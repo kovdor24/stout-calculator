@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STOUT Calc v2.0 (Fixed)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* === СТИЛИ === */
+        :root { --primary: #2563EB; --primary-light: #EFF6FF; --bg: #F3F4F6; --surface: #FFFFFF; --text-main: #111827; --text-sec: #6B7280; --border: #E5E7EB; --radius: 12px; --warn-bg: #FEF2F2; --warn-text: #991B1B; --warn-border: #FCA5A5; }
+        body.dark-mode {
+            --bg: #0B0F1A;           /* Глубокий полночный фон */
+            --surface: #111827;      /* Фон панелей */
+            --surface-light: #1F2937; /* Фон карточек внутри панелей */
+            --text-main: #F3F4F6;    /* Чистый белый текст */
+            --text-sec: #9CA3AF;     /* Серый приглушенный текст */
+            --border: #1F2937;       /* Цвет границ */
+            --primary: #6366F1;      /* Индиго-акцент как на скриншоте */
+            --primary-light: rgba(99, 102, 241, 0.15); /* Прозрачная подсветка */
+            --warn-bg: #2D1B1B;
+            --warn-text: #F87171;
+        }
+
+        body.dark-mode .input-panel, 
+        body.dark-mode .output-panel { 
+            background: var(--surface); 
+            color: var(--text-main); 
+            border: 1px solid var(--border);
+            box-shadow: none;
+        }
+
+        body.dark-mode .control-card, 
+        body.dark-mode .tabs, 
+        body.dark-mode .doc-summary, 
+        body.dark-mode .zone-card { 
+            background: #151C2C; 
+            border: 1px solid #262E3F; 
+        }
+
+        body.dark-mode .tab.active, 
+        body.dark-mode .stepper, 
+        body.dark-mode .step-btn, 
+        body.dark-mode .step-val,
+        body.dark-mode input[type="number"],
+        body.dark-mode .zone-input { 
+            background: #1F2937; 
+            color: #FFFFFF; 
+            border: 1px solid #262E3F; 
+        }
+
+        body.dark-mode .row-sec td {
+            background: #1E293B !important;
+            color: #818CF8;
+            border-top: 1px solid #262E3F;
+            padding: 12px 15px;
+        }
+
+        body.dark-mode .inv-table th { 
+            border-bottom: 1px solid #1F2937; 
+            color: var(--text-sec); 
+        }
+
+        body.dark-mode .inv-table td { 
+            border-bottom: 1px solid #111827; 
+        }
+
+        body.dark-mode .total-val, 
+        body.dark-mode .doc-title, 
+        body.dark-mode .lbl { 
+            color: #F3F4F6; 
+        }
+
+        body.dark-mode .title-edit { 
+            border-bottom: 1px dashed #262E3F; 
+            color: var(--primary); 
+        }
+
+        body.dark-mode .slider { 
+            background-color: #374151; 
+        }
+
+        body.dark-mode input:checked + .slider { 
+            background-color: var(--primary); 
+        }
+
+        body.dark-mode .group-header td {
+            background-color: #111827 !important;
+            color: #6366F1;
+            border-bottom: 1px solid #1F2937;
+        }
+
+        body.dark-mode .info-card {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.2);
+            color: #818CF8;
+        }
+
+        /* Исправление блока горячей воды (выбор жильцов) */
+        body.dark-mode #blk_res {
+            background: #151C2C !important;
+            border-color: #262E3F !important;
+        }
+        
+        body.dark-mode #blk_res div {
+            border-top-color: #262E3F !important;
+        }
+
+        /* Исправление полосы прокрутки (Scrollbar) */
+        body.dark-mode {
+            scrollbar-color: #374151 #0B0F1A; /* Для Firefox */
+        }
+
+        body.dark-mode *::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        body.dark-mode *::-webkit-scrollbar-track {
+            background: #0B0F1A;
+        }
+
+        body.dark-mode *::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 10px;
+            border: 2px solid #0B0F1A;
+        }
+
+        body.dark-mode *::-webkit-scrollbar-thumb:hover {
+            background: #4B5563;
+        }
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 20px; font-size: 13px; line-height: 1.4; }
+        .container { display: flex; gap: 20px; width: 100%; margin: 0; align-items: flex-start; }
+        .input-panel { flex: 0 0 340px; background: var(--surface); padding: 20px; border-radius: var(--radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: sticky; top: 20px; max-height: 95vh; overflow-y: auto; }
+        .output-panel { flex: 1; min-width: 0; width: 100%; background: var(--surface); padding: 30px; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; flex-direction: column; height: auto; }
+        h2 { font-size: 20px; font-weight: 800; margin-bottom: 15px; letter-spacing: -0.02em; margin-top: 0; }
+        h3 { 
+            font-size: 15px; 
+            font-weight: 800; 
+            color: var(--text-main); 
+            text-transform: uppercase; 
+            margin: 35px 0 15px 0; 
+            letter-spacing: 0.03em; 
+            border: none; 
+            padding: 0;
+        }
+        .control-item { margin-bottom: 20px; }
+        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .lbl { font-weight: 600; font-size: 13px; color: var(--text-main); }
+        .lbl-sub { 
+            font-size: 10px; 
+            color: var(--text-sec); 
+            margin-bottom: 8px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            display: block; 
+            letter-spacing: 0.02em;
+        }
+        .val { font-weight: 700; color: var(--primary); }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: var(--primary); height: 6px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .control-card { background: #F9FAFB; border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        .stepper { display: flex; align-items: center; background: #fff; border: 1px solid #D1D5DB; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: 90px; height: 28px; }
+        .step-btn { width: 28px; height: 100%; border: none; background: #fff; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-sec); transition: 0.2s; }
+        .step-btn:hover { background: #F3F4F6; color: var(--primary); }
+        .step-val { width: 34px; text-align: center; font-weight: 700; font-size: 13px; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #E5E7EB; transition: .3s; border-radius: 34px; border: 1px solid transparent; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .tabs { display: flex; background: #F9FAFB; padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
+        .tab { flex: 1; text-align: center; padding: 6px 4px; font-size: 12px; font-weight: 500; color: var(--text-sec); cursor: pointer; border-radius: 6px; transition: all 0.2s ease; }
+        .tab:hover { color: var(--text-main); }
+        .tab.active { background: #fff; color: var(--primary); font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .tab.multi-active { background: var(--primary); color: #fff; font-weight: 700; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+        .info-card { background: var(--primary-light); border-radius: 6px; padding: 8px 12px; margin-top: 8px; font-size: 11px; color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 8px; border: 1px solid #DBEAFE; }
+        .doc-header { margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .doc-title { font-size: 26px; font-weight: 800; text-transform: uppercase; line-height: 1; }
+        .doc-summary { font-size: 11px; color: var(--text-main); font-weight: 500; background: #F9FAFB; padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .doc-summary b { color: var(--primary); font-weight: 700; }
+        .sep { color: #D1D5DB; }
+        .sku-control { display: flex; align-items: center; gap: 8px; }
+        .sku-label { font-size: 10px; font-weight: 700; color: var(--text-sec); text-transform: uppercase; }
+        .inv-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; }
+        .inv-table th { text-align: left; padding: 8px 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-sec); border-bottom: 1px solid #000; }
+        .inv-table th:last-child { text-align: right; padding-right: 0; }
+        .inv-table td { padding: 5px 6px; border-bottom: 1px solid #F3F4F6; vertical-align: middle; }
+        .col-img { width: 50px; text-align: center; vertical-align: middle; position: relative; }
+        .img-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+        .prod-thumb { width: 38px; height: 38px; object-fit: contain; border-radius: 4px; background: #fff; padding: 2px; border: 1px solid #eee; transition: all 0.2s; }
+        .swap-cycle-btn { display: none; position: absolute; left: -26px; top: 50%; transform: translateY(-50%); background: #2563EB; color: #fff; width: 22px; height: 22px; border-radius: 50%; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3); border: 2px solid #fff; cursor: pointer; z-index: 10; transition: all 0.2s; }
+        .swap-cycle-btn:hover { background: #1d4ed8; transform: translateY(-50%) scale(1.15); }
+        .show-swap-ui .swap-cycle-btn { display: flex; animation: popIn 0.2s forwards; }
+        .swappable-cursor { cursor: pointer; }
+        .swappable-cursor:hover .prod-thumb { border-color: var(--primary); }
+        .show-swap-ui .prod-thumb { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15); }
+        @keyframes popIn { from { opacity: 0; transform: translateY(-50%) scale(0.5); } to { opacity: 1; transform: translateY(-50%) scale(1); } }
+        .col-idx { width: 25px; color: #9CA3AF; text-align: center; font-size: 10px; }
+        .col-name { font-weight: 600; color: var(--text-main); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 450px; }
+        .show-sku-mode .col-name { white-space: normal; overflow: visible; min-width: 200px; }
+        .col-sku { width: 100px; white-space: nowrap; font-family: monospace; color: var(--text-sec); font-size: 11px; }
+        .col-brand { width: 70px; text-align: center; font-size: 11px; }
+        .col-unit { width: 40px; text-align: center; font-size: 11px; }
+        .col-qty { width: 60px; text-align: center; font-weight: 700; }
+        .col-price { text-align: right; white-space: nowrap; width: 80px; font-size: 12px; }
+        .col-sum { text-align: right; font-weight: 800; padding-right: 0; white-space: nowrap; width: 90px; font-size: 12px; }
+        .row-sec td { background: var(--primary-light); color: var(--primary); font-weight: 800; font-size: 11px; text-transform: uppercase; padding: 8px 6px; border-top: 2px solid #fff; }
+        .row-subtotal td { text-align: right; font-style: italic; color: var(--text-sec); padding-bottom: 10px; font-size: 11px; }
+        .group-header td { background-color: #EFF6FF; color: #1e3a8a; font-weight: 800; font-size: 10px; text-transform: uppercase; padding-top: 8px; padding-bottom: 6px; border: none; cursor: pointer; vertical-align: middle; }
+        .group-header td:last-child { text-align: right; }
+        .group-header .col-sum { text-align: right; }
+        .doc-footer { margin-top: auto; padding-top: 20px; border-top: 2px solid #000; display: flex; justify-content: flex-end; align-items: baseline; gap: 15px; }
+        .total-val { font-size: 24px; font-weight: 800; color: #111; }
+        .footer-btns { display: flex; gap: 15px; margin-top: 25px; padding-top: 20px; border-top: 2px solid #000; }
+        .btn-base { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 14px 20px; border: none; border-radius: 10px; font-weight: 700; font-size: 14px; color: #fff; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .btn-base:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); }
+        /* Цвета кнопок в светлой теме */
+        .btn-tg { background-color: #229ED9; } 
+        .btn-tg:hover { background-color: #1c8dbf; }
+        .btn-print { background-color: #111827; } 
+        .btn-print:hover { background-color: #000000; }
+
+        /* Цвета кнопок в тёмной теме (Indigo style как на скриншоте) */
+        body.dark-mode .btn-tg { 
+            background-color: #374151; 
+            color: #F3F4F6;
+        }
+        body.dark-mode .btn-tg:hover { 
+            background-color: #4B5563; 
+        }
+        body.dark-mode .btn-print { 
+            background-color: #6366F1; 
+            color: #FFFFFF;
+        }
+        body.dark-mode .btn-print:hover { 
+            background-color: #4F46E5; 
+        }
+        @media (max-width: 768px) { .container { flex-direction: column; } .input-panel { flex: none; width: 100%; position: static; max-height: none; } }
+        .qty-wrap { display: flex; align-items: center; justify-content: center; gap: 3px; }
+        .warn-box { display: block; margin-top: 5px; background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: none; letter-spacing: normal; width: 100%; }
+        .print-header { display: none; font-family: Arial, sans-serif; color: #000; margin-bottom: 20px; }
+        .ph-top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; font-weight: 700; font-size: 14px; }
+        .ph-main { display: flex; gap: 20px; align-items: center; font-size: 10px; line-height: 1.3; }
+        .ph-logo { width: 80px; flex-shrink: 0; } .ph-logo img { width: 100%; height: auto; }
+        .ph-addr { flex: 1.2; } .ph-bank { flex: 1; } .ph-line { margin-top: 10px; border: none; border-top: 3px solid #D4AF37; }
+        @media print { .input-panel, .btn-print, .sku-control, .swap-cycle-btn { display: none !important; } .output-panel { box-shadow: none; width: 100%; padding: 0; border: none; } body { padding: 0; background: white; } .print-header { display: block !important; } .doc-title { font-size: 20px; margin-top: 0; } }
+        
+        /* === ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ ЗОН === */
+        /* Стили для редактируемого заголовка */
+        
+        .title-edit:focus { border-bottom: 1px solid #2563EB; background: #EFF6FF; }
+        .title-edit:empty::before { content: ""; }
+        @media print { .title-edit { border-bottom: none; color: #000; } .title-edit:empty { display: none; } }.zone-card { background: #fff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 12px; margin-bottom: 10px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+        .zone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #F3F4F6; }
+        .zone-title { font-weight: 700; font-size: 13px; color: #374151; min-width: 50px; outline: 1px dashed transparent; }
+        .zone-title:focus { outline: 1px dashed #2563EB; background: #fff; }
+        .zone-remove { color: #EF4444; font-size: 18px; cursor: pointer; line-height: 1; padding: 0 5px; opacity: 0.6; transition: 0.2s; }
+        .zone-remove:hover { opacity: 1; }
+        .zone-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .zone-input { width: 50px; padding: 4px; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 12px; text-align: center; }
+        .btn-add-zone { width: 100%; padding: 8px; background: #F3F4F6; border: 1px dashed #9CA3AF; color: #4B5563; font-weight: 600; font-size: 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .btn-add-zone:hover { background: #E5E7EB; color: #111; border-color: #6B7280; }
+
+        /* Стиль кнопки для тёмной темы (как на скриншоте) */
+        body.dark-mode .btn-add-zone { 
+            background: #374151; 
+            border: 1px dashed #4B5563; 
+            color: #F3F4F6; 
+        }
+        body.dark-mode .btn-add-zone:hover { 
+            background: #4B5563; 
+            border-color: #6366F1; 
+            color: #FFFFFF; 
+        }
+
+        .tooltip-wrapper { position: relative; display: inline-flex; align-items: center; margin-left: 4px; vertical-align: middle; }
+        .info-icon { display: flex; align-items: center; justify-content: center; width: 14px; height: 14px; background: #DBEAFE; color: #2563EB; border-radius: 50%; font-size: 9px; font-weight: 700; cursor: help; border: 1px solid #2563EB; }
+        .info-icon:hover { background: #2563EB; color: white; }
+        .tooltip-content { visibility: hidden; position: absolute; z-index: 100; bottom: 135%; left: 50%; transform: translateX(-50%); width: 260px; background: #1F2937; color: #fff; padding: 10px; border-radius: 6px; font-size: 11px; line-height: 1.4; opacity: 0; transition: 0.2s; pointer-events: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); text-align: left; font-weight: 400; }
+        .tooltip-wrapper:hover .tooltip-content { visibility: visible; opacity: 1; }
+        .tooltip-content::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #1F2937 transparent transparent transparent; }
+
+        /* Единый стиль для кнопок-иконок в шапке */
+        .header-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+        .btn-ctrl { 
+            width: 38px; height: 38px; 
+            display: flex; align-items: center; justify-content: center; 
+            border-radius: 10px; cursor: pointer; transition: 0.2s; 
+            border: 1px solid var(--border); 
+            background: #fff; color: #6B7280; 
+            padding: 0;
+        }
+        .btn-ctrl:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+        .btn-ctrl svg { width: 20px; height: 20px; }
+        
+        /* Цвета кнопок для темной темы */
+        body.dark-mode .btn-ctrl { background: #1F2937; border-color: #262E3F; color: #9CA3AF; }
+        body.dark-mode .btn-ctrl:hover { border-color: #6366F1; color: #818CF8; background: rgba(99, 102, 241, 0.1); }
+        
+        /* Цвет кнопки сброса при наведении */
+        .btn-ctrl.btn-reset:hover { border-color: #EF4444; color: #EF4444; background: rgba(239, 68, 68, 0.1); }
+        </style>
+    <script>
+    const REGION_DESC = { 130: "Мороз до -35°C", 120: "Мороз до -30°C", 100: "Мороз до -25°C", 60: "Мороз до -10°C" };
+    const WALL_DESC = { 0.8: "⬜ Тёплый (Газобетон)", 1.0: "🧱 Стандарт (Кирпич)", 1.3: "🪵 Холодный (Дерево)" };
+
+    const getImg = (item) => {
+        if(!item || !item.name) return '';
+        let txt = item.brand==='STOUT'?'S':'B'; let bg='F3F4F6';
+        if(item.type==='el') {txt='⚡';bg='FEF3C7';} else if(item.type==='gas') {txt='🔥';bg='FEE2E2';}
+        else if(item.name.includes('Радиатор')) {txt='☢️';bg='E0F2FE';} 
+        else if(item.name.includes('Труба')) {txt='➰';bg='DCFCE7';}
+        else if(item.name.includes('Коллектор')) {txt='🎛️';bg='F3E8FF';} 
+        else if(item.name.includes('смесительный')) {txt='🔄';bg='F3E8FF';}
+        else if(item.name.includes('Бойлер')) {txt='💧';bg='DBEAFE';}
+        else if(item.name.includes('Warme')) {txt='🧪';bg='D1FAE5';}
+        else if(item.name.includes('Бак')) {txt='🔴';bg='FEE2E2';}
+        else if(item.name.includes('Стабилизатор')) {txt='🔌';bg='FEF3C7';}
+        else if(item.name.includes('Мат')) {txt='🔲';bg='F3E8FF';}
+        else if(item.name.includes('Zigbee') || item.name.includes('Головка') || item.name.includes('Узел') || item.name.includes('Термостат') || item.name.includes('контроллер')) {txt='🔧';bg='DBEAFE';}
+        else if(item.name.includes('Инсталляция')) {txt='🚽';bg='F3E8FF';}
+        return `<img src="img/${item.id}.jpg" class="prod-thumb" onerror="this.onerror=null;this.src='https://placehold.co/100x100/${bg}/555?text=${txt}&font=roboto';">`;
+    };
+
+    const catalog = {
+        dhw_pump: [
+            {id:"RCP-0005-152080", name:"Насос ГВС с таймером (ROMMER Comfort)", price:11446, brand:"ROMMER", desc:"Насос рециркуляции с таймером."},
+            {id:"RCP-0005-151780", name:"Насос ГВС (ROMMER Comfort)", price:10406, brand:"ROMMER", desc:"Насос рециркуляции базовый."},
+            {id:"RCP-0005-150480", name:"Насос ГВС (Латунь)", price:5723, brand:"ROMMER", desc:"Бюджетный насос, корпус латунь."}
+        ],
+        dhw_fittings: [
+            {id:"SFT-0041-000001", name:"Американка 1\" ВР/НР (Змеевик бойлера)", price:1016},
+            {id:"SVB-0002-000025", name:"Кран шаровой 1\" ВР/ВР (Змеевик бойлера)", price:1548},
+            {id:"SFT-0041-000034", name:"Американка 3/4\" ВР/НР (ГВС/Рецирк)", price:597},
+            {id:"SVB-0012-000020", name:"Кран шаровой 3/4\" ВР/ВР (Бабочка)", price:865},
+            {id:"RVS-0003-006015", name:"Клапан предохранительный 6 бар", price:436, brand:"ROMMER"},
+            {id:"SFT-0031-000034", name:"Крестовина 3/4\" ВР", price:1151},
+            {id:"SVC-0012-000020", name:"Клапан обратный пружинный STOUT 3/4\"", price:1054},
+            {id:"SVB-0006-000020", name:"Кран шаровой 3/4\" НР/НР (Вход ХВС)", price:1175},
+            {id:"SVC-0012-000020", name:"Обратный клапан 3/4\" (Для рециркуляции)", price:1054} 
+        ],
+        boilers_gas: [
+            {id:"100022963", name:"Котёл газовый ECO Nova 1.24F (24 кВт)", power:24, price:61780, type:"gas", brand:"BAXI"},
+            {id:"100023035", name:"Котёл газовый ECO Nova 1.31F (31 кВт)", power:31, price:83990, type:"gas", brand:"BAXI"}
+        ],
+        boilers_plus: [
+            {id:"SEB-2201-000005", name:"Котёл электрический PLUS (5 кВт)", power:5, price:59236, type:"el", exp:12, vol:10, desc:"PLUS: Бак 12л, надежная автоматика."},
+            {id:"SEB-2201-000007", name:"Котёл электрический PLUS (7 кВт)", power:7, price:60121, type:"el", exp:12, vol:10, desc:"PLUS: Бак 12л, надежная автоматика."},
+            {id:"SEB-2201-000009", name:"Котёл электрический PLUS (9 кВт)", power:9, price:61715, type:"el", exp:12, vol:10, desc:"PLUS: Бак 12л, надежная автоматика."},
+            {id:"SEB-2201-000012", name:"Котёл электрический PLUS (12 кВт)", power:12, price:62657, type:"el", exp:12, vol:10, desc:"PLUS: Бак 12л, надежная автоматика."},
+            {id:"SEB-2201-000014", name:"Котёл электрический PLUS (14 кВт)", power:14, price:65191, type:"el", exp:12, vol:10, desc:"PLUS: Бак 12л, надежная автоматика."},
+            {id:"SEB-2201-000018", name:"Котёл электрический PLUS (18 кВт)", power:18, price:69393, type:"el", exp:12, vol:10, desc:"PLUS: Бак 12л, надежная автоматика."},
+            {id:"SEB-2201-000021", name:"Котёл электрический PLUS (21 кВт)", power:21, price:71130, type:"el", exp:12, vol:10, desc:"PLUS: Бак 12л, надежная автоматика."},
+            {id:"SEB-2201-000024", name:"Котёл электрический PLUS (24 кВт)", power:24, price:72724, type:"el", exp:12, vol:10, desc:"PLUS: Бак 12л, надежная автоматика."},
+            {id:"SEB-2201-000027", name:"Котёл электрический PLUS (27 кВт)", power:27, price:74462, type:"el", exp:12, vol:10, desc:"PLUS: Бак 12л, надежная автоматика."}
+        ],
+        boilers_status: [
+            {id:"SEB-3101-000005", name:"Котёл электрический STATUS (5 кВт)", power:5, price:66207, type:"el", exp:10, vol:6, desc:"STATUS: Premium. Бак 10л, сенсорный дисплей."},
+            {id:"SEB-3101-000007", name:"Котёл электрический STATUS (7 кВт)", power:7, price:67505, type:"el", exp:10, vol:6, desc:"STATUS: Premium. Бак 10л, сенсорный дисплей."},
+            {id:"SEB-3101-000009", name:"Котёл электрический STATUS (9 кВт)", power:9, price:69453, type:"el", exp:10, vol:6, desc:"STATUS: Premium. Бак 10л, сенсорный дисплей."},
+            {id:"SEB-3101-000012", name:"Котёл электрический STATUS (12 кВт)", power:12, price:70102, type:"el", exp:10, vol:6, desc:"STATUS: Premium. Бак 10л, сенсорный дисплей."},
+            {id:"SEB-3101-000014", name:"Котёл электрический STATUS (14 кВт)", power:14, price:72698, type:"el", exp:10, vol:6, desc:"STATUS: Premium. Бак 10л, сенсорный дисплей."},
+            {id:"SEB-3101-000018", name:"Котёл электрический STATUS (18 кВт)", power:18, price:77242, type:"el", exp:10, vol:6, desc:"STATUS: Premium. Бак 10л, сенсорный дисплей."},
+            {id:"SEB-3101-000021", name:"Котёл электрический STATUS (21 кВт)", power:21, price:77891, type:"el", exp:10, vol:6, desc:"STATUS: Premium. Бак 10л, сенсорный дисплей."},
+            {id:"SEB-3101-000024", name:"Котёл электрический STATUS (24 кВт)", power:24, price:78540, type:"el", exp:0, vol:11, desc:"STATUS: Premium. Внимание: НЕТ встроенного бака!"},
+            {id:"SEB-3101-000027", name:"Котёл электрический STATUS (27 кВт)", power:27, price:82435, type:"el", exp:0, vol:11, desc:"STATUS: Premium. Внимание: НЕТ встроенного бака!"}
+        ],
+        chimneys: [{id:"SCA-6010-210850", name:"Дымоход коаксиальный 60/100", price:6298, brand:"STOUT"}],
+        stabs: [
+            {id:"SST-0001-000250", name:"Стабилизатор ST 250", price:6905, type:"gas"}, 
+            {id:"SST-0001-000600", name:"Стабилизатор ST 600", price:9578, type:"el"}, 
+            {id:"SST-0001-000900", name:"Стабилизатор ST 900", price:10322, type:"el"}
+        ],
+        valves: [{id:"SFB-0001-000001", name:"Комплект 3-х ход. клапана Fugas", price:12916, brand:"STOUT"}],
+        tanks_optibase: [ 
+            {id:"SWH-3110-000100", name:"Бойлер напольный 100л", vol:100, price:57035}, 
+            {id:"SWH-2110-000150", name:"Бойлер напольный OptiBase 150л", vol:150, price:56158}, 
+            {id:"SWH-2110-000200", name:"Бойлер напольный OptiBase 200л", vol:200, price:62772}, 
+            {id:"SWH-2110-000300", name:"Бойлер напольный OptiBase 300л", vol:300, price:96910} 
+        ],
+        tanks_standard: [ 
+            {id:"SWH-3110-000100", name:"Бойлер напольный 100л", vol:100, price:57035}, 
+            {id:"SWH-3110-000150", name:"Бойлер напольный 150л", vol:150, price:64046}, 
+            {id:"SWH-3110-000200", name:"Бойлер напольный 200л", vol:200, price:66729}, 
+            {id:"SWH-1110-000300", name:"Бойлер напольный 300л", vol:300, price:114768} 
+        ],
+        exp_dhw: [ {id:"STW-0015-000012", name:"Расширительный бак для ГВС 12л", vol:12, price:2882}, {id:"STW-0015-000018", name:"Расширительный бак для ГВС 18л", vol:18, price:3316}, {id:"STW-0015-000024", name:"Расширительный бак для ГВС 24л", vol:24, price:3614} ],
+        exp_heating: [ {id:"STH-0004-000018", name:"Расширительный бак для отопления 18л", vol:18, price:2897}, {id:"STH-0006-000024", name:"Расширительный бак для отопления 24л", vol:24, price:3050}, {id:"STH-0006-000050", name:"Расширительный бак для отопления 50л", vol:50, price:6764}, {id:"STH-0006-000080", name:"Расширительный бак для отопления 80л", vol:80, price:10836}, {id:"STH-0006-000100", name:"Расширительный бак для отопления 100л", vol:100, price:12642} ],
+        tank_mount: {id:"SAC-0030-000825", name:"Крепление для бака", price:1266},
+        tank_kit: {id:"RVS-0008-002020", name:"Комплект подключения мембранного бака", price:1330, brand:"ROMMER"},
+        rads: [
+            {id:"SRB-0320-050004", name:"Радиатор Space 4 секций", sec:4, price:6457, power50: 117}, 
+            {id:"SRB-0320-050005", name:"Радиатор Space 5 секций", sec:5, price:7528, power50: 117}, 
+            {id:"SRB-0320-050006", name:"Радиатор Space 6 секций", sec:6, price:8599, power50: 117},
+            {id:"SRB-0320-050007", name:"Радиатор Space 7 секций", sec:7, price:9670, power50: 117}, 
+            {id:"SRB-0320-050008", name:"Радиатор Space 8 секций", sec:8, price:10741, power50: 117}, 
+            {id:"SRB-0320-050009", name:"Радиатор Space 9 секций", sec:9, price:11812, power50: 117},
+            {id:"SRB-0320-050010", name:"Радиатор Space 10 секций", sec:10, price:12883, power50: 117}, 
+            {id:"SRB-0320-050011", name:"Радиатор Space 11 секций", sec:11, price:13954, power50: 117}, 
+            {id:"SRB-0320-050012", name:"Радиатор Space 12 секций", sec:12, price:15025, power50: 117},
+            {id:"SRB-0320-050013", name:"Радиатор Space 13 секций", sec:13, price:16096, power50: 117}, 
+            {id:"SRB-0320-050014", name:"Радиатор Space 14 секций", sec:14, price:17167, power50: 117}
+        ],
+        rad_kits: [ {id:"SFT-0049-000002", name:"Ниппель", price:374} ],
+        rad_tube_set: [
+            {id:"SFA-0025-001650", name:"Трубка Г-образная 16/500 мм (для радиат.)", price:2863, brand:"STOUT"},
+            {id:"SFA-0000-162025", name:"Фиксирующая скоба для трубок", price:449, brand:"STOUT"},
+            {id:"SFA-0020-000016", name:"Гильза монтажная 16 (аксиальная)", price:109, brand:"STOUT"},
+            {id:"SFC-0027-001520", name:"Фитинг компрессионный 15x3/4\" (для трубки)", price:566, brand:"STOUT"}
+        ],
+        protective_sleeves: [
+            {id:"SFA-0035-200016", name:"Защитная втулка красная (для трубы 16 мм)", price:62, brand:"STOUT"},
+            {id:"SFA-0035-100016", name:"Защитная втулка синяя (для трубы 16 мм)", price:62, brand:"STOUT"}
+        ],
+        label_kits: [
+            {id:"SFA-0037-100000", name:"Комплект маркировочных наклеек \"ОТОПЛЕНИЕ\"", price:872, brand:"STOUT"},
+            {id:"SFA-0037-200000", name:"Комплект маркировочных наклеек \"ТЕПЛЫЙ ПОЛ\"", price:872, brand:"STOUT"}
+        ],
+        heads: [
+            {id:"SHT-0001-003015", name:"Головка термостатическая (Газо-жидкостная)", price:1316, type:'gas', desc:"Стандартное решение. Быстрая реакция."},
+            {id:"SHT-0002-003015", name:"Головка термостатическая (Жидкостная)", price:1334, type:'liquid', desc:"Классическая надежная модель."},
+            {id:"STE-2070-703011", name:"Умная термостатическая головка Zigbee", price:3427, type:'smart', desc:"Управление со смартфона. Требует шлюз."}
+        ],
+        smart_hub: {id:"STE-2071-804010", name:"Беспроводной шлюз Zigbee", price:4896},
+        ufh_mech: [
+            {id:"STE-2001-130210", name:"Термостат универсальный, белый", price:2142, desc:"Механический термостат (Белый)."},
+            {id:"STE-2001-130220", name:"Термостат универсальный, черный", price:2249, desc:"Механический термостат (Черный)."}
+        ],
+        ufh_electro: [
+            {id:"STE-2002-331212", name:"Терморегулятор универсальный, белый", price:11603, desc:"Электронный термостат с дисплеем (Белый)."},
+            {id:"STE-2002-331222", name:"Терморегулятор универсальный, черный", price:12067, desc:"Электронный термостат с дисплеем (Черный)."}
+        ],
+        actuators: {id:"STE-0010-230001", name:"Сервопривод компактный 230В (NC)", price:2458},
+        wiring_center: {id:"STE-3050-650522", name:"Проводной контроллер", price:7446},
+        h_valves: [
+            {id:"SVH-0004-000020", name:"Узел нижн. подкл. (Угловой)", price:1161, type:'angled', desc:"Трубы выходят из стены."},
+            {id:"SVH-0002-000020", name:"Узел нижн. подкл. (Прямой)", price:1141, type:'straight', desc:"Трубы выходят из пола."}
+        ],
+        manifolds_rad: [
+            {id:"SMS-0922-000002", loops:2, price:7643, name:"Коллектор радиаторный 2 вых."},
+            {id:"SMS-0922-000003", loops:3, price:9477, name:"Коллектор радиаторный 3 вых."},
+            {id:"SMS-0922-000004", loops:4, price:11320, name:"Коллектор радиаторный 4 вых."},
+            {id:"SMS-0922-000005", loops:5, price:13418, name:"Коллектор радиаторный 5 вых."},
+            {id:"SMS-0922-000006", loops:6, price:15374, name:"Коллектор радиаторный 6 вых."},
+            {id:"SMS-0922-000007", loops:7, price:17792, name:"Коллектор радиаторный 7 вых."},
+            {id:"SMS-0922-000008", loops:8, price:19985, name:"Коллектор радиаторный 8 вых."},
+            {id:"SMS-0922-000009", loops:9, price:21902, name:"Коллектор радиаторный 9 вых."},
+            {id:"SMS-0922-000010", loops:10, price:24063, name:"Коллектор радиаторный 10 вых."},
+            {id:"SMS-0922-000011", loops:11, price:25961, name:"Коллектор радиаторный 11 вых."},
+            {id:"SMS-0922-000012", loops:12, price:27830, name:"Коллектор радиаторный 12 вых."},
+            {id:"SMS-0922-000013", loops:13, price:31212, name:"Коллектор радиаторный 13 вых."}
+        ],
+        manifolds_chrome_blocks: [
+            {id:"SMB-6850-013402", name:"Коллекторный блок 1\" x 2 вых", loops:2, price:2983, brand:"STOUT"},
+            {id:"SMB-6850-013403", name:"Коллекторный блок 1\" x 3 вых", loops:3, price:4169, brand:"STOUT"},
+            {id:"SMB-6850-013404", name:"Коллекторный блок 1\" x 4 вых", loops:4, price:5511, brand:"STOUT"}
+        ],
+        manifold_brackets: {id:"SMB-0002-000002", name:"Кронштейны для коллекторов (пара)", price:612, brand:"STOUT"},
+        pipes: [ {id:"SPX-0002-101620", name:"Труба 16x2.0 (100 м)", len:100, price:15200}, {id:"SPX-0002-501620", name:"Труба 16x2.0 (500 м)", len:500, price:85270} ],
+        insulated_pipes: [ 
+            {id:"SPI-0003-001622", name:"Труба 16x2.2 в теплоизоляции (красная)", len:100, price:22000}, 
+            {id:"SPI-0004-001622", name:"Труба 16x2.2 в теплоизоляции (синяя)", len:100, price:22000} 
+        ],
+        rad_pipes_grey: [
+            {id:"SPX-0001-001622", name:"Труба PEX-a/EVOH серая 16x2.2 (100м)", len:100, price:17500}, 
+            {id:"SPX-0001-241622", name:"Труба PEX-a/EVOH серая 16x2.2 (240м)", len:240, price:42000}, 
+            {id:"SPX-0001-501622", name:"Труба PEX-a/EVOH серая 16x2.2 (500м)", len:500, price:98735}  
+        ],
+        insulation: [
+            {id:"EFXT018062SUPRK-400", name:"Теплоизоляция 18/6 (Красная)", price:28, unit:"м", brand:"Energoflex"}, 
+            {id:"EFXT018062SUPRS-400", name:"Теплоизоляция 18/6 (Синяя)", price:28, unit:"м", brand:"Energoflex"}
+        ],
+        manifolds: [
+            {id:"SMS-0917-000002", loops:2, price:8479}, {id:"SMS-0917-000003", loops:3, price:10717}, {id:"SMS-0917-000004", loops:4, price:12973}, {id:"SMS-0917-000005", loops:5, price:15532},
+            {id:"SMS-0917-000006", loops:6, price:17796}, {id:"SMS-0917-000007", loops:7, price:20830}, {id:"SMS-0917-000008", loops:8, price:23477}, {id:"SMS-0917-000009", loops:9, price:25873},
+            {id:"SMS-0917-000010", loops:10, price:28480}, {id:"SMS-0917-000011", loops:11, price:30864}, {id:"SMS-0917-000012", loops:12, price:33210}
+        ],
+        parts: [ 
+            {id:"SMS-1000-010001", name:"Концевой фитинг", price:2441}, 
+            {id:"SFC-0020-001622", name:"Евроконус 16x2.2", price:381},
+            {id:"SFA-0029-000016", name:"Фиксатор 90", price:127},
+            {id:"SFC-0020-001620", name:"Евроконус 16x2.0", price:376}
+        ],
+        mixing_units: [ {id:"SDG-0120-001000", name:"Насосно-смесительный узел (без насоса)", price:25684} ],
+        groups_dn20: [ {id:"SDG-0001-002001", name:"Группа насосная DN20 (Прямая)", price:16243}, {id:"SDG-0002-002001", name:"Группа насосная DN20 (Смес.)", price:29589} ],
+        groups_dn25: [ {id:"SDG-0001-002501", name:"Группа насосная DN25 (Прямая)", price:17535}, {id:"SDG-0002-002501", name:"Группа насосная DN25 (Смес.)", price:31942} ],
+        hydro_dn20: [ {id:"SDG-0018-002502", name:"Коллектор-гидрострелка DN20 (2 конт)", price:50005}, {id:"SDG-0018-002503", name:"Коллектор-гидрострелка DN20 (3 конт)", price:57133} ],
+        hydro_dn25: [ {id:"SDG-0018-004002", name:"Коллектор-гидрострелка DN25 (2 конт)", price:56826}, {id:"SDG-0018-004003", name:"Коллектор-гидрострелка DN25 (3 конт)", price:64925} ],
+        pumps_dn20: [ {id:"RCP-0002-1560130", brand:"ROMMER", name:"Насос 15/60-130", price:3364} ],
+        pumps_dn25: [
+            {id:"SPC-0011-2560180", name:"Насос циркуляционный 25/60-180", price:11669, type:'default', desc:"Базовый насос STOUT 25/60-180."},
+            {id:"SPC-0010-2560180", name:"Насос циркуляционный 25/60-180 (Std)", price:11669, type:'std', desc:"Классический 3-х скоростной насос."},
+            {id:"SPC-0002-2560180", name:"Насос циркуляционный Mini 25/60-180", price:21680, type:'mini', desc:"Энергоэффективный (частотный)."},
+            {id:"SPC-0003-2560180", name:"Насос циркуляционный Mini Pro 25/60-180", price:30622, type:'pro', desc:"Премиум Smart (дисплей, авто-адаптация)."}
+        ],
+        pumps_mix: [ {id:"SPC-0011-2560130", brand:"STOUT", name:"Насос 25/60-130", price:12666} ],
+        hydro_arrow: {id:"SDG-0015-004001", name:"Гидравлическая стрелка 3 м3/час", price:22082},
+        hydro_modular_dn20: [
+            {id:"SDG-0016-002502", name:"Стальной распр. коллектор 2 контура DN20", price:26395},
+            {id:"SDG-0016-002503", name:"Стальной распр. коллектор 3 контура DN20", price:29180}
+        ],
+        mats: [ {id:"SMF-0001-110802", name:"Мат с бобышками STOUT", area:0.88, price:991, brand:"STOUT"} ],
+        xps_kit: [
+            {id:"418318", name:"XPS Технониколь Carbon Eco 50мм (1180х580)", area:0.6844, price:299, brand:"Technonicol"},
+            {id:"138605", name:"Дюбель тарельчатый 10х100 (Уп. 100 шт)", price:936, brand:"Tech-Krep"},
+            {id:"SMF-0005-251620", name:"Скобы якорные для такера (Кассета 25 шт)", price:121, brand:"STOUT"},
+            {id:"160028", name:"Лента монтажная X-Glass ТПЛ армированная 50х50м", price:236, brand:"X-Glass"}
+        ],
+        american_34: {id:"SFT-0041-000034", name:"Разъемное соед. американка ВН 3/4\"", price:597},
+        ball_valve_34: {id:"SVB-0004-000020", name:"Кран шаровой ВР/НР, 3/4\"", price:1090},
+        check_valve_34: {id:"SVC-0011-000020", name:"Клапан обратный пружинный 3/4\"", price:1446},
+        filter_mag: {id:"SFW-0072-000020", name:"Фильтр-шламоотделитель магнитный 3/4\"", price:7720},
+        nipple_34: {id:"SFT-0003-003434", name:"Ниппель НН 3/4\"", price:200},
+        coolants: [ {id:"WARME-HYDRO-20", brand:"WARME", name:"Hydro, 20л", vol:20, price:950, type:"water"}, {id:"WARME-ECO30-20", brand:"WARME", name:"Eco 30, 20кг", vol:19, price:3492, type:"eco30"}, {id:"WARME-PRO65-20", brand:"WARME", name:"Eco Pro 65, 20кг", vol:18, price:4968, type:"pro65"} ],
+        // === ВОДОСНАБЖЕНИЕ (НОВОЕ, ПО СКРИНШОТАМ) ===
+        // ВОДОСНАБЖЕНИЕ: ТРУБЫ И ИЗОЛЯЦИЯ
+        water_pipes: [
+            { id: "SPX-0001-001622", name: "Труба PEX-a 16x2.2 (серая)", price: 197.47, unit: "м" }, 
+            { id: "SPX-0001-002028", name: "Труба PEX-a 20x2.8 (серая)", price: 295.09, unit: "м" },
+            { id: "SPX-0001-002535", name: "Труба PEX-a 25x3.5 (серая)", price: 457.78, unit: "м" },
+            { id: "SPX-0001-003244", name: "Труба PEX-a 32x4.4 (серая)", price: 743.89, unit: "м" }
+        ],
+        water_insulation: [
+            { id: "EFXT018092SUPRK", name: "Теплоизоляция 18/9 (Красная)", price: 33.67, unit: "м", brand:"Energoflex" },
+            { id: "EFXT018092SUPRS", name: "Теплоизоляция 18/9 (Синяя)", price: 33.67, unit: "м", brand:"Energoflex" }
+        ],
+
+        // ВОДОСНАБЖЕНИЕ: ФИТИНГИ
+        water_fittings: [
+            { id: "SFA-0032-001612", name: "Водорозетка 16x1/2\" (тупиковая)", price: 865.92 },
+            { id: "SFA-0040-001612", name: "Угольник проточный 16x1/2\" (Бронза)", price: 2838.94 },
+            { id: "SFA-0039-002012", name: "Угольник проточный 20x1/2\" (проходная)", price: 2698.83 },
+            { id: "SFA-0027-252525", name: "Кронштейн монтажный (75/150)", price: 895 }, 
+            { id: "SFA-0035-100012", name: "Пробка с наружней резьбой (Синяя)", price: 29.82 },
+            { id: "SFA-0035-200012", name: "Пробка с наружней резьбой (Красная)", price: 29.82 },
+            { id: "SFA-0031-000016", name: "Фиксатор поворота 90° (14-18 мм)", price: 89.89 },
+            { id: "SFA-0031-000120", name: "Фиксатор поворота 90° (20 мм)", price: 142.53 },
+            { id: "SMF-0003-028032", name: "Дюбель-крюк двойной", price: 7.09 }
+        ],
+
+        // === КОЛЛЕКТОРЫ SMB 6851 (Унифицированные) ===
+        water_manifolds_cold: [
+            { id: "SMB-6851-343402", name: "Коллектор 3/4\"x2 вых.", loops: 2, price: 1962.10 },
+            { id: "SMB-6851-343403", name: "Коллектор 3/4\"x3 вых.", loops: 3, price: 2735.63 },
+            { id: "SMB-6851-343404", name: "Коллектор 3/4\"x4 вых.", loops: 4, price: 3686.22 }
+        ],
+        water_manifolds_hot: [
+            { id: "SMB-6851-343402", name: "Коллектор 3/4\"x2 вых.", loops: 2, price: 1962.10 },
+            { id: "SMB-6851-343403", name: "Коллектор 3/4\"x3 вых.", loops: 3, price: 2735.63 },
+            { id: "SMB-6851-343404", name: "Коллектор 3/4\"x4 вых.", loops: 4, price: 3686.22 }
+        ],
+        water_manifolds_recirc: [
+            { id: "SMB-6851-343402", name: "Коллектор 3/4\"x2 вых.", loops: 2, price: 1962.10 },
+            { id: "SMB-6851-343403", name: "Коллектор 3/4\"x3 вых.", loops: 3, price: 2735.63 },
+            { id: "SMB-6851-343404", name: "Коллектор 3/4\"x4 вых.", loops: 4, price: 3686.22 }
+        ],
+        water_parts: [
+            { id: "SFC-0020-001622", name: "Евроконус 16x2.2 (для коллектора)", price: 381.76 },
+            { id: "SFC-0020-002028", name: "Евроконус 20x2.8 (для коллектора)", price: 390.30 },
+            { id: "SFT-0024-000034", name: "Заглушка коллектора 3/4\" (HP)", price: 158.50 },
+            { id: "SFA-0037-300000", name: "Наклейки \"ВОДОСНАБЖЕНИЕ\"", price: 872.84 },
+            { id: "SFA-0035-100016", name: "Защитная втулка синяя 16мм", price: 51.96 },
+            { id: "SFA-0035-200016", name: "Защитная втулка красная 16мм", price: 51.96 },
+            { id: "M571-VE-01", name: "Инсталляция с кнопкой хром глянцевая и шумоизоляцией", price: 32409, brand: "AlcaPlast" },
+            { id: "SFA-0020-000016", name: "Гильза монтажная 16 (аксиальная)", price: 109, brand: "STOUT" }
+        ]
+    };
+
+    const titanRads = [];
+    const titanData = { 4: 10092, 5: 11724, 6: 13356, 7: 14988, 8: 16620, 9: 18252, 10: 19884, 11: 21516, 12: 23148, 13: 24780, 14: 26412 };
+    for(let s=4; s<=14; s++) {
+        let idNum = s.toString().padStart(2, '0');
+        titanRads.push({ id: `SRB-3320-0500${idNum}`, name: `Радиатор TITAN ${s} секций`, sec: s, price: titanData[s] || 0, brand: 'STOUT', power50: 128, passportPower: 198 });
+    }
+
+    const steelData22 = [ {len: 400, p70: 958, price: 6739}, {len: 500, p70: 1163, price: 7530}, {len: 600, p70: 1368, price: 8419}, {len: 700, p70: 1573, price: 9229}, {len: 800, p70: 1778, price: 10118}, {len: 900, p70: 2038, price: 10905}, {len: 1000, p70: 2265, price: 11778}, {len: 1100, p70: 2491, price: 13109}, {len: 1200, p70: 2718, price: 13939}, {len: 1300, p70: 2944, price: 14824}, {len: 1400, p70: 3171, price: 15824}, {len: 1500, p70: 3397, price: 16663}, {len: 1600, p70: 3624, price: 17884}, {len: 1800, p70: 4076, price: 20738}, {len: 2000, p70: 4529, price: 23406}, {len: 2200, p70: 4982, price: 25341}, {len: 2400, p70: 5436, price: 27522}, {len: 2600, p70: 5889, price: 30301}, {len: 2800, p70: 6342, price: 32566}, {len: 3000, p70: 6795, price: 34584} ];
+    const steelData21 = [ {len: 400, p70: 680, price: 5900}, {len: 500, p70: 850, price: 6500}, {len: 600, p70: 1020, price: 7100}, {len: 700, p70: 1190, price: 7800}, {len: 800, p70: 1360, price: 8500}, {len: 900, p70: 1530, price: 9200}, {len: 1000, p70: 1700, price: 9900} ];
+    const steelRads = [ ...steelData21.map(x => ({ type: 21, ...x })), ...steelData22.map(x => ({ type: 22, ...x })) ].map(x => {
+        let lenCode = (x.len / 10).toString().padStart(3, '0');
+        return { id: `RRS-2020-${x.type}5${lenCode}`, name: `Стальной панельный радиатор, Ventil (Тип ${x.type})`, sec: x.len, isPanel: true, price: x.price, brand: 'ROMMER', power50: Math.round(x.p70 * Math.pow(50/70, 1.3)), passportPower: x.p70 };
+    }).sort((a, b) => a.power50 - b.power50);
+
+    const app = {
+        // systems: [] - значит ничего не выбрано по умолчанию
+        state: { darkMode: false, area:150, floors:1, region:130, mat:1.0, fuels:['el'], systems:[], hotWater:false, recirc:false, res:3, win:4, tp1:0, tp2:0, showSku:false, coolant:'water', mergeItems: true, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'plus', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "" },
+        // Новая функция для имени проекта
+        setProjectName: function(val) { this.state.projectName = val.trim(); this.saveState(); },
+        toggleDark: function(chk) { this.state.darkMode = chk; document.body.classList.toggle('dark-mode', chk); this.saveState(); },
+        // Новая функция для переключения автоматики
+        toggleUfhAuto: function(chk) { this.state.ufhAuto = chk; this.syncUI(); this.render(); },
+
+        toggleGroup: function(name) {
+            const idx = this.state.collapsedGroups.indexOf(name);
+            if (idx === -1) this.state.collapsedGroups.push(name);
+            else this.state.collapsedGroups.splice(idx, 1);
+            this.render();
+        },
+        toggleMerge: function() { this.state.mergeItems = document.getElementById('chk_merge').checked; this.render(); },
+        download: function() { window.print(); },
+        sendTg: function() {
+            const myLogin = "dima_ibatullin"; 
+            let s = document.getElementById('total_sum').innerText;
+            let a = this.state.area;
+            let f = this.state.floors;
+            let fuel = this.state.fuels.includes('gas') ? 'Газ' : 'Электро';
+            let settings = JSON.stringify(this.state);
+            let text = `👋 *Новый заказ с сайта!* \n`;
+            text += `➖➖➖➖➖➖➖➖➖➖\n`;
+            text += `🏠 Объект: ${a} м² (${f === 2 ? '2 этажа' : '1 этаж'})\n`;
+            text += `🔥 Система: ${fuel}\n`;
+            text += `💰 ИТОГО: **${s}**\n`;
+            text += `➖➖➖➖➖➖➖➖➖➖\n`;
+            text += `👇 *Код расчета для менеджера (нажми, чтобы скопировать):*\n`;
+            text += `\`${settings}\` \n\n`;
+            text += `Клиент просит проверить расчет.`;
+            let url = `https://t.me/${myLogin}?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        },
+        loadFromCode: function() {
+            let code = prompt("Вставьте код расчета (начинается с { ):");
+            if (code) {
+                try {
+                    let cleanCode = code.replace(/`/g, '').trim();
+                    let savedState = JSON.parse(cleanCode);
+                    this.state = { ...this.state, ...savedState };
+                    this.syncUI();
+                    this.render();
+                } catch (e) {
+                    alert("Ошибка! Неверный код. Попробуйте скопировать снова.");
+                }
+            }
+        },
+        // === НОВАЯ ФУНКЦИЯ СБРОСА ===
+        reset: function() {
+            if(!confirm("Сбросить все настройки и начать расчет заново?")) return;
+            
+            // Запоминаем текущее состояние темной темы перед сбросом
+            const currentDarkMode = this.state.darkMode;
+
+            // 1. Полный сброс данных расчета
+            this.state = { 
+                darkMode: currentDarkMode, // Возвращаем тему на место
+                area:150, floors:1, region:130, mat:1.0, fuels:['el'], systems:[], 
+                hotWater:false, recirc:false, res:3, win:4, tp1:0, tp2:0, 
+                showSku:false, coolant:'water', mergeItems: true, collapsedGroups: [], 
+                swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', 
+                connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, 
+                ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'plus', 
+                hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', 
+                radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "" 
+            };
+
+            // 2. Сохраняем состояние (теперь тема сохранится в памяти)
+            this.saveState();
+
+            // 3. Обновляем интерфейс
+            this.syncUI();
+            this.render();
+        },
+        // =============================
+        saveState: function() { localStorage.setItem('stout_save', JSON.stringify(this.state)); },
+        init: function() { 
+            if (localStorage.getItem('stout_save')) {
+                try { this.state = { ...this.state, ...JSON.parse(localStorage.getItem('stout_save')) }; } catch (e) { console.error("Ошибка загрузки сохранения", e); }
+            }
+            let radAlts = [catalog.rads[0], titanRads[0], steelRads[0]];
+            catalog.rads.forEach(rad => { rad.alts = radAlts; }); titanRads.forEach(rad => { rad.alts = radAlts; }); steelRads.forEach(rad => { rad.alts = radAlts; });
+            let hAlts = catalog.h_valves; catalog.h_valves.forEach(v => { v.alts = hAlts; });
+            let boilerAlts = [catalog.tanks_optibase[0], catalog.tanks_standard[0]]; catalog.tanks_optibase.forEach(t => { t.alts = boilerAlts; }); catalog.tanks_standard.forEach(t => { t.alts = boilerAlts; });
+            let pumpAlts = catalog.pumps_dn25; catalog.pumps_dn25.forEach(p => { p.alts = pumpAlts; });
+            let elBoilerAlts = [catalog.boilers_plus[0], catalog.boilers_status[0]]; catalog.boilers_plus.forEach(b => { b.alts = elBoilerAlts; }); catalog.boilers_status.forEach(b => { b.alts = elBoilerAlts; });
+            let hydroAlts = catalog.hydro_modular_dn20; catalog.hydro_dn20.forEach(h => { h.alts = hydroAlts; }); catalog.hydro_modular_dn20.forEach(h => { h.alts = catalog.hydro_dn20; });
+            let pipeAlts = catalog.rad_pipes_grey; catalog.insulated_pipes.forEach(p => { p.alts = pipeAlts; }); catalog.rad_pipes_grey.forEach(p => { p.alts = catalog.insulated_pipes; });
+            if (catalog.manifolds_rad && catalog.manifolds_chrome_blocks) { let chromeAlt = catalog.manifolds_chrome_blocks[0]; catalog.manifolds_rad.forEach(m => { m.alts = [chromeAlt]; }); catalog.manifolds_chrome_blocks.forEach(m => { m.alts = [catalog.manifolds_rad[0]]; }); }
+            let xpsAlt = catalog.xps_kit[0]; catalog.mats.forEach(m => { m.alts = [xpsAlt]; }); catalog.xps_kit[0].alts = catalog.mats;
+            this.syncUI(); this.render(); 
+        },
+        toggleSwapUI: function(id) { if (this.state.showSwapFor === id) { this.state.showSwapFor = null; } else { this.state.showSwapFor = id; } this.render(); },
+        cycleSwap: function(originalId) {
+            let isRad = (catalog.rads.find(x=>x.id===originalId) || titanRads.find(x=>x.id===originalId) || steelRads.find(x=>x.id===originalId));
+            if (isRad) { if (this.state.radType === 'space') this.state.radType = 'titan'; else if (this.state.radType === 'titan') this.state.radType = 'steel'; else this.state.radType = 'space'; } 
+            else if ((originalId.startsWith('SHT') || (originalId.startsWith('STE') && originalId.includes('2070'))) && !originalId.includes('2001') && !originalId.includes('2002')) { if (this.state.headType === 'gas') this.state.headType = 'liquid'; else if (this.state.headType === 'liquid') this.state.headType = 'smart'; else this.state.headType = 'gas'; }
+            else if (originalId.startsWith('SVH')) { if (this.state.connectionType === 'angled') this.state.connectionType = 'straight'; else this.state.connectionType = 'angled'; }
+            else if (originalId.startsWith('SWH')) { this.state.boilerType = (this.state.boilerType === 'optibase') ? 'standard' : 'optibase'; }
+            else if (originalId.startsWith('SPC-') && originalId.includes('180')) { if (this.state.pumpType === 'default') this.state.pumpType = 'std'; else if (this.state.pumpType === 'std') this.state.pumpType = 'mini'; else if (this.state.pumpType === 'mini') this.state.pumpType = 'pro'; else this.state.pumpType = 'default'; }
+            else if (originalId.startsWith('SEB-')) { this.state.boilerSeries = (this.state.boilerSeries === 'plus') ? 'status' : 'plus'; }
+            else if (originalId.startsWith('SDG-0018') || originalId.startsWith('SDG-0016')) { this.state.hydroType = (this.state.hydroType === 'combo') ? 'modular' : 'combo'; }
+            else if (originalId.startsWith('SMS-0922') || originalId.startsWith('SMB-6850')) { this.state.radManifoldType = (this.state.radManifoldType === 'standard') ? 'chrome' : 'standard'; }
+            else if (originalId.startsWith('SPI-') || originalId.startsWith('SPX-')) { this.state.pipeType = (this.state.pipeType === 'insulated') ? 'split' : 'insulated'; }
+            else if (originalId.startsWith('SMF-0001') || originalId === '418318') { this.state.ufhBaseType = (this.state.ufhBaseType === 'mat') ? 'xps' : 'mat'; }
+            this.state.showSwapFor = null; this.render();
+        },
+        setUfhCtrl: function(type) { this.state.ufhCtrl = type; this.syncUI(); this.render(); },
+        updZones: function(d) { let n=this.state.ufhZones+d; if(n<1)n=1; if(n>16)n=16; this.state.ufhZones=n; this.syncUI(); this.render(); },
+        syncUI: function() {
+            document.getElementById('inp_area').value = this.state.area; document.getElementById('val_area').innerText = this.state.area; document.getElementById('val_win').innerText = this.state.win; document.getElementById('chk_floors').checked = (this.state.floors===2); document.getElementById('div_tp2').style.display = (this.state.floors===2)?'block':'none';
+            document.getElementById('fuel_el').className = this.state.fuels.includes('el') ? 'tab multi-active' : 'tab'; document.getElementById('fuel_gas').className = this.state.fuels.includes('gas') ? 'tab multi-active' : 'tab';
+            const hasTp = this.state.systems.includes('tp'); document.getElementById('sys_rad').className = this.state.systems.includes('rad') ? 'tab multi-active' : 'tab'; document.getElementById('sys_tp').className = hasTp ? 'tab multi-active' : 'tab';
+            document.getElementById('blk_tp_sliders').style.display = hasTp ? 'block' : 'none'; document.getElementById('blk_ufh_ctrl').style.display = hasTp ? 'block' : 'none';
+            document.getElementById('chk_hw').checked = this.state.hotWater; document.getElementById('blk_res').style.display = this.state.hotWater?'flex':'none'; document.getElementById('val_res').innerText = this.state.res; document.getElementById('val_zones').innerText = this.state.ufhZones;
+            const ufhTabs = document.querySelectorAll('.ufh-tab'); ufhTabs.forEach(t => { t.className = 'tab ufh-tab'; if(t.dataset.type === this.state.ufhCtrl) t.classList.add('multi-active'); });
+            const regTabs = document.getElementById('reg_tabs').children; for(let t of regTabs) t.classList.remove('active');
+            if(this.state.region===130) regTabs[0].classList.add('active'); if(this.state.region===120) regTabs[1].classList.add('active'); if(this.state.region===100) regTabs[2].classList.add('active'); if(this.state.region===60) regTabs[3].classList.add('active');
+            const matTabs = document.getElementById('mat_tabs').children; for(let t of matTabs) t.classList.remove('active');
+            if(this.state.mat===1.3) matTabs[0].classList.add('active'); if(this.state.mat===1.0) matTabs[1].classList.add('active'); if(this.state.mat===0.8) matTabs[2].classList.add('active');
+            const cTabs = document.querySelectorAll('.cool-tab'); cTabs.forEach(t => { t.classList.remove('active'); if(t.dataset.type === this.state.coolant) t.classList.add('active'); });
+            document.getElementById('inp_tp1').max = this.state.area; document.getElementById('inp_tp2').max = this.state.area; document.getElementById('inp_tp1').value = this.state.tp1; document.getElementById('val_tp1').innerText = this.state.tp1; document.getElementById('inp_tp2').value = this.state.tp2; document.getElementById('val_tp2').innerText = this.state.tp2;
+            document.getElementById('chk_sku').checked = this.state.showSku;
+            if(document.getElementById('chk_hw')) document.getElementById('chk_hw').checked = this.state.hotWater;
+            if(document.getElementById('chk_recirc')) document.getElementById('chk_recirc').checked = this.state.recirc;
+            if(document.getElementById('chk_water')) document.getElementById('chk_water').checked = this.state.water;
+            if(document.getElementById('blk_water_zones')) document.getElementById('blk_water_zones').style.display = this.state.water ? 'flex' : 'none';
+            
+            // Синхронизация Автоматики ТП
+            if(document.getElementById('chk_ufh_auto')) document.getElementById('chk_ufh_auto').checked = this.state.ufhAuto;
+            if(document.getElementById('blk_ufh_settings')) document.getElementById('blk_ufh_settings').style.display = this.state.ufhAuto ? 'block' : 'none';
+            
+            // Синхронизация имени
+            if(document.getElementById('project_name_edit')) document.getElementById('project_name_edit').innerText = this.state.projectName;
+            if(document.getElementById('chk_dark')) document.getElementById('chk_dark').checked = this.state.darkMode; document.body.classList.toggle('dark-mode', this.state.darkMode);
+            this.renderZonesUI(); 
+            this.updateInfo();
+        },
+        setArea: function(v) { 
+            v=parseInt(v); this.state.area=v; if(this.state.tp1>v)this.state.tp1=v; if(this.state.tp1+this.state.tp2>v)this.state.tp2=v-this.state.tp1; 
+            // Автообновление метража для воды
+            this.state.waterZones.forEach(z => z.dist = this.state.area < 120 ? 6 : 10);
+            this.syncUI(); this.render(); 
+        },
+        updWin: function(d) { let n=this.state.win+d; if(n<1)n=1; this.state.win=n; this.syncUI(); this.render(); },
+        toggleFloors: function(chk) { 
+            this.state.floors=chk?2:1; if(!chk)this.state.tp2=0; 
+            // Автообновление метража для воды
+            this.state.waterZones.forEach(z => z.dist = this.state.area < 120 ? 6 : 10);
+            this.syncUI(); this.render(); 
+        },
+        setRegion: function(v) { this.state.region=v; this.syncUI(); this.render(); },
+        setMat: function(v) { this.state.mat=v; this.syncUI(); this.render(); },
+        updateInfo: function() { document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${REGION_DESC[this.state.region]}`; document.getElementById('desc_mat').innerHTML = WALL_DESC[this.state.mat]; },
+        toggleFuel: function(f) { let idx = this.state.fuels.indexOf(f); if (idx > -1) { if (this.state.fuels.length > 1) this.state.fuels.splice(idx, 1); } else { this.state.fuels.push(f); } this.syncUI(); this.render(); },
+        toggleSys: function(s) { let i=this.state.systems.indexOf(s); if(i>-1){ if(this.state.systems.length>1) this.state.systems.splice(i,1); } else this.state.systems.push(s); this.syncUI(); this.render(); },
+        toggleHW: function(chk) { this.state.hotWater = chk; this.render(); }, 
+        toggleRecirc: function(chk) { this.state.recirc = chk; this.render(); },
+        toggleWater: function(chk) { this.state.water = chk; if(chk && this.state.waterZones.length===0) this.addZone(); this.syncUI(); this.render(); },
+        addZone: function() {
+            let id = Date.now();
+            let dist = this.state.area < 120 ? 6 : 10; 
+            this.state.waterZones.push({ id: id, name: "Санузел " + (this.state.waterZones.length+1), dist: dist, fixtures: { toilet:0, basin:0, shower:0, wash:0, dish:0 } });
+            this.syncUI(); this.render();
+        },
+        removeZone: function(id) { this.state.waterZones = this.state.waterZones.filter(z => z.id !== id); this.syncUI(); this.render(); },
+        updZoneFixture: function(id, type, delta) {
+            let z = this.state.waterZones.find(x => x.id === id);
+            if(z) { z.fixtures[type] += delta; if(z.fixtures[type] < 0) z.fixtures[type] = 0; }
+            this.renderZonesUI(); this.render();
+        },
+        updZoneDist: function(id, val) {
+            let z = this.state.waterZones.find(x => x.id === id);
+            if(z) z.dist = parseInt(val) || 0;
+            this.render();
+        },
+        renderZonesUI: function() {
+            const container = document.getElementById('zones_list');
+            if(!container) return;
+            container.innerHTML = "";
+            const labels = { toilet: "🚽 Унитаз", basin: "🚰 Раковина", shower: "🚿 Душ", wash: "🧺 Стиралка", dish: "🍽️ ПММ" };
+            this.state.waterZones.forEach((z, idx) => {
+                let itemsHtml = "";
+                for(let [key, name] of Object.entries(labels)) {
+                    itemsHtml += `<div class="zone-row"><span style="font-size:11px;">${name}</span><div class="stepper" style="width:70px; height:24px;"><button class="step-btn" onclick="app.updZoneFixture(${z.id}, '${key}', -1)">−</button><div class="step-val" style="font-size:11px;">${z.fixtures[key]}</div><button class="step-btn" onclick="app.updZoneFixture(${z.id}, '${key}', 1)">+</button></div></div>`;
+                }
+                let html = `<div class="zone-card"><div class="zone-header"><span class="zone-title" contenteditable="true" onblur="app.state.waterZones[${idx}].name=this.innerText">${z.name}</span><div class="zone-remove" onclick="app.removeZone(${z.id})">×</div></div><div style="margin-bottom:10px; font-size:11px; display:flex; align-items:center; gap:5px;"><span>Трасса (м):</span><input type="number" class="zone-input" value="${z.dist}" onchange="app.updZoneDist(${z.id}, this.value)"></div>${itemsHtml}</div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        },
+        updRes: function(d) { let n=this.state.res+d; if(n<1)n=1; if(n>10)n=10; this.state.res=n; this.syncUI(); this.render(); },
+        updTp: function(f, v) { v = parseInt(v); let max = this.state.area; if (f === 1) { if (v > max) v = max; this.state.tp1 = v; if (this.state.tp1 + this.state.tp2 > max) this.state.tp2 = max - this.state.tp1; } else { if (v > max) v = max; this.state.tp2 = v; if (this.state.tp1 + this.state.tp2 > max) this.state.tp1 = max - this.state.tp2; } this.syncUI(); this.render(); },
+        setCoolant: function(t) { this.state.coolant=t; this.syncUI(); this.render(); },
+        toggleSku: function() {
+            this.state.showSku = document.getElementById('chk_sku').checked;
+            const panel = document.querySelector('.output-panel');
+            if (this.state.showSku) panel.classList.add('show-sku-mode'); else panel.classList.remove('show-sku-mode');
+            this.render();
+        },
+
+        // === НОВАЯ ФУНКЦИЯ ДЛЯ ПОДСКАЗОК ===
+        getDesc: function(type, val1, val2) {
+            const styles = "font-size:11px; line-height:1.4;";
+            const head = "font-weight:700; color:#93C5FD; display:block; margin-bottom:4px;";
+            
+            // Логика для коллекторов
+            if (type === 'manifold') {
+                let formula = "";
+                let why = "Равномерное распределение, балансировка петель.";
+                if (val2 === 'cw') {
+                    formula = `<b>Тип:</b> ХВС (Холодная вода).<br><b>Формула:</b> Сумма всех водоразеток.<br><b>Итого точек:</b> ${val1}.`;
+                } else if (val2 === 'hw_std') {
+                    formula = `<b>Тип:</b> ГВС (Тупиковая).<br><b>Формула:</b> Сумма приборов с горячей водой.<br><b>Итого точек:</b> ${val1}.`;
+                } else if (val2 === 'hw_recirc') {
+                    formula = `<b>Тип:</b> ГВС (Лучевая).<br><b>Формула:</b> 1 выход на 1 зону (санузел/кухню).<br><b>Итого петель:</b> ${val1}.`;
+                } else if (val2 === 'recirc') {
+                    formula = `<b>Тип:</b> Рециркуляция.<br><b>Формула:</b> Равно числу петель ГВС.<br><b>Итого линий:</b> ${val1}.`;
+                } else if (val2 === 'rad') {
+                    formula = `<b>Тип:</b> Радиаторное отопление.<br><b>Формула:</b> 1 пара выходов на 1 радиатор.<br><b>Радиаторов:</b> ${val1} шт.`;
+                } else if (val2 === 'ufh') {
+                    formula = `<b>Тип:</b> Тёплый пол.<br><b>Формула:</b> Площадь ТП / 12 м² (макс. площадь одной петли).<br><b>Контуров:</b> ${val1} шт.`;
+                }
+                let minWarn = (val1 === 1) ? "<br><br><i>*Выбран блок на 2 выхода (заводской минимум). 1 выход — резерв.</i>" : "";
+                return `<span style="${styles}"><span style="${head}">Коллекторный блок</span><b>Зачем:</b> ${why}<br><br>${formula}${minWarn}</span>`;
+            }
+
+            switch(type) {
+                // === 1. КОТЕЛЬНАЯ ===
+                case 'boiler_gas':
+                    return `<span style="${styles}"><span style="${head}">Газовый котел</span><b>Зачем:</b> Основной источник тепла.<br><b>Формула:</b> (Площадь × H_потолков × Утепление) + 20% запас.<br><b>Потребность:</b> ${val1} кВт.<br><b>Норматив:</b> СП 60.13330.2020.</span>`;
+                case 'boiler_el':
+                    return `<span style="${styles}"><span style="${head}">Электрический котел</span><b>Зачем:</b> Резервный или основной источник.<br><b>Расчет:</b> По теплопотерям здания.<br><b>Потребность:</b> ${val1} кВт.</span>`;
+                case 'boiler_tank':
+                    return `<span style="${styles}"><span style="${head}">Бойлер косвенного нагрева</span><b>Зачем:</b> Комфортное ГВС (запас воды).<br><b>Расчет:</b> Кол-во жильцов (${val1} чел) × 50 л/чел.<br><b>Рекомендуемый объем:</b> ${val2} л.<br><b>Норматив:</b> СП 30.13330.2020.</span>`;
+                case 'chimney':
+                    return `<span style="${styles}"><span style="${head}">Дымоход коаксиальный</span><b>Зачем:</b> Безопасный выброс газов и забор воздуха с улицы.<br><b>Стандарт:</b> 60/100 мм (для турбированных котлов).<br><b>Норматив:</b> СП 402.1325800.2018.</span>`;
+                case 'stab':
+                    return `<span style="${styles}"><span style="${head}">Стабилизатор напряжения</span><b>Зачем:</b> Защита дорогой электроники котла.<br><b>Важно:</b> Обязательное условие гарантии большинства производителей.</span>`;
+                case 'exp_h':
+                    return `<span style="${styles}"><span style="${head}">Расширительный бак (Отопление)</span><b>Зачем:</b> Компенсация расширения воды при нагреве.<br><b>Формула:</b> V_системы (${val1} л) × 0.12 (коэфф. расширения).<br><b>Норматив:</b> СП 41-104-2000.</span>`;
+                case 'exp_d':
+                    return `<span style="${styles}"><span style="${head}">Расширительный бак (ГВС)</span><b>Зачем:</b> Компенсация давления при нагреве бойлера.<br><b>Формула:</b> 10% от объема бойлера (${val1} л).<br><b>Расчет:</b> ${val2} л.</span>`;
+                case 'fugas':
+                    return `<span style="${styles}"><span style="${head}">Комплект Fugas</span><b>Зачем:</b> Трехходовой клапан для подключения бойлера к одноконтурному котлу.<br><b>Функция:</b> Переключает поток на нагрев воды по датчику.</span>`;
+                case 'pump_std':
+                    return `<span style="${styles}"><span style="${head}">Насос циркуляционный</span><b>Зачем:</b> Прокачка теплоносителя по системе.<br><b>Параметры:</b> 25/60 (Напор 6м).<br><b>Подбор:</b> По гидравлическому сопротивлению самой длинной петли.</span>`;
+                
+                // === 3. РАДИАТОРЫ ===
+                case 'rad_item':
+                    return `<span style="${styles}"><span style="${head}">Радиатор отопления</span><b>Зачем:</b> Компенсация теплопотерь через окна/стены.<br><b>Формула:</b> Теплопотери помещения / Теплоотдача секции.<br><b>Мощность:</b> ${val1} Вт.<br><b>Норматив:</b> ГОСТ 31311-2005.</span>`;
+                case 'rad_valves':
+                    return `<span style="${styles}"><span style="${head}">Узел нижнего подключения</span><b>Зачем:</b> Эстетичное подключение труб из стены/пола.<br><b>Функция:</b> Позволяет перекрыть и снять радиатор без слива системы.</span>`;
+                case 'rad_head':
+                    return `<span style="${styles}"><span style="${head}">Термоголовка</span><b>Зачем:</b> Климат-контроль в каждой комнате.<br><b>Экономия:</b> Снижает расход газа/электричества на 15-20% за счет отсутствия перетопа.</span>`;
+                case 'rad_pipe':
+                    return `<span style="${styles}"><span style="${head}">Труба (Лучевая разводка)</span><b>Зачем:</b> Индивидуальная трасса к каждому радиатору.<br><b>Формула:</b> (Ср. расстояние до коллектора × 2) + Подъемы.<br><b>Всего:</b> ${val1} м.</span>`;
+
+                // === 4. ТЕПЛЫЙ ПОЛ ===
+                case 'ufh_pipe':
+                    return `<span style="${styles}"><span style="${head}">Труба теплого пола</span><b>Зачем:</b> Греющий элемент системы.<br><b>Формула:</b> Площадь пола × 7 м (при шаге укладки 150 мм).<br><b>Общая длина:</b> ${val1} м.<br><b>Норматив:</b> СП 60.13330.2020.</span>`;
+                case 'ufh_mat':
+                    return `<span style="${styles}"><span style="${head}">Мат с бобышками</span><b>Зачем:</b> Быстрый монтаж и фиксация трубы.<br><b>Расчет:</b> Чистая площадь ТП (${val1} м²) + 5% запас на подрезку.</span>`;
+                case 'ufh_xps':
+                    return `<span style="${styles}"><span style="${head}">Пенополистирол (XPS)</span><b>Зачем:</b> Теплоизоляция от перекрытия/грунта.<br><b>Толщина:</b> 50 мм (стандарт для 1 этажа).<br><b>Расчет:</b> Площадь ТП + 5% запас.</span>`;
+                case 'actuator':
+                    return `<span style="${styles}"><span style="${head}">Сервопривод</span><b>Зачем:</b> Автоматическое открывание петель.<br><b>Управление:</b> По команде от комнатного термостата.<br><b>Кол-во:</b> 1 шт на каждую петлю коллектора.</span>`;
+                case 'thermostat':
+                    return `<span style="${styles}"><span style="${head}">Термостат</span><b>Зачем:</b> Измерение температуры воздуха в комнате.<br><b>Расчет:</b> 1 шт на одну независимую зону (комнату).</span>`;
+
+                // === 5. ВОДОСНАБЖЕНИЕ ===
+                case 'pipe_cw':
+                    return `<span style="${styles}"><span style="${head}">Труба PEX-a (ХВС)</span><b>Зачем:</b> Питьевая холодная вода.<br><b>Расчет:</b> Сумма длин трасс до приборов.<br><b>Всего:</b> ${val1} м.<br><b>Норматив:</b> СП 30.13330.2020.</span>`;
+                case 'pipe_hw':
+                    return `<span style="${styles}"><span style="${head}">Труба PEX-a (ГВС)</span><b>Зачем:</b> Горячая вода (до 95°C).<br><b>Расчет:</b> Трассы подачи + подъемы.<br><b>Всего:</b> ${val1} м.</span>`;
+                case 'ins_blue':
+                    return `<span style="${styles}"><span style="${head}">Изоляция (Синяя)</span><b>Зачем:</b> Защита от конденсата (чтобы труба не "потела").<br><b>Расчет:</b> По длине трубы ХВС (${val1} м).<br><b>Норматив:</b> СП 61.13330.2012.</span>`;
+                case 'ins_red':
+                    return `<span style="${styles}"><span style="${head}">Изоляция (Красная)</span><b>Зачем:</b> Снижение теплопотерь (чтобы вода не остывала).<br><b>Расчет:</b> По длине трубы ГВС (${val1} м).</span>`;
+                case 'socket':
+                    return `<span style="${styles}"><span style="${head}">Водорозетка</span><b>Зачем:</b> Жесткая фиксация выхода для смесителя.<br><b>Тип:</b> ${val1}.<br><b>Кол-во:</b> ${val2} шт.</span>`;
+                case 'sleeve':
+                    return `<span style="${styles}"><span style="${head}">Гильза монтажная</span><b>Зачем:</b> Опрессовка соединения (вечное соединение).<br><b>Расход:</b> ${val1}.</span>`;
+                case 'install':
+                    return `<span style="${styles}"><span style="${head}">Инсталляция</span><b>Зачем:</b> Несущая рама для подвесного унитаза.<br><b>Нагрузка:</b> Испытано на 400 кг.<br><b>Комплект:</b> Рама, бачок, кнопка, крепеж.</span>`;
+                case 'eurocone_water':
+                    return `<span style="${styles}"><span style="${head}">Евроконус 16</span><b>Зачем:</b> Подключение трубы к коллектору (разборное).<br><b>Формула:</b> 1 шт на каждый выход коллектора.<br><b>Кол-во:</b> ${val1} шт.</span>`;
+                
+                // === 7. ЖИДКОСТЬ ===
+                case 'coolant':
+                    return `<span style="${styles}"><span style="${head}">Теплоноситель</span><b>Зачем:</b> Заполнение системы.<br><b>Формула:</b> V_котлов + V_радиаторов + V_труб + V_ТП + Запас.<br><b>Объем системы:</b> ~${val1} л.</span>`;
+
+                default: return "";
+            }
+        },
+        // ====================================
+        render: function() {
+            let pwr = (this.state.area * this.state.region * this.state.mat / 1000).toFixed(1);
+            let regionName = "Сибирь"; if(this.state.region===120) regionName="Урал"; if(this.state.region===100) regionName="Центр"; if(this.state.region===60) regionName="Юг";
+            
+            // Заголовок спецификации
+            document.getElementById('doc_summary').innerHTML = `<span>Объект: <b>${this.state.area} м²</b> (${this.state.floors===2?2:1} эт)</span> <span class="sep">•</span> <span>Теплопотери: <b>${pwr} кВт</b></span> <span class="sep">•</span> <span>Регион: <b>${regionName}</b></span> <span class="sep">•</span> <span>Проживающих: <b>${this.state.res}</b></span> <span style="margin-left: auto;">Дата: <b>${new Date().toLocaleDateString()}</b></span>`;
+            
+            let bill = []; 
+            const addToBill = (item, qty, tip, group = null) => {
+                if(!item || qty <= 0) return;
+                let finalItem = item;
+                if (this.state.mergeItems) {
+                    let existing = bill.find(x => x.id === finalItem.id && x.group === group);
+                    if (existing) { existing.q += qty; existing.sum += finalItem.price * qty; if(tip && (!existing.qtyTip || !existing.qtyTip.includes(tip))) existing.qtyTip = existing.qtyTip ? existing.qtyTip + ". " + tip : tip; } 
+                    else { bill.push({ ...finalItem, q: qty, sum: finalItem.price * qty, displaySku: finalItem.id, qtyTip: tip || "", group: group, originalId: item.id }); }
+                } else {
+                    bill.push({ ...finalItem, q: qty, sum: finalItem.price * qty, displaySku: finalItem.id, qtyTip: tip || "", group: group, originalId: item.id });
+                }
+            };
+
+            let h = "", sum = 0, globalIdx = 1, showSku = document.getElementById('chk_sku').checked;
+
+            const flushBill = (title, warn) => {
+                if(bill.length === 0) return;
+                let groupTotals = {};
+                bill.forEach(i => { if (i.group) { if (!groupTotals[i.group]) groupTotals[i.group] = 0; groupTotals[i.group] += i.sum; } });
+                let secTotal = 0, rows = "";
+                let titleHtml = title + (warn ? `<div class="warn-box">${warn}</div>` : "");
+                h += `<tr class="row-sec"><td colspan="9">${titleHtml}</td></tr>`;
+                let lastGroup = null;
+                bill.forEach((i, arrIndex) => {
+                    secTotal += i.sum;
+                    let isCollapsed = (!this.state.mergeItems && i.group && this.state.collapsedGroups.includes(i.group));
+                    let isSubSection = (i.group && i.group.match(/^\d+\.\d+/)); 
+                    const dashStyle = "1px dashed rgba(0, 0, 0, 0.2)"; 
+                    if (!this.state.mergeItems && i.group && i.group !== lastGroup) {
+                        let icon = ""; if (i.group.includes("Газового")) icon = "🔥"; else if (i.group.includes("Электрического")) icon = "⚡"; else if (i.group.includes("Водонагревателя")) icon = "💧";
+                        let arrow = isCollapsed ? "▶" : "⤵";
+                        let txtUnit = isCollapsed ? "компл." : ""; let txtQty = isCollapsed ? "1" : ""; let txtSum = isCollapsed ? groupTotals[i.group].toLocaleString() : "";
+                        let headStyle = "";
+                        if (isSubSection) { headStyle = `style="background:var(--surface-light); border: ${dashStyle}; border-bottom: none; color:var(--text-main);"`; if (isCollapsed) headStyle = `style="background:var(--surface-light); border: ${dashStyle}; color:var(--text-main);"`; }
+                        let titleColSpan = showSku ? 5 : 4;
+                        rows += `<tr class="group-header" ${headStyle} onclick="app.toggleGroup('${i.group}')" title="Свернуть/Развернуть"><td colspan="${titleColSpan}" style="text-align:left; padding-left:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><b>${arrow} ${icon} ${i.group}</b></td><td class="col-unit" style="color:#9CA3AF; font-size:10px;">${txtUnit}</td><td class="col-qty" style="font-weight:700;">${txtQty}</td><td class="col-price"></td><td class="col-sum">${txtSum}</td></tr>`;
+                        lastGroup = i.group;
+                    }
+                    let rowStyle = "";
+                    if (isCollapsed) { rowStyle = 'style="display:none;"'; } 
+                    else if (!this.state.mergeItems && isSubSection) { let borders = `border-left: ${dashStyle}; border-right: ${dashStyle};`; let nextItem = bill[arrIndex + 1]; if (!nextItem || nextItem.group !== i.group) borders += ` border-bottom: ${dashStyle};`; else borders += " border-bottom: 1px solid var(--border);"; rowStyle = `style="background:var(--surface); ${borders}"`; }
+                    else if (!this.state.mergeItems && i.group) { if (i.group.includes("Газового") || i.group.includes("Электрического")) rowStyle = 'style="background-color: var(--primary-light);"'; }
+                    let tipHtml = i.qtyTip ? `<div class="tooltip-wrapper"><div class="info-icon">i</div><div class="tooltip-content">${i.qtyTip}</div></div>` : "";
+                    let qHtml = `<div class="qty-wrap">${i.q}${tipHtml}</div>`;
+                    let imgContent = getImg(i);
+                    let lookupId = i.originalId || i.id;
+                    let hasAlts = (i.alts && i.alts.length > 0) || this.state.swaps[lookupId];
+                    let imgCellHtml = "";
+                    if (hasAlts) {
+                        let isOpen = (this.state.showSwapFor === lookupId);
+                        let wrapClass = isOpen ? "img-wrap show-swap-ui" : "img-wrap";
+                        let svgIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>`;
+                        imgCellHtml = `<td class="col-img swappable-cursor"><div class="${wrapClass}" onclick="app.toggleSwapUI('${lookupId}')" title="Нажмите, чтобы заменить"><div class="swap-cycle-btn" onclick="event.stopPropagation(); app.cycleSwap('${lookupId}')">${svgIcon}</div>${imgContent}</div></td>`;
+                    } else { imgCellHtml = `<td class="col-img">${imgContent}</td>`; }
+                    rows += `<tr ${rowStyle}><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="col-name">${i.name}</td><td class="col-sku ${showSku?'':'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand||'STOUT'}</td><td class="col-unit">${i.unit||'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price">${i.price.toLocaleString()}</td><td class="col-sum">${i.sum.toLocaleString()}</td></tr>`;
+                });
+                h += rows + `<tr class="row-subtotal"><td colspan="9">Итого: ${secTotal.toLocaleString()} ₽</td></tr>`;
+                sum += secTotal; bill = []; 
+            };
+
+            // === 1. КОТЁЛ + ВОДОНАГРЕВАТЕЛЬ ===
+            let selBoilers = [], boilerCnt = 0;
+            ['gas','el'].forEach(ft => {
+                if(this.state.fuels.includes(ft)) {
+                    let needed = parseFloat(pwr);
+                    let db = (ft === 'gas') ? catalog.boilers_gas : (this.state.boilerSeries === 'status' ? catalog.boilers_status : catalog.boilers_plus);
+                    let b = db.find(x => x.power >= needed);
+                    if(ft==='el') {
+                        if(!b && needed > 27) { let half = needed/2; let b2 = db.find(x => x.power >= half); if(b2) { b2.alts = (this.state.boilerSeries === 'status') ? catalog.boilers_plus : catalog.boilers_status; addToBill(b2, 2, this.getDesc('boiler_el', needed)); selBoilers.push(b2,b2); } } 
+                        else { let t = b || db[db.length-1]; t.alts = (this.state.boilerSeries === 'status') ? catalog.boilers_plus : catalog.boilers_status; addToBill(t, 1, this.getDesc('boiler_el', needed)); selBoilers.push(t); }
+                    } else if (ft==='gas') {
+                        let t = (needed > 31) ? db.find(x=>x.id==="100022963") : (b || db.find(x=>x.id==="100022963"));
+                        let q = (needed > 31) ? 2 : 1; addToBill(t, q, this.getDesc('boiler_gas', needed)); for(let k=0;k<q;k++) selBoilers.push(t);
+                    }
+                }
+            });
+            boilerCnt = selBoilers.length;
+            if(this.state.hotWater) { 
+                let vol = this.state.res>=7?300 : this.state.res>=5?200 : this.state.res>=3?150 : 100; 
+                let tankDb = (this.state.boilerType === 'optibase') ? catalog.tanks_optibase : catalog.tanks_standard;
+                let t = tankDb.find(x=>x.vol===vol) || tankDb[tankDb.length-1]; 
+                t.alts = [catalog.tanks_optibase[0], catalog.tanks_standard[0]]; 
+                addToBill(t, 1, this.getDesc('boiler_tank', this.state.res, vol)); 
+            }
+            flushBill("1. Котёл + водонагреватель");
+
+            // === 2. ОБВЯЗКА КОТЕЛЬНОЙ ===
+            selBoilers.forEach(b => { 
+                if(b.type === 'gas') { 
+                    let grp = "2.1. Обвязка Газового котла"; 
+                    addToBill(catalog.chimneys[0], 1, this.getDesc('chimney'), grp); 
+                    addToBill(catalog.stabs[0], 1, this.getDesc('stab'), grp); 
+                    addToBill(catalog.american_34, 2, "Разъемное соед.", grp); 
+                    addToBill(catalog.ball_valve_34, 2, "Запорная арматура.", grp); 
+                    addToBill(catalog.filter_mag, 1, "Защита от шлама.", grp); 
+                    if(this.state.hotWater) { addToBill(catalog.valves[0], 1, this.getDesc('fugas'), grp); addToBill(catalog.nipple_34, 2, "Для фугаса.", grp); }
+                    if (selBoilers.length > 1) addToBill(catalog.check_valve_34, 1, "Обратный клапан.", grp); 
+                } 
+            });
+            selBoilers.forEach(b => { 
+                if(b.type !== 'gas') { 
+                    let grp = "2.2. Обвязка Электрического котла"; 
+                    let s = b.power<=18 ? catalog.stabs[1] : catalog.stabs[2]; addToBill(s, 1, this.getDesc('stab'), grp); 
+                    addToBill(catalog.american_34, 2, "Разъемное соед.", grp); 
+                    addToBill(catalog.ball_valve_34, 2, "Запорная арматура.", grp); 
+                    addToBill(catalog.filter_mag, 1, "Защита от шлама.", grp); 
+                    if(this.state.hotWater) { addToBill(catalog.valves[0], 1, this.getDesc('fugas'), grp); addToBill(catalog.nipple_34, 2, "Для фугаса.", grp); }
+                    if (selBoilers.length > 1) addToBill(catalog.check_valve_34, 1, "Обратный клапан.", grp); 
+                } 
+            });
+            if(this.state.hotWater) { 
+                let grp = "2.3. Обвязка Водонагревателя"; 
+                let vol = this.state.res>=7?300 : this.state.res>=5?200 : this.state.res>=3?150 : 100; 
+                let exp = catalog.exp_dhw.find(x => x.vol >= vol*0.1) || catalog.exp_dhw[2]; 
+                addToBill(exp, 1, this.getDesc('exp_d', vol, exp.vol), grp); 
+                addToBill(catalog.tank_mount, 1, "Крепление", grp); addToBill(catalog.tank_kit, 1, "Подключение бака", grp); 
+                addToBill(catalog.dhw_fittings[0], 2, "Американка 1\" (Змеевик)", grp); addToBill(catalog.dhw_fittings[1], 2, "Кран 1\" (Змеевик)", grp);
+                addToBill(catalog.dhw_fittings[2], 1, "Американка 3/4\" (ГВС)", grp); addToBill(catalog.dhw_fittings[3], 1, "Кран 3/4\" (ГВС)", grp);
+                addToBill(catalog.dhw_fittings[4], 1, "Клапан 6 бар", grp); addToBill(catalog.dhw_fittings[5], 1, "Крестовина 3/4\"", grp); addToBill(catalog.dhw_fittings[6], 1, "Клапан обратный (ХВС)", grp); addToBill(catalog.dhw_fittings[7], 1, "Кран 3/4\" (ХВС)", grp);
+                if (this.state.recirc) { addToBill(catalog.dhw_pump[0], 1, "Насос ГВС", grp); addToBill(catalog.dhw_fittings[2], 1, "Американка 3/4\" (Рецирк.)", grp); addToBill(catalog.dhw_fittings[3], 1, "Кран 3/4\" (Рецирк.)", grp); addToBill(catalog.dhw_fittings[6], 1, "Обратный клапан (Рецирк.)", grp); }
+            }
+            let hasRad = this.state.systems.includes('rad');
+            let hasTp = this.state.systems.includes('tp');
+            let radSecs = 0, radMeters = 0, tpMeters = 0;
+            let tpArea = this.state.tp1 + this.state.tp2;
+            if(hasRad) { let load = (hasTp && tpArea>0) ? pwr*1000*0.7 : pwr*1000; radSecs = Math.ceil(load/117); if(radSecs>0) { let pipe = Math.ceil(this.state.win * (Math.sqrt(this.state.area/(this.state.floors===2?2:1))+3) * 1.1); radMeters = pipe*2; } }
+            tpMeters = hasTp ? tpArea*7 : 0;
+            let useEco = (!hasRad && hasTp && tpArea<=120);
+            // Логика расчета насосных групп
+            let rQ = 0, tQ = 0;
+            // Группы для радиаторов: если есть радиаторы
+            if(hasRad) {
+                 // Если дом большой (>150м) или 2 этажа - ставим группы
+                 if(this.state.area > 150 || this.state.floors === 2 || pwr > 20) {
+                     rQ = (this.state.floors === 2) ? 2 : 1; 
+                 }
+            }
+            // Группы для ТП: если есть ТП
+            if(hasTp && tpArea > 0) tQ = 1;
+
+            // Коллектор нужен, только если групп >= 2 (или если система сложная и требует развязки)
+            let needCollector = (rQ + tQ) >= 2;
+            
+            // Расчет объема системы (для бака)
+            let boilersVol = 0; if (selBoilers.length > 0) { selBoilers.forEach(b => { boilersVol += (b.vol !== undefined ? b.vol : 6); }); }
+            let vSys = (boilersVol + radSecs*0.25 + radMeters*0.11 + tpMeters*0.113 + (needCollector ? 5 : 0)) * 1.15;
+            let reqExp = vSys * 0.12; let bltin = 0; if (selBoilers.length > 0) { selBoilers.forEach(b => { bltin += (b.exp !== undefined ? b.exp : 0); }); }
+            let def = reqExp - bltin; if(def>0) { let et = catalog.exp_heating.find(t=>t.vol>=def) || catalog.exp_heating[4]; addToBill(et, 1, this.getDesc('exp_h', Math.round(vSys))); if(et.vol<=25) addToBill(catalog.tank_mount, 1, "Крепление бака."); addToBill(catalog.tank_kit, 1, "Подключение бака."); }
+            
+            // Вывод оборудования котельной
+            if(!useEco) { 
+                let big = (pwr > 30 || tpArea > 120); 
+                let dn25 = big; 
+                let pmp = null; 
+
+                // Добавляем коллектор/стрелку только если нужно
+                if(needCollector) { 
+                    let circuits = rQ + tQ; 
+                    let idx = (circuits > 2) ? 1 : 0; 
+                    if (dn25) { 
+                        let item = catalog.hydro_dn25[idx]; addToBill(item, 1, "Гидравлическая развязка (DN25)."); 
+                    } else { 
+                        if (this.state.hydroType === 'combo') { 
+                            let item = catalog.hydro_dn20[idx]; item.alts = catalog.hydro_modular_dn20; addToBill(item, 1, "Коллектор-гидрострелка (Комби)."); 
+                        } else { 
+                            let item = catalog.hydro_modular_dn20[idx]; item.alts = catalog.hydro_dn20; addToBill(item, 1, "Распр. коллектор."); addToBill(catalog.hydro_arrow, 1, "Гидравлическая стрелка."); 
+                        } 
+                    }
+                } 
+                
+                let grps = dn25 ? catalog.groups_dn25 : catalog.groups_dn20;
+                if (dn25) { 
+                    let activePump = catalog.pumps_dn25.find(p => p.type === this.state.pumpType) || catalog.pumps_dn25[0]; activePump.alts = catalog.pumps_dn25; pmp = activePump; 
+                } else { 
+                    pmp = catalog.pumps_dn20[0]; 
+                }
+                
+                // Добавляем группы и насосы ТОЛЬКО если они рассчитаны и нужен коллектор
+                // Если коллектора нет (1 группа), то группа обычно не ставится, насос берется встроенный в котел или ставится отдельно на трубу (здесь упрощение: если нет коллектора, группы не ставим)
+                if (needCollector) {
+                    if(rQ > 0) addToBill(grps[0], rQ, "Группа прямая (Радиаторы).");
+                    if(tQ > 0) addToBill(grps[1], tQ, "Группа смесительная (ТП).");
+                    if((rQ + tQ) > 0) addToBill(pmp, rQ + tQ, this.getDesc('pump_std')); 
+                }
+            }
+            flushBill("2. Обвязка котельной");
+
+            if(hasRad && radSecs>0) {
+                let win = this.state.win; let heatLoad = Math.round((hasTp&&tpArea>0)?pwr*700:pwr*1000); let loadPerWindow = heatLoad / win;
+                let totalSecSpace = Math.ceil(heatLoad / 117); let countSpace = Math.max(win, Math.ceil(totalSecSpace / 14)); let secPerRadSpace = Math.max(4, Math.min(14, Math.ceil(totalSecSpace / countSpace))); let itemSpace = catalog.rads.find(x=>x.sec===secPerRadSpace) || catalog.rads[catalog.rads.length-1];
+                let totalSecTitan = Math.ceil(heatLoad / 128); let countTitan = Math.max(win, Math.ceil(totalSecTitan / 14)); let secPerRadTitan = Math.max(4, Math.min(14, Math.ceil(totalSecTitan / countTitan))); let itemTitan = titanRads.find(x=>x.sec===secPerRadTitan);
+                let bestPanel = steelRads.find(s => s.power50 >= loadPerWindow); let countSteel = win; if (!bestPanel) { let maxPanel = steelRads[steelRads.length-1]; countSteel = Math.max(win, Math.ceil(heatLoad / maxPanel.power50)); bestPanel = maxPanel; } let itemSteel = bestPanel;
+                let altsList = [itemSpace, itemTitan, itemSteel]; itemSpace.alts = altsList; itemTitan.alts = altsList; itemSteel.alts = altsList;
+                let activeItem = itemSpace; let activeCount = countSpace;
+                if (this.state.radType === 'titan') { activeItem = itemTitan; activeCount = countTitan; } else if (this.state.radType === 'steel') { activeItem = itemSteel; activeCount = countSteel; }
+                let unitPower = activeItem.isPanel ? activeItem.power50 : (activeItem.power50 * activeItem.sec); let totalSysPower = unitPower * activeCount;
+                let desc = `<b>Выбран: ${activeItem.name}</b><br>Мощность: <b>${totalSysPower} Вт</b> (${activeCount} шт). Потребность: ${heatLoad} Вт.`;
+                addToBill(activeItem, activeCount, this.getDesc('rad_item', heatLoad));
+                let grp = "3.1. Обвязка радиаторов"; 
+                let activeHead = catalog.heads.find(h => h.type === this.state.headType) || catalog.heads[0]; activeHead.alts = catalog.heads; addToBill(activeHead, activeCount, this.getDesc('rad_head'), grp); 
+                if (activeHead.type === 'smart') { let radHubs = Math.ceil(activeCount / 15); addToBill(catalog.smart_hub, radHubs, `Шлюз Zigbee.`, grp); }
+                let activeHValve = catalog.h_valves.find(v => v.type === this.state.connectionType) || catalog.h_valves[0]; activeHValve.alts = catalog.h_valves; addToBill(activeHValve, activeCount, this.getDesc('rad_valves'), grp);
+                if (activeItem.isPanel) { addToBill(catalog.rad_kits[0], activeCount*2, "Ниппель переходной.", grp); }
+                if (activeHValve.id === 'SVH-0002-000020') { addToBill(catalog.rad_tube_set[0], activeCount * 2, "Трубка Г-образная.", grp); addToBill(catalog.rad_tube_set[1], activeCount, "Скоба фиксатор.", grp); addToBill(catalog.rad_tube_set[2], activeCount * 2, "Гильза 16.", grp); addToBill(catalog.rad_tube_set[3], activeCount * 2, "Фитинг компрессионный.", grp); }
+                let floorArea = this.state.area / (this.state.floors===2 ? 2 : 1); let avgRun = Math.sqrt(floorArea) + 3; let totalMeters = activeCount * avgRun * 1.1; let neededPipe = Math.ceil(totalMeters);
+                if (neededPipe > 0) {
+                    if (this.state.pipeType === 'insulated') {
+                        let coils = Math.ceil(neededPipe / 100); let halfCoils = Math.ceil(coils / 2);
+                        let itemRed = catalog.insulated_pipes[0]; itemRed.alts = catalog.rad_pipes_grey; addToBill(itemRed, halfCoils, `Труба в красной изол.`, grp); 
+                        let itemBlue = catalog.insulated_pipes[1]; itemBlue.alts = catalog.rad_pipes_grey; addToBill(itemBlue, halfCoils, `Труба в синей изол.`, grp); 
+                    } else {
+                        let grayItem = (neededPipe > 200) ? catalog.rad_pipes_grey[1] : catalog.rad_pipes_grey[0]; grayItem.alts = catalog.insulated_pipes; addToBill(grayItem, Math.ceil(neededPipe/grayItem.len), this.getDesc('rad_pipe', neededPipe), grp);
+                        let insLen = Math.ceil(neededPipe / 2); if(insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, "Изоляция красная.", grp); addToBill(catalog.insulation[1], insLen, "Изоляция синяя.", grp);
+                    }
+                }
+                let reqLoops = (this.state.floors===2 ? Math.ceil(activeCount/2) : activeCount); if (reqLoops > 12) reqLoops = 12; let manifoldsCount = (this.state.floors === 2) ? 2 : 1; 
+                if (this.state.radManifoldType === 'standard') { let m = catalog.manifolds_rad.find(x => x.loops === reqLoops) || catalog.manifolds_rad[catalog.manifolds_rad.length - 1]; if (m) { m.alts = [catalog.manifolds_chrome_blocks[0]]; addToBill(m, manifoldsCount, this.getDesc('manifold', activeCount, 'rad'), grp); } } 
+                else {
+                    const assemblyMap = { 2: [0, 0, 1], 3: [0, 1, 0], 4: [1, 0, 0], 5: [0, 1, 1], 6: [0, 2, 0], 7: [1, 1, 0], 8: [2, 0, 0], 9: [1, 1, 1], 10: [1, 2, 0], 11: [2, 1, 0], 12: [3, 0, 0] }; let plan = assemblyMap[reqLoops] || [3,0,0]; let b4 = catalog.manifolds_chrome_blocks[2]; let b3 = catalog.manifolds_chrome_blocks[1]; let b2 = catalog.manifolds_chrome_blocks[0]; let stdAlt = catalog.manifolds_rad.find(x => x.loops === reqLoops) || catalog.manifolds_rad[0]; [b4, b3, b2].forEach(b => b.alts = [stdAlt]); let multiplier = manifoldsCount * 2;
+                    if (plan[0] > 0) addToBill(b4, plan[0] * multiplier, `Блок 4 вых.`, grp); if (plan[1] > 0) addToBill(b3, plan[1] * multiplier, `Блок 3 вых.`, grp); if (plan[2] > 0) addToBill(b2, plan[2] * multiplier, `Блок 2 вых.`, grp); addToBill(catalog.manifold_brackets, manifoldsCount, "Кронштейны.", grp);
+                }
+                addToBill(catalog.parts[1], activeCount*2, "Евроконус 16 (Рад).", grp); addToBill(catalog.parts[2], activeCount*2, "Фиксатор 90°.", grp); addToBill(catalog.protective_sleeves[0], activeCount, "Втулка (под).", grp); addToBill(catalog.protective_sleeves[1], activeCount, "Втулка (обр).", grp); addToBill(catalog.label_kits[0], 1, "Наклейки.", grp);
+            }
+            flushBill("3. Приборы отопления");
+
+            if(hasTp && tpMeters>0) {
+                let q5 = Math.floor(tpMeters/500); let q1 = Math.ceil((tpMeters%500)/100); 
+                if(q5) addToBill(catalog.pipes[1], q5, this.getDesc('ufh_pipe', tpMeters)); if(q1) addToBill(catalog.pipes[0], q1, this.getDesc('ufh_pipe', tpMeters));
+                let loops = 0, mans = 0; 
+                const proc = (a, lbl) => { 
+                    if(a<=0) return; let l = Math.ceil((a*7)/85); if(l===1) l=2; loops+=l; let n = Math.ceil(l/12); 
+                    for(let i=0; i<n; i++) { let sz = Math.floor(l/n) + (i<(l%n)?1:0); let m = catalog.manifolds.find(x=>x.loops===sz); if(m) { addToBill({...m, name:`Коллектор ТП ${sz} вых (${lbl})`}, 1, this.getDesc('manifold', sz, 'ufh')); mans++; if(useEco) { addToBill(catalog.mixing_units[0],1, this.getDesc('ufh_mix')); addToBill(catalog.pumps_mix[0], 1, this.getDesc('pump_std')); } } } 
+                }; 
+                proc(this.state.tp1, "1 этаж"); proc(this.state.tp2, "2 этаж"); 
+                addToBill(catalog.parts[0], mans*2, "Концевые фитинги."); addToBill(catalog.parts[3], loops*2, "Евроконус 16 (ТП)."); addToBill(catalog.parts[2], loops*2, "Фиксатор 90°.");
+                addToBill(catalog.protective_sleeves[0], loops, "Втулка красная."); addToBill(catalog.protective_sleeves[1], loops, "Втулка синяя."); addToBill(catalog.label_kits[1], 1, "Наклейки.");
+                let grpIns = "4.1. УТЕПЛИТЕЛЬ И КРЕПЁЖ";
+                if (this.state.ufhBaseType === 'mat') { let mt = catalog.mats[0]; mt.alts = [catalog.xps_kit[0]]; let mc = Math.ceil((tpArea / mt.area) * 1.05); addToBill(mt, mc, this.getDesc('ufh_mat', tpArea), grpIns); } 
+                else { let xpsItem = catalog.xps_kit[0]; xpsItem.alts = catalog.mats; let sheets = Math.ceil((tpArea / xpsItem.area) * 1.05); addToBill(xpsItem, sheets, this.getDesc('ufh_xps'), grpIns); let totalDowels = Math.ceil(tpArea * 5); addToBill(catalog.xps_kit[1], Math.ceil(totalDowels / 100), `Дюбеля.`, grpIns); let totalStaples = Math.ceil(tpMeters * 2.5); addToBill(catalog.xps_kit[2], Math.ceil(totalStaples / 25), `Скобы.`, grpIns); let tapeRolls = Math.ceil((sheets * 1.76 * 1.1) / 50); addToBill(catalog.xps_kit[3], tapeRolls, `Скотч.`, grpIns); }
+                
+                if (this.state.ufhAuto) {
+                    let grpAuto = "4.2. АВТОМАТИКА ТЁПЛОГО ПОЛА"; 
+                    addToBill(catalog.actuators, loops, this.getDesc('actuator'), grpAuto);
+                    let zones = this.state.ufhZones; 
+                    let activeStatBase = (this.state.ufhCtrl === 'mech') ? catalog.ufh_mech[0] : catalog.ufh_electro[0]; 
+                    addToBill(activeStatBase, zones, this.getDesc('thermostat'), grpAuto);
+                    let cntByZones = Math.ceil(zones / 8); let cntByFloors = (this.state.floors === 2 && this.state.tp2 > 0) ? 2 : 1; 
+                    let finalCnt = Math.max(cntByZones, cntByFloors);
+                    addToBill(catalog.wiring_center, finalCnt, "Коммутационный блок.", grpAuto);
+                }
+                
+                let warn = null; if(!hasRad && tpArea>0) { let f = (pwr*1000)/tpArea; if(f>75) warn = `⚠️ ТП может не хватить! Нагрузка: ${Math.round(f)} Вт/м².`; }
+                flushBill("4. Водяной тёплый пол", warn);
+            }
+
+            if(this.state.water && this.state.waterZones.length > 0) {
+                let mainTitle = "5. Водоснабжение";
+                let isMerge = this.state.mergeItems;
+                let grpCold = isMerge ? mainTitle : "5.1. Внутреннее ХВС";
+                let grpHot = isMerge ? mainTitle : "5.2. Внутреннее ГВС";
+                let grpRecirc = isMerge ? mainTitle : "5.3. Рециркуляция";
+                let grpGen = isMerge ? mainTitle : "5.4. Общие материалы";
+                let totalColdPoints = 0, totalHotPoints = 0, totalToilets = 0;
+                let totalPipeCold = 0, totalPipeHot = 0;
+                let recirc = this.state.recirc;
+
+                this.state.waterZones.forEach(z => {
+                    let f = z.fixtures;
+                    totalToilets += f.toilet;
+                    let cw_only = f.toilet + f.wash + f.dish;
+                    let mix = f.basin + f.shower;
+                    let zoneCold = cw_only + mix;
+                    let zoneHot = mix;
+                    totalColdPoints += zoneCold;
+                    totalPipeCold += (z.dist * zoneCold * 1.1);
+                    if (recirc) {
+                        totalHotPoints++; 
+                        if(zoneHot > 0) totalPipeHot += ((z.dist * 2) + (zoneHot * 2));
+                    } else {
+                        totalHotPoints += zoneHot; 
+                        if(zoneHot > 0) totalPipeHot += (z.dist * zoneHot * 1.1);
+                    }
+                });
+
+                if(totalColdPoints > 0) {
+                    let needed = totalColdPoints, q4 = Math.floor(needed/4), rem = needed%4, q3=0, q2=0;
+                    if(rem===3)q3=1; else if(rem===2)q2=1; else if(rem===1){if(q4>0){q4--;q3=1;q2=1}else{q2=1}}
+                    let descColl = this.getDesc('manifold', totalColdPoints, 'cw');
+                    if(q4) addToBill(catalog.water_manifolds_cold[2], q4, descColl, grpCold);
+                    if(q3) addToBill(catalog.water_manifolds_cold[1], q3, descColl, grpCold);
+                    if(q2) addToBill(catalog.water_manifolds_cold[0], q2, descColl, grpCold);
+                    addToBill(catalog.water_parts[0], totalColdPoints, this.getDesc('eurocone_water', totalColdPoints), grpCold);
+                    addToBill(catalog.water_parts[2], 1, "Заглушка коллектора", grpCold);
+                    let pLen = Math.ceil(totalPipeCold);
+                    addToBill(catalog.water_pipes[0], pLen, this.getDesc('pipe_cw', `${pLen} м`), grpCold);
+                    addToBill(catalog.water_insulation[1], pLen, this.getDesc('ins_blue', pLen), grpCold);
+                    let socketsCold = totalColdPoints - totalToilets;
+                    if(socketsCold > 0) {
+                        addToBill(catalog.water_fittings[0], socketsCold, this.getDesc('socket', 'Тупиковая (ХВС)', socketsCold), grpCold);
+                        addToBill(catalog.water_parts[7], socketsCold, this.getDesc('sleeve', '1 шт на розетку'), grpCold);
+                        addToBill(catalog.water_fittings[4], socketsCold, "Пробка синяя (опрессовка)", grpCold); 
+                        addToBill(catalog.water_fittings[6], socketsCold, "Фиксатор 90°", grpCold);
+                    }
+                    if(totalToilets > 0) addToBill(catalog.water_fittings[8], totalToilets, "Фиксатор трубы (к инсталляции)", grpCold);
+                }
+
+                if(totalPipeHot > 0) {
+                    let needed = totalHotPoints, q4 = Math.floor(needed/4), rem = needed%4, q3=0, q2=0;
+                    if(rem===3)q3=1; else if(rem===2)q2=1; else if(rem===1){if(q4>0){q4--;q3=1;q2=1}else{q2=1}}
+                    let descColl = this.getDesc('manifold', totalHotPoints, recirc ? 'hw_recirc' : 'hw_std');
+                    if(q4) addToBill(catalog.water_manifolds_hot[2], q4, descColl, grpHot);
+                    if(q3) addToBill(catalog.water_manifolds_hot[1], q3, descColl, grpHot);
+                    if(q2) addToBill(catalog.water_manifolds_hot[0], q2, descColl, grpHot);
+                    addToBill(catalog.water_parts[0], totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpHot);
+                    addToBill(catalog.water_parts[2], 1, "Заглушка коллектора", grpHot);
+                    let pLen = Math.ceil(recirc ? (totalPipeHot / 2) : totalPipeHot); 
+                    addToBill(catalog.water_pipes[0], pLen, this.getDesc('pipe_hw', `${pLen} м`), grpHot);
+                    addToBill(catalog.water_insulation[0], pLen, this.getDesc('ins_red', pLen), grpHot);
+                    let totalMixers = 0;
+                    this.state.waterZones.forEach(z => totalMixers += (z.fixtures.basin + z.fixtures.shower));
+                    if(totalMixers > 0) {
+                        let socketItem = recirc ? catalog.water_fittings[1] : catalog.water_fittings[0]; 
+                        let sName = recirc ? "Угольник проточный (Бронза)" : "Водорозетка тупиковая";
+                        let sCount = recirc ? 2 : 1; 
+                        addToBill(socketItem, totalMixers, this.getDesc('socket', sName, totalMixers), grpHot);
+                        addToBill(catalog.water_parts[7], totalMixers * sCount, this.getDesc('sleeve', `${sCount} шт на розетку`), grpHot);
+                        addToBill(catalog.water_fittings[5], totalMixers, "Пробка красная (опрессовка)", grpHot);
+                        let fixCount = recirc ? totalMixers * 2 : totalMixers;
+                        addToBill(catalog.water_fittings[6], fixCount, "Фиксатор 90°", grpHot);
+                    }
+                }
+
+                if(recirc && totalHotPoints > 0) {
+                    let needed = totalHotPoints, q4 = Math.floor(needed/4), rem = needed%4, q3=0, q2=0;
+                    if(rem===3)q3=1; else if(rem===2)q2=1; else if(rem===1){if(q4>0){q4--;q3=1;q2=1}else{q2=1}}
+                    let descColl = this.getDesc('manifold', totalHotPoints, 'recirc');
+                    if(q4) addToBill(catalog.water_manifolds_recirc[2], q4, descColl, grpRecirc);
+                    if(q3) addToBill(catalog.water_manifolds_recirc[1], q3, descColl, grpRecirc);
+                    if(q2) addToBill(catalog.water_manifolds_recirc[0], q2, descColl, grpRecirc);
+                    addToBill(catalog.water_parts[0], totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpRecirc);
+                    addToBill(catalog.water_parts[2], 1, "Заглушка коллектора", grpRecirc);
+                    let pLen = Math.ceil(totalPipeHot / 2);
+                    addToBill(catalog.water_pipes[0], pLen, this.getDesc('pipe_hw', `${pLen} м (Обратка)`), grpRecirc);
+                    addToBill(catalog.water_insulation[0], pLen, this.getDesc('ins_red', pLen), grpRecirc);
+                }
+
+                let collGroups = (totalColdPoints>0?1:0) + (totalHotPoints>0?1:0) + (recirc?1:0);
+                if(collGroups > 0) addToBill(catalog.manifold_brackets, collGroups, "Пара кронштейнов на каждый коллектор", grpGen);
+                addToBill(catalog.water_parts[3], 1, "Наклейки", grpGen);
+                let totalBrackets = 0;
+                this.state.waterZones.forEach(z => { totalBrackets += (z.fixtures.basin + z.fixtures.shower + z.fixtures.wash); });
+                if(totalBrackets > 0) addToBill(catalog.water_fittings[3], totalBrackets, "Монтажная планка (Для смесителей)", grpGen);
+                let allPipe = totalPipeCold + totalPipeHot;
+                if(allPipe > 0) addToBill(catalog.water_fittings[8], Math.ceil(allPipe * 2), "Дюбель-крюк двойной", grpGen);
+
+                if(isMerge) {
+                    flushBill(mainTitle);
+                } else {
+                    flushBill(grpCold);
+                    flushBill(grpHot);
+                    flushBill(grpRecirc);
+                    flushBill(grpGen);
+                }
+
+                if (totalToilets > 0) {
+                    addToBill(catalog.water_parts[6], totalToilets, this.getDesc('install'), "6. Канализация");
+                    flushBill("6. Канализация");
+                }
+            }
+
+            // === 7. ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ ===
+            let cl = catalog.coolants.find(c=>c.type===this.state.coolant); 
+            if(cl) { 
+                if(cl.type==='pro65') { 
+                    let vP=vSys*0.65; let vH=vSys*0.35; let p1=catalog.coolants[2]; let p2=catalog.coolants[0]; 
+                    addToBill(p1, Math.ceil(vP/p1.vol), "Концентрат.", "7. Дополнительные материалы"); addToBill(p2, Math.ceil(vH/p2.vol), "Вода.", "7. Дополнительные материалы"); 
+                } else { 
+                    addToBill(cl, Math.ceil(vSys/cl.vol), this.getDesc('coolant', Math.round(vSys)), "7. Дополнительные материалы"); 
+                } 
+            }
+            flushBill("7. Дополнительные материалы");
+
+            document.getElementById('tbody').innerHTML = h;
+            document.getElementById('total_sum').innerText = sum.toLocaleString() + " ₽";
+            let d = showSku?'table-cell':'none'; document.querySelectorAll('.col-sku').forEach(e=>e.style.display=d); document.querySelector('.col-sku-head').style.display=d;
+            this.saveState();
+        },
+    };
+    window.onload = function() { app.init(); };
+    </script>
+    
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=106856583', 'ym');
+
+    ym(106856583, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/106856583" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+ 
+</head>
+<body>
+<div class="container">
+    <div class="panel input-panel">
+        <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:25px;">
+            <div class="header-actions">
+            <button class="btn-ctrl btn-reset" onclick="app.reset()" title="Сбросить всё">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+            </button>
+
+            <button class="btn-ctrl" onclick="app.loadFromCode()" title="Загрузить код из Телеграм">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            </button>
+            
+            <button class="btn-ctrl" onclick="app.toggleDark(!app.state.darkMode)" title="Переключить тему">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+            </div>
+        </div>
+        <h3>Параметры дома</h3>
+        <div class="control-item"><div class="label-row"><span class="lbl">Основная площадь</span><span class="val"><span id="val_area">150</span> м²</span></div><input type="range" id="inp_area" min="50" max="300" step="10" value="150" oninput="app.setArea(this.value)"></div>
+        <div class="grid-2"><div class="control-card"><span class="lbl">Окна</span><div class="stepper"><button class="step-btn" onclick="app.updWin(-1)">−</button><div class="step-val" id="val_win">4</div><button class="step-btn" onclick="app.updWin(1)">+</button></div></div><div class="control-card"><span class="lbl">Второй этаж</span><label class="switch"><input type="checkbox" id="chk_floors" onchange="app.toggleFloors(this.checked)"><span class="slider"></span></label></div></div>
+        
+        
+        <div class="control-item"><span class="lbl-sub">Регион строительства</span><div class="tabs" id="reg_tabs"><div class="tab active" onclick="app.setRegion(130)">Сибирь</div><div class="tab" onclick="app.setRegion(120)">Урал</div><div class="tab" onclick="app.setRegion(100)">Центр</div><div class="tab" onclick="app.setRegion(60)">Юг</div></div><div class="info-card" id="desc_reg"><span>📍</span> Зима до -35°C</div></div>
+        <div class="control-item"><span class="lbl-sub">Материал стен</span><div class="tabs" id="mat_tabs"><div class="tab" onclick="app.setMat(1.3)">Холодный</div><div class="tab active" onclick="app.setMat(1.0)">Стандарт</div><div class="tab" onclick="app.setMat(0.8)">Тёплый</div></div><div class="info-card" id="desc_mat"><span>🧱</span> Кирпич + Утеплитель</div></div>
+        
+        <h4>Тип котла</h4>
+        <div class="control-item"><div class="tabs"><div class="tab multi-active" id="fuel_el" onclick="app.toggleFuel('el')">⚡ Электро</div><div class="tab" id="fuel_gas" onclick="app.toggleFuel('gas')">🔥 Газ</div></div></div>
+        
+        <div class="control-item"><span class="lbl-sub">Теплоноситель</span><div class="tabs"><div class="tab cool-tab active" data-type="water" onclick="app.setCoolant('water')">💧 Вода</div><div class="tab cool-tab" data-type="eco30" onclick="app.setCoolant('eco30')">❄️ -30°C</div><div class="tab cool-tab" data-type="pro65" onclick="app.setCoolant('pro65')">❄️ -40°C</div></div></div>
+
+        <div class="control-item"><div class="tabs"><div class="tab multi-active" id="sys_rad" onclick="app.toggleSys('rad')">🌡️ Радиаторы</div><div class="tab" id="sys_tp" onclick="app.toggleSys('tp')">♨️ Тёплый пол</div></div></div>
+        <div id="blk_tp_sliders" style="display:none; border-top:1px dashed #E5E7EB; padding-top:15px;"><div class="control-item"><div class="label-row"><span class="lbl">Тёплый пол 1 этаж</span><span class="val"><span id="val_tp1">0</span> м²</span></div><input type="range" id="inp_tp1" min="0" max="150" value="0" oninput="app.updTp(1,this.value)"></div><div id="div_tp2" class="control-item" style="display:none;"><div class="label-row"><span class="lbl">Тёплый пол 2 этаж</span><span class="val"><span id="val_tp2">0</span> м²</span></div><input type="range" id="inp_tp2" min="0" max="150" value="0" oninput="app.updTp(2,this.value)"></div></div>
+        
+        <div id="blk_ufh_ctrl" style="display:none; border-top:1px dashed #E5E7EB; padding-top:15px; margin-top:0;">
+            <div class="control-item">
+                <div class="label-row">
+                    <span class="lbl">Автоматика Тёплого пола</span>
+                    <label class="switch">
+                        <input type="checkbox" id="chk_ufh_auto" onchange="app.toggleUfhAuto(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="blk_ufh_settings" style="display:none;">
+                <div class="control-item">
+                    <div class="control-card" style="width:100%; display:flex; flex-direction:row; justify-content:space-between; padding:15px; align-items:center;">
+                        <span class="lbl" style="margin-right:15px;">Количество термостатов</span>
+                        <div class="stepper">
+                            <button class="step-btn" onclick="app.updZones(-1)">−</button>
+                            <div class="step-val" id="val_zones">1</div>
+                            <button class="step-btn" onclick="app.updZones(1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="control-item">
+                    <div class="label-row"><span class="lbl">Тип термостата:</span></div>
+                    <div class="tabs">
+                        <div class="tab ufh-tab active" data-type="mech" onclick="app.setUfhCtrl('mech')">Механический</div>
+                        <div class="tab ufh-tab" data-type="electro" onclick="app.setUfhCtrl('electro')">Электронный</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-item" style="margin-top: 15px; border-top: 1px dashed #E5E7EB; padding-top: 15px;">
+            <div class="label-row"><span class="lbl">Горячая вода (Бойлер)</span><label class="switch"><input type="checkbox" id="chk_hw" onchange="app.toggleHW(this.checked)"><span class="slider"></span></label></div>
+            <div id="blk_res" style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">
+                <div style="display:flex; justify-content:space-between; align-items:center;"><span class="lbl" style="font-size:12px;">Кол-во жильцов:</span><div class="stepper" style="width:100px;"><button class="step-btn" onclick="app.updRes(-1)">−</button><div class="step-val" id="val_res">3</div><button class="step-btn" onclick="app.updRes(1)">+</button></div></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #E5E7EB; padding-top:8px;"><span class="lbl" style="font-size:12px;">Рециркуляция ГВС</span><label class="switch" style="transform:scale(0.8); transform-origin:right;"><input type="checkbox" id="chk_recirc" onchange="app.toggleRecirc(this.checked)"><span class="slider"></span></label></div>
+            </div>
+        </div>
+
+        <div class="control-item">
+            <div class="label-row"><span class="lbl">Водоснабжение</span><label class="switch"><input type="checkbox" id="chk_water" onchange="app.toggleWater(this.checked)"><span class="slider"></span></label></div>
+            <div id="blk_water_zones" style="display:none; flex-direction:column; gap:10px; margin-top:10px;">
+                <div id="zones_list"></div> <button class="btn-add-zone" onclick="app.addZone()">+ Добавить санузел / Кухню</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="panel output-panel" id="print-area">
+        <div class="print-header">
+            <div class="ph-top"><div>Общество с ограниченной ответственностью «ТЕРЕМ»</div><div>www.teremopt.ru</div></div>
+            <div class="ph-main"><div class="ph-logo"><img src="img/logo.png" alt="Логотип ТЕРЕМ"></div><div class="ph-addr"><strong>ЦЕНТРАЛЬНЫЙ ОФИС:</strong><br>Россия, 123100, г. Москва<br>вн. тер.г. муниципальный округ Пресненский, 2-я<br>Звенигородская ул., д. 12, стр. 1, помещ. 16н<br>тел.: +7 (495) 775-20-20, факс: +7 (495) 775-20-25</div><div class="ph-bank">ИНН 7729646148<br>Р/сч. 40702810638110013275<br>Московский банк Сбербанка России ОАО г. Москва<br>К/сч. 30101810400000000225</div></div><hr class="ph-line">
+        </div>
+        <div class="doc-header">
+            <div class="header-row">
+                <div class="doc-title" style="display:flex; align-items:baseline;">
+                    Спецификация:&nbsp; 
+                    <span id="project_name_edit" class="title-edit" contenteditable="true" onblur="app.setProjectName(this.innerText)"></span>
+                </div>
+                
+                <div class="sku-control">
+                    <span class="sku-label">Артикулы</span><label class="switch"><input type="checkbox" id="chk_sku" onchange="app.toggleSku()"><span class="slider"></span></label>
+                    <span class="sku-label" style="margin-left: 15px;">Объединять</span><label class="switch"><input type="checkbox" id="chk_merge" checked onchange="app.toggleMerge()"><span class="slider"></span></label>
+                </div>
+            </div>
+            <div class="doc-summary" id="doc_summary">...</div>
+        </div>
+        <table class="inv-table">
+            <thead><tr><th class="col-idx">#</th><th class="col-img">Фото</th><th class="col-name">Наименование</th><th class="col-sku hidden-col col-sku-head">Артикул</th><th class="col-brand">Бренд</th><th class="col-unit">Ед.</th><th class="col-qty">Кол.</th><th class="col-price">Цена</th><th class="col-sum">Сумма</th></tr></thead>
+            <tbody id="tbody"></tbody>
+        </table>
+        <div class="doc-footer"><div class="total-lbl">Итого к оплате:</div><div class="total-val" id="total_sum">0 ₽</div></div>
+        <div class="footer-btns">
+            <button class="btn-tg btn-base" onclick="app.sendTg()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>Получить счёт в Telegram</button>
+            <button class="btn-print btn-base" onclick="app.download()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Скачать PDF</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>
