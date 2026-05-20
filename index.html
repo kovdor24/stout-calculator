@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!-- Reading index.html -->
 <html lang="ru">
 
@@ -799,4 +800,807 @@
     </div>
     <div class="mobile-menu-backdrop" onclick="app.toggleMenu()"></div>
 </body>
+=======
+<!-- Reading index.html -->
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeatCalc.ru - Калькулятор Монтажника</title>
+    <link rel="icon" type="image/png" href="img/logo_HC.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=1.3">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="catalog.js" defer></script>
+    <script src="app.js?v=1.4" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+    <script type="text/javascript">
+        (function (m, e, t, r, i, k, a) {
+            m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments) };
+            m[i].l = 1 * new Date();
+            for (var j = 0; j < document.scripts.length; j++) { if (document.scripts[j].src === r) { return; } }
+            k = e.createElement(t), a = e.getElementsByTagName(t)[0], k.async = 1, k.src = r, a.parentNode.insertBefore(k, a)
+        })
+            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+        ym(106856583, "init", {
+            clickmap: true,
+            trackLinks: true,
+            accurateTrackBounce: true,
+            webvisor: true
+        });
+    </script>
+    <noscript>
+        <div><img src="https://mc.yandex.ru/watch/106856583" style="position:absolute; left:-9999px;" alt="" /></div>
+    </noscript>
+</head>
+
+<body
+    onclick="if(event.target.id === 'auth_modal_overlay') app.closeAuthModal(); if(event.target.id === 'profile_modal_overlay') app.closeProfileModal(); if(event.target.id === 'email_success_modal_overlay') app.closeEmailSuccessModal();">
+    <div id="stout_preloader"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111827; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease, visibility 0.5s ease;">
+        <div
+            style="width: 48px; height: 48px; border: 4px solid rgba(59, 130, 246, 0.2); border-top-color: #3B82F6; border-radius: 50%; animation: stout-spin 1s linear infinite;">
+        </div>
+        <div
+            style="margin-top: 20px; color: #E5E7EB; font-family: system-ui, sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 0.5px;">
+            Загрузка калькулятора...</div>
+        <style>
+            @keyframes stout-spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+        </style>
+    </div>
+    <div id="page_scale_wrapper">
+        <header class="site-header">
+            <div class="site-header-left">
+                <img src="img/stout_logo.png" alt="STOUT" class="stout-logo-img">
+            </div>
+
+            <!-- Mobile Header Totals (Visible only on mobile) -->
+            <div id="mobile_header_totals" class="mobile-header-totals">
+                <span class="m-total-eq">Оборудование: <span id="m_tot_eq">0 ₽</span></span>
+                <span class="m-total-div">|</span>
+                <span class="m-total-work">Монтаж: <span id="m_tot_work">0 ₽</span></span>
+            </div>
+
+            <div class="site-header-right">
+            <div id="tg-auth-container" class="header-auth-block"></div>
+            <button class="menu-toggle-btn" onclick="app.toggleMenu()" title="Меню настроек">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <div class="header-main-controls">
+
+                <button id="btn_save_main" class="btn-ctrl" onclick="app.saveToCloud()" title="Сохранить смету в облако">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                </button>
+                <button class="btn-ctrl" onclick="app.loadFromCloudList()" title="Загрузить смету из облака">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </button>
+
+                <div class="header-divider"></div>
+
+                <button class="btn-ctrl" onclick="app.loadFromCode()" title="Загрузить код">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                </button>
+                <button class="btn-ctrl btn-reset" onclick="app.reset()" title="Сбросить всё">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                        <path d="M3 3v5h5"></path>
+                    </svg>
+                </button>
+                <button class="btn-ctrl" onclick="app.toggleDark(!app.state.darkMode, event)"
+                    title="Переключить тему">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="header_totals" class="header-totals-block no-print"></div>
+        </div>
+    </header>
+    <div class="container">
+        <div class="panel input-panel">
+            <h3 style="margin-top: 0;">Параметры дома</h3>
+            <div class="control-item"
+                style="margin-bottom: 15px; background: var(--primary-light); padding: 12px; border-radius: 8px;">
+                <div class="label-row" style="margin-bottom: 0;">
+                    <span class="lbl" style="color: var(--primary);">По комнатам</span>
+                    <label class="switch"><input type="checkbox" id="chk_detailed_rooms"
+                            onchange="app.toggleDetailedRooms(this.checked, event)"><span class="slider"></span></label>
+                </div>
+            </div>
+
+            <div id="blk_detailed_calc" style="display:none; flex-direction:column; gap:10px; margin-bottom: 20px;">
+                <div
+                    style="background: var(--surface-light); padding: 12px 15px; border-radius: 8px; border: 1px dashed var(--primary); border-left: 4px solid var(--primary); margin-bottom: 0;">
+                    <div class="control-item" style="margin-bottom: 0;">
+                        <div class="label-row"><span class="lbl" style="color: var(--primary);">Высота потолка 1
+                                этаж</span><span class="val" style="color: var(--primary);"><span id="val_h1"
+                                    class="editable-val" contenteditable="true" onblur="app.setH(1, this.innerText)"
+                                    onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">2.7</span>
+                                м</span></div>
+                        <input type="range" id="inp_h1" min="2.7" max="5.0" step="0.1" value="2.7"
+                            oninput="app.setH(1, this.value)" style="accent-color: var(--primary);">
+                    </div>
+                </div>
+
+                <div id="rooms_list_1" style="display: flex; flex-direction: column; gap: 8px;"></div>
+
+                <div id="blk_h2_wrapper" style="display: none; flex-direction: column; gap: 10px; margin-top: 10px;">
+                    <div
+                        style="background: var(--surface-light); padding: 12px 15px; border-radius: 8px; border: 1px dashed #10B981; border-left: 4px solid #10B981; margin-bottom: 0;">
+                        <div class="control-item" style="margin-bottom: 0;">
+                            <div class="label-row"><span class="lbl" style="color: #10B981;">Высота потолка 2
+                                    этаж</span><span class="val"><span id="val_h2" class="editable-val"
+                                        contenteditable="true" onblur="app.setH(2, this.innerText)"
+                                        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">2.7</span>
+                                    м</span></div>
+                            <input type="range" id="inp_h2" min="2.7" max="5.0" step="0.1" value="2.7"
+                                oninput="app.setH(2, this.value)" style="accent-color: #10B981;">
+                        </div>
+                    </div>
+                    <div id="rooms_list_2" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: center; margin: 10px 0 5px 0;">
+                    <button
+                        style="padding: 6px 16px; font-size: 11px; font-weight: 700; background: var(--primary-light); border: 1px dashed var(--primary); color: var(--primary); border-radius: 20px; cursor: pointer; transition: 0.2s;"
+                        onclick="app.addRoom()"
+                        onmouseover="this.style.background='var(--primary)'; this.style.color='#fff';"
+                        onmouseout="this.style.background='var(--primary-light)'; this.style.color='var(--primary)';">+
+                        Добавить комнату</button>
+                    <button id="btn_add_floor"
+                        style="padding: 6px 16px; font-size: 11px; font-weight: 700; background: #ECFDF5; border: 1px dashed #10B981; color: #10B981; border-radius: 20px; cursor: pointer; transition: 0.2s;"
+                        onclick="app.addFloor()" onmouseover="this.style.background='#10B981'; this.style.color='#fff';"
+                        onmouseout="this.style.background='#ECFDF5'; this.style.color='#10B981';">+ Добавить
+                        этаж</button>
+                </div>
+            </div>
+
+            <div id="blk_fast_calc">
+                <div class="control-item">
+                    <div class="label-row"><span class="lbl">Основная площадь</span><span class="val"><span
+                                id="val_area" class="editable-val" contenteditable="true"
+                                onblur="app.setArea(this.innerText)"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">150</span>
+                            м²</span></div><input type="range" id="inp_area" min="50" max="300" step="10" value="150"
+                        oninput="app.setArea(this.value)">
+                </div>
+                <div class="grid-2">
+                    <div class="control-card"><span class="lbl">Окна</span>
+                        <div class="stepper"><button class="step-btn" onclick="app.updWin(-1)">−</button>
+                            <div class="step-val editable-val" id="val_win" contenteditable="true"
+                                onblur="app.setWin(this.innerText)"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">4</div><button
+                                class="step-btn" onclick="app.updWin(1)">+</button>
+                        </div>
+                    </div>
+                    <div class="control-card"><span class="lbl">Второй этаж</span><label class="switch"><input
+                                type="checkbox" id="chk_floors" onchange="app.toggleFloors(this.checked)"><span
+                                class="slider"></span></label></div>
+                </div>
+            </div>
+
+
+            <div class="control-item"><span class="lbl-sub">Регион строительства</span>
+                <div class="tabs" id="reg_tabs">
+                    <div class="tab active" onclick="app.setRegion(130)">Сибирь</div>
+                    <div class="tab" onclick="app.setRegion(120)">Урал</div>
+                    <div class="tab" onclick="app.setRegion(100)">Центр</div>
+                    <div class="tab" onclick="app.setRegion(60)">Юг</div>
+                </div>
+                <div class="info-card" id="desc_reg"><span>📍</span> Зима до -35°C</div>
+            </div>
+            <div class="control-item"><span class="lbl-sub">Материал стен</span>
+                <div class="tabs" id="mat_tabs">
+                    <div class="tab" onclick="app.setMat(1.3)">Холодный</div>
+                    <div class="tab active" onclick="app.setMat(1.0)">Стандарт</div>
+                    <div class="tab" onclick="app.setMat(0.8)">Тёплый</div>
+                </div>
+                <div class="info-card" id="desc_mat"><span>🧱</span> Кирпич + Утеплитель</div>
+            </div>
+
+            <h4>Тип котла</h4>
+            <div class="control-item">
+                <div class="tabs">
+                    <div class="tab multi-active" id="fuel_el" onclick="app.toggleFuel('el')">⚡ Электро</div>
+                    <div class="tab" id="fuel_gas" onclick="app.toggleFuel('gas')">🔥 Газ</div>
+                </div>
+            </div>
+
+            <div class="control-item"><span class="lbl-sub">Теплоноситель</span>
+                <div class="tabs" id="blk_coolant">
+                    <div class="tab cool-tab active" data-type="water" onclick="app.setCoolant('water', event)">💧 Вода</div>
+                    <div class="tab cool-tab" data-type="eco30" onclick="app.setCoolant('eco30', event)">❄️ -30°C</div>
+                    <div class="tab cool-tab" data-type="pro65" onclick="app.setCoolant('pro65', event)">❄️ -40°C</div>
+                </div>
+            </div>
+
+            <div class="control-item">
+                <div class="tabs">
+                    <div class="tab multi-active" id="sys_rad" onclick="app.toggleSys('rad', event)">🌡️ Радиаторы</div>
+                    <div class="tab" id="sys_tp" onclick="app.toggleSys('tp', event)">♨️ Тёплый пол</div>
+                </div>
+            </div>
+            <div id="blk_tp_sliders" style="display:none; border-top:1px dashed #E5E7EB; padding-top:15px;">
+                <div class="control-item">
+                    <div class="label-row"><span class="lbl">Тёплый пол 1 этаж</span><span class="val"><span
+                                id="val_tp1" class="editable-val" contenteditable="true"
+                                onblur="app.updTp(1, this.innerText)"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">0</span>
+                            м²</span></div><input type="range" id="inp_tp1" min="0" max="150" value="0"
+                        oninput="app.updTp(1,this.value)">
+                </div>
+                <div id="div_tp2" class="control-item" style="display:none;">
+                    <div class="label-row"><span class="lbl">Тёплый пол 2 этаж</span><span class="val"><span
+                                id="val_tp2" class="editable-val" contenteditable="true"
+                                onblur="app.updTp(2, this.innerText)"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">0</span>
+                            м²</span></div><input type="range" id="inp_tp2" min="0" max="150" value="0"
+                        oninput="app.updTp(2,this.value)">
+                </div>
+            </div>
+
+            <div id="blk_ufh_ctrl" style="display:none; border-top:1px dashed #E5E7EB; padding-top:15px; margin-top:0;">
+                <div class="control-item">
+                    <div class="label-row">
+                        <span class="lbl">Автоматика Тёплого пола</span>
+                        <label class="switch">
+                            <input type="checkbox" id="chk_ufh_auto" onchange="app.toggleUfhAuto(this.checked, event)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="blk_ufh_settings" style="display:none;">
+                    <div class="control-item">
+                        <div class="control-card"
+                            style="width:100%; display:flex; flex-direction:row; justify-content:space-between; padding:15px; align-items:center;">
+                            <span class="lbl" style="margin-right:15px;">Количество термостатов</span>
+                            <div class="stepper">
+                                <button class="step-btn" onclick="app.updZones(-1)">−</button>
+                                <div class="step-val editable-val" id="val_zones" contenteditable="true"
+                                    onblur="app.setZones(this.innerText)"
+                                    onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">1</div>
+                                <button class="step-btn" onclick="app.updZones(1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <div class="label-row"><span class="lbl">Тип термостата:</span></div>
+                        <div class="tabs">
+                            <div class="tab ufh-tab active" data-type="mech" onclick="app.setUfhCtrl('mech')">
+                                Механический</div>
+                            <div class="tab ufh-tab" data-type="electro" onclick="app.setUfhCtrl('electro')">Электронный
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-item" style="margin-top: 15px; border-top: 1px dashed #E5E7EB; padding-top: 15px;">
+                <div class="label-row"><span class="lbl">Горячая вода (Бойлер)</span><label class="switch"><input
+                            type="checkbox" id="chk_hw" onchange="app.toggleHW(this.checked, event)"><span
+                            class="slider"></span></label></div>
+                <div id="blk_res"
+                    style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;"><span class="lbl"
+                            style="font-size:12px;">Кол-во жильцов:</span>
+                        <div class="stepper" style="width:100px;"><button class="step-btn"
+                                onclick="app.updRes(-1)">−</button>
+                            <div class="step-val editable-val" id="val_res" contenteditable="true"
+                                onblur="app.setRes(this.innerText)"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">3</div><button
+                                class="step-btn" onclick="app.updRes(1)">+</button>
+                        </div>
+                    </div>
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #E5E7EB; padding-top:8px;">
+                        <span class="lbl" style="font-size:12px;">Рециркуляция ГВС</span><label class="switch"
+                            style="transform:scale(0.8); transform-origin:right;"><input type="checkbox" id="chk_recirc"
+                                onchange="app.toggleRecirc(this.checked, event)"><span class="slider"></span></label>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="control-item">
+                <div class="label-row"><span class="lbl">Водоснабжение</span><label class="switch"><input
+                            type="checkbox" id="chk_water" onchange="app.toggleWater(this.checked, event)"><span
+                            class="slider"></span></label></div>
+                <div id="blk_water_zones" style="display:none; flex-direction:column; gap:10px; margin-top:10px;">
+                    <div id="zones_list"></div>
+                    <button
+                        style="margin: 5px auto 5px auto; display: block; width: fit-content; padding: 5px 16px; font-size: 11px; font-weight: 700; background: var(--primary-light); border: 1px dashed var(--primary); color: var(--primary); border-radius: 20px; cursor: pointer; transition: 0.2s;"
+                        onclick="app.addZone()"
+                        onmouseover="this.style.background='var(--primary)'; this.style.color='#fff';"
+                        onmouseout="this.style.background='var(--primary-light)'; this.style.color='var(--primary)';">+
+                        Добавить санузел / Кухню</button>
+                </div>
+            </div>
+
+            <div class="control-item" style="border-top: 1px dashed #E5E7EB; padding-top: 15px;">
+                <div class="label-row">
+                    <span class="lbl">Узел ввода ХВС</span>
+                    <label class="switch"><input type="checkbox" id="chk_water_input"
+                        onchange="app.toggleWaterInput(this.checked, event)"><span class="slider"></span></label>
+                </div>
+                <div id="blk_water_input_opts" style="display:none; flex-direction:column; gap:0; margin-top:10px; background:var(--surface-light); padding:10px 12px; border-radius:8px; border:1px solid var(--border);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0;">
+                        <span class="lbl" style="font-size:12px;">Незамерзающий кран</span>
+                        <label class="switch" style="transform:scale(0.8); transform-origin:right;">
+                            <input type="checkbox" id="chk_outdoor_faucet" onchange="app.toggleState('outdoorFaucet', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
+                        <span class="lbl" style="font-size:12px;">Система фильтрации (Big Blue)</span>
+                        <label class="switch" style="transform:scale(0.8); transform-origin:right;">
+                            <input type="checkbox" id="chk_big_blue" onchange="app.toggleState('bigBlueFilter', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
+                        <span class="lbl" style="font-size:12px;">Подпитка отопления</span>
+                        <label class="switch" style="transform:scale(0.8); transform-origin:right;">
+                            <input type="checkbox" id="chk_heating_feed" onchange="app.toggleState('heatingFeed', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-item" style="border-top: 1px dashed #E5E7EB; padding-top: 15px;">
+                <div class="label-row">
+                    <span class="lbl">Скважинный насос</span>
+                    <label class="switch"><input type="checkbox" id="chk_well"
+                        onchange="app.toggleWell(this.checked, event)"><span class="slider"></span></label>
+                </div>
+                <div id="blk_well" style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:var(--surface-light); padding:10px 12px; border-radius:8px; border:1px solid var(--border);">
+                    <div class="control-item" style="margin-bottom: 5px;">
+                        <div class="label-row"><span class="lbl" style="font-size:11px;">Глубина установки насоса</span>
+                            <span class="val"><span id="val_wellDepth" class="editable-val"
+                                contenteditable="true" onblur="app.setWellDepth(this.innerText)"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">40</span> м</span>
+                        </div>
+                        <input type="range" id="inp_wellDepth" min="10" max="150" step="1" value="40"
+                            oninput="app.setWellDepth(this.value)">
+                    </div>
+                    <div class="control-item" style="margin-bottom: 0;">
+                        <div class="label-row"><span class="lbl" style="font-size:11px;">Длина трассы до дома</span>
+                            <span class="val"><span id="val_wellDist" class="editable-val"
+                                contenteditable="true" onblur="app.setWellDist(this.innerText)"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">10</span> м</span>
+                        </div>
+                        <input type="range" id="inp_wellDist" min="0" max="150" step="1" value="10"
+                            oninput="app.setWellDist(this.value)">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel output-panel" id="print-area">
+            <div class="print-header">
+                <div class="ph-top">
+                    <div>Общество с ограниченной ответственностью «ТЕРЕМ»</div>
+                    <div>www.teremopt.ru</div>
+                </div>
+                <div class="ph-main">
+                    <div class="ph-logo"><img src="img/logo.jpg" alt="Логотип ТЕРЕМ" style="max-width: 100%;"></div>
+                    <div class="ph-addr"><strong>ЦЕНТРАЛЬНЫЙ ОФИС:</strong><br>Россия, 123100, г. Москва<br>вн. тер.г.
+                        муниципальный округ Пресненский, 2-я<br>Звенигородская ул., д. 12, стр. 1, помещ. 16н<br>тел.:
+                        +7 (495) 775-20-20, факс: +7 (495) 775-20-25</div>
+                    <div class="ph-bank">ИНН 7729646148<br>Р/сч. 40702810638110013275<br>Московский банк Сбербанка
+                        России ОАО г. Москва<br>К/сч. 30101810400000000225</div>
+                </div>
+                <hr class="ph-line">
+                <div id="print_master_contacts"
+                    style="margin-top: 5px; font-size: 12px; padding-top: 5px; display: none; text-align: right;">
+                    Расчёт произвёл: <strong id="print_master_name"></strong> | Тел: <strong
+                        id="print_master_phone"></strong>
+                </div>
+            </div>
+            <div class="doc-header">
+                <div class="header-row">
+                    <div class="doc-title"
+                        style="display:flex; align-items:baseline; flex-wrap:wrap; gap:15px; width:100%;">
+                        <span id="project_name_edit" class="title-edit" contenteditable="true"
+                            onblur="app.setProjectName(this.innerText)"></span>
+                    </div>
+
+                    <div class="sku-control">
+                        <div id="cheaper_wrapper" class="sku-toggle-group"
+                            style="display: none; align-items: center; position: relative;"
+                            onclick="app.handlePremiumToggleClick('cheaper', event)">
+                            <span class="sku-label" style="font-weight: 700;">АНАЛОГ</span>
+
+                            <span id="cheaper_lock"
+                                style="display: none;"
+                                aria-hidden="true">
+                            </span>
+
+                            <label class="switch" id="cheaper_switch_label" style="margin-right: 0;">
+                                <input type="checkbox" id="chk_cheaper">
+                                <span class="slider round"></span>
+                            </label>
+
+                            <span id="discount_badge"
+                                style="display: none; position: absolute; bottom: 100%; right: 0; margin-bottom: 5px; background: #10B981; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2); z-index: 100;"></span>
+                        </div>
+
+                        <div id="scheme_wrapper" class="sku-toggle-group"
+                            onclick="app.handlePremiumToggleClick('scheme', event)">
+                            <span class="sku-label">Схема</span><label class="switch"><input type="checkbox" id="chk_scheme"><span
+                                    class="slider round"></span></label>
+                        </div>
+                        <div class="sku-toggle-group" id="sku_wrapper"
+                            onclick="app.handlePremiumToggleClick('sku', event)">
+                            <span class="sku-label">Артикулы</span><label class="switch"><input
+                                    type="checkbox" id="chk_sku"><span
+                                    class="slider"></span></label>
+                        </div>
+                        <div class="sku-toggle-group" id="merge_wrapper"
+                            onclick="app.handlePremiumToggleClick('merge', event)">
+                            <span class="sku-label">Группировать</span><label
+                                class="switch"><input type="checkbox" id="chk_merge"><span
+                                    class="slider"></span></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="doc-summary" id="doc_summary">...</div>
+                <div class="sticky-tabs-container no-print">
+                    <div class="tabs main-view-tabs" style="height: 40px;">
+                        <div id="tab_equipment" class="tab active" style="font-size: 14px; font-weight: 700;"
+                            onclick="app.setViewMode('equipment')">1. Оборудование</div>
+                        <div id="tab_works" class="tab" style="font-size: 14px; font-weight: 700;"
+                            onclick="app.setViewMode('works')">2. Монтажные работы</div>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="inv-table">
+                    <thead>
+                        <tr>
+                            <th class="col-idx">#</th>
+                            <th class="col-img">Фото</th>
+                            <th class="col-name">Наименование</th>
+                            <th class="col-sku hidden-col col-sku-head">Артикул</th>
+                            <th class="col-brand">Бренд</th>
+                            <th class="col-unit">Ед.</th>
+                            <th class="col-qty">Кол.</th>
+                            <th class="col-price">Цена</th>
+                            <th class="col-sum">Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+            </div>
+            <div class="doc-footer">
+                <div class="total-lbl">Итого к оплате:</div>
+                <div class="total-val" id="total_sum">0 ₽</div>
+            </div>
+            <div class="footer-btns">
+                <button class="btn-tg btn-base" onclick="app.sendEmail()"><svg width="18" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>Получить счёт</button>
+                <button id="btn_print_trigger" class="btn-print btn-base" onclick="app.download()"><svg width="18"
+                        height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>Печать</button>
+                <button id="btn_share_trigger" class="btn-share btn-base" onclick="app.shareInvoice()"><svg width="18"
+                        height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                        <polyline points="16 6 12 2 8 6"></polyline>
+                        <line x1="12" y1="2" x2="12" y2="15"></line>
+                    </svg>Ссылка для клиента</button>
+            </div>
+
+            <div class="print-disclaimer" style="display: none; margin-top: 40px; page-break-inside: avoid;">
+                <div
+                    style="border: 2px solid #D4AF37; padding: 15px; text-align: center; font-size: 11px; line-height: 1.4; color: #000;">
+                    * Данный комплект составлен автоматическим калькулятором на сайте heatcalc.ru.<br>
+                    Перед покупкой оборудования проконсультируйтесь с менеджером отдела продаж или инженерами монтажа.
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px;">
+                    <div style="text-align: center;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://heatcalc.ru/"
+                            alt="QR" style="width: 80px; height: 80px;">
+                        <div style="font-size: 10px; margin-top: 5px; font-weight: bold; color: #000;">
+                            heatcalc.ru</div>
+                    </div>
+                    <div>
+                        <img src="img/logo.jpg" alt="ТЕРЕМ" style="width: 60px; opacity: 0.2; filter: grayscale(100%);">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer style="padding: 30px 20px; margin-top: 40px; border-top: 1px solid var(--border); text-align: center; font-size: 13px; color: var(--text-sec); background: var(--surface);">
+        <div>&copy; 2026 HeatCalc.ru — Профессиональный калькулятор систем отопления.</div>
+        <div style="margin-top: 8px;">
+            <a href="oferta.html" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 600; border-bottom: 1px dashed var(--primary);">Публичная оферта</a>
+        </div>
+    </footer>
+
+    <!-- МОДАЛЬНОЕ ОКНО ПРОВЕРКИ ДОСТУПА -->
+    <div class="custom-modal-overlay" id="custom_modal_overlay" onclick="if(event.target === this) app.closeModal()">
+        <div class="custom-modal">
+            <span class="auth-modal-close" onclick="app.closeModal()">&times;</span>
+            
+            <div id="pro_main_content" class="pro-modal-content">
+                <h2 id="custom_modal_title">Подписка PRO</h2>
+                
+                <p id="custom_modal_text">Преимущества подписки: подбор всех разделов (котельная, радиаторы, теплый пол, водоснабжение, канализация) монтажные работы, артикулы, подбор аналогов, формирование кп в pdf, excel.</p>
+                
+                <div class="tariff-cards">
+                    <!-- Monthly -->
+                    <div class="tariff-card">
+                        <h3>ПОДПИСКА НА МЕСЯЦ</h3>
+                        <div class="price">1 500 ₽</div>
+                        <div class="price-sub">в месяц</div>
+                        <button type="button" class="btn-subscribe" onclick="app.openPaymentModal('month')">Оформить подписку</button>
+                    </div>
+                    
+                    <!-- Yearly -->
+                    <div class="tariff-card">
+                        <div class="badge">-40%</div>
+                        <h3>ПОДПИСКА НА ГОД</h3>
+                        <div class="price">900 ₽</div>
+                        <div class="price-sub">в месяц (10 800 ₽ в год)</div>
+                        <button type="button" class="btn-subscribe" onclick="app.openPaymentModal('year')">Оформить подписку</button>
+                    </div>
+                </div>
+
+                <button class="custom-modal-btn" id="custom_modal_btn_ok" style="display: none;" onclick="app.closeModal()">Понятно</button>
+            </div>
+        </div>
+    </div>
+    </div>
+    <div id="auth_modal_overlay" class="auth-modal-overlay" style="display: none;">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close" onclick="app.closeAuthModal()">&times;</span>
+            
+            <!-- Main View (Login/Register Tabs) -->
+            <div id="auth_main_view">
+                <div class="auth-tabs">
+                    <div class="auth-tab active" id="tab_login" onclick="app.switchAuthTab('login')">Вход</div>
+                    <div class="auth-tab" id="tab_register" onclick="app.switchAuthTab('register')">Регистрация</div>
+                </div>
+
+                <div id="auth_form_container">
+                    <input type="email" id="auth_email_input" class="auth-input" placeholder="Введите ваш Email">
+                    <div id="login_fields">
+                        <input type="password" id="auth_password_input" class="auth-input" placeholder="Введите пароль">
+                    </div>
+                    <div id="register_fields" style="display: none;">
+                        <input type="password" id="auth_reg_password" class="auth-input" placeholder="Придумайте пароль">
+                    </div>
+                    <div id="auth_error_msg" style="color: #ef4444; font-size: 13px; margin-top: -10px; margin-bottom: 15px; display: none; text-align: left; line-height: 1.4;"></div>
+
+                    <button class="auth-btn-base btn-email-submit" id="auth_submit_btn" onclick="app.handleAuthSubmit()">
+                        Войти
+                    </button>
+                    
+                    <div id="auth_forgot_link" style="text-align: center; margin-top: 10px; font-size: 13px;">
+                        <a href="#" onclick="app.showForgotPasswordView()" style="color: var(--text-sec); text-decoration: none;">Забыли пароль?</a>
+                    </div>
+                </div>
+
+                <div class="auth-divider">
+                    <div class="auth-divider-line"></div>
+                    ИЛИ ВОЙТИ ЧЕРЕЗ
+                    <div class="auth-divider-line"></div>
+                </div>
+
+                <div class="social-btn-wrapper">
+                    <button class="auth-btn-base btn-google" onclick="app.loginGoogle()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                        </svg>
+                        Продолжить с Google
+                    </button>
+                </div>
+            </div>
+
+            <!-- Verification View -->
+            <div id="auth_verify_view" style="display: none; text-align: center;">
+                <h3 class="auth-modal-title">Подтверждение Email</h3>
+                <p style="font-size: 14px; color: var(--text-sec); margin-bottom: 20px;">
+                    Мы отправили 4-значный код на ваш email.<br>Введите его для завершения регистрации.
+                </p>
+                <input type="text" id="auth_code_input" class="auth-input" placeholder="0000" maxlength="4" style="text-align: center; font-size: 24px; letter-spacing: 5px; font-weight: 700;">
+                <div id="auth_code_error" style="color: #ef4444; font-size: 12px; margin-top: -8px; margin-bottom: 10px; display: none;">Неверный код</div>
+                <button class="auth-btn-base btn-email-submit" onclick="app.verifyCodeAndSignUp()">
+                    Подтвердить
+                </button>
+                <div style="margin-top: 15px;">
+                    <a href="#" onclick="app.backToAuthMain()" style="color: var(--text-sec); text-decoration: none; font-size: 13px;">Вернуться назад</a>
+                </div>
+            </div>
+
+            <!-- Forgot Password View -->
+            <div id="auth_forgot_view" style="display: none; text-align: center;">
+                <h3 class="auth-modal-title">Восстановление пароля</h3>
+                <p style="font-size: 14px; color: var(--text-sec); margin-bottom: 20px;">
+                    Введите ваш email, и мы отправим ссылку для сброса пароля.
+                </p>
+                <input type="email" id="forgot_email_input" class="auth-input" placeholder="Введите ваш Email">
+                <button class="auth-btn-base btn-email-submit" onclick="app.handleForgotPassword()">
+                    Отправить ссылку
+                </button>
+                <div style="margin-top: 15px;">
+                    <a href="#" onclick="app.backToAuthMain()" style="color: var(--text-sec); text-decoration: none; font-size: 13px;">Вернуться к входу</a>
+                </div>
+            </div>
+
+            <div id="auth_terms_wrapper" style="margin-top: 15px; padding: 0 5px; display: flex; justify-content: center; max-width: 280px; margin: 15px auto 0 auto;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; color: var(--text-sec);">
+                    <input type="checkbox" id="chk_terms" style="width: 16px; height: 16px; cursor: pointer;">
+                    <span>Я ознакомлен и принимаю условия <a href="oferta.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">Публичной оферты</a></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ОПЛАТЫ (СБП) -->
+    <div class="auth-modal-overlay" id="payment_modal_overlay" style="display: none;">
+        <div class="auth-modal-content" style="max-width: 400px; text-align: center;">
+            <span class="auth-modal-close" onclick="closePaymentModal()">&times;</span>
+            <h3 class="auth-modal-title" id="pay_modal_title" style="margin-bottom: 4px;">Оплата подписки</h3>
+            <p style="color: var(--text-sec); font-size: 13px; margin-bottom: 10px;" id="planName">Тариф: PRO 1 месяц</p>
+            
+            <div id="qrcode_container"></div>
+            
+            <a href="#" id="pay_link_btn" target="_blank" class="btn-subscribe" style="margin-bottom: 12px; text-decoration: none; display: flex; align-items: center; justify-content: center; height: 44px;">🔗 Оплатить по ссылке</a>
+            
+            <div style="text-align: left; background: var(--surface-light); border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px; margin-top: 16px;">
+                <label style="display: block; font-size: 10px; font-weight: 700; color: var(--text-sec); text-transform: uppercase; margin-bottom: 6px;">Подтверждение платежа</label>
+                <input type="email" id="userEmail" class="auth-input" placeholder="Ваш Email учетной записи" style="margin-bottom: 10px; height: 40px;">
+                <button class="auth-btn-base btn-email-submit" id="notify_payment_btn" style="width: 100%; height: 42px;">✅ Я оплатил</button>
+            </div>
+            
+            <p style="font-size: 10px; color: var(--text-sec); margin-top: 8px; line-height: 1.3;">После нажатия «Я оплатил» мы проверим поступление средств и активируем PRO-статус в ближайшее время.</p>
+        </div>
+    </div>
+    <div id="profile_modal_overlay" class="auth-modal-overlay" style="display: none;">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close" onclick="app.closeProfileModal()">&times;</span>
+            <h3 class="auth-modal-title">Мой профиль</h3>
+            <div style="margin-bottom: 20px;">
+                <label
+                    style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block;">Имя
+                    и Фамилия</label>
+                <input type="text" id="profile_name_input" class="auth-input" placeholder="Иван Иванов">
+                <label
+                    style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block; margin-top: 15px;">Телефон
+                    для смет</label>
+                <input type="tel" id="profile_phone_input" class="auth-input" placeholder="+7 (___) ___-__-__"
+                    oninput="app.maskPhone(this)">
+                <label
+                    style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block; margin-top: 15px;">Ваш город (для смет)</label>
+                <input type="text" id="profile_city_input" class="auth-input" placeholder="Например: Москва">
+                <button class="auth-btn-base btn-email-submit" style="margin-top: 20px;"
+                    onclick="app.saveProfile()">Сохранить профиль</button>
+            </div>
+        </div>
+    </div>
+    <div id="admin_modal_overlay" class="auth-modal-overlay" style="display: none; z-index: 100000;">
+        <div class="auth-modal-content"
+            style="max-width: 900px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+            <span class="auth-modal-close" onclick="app.closeAdminModal()">&times;</span>
+            <h3 class="auth-modal-title">👑 Панель управления</h3>
+            <div id="admin_content" style="overflow-y: auto; flex-grow: 1; padding-right: 10px;">
+                <div style="text-align: center; color: var(--text-sec); padding: 50px;">Загрузка данных из базы...
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="cloud_list_modal_overlay" class="auth-modal-overlay" style="display: none; z-index: 99999;">
+        <div class="auth-modal-content" style="max-width: 800px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+            <span class="auth-modal-close" onclick="app.closeCloudListModal()">&times;</span>
+            <h3 class="auth-modal-title">📂 Сохраненные сметы</h3>
+            <div id="cloud_list_content" style="overflow-y: auto; flex-grow: 1; padding-right: 5px;">
+                <div style="text-align: center; color: var(--text-sec); padding: 50px;">Загрузка списка...</div>
+            </div>
+        </div>
+    </div>
+    <div id="password_reset_success_modal_overlay" class="auth-modal-overlay" style="display: none; z-index: 100001;">
+        <div class="auth-modal-content" style="max-width: 400px; text-align: center;">
+            <span class="auth-modal-close" onclick="app.closePasswordResetSuccessModal()">&times;</span>
+            <h3 class="auth-modal-title" style="font-weight: 800; text-align: center; text-transform: uppercase; margin-bottom: 15px;">ПРОВЕРЬТЕ ПОЧТУ</h3>
+            <p style="font-size: 14px; color: var(--text-sec); margin-bottom: 25px; line-height: 1.5; text-align: center;">
+                Мы отправили ссылку для восстановления пароля на ваш email. Пожалуйста, перейдите по ней для завершения процесса.
+            </p>
+            <button class="auth-btn-base btn-email-submit" style="width: 100%; height: 42px;" onclick="app.closePasswordResetSuccessModal()">Понятно</button>
+        </div>
+    </div>
+    <div id="email_success_modal_overlay" class="auth-modal-overlay" style="display: none; z-index: 100001;" onclick="if(event.target === this) app.closeEmailSuccessModal()">
+        <div class="auth-modal-content" style="max-width: 400px; text-align: center;">
+            <span class="auth-modal-close" onclick="app.closeEmailSuccessModal()">&times;</span>
+            <h3 class="auth-modal-title" style="font-weight: 800; text-align: center; text-transform: uppercase; margin-bottom: 15px;">УСПЕШНО ✅</h3>
+            <p style="font-size: 15px; color: var(--text-main); font-weight: 600; margin-bottom: 8px; line-height: 1.5; text-align: center;">
+                Мы получили вашу заявку,
+            </p>
+            <p style="font-size: 12px; color: var(--text-sec); margin-bottom: 25px; line-height: 1.4; text-align: center;">
+                сейчас всё проверим и пришлём счёт на почту.
+            </p>
+            <button class="auth-btn-base btn-email-submit" style="width: 100%; height: 42px;" onclick="app.closeEmailSuccessModal()">Понятно</button>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const header = document.querySelector('.site-header');
+            const inputTarget = document.querySelector('.input-panel');
+
+            const handleScroll = () => {
+                const scrollY = Math.max(
+                    window.scrollY || document.documentElement.scrollTop || 0,
+                    inputTarget ? inputTarget.scrollTop : 0
+                );
+                
+                if (header) {
+                    if (scrollY > 40) {
+                        header.classList.add('scrolled');
+                    } else {
+                        header.classList.remove('scrolled');
+                    }
+                }
+            };
+
+            window.addEventListener('scroll', handleScroll, { passive: true });
+            if (inputTarget) inputTarget.addEventListener('scroll', handleScroll, { passive: true });
+            
+            // Initial check
+            handleScroll();
+        });
+    </script>
+    <!-- MOBILE BOTTOM NAVIGATION -->
+    <div class="mobile-bottom-nav">
+        <div class="mob-nav-item active" id="mob_nav_inputs" onclick="app.switchMobileTab('inputs')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <span>Параметры</span>
+        </div>
+        <div class="mob-nav-item" id="mob_nav_output" onclick="app.switchMobileTab('output')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span>Смета</span>
+        </div>
+    </div>
+    <div class="mobile-menu-backdrop" onclick="app.toggleMenu()"></div>
+</body>
+>>>>>>> 81755ac6f011f4fcf13f4f4a74c5cd5a48eb8423
 </html>
