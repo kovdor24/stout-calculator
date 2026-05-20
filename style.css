@@ -844,6 +844,14 @@ input:checked+.slider:before {
     background-color: #000000;
 }
 
+.btn-share {
+    background-color: #10B981;
+}
+
+.btn-share:hover {
+    background-color: #059669;
+}
+
 /* Р¦РІРµС‚Р° РєРЅРѕРїРѕРє РІ С‚С‘РјРЅРѕР№ С‚РµРјРµ (Indigo style РєР°Рє РЅР° СЃРєСЂРёРЅС€РѕС‚Рµ) */
 body.dark-mode .btn-tg {
     background-color: #374151;
@@ -861,6 +869,15 @@ body.dark-mode .btn-print {
 
 body.dark-mode .btn-print:hover {
     background-color: #4F46E5;
+}
+
+body.dark-mode .btn-share {
+    background-color: #059669;
+    color: #FFFFFF;
+}
+
+body.dark-mode .btn-share:hover {
+    background-color: #047857;
 }
 
 .editable-val {
@@ -1037,6 +1054,14 @@ body.dark-mode .editable-val:focus {
     background-color: #000000;
 }
 
+.btn-share {
+    background-color: #10B981;
+}
+
+.btn-share:hover {
+    background-color: #059669;
+}
+
 /* Р¦РІРµС‚Р° РєРЅРѕРїРѕРє РІ С‚С‘РјРЅРѕР№ С‚РµРјРµ (Indigo style РєР°Рє РЅР° СЃРєСЂРёРЅС€РѕС‚Рµ) */
 body.dark-mode .btn-tg {
     background-color: #374151;
@@ -1054,6 +1079,15 @@ body.dark-mode .btn-print {
 
 body.dark-mode .btn-print:hover {
     background-color: #4F46E5;
+}
+
+body.dark-mode .btn-share {
+    background-color: #059669;
+    color: #FFFFFF;
+}
+
+body.dark-mode .btn-share:hover {
+    background-color: #047857;
 }
 
 .editable-val {

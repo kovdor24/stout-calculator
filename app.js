@@ -13,7 +13,7 @@
 })();
 // ===================================
 
-const supabaseUrl = 'https://api.heatcalc.ru';
+const supabaseUrl = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';
 const supabaseKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 if (typeof emailjs !== 'undefined') emailjs.init("-m4N93pTqMlCfuBpT");
@@ -232,6 +232,7 @@ const app = {
         }
         this.state.projectName = clean;
         this.saveState();
+        this.updateDocumentTitle();
     },
 
     setBrand: function (val, event) {
@@ -311,6 +312,11 @@ const app = {
     },
 
     checkAccess: function (featureLvl, event) {
+        const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (isLocal) {
+            return true;
+        }
+
         let isGuest = !this.state.tgUser;
         let isPro = this.isPro();
 
@@ -1999,9 +2005,174 @@ const app = {
             }
         }
     },
+    updateDocumentTitle: function () {
+        let sections = [];
+        if (this.state.systems.includes('rad') || this.state.systems.includes('tp') || this.state.hotWater) {
+            sections.push("котельная");
+        }
+        if (this.state.systems.includes('rad')) {
+            sections.push("радиаторы");
+        }
+        if (this.state.systems.includes('tp')) {
+            sections.push("теплый пол");
+        }
+        if (this.state.water) {
+            sections.push("водоснабжение");
+        }
+        if (this.state.waterInput) {
+            sections.push("узел ввода ХВС");
+        }
+        if (this.state.well) {
+            sections.push("скважина");
+        }
+        
+        let sewerToilets = 0;
+        if (this.state.waterZones && this.state.waterZones.length > 0) {
+            this.state.waterZones.forEach(z => {
+                if (z.fixtures && z.fixtures.toilet) {
+                    sewerToilets += z.fixtures.toilet;
+                }
+            });
+        }
+        if (sewerToilets > 0) {
+            sections.push("канализация");
+        }
+
+        const objName = (this.state.projectName && this.state.projectName.trim()) ? this.state.projectName.trim() : "Новый объект";
+        const areaVal = this.state.area || 0;
+        const sectionsText = sections.length > 0 ? " (" + sections.join(", ") + ")" : "";
+        let safeName = objName.replace(/[\\\/:\*\?"<>\|]/g, "");
+        
+        document.title = `КП ${safeName} - ${areaVal} м2${sectionsText}`;
+        console.log("[updateDocumentTitle] Updated title to:", document.title);
+    },
+    shareInvoice: async function () {
+        if (!this.checkAccess('base')) return;
+
+        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (isLocal && (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16)) {
+            tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99" };
+        }
+
+        if (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16) {
+            alert("Пожалуйста, укажите Ваше Имя и Телефон в профиле. Они необходимы для формирования ссылки для клиента.");
+            this.showProfileModal();
+            return;
+        }
+
+        this.render();
+
+        let h1 = this.state.h1 || 2.7, h2 = this.state.h2 || 2.7;
+        let avgH = (this.state.floors === 2) ? (h1 + h2) / 2 : h1;
+        let pwr = 0;
+        if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
+            let totalLoadW = 0;
+            this.state.rooms.forEach(r => {
+                let rHeight = (r.floor === 2) ? h2 : h1;
+                let heightCoef = rHeight / 2.7;
+                totalLoadW += (r.area * heightCoef * 70 * (this.state.region / 100) * this.state.mat);
+                r.windows.forEach(w => {
+                    let wHeight = w.isPan ? 2.5 : 1.5;
+                    let wArea = parseFloat(w.width || 1) * wHeight;
+                    totalLoadW += (wArea * 150 * (this.state.region / 100) * this.state.mat);
+                });
+            });
+            pwr = (totalLoadW / 1000).toFixed(1);
+        } else {
+            pwr = (this.state.area * avgH * 37 * (this.state.region / 100) * this.state.mat / 1000).toFixed(1);
+        }
+        let regionName = "Сибирь"; if (this.state.region === 120) regionName = "Урал"; if (this.state.region === 100) regionName = "Центр"; if (this.state.region === 60) regionName = "Юг";
+
+        let object_info = {
+            projectName: this.state.projectName || "Новый объект",
+            area: this.state.area,
+            floors: this.state.floors,
+            res: this.state.res,
+            power: pwr,
+            region: regionName,
+            date: new Date().toLocaleDateString('ru-RU')
+        };
+
+        let manager_info = {
+            name: tgUser.first_name || tgUser.username || '',
+            phone: tgUser.phone || '',
+            city: tgUser.city || ''
+        };
+
+        let items = {
+            equipment: this.currentEquipmentList || [],
+            works: this.currentWorksList || []
+        };
+
+        let totals = {
+            equipment: app.lastEqSum || 0,
+            works: app.lastWorksSum || 0,
+            grandTotal: (app.lastEqSum || 0) + (app.lastWorksSum || 0)
+        };
+
+        try {
+            const btn = document.getElementById('btn_share_trigger');
+            let origHtml = "";
+            if (btn) {
+                origHtml = btn.innerHTML;
+                btn.innerHTML = `<span class="loading-spinner" style="display:inline-block; width:14px; height:14px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:stout-spin 0.8s linear infinite; margin-right:8px; vertical-align:middle;"></span>Генерация...`;
+                btn.disabled = true;
+            }
+
+            const { data, error } = await supabaseClient
+                .from('shared_invoices')
+                .insert([{
+                    object_info: object_info,
+                    manager_info: manager_info,
+                    items: items,
+                    totals: totals
+                }])
+                .select('id')
+                .single();
+
+            if (error) throw error;
+
+            const shareId = data.id;
+            const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
+            const shareUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
+
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert("Ссылка скопирована, отправьте клиенту");
+            }).catch(err => {
+                console.error('Ошибка копирования:', err);
+                const tempInput = document.createElement("input");
+                tempInput.value = shareUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand("copy");
+                document.body.removeChild(tempInput);
+                alert("Ссылка скопирована, отправьте клиенту");
+            });
+
+            if (btn) {
+                btn.innerHTML = origHtml;
+                btn.disabled = false;
+            }
+
+        } catch (err) {
+            console.error('[shareInvoice] Ошибка:', err);
+            alert("Произошла ошибка при создании ссылки: " + err.message);
+            const btn = document.getElementById('btn_share_trigger');
+            if (btn) {
+                btn.innerHTML = `Ссылка для клиента`;
+                btn.disabled = false;
+            }
+        }
+    },
     download: function () {
         if (!this.checkAccess('base')) return;
-        const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+
+        const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (isLocal && (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16)) {
+            tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99" };
+        }
 
         if (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16) {
             alert("Пожалуйста, укажите Ваше Имя и Телефон в профиле. Они необходимы для формирования красивой печатной сметы.");
@@ -3342,10 +3513,13 @@ const app = {
     },
     // ====================================
     render: function () {
+        this.updateDocumentTitle();
         this.calcBaseTotal = 0;
         this.calcFinalTotal = 0;
         app.lastEqSum = 0;
         app.lastWorksSum = 0;
+        this.currentEquipmentList = [];
+        this.currentWorksList = [];
         app.tempWarns = []; // Массив для сбора предупреждений о дефиците мощности
         this.currentSpec = []; // Список оборудования для генерации схемы
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
@@ -3499,6 +3673,24 @@ const app = {
         const flushBill = (title, warn) => {
             if (bill.length === 0) return;
 
+            // Сохраняем элементы для коммерческого предложения клиенту
+            bill.forEach(i => {
+                this.currentEquipmentList.push({
+                    id: i.id,
+                    name: i.name,
+                    displaySku: i.displaySku || i.article || i.id,
+                    brand: i.brand || 'STOUT',
+                    unit: i.unit || 'шт',
+                    q: i.q,
+                    price: i.price,
+                    sum: i.sum,
+                    group: i.group,
+                    sectionTitle: title,
+                    isOpt: !!this.state.optItems[i.originalId || i.id],
+                    availability: i.availability
+                });
+            });
+
             // Считаем сумму оборудования всегда
             let localSecTotal = 0;
             bill.forEach(i => { let lookupId = i.originalId || i.id; if (!this.state.optItems[lookupId]) localSecTotal += i.sum; });
@@ -3581,6 +3773,18 @@ const app = {
 
         const flushWorks = () => {
             if (worksBill.length === 0) return;
+
+            // Сохраняем элементы для коммерческого предложения клиенту
+            worksBill.forEach(w => {
+                this.currentWorksList.push({
+                    name: w.name,
+                    q: w.q,
+                    price: w.price,
+                    sum: w.sum,
+                    unit: w.unit,
+                    group: w.group
+                });
+            });
 
             // Считаем сумму работ всегда
             worksBill.forEach(w => { app.lastWorksSum += w.sum; });
