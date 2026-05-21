@@ -2199,10 +2199,16 @@ const app = {
             let city = 'Не определен';
             let clientIp = '0.0.0.0';
             try {
-                const res = await fetch('https://ipapi.co/json/');
-                const geo = await res.json();
-                city = geo.city || 'Не определен';
-                clientIp = geo.ip || '0.0.0.0';
+                const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+                if (isLocal) {
+                    clientIp = '127.0.0.1';
+                    city = 'Локальный хост';
+                } else {
+                    const res = await fetch('https://ipapi.co/json/');
+                    const geo = await res.json();
+                    city = geo.city || 'Не определен';
+                    clientIp = geo.ip || '0.0.0.0';
+                }
             } catch (e) { console.error("Geo error", e); }
 
             let utm = localStorage.getItem('stout_utm') || '';
@@ -2677,16 +2683,10 @@ const app = {
             const shareUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
 
             navigator.clipboard.writeText(shareUrl).then(() => {
-                app.alert("Ссылка скопирована, отправьте клиенту");
+                app.prompt("Ссылка успешно сгенерирована и скопирована в буфер обмена. Вы также можете скопировать её ниже:", shareUrl);
             }).catch(err => {
                 console.error('Ошибка копирования:', err);
-                const tempInput = document.createElement("input");
-                tempInput.value = shareUrl;
-                document.body.appendChild(tempInput);
-                tempInput.select();
-                document.execCommand("copy");
-                document.body.removeChild(tempInput);
-                app.alert("Ссылка скопирована, отправьте клиенту");
+                app.prompt("Ссылка успешно сгенерирована. Скопируйте её вручную:", shareUrl);
             });
 
             if (btn) {
@@ -3416,6 +3416,27 @@ const app = {
         setTimeout(() => {
             this.checkStatusNotifications();
         }, 3000);
+
+        // Подписка на обновления статусов смет в реальном времени (Supabase Realtime)
+        if (supabaseClient) {
+            supabaseClient
+                .channel('shared_invoices_updates')
+                .on(
+                    'postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'shared_invoices' },
+                    (payload) => {
+                        console.log('Realtime update received for shared_invoices:', payload);
+                        // Проверяем и показываем тост-уведомление
+                        app.checkStatusNotifications();
+                        // Если открыта админ-панель (дашборд), обновляем таблицу без перезагрузки
+                        let adminModal = document.getElementById('admin_modal_overlay');
+                        if (adminModal && adminModal.style.display === 'flex') {
+                            app.loadAdminData();
+                        }
+                    }
+                )
+                .subscribe();
+        }
     },
     toggleSwapUI: function (id) { if (this.state.showSwapFor === id) { this.state.showSwapFor = null; } else { this.state.showSwapFor = id; } this.render(); },
     cycleSwap: function (originalId) {
@@ -3809,25 +3830,11 @@ const app = {
                 else container.classList.add('locked-pro');
             }
 
-            // ПЕРЕХВАТ КЛИКА ДЛЯ ВСЕХ ЗАБЛОКИРОВАННЫХ ЭЛЕМЕНТОВ
             const isPremiumToggle = ['chk_cheaper', 'chk_scheme', 'chk_sku', 'chk_merge'].includes(elId);
             if (container.classList.contains('locked-guest') || container.classList.contains('locked-pro')) {
                 container.style.pointerEvents = 'auto';
-                if (!isPremiumToggle) {
-                    container.onclick = (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        this.checkAccess(reqLvl, e);
-                    };
-                } else {
-                    container.onclick = null; // Позволяем родителю (wrapper) обработать клик
-                }
                 if (el.tagName === 'INPUT') el.disabled = false; // Убираем жесткую блокировку клика, чтобы лейбл/свитч перехватывал клики
             } else {
-                // Если не заблокировано - снимаем перехватчик, но только если он был (не трогаем системные onclick)
-                if (container.onclick && (container.onclick.toString().includes('checkAccess') || isPremiumToggle)) {
-                    container.onclick = null;
-                }
                 if (el.tagName === 'INPUT') el.disabled = false;
             }
 
@@ -4978,7 +4985,7 @@ const app = {
             let loops = 0, mans = 0;
             const proc = (a, lbl) => {
                 if (a <= 0) return; let l = Math.ceil((a * 7) / 85); if (l === 1) l = 2; loops += l; let n = Math.ceil(l / 12);
-                for (let i = 0; i < n; i++) { let sz = Math.floor(l / n) + (i < (l % n) ? 1 : 0); let m = catalog.manifolds.find(x => x.loops === sz); if (m) { addToBill({ ...m, name: `Коллектор ТП ${sz} вых (${lbl})` }, 1, this.getDesc('manifold', sz, 'ufh')); mans++; if (useEco) { addToBill(catalog.mixing_units[0], 1, this.getDesc('ufh_mix')); addToBill(catalog.pumps_mix[0], 1, this.getDesc('pump_std')); } } }
+                for (let i = 0; i < n; i++) { let sz = Math.floor(l / n) + (i < (l % n) ? 1 : 0); let m = catalog.manifolds.find(x => x.loops === sz); if (m) { addToBill({ ...m, name: `Коллектор ТП ${sz} вых (${lbl})` }, 1, this.getDesc('manifold', sz, 'ufh')); mans++; if (!needCollector) { addToBill(catalog.mixing_units[0], 1, this.getDesc('ufh_mix')); addToBill(catalog.pumps_mix[0], 1, this.getDesc('pump_std')); } } }
             };
             proc(this.state.tp1, "1 этаж"); proc(this.state.tp2, "2 этаж");
             addToBill(catalog.parts[0], mans * 2, "Концевые фитинги."); addToBill(catalog.parts[3], loops * 2, "Евроконус 16 (ТП)."); addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.");

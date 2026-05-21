@@ -1378,11 +1378,16 @@
 
         function renderStatusBadge(obj) {
             const badgeEl = document.getElementById('status_badge');
+            const confirmBtn = document.querySelector('.fab-confirm');
+            const reviseBtn = document.querySelector('.fab-revise');
+            
             if (badgeEl) {
                 if (obj.status === 'confirmed') {
                     badgeEl.textContent = '✓ Смета согласована';
                     badgeEl.className = 'status-badge status-confirmed';
                     badgeEl.style.display = 'inline-flex';
+                    if (confirmBtn) confirmBtn.style.display = 'none';
+                    if (reviseBtn) reviseBtn.style.display = 'none';
                 } else if (obj.status === 'needs_revision') {
                     badgeEl.textContent = '✍ На доработке';
                     badgeEl.className = 'status-badge status-revision';
@@ -1390,8 +1395,13 @@
                     if (obj.client_comment) {
                         badgeEl.title = `Замечания: ${obj.client_comment}`;
                     }
+                    if (confirmBtn) confirmBtn.style.display = 'none';
+                    if (reviseBtn) reviseBtn.style.display = 'none';
                 } else {
                     badgeEl.style.display = 'none';
+                    // Re-show them if status goes back to 'sent' (just in case)
+                    if (confirmBtn) confirmBtn.style.display = '';
+                    if (reviseBtn) reviseBtn.style.display = '';
                 }
             }
         }
