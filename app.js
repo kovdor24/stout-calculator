@@ -2659,14 +2659,41 @@ const app = {
                 btn.disabled = true;
             }
 
+            // -- СТРОГАЯ ПРОВЕРКА СЕССИИ --
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            let dbUserId = null;
+            if (session) {
+                let { data: uData } = await supabaseClient.from('users').select('id').eq('auth_user_id', session.user.id).maybeSingle();
+                if (uData) dbUserId = uData.id;
+            } else if (tgUser && tgUser.authUserId) {
+                let { data: uData } = await supabaseClient.from('users').select('id').eq('auth_user_id', tgUser.authUserId).maybeSingle();
+                if (uData) dbUserId = uData.id;
+            }
+
+            if (!dbUserId && !isLocal) {
+                if (btn) { btn.innerHTML = origHtml; btn.disabled = false; }
+                app.alert("Ошибка: сессия не найдена. Попробуйте перезайти в аккаунт.");
+                return;
+            }
+            // -- КОНЕЦ ПРОВЕРКИ --
+
+            const insertPayload = {
+                object_info: object_info,
+                manager_info: manager_info,
+                items: items,
+                totals: totals
+            };
+            if (dbUserId) {
+                insertPayload.user_id = dbUserId; // Привязка к FK
+            }
+
+            if (this.state.shared_invoice_id) {
+                insertPayload.id = this.state.shared_invoice_id; // Используем существующий ID для UPSERT
+            }
+
             const { data, error } = await supabaseClient
                 .from('shared_invoices')
-                .insert([{
-                    object_info: object_info,
-                    manager_info: manager_info,
-                    items: items,
-                    totals: totals
-                }])
+                .upsert([insertPayload], { onConflict: 'id' })
                 .select('id')
                 .single();
 
