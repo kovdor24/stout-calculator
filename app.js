@@ -31,6 +31,190 @@ const ANALOG_MAP = {
 
 
 const app = {
+    // === PREMIUM CUSTOM DIALOGS ===
+    alert: function(msg, title = "Внимание") {
+        if (document.body.classList.contains('menu-open')) {
+            try { this.toggleMenu(); } catch(e) {}
+        }
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'calc-dialog-overlay';
+            
+            const card = document.createElement('div');
+            card.className = 'calc-dialog-card';
+            
+            const titleEl = document.createElement('h3');
+            titleEl.className = 'calc-dialog-title';
+            titleEl.innerText = title;
+            card.appendChild(titleEl);
+            
+            const msgEl = document.createElement('p');
+            msgEl.className = 'calc-dialog-message';
+            msgEl.innerText = msg;
+            card.appendChild(msgEl);
+            
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'calc-dialog-buttons';
+            
+            const okBtn = document.createElement('button');
+            okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
+            okBtn.innerText = 'OK';
+            okBtn.onclick = () => {
+                overlay.classList.remove('active');
+                setTimeout(() => {
+                    overlay.remove();
+                    resolve();
+                }, 200);
+            };
+            btnContainer.appendChild(okBtn);
+            card.appendChild(btnContainer);
+            overlay.appendChild(card);
+            document.body.appendChild(overlay);
+            
+            setTimeout(() => overlay.classList.add('active'), 10);
+        });
+    },
+
+    confirm: function(msg, title = "Подтверждение") {
+        if (document.body.classList.contains('menu-open')) {
+            try { this.toggleMenu(); } catch(e) {}
+        }
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'calc-dialog-overlay';
+            
+            const card = document.createElement('div');
+            card.className = 'calc-dialog-card';
+            
+            const titleEl = document.createElement('h3');
+            titleEl.className = 'calc-dialog-title';
+            titleEl.innerText = title;
+            card.appendChild(titleEl);
+            
+            const msgEl = document.createElement('p');
+            msgEl.className = 'calc-dialog-message';
+            msgEl.innerText = msg;
+            card.appendChild(msgEl);
+            
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'calc-dialog-buttons';
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
+            cancelBtn.innerText = 'Отмена';
+            cancelBtn.onclick = () => {
+                overlay.classList.remove('active');
+                setTimeout(() => {
+                    overlay.remove();
+                    resolve(false);
+                }, 200);
+            };
+            
+            const okBtn = document.createElement('button');
+            okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
+            okBtn.innerText = 'Да';
+            okBtn.onclick = () => {
+                overlay.classList.remove('active');
+                setTimeout(() => {
+                    overlay.remove();
+                    resolve(true);
+                }, 200);
+            };
+            
+            btnContainer.appendChild(cancelBtn);
+            btnContainer.appendChild(okBtn);
+            card.appendChild(btnContainer);
+            overlay.appendChild(card);
+            document.body.appendChild(overlay);
+            
+            setTimeout(() => overlay.classList.add('active'), 10);
+        });
+    },
+
+    prompt: function(msg, defaultValue = "", title = "Ввод данных") {
+        if (document.body.classList.contains('menu-open')) {
+            try { this.toggleMenu(); } catch(e) {}
+        }
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'calc-dialog-overlay';
+            
+            const card = document.createElement('div');
+            card.className = 'calc-dialog-card';
+            
+            const titleEl = document.createElement('h3');
+            titleEl.className = 'calc-dialog-title';
+            titleEl.innerText = title;
+            card.appendChild(titleEl);
+            
+            const msgEl = document.createElement('p');
+            msgEl.className = 'calc-dialog-message';
+            msgEl.innerText = msg;
+            card.appendChild(msgEl);
+            
+            const inputWrapper = document.createElement('div');
+            inputWrapper.className = 'calc-dialog-input-wrapper';
+            
+            const inputEl = document.createElement('input');
+            inputEl.type = 'text';
+            inputEl.className = 'calc-dialog-input';
+            inputEl.value = defaultValue;
+            inputWrapper.appendChild(inputEl);
+            card.appendChild(inputWrapper);
+            
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'calc-dialog-buttons';
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
+            cancelBtn.innerText = 'Отмена';
+            cancelBtn.onclick = () => {
+                overlay.classList.remove('active');
+                setTimeout(() => {
+                    overlay.remove();
+                    resolve(null);
+                }, 200);
+            };
+            
+            const okBtn = document.createElement('button');
+            okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
+            okBtn.innerText = 'OK';
+            
+            const submit = () => {
+                const val = inputEl.value;
+                overlay.classList.remove('active');
+                setTimeout(() => {
+                    overlay.remove();
+                    resolve(val);
+                }, 200);
+            };
+            
+            okBtn.onclick = submit;
+            inputEl.onkeydown = (e) => {
+                if (e.key === 'Enter') submit();
+                if (e.key === 'Escape') {
+                    overlay.classList.remove('active');
+                    setTimeout(() => {
+                        overlay.remove();
+                        resolve(null);
+                    }, 200);
+                }
+            };
+            
+            btnContainer.appendChild(cancelBtn);
+            btnContainer.appendChild(okBtn);
+            card.appendChild(btnContainer);
+            overlay.appendChild(card);
+            document.body.appendChild(overlay);
+            
+            setTimeout(() => {
+                overlay.classList.add('active');
+                inputEl.focus();
+                inputEl.select();
+            }, 10);
+        });
+    },
+
     _saveRateLimit: { count: 0, lastReset: 0 },
     _adminOffset: 0,
     _adminPageSize: 30,
@@ -259,11 +443,11 @@ const app = {
     },
 
     // Открыть ввод своего оборудования (аналог монтажных работ)
-    addCustomEqPrompt: function () {
-        let name = prompt("Введите наименование оборудования:");
+    addCustomEqPrompt: async function () {
+        let name = await app.prompt("Введите наименование оборудования:");
         if (!name) return;
-        let price = parseFloat(prompt("Введите цену за единицу, ₽:", "0")) || 0;
-        let qty = parseInt(prompt("Введите количество, шт:", "1")) || 1;
+        let price = parseFloat(await app.prompt("Введите цену за единицу, ₽:", "0")) || 0;
+        let qty = parseInt(await app.prompt("Введите количество, шт:", "1")) || 1;
 
         if (!this.state.userAddedEq) this.state.userAddedEq = [];
         this.state.userAddedEq.push({
@@ -503,7 +687,7 @@ const app = {
 
             let pName = this.state.projectName;
             if (!pName) {
-                pName = prompt("Введите название объекта для сохранения в облаке:", "Новый объект");
+                pName = await app.prompt("Введите название объекта для сохранения в облаке:", "Новый объект");
                 if (!pName) {
                     console.log("[saveToCloud] Сохранение отменено пользователем (ввод названия объекта)");
                     return false;
@@ -520,10 +704,10 @@ const app = {
                            localStorage.getItem('user_city');
             
             if (!userCity) {
-                userCity = prompt("Пожалуйста, укажите ваш город для корректного выставления счёта:");
+                userCity = await app.prompt("Пожалуйста, укажите ваш город для корректного выставления счёта:");
                 if (!userCity || userCity.trim() === '') {
                     console.log("[saveToCloud] Сохранение отменено пользователем (ввод города)");
-                    alert("Действие отменено: город обязателен для формирования счёта.");
+                    await app.alert("Действие отменено: город обязателен для формирования счёта.");
                     return false; // Прерываем выполнение
                 }
                 // Сохраняем город для текущей сессии
@@ -657,13 +841,18 @@ const app = {
         try {
             let uRow = null;
             if (session) {
-                let { data } = await supabaseClient.from('users').select('id, account_type').eq('auth_user_id', session.user.id).maybeSingle();
+                let { data } = await supabaseClient.from('users').select('id, account_type, email').eq('auth_user_id', session.user.id).maybeSingle();
                 uRow = data;
             } else if (tgUser) {
                 if (tgUser.authUserId) {
-                    let { data } = await supabaseClient.from('users').select('id, account_type').eq('auth_user_id', tgUser.authUserId).maybeSingle();
+                    let { data } = await supabaseClient.from('users').select('id, account_type, email').eq('auth_user_id', tgUser.authUserId).maybeSingle();
                     uRow = data;
                 }
+            }
+
+            // Фоллбек для локального тестирования
+            if (!uRow && isLocal) {
+                uRow = { id: '0279a53c-452b-474f-8626-08be2c2b32da', account_type: 'base', email: 'dima24ba@gmail.com' };
             }
 
             // Безопасность: если пользователь не найден в БД — не показываем ничего
@@ -672,9 +861,9 @@ const app = {
                 return;
             }
 
-            let query = supabaseClient.from('estimates').select('id, project_name, total_sum, created_at, user_id').order('created_at', { ascending: false }).limit(50);
+            let query = supabaseClient.from('estimates').select('id, project_name, total_sum, created_at, user_id, calc_data').order('created_at', { ascending: false }).limit(50);
             
-            const isAdmin = uRow.account_type === 'admin';
+            const isAdmin = uRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(uRow.email.toLowerCase());
             if (!isAdmin) {
                 // Обычный пользователь видит ТОЛЬКО свои сметы
                 query = query.eq('user_id', uRow.id);
@@ -682,23 +871,44 @@ const app = {
 
             const { data, error } = await query;
             if (error) throw error;
+
+            const estimates = data || [];
+            const sharedIds = estimates.map(e => e.calc_data?.shared_invoice_id).filter(Boolean);
+
+            let sharedStatuses = {};
+            if (sharedIds.length > 0) {
+                try {
+                    const { data: sharedList, error: sharedError } = await supabaseClient
+                        .from('shared_invoices')
+                        .select('id, object_info')
+                        .in('id', sharedIds);
+                    
+                    if (!sharedError && sharedList) {
+                        sharedList.forEach(item => {
+                            sharedStatuses[item.id] = item.object_info?.status || 'sent';
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error fetching shared invoice statuses:", e);
+                }
+            }
             
-            this._cloudEstimates = data || [];
+            this._cloudEstimates = estimates;
             this._currentUserRow = uRow;
-            this.renderCloudList(this._cloudEstimates);
+            this.renderCloudList(this._cloudEstimates, sharedStatuses);
         } catch (error) { 
             document.getElementById('cloud_list_content').innerHTML = `<div style="padding:20px; color:#EF4444;">Ошибка: ${error.message}</div>`;
         }
     },
 
-    renderCloudList: function (data) {
+    renderCloudList: function (data, sharedStatuses = {}) {
         const content = document.getElementById('cloud_list_content');
         if (!data || data.length === 0) {
             content.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 50px;">У вас пока нет сохраненных смет.</div>';
             return;
         }
 
-        const isAdmin = this._currentUserRow && this._currentUserRow.account_type === 'admin';
+        const isAdmin = this._currentUserRow && this._currentUserRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(this._currentUserRow.email.toLowerCase());
         const currentUserId = this._currentUserRow ? this._currentUserRow.id : null;
 
         let h = `
@@ -707,6 +917,7 @@ const app = {
                     <tr>
                         <th>Название объекта</th>
                         <th>Сумма</th>
+                        <th>Статус</th>
                         <th>Дата</th>
                         <th style="text-align:right;">Действия</th>
                     </tr>
@@ -719,10 +930,24 @@ const app = {
             const sum = item.total_sum ? item.total_sum.toLocaleString() + " ₽" : "0 ₽";
             const canDelete = isAdmin || (currentUserId && String(item.user_id) === String(currentUserId));
 
+            const sharedInvoiceId = item.calc_data?.shared_invoice_id;
+            let statusBadge = `<span class="status-badge-cabinet status-cabinet-saved">Сохранена</span>`;
+            if (sharedInvoiceId) {
+                const status = sharedStatuses[sharedInvoiceId];
+                if (status === 'confirmed') {
+                    statusBadge = `<span class="status-badge-cabinet status-cabinet-confirmed" title="Смета согласована клиентом">Согласована</span>`;
+                } else if (status === 'needs_revision') {
+                    statusBadge = `<span class="status-badge-cabinet status-cabinet-revision" title="Клиент просит внести правки">Отклонена</span>`;
+                } else {
+                    statusBadge = `<span class="status-badge-cabinet status-cabinet-sent" title="Ссылка отправлена клиенту">Отправлена</span>`;
+                }
+            }
+
             h += `
                 <tr class="active-row" style="cursor: pointer;" onclick="app.loadSingleEstimate('${item.id}')">
                     <td style="font-weight:600;">${item.project_name}</td>
                     <td style="color:var(--primary); font-weight:bold;">${sum}</td>
+                    <td>${statusBadge}</td>
                     <td style="color:var(--text-sec); font-size:12px;">${date}</td>
                     <td style="text-align:right;">
                         <div style="display:flex; justify-content:flex-end; gap:8px;">
@@ -747,7 +972,7 @@ const app = {
 
     deleteEstimate: async function (id, event) {
         if (event) event.stopPropagation();
-        if (!confirm("Вы уверены, что хотите удалить этот объект? Это действие необратимо.")) return;
+        if (!await app.confirm("Вы уверены, что хотите удалить этот объект? Это действие необратимо.")) return;
 
         try {
             const { error } = await supabaseClient.from('estimates').delete().eq('id', id);
@@ -785,8 +1010,8 @@ const app = {
             // Если мы не в режиме разработки, добавляем фильтр по текущему пользователю
             // (даже если RLS настроен, лишняя проверка на фронте не помешает)
             let userEmail = session ? session.user.email : (tgUser ? tgUser.email : null);
-            if (userEmail === 'dima24ba@gmail.com') {
-                // ИИ: Пропускаем фильтрацию для админа
+            if (userEmail && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(userEmail.toLowerCase())) {
+                // Пропускаем фильтрацию для админа
             } else if (session) {
                 let { data: uData } = await supabaseClient.from('users').select('id').eq('auth_user_id', session.user.id).maybeSingle();
                 if (uData) query = query.eq('user_id', uData.id);
@@ -822,6 +1047,9 @@ const app = {
     },
 
     logout: async function () {
+        this._currentUserRow = null;
+        this._cloudEstimates = null;
+        this._authHandling = false;
         await supabaseClient.auth.signOut();
         delete this.state.tgUser; this.state.accountType = 'base';
         this.saveState(); this.syncUI(); this.render();
@@ -849,17 +1077,33 @@ const app = {
         document.getElementById('profile_name_input').value = tgUser.first_name || tgUser.username || '';
         document.getElementById('profile_phone_input').value = tgUser.phone || '';
         document.getElementById('profile_city_input').value = tgUser.city || '';
+        if (document.getElementById('profile_email_input')) {
+            document.getElementById('profile_email_input').value = tgUser.email || '';
+        }
         document.getElementById('profile_modal_overlay').style.display = 'flex';
     },
     closeProfileModal: function () { document.getElementById('profile_modal_overlay').style.display = 'none'; },
 
     showAdminModal: function () {
+        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        let adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
+        if (!tgUser || !tgUser.email || !adminEmails.includes(tgUser.email.toLowerCase())) {
+            alert("Доступ запрещен.");
+            return;
+        }
         document.getElementById('admin_modal_overlay').style.display = 'flex';
         this.loadAdminData();
     },
     closeAdminModal: function () { document.getElementById('admin_modal_overlay').style.display = 'none'; },
 
     loadAdminData: async function (offset = 0) {
+        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        let adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
+        if (!tgUser || !tgUser.email || !adminEmails.includes(tgUser.email.toLowerCase())) {
+            const content = document.getElementById('admin_content');
+            if (content) content.innerHTML = '<div style="padding:20px; color:#EF4444;">Доступ запрещен.</div>';
+            return;
+        }
         this._adminOffset = offset;
         const content = document.getElementById('admin_content');
         if (content) content.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 50px;">Загрузка данных...</div>';
@@ -876,12 +1120,12 @@ const app = {
             // 2. Fetch Estimates for these specific users to calc LTV in the list
             const userIds = users.map(u => u.id);
             let { data: userEsts, error: errUE } = await supabaseClient.from('estimates')
-                .select('id, user_id, project_name, total_sum, calc_data, created_at')
+                .select('id, user_id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at')
                 .in('user_id', userIds);
 
             // 3. Fetch Recent Estimates (Fixed 50)
             let { data: recentEsts, error: errRE } = await supabaseClient.from('estimates')
-                .select('id, project_name, total_sum, created_at, users(username, phone)')
+                .select('id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at, users(username, phone)')
                 .order('created_at', { ascending: false })
                 .limit(50);
 
@@ -1166,7 +1410,7 @@ const app = {
     },
     exportAdminToExcel: function () {
         let users = this.adminData.users;
-        let estimates = this.adminData.estimates;
+        let estimates = this.adminData.userEstimates || [];
         let csv = '\uFEFF';
         csv += "Имя;Телефон;Email;Telegram;Тариф;Регистрация;Локация;UTM Источник;Кол-во смет;Ср. площадь (м2);LTV (Сумма руб)\n";
         users.forEach(u => {
@@ -1310,7 +1554,7 @@ const app = {
         h += `</tbody></table>`;
         document.getElementById('admin_content').innerHTML = h;
     },
-    viewAdminEstimate: function (estId) {
+    viewAdminEstimate: async function (estId) {
         let est = (this.adminData.userEstimates || []).find(e => String(e.id) === String(estId)) || (this.adminData.recentEstimates || []).find(e => String(e.id) === String(estId));
         if (!est) return;
         let author = est.users ? (est.users.username || 'Без имени') : 'Неизвестен';
@@ -1333,6 +1577,12 @@ const app = {
                             <div><b style="color: var(--text-sec);">Оборудование:</b> <span style="color: #6366F1; font-weight: bold;">${est.eq_sum ? est.eq_sum.toLocaleString() : '0'} ₽</span></div>
                             <div><b style="color: var(--text-sec);">Монтажные работы:</b> <span style="color: #F97316; font-weight: bold;">${est.works_sum ? est.works_sum.toLocaleString() : '0'} ₽</span></div>
                             <div style="grid-column: span 2; font-size: 14px; margin-top: 5px;"><b style="color: var(--text-sec);">Итоговая сумма:</b> <span style="color:var(--primary); font-weight:bold; font-size: 18px;">${est.total_sum ? est.total_sum.toLocaleString() : '0'} ₽</span></div>
+                            
+                            <div style="grid-column: span 2; height: 1px; background: var(--border); margin: 5px 0;"></div>
+                            
+                            <div id="admin_shared_status_container" style="grid-column: span 2;">
+                                <div style="color: var(--text-sec); font-size: 12px;">Загрузка статуса предложения...</div>
+                            </div>
                         </div>
                         <div style="font-size:12px; color:var(--text-sec); margin-bottom: 15px; line-height: 1.4;">
                             <i>* В базе данных сохраняются только общие суммы.<br>Чтобы посмотреть детальную спецификацию по позициям, скопируйте код ниже, закройте окно и нажмите иконку 📥 (Загрузить код).</i>
@@ -1341,10 +1591,111 @@ const app = {
                     </div>
                 `;
         document.getElementById('admin_content').innerHTML = h;
+
+        const sharedInvoiceId = est.calc_data?.shared_invoice_id;
+        const statusContainer = document.getElementById('admin_shared_status_container');
+        
+        if (!sharedInvoiceId) {
+            if (statusContainer) {
+                statusContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <b style="color: var(--text-sec);">Статус предложения:</b>
+                        <span class="status-badge-cabinet status-cabinet-saved">Сохранена</span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-sec); margin-top: 5px;">Клиентская ссылка еще не создавалась.</div>
+                `;
+            }
+            return;
+        }
+
+        try {
+            const { data: sharedInvoice, error: sharedError } = await supabaseClient
+                .from('shared_invoices')
+                .select('id, object_info, created_at')
+                .eq('id', sharedInvoiceId)
+                .maybeSingle();
+
+            if (sharedError) throw sharedError;
+
+            if (!sharedInvoice) {
+                if (statusContainer) {
+                    statusContainer.innerHTML = `
+                        <div style="color: #EF4444; font-size: 12px;">⚠️ Запись коммерческого предложения удалена или отсутствует в базе.</div>
+                    `;
+                }
+                return;
+            }
+
+            const objInfo = sharedInvoice.object_info || {};
+            const status = objInfo.status || 'sent';
+            const clientComment = objInfo.client_comment || '';
+            const statusUpdatedAt = objInfo.status_updated_at || sharedInvoice.created_at;
+
+            let statusBadgeHTML = '';
+            if (status === 'confirmed') {
+                statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-confirmed">✓ Согласована</span>`;
+            } else if (status === 'needs_revision') {
+                statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-revision">✍ Отклонена (на доработке)</span>`;
+            } else {
+                statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-sent">Отправлена клиенту</span>`;
+            }
+
+            const formatDateTime = (isoString) => {
+                if (!isoString) return '—';
+                try {
+                    const d = new Date(isoString);
+                    return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                } catch (e) {
+                    return isoString;
+                }
+            };
+
+            let commentBlockHTML = '';
+            if (status === 'needs_revision' && clientComment) {
+                commentBlockHTML = `
+                    <div style="margin-top: 12px; background: rgba(239, 68, 68, 0.05); border-left: 4px solid #EF4444; padding: 10px 14px; border-radius: 6px;">
+                        <div style="font-weight: 700; color: #EF4444; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.05em;">✍ Комментарий заказчика (Правки):</div>
+                        <div style="font-size: 12.5px; color: var(--text-main); font-style: italic; white-space: pre-wrap; line-height: 1.4;">"${clientComment}"</div>
+                    </div>
+                `;
+            } else if (status === 'confirmed') {
+                commentBlockHTML = `
+                    <div style="margin-top: 12px; background: rgba(16, 185, 129, 0.05); border-left: 4px solid #10B981; padding: 10px 14px; border-radius: 6px;">
+                        <div style="font-weight: 700; color: #10B981; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.05em;">✓ Комментарий при согласовании:</div>
+                        <div style="font-size: 12.5px; color: var(--text-main); font-style: italic; white-space: pre-wrap; line-height: 1.4;">${clientComment ? `"${clientComment}"` : '<i>Без дополнительных комментариев</i>'}</div>
+                    </div>
+                `;
+            }
+
+            if (statusContainer) {
+                statusContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <b style="color: var(--text-sec);">Статус предложения:</b>
+                            ${statusBadgeHTML}
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-sec);">
+                            <b>Дата изменения:</b> ${formatDateTime(statusUpdatedAt)}
+                        </div>
+                    </div>
+                    ${commentBlockHTML}
+                    <div style="margin-top: 12px; display: flex; gap: 10px;">
+                        <a href="invoice.html?id=${sharedInvoiceId}" target="_blank" class="btn-header-blue" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: 28px; padding: 0 12px; background: transparent; border: 1px solid var(--primary); color: var(--primary);">🔗 Открыть КП клиента</a>
+                    </div>
+                `;
+            }
+        } catch (e) {
+            console.error("Error loading shared status details:", e);
+            if (statusContainer) {
+                statusContainer.innerHTML = `
+                    <div style="color: #EF4444; font-size: 12px;">⚠️ Ошибка загрузки статуса предложения с сервера.</div>
+                `;
+            }
+        }
     },
-    copyAdminEstimateCode: function (estId) {
-        let est = this.adminData.estimates.find(e => String(e.id) === String(estId));
-        if (!est || !est.calc_data) { alert('Нет данных для копирования'); return; }
+    copyAdminEstimateCode: async function (estId) {
+        let est = (this.adminData.userEstimates || []).find(e => String(e.id) === String(estId)) || (this.adminData.recentEstimates || []).find(e => String(e.id) === String(estId));
+        if (!est || !est.calc_data) { await app.alert('Нет данных для копирования'); return; }
         let exportState = {};
         let st = est.calc_data;
         for (let key in st) {
@@ -1356,11 +1707,11 @@ const app = {
             exportState[key] = val;
         }
         let settings = btoa(unescape(encodeURIComponent(JSON.stringify(exportState))));
-        navigator.clipboard.writeText(settings).then(() => {
-            alert('✅ Код сметы скопирован!\n\nЗакройте админку, нажмите иконку 📥 (Загрузить код) в верхней панели и вставьте его.');
-        }).catch(err => {
+        navigator.clipboard.writeText(settings).then(async () => {
+            await app.alert('✅ Код сметы скопирован!\n\nЗакройте админку, нажмите иконку 📥 (Загрузить код) в верхней панели и вставьте его.');
+        }).catch(async err => {
             console.error('Ошибка копирования: ', err);
-            prompt('Скопируйте этот код вручную:', settings);
+            await app.prompt('Скопируйте этот код вручную:', settings);
         });
     },
     switchAuthTab: function(tab) {
@@ -1821,17 +2172,20 @@ const app = {
         let name = document.getElementById('profile_name_input').value.trim();
         let phone = document.getElementById('profile_phone_input').value.trim();
         let city = document.getElementById('profile_city_input').value.trim();
+        let email = document.getElementById('profile_email_input') ? document.getElementById('profile_email_input').value.trim() : '';
         if (!name) { alert('Имя не может быть пустым.'); return; }
         if (!city) { alert('Пожалуйста, укажите ваш город. Это необходимо для формирования смет.'); return; }
         if (phone && phone.length < 18) { alert('Введите корректный номер телефона.'); return; }
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Пожалуйста, введите корректный email.'); return; }
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         if (!tgUser) return;
         this.state.tgUser.first_name = name;
         this.state.tgUser.phone = phone;
         this.state.tgUser.city = city;
+        this.state.tgUser.email = email;
         this.saveState();
         try {
-            let query = supabaseClient.from('users').update({ username: name, phone: phone, city: city });
+            let query = supabaseClient.from('users').update({ username: name, phone: phone, city: city, email: email });
             // Используем auth_user_id как надёжный уникальный ключ
             if (tgUser.authUserId) query = query.eq('auth_user_id', tgUser.authUserId);
             else if (tgUser.email) query = query.eq('email', tgUser.email);
@@ -1877,8 +2231,8 @@ const app = {
         return os + " | " + browser;
     },
 
-    deleteWork: function (name) {
-        if (!confirm(`Удалить работу "${name}"?`)) return;
+    deleteWork: async function (name) {
+        if (!await app.confirm(`Удалить работу "${name}"?`)) return;
         if (!this.state.deletedWorks) this.state.deletedWorks = [];
         this.state.deletedWorks.push(name);
         // Если это была ручная работа - удаляем и из массива ручных
@@ -1889,12 +2243,12 @@ const app = {
         this.render();
     },
 
-    addCustomWork: function () {
+    addCustomWork: async function () {
         if (!this.checkAccess('pro')) return;
-        let name = prompt("Введите название работы:", "Дополнительная работа");
+        let name = await app.prompt("Введите название работы:", "Дополнительная работа");
         if (!name) return;
-        let q = parseFloat(prompt("Количество:", "1").replace(',', '.')) || 1;
-        let price = parseFloat(prompt("Цена за единицу (₽):", "1000").replace(',', '.')) || 0;
+        let q = parseFloat((await app.prompt("Количество:", "1")).replace(',', '.')) || 1;
+        let price = parseFloat((await app.prompt("Цена за единицу (₽):", "1000")).replace(',', '.')) || 0;
 
         if (!this.state.userAddedWorks) this.state.userAddedWorks = [];
         this.state.userAddedWorks.push({ name: name, q: q, price: price, unit: "шт", group: "5. Дополнительные работы" });
@@ -2091,13 +2445,15 @@ const app = {
             res: this.state.res,
             power: pwr,
             region: regionName,
-            date: new Date().toLocaleDateString('ru-RU')
+            date: new Date().toLocaleDateString('ru-RU'),
+            showSku: !!this.state.showSku
         };
 
         let manager_info = {
             name: tgUser.first_name || tgUser.username || '',
             phone: tgUser.phone || '',
-            city: tgUser.city || ''
+            city: tgUser.city || '',
+            email: (this.state.tgUser?.email || this.state.user?.email || localStorage.getItem('user_email') || '')
         };
 
         let items = {
@@ -2134,6 +2490,12 @@ const app = {
             if (error) throw error;
 
             const shareId = data.id;
+
+            // Сохраняем ID сгенерированного коммерческого предложения в состояние и БД
+            this.state.shared_invoice_id = shareId;
+            this.saveState();
+            await this.saveToCloud(true);
+
             const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
             const shareUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
 
@@ -2408,7 +2770,7 @@ const app = {
 
         let pName = this.state.projectName;
         if (!pName) {
-            pName = prompt("Введите название объекта для сохранения в облаке:", "Новый объект");
+            pName = await app.prompt("Введите название объекта для сохранения в облаке:", "Новый объект");
             if (!pName) {
                 console.log("[sendEmail] Отменено пользователем (ввод названия объекта)");
                 return;
@@ -2424,10 +2786,10 @@ const app = {
                        localStorage.getItem('user_city');
         
         if (!userCity) {
-            userCity = prompt("Пожалуйста, укажите ваш город для корректного выставления счёта:");
+            userCity = await app.prompt("Пожалуйста, укажите ваш город для корректного выставления счёта:");
             if (!userCity || userCity.trim() === '') {
                 console.log("[sendEmail] Отменено пользователем (ввод города)");
-                alert("Действие отменено: город обязателен для формирования счёта.");
+                await app.alert("Действие отменено: город обязателен для формирования счёта.");
                 return;
             }
             localStorage.setItem('user_city', userCity.trim());
@@ -2551,7 +2913,7 @@ const app = {
         }
     },
     loadFromCode: async function () {
-        let code = prompt("Вставьте код расчета (например, HC-240409-S4DT или старый JSON):");
+        let code = await app.prompt("Вставьте код расчета (например, HC-240409-S4DT или старый JSON):");
         if (!code) return;
 
         code = code.trim();
@@ -2617,8 +2979,8 @@ const app = {
         }
     },
     // === НОВАЯ ФУНКЦИЯ СБРОСА ===
-    reset: function () {
-        if (!confirm("Сбросить все настройки и начать расчет заново?")) return;
+    reset: async function () {
+        if (!await app.confirm("Сбросить все настройки и начать расчет заново?")) return;
 
         // Запоминаем важные данные перед сбросом
         const currentDarkMode = this.state.darkMode;
@@ -2667,6 +3029,11 @@ const app = {
         }
     },
     init: function () {
+        // Global premium modal overrides
+        window.alert = (msg) => app.alert(msg);
+        window.confirm = (msg) => app.confirm(msg);
+        window.prompt = (msg, def) => app.prompt(msg, def);
+
         this.captureUTM();
         if (localStorage.getItem('stout_save')) {
             try { this.state = { ...this.state, ...JSON.parse(localStorage.getItem('stout_save')) }; } catch (e) { console.error("Ошибка загрузки сохранения", e); }
@@ -3103,7 +3470,7 @@ const app = {
                 let adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
                 let adminBtn = (tgUser.email && adminEmails.includes(tgUser.email.toLowerCase()))
                     ? `<div style="font-size: 12px; font-weight: 700; color: #10B981; cursor: pointer; border: 1px solid #10B981; padding: 4px 10px; border-radius: 8px; background: #ECFDF5; margin-right: 10px;" onclick="app.showAdminModal()" title="Панель владельца">👑 Админка</div>`
-                    : '';
+                    : `<div style="font-size: 12px; font-weight: 700; color: var(--primary); cursor: pointer; border: 1px solid var(--primary); padding: 4px 10px; border-radius: 8px; background: var(--primary-light); margin-right: 10px;" onclick="app.loadFromCloudList()" title="Мой кабинет (Мои сметы)">📁 Мои сметы</div>`;
 
                 authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);">${adminBtn}<div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} <span style="border-bottom: 1px dashed var(--text-sec); margin-left: 5px;">${uName}</span> ${badge}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;
             } else {

@@ -278,6 +278,7 @@
         .col-idx { width: 35px; text-align: center; color: #9CA3AF; }
         .col-img { width: 50px; text-align: center; }
         .col-sku { width: 100px; font-family: monospace; color: var(--text-sec); }
+        .hide-sku .col-sku { display: none !important; }
         .col-name { font-weight: 600; color: var(--text-main); }
         .col-brand { width: 80px; text-align: center; font-size: 11px; }
         .col-unit { width: 50px; text-align: center; color: var(--text-sec); }
@@ -390,30 +391,227 @@
             line-height: 1.5;
         }
 
-        /* Floating print action */
-        .print-fab {
+        /* Floating Action Buttons */
+        .fab-container {
             position: fixed;
             bottom: 30px;
             right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1000;
+        }
+        
+        .fab-btn {
             width: 56px;
             height: 56px;
             border-radius: 50%;
-            background-color: var(--primary);
-            color: #fff;
             border: none;
-            box-shadow: 0 4px 10px rgba(30, 58, 138, 0.3);
+            color: #fff;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
-            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
         }
 
-        .print-fab:hover {
-            transform: scale(1.1);
-            background-color: #1D4ED8;
-            box-shadow: 0 6px 14px rgba(30, 58, 138, 0.4);
+        .fab-btn:hover {
+            transform: scale(1.1) translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+        }
+        
+        .fab-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        .fab-confirm {
+            background-color: #10B981; /* Emerald Green */
+        }
+        .fab-confirm:hover {
+            background-color: #059669;
+        }
+        
+        .fab-print {
+            background-color: #3B82F6; /* Blue */
+        }
+        .fab-print:hover {
+            background-color: #2563EB;
+        }
+        
+        .fab-revise {
+            background-color: #EF4444; /* Red */
+        }
+        .fab-revise:hover {
+            background-color: #DC2626;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* Modal Card */
+        .modal-card {
+            background: var(--surface);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 20px;
+        }
+        
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-sec);
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .modal-close-btn:hover {
+            color: var(--text-main);
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-body p {
+            color: var(--text-sec);
+            font-size: 13px;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        
+        .modal-body textarea {
+            width: 100%;
+            height: 120px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 13px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s ease;
+            box-sizing: border-box;
+        }
+        
+        .modal-body textarea:focus {
+            border-color: #3B82F6;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            background: #F9FAFB;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .modal-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s ease;
+        }
+        
+        .btn-cancel {
+            background: #E5E7EB;
+            color: var(--text-sec);
+        }
+        
+        .btn-cancel:hover {
+            background: #D1D5DB;
+        }
+        
+        .btn-submit {
+            background: #EF4444;
+            color: #fff;
+        }
+        
+        .btn-submit:hover {
+            background: #DC2626;
+        }
+        
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 5px;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+        }
+        
+        .status-confirmed {
+            background-color: #D1FAE5;
+            color: #065F46;
+            border: 1px solid #A7F3D0;
+        }
+        
+        .status-revision {
+            background-color: #FEE2E2;
+            color: #991B1B;
+            border: 1px solid #FCA5A5;
         }
 
         /* Responsive */
@@ -515,8 +713,129 @@
                 box-shadow: none;
                 page-break-inside: avoid;
             }
+
+            .header-main {
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: flex-start !important;
+                gap: 40px !important;
+                max-width: 800px !important;
+            }
+            .header-logo {
+                width: 80px !important;
+                flex: 0 0 80px !important;
+            }
+            .header-addr {
+                flex: 0 0 300px !important;
+                max-width: 300px !important;
+            }
+            .header-bank {
+                flex: 0 0 300px !important;
+                max-width: 300px !important;
+            }
+            .spec-table tr {
+                page-break-inside: avoid !important;
+            }
         }
-    </style>
+    
+/* === PREMIUM CUSTOM DIALOGS === */
+.calc-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999999 !important;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.calc-dialog-overlay.active {
+    opacity: 1;
+}
+
+.calc-dialog-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    width: 90%;
+    max-width: 440px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: scale(0.9);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-sizing: border-box;
+}
+
+.calc-dialog-overlay.active .calc-dialog-card {
+    transform: scale(1);
+}
+
+.calc-dialog-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0;
+    line-height: 1.4;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.calc-dialog-message {
+    font-size: 14px;
+    color: var(--text-sec);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.calc-dialog-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.calc-dialog-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.calc-dialog-btn-cancel {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text-sec);
+}
+
+.calc-dialog-btn-cancel:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-color: transparent;
+}
+
+.calc-dialog-btn-confirm {
+    background: var(--primary);
+    color: white;
+}
+
+.calc-dialog-btn-confirm:hover {
+    background: #1D4ED8;
+}
+
+</style>
 </head>
 <body>
 
@@ -526,14 +845,48 @@
         <div class="preloader-text">Загрузка коммерческого предложения...</div>
     </div>
 
-    <!-- Floating Action Button for printing -->
-    <button class="print-fab no-print" onclick="window.print()" title="Распечатать или сохранить в PDF">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 6 2 18 2 18 9"></polyline>
-            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-            <rect x="6" y="14" width="12" height="8"></rect>
-        </svg>
-    </button>
+    <!-- Floating Action Buttons -->
+    <div class="fab-container no-print">
+        <!-- Confirm Button (Green checkmark) -->
+        <button class="fab-btn fab-confirm" onclick="confirmInvoice()" title="Подтвердить КП">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        </button>
+        <!-- Print Button (Blue printer) -->
+        <button class="fab-btn fab-print" onclick="window.print()" title="Распечатать или сохранить в PDF">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+        </button>
+        <!-- Revise Button (Red cross) -->
+        <button class="fab-btn fab-revise" onclick="openRevisionModal()" title="Есть замечания / правки">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Revision Modal -->
+    <div id="revision_modal" class="modal-overlay no-print" onclick="if(event.target === this) closeRevisionModal();">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Замечания и правки к КП</h3>
+                <button class="modal-close-btn" onclick="closeRevisionModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Пожалуйста, напишите, какие изменения или дополнения требуются в коммерческом предложении. Ваш менеджер получит уведомление и внесет корректировки.</p>
+                <textarea id="revision_text" placeholder="Введите Ваши замечания по оборудованию или монтажным работам..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-cancel" onclick="closeRevisionModal()">Отмена</button>
+                <button class="modal-btn btn-submit" id="btn_submit_revision" onclick="submitRevision()">Отправить правки</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Error Screen container -->
     <div id="error_screen" style="display: none;">
@@ -585,6 +938,7 @@
         <!-- Object Context Details -->
         <section class="title-block">
             <h1 id="proposal_title">Коммерческое предложение</h1>
+            <div id="status_badge" class="status-badge" style="display: none;"></div>
             <div class="object-grid">
                 <div class="obj-item">
                     <span class="obj-lbl">Объект</span>
@@ -683,9 +1037,111 @@
 
     <!-- Load and Render script -->
     <script>
+        // === PREMIUM CUSTOM DIALOGS OVERRIDES ===
+        function customAlert(msg, title = "Внимание") {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'calc-dialog-overlay';
+                
+                const card = document.createElement('div');
+                card.className = 'calc-dialog-card';
+                
+                const titleEl = document.createElement('h3');
+                titleEl.className = 'calc-dialog-title';
+                titleEl.innerText = title;
+                card.appendChild(titleEl);
+                
+                const msgEl = document.createElement('p');
+                msgEl.className = 'calc-dialog-message';
+                msgEl.innerText = msg;
+                card.appendChild(msgEl);
+                
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'calc-dialog-buttons';
+                
+                const okBtn = document.createElement('button');
+                okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
+                okBtn.innerText = 'OK';
+                okBtn.onclick = () => {
+                    overlay.classList.remove('active');
+                    setTimeout(() => {
+                        overlay.remove();
+                        resolve();
+                    }, 200);
+                };
+                btnContainer.appendChild(okBtn);
+                card.appendChild(btnContainer);
+                overlay.appendChild(card);
+                document.body.appendChild(overlay);
+                
+                setTimeout(() => overlay.classList.add('active'), 10);
+            });
+        }
+
+        function customConfirm(msg, title = "Подтверждение") {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'calc-dialog-overlay';
+                
+                const card = document.createElement('div');
+                card.className = 'calc-dialog-card';
+                
+                const titleEl = document.createElement('h3');
+                titleEl.className = 'calc-dialog-title';
+                titleEl.innerText = title;
+                card.appendChild(titleEl);
+                
+                const msgEl = document.createElement('p');
+                msgEl.className = 'calc-dialog-message';
+                msgEl.innerText = msg;
+                card.appendChild(msgEl);
+                
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'calc-dialog-buttons';
+                
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
+                cancelBtn.innerText = 'Отмена';
+                cancelBtn.onclick = () => {
+                    overlay.classList.remove('active');
+                    setTimeout(() => {
+                        overlay.remove();
+                        resolve(false);
+                    }, 200);
+                };
+                
+                const okBtn = document.createElement('button');
+                okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
+                okBtn.innerText = 'Да';
+                okBtn.onclick = () => {
+                    overlay.classList.remove('active');
+                    setTimeout(() => {
+                        overlay.remove();
+                        resolve(true);
+                    }, 200);
+                };
+                
+                btnContainer.appendChild(cancelBtn);
+                btnContainer.appendChild(okBtn);
+                card.appendChild(btnContainer);
+                overlay.appendChild(card);
+                document.body.appendChild(overlay);
+                
+                setTimeout(() => overlay.classList.add('active'), 10);
+            });
+        }
+
+        window.alert = customAlert;
+        window.confirm = customConfirm;
+
+        let supabaseClient;
+        let invoiceId;
+        let invoiceData;
+
         document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
+            invoiceId = id;
 
             const preloader = document.getElementById('preloader');
             const errorScreen = document.getElementById('error_screen');
@@ -704,7 +1160,7 @@
             const supabaseKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';
             
             try {
-                const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+                supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
                 // Fetch invoice record from shared_invoices
                 const { data, error } = await supabaseClient
@@ -716,6 +1172,8 @@
                 if (error || !data) {
                     throw new Error(error ? error.message : "Invoice not found");
                 }
+
+                invoiceData = data;
 
                 // Render dynamic details
                 renderInvoice(data);
@@ -736,6 +1194,24 @@
         });
 
         function renderInvoice(data) {
+            // 0. Determine if SKU should be shown
+            const urlParams = new URLSearchParams(window.location.search);
+            const obj = data.object_info || {};
+            
+            let showSku = true;
+            if (urlParams.has('show_sku')) {
+                const param = urlParams.get('show_sku');
+                showSku = !(param === 'false' || param === '0');
+            } else if (obj.hasOwnProperty('showSku')) {
+                showSku = !!obj.showSku;
+            } else if (obj.hasOwnProperty('show_sku')) {
+                showSku = !!obj.show_sku;
+            }
+
+            if (!showSku) {
+                document.body.classList.add('hide-sku');
+            }
+
             // 1. Manager info
             const mgr = data.manager_info || {};
             document.getElementById('mgr_name').textContent = mgr.name || 'Менеджер';
@@ -743,9 +1219,24 @@
             document.getElementById('mgr_city').textContent = mgr.city || 'Москва';
 
             // 2. Object Info
-            const obj = data.object_info || {};
             document.getElementById('obj_name').textContent = obj.projectName || 'Новый объект';
-            document.getElementById('proposal_title').textContent = `Коммерческое предложение: ${obj.projectName || 'Объект'}`;
+            
+            // Determine sequence number
+            let sequenceNum = '';
+            if (data.sequence_id) {
+                sequenceNum = data.sequence_id;
+            } else if (obj.sequence_id) {
+                sequenceNum = obj.sequence_id;
+            } else if (obj.sequenceId) {
+                sequenceNum = obj.sequenceId;
+            } else if (data.id && typeof data.id === 'string' && data.id.length >= 4) {
+                const last4 = data.id.substring(data.id.length - 4);
+                const parsed = parseInt(last4, 16);
+                sequenceNum = !isNaN(parsed) ? parsed : '0001';
+            } else {
+                sequenceNum = '0001';
+            }
+            document.getElementById('proposal_title').textContent = `КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ № ${sequenceNum}`;
             document.getElementById('obj_area').textContent = `${obj.area || 0} м²`;
             document.getElementById('obj_floors').textContent = obj.floors || '1';
             document.getElementById('obj_power').textContent = `${obj.power || 0} кВт`;
@@ -786,11 +1277,12 @@
                 });
 
                 let globalIdx = 1;
+                const colspanVal = showSku ? 9 : 8;
                 Object.keys(grouped).forEach(sectionTitle => {
                     // Group section header row
                     const secHeaderTr = document.createElement('tr');
                     secHeaderTr.className = 'group-row';
-                    secHeaderTr.innerHTML = `<td colspan="9">${sectionTitle}</td>`;
+                    secHeaderTr.innerHTML = `<td colspan="${colspanVal}">${sectionTitle}</td>`;
                     tbody.appendChild(secHeaderTr);
 
                     let secSum = 0;
@@ -824,7 +1316,7 @@
                     const subtotalTr = document.createElement('tr');
                     subtotalTr.className = 'subtotal-row';
                     subtotalTr.innerHTML = `
-                        <td colspan="9">Итого по разделу: ${secSum.toLocaleString()} ₽</td>
+                        <td colspan="${colspanVal}">Итого по разделу: ${secSum.toLocaleString()} ₽</td>
                     `;
                     tbody.appendChild(subtotalTr);
                 });
@@ -876,6 +1368,161 @@
                     tbody.appendChild(subtotalTr);
                 });
             }
+
+            // 5. Render Status Badge
+            renderStatusBadge(obj);
+        }
+
+        function renderStatusBadge(obj) {
+            const badgeEl = document.getElementById('status_badge');
+            if (badgeEl) {
+                if (obj.status === 'confirmed') {
+                    badgeEl.textContent = '✓ Смета согласована';
+                    badgeEl.className = 'status-badge status-confirmed';
+                    badgeEl.style.display = 'inline-flex';
+                } else if (obj.status === 'needs_revision') {
+                    badgeEl.textContent = '✍ На доработке';
+                    badgeEl.className = 'status-badge status-revision';
+                    badgeEl.style.display = 'inline-flex';
+                    if (obj.client_comment) {
+                        badgeEl.title = `Замечания: ${obj.client_comment}`;
+                    }
+                } else {
+                    badgeEl.style.display = 'none';
+                }
+            }
+        }
+
+        async function updateInvoiceStatus(status, comment = null) {
+            if (!invoiceId || !supabaseClient || !invoiceData) {
+                alert("Ошибка: данные сметы не загружены.");
+                return;
+            }
+
+            // We must update the `object_info` field.
+            const updatedObjectInfo = { ...(invoiceData.object_info || {}) };
+            updatedObjectInfo.status = status;
+            if (comment !== null) {
+                updatedObjectInfo.client_comment = comment;
+            }
+            updatedObjectInfo.status_updated_at = new Date().toISOString();
+
+            try {
+                // Show a loading spinner or disable buttons
+                if (status === 'confirmed') {
+                    const btn = document.querySelector('.fab-confirm');
+                    if (btn) btn.disabled = true;
+                } else if (status === 'needs_revision') {
+                    const btn = document.getElementById('btn_submit_revision');
+                    if (btn) btn.disabled = true;
+                }
+
+                const { error } = await supabaseClient
+                    .from('shared_invoices')
+                    .update({ object_info: updatedObjectInfo })
+                    .eq('id', invoiceId);
+
+                if (error) throw error;
+
+                // Update local state
+                invoiceData.object_info = updatedObjectInfo;
+
+                // Re-render status badge
+                renderStatusBadge(updatedObjectInfo);
+
+                // Send email notification to manager
+                sendStatusEmailNotification(status, comment);
+
+                // Show success
+                if (status === 'confirmed') {
+                    alert("Коммерческое предложение успешно подтверждено! Менеджер уведомлен.");
+                } else {
+                    alert("Замечания успешно отправлены менеджеру.");
+                    closeRevisionModal();
+                }
+            } catch (err) {
+                console.error("[updateInvoiceStatus] Error:", err);
+                alert("Произошла ошибка при обновлении статуса: " + err.message);
+            } finally {
+                // Enable buttons back
+                const btnConfirm = document.querySelector('.fab-confirm');
+                if (btnConfirm) btnConfirm.disabled = false;
+                const btnSubmit = document.getElementById('btn_submit_revision');
+                if (btnSubmit) btnSubmit.disabled = false;
+            }
+        }
+
+        async function sendStatusEmailNotification(status, comment) {
+            try {
+                const managerEmail = invoiceData?.manager_info?.email;
+                if (!managerEmail) {
+                    console.log("[sendStatusEmailNotification] No manager email found, skipping notification.");
+                    return;
+                }
+
+                const projectName = invoiceData?.object_info?.projectName || 'Новый объект';
+                const statusText = status === 'confirmed' ? 'Согласована' : 'Отклонена (требует доработки)';
+                const invoiceUrl = window.location.href;
+
+                console.log("[sendStatusEmailNotification] Sending status update to:", managerEmail);
+
+                const response = await fetch('mail_status.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        to: managerEmail,
+                        projectName: projectName,
+                        statusText: statusText,
+                        comment: comment || '',
+                        invoiceUrl: invoiceUrl
+                    })
+                });
+
+                const resData = await response.json();
+                console.log("[sendStatusEmailNotification] Response:", resData);
+            } catch (e) {
+                console.error("[sendStatusEmailNotification] Failed to send email:", e);
+            }
+        }
+
+        async function confirmInvoice() {
+            if (await confirm("Вы подтверждаете данное коммерческое предложение?")) {
+                updateInvoiceStatus('confirmed');
+            }
+        }
+
+        function openRevisionModal() {
+            const modal = document.getElementById('revision_modal');
+            const txt = document.getElementById('revision_text');
+            if (modal) {
+                modal.style.display = 'flex';
+                // Wait for display:flex to register in DOM, then add active class for transition
+                setTimeout(() => modal.classList.add('active'), 10);
+            }
+            if (txt) {
+                txt.value = (invoiceData && invoiceData.object_info && invoiceData.object_info.client_comment) || '';
+                txt.focus();
+            }
+        }
+
+        function closeRevisionModal() {
+            const modal = document.getElementById('revision_modal');
+            if (modal) {
+                modal.classList.remove('active');
+                setTimeout(() => modal.style.display = 'none', 300);
+            }
+        }
+
+        function submitRevision() {
+            const txt = document.getElementById('revision_text');
+            const comment = txt ? txt.value.trim() : '';
+            if (!comment) {
+                alert("Пожалуйста, введите текст замечаний.");
+                return;
+            }
+            updateInvoiceStatus('needs_revision', comment);
         }
     </script>
 </body>
