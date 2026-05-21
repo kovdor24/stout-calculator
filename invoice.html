@@ -279,6 +279,7 @@
         .col-img { width: 50px; text-align: center; }
         .col-sku { width: 100px; font-family: monospace; color: var(--text-sec); }
         .hide-sku .col-sku { display: none !important; }
+        .hide-brand .col-brand { display: none !important; }
         .col-name { font-weight: 600; color: var(--text-main); }
         .col-brand { width: 80px; text-align: center; font-size: 11px; }
         .col-unit { width: 50px; text-align: center; color: var(--text-sec); }
@@ -1210,6 +1211,8 @@
 
             if (!showSku) {
                 document.body.classList.add('hide-sku');
+            } else {
+                document.body.classList.add('hide-brand');
             }
 
             // 1. Manager info
@@ -1277,7 +1280,7 @@
                 });
 
                 let globalIdx = 1;
-                const colspanVal = showSku ? 9 : 8;
+                const colspanVal = 8;
                 Object.keys(grouped).forEach(sectionTitle => {
                     // Group section header row
                     const secHeaderTr = document.createElement('tr');

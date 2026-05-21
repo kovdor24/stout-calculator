@@ -159,6 +159,12 @@ const app = {
             inputEl.type = 'text';
             inputEl.className = 'calc-dialog-input';
             inputEl.value = defaultValue;
+            
+            // Надежный захват значения для мобильных устройств
+            let currentValue = defaultValue;
+            inputEl.oninput = (e) => { currentValue = e.target.value; };
+            inputEl.onchange = (e) => { currentValue = e.target.value; };
+
             inputWrapper.appendChild(inputEl);
             card.appendChild(inputWrapper);
             
@@ -181,7 +187,8 @@ const app = {
             okBtn.innerText = 'OK';
             
             const submit = () => {
-                const val = inputEl.value;
+                // Берем актуальное значение (с fallback на currentValue)
+                const val = (inputEl && inputEl.value !== undefined) ? inputEl.value : currentValue;
                 overlay.classList.remove('active');
                 setTimeout(() => {
                     overlay.remove();
@@ -209,8 +216,12 @@ const app = {
             
             setTimeout(() => {
                 overlay.classList.add('active');
+                // Двойной фокус для надежности на iOS
                 inputEl.focus();
                 inputEl.select();
+                setTimeout(() => {
+                    inputEl.focus();
+                }, 50);
             }, 10);
         });
     },
@@ -584,7 +595,7 @@ const app = {
         localStorage.setItem('pro_trial_until', trialUntil);
         
         this.closeModal();
-        alert('✅ Тестовый период на 3 дня успешно активирован!');
+        app.alert('✅ Тестовый период на 3 дня успешно активирован!');
         
         // Синхронизируем UI и перерисовываем смету без перезагрузки страницы
         this.syncUI();
@@ -624,7 +635,7 @@ const app = {
     activateDemo: async function () {
         const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         if (!tgUser) {
-            alert("Сначала авторизуйтесь!");
+            app.alert("Сначала авторизуйтесь!");
             return;
         }
 
@@ -639,7 +650,7 @@ const app = {
             let query = supabaseClient.from('users').update({ account_type: 'pro', demo_ends_at: endDate });
             if (tgUser.authUserId) query = query.eq('auth_user_id', tgUser.authUserId);
             else if (tgUser.email) query = query.eq('email', tgUser.email);
-            else { alert("Ошибка: не удалось определить аккаунт. Войдите заново."); return; }
+            else { app.alert("Ошибка: не удалось определить аккаунт. Войдите заново."); return; }
             const { error } = await query;
 
             if (error) throw error;
@@ -650,10 +661,10 @@ const app = {
             this.syncUI();
             this.closeModal();
 
-            alert("🎉 ДЕМО-доступ на 7 дней успешно активирован! Вам открыты все профессиональные функции.");
+            app.alert("🎉 ДЕМО-доступ на 7 дней успешно активирован! Вам открыты все профессиональные функции.");
         } catch (e) {
             console.error("Ошибка активации:", e);
-            alert("Ошибка активации. Попробуйте позже.");
+            app.alert("Ошибка активации. Попробуйте позже.");
             if (btn) btn.innerText = "🎁 Попробовать PRO (7 дней)";
         }
     },
@@ -667,7 +678,7 @@ const app = {
         }
         this._saveRateLimit.count++;
         if (this._saveRateLimit.count > 5) {
-            alert("Слишком много запросов на сохранение. Пожалуйста, подождите минуту.");
+            app.alert("Слишком много запросов на сохранение. Пожалуйста, подождите минуту.");
             return false;
         }
 
@@ -749,7 +760,7 @@ const app = {
             // Если в режиме разработки и пользователя нет в БД - используем заглушку или блокируем
             if (!dbUserId && !isLocal) {
                 console.log("[saveToCloud] Ошибка: профиль пользователя не найден в БД.");
-                alert("Ошибка: профиль пользователя не найден. Попробуйте перезайти в аккаунт.");
+                app.alert("Ошибка: профиль пользователя не найден. Попробуйте перезайти в аккаунт.");
                 return false;
             }
 
@@ -815,11 +826,11 @@ const app = {
             this.lastSavedStateString = this.getStateSignature();
             this.markAsSaved();
             console.log("[saveToCloud] Сохранение успешно завершено.");
-            if (!silent) alert("✅ Смета успешно сохранена!");
+            if (!silent) app.alert("✅ Смета успешно сохранена!");
             return true;
         } catch (error) {
             console.error("[saveToCloud] Критическая ошибка в блоке catch:", error);
-            alert("❌ Ошибка при сохранении в облако: " + error.message);
+            app.alert("❌ Ошибка при сохранении в облако: " + error.message);
             return false;
         }
     },
@@ -830,7 +841,7 @@ const app = {
         const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
 
         if (!session && !isLocal) {
-            alert("Для просмотра сохраненных смет необходимо авторизоваться.");
+            app.alert("Для просмотра сохраненных смет необходимо авторизоваться.");
             this.showAuthModal();
             return;
         }
@@ -943,6 +954,13 @@ const app = {
                 }
             }
 
+            // Кнопка "Получить счёт" если статус confirmed
+            const isConfirmed = sharedInvoiceId && sharedStatuses[sharedInvoiceId] === 'confirmed';
+            let getInvoiceBtn = '';
+            if (isConfirmed) {
+                getInvoiceBtn = `<button class="btn-get-invoice" id="btn_invoice_${item.id}" onclick="event.stopPropagation(); app.sendEstimateInvoiceToManager('${item.id}', this)" title="Заказать счёт у менеджера">📄 Получить счёт</button>`;
+            }
+
             h += `
                 <tr class="active-row" style="cursor: pointer;" onclick="app.loadSingleEstimate('${item.id}')">
                     <td style="font-weight:600;">${item.project_name}</td>
@@ -950,7 +968,8 @@ const app = {
                     <td>${statusBadge}</td>
                     <td style="color:var(--text-sec); font-size:12px;">${date}</td>
                     <td style="text-align:right;">
-                        <div style="display:flex; justify-content:flex-end; gap:8px;">
+                        <div style="display:flex; justify-content:flex-end; gap:8px; align-items: center;">
+                            ${getInvoiceBtn}
                             ${canDelete ? `
                                 <button class="delete-icon-btn" onclick="event.stopPropagation(); app.deleteEstimate('${item.id}', event)" title="Удалить смету">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -968,6 +987,90 @@ const app = {
 
     closeCloudListModal: function () {
         document.getElementById('cloud_list_modal_overlay').style.display = 'none';
+    },
+
+    sendEstimateInvoiceToManager: async function (estimateId, btnEl) {
+        try {
+            // Оптимистичный UI
+            if (btnEl) {
+                btnEl.disabled = true;
+                btnEl.innerHTML = '⌛ Отправка...';
+            }
+
+            // Ищем смету в кеше
+            const est = (this._cloudEstimates || []).find(e => String(e.id) === String(estimateId));
+            if (!est || !est.calc_data) {
+                await app.alert('Данные сметы не найдены. Попробуйте обновить список.');
+                if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '📄 Получить счёт'; }
+                return;
+            }
+
+            const tgUser = this.state.tgUser;
+            if (!tgUser || !tgUser.email) {
+                await app.alert('Пожалуйста, укажите Email в профиле для получения счёта.');
+                this.showProfileModal();
+                if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '📄 Получить счёт'; }
+                return;
+            }
+
+            const EMAILJS_SERVICE_ID = "service_o11b4ej";
+            const EMAILJS_TEMPLATE_ID = "template_lg1zol9";
+            const EMAILJS_PUBLIC_KEY = "-m4N93pTqMlCfuBpT";
+
+            const eqSum = est.eq_sum || 0;
+            const worksSum = est.works_sum || 0;
+            const total = eqSum + worksSum;
+
+            const templateParams = {
+                project_name: est.project_name || "Без названия",
+                calc_id: est.calc_data.calc_id || 'N/A',
+                user_name: tgUser.first_name || tgUser.username || "Монтажник",
+                user_phone: tgUser.phone || "Не указан",
+                user_email: tgUser.email || 'Не указан',
+                user_city: tgUser.city || localStorage.getItem('user_city') || 'Не указан',
+                user_status: (this.state.accountType === 'pro') ? "PRO" : "Базовый",
+                area: est.calc_data.area || 0,
+                region: est.calc_data.region || 100,
+                boiler_type: "—",
+                total_sum: total.toLocaleString('ru-RU') + " ₽",
+                equipment_list: `[Запрос счёта для согласованной сметы]\nОборудование: ${eqSum.toLocaleString('ru-RU')} ₽\nРаботы: ${worksSum.toLocaleString('ru-RU')} ₽\nИТОГО: ${total.toLocaleString('ru-RU')} ₽`
+            };
+
+            const job = {
+                id: "invoice_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+                stateData: est.calc_data,
+                eqSum: eqSum,
+                worksSum: worksSum,
+                templateParams: templateParams,
+                serviceId: EMAILJS_SERVICE_ID,
+                templateId: EMAILJS_TEMPLATE_ID,
+                emailJsKey: EMAILJS_PUBLIC_KEY,
+                retries: 0,
+                status: "pending",
+                created_at: Date.now()
+            };
+
+            if (this.queue && typeof this.queue.addJob === 'function') {
+                this.queue.addJob(job);
+            }
+
+            if (btnEl) {
+                btnEl.innerHTML = '✓ Счёт заказан';
+                btnEl.style.background = '#059669';
+                btnEl.style.opacity = '0.8';
+            }
+
+            this.showInAppNotification(
+                'Запрос отправлен',
+                `Счёт для «${est.project_name}» отправлен менеджеру. Ожидайте ответа на email.`,
+                '📄'
+            );
+
+        } catch (error) {
+            console.error('[sendEstimateInvoiceToManager] Error:', error);
+            await app.alert('Ошибка при отправке запроса: ' + error.message);
+            if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '📄 Получить счёт'; }
+        }
     },
 
     deleteEstimate: async function (id, event) {
@@ -992,9 +1095,9 @@ const app = {
             const row = document.querySelector(`tr[onclick*="${id}"]`);
             if (row) row.style.display = 'none';
 
-            alert("Объект успешно удален");
+            app.alert("Объект успешно удален");
         } catch (error) {
-            alert("Ошибка удаления: " + error.message);
+            app.alert("Ошибка удаления: " + error.message);
         }
     },
 
@@ -1030,20 +1133,20 @@ const app = {
             this.lastSavedStateString = this.getStateSignature();
             this.hasUnsavedChanges = false;
             this.updateSaveBtnUI();
-            alert("✅ Смета успешно загружена!");
-        } catch (error) { alert("Ошибка загрузки сметы: " + error.message); }
+            app.alert("✅ Смета успешно загружена!");
+        } catch (error) { app.alert("Ошибка загрузки сметы: " + error.message); }
     },
 
     loginGoogle: async function () {
         if (!document.getElementById('chk_terms').checked) {
-            alert("Для продолжения необходимо принять условия Публичной оферты.");
+            app.alert("Для продолжения необходимо принять условия Публичной оферты.");
             return;
         }
         const { error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo: window.location.origin + window.location.pathname }
         });
-        if (error) alert("Ошибка при входе через Google: " + error.message);
+        if (error) app.alert("Ошибка при входе через Google: " + error.message);
     },
 
     logout: async function () {
@@ -1088,7 +1191,7 @@ const app = {
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         let adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
         if (!tgUser || !tgUser.email || !adminEmails.includes(tgUser.email.toLowerCase())) {
-            alert("Доступ запрещен.");
+            app.alert("Доступ запрещен.");
             return;
         }
         document.getElementById('admin_modal_overlay').style.display = 'flex';
@@ -1125,7 +1228,7 @@ const app = {
 
             // 3. Fetch Recent Estimates (Fixed 50)
             let { data: recentEsts, error: errRE } = await supabaseClient.from('estimates')
-                .select('id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at, users(username, phone)')
+                .select('id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at, users(username, phone, email)')
                 .order('created_at', { ascending: false })
                 .limit(50);
 
@@ -1138,6 +1241,23 @@ const app = {
             let totalEq = 0, totalWorks = 0;
             sums.forEach(s => { totalEq += (s.eq_sum || 0); totalWorks += (s.works_sum || 0); });
 
+            // 5. Fetch statuses for shared invoices linked to recent estimates
+            let sharedStatusesAdmin = {};
+            try {
+                const sharedIds = (recentEsts || []).map(e => e.calc_data?.shared_invoice_id).filter(Boolean);
+                if (sharedIds.length > 0) {
+                    const { data: sharedList } = await supabaseClient
+                        .from('shared_invoices')
+                        .select('id, object_info')
+                        .in('id', sharedIds);
+                    if (sharedList) {
+                        sharedList.forEach(item => {
+                            sharedStatusesAdmin[item.id] = item.object_info?.status || 'sent';
+                        });
+                    }
+                }
+            } catch (e) { console.error('Admin status fetch error:', e); }
+
             this.adminData = { 
                 users: users || [], 
                 userEstimates: userEsts || [], 
@@ -1145,7 +1265,8 @@ const app = {
                 totalUsers: totalUsers || 0,
                 totalEstimates: sums.length,
                 totalEq,
-                totalWorks
+                totalWorks,
+                sharedStatusesAdmin
             };
             this.renderAdminMain();
         } catch (error) { 
@@ -1246,7 +1367,9 @@ const app = {
               </div>
         `;
 
-        h += `<h4 style="margin: 0 0 10px 0;">📋 Последние сметы</h4><table class="inv-table"><thead><tr><th style="width:30px;">#</th><th>Объект</th><th>Монтажник</th><th>Сумма</th><th style="text-align:right;">Дата / Опции</th></tr></thead><tbody>`;
+        h += `<h4 style="margin: 0 0 10px 0;">📋 Последние сметы</h4><table class="inv-table"><thead><tr><th style="width:30px;">#</th><th>Объект</th><th>Монтажник</th><th>Сумма</th><th>Статус</th><th style="text-align:right;">Дата / Опции</th></tr></thead><tbody>`;
+
+        const sharedStatusesAdmin = this.adminData.sharedStatusesAdmin || {};
 
         recentEstimates.forEach((e, i) => {
             let date = new Date(e.created_at).toLocaleDateString();
@@ -1255,11 +1378,22 @@ const app = {
             let projName = e.project_name || e.name || 'Без названия';
             let estSearchStr = `${projName} ${author} ${sum}`.toLowerCase();
 
+            // Определяем статус сметы
+            const sharedInvoiceId = e.calc_data?.shared_invoice_id;
+            let adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-saved">Сохранена</span>`;
+            if (sharedInvoiceId) {
+                const st = sharedStatusesAdmin[sharedInvoiceId];
+                if (st === 'confirmed') adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-confirmed">✓ Согласована</span>`;
+                else if (st === 'needs_revision') adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-revision">✍ Отклонена</span>`;
+                else adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-sent">Отправлена</span>`;
+            }
+
             h += `<tr class="active-row admin-list-row" data-search="${estSearchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminEstimate('${e.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
                         <td style="color:var(--text-sec);">${i + 1}</td>
                         <td><b>${projName}</b></td>
                         <td>${author}</td>
                         <td style="font-weight:bold; color:var(--primary);">${sum}</td>
+                        <td>${adminStatusBadge}</td>
                         <td style="text-align:right;">
                             <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px;">
                                 <span style="color:var(--text-sec); font-size:12px;">${date}</span>
@@ -1559,16 +1693,34 @@ const app = {
         if (!est) return;
         let author = est.users ? (est.users.username || 'Без имени') : 'Неизвестен';
         let phone = est.users ? (est.users.phone || 'Не указан') : '—';
+        let email = est.users ? (est.users.email || 'Не указан') : '—';
         let date = new Date(est.created_at).toLocaleDateString();
         let objArea = est.calc_data && est.calc_data.area ? est.calc_data.area + ' м²' : 'Не указана';
+
+        // Формируем контактный блок монтажника с кликабельными ссылками
+        let phoneLink = phone !== 'Не указан' && phone !== '—'
+            ? `<a href="tel:${phone.replace(/[^+\d]/g, '')}" style="color: var(--primary); text-decoration: none; font-weight: 600;">${phone}</a>`
+            : `<span style="color: var(--text-sec);">${phone}</span>`;
+        let emailLink = email !== 'Не указан' && email !== '—'
+            ? `<a href="mailto:${email}" style="color: var(--primary); text-decoration: none; font-weight: 600;">${email}</a>`
+            : `<span style="color: var(--text-sec);">${email}</span>`;
 
         let h = `
                     <button class="btn-header-blue" style="margin-bottom: 20px; width: fit-content;" onclick="app.renderAdminMain()">← Назад</button>
                     <div style="background: var(--surface-light); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
                         <h3 style="margin-top:0; color: var(--text-main);">📋 ${est.project_name}</h3>
+                        
+                        <div style="background: rgba(37, 99, 235, 0.04); border: 1px solid rgba(37, 99, 235, 0.12); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;">
+                            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sec); font-weight: 700; margin-bottom: 10px;">👷 Монтажник</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+                                <div><b style="color: var(--text-sec);">Имя:</b> <span style="font-weight: 600; color: var(--text-main);">${author}</span></div>
+                                <div><b style="color: var(--text-sec);">Город:</b> <span style="color: var(--text-main);">${est.calc_data?.tgUser?.city || 'Не указан'}</span></div>
+                                <div><b style="color: var(--text-sec);">📞 Телефон:</b> ${phoneLink}</div>
+                                <div><b style="color: var(--text-sec);">✉️ Email:</b> ${emailLink}</div>
+                            </div>
+                        </div>
+
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px; color: var(--text-main); margin-bottom: 20px;">
-                            <div><b style="color: var(--text-sec);">Монтажник:</b> ${author}</div>
-                            <div><b style="color: var(--text-sec);">Телефон:</b> ${phone}</div>
                             <div><b style="color: var(--text-sec);">Дата сохранения:</b> ${date}</div>
                             <div><b style="color: var(--text-sec);">Площадь объекта:</b> <span style="font-weight: bold; color: var(--text-main);">${objArea}</span></div>
                             
@@ -1761,7 +1913,7 @@ const app = {
                 authErrEl.innerText = 'Введите Email и пароль';
                 authErrEl.style.display = 'block';
             } else {
-                alert('Введите Email и пароль');
+                app.alert('Введите Email и пароль');
             }
             return;
         }
@@ -1783,7 +1935,7 @@ const app = {
                 authErrEl.innerText = 'Ошибка входа: ' + (err.message || 'Неверный логин или пароль');
                 authErrEl.style.display = 'block';
             } else {
-                alert('Ошибка входа: ' + (err.message || 'Неизвестная ошибка'));
+                app.alert('Ошибка входа: ' + (err.message || 'Неизвестная ошибка'));
             }
         } finally {
             btn.disabled = false;
@@ -1798,7 +1950,7 @@ const app = {
         }
 
         if (!document.getElementById('chk_terms').checked) {
-            alert("Для регистрации необходимо принять условия Публичной оферты.");
+            app.alert("Для регистрации необходимо принять условия Публичной оферты.");
             if (btn) {
                 btn.disabled = false;
             }
@@ -1816,7 +1968,7 @@ const app = {
                 authErrEl.innerText = 'Заполните все поля';
                 authErrEl.style.display = 'block';
             } else {
-                alert('Заполните все поля');
+                app.alert('Заполните все поля');
             }
             if (btn) {
                 btn.disabled = false;
@@ -1828,7 +1980,7 @@ const app = {
                 authErrEl.innerText = 'Пароль должен быть не менее 6 символов';
                 authErrEl.style.display = 'block';
             } else {
-                alert('Пароль должен быть не менее 6 символов');
+                app.alert('Пароль должен быть не менее 6 символов');
             }
             if (btn) {
                 btn.disabled = false;
@@ -1890,7 +2042,7 @@ const app = {
             }
         } catch (err) {
             console.error("Детали ошибки отправки кода (EmailJS):", err);
-            alert("Ошибка при отправке кода: " + (err.text || err.message || JSON.stringify(err) || "Неизвестная ошибка"));
+            app.alert("Ошибка при отправке кода: " + (err.text || err.message || JSON.stringify(err) || "Неизвестная ошибка"));
         } finally {
             if (btn) {
                 btn.disabled = false;
@@ -1907,7 +2059,7 @@ const app = {
         if (errEl) errEl.style.display = 'none';
 
         if (!this.pendingRegistration) {
-            alert('Сессия регистрации истекла. Пожалуйста, начните сначала.');
+            app.alert('Сессия регистрации истекла. Пожалуйста, начните сначала.');
             this.backToAuthMain();
             return;
         }
@@ -1917,7 +2069,7 @@ const app = {
                 errEl.innerText = 'Неверный код подтверждения';
                 errEl.style.display = 'block';
             } else {
-                alert('Неверный код подтверждения');
+                app.alert('Неверный код подтверждения');
             }
             return;
         }
@@ -1936,7 +2088,7 @@ const app = {
 
             if (error) throw error;
 
-            alert('Регистрация успешна!'); // Оставляем успех как алерт или можно тоже в UI
+            app.alert('Регистрация успешна!'); // Оставляем успех как алерт или можно тоже в UI
             this.closeAuthModal();
         } catch (err) {
             console.error("Детали ошибки создания аккаунта (Supabase):", err);
@@ -1951,7 +2103,7 @@ const app = {
                 authErrEl.style.display = 'block';
                 this.backToAuthMain(); // Возвращаем к форме, чтобы пользователь видел ошибку
             } else {
-                alert('Ошибка регистрации: ' + (err.message || 'Неизвестная ошибка'));
+                app.alert('Ошибка регистрации: ' + (err.message || 'Неизвестная ошибка'));
             }
         } finally {
             btn.disabled = false;
@@ -2004,7 +2156,7 @@ const app = {
         const btn = document.querySelector('[onclick="app.handleForgotPassword()"]');
 
         if (!email) {
-            alert('Введите Email');
+            app.alert('Введите Email');
             return;
         }
 
@@ -2019,7 +2171,7 @@ const app = {
             this.closeAuthModal();
             this.showPasswordResetSuccessModal();
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            app.alert('Ошибка: ' + err.message);
         } finally {
             btn.disabled = false;
             btn.innerText = 'Отправить ссылку';
@@ -2135,7 +2287,7 @@ const app = {
                 if (!uRow.city) {
                     setTimeout(() => {
                         this.showProfileModal();
-                        alert("Пожалуйста, укажите ваш город. Это необходимо для корректного формирования счетов.");
+                        app.alert("Пожалуйста, укажите ваш город. Это необходимо для корректного формирования счетов.");
                     }, 1000);
                 }
             } else {
@@ -2161,11 +2313,11 @@ const app = {
         try {
             const { error } = await supabaseClient.from('users').update(updateData).eq('id', userId);
             if (error) throw error;
-            alert("✅ Тариф успешно обновлен!");
+            app.alert("✅ Тариф успешно обновлен!");
             this.loadAdminData();
         } catch (e) {
             console.error(e);
-            alert("Ошибка обновления: " + e.message);
+            app.alert("Ошибка обновления: " + e.message);
         }
     },
     saveProfile: async function () {
@@ -2173,10 +2325,10 @@ const app = {
         let phone = document.getElementById('profile_phone_input').value.trim();
         let city = document.getElementById('profile_city_input').value.trim();
         let email = document.getElementById('profile_email_input') ? document.getElementById('profile_email_input').value.trim() : '';
-        if (!name) { alert('Имя не может быть пустым.'); return; }
-        if (!city) { alert('Пожалуйста, укажите ваш город. Это необходимо для формирования смет.'); return; }
-        if (phone && phone.length < 18) { alert('Введите корректный номер телефона.'); return; }
-        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Пожалуйста, введите корректный email.'); return; }
+        if (!name) { app.alert('Имя не может быть пустым.'); return; }
+        if (!city) { app.alert('Пожалуйста, укажите ваш город. Это необходимо для формирования смет.'); return; }
+        if (phone && phone.length < 18) { app.alert('Введите корректный номер телефона.'); return; }
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { app.alert('Пожалуйста, введите корректный email.'); return; }
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         if (!tgUser) return;
         this.state.tgUser.first_name = name;
@@ -2194,10 +2346,10 @@ const app = {
             if (tgUser.email) await supabaseClient.auth.updateUser({ data: { full_name: name, phone: phone } });
             this.syncUI();
             this.closeProfileModal();
-            alert('✅ Профиль успешно сохранен!');
+            app.alert('✅ Профиль успешно сохранен!');
         } catch (error) {
             console.error('Ошибка сохранения профиля:', error);
-            alert('Ошибка: ' + error.message);
+            app.alert('Ошибка: ' + error.message);
         }
     },
     maskPhone: function (input) {
@@ -2406,13 +2558,38 @@ const app = {
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
         if (isLocal && (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16)) {
-            tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99" };
+            tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99", email: "test@installer.ru" };
         }
 
-        if (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16) {
-            alert("Пожалуйста, укажите Ваше Имя и Телефон в профиле. Они необходимы для формирования ссылки для клиента.");
+        if (!tgUser) {
+            app.alert("Пожалуйста, авторизуйтесь, чтобы сформировать ссылку.");
+            this.showAuthModal();
+            return;
+        }
+
+        if (!tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16 || !tgUser.email || !tgUser.email.includes('@')) {
+            app.alert("Пожалуйста, укажите Ваше Имя, Телефон и Email в профиле. Они необходимы для формирования ссылки для клиента.");
             this.showProfileModal();
             return;
+        }
+
+        let pName = this.state.projectName;
+        if (!pName) {
+            pName = await app.prompt("Введите название объекта для сохранения в облаке:", "Новый объект");
+            if (!pName) {
+                console.log("[shareInvoice] Отменено пользователем (ввод названия объекта)");
+                return;
+            }
+            this.state.projectName = pName;
+            this.saveState();
+        }
+
+        // Генерируем уникальный ID расчета (если еще нет), чтобы избежать дубликатов при saveToCloud
+        if (!this.state.calc_id) {
+            const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+            const randPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+            this.state.calc_id = `HC-${datePart}-${randPart}`;
+            this.saveState();
         }
 
         this.render();
@@ -2500,7 +2677,7 @@ const app = {
             const shareUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
 
             navigator.clipboard.writeText(shareUrl).then(() => {
-                alert("Ссылка скопирована, отправьте клиенту");
+                app.alert("Ссылка скопирована, отправьте клиенту");
             }).catch(err => {
                 console.error('Ошибка копирования:', err);
                 const tempInput = document.createElement("input");
@@ -2509,7 +2686,7 @@ const app = {
                 tempInput.select();
                 document.execCommand("copy");
                 document.body.removeChild(tempInput);
-                alert("Ссылка скопирована, отправьте клиенту");
+                app.alert("Ссылка скопирована, отправьте клиенту");
             });
 
             if (btn) {
@@ -2519,7 +2696,7 @@ const app = {
 
         } catch (err) {
             console.error('[shareInvoice] Ошибка:', err);
-            alert("Произошла ошибка при создании ссылки: " + err.message);
+            app.alert("Произошла ошибка при создании ссылки: " + err.message);
             const btn = document.getElementById('btn_share_trigger');
             if (btn) {
                 btn.innerHTML = `Ссылка для клиента`;
@@ -2537,7 +2714,7 @@ const app = {
         }
 
         if (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16) {
-            alert("Пожалуйста, укажите Ваше Имя и Телефон в профиле. Они необходимы для формирования красивой печатной сметы.");
+            app.alert("Пожалуйста, укажите Ваше Имя и Телефон в профиле. Они необходимы для формирования красивой печатной сметы.");
             this.showProfileModal();
             return;
         }
@@ -2752,18 +2929,22 @@ const app = {
     },
     sendEmail: async function () {
         console.log("[sendEmail] Функция запущенна.");
-        const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (isLocal && (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16)) {
+            tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99", email: "test@installer.ru" };
+        }
 
         if (!tgUser) {
             console.log("[sendEmail] Пользователь не авторизован.");
-            alert("Пожалуйста, авторизуйтесь, чтобы отправить смету.");
+            app.alert("Пожалуйста, авторизуйтесь, чтобы отправить смету.");
             this.showAuthModal();
             return;
         }
 
-        if (!tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16) {
+        if (!tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16 || !tgUser.email || !tgUser.email.includes('@')) {
             console.log("[sendEmail] Неполный профиль пользователя.");
-            alert("Пожалуйста, укажите Ваше Имя и Телефон в профиле. Они необходимы для отправки сметы.");
+            app.alert("Пожалуйста, укажите Ваше Имя, Телефон и Email в профиле. Они необходимы для отправки сметы.");
             this.showProfileModal();
             return;
         }
@@ -2906,7 +3087,7 @@ const app = {
 
         } catch (error) {
             console.error("[sendEmail] Ошибка при подготовке к отправке:", error);
-            alert("⚠️ Не удалось запустить отправку сметы:\n\n" + error.message);
+            app.alert("⚠️ Не удалось запустить отправку сметы:\n\n" + error.message);
         } finally {
             btn.innerHTML = originalHtml;
             btn.disabled = false;
@@ -2943,12 +3124,12 @@ const app = {
                     this.state = { ...this.state, ...savedState };
                     this.syncUI();
                     this.render();
-                    alert("✅ Расчет успешно загружен по коду!");
+                    app.alert("✅ Расчет успешно загружен по коду!");
                     return;
                 }
             } catch (err) {
                 console.error("Ошибка загрузки по коду:", err);
-                alert("❌ Ошибка! Неверный код или расчет не найден.");
+                app.alert("❌ Ошибка! Неверный код или расчет не найден.");
                 return;
             }
         }
@@ -2975,7 +3156,7 @@ const app = {
             }
         } catch (e) {
             console.error("Ошибка десериализации:", e);
-            alert("❌ Ошибка! Неверный формат кода. Попробуйте скопировать снова.");
+            app.alert("❌ Ошибка! Неверный формат кода. Попробуйте скопировать снова.");
         }
     },
     // === НОВАЯ ФУНКЦИЯ СБРОСА ===
@@ -3028,6 +3209,118 @@ const app = {
             document.body.classList.remove('mob-tab-output');
         }
     },
+
+    // === ТОСТ-УВЕДОМЛЕНИЯ О СМЕНЕ СТАТУСА ===
+    showInAppNotification: function (title, body, icon = '🔔') {
+        let container = document.getElementById('calc_toast_container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'calc_toast_container';
+            container.className = 'calc-toast-container';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'calc-toast-notification';
+        toast.innerHTML = `
+            <div class="calc-toast-icon">${icon}</div>
+            <div class="calc-toast-content">
+                <div class="calc-toast-title">${title}</div>
+                <div class="calc-toast-body">${body}</div>
+            </div>
+            <button class="calc-toast-close" onclick="this.parentElement.classList.add('toast-removing'); setTimeout(() => this.parentElement.remove(), 350);">✕</button>
+        `;
+
+        container.appendChild(toast);
+
+        // Автоудаление через 8 секунд
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.classList.add('toast-removing');
+                setTimeout(() => toast.remove(), 350);
+            }
+        }, 8000);
+    },
+
+    checkStatusNotifications: async function () {
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            const tgUser = this.state.tgUser;
+            if (!session && !tgUser) return;
+
+            // Получаем текущего пользователя из БД
+            let uRow = null;
+            if (session) {
+                let { data } = await supabaseClient.from('users').select('id').eq('auth_user_id', session.user.id).maybeSingle();
+                uRow = data;
+            } else if (tgUser && tgUser.authUserId) {
+                let { data } = await supabaseClient.from('users').select('id').eq('auth_user_id', tgUser.authUserId).maybeSingle();
+                uRow = data;
+            }
+            if (!uRow) return;
+
+            // Получаем сметы пользователя у которых есть shared_invoice_id
+            const { data: estimates } = await supabaseClient
+                .from('estimates')
+                .select('id, project_name, calc_data')
+                .eq('user_id', uRow.id)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (!estimates || estimates.length === 0) return;
+
+            const sharedIds = estimates.map(e => e.calc_data?.shared_invoice_id).filter(Boolean);
+            if (sharedIds.length === 0) return;
+
+            // Получаем текущие статусы из shared_invoices
+            const { data: sharedList } = await supabaseClient
+                .from('shared_invoices')
+                .select('id, object_info')
+                .in('id', sharedIds);
+
+            if (!sharedList || sharedList.length === 0) return;
+
+            // Сравниваем с localStorage
+            let seenRaw = localStorage.getItem('seen_estimate_statuses');
+            let seen = {};
+            try { seen = seenRaw ? JSON.parse(seenRaw) : {}; } catch(e) { seen = {}; }
+
+            const statusLabels = {
+                'confirmed': { label: '✅ Согласована клиентом', icon: '✅' },
+                'needs_revision': { label: '✍️ Отклонена — требуется доработка', icon: '⚠️' },
+                'sent': { label: 'Отправлена клиенту', icon: '📤' }
+            };
+
+            let updated = false;
+            sharedList.forEach(item => {
+                const currentStatus = item.object_info?.status || 'sent';
+                const prevStatus = seen[item.id];
+
+                if (prevStatus !== undefined && prevStatus !== currentStatus) {
+                    // Статус изменился — показываем уведомление
+                    const estInfo = estimates.find(e => e.calc_data?.shared_invoice_id === item.id);
+                    const projectName = estInfo?.project_name || 'Объект';
+                    const statusInfo = statusLabels[currentStatus] || { label: currentStatus, icon: '🔔' };
+
+                    this.showInAppNotification(
+                        `Смета «${projectName}»`,
+                        statusInfo.label,
+                        statusInfo.icon
+                    );
+                }
+
+                seen[item.id] = currentStatus;
+                updated = true;
+            });
+
+            if (updated) {
+                localStorage.setItem('seen_estimate_statuses', JSON.stringify(seen));
+            }
+        } catch (e) {
+            console.error('[checkStatusNotifications] Error:', e);
+        }
+    },
+
     init: function () {
         // Global premium modal overrides
         window.alert = (msg) => app.alert(msg);
@@ -3118,6 +3411,11 @@ const app = {
                 setTimeout(() => preloader.remove(), 500); // Удаляем из DOM после затухания
             }
         }, 300);
+
+        // Проверяем обновления статусов смет через 3 секунды после загрузки
+        setTimeout(() => {
+            this.checkStatusNotifications();
+        }, 3000);
     },
     toggleSwapUI: function (id) { if (this.state.showSwapFor === id) { this.state.showSwapFor = null; } else { this.state.showSwapFor = id; } this.render(); },
     cycleSwap: function (originalId) {
@@ -5042,7 +5340,7 @@ const app = {
             }
 
             // Кнопка добавления (со специальным классом no-print для скрытия при печати)
-            h += `<tr class="hide-custom-eq-btn no-print"><td colspan="7">
+            h += `<tr class="hide-custom-eq-btn no-print"><td colspan="9">
                     <div class="btn-add-custom" onclick="app.addCustomEqPrompt()">
                         + Добавить своё оборудование
                     </div>
@@ -5364,7 +5662,7 @@ async function notifyPayment() {
     }
 
     if (!emailInput) {
-        alert('Пожалуйста, укажите ваш email, чтобы мы могли активировать PRO-статус.');
+        app.alert('Пожалуйста, укажите ваш email, чтобы мы могли активировать PRO-статус.');
         return;
     }
 
@@ -5433,7 +5731,7 @@ async function notifyPayment() {
     });
 
     // Отображаем всплывающее уведомление пользователю
-    alert('Спасибо! Мы проверяем поступление средств. PRO-статус будет активирован на email: ' + emailInput + ' в ближайшее время.');
+    app.alert('Спасибо! Мы проверяем поступление средств. PRO-статус будет активирован на email: ' + emailInput + ' в ближайшее время.');
 }
 window.notifyPayment = notifyPayment;
 document.addEventListener('DOMContentLoaded', function () { app.init(); });

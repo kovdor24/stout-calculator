@@ -3917,6 +3917,182 @@ body.dark-mode .calc-dialog-btn-cancel:hover {
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
-        overflow-x: hidden !important;
+        overflow-x: auto !important; /* Allow table to scroll horizontally if needed */
+        -webkit-overflow-scrolling: touch;
     }
+}
+
+/* === КНОПКА ДОБАВЛЕНИЯ: УБИРАЕМ ПАДДИНГИ ЯЧЕЙКИ (DESKTOP + MOBILE) === */
+.inv-table tr.hide-custom-work-btn td,
+.inv-table tr.hide-custom-eq-btn td {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    border-bottom: none !important;
+}
+
+/* === ПРЕМИУМ ТОСТ-УВЕДОМЛЕНИЯ === */
+@keyframes calcToastSlideIn {
+    0% { transform: translateX(120%); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+@keyframes calcToastSlideOut {
+    0% { transform: translateX(0); opacity: 1; }
+    100% { transform: translateX(120%); opacity: 0; }
+}
+
+.calc-toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100000001;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+    max-width: 380px;
+    width: calc(100vw - 40px);
+}
+
+.calc-toast-notification {
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(229, 231, 235, 0.6);
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.04);
+    animation: calcToastSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.calc-toast-notification:hover {
+    box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+}
+
+.calc-toast-notification.toast-removing {
+    animation: calcToastSlideOut 0.35s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.calc-toast-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+    line-height: 1;
+    margin-top: 2px;
+}
+
+.calc-toast-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.calc-toast-title {
+    font-weight: 700;
+    font-size: 13px;
+    color: #111827;
+    margin-bottom: 3px;
+    line-height: 1.3;
+}
+
+.calc-toast-body {
+    font-size: 12px;
+    color: #6B7280;
+    line-height: 1.4;
+}
+
+.calc-toast-close {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(107, 114, 128, 0.08);
+    color: #9CA3AF;
+    font-size: 14px;
+    line-height: 22px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.calc-toast-close:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+}
+
+body.dark-mode .calc-toast-notification {
+    background: rgba(30, 41, 59, 0.92);
+    border-color: rgba(71, 85, 105, 0.4);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.25),
+        0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+body.dark-mode .calc-toast-title { color: #F1F5F9; }
+body.dark-mode .calc-toast-body { color: #94A3B8; }
+body.dark-mode .calc-toast-close {
+    background: rgba(148, 163, 184, 0.12);
+    color: #64748B;
+}
+
+body.dark-mode .calc-toast-close:hover {
+    background: rgba(248, 113, 113, 0.15);
+    color: #F87171;
+}
+
+@media screen and (max-width: 480px) {
+    .calc-toast-container {
+        top: 10px;
+        right: 10px;
+        max-width: calc(100vw - 20px);
+        width: calc(100vw - 20px);
+    }
+    .calc-toast-notification {
+        padding: 12px 14px;
+        border-radius: 12px;
+    }
+}
+
+/* === КНОПКА "ПОЛУЧИТЬ СЧЁТ" В КАБИНЕТЕ === */
+.btn-get-invoice {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #059669, #10B981);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-get-invoice:hover {
+    background: linear-gradient(135deg, #047857, #059669);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    transform: translateY(-1px);
+}
+
+.btn-get-invoice:disabled {
+    opacity: 0.7;
+    cursor: default;
+    transform: none;
+    box-shadow: none;
+}
+
+body.dark-mode .btn-get-invoice {
+    background: linear-gradient(135deg, #047857, #10B981);
 }
