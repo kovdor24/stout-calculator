@@ -1588,8 +1588,8 @@
                     badgeEl.style.display = 'inline-flex';
                     if (confirmBtn) confirmBtn.style.display = 'none';
                     if (reviseBtn) reviseBtn.style.display = 'none';
-                    if (getInvoiceContainer) getInvoiceContainer.style.display = 'block';
-                    if (btnGetInvoice) btnGetInvoice.style.display = 'flex';
+                    if (getInvoiceContainer) getInvoiceContainer.style.display = 'none';
+                    if (btnGetInvoice) btnGetInvoice.style.display = 'none';
                 } else if (obj.status === 'needs_revision') {
                     badgeEl.textContent = '✍ На доработке';
                     badgeEl.className = 'status-badge status-revision';
