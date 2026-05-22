@@ -232,16 +232,85 @@
             color: var(--text-main);
         }
 
-        /* Specifications Tables */
+        .sec-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 35px 0 15px 0;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 6px;
+            gap: 15px;
+        }
+
         .sec-title {
             font-size: 15px;
             font-weight: 800;
             color: var(--primary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin: 35px 0 15px 0;
-            border-bottom: 2px solid var(--primary);
-            padding-bottom: 6px;
+            margin: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        /* Modern iOS-style Toggle Switch */
+        .switch-control {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-sec);
+            user-select: none;
+            transition: color 0.2s ease;
+        }
+
+        .switch-control:hover {
+            color: var(--primary);
+        }
+
+        .switch-control input {
+            display: none;
+        }
+
+        .switch-slider {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 18px;
+            background-color: #E5E7EB;
+            border-radius: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .switch-slider::before {
+            content: "";
+            position: absolute;
+            height: 14px;
+            width: 14px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            border-radius: 50%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .switch-control input:checked + .switch-slider {
+            background-color: #10B981; /* Emerald Green */
+        }
+
+        .switch-control input:checked + .switch-slider::before {
+            transform: translateX(16px);
+        }
+
+        .hide-images .col-img {
+            display: none !important;
+        }
+
+        .hide-images .spec-table td {
+            padding: 5px 12px !important;
         }
 
         .table-responsive {
@@ -1114,7 +1183,16 @@
 
         <!-- Equipment Section -->
         <div id="equipment_container" style="display: none;">
-            <h2 class="sec-title">Спецификация оборудования и материалов</h2>
+            <div class="sec-header-row">
+                <h2 class="sec-title">Спецификация оборудования и материалов</h2>
+                <div class="toggle-images-wrapper no-print">
+                    <label class="switch-control" title="Скрыть изображения оборудования для компактности">
+                        <span class="switch-label">Картинки</span>
+                        <input type="checkbox" id="toggle_images_checkbox" checked onchange="toggleEquipmentImages(this.checked)">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="spec-table">
                     <thead>
@@ -1284,6 +1362,16 @@
         let invoiceId;
         let invoiceData;
 
+        function toggleEquipmentImages(show) {
+            if (show) {
+                document.body.classList.remove('hide-images');
+                localStorage.setItem('show_equipment_images', 'true');
+            } else {
+                document.body.classList.add('hide-images');
+                localStorage.setItem('show_equipment_images', 'false');
+            }
+        }
+
         // ===================================
         // === OFFLINE SHARE LINK DECODER ===
         function decompressPayload(compact) {
@@ -1369,6 +1457,17 @@
         // ===================================
 
         document.addEventListener('DOMContentLoaded', async () => {
+            // Restore images toggle state
+            const showImagesPref = localStorage.getItem('show_equipment_images');
+            const toggleCheckbox = document.getElementById('toggle_images_checkbox');
+            if (showImagesPref === 'false') {
+                if (toggleCheckbox) toggleCheckbox.checked = false;
+                document.body.classList.add('hide-images');
+            } else {
+                if (toggleCheckbox) toggleCheckbox.checked = true;
+                document.body.classList.remove('hide-images');
+            }
+
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
             const dataParam = urlParams.get('data');
