@@ -48,6 +48,11 @@ $headers = "MIME-Version: 1.0" . "\r\n";
 $headers .= "Content-type: text/plain; charset=UTF-8" . "\r\n";
 $headers .= "From: HeatCalc Robot <noreply@heatcalc.ru>" . "\r\n";
 
+if (!function_exists('mail')) {
+    echo json_encode(["status" => "error", "message" => "Функция mail() отключена или недоступна на этом сервере. Пожалуйста, обратитесь к хостинг-провайдеру."]);
+    exit;
+}
+
 if (mail($to, $subject, $message, $headers)) {
     echo json_encode(["status" => "success"]);
 } else {

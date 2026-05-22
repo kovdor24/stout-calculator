@@ -450,6 +450,38 @@
         .fab-revise:hover {
             background-color: #DC2626;
         }
+        
+        .fab-get-invoice {
+            background-color: #10B981; /* Emerald Green */
+        }
+        .fab-get-invoice:hover {
+            background-color: #059669;
+        }
+        .btn-get-invoice-client {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+            transition: all 0.2s ease;
+        }
+        .btn-get-invoice-client:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+        }
+        .btn-get-invoice-client:active {
+            transform: translateY(0);
+        }
+        .btn-get-invoice-client:disabled {
+            background: #9CA3AF !important;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
 
         /* Modal Overlay */
         .modal-overlay {
@@ -669,50 +701,67 @@
             }
         }
 
+        @page {
+            size: A4 portrait;
+            margin: 15mm 10mm;
+        }
+
         /* Print styling */
         @media print {
-            body {
-                background: none;
-                color: #000;
-                padding: 0;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
 
-            .container {
-                box-shadow: none;
-                border: none;
-                padding: 0;
-                max-width: 100%;
+            html, body {
+                width: 210mm !important;
+                height: max-content !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: visible !important;
+                background: #fff !important;
             }
 
-            .no-print {
+            .container, .invoice-wrapper {
+                width: 100% !important;
+                min-width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            .no-print,
+            .fab-container,
+            .fab-btn,
+            .modal-overlay,
+            .calc-dialog-overlay,
+            #preloader,
+            #get_invoice_container,
+            button {
                 display: none !important;
             }
 
             .spec-table th {
                 background-color: #F3F4F6 !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
             }
 
             .group-row td {
                 background-color: #EFF6FF !important;
                 color: #1e3a8a !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
             }
 
             .subtotal-row td {
                 background-color: #FAFBFB !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
             }
 
             .summary-card {
                 border: 2px solid #000;
                 box-shadow: none;
-                page-break-inside: avoid;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
 
             .header-main {
@@ -734,7 +783,20 @@
                 flex: 0 0 300px !important;
                 max-width: 300px !important;
             }
-            .spec-table tr {
+
+            table {
+                page-break-inside: auto !important;
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+
+            tr, td, th {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            .no-break, .manager-bar, .doc-header, .object-grid, .title-block {
+                break-inside: avoid !important;
                 page-break-inside: avoid !important;
             }
         }
@@ -862,6 +924,16 @@
                 <rect x="6" y="14" width="12" height="8"></rect>
             </svg>
         </button>
+        <!-- Get Invoice FAB (Emerald page) -->
+        <button class="fab-btn fab-get-invoice" id="btn_get_invoice" onclick="requestInvoice()" title="Получить счёт" style="display: none;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+        </button>
         <!-- Revise Button (Red cross) -->
         <button class="fab-btn fab-revise" onclick="openRevisionModal()" title="Есть замечания / правки">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -940,6 +1012,11 @@
         <section class="title-block">
             <h1 id="proposal_title">Коммерческое предложение</h1>
             <div id="status_badge" class="status-badge" style="display: none;"></div>
+            <div id="get_invoice_container" class="no-print" style="display: none; margin-top: 15px; margin-bottom: 25px; text-align: center;">
+                <button class="btn-get-invoice-client" onclick="requestInvoice()">
+                    📄 Получить счет на email
+                </button>
+            </div>
             <div class="object-grid">
                 <div class="obj-item">
                     <span class="obj-lbl">Объект</span>
@@ -1157,7 +1234,10 @@
             }
 
             // Reusing Supabase project credentials
-            const supabaseUrl = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';
+            const isHeatCalc = window.location.hostname.includes('heatcalc.ru');
+            const supabaseUrl = isHeatCalc 
+                ? window.location.origin + '/supabase_proxy.php' 
+                : 'https://heatcalc.ru/supabase_proxy.php';
             const supabaseKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';
             
             try {
@@ -1380,14 +1460,18 @@
             const badgeEl = document.getElementById('status_badge');
             const confirmBtn = document.querySelector('.fab-confirm');
             const reviseBtn = document.querySelector('.fab-revise');
+            const getInvoiceContainer = document.getElementById('get_invoice_container');
+            const btnGetInvoice = document.getElementById('btn_get_invoice');
             
             if (badgeEl) {
                 if (obj.status === 'confirmed') {
-                    badgeEl.textContent = '✓ Смета согласована';
+                    badgeEl.textContent = '✓ Смета одобрена';
                     badgeEl.className = 'status-badge status-confirmed';
                     badgeEl.style.display = 'inline-flex';
                     if (confirmBtn) confirmBtn.style.display = 'none';
                     if (reviseBtn) reviseBtn.style.display = 'none';
+                    if (getInvoiceContainer) getInvoiceContainer.style.display = 'block';
+                    if (btnGetInvoice) btnGetInvoice.style.display = 'flex';
                 } else if (obj.status === 'needs_revision') {
                     badgeEl.textContent = '✍ На доработке';
                     badgeEl.className = 'status-badge status-revision';
@@ -1397,11 +1481,15 @@
                     }
                     if (confirmBtn) confirmBtn.style.display = 'none';
                     if (reviseBtn) reviseBtn.style.display = 'none';
+                    if (getInvoiceContainer) getInvoiceContainer.style.display = 'none';
+                    if (btnGetInvoice) btnGetInvoice.style.display = 'none';
                 } else {
                     badgeEl.style.display = 'none';
                     // Re-show them if status goes back to 'sent' (just in case)
                     if (confirmBtn) confirmBtn.style.display = '';
                     if (reviseBtn) reviseBtn.style.display = '';
+                    if (getInvoiceContainer) getInvoiceContainer.style.display = 'none';
+                    if (btnGetInvoice) btnGetInvoice.style.display = 'none';
                 }
             }
         }
@@ -1493,7 +1581,14 @@
                     })
                 });
 
-                const resData = await response.json();
+                const text = await response.text();
+                let resData;
+                try {
+                    resData = text ? JSON.parse(text) : null;
+                } catch (parseErr) {
+                    console.error("[sendStatusEmailNotification] Failed to parse response as JSON. Raw response:", text);
+                    throw new Error("Неверный формат ответа сервера (ожидался JSON). " + (text ? text.substring(0, 150) : "Пустой ответ"));
+                }
                 console.log("[sendStatusEmailNotification] Response:", resData);
             } catch (e) {
                 console.error("[sendStatusEmailNotification] Failed to send email:", e);
@@ -1536,6 +1631,124 @@
                 return;
             }
             updateInvoiceStatus('needs_revision', comment);
+        }
+
+        async function requestInvoice() {
+            const btnFloat = document.getElementById('btn_get_invoice');
+            const btnClient = document.querySelector('.btn-get-invoice-client');
+            
+            if (!invoiceId || !supabaseClient || !invoiceData) {
+                alert("Ошибка: данные сметы не загружены.");
+                return;
+            }
+            
+            const managerEmail = invoiceData?.manager_info?.email;
+            if (!managerEmail) {
+                alert("Ошибка: email менеджера не найден в данных сметы.");
+                return;
+            }
+            
+            // Set loading state and disable buttons
+            if (btnFloat) {
+                btnFloat.disabled = true;
+                btnFloat.title = "⌛ Отправка...";
+            }
+            if (btnClient) {
+                btnClient.disabled = true;
+                btnClient.textContent = "⌛ Отправка...";
+            }
+            
+            try {
+                const obj = invoiceData.object_info || {};
+                const totals = invoiceData.totals || {};
+                const items = invoiceData.items || {};
+                const eqList = items.equipment || [];
+                const worksList = items.works || [];
+                
+                let wallMat = 'Газобетон';
+                if (obj.res === 1) wallMat = 'Газобетон';
+                else if (obj.res === 1.2) wallMat = 'Кирпич (без утепления)';
+                else if (obj.res === 0.8) wallMat = 'Тёплый дом (утепленный)';
+                else if (obj.res === 1.5) wallMat = 'Каркасный / Деревянный';
+                
+                // Construct detailed comment with physical units (м², кВт)
+                let comment = `Клиент одобрил смету и запросил выставление официального счета.\n\n`;
+                
+                comment += `📋 СВОДКА ПО ОБЪЕКТУ:\n`;
+                comment += `- Название проекта: ${obj.projectName || 'Новый объект'}\n`;
+                comment += `- Площадь дома: ${obj.area || 0} м²\n`;
+                comment += `- Количество этажей: ${obj.floors || 1}\n`;
+                comment += `- Материал стен: ${wallMat}\n`;
+                comment += `- Теплопотери дома: ${obj.power || 0} кВт\n`;
+                comment += `- Регион строительства: ${obj.region || 'Центр'}\n\n`;
+                
+                comment += `💰 ФИНАНСОВЫЕ ПОКАЗАТЕЛИ:\n`;
+                comment += `- Итого по оборудованию: ${(totals.equipment || 0).toLocaleString('ru-RU')} ₽\n`;
+                comment += `- Итого по монтажным работам: ${(totals.works || 0).toLocaleString('ru-RU')} ₽\n`;
+                comment += `- Общая сумма по смете: ${(totals.grandTotal || 0).toLocaleString('ru-RU')} ₽\n\n`;
+                
+                if (eqList && eqList.length > 0) {
+                    comment += `📦 СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ И МАТЕРИАЛОВ:\n`;
+                    let eqIdx = 1;
+                    eqList.forEach(item => {
+                        if (item.isOpt) return;
+                        comment += `  ${eqIdx++}. ${item.name} [Артикул: ${item.displaySku || '-'}] — ${item.q} ${item.unit || 'шт'} х ${item.price.toLocaleString('ru-RU')} ₽ = ${item.sum.toLocaleString('ru-RU')} ₽\n`;
+                    });
+                    comment += `\n`;
+                }
+                
+                if (worksList && worksList.length > 0) {
+                    comment += `🛠️ СПЕЦИФИКАЦИЯ РАБОТ:\n`;
+                    let workIdx = 1;
+                    worksList.forEach(work => {
+                        comment += `  ${workIdx++}. ${work.name} — ${work.q} ${work.unit || 'услуга'} х ${work.price.toLocaleString('ru-RU')} ₽ = ${work.sum.toLocaleString('ru-RU')} ₽\n`;
+                    });
+                    comment += `\n`;
+                }
+                
+                const projectName = obj.projectName || 'Новый объект';
+                const statusText = 'Запрошен счет';
+                const invoiceUrl = window.location.href;
+                
+                const response = await fetch('mail_status.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        to: managerEmail,
+                        projectName: projectName,
+                        statusText: statusText,
+                        comment: comment,
+                        invoiceUrl: invoiceUrl
+                    })
+                });
+                
+                const text = await response.text();
+                let resData;
+                try {
+                    resData = text ? JSON.parse(text) : null;
+                } catch (parseErr) {
+                    console.error("[requestInvoice] Failed to parse response as JSON. Raw response:", text);
+                    throw new Error("Неверный формат ответа сервера (ожидался JSON). " + (text ? text.substring(0, 150) : "Пустой ответ"));
+                }
+
+                if (resData && resData.status === 'success') {
+                    alert("Запрос на получение счета успешно отправлен менеджеру!");
+                    if (btnClient) btnClient.textContent = "✓ Запрос отправлен";
+                    if (btnFloat) btnFloat.title = "✓ Запрос отправлен";
+                } else {
+                    throw new Error(resData?.message || "Не удалось отправить email через mail_status.php");
+                }
+            } catch (err) {
+                console.error("[requestInvoice] Error sending request:", err);
+                alert("Не удалось отправить запрос на счет: " + err.message);
+                if (btnFloat) btnFloat.disabled = false;
+                if (btnClient) {
+                    btnClient.disabled = false;
+                    btnClient.textContent = "📄 Получить счет на email";
+                }
+            }
         }
     </script>
 </body>

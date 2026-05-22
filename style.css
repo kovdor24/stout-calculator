@@ -1447,7 +1447,7 @@ body.menu-open .mobile-menu-backdrop {
         background: #1F2937;
     }
 
-    /* РС‚РѕРіРѕ Рё С„РёРЅР°Р»СЊРЅС‹Рµ РєРЅРѕРїРєРё */
+    /* Р˜С‚РѕРіРѕ Рё С„РёРЅР°Р»СЊРЅС‹Рµ РєРЅРѕРїРєРё */
     .row-subtotal td {
         text-align: right !important;
         font-size: 15px !important;
@@ -1547,6 +1547,7 @@ body.menu-open .mobile-menu-backdrop {
 }
 
 @page {
+    size: A4 portrait;
     margin: 15mm 10mm;
 }
 
@@ -1555,11 +1556,40 @@ body.menu-open .mobile-menu-backdrop {
 }
 
 @media print {
-    tr {
-        page-break-inside: avoid;
+    /* Global settings to force color graphics */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
-    /* РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ РІРѕР·РІСЂР°С‰Р°РµРј С‚Р°Р±Р»РёС‡РЅС‹Р№ РІРёРґ */
+    html, body {
+        width: 210mm !important;
+        height: max-content !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: #fff !important;
+    }
+
+    #print-area, #print_bin, .container, .output-panel, #print_eq_clone, #print_works_clone, .invoice-wrapper {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        float: none !important;
+        position: relative !important;
+    }
+
+    tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    /* Принудительно возвращаем табличный вид */
     .inv-table {
         display: table !important;
         width: 100% !important;
@@ -1576,21 +1606,25 @@ body.menu-open .mobile-menu-backdrop {
 
     .inv-table tr {
         display: table-row !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
 
     .inv-table td,
     .inv-table th {
         display: table-cell !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
 
-    /* РЈР±СЂР°РЅРѕ СЃР»РѕРІРѕ РЎРџР•Р¦РР¤РРљРђР¦РРЇ РїРѕ Р·Р°РїСЂРѕСЃСѓ */
+    /* Убрано слово СПЕЦИФИКАЦИЯ по запросу */
     .doc-title::before {
         content: "";
     }
 
     .title-edit:empty::before {
         content: "" !important;
-        /* РЈР±РёСЂР°РµРј РїРѕРґСЃРєР°Р·РєСѓ "Р’РІРµРґРёС‚Рµ РЅР°Р·РІР°РЅРёРµ" РЅР° Р±СѓРјР°РіРµ */
+        /* Убираем подсказку "Введите название" на бумаге */
     }
 
     .title-edit {
@@ -1599,7 +1633,7 @@ body.menu-open .mobile-menu-backdrop {
         background: transparent !important;
     }
 
-    /* РЎРєСЂС‹РІР°РµРј Р·Р°РјРѕС‡РєРё, РєРЅРѕРїРєРё Рё Р»РёС€РЅРёРµ С„РѕРЅС‹ */
+    /* Скрываем замочки, кнопки и лишние фоны */
     .locked-guest::after,
     .locked-pro::after {
         display: none !important;
@@ -1608,6 +1642,8 @@ body.menu-open .mobile-menu-backdrop {
     .doc-summary {
         background: transparent !important;
         border: 1px solid #ccc !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
 
     .qty-wrap .opt-btn {
@@ -1649,12 +1685,10 @@ body.menu-open .mobile-menu-backdrop {
         padding: 14px !important;
     }
 
+    /* Скрываем все лишние интерфейсные элементы, меню, модалки и кнопки */
     .header-auth-block,
     .header-cloud-btns,
-    .header-actions {
-        display: none !important;
-    }
-
+    .header-actions,
     .site-header,
     .input-panel,
     .btn-print,
@@ -1663,7 +1697,16 @@ body.menu-open .mobile-menu-backdrop {
     .main-view-tabs,
     .footer-btns,
     footer,
-    #stout_preloader {
+    #stout_preloader,
+    .fab-container,
+    .fab-btn,
+    .modal-overlay,
+    .calc-dialog-overlay,
+    #revision_modal,
+    #custom_modal_overlay,
+    #preloader,
+    .mobile-bottom-nav,
+    .mobile-menu-backdrop {
         display: none !important;
     }
 
@@ -1844,33 +1887,34 @@ body.menu-open .mobile-menu-backdrop {
 }
 
 .btn-add-custom {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    max-width: none;
-    margin: 10px 0;
-    padding: 14px 20px;
-    border: 1px dashed var(--primary);
-    border-radius: 12px;
-    color: var(--primary);
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    text-align: center;
-    background: rgba(37, 99, 235, 0.03);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+    margin: 10px 0 !important;
+    padding: 14px 20px !important;
+    border: 1px dashed var(--primary) !important;
+    border-radius: 12px !important;
+    color: var(--primary) !important;
+    cursor: pointer !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    transition: all 0.2s ease !important;
+    text-align: center !important;
+    background: rgba(37, 99, 235, 0.03) !important;
 }
 
 .btn-add-custom:hover {
-    background: rgba(37, 99, 235, 0.08);
-    border-style: solid;
+    background: rgba(37, 99, 235, 0.08) !important;
+    border-style: solid !important;
 }
 
 body.dark-mode .btn-add-custom {
-    background: rgba(59, 130, 246, 0.05);
-    border-color: #3b82f6;
-    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05) !important;
+    border-color: #3b82f6 !important;
+    color: #3b82f6 !important;
 }
 
 /* РЎС‚РёР»СЊ РєРЅРѕРїРєРё РґР»СЏ С‚С‘РјРЅРѕР№ С‚РµРјС‹ (РєР°Рє РЅР° СЃРєСЂРёРЅС€РѕС‚Рµ) */

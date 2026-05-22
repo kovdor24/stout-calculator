@@ -13,9 +13,55 @@
 })();
 // ===================================
 
-const supabaseUrl = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';
+const isHeatCalc = window.location.hostname.includes('heatcalc.ru');
+const supabaseUrl = isHeatCalc 
+    ? window.location.origin + '/supabase_proxy.php' 
+    : 'https://heatcalc.ru/supabase_proxy.php';
 const supabaseKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+function getFriendlyErrorMessage(err, defaultMsg = 'Неизвестная ошибка') {
+    if (!err) return defaultMsg;
+    const msg = (err.message || String(err)).toLowerCase();
+    const isNetwork = msg.includes('failed to fetch') || 
+                      msg.includes('load failed') || 
+                      msg.includes('network') || 
+                      msg.includes('aborted') || 
+                      msg.includes('cors') || 
+                      msg.includes('timeout') || 
+                      msg.includes('превышено время') || 
+                      (err.name && err.name.includes('TypeError')) ||
+                      !navigator.onLine;
+    if (isNetwork) {
+        return 'Не удалось связаться с сервером Supabase. Пожалуйста, проверьте интернет-соединение, VPN, CORS-настройки в панели Supabase, или отключите блокировщики рекламы/расширения приватности (AdBlock, uBlock и др.) в вашем браузере.';
+    }
+    
+    if (msg.includes('invalid login credentials') || msg.includes('invalid email or password')) {
+        return 'Неверный логин или пароль.';
+    }
+    if (msg.includes('email not confirmed')) {
+        return 'Email не подтвержден. Пожалуйста, проверьте почту и подтвердите ваш аккаунт.';
+    }
+    if (msg.includes('already registered') || msg.includes('already exists')) {
+        return 'Пользователь с таким email уже зарегистрирован. Войдите в систему.';
+    }
+    return err.message || defaultMsg;
+}
+
+async function withTimeout(promise, timeoutMs = 6000, errorMsg = 'Превышено время ожидания ответа от сервера Supabase. Возможно, требуется включить VPN или проверить интернет-соединение.') {
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+            reject(new Error(errorMsg));
+        }, timeoutMs);
+    });
+    try {
+        return await Promise.race([promise, timeoutPromise]);
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
 if (typeof emailjs !== 'undefined') emailjs.init("-m4N93pTqMlCfuBpT");
 
 // Глобальный маппинг замен для кнопки "Аналог"
@@ -705,6 +751,7 @@ const app = {
                 }
                 this.state.projectName = pName;
                 this.saveState();
+                this.syncUI();
                 this.render();
             }
 
@@ -946,9 +993,9 @@ const app = {
             if (sharedInvoiceId) {
                 const status = sharedStatuses[sharedInvoiceId];
                 if (status === 'confirmed') {
-                    statusBadge = `<span class="status-badge-cabinet status-cabinet-confirmed" title="Смета согласована клиентом">Согласована</span>`;
+                    statusBadge = `<span class="status-badge-cabinet status-cabinet-confirmed" title="Смета согласована клиентом">Одобрена</span>`;
                 } else if (status === 'needs_revision') {
-                    statusBadge = `<span class="status-badge-cabinet status-cabinet-revision" title="Клиент просит внести правки">Отклонена</span>`;
+                    statusBadge = `<span class="status-badge-cabinet status-cabinet-revision" title="Клиент просит внести правки">На доработке</span>`;
                 } else {
                     statusBadge = `<span class="status-badge-cabinet status-cabinet-sent" title="Ссылка отправлена клиенту">Отправлена</span>`;
                 }
@@ -1142,11 +1189,16 @@ const app = {
             app.alert("Для продолжения необходимо принять условия Публичной оферты.");
             return;
         }
-        const { error } = await supabaseClient.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: window.location.origin + window.location.pathname }
-        });
-        if (error) app.alert("Ошибка при входе через Google: " + error.message);
+        try {
+            const { error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.origin + window.location.pathname }
+            });
+            if (error) throw error;
+        } catch (err) {
+            console.error("Ошибка входа через Google:", err);
+            app.alert("Ошибка при входе через Google: " + getFriendlyErrorMessage(err));
+        }
     },
 
     logout: async function () {
@@ -1383,8 +1435,8 @@ const app = {
             let adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-saved">Сохранена</span>`;
             if (sharedInvoiceId) {
                 const st = sharedStatusesAdmin[sharedInvoiceId];
-                if (st === 'confirmed') adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-confirmed">✓ Согласована</span>`;
-                else if (st === 'needs_revision') adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-revision">✍ Отклонена</span>`;
+                if (st === 'confirmed') adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-confirmed">✓ Одобрена</span>`;
+                else if (st === 'needs_revision') adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-revision">✍ На доработке</span>`;
                 else adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-sent">Отправлена</span>`;
             }
 
@@ -1785,9 +1837,9 @@ const app = {
 
             let statusBadgeHTML = '';
             if (status === 'confirmed') {
-                statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-confirmed">✓ Согласована</span>`;
+                statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-confirmed">✓ Одобрена</span>`;
             } else if (status === 'needs_revision') {
-                statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-revision">✍ Отклонена (на доработке)</span>`;
+                statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-revision">✍ На доработке</span>`;
             } else {
                 statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-sent">Отправлена клиенту</span>`;
             }
@@ -1931,11 +1983,12 @@ const app = {
             this.closeAuthModal();
         } catch (err) {
             console.error("Детали ошибки входа (Supabase):", err);
+            const userFriendlyMsg = getFriendlyErrorMessage(err, 'Неверный логин или пароль');
             if (authErrEl) {
-                authErrEl.innerText = 'Ошибка входа: ' + (err.message || 'Неверный логин или пароль');
+                authErrEl.innerText = 'Ошибка входа: ' + userFriendlyMsg;
                 authErrEl.style.display = 'block';
             } else {
-                app.alert('Ошибка входа: ' + (err.message || 'Неизвестная ошибка'));
+                app.alert('Ошибка входа: ' + userFriendlyMsg);
             }
         } finally {
             btn.disabled = false;
@@ -1999,8 +2052,13 @@ const app = {
             // Обязательно добавь console.log('Результат проверки email:', emailExists)
             console.log('Результат проверки email:', emailExists);
 
-            // Логика блокировки: Если emailExists === true (или если возникла ошибка базы данных)
-            if (emailExists === true || error) {
+            if (error) {
+                console.error("Ошибка проверки email:", error);
+                throw error;
+            }
+
+            // Логика блокировки: Если emailExists === true
+            if (emailExists === true) {
                 if (authErrEl) {
                     authErrEl.innerText = 'Пользователь с таким email уже существует. Пожалуйста, войдите в систему.';
                     authErrEl.style.display = 'block';
@@ -2013,7 +2071,7 @@ const app = {
             }
 
             // Execute the generation of the 4-digit verification code and invoke await emailjs.send(...) STRICTLY inside the condition where the Supabase query successfully confirms the email is available
-            if (emailExists === false && !error) {
+            if (emailExists === false) {
                 if (btn) {
                     btn.innerText = 'Отправка кода...';
                 }
@@ -2041,8 +2099,14 @@ const app = {
                 document.getElementById('auth_terms_wrapper').style.display = 'none';
             }
         } catch (err) {
-            console.error("Детали ошибки отправки кода (EmailJS):", err);
-            app.alert("Ошибка при отправке кода: " + (err.text || err.message || JSON.stringify(err) || "Неизвестная ошибка"));
+            console.error("Детали ошибки регистрации/отправки кода:", err);
+            const friendlyErr = getFriendlyErrorMessage(err);
+            if (authErrEl) {
+                authErrEl.innerText = 'Ошибка: ' + friendlyErr;
+                authErrEl.style.display = 'block';
+            } else {
+                app.alert("Ошибка при регистрации: " + friendlyErr);
+            }
         } finally {
             if (btn) {
                 btn.disabled = false;
@@ -2093,17 +2157,18 @@ const app = {
         } catch (err) {
             console.error("Детали ошибки создания аккаунта (Supabase):", err);
             
+            const friendlyErr = getFriendlyErrorMessage(err);
             if (authErrEl) {
                 const msg = (err.message || "").toLowerCase();
                 if (msg.includes('already registered') || msg.includes('already exists')) {
                     authErrEl.innerText = 'Пользователь с таким email уже существует. Пожалуйста, войдите в систему.';
                 } else {
-                    authErrEl.innerText = 'Произошла ошибка при регистрации, попробуйте позже.';
+                    authErrEl.innerText = 'Ошибка регистрации: ' + friendlyErr;
                 }
                 authErrEl.style.display = 'block';
                 this.backToAuthMain(); // Возвращаем к форме, чтобы пользователь видел ошибку
             } else {
-                app.alert('Ошибка регистрации: ' + (err.message || 'Неизвестная ошибка'));
+                app.alert('Ошибка регистрации: ' + friendlyErr);
             }
         } finally {
             btn.disabled = false;
@@ -2171,7 +2236,7 @@ const app = {
             this.closeAuthModal();
             this.showPasswordResetSuccessModal();
         } catch (err) {
-            app.alert('Ошибка: ' + err.message);
+            app.alert('Ошибка: ' + getFriendlyErrorMessage(err));
         } finally {
             btn.disabled = false;
             btn.innerText = 'Отправить ссылку';
@@ -2588,6 +2653,7 @@ const app = {
             }
             this.state.projectName = pName;
             this.saveState();
+            this.syncUI();
         }
 
         // Генерируем уникальный ID расчета (если еще нет), чтобы избежать дубликатов при saveToCloud
@@ -2659,52 +2725,119 @@ const app = {
                 btn.disabled = true;
             }
 
-            // -- СТРОГАЯ ПРОВЕРКА СЕССИИ --
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            let dbUserId = null;
-            if (session) {
-                let { data: uData } = await supabaseClient.from('users').select('id').eq('auth_user_id', session.user.id).maybeSingle();
-                if (uData) dbUserId = uData.id;
-            } else if (tgUser && tgUser.authUserId) {
-                let { data: uData } = await supabaseClient.from('users').select('id').eq('auth_user_id', tgUser.authUserId).maybeSingle();
-                if (uData) dbUserId = uData.id;
+            // -- НАДЕЖНАЯ ПРОВЕРКА СЕССИИ --
+            let user = null;
+            let authError = null;
+            try {
+                const { data: sessionData, error: sessionErr } = await withTimeout(supabaseClient.auth.getSession(), 6000);
+                if (sessionData && sessionData.session) {
+                    user = sessionData.session.user;
+                } else {
+                    const { data: userData, error: userErr } = await withTimeout(supabaseClient.auth.getUser(), 6000);
+                    user = userData ? userData.user : null;
+                    authError = userErr || sessionErr;
+                }
+            } catch (e) {
+                console.error('[shareInvoice] Ошибка проверки сессии:', e);
+                authError = e;
             }
 
-            if (!dbUserId && !isLocal) {
+            if (authError || !user) {
                 if (btn) { btn.innerHTML = origHtml; btn.disabled = false; }
-                app.alert("Ошибка: сессия не найдена. Попробуйте перезайти в аккаунт.");
+                app.alert("Ошибка: Вы не авторизованы. Войдите в систему для создания ссылки.");
                 return;
             }
             // -- КОНЕЦ ПРОВЕРКИ --
+
+            // Получаем существующий статус сметы для его корректного сохранения/сброса при обновлении
+            let existingObjectInfo = {};
+            if (this.state.shared_invoice_id) {
+                try {
+                    const { data: existingData, error: existingError } = await withTimeout(
+                        supabaseClient
+                            .from('shared_invoices')
+                            .select('object_info')
+                            .eq('id', this.state.shared_invoice_id)
+                            .maybeSingle(),
+                        6000
+                    );
+                    if (!existingError && existingData && existingData.object_info) {
+                        existingObjectInfo = existingData.object_info;
+                    }
+                } catch (e) {
+                    console.error('[shareInvoice] Ошибка при получении существующей сметы:', e);
+                }
+            }
+
+            // Если смету обновили (были правки от менеджера), сбрасываем статус с 'needs_revision' или 'confirmed' на 'sent',
+            // так как отправляется новая актуальная версия сметы.
+            let newStatus = 'sent';
+            let clientComment = existingObjectInfo.client_comment || null;
+            let statusUpdatedAt = existingObjectInfo.status_updated_at || null;
+
+            if (existingObjectInfo.status && existingObjectInfo.status !== newStatus) {
+                statusUpdatedAt = new Date().toISOString();
+            }
+
+            // Расширяем исходную информацию об объекте актуальными статусами
+            object_info.status = newStatus;
+            object_info.client_comment = clientComment;
+            object_info.status_updated_at = statusUpdatedAt;
 
             const insertPayload = {
                 object_info: object_info,
                 manager_info: manager_info,
                 items: items,
-                totals: totals
+                totals: totals,
+                user_id: user.id // UUID linked to auth.users.id
             };
-            if (dbUserId) {
-                insertPayload.user_id = dbUserId; // Привязка к FK
-            }
 
             if (this.state.shared_invoice_id) {
                 insertPayload.id = this.state.shared_invoice_id; // Используем существующий ID для UPSERT
             }
 
-            const { data, error } = await supabaseClient
-                .from('shared_invoices')
-                .upsert([insertPayload], { onConflict: 'id' })
-                .select('id')
-                .single();
+            let { data, error } = await withTimeout(
+                supabaseClient
+                    .from('shared_invoices')
+                    .upsert([insertPayload], { onConflict: 'id' })
+                    .select('id')
+                    .single(),
+                6000
+            );
 
-            if (error) throw error;
+            if (error) {
+                console.warn('[shareInvoice] Ошибка при сохранении (возможно, нарушение прав RLS). Пробуем создать новую запись:', error);
+                
+                const fallbackPayload = { ...insertPayload };
+                delete fallbackPayload.id; // Удаляем ID, чтобы принудительно создать новую запись
+                
+                const { data: fallbackData, error: fallbackError } = await withTimeout(
+                    supabaseClient
+                        .from('shared_invoices')
+                        .insert([fallbackPayload])
+                        .select('id')
+                        .single(),
+                    6000
+                );
+                
+                if (fallbackError) {
+                    throw fallbackError; // Если даже новая запись не создалась, пробрасываем ошибку
+                }
+                data = fallbackData;
+            }
 
             const shareId = data.id;
 
             // Сохраняем ID сгенерированного коммерческого предложения в состояние и БД
             this.state.shared_invoice_id = shareId;
             this.saveState();
-            await this.saveToCloud(true);
+            
+            // Фоновое сохранение сметы с таймаутом
+            try {
+                await withTimeout(this.saveToCloud(true), 6000);
+            } catch (saveCloudErr) {
+                console.error('[shareInvoice] Ошибка фонового сохранения сметы:', saveCloudErr);
+            }
 
             const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
             const shareUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
@@ -2723,7 +2856,7 @@ const app = {
 
         } catch (err) {
             console.error('[shareInvoice] Ошибка:', err);
-            app.alert("Произошла ошибка при создании ссылки: " + err.message);
+            app.alert("Произошла ошибка при создании ссылки: " + getFriendlyErrorMessage(err));
             const btn = document.getElementById('btn_share_trigger');
             if (btn) {
                 btn.innerHTML = `Ссылка для клиента`;
@@ -2985,6 +3118,7 @@ const app = {
             }
             this.state.projectName = pName;
             this.saveState();
+            this.syncUI();
             this.render();
         }
 
@@ -4551,7 +4685,7 @@ const app = {
             }
 
             // Кнопка добавления своей работы (в едином стиле с оборудованием)
-            h += `<tr class="hide-custom-work-btn no-print"><td colspan="9">
+            h += `<tr class="hide-custom-work-btn no-print"><td colspan="100">
                     <div class="btn-add-custom" onclick="app.addCustomWork()">
                         + Добавить свою работу
                     </div>
@@ -5374,7 +5508,7 @@ const app = {
             }
 
             // Кнопка добавления (со специальным классом no-print для скрытия при печати)
-            h += `<tr class="hide-custom-eq-btn no-print"><td colspan="9">
+            h += `<tr class="hide-custom-eq-btn no-print"><td colspan="100">
                     <div class="btn-add-custom" onclick="app.addCustomEqPrompt()">
                         + Добавить своё оборудование
                     </div>
