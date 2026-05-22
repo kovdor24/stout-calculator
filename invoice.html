@@ -1221,14 +1221,129 @@
         let invoiceId;
         let invoiceData;
 
+        // ===================================
+        // === OFFLINE SHARE LINK DECODER ===
+        function decompressPayload(compact) {
+            return {
+                object_info: {
+                    projectName: compact.o.n,
+                    area: compact.o.a,
+                    floors: compact.o.f,
+                    res: compact.o.r,
+                    mat: compact.o.m,
+                    power: compact.o.p,
+                    region: compact.o.g,
+                    date: compact.o.d,
+                    showSku: compact.o.s === 1
+                },
+                manager_info: {
+                    name: compact.m.n,
+                    phone: compact.m.p,
+                    city: compact.m.c,
+                    email: compact.m.e
+                },
+                items: {
+                    equipment: (compact.i.e || []).map(item => ({
+                        name: item.n,
+                        displaySku: item.s,
+                        brand: item.b,
+                        unit: item.u,
+                        q: item.q,
+                        price: item.p,
+                        sum: item.m,
+                        sectionTitle: item.t
+                    })),
+                    works: (compact.i.w || []).map(item => ({
+                        name: item.n,
+                        qty: item.q,
+                        q: item.q,
+                        price: item.p,
+                        sum: item.m
+                    }))
+                },
+                totals: {
+                    equipment: compact.t.e,
+                    works: compact.t.w,
+                    grandTotal: compact.t.g
+                }
+            };
+        }
+
+        function base64Decode(str) {
+            return decodeURIComponent(Array.prototype.map.call(atob(str), function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+        }
+
+        async function decompressString(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            const ds = new DecompressionStream('deflate');
+            const writer = ds.writable.getWriter();
+            writer.write(bytes);
+            writer.close();
+            const response = new Response(ds.readable);
+            const arrayBuffer = await response.arrayBuffer();
+            return new TextDecoder().decode(arrayBuffer);
+        }
+
+        async function decodePayload(str) {
+            if (str.startsWith('c_')) {
+                const raw = decodeURIComponent(str.substring(2));
+                const decompressed = await decompressString(raw);
+                return decompressPayload(JSON.parse(decompressed));
+            } else if (str.startsWith('r_')) {
+                const raw = decodeURIComponent(str.substring(2));
+                const decoded = base64Decode(raw);
+                return decompressPayload(JSON.parse(decoded));
+            } else {
+                return decompressPayload(JSON.parse(decodeURIComponent(str)));
+            }
+        }
+        // ===================================
+
         document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
+            const dataParam = urlParams.get('data');
             invoiceId = id;
 
             const preloader = document.getElementById('preloader');
             const errorScreen = document.getElementById('error_screen');
             const invoiceContent = document.getElementById('invoice_content');
+
+            if (dataParam) {
+                try {
+                    // Hide confirm/decline buttons in offline mode
+                    const btnConfirm = document.querySelector('.fab-confirm');
+                    const btnRevise = document.querySelector('.fab-revise');
+                    if (btnConfirm) btnConfirm.style.display = 'none';
+                    if (btnRevise) btnRevise.style.display = 'none';
+
+                    const decodedData = await decodePayload(dataParam);
+                    invoiceData = decodedData;
+
+                    // Render dynamic details
+                    renderInvoice(decodedData);
+
+                    // Reveal content and hide preloader
+                    invoiceContent.style.display = 'block';
+                    setTimeout(() => {
+                        preloader.style.opacity = '0';
+                        preloader.style.visibility = 'hidden';
+                    }, 300);
+                    return;
+                } catch (decodeErr) {
+                    console.error('[LoadSharedInvoice] Local payload decode error:', decodeErr);
+                    preloader.style.opacity = '0';
+                    preloader.style.visibility = 'hidden';
+                    errorScreen.style.display = 'block';
+                    return;
+                }
+            }
 
             if (!id || id.trim().length < 36) {
                 // Invalid or missing UUID
