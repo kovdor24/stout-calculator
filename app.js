@@ -13,10 +13,7 @@
 })();
 // ===================================
 
-const isHeatCalc = window.location.hostname.includes('heatcalc.ru');
-const supabaseUrl = isHeatCalc 
-    ? window.location.origin + '/supabase_proxy.php' 
-    : 'https://heatcalc.ru/supabase_proxy.php';
+const supabaseUrl = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';
 const supabaseKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
@@ -1190,9 +1187,8 @@ const app = {
             return;
         }
         try {
-            const { error } = await supabaseClient.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.origin + window.location.pathname }
+            const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google'
             });
             if (error) throw error;
         } catch (err) {
