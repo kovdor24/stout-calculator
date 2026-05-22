@@ -1141,6 +1141,7 @@
                 okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
                 okBtn.innerText = 'OK';
                 okBtn.onclick = () => {
+                    okBtn.disabled = true;
                     overlay.classList.remove('active');
                     setTimeout(() => {
                         overlay.remove();
@@ -1181,6 +1182,8 @@
                 cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
                 cancelBtn.innerText = 'Отмена';
                 cancelBtn.onclick = () => {
+                    cancelBtn.disabled = true;
+                    okBtn.disabled = true;
                     overlay.classList.remove('active');
                     setTimeout(() => {
                         overlay.remove();
@@ -1192,6 +1195,8 @@
                 okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
                 okBtn.innerText = 'Да';
                 okBtn.onclick = () => {
+                    cancelBtn.disabled = true;
+                    okBtn.disabled = true;
                     overlay.classList.remove('active');
                     setTimeout(() => {
                         overlay.remove();
@@ -1327,11 +1332,12 @@
             document.getElementById('obj_date').textContent = obj.date || '--.--.----';
 
             // Determine walls material from state mapping
+            const matVal = obj.hasOwnProperty('mat') ? obj.mat : obj.res;
             let wallMat = 'Газобетон';
-            if (obj.res === 1) wallMat = 'Газобетон';
-            else if (obj.res === 1.2) wallMat = 'Кирпич (без утепления)';
-            else if (obj.res === 0.8) wallMat = 'Тёплый дом (утепленный)';
-            else if (obj.res === 1.5) wallMat = 'Каркасный / Деревянный';
+            if (matVal === 1 || matVal === 1.0) wallMat = 'Газобетон';
+            else if (matVal === 1.2 || matVal === 1.3) wallMat = 'Кирпич (без утепления)';
+            else if (matVal === 0.8) wallMat = 'Тёплый дом (утепленный)';
+            else if (matVal === 1.5) wallMat = 'Каркасный / Деревянный';
             document.getElementById('obj_mat').textContent = wallMat;
 
             // 3. Totals
@@ -1597,7 +1603,7 @@
 
         async function confirmInvoice() {
             if (await confirm("Вы подтверждаете данное коммерческое предложение?")) {
-                updateInvoiceStatus('confirmed');
+                await updateInvoiceStatus('confirmed');
             }
         }
 
@@ -1623,14 +1629,14 @@
             }
         }
 
-        function submitRevision() {
+        async function submitRevision() {
             const txt = document.getElementById('revision_text');
             const comment = txt ? txt.value.trim() : '';
             if (!comment) {
-                alert("Пожалуйста, введите текст замечаний.");
+                await alert("Пожалуйста, введите текст замечаний.");
                 return;
             }
-            updateInvoiceStatus('needs_revision', comment);
+            await updateInvoiceStatus('needs_revision', comment);
         }
 
         async function requestInvoice() {
@@ -1665,11 +1671,12 @@
                 const eqList = items.equipment || [];
                 const worksList = items.works || [];
                 
+                const matVal = obj.hasOwnProperty('mat') ? obj.mat : obj.res;
                 let wallMat = 'Газобетон';
-                if (obj.res === 1) wallMat = 'Газобетон';
-                else if (obj.res === 1.2) wallMat = 'Кирпич (без утепления)';
-                else if (obj.res === 0.8) wallMat = 'Тёплый дом (утепленный)';
-                else if (obj.res === 1.5) wallMat = 'Каркасный / Деревянный';
+                if (matVal === 1 || matVal === 1.0) wallMat = 'Газобетон';
+                else if (matVal === 1.2 || matVal === 1.3) wallMat = 'Кирпич (без утепления)';
+                else if (matVal === 0.8) wallMat = 'Тёплый дом (утепленный)';
+                else if (matVal === 1.5) wallMat = 'Каркасный / Деревянный';
                 
                 // Construct detailed comment with physical units (м², кВт)
                 let comment = `Клиент одобрил смету и запросил выставление официального счета.\n\n`;

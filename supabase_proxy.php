@@ -96,8 +96,10 @@ curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
 curl_setopt($ch, CURLOPT_HTTPHEADER, $headersToSend);
 curl_setopt($ch, CURLOPT_TIMEOUT, 30); // 30-second timeout
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+// В целях безопасности SSL-верификация включена. Если на вашем сервере устарели корневые сертификаты,
+// и запросы к Supabase падают с ошибкой, скачайте cacert.pem с curl.se и укажите путь через CURLOPT_CAINFO.
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
 
 // Forward request body if applicable
 if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'PATCH', 'DELETE'])) {

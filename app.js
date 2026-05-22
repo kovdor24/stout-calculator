@@ -2692,6 +2692,7 @@ const app = {
             area: this.state.area,
             floors: this.state.floors,
             res: this.state.res,
+            mat: this.state.mat,
             power: pwr,
             region: regionName,
             date: new Date().toLocaleDateString('ru-RU'),
@@ -2716,154 +2717,202 @@ const app = {
             grandTotal: (app.lastEqSum || 0) + (app.lastWorksSum || 0)
         };
 
+        const btn = document.getElementById('btn_share_trigger');
+        let origHtml = "Ссылка для клиента";
         try {
-            const btn = document.getElementById('btn_share_trigger');
-            let origHtml = "";
             if (btn) {
-                origHtml = btn.innerHTML;
-                btn.innerHTML = `<span class="loading-spinner" style="display:inline-block; width:14px; height:14px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:stout-spin 0.8s linear infinite; margin-right:8px; vertical-align:middle;"></span>Генерация...`;
-                btn.disabled = true;
-            }
-
-            // -- НАДЕЖНАЯ ПРОВЕРКА СЕССИИ --
-            let user = null;
-            let authError = null;
-            try {
-                const { data: sessionData, error: sessionErr } = await withTimeout(supabaseClient.auth.getSession(), 6000);
-                if (sessionData && sessionData.session) {
-                    user = sessionData.session.user;
-                } else {
-                    const { data: userData, error: userErr } = await withTimeout(supabaseClient.auth.getUser(), 6000);
-                    user = userData ? userData.user : null;
-                    authError = userErr || sessionErr;
+                    origHtml = btn.innerHTML;
+                    btn.innerHTML = `<span class="loading-spinner" style="display:inline-block; width:14px; height:14px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:stout-spin 0.8s linear infinite; margin-right:8px; vertical-align:middle;"></span>Генерация...`;
+                    btn.disabled = true;
                 }
-            } catch (e) {
-                console.error('[shareInvoice] Ошибка проверки сессии:', e);
-                authError = e;
-            }
 
-            if (authError || !user) {
-                if (btn) { btn.innerHTML = origHtml; btn.disabled = false; }
-                app.alert("Ошибка: Вы не авторизованы. Войдите в систему для создания ссылки.");
-                return;
-            }
-            // -- КОНЕЦ ПРОВЕРКИ --
-
-            // Получаем существующий статус сметы для его корректного сохранения/сброса при обновлении
-            let existingObjectInfo = {};
-            if (this.state.shared_invoice_id) {
+                // -- НАДЕЖНАЯ ПРОВЕРКА СЕССИИ --
+                let user = null;
+                let authError = null;
                 try {
-                    const { data: existingData, error: existingError } = await withTimeout(
-                        supabaseClient
-                            .from('shared_invoices')
-                            .select('object_info')
-                            .eq('id', this.state.shared_invoice_id)
-                            .maybeSingle(),
-                        6000
-                    );
-                    if (!existingError && existingData && existingData.object_info) {
-                        existingObjectInfo = existingData.object_info;
+                    const { data: sessionData, error: sessionErr } = await withTimeout(supabaseClient.auth.getSession(), 6000);
+                    if (sessionData && sessionData.session) {
+                        user = sessionData.session.user;
+                    } else {
+                        const { data: userData, error: userErr } = await withTimeout(supabaseClient.auth.getUser(), 6000);
+                        user = userData ? userData.user : null;
+                        authError = userErr || sessionErr;
                     }
                 } catch (e) {
-                    console.error('[shareInvoice] Ошибка при получении существующей сметы:', e);
+                    console.error('[shareInvoice] Ошибка проверки сессии:', e);
+                    authError = e;
                 }
-            }
 
-            // Если смету обновили (были правки от менеджера), сбрасываем статус с 'needs_revision' или 'confirmed' на 'sent',
-            // так как отправляется новая актуальная версия сметы.
-            let newStatus = 'sent';
-            let clientComment = existingObjectInfo.client_comment || null;
-            let statusUpdatedAt = existingObjectInfo.status_updated_at || null;
+                if (authError || !user) {
+                    app.alert("Ошибка: Вы не авторизованы. Войдите в систему для создания ссылки.");
+                    return;
+                }
+                // -- КОНЕЦ ПРОВЕРКИ --
 
-            if (existingObjectInfo.status && existingObjectInfo.status !== newStatus) {
-                statusUpdatedAt = new Date().toISOString();
-            }
+                // Получаем существующий статус сметы для его корректного сохранения/сброса при обновлении
+                let existingObjectInfo = {};
+                if (this.state.shared_invoice_id) {
+                    try {
+                        const { data: existingData, error: existingError } = await withTimeout(
+                            supabaseClient
+                                .from('shared_invoices')
+                                .select('object_info')
+                                .eq('id', this.state.shared_invoice_id)
+                                .maybeSingle(),
+                            6000
+                        );
+                        if (!existingError && existingData && existingData.object_info) {
+                            existingObjectInfo = existingData.object_info;
+                        }
+                    } catch (e) {
+                        console.error('[shareInvoice] Ошибка при получении существующей сметы:', e);
+                    }
+                }
 
-            // Расширяем исходную информацию об объекте актуальными статусами
-            object_info.status = newStatus;
-            object_info.client_comment = clientComment;
-            object_info.status_updated_at = statusUpdatedAt;
+                // Если смету обновили (были правки от менеджера), сбрасываем статус с 'needs_revision' или 'confirmed' на 'sent',
+                // так как отправляется новая актуальная версия сметы.
+                let newStatus = 'sent';
+                let clientComment = existingObjectInfo.client_comment || null;
+                let statusUpdatedAt = existingObjectInfo.status_updated_at || null;
 
-            const insertPayload = {
-                object_info: object_info,
-                manager_info: manager_info,
-                items: items,
-                totals: totals,
-                user_id: user.id // UUID linked to auth.users.id
-            };
+                if (existingObjectInfo.status && existingObjectInfo.status !== newStatus) {
+                    statusUpdatedAt = new Date().toISOString();
+                }
 
-            if (this.state.shared_invoice_id) {
-                insertPayload.id = this.state.shared_invoice_id; // Используем существующий ID для UPSERT
-            }
+                // Расширяем исходную информацию об объекте актуальными статусами
+                object_info.status = newStatus;
+                object_info.client_comment = clientComment;
+                object_info.status_updated_at = statusUpdatedAt;
 
-            let { data, error } = await withTimeout(
-                supabaseClient
-                    .from('shared_invoices')
-                    .upsert([insertPayload], { onConflict: 'id' })
-                    .select('id')
-                    .single(),
-                6000
-            );
+                // Получаем UUID пользователя из public.users для соблюдения Foreign Key constraint
+                let dbUserId = null;
+                if (this.state.tgUser && this.state.tgUser.id) {
+                    dbUserId = this.state.tgUser.id;
+                }
+                if (!dbUserId) {
+                    console.log("[shareInvoice] Поиск UUID пользователя в public.users по authUserId:", user.id);
+                    try {
+                        let { data: uData, error: uError } = await withTimeout(
+                            supabaseClient
+                                .from('users')
+                                .select('id')
+                                .eq('auth_user_id', user.id)
+                                .maybeSingle(),
+                            6000
+                        );
+                        if (!uError && uData) {
+                            dbUserId = uData.id;
+                            this.state.tgUser = this.state.tgUser || {};
+                            this.state.tgUser.id = dbUserId;
+                            this.saveState();
+                        }
+                    } catch (e) {
+                        console.error('[shareInvoice] Ошибка при поиске пользователя:', e);
+                    }
+                }
 
-            if (error) {
-                console.warn('[shareInvoice] Ошибка при сохранении (возможно, нарушение прав RLS). Пробуем создать новую запись:', error);
-                
-                const fallbackPayload = { ...insertPayload };
-                delete fallbackPayload.id; // Удаляем ID, чтобы принудительно создать новую запись
-                
-                const { data: fallbackData, error: fallbackError } = await withTimeout(
+                if (!dbUserId) {
+                    // Если не нашли по auth_user_id, пробуем по email
+                    const email = user.email || '';
+                    if (email) {
+                        try {
+                            let { data: uData } = await withTimeout(
+                                supabaseClient
+                                    .from('users')
+                                    .select('id')
+                                    .eq('email', email)
+                                    .maybeSingle(),
+                                6000
+                            );
+                            if (uData) {
+                                dbUserId = uData.id;
+                                this.state.tgUser = this.state.tgUser || {};
+                                this.state.tgUser.id = dbUserId;
+                                this.saveState();
+                            }
+                        } catch (e) {
+                            console.error('[shareInvoice] Ошибка при поиске по email:', e);
+                        }
+                    }
+                }
+
+                console.log("[shareInvoice] Итоговый ID пользователя для вставки:", dbUserId);
+
+                const insertPayload = {
+                    object_info: object_info,
+                    manager_info: manager_info,
+                    items: items,
+                    totals: totals,
+                    user_id: dbUserId || user.id // Отправляем UUID из public.users, с откатом до auth.users.id
+                };
+
+                if (this.state.shared_invoice_id) {
+                    insertPayload.id = this.state.shared_invoice_id; // Используем существующий ID для UPSERT
+                }
+
+                let { data, error } = await withTimeout(
                     supabaseClient
                         .from('shared_invoices')
-                        .insert([fallbackPayload])
+                        .upsert([insertPayload], { onConflict: 'id' })
                         .select('id')
                         .single(),
                     6000
                 );
-                
-                if (fallbackError) {
-                    throw fallbackError; // Если даже новая запись не создалась, пробрасываем ошибку
+
+                if (error) {
+                    console.warn('[shareInvoice] Ошибка при сохранении (возможно, нарушение прав RLS). Пробуем создать новую запись:', error);
+                    
+                    const fallbackPayload = { ...insertPayload };
+                    delete fallbackPayload.id; // Удаляем ID, чтобы принудительно создать новую запись
+                    
+                    const { data: fallbackData, error: fallbackError } = await withTimeout(
+                        supabaseClient
+                            .from('shared_invoices')
+                            .insert([fallbackPayload])
+                            .select('id')
+                            .single(),
+                        6000
+                    );
+                    
+                    if (fallbackError) {
+                        throw fallbackError; // Если даже новая запись не создалась, пробрасываем ошибку
+                    }
+                    data = fallbackData;
                 }
-                data = fallbackData;
+
+                const shareId = data.id;
+
+                // Сохраняем ID сгенерированного коммерческого предложения в состояние и БД
+                this.state.shared_invoice_id = shareId;
+                this.saveState();
+                
+                // Фоновое сохранение сметы с таймаутом
+                try {
+                    await withTimeout(this.saveToCloud(true), 6000);
+                } catch (saveCloudErr) {
+                    console.error('[shareInvoice] Ошибка фонового сохранения сметы:', saveCloudErr);
+                }
+
+                const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
+                const shareUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
+
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    app.prompt("Ссылка успешно сгенерирована и скопирована в буфер обмена. Вы также можете скопировать её ниже:", shareUrl);
+                }).catch(err => {
+                    console.error('Ошибка копирования:', err);
+                    app.prompt("Ссылка успешно сгенерирована. Скопируйте её вручную:", shareUrl);
+                });
+
+            } catch (err) {
+                console.error('[shareInvoice] Ошибка:', err);
+                app.alert("Произошла ошибка при создании ссылки: " + getFriendlyErrorMessage(err));
+            } finally {
+                if (btn) {
+                    btn.innerHTML = origHtml;
+                    btn.disabled = false;
+                }
             }
-
-            const shareId = data.id;
-
-            // Сохраняем ID сгенерированного коммерческого предложения в состояние и БД
-            this.state.shared_invoice_id = shareId;
-            this.saveState();
-            
-            // Фоновое сохранение сметы с таймаутом
-            try {
-                await withTimeout(this.saveToCloud(true), 6000);
-            } catch (saveCloudErr) {
-                console.error('[shareInvoice] Ошибка фонового сохранения сметы:', saveCloudErr);
-            }
-
-            const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
-            const shareUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
-
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                app.prompt("Ссылка успешно сгенерирована и скопирована в буфер обмена. Вы также можете скопировать её ниже:", shareUrl);
-            }).catch(err => {
-                console.error('Ошибка копирования:', err);
-                app.prompt("Ссылка успешно сгенерирована. Скопируйте её вручную:", shareUrl);
-            });
-
-            if (btn) {
-                btn.innerHTML = origHtml;
-                btn.disabled = false;
-            }
-
-        } catch (err) {
-            console.error('[shareInvoice] Ошибка:', err);
-            app.alert("Произошла ошибка при создании ссылки: " + getFriendlyErrorMessage(err));
-            const btn = document.getElementById('btn_share_trigger');
-            if (btn) {
-                btn.innerHTML = `Ссылка для клиента`;
-                btn.disabled = false;
-            }
-        }
-    },
+        },
     download: function () {
         if (!this.checkAccess('base')) return;
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
