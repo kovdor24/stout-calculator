@@ -63,11 +63,29 @@ $targetUrl = $supabaseBaseUrl . $pathAndQuery;
 
 // Extract and forward critical headers required by Supabase API
 $headersToSend = [];
+$hasApiKey = false;
+$hasAuth = false;
+
 foreach (getallheaders() as $name => $value) {
     $lowerName = strtolower($name);
     if (in_array($lowerName, ['apikey', 'authorization', 'content-type', 'prefer', 'x-client-info', 'range', 'if-none-match'])) {
         $headersToSend[] = "$name: $value";
+        if ($lowerName === 'apikey') {
+            $hasApiKey = true;
+        }
+        if ($lowerName === 'authorization') {
+            $hasAuth = true;
+        }
     }
+}
+
+// Fallback public anon key if missing (critical for full-page OAuth redirects)
+$anonKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';
+if (!$hasApiKey) {
+    $headersToSend[] = "apikey: $anonKey";
+}
+if (!$hasAuth) {
+    $headersToSend[] = "Authorization: Bearer $anonKey";
 }
 
 // Initialize cURL session
