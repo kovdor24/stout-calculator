@@ -799,6 +799,69 @@
                 break-inside: avoid !important;
                 page-break-inside: avoid !important;
             }
+
+            /* Force standard row layout during printing regardless of device screen size */
+            .manager-bar {
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                gap: 15px !important;
+                padding: 10px 20px !important;
+                background-color: #F9FAFB !important;
+                border: 1px solid var(--border) !important;
+                border-radius: 8px !important;
+            }
+
+            .object-grid {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                justify-content: space-between !important;
+                padding: 12px 20px !important;
+                gap: 5px !important;
+                background: #F9FAFB !important;
+                border: 1px solid var(--border) !important;
+                border-radius: 8px !important;
+            }
+
+            .obj-item {
+                flex: 1 1 auto !important;
+                text-align: center !important;
+                padding: 4px 5px !important;
+                min-width: 60px !important;
+                position: relative !important;
+                display: block !important;
+            }
+
+            .obj-item:not(:last-child)::after {
+                content: '' !important;
+                display: block !important;
+                position: absolute !important;
+                right: 0 !important;
+                top: 20% !important;
+                height: 60% !important;
+                width: 1px !important;
+                background-color: var(--border) !important;
+            }
+
+            .header-logo {
+                margin: 0 !important;
+                width: 80px !important;
+                flex: 0 0 80px !important;
+            }
+
+            .col-sku {
+                display: table-cell !important;
+            }
+            .hide-sku .col-sku {
+                display: none !important;
+            }
+            .col-brand {
+                display: table-cell !important;
+            }
+            .hide-brand .col-brand {
+                display: none !important;
+            }
         }
     
 /* === PREMIUM CUSTOM DIALOGS === */
