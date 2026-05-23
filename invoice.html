@@ -2001,6 +2001,14 @@
             const getInvoiceContainer = document.getElementById('get_invoice_container');
             const btnGetInvoice = document.getElementById('btn_get_invoice');
             
+            const urlParams = new URLSearchParams(window.location.search);
+            const isOffline = urlParams.has('data');
+
+            if (isOffline) {
+                if (confirmBtn) confirmBtn.style.display = 'none';
+                if (reviseBtn) reviseBtn.style.display = 'none';
+            }
+            
             if (badgeEl) {
                 if (obj.status === 'confirmed') {
                     badgeEl.textContent = '✓ Смета одобрена';
@@ -2023,9 +2031,9 @@
                     if (btnGetInvoice) btnGetInvoice.style.display = 'none';
                 } else {
                     badgeEl.style.display = 'none';
-                    // Re-show them if status goes back to 'sent' (just in case)
-                    if (confirmBtn) confirmBtn.style.display = '';
-                    if (reviseBtn) reviseBtn.style.display = '';
+                    // Re-show them if status goes back to 'sent' (just in case), but only if not offline
+                    if (confirmBtn) confirmBtn.style.display = isOffline ? 'none' : '';
+                    if (reviseBtn) reviseBtn.style.display = isOffline ? 'none' : '';
                     if (getInvoiceContainer) getInvoiceContainer.style.display = 'none';
                     if (btnGetInvoice) btnGetInvoice.style.display = 'none';
                 }
