@@ -3184,6 +3184,41 @@ body.dark-mode .header-totals-block {
         grid-template-areas: 
             "name name sum"
             "spacer qty price" !important;
+        padding: 5px 0 !important;
+        gap: 2px 8px !important;
+    }
+    body.hide-images-mode .inv-table td.col-name {
+        font-size: 12px !important;
+    }
+
+    /* Compact wrappers on mobile */
+    .container {
+        padding: 8px !important;
+        gap: 10px !important;
+    }
+    .output-panel {
+        padding: 8px !important;
+    }
+
+    /* Compact table division lines and subheadings on mobile */
+    .row-sec td {
+        padding: 5px 8px !important;
+        font-size: 10px !important;
+        border-top: 1px solid var(--border) !important;
+    }
+    body.dark-mode .row-sec td {
+        padding: 5px 8px !important;
+        font-size: 10px !important;
+        border-top: 1px solid #262E3F !important;
+        background: #1E293B !important;
+    }
+    .group-header td {
+        padding: 4px 8px !important;
+        font-size: 9px !important;
+    }
+    .row-subtotal td {
+        padding: 4px 8px !important;
+        font-size: 9px !important;
     }
 }
 
