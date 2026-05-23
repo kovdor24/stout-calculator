@@ -3331,11 +3331,15 @@ const app = {
 
                 let success = false;
                 try {
-                    // 1. Сохранение в Supabase
+                    // 1. Сохранение в Supabase (неблокирующее для отправки писем)
                     console.log("[Queue] Шаг 1: Сохранение в Supabase для задачи:", job.id);
-                    const isSaved = await app.saveJobToCloud(job.stateData, job.eqSum, job.worksSum);
-                    if (!isSaved) {
-                        throw new Error("Не удалось сохранить смету в облаке");
+                    try {
+                        const isSaved = await app.saveJobToCloud(job.stateData, job.eqSum, job.worksSum);
+                        if (!isSaved) {
+                            console.warn("[Queue] Не удалось сохранить смету в облаке (продолжаем отправку письма)");
+                        }
+                    } catch (supabaseErr) {
+                        console.error("[Queue] Исключение при сохранении в Supabase:", supabaseErr);
                     }
 
                     // 2. Отправка через EmailJS
