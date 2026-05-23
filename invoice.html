@@ -768,8 +768,131 @@
                 padding: 15px;
             }
 
-            .col-sku, .col-brand {
-                display: none;
+            /* Pyaterochka / Perekrestok Flat UI for equipment proposal rows */
+            #equipment_container thead {
+                display: none !important;
+            }
+            
+            #equipment_tbody tr:not(.group-row):not(.subtotal-row) {
+                display: grid !important;
+                grid-template-columns: 64px 1fr auto !important;
+                grid-template-rows: auto auto !important;
+                grid-template-areas: 
+                    "img name sum"
+                    "img qty price" !important;
+                gap: 4px 12px !important;
+                background: transparent !important;
+                border: none !important;
+                border-bottom: 1px solid var(--border) !important;
+                border-radius: 0 !important;
+                padding: 12px 0 !important;
+                margin-bottom: 0 !important;
+                box-shadow: none !important;
+            }
+            
+            #equipment_tbody td {
+                padding: 0 !important;
+                border: none !important;
+                color: var(--text-main) !important;
+                background: transparent !important;
+            }
+            
+            /* Left rounded square image wrapper */
+            #equipment_tbody td.col-img {
+                grid-area: img !important;
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                background: #F3F4F6 !important; /* Soft light grey */
+                border-radius: 12px !important;
+                width: 64px !important;
+                height: 64px !important;
+                padding: 4px !important;
+                box-sizing: border-box !important;
+            }
+            
+            /* Support dark mode for image background if body has dark-mode */
+            body.dark-mode #equipment_tbody td.col-img {
+                background: var(--surface-light) !important;
+            }
+            
+            #equipment_tbody td.col-img img, 
+            #equipment_tbody td.col-img .table-img {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: contain !important;
+                background: transparent !important;
+                border: none !important;
+                padding: 0 !important;
+                border-radius: 0 !important;
+            }
+            
+            /* Product Name styling */
+            #equipment_tbody td.col-name {
+                grid-area: name !important;
+                font-weight: 600 !important;
+                font-size: 13px !important;
+                line-height: 1.3 !important;
+                align-self: start !important;
+                max-width: none !important;
+                width: 100% !important;
+                display: block !important;
+                white-space: normal !important;
+                word-break: break-word !important;
+            }
+            
+            /* Total Sum styling (bold, top-right) */
+            #equipment_tbody td.col-sum {
+                grid-area: sum !important;
+                display: flex !important;
+                justify-content: flex-end !important;
+                align-items: start !important;
+                font-weight: 700 !important;
+                font-size: 14px !important;
+                text-align: right !important;
+                white-space: nowrap !important;
+            }
+            
+            /* Quantity styling (bottom-left) */
+            #equipment_tbody td.col-qty {
+                grid-area: qty !important;
+                display: flex !important;
+                justify-content: flex-start !important;
+                align-items: center !important;
+                align-self: end !important;
+                font-size: 12px !important;
+                font-weight: 500 !important;
+                color: var(--text-sec) !important;
+            }
+            
+            /* Unit Price styling (bottom-right, grey) */
+            #equipment_tbody td.col-price {
+                grid-area: price !important;
+                display: flex !important;
+                justify-content: flex-end !important;
+                align-items: center !important;
+                align-self: end !important;
+                font-size: 11px !important;
+                color: var(--text-sec) !important;
+                text-align: right !important;
+                white-space: nowrap !important;
+            }
+            
+            #equipment_tbody td.col-qty::after {
+                content: " шт" !important;
+            }
+            
+            #equipment_tbody td.col-price::before {
+                content: "× " !important;
+                margin-right: 2px !important;
+            }
+            
+            /* Hide unused columns on mobile */
+            #equipment_tbody td.col-sku,
+            #equipment_tbody td.col-brand,
+            #equipment_tbody td.col-unit,
+            #equipment_tbody td.col-idx {
+                display: none !important;
             }
         }
 
