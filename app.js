@@ -2377,13 +2377,18 @@ const app = {
 
             let utm = localStorage.getItem('stout_utm') || '';
 
+            this.state.tgUser = this.state.tgUser || {};
+            const existingCity = this.state.tgUser.city || localStorage.getItem('user_city') || '';
+            const existingPhone = this.state.tgUser.phone || phone || '';
+
             this.state.tgUser = {
                 id: authUserId,
                 authUserId: authUserId,
                 first_name: fullName,
-                phone: phone,
+                phone: existingPhone,
                 email: email,
                 avatar_url: avatar,
+                city: existingCity,
                 isGoogle: user.app_metadata && user.app_metadata.provider === 'google'
             };
             this.saveState();
@@ -2400,7 +2405,8 @@ const app = {
                 auth_user_id: authUserId,
                 email: email,
                 username: fullName,
-                phone: phone,
+                phone: existingPhone,
+                city: existingCity || undefined,
                 utm_source: utm || undefined,
                 registration_ip: clientIp,
                 terms_accepted: true,
@@ -2425,12 +2431,15 @@ const app = {
                 if (!uData) {
                     let { data: newUList } = await supabaseClient
                         .from('users')
-                        .insert([{ auth_user_id: authUserId, email: email, username: fullName, phone: phone, utm_source: utm, registration_ip: clientIp, ...updatePayload }])
+                        .insert([{ auth_user_id: authUserId, email: email, username: fullName, phone: existingPhone, city: existingCity || undefined, utm_source: utm, registration_ip: clientIp, ...updatePayload }])
                         .select('id, account_type, demo_ends_at, username, phone, city');
                     upsertResult = newUList;
                 } else {
-                    await supabaseClient.from('users').update({ auth_user_id: authUserId, ...updatePayload }).eq('id', uData.id);
+                    await supabaseClient.from('users').update({ auth_user_id: authUserId, city: existingCity || uData.city || undefined, ...updatePayload }).eq('id', uData.id);
                     upsertResult = [uData];
+                    if (upsertResult[0]) {
+                        upsertResult[0].city = existingCity || uData.city || '';
+                    }
                 }
             }
 
