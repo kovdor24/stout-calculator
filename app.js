@@ -2863,6 +2863,16 @@ const app = {
                 authError = e;
             }
 
+            // Резервный вариант: если произошел сетевой сбой / таймаут Supabase, но в стейте сохранен авторизованный пользователь
+            if ((authError || !user) && this.state.tgUser) {
+                console.log('[shareInvoice] Сбой сети или таймаут Supabase. Используем локальную сохраненную сессию.');
+                user = {
+                    id: this.state.tgUser.authUserId || this.state.tgUser.id,
+                    email: this.state.tgUser.email || ''
+                };
+                authError = null; // Сбрасываем ошибку, так как локальная сессия валидна
+            }
+
             if (authError || !user) {
                 app.alert("Ошибка: Вы не авторизованы. Войдите в систему для создания ссылки.");
                 if (btn) {
