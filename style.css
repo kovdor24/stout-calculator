@@ -3150,6 +3150,10 @@ body.dark-mode .header-totals-block {
         text-align: right !important;
         white-space: nowrap !important;
     }
+    .inv-table td.col-sum::after {
+        content: "\00a0₽" !important;
+        margin-left: 4px !important;
+    }
 
     .inv-table td.col-price { 
         grid-area: price !important; 
@@ -3163,7 +3167,8 @@ body.dark-mode .header-totals-block {
         white-space: nowrap !important;
     }
     .inv-table td.col-price::after {
-        content: " ₽" !important;
+        content: "\00a0₽" !important;
+        margin-left: 4px !important;
     }
     .inv-table td.col-price .mob-mult {
         display: inline !important;
