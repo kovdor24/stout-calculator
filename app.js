@@ -2936,8 +2936,8 @@ const app = {
             object_info.status_updated_at = statusUpdatedAt;
 
             let dbUserId = null;
-            if (this.state.tgUser && this.state.tgUser.id) {
-                dbUserId = this.state.tgUser.id;
+            if (this.state.tgUser && this.state.tgUser.id && /^\d+$/.test(String(this.state.tgUser.id))) {
+                dbUserId = parseInt(this.state.tgUser.id);
             }
             if (!dbUserId) {
                 try {
@@ -2984,12 +2984,16 @@ const app = {
                 }
             }
 
+            if (!dbUserId) {
+                throw new Error("Профиль пользователя не найден в базе данных. Попробуйте выйти и войти в аккаунт заново.");
+            }
+
             const insertPayload = {
                 object_info: object_info,
                 manager_info: manager_info,
                 items: items,
                 totals: totals,
-                user_id: dbUserId || user.id
+                user_id: dbUserId
             };
 
             if (this.state.shared_invoice_id) {
