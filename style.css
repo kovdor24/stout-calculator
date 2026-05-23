@@ -3081,11 +3081,11 @@ body.dark-mode .header-totals-block {
     /* Redefine Table for iPhone 15 widths (Pyaterochka / Perekrestok Flat UI) */
     .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.hide-custom-work-btn):not(.hide-custom-eq-btn) {
         display: grid !important;
-        grid-template-columns: 64px 1fr auto !important;
+        grid-template-columns: 64px 1fr auto auto !important;
         grid-template-rows: auto auto !important;
         grid-template-areas: 
-            "img name sum"
-            "img qty price" !important;
+            "img name name sum"
+            "img spacer qty price" !important;
         gap: 4px 12px !important;
         background: transparent !important;
         border: none !important;
@@ -3153,7 +3153,7 @@ body.dark-mode .header-totals-block {
     .inv-table td.col-qty { 
         grid-area: qty !important; 
         display: flex !important; 
-        justify-content: flex-start !important; 
+        justify-content: flex-end !important; 
         align-items: center !important; 
         align-self: end !important;
     }
@@ -3180,10 +3180,10 @@ body.dark-mode .header-totals-block {
         display: none !important;
     }
     body.hide-images-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.hide-custom-work-btn):not(.hide-custom-eq-btn) {
-        grid-template-columns: 1fr auto !important;
+        grid-template-columns: 1fr auto auto !important;
         grid-template-areas: 
-            "name sum"
-            "qty price" !important;
+            "name name sum"
+            "spacer qty price" !important;
     }
 }
 
