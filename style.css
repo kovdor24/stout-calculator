@@ -4140,3 +4140,11 @@ body.dark-mode .calc-toast-close:hover {
 body.dark-mode .btn-get-invoice {
     background: linear-gradient(135deg, #047857, #10B981);
 }
+
+/* === COMPACT IMAGES HIDING MODE === */
+body.hide-images-mode .col-img {
+    display: none !important;
+}
+body.hide-images-mode .inv-table td {
+    padding: 6px 12px !important;
+}
