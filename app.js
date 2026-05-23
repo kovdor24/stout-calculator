@@ -2993,7 +2993,7 @@ const app = {
                 manager_info: manager_info,
                 items: items,
                 totals: totals,
-                user_id: dbUserId
+                user_id: user.id
             };
 
             if (this.state.shared_invoice_id) {
