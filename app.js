@@ -301,14 +301,37 @@ const app = {
 
             const cancelBtn = document.createElement('button');
             cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
-            cancelBtn.innerText = 'Отмена';
-            cancelBtn.onclick = () => {
-                overlay.classList.remove('active');
-                setTimeout(() => {
-                    overlay.remove();
-                    resolve(null);
-                }, 200);
-            };
+            const isSharePrompt = msg && (msg.includes("Ссылка создана") || msg.includes("Скопируйте"));
+            if (isSharePrompt) {
+                cancelBtn.innerText = 'Копировать';
+                cancelBtn.onclick = () => {
+                    app.copyToClipboard(currentValue).then(() => {
+                        cancelBtn.innerText = '✅ Скопировано!';
+                        cancelBtn.style.backgroundColor = '#22c55e';
+                        cancelBtn.style.color = '#ffffff';
+                        setTimeout(() => {
+                            overlay.classList.remove('active');
+                            setTimeout(() => {
+                                overlay.remove();
+                                resolve(currentValue);
+                            }, 200);
+                        }, 800);
+                    }).catch(err => {
+                        console.error('Ошибка копирования:', err);
+                        cancelBtn.innerText = 'Ошибка!';
+                        cancelBtn.style.backgroundColor = '#ef4444';
+                    });
+                };
+            } else {
+                cancelBtn.innerText = 'Отмена';
+                cancelBtn.onclick = () => {
+                    overlay.classList.remove('active');
+                    setTimeout(() => {
+                        overlay.remove();
+                        resolve(null);
+                    }, 200);
+                };
+            }
 
             const okBtn = document.createElement('button');
             okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
