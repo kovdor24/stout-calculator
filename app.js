@@ -3052,6 +3052,9 @@ const app = {
 
         } catch (supabaseErr) {
             console.warn('[shareInvoice] Supabase connection failed, falling back to local payload URL:', supabaseErr);
+            if (this.isPro()) {
+                app.alert("Предупреждение: не удалось сохранить смету в облачную базу данных (" + (supabaseErr.message || supabaseErr) + "). Создана офлайн-ссылка без кнопок согласования.");
+            }
             try {
                 const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
                 
