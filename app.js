@@ -354,6 +354,35 @@ const app = {
         });
     },
 
+    copyToClipboard: function (text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text);
+        } else {
+            let textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            return new Promise((resolve, reject) => {
+                try {
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    if (successful) {
+                        resolve();
+                    } else {
+                        reject(new Error("document.execCommand('copy') failed"));
+                    }
+                } catch (err) {
+                    document.body.removeChild(textArea);
+                    reject(err);
+                }
+            });
+        }
+    },
+
     _saveRateLimit: { count: 0, lastReset: 0 },
     _adminOffset: 0,
     _adminPageSize: 30,
@@ -2010,7 +2039,7 @@ const app = {
             exportState[key] = val;
         }
         let settings = btoa(unescape(encodeURIComponent(JSON.stringify(exportState))));
-        navigator.clipboard.writeText(settings).then(async () => {
+        app.copyToClipboard(settings).then(async () => {
             await app.alert('✅ Код сметы скопирован!\n\nЗакройте админку, нажмите иконку 📥 (Загрузить код) в верхней панели и вставьте его.');
         }).catch(async err => {
             console.error('Ошибка копирования: ', err);
@@ -2864,7 +2893,7 @@ const app = {
             try {
                 const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
 
-                navigator.clipboard.writeText(shareUrl).then(() => {
+                app.copyToClipboard(shareUrl).then(() => {
                     app.prompt("✅ Ссылка создана и скопирована! Отправьте её клиенту:", shareUrl);
                 }).catch(err => {
                     console.error('Ошибка копирования:', err);
@@ -3061,7 +3090,7 @@ const app = {
             const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
             const shareUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
 
-            navigator.clipboard.writeText(shareUrl).then(() => {
+            app.copyToClipboard(shareUrl).then(() => {
                 app.prompt("✅ Ссылка создана и скопирована! Отправьте её клиенту:", shareUrl);
             }).catch(err => {
                 console.error('Ошибка копирования:', err);
@@ -3076,7 +3105,7 @@ const app = {
             try {
                 const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
 
-                navigator.clipboard.writeText(shareUrl).then(() => {
+                app.copyToClipboard(shareUrl).then(() => {
                     app.prompt("✅ Ссылка создана и скопирована! Отправьте её клиенту:", shareUrl);
                 }).catch(err => {
                     console.error('Ошибка копирования:', err);
