@@ -3540,7 +3540,7 @@ const app = {
                     grandTotal: total
                 };
 
-                const { data: sessionData } = await supabaseClient.auth.getSession();
+                const { data: sessionData } = await withTimeout(supabaseClient.auth.getSession(), 3000).catch(() => ({ data: { session: null } }));
                 const sessionUser = sessionData?.session?.user;
                 const authUserId = sessionUser ? sessionUser.id : (tgUser.authUserId || null);
 
@@ -3551,11 +3551,14 @@ const app = {
                 }
                 if (!dbUserId && authUserId) {
                     try {
-                        const { data: uData } = await supabaseClient
-                            .from('users')
-                            .select('id')
-                            .eq('auth_user_id', authUserId)
-                            .maybeSingle();
+                        const { data: uData } = await withTimeout(
+                            supabaseClient
+                                .from('users')
+                                .select('id')
+                                .eq('auth_user_id', authUserId)
+                                .maybeSingle(),
+                            3000
+                        );
                         if (uData) dbUserId = uData.id;
                     } catch (e) {
                         console.error('[sendEmail] Ошибка поиска по auth_user_id:', e);
@@ -3565,11 +3568,14 @@ const app = {
                     const email = tgUser.email || (this.state.tgUser?.email || this.state.user?.email || localStorage.getItem('user_email') || '');
                     if (email) {
                         try {
-                            const { data: uData } = await supabaseClient
-                                .from('users')
-                                .select('id')
-                                .eq('email', email)
-                                .maybeSingle();
+                            const { data: uData } = await withTimeout(
+                                supabaseClient
+                                    .from('users')
+                                    .select('id')
+                                    .eq('email', email)
+                                    .maybeSingle(),
+                                3000
+                            );
                             if (uData) dbUserId = uData.id;
                         } catch (e) {
                             console.error('[sendEmail] Ошибка поиска по email:', e);
@@ -3589,20 +3595,26 @@ const app = {
                     insertPayload.id = shareId;
                 }
 
-                let { data, error } = await supabaseClient
-                    .from('shared_invoices')
-                    .upsert([insertPayload], { onConflict: 'id' })
-                    .select('id')
-                    .single();
+                let { data, error } = await withTimeout(
+                    supabaseClient
+                        .from('shared_invoices')
+                        .upsert([insertPayload], { onConflict: 'id' })
+                        .select('id')
+                        .single(),
+                    4000
+                );
 
                 if (error) {
                     const fallbackPayload = { ...insertPayload };
                     delete fallbackPayload.id;
-                    const { data: fallbackData, error: fallbackError } = await supabaseClient
-                        .from('shared_invoices')
-                        .insert([fallbackPayload])
-                        .select('id')
-                        .single();
+                    const { data: fallbackData, error: fallbackError } = await withTimeout(
+                        supabaseClient
+                            .from('shared_invoices')
+                            .insert([fallbackPayload])
+                            .select('id')
+                            .single(),
+                        4000
+                    );
                     if (fallbackError) throw fallbackError;
                     data = fallbackData;
                 }
