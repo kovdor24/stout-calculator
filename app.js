@@ -885,7 +885,10 @@ const app = {
             const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
 
             let dbUserId = null;
-            if (tgUser || session) {
+            if (tgUser && tgUser.id) {
+                dbUserId = tgUser.id;
+            }
+            if (!dbUserId && (tgUser || session)) {
                 // Пытаемся получить UUID пользователя из сессии или стейта
                 const authUserId = session ? session.user.id : (tgUser ? tgUser.authUserId : null);
                 const email = session ? session.user.email : (tgUser ? tgUser.email : null);
@@ -903,11 +906,9 @@ const app = {
                 console.log("[saveToCloud] Найден ID пользователя в БД:", dbUserId);
             }
 
-            // Если в режиме разработки и пользователя нет в БД - используем заглушку или блокируем
+            // Если в режиме разработки и пользователя нет в БД - используем заглушку или предупреждаем
             if (!dbUserId && !isLocal) {
-                console.log("[saveToCloud] Ошибка: профиль пользователя не найден в БД.");
-                app.alert("Ошибка: профиль пользователя не найден. Попробуйте перезайти в аккаунт.");
-                return false;
+                console.warn("[saveToCloud] Профиль пользователя не найден в БД. Сохраняем расчет без привязки к user_id.");
             }
 
             const insertData = {
@@ -917,7 +918,7 @@ const app = {
                 total_sum: total,
                 eq_sum: eq,
                 works_sum: wk,
-                user_id: dbUserId // Теперь это поле обязательно заполнится если есть сессия
+                user_id: dbUserId
             };
 
             let saveError = null;
@@ -933,18 +934,18 @@ const app = {
                 console.log("[saveToCloud] Результат проверки сметы в БД:", existing);
                 if (existing && existing.length > 0) {
                     // Безопасность: обновляем ТОЛЬКО если запись принадлежит текущему пользователю
-                    if (dbUserId && String(existing[0].user_id) !== String(dbUserId)) {
-                        console.log("[saveToCloud] Смета чужая. Создаем копию...");
-                        const { error } = await supabaseClient
-                            .from('estimates')
-                            .insert([insertData]);
-                        saveError = error;
-                    } else {
+                    if (String(existing[0].user_id) === String(dbUserId)) {
                         console.log("[saveToCloud] Смета своя. Обновляем...");
                         const { error } = await supabaseClient
                             .from('estimates')
                             .update(insertData)
                             .eq('id', existing[0].id);
+                        saveError = error;
+                    } else {
+                        console.log("[saveToCloud] Смета чужая или анонимная попытка перезаписи. Создаем копию...");
+                        const { error } = await supabaseClient
+                            .from('estimates')
+                            .insert([insertData]);
                         saveError = error;
                     }
                 } else {
@@ -3149,7 +3150,10 @@ const app = {
             
             let dbUserId = null;
             const tgUser = stateData.tgUser;
-            if (tgUser || session) {
+            if (tgUser && tgUser.id) {
+                dbUserId = tgUser.id;
+            }
+            if (!dbUserId && (tgUser || session)) {
                 const authUserId = session ? session.user.id : (tgUser ? tgUser.authUserId : null);
                 const email = session ? session.user.email : (tgUser ? tgUser.email : null);
 
@@ -3163,8 +3167,7 @@ const app = {
             }
 
             if (!dbUserId && !isLocal) {
-                console.error("[saveJobToCloud] Профиль пользователя не найден в БД.");
-                return false;
+                console.warn("[saveJobToCloud] Профиль пользователя не найден в БД. Сохраняем расчет без привязки к user_id.");
             }
 
             const insertData = {
@@ -3186,16 +3189,16 @@ const app = {
                     .limit(1);
 
                 if (existing && existing.length > 0) {
-                    if (dbUserId && String(existing[0].user_id) !== String(dbUserId)) {
-                        const { error } = await supabaseClient
-                            .from('estimates')
-                            .insert([insertData]);
-                        saveError = error;
-                    } else {
+                    if (String(existing[0].user_id) === String(dbUserId)) {
                         const { error } = await supabaseClient
                             .from('estimates')
                             .update(insertData)
                             .eq('id', existing[0].id);
+                        saveError = error;
+                    } else {
+                        const { error } = await supabaseClient
+                            .from('estimates')
+                            .insert([insertData]);
                         saveError = error;
                     }
                 } else {
@@ -3418,15 +3421,29 @@ const app = {
             const EMAILJS_TEMPLATE_ID = "template_lg1zol9";
             const EMAILJS_PUBLIC_KEY = "-m4N93pTqMlCfuBpT";
 
-            // 1. Формируем список оборудования
-            let equipmentText = "";
+            // 1. Формируем простую и наглядную таблицу оборудования (Название - Артикул - Количество)
+            let equipmentText = "Название - Артикул - Количество\n";
+            equipmentText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
             (this.currentSpec || []).forEach((item, idx) => {
-                const sku = item.id || item.code || "---";
-                const sum = ((item.price || 0) * item.q).toLocaleString('ru-RU');
-                equipmentText += `${idx + 1}. ${item.name} (${sku}) — ${item.q} шт. — ${sum} ₽\n`;
+                const sku = item.id || item.code || "—";
+                equipmentText += `${idx + 1}. ${item.name} - ${sku} - ${item.q} шт.\n`;
+            });
+            equipmentText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
+
+            // 2. Формируем таблицу с табуляцией для легкого копирования в Excel (Название \t Артикул \t Количество)
+            let copyTableText = "Название\tАртикул\tКоличество\n";
+            (this.currentSpec || []).forEach(item => {
+                const sku = item.id || item.code || "";
+                copyTableText += `${item.name}\t${sku}\t${item.q}\n`;
             });
 
-            // 2. Получаем названия параметров из стейта
+            // Добавляем таблицу копирования прямо в конец списка оборудования для максимального удобства
+            equipmentText += "📋 ТАБЛИЦА ДЛЯ ИМПОРТА В EXCEL (выделите и скопируйте в Excel):\n";
+            equipmentText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+            equipmentText += copyTableText;
+            equipmentText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+
+            // 3. Получаем названия параметров из стейта
             let regionName = "Центр";
             if (this.state.region === 120) regionName = "Урал";
             if (this.state.region === 100) regionName = "Центр";
@@ -3443,11 +3460,168 @@ const app = {
             const worksSum = (this.state.accountType === 'pro') ? (app.lastWorksSum || 0) : 0;
             const total = eqSum + worksSum;
 
-            // 3. Собираем итоговый объект данных для EmailJS
+            const authorName = tgUser.first_name || tgUser.username || "Дмитрий";
+
+            // ГЕНЕРАЦИЯ / Upsert В ТАБЛИЦУ shared_invoices ДЛЯ СОЗДАНИЯ РАБОЧЕЙ ОНЛАЙН ССЫЛКИ КЛИЕНТА
+            let shareId = this.state.shared_invoice_id;
+            const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
+            let viewUrl = "";
+
+            try {
+                // Расчет теплопотерь
+                let h1 = this.state.h1 || 2.7, h2 = this.state.h2 || 2.7;
+                let avgH = (this.state.floors === 2) ? (h1 + h2) / 2 : h1;
+                let pwr = 0;
+                if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
+                    let totalLoadW = 0;
+                    this.state.rooms.forEach(r => {
+                        let rHeight = (r.floor === 2) ? h2 : h1;
+                        let heightCoef = rHeight / 2.7;
+                        totalLoadW += (r.area * heightCoef * 70 * (this.state.region / 100) * this.state.mat);
+                        r.windows.forEach(w => {
+                            let wHeight = w.isPan ? 2.5 : 1.5;
+                            let wArea = parseFloat(w.width || 1) * wHeight;
+                            totalLoadW += (wArea * 150 * (this.state.region / 100) * this.state.mat);
+                        });
+                    });
+                    pwr = (totalLoadW / 1000).toFixed(1);
+                } else {
+                    pwr = (this.state.area * avgH * 37 * (this.state.region / 100) * this.state.mat / 1000).toFixed(1);
+                }
+
+                const object_info = {
+                    projectName: pName,
+                    area: this.state.area,
+                    floors: this.state.floors,
+                    res: this.state.res,
+                    mat: this.state.mat,
+                    power: pwr,
+                    region: regionName,
+                    date: new Date().toLocaleDateString('ru-RU'),
+                    showSku: !!this.state.showSku,
+                    status: 'sent',
+                    client_comment: null,
+                    status_updated_at: null
+                };
+
+                const manager_info = {
+                    name: authorName,
+                    phone: tgUser.phone || '',
+                    city: tgUser.city || '',
+                    email: (this.state.tgUser?.email || this.state.user?.email || localStorage.getItem('user_email') || '')
+                };
+
+                const items = {
+                    equipment: this.currentEquipmentList || [],
+                    works: this.currentWorksList || []
+                };
+
+                const totals = {
+                    equipment: eqSum,
+                    works: worksSum,
+                    grandTotal: total
+                };
+
+                const { data: sessionData } = await supabaseClient.auth.getSession();
+                const sessionUser = sessionData?.session?.user;
+                const authUserId = sessionUser ? sessionUser.id : (tgUser.authUserId || null);
+
+                // Получаем внутренний dbUserId из таблицы public.users (поскольку user_id - внешний ключ на public.users.id)
+                let dbUserId = null;
+                if (tgUser && tgUser.id) {
+                    dbUserId = tgUser.id;
+                }
+                if (!dbUserId && authUserId) {
+                    try {
+                        const { data: uData } = await supabaseClient
+                            .from('users')
+                            .select('id')
+                            .eq('auth_user_id', authUserId)
+                            .maybeSingle();
+                        if (uData) dbUserId = uData.id;
+                    } catch (e) {
+                        console.error('[sendEmail] Ошибка поиска по auth_user_id:', e);
+                    }
+                }
+                if (!dbUserId) {
+                    const email = tgUser.email || (this.state.tgUser?.email || this.state.user?.email || localStorage.getItem('user_email') || '');
+                    if (email) {
+                        try {
+                            const { data: uData } = await supabaseClient
+                                .from('users')
+                                .select('id')
+                                .eq('email', email)
+                                .maybeSingle();
+                            if (uData) dbUserId = uData.id;
+                        } catch (e) {
+                            console.error('[sendEmail] Ошибка поиска по email:', e);
+                        }
+                    }
+                }
+
+                const insertPayload = {
+                    object_info: object_info,
+                    manager_info: manager_info,
+                    items: items,
+                    totals: totals,
+                    user_id: dbUserId
+                };
+
+                if (shareId) {
+                    insertPayload.id = shareId;
+                }
+
+                let { data, error } = await supabaseClient
+                    .from('shared_invoices')
+                    .upsert([insertPayload], { onConflict: 'id' })
+                    .select('id')
+                    .single();
+
+                if (error) {
+                    const fallbackPayload = { ...insertPayload };
+                    delete fallbackPayload.id;
+                    const { data: fallbackData, error: fallbackError } = await supabaseClient
+                        .from('shared_invoices')
+                        .insert([fallbackPayload])
+                        .select('id')
+                        .single();
+                    if (fallbackError) throw fallbackError;
+                    data = fallbackData;
+                }
+
+                shareId = data.id;
+                this.state.shared_invoice_id = shareId;
+                this.saveState();
+                
+                viewUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
+            } catch (err) {
+                console.warn("[sendEmail] Сбой сохранения в shared_invoices, генерируем offline fallback:", err);
+                try {
+                    let items = {
+                        equipment: this.currentEquipmentList || [],
+                        works: this.currentWorksList || []
+                    };
+                    let totals = {
+                        equipment: eqSum,
+                        works: worksSum,
+                        grandTotal: total
+                    };
+                    viewUrl = await this.generateLocalShareLink(
+                        { projectName: pName, area: this.state.area, floors: this.state.floors, res: this.state.res, mat: this.state.mat, power: 0, region: regionName, date: new Date().toLocaleDateString('ru-RU'), showSku: !!this.state.showSku },
+                        { name: authorName, phone: tgUser.phone || '', city: tgUser.city || '', email: tgUser.email || '' },
+                        items,
+                        totals
+                    );
+                } catch (fallbackErr) {
+                    console.error("[sendEmail] Ошибка генерации офлайн-ссылки:", fallbackErr);
+                }
+            }
+
+            // 4. Собираем итоговый объект данных для EmailJS
             const templateParams = {
-                project_name: this.state.projectName || "Без названия",
+                project_name: pName,
                 calc_id: this.state.calc_id,
-                user_name: tgUser.first_name || tgUser.username || "Монтажник",
+                user_name: authorName,
                 user_phone: tgUser.phone || "Не указан",
                 user_email: (this.state.tgUser?.email || this.state.user?.email || 'Не указан'),
                 user_city: (this.state.tgUser?.city || this.state.user?.city || localStorage.getItem('user_city') || 'Не указан'),
@@ -3456,7 +3630,9 @@ const app = {
                 region: regionName,
                 boiler_type: boilerName,
                 total_sum: total.toLocaleString('ru-RU') + " ₽",
-                equipment_list: equipmentText
+                equipment_list: equipmentText,
+                copy_table: copyTableText, // также передаем отдельным параметром на всякий случай
+                view_url: viewUrl // Полностью рабочая ссылка на счет для клиента (динамическая или оффлайн)
             };
 
             // Клонируем стейт для независимого сохранения в фоне
@@ -3500,6 +3676,7 @@ const app = {
             btn.disabled = false;
         }
     },
+
     loadFromCode: async function () {
         let code = await app.prompt("Вставьте код расчета (например, HC-240409-S4DT или старый JSON):");
         if (!code) return;
