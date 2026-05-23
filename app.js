@@ -65,7 +65,7 @@ function compactPayload(data) {
 }
 
 function base64Encode(str) {
-    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function (match, p1) {
         return String.fromCharCode(parseInt(p1, 16));
     }));
 }
@@ -78,7 +78,7 @@ async function compressString(str) {
     writer.close();
     const response = new Response(cs.readable);
     const arrayBuffer = await response.arrayBuffer();
-    
+
     let binary = '';
     const bytes = new Uint8Array(arrayBuffer);
     const len = bytes.byteLength;
@@ -105,19 +105,19 @@ async function encodePayload(data) {
 function getFriendlyErrorMessage(err, defaultMsg = 'Неизвестная ошибка') {
     if (!err) return defaultMsg;
     const msg = (err.message || String(err)).toLowerCase();
-    const isNetwork = msg.includes('failed to fetch') || 
-                      msg.includes('load failed') || 
-                      msg.includes('network') || 
-                      msg.includes('aborted') || 
-                      msg.includes('cors') || 
-                      msg.includes('timeout') || 
-                      msg.includes('превышено время') || 
-                      (err.name && err.name.includes('TypeError')) ||
-                      !navigator.onLine;
+    const isNetwork = msg.includes('failed to fetch') ||
+        msg.includes('load failed') ||
+        msg.includes('network') ||
+        msg.includes('aborted') ||
+        msg.includes('cors') ||
+        msg.includes('timeout') ||
+        msg.includes('превышено время') ||
+        (err.name && err.name.includes('TypeError')) ||
+        !navigator.onLine;
     if (isNetwork) {
         return 'Не удалось связаться с сервером Supabase. Пожалуйста, проверьте интернет-соединение, VPN, CORS-настройки в панели Supabase, или отключите блокировщики рекламы/расширения приватности (AdBlock, uBlock и др.) в вашем браузере.';
     }
-    
+
     if (msg.includes('invalid login credentials') || msg.includes('invalid email or password')) {
         return 'Неверный логин или пароль.';
     }
@@ -160,30 +160,30 @@ const ANALOG_MAP = {
 
 const app = {
     // === PREMIUM CUSTOM DIALOGS ===
-    alert: function(msg, title = "Внимание") {
+    alert: function (msg, title = "Внимание") {
         if (document.body.classList.contains('menu-open')) {
-            try { this.toggleMenu(); } catch(e) {}
+            try { this.toggleMenu(); } catch (e) { }
         }
         return new Promise((resolve) => {
             const overlay = document.createElement('div');
             overlay.className = 'calc-dialog-overlay';
-            
+
             const card = document.createElement('div');
             card.className = 'calc-dialog-card';
-            
+
             const titleEl = document.createElement('h3');
             titleEl.className = 'calc-dialog-title';
             titleEl.innerText = title;
             card.appendChild(titleEl);
-            
+
             const msgEl = document.createElement('p');
             msgEl.className = 'calc-dialog-message';
             msgEl.innerText = msg;
             card.appendChild(msgEl);
-            
+
             const btnContainer = document.createElement('div');
             btnContainer.className = 'calc-dialog-buttons';
-            
+
             const okBtn = document.createElement('button');
             okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
             okBtn.innerText = 'OK';
@@ -198,35 +198,35 @@ const app = {
             card.appendChild(btnContainer);
             overlay.appendChild(card);
             document.body.appendChild(overlay);
-            
+
             setTimeout(() => overlay.classList.add('active'), 10);
         });
     },
 
-    confirm: function(msg, title = "Подтверждение") {
+    confirm: function (msg, title = "Подтверждение") {
         if (document.body.classList.contains('menu-open')) {
-            try { this.toggleMenu(); } catch(e) {}
+            try { this.toggleMenu(); } catch (e) { }
         }
         return new Promise((resolve) => {
             const overlay = document.createElement('div');
             overlay.className = 'calc-dialog-overlay';
-            
+
             const card = document.createElement('div');
             card.className = 'calc-dialog-card';
-            
+
             const titleEl = document.createElement('h3');
             titleEl.className = 'calc-dialog-title';
             titleEl.innerText = title;
             card.appendChild(titleEl);
-            
+
             const msgEl = document.createElement('p');
             msgEl.className = 'calc-dialog-message';
             msgEl.innerText = msg;
             card.appendChild(msgEl);
-            
+
             const btnContainer = document.createElement('div');
             btnContainer.className = 'calc-dialog-buttons';
-            
+
             const cancelBtn = document.createElement('button');
             cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
             cancelBtn.innerText = 'Отмена';
@@ -237,7 +237,7 @@ const app = {
                     resolve(false);
                 }, 200);
             };
-            
+
             const okBtn = document.createElement('button');
             okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
             okBtn.innerText = 'Да';
@@ -248,46 +248,46 @@ const app = {
                     resolve(true);
                 }, 200);
             };
-            
+
             btnContainer.appendChild(cancelBtn);
             btnContainer.appendChild(okBtn);
             card.appendChild(btnContainer);
             overlay.appendChild(card);
             document.body.appendChild(overlay);
-            
+
             setTimeout(() => overlay.classList.add('active'), 10);
         });
     },
 
-    prompt: function(msg, defaultValue = "", title = "Ввод данных") {
+    prompt: function (msg, defaultValue = "", title = "Ввод данных") {
         if (document.body.classList.contains('menu-open')) {
-            try { this.toggleMenu(); } catch(e) {}
+            try { this.toggleMenu(); } catch (e) { }
         }
         return new Promise((resolve) => {
             const overlay = document.createElement('div');
             overlay.className = 'calc-dialog-overlay';
-            
+
             const card = document.createElement('div');
             card.className = 'calc-dialog-card';
-            
+
             const titleEl = document.createElement('h3');
             titleEl.className = 'calc-dialog-title';
             titleEl.innerText = title;
             card.appendChild(titleEl);
-            
+
             const msgEl = document.createElement('p');
             msgEl.className = 'calc-dialog-message';
             msgEl.innerText = msg;
             card.appendChild(msgEl);
-            
+
             const inputWrapper = document.createElement('div');
             inputWrapper.className = 'calc-dialog-input-wrapper';
-            
+
             const inputEl = document.createElement('input');
             inputEl.type = 'text';
             inputEl.className = 'calc-dialog-input';
             inputEl.value = defaultValue;
-            
+
             // Надежный захват значения для мобильных устройств
             let currentValue = defaultValue;
             inputEl.oninput = (e) => { currentValue = e.target.value; };
@@ -295,10 +295,10 @@ const app = {
 
             inputWrapper.appendChild(inputEl);
             card.appendChild(inputWrapper);
-            
+
             const btnContainer = document.createElement('div');
             btnContainer.className = 'calc-dialog-buttons';
-            
+
             const cancelBtn = document.createElement('button');
             cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
             cancelBtn.innerText = 'Отмена';
@@ -309,11 +309,11 @@ const app = {
                     resolve(null);
                 }, 200);
             };
-            
+
             const okBtn = document.createElement('button');
             okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
             okBtn.innerText = 'OK';
-            
+
             const submit = () => {
                 // Берем актуальное значение (с fallback на currentValue)
                 const val = (inputEl && inputEl.value !== undefined) ? inputEl.value : currentValue;
@@ -323,7 +323,7 @@ const app = {
                     resolve(val);
                 }, 200);
             };
-            
+
             okBtn.onclick = submit;
             inputEl.onkeydown = (e) => {
                 if (e.key === 'Enter') submit();
@@ -335,13 +335,13 @@ const app = {
                     }, 200);
                 }
             };
-            
+
             btnContainer.appendChild(cancelBtn);
             btnContainer.appendChild(okBtn);
             card.appendChild(btnContainer);
             overlay.appendChild(card);
             document.body.appendChild(overlay);
-            
+
             setTimeout(() => {
                 overlay.classList.add('active');
                 // Двойной фокус для надежности на iOS
@@ -364,7 +364,7 @@ const app = {
     state: { waterInput: false, outdoorFaucet: false, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 4, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true },
 
     lastSavedStateString: "",
-    
+
     get currentUser() {
         return this.state.tgUser || {};
     },
@@ -394,13 +394,13 @@ const app = {
         try { let res = await fetch('https://ipapi.co/json/'); let data = await res.json(); if (data && data.city && data.country_name) return data.city + ', ' + data.country_name; } catch (e) { }
         return '';
     },
-    initMobileMenu: function() {
+    initMobileMenu: function () {
         if (document.getElementById('mobile-sidebar')) return;
 
         const sidebar = document.createElement('div');
         sidebar.id = 'mobile-sidebar';
         sidebar.className = 'mobile-sidebar';
-        
+
         const closeBtn = document.createElement('span');
         closeBtn.className = 'auth-modal-close';
         closeBtn.innerHTML = '&times;';
@@ -410,7 +410,7 @@ const app = {
         closeBtn.style.zIndex = '10';
         closeBtn.onclick = () => app.toggleMenu();
         sidebar.appendChild(closeBtn);
-        
+
         const content = document.createElement('div');
         content.id = 'mobile-sidebar-content';
         content.className = 'mobile-sidebar-content';
@@ -429,7 +429,7 @@ const app = {
         });
     },
 
-    toggleMenu: function() {
+    toggleMenu: function () {
         const isMobile = window.innerWidth <= 768;
         if (!isMobile) return;
 
@@ -437,7 +437,7 @@ const app = {
 
         const isOpen = document.body.classList.toggle('menu-open');
         const sidebarContent = document.getElementById('mobile-sidebar-content');
-        
+
         const authBlock = document.getElementById('tg-auth-container');
         const mainControls = document.querySelector('.header-main-controls');
         const skuControl = document.querySelector('.sku-control');
@@ -455,12 +455,12 @@ const app = {
         }
     },
 
-    restoreDesktopLayout: function() {
+    restoreDesktopLayout: function () {
         const authBlock = document.getElementById('tg-auth-container');
         const mainControls = document.querySelector('.header-main-controls');
         const skuControl = document.querySelector('.sku-control');
         const mobileTotals = document.getElementById('mobile_header_totals');
-        
+
         const headerRight = document.querySelector('.site-header-right');
         const toggleBtn = document.querySelector('.menu-toggle-btn');
         const headerRow = document.querySelector('.doc-header .header-row');
@@ -692,7 +692,7 @@ const app = {
             }
             if (title) title.innerHTML = "Подписка PRO";
             if (text) text.innerHTML = "Преимущества подписки: подбор всех разделов (котельная, радиаторы, теплый пол, водоснабжение, канализация) монтажные работы, артикулы, подбор аналогов, формирование кп в pdf, excel.";
-            
+
             let cards = document.querySelector('.tariff-cards');
             if (cards) cards.style.display = 'flex';
 
@@ -721,10 +721,10 @@ const app = {
         // Текущее время + 3 дня в мс
         const trialUntil = Date.now() + 3 * 24 * 60 * 60 * 1000;
         localStorage.setItem('pro_trial_until', trialUntil);
-        
+
         this.closeModal();
         app.alert('✅ Тестовый период на 3 дня успешно активирован!');
-        
+
         // Синхронизируем UI и перерисовываем смету без перезагрузки страницы
         this.syncUI();
         this.render();
@@ -780,13 +780,13 @@ const app = {
             if (tgUser.authUserId) query = query.eq('auth_user_id', tgUser.authUserId);
             else if (tgUser.email) query = query.eq('email', tgUser.email);
             else { app.alert("Ошибка: не удалось определить аккаунт. Войдите заново."); return; }
-            
+
             // Запрашиваем текущие данные пользователя, чтобы убедиться что триал не был активирован
             let checkQuery = supabaseClient.from('users').select('demo_ends_at');
             if (tgUser.authUserId) checkQuery = checkQuery.eq('auth_user_id', tgUser.authUserId);
             else checkQuery = checkQuery.eq('email', tgUser.email);
             const checkRes = await checkQuery.single();
-            
+
             if (checkRes.data && checkRes.data.demo_ends_at) {
                 app.alert("Пробный период уже был активирован ранее.");
                 this.state.demoUsed = true;
@@ -830,11 +830,11 @@ const app = {
         try {
             // === ПРОВЕРКА АВТОРИЗАЦИИ ===
             const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-            
+
             console.log("[saveToCloud] Запрашиваем сессию Supabase...");
             const { data: { session } } = await supabaseClient.auth.getSession();
             console.log("[saveToCloud] Сессия Supabase получена:", session ? "Активна" : "Нет сессии");
-            
+
             if (!session && !isLocal) {
                 console.log("[saveToCloud] Сессия отсутствует, показываем окно авторизации");
                 this.showAuthModal();
@@ -855,11 +855,11 @@ const app = {
             }
 
             // Проверка наличия города (ищем в стейте, в полях профиля или в localStorage)
-            let userCity = (this.state.tgUser && this.state.tgUser.city) || 
-                           (this.state.user && this.state.user.city) || 
-                           (document.getElementById('profile_city_input') ? document.getElementById('profile_city_input').value.trim() : null) ||
-                           localStorage.getItem('user_city');
-            
+            let userCity = (this.state.tgUser && this.state.tgUser.city) ||
+                (this.state.user && this.state.user.city) ||
+                (document.getElementById('profile_city_input') ? document.getElementById('profile_city_input').value.trim() : null) ||
+                localStorage.getItem('user_city');
+
             if (!userCity) {
                 userCity = await app.prompt("Пожалуйста, укажите ваш город для корректного выставления счёта:");
                 if (!userCity || userCity.trim() === '') {
@@ -1020,7 +1020,7 @@ const app = {
             }
 
             let query = supabaseClient.from('estimates').select('id, project_name, total_sum, created_at, user_id, calc_data').order('created_at', { ascending: false }).limit(50);
-            
+
             const isAdmin = uRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(uRow.email.toLowerCase());
             if (!isAdmin) {
                 // Обычный пользователь видит ТОЛЬКО свои сметы
@@ -1040,7 +1040,7 @@ const app = {
                         .from('shared_invoices')
                         .select('id, object_info')
                         .in('id', sharedIds);
-                    
+
                     if (!sharedError && sharedList) {
                         sharedList.forEach(item => {
                             sharedStatuses[item.id] = item.object_info?.status || 'sent';
@@ -1050,11 +1050,11 @@ const app = {
                     console.error("Error fetching shared invoice statuses:", e);
                 }
             }
-            
+
             this._cloudEstimates = estimates;
             this._currentUserRow = uRow;
             this.renderCloudList(this._cloudEstimates, sharedStatuses);
-        } catch (error) { 
+        } catch (error) {
             document.getElementById('cloud_list_content').innerHTML = `<div style="padding:20px; color:#EF4444;">Ошибка: ${error.message}</div>`;
         }
     },
@@ -1254,9 +1254,9 @@ const app = {
             const { data: { session } } = await supabaseClient.auth.getSession();
             const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
             const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
-            
+
             let query = supabaseClient.from('estimates').select('calc_data, user_id').eq('id', id);
-            
+
             // Если мы не в режиме разработки, добавляем фильтр по текущему пользователю
             // (даже если RLS настроен, лишняя проверка на фронте не помешает)
             let userEmail = session ? session.user.email : (tgUser ? tgUser.email : null);
@@ -1271,7 +1271,7 @@ const app = {
 
             const { data, error } = await query.single();
             if (error) throw error;
-            
+
             let loadedState = data.calc_data;
             delete loadedState.tgUser; delete loadedState.accountType; delete loadedState.demoUsed; delete loadedState.darkMode;
             this.state = { ...this.state, ...loadedState };
@@ -1361,7 +1361,7 @@ const app = {
         this._adminOffset = offset;
         const content = document.getElementById('admin_content');
         if (content) content.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 50px;">Загрузка данных...</div>';
-        
+
         try {
             // 1. Fetch Users (Paginated)
             let { data: users, error: errU, count: totalUsers } = await supabaseClient.from('users')
@@ -1409,9 +1409,9 @@ const app = {
                 }
             } catch (e) { console.error('Admin status fetch error:', e); }
 
-            this.adminData = { 
-                users: users || [], 
-                userEstimates: userEsts || [], 
+            this.adminData = {
+                users: users || [],
+                userEstimates: userEsts || [],
                 recentEstimates: recentEsts || [],
                 totalUsers: totalUsers || 0,
                 totalEstimates: sums.length,
@@ -1420,9 +1420,9 @@ const app = {
                 sharedStatusesAdmin
             };
             this.renderAdminMain();
-        } catch (error) { 
+        } catch (error) {
             console.error("Admin Load Error:", error);
-            if (content) content.innerHTML = `<div style="padding:20px; color:#EF4444;">Ошибка: ${error.message}</div>`; 
+            if (content) content.innerHTML = `<div style="padding:20px; color:#EF4444;">Ошибка: ${error.message}</div>`;
         }
     },
 
@@ -1490,11 +1490,11 @@ const app = {
             let device = u.last_device || 'Неизвестно';
             let lastVis = u.last_visited ? new Date(u.last_visited).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : date;
             let avatarImg = u.avatar_url ? `<img src="${u.avatar_url}" style="width:32px; height:32px; border-radius:50%; vertical-align:middle; margin-right:10px; object-fit:cover; border:1px solid #E5E7EB;">` : `<span style="font-size:24px; vertical-align:middle; margin-right:10px;">👤</span>`;
-            
+
             let cityText = u.city || 'Город не указан';
             let ipLoc = u.location || 'Неизвестно';
             let locHTML = `<div style="font-size:10px;color:var(--text-sec); margin-top:2px;">📍 ${cityText} <span class="admin-ip-location" style="color: #888; font-size: 0.85em; margin-left:5px;">(IP: ${ipLoc})</span></div>`;
-            
+
             let searchStr = `${name} ${phone} ${u.email || ''} ${cityText} ${ipLoc}`.toLowerCase();
 
             h += `<tr class="active-row admin-list-row" data-search="${searchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminUser('${u.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
@@ -1509,7 +1509,7 @@ const app = {
         // Pagination Controls
         const hasPrev = this._adminOffset > 0;
         const hasNext = (this._adminOffset + this._adminPageSize) < totalUsers;
-        
+
         h += `</tbody></table>
               <div style="display:flex; justify-content:center; align-items:center; gap:20px; margin-bottom:30px;">
                   <button class="btn-ctrl" ${!hasPrev ? 'disabled style="opacity:0.5; cursor:default;"' : ''} onclick="app.loadAdminData(${this._adminOffset - this._adminPageSize})">⬅️ Назад</button>
@@ -1897,7 +1897,7 @@ const app = {
 
         const sharedInvoiceId = est.calc_data?.shared_invoice_id;
         const statusContainer = document.getElementById('admin_shared_status_container');
-        
+
         if (!sharedInvoiceId) {
             if (statusContainer) {
                 statusContainer.innerHTML = `
@@ -2017,7 +2017,7 @@ const app = {
             await app.prompt('Скопируйте этот код вручную:', settings);
         });
     },
-    switchAuthTab: function(tab) {
+    switchAuthTab: function (tab) {
         this.currentAuthTab = tab;
         const tabLogin = document.getElementById('tab_login');
         const tabRegister = document.getElementById('tab_register');
@@ -2043,7 +2043,7 @@ const app = {
         }
     },
 
-    handleAuthSubmit: function() {
+    handleAuthSubmit: function () {
         if (this.currentAuthTab === 'register') {
             this.handleRegistration();
         } else {
@@ -2051,7 +2051,7 @@ const app = {
         }
     },
 
-    handleLogin: async function() {
+    handleLogin: async function () {
         const email = document.getElementById('auth_email_input').value.trim();
         const password = document.getElementById('auth_password_input').value.trim();
         const btn = document.getElementById('auth_submit_btn');
@@ -2095,7 +2095,7 @@ const app = {
         }
     },
 
-    handleRegistration: async function() {
+    handleRegistration: async function () {
         const btn = document.getElementById('auth_submit_btn');
         if (btn) {
             btn.disabled = true;
@@ -2147,7 +2147,7 @@ const app = {
         try {
             // Проверка: существует ли уже пользователь с таким email через RPC-функцию (SECURITY DEFINER обходит RLS)
             const { data: emailExists, error } = await supabaseClient.rpc('check_email_exists', { check_email: email });
-            
+
             // Обязательно добавь console.log('Результат проверки email:', emailExists)
             console.log('Результат проверки email:', emailExists);
 
@@ -2178,7 +2178,7 @@ const app = {
                 this.pendingRegistration = { email, password, code };
 
                 const serviceId = "service_o11b4ej";
-                const templateId = "template_ysuxfio"; 
+                const templateId = "template_ysuxfio";
                 const publicKey = "-m4N93pTqMlCfuBpT";
 
                 const templateParams = {
@@ -2214,7 +2214,7 @@ const app = {
         }
     },
 
-    verifyCodeAndSignUp: async function() {
+    verifyCodeAndSignUp: async function () {
         const inputCode = document.getElementById('auth_code_input').value.trim();
         const btn = document.querySelector('[onclick="app.verifyCodeAndSignUp()"]');
         const errEl = document.getElementById('auth_code_error');
@@ -2255,7 +2255,7 @@ const app = {
             this.closeAuthModal();
         } catch (err) {
             console.error("Детали ошибки создания аккаунта (Supabase):", err);
-            
+
             const friendlyErr = getFriendlyErrorMessage(err);
             if (authErrEl) {
                 const msg = (err.message || "").toLowerCase();
@@ -2275,47 +2275,47 @@ const app = {
         }
     },
 
-    showForgotPasswordView: function() {
+    showForgotPasswordView: function () {
         document.getElementById('auth_main_view').style.display = 'none';
         document.getElementById('auth_forgot_view').style.display = 'block';
         document.getElementById('auth_terms_wrapper').style.display = 'none';
     },
 
-    backToAuthMain: function() {
+    backToAuthMain: function () {
         document.getElementById('auth_main_view').style.display = 'block';
         document.getElementById('auth_verify_view').style.display = 'none';
         document.getElementById('auth_forgot_view').style.display = 'none';
         document.getElementById('auth_terms_wrapper').style.display = 'block';
     },
 
-    showPasswordResetSuccessModal: function() {
+    showPasswordResetSuccessModal: function () {
         const modal = document.getElementById('password_reset_success_modal_overlay');
         if (modal) {
             modal.style.display = 'flex';
         }
     },
 
-    closePasswordResetSuccessModal: function() {
+    closePasswordResetSuccessModal: function () {
         const modal = document.getElementById('password_reset_success_modal_overlay');
         if (modal) {
             modal.style.display = 'none';
         }
         this.backToAuthMain();
     },
-    showEmailSuccessModal: function() {
+    showEmailSuccessModal: function () {
         const modal = document.getElementById('email_success_modal_overlay');
         if (modal) {
             modal.style.display = 'flex';
         }
     },
-    closeEmailSuccessModal: function() {
+    closeEmailSuccessModal: function () {
         const modal = document.getElementById('email_success_modal_overlay');
         if (modal) {
             modal.style.display = 'none';
         }
     },
 
-    handleForgotPassword: async function() {
+    handleForgotPassword: async function () {
         const email = document.getElementById('forgot_email_input').value.trim();
         const btn = document.querySelector('[onclick="app.handleForgotPassword()"]');
 
@@ -2511,7 +2511,7 @@ const app = {
         if (!city) { app.alert('Пожалуйста, укажите ваш город. Это необходимо для формирования смет.'); return; }
         if (phone && phone.length < 18) { app.alert('Введите корректный номер телефона.'); return; }
         if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { app.alert('Пожалуйста, введите корректный email.'); return; }
-        
+
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         if (!tgUser) return;
 
@@ -2722,7 +2722,7 @@ const app = {
         if (this.state.well) {
             sections.push("скважина");
         }
-        
+
         let sewerToilets = 0;
         if (this.state.waterZones && this.state.waterZones.length > 0) {
             this.state.waterZones.forEach(z => {
@@ -2739,7 +2739,7 @@ const app = {
         const areaVal = this.state.area || 0;
         const sectionsText = sections.length > 0 ? " (" + sections.join(", ") + ")" : "";
         let safeName = objName.replace(/[\\\/:\*\?"<>\|]/g, "");
-        
+
         document.title = `КП ${safeName} - ${areaVal} м2${sectionsText}`;
         console.log("[updateDocumentTitle] Updated title to:", document.title);
     },
@@ -2863,7 +2863,7 @@ const app = {
             // По умолчанию генерируем оффлайн-ссылку без обращения к Supabase
             try {
                 const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
-                
+
                 navigator.clipboard.writeText(shareUrl).then(() => {
                     app.prompt("✅ Ссылка создана и скопирована! Отправьте её клиенту:", shareUrl);
                 }).catch(err => {
@@ -3032,7 +3032,7 @@ const app = {
                 console.warn('[shareInvoice] Ошибка при сохранении (пробуем RLS/fallback):', error);
                 const fallbackPayload = { ...insertPayload };
                 delete fallbackPayload.id;
-                
+
                 const { data: fallbackData, error: fallbackError } = await withTimeout(
                     supabaseClient
                         .from('shared_invoices')
@@ -3041,7 +3041,7 @@ const app = {
                         .single(),
                     5000
                 );
-                
+
                 if (fallbackError) {
                     throw fallbackError;
                 }
@@ -3051,7 +3051,7 @@ const app = {
             const shareId = data.id;
             this.state.shared_invoice_id = shareId;
             this.saveState();
-            
+
             try {
                 await withTimeout(this.saveToCloud(true), 4000);
             } catch (saveCloudErr) {
@@ -3071,11 +3071,11 @@ const app = {
         } catch (supabaseErr) {
             console.warn('[shareInvoice] Supabase connection failed, falling back to local payload URL:', supabaseErr);
             if (this.isPro()) {
-                app.alert("Предупреждение: не удалось сохранить смету в облачную базу данных (" + (supabaseErr.message || supabaseErr) + "). Создана офлайн-ссылка без кнопок согласования.");
+                app.alert("Создана офлайн-ссылка без кнопок согласования.");
             }
             try {
                 const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
-                
+
                 navigator.clipboard.writeText(shareUrl).then(() => {
                     app.prompt("✅ Ссылка создана и скопирована! Отправьте её клиенту:", shareUrl);
                 }).catch(err => {
@@ -3116,26 +3116,26 @@ const app = {
         }
 
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-        
+
         if (isMobile) {
             // Показываем пользователю тост-уведомление о старте генерации
             app.showInAppNotification("Генерация PDF", "Ваша смета компилируется, пожалуйста, подождите...", "📄");
-            
+
             // Временно отключаем темную тему перед печатью для светлого фона документа
             const wasDark = document.body.classList.contains('dark-mode');
             if (wasDark) document.body.classList.remove('dark-mode');
-            
+
             // Добавляем класс для форсирования печатных стилей на мобильных
             document.body.classList.add('html2pdf-printing');
 
             this.updateDocumentTitle();
             const element = document.getElementById('print-area');
             const opt = {
-                margin:       10,
-                filename:     `${document.title || 'Смета'}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                margin: 10,
+                filename: `${document.title || 'Смета'}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
             // Запускаем оффлайн генерацию PDF
@@ -3165,7 +3165,7 @@ const app = {
         try {
             const { data: { session } } = await supabaseClient.auth.getSession();
             const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-            
+
             let dbUserId = null;
             const tgUser = stateData.tgUser;
             if (tgUser && tgUser.id) {
@@ -3245,23 +3245,23 @@ const app = {
     },
     queue: {
         _isProcessing: false,
-        getQueue: function() {
+        getQueue: function () {
             try {
                 return JSON.parse(localStorage.getItem('email_dispatch_queue')) || [];
             } catch (e) {
                 return [];
             }
         },
-        saveQueue: function(q) {
+        saveQueue: function (q) {
             localStorage.setItem('email_dispatch_queue', JSON.stringify(q));
         },
-        addJob: function(job) {
+        addJob: function (job) {
             const q = this.getQueue();
             q.push(job);
             this.saveQueue(q);
             this.processNext();
         },
-        processNext: async function() {
+        processNext: async function () {
             if (this._isProcessing) return;
             this._isProcessing = true;
 
@@ -3334,7 +3334,7 @@ const app = {
                 setTimeout(() => this.processNext(), 5000);
             }
         },
-        start: function() {
+        start: function () {
             console.log("[Queue] Фоновый воркер запущен.");
             this.processNext();
             setInterval(() => {
@@ -3389,11 +3389,11 @@ const app = {
             this.render();
         }
 
-        let userCity = (this.state.tgUser && this.state.tgUser.city) || 
-                       (this.state.user && this.state.user.city) || 
-                       (document.getElementById('profile_city_input') ? document.getElementById('profile_city_input').value.trim() : null) ||
-                       localStorage.getItem('user_city');
-        
+        let userCity = (this.state.tgUser && this.state.tgUser.city) ||
+            (this.state.user && this.state.user.city) ||
+            (document.getElementById('profile_city_input') ? document.getElementById('profile_city_input').value.trim() : null) ||
+            localStorage.getItem('user_city');
+
         if (!userCity) {
             userCity = await app.prompt("Пожалуйста, укажите ваш город для корректного выставления счёта:");
             if (!userCity || userCity.trim() === '') {
@@ -3622,7 +3622,7 @@ const app = {
                 shareId = data.id;
                 this.state.shared_invoice_id = shareId;
                 this.saveState();
-                
+
                 viewUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
             } catch (err) {
                 console.warn("[sendEmail] Сбой сохранения в shared_invoices, генерируем offline fallback:", err);
@@ -3684,7 +3684,7 @@ const app = {
             };
 
             console.log("[sendEmail] Добавление задачи в фоновую очередь:", job.id);
-            
+
             // Искусственная микрозадержка в 300мс для улучшения плавности UI
             await new Promise(resolve => setTimeout(resolve, 300));
 
@@ -3897,7 +3897,7 @@ const app = {
             // Сравниваем с localStorage
             let seenRaw = localStorage.getItem('seen_estimate_statuses');
             let seen = {};
-            try { seen = seenRaw ? JSON.parse(seenRaw) : {}; } catch(e) { seen = {}; }
+            try { seen = seenRaw ? JSON.parse(seenRaw) : {}; } catch (e) { seen = {}; }
 
             const statusLabels = {
                 'confirmed': { label: '✅ Согласована клиентом', icon: '✅' },
@@ -4426,10 +4426,10 @@ const app = {
             if (container.classList.contains('locked-guest') || container.classList.contains('locked-pro')) {
                 container.style.pointerEvents = 'auto';
                 if (el.tagName === 'INPUT') el.disabled = false; // Убираем жесткую блокировку клика, чтобы лейбл/свитч перехватывал клики
-                
+
                 if (!container.dataset.lockInit) {
                     container.dataset.lockInit = '1';
-                    container.addEventListener('click', function(e) {
+                    container.addEventListener('click', function (e) {
                         if (this.classList.contains('locked-guest')) {
                             e.preventDefault();
                             e.stopPropagation();
@@ -4563,14 +4563,14 @@ const app = {
     setMat: function (v) { this.state.mat = v; this.syncUI(); this.render(); },
     updateInfo: function () { document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${REGION_DESC[this.state.region]}`; document.getElementById('desc_mat').innerHTML = WALL_DESC[this.state.mat]; },
     toggleFuel: function (f) { let idx = this.state.fuels.indexOf(f); if (idx > -1) { if (this.state.fuels.length > 1) this.state.fuels.splice(idx, 1); } else { this.state.fuels.push(f); } this.syncUI(); this.render(); },
-    toggleSys: function (s, event) { 
+    toggleSys: function (s, event) {
         if ((s === 'tp' || s === 'rad') && !this.checkAccess('pro', event)) return;
         setTimeout(() => {
-            let i = this.state.systems.indexOf(s); 
-            if (i > -1) { 
-                if (this.state.systems.length > 1) this.state.systems.splice(i, 1); 
-            } else this.state.systems.push(s); 
-            this.syncUI(); this.render(); 
+            let i = this.state.systems.indexOf(s);
+            if (i > -1) {
+                if (this.state.systems.length > 1) this.state.systems.splice(i, 1);
+            } else this.state.systems.push(s);
+            this.syncUI(); this.render();
         }, 50);
     },
     toggleHW: function (chk, event) {
@@ -4587,25 +4587,25 @@ const app = {
         }
         this.state.recirc = chk; this.render();
     },
-    toggleWaterInput: function (chk, event) { 
+    toggleWaterInput: function (chk, event) {
         if (!this.checkAccess('pro', event)) {
             if (document.getElementById('chk_water_input')) document.getElementById('chk_water_input').checked = this.state.waterInput;
             return;
         }
         setTimeout(() => {
-            this.state.waterInput = chk; 
-            this.render(); 
+            this.state.waterInput = chk;
+            this.render();
         }, 50);
     },
-    toggleWell: function (chk, event) { 
+    toggleWell: function (chk, event) {
         if (!this.checkAccess('pro', event)) {
             if (document.getElementById('chk_well')) document.getElementById('chk_well').checked = this.state.well;
             return;
         }
         setTimeout(() => {
-            this.state.well = chk; 
-            this.syncUI(); 
-            this.render(); 
+            this.state.well = chk;
+            this.syncUI();
+            this.render();
         }, 50);
     },
     setWellDepth: function (v) { let n = parseInt(v); if (isNaN(n) || n < 10) n = 10; if (n > 150) n = 150; this.state.wellDepth = n; this.syncUI(); this.render(); },
@@ -4676,9 +4676,10 @@ const app = {
         }
         this.syncUI(); this.render();
     },
-    setCoolant: function (t, event) { 
+    setCoolant: function (t, event) {
         if (!this.checkAccess('pro', event)) return;
-        this.state.coolant = t; this.syncUI(); this.render(); },
+        this.state.coolant = t; this.syncUI(); this.render();
+    },
     toggleSku: function (event) {
         if (!this.checkAccess('pro', event)) {
             document.getElementById('chk_sku').checked = this.state.showSku;
@@ -5069,11 +5070,11 @@ const app = {
                     availStyle = 'color: #eab308; border-color: #eab308;';
                     availText = ' (Под заказ)';
                 }
-                
+
                 let descText = i.desc ? i.desc : (i.qtyTip || '');
                 let availStatusLine = availText ? `<div style="margin-top: 8px; font-weight: 700; color: ${i.availability === 'in_stock' ? '#22c55e' : '#eab308'};">${availText.trim()}</div>` : '';
                 let finalTooltipContent = `${descText}${availStatusLine}`;
-                
+
                 let tipHtml = finalTooltipContent ? `
                     <div class="tooltip-wrapper">
                         <i class="info-icon" style="${availStyle}">i</i>
@@ -6185,7 +6186,7 @@ const app = {
         let mEqEl = document.getElementById('m_tot_eq');
         let mWorkEl = document.getElementById('m_tot_work');
         let mobileTotals = document.getElementById('mobile_header_totals');
-        
+
         if (mEqEl && mobileTotals) {
             let oldEq = parseFloat(mobileTotals.dataset.lastEq) || 0;
             let newEq = app.lastEqSum || 0;
@@ -6197,7 +6198,7 @@ const app = {
             // Проверяем тариф
             let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
             let isPro = (this.state.accountType === 'pro' || trialUntil > Date.now() || (this.state.tgUser && ['pro', 'admin'].includes(this.state.tgUser.account_type)));
-            
+
             if (isPro && mWorkEl) {
                 let oldWorks = parseFloat(mobileTotals.dataset.lastWorks) || 0;
                 let newWorks = app.lastWorksSum || 0;
@@ -6270,10 +6271,10 @@ const app = {
 
         subtitle.innerText = `Тариф: ${tariffName} (${price})`;
         if (linkBtn) linkBtn.href = url;
-        
+
         // Clear old QR
         qrContainer.innerHTML = "";
-        
+
         // Generate new QR using qrcode.js
         try {
             new QRCode(qrContainer, {
@@ -6293,7 +6294,7 @@ const app = {
             emailInput.value = this.state.tgUser.email;
         } else {
             // Attempt to get email from Supabase session
-            supabaseClient.auth.getSession().then(({data}) => {
+            supabaseClient.auth.getSession().then(({ data }) => {
                 if (data && data.session && data.session.user) {
                     emailInput.value = data.session.user.email;
                 }
@@ -6316,7 +6317,7 @@ async function notifyPayment() {
     const emailEl = document.getElementById('userEmail');
     const emailInput = emailEl ? emailEl.value.trim() : '';
     const planNameEl = document.getElementById('planName');
-    
+
     // Динамически получаем название тарифа со стоимостью из заголовка в модальном окне
     let tariffNameText = '';
     if (planNameEl) {
@@ -6342,8 +6343,8 @@ async function notifyPayment() {
     }).catch(err => console.error('Ошибка ТГ:', err));
 
     // === 2. ОТПРАВКА НА EMAIL (через EmailJS с обновленным шаблоном) ===
-    const emailjsServiceID = 'service_o11b4ej'; 
-    const emailjsTemplateID = 'template_ysuxfio'; 
+    const emailjsServiceID = 'service_o11b4ej';
+    const emailjsTemplateID = 'template_ysuxfio';
 
     const templateParams = {
         to_email: 'kovdor24@yandex.ru',
@@ -6365,12 +6366,12 @@ async function notifyPayment() {
     // === 3. ЗАКРЫТИЕ ВСЕХ ВСПЛЫВАЮЩИХ ОКОН И УВЕДОМЛЕНИЕ ===
     // Закрываем окно оплаты
     closePaymentModal();
-    
+
     // Закрываем главное окно тарифов (Подписка PRO) через штатный метод и принудительное скрытие
     if (typeof app !== 'undefined' && typeof app.closeModal === 'function') {
         app.closeModal();
     }
-    const mainPricingModal = document.getElementById('custom_modal_overlay'); 
+    const mainPricingModal = document.getElementById('custom_modal_overlay');
     if (mainPricingModal) {
         mainPricingModal.classList.remove('active');
         mainPricingModal.style.display = 'none';
