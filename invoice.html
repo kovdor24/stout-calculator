@@ -1654,7 +1654,7 @@
             <div class="sec-header-row">
                 <h2 class="sec-title">Спецификация оборудования и материалов</h2>
                 <div class="toggle-images-wrapper no-print" style="display: inline-flex; align-items: center; gap: 15px;">
-                    <button class="btn-copy-spec" onclick="copySpecFor1C()" title="Скопировать смету в буфер обмена в формате Артикул|Количество" style="background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary); padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;">
+                    <button class="btn-copy-spec" id="btn_copy_1c" onclick="copySpecFor1C()" title="Скопировать смету в буфер обмена в формате Артикул|Количество" style="display: none; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary); padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;">
                         📋 Копировать для 1С
                     </button>
                     <label class="switch-control" title="Скрыть изображения оборудования для компактности">
@@ -2095,8 +2095,14 @@
         });
 
         function renderInvoice(data) {
-            // 0. Determine if SKU should be shown
             const urlParams = new URLSearchParams(window.location.search);
+            const isManager = urlParams.has('manager') || urlParams.get('manager') === '1' || urlParams.get('view') === 'manager';
+            const copyBtn = document.getElementById('btn_copy_1c');
+            if (copyBtn) {
+                copyBtn.style.display = isManager ? 'inline-block' : 'none';
+            }
+
+            // 0. Determine if SKU should be shown
             const obj = data.object_info || {};
             
             let showSku = true;

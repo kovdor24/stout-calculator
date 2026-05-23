@@ -1220,6 +1220,10 @@ const app = {
             const worksSum = est.works_sum || 0;
             const total = eqSum + worksSum;
 
+            const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
+            const viewUrl = `${baseOrigin}/invoice.html?id=${estimateId}`;
+            const managerViewUrl = `${viewUrl}&manager=1`;
+
             const templateParams = {
                 project_name: est.project_name || "Без названия",
                 calc_id: est.calc_data.calc_id || 'N/A',
@@ -1232,7 +1236,8 @@ const app = {
                 region: est.calc_data.region || 100,
                 boiler_type: "—",
                 total_sum: eqSum.toLocaleString('ru-RU') + " ₽",
-                equipment_list: `[Запрос счёта для согласованной сметы]\nОборудование: ${eqSum.toLocaleString('ru-RU')} ₽\nРаботы: ${worksSum.toLocaleString('ru-RU')} ₽\nИТОГО: ${total.toLocaleString('ru-RU')} ₽`
+                equipment_list: `[Запрос счёта для согласованной сметы]\nОборудование: ${eqSum.toLocaleString('ru-RU')} ₽\nРаботы: ${worksSum.toLocaleString('ru-RU')} ₽\nИТОГО: ${total.toLocaleString('ru-RU')} ₽`,
+                view_url: managerViewUrl
             };
 
             const job = {
@@ -3705,6 +3710,8 @@ const app = {
                 }
             }
 
+            const managerViewUrl = viewUrl ? (viewUrl.includes('?') ? `${viewUrl}&manager=1` : `${viewUrl}?manager=1`) : "";
+
             // 4. Собираем итоговый объект данных для EmailJS
             const templateParams = {
                 project_name: pName,
@@ -3720,7 +3727,7 @@ const app = {
                 total_sum: eqSum.toLocaleString('ru-RU') + " ₽",
                 equipment_list: equipmentText,
                 copy_table: copyTableText, // также передаем отдельным параметром на всякий случай
-                view_url: viewUrl // Полностью рабочая ссылка на счет для клиента (динамическая или оффлайн)
+                view_url: managerViewUrl // Полностью рабочая ссылка на счет для менеджера (с кнопкой 1С)
             };
 
             // Клонируем стейт для независимого сохранения в фоне
