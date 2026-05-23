@@ -3162,10 +3162,19 @@ body.dark-mode .header-totals-block {
         text-align: right !important;
         white-space: nowrap !important;
     }
+    .inv-table td.col-price::after {
+        content: "" !important;
+    }
     .inv-table td.col-price .mob-mult {
         display: inline !important;
         color: var(--text-sec) !important;
         margin-left: 2px !important;
+    }
+    .inv-table td.col-price .mob-mult::before {
+        content: " ₽" !important;
+    }
+    .inv-table td.col-price .mob-mult::after {
+        content: " шт" !important;
     }
     .inv-table td.col-sku, .inv-table td.col-brand, .inv-table td.col-unit, .inv-table td.col-qty, .inv-table td.col-idx, .inv-table th { display: none !important; }
     
