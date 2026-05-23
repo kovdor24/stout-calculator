@@ -3072,10 +3072,11 @@ const app = {
             // Добавляем класс для форсирования печатных стилей на мобильных
             document.body.classList.add('html2pdf-printing');
 
+            this.updateDocumentTitle();
             const element = document.getElementById('print-area');
             const opt = {
                 margin:       10,
-                filename:     `Смета_${(this.state.projectName || 'Новый_объект').replace(/\s+/g, '_')}.pdf`,
+                filename:     `${document.title || 'Смета'}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, logging: false },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -4041,42 +4042,15 @@ const app = {
         let chk = document.getElementById('chk_cheaper');
 
         if (cw && chk && sl) {
-            // Универсальная проверка авторизации (Google, Email)
-            let isAuthenticated = this.state.tgUser || this.state.user || this.state.currentUser;
+            // Показываем блок для всех (включая гостей), так как хотим отобразить закрытый замок
+            cw.style.display = 'flex';
+            chk.checked = (this.state.brandMode === 'rommer');
 
-            if (!isAuthenticated) {
-                // Если нет авторизации — скрываем блок полностью
-                cw.style.display = 'none';
-            } else {
-                cw.style.display = 'flex'; // Показываем блок для любого авторизованного
-
-                let isPro = this.isPro();
-
-                if (isPro) {
-                    // Тариф PRO: снимаем блокировку, всё работает
-                    sl.classList.remove('locked-pro');
-                    sl.style.pointerEvents = 'auto';
-                    sl.style.cursor = '';
-                    sl.onclick = null;
-                    chk.disabled = false;
-                    chk.checked = (this.state.brandMode === 'rommer');
-                } else {
-                    // Базовый тариф: добавляем класс locked-pro на ползунок.
-                    // CSS-правило .switch.locked-pro::after отрисует замок внутри,
-                    // точно как у переключателей СХЕМА, АРТИКУЛЫ, ГРУППИРОВАТЬ.
-                    sl.classList.add('locked-pro');
-                    chk.disabled = false; // Убираем жесткую блокировку клика
-                    chk.checked = false; // Принудительно выключаем
-                    sl.style.pointerEvents = 'auto';
-                    sl.style.cursor = 'pointer';
-                    sl.onclick = null; // Позволяем родителю (wrapper) обработать клик
-
-                    // Если пользователь без PRO как-то включил режим, сбрасываем его
-                    if (this.state.brandMode === 'rommer') {
-                        this.state.brandMode = 'stout';
-                        setTimeout(() => this.render(), 10);
-                    }
-                }
+            // Если пользователь без PRO как-то включил режим, сбрасываем его
+            if (!this.isPro() && this.state.brandMode === 'rommer') {
+                this.state.brandMode = 'stout';
+                chk.checked = false;
+                setTimeout(() => this.render(), 10);
             }
         }
         if (document.getElementById('chk_hw')) document.getElementById('chk_hw').checked = this.state.hotWater;
@@ -4232,12 +4206,25 @@ const app = {
         if (document.getElementById('chk_merge')) document.getElementById('chk_merge').checked = this.state.groupItems;
         if (document.getElementById('chk_sku')) document.getElementById('chk_sku').checked = this.state.showSku;
         if (document.getElementById('chk_scheme')) document.getElementById('chk_scheme').checked = this.state.showScheme;
-        if (document.getElementById('chk_images')) document.getElementById('chk_images').checked = (this.state.showImages !== false);
+        // Логика доступа для переключателя "КАРТИНКИ"
+        let imgWrapper = document.getElementById('images_wrapper');
+        let chkImages = document.getElementById('chk_images');
+        if (imgWrapper && chkImages) {
+            let isAuthenticated = this.state.tgUser || this.state.user || this.state.currentUser;
+            if (!isAuthenticated) {
+                // Полностью скрываем блок для неавторизованных пользователей
+                imgWrapper.style.display = 'none';
+            } else {
+                imgWrapper.style.display = 'flex';
+                chkImages.checked = (this.state.showImages !== false);
+            }
+        }
         document.body.classList.toggle('hide-images-mode', this.state.showImages === false);
 
         applyLock('chk_merge', 'pro');
         applyLock('chk_sku', 'pro');
         applyLock('chk_scheme', 'pro');
+        applyLock('chk_cheaper', 'pro');
         applyLock('btn_print_trigger', 'base');
 
         document.body.classList.toggle('work-mode', this.state.viewMode === 'works');

@@ -1339,6 +1339,18 @@ body.menu-open .mobile-menu-backdrop {
         align-items: start;
     }
 
+    body.hide-images-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal) {
+        grid-template-columns: 1fr 55px !important;
+        grid-template-areas:
+            "name  qty"
+            "sku   unit"
+            "price ." !important;
+    }
+
+    body.hide-images-mode .col-img {
+        display: none !important;
+    }
+
     /* РЎРєСЂС‹РІР°РµРј Р»РёС€РЅРµРµ */
     .col-idx,
     .col-brand,
@@ -2458,12 +2470,22 @@ body.dark-mode .custom-modal-close:hover {
     width: 100vw;
     height: 100vh;
     background: rgba(0, 0, 0, 0.6);
-    z-index: 100000;
+    z-index: 2000000 !important; /* Force higher z-index to show above mobile menu sidebar */
     display: none;
     /* Скрыто по умолчанию */
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(3px);
+}
+
+/* Ensure modal overlays always overlay the mobile sidebar */
+.auth-modal-overlay,
+.custom-modal-overlay,
+#admin_modal_overlay,
+#cloud_list_modal_overlay,
+#password_reset_success_modal_overlay,
+#email_success_modal_overlay {
+    z-index: 2000000 !important;
 }
 
 .auth-modal-content {
@@ -3493,17 +3515,17 @@ body.menu-open .mobile-menu-backdrop {
 .mobile-sidebar-content {
     flex: 1;
     overflow-y: auto;
-    padding: 60px 20px 20px 20px;
+    padding: 45px 16px 15px 16px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 12px;
 }
 
 /* Стилизация элементов внутри сайдбара */
 .mobile-sidebar .header-auth-block {
     width: 100%;
     justify-content: flex-start;
-    padding-bottom: 15px;
+    padding-bottom: 10px;
     border-bottom: 1px solid var(--border);
 }
 
@@ -3512,23 +3534,23 @@ body.menu-open .mobile-menu-backdrop {
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    gap: 12px;
+    gap: 8px !important;
     opacity: 1 !important;
     max-height: none !important;
-    margin: 0 0 10px 0 !important;
+    margin: 0 0 5px 0 !important;
     pointer-events: auto !important;
     width: 100%;
 }
 
 .mobile-sidebar .btn-ctrl {
-    width: 48px;
-    height: 48px;
+    width: 40px !important;
+    height: 40px !important;
     justify-content: center;
     align-items: center;
     padding: 0;
     background: transparent;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 10px !important;
     color: var(--text-main);
     transition: all 0.2s ease;
 }
@@ -3540,13 +3562,13 @@ body.menu-open .mobile-menu-backdrop {
 
 .mobile-sidebar .btn-ctrl svg {
     margin: 0;
-    width: 20px;
-    height: 20px;
+    width: 18px !important;
+    height: 18px !important;
 }
 
 .mobile-sidebar .header-divider {
     display: block;
-    height: 24px;
+    height: 20px !important;
     width: 1px;
     background: #e5e7eb;
     margin: 0;
@@ -3555,8 +3577,8 @@ body.menu-open .mobile-menu-backdrop {
 .mobile-sidebar .sku-control {
     display: flex !important;
     flex-direction: column;
-    gap: 15px;
-    padding-top: 15px;
+    gap: 10px !important;
+    padding-top: 10px !important;
     border-top: 1px solid var(--border);
     width: 100%;
     background: transparent !important;
@@ -3570,12 +3592,12 @@ body.menu-open .mobile-menu-backdrop {
     align-items: center !important;
     width: 100% !important;
     margin-bottom: 0 !important;
-    padding-bottom: 10px !important;
+    padding-bottom: 8px !important;
     border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
 .mobile-sidebar .sku-label {
-    font-size: 14px;
+    font-size: 13px !important;
     font-weight: 600;
     color: var(--text-main);
     text-transform: uppercase;
@@ -3585,6 +3607,41 @@ body.menu-open .mobile-menu-backdrop {
 
 .mobile-sidebar .switch {
     margin: 0 !important;
+    transform: scale(0.9) !important;
+    transform-origin: right center !important;
+}
+
+/* Адаптивное уменьшение элементов меню на экранах с малой высотой (до 660px) */
+@media screen and (max-height: 660px) {
+    .mobile-sidebar-content {
+        padding: 40px 12px 10px 12px !important;
+        gap: 8px !important;
+    }
+    .mobile-sidebar .sku-control {
+        gap: 8px !important;
+        padding-top: 8px !important;
+    }
+    .mobile-sidebar .sku-toggle-group {
+        padding-bottom: 6px !important;
+    }
+    .mobile-sidebar .btn-ctrl {
+        width: 36px !important;
+        height: 36px !important;
+    }
+    .mobile-sidebar .btn-ctrl svg {
+        width: 16px !important;
+        height: 16px !important;
+    }
+    .mobile-sidebar .sku-label {
+        font-size: 12px !important;
+    }
+    .mobile-sidebar .switch {
+        transform: scale(0.8) !important;
+    }
+    .mobile-sidebar .mobile-header-totals {
+        padding: 4px 6px !important;
+        font-size: 9px !important;
+    }
 }
 
 /* Ensure desktop grouping works */
@@ -4185,11 +4242,12 @@ body.html2pdf-printing #print-area {
     color: #000 !important;
 }
 
-/* Force table layout for estimates */
+/* Force table layout for estimates during html2pdf compilation */
 body.html2pdf-printing .inv-table {
     display: table !important;
     width: 100% !important;
     border-collapse: collapse !important;
+    table-layout: auto !important;
 }
 
 body.html2pdf-printing .inv-table thead {
@@ -4202,11 +4260,58 @@ body.html2pdf-printing .inv-table tbody {
 
 body.html2pdf-printing .inv-table tr {
     display: table-row !important;
+    grid-template-columns: unset !important;
+    grid-template-rows: unset !important;
+    grid-template-areas: unset !important;
 }
 
-body.html2pdf-printing .inv-table td,
-body.html2pdf-printing .inv-table th {
-    display: table-cell !important;
-    padding: 6px 8px !important;
+/* Сбрасываем ячейки обратно в табличный вид, но НЕ трогаем те, что скрыты явно через hidden-col или inline style */
+body.html2pdf-printing .inv-table td:not(.hidden-col),
+body.html2pdf-printing .inv-table th:not(.hidden-col) {
+    display: table-cell;
+    grid-area: unset !important;
+    padding: 5px 6px !important;
     border-bottom: 1px solid #E5E7EB !important;
+    white-space: normal !important;
+    font-size: 11px !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    height: auto !important;
+}
+
+body.html2pdf-printing .inv-table td.hidden-col,
+body.html2pdf-printing .inv-table th.hidden-col,
+body.html2pdf-printing .inv-table td[style*="display: none"],
+body.html2pdf-printing .inv-table th[style*="display: none"] {
+    display: none !important;
+}
+
+/* Ширины колонок в нормальном виде */
+body.html2pdf-printing .inv-table td.col-idx  { display: table-cell !important; width: 25px !important; text-align: center !important; color: #9CA3AF !important; }
+body.html2pdf-printing .inv-table td.col-img:not(.hidden-col) { display: table-cell !important; width: 40px !important; text-align: center !important; }
+body.html2pdf-printing .inv-table td.col-name { display: table-cell !important; width: auto !important; font-weight: 600 !important; color: #000 !important; white-space: normal !important; text-align: left !important; }
+body.html2pdf-printing .inv-table td.col-brand:not(.hidden-col) { display: table-cell !important; width: 65px !important; text-align: center !important; }
+body.html2pdf-printing .inv-table td.col-unit { display: table-cell !important; width: 35px !important; text-align: center !important; }
+body.html2pdf-printing .inv-table td.col-qty  { display: table-cell !important; width: 45px !important; text-align: center !important; font-weight: 700 !important; }
+body.html2pdf-printing .inv-table td.col-price { display: table-cell !important; width: 80px !important; text-align: right !important; white-space: nowrap !important; color: #000 !important; font-weight: 400 !important; }
+body.html2pdf-printing .inv-table td.col-sum  { display: table-cell !important; width: 90px !important; text-align: right !important; font-weight: 800 !important; white-space: nowrap !important; }
+
+/* Псевдо-элементы мобильной темы убираем */
+body.html2pdf-printing .col-price::after { content: "" !important; }
+body.html2pdf-printing .col-sku::before  { content: "" !important; }
+
+/* Кнопки opt/qty скрываем */
+body.html2pdf-printing .qty-wrap .opt-btn { display: none !important; }
+body.html2pdf-printing .mob-mult { display: none !important; }
+
+/* Мобильный серый фон для qty/unit убираем */
+body.html2pdf-printing .col-qty, 
+body.html2pdf-printing .col-unit {
+    background: transparent !important;
+    border-radius: 0 !important;
+}
+
+/* Скрываем картинки если активирован режим */
+body.html2pdf-printing.hide-images-mode .col-img {
+    display: none !important;
 }

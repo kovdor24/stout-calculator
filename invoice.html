@@ -1830,6 +1830,32 @@
                 });
             }
 
+            // Set dynamic page title
+            const sections = [];
+            const systems = obj.systems || [];
+            if (systems.includes('rad') || systems.includes('tp') || obj.hotWater) {
+                sections.push("котельная");
+            }
+            if (systems.includes('rad')) {
+                sections.push("радиаторы");
+            }
+            if (systems.includes('tp')) {
+                sections.push("теплый пол");
+            }
+            if (obj.water) {
+                sections.push("водоснабжение");
+            }
+            if (obj.waterInput) {
+                sections.push("узел ввода ХВС");
+            }
+            if (obj.well) {
+                sections.push("скважина");
+            }
+            const sectionsText = sections.length > 0 ? " (" + sections.join(", ") + ")" : "";
+            const areaVal = obj.area || 0;
+            const safeName = (obj.projectName || "Новый объект").replace(/[\\\/:\*\?"<>\|]/g, "");
+            document.title = `КП ${safeName} - ${areaVal} м2${sectionsText}`;
+
             // 5. Render Status Badge
             renderStatusBadge(obj);
         }
@@ -1997,7 +2023,7 @@
                 const element = document.getElementById('invoice_content');
                 const opt = {
                     margin:       10,
-                    filename:     `Смета_${(invoiceData?.object_info?.projectName || 'Новый_объект').replace(/\s+/g, '_')}.pdf`,
+                    filename:     `${document.title || 'Смета'}.pdf`,
                     image:        { type: 'jpeg', quality: 0.98 },
                     html2canvas:  { scale: 2, useCORS: true, logging: false },
                     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
