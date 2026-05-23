@@ -675,8 +675,8 @@ const app = {
             }
             if (title) title.innerHTML = "Требуется авторизация";
             if (text) text.innerHTML = "Авторизуйтесь через Email, Google, чтобы получить доступ к этой функции.";
-            let demoBtn = document.getElementById('custom_modal_btn_demo');
-            if (demoBtn) demoBtn.style.display = 'none';
+            let trialBtn = document.getElementById('custom_modal_btn_trial');
+            if (trialBtn) trialBtn.style.display = 'none';
             let cards = document.querySelector('.tariff-cards');
             if (cards) cards.style.display = 'none';
 
@@ -700,12 +700,12 @@ const app = {
                 okBtn.style.display = 'none';
             }
 
-            let demoBtn = document.getElementById('custom_modal_btn_demo');
-            if (demoBtn) {
-                if (!this.state.demoUsed) {
-                    demoBtn.style.display = 'block';
+            let trialBtn = document.getElementById('custom_modal_btn_trial');
+            if (trialBtn) {
+                if (this.state.tgUser && !this.state.demoUsed) {
+                    trialBtn.style.display = 'block';
                 } else {
-                    demoBtn.style.display = 'none';
+                    trialBtn.style.display = 'none';
                 }
             }
         }
@@ -760,40 +760,57 @@ const app = {
         if (msg) msg.style.display = 'none';
     },
 
-    activateDemo: async function () {
+    activateTrial14: async function () {
         const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         if (!tgUser) {
             app.alert("Сначала авторизуйтесь!");
             return;
         }
 
-        let btn = document.getElementById('custom_modal_btn_demo');
+        let btn = document.getElementById('custom_modal_btn_trial');
         if (btn) btn.innerText = "Активация...";
 
         try {
-            // Дата окончания = текущее время + 7 суток
-            let endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+            // Дата окончания = текущее время + 14 суток
+            let trialDurationMs = 14 * 24 * 60 * 60 * 1000;
+            let endDate = new Date(Date.now() + trialDurationMs).toISOString();
 
             // Всегда используем auth_user_id (UUID из Supabase Auth) как надёжный ключ
             let query = supabaseClient.from('users').update({ account_type: 'pro', demo_ends_at: endDate });
             if (tgUser.authUserId) query = query.eq('auth_user_id', tgUser.authUserId);
             else if (tgUser.email) query = query.eq('email', tgUser.email);
             else { app.alert("Ошибка: не удалось определить аккаунт. Войдите заново."); return; }
+            
+            // Запрашиваем текущие данные пользователя, чтобы убедиться что триал не был активирован
+            let checkQuery = supabaseClient.from('users').select('demo_ends_at');
+            if (tgUser.authUserId) checkQuery = checkQuery.eq('auth_user_id', tgUser.authUserId);
+            else checkQuery = checkQuery.eq('email', tgUser.email);
+            const checkRes = await checkQuery.single();
+            
+            if (checkRes.data && checkRes.data.demo_ends_at) {
+                app.alert("Пробный период уже был активирован ранее.");
+                this.state.demoUsed = true;
+                this.saveState();
+                if (btn) btn.style.display = 'none';
+                return;
+            }
+
             const { error } = await query;
 
             if (error) throw error;
 
             this.state.accountType = 'pro';
             this.state.demoUsed = true;
+            localStorage.setItem('pro_trial_until', Date.now() + trialDurationMs);
             this.saveState();
             this.syncUI();
             this.closeModal();
 
-            app.alert("🎉 ДЕМО-доступ на 7 дней успешно активирован! Вам открыты все профессиональные функции.");
+            app.alert("✅ Пробный период на 14 дней успешно активирован! Вам открыты все PRO функции.");
         } catch (e) {
             console.error("Ошибка активации:", e);
             app.alert("Ошибка активации. Попробуйте позже.");
-            if (btn) btn.innerText = "🎁 Попробовать PRO (7 дней)";
+            if (btn) btn.innerText = "Попробовать бесплатно 14 дней";
         }
     },
 
@@ -2428,6 +2445,14 @@ const app = {
                             .update({ account_type: 'base' })
                             .eq('auth_user_id', authUserId)
                             .lt('demo_ends_at', new Date().toISOString());
+                    } else if (accType === 'pro' && new Date(demoEnds) > new Date()) {
+                        let msLeft = new Date(demoEnds).getTime() - Date.now();
+                        if (msLeft <= 24 * 60 * 60 * 1000 && !sessionStorage.getItem('trial_reminder_shown')) {
+                            sessionStorage.setItem('trial_reminder_shown', '1');
+                            setTimeout(() => {
+                                app.alert('⏰ Ваш пробный период заканчивается в течение 24 часов. Оформите подписку, чтобы не потерять доступ.');
+                            }, 1500);
+                        }
                     }
                 }
                 this.state.accountType = accType;
@@ -2826,10 +2851,10 @@ const app = {
                 const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
                 
                 navigator.clipboard.writeText(shareUrl).then(() => {
-                    app.prompt("Ссылка успешно сгенерирована (базовый режим) и скопирована в буфер обмена. Вы также можете скопировать её ниже:", shareUrl);
+                    app.prompt("✅ Ссылка создана и скопирована! Отправьте её клиенту:", shareUrl);
                 }).catch(err => {
                     console.error('Ошибка копирования:', err);
-                    app.prompt("Ссылка успешно сгенерирована (базовый режим). Скопируйте её вручную:", shareUrl);
+                    app.prompt("✅ Ссылка создана! Скопируйте и отправьте клиенту:", shareUrl);
                 });
             } catch (err) {
                 console.error('[shareInvoice] Ошибка генерации оффлайн-ссылки:', err);
@@ -3019,10 +3044,10 @@ const app = {
             const shareUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
 
             navigator.clipboard.writeText(shareUrl).then(() => {
-                app.prompt("Ссылка успешно сгенерирована (сохранено в облако) и скопирована в буфер обмена. Вы также можете скопировать её ниже:", shareUrl);
+                app.prompt("✅ Ссылка создана и скопирована! Отправьте её клиенту:", shareUrl);
             }).catch(err => {
                 console.error('Ошибка копирования:', err);
-                app.prompt("Ссылка успешно сгенерирована (сохранено в облако). Скопируйте её вручную:", shareUrl);
+                app.prompt("✅ Ссылка создана! Скопируйте и отправьте клиенту:", shareUrl);
             });
 
         } catch (supabaseErr) {
@@ -3031,10 +3056,10 @@ const app = {
                 const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
                 
                 navigator.clipboard.writeText(shareUrl).then(() => {
-                    app.prompt("⚠️ Не удалось связаться с сервером Supabase (возможно, не включен VPN). Ссылка была успешно сгенерирована в автономном (запасном) режиме и скопирована в буфер обмена. Вы также можете скопировать её ниже:", shareUrl);
+                    app.prompt("✅ Ссылка создана и скопирована! Отправьте её клиенту:", shareUrl);
                 }).catch(err => {
                     console.error('Ошибка копирования:', err);
-                    app.prompt("⚠️ Не удалось связаться с сервером Supabase (возможно, не включен VPN). Ссылка сгенерирована в автономном (запасном) режиме. Скопируйте её вручную:", shareUrl);
+                    app.prompt("✅ Ссылка создана! Скопируйте и отправьте клиенту:", shareUrl);
                 });
             } catch (fallbackErr) {
                 console.error('[shareInvoice] Ошибка генерации автономной ссылки при откате:', fallbackErr);
@@ -4187,6 +4212,21 @@ const app = {
             if (container.classList.contains('locked-guest') || container.classList.contains('locked-pro')) {
                 container.style.pointerEvents = 'auto';
                 if (el.tagName === 'INPUT') el.disabled = false; // Убираем жесткую блокировку клика, чтобы лейбл/свитч перехватывал клики
+                
+                if (!container.dataset.lockInit) {
+                    container.dataset.lockInit = '1';
+                    container.addEventListener('click', function(e) {
+                        if (this.classList.contains('locked-guest')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            app.showAuthModal();
+                        } else if (this.classList.contains('locked-pro')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            app.showModal('pro');
+                        }
+                    }, true);
+                }
             } else {
                 if (el.tagName === 'INPUT') el.disabled = false;
             }

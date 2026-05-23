@@ -3070,7 +3070,10 @@ body.dark-mode .header-totals-block {
     body { padding-bottom: 85px !important; }
 
     /* Header Compactness */
-    .site-header { padding: 10px !important; }
+    .site-header { padding: 8px 10px !important; gap: 8px !important; }
+    .site-header-left { min-width: auto !important; flex-shrink: 0 !important; }
+    .site-header-left img,
+    .stout-logo-img { height: 30px !important; max-width: 100px !important; }
     
     /* Input sizing to prevent iOS zoom */
     input[type=number], input[type=text] {
@@ -3086,14 +3089,15 @@ body.dark-mode .header-totals-block {
         grid-template-areas: 
             "img name sum"
             "img spacer price" !important;
-        gap: 4px 12px !important;
+        gap: 4px 8px !important;
         background: transparent !important;
         border: none !important;
         border-bottom: 1px solid var(--border) !important;
         border-radius: 0 !important;
-        padding: 12px 0 !important;
+        padding: 10px 0 !important;
         margin-bottom: 0 !important;
         box-shadow: none !important;
+        max-width: 100% !important;
     }
     .inv-table td { padding: 0 !important; border: none !important; color: var(--text-main) !important; background: transparent !important; }
     .inv-table td.col-img { 
@@ -3200,9 +3204,19 @@ body.dark-mode .header-totals-block {
     .container {
         padding: 8px !important;
         gap: 10px !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
     }
     .output-panel {
         padding: 8px !important;
+        overflow-x: hidden !important;
+        max-width: 100% !important;
+    }
+    .inv-table {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        table-layout: fixed !important;
     }
 
     /* Compact table division lines and subheadings on mobile */
@@ -3354,6 +3368,23 @@ body.dark-mode .header-totals-block {
     gap: 20px;
     margin-bottom: 10px;
     justify-content: center;
+}
+
+.btn-trial-14 {
+    display: block;
+    margin: 12px auto 0;
+    background: none;
+    border: none;
+    color: var(--text-sec);
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    transition: color 0.2s;
+}
+
+.btn-trial-14:hover {
+    color: var(--primary);
 }
 
 .tariff-card {
@@ -3798,15 +3829,17 @@ body.menu-open .mobile-menu-backdrop {
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 20px;
-        padding: 6px 10px;
-        font-size: 10px;
+        padding: 4px 8px;
+        font-size: 9px;
         font-weight: 500;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         white-space: nowrap;
         margin: 0 auto;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 60%;
+        max-width: none;
+        flex: 1;
+        min-width: 0;
     }
     .m-total-eq { color: var(--text-sec); }
     .m-total-eq span { color: var(--primary); font-size: 12px; font-weight: 700; margin-left: 3px; }
