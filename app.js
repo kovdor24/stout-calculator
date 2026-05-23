@@ -3782,6 +3782,11 @@ const app = {
         // Подписка на изменения авторизации Supabase.
         supabaseClient.auth.onAuthStateChange((event, session) => {
             if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+                // Принудительная перезагрузка после возвращения из Google OAuth (очистка хэша с токеном)
+                if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
+                    window.location.replace(window.location.pathname + window.location.search);
+                    return;
+                }
                 this.handleAuthSession(session);
             } else if (event === 'SIGNED_OUT') {
                 // При явном выходе — сбрасываем состояние
