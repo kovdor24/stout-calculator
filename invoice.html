@@ -1068,6 +1068,126 @@
             .hide-brand .col-brand {
                 display: none !important;
             }
+
+            /* Force standard table layout during printing regardless of screen size */
+            #equipment_container thead {
+                display: table-header-group !important;
+            }
+            #equipment_tbody tr:not(.group-row):not(.subtotal-row) {
+                display: table-row !important;
+                grid-template-columns: none !important;
+                grid-template-rows: none !important;
+                grid-template-areas: none !important;
+                gap: 0 !important;
+                background: transparent !important;
+                border: none !important;
+                padding: 0 !important;
+                margin-bottom: 0 !important;
+                box-shadow: none !important;
+            }
+            #equipment_tbody td {
+                display: table-cell !important;
+                padding: 8px 12px !important;
+                border-bottom: 1px solid #F3F4F6 !important;
+                color: var(--text-main) !important;
+                background: transparent !important;
+                text-align: left !important;
+                vertical-align: middle !important;
+            }
+            #equipment_tbody td.col-idx {
+                display: table-cell !important;
+                width: 35px !important;
+                text-align: center !important;
+                color: #9CA3AF !important;
+            }
+            #equipment_tbody td.col-img {
+                display: table-cell !important;
+                width: 50px !important;
+                height: auto !important;
+                background: transparent !important;
+                border-radius: 0 !important;
+                padding: 8px 12px !important;
+                box-sizing: content-box !important;
+            }
+            .hide-images #equipment_tbody td.col-img {
+                display: none !important;
+            }
+            #equipment_tbody td.col-img img, 
+            #equipment_tbody td.col-img .table-img {
+                width: 32px !important;
+                height: 32px !important;
+                object-fit: contain !important;
+                border-radius: 4px !important;
+                background: #fff !important;
+                border: 1px solid #E5E7EB !important;
+                padding: 1px !important;
+            }
+            #equipment_tbody td.col-name {
+                display: table-cell !important;
+                font-weight: 600 !important;
+                font-size: 12px !important;
+                line-height: inherit !important;
+                align-self: auto !important;
+                max-width: none !important;
+                width: auto !important;
+            }
+            #equipment_tbody td.col-sku {
+                display: table-cell !important;
+                width: 100px !important;
+                font-family: monospace !important;
+                color: var(--text-sec) !important;
+            }
+            .hide-sku #equipment_tbody td.col-sku {
+                display: none !important;
+            }
+            #equipment_tbody td.col-brand {
+                display: table-cell !important;
+                width: 80px !important;
+                text-align: center !important;
+                font-size: 11px !important;
+            }
+            .hide-brand #equipment_tbody td.col-brand {
+                display: none !important;
+            }
+            #equipment_tbody td.col-unit {
+                display: table-cell !important;
+                width: 50px !important;
+                text-align: center !important;
+                color: var(--text-sec) !important;
+            }
+            #equipment_tbody td.col-qty {
+                display: table-cell !important;
+                width: 60px !important;
+                text-align: center !important;
+                font-weight: 700 !important;
+                align-self: auto !important;
+                font-size: 12px !important;
+                color: var(--text-main) !important;
+            }
+            #equipment_tbody td.col-qty::after {
+                content: "" !important;
+            }
+            #equipment_tbody td.col-price {
+                display: table-cell !important;
+                width: 90px !important;
+                text-align: right !important;
+                font-size: 12px !important;
+                color: var(--text-main) !important;
+                white-space: nowrap !important;
+                align-self: auto !important;
+            }
+            #equipment_tbody td.col-price::before {
+                content: "" !important;
+            }
+            #equipment_tbody td.col-sum {
+                display: table-cell !important;
+                width: 100px !important;
+                text-align: right !important;
+                font-weight: 800 !important;
+                font-size: 12px !important;
+                white-space: nowrap !important;
+                align-self: auto !important;
+            }
         }
 
         /* === OFFLINE PDF GENERATION CSS OVERRIDES === */
@@ -1149,6 +1269,126 @@
         }
         body.html2pdf-printing .hide-brand .col-brand {
             display: none !important;
+        }
+
+        /* === OFFLINE PDF GENERATION TABLE LAYOUT OVERRIDES === */
+        body.html2pdf-printing #equipment_container thead {
+            display: table-header-group !important;
+        }
+        body.html2pdf-printing #equipment_tbody tr:not(.group-row):not(.subtotal-row) {
+            display: table-row !important;
+            grid-template-columns: none !important;
+            grid-template-rows: none !important;
+            grid-template-areas: none !important;
+            gap: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            margin-bottom: 0 !important;
+            box-shadow: none !important;
+        }
+        body.html2pdf-printing #equipment_tbody td {
+            display: table-cell !important;
+            padding: 8px 12px !important;
+            border-bottom: 1px solid #F3F4F6 !important;
+            color: var(--text-main) !important;
+            background: transparent !important;
+            text-align: left !important;
+            vertical-align: middle !important;
+        }
+        body.html2pdf-printing #equipment_tbody td.col-idx {
+            display: table-cell !important;
+            width: 35px !important;
+            text-align: center !important;
+            color: #9CA3AF !important;
+        }
+        body.html2pdf-printing #equipment_tbody td.col-img {
+            display: table-cell !important;
+            width: 50px !important;
+            height: auto !important;
+            background: transparent !important;
+            border-radius: 0 !important;
+            padding: 8px 12px !important;
+            box-sizing: content-box !important;
+        }
+        body.html2pdf-printing.hide-images #equipment_tbody td.col-img {
+            display: none !important;
+        }
+        body.html2pdf-printing #equipment_tbody td.col-img img, 
+        body.html2pdf-printing #equipment_tbody td.col-img .table-img {
+            width: 32px !important;
+            height: 32px !important;
+            object-fit: contain !important;
+            border-radius: 4px !important;
+            background: #fff !important;
+            border: 1px solid #E5E7EB !important;
+            padding: 1px !important;
+        }
+        body.html2pdf-printing #equipment_tbody td.col-name {
+            display: table-cell !important;
+            font-weight: 600 !important;
+            font-size: 12px !important;
+            line-height: inherit !important;
+            align-self: auto !important;
+            max-width: none !important;
+            width: auto !important;
+        }
+        body.html2pdf-printing #equipment_tbody td.col-sku {
+            display: table-cell !important;
+            width: 100px !important;
+            font-family: monospace !important;
+            color: var(--text-sec) !important;
+        }
+        body.html2pdf-printing.hide-sku #equipment_tbody td.col-sku {
+            display: none !important;
+        }
+        body.html2pdf-printing #equipment_tbody td.col-brand {
+            display: table-cell !important;
+            width: 80px !important;
+            text-align: center !important;
+            font-size: 11px !important;
+        }
+        body.html2pdf-printing.hide-brand #equipment_tbody td.col-brand {
+            display: none !important;
+        }
+        body.html2pdf-printing #equipment_tbody td.col-unit {
+            display: table-cell !important;
+            width: 50px !important;
+            text-align: center !important;
+            color: var(--text-sec) !important;
+        }
+        body.html2pdf-printing #equipment_tbody td.col-qty {
+            display: table-cell !important;
+            width: 60px !important;
+            text-align: center !important;
+            font-weight: 700 !important;
+            align-self: auto !important;
+            font-size: 12px !important;
+            color: var(--text-main) !important;
+        }
+        body.html2pdf-printing #equipment_tbody td.col-qty::after {
+            content: "" !important;
+        }
+        body.html2pdf-printing #equipment_tbody td.col-price {
+            display: table-cell !important;
+            width: 90px !important;
+            text-align: right !important;
+            font-size: 12px !important;
+            color: var(--text-main) !important;
+            white-space: nowrap !important;
+            align-self: auto !important;
+        }
+        body.html2pdf-printing #equipment_tbody td.col-price::before {
+            content: "" !important;
+        }
+        body.html2pdf-printing #equipment_tbody td.col-sum {
+            display: table-cell !important;
+            width: 100px !important;
+            text-align: right !important;
+            font-weight: 800 !important;
+            font-size: 12px !important;
+            white-space: nowrap !important;
+            align-self: auto !important;
         }
     
 /* === PREMIUM CUSTOM DIALOGS === */
