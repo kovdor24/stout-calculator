@@ -722,12 +722,12 @@
         /* Responsive */
         @media (max-width: 768px) {
             body {
-                padding: 8px 6px !important;
+                padding: 15px 10px;
             }
 
             .container {
-                padding: 12px 8px !important;
-                border-radius: 8px !important;
+                padding: 20px 15px;
+                border-radius: 10px;
             }
 
             .header-main {
@@ -775,11 +775,11 @@
             
             #equipment_tbody tr:not(.group-row):not(.subtotal-row) {
                 display: grid !important;
-                grid-template-columns: 64px 1fr auto !important;
+                grid-template-columns: 64px 1fr auto auto !important;
                 grid-template-rows: auto auto !important;
                 grid-template-areas: 
-                    "img name sum"
-                    "img spacer price" !important;
+                    "img name name sum"
+                    "img spacer qty price" !important;
                 gap: 4px 12px !important;
                 background: transparent !important;
                 border: none !important;
@@ -821,15 +821,10 @@
                 display: none !important;
             }
             body.hide-images #equipment_tbody tr:not(.group-row):not(.subtotal-row) {
-                grid-template-columns: 1fr auto !important;
+                grid-template-columns: 1fr auto auto !important;
                 grid-template-areas: 
-                    "name sum"
-                    "spacer price" !important;
-                padding: 5px 0 !important;
-                gap: 2px 8px !important;
-            }
-            body.hide-images #equipment_tbody td.col-name {
-                font-size: 12px !important;
+                    "name name sum"
+                    "spacer qty price" !important;
             }
             
             #equipment_tbody td.col-img img, 
@@ -869,7 +864,17 @@
                 white-space: nowrap !important;
             }
             
-
+            /* Quantity styling (bottom-left, aligned to right next to price) */
+            #equipment_tbody td.col-qty {
+                grid-area: qty !important;
+                display: flex !important;
+                justify-content: flex-end !important;
+                align-items: center !important;
+                align-self: end !important;
+                font-size: 12px !important;
+                font-weight: 500 !important;
+                color: var(--text-sec) !important;
+            }
             
             /* Unit Price styling (bottom-right, grey) */
             #equipment_tbody td.col-price {
@@ -884,7 +889,9 @@
                 white-space: nowrap !important;
             }
             
-
+            #equipment_tbody td.col-qty::after {
+                content: " шт" !important;
+            }
             
             #equipment_tbody td.col-price::before {
                 content: "× " !important;
@@ -895,27 +902,8 @@
             #equipment_tbody td.col-sku,
             #equipment_tbody td.col-brand,
             #equipment_tbody td.col-unit,
-            #equipment_tbody td.col-qty,
             #equipment_tbody td.col-idx {
                 display: none !important;
-            }
-
-            /* Compact section headers, subheadings and subtotals on mobile */
-            .sec-header-row {
-                margin: 15px 0 8px 0 !important;
-                border-bottom: 2px solid var(--primary) !important;
-                padding-bottom: 4px !important;
-            }
-            .sec-title {
-                font-size: 13px !important;
-            }
-            .group-row td {
-                padding: 4px 8px !important;
-                font-size: 9px !important;
-            }
-            .subtotal-row td {
-                padding: 4px 8px !important;
-                font-size: 9px !important;
             }
         }
 
