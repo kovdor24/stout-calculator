@@ -4829,7 +4829,7 @@ const app = {
                 let nameClass = hasAlts ? "col-name swappable-cursor" : "col-name";
                 let nameClick = hasAlts ? `onclick="event.stopPropagation(); app.cycleSwap('${lookupId}')" title="Нажмите, чтобы заменить"` : "";
 
-                rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price">${i.price.toLocaleString()}<span class="mob-mult" style="display:none;"> × ${i.q}</span></td><td class="col-sum">${i.sum.toLocaleString()}</td></tr>`;
+                rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${i.price.toLocaleString()}</td><td class="col-sum">${i.sum.toLocaleString()}</td></tr>`;
             });
             h += rows + `<tr class="row-subtotal"><td colspan="9">Итого: ${secTotal.toLocaleString()} ₽</td></tr>`;
             sum += secTotal; bill = [];
@@ -4908,7 +4908,7 @@ const app = {
                         }
                     }
 
-                    rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td><td class="col-img hidden-col"></td><td class="col-name"><span class="work-del-btn" onclick="event.stopPropagation(); app.deleteWork('${w.name}')" title="Удалить работу">✖</span>${w.name}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">-</td><td class="col-brand hidden-col"></td><td class="col-unit">${w.unit}</td><td class="col-qty"><div class="qty-wrap">${w.q}</div></td><td class="col-price"><span class="price-edit" contenteditable="true" onblur="app.updateWorkPrice('${w.name}', this.innerText)" title="Изменить цену">${w.price.toLocaleString()}</span><span class="mob-mult" style="display:none;"> × ${w.q}</span></td><td class="col-sum">${w.sum.toLocaleString()}</td></tr>`;
+                    rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td><td class="col-img hidden-col"></td><td class="col-name"><span class="work-del-btn" onclick="event.stopPropagation(); app.deleteWork('${w.name}')" title="Удалить работу">✖</span>${w.name}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">-</td><td class="col-brand hidden-col"></td><td class="col-unit">${w.unit}</td><td class="col-qty"><div class="qty-wrap">${w.q}</div></td><td class="col-price"><span class="mob-mult" style="display:none;">${w.q}</span><span class="price-edit" contenteditable="true" onblur="app.updateWorkPrice('${w.name}', this.innerText)" title="Изменить цену">${w.price.toLocaleString()}</span></td><td class="col-sum">${w.sum.toLocaleString()}</td></tr>`;
                 });
 
                 h += rows + `<tr class="row-subtotal"><td colspan="9">Итого: ${secTotal.toLocaleString()} ₽</td></tr>`;
