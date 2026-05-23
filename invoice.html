@@ -775,11 +775,11 @@
             
             #equipment_tbody tr:not(.group-row):not(.subtotal-row) {
                 display: grid !important;
-                grid-template-columns: 64px 1fr auto auto !important;
+                grid-template-columns: 64px 1fr auto !important;
                 grid-template-rows: auto auto !important;
                 grid-template-areas: 
-                    "img name name sum"
-                    "img spacer qty price" !important;
+                    "img name sum"
+                    "img spacer price" !important;
                 gap: 4px 12px !important;
                 background: transparent !important;
                 border: none !important;
@@ -821,10 +821,10 @@
                 display: none !important;
             }
             body.hide-images #equipment_tbody tr:not(.group-row):not(.subtotal-row) {
-                grid-template-columns: 1fr auto auto !important;
+                grid-template-columns: 1fr auto !important;
                 grid-template-areas: 
-                    "name name sum"
-                    "spacer qty price" !important;
+                    "name sum"
+                    "spacer price" !important;
                 padding: 5px 0 !important;
                 gap: 2px 8px !important;
             }
@@ -869,17 +869,7 @@
                 white-space: nowrap !important;
             }
             
-            /* Quantity styling (bottom-left, aligned to right next to price) */
-            #equipment_tbody td.col-qty {
-                grid-area: qty !important;
-                display: flex !important;
-                justify-content: flex-end !important;
-                align-items: center !important;
-                align-self: end !important;
-                font-size: 12px !important;
-                font-weight: 500 !important;
-                color: var(--text-sec) !important;
-            }
+
             
             /* Unit Price styling (bottom-right, grey) */
             #equipment_tbody td.col-price {
@@ -894,9 +884,7 @@
                 white-space: nowrap !important;
             }
             
-            #equipment_tbody td.col-qty::after {
-                content: " шт" !important;
-            }
+
             
             #equipment_tbody td.col-price::before {
                 content: "× " !important;
@@ -907,6 +895,7 @@
             #equipment_tbody td.col-sku,
             #equipment_tbody td.col-brand,
             #equipment_tbody td.col-unit,
+            #equipment_tbody td.col-qty,
             #equipment_tbody td.col-idx {
                 display: none !important;
             }
