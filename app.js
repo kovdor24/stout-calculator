@@ -3504,15 +3504,17 @@ const app = {
             });
             equipmentText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
 
-            // 2. Формируем таблицу с табуляцией для легкого копирования в Excel (Название \t Артикул \t Количество)
-            let copyTableText = "Название\tАртикул\tКоличество\n";
+            // 2. Формируем таблицу для легкого импорта в 1С (Артикул|Количество)
+            let copyTableText = "";
             (this.currentSpec || []).forEach(item => {
                 const sku = item.id || item.code || "";
-                copyTableText += `${item.name}\t${sku}\t${item.q}\n`;
+                if (sku) {
+                    copyTableText += `${sku}|${item.q}\n`;
+                }
             });
 
             // Добавляем таблицу копирования прямо в конец списка оборудования для максимального удобства
-            equipmentText += "📋 ТАБЛИЦА ДЛЯ ИМПОРТА В EXCEL (выделите и скопируйте в Excel):\n";
+            equipmentText += "📋 ТАБЛИЦА ДЛЯ ИМПОРТА (выделите и скопируйте):\n";
             equipmentText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
             equipmentText += copyTableText;
             equipmentText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";

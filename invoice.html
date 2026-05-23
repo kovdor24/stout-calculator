@@ -1653,7 +1653,10 @@
         <div id="equipment_container" style="display: none;">
             <div class="sec-header-row">
                 <h2 class="sec-title">Спецификация оборудования и материалов</h2>
-                <div class="toggle-images-wrapper no-print">
+                <div class="toggle-images-wrapper no-print" style="display: inline-flex; align-items: center; gap: 15px;">
+                    <button class="btn-copy-spec" onclick="copySpecFor1C()" title="Скопировать смету в буфер обмена в формате Артикул|Количество" style="background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary); padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;">
+                        📋 Копировать для 1С
+                    </button>
                     <label class="switch-control" title="Скрыть изображения оборудования для компактности">
                         <span class="switch-label">Картинки</span>
                         <input type="checkbox" id="toggle_images_checkbox" checked onchange="toggleEquipmentImages(this.checked)">
@@ -1722,8 +1725,64 @@
         </section>
     </div>
 
-    <!-- Load and Render script -->
     <script>
+        function copySpecFor1C() {
+            if (!invoiceData || !invoiceData.items || !invoiceData.items.equipment) {
+                alert("Данные сметы не найдены");
+                return;
+            }
+            let text = "";
+            invoiceData.items.equipment.forEach(item => {
+                if (item.isOpt) return;
+                const sku = item.displaySku || item.id || "";
+                if (sku) {
+                    text += `${sku}|${item.q}\n`;
+                }
+            });
+            
+            const btn = document.querySelector('.btn-copy-spec');
+            const oldText = btn ? btn.innerHTML : "📋 Копировать для 1С";
+            
+            let p;
+            if (navigator.clipboard && window.isSecureContext) {
+                p = navigator.clipboard.writeText(text);
+            } else {
+                let textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.opacity = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    p = Promise.resolve();
+                } catch (err) {
+                    document.body.removeChild(textArea);
+                    p = Promise.reject(err);
+                }
+            }
+            
+            p.then(() => {
+                if (btn) {
+                    btn.innerHTML = "✅ Скопировано!";
+                    btn.style.background = "#10B981";
+                    btn.style.color = "#ffffff";
+                    btn.style.borderColor = "transparent";
+                    setTimeout(() => {
+                        btn.innerHTML = oldText;
+                        btn.style.background = "";
+                        btn.style.color = "";
+                        btn.style.borderColor = "";
+                    }, 2000);
+                }
+            }).catch(err => {
+                console.error("Ошибка копирования:", err);
+                alert("Не удалось скопировать. Пожалуйста, скопируйте таблицу вручную.");
+            });
+        }
+
         // === PREMIUM CUSTOM DIALOGS OVERRIDES ===
         function customAlert(msg, title = "Внимание") {
             return new Promise((resolve) => {
