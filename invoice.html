@@ -11,6 +11,9 @@
     
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- html2pdf SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         :root {
@@ -932,6 +935,87 @@
                 display: none !important;
             }
         }
+
+        /* === OFFLINE PDF GENERATION CSS OVERRIDES === */
+        body.html2pdf-printing .no-print,
+        body.html2pdf-printing .fab-container,
+        body.html2pdf-printing .modal-overlay,
+        body.html2pdf-printing #preloader {
+            display: none !important;
+        }
+
+        body.html2pdf-printing .container {
+            width: 800px !important;
+            max-width: 800px !important;
+            min-width: 800px !important;
+            box-shadow: none !important;
+            border: none !important;
+            padding: 10px !important;
+            margin: 0 auto !important;
+            background: #fff !important;
+        }
+
+        body.html2pdf-printing .manager-bar {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            gap: 15px !important;
+            padding: 10px 20px !important;
+            background-color: #F9FAFB !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 8px !important;
+        }
+
+        body.html2pdf-printing .object-grid {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            justify-content: space-between !important;
+            padding: 12px 20px !important;
+            gap: 5px !important;
+            background: #F9FAFB !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 8px !important;
+        }
+
+        body.html2pdf-printing .obj-item {
+            flex: 1 1 auto !important;
+            text-align: center !important;
+            padding: 4px 5px !important;
+            min-width: 60px !important;
+            position: relative !important;
+            display: block !important;
+        }
+
+        body.html2pdf-printing .obj-item:not(:last-child)::after {
+            content: '' !important;
+            display: block !important;
+            position: absolute !important;
+            right: 0 !important;
+            top: 20% !important;
+            height: 60% !important;
+            width: 1px !important;
+            background-color: var(--border) !important;
+        }
+
+        body.html2pdf-printing .header-logo {
+            margin: 0 !important;
+            width: 80px !important;
+            flex: 0 0 80px !important;
+        }
+
+        body.html2pdf-printing .col-sku {
+            display: table-cell !important;
+        }
+        body.html2pdf-printing .hide-sku .col-sku {
+            display: none !important;
+        }
+        body.html2pdf-printing .col-brand {
+            display: table-cell !important;
+        }
+        body.html2pdf-printing .hide-brand .col-brand {
+            display: none !important;
+        }
     
 /* === PREMIUM CUSTOM DIALOGS === */
 .calc-dialog-overlay {
@@ -1049,7 +1133,7 @@
             </svg>
         </button>
         <!-- Print Button (Blue printer) -->
-        <button class="fab-btn fab-print" onclick="window.print()" title="Распечатать или сохранить в PDF">
+        <button class="fab-btn fab-print" onclick="handlePrintAction()" title="Распечатать или сохранить в PDF">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 6 2 18 2 18 9"></polyline>
                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
@@ -1468,6 +1552,20 @@
                 document.body.classList.remove('hide-images');
             }
 
+            // Динамически меняем иконку принтера на иконку загрузки на мобильных
+            const printBtn = document.querySelector('.fab-print');
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+            if (printBtn && isMobile) {
+                printBtn.title = "Скачать смету в PDF";
+                printBtn.innerHTML = `
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                `;
+            }
+
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
             const dataParam = urlParams.get('data');
@@ -1878,6 +1976,53 @@
         async function confirmInvoice() {
             if (await confirm("Вы подтверждаете данное коммерческое предложение?")) {
                 await updateInvoiceStatus('confirmed');
+            }
+        }
+
+        async function downloadPDFOffline() {
+            const preloader = document.getElementById('preloader');
+            const preloaderText = preloader ? preloader.querySelector('.preloader-text') : null;
+            
+            if (preloader) {
+                if (preloaderText) preloaderText.textContent = "Формирование PDF...";
+                preloader.style.opacity = '1';
+                preloader.style.visibility = 'visible';
+                preloader.style.display = 'flex';
+            }
+
+            try {
+                // Добавляем класс для форсирования печатных стилей на мобильных
+                document.body.classList.add('html2pdf-printing');
+
+                const element = document.getElementById('invoice_content');
+                const opt = {
+                    margin:       10,
+                    filename:     `Смета_${(invoiceData?.object_info?.projectName || 'Новый_объект').replace(/\s+/g, '_')}.pdf`,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true, logging: false },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                // Запускаем оффлайн генерацию PDF
+                await html2pdf().set(opt).from(element).save();
+            } catch (err) {
+                console.error("Ошибка при генерации PDF:", err);
+                alert("Не удалось скачать PDF: " + err.message);
+            } finally {
+                document.body.classList.remove('html2pdf-printing');
+                if (preloader) {
+                    preloader.style.opacity = '0';
+                    preloader.style.visibility = 'hidden';
+                }
+            }
+        }
+
+        function handlePrintAction() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+            if (isMobile) {
+                downloadPDFOffline();
+            } else {
+                window.print();
             }
         }
 

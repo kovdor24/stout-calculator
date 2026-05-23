@@ -3059,14 +3059,49 @@ const app = {
             printBlock.style.display = 'block';
         }
 
-        // Временно отключаем темную тему перед печатью для светлого фона документа
-        const wasDark = document.body.classList.contains('dark-mode');
-        if (wasDark) document.body.classList.remove('dark-mode');
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        
+        if (isMobile) {
+            // Показываем пользователю тост-уведомление о старте генерации
+            app.showInAppNotification("Генерация PDF", "Ваша смета компилируется, пожалуйста, подождите...", "📄");
+            
+            // Временно отключаем темную тему перед печатью для светлого фона документа
+            const wasDark = document.body.classList.contains('dark-mode');
+            if (wasDark) document.body.classList.remove('dark-mode');
+            
+            // Добавляем класс для форсирования печатных стилей на мобильных
+            document.body.classList.add('html2pdf-printing');
 
-        window.print();
+            const element = document.getElementById('print-area');
+            const opt = {
+                margin:       10,
+                filename:     `Смета_${(this.state.projectName || 'Новый_объект').replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
 
-        // Возвращаем тему обратно
-        if (wasDark) document.body.classList.add('dark-mode');
+            // Запускаем оффлайн генерацию PDF
+            html2pdf().set(opt).from(element).save().then(() => {
+                document.body.classList.remove('html2pdf-printing');
+                if (wasDark) document.body.classList.add('dark-mode');
+                app.showInAppNotification("Готово!", "Смета успешно сохранена в PDF!", "✅");
+            }).catch(err => {
+                console.error("Ошибка при генерации PDF:", err);
+                document.body.classList.remove('html2pdf-printing');
+                if (wasDark) document.body.classList.add('dark-mode');
+                app.alert("Не удалось скачать PDF: " + err.message);
+            });
+        } else {
+            // Временно отключаем темную тему перед печатью для светлого фона документа
+            const wasDark = document.body.classList.contains('dark-mode');
+            if (wasDark) document.body.classList.remove('dark-mode');
+
+            window.print();
+
+            // Возвращаем тему обратно
+            if (wasDark) document.body.classList.add('dark-mode');
+        }
     },
     saveJobToCloud: async function (stateData, eqSum = 0, worksSum = 0) {
         console.log("[saveJobToCloud] Запущен фоновый сейв для проекта:", stateData.projectName);
@@ -4226,6 +4261,17 @@ const app = {
 
         this.renderZonesUI();
         this.updateInfo();
+
+        // Динамическое переименование кнопки Печать -> Скачать PDF на мобильных устройствах
+        const btnPrint = document.getElementById('btn_print_trigger');
+        if (btnPrint) {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+            if (isMobile) {
+                btnPrint.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Скачать PDF`;
+            } else {
+                btnPrint.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>Печать`;
+            }
+        }
     },
     setArea: function (v) {
         if (this.state.detailedRooms) { this.syncUI(); return; } // Блокировка ползунка, если включен покомнатный расчет

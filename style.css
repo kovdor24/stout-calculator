@@ -4148,3 +4148,65 @@ body.hide-images-mode .col-img {
 body.hide-images-mode .inv-table td {
     padding: 6px 12px !important;
 }
+
+/* === OFFLINE PDF GENERATION CSS OVERRIDES FOR CALCULATOR === */
+body.html2pdf-printing {
+    background: #fff !important;
+}
+
+body.html2pdf-printing .site-header,
+body.html2pdf-printing .input-panel,
+body.html2pdf-printing .footer-btns,
+body.html2pdf-printing .no-print,
+body.html2pdf-printing footer,
+body.html2pdf-printing button,
+body.html2pdf-printing .custom-modal-overlay,
+body.html2pdf-printing .auth-modal-overlay {
+    display: none !important;
+}
+
+body.html2pdf-printing .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+body.html2pdf-printing .output-panel,
+body.html2pdf-printing #print-area {
+    width: 800px !important;
+    max-width: 800px !important;
+    min-width: 800px !important;
+    padding: 20px !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #fff !important;
+    color: #000 !important;
+}
+
+/* Force table layout for estimates */
+body.html2pdf-printing .inv-table {
+    display: table !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+}
+
+body.html2pdf-printing .inv-table thead {
+    display: table-header-group !important;
+}
+
+body.html2pdf-printing .inv-table tbody {
+    display: table-row-group !important;
+}
+
+body.html2pdf-printing .inv-table tr {
+    display: table-row !important;
+}
+
+body.html2pdf-printing .inv-table td,
+body.html2pdf-printing .inv-table th {
+    display: table-cell !important;
+    padding: 6px 8px !important;
+    border-bottom: 1px solid #E5E7EB !important;
+}
