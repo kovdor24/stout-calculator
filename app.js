@@ -1231,7 +1231,7 @@ const app = {
                 area: est.calc_data.area || 0,
                 region: est.calc_data.region || 100,
                 boiler_type: "—",
-                total_sum: total.toLocaleString('ru-RU') + " ₽",
+                total_sum: eqSum.toLocaleString('ru-RU') + " ₽",
                 equipment_list: `[Запрос счёта для согласованной сметы]\nОборудование: ${eqSum.toLocaleString('ru-RU')} ₽\nРаботы: ${worksSum.toLocaleString('ru-RU')} ₽\nИТОГО: ${total.toLocaleString('ru-RU')} ₽`
             };
 
@@ -3717,7 +3717,7 @@ const app = {
                 area: this.state.area || 0,
                 region: regionName,
                 boiler_type: boilerName,
-                total_sum: total.toLocaleString('ru-RU') + " ₽",
+                total_sum: eqSum.toLocaleString('ru-RU') + " ₽",
                 equipment_list: equipmentText,
                 copy_table: copyTableText, // также передаем отдельным параметром на всякий случай
                 view_url: viewUrl // Полностью рабочая ссылка на счет для клиента (динамическая или оффлайн)
