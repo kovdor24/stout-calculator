@@ -816,6 +816,17 @@
                 background: var(--surface-light) !important;
             }
             
+            /* Support hiding images and adjusting grid columns on mobile */
+            body.hide-images #equipment_tbody td.col-img {
+                display: none !important;
+            }
+            body.hide-images #equipment_tbody tr:not(.group-row):not(.subtotal-row) {
+                grid-template-columns: 1fr auto !important;
+                grid-template-areas: 
+                    "name sum"
+                    "qty price" !important;
+            }
+            
             #equipment_tbody td.col-img img, 
             #equipment_tbody td.col-img .table-img {
                 width: 100% !important;

@@ -3174,6 +3174,17 @@ body.dark-mode .header-totals-block {
         margin-left: 2px !important;
     }
     .inv-table td.col-sku, .inv-table td.col-brand, .inv-table td.col-unit, .inv-table td.col-idx, .inv-table th { display: none !important; }
+    
+    /* Support hiding images and adjusting grid columns on mobile */
+    body.hide-images-mode .inv-table td.col-img {
+        display: none !important;
+    }
+    body.hide-images-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.hide-custom-work-btn):not(.hide-custom-eq-btn) {
+        grid-template-columns: 1fr auto !important;
+        grid-template-areas: 
+            "name sum"
+            "qty price" !important;
+    }
 }
 
 @media screen and (min-width: 769px) {
