@@ -702,7 +702,7 @@ const app = {
 
             let trialBtn = document.getElementById('custom_modal_btn_trial');
             if (trialBtn) {
-                if (this.state.tgUser && !this.state.demoUsed) {
+                if (this.state.tgUser && this.state.accountType !== 'pro') {
                     trialBtn.style.display = 'block';
                 } else {
                     trialBtn.style.display = 'none';
@@ -2461,12 +2461,7 @@ const app = {
                 if (uRow.username && uRow.username !== fullName) this.state.tgUser.first_name = uRow.username;
                 if (uRow.city) this.state.tgUser.city = uRow.city;
 
-                if (!uRow.city) {
-                    setTimeout(() => {
-                        this.showProfileModal();
-                        app.alert("Пожалуйста, укажите ваш город. Это необходимо для корректного формирования счетов.");
-                    }, 1000);
-                }
+                // City check removed immediately after registration; now validated on actions
             } else {
                 this.state.accountType = 'base';
             }
@@ -2755,8 +2750,8 @@ const app = {
             return;
         }
 
-        if (!tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16 || !tgUser.email || !tgUser.email.includes('@')) {
-            app.alert("Пожалуйста, укажите Ваше Имя, Телефон и Email в профиле. Они необходимы для формирования ссылки для клиента.");
+        if (!tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16 || !tgUser.email || !tgUser.email.includes('@') || !tgUser.city) {
+            app.alert("Пожалуйста, укажите Ваше Имя, Телефон, Город и Email в профиле. Они необходимы для формирования ссылки для клиента.");
             this.showProfileModal();
             return;
         }
@@ -3084,8 +3079,8 @@ const app = {
             tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99" };
         }
 
-        if (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16) {
-            app.alert("Пожалуйста, укажите Ваше Имя и Телефон в профиле. Они необходимы для формирования красивой печатной сметы.");
+        if (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16 || !tgUser.city) {
+            app.alert("Пожалуйста, укажите Ваше Имя, Телефон и Город в профиле. Они необходимы для формирования красивой печатной сметы.");
             this.showProfileModal();
             return;
         }
@@ -3349,9 +3344,9 @@ const app = {
             return;
         }
 
-        if (!tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16 || !tgUser.email || !tgUser.email.includes('@')) {
+        if (!tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16 || !tgUser.email || !tgUser.email.includes('@') || !tgUser.city) {
             console.log("[sendEmail] Неполный профиль пользователя.");
-            app.alert("Пожалуйста, укажите Ваше Имя, Телефон и Email в профиле. Они необходимы для отправки сметы.");
+            app.alert("Пожалуйста, укажите Ваше Имя, Телефон, Город и Email в профиле. Они необходимы для отправки сметы.");
             this.showProfileModal();
             return;
         }
