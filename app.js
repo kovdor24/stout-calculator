@@ -2511,28 +2511,37 @@ const app = {
         if (!city) { app.alert('Пожалуйста, укажите ваш город. Это необходимо для формирования смет.'); return; }
         if (phone && phone.length < 18) { app.alert('Введите корректный номер телефона.'); return; }
         if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { app.alert('Пожалуйста, введите корректный email.'); return; }
+        
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         if (!tgUser) return;
+
+        // 1. Мгновенно сохраняем в локальное состояние для моментального отклика
+        this.state.tgUser = this.state.tgUser || {};
         this.state.tgUser.first_name = name;
         this.state.tgUser.phone = phone;
         this.state.tgUser.city = city;
         this.state.tgUser.email = email;
         this.saveState();
-        try {
-            let query = supabaseClient.from('users').update({ username: name, phone: phone, city: city, email: email });
-            // Используем auth_user_id как надёжный уникальный ключ
-            if (tgUser.authUserId) query = query.eq('auth_user_id', tgUser.authUserId);
-            else if (tgUser.email) query = query.eq('email', tgUser.email);
-            const { error } = await query;
-            if (error) throw error;
-            if (tgUser.email) await supabaseClient.auth.updateUser({ data: { full_name: name, phone: phone } });
-            this.syncUI();
-            this.closeProfileModal();
-            app.alert('✅ Профиль успешно сохранен!');
-        } catch (error) {
-            console.error('Ошибка сохранения профиля:', error);
-            app.alert('Ошибка: ' + error.message);
-        }
+        localStorage.setItem('user_city', city); // Дублируем для надежности
+
+        this.syncUI();
+        this.closeProfileModal();
+        app.alert('✅ Профиль успешно сохранен!');
+
+        // 2. В фоне синхронизируем с Supabase без блокировки UI
+        (async () => {
+            try {
+                let query = supabaseClient.from('users').update({ username: name, phone: phone, city: city, email: email });
+                if (tgUser.authUserId) query = query.eq('auth_user_id', tgUser.authUserId);
+                else if (tgUser.email) query = query.eq('email', tgUser.email);
+                const { error } = await query;
+                if (error) throw error;
+                if (tgUser.email) await supabaseClient.auth.updateUser({ data: { full_name: name, phone: phone } });
+                console.log("[saveProfile] Профиль успешно синхронизирован с облаком Supabase.");
+            } catch (error) {
+                console.error('[saveProfile] Фоновая ошибка синхронизации профиля с Supabase:', error);
+            }
+        })();
     },
     maskPhone: function (input) {
         let val = input.value.replace(/\D/g, '');
