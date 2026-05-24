@@ -2449,12 +2449,26 @@ const app = {
                     clientIp = '127.0.0.1';
                     city = 'Локальный хост';
                 } else {
-                    const res = await fetch('https://ipapi.co/json/');
-                    const geo = await res.json();
-                    city = geo.city || 'Не определен';
-                    clientIp = geo.ip || '0.0.0.0';
+                    try {
+                        const res = await fetch('https://ipapi.co/json/');
+                        if (!res.ok) throw new Error("HTTP error " + res.status);
+                        const geo = await res.json();
+                        city = geo.city || 'Не определен';
+                        clientIp = geo.ip || '0.0.0.0';
+                    } catch (primaryErr) {
+                        console.warn("Primary geo fetch failed, trying fallback...", primaryErr);
+                        try {
+                            const res = await fetch('https://ipinfo.io/json');
+                            if (!res.ok) throw new Error("HTTP error " + res.status);
+                            const geo = await res.json();
+                            city = geo.city || 'Не определен';
+                            clientIp = geo.ip || '0.0.0.0';
+                        } catch (fallbackErr) {
+                            console.warn("Fallback geo fetch also failed", fallbackErr);
+                        }
+                    }
                 }
-            } catch (e) { console.error("Geo error", e); }
+            } catch (e) { console.warn("Geo error", e); }
 
             let utm = localStorage.getItem('stout_utm') || '';
 

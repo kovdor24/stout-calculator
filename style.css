@@ -259,6 +259,13 @@ h3 {
     margin-bottom: 20px;
 }
 
+.control-item.toggle-item {
+    border-top: 1px dashed var(--border);
+    margin-top: 16px;
+    padding-top: 16px;
+    margin-bottom: 16px;
+}
+
 .label-row {
     display: flex;
     justify-content: space-between;
