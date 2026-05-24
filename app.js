@@ -814,10 +814,13 @@ const app = {
 
     activateTrial14: async function () {
         const { data: { session } } = await supabaseClient.auth.getSession();
-        const authUserId = session?.user?.id || this.state.tgUser?.authUserId || this.state.tgUser?.id;
-        const email = session?.user?.email || this.state.tgUser?.email;
+        const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
 
-        if (!authUserId && !email) {
+        const authUserId = session?.user?.id || tgUser?.authUserId || (tgUser?.id && !/^\d+$/.test(String(tgUser.id)) ? tgUser.id : null);
+        const email = session?.user?.email || tgUser?.email;
+        const dbId = tgUser?.id; // can be the primary key UUID/int in some contexts
+
+        if (!authUserId && !email && !dbId) {
             app.alert("Сначала авторизуйтесь!");
             return;
         }
@@ -830,19 +833,28 @@ const app = {
             let trialDurationMs = 14 * 24 * 60 * 60 * 1000;
             let endDate = new Date(Date.now() + trialDurationMs).toISOString();
 
-            // Всегда используем auth_user_id (UUID из Supabase Auth) как надёжный ключ
-            let query = supabaseClient.from('users').update({ account_type: 'pro', demo_ends_at: endDate });
-            if (authUserId) query = query.eq('auth_user_id', authUserId);
-            else if (email) query = query.eq('email', email);
-            else { app.alert("Ошибка: не удалось определить аккаунт. Войдите заново."); return; }
+            // Сначала найдем пользователя в БД по любому доступному признаку
+            let uRow = null;
+            if (authUserId) {
+                let { data } = await supabaseClient.from('users').select('id, demo_ends_at').eq('auth_user_id', authUserId).maybeSingle();
+                uRow = data;
+            }
+            if (!uRow && email) {
+                let { data } = await supabaseClient.from('users').select('id, demo_ends_at').eq('email', email).maybeSingle();
+                uRow = data;
+            }
+            if (!uRow && dbId) {
+                let { data } = await supabaseClient.from('users').select('id, demo_ends_at').eq('id', dbId).maybeSingle();
+                uRow = data;
+            }
 
-            // Запрашиваем текущие данные пользователя, чтобы убедиться что триал не был активирован
-            let checkQuery = supabaseClient.from('users').select('demo_ends_at');
-            if (authUserId) checkQuery = checkQuery.eq('auth_user_id', authUserId);
-            else checkQuery = checkQuery.eq('email', email);
-            const checkRes = await checkQuery.single();
+            if (!uRow) {
+                app.alert("Профиль пользователя не найден в базе данных. Пожалуйста, попробуйте перезайти в аккаунт.");
+                if (btn) btn.innerText = "Попробовать бесплатно 14 дней";
+                return;
+            }
 
-            if (checkRes.data && checkRes.data.demo_ends_at) {
+            if (uRow.demo_ends_at) {
                 app.alert("Пробный период уже был активирован ранее.");
                 this.state.demoUsed = true;
                 this.saveState();
@@ -850,16 +862,22 @@ const app = {
                 return;
             }
 
-            const { error } = await query;
+            // Обновляем статус
+            const { error } = await supabaseClient.from('users').update({ account_type: 'pro', demo_ends_at: endDate }).eq('id', uRow.id);
 
             if (error) throw error;
 
             this.state.accountType = 'pro';
             this.state.demoUsed = true;
             localStorage.setItem('pro_trial_until', Date.now() + trialDurationMs);
+            
             if (this.state.tgUser) {
                 this.state.tgUser.account_type = 'pro';
+                if (!this.state.tgUser.id) {
+                    this.state.tgUser.id = uRow.id;
+                }
             }
+            
             this.saveState();
             this.syncUI();
             this.closeModal();
@@ -6375,6 +6393,286 @@ const app = {
 
         overlay.style.display = 'flex';
         this.currentPaymentTariff = tariffName;
+    },
+
+    // === FEEDBACK FORM FUNCTIONALITY ===
+    selectedFeedbackCategory: 'bug',
+    feedbackImageBase64: null,
+
+    openFeedbackModal: function () {
+        // Reset fields
+        const subjectEl = document.getElementById('feedback_subject');
+        const descEl = document.getElementById('feedback_description');
+        const fileInput = document.getElementById('feedback_file_input');
+        
+        if (subjectEl) subjectEl.value = '';
+        if (descEl) descEl.value = '';
+        if (fileInput) fileInput.value = '';
+        
+        this.feedbackImageBase64 = null;
+        this.clearFeedbackFile();
+
+        // Show main view, hide success view
+        const mainContent = document.getElementById('feedback_main_content');
+        const successContent = document.getElementById('feedback_success_content');
+        if (mainContent) mainContent.style.display = 'block';
+        if (successContent) successContent.style.display = 'none';
+
+        // Set default category
+        this.selectFeedbackCategory('bug');
+
+        // Show overlay
+        const overlay = document.getElementById('feedback_modal_overlay');
+        if (overlay) {
+            overlay.classList.add('active');
+        }
+    },
+
+    closeFeedbackModal: function () {
+        const overlay = document.getElementById('feedback_modal_overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
+    },
+
+    selectFeedbackCategory: function (category) {
+        this.selectedFeedbackCategory = category;
+        
+        // Update active classes
+        document.querySelectorAll('.feedback-cat-card').forEach(card => {
+            card.classList.remove('active');
+        });
+        
+        const activeCard = document.getElementById('feedback_cat_' + category);
+        if (activeCard) {
+            activeCard.classList.add('active');
+        }
+    },
+
+    handleFeedbackFile: function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Size check (1MB = 1048576 bytes)
+        if (file.size > 1048576) {
+            app.alert("Ошибка: размер изображения превышает 1МБ.");
+            this.clearFeedbackFile();
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                // Resize image using canvas to max 800x800 to avoid EmailJS payload limit
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const maxDim = 800;
+
+                if (width > maxDim || height > maxDim) {
+                    if (width > height) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    } else {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Compress image to JPEG 0.6
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                this.feedbackImageBase64 = dataUrl;
+
+                // Show preview UI
+                const previewContainer = document.getElementById('feedback_file_preview_container');
+                const fileNameEl = document.getElementById('feedback_file_name');
+                const fileTextEl = document.getElementById('feedback_file_text');
+                
+                if (previewContainer) previewContainer.style.display = 'flex';
+                if (fileNameEl) fileNameEl.innerText = file.name;
+                if (fileTextEl) fileTextEl.innerText = "Изображение прикреплено";
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    },
+
+    clearFeedbackFile: function () {
+        this.feedbackImageBase64 = null;
+        const fileInput = document.getElementById('feedback_file_input');
+        if (fileInput) fileInput.value = '';
+        
+        const previewContainer = document.getElementById('feedback_file_preview_container');
+        const fileTextEl = document.getElementById('feedback_file_text');
+        
+        if (previewContainer) previewContainer.style.display = 'none';
+        if (fileTextEl) fileTextEl.innerText = "Прикрепить изображение (макс. 1МБ)";
+    },
+
+    submitFeedback: async function () {
+        const subjectEl = document.getElementById('feedback_subject');
+        const descEl = document.getElementById('feedback_description');
+        const sendBtn = document.getElementById('btn_send_feedback');
+
+        const subject = subjectEl ? subjectEl.value.trim() : '';
+        const description = descEl ? descEl.value.trim() : '';
+
+        if (!subject || !description) {
+            app.alert("Пожалуйста, заполните Тему и Описание.");
+            return;
+        }
+
+        // Set Loading state
+        if (sendBtn) {
+            sendBtn.disabled = true;
+            sendBtn.innerText = "Отправка...";
+        }
+
+        try {
+            // 1. Gather browser diagnostics & network IP/geo details
+            let clientIp = '0.0.0.0';
+            let clientCity = 'Не определен';
+            try {
+                const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+                if (isLocal) {
+                    clientIp = '127.0.0.1';
+                    clientCity = 'Локальный хост';
+                } else {
+                    const res = await fetch('https://ipapi.co/json/');
+                    const geo = await res.json();
+                    clientIp = geo.ip || '0.0.0.0';
+                    clientCity = geo.city || 'Не определен';
+                }
+            } catch (e) {
+                console.error("Feedback geo-IP error:", e);
+            }
+
+            const categoryLabels = {
+                'bug': '🐞 Баг / Ошибка',
+                'idea': '💡 Идея / Улучшение',
+                'question': '❓ Вопрос',
+                'other': '💬 Другое'
+            };
+
+            const categoryLabel = categoryLabels[this.selectedFeedbackCategory] || this.selectedFeedbackCategory;
+            const userAgent = navigator.userAgent;
+            const windowSize = `${window.innerWidth}x${window.innerHeight}`;
+            const screenSize = `${screen.width}x${screen.height}`;
+            const platform = navigator.platform;
+            const language = navigator.language;
+            const connectionSpeed = navigator.connection ? navigator.connection.effectiveType : 'unknown';
+
+            // Gather contact info
+            const userEmail = this.state.tgUser?.email || 'Не указан';
+            const userName = this.state.tgUser?.first_name || this.state.tgUser?.username || 'Гость';
+            const userPhone = this.state.tgUser?.phone || 'Не указан';
+            const userCity = this.state.tgUser?.city || 'Не указан';
+            
+            // Gather calculation details
+            const projectName = this.state.projectName || 'Новый объект';
+            const calcId = this.state.calc_id || 'Нет ID';
+            const eqSum = app.lastEqSum || 0;
+            const workSum = app.lastWorksSum || 0;
+            const totalSum = eqSum + workSum;
+
+            // 2. Telegram Alert dispatch
+            const tgBotToken = '8601624733:AAH3Mlz6NQJ3MB1pSE2T17hMzPoocbTAGmg';
+            const tgChatId = '594437394';
+            const tgMessage = `📩 НОВЫЙ ОТЗЫВ / ОБРАТНАЯ СВЯЗЬ!\n` +
+                              `========================\n` +
+                              `• Категория: ${categoryLabel}\n` +
+                              `• Тема: ${subject}\n` +
+                              `• Описание: ${description}\n\n` +
+                              `👤 ОТПРАВИТЕЛЬ:\n` +
+                              `• Имя: ${userName}\n` +
+                              `• Email: ${userEmail}\n` +
+                              `• Телефон: ${userPhone}\n` +
+                              `• Город (профиль): ${userCity}\n\n` +
+                              `🌐 УСТРОЙСТВО И СЕТЬ:\n` +
+                              `• IP: ${clientIp} (${clientCity})\n` +
+                              `• Браузер/ОС: ${userAgent}\n` +
+                              `• Окно: ${windowSize}, Экран: ${screenSize}\n` +
+                              `• Платформа: ${platform}, Язык: ${language}\n` +
+                              `• Сеть: ${connectionSpeed}\n\n` +
+                              `📊 ДАННЫЕ РАСЧЕТА:\n` +
+                              `• Объект: ${projectName}\n` +
+                              `• ID Расчета: ${calcId}\n` +
+                              `• Сумма: ${totalSum} ₽ (Оборудование: ${eqSum} ₽, Монтаж: ${workSum} ₽)\n` +
+                              `========================\n` +
+                              `${this.feedbackImageBase64 ? '🖼️ [Изображение прикреплено в письме]' : '❌ Изображение не прикреплено'}`;
+
+            const tgUrl = `https://api.telegram.org/bot${tgBotToken}/sendMessage`;
+            fetch(tgUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: tgChatId, text: tgMessage })
+            }).catch(err => console.error('Ошибка отправки в Telegram:', err));
+
+            // 3. EmailJS dispatch
+            const emailjsServiceID = 'service_o11b4ej';
+            const emailjsTemplateID = 'template_ysuxfio';
+
+            const emailSubject = `[Feedback - ${categoryLabel}] ${subject}`;
+            const emailBody = `Поступила новая форма обратной связи:\n\n` +
+                              `Категория: ${categoryLabel}\n` +
+                              `Тема: ${subject}\n` +
+                              `Описание: ${description}\n\n` +
+                              `--- ОТПРАВИТЕЛЬ ---\n` +
+                              `Имя: ${userName}\n` +
+                              `Email: ${userEmail}\n` +
+                              `Телефон: ${userPhone}\n` +
+                              `Город (профиль): ${userCity}\n\n` +
+                              `--- ДИАГНОСТИКА УСТРОЙСТВА ---\n` +
+                              `IP-Адрес: ${clientIp} (${clientCity})\n` +
+                              `User Agent: ${userAgent}\n` +
+                              `Window Size: ${windowSize}, Screen Resolution: ${screenSize}\n` +
+                              `Platform: ${platform}, Language: ${language}\n` +
+                              `Network Speed: ${connectionSpeed}\n\n` +
+                              `--- ДАННЫЕ РАСЧЕТА ---\n` +
+                              `Название объекта: ${projectName}\n` +
+                              `ID Расчета: ${calcId}\n` +
+                              `Итого сметы: ${totalSum} ₽\n\n` +
+                              `--------------------------------\n` +
+                              `Отправлено автоматически с сайта HeatCalc.ru.`;
+
+            const templateParams = {
+                to_email: 'kovdor24@yandex.ru',
+                user_email: userEmail,
+                tariff_name: categoryLabel,
+                email_subject: emailSubject,
+                subject_text: emailSubject,
+                email_body: emailBody,
+                message_text: emailBody,
+                feedback_image: this.feedbackImageBase64 || ''
+            };
+
+            if (typeof emailjs !== 'undefined') {
+                await emailjs.send(emailjsServiceID, emailjsTemplateID, templateParams);
+            } else {
+                console.warn('Библиотека EmailJS не загружена');
+            }
+
+            // Show success content
+            const mainContent = document.getElementById('feedback_main_content');
+            const successContent = document.getElementById('feedback_success_content');
+            if (mainContent) mainContent.style.display = 'none';
+            if (successContent) successContent.style.display = 'block';
+
+        } catch (error) {
+            console.error("Ошибка отправки обратной связи:", error);
+            app.alert("Не удалось отправить отзыв. Пожалуйста, попробуйте позже.");
+        } finally {
+            if (sendBtn) {
+                sendBtn.disabled = false;
+                sendBtn.innerText = "Отправить отзыв";
+            }
+        }
     },
 
 };

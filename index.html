@@ -555,6 +555,8 @@
         <div>&copy; 2026 HeatCalc.ru — Профессиональный калькулятор систем отопления.</div>
         <div style="margin-top: 8px;">
             <a href="oferta.html" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 600; border-bottom: 1px dashed var(--primary);">Публичная оферта</a>
+            <span style="color: var(--text-sec); margin: 0 10px;">|</span>
+            <a href="#" onclick="app.openFeedbackModal(); return false;" style="color: var(--primary); text-decoration: none; font-weight: 600; border-bottom: 1px dashed var(--primary);">Сообщить о проблеме</a>
         </div>
     </footer>
 
@@ -798,6 +800,77 @@
             handleScroll();
         });
     </script>
+    <!-- DESKTOP FLOATING FEEDBACK BUTTON -->
+    <button class="desktop-feedback-btn no-print" onclick="app.openFeedbackModal()" title="Сообщить о проблеме">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span>Сообщить о проблеме</span>
+    </button>
+
+    <!-- МОДАЛЬНОЕ ОКНО ОБРАТНОЙ СВЯЗИ -->
+    <div class="custom-modal-overlay" id="feedback_modal_overlay" onclick="if(event.target === this) app.closeFeedbackModal()">
+        <div class="custom-modal feedback-modal">
+            <span class="auth-modal-close" onclick="app.closeFeedbackModal()">&times;</span>
+            
+            <div id="feedback_main_content" class="feedback-modal-content">
+                <div class="feedback-header">
+                    <svg class="feedback-title-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <h2>Обратная связь</h2>
+                </div>
+                
+                <div class="feedback-categories">
+                    <div class="feedback-cat-card active" data-category="bug" id="feedback_cat_bug" onclick="app.selectFeedbackCategory('bug')">
+                        <span class="feedback-cat-icon">🐞</span>
+                        <span class="feedback-cat-label">Баг / Ошибка</span>
+                    </div>
+                    <div class="feedback-cat-card" data-category="idea" id="feedback_cat_idea" onclick="app.selectFeedbackCategory('idea')">
+                        <span class="feedback-cat-icon">💡</span>
+                        <span class="feedback-cat-label">Идея / Улучшение</span>
+                    </div>
+                    <div class="feedback-cat-card" data-category="question" id="feedback_cat_question" onclick="app.selectFeedbackCategory('question')">
+                        <span class="feedback-cat-icon">❓</span>
+                        <span class="feedback-cat-label">Вопрос</span>
+                    </div>
+                    <div class="feedback-cat-card" data-category="other" id="feedback_cat_other" onclick="app.selectFeedbackCategory('other')">
+                        <span class="feedback-cat-icon">💬</span>
+                        <span class="feedback-cat-label">Другое</span>
+                    </div>
+                </div>
+
+                <div class="feedback-form-group">
+                    <input type="text" id="feedback_subject" placeholder="Тема" class="feedback-input">
+                </div>
+
+                <div class="feedback-form-group">
+                    <textarea id="feedback_description" placeholder="Описание..." class="feedback-textarea" rows="3"></textarea>
+                </div>
+
+                <div class="feedback-form-group">
+                    <label class="feedback-file-upload" id="feedback_file_label">
+                        <input type="file" id="feedback_file_input" accept="image/*" style="display:none;" onchange="app.handleFeedbackFile(event)">
+                        <span class="feedback-file-icon">🖼️</span>
+                        <span class="feedback-file-text" id="feedback_file_text">Прикрепить изображение (макс. 1МБ)</span>
+                    </label>
+                    <div id="feedback_file_preview_container" style="display: none; align-items: center; justify-content: space-between; margin-top: 6px; background: rgba(0,0,0,0.05); padding: 6px 10px; border-radius: 8px;">
+                        <span id="feedback_file_name" style="font-size: 12px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 80%;"></span>
+                        <button type="button" onclick="app.clearFeedbackFile()" style="background:none; border:none; color:#ef4444; font-weight:bold; cursor:pointer; font-size:16px; padding:0; line-height:1;">&times;</button>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-subscribe" id="btn_send_feedback" onclick="app.submitFeedback()" style="width:100%; font-size: 13.5px; padding: 10px 16px; border-radius: 10px; margin-top: 10px;">Отправить отзыв</button>
+            </div>
+
+            <!-- ОКНО БЛАГОДАРНОСТИ (SUCCESS VIEW) -->
+            <div id="feedback_success_content" class="feedback-modal-content" style="display: none; text-align: center; padding: 40px 20px;">
+                <div class="feedback-success-icon" style="font-size: 64px; margin-bottom: 20px;">✅</div>
+                <h2 style="margin-bottom: 12px; font-weight: 800; font-size: 22px;">Спасибо за отзыв!</h2>
+                <p style="color: var(--text-sec); font-size: 14px; line-height: 1.6; margin-bottom: 25px;">Ваше сообщение успешно отправлено. Мы обязательно изучим его для улучшения нашего калькулятора.</p>
+                <button type="button" class="btn-subscribe" onclick="app.closeFeedbackModal()" style="font-size: 14px; padding: 10px 30px; border-radius: 8px;">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MOBILE BOTTOM NAVIGATION -->
     <div class="mobile-bottom-nav">
         <div class="mob-nav-item active" id="mob_nav_inputs" onclick="app.switchMobileTab('inputs')">
@@ -807,6 +880,10 @@
         <div class="mob-nav-item" id="mob_nav_output" onclick="app.switchMobileTab('output')">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
             <span>Смета</span>
+        </div>
+        <div class="mob-nav-item" id="mob_nav_feedback" onclick="app.openFeedbackModal()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <span>Ошибка?</span>
         </div>
     </div>
     <div class="mobile-menu-backdrop" onclick="app.toggleMenu()"></div>

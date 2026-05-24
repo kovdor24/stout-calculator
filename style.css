@@ -4563,3 +4563,239 @@ body.html2pdf-printing .doc-footer {
     border-top: 3px solid #D4AF37 !important;
     padding-top: 15px !important;
 }
+
+/* ===================================================== */
+/*   REPORT A PROBLEM / FEEDBACK FORM STYLES             */
+/* ===================================================== */
+
+/* Desktop Floating Action Button (FAB) */
+.desktop-feedback-btn {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(229, 231, 235, 0.2);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #1f2937;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    cursor: pointer;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.desktop-feedback-btn:hover {
+    transform: translateY(-2px);
+    background: #fff;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 10px 10px -5px rgba(0, 0, 0, 0.06);
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+.desktop-feedback-btn svg {
+    stroke: var(--primary);
+    width: 14px;
+    height: 14px;
+    transition: transform 0.3s ease;
+}
+
+.desktop-feedback-btn:hover svg {
+    transform: rotate(15deg) scale(1.1);
+}
+
+/* Dark Mode support for desktop FAB */
+body.dark-mode .desktop-feedback-btn {
+    background: rgba(31, 41, 55, 0.85);
+    border-color: rgba(75, 85, 99, 0.3);
+    color: #f3f4f6;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .desktop-feedback-btn:hover {
+    background: #1f2937;
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+/* Responsive constraints for the FAB button */
+@media screen and (max-width: 768px) {
+    .desktop-feedback-btn {
+        display: none !important;
+    }
+}
+
+/* Feedback Modal Container */
+.feedback-modal {
+    max-width: 440px !important;
+    width: 90% !important;
+    border-radius: 20px !important;
+    overflow: hidden;
+    padding: 0 !important; /* Managed by individual containers to look premium */
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.feedback-modal-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.feedback-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.feedback-title-icon {
+    stroke: var(--primary);
+}
+
+.feedback-header h2 {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 0;
+    color: var(--text-main);
+}
+
+/* Categories Grid */
+.feedback-categories {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.feedback-cat-card {
+    background: var(--surface-light);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.feedback-cat-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-light);
+    background: var(--surface);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+body.dark-mode .feedback-cat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.feedback-cat-card.active {
+    border-color: var(--primary) !important;
+    background: var(--surface) !important;
+    box-shadow: 0 0 0 1px var(--primary), 0 4px 12px rgba(37, 99, 235, 0.08) !important;
+}
+
+body.dark-mode .feedback-cat-card.active {
+    box-shadow: 0 0 0 1px var(--primary), 0 4px 12px rgba(99, 102, 241, 0.15) !important;
+}
+
+.feedback-cat-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.feedback-cat-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+/* Form inputs & textareas */
+.feedback-form-group {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.feedback-input,
+.feedback-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface-light);
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.feedback-input:focus,
+.feedback-textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    background: var(--surface);
+}
+
+body.dark-mode .feedback-input:focus,
+body.dark-mode .feedback-textarea:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+/* Premium Drag-and-Drop file uploader */
+.feedback-file-upload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    padding: 8px;
+    cursor: pointer;
+    background: var(--surface-light);
+    transition: all 0.2s ease;
+}
+
+.feedback-file-upload:hover {
+    border-color: var(--primary);
+    background: var(--surface);
+}
+
+.feedback-file-icon {
+    font-size: 14px;
+}
+
+.feedback-file-text {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-sec);
+}
+
+/* Print exclusion for modal overlays and buttons */
+@media print {
+    .custom-modal-overlay,
+    .desktop-feedback-btn,
+    .mobile-bottom-nav {
+        display: none !important;
+    }
+}
+body.html2pdf-printing .custom-modal-overlay,
+body.html2pdf-printing .desktop-feedback-btn,
+body.html2pdf-printing .mobile-bottom-nav {
+    display: none !important;
+}
