@@ -1995,18 +1995,11 @@
                 document.body.classList.remove('hide-images');
             }
 
-            // Динамически меняем иконку принтера на иконку загрузки на мобильных
+            // Скрываем кнопку печати на мобильных устройствах
             const printBtn = document.querySelector('.fab-print');
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
             if (printBtn && isMobile) {
-                printBtn.title = "Скачать смету в PDF";
-                printBtn.innerHTML = `
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                `;
+                printBtn.style.display = 'none';
             }
 
             const urlParams = new URLSearchParams(window.location.search);
