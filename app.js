@@ -2490,8 +2490,6 @@ const app = {
                 city: existingCity || undefined,
                 utm_source: utm || undefined,
                 registration_ip: clientIp,
-                terms_accepted: true,
-                terms_accepted_at: new Date().toISOString(),
                 ...updatePayload
             };
             Object.keys(upsertObj).forEach(k => { if (upsertObj[k] === undefined) delete upsertObj[k]; });
