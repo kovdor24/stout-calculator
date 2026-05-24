@@ -6653,7 +6653,11 @@ const app = {
             };
 
             if (typeof emailjs !== 'undefined') {
-                await emailjs.send(emailjsServiceID, emailjsTemplateID, templateParams);
+                try {
+                    await emailjs.send(emailjsServiceID, emailjsTemplateID, templateParams);
+                } catch (emailjsError) {
+                    console.error('Ошибка EmailJS при отправке отзыва:', emailjsError);
+                }
             } else {
                 console.warn('Библиотека EmailJS не загружена');
             }
