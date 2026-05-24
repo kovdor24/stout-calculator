@@ -2991,7 +2991,7 @@ const app = {
                     authError = userErr || sessionErr;
                 }
             } catch (e) {
-                console.error('[shareInvoice] Ошибка проверки сессии:', e);
+                console.warn('[shareInvoice] Ошибка проверки сессии:', e);
                 authError = e;
             }
 
@@ -3068,7 +3068,7 @@ const app = {
                         this.saveState();
                     }
                 } catch (e) {
-                    console.error('[shareInvoice] Ошибка при поиске пользователя:', e);
+                    console.warn('[shareInvoice] Ошибка при поиске пользователя:', e);
                 }
             }
 
@@ -3091,7 +3091,7 @@ const app = {
                             this.saveState();
                         }
                     } catch (e) {
-                        console.error('[shareInvoice] Ошибка при поиске по email:', e);
+                        console.warn('[shareInvoice] Ошибка при поиске по email:', e);
                     }
                 }
             }
@@ -3625,7 +3625,7 @@ const app = {
                         );
                         if (uData) dbUserId = uData.id;
                     } catch (e) {
-                        console.error('[sendEmail] Ошибка поиска по auth_user_id:', e);
+                        console.warn('[sendEmail] Ошибка поиска по auth_user_id:', e);
                     }
                 }
                 if (!dbUserId) {
@@ -3642,7 +3642,7 @@ const app = {
                             );
                             if (uData) dbUserId = uData.id;
                         } catch (e) {
-                            console.error('[sendEmail] Ошибка поиска по email:', e);
+                            console.warn('[sendEmail] Ошибка поиска по email:', e);
                         }
                     }
                 }
