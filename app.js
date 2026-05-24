@@ -3194,51 +3194,15 @@ const app = {
             printBlock.style.display = 'block';
         }
 
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        // Временно отключаем темную тему перед печатью для светлого фона документа
+        const wasDark = document.body.classList.contains('dark-mode');
+        if (wasDark) document.body.classList.remove('dark-mode');
 
-        if (isMobile) {
-            // Показываем пользователю тост-уведомление о старте генерации
-            app.showInAppNotification("Генерация PDF", "Ваша смета компилируется, пожалуйста, подождите...", "📄");
+        this.updateDocumentTitle();
+        window.print();
 
-            // Временно отключаем темную тему перед печатью для светлого фона документа
-            const wasDark = document.body.classList.contains('dark-mode');
-            if (wasDark) document.body.classList.remove('dark-mode');
-
-            // Добавляем класс для форсирования печатных стилей на мобильных
-            document.body.classList.add('html2pdf-printing');
-
-            this.updateDocumentTitle();
-            const element = document.getElementById('print-area');
-            const opt = {
-                margin: 10,
-                filename: `${document.title || 'Смета'}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'] }
-            };
-
-            // Запускаем оффлайн генерацию PDF
-            html2pdf().set(opt).from(element).save().then(() => {
-                document.body.classList.remove('html2pdf-printing');
-                if (wasDark) document.body.classList.add('dark-mode');
-                app.showInAppNotification("Готово!", "Смета успешно сохранена в PDF!", "✅");
-            }).catch(err => {
-                console.error("Ошибка при генерации PDF:", err);
-                document.body.classList.remove('html2pdf-printing');
-                if (wasDark) document.body.classList.add('dark-mode');
-                app.alert("Не удалось скачать PDF: " + err.message);
-            });
-        } else {
-            // Временно отключаем темную тему перед печатью для светлого фона документа
-            const wasDark = document.body.classList.contains('dark-mode');
-            if (wasDark) document.body.classList.remove('dark-mode');
-
-            window.print();
-
-            // Возвращаем тему обратно
-            if (wasDark) document.body.classList.add('dark-mode');
-        }
+        // Возвращаем тему обратно
+        if (wasDark) document.body.classList.add('dark-mode');
     },
     saveJobToCloud: async function (stateData, eqSum = 0, worksSum = 0) {
         console.log("[saveJobToCloud] Запущен фоновый сейв для проекта:", stateData.projectName);
