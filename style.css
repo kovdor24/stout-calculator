@@ -4398,16 +4398,35 @@ body.hide-images-mode .inv-table td {
 /* === OFFLINE PDF GENERATION CSS OVERRIDES FOR CALCULATOR === */
 body.html2pdf-printing {
     background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
+body.html2pdf-printing .header-auth-block,
+body.html2pdf-printing .header-cloud-btns,
+body.html2pdf-printing .header-actions,
 body.html2pdf-printing .site-header,
 body.html2pdf-printing .input-panel,
+body.html2pdf-printing .btn-print,
+body.html2pdf-printing .sku-control,
+body.html2pdf-printing .swap-cycle-btn,
+body.html2pdf-printing .main-view-tabs,
 body.html2pdf-printing .footer-btns,
-body.html2pdf-printing .no-print,
 body.html2pdf-printing footer,
-body.html2pdf-printing button,
-body.html2pdf-printing .custom-modal-overlay,
-body.html2pdf-printing .auth-modal-overlay {
+body.html2pdf-printing #stout_preloader,
+body.html2pdf-printing .fab-container,
+body.html2pdf-printing .fab-btn,
+body.html2pdf-printing .modal-overlay,
+body.html2pdf-printing .calc-dialog-overlay,
+body.html2pdf-printing #revision_modal,
+body.html2pdf-printing #custom_modal_overlay,
+body.html2pdf-printing #preloader,
+body.html2pdf-printing .mobile-bottom-nav,
+body.html2pdf-printing .mobile-menu-backdrop,
+body.html2pdf-printing #mobile-sidebar,
+body.html2pdf-printing .menu-toggle-btn,
+body.html2pdf-printing .no-print,
+body.html2pdf-printing button {
     display: none !important;
 }
 
@@ -4452,12 +4471,18 @@ body.html2pdf-printing .inv-table tr {
     grid-template-columns: unset !important;
     grid-template-rows: unset !important;
     grid-template-areas: unset !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
 }
 
-/* Сбрасываем ячейки обратно в табличный вид, но НЕ трогаем те, что скрыты явно через hidden-col или inline style */
-body.html2pdf-printing .inv-table td:not(.hidden-col),
-body.html2pdf-printing .inv-table th:not(.hidden-col) {
-    display: table-cell;
+body.html2pdf-printing tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+}
+
+body.html2pdf-printing .inv-table td,
+body.html2pdf-printing .inv-table th {
+    display: table-cell !important;
     grid-area: unset !important;
     padding: 5px 6px !important;
     border-bottom: 1px solid #E5E7EB !important;
@@ -4466,16 +4491,17 @@ body.html2pdf-printing .inv-table th:not(.hidden-col) {
     background: transparent !important;
     border-radius: 0 !important;
     height: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
 }
 
-body.html2pdf-printing .inv-table td.hidden-col,
-body.html2pdf-printing .inv-table th.hidden-col,
+body.html2pdf-printing .inv-table th[style*="display: none"],
 body.html2pdf-printing .inv-table td[style*="display: none"],
-body.html2pdf-printing .inv-table th[style*="display: none"] {
+body.html2pdf-printing .hidden-col {
     display: none !important;
 }
 
-/* Ширины колонок в нормальном виде */
+/* Column widths in desktop layout for printing */
 body.html2pdf-printing .inv-table td.col-idx  { display: table-cell !important; width: 25px !important; text-align: center !important; color: #9CA3AF !important; }
 body.html2pdf-printing .inv-table td.col-img:not(.hidden-col) { display: table-cell !important; width: 40px !important; text-align: center !important; }
 body.html2pdf-printing .inv-table td.col-name { display: table-cell !important; width: auto !important; font-weight: 600 !important; color: #000 !important; white-space: normal !important; text-align: left !important; }
@@ -4485,22 +4511,55 @@ body.html2pdf-printing .inv-table td.col-qty  { display: table-cell !important; 
 body.html2pdf-printing .inv-table td.col-price { display: table-cell !important; width: 80px !important; text-align: right !important; white-space: nowrap !important; color: #000 !important; font-weight: 400 !important; }
 body.html2pdf-printing .inv-table td.col-sum  { display: table-cell !important; width: 90px !important; text-align: right !important; font-weight: 800 !important; white-space: nowrap !important; }
 
-/* Псевдо-элементы мобильной темы убираем */
+/* Clear pseudo-elements from mobile responsive styles */
 body.html2pdf-printing .col-price::after { content: "" !important; }
 body.html2pdf-printing .col-sku::before  { content: "" !important; }
 
-/* Кнопки opt/qty скрываем */
-body.html2pdf-printing .qty-wrap .opt-btn { display: none !important; }
-body.html2pdf-printing .mob-mult { display: none !important; }
+/* Hide mobile-specific buttons and elements */
+body.html2pdf-printing .qty-wrap .opt-btn,
+body.html2pdf-printing .swap-cycle-btn,
+body.html2pdf-printing .work-del-btn,
+body.html2pdf-printing .mob-mult {
+    display: none !important;
+}
 
-/* Мобильный серый фон для qty/unit убираем */
 body.html2pdf-printing .col-qty, 
 body.html2pdf-printing .col-unit {
     background: transparent !important;
     border-radius: 0 !important;
 }
 
-/* Скрываем картинки если активирован режим */
 body.html2pdf-printing.hide-images-mode .col-img {
     display: none !important;
+}
+
+/* Show print header and disclaimer correctly in generated PDF */
+body.html2pdf-printing .print-header {
+    display: block !important;
+}
+
+body.html2pdf-printing .print-disclaimer {
+    display: block !important;
+}
+
+body.html2pdf-printing .doc-title::before {
+    content: "" !important;
+}
+
+body.html2pdf-printing .title-edit {
+    border: none !important;
+    color: #000 !important;
+    background: transparent !important;
+}
+
+body.html2pdf-printing .doc-summary {
+    background: transparent !important;
+    border: 1px solid #ccc !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+}
+
+body.html2pdf-printing .doc-footer {
+    border-top: 3px solid #D4AF37 !important;
+    padding-top: 15px !important;
 }

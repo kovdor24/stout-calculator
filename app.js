@@ -813,8 +813,11 @@ const app = {
     },
 
     activateTrial14: async function () {
-        const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
-        if (!tgUser) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const authUserId = session?.user?.id || this.state.tgUser?.authUserId || this.state.tgUser?.id;
+        const email = session?.user?.email || this.state.tgUser?.email;
+
+        if (!authUserId && !email) {
             app.alert("Сначала авторизуйтесь!");
             return;
         }
@@ -829,14 +832,14 @@ const app = {
 
             // Всегда используем auth_user_id (UUID из Supabase Auth) как надёжный ключ
             let query = supabaseClient.from('users').update({ account_type: 'pro', demo_ends_at: endDate });
-            if (tgUser.authUserId) query = query.eq('auth_user_id', tgUser.authUserId);
-            else if (tgUser.email) query = query.eq('email', tgUser.email);
+            if (authUserId) query = query.eq('auth_user_id', authUserId);
+            else if (email) query = query.eq('email', email);
             else { app.alert("Ошибка: не удалось определить аккаунт. Войдите заново."); return; }
 
             // Запрашиваем текущие данные пользователя, чтобы убедиться что триал не был активирован
             let checkQuery = supabaseClient.from('users').select('demo_ends_at');
-            if (tgUser.authUserId) checkQuery = checkQuery.eq('auth_user_id', tgUser.authUserId);
-            else checkQuery = checkQuery.eq('email', tgUser.email);
+            if (authUserId) checkQuery = checkQuery.eq('auth_user_id', authUserId);
+            else checkQuery = checkQuery.eq('email', email);
             const checkRes = await checkQuery.single();
 
             if (checkRes.data && checkRes.data.demo_ends_at) {
@@ -854,6 +857,9 @@ const app = {
             this.state.accountType = 'pro';
             this.state.demoUsed = true;
             localStorage.setItem('pro_trial_until', Date.now() + trialDurationMs);
+            if (this.state.tgUser) {
+                this.state.tgUser.account_type = 'pro';
+            }
             this.saveState();
             this.syncUI();
             this.closeModal();
@@ -3192,7 +3198,8 @@ const app = {
                 filename: `${document.title || 'Смета'}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, useCORS: true, logging: false },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'] }
             };
 
             // Запускаем оффлайн генерацию PDF
