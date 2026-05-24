@@ -1330,11 +1330,11 @@ body.menu-open .mobile-menu-backdrop {
         text-align: left !important;
     }
 
-    /* 3. CSS Grid РґР»СЏ СЃС‚СЂРѕРє С‚РѕРІР°СЂРѕРІ */
+    /* 3. CSS Grid для строк товаров */
     .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal) {
         display: grid;
         grid-template-columns: auto 1fr 55px;
-        /* РђРІС‚Рѕ РїРѕРґ РєР°СЂС‚РёРЅРєСѓ, 1fr РїРѕРґ С‚РµРєСЃС‚, 55px РїРѕРґ РєРѕР»-РІРѕ */
+        /* Авто под картинку, 1fr под текст, 55px под кол-во */
         grid-template-rows: auto auto auto;
         grid-template-areas:
             "img name  qty"
@@ -1344,6 +1344,47 @@ body.menu-open .mobile-menu-backdrop {
         padding: 10px 0;
         border-bottom: 1px solid var(--border) !important;
         align-items: start;
+    }
+
+    /* === МОНТАЖНЫЕ РАБОТЫ: без картинок — убираем колонку img из grid === */
+    body.work-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal) {
+        grid-template-columns: 1fr 55px !important;
+        grid-template-rows: auto auto !important;
+        grid-template-areas:
+            "name  qty"
+            "price unit" !important;
+        gap: 1px 8px !important;
+        padding: 8px 0 !important;
+    }
+
+    body.work-mode .col-img {
+        display: none !important;
+    }
+
+    body.work-mode .col-sku {
+        display: none !important;
+    }
+
+    body.work-mode .col-name {
+        padding-left: 0 !important;
+        text-indent: 0 !important;
+    }
+
+    /* Кнопка удаления: прячем её визуально, текст начинается с края */
+    body.work-mode .work-del-btn {
+        font-size: 12px !important;
+        margin-right: 4px !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        overflow: hidden !important;
+        display: inline-block !important;
+        vertical-align: middle !important;
+    }
+
+    body.work-mode .inv-table tr.active-row .work-del-btn {
+        opacity: 1 !important;
+        width: auto !important;
+        overflow: visible !important;
     }
 
     body.hide-images-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal) {
