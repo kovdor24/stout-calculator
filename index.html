@@ -411,7 +411,7 @@
                     <div id="hdr_comp_addr" class="ph-addr"><strong>ЦЕНТРАЛЬНЫЙ ОФИС:</strong><br>Россия, 123100, г. Москва<br>вн. тер.г.
                         муниципальный округ Пресненский, 2-я<br>Звенигородская ул., д. 12, стр. 1, помещ. 16н<br>тел.:
                         +7 (495) 775-20-20, факс: +7 (495) 775-20-25</div>
-                    <div class="ph-bank">ИНН 7729646148<br>Р/сч. 40702810638110013275<br>Московский банк Сбербанка
+                    <div id="hdr_comp_bank" class="ph-bank">ИНН 7729646148<br>Р/сч. 40702810638110013275<br>Московский банк Сбербанка
                         России ОАО г. Москва<br>К/сч. 30101810400000000225</div>
                 </div>
                 <hr class="ph-line">
@@ -744,6 +744,9 @@
                         
                         <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block;">Email для уведомлений</label>
                         <input type="email" id="profile_email_input" class="auth-input" placeholder="example@mail.ru" style="max-width: 100%; margin-bottom: 12px;">
+                        
+                        <!-- Toggle Button for PRO Branding (Only visible for PRO) -->
+                        <button type="button" id="toggle_branding_btn" class="auth-btn-base" style="display: none; margin-top: 15px; background: var(--surface-light); border: 1px solid var(--border); color: var(--primary); font-size: 13px; max-width: 100%; height: 42px; border-radius: 8px;" onclick="app.toggleBrandingSection()">⚙️ Настроить логотип и реквизиты</button>
                     </div>
 
                     <!-- Right Column (PRO Branding) -->

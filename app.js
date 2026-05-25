@@ -691,6 +691,20 @@ const app = {
         app.alert("✅ Все реквизиты компании сброшены на стандартные!");
     },
 
+    toggleBrandingSection: function () {
+        let compSec = document.getElementById('pro_profile_company_section');
+        let btn = document.getElementById('toggle_branding_btn');
+        if (compSec) {
+            if (compSec.style.display === 'none') {
+                compSec.style.display = 'block';
+                if (btn) btn.innerHTML = '✕ Скрыть реквизиты';
+            } else {
+                compSec.style.display = 'none';
+                if (btn) btn.innerHTML = '⚙️ Настроить логотип и реквизиты';
+            }
+        }
+    },
+
     setBrand: function (val, event) {
         if (!this.checkAccess('pro', event)) {
             let chk = document.getElementById('chk_cheaper');
@@ -1500,17 +1514,22 @@ const app = {
         // Show/hide and populate PRO company branding settings
         let isPro = this.isPro();
         let compSec = document.getElementById('pro_profile_company_section');
+        let toggleBtn = document.getElementById('toggle_branding_btn');
         if (compSec) {
+            compSec.style.display = 'none'; // Keep hidden by default to keep modal clean and compact
             if (isPro) {
-                compSec.style.display = 'block';
                 let cc = this.state.customCompany || {};
                 document.getElementById('profile_company_name').value = cc.name || '';
                 document.getElementById('profile_company_website').value = cc.website || '';
                 document.getElementById('profile_company_address').value = cc.address || '';
                 document.getElementById('profile_company_bank').value = cc.bank || '';
                 document.getElementById('profile_logo_preview').src = cc.logo || 'img/logo.jpg';
+                if (toggleBtn) {
+                    toggleBtn.style.display = 'flex';
+                    toggleBtn.innerHTML = '⚙️ Настроить логотип и реквизиты';
+                }
             } else {
-                compSec.style.display = 'none';
+                if (toggleBtn) toggleBtn.style.display = 'none';
             }
         }
 
