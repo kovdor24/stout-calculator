@@ -5057,6 +5057,13 @@ const app = {
     render: function () {
         this.updateHeaderCompanyDetails();
         this.updateDocumentTitle();
+
+        // Update top left logo based on brandMode
+        let topLogoEl = document.getElementById('top_left_logo');
+        if (topLogoEl) {
+            topLogoEl.src = (this.state.brandMode === 'rommer') ? 'img/rommer_logo.jpg' : 'img/stout_logo.png';
+        }
+
         this.calcBaseTotal = 0;
         this.calcFinalTotal = 0;
         app.lastEqSum = 0;
