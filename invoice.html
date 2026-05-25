@@ -2129,14 +2129,25 @@
                 const elAddr = document.getElementById('hdr_comp_addr');
                 const elBank = document.getElementById('hdr_comp_bank');
 
+                const formatBrandingText = function(text) {
+                    if (!text) return "";
+                    let lines = text.split('\n');
+                    if (lines.length > 0 && lines[0].trim() !== '') {
+                        if (!lines[0].includes('<strong>') && !lines[0].includes('<b>')) {
+                            lines[0] = `<strong>${lines[0].trim()}</strong>`;
+                        }
+                    }
+                    return lines.join('<br>');
+                };
+
                 if (elName && cc.name) elName.textContent = cc.name;
                 if (elWeb && cc.website) {
                     elWeb.textContent = cc.website;
                     elWeb.href = cc.website.startsWith('http') ? cc.website : 'https://' + cc.website;
                 }
                 if (elLogo && cc.logo) elLogo.src = cc.logo;
-                if (elAddr && cc.address) elAddr.innerHTML = cc.address.replace(/\n/g, '<br>');
-                if (elBank && cc.bank) elBank.innerHTML = cc.bank.replace(/\n/g, '<br>');
+                if (elAddr && cc.address) elAddr.innerHTML = formatBrandingText(cc.address);
+                if (elBank && cc.bank) elBank.innerHTML = formatBrandingText(cc.bank);
             }
 
             // 2. Object Info

@@ -631,7 +631,7 @@ const app = {
         let defWeb = "www.teremopt.ru";
         let defLogo = "img/logo.jpg";
         let defAddr = "<strong>ЦЕНТРАЛЬНЫЙ ОФИС:</strong><br>Россия, 123100, г. Москва<br>вн. тер.г. муниципального округа Пресненский, 2-я Звенигородская ул., д. 12, стр. 1, помещ. 16н<br>тел.: +7 (495) 775-20-20, факс: +7 (495) 775-20-25";
-        let defBank = "ИНН 7729646148<br>Р/сч. 40702810638110013275<br>Московский банк Сбербанка России ОАО г. Москва<br>К/сч. 30101810400000000225";
+        let defBank = "<strong>РЕКВИЗИТЫ БАНКА:</strong><br>ИНН 7729646148<br>Р/сч. 40702810638110013275<br>Московский банк Сбербанка России ОАО г. Москва<br>К/сч. 30101810400000000225";
 
         let elName = document.getElementById('hdr_comp_name');
         let elWeb = document.getElementById('hdr_comp_web');
@@ -639,11 +639,22 @@ const app = {
         let elAddr = document.getElementById('hdr_comp_addr');
         let elBank = document.getElementById('hdr_comp_bank');
 
+        const formatBrandingText = function(text, defaultHtml) {
+            if (!text) return defaultHtml;
+            let lines = text.split('\n');
+            if (lines.length > 0 && lines[0].trim() !== '') {
+                if (!lines[0].includes('<strong>') && !lines[0].includes('<b>')) {
+                    lines[0] = `<strong>${lines[0].trim()}</strong>`;
+                }
+            }
+            return lines.join('<br>');
+        };
+
         if (elName) elName.innerText = (cc && cc.name) ? cc.name : defName;
         if (elWeb) elWeb.innerText = (cc && cc.website) ? cc.website : defWeb;
         if (elLogo) elLogo.src = (cc && cc.logo) ? cc.logo : defLogo;
-        if (elAddr) elAddr.innerHTML = (cc && cc.address) ? cc.address.replace(/\n/g, '<br>') : defAddr;
-        if (elBank) elBank.innerHTML = (cc && cc.bank) ? cc.bank.replace(/\n/g, '<br>') : defBank;
+        if (elAddr) elAddr.innerHTML = (cc && cc.address) ? formatBrandingText(cc.address, defAddr) : defAddr;
+        if (elBank) elBank.innerHTML = (cc && cc.bank) ? formatBrandingText(cc.bank, defBank) : defBank;
     },
 
     handleProfileLogoUpload: function (event) {
