@@ -705,13 +705,16 @@ const app = {
     toggleBrandingSection: function () {
         let compSec = document.getElementById('pro_profile_company_section');
         let btn = document.getElementById('toggle_branding_btn');
+        let modalContent = document.querySelector('#profile_modal_overlay .auth-modal-content');
         if (compSec) {
             if (compSec.style.display === 'none') {
                 compSec.style.display = 'block';
                 if (btn) btn.innerHTML = '✕ Скрыть реквизиты';
+                if (modalContent) modalContent.style.maxWidth = '760px';
             } else {
                 compSec.style.display = 'none';
                 if (btn) btn.innerHTML = '⚙️ Настроить логотип и реквизиты';
+                if (modalContent) modalContent.style.maxWidth = '380px';
             }
         }
     },
@@ -1548,6 +1551,9 @@ const app = {
                 if (toggleBtn) toggleBtn.style.display = 'none';
             }
         }
+
+        let modalContent = document.querySelector('#profile_modal_overlay .auth-modal-content');
+        if (modalContent) modalContent.style.maxWidth = '380px';
 
         document.getElementById('profile_modal_overlay').style.display = 'flex';
     },

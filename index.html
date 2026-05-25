@@ -722,11 +722,11 @@
         </div>
     </div>
     <div id="profile_modal_overlay" class="auth-modal-overlay" style="display: none;">
-        <div class="auth-modal-content" style="max-width: 760px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+        <div class="auth-modal-content" style="max-width: 380px; width: 95%; max-height: 90vh; overflow-y: auto; display: block; box-sizing: border-box; transition: max-width 0.3s ease;">
             <span class="auth-modal-close" onclick="app.closeProfileModal()">&times;</span>
             <h3 class="auth-modal-title">Мой профиль</h3>
             
-            <div style="flex-grow: 1; overflow-y: auto; padding-right: 12px; margin-bottom: 20px;">
+            <div style="margin-bottom: 20px; box-sizing: border-box; width: 100%;">
                 <div class="profile-grid" style="display: flex; gap: 24px; flex-wrap: wrap; text-align: left;">
                     
                     <!-- Left Column (General info) -->
