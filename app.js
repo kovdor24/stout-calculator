@@ -413,7 +413,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: false, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 4, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true },
+    state: { waterInput: false, outdoorFaucet: false, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 4, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0 },
 
     lastSavedStateString: "",
 
@@ -608,6 +608,19 @@ const app = {
         this.state.projectName = clean;
         this.saveState();
         this.updateDocumentTitle();
+    },
+
+    setEqDiscount: function (val) {
+        if (!this.checkAccess('pro', window.event)) {
+            this.render();
+            return;
+        }
+        let num = parseInt(val) || 0;
+        if (num < 0) num = 0;
+        if (num > 20) num = 20;
+        this.state.eqDiscount = num;
+        this.saveState();
+        this.render();
     },
 
     setBrand: function (val, event) {
@@ -4025,8 +4038,8 @@ const app = {
         if (catalog.convectors_scq && catalog.convectors_scn) { let convAlts = [catalog.convectors_scq[0], catalog.convectors_scn[0]]; catalog.convectors_scq.forEach(c => { c.alts = convAlts; }); catalog.convectors_scn.forEach(c => { c.alts = convAlts; }); }
         // === ОБХОД АВТОРИЗАЦИИ ДЛЯ ЛОКАЛЬНОЙ РАЗРАБОТКИ ===
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.warn('[DEV MODE] Localhost detected — установлена базовая сессия для тестирования модалок.');
-            this.state.accountType = 'base';
+            console.warn('[DEV MODE] Localhost detected — установлена PRO сессия для тестирования.');
+            this.state.accountType = 'pro';
         }
         // ===================================================
         this.syncUI(); this.render();
@@ -4907,6 +4920,7 @@ const app = {
         this.calcFinalTotal = 0;
         app.lastEqSum = 0;
         app.lastWorksSum = 0;
+        app.originalEqSum = 0;
         this.currentEquipmentList = [];
         this.currentWorksList = [];
         app.tempWarns = []; // Массив для сбора предупреждений о дефиците мощности
@@ -5003,6 +5017,20 @@ const app = {
             itemsToAdd.forEach(entry => {
                 let finalItem = entry.itm;
                 let finalQty = entry.q;
+
+                let originalPrice = finalItem.price || 0;
+                let finalPrice = originalPrice;
+                if (isPro && this.state.eqDiscount > 0) {
+                    finalPrice = Math.round(originalPrice * (1 - this.state.eqDiscount / 100));
+                }
+
+                let lookupId = finalItem.originalId || finalItem.id;
+                let isOpt = !!this.state.optItems[lookupId];
+                if (!isOpt) {
+                    app.originalEqSum = (app.originalEqSum || 0) + originalPrice * finalQty;
+                }
+
+                finalItem.price = finalPrice;
 
                 this.currentSpec.push({ ...finalItem, q: finalQty, group: group });
                 this.calcFinalTotal += (finalItem.price || 0) * finalQty;
@@ -6198,6 +6226,19 @@ const app = {
 
         document.getElementById('tbody').innerHTML = h;
         document.getElementById('total_sum').innerText = sum.toLocaleString() + " ₽";
+
+        // Toggle and update discount block for PRO users
+        let discountBlock = document.getElementById('discount_block');
+        if (discountBlock) {
+            if (isPro && this.state.viewMode === 'equipment') {
+                discountBlock.style.display = 'flex';
+                document.getElementById('rec_price_val').innerText = (app.originalEqSum || 0).toLocaleString() + " ₽";
+                document.getElementById('eq_discount_slider').value = this.state.eqDiscount || 0;
+                document.getElementById('eq_discount_val').innerText = this.state.eqDiscount || 0;
+            } else {
+                discountBlock.style.display = 'none';
+            }
+        }
         let d = showSku ? 'table-cell' : 'none'; document.querySelectorAll('.col-sku').forEach(e => e.style.display = d); document.querySelector('.col-sku-head').style.display = d;
 
         // === ОБНОВЛЕНИЕ СУММ В ЛИПКОЙ ШАПКЕ (С АНИМАЦИЕЙ) ===

@@ -502,9 +502,25 @@
                     <tbody id="tbody"></tbody>
                 </table>
             </div>
-            <div class="doc-footer">
-                <div class="total-lbl">Итого к оплате:</div>
-                <div class="total-val" id="total_sum">0 ₽</div>
+            <div class="doc-footer" style="display: flex; flex-direction: column; align-items: stretch;">
+                <div class="discount-container no-print" id="discount_block" style="display: none; width: 100%; flex-direction: column; gap: 8px; margin-bottom: 12px; border-bottom: 1px dashed var(--border); padding-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--text-sec);">
+                        <span>Рекомендованная цена:</span>
+                        <span id="rec_price_val" style="font-weight: 600; color: var(--text-main);">0 ₽</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--text-sec);">
+                        <span>Скидка:</span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="range" id="eq_discount_slider" min="0" max="20" step="1" value="0" oninput="app.setEqDiscount(this.value)" style="width: 120px; accent-color: var(--primary); cursor: pointer;">
+                            <span id="eq_discount_val" class="editable-val" contenteditable="true" onblur="app.setEqDiscount(this.innerText)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="font-weight: 700; color: var(--primary); min-width: 30px; text-align: right; border-bottom: 1px dashed var(--primary); padding: 0 4px;">0</span>
+                            <span style="font-weight: 700; color: var(--primary);">%</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                    <div class="total-lbl">Итого к оплате:</div>
+                    <div class="total-val" id="total_sum">0 ₽</div>
+                </div>
             </div>
             <div class="footer-btns">
                 <button class="btn-tg btn-base" onclick="app.sendEmail()"><svg width="18" height="18" viewBox="0 0 24 24"
