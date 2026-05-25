@@ -1576,21 +1576,21 @@
         <!-- Corporate Header -->
         <header class="doc-header">
             <div class="header-top">
-                <div>Общество с ограниченной ответственностью «ТЕРЕМ»</div>
-                <a href="https://www.teremopt.ru" target="_blank" class="header-top-web">www.teremopt.ru</a>
+                <div id="hdr_comp_name">Общество с ограниченной ответственностью «ТЕРЕМ»</div>
+                <a href="https://www.teremopt.ru" target="_blank" class="header-top-web" id="hdr_comp_web">www.teremopt.ru</a>
             </div>
             <div class="header-main">
                 <div class="header-logo">
-                    <img src="img/logo.jpg" alt="ТЕРЕМ" onerror="this.style.display='none'">
+                    <img id="hdr_comp_logo" src="img/logo.jpg" alt="ТЕРЕМ" onerror="this.style.display='none'">
                 </div>
-                <div class="header-addr">
+                <div class="header-addr" id="hdr_comp_addr">
                     <strong>ЦЕНТРАЛЬНЫЙ ОФИС:</strong><br>
                     Россия, 123100, г. Москва<br>
                     вн. тер.г. муниципальный округ Пресненский, 2-я<br>
                     Звенигородская ул., д. 12, стр. 1, помещ. 16н<br>
                     тел.: +7 (495) 775-20-20, факс: +7 (495) 775-20-25
                 </div>
-                <div class="header-bank">
+                <div class="header-bank" id="hdr_comp_bank">
                     <strong>РЕКВИЗИТЫ БАНКА:</strong><br>
                     ИНН 7729646148<br>
                     Р/сч. 40702810638110013275<br>
@@ -2119,6 +2119,25 @@
             document.getElementById('mgr_name').textContent = mgr.name || 'Менеджер';
             document.getElementById('mgr_phone').textContent = mgr.phone || '+7 (---) ----key';
             document.getElementById('mgr_city').textContent = mgr.city || 'Москва';
+
+            // Apply custom company details if present (PRO tariff feature)
+            const cc = mgr.customCompany;
+            if (cc) {
+                const elName = document.getElementById('hdr_comp_name');
+                const elWeb = document.getElementById('hdr_comp_web');
+                const elLogo = document.getElementById('hdr_comp_logo');
+                const elAddr = document.getElementById('hdr_comp_addr');
+                const elBank = document.getElementById('hdr_comp_bank');
+
+                if (elName && cc.name) elName.textContent = cc.name;
+                if (elWeb && cc.website) {
+                    elWeb.textContent = cc.website;
+                    elWeb.href = cc.website.startsWith('http') ? cc.website : 'https://' + cc.website;
+                }
+                if (elLogo && cc.logo) elLogo.src = cc.logo;
+                if (elAddr && cc.address) elAddr.innerHTML = cc.address.replace(/\n/g, '<br>');
+                if (elBank && cc.bank) elBank.innerHTML = cc.bank.replace(/\n/g, '<br>');
+            }
 
             // 2. Object Info
             document.getElementById('obj_name').textContent = obj.projectName || 'Новый объект';

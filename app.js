@@ -413,7 +413,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: false, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 4, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0 },
+    state: { waterInput: false, outdoorFaucet: false, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 4, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null },
 
     lastSavedStateString: "",
 
@@ -621,6 +621,74 @@ const app = {
         this.state.eqDiscount = num;
         this.saveState();
         this.render();
+    },
+
+    updateHeaderCompanyDetails: function () {
+        let isPro = this.isPro();
+        let cc = (isPro && this.state.customCompany) ? this.state.customCompany : null;
+        
+        let defName = "Общество с ограниченной ответственностью «ТЕРЕМ»";
+        let defWeb = "www.teremopt.ru";
+        let defLogo = "img/logo.jpg";
+        let defAddr = "<strong>ЦЕНТРАЛЬНЫЙ ОФИС:</strong><br>Россия, 123100, г. Москва<br>вн. тер.г. муниципального округа Пресненский, 2-я Звенигородская ул., д. 12, стр. 1, помещ. 16н<br>тел.: +7 (495) 775-20-20, факс: +7 (495) 775-20-25";
+        let defBank = "ИНН 7729646148<br>Р/сч. 40702810638110013275<br>Московский банк Сбербанка России ОАО г. Москва<br>К/сч. 30101810400000000225";
+
+        let elName = document.getElementById('hdr_comp_name');
+        let elWeb = document.getElementById('hdr_comp_web');
+        let elLogo = document.getElementById('hdr_comp_logo');
+        let elAddr = document.getElementById('hdr_comp_addr');
+        let elBank = document.getElementById('hdr_comp_bank');
+
+        if (elName) elName.innerText = (cc && cc.name) ? cc.name : defName;
+        if (elWeb) elWeb.innerText = (cc && cc.website) ? cc.website : defWeb;
+        if (elLogo) elLogo.src = (cc && cc.logo) ? cc.logo : defLogo;
+        if (elAddr) elAddr.innerHTML = (cc && cc.address) ? cc.address.replace(/\n/g, '<br>') : defAddr;
+        if (elBank) elBank.innerHTML = (cc && cc.bank) ? cc.bank.replace(/\n/g, '<br>') : defBank;
+    },
+
+    handleProfileLogoUpload: function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (file.size > 1048576) {
+            app.alert("Ошибка: размер изображения логотипа превышает 1МБ.");
+            event.target.value = "";
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const dataUrl = e.target.result;
+            this.state.customCompany = this.state.customCompany || {};
+            this.state.customCompany.logo = dataUrl;
+            
+            const imgPreview = document.getElementById('profile_logo_preview');
+            if (imgPreview) imgPreview.src = dataUrl;
+            
+            this.updateHeaderCompanyDetails();
+            app.alert("✅ Логотип успешно загружен!");
+        };
+        reader.readAsDataURL(file);
+    },
+
+    resetProfileLogo: function () {
+        this.state.customCompany = this.state.customCompany || {};
+        this.state.customCompany.logo = "";
+        const imgPreview = document.getElementById('profile_logo_preview');
+        if (imgPreview) imgPreview.src = "img/logo.jpg";
+        this.updateHeaderCompanyDetails();
+        app.alert("✅ Логотип сброшен на стандартный ТЕРЕМ!");
+    },
+
+    resetCompanyDetails: function () {
+        this.state.customCompany = { name: "", website: "", address: "", bank: "", logo: "" };
+        if (document.getElementById('profile_company_name')) document.getElementById('profile_company_name').value = "";
+        if (document.getElementById('profile_company_website')) document.getElementById('profile_company_website').value = "";
+        if (document.getElementById('profile_company_address')) document.getElementById('profile_company_address').value = "";
+        if (document.getElementById('profile_company_bank')) document.getElementById('profile_company_bank').value = "";
+        const imgPreview = document.getElementById('profile_logo_preview');
+        if (imgPreview) imgPreview.src = "img/logo.jpg";
+        this.updateHeaderCompanyDetails();
+        this.saveState();
+        app.alert("✅ Все реквизиты компании сброшены на стандартные!");
     },
 
     setBrand: function (val, event) {
@@ -1428,6 +1496,24 @@ const app = {
         if (document.getElementById('profile_email_input')) {
             document.getElementById('profile_email_input').value = tgUser.email || '';
         }
+
+        // Show/hide and populate PRO company branding settings
+        let isPro = this.isPro();
+        let compSec = document.getElementById('pro_profile_company_section');
+        if (compSec) {
+            if (isPro) {
+                compSec.style.display = 'block';
+                let cc = this.state.customCompany || {};
+                document.getElementById('profile_company_name').value = cc.name || '';
+                document.getElementById('profile_company_website').value = cc.website || '';
+                document.getElementById('profile_company_address').value = cc.address || '';
+                document.getElementById('profile_company_bank').value = cc.bank || '';
+                document.getElementById('profile_logo_preview').src = cc.logo || 'img/logo.jpg';
+            } else {
+                compSec.style.display = 'none';
+            }
+        }
+
         document.getElementById('profile_modal_overlay').style.display = 'flex';
     },
     closeProfileModal: function () { document.getElementById('profile_modal_overlay').style.display = 'none'; },
@@ -2627,6 +2713,17 @@ const app = {
         this.state.tgUser.phone = phone;
         this.state.tgUser.city = city;
         this.state.tgUser.email = email;
+
+        // Save company details for PRO tariff users
+        if (this.isPro()) {
+            this.state.customCompany = this.state.customCompany || {};
+            this.state.customCompany.name = document.getElementById('profile_company_name').value.trim();
+            this.state.customCompany.website = document.getElementById('profile_company_website').value.trim();
+            this.state.customCompany.address = document.getElementById('profile_company_address').value.trim();
+            this.state.customCompany.bank = document.getElementById('profile_company_bank').value.trim();
+            this.updateHeaderCompanyDetails();
+        }
+
         this.saveState();
         localStorage.setItem('user_city', city); // Дублируем для надежности
 
@@ -2940,7 +3037,8 @@ const app = {
             name: tgUser.first_name || tgUser.username || '',
             phone: tgUser.phone || '',
             city: tgUser.city || '',
-            email: (this.state.tgUser?.email || this.state.user?.email || localStorage.getItem('user_email') || '')
+            email: (this.state.tgUser?.email || this.state.user?.email || localStorage.getItem('user_email') || ''),
+            customCompany: (this.isPro() && this.state.customCompany) ? this.state.customCompany : null
         };
 
         let items = {
@@ -3603,7 +3701,8 @@ const app = {
                     name: authorName,
                     phone: tgUser.phone || '',
                     city: tgUser.city || '',
-                    email: (this.state.tgUser?.email || this.state.user?.email || localStorage.getItem('user_email') || '')
+                    email: (this.state.tgUser?.email || this.state.user?.email || localStorage.getItem('user_email') || ''),
+                    customCompany: (this.isPro() && this.state.customCompany) ? this.state.customCompany : null
                 };
 
                 const items = {
@@ -4042,7 +4141,7 @@ const app = {
             this.state.accountType = 'pro';
         }
         // ===================================================
-        this.syncUI(); this.render();
+        this.updateHeaderCompanyDetails(); this.syncUI(); this.render();
 
         // Initialize mobile UI state and listeners
         this.syncMobileUI();
@@ -4915,6 +5014,7 @@ const app = {
     },
     // ====================================
     render: function () {
+        this.updateHeaderCompanyDetails();
         this.updateDocumentTitle();
         this.calcBaseTotal = 0;
         this.calcFinalTotal = 0;

@@ -403,12 +403,12 @@
         <div class="panel output-panel" id="print-area">
             <div class="print-header">
                 <div class="ph-top">
-                    <div>Общество с ограниченной ответственностью «ТЕРЕМ»</div>
-                    <div>www.teremopt.ru</div>
+                    <div id="hdr_comp_name">Общество с ограниченной ответственностью «ТЕРЕМ»</div>
+                    <div id="hdr_comp_web">www.teremopt.ru</div>
                 </div>
                 <div class="ph-main">
-                    <div class="ph-logo"><img src="img/logo.jpg" alt="Логотип ТЕРЕМ" style="max-width: 100%;"></div>
-                    <div class="ph-addr"><strong>ЦЕНТРАЛЬНЫЙ ОФИС:</strong><br>Россия, 123100, г. Москва<br>вн. тер.г.
+                    <div class="ph-logo"><img id="hdr_comp_logo" src="img/logo.jpg" alt="Логотип ТЕРЕМ" style="max-width: 100%;"></div>
+                    <div id="hdr_comp_addr" class="ph-addr"><strong>ЦЕНТРАЛЬНЫЙ ОФИС:</strong><br>Россия, 123100, г. Москва<br>вн. тер.г.
                         муниципальный округ Пресненский, 2-я<br>Звенигородская ул., д. 12, стр. 1, помещ. 16н<br>тел.:
                         +7 (495) 775-20-20, факс: +7 (495) 775-20-25</div>
                     <div class="ph-bank">ИНН 7729646148<br>Р/сч. 40702810638110013275<br>Московский банк Сбербанка
@@ -741,6 +741,37 @@
                 <label
                     style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block; margin-top: 15px;">Email для уведомлений</label>
                 <input type="email" id="profile_email_input" class="auth-input" placeholder="example@mail.ru">
+
+                <div id="pro_profile_company_section" style="display: none; border-top: 1px dashed var(--border); margin-top: 20px; padding-top: 15px;">
+                    <h4 style="margin: 0 0 15px 0; color: var(--primary);">Реквизиты компании (PRO)</h4>
+                    
+                    <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block;">Логотип компании</label>
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                        <div id="profile_logo_preview_container" style="width: 80px; height: 50px; background: #fff; border: 1px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px;">
+                            <img id="profile_logo_preview" src="img/logo.jpg" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <button type="button" class="btn-subscribe" onclick="document.getElementById('profile_logo_file').click()" style="padding: 6px 12px; font-size: 11px; margin: 0; width: fit-content; height: auto;">Загрузить свой логотип</button>
+                            <input type="file" id="profile_logo_file" accept="image/*" style="display: none;" onchange="app.handleProfileLogoUpload(event)">
+                            <button type="button" class="btn-subscribe" onclick="app.resetProfileLogo()" style="padding: 6px 12px; font-size: 11px; margin: 0; width: fit-content; height: auto; background: var(--surface-light); color: var(--text-sec); border-color: var(--border);">Восстановить логотип ТЕРЕМ</button>
+                        </div>
+                    </div>
+
+                    <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block;">Название компании</label>
+                    <input type="text" id="profile_company_name" class="auth-input" placeholder="Общество с ограниченной ответственностью «ТЕРЕМ»">
+
+                    <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block; margin-top: 15px;">Сайт компании</label>
+                    <input type="text" id="profile_company_website" class="auth-input" placeholder="www.teremopt.ru">
+
+                    <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block; margin-top: 15px;">Адрес компании</label>
+                    <textarea id="profile_company_address" class="auth-input" style="height: 60px; resize: none; font-size: 12px; padding: 8px; font-family: inherit;" placeholder="Россия, 123100, г. Москва..."></textarea>
+
+                    <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block; margin-top: 15px;">Банковские реквизиты</label>
+                    <textarea id="profile_company_bank" class="auth-input" style="height: 60px; resize: none; font-size: 12px; padding: 8px; font-family: inherit;" placeholder="ИНН 7729646148..."></textarea>
+
+                    <button type="button" class="auth-btn-base btn-email-submit" onclick="app.resetCompanyDetails()" style="margin-top: 15px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border); font-size: 12px; height: 36px; padding: 0 10px;">Сбросить реквизиты на Терем по умолчанию</button>
+                </div>
+
                 <button class="auth-btn-base btn-email-submit" style="margin-top: 20px;"
                     onclick="app.saveProfile()">Сохранить профиль</button>
             </div>
