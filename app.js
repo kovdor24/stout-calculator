@@ -1519,10 +1519,15 @@ const app = {
             compSec.style.display = 'none'; // Keep hidden by default to keep modal clean and compact
             if (isPro) {
                 let cc = this.state.customCompany || {};
-                document.getElementById('profile_company_name').value = cc.name || '';
-                document.getElementById('profile_company_website').value = cc.website || '';
-                document.getElementById('profile_company_address').value = cc.address || '';
-                document.getElementById('profile_company_bank').value = cc.bank || '';
+                let defName = "Общество с ограниченной ответственностью «ТЕРЕМ»";
+                let defWeb = "www.teremopt.ru";
+                let defAddr = "Россия, 123100, г. Москва\nвн. тер.г. муниципального округа Пресненский, 2-я Звенигородская ул., д. 12, стр. 1, помещ. 16н\nтел.: +7 (495) 775-20-20, факс: +7 (495) 775-20-25";
+                let defBank = "ИНН 7729646148\nР/сч. 40702810638110013275\nМосковский банк Сбербанка России ОАО г. Москва\nК/сч. 30101810400000000225";
+
+                document.getElementById('profile_company_name').value = (cc.name !== undefined && cc.name !== null && cc.name !== '') ? cc.name : defName;
+                document.getElementById('profile_company_website').value = (cc.website !== undefined && cc.website !== null && cc.website !== '') ? cc.website : defWeb;
+                document.getElementById('profile_company_address').value = (cc.address !== undefined && cc.address !== null && cc.address !== '') ? cc.address : defAddr;
+                document.getElementById('profile_company_bank').value = (cc.bank !== undefined && cc.bank !== null && cc.bank !== '') ? cc.bank : defBank;
                 document.getElementById('profile_logo_preview').src = cc.logo || 'img/logo.jpg';
                 if (toggleBtn) {
                     toggleBtn.style.display = 'flex';
