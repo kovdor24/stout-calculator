@@ -2231,12 +2231,13 @@ body.work-mode .inv-table td.col-sku {
 }
 
 .site-header-left img {
-    transition: height 0.3s ease !important;
-    height: 40px;
-    /* Р˜СЃС…РѕРґРЅС‹Р№ СЂР°Р·РјРµСЂ Р»РѕРіРѕС‚РёРїР° */
+    transition: all 0.3s ease !important;
+    max-height: 40px;
+    max-width: 130px;
+    width: auto;
+    height: auto;
     display: block;
     object-fit: contain;
-    max-width: 150px;
 }
 
 .container {
@@ -2257,11 +2258,13 @@ body.work-mode .inv-table td.col-sku {
 }
 
 .stout-logo-img {
-    height: 45px;
+    max-height: 42px;
+    max-width: 130px;
+    width: auto;
+    height: auto;
     display: block;
     object-fit: contain;
-    max-width: 160px;
-    transition: height 0.3s ease !important;
+    transition: all 0.3s ease !important;
 }
 
 /* Р˜РЅРІРµСЂС‚РёСЂСѓРµРј Р»РѕРіРѕС‚РёРї РІ С‚РµРјРЅРѕР№ С‚РµРјРµ (РµСЃР»Рё РѕРЅ С‡РµСЂРЅС‹Р№ РЅР° РїСЂРѕР·СЂР°С‡РЅРѕРј С„РѕРЅРµ) */
