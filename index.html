@@ -6,6 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HeatCalc.ru - Калькулятор Монтажника</title>
     <link rel="icon" type="image/png" href="img/logo_HC.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563EB">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js')
+                    .then(function (reg) { console.log('PWA Service Worker registered:', reg.scope); })
+                    .catch(function (err) { console.error('PWA Service Worker registration failed:', err); });
+            });
+        }
+    </script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=1.3">
