@@ -572,6 +572,8 @@
         <div style="margin-top: 8px;">
             <a href="oferta.html" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 600; border-bottom: 1px dashed var(--primary);">Публичная оферта</a>
             <span style="color: var(--text-sec); margin: 0 10px;">|</span>
+            <a href="privacy-policy.html" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 600; border-bottom: 1px dashed var(--primary);">Политика конфиденциальности</a>
+            <span style="color: var(--text-sec); margin: 0 10px;">|</span>
             <a href="#" onclick="app.openFeedbackModal(); return false;" style="color: var(--primary); text-decoration: none; font-weight: 600; border-bottom: 1px dashed var(--primary);">Сообщить о проблеме</a>
         </div>
     </footer>
@@ -692,10 +694,14 @@
                 </div>
             </div>
 
-            <div id="auth_terms_wrapper" style="margin-top: 15px; padding: 0 5px; display: flex; justify-content: center; max-width: 280px; margin: 15px auto 0 auto;">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; color: var(--text-sec);">
-                    <input type="checkbox" id="chk_terms" style="width: 16px; height: 16px; cursor: pointer;">
+            <div id="auth_terms_wrapper" style="margin-top: 15px; padding: 0 5px; display: flex; flex-direction: column; gap: 10px; max-width: 320px; margin: 15px auto 0 auto;">
+                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 13px; color: var(--text-sec); text-align: left;">
+                    <input type="checkbox" id="chk_terms" style="width: 16px; height: 16px; cursor: pointer; margin-top: 2px; flex-shrink: 0;">
                     <span>Я ознакомлен и принимаю условия <a href="oferta.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">Публичной оферты</a></span>
+                </label>
+                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 13px; color: var(--text-sec); text-align: left;">
+                    <input type="checkbox" id="chk_privacy" required style="width: 16px; height: 16px; cursor: pointer; margin-top: 2px; flex-shrink: 0;">
+                    <span>Я даю согласие на обработку моих персональных данных и принимаю условия <a href="privacy-policy.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">Политики обработки персональных данных</a></span>
                 </label>
             </div>
         </div>
@@ -920,6 +926,13 @@
                     </div>
                 </div>
 
+                <div class="feedback-form-group" style="margin-top: 15px; margin-bottom: 10px;">
+                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 12px; color: var(--text-sec); text-align: left;">
+                        <input type="checkbox" id="chk_feedback_privacy" required style="width: 16px; height: 16px; cursor: pointer; margin-top: 2px; flex-shrink: 0;">
+                        <span>Я даю согласие на обработку моих персональных данных и принимаю условия <a href="privacy-policy.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">Политики обработки персональных данных</a></span>
+                    </label>
+                </div>
+
                 <button type="button" class="btn-subscribe" id="btn_send_feedback" onclick="app.submitFeedback()" style="width:100%; font-size: 13.5px; padding: 10px 16px; border-radius: 10px; margin-top: 10px;">Отправить отзыв</button>
             </div>
 
@@ -949,4 +962,15 @@
         </div>
     </div>
     <div class="mobile-menu-backdrop" onclick="app.toggleMenu()"></div>
+
+    <!-- БАННЕР СОГЛАСИЯ НА COOKIE (152-ФЗ) -->
+    <div id="cookie_consent_banner" class="cookie-banner" style="display: none;">
+        <div class="cookie-banner-content">
+            <p class="cookie-banner-text">
+                Мы используем файлы cookie и собираем технические данные для нормального функционирования сайта. 
+                Продолжая работу с сайтом, вы соглашаетесь с нашей <a href="privacy-policy.html" target="_blank" class="cookie-banner-link">Политикой обработки персональных данных</a>.
+            </p>
+            <button id="cookie_consent_accept" class="cookie-banner-btn" onclick="app.acceptCookieConsent()">Согласен</button>
+        </div>
+    </div>
 </body>

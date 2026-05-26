@@ -1479,6 +1479,10 @@ const app = {
             app.alert("Для продолжения необходимо принять условия Публичной оферты.");
             return;
         }
+        if (!document.getElementById('chk_privacy').checked) {
+            app.alert("Для продолжения необходимо дать согласие на обработку персональных данных.");
+            return;
+        }
         try {
             const { data, error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google'
@@ -2324,6 +2328,14 @@ const app = {
 
         if (!document.getElementById('chk_terms').checked) {
             app.alert("Для регистрации необходимо принять условия Публичной оферты.");
+            if (btn) {
+                btn.disabled = false;
+            }
+            return;
+        }
+
+        if (!document.getElementById('chk_privacy').checked) {
+            app.alert("Для регистрации необходимо дать согласие на обработку персональных данных.");
             if (btn) {
                 btn.disabled = false;
             }
@@ -4275,6 +4287,9 @@ const app = {
                 )
                 .subscribe();
         }
+        
+        // Инициализация куки-баннера (152-ФЗ)
+        this.initCookieConsent();
     },
     toggleSwapUI: function (id) { if (this.state.showSwapFor === id) { this.state.showSwapFor = null; } else { this.state.showSwapFor = id; } this.render(); },
     cycleSwap: function (originalId) {
@@ -6568,6 +6583,9 @@ const app = {
         if (descEl) descEl.value = '';
         if (fileInput) fileInput.value = '';
         
+        const privacyChk = document.getElementById('chk_feedback_privacy');
+        if (privacyChk) privacyChk.checked = false;
+        
         this.feedbackImageBase64 = null;
         this.clearFeedbackFile();
 
@@ -6684,6 +6702,12 @@ const app = {
 
         if (!subject || !description) {
             app.alert("Пожалуйста, заполните Тему и Описание.");
+            return;
+        }
+
+        const privacyChk = document.getElementById('chk_feedback_privacy');
+        if (privacyChk && !privacyChk.checked) {
+            app.alert("Необходимо дать согласие на обработку персональных данных для отправки отзыва.");
             return;
         }
 
@@ -6835,6 +6859,30 @@ const app = {
                 sendBtn.disabled = false;
                 sendBtn.innerText = "Отправить отзыв";
             }
+        }
+    },
+
+    initCookieConsent: function () {
+        const accepted = localStorage.getItem('cookie_consent_accepted');
+        if (!accepted) {
+            const banner = document.getElementById('cookie_consent_banner');
+            if (banner) {
+                banner.style.display = 'block';
+                setTimeout(() => {
+                    banner.classList.add('show');
+                }, 100);
+            }
+        }
+    },
+
+    acceptCookieConsent: function () {
+        localStorage.setItem('cookie_consent_accepted', 'true');
+        const banner = document.getElementById('cookie_consent_banner');
+        if (banner) {
+            banner.classList.remove('show');
+            setTimeout(() => {
+                banner.style.display = 'none';
+            }, 400);
         }
     },
 
