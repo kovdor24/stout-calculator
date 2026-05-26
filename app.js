@@ -4237,7 +4237,13 @@ const app = {
 
         // Initialize mobile UI state and listeners
         this.syncMobileUI();
-        window.addEventListener('resize', () => { this.syncMobileUI(); });
+        let lastWidth = window.innerWidth;
+        window.addEventListener('resize', () => {
+            if (window.innerWidth !== lastWidth) {
+                lastWidth = window.innerWidth;
+                this.syncMobileUI();
+            }
+        });
 
 
         this.isAppReady = true;
