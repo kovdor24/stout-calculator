@@ -1,25 +1,28 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Коммерческое предложение - HeatCalc.ru</title>
     <link rel="icon" type="image/png" href="img/logo_HC.png">
-    
+
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+
     <!-- html2pdf SDK -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         :root {
-            --primary: #1E3A8A; /* Deep Navy Blue */
+            --primary: #1E3A8A;
+            /* Deep Navy Blue */
             --primary-light: #EFF6FF;
-            --accent: #D4AF37; /* Gold Accent */
+            --accent: #D4AF37;
+            /* Gold Accent */
             --text-main: #1F2937;
             --text-sec: #4B5563;
             --border: #E5E7EB;
@@ -45,7 +48,10 @@
         /* Preloader */
         #preloader {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: #111827;
             z-index: 99999;
             display: flex;
@@ -54,7 +60,7 @@
             justify-content: center;
             transition: opacity 0.4s ease, visibility 0.4s ease;
         }
-        
+
         .spinner {
             width: 50px;
             height: 50px;
@@ -65,7 +71,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .preloader-text {
@@ -143,7 +151,8 @@
             line-height: 1.3;
         }
 
-        .header-addr strong, .header-bank strong {
+        .header-addr strong,
+        .header-bank strong {
             color: var(--text-main);
         }
 
@@ -297,14 +306,15 @@
             background-color: white;
             border-radius: 50%;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
-        .switch-control input:checked + .switch-slider {
-            background-color: #10B981; /* Emerald Green */
+        .switch-control input:checked+.switch-slider {
+            background-color: #10B981;
+            /* Emerald Green */
         }
 
-        .switch-control input:checked + .switch-slider::before {
+        .switch-control input:checked+.switch-slider::before {
             transform: translateX(16px);
         }
 
@@ -347,17 +357,66 @@
             vertical-align: middle;
         }
 
-        .col-idx { width: 35px; text-align: center; color: #9CA3AF; }
-        .col-img { width: 50px; text-align: center; }
-        .col-sku { width: 100px; font-family: monospace; color: var(--text-sec); }
-        .hide-sku .col-sku { display: none !important; }
-        .hide-brand .col-brand { display: none !important; }
-        .col-name { font-weight: 600; color: var(--text-main); }
-        .col-brand { width: 80px; text-align: center; font-size: 11px; }
-        .col-unit { width: 50px; text-align: center; color: var(--text-sec); }
-        .col-qty { width: 60px; text-align: center; font-weight: 700; }
-        .col-price { width: 90px; text-align: right; white-space: nowrap; }
-        .col-sum { width: 100px; text-align: right; font-weight: 800; white-space: nowrap; }
+        .col-idx {
+            width: 35px;
+            text-align: center;
+            color: #9CA3AF;
+        }
+
+        .col-img {
+            width: 50px;
+            text-align: center;
+        }
+
+        .col-sku {
+            width: 100px;
+            font-family: monospace;
+            color: var(--text-sec);
+        }
+
+        .hide-sku .col-sku {
+            display: none !important;
+        }
+
+        .hide-brand .col-brand {
+            display: none !important;
+        }
+
+        .col-name {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .col-brand {
+            width: 80px;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        .col-unit {
+            width: 50px;
+            text-align: center;
+            color: var(--text-sec);
+        }
+
+        .col-qty {
+            width: 60px;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .col-price {
+            width: 90px;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .col-sum {
+            width: 100px;
+            text-align: right;
+            font-weight: 800;
+            white-space: nowrap;
+        }
 
         .spec-table tbody tr:last-child td {
             border-bottom: none;
@@ -439,7 +498,7 @@
             margin: 100px auto;
             background: #fff;
             border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
             border: 1px solid var(--border);
             padding: 40px;
             text-align: center;
@@ -474,7 +533,7 @@
             gap: 12px;
             z-index: 1000;
         }
-        
+
         .fab-btn {
             width: 56px;
             height: 56px;
@@ -494,41 +553,50 @@
             transform: scale(1.1) translateY(-2px);
             box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
         }
-        
+
         .fab-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none !important;
             box-shadow: none !important;
         }
-        
+
         .fab-confirm {
-            background-color: #10B981; /* Emerald Green */
+            background-color: #10B981;
+            /* Emerald Green */
         }
+
         .fab-confirm:hover {
             background-color: #059669;
         }
-        
+
         .fab-print {
-            background-color: #3B82F6; /* Blue */
+            background-color: #3B82F6;
+            /* Blue */
         }
+
         .fab-print:hover {
             background-color: #2563EB;
         }
-        
+
         .fab-revise {
-            background-color: #EF4444; /* Red */
+            background-color: #EF4444;
+            /* Red */
         }
+
         .fab-revise:hover {
             background-color: #DC2626;
         }
-        
+
         .fab-get-invoice {
-            background-color: #10B981; /* Emerald Green */
+            background-color: #10B981;
+            /* Emerald Green */
         }
+
         .fab-get-invoice:hover {
             background-color: #059669;
         }
+
         .btn-get-invoice-client {
             background: linear-gradient(135deg, #10B981 0%, #059669 100%);
             color: white;
@@ -541,13 +609,16 @@
             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
             transition: all 0.2s ease;
         }
+
         .btn-get-invoice-client:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
         }
+
         .btn-get-invoice-client:active {
             transform: translateY(0);
         }
+
         .btn-get-invoice-client:disabled {
             background: #9CA3AF !important;
             cursor: not-allowed;
@@ -558,7 +629,10 @@
         /* Modal Overlay */
         .modal-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background-color: rgba(17, 24, 39, 0.6);
             backdrop-filter: blur(4px);
             display: flex;
@@ -569,12 +643,12 @@
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        
+
         .modal-overlay.active {
             opacity: 1;
             visibility: visible;
         }
-        
+
         /* Modal Card */
         .modal-card {
             background: var(--surface);
@@ -588,11 +662,11 @@
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             margin: 20px;
         }
-        
+
         .modal-overlay.active .modal-card {
             transform: scale(1);
         }
-        
+
         .modal-header {
             padding: 20px;
             border-bottom: 1px solid var(--border);
@@ -600,13 +674,13 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .modal-header h3 {
             font-size: 16px;
             font-weight: 700;
             color: var(--primary);
         }
-        
+
         .modal-close-btn {
             background: none;
             border: none;
@@ -615,22 +689,22 @@
             cursor: pointer;
             line-height: 1;
         }
-        
+
         .modal-close-btn:hover {
             color: var(--text-main);
         }
-        
+
         .modal-body {
             padding: 20px;
         }
-        
+
         .modal-body p {
             color: var(--text-sec);
             font-size: 13px;
             margin-bottom: 15px;
             line-height: 1.4;
         }
-        
+
         .modal-body textarea {
             width: 100%;
             height: 120px;
@@ -644,11 +718,11 @@
             transition: border-color 0.2s ease;
             box-sizing: border-box;
         }
-        
+
         .modal-body textarea:focus {
             border-color: #3B82F6;
         }
-        
+
         .modal-footer {
             padding: 15px 20px;
             background: #F9FAFB;
@@ -657,7 +731,7 @@
             justify-content: flex-end;
             gap: 10px;
         }
-        
+
         .modal-btn {
             padding: 8px 16px;
             border-radius: 6px;
@@ -667,25 +741,25 @@
             border: none;
             transition: background-color 0.2s ease;
         }
-        
+
         .btn-cancel {
             background: #E5E7EB;
             color: var(--text-sec);
         }
-        
+
         .btn-cancel:hover {
             background: #D1D5DB;
         }
-        
+
         .btn-submit {
             background: #EF4444;
             color: #fff;
         }
-        
+
         .btn-submit:hover {
             background: #DC2626;
         }
-        
+
         .btn-submit:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -706,13 +780,13 @@
             margin-bottom: 20px;
             transition: all 0.2s ease;
         }
-        
+
         .status-confirmed {
             background-color: #D1FAE5;
             color: #065F46;
             border: 1px solid #A7F3D0;
         }
-        
+
         .status-revision {
             background-color: #FEE2E2;
             color: #991B1B;
@@ -772,12 +846,12 @@
             #equipment_container thead {
                 display: none !important;
             }
-            
+
             #equipment_tbody tr:not(.group-row):not(.subtotal-row) {
                 display: grid !important;
                 grid-template-columns: 64px 1fr auto auto !important;
                 grid-template-rows: auto auto !important;
-                grid-template-areas: 
+                grid-template-areas:
                     "img name name sum"
                     "img spacer qty price" !important;
                 gap: 4px 12px !important;
@@ -789,45 +863,47 @@
                 margin-bottom: 0 !important;
                 box-shadow: none !important;
             }
-            
+
             #equipment_tbody td {
                 padding: 0 !important;
                 border: none !important;
                 color: var(--text-main) !important;
                 background: transparent !important;
             }
-            
+
             /* Left rounded square image wrapper */
             #equipment_tbody td.col-img {
                 grid-area: img !important;
                 display: flex !important;
                 justify-content: center !important;
                 align-items: center !important;
-                background: #F3F4F6 !important; /* Soft light grey */
+                background: #F3F4F6 !important;
+                /* Soft light grey */
                 border-radius: 12px !important;
                 width: 64px !important;
                 height: 64px !important;
                 padding: 4px !important;
                 box-sizing: border-box !important;
             }
-            
+
             /* Support dark mode for image background if body has dark-mode */
             body.dark-mode #equipment_tbody td.col-img {
                 background: var(--surface-light) !important;
             }
-            
+
             /* Support hiding images and adjusting grid columns on mobile */
             body.hide-images #equipment_tbody td.col-img {
                 display: none !important;
             }
+
             body.hide-images #equipment_tbody tr:not(.group-row):not(.subtotal-row) {
                 grid-template-columns: 1fr auto auto !important;
-                grid-template-areas: 
+                grid-template-areas:
                     "name name sum"
                     "spacer qty price" !important;
             }
-            
-            #equipment_tbody td.col-img img, 
+
+            #equipment_tbody td.col-img img,
             #equipment_tbody td.col-img .table-img {
                 width: 100% !important;
                 height: 100% !important;
@@ -837,7 +913,7 @@
                 padding: 0 !important;
                 border-radius: 0 !important;
             }
-            
+
             /* Product Name styling */
             #equipment_tbody td.col-name {
                 grid-area: name !important;
@@ -851,7 +927,7 @@
                 white-space: normal !important;
                 word-break: break-word !important;
             }
-            
+
             /* Total Sum styling (bold, top-right) */
             #equipment_tbody td.col-sum {
                 grid-area: sum !important;
@@ -863,7 +939,7 @@
                 text-align: right !important;
                 white-space: nowrap !important;
             }
-            
+
             /* Quantity styling (bottom-left, aligned to right next to price) */
             #equipment_tbody td.col-qty {
                 grid-area: qty !important;
@@ -875,7 +951,7 @@
                 font-weight: 500 !important;
                 color: var(--text-sec) !important;
             }
-            
+
             /* Unit Price styling (bottom-right, grey) */
             #equipment_tbody td.col-price {
                 grid-area: price !important;
@@ -888,16 +964,16 @@
                 text-align: right !important;
                 white-space: nowrap !important;
             }
-            
+
             #equipment_tbody td.col-qty::after {
                 content: " шт" !important;
             }
-            
+
             #equipment_tbody td.col-price::before {
                 content: "× " !important;
                 margin-right: 2px !important;
             }
-            
+
             /* Hide unused columns on mobile */
             #equipment_tbody td.col-sku,
             #equipment_tbody td.col-brand,
@@ -910,11 +986,12 @@
             #works_container thead {
                 display: none !important;
             }
+
             #works_tbody tr:not(.group-row):not(.subtotal-row) {
                 display: grid !important;
                 grid-template-columns: 1fr auto auto !important;
                 grid-template-rows: auto auto !important;
-                grid-template-areas: 
+                grid-template-areas:
                     "name name sum"
                     "qty price price" !important;
                 gap: 4px 12px !important;
@@ -926,12 +1003,14 @@
                 margin-bottom: 0 !important;
                 box-shadow: none !important;
             }
+
             #works_tbody td {
                 padding: 0 !important;
                 border: none !important;
                 color: var(--text-main) !important;
                 background: transparent !important;
             }
+
             #works_tbody td.col-name {
                 grid-area: name !important;
                 font-weight: 600 !important;
@@ -942,6 +1021,7 @@
                 white-space: normal !important;
                 word-break: break-word !important;
             }
+
             #works_tbody td.col-qty {
                 grid-area: qty !important;
                 display: flex !important;
@@ -952,9 +1032,11 @@
                 font-weight: 500 !important;
                 color: var(--text-sec) !important;
             }
+
             #works_tbody td.col-qty::before {
                 content: "Кол-во: " !important;
             }
+
             #works_tbody td.col-price {
                 grid-area: price !important;
                 display: flex !important;
@@ -966,10 +1048,12 @@
                 text-align: right !important;
                 white-space: nowrap !important;
             }
+
             #works_tbody td.col-price::before {
                 content: "× " !important;
                 margin-right: 2px !important;
             }
+
             #works_tbody td.col-sum {
                 grid-area: sum !important;
                 display: flex !important;
@@ -980,6 +1064,7 @@
                 text-align: right !important;
                 white-space: nowrap !important;
             }
+
             #works_tbody td.col-idx,
             #works_tbody td.col-unit {
                 display: none !important;
@@ -988,9 +1073,11 @@
             .hide-mobile {
                 display: none !important;
             }
+
             .show-mobile {
                 display: inline !important;
             }
+
             .sum-val {
                 white-space: nowrap !important;
             }
@@ -1012,7 +1099,8 @@
                 print-color-adjust: exact !important;
             }
 
-            html, body {
+            html,
+            body {
                 width: 210mm !important;
                 height: max-content !important;
                 margin: 0 !important;
@@ -1021,7 +1109,8 @@
                 background: #fff !important;
             }
 
-            .container, .invoice-wrapper {
+            .container,
+            .invoice-wrapper {
                 width: 100% !important;
                 min-width: 100% !important;
                 max-width: 100% !important;
@@ -1070,14 +1159,17 @@
                 gap: 40px !important;
                 max-width: 800px !important;
             }
+
             .header-logo {
                 width: 80px !important;
                 flex: 0 0 80px !important;
             }
+
             .header-addr {
                 flex: 0 0 300px !important;
                 max-width: 300px !important;
             }
+
             .header-bank {
                 flex: 0 0 300px !important;
                 max-width: 300px !important;
@@ -1089,12 +1181,18 @@
                 border-collapse: collapse !important;
             }
 
-            tr, td, th {
+            tr,
+            td,
+            th {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
             }
 
-            .no-break, .manager-bar, .doc-header, .object-grid, .title-block {
+            .no-break,
+            .manager-bar,
+            .doc-header,
+            .object-grid,
+            .title-block {
                 break-inside: avoid !important;
                 page-break-inside: avoid !important;
             }
@@ -1152,12 +1250,15 @@
             .col-sku {
                 display: table-cell !important;
             }
+
             .hide-sku .col-sku {
                 display: none !important;
             }
+
             .col-brand {
                 display: table-cell !important;
             }
+
             .hide-brand .col-brand {
                 display: none !important;
             }
@@ -1166,6 +1267,7 @@
             #equipment_container thead {
                 display: table-header-group !important;
             }
+
             #equipment_tbody tr:not(.group-row):not(.subtotal-row) {
                 display: table-row !important;
                 grid-template-columns: none !important;
@@ -1178,6 +1280,7 @@
                 margin-bottom: 0 !important;
                 box-shadow: none !important;
             }
+
             #equipment_tbody td {
                 display: table-cell !important;
                 padding: 8px 12px !important;
@@ -1187,12 +1290,14 @@
                 text-align: left !important;
                 vertical-align: middle !important;
             }
+
             #equipment_tbody td.col-idx {
                 display: table-cell !important;
                 width: 35px !important;
                 text-align: center !important;
                 color: #9CA3AF !important;
             }
+
             #equipment_tbody td.col-img {
                 display: table-cell !important;
                 width: 50px !important;
@@ -1202,10 +1307,12 @@
                 padding: 8px 12px !important;
                 box-sizing: content-box !important;
             }
+
             .hide-images #equipment_tbody td.col-img {
                 display: none !important;
             }
-            #equipment_tbody td.col-img img, 
+
+            #equipment_tbody td.col-img img,
             #equipment_tbody td.col-img .table-img {
                 width: 32px !important;
                 height: 32px !important;
@@ -1215,6 +1322,7 @@
                 border: 1px solid #E5E7EB !important;
                 padding: 1px !important;
             }
+
             #equipment_tbody td.col-name {
                 display: table-cell !important;
                 font-weight: 600 !important;
@@ -1224,30 +1332,36 @@
                 max-width: none !important;
                 width: auto !important;
             }
+
             #equipment_tbody td.col-sku {
                 display: table-cell !important;
                 width: 100px !important;
                 font-family: monospace !important;
                 color: var(--text-sec) !important;
             }
+
             .hide-sku #equipment_tbody td.col-sku {
                 display: none !important;
             }
+
             #equipment_tbody td.col-brand {
                 display: table-cell !important;
                 width: 80px !important;
                 text-align: center !important;
                 font-size: 11px !important;
             }
+
             .hide-brand #equipment_tbody td.col-brand {
                 display: none !important;
             }
+
             #equipment_tbody td.col-unit {
                 display: table-cell !important;
                 width: 50px !important;
                 text-align: center !important;
                 color: var(--text-sec) !important;
             }
+
             #equipment_tbody td.col-qty {
                 display: table-cell !important;
                 width: 60px !important;
@@ -1257,9 +1371,11 @@
                 font-size: 12px !important;
                 color: var(--text-main) !important;
             }
+
             #equipment_tbody td.col-qty::after {
                 content: "" !important;
             }
+
             #equipment_tbody td.col-price {
                 display: table-cell !important;
                 width: 90px !important;
@@ -1269,9 +1385,11 @@
                 white-space: nowrap !important;
                 align-self: auto !important;
             }
+
             #equipment_tbody td.col-price::before {
                 content: "" !important;
             }
+
             #equipment_tbody td.col-sum {
                 display: table-cell !important;
                 width: 100px !important;
@@ -1359,12 +1477,15 @@
         body.html2pdf-printing .col-sku {
             display: table-cell !important;
         }
+
         body.html2pdf-printing .hide-sku .col-sku {
             display: none !important;
         }
+
         body.html2pdf-printing .col-brand {
             display: table-cell !important;
         }
+
         body.html2pdf-printing .hide-brand .col-brand {
             display: none !important;
         }
@@ -1373,6 +1494,7 @@
         body.html2pdf-printing #equipment_container thead {
             display: table-header-group !important;
         }
+
         body.html2pdf-printing #equipment_tbody tr:not(.group-row):not(.subtotal-row) {
             display: table-row !important;
             grid-template-columns: none !important;
@@ -1385,6 +1507,7 @@
             margin-bottom: 0 !important;
             box-shadow: none !important;
         }
+
         body.html2pdf-printing #equipment_tbody td {
             display: table-cell !important;
             padding: 8px 12px !important;
@@ -1394,12 +1517,14 @@
             text-align: left !important;
             vertical-align: middle !important;
         }
+
         body.html2pdf-printing #equipment_tbody td.col-idx {
             display: table-cell !important;
             width: 35px !important;
             text-align: center !important;
             color: #9CA3AF !important;
         }
+
         body.html2pdf-printing #equipment_tbody td.col-img {
             display: table-cell !important;
             width: 50px !important;
@@ -1409,10 +1534,12 @@
             padding: 8px 12px !important;
             box-sizing: content-box !important;
         }
+
         body.html2pdf-printing.hide-images #equipment_tbody td.col-img {
             display: none !important;
         }
-        body.html2pdf-printing #equipment_tbody td.col-img img, 
+
+        body.html2pdf-printing #equipment_tbody td.col-img img,
         body.html2pdf-printing #equipment_tbody td.col-img .table-img {
             width: 32px !important;
             height: 32px !important;
@@ -1422,6 +1549,7 @@
             border: 1px solid #E5E7EB !important;
             padding: 1px !important;
         }
+
         body.html2pdf-printing #equipment_tbody td.col-name {
             display: table-cell !important;
             font-weight: 600 !important;
@@ -1431,30 +1559,36 @@
             max-width: none !important;
             width: auto !important;
         }
+
         body.html2pdf-printing #equipment_tbody td.col-sku {
             display: table-cell !important;
             width: 100px !important;
             font-family: monospace !important;
             color: var(--text-sec) !important;
         }
+
         body.html2pdf-printing.hide-sku #equipment_tbody td.col-sku {
             display: none !important;
         }
+
         body.html2pdf-printing #equipment_tbody td.col-brand {
             display: table-cell !important;
             width: 80px !important;
             text-align: center !important;
             font-size: 11px !important;
         }
+
         body.html2pdf-printing.hide-brand #equipment_tbody td.col-brand {
             display: none !important;
         }
+
         body.html2pdf-printing #equipment_tbody td.col-unit {
             display: table-cell !important;
             width: 50px !important;
             text-align: center !important;
             color: var(--text-sec) !important;
         }
+
         body.html2pdf-printing #equipment_tbody td.col-qty {
             display: table-cell !important;
             width: 60px !important;
@@ -1464,9 +1598,11 @@
             font-size: 12px !important;
             color: var(--text-main) !important;
         }
+
         body.html2pdf-printing #equipment_tbody td.col-qty::after {
             content: "" !important;
         }
+
         body.html2pdf-printing #equipment_tbody td.col-price {
             display: table-cell !important;
             width: 90px !important;
@@ -1476,9 +1612,11 @@
             white-space: nowrap !important;
             align-self: auto !important;
         }
+
         body.html2pdf-printing #equipment_tbody td.col-price::before {
             content: "" !important;
         }
+
         body.html2pdf-printing #equipment_tbody td.col-sum {
             display: table-cell !important;
             width: 100px !important;
@@ -1493,106 +1631,106 @@
             page-break-before: always !important;
             break-before: page !important;
         }
-    
-/* === PREMIUM CUSTOM DIALOGS === */
-.calc-dialog-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(15, 23, 42, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 99999999 !important;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
 
-.calc-dialog-overlay.active {
-    opacity: 1;
-}
+        /* === PREMIUM CUSTOM DIALOGS === */
+        .calc-dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999999 !important;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
 
-.calc-dialog-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    width: 90%;
-    max-width: 440px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    transform: scale(0.9);
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    box-sizing: border-box;
-}
+        .calc-dialog-overlay.active {
+            opacity: 1;
+        }
 
-.calc-dialog-overlay.active .calc-dialog-card {
-    transform: scale(1);
-}
+        .calc-dialog-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 440px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: scale(0.9);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-sizing: border-box;
+        }
 
-.calc-dialog-title {
-    font-size: 16px;
-    font-weight: 800;
-    color: var(--text-main);
-    margin: 0;
-    line-height: 1.4;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-}
+        .calc-dialog-overlay.active .calc-dialog-card {
+            transform: scale(1);
+        }
 
-.calc-dialog-message {
-    font-size: 14px;
-    color: var(--text-sec);
-    margin: 0;
-    line-height: 1.5;
-}
+        .calc-dialog-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.4;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
 
-.calc-dialog-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    margin-top: 8px;
-}
+        .calc-dialog-message {
+            font-size: 14px;
+            color: var(--text-sec);
+            margin: 0;
+            line-height: 1.5;
+        }
 
-.calc-dialog-btn {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    border: 1px solid transparent;
-}
+        .calc-dialog-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 8px;
+        }
 
-.calc-dialog-btn-cancel {
-    background: transparent;
-    border-color: var(--border);
-    color: var(--text-sec);
-}
+        .calc-dialog-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid transparent;
+        }
 
-.calc-dialog-btn-cancel:hover {
-    background: var(--primary-light);
-    color: var(--primary);
-    border-color: transparent;
-}
+        .calc-dialog-btn-cancel {
+            background: transparent;
+            border-color: var(--border);
+            color: var(--text-sec);
+        }
 
-.calc-dialog-btn-confirm {
-    background: var(--primary);
-    color: white;
-}
+        .calc-dialog-btn-cancel:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-color: transparent;
+        }
 
-.calc-dialog-btn-confirm:hover {
-    background: #1D4ED8;
-}
+        .calc-dialog-btn-confirm {
+            background: var(--primary);
+            color: white;
+        }
 
-</style>
+        .calc-dialog-btn-confirm:hover {
+            background: #1D4ED8;
+        }
+    </style>
 </head>
+
 <body>
 
     <!-- Dynamic Preloader -->
@@ -1605,21 +1743,25 @@
     <div class="fab-container no-print">
         <!-- Confirm Button (Green checkmark) -->
         <button class="fab-btn fab-confirm" onclick="confirmInvoice()" title="Подтвердить КП">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
         </button>
         <!-- Print Button (Blue printer) -->
         <button class="fab-btn fab-print" onclick="handlePrintAction()" title="Распечатать или сохранить в PDF">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 6 2 18 2 18 9"></polyline>
                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
                 <rect x="6" y="14" width="12" height="8"></rect>
             </svg>
         </button>
         <!-- Get Invoice FAB (Emerald page) -->
-        <button class="fab-btn fab-get-invoice" id="btn_get_invoice" onclick="requestInvoice()" title="Получить счёт" style="display: none;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <button class="fab-btn fab-get-invoice" id="btn_get_invoice" onclick="requestInvoice()" title="Получить счёт"
+            style="display: none;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 <polyline points="14 2 14 8 20 8"></polyline>
                 <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -1629,7 +1771,8 @@
         </button>
         <!-- Revise Button (Red cross) -->
         <button class="fab-btn fab-revise" onclick="openRevisionModal()" title="Есть замечания / правки">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -1644,12 +1787,15 @@
                 <button class="modal-close-btn" onclick="closeRevisionModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <p>Пожалуйста, напишите, какие изменения или дополнения требуются в коммерческом предложении. Ваш менеджер получит уведомление и внесет корректировки.</p>
-                <textarea id="revision_text" placeholder="Введите Ваши замечания по оборудованию или монтажным работам..."></textarea>
+                <p>Пожалуйста, напишите, какие изменения или дополнения требуются в коммерческом предложении. Ваш
+                    менеджер получит уведомление и внесет корректировки.</p>
+                <textarea id="revision_text"
+                    placeholder="Введите Ваши замечания по оборудованию или монтажным работам..."></textarea>
             </div>
             <div class="modal-footer">
                 <button class="modal-btn btn-cancel" onclick="closeRevisionModal()">Отмена</button>
-                <button class="modal-btn btn-submit" id="btn_submit_revision" onclick="submitRevision()">Отправить правки</button>
+                <button class="modal-btn btn-submit" id="btn_submit_revision" onclick="submitRevision()">Отправить
+                    правки</button>
             </div>
         </div>
     </div>
@@ -1659,18 +1805,20 @@
         <div class="error-card">
             <div class="error-icon">⚠️</div>
             <h2>Счет не найден или удален</h2>
-            <p>Запрошенная ссылка недействительна или коммерческое предложение было удалено. Пожалуйста, обратитесь к Вашему менеджеру для получения новой ссылки.</p>
+            <p>Запрошенная ссылка недействительна или коммерческое предложение было удалено. Пожалуйста, обратитесь к
+                Вашему менеджеру для получения новой ссылки.</p>
         </div>
     </div>
 
     <!-- Main Content proposal container -->
     <div id="invoice_content" class="container" style="display: none;">
-        
+
         <!-- Corporate Header -->
         <header class="doc-header">
             <div class="header-top">
                 <div id="hdr_comp_name">Общество с ограниченной ответственностью «ТЕРЕМ»</div>
-                <a href="https://www.teremopt.ru" target="_blank" class="header-top-web" id="hdr_comp_web">www.teremopt.ru</a>
+                <a href="https://www.teremopt.ru" target="_blank" class="header-top-web"
+                    id="hdr_comp_web">www.teremopt.ru</a>
             </div>
             <div class="header-main">
                 <div class="header-logo">
@@ -1705,7 +1853,8 @@
         <section class="title-block">
             <h1 id="proposal_title">Коммерческое предложение</h1>
             <div id="status_badge" class="status-badge" style="display: none;"></div>
-            <div id="get_invoice_container" class="no-print" style="display: none; margin-top: 15px; margin-bottom: 25px; text-align: center;">
+            <div id="get_invoice_container" class="no-print"
+                style="display: none; margin-top: 15px; margin-bottom: 25px; text-align: center;">
                 <button class="btn-get-invoice-client" onclick="requestInvoice()">
                     📄 Получить счет на email
                 </button>
@@ -1746,13 +1895,17 @@
         <div id="equipment_container" style="display: none;">
             <div class="sec-header-row">
                 <h2 class="sec-title">Спецификация оборудования и материалов</h2>
-                <div class="toggle-images-wrapper no-print" style="display: inline-flex; align-items: center; gap: 15px;">
-                    <button class="btn-copy-spec" id="btn_copy_1c" onclick="copySpecFor1C()" title="Скопировать смету в буфер обмена в формате Артикул|Количество" style="display: none; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary); padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;">
+                <div class="toggle-images-wrapper no-print"
+                    style="display: inline-flex; align-items: center; gap: 15px;">
+                    <button class="btn-copy-spec" id="btn_copy_1c" onclick="copySpecFor1C()"
+                        title="Скопировать смету в буфер обмена в формате Артикул|Количество"
+                        style="display: none; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary); padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;">
                         📋 Копировать для 1С
                     </button>
                     <label class="switch-control" title="Скрыть изображения оборудования для компактности">
                         <span class="switch-label">Картинки</span>
-                        <input type="checkbox" id="toggle_images_checkbox" checked onchange="toggleEquipmentImages(this.checked)">
+                        <input type="checkbox" id="toggle_images_checkbox" checked
+                            onchange="toggleEquipmentImages(this.checked)">
                         <span class="switch-slider"></span>
                     </label>
                 </div>
@@ -1804,15 +1957,18 @@
         <!-- Summary aggregation card -->
         <section class="summary-card">
             <div class="sum-item">
-                <span><span class="hide-mobile">Итого по оборудованию:</span><span class="show-mobile">Итого:</span></span>
+                <span><span class="hide-mobile">Итого по оборудованию:</span><span
+                        class="show-mobile">Итого:</span></span>
                 <span class="sum-val" id="total_eq">0 ₽</span>
             </div>
             <div class="sum-item">
-                <span><span class="hide-mobile">Итого по монтажным работам:</span><span class="show-mobile">Монтаж:</span></span>
+                <span><span class="hide-mobile">Итого по монтажным работам:</span><span
+                        class="show-mobile">Монтаж:</span></span>
                 <span class="sum-val" id="total_works">0 ₽</span>
             </div>
             <div class="sum-item grand-total">
-                <span><span class="hide-mobile">Общая сумма по смете:</span><span class="show-mobile">Итого по смете:</span></span>
+                <span><span class="hide-mobile">Общая сумма по смете:</span><span class="show-mobile">Итого по
+                        смете:</span></span>
                 <span class="sum-val" id="grand_total">0 ₽</span>
             </div>
         </section>
@@ -1832,10 +1988,10 @@
                     text += `${sku}|${item.q}\n`;
                 }
             });
-            
+
             const btn = document.querySelector('.btn-copy-spec');
             const oldText = btn ? btn.innerHTML : "📋 Копировать для 1С";
-            
+
             let p;
             if (navigator.clipboard && window.isSecureContext) {
                 p = navigator.clipboard.writeText(text);
@@ -1856,7 +2012,7 @@
                     p = Promise.reject(err);
                 }
             }
-            
+
             p.then(() => {
                 if (btn) {
                     btn.innerHTML = "✅ Скопировано!";
@@ -1881,23 +2037,23 @@
             return new Promise((resolve) => {
                 const overlay = document.createElement('div');
                 overlay.className = 'calc-dialog-overlay';
-                
+
                 const card = document.createElement('div');
                 card.className = 'calc-dialog-card';
-                
+
                 const titleEl = document.createElement('h3');
                 titleEl.className = 'calc-dialog-title';
                 titleEl.innerText = title;
                 card.appendChild(titleEl);
-                
+
                 const msgEl = document.createElement('p');
                 msgEl.className = 'calc-dialog-message';
                 msgEl.innerText = msg;
                 card.appendChild(msgEl);
-                
+
                 const btnContainer = document.createElement('div');
                 btnContainer.className = 'calc-dialog-buttons';
-                
+
                 const okBtn = document.createElement('button');
                 okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
                 okBtn.innerText = 'OK';
@@ -1913,7 +2069,7 @@
                 card.appendChild(btnContainer);
                 overlay.appendChild(card);
                 document.body.appendChild(overlay);
-                
+
                 setTimeout(() => overlay.classList.add('active'), 10);
             });
         }
@@ -1922,23 +2078,23 @@
             return new Promise((resolve) => {
                 const overlay = document.createElement('div');
                 overlay.className = 'calc-dialog-overlay';
-                
+
                 const card = document.createElement('div');
                 card.className = 'calc-dialog-card';
-                
+
                 const titleEl = document.createElement('h3');
                 titleEl.className = 'calc-dialog-title';
                 titleEl.innerText = title;
                 card.appendChild(titleEl);
-                
+
                 const msgEl = document.createElement('p');
                 msgEl.className = 'calc-dialog-message';
                 msgEl.innerText = msg;
                 card.appendChild(msgEl);
-                
+
                 const btnContainer = document.createElement('div');
                 btnContainer.className = 'calc-dialog-buttons';
-                
+
                 const cancelBtn = document.createElement('button');
                 cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
                 cancelBtn.innerText = 'Отмена';
@@ -1951,7 +2107,7 @@
                         resolve(false);
                     }, 200);
                 };
-                
+
                 const okBtn = document.createElement('button');
                 okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
                 okBtn.innerText = 'Да';
@@ -1964,13 +2120,13 @@
                         resolve(true);
                     }, 200);
                 };
-                
+
                 btnContainer.appendChild(cancelBtn);
                 btnContainer.appendChild(okBtn);
                 card.appendChild(btnContainer);
                 overlay.appendChild(card);
                 document.body.appendChild(overlay);
-                
+
                 setTimeout(() => overlay.classList.add('active'), 10);
             });
         }
@@ -2041,7 +2197,7 @@
         }
 
         function base64Decode(str) {
-            return decodeURIComponent(Array.prototype.map.call(atob(str), function(c) {
+            return decodeURIComponent(Array.prototype.map.call(atob(str), function (c) {
                 return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
             }).join(''));
         }
@@ -2145,7 +2301,7 @@
             // Reusing Supabase project credentials
             const supabaseUrl = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';
             const supabaseKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';
-            
+
             try {
                 supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
@@ -2190,7 +2346,7 @@
 
             // 0. Determine if SKU should be shown
             const obj = data.object_info || {};
-            
+
             let showSku = true;
             if (urlParams.has('show_sku')) {
                 const param = urlParams.get('show_sku');
@@ -2222,7 +2378,7 @@
                 const elAddr = document.getElementById('hdr_comp_addr');
                 const elBank = document.getElementById('hdr_comp_bank');
 
-                const formatBrandingText = function(text) {
+                const formatBrandingText = function (text) {
                     if (!text) return "";
                     let lines = text.split('\n');
                     if (lines.length > 0 && lines[0].trim() !== '') {
@@ -2245,7 +2401,7 @@
 
             // 2. Object Info
             document.getElementById('obj_name').textContent = obj.projectName || 'Новый объект';
-            
+
             // Determine sequence number
             let sequenceNum = '';
             if (data.sequence_id) {
@@ -2319,7 +2475,7 @@
                         if (i.isOpt) return; // Skip optional untoggled items
 
                         const tr = document.createElement('tr');
-                        
+
                         // Image file mapping
                         const cleanSku = i.displaySku || i.id;
                         const imgPath = `img/${cleanSku}.jpg`;
@@ -2437,7 +2593,7 @@
             const reviseBtn = document.querySelector('.fab-revise');
             const getInvoiceContainer = document.getElementById('get_invoice_container');
             const btnGetInvoice = document.getElementById('btn_get_invoice');
-            
+
             const urlParams = new URLSearchParams(window.location.search);
             const isOffline = urlParams.has('data');
 
@@ -2445,7 +2601,7 @@
                 if (confirmBtn) confirmBtn.style.display = 'none';
                 if (reviseBtn) reviseBtn.style.display = 'none';
             }
-            
+
             if (badgeEl) {
                 if (obj.status === 'confirmed') {
                     badgeEl.textContent = '✓ Смета одобрена';
@@ -2587,7 +2743,7 @@
         async function downloadPDFOffline() {
             const preloader = document.getElementById('preloader');
             const preloaderText = preloader ? preloader.querySelector('.preloader-text') : null;
-            
+
             if (preloader) {
                 if (preloaderText) preloaderText.textContent = "Формирование PDF...";
                 preloader.style.opacity = '1';
@@ -2601,12 +2757,12 @@
 
                 const element = document.getElementById('invoice_content');
                 const opt = {
-                    margin:       10,
-                    filename:     `${document.title || 'Смета'}.pdf`,
-                    image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { scale: 2, useCORS: true, logging: false },
-                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    pagebreak:    { mode: ['css', 'legacy'] }
+                    margin: 10,
+                    filename: `${document.title || 'Смета'}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, logging: false },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: ['css', 'legacy'] }
                 };
 
                 // Запускаем оффлайн генерацию PDF
@@ -2662,18 +2818,18 @@
         async function requestInvoice() {
             const btnFloat = document.getElementById('btn_get_invoice');
             const btnClient = document.querySelector('.btn-get-invoice-client');
-            
+
             if (!invoiceId || !supabaseClient || !invoiceData) {
                 alert("Ошибка: данные сметы не загружены.");
                 return;
             }
-            
+
             const managerEmail = invoiceData?.manager_info?.email;
             if (!managerEmail) {
                 alert("Ошибка: email менеджера не найден в данных сметы.");
                 return;
             }
-            
+
             // Set loading state and disable buttons
             if (btnFloat) {
                 btnFloat.disabled = true;
@@ -2683,24 +2839,24 @@
                 btnClient.disabled = true;
                 btnClient.textContent = "⌛ Отправка...";
             }
-            
+
             try {
                 const obj = invoiceData.object_info || {};
                 const totals = invoiceData.totals || {};
                 const items = invoiceData.items || {};
                 const eqList = items.equipment || [];
                 const worksList = items.works || [];
-                
+
                 const matVal = obj.hasOwnProperty('mat') ? obj.mat : obj.res;
                 let wallMat = 'Газобетон';
                 if (matVal === 1 || matVal === 1.0) wallMat = 'Газобетон';
                 else if (matVal === 1.2 || matVal === 1.3) wallMat = 'Кирпич (без утепления)';
                 else if (matVal === 0.8) wallMat = 'Тёплый дом (утепленный)';
                 else if (matVal === 1.5) wallMat = 'Каркасный / Деревянный';
-                
+
                 // Construct detailed comment with physical units (м², кВт)
                 let comment = `Клиент одобрил смету и запросил выставление официального счета.\n\n`;
-                
+
                 comment += `📋 СВОДКА ПО ОБЪЕКТУ:\n`;
                 comment += `- Название проекта: ${obj.projectName || 'Новый объект'}\n`;
                 comment += `- Площадь дома: ${obj.area || 0} м²\n`;
@@ -2708,12 +2864,12 @@
                 comment += `- Материал стен: ${wallMat}\n`;
                 comment += `- Теплопотери дома: ${obj.power || 0} кВт\n`;
                 comment += `- Регион строительства: ${obj.region || 'Центр'}\n\n`;
-                
+
                 comment += `💰 ФИНАНСОВЫЕ ПОКАЗАТЕЛИ:\n`;
                 comment += `- Итого по оборудованию: ${(totals.equipment || 0).toLocaleString('ru-RU')} ₽\n`;
                 comment += `- Итого по монтажным работам: ${(totals.works || 0).toLocaleString('ru-RU')} ₽\n`;
                 comment += `- Общая сумма по смете: ${(totals.grandTotal || 0).toLocaleString('ru-RU')} ₽\n\n`;
-                
+
                 if (eqList && eqList.length > 0) {
                     comment += `📦 СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ И МАТЕРИАЛОВ:\n`;
                     let eqIdx = 1;
@@ -2723,7 +2879,7 @@
                     });
                     comment += `\n`;
                 }
-                
+
                 if (worksList && worksList.length > 0) {
                     comment += `🛠️ СПЕЦИФИКАЦИЯ РАБОТ:\n`;
                     let workIdx = 1;
@@ -2732,11 +2888,11 @@
                     });
                     comment += `\n`;
                 }
-                
+
                 const projectName = obj.projectName || 'Новый объект';
                 const statusText = 'Запрошен счет';
                 const invoiceUrl = window.location.href;
-                
+
                 const response = await fetch('mail_status.php', {
                     method: 'POST',
                     headers: {
@@ -2750,7 +2906,7 @@
                         invoiceUrl: invoiceUrl
                     })
                 });
-                
+
                 const text = await response.text();
                 let resData;
                 try {
@@ -2779,4 +2935,5 @@
         }
     </script>
 </body>
+
 </html>
