@@ -3073,9 +3073,7 @@ const app = {
 
         // Генерируем уникальный ID расчета (если еще нет), чтобы избежать дубликатов при saveToCloud
         if (!this.state.calc_id) {
-            const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-            const randPart = Math.random().toString(36).substring(2, 6).toUpperCase();
-            this.state.calc_id = `HC-${datePart}-${randPart}`;
+            this.state.calc_id = String(Math.floor(100000 + Math.random() * 900000));
             this.saveState();
         }
 
@@ -3111,7 +3109,8 @@ const app = {
             power: pwr,
             region: regionName,
             date: new Date().toLocaleDateString('ru-RU'),
-            showSku: !!this.state.showSku
+            showSku: !!this.state.showSku,
+            sequence_id: this.state.calc_id
         };
 
         let manager_info = {
@@ -3680,9 +3679,7 @@ const app = {
         try {
             // ГЕНЕРАЦИЯ УНИКАЛЬНОГО ID РАСЧЕТА (если еще нет)
             if (!this.state.calc_id) {
-                const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-                const randPart = Math.random().toString(36).substring(2, 6).toUpperCase();
-                this.state.calc_id = `HC-${datePart}-${randPart}`;
+                this.state.calc_id = String(Math.floor(100000 + Math.random() * 900000));
                 this.saveState();
             }
             console.log("[sendEmail] Сгенерирован/получен ID расчета:", this.state.calc_id);
@@ -3776,7 +3773,8 @@ const app = {
                     showSku: !!this.state.showSku,
                     status: 'sent',
                     client_comment: null,
-                    status_updated_at: null
+                    status_updated_at: null,
+                    sequence_id: this.state.calc_id
                 };
 
                 const manager_info = {
@@ -3974,13 +3972,13 @@ const app = {
     },
 
     loadFromCode: async function () {
-        let code = await app.prompt("Вставьте код расчета (например, HC-240409-S4DT или старый JSON):");
+        let code = await app.prompt("Вставьте 6-значный код или код расчета (например, 265039 или HC-...):");
         if (!code) return;
 
         code = code.trim();
 
-        // 1. ПОИСК ПО КОРОТКОМУ КОДУ В БАЗЕ (HC-...)
-        if (code.startsWith('HC-')) {
+        // 1. ПОИСК ПО КОРОТКОМУ КОДУ В БАЗЕ (HC-... или 6-значный код)
+        if (code.startsWith('HC-') || /^\d{6}$/.test(code)) {
             try {
                 const { data, error } = await supabaseClient
                     .from('estimates')
