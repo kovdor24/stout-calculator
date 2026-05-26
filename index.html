@@ -360,10 +360,13 @@
                 <div id="blk_water_input_opts" style="display:none; flex-direction:column; gap:0; margin-top:10px; background:var(--surface-light); padding:10px 12px; border-radius:8px; border:1px solid var(--border);">
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0;">
                         <span class="lbl" style="font-size:12px;">Незамерзающий кран</span>
-                        <label class="switch" style="transform:scale(0.8); transform-origin:right;">
-                            <input type="checkbox" id="chk_outdoor_faucet" onchange="app.toggleState('outdoorFaucet', this.checked)">
-                            <span class="slider"></span>
-                        </label>
+                        <div class="stepper" style="width:100px;">
+                            <button class="step-btn" onclick="app.updOutdoorFaucet(-1)">−</button>
+                            <div class="step-val editable-val" id="val_outdoor_faucet" contenteditable="true"
+                                onblur="app.setOutdoorFaucet(this.innerText)"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">0</div>
+                            <button class="step-btn" onclick="app.updOutdoorFaucet(1)">+</button>
+                        </div>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
                         <span class="lbl" style="font-size:12px;">Система фильтрации (Big Blue)</span>

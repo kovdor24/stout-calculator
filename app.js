@@ -413,7 +413,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: false, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 4, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 4, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null },
 
     lastSavedStateString: "",
 
@@ -4015,7 +4015,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: false, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 4, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true,
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 4, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true,
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -4485,6 +4485,8 @@ const app = {
     setUfhCtrl: function (type) { this.state.ufhCtrl = type; this.syncUI(); this.render(); },
     updZones: function (d) { let n = this.state.ufhZones + d; if (n < 1) n = 1; if (n > 16) n = 16; this.state.ufhZones = n; this.syncUI(); this.render(); },
     setZones: function (v) { let n = parseInt(v); if (isNaN(n) || n < 1) n = 1; if (n > 16) n = 16; this.state.ufhZones = n; this.syncUI(); this.render(); },
+    updOutdoorFaucet: function (d) { let n = (parseInt(this.state.outdoorFaucet) || 0) + d; if (n < 0) n = 0; if (n > 5) n = 5; this.state.outdoorFaucet = n; this.syncUI(); this.render(); },
+    setOutdoorFaucet: function (v) { let n = parseInt(v); if (isNaN(n) || n < 0) n = 0; if (n > 5) n = 5; this.state.outdoorFaucet = n; this.syncUI(); this.render(); },
     syncUI: function () {
         document.getElementById('inp_area').value = this.state.area; document.getElementById('val_area').innerText = this.state.area;
         if (document.getElementById('blk_h2_wrapper')) document.getElementById('blk_h2_wrapper').style.display = (this.state.floors === 2) ? 'flex' : 'none';
@@ -4540,7 +4542,7 @@ const app = {
         if (document.getElementById('chk_recirc')) document.getElementById('chk_recirc').checked = this.state.recirc;
         if (document.getElementById('chk_water_input')) document.getElementById('chk_water_input').checked = this.state.waterInput;
         if (document.getElementById('blk_water_input_opts')) document.getElementById('blk_water_input_opts').style.display = this.state.waterInput ? 'flex' : 'none';
-        if (document.getElementById('chk_outdoor_faucet')) document.getElementById('chk_outdoor_faucet').checked = !!this.state.outdoorFaucet;
+        if (document.getElementById('val_outdoor_faucet')) document.getElementById('val_outdoor_faucet').innerText = parseInt(this.state.outdoorFaucet) || 0;
         if (document.getElementById('chk_big_blue')) document.getElementById('chk_big_blue').checked = !!this.state.bigBlueFilter;
         if (document.getElementById('chk_heating_feed')) document.getElementById('chk_heating_feed').checked = !!this.state.heatingFeed;
         if (document.getElementById('chk_water')) document.getElementById('chk_water').checked = this.state.water;
@@ -6079,10 +6081,11 @@ const app = {
             let grp61 = "6.1. Ввод ХВС в дом";
             ni.forEach(item => addToBill(item, 1, "", grp61));
 
-            if (this.state.outdoorFaucet) {
-                let grp62 = "6.2. Незамерзающий уличный кран";
-                catalog.outdoor_faucet.forEach(item => addToBill(item, 1, "", grp62));
-                addToBill({ id: "SFT-0004-003434", name: "Ниппель 3/4\" НР", price: 207, brand: "STOUT" }, 1, "", grp62);
+            if (this.state.outdoorFaucet > 0) {
+                let count = parseInt(this.state.outdoorFaucet) || 1;
+                let grp62 = `6.2. Незамерзающий уличный кран (${count} шт.)`;
+                catalog.outdoor_faucet.forEach(item => addToBill(item, count, "", grp62));
+                addToBill({ id: "SFT-0004-003434", name: "Ниппель 3/4\" НР", price: 207, brand: "STOUT" }, count, "", grp62);
             }
 
             if (this.state.bigBlueFilter) {
