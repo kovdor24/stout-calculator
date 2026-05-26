@@ -3288,10 +3288,6 @@ const app = {
                 }
             }
 
-            if (!dbUserId) {
-                throw new Error("Профиль пользователя не найден в базе данных. Попробуйте выйти и войти в аккаунт заново.");
-            }
-
             if (!this.state.shared_invoice_id) {
                 this.state.shared_invoice_id = this.generateCustomInvoiceId(tgUser);
                 this.saveState();
@@ -3302,7 +3298,7 @@ const app = {
                 manager_info: manager_info,
                 items: items,
                 totals: totals,
-                user_id: user.id
+                user_id: dbUserId || null
             };
 
             if (this.state.shared_invoice_id) {
