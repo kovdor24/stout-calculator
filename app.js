@@ -3010,6 +3010,34 @@ const app = {
         const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
         return `${baseOrigin}/invoice.html?data=${encoded}`;
     },
+    generateCustomInvoiceId: function (tgUser) {
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yy = String(now.getFullYear()).substring(2, 4);
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        
+        let loginStr = "user";
+        if (tgUser) {
+            loginStr = tgUser.email ? tgUser.email.split('@')[0] : (tgUser.username || tgUser.first_name || "user");
+        }
+        loginStr = loginStr.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || "user";
+        
+        let hash = 5381;
+        for (let i = 0; i < loginStr.length; i++) {
+            hash = ((hash << 5) + hash) + loginStr.charCodeAt(i);
+        }
+        const loginHex = (hash >>> 0).toString(16).padStart(8, '0').substring(0, 8);
+        
+        const datePart = `${dd}${mm}`;
+        const timePart1 = `${yy}${hh}`;
+        const timePart2 = `${min}${ss}`;
+        const areaPart = String(Math.round(this.state.area || 0)).padStart(12, '0');
+        
+        return `${loginHex}-${datePart}-${timePart1}-${timePart2}-${areaPart}`;
+    },
     shareInvoice: async function () {
         if (!this.checkAccess('base')) return;
 
@@ -3262,6 +3290,11 @@ const app = {
 
             if (!dbUserId) {
                 throw new Error("Профиль пользователя не найден в базе данных. Попробуйте выйти и войти в аккаунт заново.");
+            }
+
+            if (!this.state.shared_invoice_id) {
+                this.state.shared_invoice_id = this.generateCustomInvoiceId(tgUser);
+                this.saveState();
             }
 
             const insertPayload = {
@@ -3810,6 +3843,12 @@ const app = {
                             console.warn('[sendEmail] Ошибка поиска по email:', e);
                         }
                     }
+                }
+
+                if (!shareId) {
+                    shareId = this.generateCustomInvoiceId(tgUser);
+                    this.state.shared_invoice_id = shareId;
+                    this.saveState();
                 }
 
                 const insertPayload = {
