@@ -1287,6 +1287,12 @@ body.menu-open .mobile-menu-backdrop {
         font-size: 11px;
     }
 
+    .doc-summary .param-date {
+        grid-column: 2;
+        justify-self: end;
+        margin-left: 0;
+    }
+
     .doc-summary .sep {
         display: none !important;
     }
