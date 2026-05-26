@@ -1974,6 +1974,7 @@
         </section>
     </div>
 
+    <script src="catalog.js"></script>
     <script>
         function copySpecFor1C() {
             if (!invoiceData || !invoiceData.items || !invoiceData.items.equipment) {
@@ -2150,7 +2151,113 @@
 
         // ===================================
         // === OFFLINE SHARE LINK DECODER ===
+        // ===================================
+        // === OFFLINE SHARE LINK DECODER ===
+        function findCatalogItem(sku) {
+            if (typeof catalog === 'undefined') return null;
+            for (const key in catalog) {
+                const list = catalog[key];
+                if (Array.isArray(list)) {
+                    const found = list.find(item => item.id === sku || item.article === sku);
+                    if (found) return found;
+                    
+                    // Check nested Rommer version
+                    for (const item of list) {
+                        if (item.rommer && item.rommer.id === sku) {
+                            return item.rommer;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
         function decompressPayload(compact) {
+            const SECTION_MAP_REV = {
+                1: "1. Котёл + водонагреватель",
+                2: "2. Обвязка котельной",
+                3: "3. Радиаторное отопление",
+                4: "4. Водяной теплый пол",
+                5: "5. Горячее водоснабжение",
+                6: "6. Водопровод и канализация",
+                7: "7. Управление отоплением",
+                8: "8. Монтажные элементы",
+                9: "9. Дополнительные материалы",
+                10: "10. Ввод ХВС и водоочистка",
+                11: "11. Скважина / Колодец"
+            };
+
+            const discountPercent = compact.o.c || 0; // 'c' is the discount percentage
+
+            const equipmentList = (compact.i.e || []).map(item => {
+                // If it is in the old full format, return as-is
+                if (item.hasOwnProperty('n') && item.c !== 1) {
+                    return {
+                        name: item.n,
+                        displaySku: item.s,
+                        brand: item.b,
+                        unit: item.u,
+                        q: item.q,
+                        price: item.p,
+                        sum: item.m,
+                        sectionTitle: item.t,
+                        isOpt: !!item.isOpt
+                    };
+                }
+
+                // If it's a custom manually-added item
+                if (item.c === 1) {
+                    const price = item.p || 0;
+                    const q = item.q || 0;
+                    return {
+                        name: item.n || 'Свое оборудование',
+                        displaySku: item.id || '',
+                        brand: item.b || ' ',
+                        unit: item.u || 'шт',
+                        q: q,
+                        price: price,
+                        sum: price * q,
+                        sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
+                        isOpt: false
+                    };
+                }
+
+                // Standard item: look up in catalog.js
+                const catalogItem = findCatalogItem(item.s) || {};
+                let basePrice = catalogItem.price || 0;
+                // Apply discount if any
+                let finalPrice = basePrice;
+                if (discountPercent > 0) {
+                    finalPrice = Math.round(basePrice * (1 - discountPercent / 100));
+                }
+                const q = item.q || 0;
+                
+                return {
+                    name: catalogItem.name || item.s || 'Оборудование',
+                    displaySku: item.s,
+                    brand: catalogItem.brand || 'STOUT',
+                    unit: catalogItem.unit || 'шт',
+                    q: q,
+                    price: finalPrice,
+                    sum: finalPrice * q,
+                    sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
+                    isOpt: item.o === 1
+                };
+            });
+
+            const worksList = (compact.i.w || []).map(item => {
+                // Return as-is, works are already lightweight
+                const price = item.p || 0;
+                const q = item.q || 0;
+                return {
+                    name: item.n,
+                    qty: q,
+                    q: q,
+                    price: price,
+                    sum: price * q
+                };
+            });
+
             return {
                 object_info: {
                     projectName: compact.o.n,
@@ -2161,7 +2268,8 @@
                     power: compact.o.p,
                     region: compact.o.g,
                     date: compact.o.d,
-                    showSku: compact.o.s === 1
+                    showSku: compact.o.s === 1,
+                    eqDiscount: discountPercent
                 },
                 manager_info: {
                     name: compact.m.n,
@@ -2170,23 +2278,8 @@
                     email: compact.m.e
                 },
                 items: {
-                    equipment: (compact.i.e || []).map(item => ({
-                        name: item.n,
-                        displaySku: item.s,
-                        brand: item.b,
-                        unit: item.u,
-                        q: item.q,
-                        price: item.p,
-                        sum: item.m,
-                        sectionTitle: item.t
-                    })),
-                    works: (compact.i.w || []).map(item => ({
-                        name: item.n,
-                        qty: item.q,
-                        q: item.q,
-                        price: item.p,
-                        sum: item.m
-                    }))
+                    equipment: equipmentList,
+                    works: worksList
                 },
                 totals: {
                     equipment: compact.t.e,
@@ -2290,14 +2383,28 @@
                 }
             }
 
-            if (!id || id.trim().length < 36) {
-                // Invalid or missing UUID
+            if (!id) {
+                // Нет ни ?data=, ни ?id= — ошибка
                 preloader.style.opacity = '0';
                 preloader.style.visibility = 'hidden';
                 errorScreen.style.display = 'block';
                 return;
             }
 
+            // Определяем тип ID:
+            // UUID (Supabase): 36 символов с тире в формате xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+            // Короткий ID (наш сервер): меньше 36 символов
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+            if (!isUUID) {
+                // Не UUID и не ?data= — ошибка (PHP не работает на GitHub Pages)
+                preloader.style.opacity = '0';
+                preloader.style.visibility = 'hidden';
+                errorScreen.style.display = 'block';
+                return;
+            }
+
+            // === UUID — загружаем из Supabase (PRO-тариф) ===
             // Reusing Supabase project credentials
             const supabaseUrl = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';
             const supabaseKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';

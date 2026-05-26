@@ -20,6 +20,20 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 // ===================================
 // === OFFLINE SHARE LINK GENERATOR (COMPRESSION & BASE64) ===
 function compactPayload(data) {
+    const SECTION_MAP = {
+        "1. Котёл + водонагреватель": 1,
+        "2. Обвязка котельной": 2,
+        "3. Радиаторное отопление": 3,
+        "4. Водяной теплый пол": 4,
+        "5. Горячее водоснабжение": 5,
+        "6. Водопровод и канализация": 6,
+        "7. Управление отоплением": 7,
+        "8. Монтажные элементы": 8,
+        "9. Дополнительные материалы": 9,
+        "10. Ввод ХВС и водоочистка": 10,
+        "11. Скважина / Колодец": 11
+    };
+
     return {
         o: {
             n: data.object_info.projectName || "Новый объект",
@@ -30,7 +44,8 @@ function compactPayload(data) {
             p: data.object_info.power || 0,
             g: data.object_info.region || 'Центр',
             d: data.object_info.date || '',
-            s: data.object_info.showSku ? 1 : 0
+            s: data.object_info.showSku ? 1 : 0,
+            c: data.object_info.eqDiscount || 0
         },
         m: {
             n: data.manager_info.name || '',
@@ -39,21 +54,32 @@ function compactPayload(data) {
             e: data.manager_info.email || ''
         },
         i: {
-            e: (data.items.equipment || []).map(item => ({
-                n: item.name || '',
-                s: item.displaySku || item.sku || '',
-                b: item.brand || '',
-                u: item.unit || '',
-                q: item.q || item.qty || 0,
-                p: item.price || 0,
-                m: item.sum || 0,
-                t: item.sectionTitle || ''
-            })),
+            e: (data.items.equipment || []).map(item => {
+                const isCustom = item.id && String(item.id).startsWith('custom_');
+                if (isCustom) {
+                    return {
+                        id: item.id,
+                        n: item.name || '',
+                        b: item.brand || '',
+                        u: item.unit || '',
+                        p: item.price || 0,
+                        q: item.q || 0,
+                        t: SECTION_MAP[item.sectionTitle] || item.sectionTitle || 9,
+                        c: 1
+                    };
+                } else {
+                    return {
+                        s: item.displaySku || item.sku || item.id || '',
+                        q: item.q || 0,
+                        t: SECTION_MAP[item.sectionTitle] || item.sectionTitle || 9,
+                        o: item.isOpt ? 1 : 0
+                    };
+                }
+            }),
             w: (data.items.works || []).map(item => ({
                 n: item.name || '',
                 q: item.q || item.qty || 0,
-                p: item.price || 0,
-                m: item.sum || 0
+                p: item.price || 0
             }))
         },
         t: {
@@ -626,7 +652,7 @@ const app = {
     updateHeaderCompanyDetails: function () {
         let isPro = this.isPro();
         let cc = (isPro && this.state.customCompany) ? this.state.customCompany : null;
-        
+
         let defName = "Общество с ограниченной ответственностью «ТЕРЕМ»";
         let defWeb = "www.teremopt.ru";
         let defLogo = "img/logo.jpg";
@@ -639,7 +665,7 @@ const app = {
         let elAddr = document.getElementById('hdr_comp_addr');
         let elBank = document.getElementById('hdr_comp_bank');
 
-        const formatBrandingText = function(text, defaultHtml) {
+        const formatBrandingText = function (text, defaultHtml) {
             if (!text) return defaultHtml;
             let lines = text.split('\n');
             if (lines.length > 0 && lines[0].trim() !== '') {
@@ -670,10 +696,10 @@ const app = {
             const dataUrl = e.target.result;
             this.state.customCompany = this.state.customCompany || {};
             this.state.customCompany.logo = dataUrl;
-            
+
             const imgPreview = document.getElementById('profile_logo_preview');
             if (imgPreview) imgPreview.src = dataUrl;
-            
+
             this.updateHeaderCompanyDetails();
             app.alert("✅ Логотип успешно загружен!");
         };
@@ -979,14 +1005,14 @@ const app = {
             this.state.accountType = 'pro';
             this.state.demoUsed = true;
             localStorage.setItem('pro_trial_until', Date.now() + trialDurationMs);
-            
+
             if (this.state.tgUser) {
                 this.state.tgUser.account_type = 'pro';
                 if (!this.state.tgUser.id) {
                     this.state.tgUser.id = uRow.id;
                 }
             }
-            
+
             this.saveState();
             this.syncUI();
             this.closeModal();
@@ -3018,15 +3044,15 @@ const app = {
         const hh = String(now.getHours()).padStart(2, '0');
         const min = String(now.getMinutes()).padStart(2, '0');
         const ss = String(now.getSeconds()).padStart(2, '0');
-        
+
         // Используем 6-значный номер КП (calc_id), дополненный нулями до 8 символов
         const kpPart = String(this.state.calc_id || '000000').padStart(8, '0');
-        
+
         const datePart = `${dd}${mm}`;
         const timePart1 = `${yy}${hh}`;
         const timePart2 = `${min}${ss}`;
         const areaPart = String(Math.round(this.state.area || 0)).padStart(12, '0');
-        
+
         return `${kpPart}-${datePart}-${timePart1}-${timePart2}-${areaPart}`;
     },
     shareInvoice: async function () {
@@ -3101,7 +3127,8 @@ const app = {
             region: regionName,
             date: new Date().toLocaleDateString('ru-RU'),
             showSku: !!this.state.showSku,
-            sequence_id: this.state.calc_id
+            sequence_id: this.state.calc_id,
+            eqDiscount: this.state.eqDiscount || 0
         };
 
         let manager_info = {
@@ -3135,19 +3162,18 @@ const app = {
 
         if (!isProUser) {
             // ================== БАЗОВЫЙ ТАРИФ ==================
-            // По умолчанию генерируем оффлайн-ссылку без обращения к Supabase
             try {
                 const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
 
                 app.copyToClipboard(shareUrl).then(() => {
-                    app.prompt("✅ Ссылка создана и скопирована! Отправьте её клиенту:", shareUrl);
+                    app.prompt("\u2705 \u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0430 \u0438 \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0430! \u041e\u0442\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u0435\u0451 \u043a\u043b\u0438\u0435\u043d\u0442\u0443:", shareUrl);
                 }).catch(err => {
-                    console.error('Ошибка копирования:', err);
-                    app.prompt("✅ Ссылка создана! Скопируйте и отправьте клиенту:", shareUrl);
+                    console.error('\u041e\u0448\u0438\u0431\u043a\u0430 \u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f:', err);
+                    app.prompt("\u2705 \u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0430! \u0421\u043a\u043e\u043f\u0438\u0440\u0443\u0439\u0442\u0435 \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u043a\u043b\u0438\u0435\u043d\u0442\u0443:", shareUrl);
                 });
             } catch (err) {
-                console.error('[shareInvoice] Ошибка генерации оффлайн-ссылки:', err);
-                app.alert("Произошла ошибка при создании ссылки: " + err.message);
+                console.error('[shareInvoice] \u041e\u0448\u0438\u0431\u043a\u0430 \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438 \u0441\u0441\u044b\u043b\u043a\u0438:', err);
+                app.alert("\u041f\u0440\u043e\u0438\u0437\u043e\u0448\u043b\u0430 \u043e\u0448\u0438\u0431\u043a\u0430 \u043f\u0440\u0438 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u0438 \u0441\u0441\u044b\u043b\u043a\u0438: " + err.message);
             } finally {
                 if (btn) {
                     btn.innerHTML = origHtml;
@@ -4317,7 +4343,7 @@ const app = {
                 )
                 .subscribe();
         }
-        
+
         // Инициализация куки-баннера (152-ФЗ)
         this.initCookieConsent();
     },
@@ -6618,14 +6644,14 @@ const app = {
         const subjectEl = document.getElementById('feedback_subject');
         const descEl = document.getElementById('feedback_description');
         const fileInput = document.getElementById('feedback_file_input');
-        
+
         if (subjectEl) subjectEl.value = '';
         if (descEl) descEl.value = '';
         if (fileInput) fileInput.value = '';
-        
+
         const privacyChk = document.getElementById('chk_feedback_privacy');
         if (privacyChk) privacyChk.checked = false;
-        
+
         this.feedbackImageBase64 = null;
         this.clearFeedbackFile();
 
@@ -6654,12 +6680,12 @@ const app = {
 
     selectFeedbackCategory: function (category) {
         this.selectedFeedbackCategory = category;
-        
+
         // Update active classes
         document.querySelectorAll('.feedback-cat-card').forEach(card => {
             card.classList.remove('active');
         });
-        
+
         const activeCard = document.getElementById('feedback_cat_' + category);
         if (activeCard) {
             activeCard.classList.add('active');
@@ -6710,7 +6736,7 @@ const app = {
                 const previewContainer = document.getElementById('feedback_file_preview_container');
                 const fileNameEl = document.getElementById('feedback_file_name');
                 const fileTextEl = document.getElementById('feedback_file_text');
-                
+
                 if (previewContainer) previewContainer.style.display = 'flex';
                 if (fileNameEl) fileNameEl.innerText = file.name;
                 if (fileTextEl) fileTextEl.innerText = "Изображение прикреплено";
@@ -6724,10 +6750,10 @@ const app = {
         this.feedbackImageBase64 = null;
         const fileInput = document.getElementById('feedback_file_input');
         if (fileInput) fileInput.value = '';
-        
+
         const previewContainer = document.getElementById('feedback_file_preview_container');
         const fileTextEl = document.getElementById('feedback_file_text');
-        
+
         if (previewContainer) previewContainer.style.display = 'none';
         if (fileTextEl) fileTextEl.innerText = "Прикрепить изображение (макс. 1МБ)";
     },
@@ -6796,7 +6822,7 @@ const app = {
             const userName = this.state.tgUser?.first_name || this.state.tgUser?.username || 'Гость';
             const userPhone = this.state.tgUser?.phone || 'Не указан';
             const userCity = this.state.tgUser?.city || 'Не указан';
-            
+
             // Gather calculation details
             const projectName = this.state.projectName || 'Новый объект';
             const calcId = this.state.calc_id || 'Нет ID';
@@ -6808,27 +6834,27 @@ const app = {
             const tgBotToken = '8601624733:AAH3Mlz6NQJ3MB1pSE2T17hMzPoocbTAGmg';
             const tgChatId = '594437394';
             const tgMessage = `📩 НОВЫЙ ОТЗЫВ / ОБРАТНАЯ СВЯЗЬ!\n` +
-                              `========================\n` +
-                              `• Категория: ${categoryLabel}\n` +
-                              `• Тема: ${subject}\n` +
-                              `• Описание: ${description}\n\n` +
-                              `👤 ОТПРАВИТЕЛЬ:\n` +
-                              `• Имя: ${userName}\n` +
-                              `• Email: ${userEmail}\n` +
-                              `• Телефон: ${userPhone}\n` +
-                              `• Город (профиль): ${userCity}\n\n` +
-                              `🌐 УСТРОЙСТВО И СЕТЬ:\n` +
-                              `• IP: ${clientIp} (${clientCity})\n` +
-                              `• Браузер/ОС: ${userAgent}\n` +
-                              `• Окно: ${windowSize}, Экран: ${screenSize}\n` +
-                              `• Платформа: ${platform}, Язык: ${language}\n` +
-                              `• Сеть: ${connectionSpeed}\n\n` +
-                              `📊 ДАННЫЕ РАСЧЕТА:\n` +
-                              `• Объект: ${projectName}\n` +
-                              `• ID Расчета: ${calcId}\n` +
-                              `• Сумма: ${totalSum} ₽ (Оборудование: ${eqSum} ₽, Монтаж: ${workSum} ₽)\n` +
-                              `========================\n` +
-                              `${this.feedbackImageBase64 ? '🖼️ [Изображение прикреплено в письме]' : '❌ Изображение не прикреплено'}`;
+                `========================\n` +
+                `• Категория: ${categoryLabel}\n` +
+                `• Тема: ${subject}\n` +
+                `• Описание: ${description}\n\n` +
+                `👤 ОТПРАВИТЕЛЬ:\n` +
+                `• Имя: ${userName}\n` +
+                `• Email: ${userEmail}\n` +
+                `• Телефон: ${userPhone}\n` +
+                `• Город (профиль): ${userCity}\n\n` +
+                `🌐 УСТРОЙСТВО И СЕТЬ:\n` +
+                `• IP: ${clientIp} (${clientCity})\n` +
+                `• Браузер/ОС: ${userAgent}\n` +
+                `• Окно: ${windowSize}, Экран: ${screenSize}\n` +
+                `• Платформа: ${platform}, Язык: ${language}\n` +
+                `• Сеть: ${connectionSpeed}\n\n` +
+                `📊 ДАННЫЕ РАСЧЕТА:\n` +
+                `• Объект: ${projectName}\n` +
+                `• ID Расчета: ${calcId}\n` +
+                `• Сумма: ${totalSum} ₽ (Оборудование: ${eqSum} ₽, Монтаж: ${workSum} ₽)\n` +
+                `========================\n` +
+                `${this.feedbackImageBase64 ? '🖼️ [Изображение прикреплено в письме]' : '❌ Изображение не прикреплено'}`;
 
             const tgUrl = `https://api.telegram.org/bot${tgBotToken}/sendMessage`;
             fetch(tgUrl, {
@@ -6843,26 +6869,26 @@ const app = {
 
             const emailSubject = `[Feedback - ${categoryLabel}] ${subject}`;
             const emailBody = `Поступила новая форма обратной связи:\n\n` +
-                              `Категория: ${categoryLabel}\n` +
-                              `Тема: ${subject}\n` +
-                              `Описание: ${description}\n\n` +
-                              `--- ОТПРАВИТЕЛЬ ---\n` +
-                              `Имя: ${userName}\n` +
-                              `Email: ${userEmail}\n` +
-                              `Телефон: ${userPhone}\n` +
-                              `Город (профиль): ${userCity}\n\n` +
-                              `--- ДИАГНОСТИКА УСТРОЙСТВА ---\n` +
-                              `IP-Адрес: ${clientIp} (${clientCity})\n` +
-                              `User Agent: ${userAgent}\n` +
-                              `Window Size: ${windowSize}, Screen Resolution: ${screenSize}\n` +
-                              `Platform: ${platform}, Language: ${language}\n` +
-                              `Network Speed: ${connectionSpeed}\n\n` +
-                              `--- ДАННЫЕ РАСЧЕТА ---\n` +
-                              `Название объекта: ${projectName}\n` +
-                              `ID Расчета: ${calcId}\n` +
-                              `Итого сметы: ${totalSum} ₽\n\n` +
-                              `--------------------------------\n` +
-                              `Отправлено автоматически с сайта HeatCalc.ru.`;
+                `Категория: ${categoryLabel}\n` +
+                `Тема: ${subject}\n` +
+                `Описание: ${description}\n\n` +
+                `--- ОТПРАВИТЕЛЬ ---\n` +
+                `Имя: ${userName}\n` +
+                `Email: ${userEmail}\n` +
+                `Телефон: ${userPhone}\n` +
+                `Город (профиль): ${userCity}\n\n` +
+                `--- ДИАГНОСТИКА УСТРОЙСТВА ---\n` +
+                `IP-Адрес: ${clientIp} (${clientCity})\n` +
+                `User Agent: ${userAgent}\n` +
+                `Window Size: ${windowSize}, Screen Resolution: ${screenSize}\n` +
+                `Platform: ${platform}, Language: ${language}\n` +
+                `Network Speed: ${connectionSpeed}\n\n` +
+                `--- ДАННЫЕ РАСЧЕТА ---\n` +
+                `Название объекта: ${projectName}\n` +
+                `ID Расчета: ${calcId}\n` +
+                `Итого сметы: ${totalSum} ₽\n\n` +
+                `--------------------------------\n` +
+                `Отправлено автоматически с сайта HeatCalc.ru.`;
 
             const templateParams = {
                 to_email: 'kovdor24@yandex.ru',
