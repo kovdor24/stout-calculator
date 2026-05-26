@@ -905,6 +905,99 @@
             #equipment_tbody td.col-idx {
                 display: none !important;
             }
+
+            /* Works Mobile Grid Layout */
+            #works_container thead {
+                display: none !important;
+            }
+            #works_tbody tr:not(.group-row):not(.subtotal-row) {
+                display: grid !important;
+                grid-template-columns: 1fr auto auto !important;
+                grid-template-rows: auto auto !important;
+                grid-template-areas: 
+                    "name name sum"
+                    "qty price price" !important;
+                gap: 4px 12px !important;
+                background: transparent !important;
+                border: none !important;
+                border-bottom: 1px solid var(--border) !important;
+                border-radius: 0 !important;
+                padding: 12px 0 !important;
+                margin-bottom: 0 !important;
+                box-shadow: none !important;
+            }
+            #works_tbody td {
+                padding: 0 !important;
+                border: none !important;
+                color: var(--text-main) !important;
+                background: transparent !important;
+            }
+            #works_tbody td.col-name {
+                grid-area: name !important;
+                font-weight: 600 !important;
+                font-size: 13px !important;
+                line-height: 1.3 !important;
+                align-self: start !important;
+                text-align: left !important;
+                white-space: normal !important;
+                word-break: break-word !important;
+            }
+            #works_tbody td.col-qty {
+                grid-area: qty !important;
+                display: flex !important;
+                justify-content: flex-start !important;
+                align-items: center !important;
+                align-self: end !important;
+                font-size: 12px !important;
+                font-weight: 500 !important;
+                color: var(--text-sec) !important;
+            }
+            #works_tbody td.col-qty::before {
+                content: "Кол-во: " !important;
+            }
+            #works_tbody td.col-price {
+                grid-area: price !important;
+                display: flex !important;
+                justify-content: flex-end !important;
+                align-items: center !important;
+                align-self: end !important;
+                font-size: 11px !important;
+                color: var(--text-sec) !important;
+                text-align: right !important;
+                white-space: nowrap !important;
+            }
+            #works_tbody td.col-price::before {
+                content: "× " !important;
+                margin-right: 2px !important;
+            }
+            #works_tbody td.col-sum {
+                grid-area: sum !important;
+                display: flex !important;
+                justify-content: flex-end !important;
+                align-items: start !important;
+                font-weight: 700 !important;
+                font-size: 14px !important;
+                text-align: right !important;
+                white-space: nowrap !important;
+            }
+            #works_tbody td.col-idx,
+            #works_tbody td.col-unit {
+                display: none !important;
+            }
+
+            .hide-mobile {
+                display: none !important;
+            }
+            .show-mobile {
+                display: inline !important;
+            }
+            .sum-val {
+                white-space: nowrap !important;
+            }
+        }
+
+        .show-mobile {
+            display: none !important;
         }
 
         @page {
@@ -1711,15 +1804,15 @@
         <!-- Summary aggregation card -->
         <section class="summary-card">
             <div class="sum-item">
-                <span>Итого по оборудованию:</span>
+                <span><span class="hide-mobile">Итого по оборудованию:</span><span class="show-mobile">Итого:</span></span>
                 <span class="sum-val" id="total_eq">0 ₽</span>
             </div>
             <div class="sum-item">
-                <span>Итого по монтажным работам:</span>
+                <span><span class="hide-mobile">Итого по монтажным работам:</span><span class="show-mobile">Монтаж:</span></span>
                 <span class="sum-val" id="total_works">0 ₽</span>
             </div>
             <div class="sum-item grand-total">
-                <span>Общая сумма по смете:</span>
+                <span><span class="hide-mobile">Общая сумма по смете:</span><span class="show-mobile">Итого по смете:</span></span>
                 <span class="sum-val" id="grand_total">0 ₽</span>
             </div>
         </section>
@@ -2212,6 +2305,9 @@
                 let globalIdx = 1;
                 const colspanVal = 8;
                 Object.keys(grouped).forEach(sectionTitle => {
+                    const activeItems = (grouped[sectionTitle] || []).filter(i => !i.isOpt);
+                    if (activeItems.length === 0) return; // Skip empty section entirely!
+
                     // Group section header row
                     const secHeaderTr = document.createElement('tr');
                     secHeaderTr.className = 'group-row';
@@ -2271,6 +2367,9 @@
 
                 let globalIdx = 1;
                 Object.keys(grouped).forEach(groupTitle => {
+                    const activeWorks = (grouped[groupTitle] || []).filter(w => w.name && w.name.trim() !== "" && w.price > 0 && w.sum > 0);
+                    if (activeWorks.length === 0) return; // Skip empty works group entirely!
+
                     // Group header row
                     const secHeaderTr = document.createElement('tr');
                     secHeaderTr.className = 'group-row';
@@ -2278,7 +2377,7 @@
                     tbody.appendChild(secHeaderTr);
 
                     let secSum = 0;
-                    grouped[groupTitle].forEach(w => {
+                    activeWorks.forEach(w => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
                             <td class="col-idx">${globalIdx++}</td>
