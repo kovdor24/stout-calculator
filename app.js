@@ -3019,24 +3019,15 @@ const app = {
         const min = String(now.getMinutes()).padStart(2, '0');
         const ss = String(now.getSeconds()).padStart(2, '0');
         
-        let loginStr = "user";
-        if (tgUser) {
-            loginStr = tgUser.email ? tgUser.email.split('@')[0] : (tgUser.username || tgUser.first_name || "user");
-        }
-        loginStr = loginStr.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || "user";
-        
-        let hash = 5381;
-        for (let i = 0; i < loginStr.length; i++) {
-            hash = ((hash << 5) + hash) + loginStr.charCodeAt(i);
-        }
-        const loginHex = (hash >>> 0).toString(16).padStart(8, '0').substring(0, 8);
+        // Используем 6-значный номер КП (calc_id), дополненный нулями до 8 символов
+        const kpPart = String(this.state.calc_id || '000000').padStart(8, '0');
         
         const datePart = `${dd}${mm}`;
         const timePart1 = `${yy}${hh}`;
         const timePart2 = `${min}${ss}`;
         const areaPart = String(Math.round(this.state.area || 0)).padStart(12, '0');
         
-        return `${loginHex}-${datePart}-${timePart1}-${timePart2}-${areaPart}`;
+        return `${kpPart}-${datePart}-${timePart1}-${timePart2}-${areaPart}`;
     },
     shareInvoice: async function () {
         if (!this.checkAccess('base')) return;
