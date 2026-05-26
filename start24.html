@@ -471,6 +471,121 @@
             </div>
         </section>
 
+        </section>
+
+        <!-- DEMONSTRATION OF RESULT / ДЕМОНСТРАЦИЯ РЕЗУЛЬТАТА -->
+        <section id="demo-result" class="py-16 md:py-24 border-b border-slate-900 relative">
+            <div class="absolute top-1/3 right-1/4 w-[400px] h-[200px] bg-brand-600/5 rounded-full blur-[100px] pointer-events-none"></div>
+            
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                    
+                    <!-- Left: Interactive Gallery/Carousel -->
+                    <div class="lg:col-span-6 flex flex-col gap-4">
+                        <div class="relative w-full aspect-[16/10] bg-slate-950 border border-slate-900 rounded-3xl overflow-hidden group shadow-2xl">
+                            <!-- Main Display Slot (Fallback to stylish dashboard cards if images are missing) -->
+                            <div class="w-full h-full relative flex items-center justify-center">
+                                <img :src="gallery[activeGalleryIndex].src" :alt="gallery[activeGalleryIndex].title" class="w-full h-full object-cover opacity-90 transition-all duration-300">
+                                
+                                <!-- Decorative dark gradient overlay -->
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+                                
+                                <!-- Floating description badge -->
+                                <div class="absolute bottom-6 left-6 right-6 bg-slate-900/90 border border-slate-800 rounded-xl p-4 backdrop-blur-sm">
+                                    <span class="text-[9px] text-brand-400 font-bold uppercase tracking-wider block mb-1">Скриншот интерфейса</span>
+                                    <h4 class="text-xs font-bold text-white">{{ gallery[activeGalleryIndex].title }}</h4>
+                                </div>
+
+                                <!-- Left/Right Navigation Arrows -->
+                                <button @click="prevSlide" class="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-slate-900/80 hover:bg-brand-600 text-white rounded-full flex items-center justify-center border border-slate-850 hover:border-brand-500 transition-all opacity-0 group-hover:opacity-100 focus:outline-none">
+                                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                                </button>
+                                <button @click="nextSlide" class="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-slate-900/80 hover:bg-brand-600 text-white rounded-full flex items-center justify-center border border-slate-850 hover:border-brand-500 transition-all opacity-0 group-hover:opacity-100 focus:outline-none">
+                                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Thumbnails Row -->
+                        <div class="grid grid-cols-3 gap-3">
+                            <button v-for="(item, index) in gallery" :key="index" @click="activeGalleryIndex = index" :class="activeGalleryIndex === index ? 'border-brand-500 bg-brand-500/5' : 'border-slate-900 bg-slate-900/20 hover:border-slate-800'" class="border rounded-2xl p-2 text-left flex flex-col gap-1.5 focus:outline-none transition-all">
+                                <div class="aspect-[16/10] w-full rounded-lg overflow-hidden bg-slate-950 relative">
+                                    <img :src="item.src" :alt="item.title" class="w-full h-full object-cover opacity-60">
+                                </div>
+                                <span class="text-[9px] font-bold text-slate-400 truncate w-full block px-0.5">{{ item.label }}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Context Copy & Live Link CTA -->
+                    <div class="lg:col-span-6 flex flex-col">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 bg-brand-500/10 text-brand-400 rounded-full text-[10px] font-bold uppercase tracking-wider mb-6 w-max border border-brand-500/20">
+                            <i data-lucide="award" class="w-3.5 h-3.5"></i>
+                            Пример готового коммерческого предложения
+                        </div>
+
+                        <h2 class="font-outfit font-black text-2xl sm:text-3xl text-white leading-tight mb-4">
+                            Оцените масштаб. Вот что вы отдаете клиенту через 5 минут.
+                        </h2>
+                        
+                        <p class="text-xs sm:text-sm text-slate-400 font-medium leading-relaxed mb-6">
+                            Никаких примерных цифр. Вы генерируете полноценное коммерческое предложение на 10 страницах, где учтено всё: от коаксиального дымохода и длины труб теплого пола до дюбель-крюков и точной стоимости ваших монтажных работ.
+                        </p>
+
+                        <!-- Highlights List -->
+                        <ul class="space-y-3.5 mb-8">
+                            <li class="flex items-start gap-3 text-xs font-semibold text-slate-200">
+                                <span class="w-5 h-5 bg-brand-500/10 text-brand-400 rounded-md border border-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-brand-500"></i>
+                                </span>
+                                <div>
+                                    <span class="text-slate-100">Объект: Дом 150 м²</span>
+                                    <span class="text-slate-400 block text-[10px] font-medium mt-0.5">Центральный регион, теплопотери 15.0 кВт (Газобетон).</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-3 text-xs font-semibold text-slate-200">
+                                <span class="w-5 h-5 bg-brand-500/10 text-brand-400 rounded-md border border-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-brand-500"></i>
+                                </span>
+                                <div>
+                                    <span class="text-slate-100">6 разделов инженерии</span>
+                                    <span class="text-slate-400 block text-[10px] font-medium mt-0.5">Котельная, радиаторы, теплый пол, водоснабжение, скважина, канализация.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-3 text-xs font-semibold text-slate-200">
+                                <span class="w-5 h-5 bg-brand-500/10 text-brand-400 rounded-md border border-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-brand-500"></i>
+                                </span>
+                                <div>
+                                    <span class="text-slate-100">Спецификация по брендам</span>
+                                    <span class="text-slate-400 block text-[10px] font-medium mt-0.5">Полная детализация оригинального оборудования STOUT, ROMMER, Haier с актуальными РРЦ.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-3 text-xs font-semibold text-slate-200">
+                                <span class="w-5 h-5 bg-brand-500/10 text-brand-400 rounded-md border border-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-brand-500"></i>
+                                </span>
+                                <div>
+                                    <span class="text-slate-100">Монтаж и пусконаладка</span>
+                                    <span class="text-slate-400 block text-[10px] font-medium mt-0.5">Отдельный лист с полной детализацией и прозрачной стоимостью ваших работ.</span>
+                                </div>
+                            </li>
+                        </ul>
+
+                        <!-- CTA Live Estimate Link Button -->
+                        <a href="https://heatcalc.ru/invoice.html?data=c_eJztXVtvVEe2%2Fiul%2FZJG07tdVfvafjrgMQOaAB5sIEcn8%2BBhHIREQoYEDdIIyXYPhHNMYjBwQgjGXM7l4by0jQ2N7W5L8wtW%2FYX5JUdrVdW%2BtPuyu90QIlkTjbdwe%2FurVWt961Krlv%2FmXHXG%2F%2BZ85Yw7sAbP4TE8hUfwnMFzuAcv4H9hAV7CPafszDrjIuBl5wtnXJSda864V3a%2BpOevnXFHBBXulJ1L%2BJr%2FgS1oqkU175SdPzvjjgwrPKhILkOn7HzjjPOb9JPmlz6GDahDk9kHaMGGo1%2F6m4iVqtXqEVatVl36zyk7F%2FGHnkJLLcA2%2FoRTduaccefPl7%2Bclf6fZv%2Fl0pezl69ULl790rlZdi7jr5lzxv%2FN%2FLIn0FKL6j7sMHgNdXiLv0wtwbsygxZs0i%2Ffhhahr6l5aOL3WEnEDLZhRS0e0QtwfjfJ%2FxD%2BYZJPnD3nlJ0%2FOePOidnLc9ecsnPdGXfUHbXolJ2%2FWOEEIa8KWrJ5%2BhYFVmEZNL9hsEEIWtCEOrxW87CFi1OLsAU76q5zs7xvBep72IEt2EZJQ0N9B1skkga8Y9MzR2fOTXcAPj15zPUEFy7nnIvYgJ%2BeOXNupgv4KJK%2BJPDm6SDg70ML3iFqNc%2Fos3vQwk8YQZ%2F5%2BtvLx2a%2FmWOSc9ixkC%2BccKUQHCFLzgtADqUQWt7m6SCQH6ol2IWWuoUfZ6QdddhWC9CAegZ6yMcEgSPIE0fdkAvuSsHjoBjkamwQ4wMClhUGz2AdNtQyvIVtqNMvtwBJVd%2BlMF%2BoRajDOjRgBxrwllbSUvNseobJIME1PYNSpN2XxXBVeaBx0cPguJ6jlan%2FgC3YpW9tMbWAX2CzwqAOu6gK0MDXQFO%2FbAVWmTfmf%2B5Y0McRtK9V1vN7gpba3qqRpiZR9YfB%2FETNEyOpO1BX80gR%2BH1E9nwMVuF5OY%2Fv%2FDGE5hM%2B2VuoGp%2FgVU4ApYj5MAD%2FC7dZ3UXDd9Ud2CFBtujzm%2FgT0LA%2FyWAX1Rua9E9aVfPCveByHski4BM%2B4JYOhgL%2FBFqwC3uWu5jnqltMm1cFf3CHaAHVoc6OX780%2B00C9ViivJyLAlCFrIpQa4J%2BGhzsKjRgD%2FasMFc76ib3XNTMQropuZaez4cUXiIe9FjrqKnJxsKemlc1eAMNaHba6%2FMTLudCFN9r4ftGfvQwUlYKeSdWCgsRfDWINFvqh0NWOmSlQ1Y6ZKUBrF8tqDvQoLg5%2BZBGu47hHYNN2FHLDB7ACrxgIk6j0RlUTREUD6A9z2y3fhjO8LeMajahAVsJOsJKGRBBO4qS9ChQjmVQSBVDq4nhcNDarIbi%2BU00F%2FUDJiRk4cto7si065rB6CWvodWO%2F%2Bz5aYLuoh4kmnD2zKlTk2e7LcDztOLqh8EXcK8D14vPnZRVWQl%2BJPiYHjRQM9bTHAbqRzq5gz40YOnWqIXknhyhP0jRrxRHr52F4dvemmPQB772wB6vDqU5nQRPtJATMZen/yHLXWbzHW7o8D7cJzI%2Be%2F6OjJxZzFrgd%2BniKelvsNX5iUsBvBocagTL%2Fp6QEreIwbZxCzWmGA77YVkjFSxyZgiepCQi6CIKfqeVmf6OiTJqQWMD0lVmzl9yG26N8CmCxEIE3UF4kO4NgLTycENsPWCB74GTQ%2Bj1tXV1L5WbFnjv9HQ2uggHACxiAIj5mjYMkFRl9wiHUncoVrOu%2BcTadhbyD3L2PCCfjh0zx%2BTe8Y8bRMrbTZv%2FHr24hyrYraGK7qNxU4r3rPHXO5J7vKAc17tLV5utDYW0qhtLGze4FUYrJFnQhafV0sdVC5F%2BAALmGRhuBZch5qneiFSGcJOC7N1tUwujcrOLrHGJi0eP9rEbycGeCLJiL2UfnuvxUaZ%2BDDUSl7BW9wERkr8BpqVjLpUWAlewWuz0ha8S6niROE0M5F6aCMD5f" target="_blank" class="w-full sm:w-max inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/10 hover:shadow-brand-500/20 hover:scale-[1.02] transition-all text-xs">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                            Посмотреть живой пример расчета
+                        </a>
+                        <span class="text-[9px] text-slate-500 mt-2 font-medium">
+                            * Открывается в новой вкладке, чтобы клиент мог покрутить реальный счет
+                        </span>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
         <!-- STEPS -->
         <section class="py-16 md:py-24 border-b border-slate-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -840,6 +955,22 @@
 
                 const previewMode = ref('equipment');
 
+                // Gallery/Carousel State for Results Demo
+                const activeGalleryIndex = ref(0);
+                const gallery = ref([
+                    { src: 'interface_1.jpg', label: 'Параметры и котельная', title: 'Параметры объекта и подбор оборудования для котельной' },
+                    { src: 'interface_2.jpg', label: 'Монтажные работы', title: 'Детализация и настройка стоимости монтажных услуг' },
+                    { src: 'pdf_cover.jpg', label: 'Готовое КП PDF', title: 'Брендированное коммерческое предложение с логотипом в формате PDF' }
+                ]);
+
+                const prevSlide = () => {
+                    activeGalleryIndex.value = activeGalleryIndex.value === 0 ? gallery.value.length - 1 : activeGalleryIndex.value - 1;
+                };
+
+                const nextSlide = () => {
+                    activeGalleryIndex.value = activeGalleryIndex.value === gallery.value.length - 1 ? 0 : activeGalleryIndex.value + 1;
+                };
+
                 return {
                     form,
                     formStatus,
@@ -851,7 +982,11 @@
                     tabs,
                     activeTabData,
                     faq,
-                    previewMode
+                    previewMode,
+                    activeGalleryIndex,
+                    gallery,
+                    prevSlide,
+                    nextSlide
                 };
             }
         }).mount('#app');
