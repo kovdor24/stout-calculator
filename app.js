@@ -4824,6 +4824,13 @@ const app = {
         }
         setTimeout(() => {
             this.state.waterInput = chk;
+            if (!chk) {
+                this.state.outdoorFaucet = 0;
+                this.state.bigBlueFilter = false;
+                this.state.heatingFeed = false;
+            }
+            this.saveState();
+            this.syncUI();
             this.render();
         }, 50);
     },
