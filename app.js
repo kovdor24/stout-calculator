@@ -4134,24 +4134,7 @@ const app = {
                 }
             }
 
-            // 3. Локальный резерв: если база недоступна или запись не найдена — НЕ используем Telegram ID,
-            //    так как он числовой и нарушает foreign key constraint shared_invoices.user_id (ожидается UUID из public.users)
-            if (!dbUserId && this.state.tgUser && this.state.tgUser.id) {
-                const rawId = this.state.tgUser.id;
-                // Используем только UUID (строка с тире), Telegram-числовые ID пропускаем
-                if (typeof rawId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId)) {
-                    const currentAuthUser = (user && user.id) ? user.id : (this.state.tgUser.authUserId || null);
-                    if (rawId !== currentAuthUser) {
-                        dbUserId = rawId;
-                    } else {
-                        console.warn('[shareInvoice] tgUser.id равен Auth ID, пропускаем для user_id (ожидается public.users.id):', rawId);
-                    }
-                } else {
-                    console.warn('[shareInvoice] tgUser.id не является UUID, пропускаем для user_id:', rawId);
-                }
-            }
-
-            // 4. Если актуальный ID найден в базе, сохраняем его в стейт для синхронизации
+            // Если актуальный ID найден в базе, сохраняем его в стейт для синхронизации
             if (dbUserId) {
                 this.state.tgUser = this.state.tgUser || {};
                 this.state.tgUser.id = dbUserId;
@@ -4677,20 +4660,7 @@ const app = {
 
                 // Получаем внутренний dbUserId из таблицы public.users (поскольку user_id - внешний ключ на public.users.id)
                 let dbUserId = null;
-                if (tgUser && tgUser.id) {
-                    const rawId = tgUser.id;
-                    // Используем только UUID — Telegram-числовой ID нарушает foreign key constraint
-                    if (typeof rawId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId)) {
-                        if (rawId !== authUserId) {
-                            dbUserId = rawId;
-                        } else {
-                            console.warn('[sendEmail] tgUser.id равен Auth ID, пропускаем для user_id (ожидается public.users.id):', rawId);
-                        }
-                    } else {
-                        console.warn('[sendEmail] tgUser.id не является UUID, пропускаем для user_id:', rawId);
-                    }
-                }
-                if (!dbUserId && authUserId) {
+                if (authUserId) {
                     try {
                         const { data: uData } = await withTimeout(
                             supabaseClient
@@ -4722,6 +4692,13 @@ const app = {
                             console.warn('[sendEmail] Ошибка поиска по email:', e);
                         }
                     }
+                }
+
+                // Если актуальный ID найден в базе, сохраняем его в стейт для синхронизации
+                if (dbUserId) {
+                    this.state.tgUser = this.state.tgUser || {};
+                    this.state.tgUser.id = dbUserId;
+                    this.saveState();
                 }
 
                 // Проверяем: если shareId не является валидным UUID — сбрасываем чтобы Supabase сам выдал новый
