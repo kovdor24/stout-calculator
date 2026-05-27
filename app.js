@@ -141,7 +141,7 @@ function getFriendlyErrorMessage(err, defaultMsg = 'Неизвестная ош�
         (err.name && err.name.includes('TypeError')) ||
         !navigator.onLine;
     if (isNetwork) {
-        return 'Не удалось связаться с сервером Supabase. Пожалуйста, проверьте интернет-соединение, VPN, CORS-настройки в панели Supabase, или отключите блокировщики рекламы/расширения приватности (AdBlock, uBlock и др.) в вашем браузере.';
+        return 'Нет связи с сервером. Попробуйте:\n1. Войти через мобильный интернет (не Wi-Fi)\n2. Отключить AdBlock / uBlock в браузере\n3. Включить VPN\n4. Проверить интернет-соединение';
     }
 
     if (msg.includes('invalid login credentials') || msg.includes('invalid email or password')) {
