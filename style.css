@@ -4967,3 +4967,24 @@ body.dark-mode .cookie-banner {
         text-align: center;
     }
 }
+
+/* === СТИЛИ ДЛЯ УВЕДОМЛЕНИЙ И ЧАТА === */
+.notification-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.notification-card:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+body.dark-mode .notification-card {
+    background: #1F2937 !important;
+    border-color: #374151 !important;
+}
+
+body.dark-mode .notification-card:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+}

@@ -1618,6 +1618,207 @@ const app = {
     },
     closeProfileModal: function () { document.getElementById('profile_modal_overlay').style.display = 'none'; },
 
+    checkConnectionStatus: async function () {
+        const dot = document.getElementById('vpn_status_dot');
+        const btn = document.getElementById('btn_notifications');
+        if (!dot) return;
+        
+        try {
+            // Сверхлегкий пинг Supabase
+            const { data, error } = await Promise.race([
+                supabaseClient.from('users').select('id').limit(1),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2500))
+            ]);
+            
+            if (error) throw error;
+            
+            // Если все успешно — зеленая точка (соединение работает)
+            dot.style.backgroundColor = '#10B981';
+            if (btn) btn.setAttribute('title', 'Соединение с базой активно (VPN работает)');
+        } catch (e) {
+            // В случае ошибки или тайм-аута — красная точка (нужен VPN)
+            dot.style.backgroundColor = '#EF4444';
+            if (btn) btn.setAttribute('title', 'Нет соединения с базой (включите VPN)');
+        }
+    },
+
+    fetchNotifications: async function () {
+        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        if (!tgUser) return;
+
+        try {
+            // Получаем пользователя из БД
+            let uRow = null;
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                let { data } = await supabaseClient.from('users').select('id, email').eq('auth_user_id', session.user.id).maybeSingle();
+                uRow = data;
+            } else if (tgUser.authUserId) {
+                let { data } = await supabaseClient.from('users').select('id, email').eq('auth_user_id', tgUser.authUserId).maybeSingle();
+                uRow = data;
+            } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                uRow = { id: '0279a53c-452b-474f-8626-08be2c2b32da', email: 'dima24ba@gmail.com' };
+            }
+
+            if (!uRow) return;
+
+            // Запрашиваем сметы
+            let query = supabaseClient.from('estimates').select('id, project_name, total_sum, created_at, calc_data');
+            const isAdmin = uRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(uRow.email.toLowerCase());
+            if (!isAdmin) {
+                query = query.eq('user_id', uRow.id);
+            }
+            const { data: estimates, error: estError } = await query;
+            if (estError) throw estError;
+
+            if (!estimates || estimates.length === 0) return;
+
+            // Ищем привязанные shared_invoice_id
+            const sharedMap = {};
+            const sharedIds = [];
+            estimates.forEach(e => {
+                const sid = e.calc_data?.shared_invoice_id;
+                if (sid) {
+                    sharedIds.push(sid);
+                    sharedMap[sid] = e;
+                }
+            });
+
+            if (sharedIds.length === 0) return;
+
+            // Запрашиваем статусы из shared_invoices
+            const { data: sharedList, error: sharedError } = await supabaseClient
+                .from('shared_invoices')
+                .select('id, object_info, created_at')
+                .in('id', sharedIds);
+
+            if (sharedError) throw sharedError;
+
+            // Обрабатываем уведомления
+            const notifications = [];
+            const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
+
+            if (sharedList) {
+                sharedList.forEach(item => {
+                    const objInfo = item.object_info || {};
+                    const status = objInfo.status || 'sent';
+                    if (status === 'confirmed' || status === 'needs_revision') {
+                        const est = sharedMap[item.id];
+                        if (est) {
+                            notifications.push({
+                                id: item.id,
+                                estimateId: est.id,
+                                projectName: est.project_name,
+                                totalSum: est.total_sum,
+                                status: status,
+                                comment: objInfo.client_comment || '',
+                                time: objInfo.status_updated_at || item.created_at,
+                                isRead: readIds.includes(item.id)
+                            });
+                        }
+                    }
+                });
+            }
+
+            // Сортируем уведомления по дате (новые сверху)
+            notifications.sort((a, b) => new Date(b.time) - new Date(a.time));
+            this._notifications = notifications;
+
+            // Обновляем бейдж непрочитанных
+            const unreadCount = notifications.filter(n => !n.isRead).length;
+            const badge = document.getElementById('notification_badge');
+            if (badge) {
+                if (unreadCount > 0) {
+                    badge.innerText = unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        } catch (e) {
+            console.error("Error fetching notifications:", e);
+        }
+    },
+
+    openNotificationsModal: async function () {
+        document.getElementById('notifications_modal_overlay').style.display = 'flex';
+        const listEl = document.getElementById('notifications_list');
+        if (!listEl) return;
+
+        listEl.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 40px; font-size: 13px;">⌛ Загрузка сообщений...</div>';
+
+        // Обновляем уведомления при открытии
+        await this.fetchNotifications();
+
+        const notifications = this._notifications || [];
+        if (notifications.length === 0) {
+            listEl.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 40px; font-size: 13px;">У вас пока нет уведомлений от клиентов.</div>';
+            return;
+        }
+
+        let h = '';
+        notifications.forEach(n => {
+            const dateStr = new Date(n.time).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+            const isUnread = !n.isRead;
+            
+            // Стили сообщения
+            const bg = n.status === 'confirmed' ? 'rgba(16, 185, 129, 0.04)' : 'rgba(239, 68, 68, 0.04)';
+            const borderCol = n.status === 'confirmed' ? '#10B981' : '#EF4444';
+            const statusLabel = n.status === 'confirmed' ? 'ОДОБРЕНА ✓' : 'НА ДОРАБОТКЕ ✍';
+            const labelCol = n.status === 'confirmed' ? '#065F46' : '#991B1B';
+            const unreadDot = isUnread ? '<span style="width: 7px; height: 7px; background: #3B82F6; border-radius: 50%; display: inline-block; margin-left: 5px;" title="Новое сообщение"></span>' : '';
+
+            h += `
+                <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: 0.2s; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(59, 130, 246, 0.06);' : 'opacity: 0.85;'}" onclick="app.handleNotificationClick('${n.id}', '${n.estimateId}')" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.05)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 800; color: ${labelCol}; font-size: 10px; letter-spacing: 0.03em;">${statusLabel}${unreadDot}</span>
+                        <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                    </div>
+                    <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">Смета «${n.projectName}»</div>
+                    ${n.status === 'confirmed' 
+                        ? `<div style="font-size: 11px; color: var(--text-sec);">Заказчик согласовал предложение на сумму <b>${n.totalSum.toLocaleString()} ₽</b>.</div>`
+                        : `<div style="font-size: 11px; color: var(--text-sec); font-style: italic; background: rgba(239,68,68,0.02); border-radius: 6px; padding: 6px; border: 1px dashed rgba(239,68,68,0.15); margin-top: 2px; word-break: break-word;"><b>Замечание:</b> "${n.comment}"</div>`
+                    }
+                </div>
+            `;
+        });
+
+        listEl.innerHTML = h;
+    },
+
+    handleNotificationClick: function (notificationId, estimateId) {
+        // Отмечаем как прочитанное
+        const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
+        if (!readIds.includes(notificationId)) {
+            readIds.push(notificationId);
+            localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
+        }
+
+        // Обновляем бейдж и закрываем модал
+        this.fetchNotifications();
+        this.closeNotificationsModal();
+
+        // Загружаем смету
+        app.loadSingleEstimate(estimateId);
+    },
+
+    markAllNotificationsRead: function () {
+        const notifications = this._notifications || [];
+        const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
+        notifications.forEach(n => {
+            if (!readIds.includes(n.id)) {
+                readIds.push(n.id);
+            }
+        });
+        localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
+        this.fetchNotifications();
+        this.openNotificationsModal(); // перерисовываем
+    },
+
+    closeNotificationsModal: function () {
+        document.getElementById('notifications_modal_overlay').style.display = 'none';
+    },
+
     showAdminModal: function () {
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         let adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
@@ -4281,6 +4482,14 @@ const app = {
         }
         // ===================================================
         this.updateHeaderCompanyDetails(); this.syncUI(); this.render();
+
+        // Запуск проверки соединения и опроса уведомлений
+        this.checkConnectionStatus();
+        this.fetchNotifications();
+        setInterval(() => {
+            this.checkConnectionStatus();
+            this.fetchNotifications();
+        }, 30000);
 
         // Initialize mobile UI state and listeners
         this.syncMobileUI();
