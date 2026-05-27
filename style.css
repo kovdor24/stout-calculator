@@ -4020,7 +4020,7 @@ body.dark-mode .mobile-sidebar .footer-btns {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .calculation-date {
         display: none !important;
     }
