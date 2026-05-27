@@ -3879,24 +3879,17 @@ const app = {
         const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
         return `${baseOrigin}/invoice.html?data=${encoded}`;
     },
-    generateCustomInvoiceId: function (tgUser) {
-        const now = new Date();
-        const dd = String(now.getDate()).padStart(2, '0');
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const yy = String(now.getFullYear()).substring(2, 4);
-        const hh = String(now.getHours()).padStart(2, '0');
-        const min = String(now.getMinutes()).padStart(2, '0');
-        const ss = String(now.getSeconds()).padStart(2, '0');
+    generateCustomInvoiceId: function () {
+        // Генерируем стандартный UUID v4, совместимый с типом UUID в Supabase
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    },
 
-        // Используем 6-значный номер КП (calc_id), дополненный нулями до 8 символов
-        const kpPart = String(this.state.calc_id || '000000').padStart(8, '0');
-
-        const datePart = `${dd}${mm}`;
-        const timePart1 = `${yy}${hh}`;
-        const timePart2 = `${min}${ss}`;
-        const areaPart = String(Math.round(this.state.area || 0)).padStart(12, '0');
-
-        return `${kpPart}-${datePart}-${timePart1}-${timePart2}-${areaPart}`;
+    isValidUUID: function (str) {
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
     },
     shareInvoice: async function () {
         if (!this.checkAccess('base')) return;
@@ -4154,8 +4147,10 @@ const app = {
                 this.saveState();
             }
 
-            if (!this.state.shared_invoice_id) {
-                this.state.shared_invoice_id = this.generateCustomInvoiceId(tgUser);
+            // Проверяем: если сохранённый ID не является валидным UUID — сбрасываем его
+            if (this.state.shared_invoice_id && !this.isValidUUID(this.state.shared_invoice_id)) {
+                console.warn('[shareInvoice] Сохранённый shared_invoice_id не является UUID, сбрасываем:', this.state.shared_invoice_id);
+                this.state.shared_invoice_id = null;
                 this.saveState();
             }
 
@@ -4167,6 +4162,7 @@ const app = {
                 user_id: dbUserId || null
             };
 
+            // Передаём id только если он уже сохранён и является валидным UUID (upsert для обновления)
             if (this.state.shared_invoice_id) {
                 insertPayload.id = this.state.shared_invoice_id;
             }
@@ -4707,9 +4703,11 @@ const app = {
                     }
                 }
 
-                if (!shareId) {
-                    shareId = this.generateCustomInvoiceId(tgUser);
-                    this.state.shared_invoice_id = shareId;
+                // Проверяем: если shareId не является валидным UUID — сбрасываем чтобы Supabase сам выдал новый
+                if (shareId && !this.isValidUUID(shareId)) {
+                    console.warn('[sendEmail] shareId не является UUID, сбрасываем:', shareId);
+                    shareId = null;
+                    this.state.shared_invoice_id = null;
                     this.saveState();
                 }
 
