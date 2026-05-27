@@ -7357,10 +7357,11 @@ const app = {
         // === ОБНОВЛЕНИЕ СУММ В ЛИПКОЙ ШАПКЕ (С АНИМАЦИЕЙ) ===
         let headerTotals = document.getElementById('header_totals');
         if (headerTotals) {
-            // Проверяем тариф (может быть pro в accountType или внутри tgUser или активный триал)
+            // Проверяем тариф и авторизацию
             let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
             let isTrialActive = trialUntil > Date.now();
-            let isPro = (this.state.accountType === 'pro' || isTrialActive || (this.state.tgUser && ['pro', 'admin'].includes(this.state.tgUser.account_type)));
+            let isAuthorized = !!(this.state.tgUser && this.state.tgUser.authUserId);
+            let isPro = isAuthorized && (this.state.accountType === 'pro' || isTrialActive || (this.state.tgUser && ['pro', 'admin'].includes(this.state.tgUser.account_type)));
 
             // Строим HTML каркас только 1 раз (или при смене тарифа), чтобы не сбрасывать анимацию
             if (!headerTotals.innerHTML.includes('anim_eq_sum') || headerTotals.dataset.isPro !== String(isPro)) {
@@ -7409,9 +7410,11 @@ const app = {
                 mobileTotals.dataset.lastEq = newEq;
             }
 
-            // Проверяем тариф
+            // Проверяем тариф и авторизацию
             let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
-            let isPro = (this.state.accountType === 'pro' || trialUntil > Date.now() || (this.state.tgUser && ['pro', 'admin'].includes(this.state.tgUser.account_type)));
+            let isTrialActive = trialUntil > Date.now();
+            let isAuthorized = !!(this.state.tgUser && this.state.tgUser.authUserId);
+            let isPro = isAuthorized && (this.state.accountType === 'pro' || isTrialActive || (this.state.tgUser && ['pro', 'admin'].includes(this.state.tgUser.account_type)));
 
             if (isPro && mWorkEl) {
                 let oldWorks = parseFloat(mobileTotals.dataset.lastWorks) || 0;
