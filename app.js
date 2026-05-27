@@ -1651,13 +1651,13 @@ const app = {
             let uRow = null;
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
-                let { data } = await supabaseClient.from('users').select('id, email').eq('auth_user_id', session.user.id).maybeSingle();
+                let { data } = await supabaseClient.from('users').select('id, email, account_type, demo_ends_at').eq('auth_user_id', session.user.id).maybeSingle();
                 uRow = data;
             } else if (tgUser.authUserId) {
-                let { data } = await supabaseClient.from('users').select('id, email').eq('auth_user_id', tgUser.authUserId).maybeSingle();
+                let { data } = await supabaseClient.from('users').select('id, email, account_type, demo_ends_at').eq('auth_user_id', tgUser.authUserId).maybeSingle();
                 uRow = data;
             } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                uRow = { id: '0279a53c-452b-474f-8626-08be2c2b32da', email: 'dima24ba@gmail.com' };
+                uRow = { id: '0279a53c-452b-474f-8626-08be2c2b32da', email: 'dima24ba@gmail.com', account_type: 'pro', demo_ends_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 4).toISOString() }; // Mock 4 days remaining for dev
             }
 
             if (!uRow) return;
@@ -1671,53 +1671,131 @@ const app = {
             const { data: estimates, error: estError } = await query;
             if (estError) throw estError;
 
-            if (!estimates || estimates.length === 0) return;
-
-            // Ищем привязанные shared_invoice_id
-            const sharedMap = {};
-            const sharedIds = [];
-            estimates.forEach(e => {
-                const sid = e.calc_data?.shared_invoice_id;
-                if (sid) {
-                    sharedIds.push(sid);
-                    sharedMap[sid] = e;
-                }
-            });
-
-            if (sharedIds.length === 0) return;
-
-            // Запрашиваем статусы из shared_invoices
-            const { data: sharedList, error: sharedError } = await supabaseClient
-                .from('shared_invoices')
-                .select('id, object_info, created_at')
-                .in('id', sharedIds);
-
-            if (sharedError) throw sharedError;
-
             // Обрабатываем уведомления
             const notifications = [];
             const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
 
-            if (sharedList) {
-                sharedList.forEach(item => {
-                    const objInfo = item.object_info || {};
-                    const status = objInfo.status || 'sent';
-                    if (status === 'confirmed' || status === 'needs_revision') {
-                        const est = sharedMap[item.id];
-                        if (est) {
-                            notifications.push({
-                                id: item.id,
-                                estimateId: est.id,
-                                projectName: est.project_name,
-                                totalSum: est.total_sum,
-                                status: status,
-                                comment: objInfo.client_comment || '',
-                                time: objInfo.status_updated_at || item.created_at,
-                                isRead: readIds.includes(item.id)
-                            });
-                        }
+            // Ищем привязанные shared_invoice_id если есть сметы
+            if (estimates && estimates.length > 0) {
+                const sharedMap = {};
+                const sharedIds = [];
+                estimates.forEach(e => {
+                    const sid = e.calc_data?.shared_invoice_id;
+                    if (sid) {
+                        sharedIds.push(sid);
+                        sharedMap[sid] = e;
                     }
                 });
+
+                if (sharedIds.length > 0) {
+                    // Запрашиваем статусы из shared_invoices
+                    const { data: sharedList } = await supabaseClient
+                        .from('shared_invoices')
+                        .select('id, object_info, created_at')
+                        .in('id', sharedIds);
+
+                    if (sharedList) {
+                        sharedList.forEach(item => {
+                            const objInfo = item.object_info || {};
+                            const status = objInfo.status || 'sent';
+                            if (status === 'confirmed' || status === 'needs_revision') {
+                                const est = sharedMap[item.id];
+                                if (est) {
+                                    notifications.push({
+                                        id: item.id,
+                                        estimateId: est.id,
+                                        projectName: est.project_name,
+                                        totalSum: est.total_sum,
+                                        status: status,
+                                        comment: objInfo.client_comment || '',
+                                        time: objInfo.status_updated_at || item.created_at,
+                                        isRead: readIds.includes(item.id)
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+
+            // 1. ДИНАМИЧЕСКИЕ УВЕДОМЛЕНИЯ О ТАРИФЕ PRO
+            if (uRow.account_type === 'pro' && uRow.demo_ends_at) {
+                const endsAt = new Date(uRow.demo_ends_at);
+                const now = new Date();
+                const diffTime = endsAt - now;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (diffTime > 0) {
+                    if (diffDays <= 1) {
+                        // Осталось менее 24 часов
+                        notifications.push({
+                            id: 'tariff_warning_24h',
+                            type: 'tariff_alert',
+                            projectName: '🚨 Срочно: Тариф PRO истекает!',
+                            status: 'critical',
+                            comment: 'Срок действия вашего PRO тарифа истекает менее чем через 24 часа! Продлите его сейчас, чтобы сохранить доступ ко всем профессиональным возможностям.',
+                            time: now.toISOString(),
+                            isRead: false
+                        });
+                    } else if (diffDays <= 5) {
+                        // Осталось менее 5 дней
+                        notifications.push({
+                            id: 'tariff_warning_5d',
+                            type: 'tariff_alert',
+                            projectName: '⚠️ Предупреждение: Тариф PRO заканчивается',
+                            status: 'warning',
+                            comment: `Срок действия вашего PRO тарифа истекает через ${diffDays} дн. Рекомендуем продлить его заранее, чтобы работа не прерывалась.`,
+                            time: now.toISOString(),
+                            isRead: false
+                        });
+                    }
+                    
+                    // Общая информационная плашка (всегда "прочитана", просто висит как статус)
+                    notifications.push({
+                        id: 'tariff_active_info',
+                        type: 'tariff_info',
+                        projectName: 'Ваш тариф PRO активен',
+                        status: 'info',
+                        comment: `Профессиональный доступ предоставлен до ${endsAt.toLocaleDateString('ru-RU')}. Спасибо за доверие!`,
+                        time: new Date(endsAt.getTime() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+                        isRead: true
+                    });
+                }
+            }
+
+            // 2. ЗАПРОС ХОСТИНГА СООБЩЕНИЙ (Служба «Админ ⇄ Монтажник»)
+            try {
+                const { data: dbMessages } = await supabaseClient
+                    .from('messages')
+                    .select('*')
+                    .or(`recipient_id.eq.${uRow.id},recipient_id.is.null,sender_id.eq.${uRow.id}`)
+                    .order('created_at', { ascending: false });
+
+                if (dbMessages && dbMessages.length > 0) {
+                    const parentMessages = dbMessages.filter(m => m.type !== 'reply');
+                    const replies = dbMessages.filter(m => m.type === 'reply');
+
+                    parentMessages.forEach(msg => {
+                        // Выводим только входящие сообщения для монтажника (отправленные админом ему или всем)
+                        if (msg.sender_id !== uRow.id) {
+                            const msgReplies = replies.filter(r => r.parent_id === msg.id);
+                            
+                            notifications.push({
+                                id: msg.id,
+                                type: 'admin_message',
+                                projectName: msg.type === 'broadcast' ? '📢 Объявление для всех' : '✉️ Личное сообщение от администратора',
+                                status: 'message',
+                                comment: msg.text,
+                                time: msg.created_at,
+                                isRead: readIds.includes(msg.id),
+                                replies: msgReplies,
+                                senderId: msg.sender_id
+                            });
+                        }
+                    });
+                }
+            } catch (msgErr) {
+                console.warn("Could not load messages from Supabase (messages table might not exist yet):", msgErr);
             }
 
             // Сортируем уведомления по дате (новые сверху)
@@ -1874,27 +1952,91 @@ const app = {
         notifications.forEach(n => {
             const dateStr = new Date(n.time).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
             const isUnread = !n.isRead;
-            
-            // Стили сообщения
-            const bg = n.status === 'confirmed' ? 'rgba(16, 185, 129, 0.04)' : 'rgba(239, 68, 68, 0.04)';
-            const borderCol = n.status === 'confirmed' ? '#10B981' : '#EF4444';
-            const statusLabel = n.status === 'confirmed' ? 'ОДОБРЕНА ✓' : 'НА ДОРАБОТКЕ ✍';
-            const labelCol = n.status === 'confirmed' ? '#065F46' : '#991B1B';
             const unreadDot = isUnread ? '<span style="width: 7px; height: 7px; background: #3B82F6; border-radius: 50%; display: inline-block; margin-left: 5px;" title="Новое сообщение"></span>' : '';
 
-            h += `
-                <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: 0.2s; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(59, 130, 246, 0.06);' : 'opacity: 0.85;'}" onclick="app.handleNotificationClick('${n.id}', '${n.estimateId}')" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.05)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-weight: 800; color: ${labelCol}; font-size: 10px; letter-spacing: 0.03em;">${statusLabel}${unreadDot}</span>
-                        <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+            if (n.type === 'tariff_alert' || n.type === 'tariff_info') {
+                const isCritical = n.status === 'critical';
+                const isWarning = n.status === 'warning';
+                
+                const bg = isCritical ? 'rgba(239, 68, 68, 0.04)' : (isWarning ? 'rgba(245, 158, 11, 0.04)' : 'rgba(59, 130, 246, 0.04)');
+                const borderCol = isCritical ? '#EF4444' : (isWarning ? '#F59E0B' : '#3B82F6');
+                const labelCol = isCritical ? '#991B1B' : (isWarning ? '#92400E' : '#1E40AF');
+                
+                h += `
+                    <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(59, 130, 246, 0.06);' : 'opacity: 0.85;'}" onclick="app.handleNotificationClick('${n.id}', null)">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 800; color: ${labelCol}; font-size: 10px; letter-spacing: 0.03em;">ТАРИФ PRO${unreadDot}</span>
+                            <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                        </div>
+                        <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">${n.projectName}</div>
+                        <div style="font-size: 11px; color: var(--text-sec); line-height: 1.4;">${n.comment}</div>
+                            ? `<button class="auth-btn-base btn-email-submit" style="margin: 6px 0 0 0; width: 100%; height: 30px; font-size: 11px; font-weight: bold; background: #D97706; border-color: #D97706;" onclick="event.stopPropagation(); document.getElementById('notifications_modal_overlay').style.display='none'; document.querySelector('.header-main-btn-pro')?.click();">Продлить доступ</button>`
+                            : ''
+                        }
                     </div>
-                    <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">Смета «${n.projectName}»</div>
-                    ${n.status === 'confirmed' 
-                        ? `<div style="font-size: 11px; color: var(--text-sec);">Заказчик согласовал предложение на сумму <b>${n.totalSum.toLocaleString()} ₽</b>.</div>`
-                        : `<div style="font-size: 11px; color: var(--text-sec); font-style: italic; background: rgba(239,68,68,0.02); border-radius: 6px; padding: 6px; border: 1px dashed rgba(239,68,68,0.15); margin-top: 2px; word-break: break-word;"><b>Замечание:</b> "${n.comment}"</div>`
-                    }
-                </div>
-            `;
+                `;
+            } else if (n.type === 'admin_message') {
+                const bg = 'rgba(59, 130, 246, 0.03)';
+                const borderCol = '#3B82F6';
+                const labelCol = '#1E40AF';
+                
+                // Рендерим вложенные ответы
+                let repliesHtml = '';
+                if (n.replies && n.replies.length > 0) {
+                    repliesHtml += `<div style="margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--border); display: flex; flex-direction: column; gap: 6px;">`;
+                    n.replies.forEach(r => {
+                        const replyDate = new Date(r.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                        repliesHtml += `
+                            <div style="font-size: 11px; line-height: 1.3;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                    <span style="font-weight: 700; color: var(--text-main);">Вы (Ответ):</span>
+                                    <span style="font-size: 9px; color: var(--text-sec);">${replyDate}</span>
+                                </div>
+                                <div style="color: var(--text-sec); font-style: italic; background: var(--surface-light); padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border); word-break: break-word;">${r.text}</div>
+                            </div>
+                        `;
+                    });
+                    repliesHtml += `</div>`;
+                }
+
+                h += `
+                    <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(59, 130, 246, 0.06);' : 'opacity: 0.85;'}" onclick="app.handleNotificationClick('${n.id}', null)">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 800; color: ${labelCol}; font-size: 10px; letter-spacing: 0.03em;">${n.projectName}${unreadDot}</span>
+                            <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-main); font-weight: 500; line-height: 1.4; white-space: pre-wrap; margin-top: 2px;">${n.comment}</div>
+                        
+                        ${repliesHtml}
+
+                        <!-- Форма ответа монтажника -->
+                        <div style="margin-top: 10px; display: flex; gap: 6px;" onclick="event.stopPropagation();">
+                            <input type="text" id="reply_input_${n.id}" placeholder="Ваш ответ админу..." style="flex: 1; height: 28px; font-size: 11px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); outline: none;">
+                            <button class="auth-btn-base btn-email-submit" style="margin: 0; width: auto; padding: 0 10px; height: 28px; font-size: 11px;" onclick="app.sendUserReply('${n.id}', document.getElementById('reply_input_${n.id}').value)">Ответить</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Стандартное уведомление по смете
+                const bg = n.status === 'confirmed' ? 'rgba(16, 185, 129, 0.04)' : 'rgba(239, 68, 68, 0.04)';
+                const borderCol = n.status === 'confirmed' ? '#10B981' : '#EF4444';
+                const statusLabel = n.status === 'confirmed' ? 'ОДОБРЕНА ✓' : 'НА ДОРАБОТКЕ ✍';
+                const labelCol = n.status === 'confirmed' ? '#065F46' : '#991B1B';
+                
+                h += `
+                    <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: 0.2s; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(59, 130, 246, 0.06);' : 'opacity: 0.85;'}" onclick="app.handleNotificationClick('${n.id}', '${n.estimateId}')" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.05)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 800; color: ${labelCol}; font-size: 10px; letter-spacing: 0.03em;">${statusLabel}${unreadDot}</span>
+                            <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                        </div>
+                        <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">Смета «${n.projectName}»</div>
+                        ${n.status === 'confirmed' 
+                            ? `<div style="font-size: 11px; color: var(--text-sec);">Заказчик согласовал предложение на сумму <b>${n.totalSum.toLocaleString()} ₽</b>.</div>`
+                            : `<div style="font-size: 11px; color: var(--text-sec); font-style: italic; background: rgba(239,68,68,0.02); border-radius: 6px; padding: 6px; border: 1px dashed rgba(239,68,68,0.15); margin-top: 2px; word-break: break-word;"><b>Замечание:</b> "${n.comment}"</div>`
+                        }
+                    </div>
+                `;
+            }
         });
 
         listEl.innerHTML = h;
@@ -1908,12 +2050,17 @@ const app = {
             localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
         }
 
-        // Обновляем бейдж и закрываем модал
+        // Обновляем бейдж
         this.fetchNotifications();
-        this.closeNotificationsModal();
 
-        // Загружаем смету
-        app.loadSingleEstimate(estimateId);
+        if (estimateId && estimateId !== 'undefined' && estimateId !== 'null') {
+            this.closeNotificationsModal();
+            // Загружаем смету
+            app.loadSingleEstimate(estimateId);
+        } else {
+            // Если это сервисное/админское сообщение, не закрываем модал, просто перерисовываем
+            this.openNotificationsModal();
+        }
     },
 
     markAllNotificationsRead: function () {
@@ -2004,6 +2151,24 @@ const app = {
                 }
             } catch (e) { console.error('Admin status fetch error:', e); }
 
+            // 6. Fetch Lightweight list of all users for the message composer dropdown selection
+            let allUsersDropdown = [];
+            try {
+                let { data } = await supabaseClient.from('users')
+                    .select('id, username, email, phone')
+                    .order('username', { ascending: true });
+                allUsersDropdown = data || [];
+            } catch (e) { console.warn("Could not load users for dropdown:", e); }
+
+            // 7. Fetch all messages (broadcasts, private and replies) for history listing
+            let allMessages = [];
+            try {
+                let { data } = await supabaseClient.from('messages')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                allMessages = data || [];
+            } catch (e) { console.warn("Could not load messages history:", e); }
+
             this.adminData = {
                 users: users || [],
                 userEstimates: userEsts || [],
@@ -2012,7 +2177,9 @@ const app = {
                 totalEstimates: sums.length,
                 totalEq,
                 totalWorks,
-                sharedStatusesAdmin
+                sharedStatusesAdmin,
+                allUsersDropdown,
+                messages: allMessages
             };
             this.renderAdminMain();
         } catch (error) {
@@ -2022,7 +2189,25 @@ const app = {
     },
 
     renderAdminMain: function () {
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+        
+        if (!this._adminTab) this._adminTab = 'stats';
+
         const { users, userEstimates, recentEstimates, totalUsers, totalEstimates, totalEq, totalWorks } = this.adminData;
+
+        let navHtml = `
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-shrink: 0; width: 100%;">
+                <button id="admin_tab_stats" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'stats' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'stats' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'stats' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('stats')">📊 Монтажники и Сметы</button>
+                <button id="admin_tab_messages" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'messages' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'messages' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'messages' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('messages')">💬 Сообщения и Рассылка</button>
+            </div>
+        `;
+        
+        if (this._adminTab === 'messages') {
+            content.innerHTML = navHtml;
+            this.renderAdminMessages();
+            return;
+        }
 
         users.forEach(u => {
             const uEsts = userEstimates.filter(e => String(e.user_id) === String(u.id));
@@ -2070,7 +2255,7 @@ const app = {
                             <button class="btn-header-blue" style="background: #10B981; color: white; border-color: #10B981; font-weight: bold; padding: 0 15px; height: 34px;" onclick="app.exportAdminToExcel()">📊 Excel</button>
                         </div>
                     </div>
-
+ 
                     <table class="inv-table" style="margin-bottom: 30px;">
                         <thead><tr><th style="width:30px;">#</th><th>Имя / Контакты</th><th>Статистика (LTV)</th><th>Тариф / Устройство</th><th style="text-align:right;">Вход</th></tr></thead>
                         <tbody>
@@ -2085,11 +2270,11 @@ const app = {
             let device = u.last_device || 'Неизвестно';
             let lastVis = u.last_visited ? new Date(u.last_visited).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : date;
             let avatarImg = u.avatar_url ? `<img src="${u.avatar_url}" style="width:32px; height:32px; border-radius:50%; vertical-align:middle; margin-right:10px; object-fit:cover; border:1px solid #E5E7EB;">` : `<span style="font-size:24px; vertical-align:middle; margin-right:10px;">👤</span>`;
-
+ 
             let cityText = u.city || 'Город не указан';
             let ipLoc = u.location || 'Неизвестно';
             let locHTML = `<div style="font-size:10px;color:var(--text-sec); margin-top:2px;">📍 ${cityText} <span class="admin-ip-location" style="color: #888; font-size: 0.85em; margin-left:5px;">(IP: ${ipLoc})</span></div>`;
-
+ 
             let searchStr = `${name} ${phone} ${u.email || ''} ${cityText} ${ipLoc}`.toLowerCase();
 
             h += `<tr class="active-row admin-list-row" data-search="${searchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminUser('${u.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
@@ -2151,7 +2336,215 @@ const app = {
                     </tr>`;
         });
         h += `</tbody></table>`;
-        document.getElementById('admin_content').innerHTML = h;
+        content.innerHTML = navHtml + h;
+    },
+
+    switchAdminTab: function (tab) {
+        this._adminTab = tab;
+        this.renderAdminMain();
+    },
+
+    renderAdminMessages: function () {
+        const dropdownUsers = this.adminData.allUsersDropdown || [];
+        const messages = this.adminData.messages || [];
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+
+        let userOptions = '<option value="all">📢 Отправить ВСЕМ авторизованным</option>';
+        dropdownUsers.forEach(u => {
+            const name = u.username || u.email || `Пользователь #${u.id.substring(0,6)}`;
+            userOptions += `<option value="${u.id}">👤 ${name} (${u.phone || 'без тел.'})</option>`;
+        });
+
+        let innerHtml = `
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; background: var(--surface-light); border: 1px solid var(--border); padding: 15px; border-radius: 12px;">
+                <h4 style="margin: 0; color: var(--text-main); font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px;">💬 Отправить новое сообщение</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-sec); display: block; margin-bottom: 4px;">Получатель:</label>
+                        <select id="admin_msg_recipient" style="width: 100%; height: 36px; padding: 0 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 13px; outline: none; cursor: pointer;">
+                            ${userOptions}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-sec); display: block; margin-bottom: 4px;">Текст сообщения:</label>
+                        <textarea id="admin_msg_text" placeholder="Введите текст объявления или личного сообщения..." style="width: 100%; min-height: 80px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 13px; outline: none; resize: vertical; font-family: inherit;"></textarea>
+                    </div>
+                    <button class="auth-btn-base btn-email-submit" style="margin: 5px 0 0 auto; width: 100%; max-width: 180px; height: 34px; font-size: 12px;" onclick="app.sendAdminMessage()">🚀 Отправить</button>
+                </div>
+            </div>
+            
+            <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700;">📋 История переписки</h4>
+        `;
+
+        // Разделяем на сообщения и ответы
+        const parentMsgs = messages.filter(m => m.type !== 'reply');
+        const replies = messages.filter(m => m.type === 'reply');
+
+        if (parentMsgs.length === 0) {
+            innerHtml += `<div style="text-align: center; color: var(--text-sec); padding: 30px; font-size: 13px;">Сообщений пока нет. Отправьте первое сообщение выше!</div>`;
+        } else {
+            innerHtml += `<div style="display: flex; flex-direction: column; gap: 12px; max-height: 45vh; overflow-y: auto; padding-right: 5px;">`;
+            parentMsgs.forEach(msg => {
+                const dateStr = new Date(msg.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                
+                // Находим имя получателя
+                let recipientName = 'Все монтажники';
+                if (msg.recipient_id) {
+                    const recUser = dropdownUsers.find(u => u.id === msg.recipient_id);
+                    recipientName = recUser ? (recUser.username || recUser.email) : `Пользователь #${msg.recipient_id.substring(0,6)}`;
+                }
+                
+                const label = msg.type === 'broadcast' ? '📢 Объявление для всех' : `✉️ Личное для ${recipientName}`;
+                const labelCol = msg.type === 'broadcast' ? '#D97706' : '#2563EB';
+
+                // Находим вложенные ответы
+                const msgReplies = replies.filter(r => r.parent_id === msg.id);
+                let repliesHtml = '';
+                if (msgReplies.length > 0) {
+                    repliesHtml += `<div style="margin-top: 10px; padding-left: 12px; border-left: 2.5px solid #10B981; display: flex; flex-direction: column; gap: 8px; background: rgba(16, 185, 129, 0.02); padding-top: 6px; padding-bottom: 6px; border-radius: 4px;">`;
+                    msgReplies.forEach(r => {
+                        const replyUser = dropdownUsers.find(u => u.id === r.sender_id);
+                        const senderName = replyUser ? (replyUser.username || replyUser.email || replyUser.phone) : 'Монтажник';
+                        const replyDate = new Date(r.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                        
+                        repliesHtml += `
+                            <div style="font-size: 12px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                                    <span style="font-weight: 700; color: #047857;">💬 Ответ от ${senderName}:</span>
+                                    <span style="font-size: 9px; color: var(--text-sec);">${replyDate}</span>
+                                </div>
+                                <div style="color: var(--text-main); background: var(--surface); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); word-break: break-word;">${r.text}</div>
+                            </div>
+                        `;
+                    });
+                    repliesHtml += `</div>`;
+                }
+
+                innerHtml += `
+                    <div style="border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--surface); display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding-bottom: 6px;">
+                            <span style="font-size: 11px; font-weight: 800; color: ${labelCol}; text-transform: uppercase; letter-spacing: 0.02em;">${label}</span>
+                            <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                        </div>
+                        <div style="font-size: 13px; color: var(--text-main); white-space: pre-wrap; line-height: 1.4; margin-top: 4px;">${msg.text}</div>
+                        
+                        ${repliesHtml}
+                    </div>
+                `;
+            });
+            innerHtml += `</div>`;
+        }
+
+        // Вставляем вкладку под навигацией
+        const navContainer = content.firstElementChild;
+        if (navContainer && navContainer.nextElementSibling) {
+            // ...
+            while (content.childNodes.length > 1) {
+                content.removeChild(content.lastChild);
+            }
+        }
+        
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = innerHtml;
+        content.appendChild(wrapper);
+    },
+
+    sendAdminMessage: async function () {
+        const text = document.getElementById('admin_msg_text')?.value;
+        const recipientVal = document.getElementById('admin_msg_recipient')?.value;
+        if (!text || !text.trim()) {
+            app.alert("Введите текст сообщения!");
+            return;
+        }
+
+        try {
+            const recipientId = recipientVal === 'all' ? null : recipientVal;
+            const type = recipientVal === 'all' ? 'broadcast' : 'private';
+
+            // Получаем ID админа
+            let uRow = null;
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                let { data } = await supabaseClient.from('users').select('id').eq('auth_user_id', session.user.id).maybeSingle();
+                uRow = data;
+            } else if (this.state.tgUser && this.state.tgUser.authUserId) {
+                let { data } = await supabaseClient.from('users').select('id').eq('auth_user_id', this.state.tgUser.authUserId).maybeSingle();
+                uRow = data;
+            }
+            if (!uRow) {
+                app.alert("Сессия администратора не найдена.");
+                return;
+            }
+
+            const { error } = await supabaseClient.from('messages').insert({
+                sender_id: uRow.id,
+                recipient_id: recipientId,
+                text: text.trim(),
+                type: type
+            });
+
+            if (error) throw error;
+
+            app.alert("Сообщение успешно отправлено!");
+            
+            // Очищаем форму и перезагружаем историю сообщений
+            document.getElementById('admin_msg_text').value = '';
+            
+            // Перезапрашиваем сообщения
+            let { data: allMessages } = await supabaseClient.from('messages').select('*').order('created_at', { ascending: false });
+            this.adminData.messages = allMessages || [];
+            this.renderAdminMessages();
+        } catch (e) {
+            console.error("Error sending admin message:", e);
+            app.alert("Не удалось отправить сообщение: " + e.message);
+        }
+    },
+
+    sendUserReply: async function (parentId, text) {
+        if (!text || !text.trim()) {
+            app.alert("Введите текст ответа!");
+            return;
+        }
+        
+        try {
+            // Получаем текущего пользователя
+            let uRow = null;
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                let { data } = await supabaseClient.from('users').select('id').eq('auth_user_id', session.user.id).maybeSingle();
+                uRow = data;
+            } else if (this.state.tgUser && this.state.tgUser.authUserId) {
+                let { data } = await supabaseClient.from('users').select('id').eq('auth_user_id', this.state.tgUser.authUserId).maybeSingle();
+                uRow = data;
+            }
+            if (!uRow) {
+                app.alert("Необходимо авторизоваться для отправки ответа.");
+                return;
+            }
+
+            const { error } = await supabaseClient.from('messages').insert({
+                sender_id: uRow.id,
+                recipient_id: null, // Предназначен админу
+                text: text.trim(),
+                type: 'reply',
+                parent_id: parentId
+            });
+
+            if (error) throw error;
+            
+            app.alert("Ответ успешно отправлен администратору!");
+            
+            // Сбросываем инпут
+            const inp = document.getElementById(`reply_input_${parentId}`);
+            if (inp) inp.value = '';
+
+            // Обновляем список уведомлений
+            this.openNotificationsModal();
+        } catch (e) {
+            console.error("Error sending reply:", e);
+            app.alert("Не удалось отправить ответ: " + e.message);
+        }
     },
     filterAdminData: function (query) {
         let lowerQuery = query.toLowerCase().trim();
@@ -5055,7 +5448,7 @@ const app = {
                 // ПРОВЕРКА НА АДМИНА
                 let adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
                 let adminBtn = (tgUser.email && adminEmails.includes(tgUser.email.toLowerCase()))
-                    ? `<div style="font-size: 12px; font-weight: 700; color: #10B981; cursor: pointer; border: 1px solid #10B981; padding: 4px 10px; border-radius: 8px; background: #ECFDF5; margin-right: 10px;" onclick="app.showAdminModal()" title="Панель владельца">👑 Админка</div>`
+                    ? `<div style="font-size: 12px; font-weight: 700; color: #10B981; cursor: pointer; border: 1px solid #10B981; padding: 4px 10px; border-radius: 8px; background: #ECFDF5; margin-right: 10px;" onclick="app.showAdminModal()" title="Панель владельца">Админка</div>`
                     : `<div style="font-size: 12px; font-weight: 700; color: var(--primary); cursor: pointer; border: 1px solid var(--primary); padding: 4px 10px; border-radius: 8px; background: var(--primary-light); margin-right: 10px;" onclick="app.loadFromCloudList()" title="Мой кабинет (Мои сметы)">📁 Мои сметы</div>`;
 
                 authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);">${adminBtn}<div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;
