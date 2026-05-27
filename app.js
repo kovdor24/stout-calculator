@@ -4684,7 +4684,11 @@ const app = {
                 let badge = '';
                 if (isActuallyPro) {
                     let proUntilDate = this.getProUntilDate();
-                    let dateHtml = proUntilDate ? `<span style="font-size: 8px; color: var(--text-sec); font-weight: 500; margin-top: 1px; white-space: nowrap; line-height: 1;">до ${proUntilDate}</span>` : '';
+                    let dateHtml = '';
+                    if (proUntilDate) {
+                        let text = (proUntilDate === 'навсегда') ? 'бессрочно' : `до ${proUntilDate}`;
+                        dateHtml = `<span style="font-size: 8px; color: var(--text-sec); font-weight: 500; margin-top: 1px; white-space: nowrap; line-height: 1;">${text}</span>`;
+                    }
                     badge = `<div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 8px; justify-content: center;">
                         <span style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3); line-height: 1.2;">PRO</span>
                         ${dateHtml}
