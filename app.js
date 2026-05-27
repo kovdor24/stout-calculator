@@ -1525,11 +1525,10 @@ const app = {
             return;
         }
         try {
-            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             const { data, error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: isLocal ? window.location.origin : 'https://heatcalc.ru/'
+                    redirectTo: window.location.origin + window.location.pathname
                 }
             });
             if (error) throw error;
