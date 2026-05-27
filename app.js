@@ -98,7 +98,7 @@ function base64Encode(str) {
 
 async function compressString(str) {
     const byteArray = new TextEncoder().encode(str);
-    const cs = new CompressionStream('deflate-raw');
+    const cs = new CompressionStream('deflate');
     const writer = cs.writable.getWriter();
     writer.write(byteArray);
     writer.close();
@@ -4219,17 +4219,15 @@ const app = {
 
         } catch (supabaseErr) {
             console.warn('[shareInvoice] Supabase connection failed, falling back to local payload URL:', supabaseErr);
-            if (this.isPro()) {
-                app.alert("⚠️ Внимание\n\nСоздана офлайн-ссылка без кнопок согласования.\n\nВозможно, требуется включить VPN.");
-            }
             try {
                 const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
+                const promptMsg = "Создана ссылка без кнопок согласования.\nВозможно, требуется включить VPN.";
 
                 app.copyToClipboard(shareUrl).then(() => {
-                    app.prompt("✅ Ссылка создана и скопирована! Отправьте её клиенту:", shareUrl);
+                    app.prompt(promptMsg, shareUrl);
                 }).catch(err => {
                     console.error('Ошибка копирования:', err);
-                    app.prompt("✅ Ссылка создана! Скопируйте и отправьте клиенту:", shareUrl);
+                    app.prompt(promptMsg, shareUrl);
                 });
             } catch (fallbackErr) {
                 console.error('[shareInvoice] Ошибка генерации автономной ссылки при откате:', fallbackErr);

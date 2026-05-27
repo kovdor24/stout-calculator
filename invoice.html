@@ -2301,24 +2301,34 @@
             for (let i = 0; i < binary.length; i++) {
                 bytes[i] = binary.charCodeAt(i);
             }
-            // Сначала пробуем deflate-raw (текущий алгоритм)
+            
+            // Определяем формат по первому байту (0x78 - стандартный zlib/deflate заголовок)
+            const isDeflate = (bytes[0] === 0x78);
+            const primaryFormat = isDeflate ? 'deflate' : 'deflate-raw';
+            const secondaryFormat = isDeflate ? 'deflate-raw' : 'deflate';
+            
             try {
-                const ds = new DecompressionStream('deflate-raw');
-                const writer = ds.writable.getWriter();
-                writer.write(bytes.slice());
-                writer.close();
-                const response = new Response(ds.readable);
-                const arrayBuffer = await response.arrayBuffer();
-                return new TextDecoder().decode(arrayBuffer);
-            } catch (e) {
-                // Fallback: пробуем deflate (старые ссылки, созданные до обновления)
-                const ds = new DecompressionStream('deflate');
+                const ds = new DecompressionStream(primaryFormat);
                 const writer = ds.writable.getWriter();
                 writer.write(bytes);
                 writer.close();
                 const response = new Response(ds.readable);
                 const arrayBuffer = await response.arrayBuffer();
                 return new TextDecoder().decode(arrayBuffer);
+            } catch (e) {
+                console.warn(`[decompressString] Primary format ${primaryFormat} failed, trying ${secondaryFormat}:`, e);
+                try {
+                    const ds = new DecompressionStream(secondaryFormat);
+                    const writer = ds.writable.getWriter();
+                    writer.write(bytes);
+                    writer.close();
+                    const response = new Response(ds.readable);
+                    const arrayBuffer = await response.arrayBuffer();
+                    return new TextDecoder().decode(arrayBuffer);
+                } catch (e2) {
+                    console.error(`[decompressString] All decompression formats failed:`, e2);
+                    throw e2;
+                }
             }
         }
 
