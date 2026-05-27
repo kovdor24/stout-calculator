@@ -2307,7 +2307,7 @@ body.dark-mode .stout-logo-img {
     justify-content: flex-end;
     max-height: 100px;
     opacity: 1;
-    overflow: hidden;
+    overflow: visible;
     transition: opacity 0.3s ease, max-height 0.3s ease, margin 0.3s ease;
 }
 
