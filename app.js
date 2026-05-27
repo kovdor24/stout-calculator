@@ -3994,8 +3994,12 @@ const app = {
             object_info.status_updated_at = statusUpdatedAt;
 
             let dbUserId = null;
-            if (this.state.tgUser && this.state.tgUser.id && /^\d+$/.test(String(this.state.tgUser.id))) {
-                dbUserId = parseInt(this.state.tgUser.id);
+            if (this.state.tgUser && this.state.tgUser.id) {
+                if (/^\d+$/.test(String(this.state.tgUser.id))) {
+                    dbUserId = parseInt(this.state.tgUser.id);
+                } else {
+                    dbUserId = this.state.tgUser.id;
+                }
             }
             if (!dbUserId) {
                 try {
@@ -4111,7 +4115,8 @@ const app = {
         } catch (supabaseErr) {
             console.warn('[shareInvoice] Supabase connection failed, falling back to local payload URL:', supabaseErr);
             if (this.isPro()) {
-                app.alert("Создана офлайн-ссылка без кнопок согласования.");
+                const errMsg = supabaseErr ? (supabaseErr.message || String(supabaseErr)) : "Неизвестная ошибка";
+                app.alert("Создана офлайн-ссылка без кнопок согласования. Причина: " + errMsg + ". Рекомендуем попробовать выйти из аккаунта и войти снова, чтобы обновить сессию.");
             }
             try {
                 const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
