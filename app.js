@@ -3446,7 +3446,7 @@ const app = {
         }
     },
 
-    handleAuthSession: async function (session) {
+    handleAuthSession: async function (session, isGoogleCallback = false) {
         if (!session || !session.user) return;
 
         if (this._authHandling) return;
@@ -3597,6 +3597,13 @@ const app = {
             this.closeAuthModal();
             this.syncUI();
             this.render();
+
+            if (isGoogleCallback) {
+                console.log("[handleAuthSession] Запланирована принудительная перезагрузка через 5 секунд для обновления сессии...");
+                setTimeout(() => {
+                    window.location.replace(window.location.pathname + window.location.search);
+                }, 5000);
+            }
         } catch (error) {
             console.error('Ошибка авторизации:', error);
         } finally {
@@ -5139,11 +5146,11 @@ const app = {
         // Подписка на изменения авторизации Supabase.
         supabaseClient.auth.onAuthStateChange((event, session) => {
             if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
-                // Очистка хэша с токеном из адресной строки без полной перезагрузки страницы
-                if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
+                let isGoogleCallback = event === 'SIGNED_IN' && window.location.hash.includes('access_token');
+                if (isGoogleCallback) {
                     history.replaceState(null, document.title, window.location.pathname + window.location.search);
                 }
-                this.handleAuthSession(session);
+                this.handleAuthSession(session, isGoogleCallback);
             } else if (event === 'SIGNED_OUT') {
                 // При явном выходе — сбрасываем состояние
                 delete this.state.tgUser;
