@@ -5443,7 +5443,8 @@ const app = {
         let chk = document.getElementById('chk_cheaper');
 
         if (cw && chk && sl) {
-            if (this.isPro()) {
+            let isAuthorized = !!(this.state.tgUser && this.state.tgUser.authUserId);
+            if (isAuthorized && this.isPro()) {
                 cw.style.display = 'flex';
                 chk.checked = (this.state.brandMode === 'rommer');
             } else {
