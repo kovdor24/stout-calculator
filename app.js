@@ -4220,8 +4220,7 @@ const app = {
         } catch (supabaseErr) {
             console.warn('[shareInvoice] Supabase connection failed, falling back to local payload URL:', supabaseErr);
             if (this.isPro()) {
-                const errMsg = supabaseErr ? (supabaseErr.message || String(supabaseErr)) : "Неизвестная ошибка";
-                app.alert("Создана офлайн-ссылка без кнопок согласования. Причина: " + errMsg + ". Рекомендуем попробовать выйти из аккаунта и войти снова, чтобы обновить сессию.");
+                app.alert("⚠️ Внимание\n\nСоздана офлайн-ссылка без кнопок согласования.\n\nВозможно, требуется включить VPN.");
             }
             try {
                 const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
