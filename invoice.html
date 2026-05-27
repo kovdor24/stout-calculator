@@ -2301,13 +2301,25 @@
             for (let i = 0; i < binary.length; i++) {
                 bytes[i] = binary.charCodeAt(i);
             }
-            const ds = new DecompressionStream('deflate');
-            const writer = ds.writable.getWriter();
-            writer.write(bytes);
-            writer.close();
-            const response = new Response(ds.readable);
-            const arrayBuffer = await response.arrayBuffer();
-            return new TextDecoder().decode(arrayBuffer);
+            // Сначала пробуем deflate-raw (текущий алгоритм)
+            try {
+                const ds = new DecompressionStream('deflate-raw');
+                const writer = ds.writable.getWriter();
+                writer.write(bytes.slice());
+                writer.close();
+                const response = new Response(ds.readable);
+                const arrayBuffer = await response.arrayBuffer();
+                return new TextDecoder().decode(arrayBuffer);
+            } catch (e) {
+                // Fallback: пробуем deflate (старые ссылки, созданные до обновления)
+                const ds = new DecompressionStream('deflate');
+                const writer = ds.writable.getWriter();
+                writer.write(bytes);
+                writer.close();
+                const response = new Response(ds.readable);
+                const arrayBuffer = await response.arrayBuffer();
+                return new TextDecoder().decode(arrayBuffer);
+            }
         }
 
         async function decodePayload(str) {

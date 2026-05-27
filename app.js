@@ -98,7 +98,7 @@ function base64Encode(str) {
 
 async function compressString(str) {
     const byteArray = new TextEncoder().encode(str);
-    const cs = new CompressionStream('deflate');
+    const cs = new CompressionStream('deflate-raw');
     const writer = cs.writable.getWriter();
     writer.write(byteArray);
     writer.close();
@@ -2028,7 +2028,7 @@ const app = {
                         <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">${n.projectName}</div>
                         <div style="font-size: 11px; color: var(--text-sec); line-height: 1.4;">${n.comment}</div>
                         ${(isCritical || isWarning) 
-                            ? `<button class="auth-btn-base btn-email-submit" style="margin: 6px 0 0 0; width: 100%; height: 30px; font-size: 11px; font-weight: bold; background: #D97706; border-color: #D97706;" onclick="event.stopPropagation(); document.getElementById('notifications_modal_overlay').style.display='none'; document.querySelector('.header-main-btn-pro')?.click();">Продлить доступ</button>`
+                            ? `<button class="auth-btn-base btn-email-submit" style="margin: 6px 0 0 0; width: 100%; height: 30px; font-size: 11px; font-weight: bold; background: #D97706; border-color: #D97706;" onclick="event.stopPropagation(); document.getElementById('notifications_modal_overlay').style.display='none'; app.showModal('pro');">Продлить доступ</button>`
                             : ''
                         }
                     </div>
@@ -4131,12 +4131,15 @@ const app = {
                 }
             }
 
-            // 3. Локальный резерв: если база недоступна или запись не найдена, используем сохраненный ID
+            // 3. Локальный резерв: если база недоступна или запись не найдена — НЕ используем Telegram ID,
+            //    так как он числовой и нарушает foreign key constraint shared_invoices.user_id (ожидается UUID из public.users)
             if (!dbUserId && this.state.tgUser && this.state.tgUser.id) {
-                if (/^\d+$/.test(String(this.state.tgUser.id))) {
-                    dbUserId = parseInt(this.state.tgUser.id);
+                const rawId = this.state.tgUser.id;
+                // Используем только UUID (строка с тире), Telegram-числовые ID пропускаем
+                if (typeof rawId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId)) {
+                    dbUserId = rawId;
                 } else {
-                    dbUserId = this.state.tgUser.id;
+                    console.warn('[shareInvoice] tgUser.id не является UUID, пропускаем для user_id:', rawId);
                 }
             }
 
@@ -4667,7 +4670,13 @@ const app = {
                 // Получаем внутренний dbUserId из таблицы public.users (поскольку user_id - внешний ключ на public.users.id)
                 let dbUserId = null;
                 if (tgUser && tgUser.id) {
-                    dbUserId = tgUser.id;
+                    const rawId = tgUser.id;
+                    // Используем только UUID — Telegram-числовой ID нарушает foreign key constraint
+                    if (typeof rawId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId)) {
+                        dbUserId = rawId;
+                    } else {
+                        console.warn('[sendEmail] tgUser.id не является UUID, пропускаем для user_id:', rawId);
+                    }
                 }
                 if (!dbUserId && authUserId) {
                     try {

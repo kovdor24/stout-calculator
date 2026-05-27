@@ -88,30 +88,32 @@
             </button>
             <div class="header-main-controls">
                 
-                <!-- Notification / Envelope Button -->
-                <button id="btn_notifications" class="btn-ctrl" onclick="app.openNotificationsModal()" title="Сообщения от клиентов" style="position: relative;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                        <polyline points="22,6 12,13 2,6"></polyline>
-                    </svg>
-                    <span id="notification_badge" style="display: none; position: absolute; top: -2px; right: -2px; background: #EF4444; color: white; border-radius: 50%; font-size: 8.5px; font-weight: 800; min-width: 14px; height: 14px; padding: 0 3.5px; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4); line-height: 1; z-index: 10;">0</span>
-                    <span id="vpn_status_dot" style="position: absolute; bottom: -2px; right: -2px; width: 8px; height: 8px; background: #9CA3AF; border-radius: 50%; border: 1.5px solid var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: background-color 0.3s ease; z-index: 10;"></span>
-                </button>
+                <div class="header-cloud-btns" style="display: flex; align-items: center; gap: 8px;">
+                    <!-- Notification / Envelope Button -->
+                    <button id="btn_notifications" class="btn-ctrl" onclick="app.openNotificationsModal()" title="Сообщения от клиентов" style="position: relative;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                        <span id="notification_badge" style="display: none; position: absolute; top: -2px; right: -2px; background: #EF4444; color: white; border-radius: 50%; font-size: 8.5px; font-weight: 800; min-width: 14px; height: 14px; padding: 0 3.5px; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4); line-height: 1; z-index: 10;">0</span>
+                        <span id="vpn_status_dot" style="position: absolute; bottom: -2px; right: -2px; width: 8px; height: 8px; background: #9CA3AF; border-radius: 50%; border: 1.5px solid var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: background-color 0.3s ease; z-index: 10;"></span>
+                    </button>
 
-                <button id="btn_save_main" class="btn-ctrl" onclick="app.saveToCloud()" title="Сохранить смету в облако">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                        <polyline points="7 3 7 8 15 8"></polyline>
-                    </svg>
-                </button>
-                <button class="btn-ctrl" onclick="app.loadFromCloudList()" title="Загрузить смету из облака">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                </button>
+                    <button id="btn_save_main" class="btn-ctrl" onclick="app.saveToCloud()" title="Сохранить смету в облако">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                    </button>
+                    <button class="btn-ctrl" onclick="app.loadFromCloudList()" title="Загрузить смету из облака">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                </div>
 
                 <div class="header-divider"></div>
 
@@ -758,8 +760,11 @@
 
             <!-- PRO Status Banner -->
             <div id="profile_pro_badge_banner" style="display: none; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 6px 12px; margin-bottom: 12px; align-items: center; justify-content: space-between; font-size: 11px;">
-                <span style="font-weight: 700; color: #D97706; text-transform: uppercase; letter-spacing: 0.03em;">Тариф PRO активен</span>
-                <span id="profile_pro_expiry_text" style="color: var(--text-sec); font-weight: 600;">до 06.06.2026</span>
+                <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
+                    <span style="font-weight: 700; color: #D97706; text-transform: uppercase; letter-spacing: 0.03em;">Тариф PRO активен</span>
+                    <span id="profile_pro_expiry_text" style="color: var(--text-sec); font-weight: 600;">до 06.06.2026</span>
+                </div>
+                <button type="button" onclick="app.closeProfileModal(); app.showModal('pro');" style="padding: 4px 8px; font-size: 10px; font-weight: bold; background: #D97706; border: 1px solid #D97706; color: #fff; border-radius: 6px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#B45309'; this.style.borderColor='#B45309';" onmouseout="this.style.background='#D97706'; this.style.borderColor='#D97706';">Продлить</button>
             </div>
             
             <div style="margin-bottom: 12px; box-sizing: border-box; width: 100%;">
