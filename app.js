@@ -821,6 +821,18 @@ const app = {
         return this.state.accountType === 'pro' || isTrialActive;
     },
 
+    getProUntilDate: function () {
+        let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
+        let isTrialActive = trialUntil > Date.now();
+        if (this.state.accountType === 'pro' && this.state.tgUser && this.state.tgUser.demo_ends_at) {
+            return new Date(this.state.tgUser.demo_ends_at).toLocaleDateString('ru-RU');
+        }
+        if (isTrialActive) {
+            return new Date(trialUntil).toLocaleDateString('ru-RU');
+        }
+        return null;
+    },
+
     checkAccess: function (featureLvl, event) {
         const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
         if (isLocal) {
@@ -2738,6 +2750,7 @@ const app = {
                 }
                 this.state.accountType = accType;
                 this.state.tgUser.id = uRow.id;
+                this.state.tgUser.demo_ends_at = uRow.demo_ends_at;
                 if (uRow.phone && uRow.phone !== phone) this.state.tgUser.phone = uRow.phone;
                 if (uRow.username && uRow.username !== fullName) this.state.tgUser.first_name = uRow.username;
                 if (uRow.city) this.state.tgUser.city = uRow.city;
@@ -4583,15 +4596,16 @@ const app = {
         let chk = document.getElementById('chk_cheaper');
 
         if (cw && chk && sl) {
-            // Показываем блок для всех (включая гостей), так как хотим отобразить закрытый замок
-            cw.style.display = 'flex';
-            chk.checked = (this.state.brandMode === 'rommer');
-
-            // Если пользователь без PRO как-то включил режим, сбрасываем его
-            if (!this.isPro() && this.state.brandMode === 'rommer') {
-                this.state.brandMode = 'stout';
-                chk.checked = false;
-                setTimeout(() => this.render(), 10);
+            if (this.isPro()) {
+                cw.style.display = 'flex';
+                chk.checked = (this.state.brandMode === 'rommer');
+            } else {
+                cw.style.display = 'none';
+                if (this.state.brandMode === 'rommer') {
+                    this.state.brandMode = 'stout';
+                    chk.checked = false;
+                    setTimeout(() => this.render(), 10);
+                }
             }
         }
         if (document.getElementById('chk_hw')) document.getElementById('chk_hw').checked = this.state.hotWater;
@@ -4664,7 +4678,17 @@ const app = {
 
             if (tgUser) {
                 let isActuallyPro = this.isPro();
-                let badge = isActuallyPro ? `<span style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; margin-left: 8px; box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3);">PRO</span>` : `<span style="color: var(--text-sec); font-size: 11px; font-weight: 500; margin-left: 8px;">(Базовый)</span>`;
+                let badge = '';
+                if (isActuallyPro) {
+                    let proUntilDate = this.getProUntilDate();
+                    let dateHtml = proUntilDate ? `<span style="font-size: 8px; color: var(--text-sec); font-weight: 500; margin-top: 1px; white-space: nowrap; line-height: 1;">до ${proUntilDate}</span>` : '';
+                    badge = `<div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 8px; justify-content: center;">
+                        <span style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3); line-height: 1.2;">PRO</span>
+                        ${dateHtml}
+                    </div>`;
+                } else {
+                    badge = `<span style="color: var(--text-sec); font-size: 11px; font-weight: 500; margin-left: 8px;">(Базовый)</span>`;
+                }
                 let uName = tgUser.first_name || tgUser.username || 'Монтажник';
                 let avatarImg = tgUser.avatar_url || tgUser.photo_url;
                 let icon = avatarImg ? `<img src="${avatarImg}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">` : (tgUser.isGoogle ? 'G' : '👤');

@@ -1131,6 +1131,14 @@ body.dark-mode .editable-val:focus {
     .editable-val {
         border-bottom: none !important;
     }
+
+    .calculation-date {
+        display: flex !important;
+    }
+}
+
+body.html2pdf-printing .calculation-date {
+    display: flex !important;
 }
 
 /* Кнопка бургера (скрыта на десктопе) */
