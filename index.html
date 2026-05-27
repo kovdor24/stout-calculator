@@ -742,73 +742,78 @@
         </div>
     </div>
     <div id="profile_modal_overlay" class="auth-modal-overlay" style="display: none;">
-        <div class="auth-modal-content" style="max-width: 380px; width: 95%; max-height: 90vh; overflow-y: auto; display: block; box-sizing: border-box; transition: max-width 0.3s ease;">
-            <span class="auth-modal-close" onclick="app.closeProfileModal()">&times;</span>
-            <h3 class="auth-modal-title">Мой профиль</h3>
+        <div class="auth-modal-content" style="max-width: 360px; width: 95%; max-height: 95vh; overflow-y: auto; display: block; box-sizing: border-box; transition: max-width 0.3s ease; padding: 16px 20px;">
+            <span class="auth-modal-close" onclick="app.closeProfileModal()" style="top: 12px; right: 16px;">&times;</span>
+            <h3 class="auth-modal-title" style="margin-top: 0; margin-bottom: 12px; font-size: 18px;">Мой профиль</h3>
+
+            <!-- PRO Status Banner -->
+            <div id="profile_pro_badge_banner" style="display: none; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 6px 12px; margin-bottom: 12px; align-items: center; justify-content: space-between; font-size: 11px;">
+                <span style="font-weight: 700; color: #D97706; text-transform: uppercase; letter-spacing: 0.03em;">Тариф PRO активен</span>
+                <span id="profile_pro_expiry_text" style="color: var(--text-sec); font-weight: 600;">до 06.06.2026</span>
+            </div>
             
-            <div style="margin-bottom: 20px; box-sizing: border-box; width: 100%;">
-                <div class="profile-grid" style="display: flex; gap: 24px; flex-wrap: wrap; text-align: left;">
+            <div style="margin-bottom: 12px; box-sizing: border-box; width: 100%;">
+                <div class="profile-grid" style="display: flex; gap: 15px; flex-wrap: wrap; text-align: left;">
                     
                     <!-- Left Column (General info) -->
-                    <div style="flex: 1 1 280px; min-width: 260px; display: flex; flex-direction: column; justify-content: flex-start; padding: 5px;">
-                        <h4 style="margin: 0 0 15px 0; color: var(--primary); font-size: 15px; font-weight: 700;">Основные данные</h4>
+                    <div style="flex: 1 1 260px; min-width: 240px; display: flex; flex-direction: column; justify-content: flex-start; padding: 0;">
+                        <h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 13.5px; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 4px;">Основные данные</h4>
                         
-                        <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block;">Имя и Фамилия</label>
-                        <input type="text" id="profile_name_input" class="auth-input" placeholder="Иван Иванов" style="max-width: 100%; margin-bottom: 12px;">
+                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Имя и Фамилия</label>
+                        <input type="text" id="profile_name_input" class="auth-input" placeholder="Иван Иванов" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px;">
                         
-                        <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block;">Телефон для смет</label>
-                        <input type="tel" id="profile_phone_input" class="auth-input" placeholder="+7 (___) ___-__-__" oninput="app.maskPhone(this)" style="max-width: 100%; margin-bottom: 12px;">
+                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Телефон для смет</label>
+                        <input type="tel" id="profile_phone_input" class="auth-input" placeholder="+7 (___) ___-__-__" oninput="app.maskPhone(this)" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px;">
                         
-                        <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block;">Ваш город (для смет)</label>
-                        <input type="text" id="profile_city_input" class="auth-input" placeholder="Например: Москва" style="max-width: 100%; margin-bottom: 12px;">
+                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Ваш город (для смет)</label>
+                        <input type="text" id="profile_city_input" class="auth-input" placeholder="Например: Москва" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px;">
                         
-                        <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block;">Email для уведомлений</label>
-                        <input type="email" id="profile_email_input" class="auth-input" placeholder="example@mail.ru" style="max-width: 100%; margin-bottom: 12px;">
+                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Email для уведомлений</label>
+                        <input type="email" id="profile_email_input" class="auth-input" placeholder="example@mail.ru" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px;">
                         
                         <!-- Toggle Button for PRO Branding (Only visible for PRO) -->
-                        <button type="button" id="toggle_branding_btn" class="auth-btn-base" style="display: none; margin-top: 15px; background: var(--surface-light); border: 1px solid var(--border); color: var(--primary); font-size: 13px; max-width: 100%; height: 42px; border-radius: 8px;" onclick="app.toggleBrandingSection()">⚙️ Настроить логотип и реквизиты</button>
+                        <button type="button" id="toggle_branding_btn" class="auth-btn-base" style="display: none; margin-top: 5px; background: var(--surface-light); border: 1px solid var(--border); color: var(--primary); font-size: 12px; max-width: 100%; height: 36px; border-radius: 8px;" onclick="app.toggleBrandingSection()">⚙️ Настроить логотип и реквизиты</button>
                     </div>
 
                     <!-- Right Column (PRO Branding) -->
-                    <div id="pro_profile_company_section" style="flex: 1 2 360px; min-width: 300px; display: none; background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-sizing: border-box;">
-                        <h4 style="margin: 0 0 15px 0; color: var(--primary); font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                    <div id="pro_profile_company_section" style="flex: 1 2 320px; min-width: 280px; display: none; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-sizing: border-box;">
+                        <h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">
                             <span>Реквизиты компании</span>
-                            <span style="background: var(--primary); color: #fff; font-size: 9px; padding: 2px 6px; border-radius: 20px; text-transform: uppercase; font-weight: 800;">PRO</span>
+                            <span style="background: var(--primary); color: #fff; font-size: 8px; padding: 1px 5px; border-radius: 10px; text-transform: uppercase; font-weight: 800;">PRO</span>
                         </h4>
                         
-                        <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block;">Логотип компании</label>
-                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
-                            <div id="profile_logo_preview_container" style="width: 80px; height: 50px; background: #fff; border: 1px solid var(--border); border-radius: 6px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Логотип компании</label>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                            <div id="profile_logo_preview_container" style="width: 60px; height: 38px; background: #fff; border: 1px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                                 <img id="profile_logo_preview" src="img/logo.jpg" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                             </div>
-                            <div style="display: flex; flex-direction: column; gap: 6px;">
-                                <button type="button" class="btn-subscribe" onclick="document.getElementById('profile_logo_file').click()" style="padding: 6px 12px; font-size: 11px; margin: 0; width: fit-content; height: auto;">Загрузить свой логотип</button>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <button type="button" class="btn-subscribe" onclick="document.getElementById('profile_logo_file').click()" style="padding: 4px 8px; font-size: 10px; margin: 0; width: fit-content; height: auto;">Загрузить логотип</button>
                                 <input type="file" id="profile_logo_file" accept="image/*" style="display: none;" onchange="app.handleProfileLogoUpload(event)">
-                                <button type="button" class="btn-subscribe" onclick="app.resetProfileLogo()" style="padding: 6px 12px; font-size: 11px; margin: 0; width: fit-content; height: auto; background: var(--surface-light); color: var(--text-sec); border-color: var(--border);">Восстановить логотип ТЕРЕМ</button>
+                                <button type="button" class="btn-subscribe" onclick="app.resetProfileLogo()" style="padding: 4px 8px; font-size: 10px; margin: 0; width: fit-content; height: auto; background: var(--surface-light); color: var(--text-sec); border-color: var(--border);">Сбросить логотип</button>
                             </div>
                         </div>
 
-                        <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block;">Название компании</label>
-                        <input type="text" id="profile_company_name" class="auth-input" placeholder="Общество с ограниченной ответственностью «ТЕРЕМ»" style="max-width: 100%; margin-bottom: 12px;">
+                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Название компании</label>
+                        <input type="text" id="profile_company_name" class="auth-input" placeholder="ООО «ТЕРЕМ»" style="max-width: 100%; margin-bottom: 8px; height: 32px; font-size: 12px; padding: 4px 8px;">
 
-                        <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block;">Сайт компании</label>
-                        <input type="text" id="profile_company_website" class="auth-input" placeholder="www.teremopt.ru" style="max-width: 100%; margin-bottom: 12px;">
+                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Сайт компании</label>
+                        <input type="text" id="profile_company_website" class="auth-input" placeholder="www.teremopt.ru" style="max-width: 100%; margin-bottom: 8px; height: 32px; font-size: 12px; padding: 4px 8px;">
 
-                        <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block;">Адрес компании</label>
-                        <textarea id="profile_company_address" class="auth-input" style="height: 56px; resize: none; font-size: 12px; padding: 8px; font-family: inherit; max-width: 100%; margin-bottom: 12px;" placeholder="Россия, 123100, г. Москва..."></textarea>
+                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Адрес компании</label>
+                        <textarea id="profile_company_address" class="auth-input" style="height: 44px; resize: none; font-size: 11px; padding: 6px; font-family: inherit; max-width: 100%; margin-bottom: 8px;" placeholder="Россия, 123100, г. Москва..."></textarea>
 
-                        <label style="font-size: 12px; color: var(--text-sec); font-weight: 600; margin-bottom: 5px; display: block;">Банковские реквизиты</label>
-                        <textarea id="profile_company_bank" class="auth-input" style="height: 56px; resize: none; font-size: 12px; padding: 8px; font-family: inherit; max-width: 100%; margin-bottom: 12px;" placeholder="ИНН 7729646148..."></textarea>
+                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Банковские реквизиты</label>
+                        <textarea id="profile_company_bank" class="auth-input" style="height: 44px; resize: none; font-size: 11px; padding: 6px; font-family: inherit; max-width: 100%; margin-bottom: 8px;" placeholder="ИНН 7729646148..."></textarea>
 
-                        <button type="button" class="auth-btn-base btn-email-submit" onclick="app.resetCompanyDetails()" style="margin: 5px auto 0 auto; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border); font-size: 11px; height: 32px; padding: 0 10px; max-width: 100%; border-radius: 8px;">Сбросить реквизиты на Терем по умолчанию</button>
+                        <button type="button" class="auth-btn-base btn-email-submit" onclick="app.resetCompanyDetails()" style="margin: 3px auto 0 auto; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border); font-size: 10px; height: 28px; padding: 0 8px; max-width: 100%; border-radius: 6px;">Сбросить реквизиты по умолчанию</button>
                     </div>
                     
                 </div>
             </div>
-            
-            <div style="flex-shrink: 0; border-top: 1px solid var(--border); padding-top: 15px; display: flex; justify-content: center; gap: 15px; width: 100%;">
-                <button class="auth-btn-base btn-email-submit" style="margin: 0; max-width: 220px;" onclick="app.saveProfile()">Сохранить профиль</button>
-                <button class="auth-btn-base" style="margin: 0; max-width: 140px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border);" onclick="app.closeProfileModal()">Отмена</button>
+            <div style="flex-shrink: 0; border-top: 1px solid var(--border); padding-top: 10px; display: flex; justify-content: center; gap: 10px; width: 100%;">
+                <button class="auth-btn-base btn-email-submit" style="margin: 0; max-width: 180px; height: 36px; font-size: 13px;" onclick="app.saveProfile()">Сохранить</button>
+                <button class="auth-btn-base" style="margin: 0; max-width: 110px; height: 36px; font-size: 13px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border);" onclick="app.closeProfileModal()">Отмена</button>
             </div>
         </div>
     </div>

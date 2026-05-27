@@ -1572,6 +1572,20 @@ const app = {
 
         // Show/hide and populate PRO company branding settings
         let isPro = this.isPro();
+        let proBanner = document.getElementById('profile_pro_badge_banner');
+        if (proBanner) {
+            if (isPro) {
+                let proUntilDate = this.getProUntilDate();
+                let expiryText = document.getElementById('profile_pro_expiry_text');
+                if (expiryText) {
+                    expiryText.innerText = (proUntilDate === 'навсегда') ? 'действует бессрочно' : `действует до ${proUntilDate}`;
+                }
+                proBanner.style.display = 'flex';
+            } else {
+                proBanner.style.display = 'none';
+            }
+        }
+
         let compSec = document.getElementById('pro_profile_company_section');
         let toggleBtn = document.getElementById('toggle_branding_btn');
         if (compSec) {
@@ -4258,6 +4272,12 @@ const app = {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             console.warn('[DEV MODE] Localhost detected — установлена PRO сессия для тестирования.');
             this.state.accountType = 'pro';
+            this.state.tgUser = {
+                first_name: "Dima Ibatullin",
+                username: "dima_ibatullin",
+                account_type: "pro",
+                demo_ends_at: "2026-06-06T00:00:00.000Z"
+            };
         }
         // ===================================================
         this.updateHeaderCompanyDetails(); this.syncUI(); this.render();
@@ -4681,24 +4701,33 @@ const app = {
 
             if (tgUser) {
                 let isActuallyPro = this.isPro();
-                let badge = '';
+                let infoHtml = '';
+                let uName = tgUser.first_name || tgUser.username || 'Монтажник';
+                let avatarImg = tgUser.avatar_url || tgUser.photo_url;
+                let icon = avatarImg ? `<img src="${avatarImg}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">` : (tgUser.isGoogle ? 'G' : '👤');
+
                 if (isActuallyPro) {
                     let proUntilDate = this.getProUntilDate();
                     let dateHtml = '';
                     if (proUntilDate) {
                         let text = (proUntilDate === 'навсегда') ? 'бессрочно' : `до ${proUntilDate}`;
-                        dateHtml = `<span style="font-size: 8px; color: var(--text-sec); font-weight: 500; margin-top: 1px; white-space: nowrap; line-height: 1;">${text}</span>`;
+                        dateHtml = `<span style="font-size: 9px; color: var(--text-sec); font-weight: 400; margin-top: 1px; white-space: nowrap; line-height: 1.2;">${text}</span>`;
                     }
-                    badge = `<div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 8px; justify-content: center;">
-                        <span style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3); line-height: 1.2;">PRO</span>
+                    infoHtml = `<div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="border-bottom: 1px dashed var(--text-sec);">${uName}</span>
+                            <span style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3); line-height: 1.2;">PRO</span>
+                        </div>
                         ${dateHtml}
                     </div>`;
                 } else {
-                    badge = `<span style="color: var(--text-sec); font-size: 11px; font-weight: 500; margin-left: 8px;">(Базовый)</span>`;
+                    infoHtml = `<div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="border-bottom: 1px dashed var(--text-sec);">${uName}</span>
+                            <span style="color: var(--text-sec); font-size: 11px; font-weight: 500;">(Базовый)</span>
+                        </div>
+                    </div>`;
                 }
-                let uName = tgUser.first_name || tgUser.username || 'Монтажник';
-                let avatarImg = tgUser.avatar_url || tgUser.photo_url;
-                let icon = avatarImg ? `<img src="${avatarImg}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">` : (tgUser.isGoogle ? 'G' : '👤');
 
                 // ПРОВЕРКА НА АДМИНА
                 let adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
@@ -4706,7 +4735,7 @@ const app = {
                     ? `<div style="font-size: 12px; font-weight: 700; color: #10B981; cursor: pointer; border: 1px solid #10B981; padding: 4px 10px; border-radius: 8px; background: #ECFDF5; margin-right: 10px;" onclick="app.showAdminModal()" title="Панель владельца">👑 Админка</div>`
                     : `<div style="font-size: 12px; font-weight: 700; color: var(--primary); cursor: pointer; border: 1px solid var(--primary); padding: 4px 10px; border-radius: 8px; background: var(--primary-light); margin-right: 10px;" onclick="app.loadFromCloudList()" title="Мой кабинет (Мои сметы)">📁 Мои сметы</div>`;
 
-                authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);">${adminBtn}<div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} <span style="border-bottom: 1px dashed var(--text-sec); margin-left: 5px;">${uName}</span> ${badge}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;
+                authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);">${adminBtn}<div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;
             } else {
                 // Если пользователь не авторизован - показываем только одну аккуратную кнопку
                 authContainer.innerHTML = `
