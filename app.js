@@ -1524,6 +1524,7 @@ const app = {
             app.alert("Для продолжения необходимо дать согласие на обработку персональных данных.");
             return;
         }
+        try {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             const { data, error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
