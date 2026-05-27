@@ -1526,7 +1526,10 @@ const app = {
         }
         try {
             const { data, error } = await supabaseClient.auth.signInWithOAuth({
-                provider: 'google'
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + window.location.pathname
+                }
             });
             if (error) throw error;
         } catch (err) {
@@ -5159,10 +5162,9 @@ const app = {
         // Подписка на изменения авторизации Supabase.
         supabaseClient.auth.onAuthStateChange((event, session) => {
             if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
-                // Принудительная перезагрузка после возвращения из Google OAuth (очистка хэша с токеном)
+                // Очистка хэша с токеном из адресной строки без полной перезагрузки страницы
                 if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
-                    window.location.replace(window.location.pathname + window.location.search);
-                    return;
+                    history.replaceState(null, document.title, window.location.pathname + window.location.search);
                 }
                 this.handleAuthSession(session);
             } else if (event === 'SIGNED_OUT') {
