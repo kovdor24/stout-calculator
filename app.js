@@ -1737,6 +1737,21 @@ const app = {
                             time: now.toISOString(),
                             isRead: false
                         });
+
+                        // Дублирование на Email с учетом приоритета (Email для уведомлений или регистрационный)
+                        const todayStr = now.toDateString();
+                        const sentKey = `sent_exp_mail_24h_${uRow.id}_${todayStr}`;
+                        if (!localStorage.getItem(sentKey)) {
+                            const recipientEmail = uRow.email || (session && session.user ? session.user.email : '');
+                            if (recipientEmail) {
+                                this.sendNotificationEmail(
+                                    recipientEmail,
+                                    'Срочно: Тариф PRO истекает на HeatCalc.ru',
+                                    'Срок действия вашего PRO тарифа истекает менее чем через 24 часа! Рекомендуем продлить его прямо сейчас в личном кабинете калькулятора, чтобы сохранить доступ ко всем возможностям.'
+                                );
+                                localStorage.setItem(sentKey, 'true');
+                            }
+                        }
                     } else if (diffDays <= 5) {
                         // Осталось менее 5 дней
                         notifications.push({
@@ -1748,6 +1763,21 @@ const app = {
                             time: now.toISOString(),
                             isRead: false
                         });
+
+                        // Дублирование на Email с учетом приоритета (Email для уведомлений или регистрационный)
+                        const todayStr = now.toDateString();
+                        const sentKey = `sent_exp_mail_5d_${uRow.id}_${todayStr}`;
+                        if (!localStorage.getItem(sentKey)) {
+                            const recipientEmail = uRow.email || (session && session.user ? session.user.email : '');
+                            if (recipientEmail) {
+                                this.sendNotificationEmail(
+                                    recipientEmail,
+                                    'Предупреждение: Тариф PRO заканчивается на HeatCalc.ru',
+                                    `Срок действия вашего PRO тарифа истекает через ${diffDays} дн. Рекомендуем продлить его заранее в личном кабинете калькулятора, чтобы работа не прерывалась.`
+                                );
+                                localStorage.setItem(sentKey, 'true');
+                            }
+                        }
                     }
                     
                     // Общая информационная плашка (всегда "прочитана", просто висит как статус)
@@ -1822,6 +1852,33 @@ const app = {
             this._lastUnreadCount = unreadCount;
         } catch (e) {
             console.error("Error fetching notifications:", e);
+        }
+    },
+
+    sendNotificationEmail: async function (toEmail, subject, body) {
+        if (!toEmail || !toEmail.trim()) return;
+        const emailjsServiceID = 'service_o11b4ej';
+        const emailjsTemplateID = 'template_ysuxfio';
+        
+        const templateParams = {
+            to_email: toEmail.trim(),
+            user_email: toEmail.trim(),
+            tariff_name: 'Системное уведомление',
+            email_subject: subject,
+            subject_text: subject,
+            email_body: body,
+            message_text: body
+        };
+
+        if (typeof emailjs !== 'undefined') {
+            try {
+                await emailjs.send(emailjsServiceID, emailjsTemplateID, templateParams);
+                console.log(`[Email Notification] Успешно отправлено на ${toEmail}`);
+            } catch (err) {
+                console.error('[Email Notification] Ошибка EmailJS:', err);
+            }
+        } else {
+            console.warn('[Email Notification] Библиотека EmailJS не загружена');
         }
     },
 
@@ -2488,6 +2545,36 @@ const app = {
             if (error) throw error;
 
             app.alert("Сообщение успешно отправлено!");
+
+            // Email Дублирование получателям в фоне
+            (async () => {
+                try {
+                    if (type === 'private' && recipientId) {
+                        const users = this.adminData.allUsersDropdown || [];
+                        const targetUser = users.find(u => u.id === recipientId);
+                        if (targetUser && targetUser.email) {
+                            await this.sendNotificationEmail(
+                                targetUser.email,
+                                'Новое личное сообщение от администратора HeatCalc.ru',
+                                `Здравствуйте!\n\nАдминистратор калькулятора HeatCalc.ru отправил вам новое личное сообщение:\n\n"${text.trim()}"\n\nВы можете ответить на это сообщение в разделе уведомлений личного кабинета.`
+                            );
+                        }
+                    } else if (type === 'broadcast') {
+                        const users = this.adminData.allUsersDropdown || [];
+                        for (const targetUser of users) {
+                            if (targetUser && targetUser.email) {
+                                await this.sendNotificationEmail(
+                                    targetUser.email,
+                                    'Важное объявление от администрации HeatCalc.ru',
+                                    `Здравствуйте!\n\nОпубликовано новое объявление для всех пользователей HeatCalc.ru:\n\n"${text.trim()}"\n\nПодробности доступны в разделе уведомлений личного кабинета.`
+                                );
+                            }
+                        }
+                    }
+                } catch (emailErr) {
+                    console.error("Ошибка при дублировании сообщений админа на почту:", emailErr);
+                }
+            })();
             
             // Очищаем форму и перезагружаем историю сообщений
             document.getElementById('admin_msg_text').value = '';
@@ -2513,10 +2600,10 @@ const app = {
             let uRow = null;
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
-                let { data } = await supabaseClient.from('users').select('id').eq('auth_user_id', session.user.id).maybeSingle();
+                let { data } = await supabaseClient.from('users').select('id, username, email').eq('auth_user_id', session.user.id).maybeSingle();
                 uRow = data;
             } else if (this.state.tgUser && this.state.tgUser.authUserId) {
-                let { data } = await supabaseClient.from('users').select('id').eq('auth_user_id', this.state.tgUser.authUserId).maybeSingle();
+                let { data } = await supabaseClient.from('users').select('id, username, email').eq('auth_user_id', this.state.tgUser.authUserId).maybeSingle();
                 uRow = data;
             }
             if (!uRow) {
@@ -2535,6 +2622,23 @@ const app = {
             if (error) throw error;
             
             app.alert("Ответ успешно отправлен администратору!");
+
+            // Email Дублирование администраторам в фоне
+            (async () => {
+                try {
+                    const adminEmails = ['kovdor24@yandex.ru', 'dima24ba@gmail.com', 'kovdorekb@gmail.com'];
+                    const installerName = uRow.username || uRow.email || 'Монтажник';
+                    for (const adminEmail of adminEmails) {
+                        await this.sendNotificationEmail(
+                            adminEmail,
+                            `Новый ответ от монтажника ${installerName} на HeatCalc.ru`,
+                            `Монтажник ${installerName} (${uRow.email || 'Email не указан'}) ответил на сообщение администратора:\n\n"${text.trim()}"\n\nПожалуйста, проверьте панель администрирования на HeatCalc.ru.`
+                        );
+                    }
+                } catch (emailErr) {
+                    console.error("Ошибка при дублировании ответа на почту админам:", emailErr);
+                }
+            })();
             
             // Сбросываем инпут
             const inp = document.getElementById(`reply_input_${parentId}`);
