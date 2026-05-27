@@ -3995,16 +3995,11 @@ const app = {
             object_info.status_updated_at = statusUpdatedAt;
 
             let dbUserId = null;
-            if (this.state.tgUser && this.state.tgUser.id) {
-                if (/^\d+$/.test(String(this.state.tgUser.id))) {
-                    dbUserId = parseInt(this.state.tgUser.id);
-                } else {
-                    dbUserId = this.state.tgUser.id;
-                }
-            }
-            if (!dbUserId) {
+            
+            // 1. Сначала всегда запрашиваем свежий и 100% рабочий ID из базы по auth_user_id активного пользователя
+            if (user && user.id) {
                 try {
-                    let { data: uData, error: uError } = await withTimeout(
+                    let { data: uData } = await withTimeout(
                         supabaseClient
                             .from('users')
                             .select('id')
@@ -4012,39 +4007,47 @@ const app = {
                             .maybeSingle(),
                         4000
                     );
-                    if (!uError && uData) {
+                    if (uData) {
                         dbUserId = uData.id;
-                        this.state.tgUser = this.state.tgUser || {};
-                        this.state.tgUser.id = dbUserId;
-                        this.saveState();
                     }
                 } catch (e) {
-                    console.warn('[shareInvoice] Ошибка при поиске пользователя:', e);
+                    console.warn('[shareInvoice] Ошибка поиска по auth_user_id:', e);
                 }
             }
 
-            if (!dbUserId) {
-                const email = user.email || '';
-                if (email) {
-                    try {
-                        let { data: uData } = await withTimeout(
-                            supabaseClient
-                                .from('users')
-                                .select('id')
-                                .eq('email', email)
-                                .maybeSingle(),
-                            4000
-                        );
-                        if (uData) {
-                            dbUserId = uData.id;
-                            this.state.tgUser = this.state.tgUser || {};
-                            this.state.tgUser.id = dbUserId;
-                            this.saveState();
-                        }
-                    } catch (e) {
-                        console.warn('[shareInvoice] Ошибка при поиске по email:', e);
+            // 2. Если по auth_user_id не нашли, пробуем найти по email
+            if (!dbUserId && user && user.email) {
+                try {
+                    let { data: uData } = await withTimeout(
+                        supabaseClient
+                            .from('users')
+                            .select('id')
+                            .eq('email', user.email)
+                            .maybeSingle(),
+                        4000
+                    );
+                    if (uData) {
+                        dbUserId = uData.id;
                     }
+                } catch (e) {
+                    console.warn('[shareInvoice] Ошибка поиска по email:', e);
                 }
+            }
+
+            // 3. Локальный резерв: если база недоступна или запись не найдена, используем сохраненный ID
+            if (!dbUserId && this.state.tgUser && this.state.tgUser.id) {
+                if (/^\d+$/.test(String(this.state.tgUser.id))) {
+                    dbUserId = parseInt(this.state.tgUser.id);
+                } else {
+                    dbUserId = this.state.tgUser.id;
+                }
+            }
+
+            // 4. Если актуальный ID найден в базе, сохраняем его в стейт для синхронизации
+            if (dbUserId) {
+                this.state.tgUser = this.state.tgUser || {};
+                this.state.tgUser.id = dbUserId;
+                this.saveState();
             }
 
             if (!this.state.shared_invoice_id) {
