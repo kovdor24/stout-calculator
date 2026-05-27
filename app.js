@@ -3497,7 +3497,7 @@ const app = {
             const existingPhone = this.state.tgUser.phone || phone || '';
 
             this.state.tgUser = {
-                id: authUserId,
+                id: null,
                 authUserId: authUserId,
                 first_name: fullName,
                 phone: existingPhone,
@@ -4137,7 +4137,12 @@ const app = {
                 const rawId = this.state.tgUser.id;
                 // Используем только UUID (строка с тире), Telegram-числовые ID пропускаем
                 if (typeof rawId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId)) {
-                    dbUserId = rawId;
+                    const currentAuthUser = (user && user.id) ? user.id : (this.state.tgUser.authUserId || null);
+                    if (rawId !== currentAuthUser) {
+                        dbUserId = rawId;
+                    } else {
+                        console.warn('[shareInvoice] tgUser.id равен Auth ID, пропускаем для user_id (ожидается public.users.id):', rawId);
+                    }
                 } else {
                     console.warn('[shareInvoice] tgUser.id не является UUID, пропускаем для user_id:', rawId);
                 }
@@ -4673,7 +4678,11 @@ const app = {
                     const rawId = tgUser.id;
                     // Используем только UUID — Telegram-числовой ID нарушает foreign key constraint
                     if (typeof rawId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId)) {
-                        dbUserId = rawId;
+                        if (rawId !== authUserId) {
+                            dbUserId = rawId;
+                        } else {
+                            console.warn('[sendEmail] tgUser.id равен Auth ID, пропускаем для user_id (ожидается public.users.id):', rawId);
+                        }
                     } else {
                         console.warn('[sendEmail] tgUser.id не является UUID, пропускаем для user_id:', rawId);
                     }
