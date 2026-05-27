@@ -1735,13 +1735,127 @@ const app = {
                     badge.style.display = 'none';
                 }
             }
+
+            // Проигрываем звук, если количество непрочитанных увеличилось
+            if (this._lastUnreadCount !== undefined && unreadCount > this._lastUnreadCount) {
+                const savedSound = localStorage.getItem('stout_notification_sound') || 'iphone';
+                this.playNotificationSound(savedSound);
+            }
+            this._lastUnreadCount = unreadCount;
         } catch (e) {
             console.error("Error fetching notifications:", e);
         }
     },
 
+    playNotificationSound: function (soundName) {
+        if (!soundName) {
+            soundName = localStorage.getItem('stout_notification_sound') || 'iphone';
+        }
+        if (soundName === 'none') return;
+
+        try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return;
+            
+            const ctx = new AudioContextClass();
+            if (ctx.state === 'suspended') {
+                ctx.resume();
+            }
+            const now = ctx.currentTime;
+
+            if (soundName === 'iphone') {
+                // iPhone Tri-tone (C6, D6, G6)
+                const playNote = (freq, startTime, duration) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, startTime);
+                    
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(0.2, startTime + 0.01); // quick attack
+                    gain.gain.setValueAtTime(0.2, startTime + duration - 0.04);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration); // smooth release
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+                };
+
+                playNote(1046.50, now, 0.12);        // C6
+                playNote(1174.66, now + 0.10, 0.12); // D6
+                playNote(1567.98, now + 0.20, 0.35); // G6
+            } else if (soundName === 'icq') {
+                // ICQ Uh-Oh! (vocal chirp)
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1400, now);
+                filter.connect(ctx.destination);
+
+                // "Uh" Note
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sawtooth';
+                osc1.frequency.setValueAtTime(320, now);
+                osc1.frequency.exponentialRampToValueAtTime(200, now + 0.08);
+                
+                gain1.gain.setValueAtTime(0, now);
+                gain1.gain.linearRampToValueAtTime(0.2, now + 0.01);
+                gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+                
+                osc1.connect(gain1);
+                gain1.connect(filter);
+                osc1.start(now);
+                osc1.stop(now + 0.08);
+
+                // "Oh" Note
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sawtooth';
+                const startOh = now + 0.09;
+                osc2.frequency.setValueAtTime(510, startOh);
+                osc2.frequency.exponentialRampToValueAtTime(340, startOh + 0.16);
+                
+                gain2.gain.setValueAtTime(0, startOh);
+                gain2.gain.linearRampToValueAtTime(0.2, startOh + 0.015);
+                gain2.gain.exponentialRampToValueAtTime(0.0001, startOh + 0.16);
+                
+                osc2.connect(gain2);
+                gain2.connect(filter);
+                osc2.start(startOh);
+                osc2.stop(startOh + 0.16);
+            }
+        } catch (e) {
+            console.warn("Failed to play notification sound:", e);
+        }
+    },
+
+    updateSoundIconUI: function (val) {
+        const iconEl = document.getElementById('sound_status_icon');
+        if (iconEl) {
+            iconEl.innerText = val === 'none' ? '🔇' : '🔊';
+        }
+    },
+
+    changeNotificationSound: function (val) {
+        localStorage.setItem('stout_notification_sound', val);
+        this.playNotificationSound(val);
+        this.updateSoundIconUI(val);
+    },
+
     openNotificationsModal: async function () {
         document.getElementById('notifications_modal_overlay').style.display = 'flex';
+        
+        // Синхронизируем значение селектора звука
+        const savedSound = localStorage.getItem('stout_notification_sound') || 'iphone';
+        const soundSelect = document.getElementById('notification_sound_select');
+        if (soundSelect) {
+            soundSelect.value = savedSound;
+        }
+        this.updateSoundIconUI(savedSound);
+
         const listEl = document.getElementById('notifications_list');
         if (!listEl) return;
 
