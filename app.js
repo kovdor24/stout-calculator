@@ -1970,6 +1970,7 @@ const app = {
                         </div>
                         <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">${n.projectName}</div>
                         <div style="font-size: 11px; color: var(--text-sec); line-height: 1.4;">${n.comment}</div>
+                        ${(isCritical || isWarning) 
                             ? `<button class="auth-btn-base btn-email-submit" style="margin: 6px 0 0 0; width: 100%; height: 30px; font-size: 11px; font-weight: bold; background: #D97706; border-color: #D97706;" onclick="event.stopPropagation(); document.getElementById('notifications_modal_overlay').style.display='none'; document.querySelector('.header-main-btn-pro')?.click();">Продлить доступ</button>`
                             : ''
                         }
