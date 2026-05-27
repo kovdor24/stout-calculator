@@ -824,8 +824,11 @@ const app = {
     getProUntilDate: function () {
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
         let isTrialActive = trialUntil > Date.now();
-        if (this.state.accountType === 'pro' && this.state.tgUser && this.state.tgUser.demo_ends_at) {
-            return new Date(this.state.tgUser.demo_ends_at).toLocaleDateString('ru-RU');
+        if (this.state.accountType === 'pro') {
+            if (this.state.tgUser && this.state.tgUser.demo_ends_at) {
+                return new Date(this.state.tgUser.demo_ends_at).toLocaleDateString('ru-RU');
+            }
+            return 'навсегда';
         }
         if (isTrialActive) {
             return new Date(trialUntil).toLocaleDateString('ru-RU');
