@@ -2375,7 +2375,9 @@
                         price: item.p,
                         sum: item.m,
                         sectionTitle: item.t,
-                        isOpt: !!item.isOpt
+                        isOpt: !!item.isOpt,
+                        desc: item.desc || item.d || '',
+                        availability: item.availability || item.a || ''
                     };
                 }
 
@@ -2392,7 +2394,9 @@
                         price: price,
                         sum: price * q,
                         sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
-                        isOpt: false
+                        isOpt: false,
+                        desc: item.d || item.desc || '',
+                        availability: ''
                     };
                 }
 
@@ -2415,7 +2419,9 @@
                     price: finalPrice,
                     sum: finalPrice * q,
                     sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
-                    isOpt: item.o === 1
+                    isOpt: item.o === 1,
+                    desc: item.d || catalogItem.desc || '',
+                    availability: catalogItem.availability || ''
                 };
             });
 

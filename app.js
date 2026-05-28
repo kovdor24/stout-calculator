@@ -72,7 +72,8 @@ function compactPayload(data) {
                         s: item.displaySku || item.sku || item.id || '',
                         q: item.q || 0,
                         t: SECTION_MAP[item.sectionTitle] || item.sectionTitle || 9,
-                        o: item.isOpt ? 1 : 0
+                        o: item.isOpt ? 1 : 0,
+                        d: item.desc || ''
                     };
                 }
             }),
