@@ -1115,7 +1115,7 @@ const app = {
             const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
 
             let dbUserId = null;
-            if (tgUser && tgUser.id) {
+            if (tgUser && tgUser.id && !/^\d+$/.test(String(tgUser.id))) {
                 dbUserId = tgUser.id;
             }
             if (!dbUserId && (tgUser || session)) {
@@ -3928,7 +3928,7 @@ const app = {
 
         let pName = this.state.projectName;
         if (!pName) {
-            pName = await app.prompt("Введите название объекта для сохранения в облаке:", "Новый объект");
+            pName = await app.prompt("Перед отправкой клиенту и формированием ссылки укажите название объекта:", "");
             if (!pName) {
                 console.log("[shareInvoice] Отменено пользователем (ввод названия объекта)");
                 return;
@@ -4021,6 +4021,13 @@ const app = {
                     console.error('\u041e\u0448\u0438\u0431\u043a\u0430 \u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f:', err);
                     app.prompt("\u2705 \u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0430! \u0421\u043a\u043e\u043f\u0438\u0440\u0443\u0439\u0442\u0435 \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u043a\u043b\u0438\u0435\u043d\u0442\u0443:", shareUrl);
                 });
+
+                // Автоматически сохраняем в облако
+                try {
+                    await withTimeout(this.saveToCloud(true), 4000);
+                } catch (saveCloudErr) {
+                    console.error('[shareInvoice] Ошибка фонового сохранения сметы:', saveCloudErr);
+                }
             } catch (err) {
                 console.error('[shareInvoice] \u041e\u0448\u0438\u0431\u043a\u0430 \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438 \u0441\u0441\u044b\u043b\u043a\u0438:', err);
                 app.alert("\u041f\u0440\u043e\u0438\u0437\u043e\u0448\u043b\u0430 \u043e\u0448\u0438\u0431\u043a\u0430 \u043f\u0440\u0438 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u0438 \u0441\u0441\u044b\u043b\u043a\u0438: " + err.message);
@@ -4284,7 +4291,7 @@ const app = {
 
             let dbUserId = null;
             const tgUser = stateData.tgUser;
-            if (tgUser && tgUser.id) {
+            if (tgUser && tgUser.id && !/^\d+$/.test(String(tgUser.id))) {
                 dbUserId = tgUser.id;
             }
             if (!dbUserId && (tgUser || session)) {
