@@ -329,8 +329,8 @@ const app = {
             const cancelBtn = document.createElement('button');
             cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
             const isSharePrompt = msg && (
-                msg.toLowerCase().includes("ссылк") || 
-                msg.toLowerCase().includes("создан") || 
+                msg.toLowerCase().includes("ссылк") ||
+                msg.toLowerCase().includes("создан") ||
                 msg.toLowerCase().includes("скопир")
             ) && !msg.toLowerCase().includes("название объекта") && !msg.toLowerCase().includes("введите название");
             if (isSharePrompt) {
@@ -824,7 +824,7 @@ const app = {
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
         let isTrialActive = trialUntil > Date.now();
         let isDbPro = (this.state.tgUser && ['pro', 'admin'].includes(this.state.tgUser.account_type)) ||
-                      (this.state.user && ['pro', 'admin'].includes(this.state.user.account_type));
+            (this.state.user && ['pro', 'admin'].includes(this.state.user.account_type));
         return this.state.accountType === 'pro' || isTrialActive || !!isDbPro;
     },
 
@@ -1632,16 +1632,16 @@ const app = {
         const dot = document.getElementById('vpn_status_dot');
         const btn = document.getElementById('btn_notifications');
         if (!dot) return;
-        
+
         try {
             // Сверхлегкий пинг Supabase
             const { data, error } = await Promise.race([
                 supabaseClient.from('users').select('id').limit(1),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2500))
             ]);
-            
+
             if (error) throw error;
-            
+
             // Если все успешно — зеленая точка (соединение работает)
             dot.style.backgroundColor = '#10B981';
             if (btn) btn.setAttribute('title', 'Соединение с базой активно (VPN работает)');
@@ -1734,7 +1734,7 @@ const app = {
                 const now = new Date();
                 const diffTime = endsAt - now;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                
+
                 if (diffTime > 0) {
                     if (diffDays <= 1) {
                         // Осталось менее 24 часов
@@ -1789,7 +1789,7 @@ const app = {
                             }
                         }
                     }
-                    
+
                     // Общая информационная плашка (всегда "прочитана", просто висит как статус)
                     notifications.push({
                         id: 'tariff_active_info',
@@ -1819,7 +1819,7 @@ const app = {
                         // Выводим только входящие сообщения для монтажника (отправленные админом ему или всем)
                         if (msg.sender_id !== uRow.id) {
                             const msgReplies = replies.filter(r => r.parent_id === msg.id);
-                            
+
                             notifications.push({
                                 id: msg.id,
                                 type: 'admin_message',
@@ -1869,7 +1869,7 @@ const app = {
         if (!toEmail || !toEmail.trim()) return;
         const emailjsServiceID = 'service_o11b4ej';
         const emailjsTemplateID = 'template_ysuxfio';
-        
+
         const templateParams = {
             to_email: toEmail.trim(),
             user_email: toEmail.trim(),
@@ -1901,7 +1901,7 @@ const app = {
         try {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             if (!AudioContextClass) return;
-            
+
             const ctx = new AudioContextClass();
             if (ctx.state === 'suspended') {
                 ctx.resume();
@@ -1913,18 +1913,18 @@ const app = {
                 const playNote = (freq, startTime, duration) => {
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
-                    
+
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(freq, startTime);
-                    
+
                     gain.gain.setValueAtTime(0, startTime);
                     gain.gain.linearRampToValueAtTime(0.2, startTime + 0.01); // quick attack
                     gain.gain.setValueAtTime(0.2, startTime + duration - 0.04);
                     gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration); // smooth release
-                    
+
                     osc.connect(gain);
                     gain.connect(ctx.destination);
-                    
+
                     osc.start(startTime);
                     osc.stop(startTime + duration);
                 };
@@ -1945,11 +1945,11 @@ const app = {
                 osc1.type = 'sawtooth';
                 osc1.frequency.setValueAtTime(320, now);
                 osc1.frequency.exponentialRampToValueAtTime(200, now + 0.08);
-                
+
                 gain1.gain.setValueAtTime(0, now);
                 gain1.gain.linearRampToValueAtTime(0.2, now + 0.01);
                 gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
-                
+
                 osc1.connect(gain1);
                 gain1.connect(filter);
                 osc1.start(now);
@@ -1962,11 +1962,11 @@ const app = {
                 const startOh = now + 0.09;
                 osc2.frequency.setValueAtTime(510, startOh);
                 osc2.frequency.exponentialRampToValueAtTime(340, startOh + 0.16);
-                
+
                 gain2.gain.setValueAtTime(0, startOh);
                 gain2.gain.linearRampToValueAtTime(0.2, startOh + 0.015);
                 gain2.gain.exponentialRampToValueAtTime(0.0001, startOh + 0.16);
-                
+
                 osc2.connect(gain2);
                 gain2.connect(filter);
                 osc2.start(startOh);
@@ -1992,7 +1992,7 @@ const app = {
 
     openNotificationsModal: async function () {
         document.getElementById('notifications_modal_overlay').style.display = 'flex';
-        
+
         // Синхронизируем значение селектора звука
         const savedSound = localStorage.getItem('stout_notification_sound') || 'iphone';
         const soundSelect = document.getElementById('notification_sound_select');
@@ -2024,11 +2024,11 @@ const app = {
             if (n.type === 'tariff_alert' || n.type === 'tariff_info') {
                 const isCritical = n.status === 'critical';
                 const isWarning = n.status === 'warning';
-                
+
                 const bg = isCritical ? 'rgba(239, 68, 68, 0.04)' : (isWarning ? 'rgba(245, 158, 11, 0.04)' : 'rgba(59, 130, 246, 0.04)');
                 const borderCol = isCritical ? '#EF4444' : (isWarning ? '#F59E0B' : '#3B82F6');
                 const labelCol = isCritical ? '#991B1B' : (isWarning ? '#92400E' : '#1E40AF');
-                
+
                 h += `
                     <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(59, 130, 246, 0.06);' : 'opacity: 0.85;'}" onclick="app.handleNotificationClick('${n.id}', null)">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -2037,17 +2037,17 @@ const app = {
                         </div>
                         <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">${n.projectName}</div>
                         <div style="font-size: 11px; color: var(--text-sec); line-height: 1.4;">${n.comment}</div>
-                        ${(isCritical || isWarning) 
-                            ? `<button class="auth-btn-base btn-email-submit" style="margin: 6px 0 0 0; width: 100%; height: 30px; font-size: 11px; font-weight: bold; background: #D97706; border-color: #D97706;" onclick="event.stopPropagation(); document.getElementById('notifications_modal_overlay').style.display='none'; app.showModal('pro');">Продлить доступ</button>`
-                            : ''
-                        }
+                        ${(isCritical || isWarning)
+                        ? `<button class="auth-btn-base btn-email-submit" style="margin: 6px 0 0 0; width: 100%; height: 30px; font-size: 11px; font-weight: bold; background: #D97706; border-color: #D97706;" onclick="event.stopPropagation(); document.getElementById('notifications_modal_overlay').style.display='none'; app.showModal('pro');">Продлить доступ</button>`
+                        : ''
+                    }
                     </div>
                 `;
             } else if (n.type === 'admin_message') {
                 const bg = 'rgba(59, 130, 246, 0.03)';
                 const borderCol = '#3B82F6';
                 const labelCol = '#1E40AF';
-                
+
                 // Рендерим вложенные ответы
                 let repliesHtml = '';
                 if (n.replies && n.replies.length > 0) {
@@ -2090,7 +2090,7 @@ const app = {
                 const borderCol = n.status === 'confirmed' ? '#10B981' : '#EF4444';
                 const statusLabel = n.status === 'confirmed' ? 'ОДОБРЕНА ✓' : 'НА ДОРАБОТКЕ ✍';
                 const labelCol = n.status === 'confirmed' ? '#065F46' : '#991B1B';
-                
+
                 h += `
                     <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: 0.2s; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(59, 130, 246, 0.06);' : 'opacity: 0.85;'}" onclick="app.handleNotificationClick('${n.id}', '${n.estimateId}')" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.05)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -2098,10 +2098,10 @@ const app = {
                             <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
                         </div>
                         <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">Смета «${n.projectName}»</div>
-                        ${n.status === 'confirmed' 
-                            ? `<div style="font-size: 11px; color: var(--text-sec);">Заказчик согласовал предложение на сумму <b>${n.totalSum.toLocaleString()} ₽</b>.</div>`
-                            : `<div style="font-size: 11px; color: var(--text-sec); font-style: italic; background: rgba(239,68,68,0.02); border-radius: 6px; padding: 6px; border: 1px dashed rgba(239,68,68,0.15); margin-top: 2px; word-break: break-word;"><b>Замечание:</b> "${n.comment}"</div>`
-                        }
+                        ${n.status === 'confirmed'
+                        ? `<div style="font-size: 11px; color: var(--text-sec);">Заказчик согласовал предложение на сумму <b>${n.totalSum.toLocaleString()} ₽</b>.</div>`
+                        : `<div style="font-size: 11px; color: var(--text-sec); font-style: italic; background: rgba(239,68,68,0.02); border-radius: 6px; padding: 6px; border: 1px dashed rgba(239,68,68,0.15); margin-top: 2px; word-break: break-word;"><b>Замечание:</b> "${n.comment}"</div>`
+                    }
                     </div>
                 `;
             }
@@ -2259,7 +2259,7 @@ const app = {
     renderAdminMain: function () {
         const content = document.getElementById('admin_content');
         if (!content) return;
-        
+
         if (!this._adminTab) this._adminTab = 'stats';
 
         const { users, userEstimates, recentEstimates, totalUsers, totalEstimates, totalEq, totalWorks } = this.adminData;
@@ -2270,7 +2270,7 @@ const app = {
                 <button id="admin_tab_messages" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'messages' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'messages' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'messages' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('messages')">💬 Сообщения и Рассылка</button>
             </div>
         `;
-        
+
         if (this._adminTab === 'messages') {
             content.innerHTML = navHtml;
             this.renderAdminMessages();
@@ -2338,11 +2338,11 @@ const app = {
             let device = u.last_device || 'Неизвестно';
             let lastVis = u.last_visited ? new Date(u.last_visited).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : date;
             let avatarImg = u.avatar_url ? `<img src="${u.avatar_url}" style="width:32px; height:32px; border-radius:50%; vertical-align:middle; margin-right:10px; object-fit:cover; border:1px solid #E5E7EB;">` : `<span style="font-size:24px; vertical-align:middle; margin-right:10px;">👤</span>`;
- 
+
             let cityText = u.city || 'Город не указан';
             let ipLoc = u.location || 'Неизвестно';
             let locHTML = `<div style="font-size:10px;color:var(--text-sec); margin-top:2px;">📍 ${cityText} <span class="admin-ip-location" style="color: #888; font-size: 0.85em; margin-left:5px;">(IP: ${ipLoc})</span></div>`;
- 
+
             let searchStr = `${name} ${phone} ${u.email || ''} ${cityText} ${ipLoc}`.toLowerCase();
 
             h += `<tr class="active-row admin-list-row" data-search="${searchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminUser('${u.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
@@ -2420,7 +2420,7 @@ const app = {
 
         let userOptions = '<option value="all">📢 Отправить ВСЕМ авторизованным</option>';
         dropdownUsers.forEach(u => {
-            const name = u.username || u.email || `Пользователь #${u.id.substring(0,6)}`;
+            const name = u.username || u.email || `Пользователь #${u.id.substring(0, 6)}`;
             userOptions += `<option value="${u.id}">👤 ${name} (${u.phone || 'без тел.'})</option>`;
         });
 
@@ -2455,14 +2455,14 @@ const app = {
             innerHtml += `<div style="display: flex; flex-direction: column; gap: 12px; max-height: 45vh; overflow-y: auto; padding-right: 5px;">`;
             parentMsgs.forEach(msg => {
                 const dateStr = new Date(msg.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-                
+
                 // Находим имя получателя
                 let recipientName = 'Все монтажники';
                 if (msg.recipient_id) {
                     const recUser = dropdownUsers.find(u => u.id === msg.recipient_id);
-                    recipientName = recUser ? (recUser.username || recUser.email) : `Пользователь #${msg.recipient_id.substring(0,6)}`;
+                    recipientName = recUser ? (recUser.username || recUser.email) : `Пользователь #${msg.recipient_id.substring(0, 6)}`;
                 }
-                
+
                 const label = msg.type === 'broadcast' ? '📢 Объявление для всех' : `✉️ Личное для ${recipientName}`;
                 const labelCol = msg.type === 'broadcast' ? '#D97706' : '#2563EB';
 
@@ -2475,7 +2475,7 @@ const app = {
                         const replyUser = dropdownUsers.find(u => u.id === r.sender_id);
                         const senderName = replyUser ? (replyUser.username || replyUser.email || replyUser.phone) : 'Монтажник';
                         const replyDate = new Date(r.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-                        
+
                         repliesHtml += `
                             <div style="font-size: 12px;">
                                 <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
@@ -2512,7 +2512,7 @@ const app = {
                 content.removeChild(content.lastChild);
             }
         }
-        
+
         const wrapper = document.createElement('div');
         wrapper.innerHTML = innerHtml;
         content.appendChild(wrapper);
@@ -2585,10 +2585,10 @@ const app = {
                     console.error("Ошибка при дублировании сообщений админа на почту:", emailErr);
                 }
             })();
-            
+
             // Очищаем форму и перезагружаем историю сообщений
             document.getElementById('admin_msg_text').value = '';
-            
+
             // Перезапрашиваем сообщения
             let { data: allMessages } = await supabaseClient.from('messages').select('*').order('created_at', { ascending: false });
             this.adminData.messages = allMessages || [];
@@ -2604,7 +2604,7 @@ const app = {
             app.alert("Введите текст ответа!");
             return;
         }
-        
+
         try {
             // Получаем текущего пользователя
             let uRow = null;
@@ -2630,7 +2630,7 @@ const app = {
             });
 
             if (error) throw error;
-            
+
             app.alert("Ответ успешно отправлен администратору!");
 
             // Email Дублирование администраторам в фоне
@@ -2649,7 +2649,7 @@ const app = {
                     console.error("Ошибка при дублировании ответа на почту админам:", emailErr);
                 }
             })();
-            
+
             // Сбросываем инпут
             const inp = document.getElementById(`reply_input_${parentId}`);
             if (inp) inp.value = '';
@@ -3134,7 +3134,7 @@ const app = {
     copyAdminEstimateCode: async function (estId) {
         let est = (this.adminData.userEstimates || []).find(e => String(e.id) === String(estId)) || (this.adminData.recentEstimates || []).find(e => String(e.id) === String(estId));
         if (!est || !est.calc_data) { await app.alert('Нет данных для копирования'); return; }
-        
+
         let st = est.calc_data;
         if (typeof st === 'string') {
             try {
@@ -3176,7 +3176,7 @@ const app = {
             input.focus();
             input.select();
             input.setSelectionRange(0, 99999); // For mobile devices
-            
+
             try {
                 navigator.clipboard.writeText(input.value).then(() => {
                     if (btn) {
@@ -4219,7 +4219,7 @@ const app = {
             object_info.status_updated_at = statusUpdatedAt;
 
             let dbUserId = null;
-            
+
             // 1. Сначала всегда запрашиваем свежий и 100% рабочий ID из базы по auth_user_id активного пользователя
             if (user && user.id) {
                 try {
@@ -4277,7 +4277,7 @@ const app = {
                 manager_info: manager_info,
                 items: items,
                 totals: totals,
-                user_id: dbUserId || null
+                user_id: (user && user.id) || null
             };
 
             // Передаём id только если он уже сохранён и является валидным UUID (upsert для обновления)
