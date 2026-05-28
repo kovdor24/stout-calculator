@@ -2157,15 +2157,23 @@
             if (typeof catalog === 'undefined') return null;
             for (const key in catalog) {
                 const list = catalog[key];
+                if (!list) continue;
                 if (Array.isArray(list)) {
                     const found = list.find(item => item.id === sku || item.article === sku);
                     if (found) return found;
                     
                     // Check nested Rommer version
                     for (const item of list) {
-                        if (item.rommer && item.rommer.id === sku) {
-                            return item.rommer;
+                        if (item.rommer && (Array.isArray(item.rommer) ? item.rommer.some(r => r.id === sku) : item.rommer.id === sku)) {
+                            return Array.isArray(item.rommer) ? item.rommer.find(r => r.id === sku) : item.rommer;
                         }
+                    }
+                } else if (typeof list === 'object') {
+                    if (list.id === sku || list.article === sku) {
+                        return list;
+                    }
+                    if (list.rommer && (Array.isArray(list.rommer) ? list.rommer.some(r => r.id === sku) : list.rommer.id === sku)) {
+                        return Array.isArray(list.rommer) ? list.rommer.find(r => r.id === sku) : list.rommer;
                     }
                 }
             }
