@@ -2857,15 +2857,7 @@
 
                         let finalTooltipContent = "";
                         if (friendlyExplanation) {
-                            finalTooltipContent += `<div style="font-weight: 700; color: #60A5FA; margin-bottom: 4px; font-size: 11px;">Зачем это нужно:</div><div style="font-size: 11px; line-height: 1.4; color: #E5E7EB; margin-bottom: 8px;">${friendlyExplanation}</div>`;
-                        }
-                        if (descText && descText.trim() !== "" && !descText.toLowerCase().includes("status: premium") && !descText.toLowerCase().includes("plus: ")) {
-                            finalTooltipContent += `<div style="font-weight: 700; color: #34D399; margin-bottom: 2px; font-size: 11px;">Технический расчет:</div><div style="font-size: 11px; line-height: 1.4; color: #D1D5DB; margin-bottom: 8px;">${descText}</div>`;
-                        }
-
-                        let availStatusLine = availText ? `<div style="margin-top: 8px; font-weight: 700; color: ${i.availability === 'in_stock' ? '#2563EB' : '#eab308'}; font-size: 11px;">${availText.trim()}</div>` : '';
-                        if (availStatusLine) {
-                            finalTooltipContent += availStatusLine;
+                            finalTooltipContent += `<div style="font-weight: 700; color: #60A5FA; margin-bottom: 4px; font-size: 11px;">Зачем это нужно:</div><div style="font-size: 11px; line-height: 1.4; color: #E5E7EB;">${friendlyExplanation}</div>`;
                         }
 
                         let tipHtml = finalTooltipContent ? `
