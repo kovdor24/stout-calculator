@@ -4988,3 +4988,29 @@ body.dark-mode .notification-card {
 body.dark-mode .notification-card:hover {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
 }
+
+/* High-priority print overrides for tooltips on the main page */
+@media print {
+    .no-print, .tooltip-wrapper, .info-icon, .tooltip-content {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}
+
+body.html2pdf-printing .no-print,
+body.html2pdf-printing .tooltip-wrapper,
+body.html2pdf-printing .info-icon,
+body.html2pdf-printing .tooltip-content {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}

@@ -327,7 +327,11 @@ const app = {
 
             const cancelBtn = document.createElement('button');
             cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
-            const isSharePrompt = msg && (msg.includes("Ссылка создана") || msg.includes("Скопируйте"));
+            const isSharePrompt = msg && (
+                msg.toLowerCase().includes("ссылк") || 
+                msg.toLowerCase().includes("создан") || 
+                msg.toLowerCase().includes("скопир")
+            );
             if (isSharePrompt) {
                 cancelBtn.innerText = 'Копировать';
                 cancelBtn.onclick = () => {
@@ -6221,7 +6225,8 @@ const app = {
                     group: i.group,
                     sectionTitle: title,
                     isOpt: !!this.state.optItems[i.originalId || i.id],
-                    availability: i.availability
+                    availability: i.availability,
+                    desc: i.qtyTip || ""
                 });
             });
 

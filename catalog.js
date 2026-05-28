@@ -667,7 +667,7 @@ const catalog = {
         { id: "VT.386.N.05", name: "Фильтр универсальный 3/4''", price: 2770, brand: "VALTEC",
   availability: 'in_stock' },
         { id: "SVC-0011-000020", name: "Клапан обратный 3/4’’ ВР", price: 1446, brand: "STOUT", rommer: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 482, brand: "ROMMER" },
-  availability: 'in_stock' }, ,
+  availability: 'in_stock' },
         { id: "SFT-0020-000034", name: "Тройник 3/4\" ВР", price: 504, brand: "STOUT",
   availability: 'in_stock' },
         { id: "SFT-0029-003412", name: "Футорка 3/4\" x 1/2\"", price: 156, brand: "STOUT",
