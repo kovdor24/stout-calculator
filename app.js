@@ -2183,7 +2183,7 @@ const app = {
             // 2. Fetch Estimates for these specific users to calc LTV in the list
             const userIds = users.map(u => u.id);
             let { data: userEsts, error: errUE } = await supabaseClient.from('estimates')
-                .select('id, user_id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at')
+                .select('id, user_id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at, users(username, phone, email)')
                 .in('user_id', userIds);
 
             // 3. Fetch Recent Estimates (Fixed 50)
@@ -3101,8 +3101,17 @@ const app = {
     copyAdminEstimateCode: async function (estId) {
         let est = (this.adminData.userEstimates || []).find(e => String(e.id) === String(estId)) || (this.adminData.recentEstimates || []).find(e => String(e.id) === String(estId));
         if (!est || !est.calc_data) { await app.alert('Нет данных для копирования'); return; }
-        let exportState = {};
+        
         let st = est.calc_data;
+        if (typeof st === 'string') {
+            try {
+                st = JSON.parse(st);
+            } catch (e) {
+                console.error("Error parsing calc_data string:", e);
+            }
+        }
+
+        let exportState = {};
         for (let key in st) {
             let val = st[key];
             if (val === false || val === 0 || val === "" || key === 'viewMode' || key === 'showSwapFor' || key === 'collapsedGroups') continue;
@@ -3111,7 +3120,15 @@ const app = {
             if (typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length === 0) continue;
             exportState[key] = val;
         }
-        let settings = btoa(unescape(encodeURIComponent(JSON.stringify(exportState))));
+
+        let settings = "";
+        try {
+            settings = base64Encode(JSON.stringify(exportState));
+        } catch (encodeErr) {
+            console.error("Error encoding estimate code using base64Encode, falling back to legacy:", encodeErr);
+            settings = btoa(unescape(encodeURIComponent(JSON.stringify(exportState))));
+        }
+
         app.copyToClipboard(settings).then(async () => {
             await app.alert('✅ Код сметы скопирован!\n\nЗакройте админку, нажмите иконку 📥 (Загрузить код) в верхней панели и вставьте его.');
         }).catch(async err => {
