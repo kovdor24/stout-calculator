@@ -329,9 +329,8 @@ const app = {
             const cancelBtn = document.createElement('button');
             cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
             const isSharePrompt = msg && (
-                msg.toLowerCase().includes("ссылк") || 
-                msg.toLowerCase().includes("создан") || 
-                msg.toLowerCase().includes("скопир")
+                msg.toLowerCase().includes("http") || 
+                msg.toLowerCase().includes("invoice.html")
             );
             if (isSharePrompt) {
                 cancelBtn.innerText = 'Копировать';
@@ -823,7 +822,8 @@ const app = {
     isPro: function () {
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
         let isTrialActive = trialUntil > Date.now();
-        let isDbPro = this.state.tgUser && ['pro', 'admin'].includes(this.state.tgUser.account_type);
+        let isDbPro = (this.state.tgUser && ['pro', 'admin'].includes(this.state.tgUser.account_type)) ||
+                      (this.state.user && ['pro', 'admin'].includes(this.state.user.account_type));
         return this.state.accountType === 'pro' || isTrialActive || !!isDbPro;
     },
 
