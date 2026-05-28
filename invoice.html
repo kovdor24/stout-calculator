@@ -204,17 +204,17 @@
             justify-content: space-between;
             align-items: center;
             background: #F9FAFB;
-            padding: 12px 20px;
+            padding: 12px 10px;
             border-radius: 8px;
             border: 1px solid var(--border);
-            gap: 10px;
+            gap: 5px;
         }
 
         .obj-item {
-            flex: 1 1 auto;
+            flex: 1 1 0px;
             text-align: center;
-            padding: 4px 10px;
-            min-width: 100px;
+            padding: 4px 5px;
+            min-width: 0;
             position: relative;
         }
 
@@ -352,7 +352,7 @@
         }
 
         .spec-table td {
-            padding: 8px 12px;
+            padding: 4px 12px;
             border-bottom: 1px solid #F3F4F6;
             vertical-align: middle;
         }
@@ -423,8 +423,8 @@
         }
 
         .table-img {
-            width: 32px;
-            height: 32px;
+            width: 26px;
+            height: 26px;
             object-fit: contain;
             border-radius: 4px;
             background: #fff;
@@ -2557,9 +2557,9 @@
             const matVal = obj.hasOwnProperty('mat') ? obj.mat : obj.res;
             let wallMat = 'Газобетон';
             if (matVal === 1 || matVal === 1.0) wallMat = 'Газобетон';
-            else if (matVal === 1.2 || matVal === 1.3) wallMat = 'Кирпич (без утепления)';
-            else if (matVal === 0.8) wallMat = 'Тёплый дом (утепленный)';
-            else if (matVal === 1.5) wallMat = 'Каркасный / Деревянный';
+            else if (matVal === 1.2 || matVal === 1.3) wallMat = 'Кирпич';
+            else if (matVal === 0.8) wallMat = 'Газобетон';
+            else if (matVal === 1.5) wallMat = 'Дерево';
             document.getElementById('obj_mat').textContent = wallMat;
 
             // 3. Totals
@@ -2979,9 +2979,9 @@
                 const matVal = obj.hasOwnProperty('mat') ? obj.mat : obj.res;
                 let wallMat = 'Газобетон';
                 if (matVal === 1 || matVal === 1.0) wallMat = 'Газобетон';
-                else if (matVal === 1.2 || matVal === 1.3) wallMat = 'Кирпич (без утепления)';
-                else if (matVal === 0.8) wallMat = 'Тёплый дом (утепленный)';
-                else if (matVal === 1.5) wallMat = 'Каркасный / Деревянный';
+                else if (matVal === 1.2 || matVal === 1.3) wallMat = 'Кирпич';
+                else if (matVal === 0.8) wallMat = 'Газобетон';
+                else if (matVal === 1.5) wallMat = 'Дерево';
 
                 // Construct detailed comment with physical units (м², кВт)
                 let comment = `Клиент одобрил смету и запросил выставление официального счета.\n\n`;
