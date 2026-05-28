@@ -1441,7 +1441,7 @@
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             justify-content: space-between !important;
-            padding: 12px 20px !important;
+            padding: 4px 10px !important;
             gap: 5px !important;
             background: #F9FAFB !important;
             border: 1px solid var(--border) !important;
@@ -1510,7 +1510,17 @@
 
         body.html2pdf-printing #equipment_tbody td {
             display: table-cell !important;
-            padding: 8px 12px !important;
+            padding: 4px 12px !important;
+            border-bottom: 1px solid #F3F4F6 !important;
+            color: var(--text-main) !important;
+            background: transparent !important;
+            text-align: left !important;
+            vertical-align: middle !important;
+        }
+
+        body.html2pdf-printing #works_tbody td {
+            display: table-cell !important;
+            padding: 4px 12px !important;
             border-bottom: 1px solid #F3F4F6 !important;
             color: var(--text-main) !important;
             background: transparent !important;
@@ -1531,7 +1541,7 @@
             height: auto !important;
             background: transparent !important;
             border-radius: 0 !important;
-            padding: 8px 12px !important;
+            padding: 4px 12px !important;
             box-sizing: content-box !important;
         }
 
@@ -1541,8 +1551,8 @@
 
         body.html2pdf-printing #equipment_tbody td.col-img img,
         body.html2pdf-printing #equipment_tbody td.col-img .table-img {
-            width: 32px !important;
-            height: 32px !important;
+            width: 26px !important;
+            height: 26px !important;
             object-fit: contain !important;
             border-radius: 4px !important;
             background: #fff !important;
@@ -1729,109 +1739,86 @@
             background: #1D4ED8;
         }
 
-        /* Premium Info Tooltips */
-        .info-tooltip-wrapper {
+        /* Tooltip style copied exactly from the main calculator */
+        .tooltip-wrapper {
             position: relative;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            margin-left: 6px;
-            cursor: help;
+            margin-left: 4px;
+            vertical-align: middle;
         }
 
         .info-icon {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: #E5E7EB;
-            color: #4B5563;
-            font-size: 10px;
-            font-weight: bold;
-            font-style: italic;
-            font-family: serif;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            border: 1px solid #D1D5DB;
-        }
-
-        .info-tooltip-wrapper:hover .info-icon {
-            background: var(--primary);
-            color: #FFFFFF;
-            border-color: var(--primary);
-            transform: scale(1.1);
-        }
-
-        .info-tooltip-content {
-            position: absolute;
-            left: 50%;
-            bottom: 125%;
-            transform: translateX(-50%) translateY(8px);
-            width: 260px;
-            background: #FFFFFF;
-            border: 1px solid #E5E7EB;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            border-radius: 8px;
-            padding: 12px;
-            z-index: 50;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            pointer-events: none;
-            text-align: left;
-        }
-
-        .info-tooltip-content::after {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border-width: 6px;
-            border-style: solid;
-            border-color: #FFFFFF transparent transparent transparent;
-        }
-        
-        .info-tooltip-content::before {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border-width: 7px;
-            border-style: solid;
-            border-color: #E5E7EB transparent transparent transparent;
-            z-index: -1;
-        }
-
-        .info-tooltip-wrapper:hover .info-tooltip-content {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .info-tooltip-title {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: var(--primary);
-            letter-spacing: 0.05em;
-            margin-bottom: 4px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            justify-content: center;
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            aspect-ratio: 1 / 1;
+            background: #DBEAFE;
+            color: #2563EB;
+            border-radius: 50%;
+            font-size: 9px;
+            font-weight: 700;
+            font-style: normal;
+            cursor: help;
+            border: 1px solid #2563EB;
         }
 
-        .info-tooltip-text {
-            font-size: 12px;
-            color: #374151;
+        .info-icon:hover {
+            background: #2563EB;
+            color: white;
+        }
+
+        .tooltip-content {
+            visibility: hidden;
+            position: absolute;
+            z-index: 100;
+            bottom: 135%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: max-content; min-width: 260px; max-width: 420px; white-space: normal;
+            background: #1F2937;
+            color: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
             line-height: 1.4;
-            font-weight: normal;
+            opacity: 0;
+            transition: 0.2s;
+            pointer-events: auto;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+            text-align: left;
+            font-weight: 400;
         }
 
-        /* Prevent page layout shift in PDF printing */
-        body.html2pdf-printing .info-tooltip-wrapper {
+        .tooltip-wrapper:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .tooltip-content::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #1F2937 transparent transparent transparent;
+        }
+
+        /* Prevent showing tooltips when printing */
+        @media print {
+            .no-print, .tooltip-wrapper, .info-icon, .tooltip-content {
+                display: none !important;
+            }
+        }
+
+        body.html2pdf-printing .tooltip-wrapper,
+        body.html2pdf-printing .info-icon,
+        body.html2pdf-printing .tooltip-content {
             display: none !important;
         }
     </style>
@@ -2798,50 +2785,41 @@
                         const cleanSku = i.displaySku || i.id;
                         const imgPath = `img/${cleanSku}.jpg`;
 
-                        // Находим понятное описание (Зачем этот элемент)
-                        let expl = '';
-                        if (i.desc && i.desc.trim() !== "" && !i.desc.includes("Количество") && !i.desc.includes("плит") && !i.desc.includes("комплект")) {
-                            expl = i.desc;
-                        } else {
-                            // Ищем в словаре
-                            const matchedKey = Object.keys(itemExplanations).find(k => cleanSku.startsWith(k));
-                            if (matchedKey) {
-                                expl = itemExplanations[matchedKey];
-                            } else {
-                                // Попробуем найти в catalog.js
-                                const catalogItem = findCatalogItem(cleanSku) || {};
-                                expl = catalogItem.desc || '';
-                            }
+                        let availStyle = '';
+                        let availText = '';
+                        if (i.availability === 'in_stock') {
+                            availStyle = 'color: #2563EB; border-color: #2563EB; background: #DBEAFE;';
+                            availText = ' (В наличии)';
+                        } else if (i.availability === 'on_order') {
+                            availStyle = 'color: #eab308; border-color: #eab308; background: #fef9c3;';
+                            availText = ' (Под заказ)';
                         }
 
-                        // Убираем HTML теги из описания для чистоты тултипа
-                        const cleanExpl = expl ? expl.replace(/<[^>]*>/g, '') : '';
+                        let descText = i.desc || '';
+                        let availStatusLine = availText ? `<div style="margin-top: 8px; font-weight: 700; color: ${i.availability === 'in_stock' ? '#2563EB' : '#eab308'};">${availText.trim()}</div>` : '';
+                        let finalTooltipContent = `${descText}${availStatusLine}`;
 
-                        const nameCellHtml = cleanExpl ? `
-                            <td class="col-name">
-                                <div style="display:flex; align-items:center; gap:6px; flex-wrap: wrap;">
-                                    <span>${i.name}</span>
-                                    <div class="info-tooltip-wrapper">
-                                        <span class="info-icon">i</span>
-                                        <div class="info-tooltip-content">
-                                            <div class="info-tooltip-title">💡 Зачем это нужно?</div>
-                                            <div class="info-tooltip-text">${cleanExpl}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                        ` : `<td class="col-name">${i.name}</td>`;
+                        let tipHtml = finalTooltipContent ? `
+                            <div class="tooltip-wrapper no-print">
+                                <i class="info-icon" style="${availStyle}">i</i>
+                                <div class="tooltip-content">${finalTooltipContent}</div>
+                            </div>` : "";
 
                         tr.innerHTML = `
                             <td class="col-idx">${globalIdx++}</td>
                             <td class="col-img">
                                 <img src="${imgPath}" class="table-img" onerror="this.onerror=null; this.src='img/favicon.png';">
                             </td>
-                            ${nameCellHtml}
+                            <td class="col-name">${i.name}</td>
                             <td class="col-sku">${i.displaySku || '-'}</td>
                             <td class="col-brand">${i.brand || 'STOUT'}</td>
                             <td class="col-unit">${i.unit || 'шт'}</td>
-                            <td class="col-qty">${i.q}</td>
+                            <td class="col-qty">
+                                <div class="qty-wrap" style="display:inline-flex; align-items:center; justify-content:center; gap:4px; width:100%; position:relative;">
+                                    <span>${i.q}</span>
+                                    ${tipHtml}
+                                </div>
+                            </td>
                             <td class="col-price">${i.price.toLocaleString()} ₽</td>
                             <td class="col-sum">${i.sum.toLocaleString()} ₽</td>
                         `;
