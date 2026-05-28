@@ -2290,13 +2290,15 @@
         }
 
         function base64Decode(str) {
-            return decodeURIComponent(Array.prototype.map.call(atob(str), function (c) {
+            const normalized = (str || '').replace(/ /g, '+');
+            return decodeURIComponent(Array.prototype.map.call(atob(normalized), function (c) {
                 return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
             }).join(''));
         }
 
         async function decompressString(base64) {
-            const binary = atob(base64);
+            const normalized = (base64 || '').replace(/ /g, '+');
+            const binary = atob(normalized);
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) {
                 bytes[i] = binary.charCodeAt(i);
