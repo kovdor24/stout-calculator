@@ -823,7 +823,8 @@ const app = {
     isPro: function () {
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
         let isTrialActive = trialUntil > Date.now();
-        return this.state.accountType === 'pro' || isTrialActive;
+        let isDbPro = this.state.tgUser && ['pro', 'admin'].includes(this.state.tgUser.account_type);
+        return this.state.accountType === 'pro' || isTrialActive || !!isDbPro;
     },
 
     getProUntilDate: function () {
