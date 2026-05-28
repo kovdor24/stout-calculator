@@ -3137,11 +3137,24 @@ body.dark-mode .header-totals-block {
 
     body { padding-bottom: 85px !important; }
 
-    /* Header Compactness */
-    .site-header { padding: 8px 10px !important; gap: 8px !important; }
+    /* Header Compactness (Minimal layout from start to prevent jumping) */
+    .site-header { 
+        padding: 5px 10px !important; 
+        gap: 8px !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+    }
     .site-header-left { min-width: auto !important; flex-shrink: 0 !important; }
     .site-header-left img,
-    .stout-logo-img { height: 30px !important; max-width: 100px !important; }
+    .stout-logo-img { height: 20px !important; max-width: 100px !important; }
+    
+    /* Lock scrolled state size on mobile to prevent shifting on scroll */
+    .site-header.scrolled {
+        padding-top: 5px !important;
+        padding-bottom: 5px !important;
+    }
+    .site-header.scrolled .site-header-left img {
+        height: 20px !important;
+    }
     
     /* Input sizing to prevent iOS zoom */
     input[type=number], input[type=text] {
