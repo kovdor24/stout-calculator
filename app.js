@@ -329,9 +329,10 @@ const app = {
             const cancelBtn = document.createElement('button');
             cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
             const isSharePrompt = msg && (
-                msg.toLowerCase().includes("http") || 
-                msg.toLowerCase().includes("invoice.html")
-            );
+                msg.toLowerCase().includes("ссылк") || 
+                msg.toLowerCase().includes("создан") || 
+                msg.toLowerCase().includes("скопир")
+            ) && !msg.toLowerCase().includes("название объекта") && !msg.toLowerCase().includes("введите название");
             if (isSharePrompt) {
                 cancelBtn.innerText = 'Копировать';
                 cancelBtn.onclick = () => {
