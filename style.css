@@ -3180,6 +3180,19 @@ body.dark-mode .header-totals-block {
         box-shadow: none !important;
         max-width: 100% !important;
     }
+    
+    /* Remove image placeholder offset specifically in installation works tab on mobile */
+    body.work-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.hide-custom-work-btn):not(.hide-custom-eq-btn) {
+        grid-template-columns: 1fr auto !important;
+        grid-template-rows: auto auto !important;
+        grid-template-areas: 
+            "name sum"
+            "name price" !important;
+    }
+    body.work-mode .inv-table td.col-img {
+        display: none !important;
+    }
+    
     .inv-table td { padding: 0 !important; border: none !important; color: var(--text-main) !important; background: transparent !important; }
     .inv-table td.col-img { 
         grid-area: img !important; 
