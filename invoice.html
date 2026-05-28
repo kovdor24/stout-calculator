@@ -2802,8 +2802,71 @@
                         }
 
                         let descText = i.desc || '';
-                        let availStatusLine = availText ? `<div style="margin-top: 8px; font-weight: 700; color: ${i.availability === 'in_stock' ? '#2563EB' : '#eab308'};">${availText.trim()}</div>` : '';
-                        let finalTooltipContent = `${descText}${availStatusLine}`;
+                        let friendlyExplanation = '';
+                        const nameLower = (i.name || '').toLowerCase();
+                        const sku = (i.displaySku || '').toUpperCase();
+
+                        // Search in itemExplanations first
+                        for (const key in itemExplanations) {
+                            if (sku.includes(key.toUpperCase()) || nameLower.includes(key.toLowerCase())) {
+                                friendlyExplanation = itemExplanations[key];
+                                break;
+                            }
+                        }
+
+                        // Fallback auto-generation based on keywords
+                        if (!friendlyExplanation) {
+                            if (nameLower.includes('котел') || nameLower.includes('котёл')) {
+                                friendlyExplanation = 'Отопительный котел — главный источник тепла в доме. Он нагревает воду или антифриз для обогрева всех помещений и обеспечения работы горячего водоснабжения.';
+                            } else if (nameLower.includes('стабилизатор')) {
+                                friendlyExplanation = 'Стабилизатор напряжения — защищает чувствительную автоматику и плату котла от перепадов электричества в сети, продлевая срок службы оборудования.';
+                            } else if (nameLower.includes('дымоход')) {
+                                friendlyExplanation = 'Коаксиальный дымоход — безопасная труба для вывода продуктов сгорания газа на улицу и одновременного забора свежего воздуха для работы котла.';
+                            } else if (nameLower.includes('насос')) {
+                                friendlyExplanation = 'Циркуляционный насос — обеспечивает непрерывное и бесшумное движение горячей воды по трубам, радиаторам и контурам теплого пола в доме.';
+                            } else if (nameLower.includes('бак') || nameLower.includes('гидроаккумулятор')) {
+                                friendlyExplanation = 'Расширительный бак — компенсирует температурное расширение воды при нагреве, поддерживая стабильное и безопасное давление внутри всей системы.';
+                            } else if (nameLower.includes('бойлер') || nameLower.includes('водонагреватель')) {
+                                friendlyExplanation = 'Бойлер косвенного нагрева — емкость для накопления горячей воды. Нагревается от тепла отопительного котла и позволяет комфортно пользоваться душем и раковинами одновременно.';
+                            } else if (nameLower.includes('коллектор') || nameLower.includes('распределитель')) {
+                                friendlyExplanation = 'Распределительный коллекторный блок — распределяет потоки горячей воды по отдельным комнатам, радиаторам или петлям теплого пола с возможностью индивидуальной регулировки.';
+                            } else if (nameLower.includes('труба')) {
+                                friendlyExplanation = 'Прочная полимерная труба — используется для надежной циркуляции теплоносителя. Не ржавеет, не зарастает изнутри и рассчитана на срок службы более 50 лет.';
+                            } else if (nameLower.includes('кран') || nameLower.includes('вентиль')) {
+                                friendlyExplanation = 'Шаровой кран — запорный элемент, позволяющий перекрыть воду на отдельном участке системы для его обслуживания или ремонта без слива воды из всего дома.';
+                            } else if (nameLower.includes('американка') || nameLower.includes('сгон')) {
+                                friendlyExplanation = 'Американка — разъемное резьбовое соединение, которое позволяет легко снять котел, насос или бойлер для чистки или замены без демонтажа труб.';
+                            } else if (nameLower.includes('фильтр')) {
+                                friendlyExplanation = 'Очищающий фильтр — задерживает ржавчину, окалину и другие частицы грязи из воды, оберегая дорогостоящие детали котла и смесителей от поломки.';
+                            } else if (nameLower.includes('термостат')) {
+                                friendlyExplanation = 'Комнатный термостат — автоматически поддерживает заданную вами комфортную температуру в комнате, управляя системой отопления и экономя топливо.';
+                            } else if (nameLower.includes('клапан')) {
+                                friendlyExplanation = 'Предохранительный или регулирующий клапан — автоматически управляет потоками теплоносителя, защищает систему от избыточного давления или перегрева.';
+                            } else if (nameLower.includes('шкаф')) {
+                                friendlyExplanation = 'Распределительный металлический шкаф — аккуратно прячет коллекторные узлы, краны и автоматику внутри стены или у пола, защищая их и сохраняя эстетику дома.';
+                            } else if (nameLower.includes('мат') || nameLower.includes('пенополистирол')) {
+                                friendlyExplanation = 'Теплоизоляционный мат с бобышками — плотный утеплитель, который направляет 100% тепла от теплого пола вверх в комнату, не давая ему греть фундамент или землю.';
+                            } else if (nameLower.includes('смесит') || nameLower.includes('sdg') || nameLower.includes('rdg')) {
+                                friendlyExplanation = 'Насосно-смесительный узел — автоматически подмешивает остывшую воду в теплый пол, поддерживая комфортную и безопасную температуру пола (~35°C).';
+                            } else if (nameLower.includes('сервопривод')) {
+                                friendlyExplanation = 'Электротермический сервопривод — по сигналу комнатного термостата автоматически перекрывает или открывает подачу тепла в конкретную комнату.';
+                            } else {
+                                friendlyExplanation = 'Соединительный фитинг или монтажный элемент — необходим для герметичного и надежного соединения трубопроводов отопления и водоснабжения.';
+                            }
+                        }
+
+                        let finalTooltipContent = "";
+                        if (friendlyExplanation) {
+                            finalTooltipContent += `<div style="font-weight: 700; color: #60A5FA; margin-bottom: 4px; font-size: 11px;">Зачем это нужно:</div><div style="font-size: 11px; line-height: 1.4; color: #E5E7EB; margin-bottom: 8px;">${friendlyExplanation}</div>`;
+                        }
+                        if (descText && descText.trim() !== "" && !descText.toLowerCase().includes("status: premium") && !descText.toLowerCase().includes("plus: ")) {
+                            finalTooltipContent += `<div style="font-weight: 700; color: #34D399; margin-bottom: 2px; font-size: 11px;">Технический расчет:</div><div style="font-size: 11px; line-height: 1.4; color: #D1D5DB; margin-bottom: 8px;">${descText}</div>`;
+                        }
+
+                        let availStatusLine = availText ? `<div style="margin-top: 8px; font-weight: 700; color: ${i.availability === 'in_stock' ? '#2563EB' : '#eab308'}; font-size: 11px;">${availText.trim()}</div>` : '';
+                        if (availStatusLine) {
+                            finalTooltipContent += availStatusLine;
+                        }
 
                         let tipHtml = finalTooltipContent ? `
                             <div class="tooltip-wrapper no-print">
