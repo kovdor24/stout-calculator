@@ -2950,6 +2950,26 @@ const app = {
         let date = new Date(est.created_at).toLocaleDateString();
         let objArea = est.calc_data && est.calc_data.area ? est.calc_data.area + ' м²' : 'Не указана';
 
+        let exportState = {};
+        let st = est.calc_data || {};
+        if (typeof st === 'string') {
+            try { st = JSON.parse(st); } catch (e) { console.error(e); }
+        }
+        for (let key in st) {
+            let val = st[key];
+            if (val === false || val === 0 || val === "" || key === 'viewMode' || key === 'showSwapFor' || key === 'collapsedGroups') continue;
+            if (key === 'tgUser' || key === 'accountType' || key === 'demoUsed' || key === 'darkMode') continue;
+            if (Array.isArray(val) && val.length === 0) continue;
+            if (typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length === 0) continue;
+            exportState[key] = val;
+        }
+        let settings = "";
+        try {
+            settings = base64Encode(JSON.stringify(exportState));
+        } catch (e) {
+            settings = btoa(unescape(encodeURIComponent(JSON.stringify(exportState))));
+        }
+
         // Формируем контактный блок монтажника с кликабельными ссылками
         let phoneLink = phone !== 'Не указан' && phone !== '—'
             ? `<a href="tel:${phone.replace(/[^+\d]/g, '')}" style="color: var(--primary); text-decoration: none; font-weight: 600;">${phone}</a>`
@@ -2992,7 +3012,19 @@ const app = {
                         <div style="font-size:12px; color:var(--text-sec); margin-bottom: 15px; line-height: 1.4;">
                             <i>* В базе данных сохраняются только общие суммы.<br>Чтобы посмотреть детальную спецификацию по позициям, скопируйте код ниже, закройте окно и нажмите иконку 📥 (Загрузить код).</i>
                         </div>
-                        <button class="auth-btn-base btn-email-submit" style="width: 100%; height: 40px; margin-bottom: 10px;" onclick="app.copyAdminEstimateCode('${estId}')">📋 Скопировать код сметы</button>
+                        <div style="margin-top: 15px; margin-bottom: 10px;">
+                            <div style="font-weight: 700; font-size: 12px; color: var(--text-sec); margin-bottom: 6px;">Код сметы для загрузки:</div>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="text" id="admin_est_code_input" value="${settings}" readonly 
+                                    style="flex: 1; height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: #F3F4F6; color: var(--text-sec); font-family: monospace; font-size: 11px; outline: none; box-sizing: border-box;" 
+                                    onclick="this.select();" />
+                                <button id="btn_copy_est_code" class="auth-btn-base btn-email-submit" 
+                                    style="height: 38px; padding: 0 16px; font-size: 12px; white-space: nowrap; margin: 0; min-width: 120px;" 
+                                    onclick="app.copyAdminEstimateCodeDirect('${estId}')">
+                                    Копировать
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 `;
         document.getElementById('admin_content').innerHTML = h;
@@ -3135,6 +3167,60 @@ const app = {
             console.error('Ошибка копирования: ', err);
             await app.prompt('Скопируйте этот код вручную:', settings);
         });
+    },
+    copyAdminEstimateCodeDirect: function (estId) {
+        const input = document.getElementById('admin_est_code_input');
+        const btn = document.getElementById('btn_copy_est_code');
+        if (input) {
+            input.focus();
+            input.select();
+            input.setSelectionRange(0, 99999); // For mobile devices
+            
+            try {
+                navigator.clipboard.writeText(input.value).then(() => {
+                    if (btn) {
+                        btn.innerText = "Скопировано!";
+                        btn.style.background = "#10B981";
+                        btn.style.color = "#fff";
+                        btn.style.borderColor = "#10B981";
+                        setTimeout(() => {
+                            btn.innerText = "Копировать";
+                            btn.style.background = "";
+                            btn.style.color = "";
+                            btn.style.borderColor = "";
+                        }, 2000);
+                    }
+                }).catch(() => {
+                    document.execCommand('copy');
+                    if (btn) {
+                        btn.innerText = "Скопировано!";
+                        btn.style.background = "#10B981";
+                        btn.style.color = "#fff";
+                        btn.style.borderColor = "#10B981";
+                        setTimeout(() => {
+                            btn.innerText = "Копировать";
+                            btn.style.background = "";
+                            btn.style.color = "";
+                            btn.style.borderColor = "";
+                        }, 2000);
+                    }
+                });
+            } catch (err) {
+                document.execCommand('copy');
+                if (btn) {
+                    btn.innerText = "Скопировано!";
+                    btn.style.background = "#10B981";
+                    btn.style.color = "#fff";
+                    btn.style.borderColor = "#10B981";
+                    setTimeout(() => {
+                        btn.innerText = "Копировать";
+                        btn.style.background = "";
+                        btn.style.color = "";
+                        btn.style.borderColor = "";
+                    }, 2000);
+                }
+            }
+        }
     },
     switchAuthTab: function (tab) {
         this.currentAuthTab = tab;
