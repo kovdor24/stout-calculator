@@ -1164,7 +1164,9 @@ body.html2pdf-printing .calculation-date {
 /* Оверлей */
 .mobile-menu-backdrop {
     position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
+    top: 50px !important; left: 0; width: 100%;
+    bottom: calc(56px + env(safe-area-inset-bottom, 15px));
+    height: auto;
     background: rgba(0,0,0,0.4);
     backdrop-filter: blur(2px);
     z-index: 10000;
@@ -1474,7 +1476,7 @@ body.menu-open .mobile-menu-backdrop {
         margin-top: 4px;
     }
 
-    .col-price::after {
+    .col-price:not(:empty)::after {
         content: " ₽";
     }
 
@@ -3089,6 +3091,12 @@ body.dark-mode .header-totals-block {
 /*       MOBILE APP OVERHAUL (BOTTOM NAV)      */
 /* ========================================= */
 @media screen and (max-width: 768px) {
+    body, input, select, textarea, button {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+    }
+    *, *::before, *::after {
+        font-style: normal !important;
+    }
     #page_scale_wrapper {
         zoom: 1 !important;
     }
@@ -3103,7 +3111,7 @@ body.dark-mode .header-totals-block {
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         border-top: 1px solid var(--border);
-        z-index: 99999;
+        z-index: 10000002 !important;
         padding-bottom: env(safe-area-inset-bottom, 15px);
         box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
     }
@@ -3141,6 +3149,7 @@ body.dark-mode .header-totals-block {
     body.mob-tab-output .input-panel, body.mob-tab-output .profile-panel { display: none !important; }
     body.mob-tab-profile .input-panel, body.mob-tab-profile .output-panel { display: none !important; }
     body.mob-tab-profile .profile-panel { display: block !important; }
+    footer { display: none !important; }
     
     /* Desktop fallback: profile panel is always hidden on desktop screens */
     @media (min-width: 769px) {
@@ -3164,6 +3173,7 @@ body.dark-mode .header-totals-block {
         padding: 5px 10px !important; 
         gap: 8px !important;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+        min-height: 50px !important;
     }
     .site-header-left { min-width: auto !important; flex-shrink: 0 !important; }
     .site-header-left img,
@@ -3270,7 +3280,7 @@ body.dark-mode .header-totals-block {
         text-align: right !important;
         white-space: nowrap !important;
     }
-    .inv-table td.col-sum::after {
+    .inv-table td.col-sum:not(:empty)::after {
         content: "\00a0₽" !important;
         margin-left: 4px !important;
     }
@@ -3286,7 +3296,7 @@ body.dark-mode .header-totals-block {
         text-align: right !important;
         white-space: nowrap !important;
     }
-    .inv-table td.col-price::after {
+    .inv-table td.col-price:not(:empty)::after {
         content: "\00a0₽" !important;
         margin-left: 4px !important;
     }
@@ -3299,6 +3309,13 @@ body.dark-mode .header-totals-block {
         content: " шт × " !important;
     }
     .inv-table td.col-sku, .inv-table td.col-brand, .inv-table td.col-unit, .inv-table td.col-qty, .inv-table td.col-idx, .inv-table th { display: none !important; }
+    body:not(.work-mode) .output-panel.show-sku-mode .inv-table td.col-sku:not(.hidden-col) {
+        display: block !important;
+        grid-area: spacer !important;
+        font-size: 10.5px !important;
+        color: var(--text-sec) !important;
+        margin-top: 2px !important;
+    }
     
     /* Support hiding images and adjusting grid columns on mobile */
     body.hide-images-mode .inv-table td.col-img {
@@ -3347,6 +3364,17 @@ body.dark-mode .header-totals-block {
         border-left: none !important;
         border-right: none !important;
     }
+    .profile-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        border-radius: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+        padding: 16px 12px !important;
+        margin: 0 !important;
+        background: var(--surface) !important;
+    }
     .inv-table {
         width: 100% !important;
         max-width: 100% !important;
@@ -3357,22 +3385,207 @@ body.dark-mode .header-totals-block {
     /* Compact table division lines and subheadings on mobile */
     .row-sec td {
         padding: 5px 8px !important;
-        font-size: 10px !important;
+        font-size: 12px !important;
         border-top: 1px solid var(--border) !important;
     }
     body.dark-mode .row-sec td {
         padding: 5px 8px !important;
-        font-size: 10px !important;
+        font-size: 12px !important;
         border-top: 1px solid #262E3F !important;
         background: #1E293B !important;
     }
     .group-header td {
         padding: 4px 8px !important;
-        font-size: 9px !important;
+        font-size: 11px !important;
     }
     .row-subtotal td {
         padding: 4px 8px !important;
-        font-size: 9px !important;
+        font-size: 11px !important;
+    }
+
+    /* PREMIUM MOBILE BOTTOM SHEET STYLE FOR PROFILE EDIT MODAL */
+    #profile_modal_overlay .auth-modal-content {
+        position: fixed !important;
+        bottom: calc(56px + env(safe-area-inset-bottom, 15px)) !important;
+        top: 50px !important;
+        left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        border-radius: 20px 20px 0 0 !important;
+        transform: none !important;
+        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15) !important;
+        border: none !important;
+        border-top: 1px solid var(--border) !important;
+        padding: 24px 20px 20px 20px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-sizing: border-box !important;
+    }
+
+    #profile_modal_overlay .auth-modal-close {
+        top: 16px !important;
+        right: 20px !important;
+        font-size: 24px !important;
+    }
+
+    #profile_modal_overlay .auth-modal-title {
+        font-size: 20px !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.5px !important;
+        margin-bottom: 16px !important;
+        color: var(--text-main) !important;
+    }
+
+    /* Finger-friendly touch inputs for mobile filling */
+    #profile_modal_overlay .auth-input {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 46px !important;
+        font-size: 15px !important;
+        padding: 10px 14px !important;
+        border-radius: 12px !important;
+        border: 1px solid var(--border) !important;
+        background: var(--surface-light) !important;
+        color: var(--text-main) !important;
+        margin-bottom: 14px !important;
+        box-sizing: border-box !important;
+        transition: border-color 0.2s, box-shadow 0.2s !important;
+    }
+    
+    #profile_modal_overlay .auth-input:focus {
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 3px var(--primary-light) !important;
+        background: var(--surface) !important;
+    }
+
+    #profile_modal_overlay textarea.auth-input {
+        height: 70px !important;
+    }
+
+    #profile_modal_overlay label {
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        color: var(--text-main) !important;
+        margin-bottom: 6px !important;
+        display: block !important;
+    }
+
+    #profile_pro_badge_banner {
+        border-radius: 12px !important;
+        padding: 10px 16px !important;
+        margin-bottom: 16px !important;
+    }
+
+    #profile_modal_overlay .profile-grid {
+        flex-direction: column !important;
+        gap: 0 !important;
+    }
+
+    #profile_modal_overlay .profile-grid > div {
+        min-width: 100% !important;
+        width: 100% !important;
+        flex: 1 1 auto !important;
+    }
+
+    #toggle_branding_btn {
+        height: 44px !important;
+        font-size: 13.5px !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+        margin-top: 10px !important;
+        margin-bottom: 15px !important;
+        width: 100% !important;
+    }
+
+    #pro_profile_company_section {
+        border-radius: 16px !important;
+        padding: 16px !important;
+        margin-top: 10px !important;
+        margin-bottom: 20px !important;
+    }
+
+    #profile_modal_overlay div[style*="border-top"] {
+        border-top: 1px solid var(--border) !important;
+        padding-top: 16px !important;
+        margin-top: auto !important;
+        display: flex !important;
+        gap: 12px !important;
+    }
+
+    #profile_modal_overlay div[style*="border-top"] button {
+        flex: 1 !important;
+        margin: 0 !important;
+        height: 46px !important;
+        font-size: 14.5px !important;
+        font-weight: 700 !important;
+        border-radius: 12px !important;
+        max-width: none !important;
+    }
+
+    /* PREMIUM MOBILE BOTTOM SHEET STYLE FOR SAVED ESTIMATES MODAL */
+    #cloud_list_modal_overlay .auth-modal-content {
+        position: fixed !important;
+        bottom: calc(56px + env(safe-area-inset-bottom, 15px)) !important;
+        top: 50px !important;
+        left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        border-radius: 20px 20px 0 0 !important;
+        transform: none !important;
+        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15) !important;
+        border: none !important;
+        border-top: 1px solid var(--border) !important;
+        padding: 24px 20px 20px 20px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-sizing: border-box !important;
+    }
+
+    #cloud_list_modal_overlay .auth-modal-close {
+        top: 16px !important;
+        right: 20px !important;
+        font-size: 24px !important;
+    }
+
+    #cloud_list_modal_overlay .auth-modal-title {
+        font-size: 20px !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.5px !important;
+        margin-bottom: 16px !important;
+        color: var(--text-main) !important;
+    }
+
+    /* Scrollable and clean table for mobile estimates view */
+    #cloud_list_content {
+        overflow-x: auto !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        margin-top: 10px !important;
+        -webkit-overflow-scrolling: touch !important; /* Smooth momentum scrolling on iOS */
+    }
+
+    #cloud_list_content table {
+        width: 100% !important;
+        min-width: 580px !important;
+        border-collapse: collapse !important;
+    }
+
+    #cloud_list_content th {
+        font-size: 11px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.03em !important;
+        padding: 8px 6px !important;
+        color: var(--text-sec) !important;
+        border-bottom: 2px solid var(--border) !important;
+    }
+
+    #cloud_list_content td {
+        font-size: 13.5px !important;
+        padding: 12px 8px !important;
+        vertical-align: middle !important;
+        border-bottom: 1px solid var(--border) !important;
     }
 }
 
@@ -3776,17 +3989,21 @@ body.dark-mode .header-totals-block {
 /* === СТРОГО МОБИЛЬНОЕ МЕНЮ (ДО 768px) === */
 .mobile-sidebar {
     position: fixed;
-    top: 0;
+    top: 50px !important;
     right: -100%;
     width: 100%;
     max-width: none;
-    height: 100vh;
+    bottom: auto !important;
+    height: auto !important;
+    max-height: min(480px, 70vh) !important;
     background: var(--surface);
     z-index: 1000000;
     transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: -10px 0 30px rgba(0,0,0,0.15);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12) !important;
     display: flex;
     flex-direction: column;
+    border-radius: 0 0 20px 20px !important;
+    border-bottom: 1px solid var(--border) !important;
 }
 
 body.menu-open .mobile-sidebar {
@@ -3873,7 +4090,7 @@ body.menu-open .mobile-menu-backdrop {
 }
 
 .mobile-sidebar .sku-toggle-group {
-    display: flex !important;
+    display: flex;
     justify-content: space-between !important;
     align-items: center !important;
     width: 100% !important;
@@ -3926,7 +4143,7 @@ body.menu-open .mobile-menu-backdrop {
     }
     .mobile-sidebar .mobile-header-totals {
         padding: 4px 6px !important;
-        font-size: 9px !important;
+        font-size: 12px !important;
     }
 }
 
@@ -3963,41 +4180,34 @@ body.menu-open .mobile-menu-backdrop {
         align-items: center;
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 20px;
-        padding: 3px 8px;
-        font-size: 9px;
+        border-radius: 24px;
+        padding: 5px 12px;
+        font-size: 11.5px;
         font-weight: 600;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         white-space: nowrap;
-        margin: 0 auto;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
         max-width: 72%;
         justify-content: center;
         overflow: hidden;
         text-overflow: ellipsis;
     }
     .m-total-eq { color: var(--text-sec); }
-    .m-total-eq span { color: var(--primary); font-size: 10.5px; font-weight: 700; margin-left: 2px; }
+    .m-total-eq span { color: var(--primary); font-size: 13.5px; font-weight: 700; margin-left: 2px; }
     .m-total-div { color: var(--border); margin: 0 5px; }
     .m-total-work { color: var(--text-sec); }
-    .m-total-work span { color: #ea580c; font-size: 10.5px; font-weight: 700; margin-left: 2px; }
+    .m-total-work span { color: #ea580c; font-size: 13.5px; font-weight: 700; margin-left: 2px; }
 
     /* Когда виджет стоимости находится внутри открытого мобильного меню */
     .mobile-sidebar .mobile-header-totals {
-        width: 100%;
-        max-width: none;
-        justify-content: center;
-        margin: 0 0 20px 0 !important;
-        padding: 12px 10px;
-        border-radius: 14px;
-        font-size: 12px;
-        background: var(--surface-light);
-        border: 1px solid var(--border);
+        position: static !important;
+        transform: none !important;
+        max-width: none !important;
+        margin: 0 auto 20px auto !important;
     }
-    .mobile-sidebar .m-total-eq { color: var(--text-sec); }
-    .mobile-sidebar .m-total-eq span { font-size: 15px; }
-    .mobile-sidebar .m-total-div { color: var(--border); margin: 0 10px; }
-    .mobile-sidebar .m-total-work { color: var(--text-sec); }
-    .mobile-sidebar .m-total-work span { font-size: 15px; }
 
     /* Кнопки футера (Получить счет и Печать) внутри мобильного меню */
     .mobile-sidebar .footer-btns {

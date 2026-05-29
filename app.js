@@ -444,7 +444,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 4, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null },
 
     lastSavedStateString: "",
 
@@ -528,8 +528,8 @@ const app = {
         const footerBtns = document.querySelector('.footer-btns');
 
         if (isOpen) {
-            if (authBlock) sidebarContent.appendChild(authBlock);
-            if (mobileTotals) sidebarContent.appendChild(mobileTotals);
+            // authBlock is removed from mobile menu drawer to be displayed in the Profile tab instead
+            // mobileTotals is kept permanently in the top header and not appended here
             if (mainControls) sidebarContent.appendChild(mainControls);
             if (skuControl) sidebarContent.appendChild(skuControl);
             if (footerBtns) sidebarContent.appendChild(footerBtns);
@@ -5058,7 +5058,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 4, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true,
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true,
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -5104,30 +5104,34 @@ const app = {
     updateProfileTabDetails: function () {
         const nameEl = document.getElementById('profile_display_name');
         const phoneEl = document.getElementById('profile_display_phone');
+        const statusEl = document.getElementById('profile_display_status');
         const initialsEl = document.getElementById('profile_initials');
         const avatarImgEl = document.getElementById('profile_custom_avatar_img');
         const badgeEl = document.getElementById('profile_notification_badge');
         
-        let nameVal = "Дмитрий";
-        let phoneVal = "+7 982 610-95-48";
+        let nameVal = "Войти в аккаунт";
+        let phoneVal = "Нажмите для авторизации";
         let avatarSrc = null;
 
-        // 1. Проверяем Telegram-авторизацию
-        if (this.state.tgUser) {
-            nameVal = [this.state.tgUser.first_name, this.state.tgUser.last_name].filter(Boolean).join(' ') || this.state.tgUser.username || "Дмитрий";
-            phoneVal = this.state.tgUser.phone || "";
-            if (this.state.tgUser.photo_url) {
-                avatarSrc = this.state.tgUser.photo_url;
+        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+
+        // 1. Проверяем Telegram / Google авторизацию
+        if (tgUser) {
+            nameVal = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || "Монтажник";
+            phoneVal = tgUser.phone || "";
+            if (tgUser.photo_url) {
+                avatarSrc = tgUser.photo_url;
+            }
+        } else {
+            // 2. Иначе проверяем ручные настройки из формы профиля
+            const manualName = document.getElementById('profile_name_input')?.value || "";
+            const manualPhone = document.getElementById('profile_phone_input')?.value || "";
+            if (manualName) {
+                nameVal = manualName;
+                phoneVal = manualPhone || "Нажмите для авторизации";
             }
         }
         
-        // 2. Иначе проверяем ручные настройки из формы профиля
-        const manualName = document.getElementById('profile_name_input')?.value || "";
-        const manualPhone = document.getElementById('profile_phone_input')?.value || "";
-        
-        if (manualName) nameVal = manualName;
-        if (manualPhone) phoneVal = manualPhone;
-
         // 3. Проверяем пользовательский загруженный аватар
         const customAvatar = localStorage.getItem('profile_custom_avatar');
         if (customAvatar) {
@@ -5136,6 +5140,40 @@ const app = {
 
         if (nameEl) nameEl.innerText = nameVal;
         if (phoneEl) phoneEl.innerText = phoneVal;
+        
+        // 4. Отрисовка тарифа и даты действия под именем пользователя
+        if (statusEl) {
+            if (tgUser) {
+                let isActuallyPro = this.isPro();
+                if (isActuallyPro) {
+                    let proUntilDate = this.getProUntilDate();
+                    let text = (proUntilDate === 'навсегда') ? 'бессрочно' : `до ${proUntilDate}`;
+                    statusEl.innerHTML = `<span style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; line-height: 1.2;">PRO</span> <span style="font-size: 11.5px; color: var(--text-sec); font-weight: 500;">действует ${text}</span>`;
+                } else {
+                    statusEl.innerHTML = `<span style="color: var(--text-sec); font-size: 12px; font-weight: 500;">Тариф: Базовый</span>`;
+                }
+            } else {
+                statusEl.innerHTML = `<span style="color: var(--text-sec); font-size: 12px; font-weight: 500;">Не авторизован</span>`;
+            }
+        }
+
+        // 5. Динамическая настройка клика по карточке (аватар или вход в аккаунт)
+        const userCard = document.querySelector('.profile-user-card');
+        if (userCard) {
+            if (tgUser) {
+                userCard.onclick = () => document.getElementById('profile_avatar_upload_input').click();
+                userCard.title = "Нажмите, чтобы загрузить фото";
+            } else {
+                userCard.onclick = () => app.showAuthModal();
+                userCard.title = "Нажмите, чтобы войти в аккаунт";
+            }
+        }
+
+        // 6. Динамическое скрытие/показ кнопки выхода из аккаунта
+        const logoutItem = document.getElementById('profile_logout_item');
+        if (logoutItem) {
+            logoutItem.style.display = tgUser ? 'flex' : 'none';
+        }
         
         if (avatarSrc) {
             if (avatarImgEl) {
@@ -5147,7 +5185,7 @@ const app = {
             if (avatarImgEl) avatarImgEl.style.display = "none";
             if (initialsEl) {
                 initialsEl.style.display = "flex";
-                initialsEl.innerText = nameVal ? nameVal.charAt(0).toUpperCase() : "Д";
+                initialsEl.innerText = (tgUser || nameVal !== "Войти в аккаунт") ? nameVal.charAt(0).toUpperCase() : "Д";
             }
         }
 
@@ -6199,7 +6237,7 @@ const app = {
                 let adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
                 let adminBtn = (tgUser.email && adminEmails.includes(tgUser.email.toLowerCase()))
                     ? `<div style="font-size: 12px; font-weight: 700; color: #10B981; cursor: pointer; border: 1px solid #10B981; padding: 4px 10px; border-radius: 8px; background: #ECFDF5; margin-right: 10px;" onclick="app.showAdminModal()" title="Панель владельца">Админка</div>`
-                    : `<div style="font-size: 12px; font-weight: 700; color: var(--primary); cursor: pointer; border: 1px solid var(--primary); padding: 4px 10px; border-radius: 8px; background: var(--primary-light); margin-right: 10px;" onclick="app.loadFromCloudList()" title="Мой кабинет (Мои сметы)">📁 Мои сметы</div>`;
+                    : ``;
 
                 authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);">${adminBtn}<div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;
             } else {
@@ -8082,10 +8120,7 @@ const app = {
         let headerTotals = document.getElementById('header_totals');
         if (headerTotals) {
             // Проверяем тариф и авторизацию
-            let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
-            let isTrialActive = trialUntil > Date.now();
-            let isAuthorized = !!(this.state.tgUser && this.state.tgUser.authUserId);
-            let isPro = isAuthorized && (this.state.accountType === 'pro' || isTrialActive || (this.state.tgUser && ['pro', 'admin'].includes(this.state.tgUser.account_type)));
+            let isPro = this.isPro();
 
             // Строим HTML каркас только 1 раз (или при смене тарифа), чтобы не сбрасывать анимацию
             if (!headerTotals.innerHTML.includes('anim_eq_sum') || headerTotals.dataset.isPro !== String(isPro)) {
@@ -8135,10 +8170,7 @@ const app = {
             }
 
             // Проверяем тариф и авторизацию
-            let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
-            let isTrialActive = trialUntil > Date.now();
-            let isAuthorized = !!(this.state.tgUser && this.state.tgUser.authUserId);
-            let isPro = isAuthorized && (this.state.accountType === 'pro' || isTrialActive || (this.state.tgUser && ['pro', 'admin'].includes(this.state.tgUser.account_type)));
+            let isPro = this.isPro();
 
             if (isPro && mWorkEl) {
                 let oldWorks = parseFloat(mobileTotals.dataset.lastWorks) || 0;
