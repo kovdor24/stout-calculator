@@ -5330,8 +5330,7 @@ const app = {
                 .subscribe();
         }
 
-        // Инициализация куки-баннера (152-ФЗ)
-        this.initCookieConsent();
+
     },
     toggleSwapUI: function (id) { if (this.state.showSwapFor === id) { this.state.showSwapFor = null; } else { this.state.showSwapFor = id; } this.render(); },
     cycleSwap: function (originalId) {
@@ -7943,29 +7942,7 @@ const app = {
         }
     },
 
-    initCookieConsent: function () {
-        const accepted = localStorage.getItem('cookie_consent_accepted');
-        if (!accepted) {
-            const banner = document.getElementById('cookie_consent_banner');
-            if (banner) {
-                banner.style.display = 'block';
-                setTimeout(() => {
-                    banner.classList.add('show');
-                }, 100);
-            }
-        }
-    },
 
-    acceptCookieConsent: function () {
-        localStorage.setItem('cookie_consent_accepted', 'true');
-        const banner = document.getElementById('cookie_consent_banner');
-        if (banner) {
-            banner.classList.remove('show');
-            setTimeout(() => {
-                banner.style.display = 'none';
-            }, 400);
-        }
-    },
 
 };
 
