@@ -5365,6 +5365,7 @@ const app = {
             this.state.win = tW > 0 ? tW : 1;
             this.state.tp1 = tTp1;
             this.state.tp2 = tTp2;
+            this.state.ufhZones = this.state.rooms.length;
 
             if ((tTp1 + tTp2) > 0 && !this.state.systems.includes('tp')) this.state.systems.push('tp');
             else if ((tTp1 + tTp2) === 0 && this.state.systems.includes('tp')) this.state.systems = this.state.systems.filter(s => s !== 'tp');
@@ -5388,15 +5389,317 @@ const app = {
                 this.state.rooms.forEach(r => currentRoomsArea += (parseFloat(r.area) || 0));
             }
 
-            // Если комнат нет ИЛИ ползунок общей площади сдвинули (площадь не совпадает) -> создаем 3 новые комнаты
+            // Если комнат нет ИЛИ площадь сменилась -> создаем рекомендуемое количество комнат
             if (!this.state.rooms || this.state.rooms.length === 0 || Math.abs(currentRoomsArea - this.state.area) > 1) {
                 let totalA = parseFloat(this.state.area) || 150;
-                let a = Math.round(totalA / 3);
-                this.state.rooms = [
-                    { id: Date.now(), name: "Комната 1", area: a, floor: 1, sys: ['rad'], windows: [{ id: Date.now() + 1, width: 1.5, isPan: false }] },
-                    { id: Date.now() + 10, name: "Комната 2", area: a, floor: 1, sys: ['rad'], windows: [{ id: Date.now() + 11, width: 1.5, isPan: false }] },
-                    { id: Date.now() + 20, name: "Комната 3", area: totalA - a * 2, floor: 1, sys: ['rad'], windows: [{ id: Date.now() + 21, width: 1.5, isPan: false }] }
-                ];
+                let floors = this.state.floors || 1;
+                
+                // Шаг 1 & 2: Базовый расчет по площади + модификатор этажности
+                let roomsCount = 5;
+                if (totalA < 80) roomsCount = 5;
+                else if (totalA >= 81 && totalA <= 120) roomsCount = 7;
+                else if (totalA >= 121 && totalA <= 160) roomsCount = 9;
+                else if (totalA >= 161 && totalA <= 200) roomsCount = 11;
+                else if (totalA >= 201 && totalA <= 250) roomsCount = 14;
+                else roomsCount = 17;
+
+                if (floors === 2) {
+                    roomsCount += 2;
+                }
+
+                let roomTemplates = [];
+                if (floors === 1) {
+                    if (roomsCount === 5) {
+                        roomTemplates = [
+                            { name: 'Кухня-гостиная', weight: 28, floor: 1 },
+                            { name: 'Спальня', weight: 18, floor: 1 },
+                            { name: 'Прихожая-котельная', weight: 10, floor: 1 },
+                            { name: 'Санузел', weight: 8, floor: 1 },
+                            { name: 'Гардеробная', weight: 6, floor: 1 }
+                        ];
+                    } else if (roomsCount === 7) {
+                        roomTemplates = [
+                            { name: 'Гостиная', weight: 24, floor: 1 },
+                            { name: 'Кухня', weight: 16, floor: 1 },
+                            { name: 'Спальня', weight: 16, floor: 1 },
+                            { name: 'Спальня', weight: 14, floor: 1 },
+                            { name: 'Коридор-холл', weight: 10, floor: 1 },
+                            { name: 'Санузел', weight: 8, floor: 1 },
+                            { name: 'Котельная', weight: 8, floor: 1 }
+                        ];
+                    } else if (roomsCount === 9) {
+                        roomTemplates = [
+                            { name: 'Гостиная', weight: 22, floor: 1 },
+                            { name: 'Кухня', weight: 14, floor: 1 },
+                            { name: 'Спальня', weight: 14, floor: 1 },
+                            { name: 'Спальня', weight: 12, floor: 1 },
+                            { name: 'Детская', weight: 12, floor: 1 },
+                            { name: 'Коридор-холл', weight: 9, floor: 1 },
+                            { name: 'Санузел', weight: 8, floor: 1 },
+                            { name: 'Котельная', weight: 7, floor: 1 },
+                            { name: 'Санузел', weight: 6, floor: 1 }
+                        ];
+                    } else if (roomsCount === 11) {
+                        roomTemplates = [
+                            { name: 'Гостиная', weight: 20, floor: 1 },
+                            { name: 'Кухня', weight: 13, floor: 1 },
+                            { name: 'Спальня', weight: 13, floor: 1 },
+                            { name: 'Спальня', weight: 11, floor: 1 },
+                            { name: 'Детская', weight: 11, floor: 1 },
+                            { name: 'Кабинет', weight: 10, floor: 1 },
+                            { name: 'Коридор-холл', weight: 8, floor: 1 },
+                            { name: 'Санузел', weight: 7, floor: 1 },
+                            { name: 'Котельная', weight: 7, floor: 1 },
+                            { name: 'Санузел', weight: 6, floor: 1 },
+                            { name: 'Гардеробная', weight: 5, floor: 1 }
+                        ];
+                    } else if (roomsCount === 14) {
+                        roomTemplates = [
+                            { name: 'Гостиная', weight: 18, floor: 1 },
+                            { name: 'Кухня', weight: 12, floor: 1 },
+                            { name: 'Спальня', weight: 12, floor: 1 },
+                            { name: 'Спальня', weight: 10, floor: 1 },
+                            { name: 'Детская', weight: 10, floor: 1 },
+                            { name: 'Детская', weight: 10, floor: 1 },
+                            { name: 'Кабинет', weight: 9, floor: 1 },
+                            { name: 'Коридор-холл', weight: 8, floor: 1 },
+                            { name: 'Санузел', weight: 7, floor: 1 },
+                            { name: 'Котельная', weight: 7, floor: 1 },
+                            { name: 'Санузел', weight: 6, floor: 1 },
+                            { name: 'Гардеробная', weight: 5, floor: 1 },
+                            { name: 'Гардеробная', weight: 5, floor: 1 },
+                            { name: 'Кладовая', weight: 4, floor: 1 }
+                        ];
+                    } else {
+                        roomTemplates = [
+                            { name: 'Гостиная', weight: 16, floor: 1 },
+                            { name: 'Кухня', weight: 11, floor: 1 },
+                            { name: 'Столовая', weight: 10, floor: 1 },
+                            { name: 'Спальня', weight: 10, floor: 1 },
+                            { name: 'Спальня', weight: 9, floor: 1 },
+                            { name: 'Детская', weight: 9, floor: 1 },
+                            { name: 'Детская', weight: 9, floor: 1 },
+                            { name: 'Гостевая комната', weight: 8, floor: 1 },
+                            { name: 'Кабинет', weight: 8, floor: 1 },
+                            { name: 'Коридор-холл', weight: 7, floor: 1 },
+                            { name: 'Санузел', weight: 6, floor: 1 },
+                            { name: 'Котельная', weight: 6, floor: 1 },
+                            { name: 'Санузел', weight: 5, floor: 1 },
+                            { name: 'Санузел', weight: 5, floor: 1 },
+                            { name: 'Гардеробная', weight: 4, floor: 1 },
+                            { name: 'Гардеробная', weight: 4, floor: 1 },
+                            { name: 'Кладовая', weight: 3, floor: 1 }
+                        ];
+                    }
+                } else {
+                    if (roomsCount === 7) {
+                        roomTemplates = [
+                            { name: 'Кухня-гостиная', weight: 26, floor: 1 },
+                            { name: 'Спальня', weight: 18, floor: 2 },
+                            { name: 'Спальня', weight: 16, floor: 2 },
+                            { name: 'Прихожая-котельная', weight: 12, floor: 1 },
+                            { name: 'Санузел', weight: 8, floor: 1 },
+                            { name: 'Санузел', weight: 8, floor: 2 },
+                            { name: 'Холл 2 этажа', weight: 7, floor: 2 }
+                        ];
+                    } else if (roomsCount === 9) {
+                        roomTemplates = [
+                            { name: 'Гостиная', weight: 22, floor: 1 },
+                            { name: 'Кухня', weight: 15, floor: 1 },
+                            { name: 'Спальня', weight: 15, floor: 2 },
+                            { name: 'Спальня', weight: 13, floor: 2 },
+                            { name: 'Прихожая', weight: 10, floor: 1 },
+                            { name: 'Котельная', weight: 8, floor: 1 },
+                            { name: 'Санузел', weight: 8, floor: 1 },
+                            { name: 'Санузел', weight: 8, floor: 2 },
+                            { name: 'Холл 2 этажа', weight: 7, floor: 2 }
+                        ];
+                    } else if (roomsCount === 11) {
+                        roomTemplates = [
+                            { name: 'Гостиная', weight: 20, floor: 1 },
+                            { name: 'Кухня', weight: 13, floor: 1 },
+                            { name: 'Спальня', weight: 13, floor: 2 },
+                            { name: 'Спальня', weight: 11, floor: 2 },
+                            { name: 'Детская', weight: 11, floor: 2 },
+                            { name: 'Спальня', weight: 10, floor: 1 },
+                            { name: 'Прихожая', weight: 8, floor: 1 },
+                            { name: 'Котельная', weight: 7, floor: 1 },
+                            { name: 'Санузел', weight: 7, floor: 1 },
+                            { name: 'Санузел', weight: 6, floor: 2 },
+                            { name: 'Холл 2 этажа', weight: 6, floor: 2 }
+                        ];
+                    } else if (roomsCount === 13) {
+                        roomTemplates = [
+                            { name: 'Гостиная', weight: 18, floor: 1 },
+                            { name: 'Кухня', weight: 12, floor: 1 },
+                            { name: 'Спальня', weight: 12, floor: 2 },
+                            { name: 'Спальня', weight: 10, floor: 2 },
+                            { name: 'Детская', weight: 10, floor: 2 },
+                            { name: 'Спальня', weight: 9, floor: 1 },
+                            { name: 'Кабинет', weight: 9, floor: 2 },
+                            { name: 'Прихожая', weight: 7, floor: 1 },
+                            { name: 'Котельная', weight: 7, floor: 1 },
+                            { name: 'Санузел', weight: 6, floor: 1 },
+                            { name: 'Санузел', weight: 6, floor: 2 },
+                            { name: 'Холл 2 этажа', weight: 6, floor: 2 },
+                            { name: 'Гардеробная', weight: 5, floor: 2 }
+                        ];
+                    } else if (roomsCount === 16) {
+                        roomTemplates = [
+                            { name: 'Гостиная', weight: 16, floor: 1 },
+                            { name: 'Кухня', weight: 11, floor: 1 },
+                            { name: 'Спальня', weight: 11, floor: 2 },
+                            { name: 'Спальня', weight: 9, floor: 2 },
+                            { name: 'Детская', weight: 9, floor: 2 },
+                            { name: 'Детская', weight: 9, floor: 2 },
+                            { name: 'Спальня', weight: 8, floor: 1 },
+                            { name: 'Кабинет', weight: 8, floor: 2 },
+                            { name: 'Прихожая', weight: 7, floor: 1 },
+                            { name: 'Котельная', weight: 6, floor: 1 },
+                            { name: 'Санузел', weight: 6, floor: 1 },
+                            { name: 'Санузел', weight: 6, floor: 2 },
+                            { name: 'Холл 2 этажа', weight: 5, floor: 2 },
+                            { name: 'Гардеробная', weight: 4, floor: 2 },
+                            { name: 'Гардеробная', weight: 4, floor: 2 },
+                            { name: 'Кладовая', weight: 3, floor: 1 }
+                        ];
+                    } else {
+                        roomTemplates = [
+                            { name: 'Гостиная', weight: 14, floor: 1 },
+                            { name: 'Кухня', weight: 10, floor: 1 },
+                            { name: 'Столовая', weight: 9, floor: 1 },
+                            { name: 'Спальня', weight: 9, floor: 2 },
+                            { name: 'Спальня', weight: 8, floor: 2 },
+                            { name: 'Детская', weight: 8, floor: 2 },
+                            { name: 'Детская', weight: 8, floor: 2 },
+                            { name: 'Спальня', weight: 7, floor: 1 },
+                            { name: 'Кабинет', weight: 7, floor: 2 },
+                            { name: 'Гостевая комната', weight: 7, floor: 1 },
+                            { name: 'Прихожая', weight: 6, floor: 1 },
+                            { name: 'Котельная', weight: 5, floor: 1 },
+                            { name: 'Санузел', weight: 5, floor: 1 },
+                            { name: 'Санузел', weight: 5, floor: 2 },
+                            { name: 'Санузел', weight: 4, floor: 2 },
+                            { name: 'Холл 2 этажа', weight: 4, floor: 2 },
+                            { name: 'Гардеробная', weight: 4, floor: 2 },
+                            { name: 'Гардеробная', weight: 3, floor: 2 },
+                            { name: 'Кладовая', weight: 3, floor: 1 }
+                        ];
+                    }
+                }
+
+                let totalWeight = roomTemplates.reduce((sum, r) => sum + r.weight, 0);
+                
+                // Проверяем наличие газа и рассчитываем минимальную площадь котельной
+                let isGas = this.state.fuels && this.state.fuels.includes('gas');
+                let minBoilerArea = 0;
+                if (isGas) {
+                    let ceilingH1 = parseFloat(this.state.h1) || 2.7;
+                    minBoilerArea = Math.ceil(15 / ceilingH1); // СП 402.1325800.2018: не менее 15 м3
+                }
+
+                // Счетчик для каждого базового имени отдельно для каждого этажа
+                let nameCounters = {
+                    1: {},
+                    2: {}
+                };
+                roomTemplates.forEach(tpl => {
+                    let f = tpl.floor;
+                    let name = tpl.name;
+                    if (!nameCounters[f][name]) nameCounters[f][name] = { total: 0, current: 0 };
+                    nameCounters[f][name].total++;
+                });
+
+                // 1. Сначала распределяем площадь по весам и создаем базовую структуру комнат
+                let generatedRooms = roomTemplates.map((tpl, i) => {
+                    let f = tpl.floor;
+                    let baseName = tpl.name;
+                    let roomName = baseName;
+                    if (nameCounters[f][baseName].total > 1) {
+                        nameCounters[f][baseName].current++;
+                        roomName = `${baseName} ${nameCounters[f][baseName].current}`;
+                    }
+
+                    let roomArea = Math.floor(totalA * tpl.weight / totalWeight);
+                    if (roomArea < 1) roomArea = 1;
+
+                    return {
+                        id: Date.now() + i * 100,
+                        name: roomName,
+                        area: roomArea,
+                        floor: tpl.floor,
+                        sys: ['rad'],
+                        windows: []
+                    };
+                });
+
+                // 2. Если есть газ, находим котельную и принудительно задаем ей минимум
+                if (isGas) {
+                    let boilerRoom = generatedRooms.find(r => r.name.toLowerCase().includes('котельная'));
+                    if (boilerRoom && boilerRoom.area < minBoilerArea) {
+                        boilerRoom.area = minBoilerArea;
+                    }
+                }
+
+                // Рассчитаем текущую сумму распределенной площади
+                let currentSum = generatedRooms.reduce((sum, r) => sum + r.area, 0);
+
+                // 3. Распределяем остаток/разницу так, чтобы общая сумма была в точности равна totalA
+                let remainder = totalA - currentSum;
+                if (remainder > 0) {
+                    let indices = generatedRooms
+                        .map((r, idx) => ({ idx, area: r.area }))
+                        .sort((a, b) => b.area - a.area);
+                    for (let rIdx = 0; rIdx < remainder; rIdx++) {
+                        let targetIdx = indices[rIdx % indices.length].idx;
+                        generatedRooms[targetIdx].area += 1;
+                    }
+                } else if (remainder < 0) {
+                    let attempts = Math.abs(remainder);
+                    let indices = generatedRooms
+                        .map((r, idx) => ({ idx, name: r.name, area: r.area }))
+                        .filter(x => !x.name.toLowerCase().includes('котельная'))
+                        .sort((a, b) => b.area - a.area);
+
+                    if (indices.length > 0) {
+                        for (let rIdx = 0; rIdx < attempts; rIdx++) {
+                            let targetIdx = indices[rIdx % indices.length].idx;
+                            if (generatedRooms[targetIdx].area > 1) {
+                                generatedRooms[targetIdx].area -= 1;
+                            }
+                        }
+                    }
+                }
+
+                // Умное распределение окон из быстрого расчета (this.state.win)
+                let totalWinCount = parseInt(this.state.win) || 4;
+                if (totalWinCount < roomsCount) totalWinCount = roomsCount; // Гарантируем хотя бы по 1 окну на комнату
+
+                // Сначала добавляем по 1 окну в каждую комнату
+                generatedRooms.forEach((r, idx) => {
+                    r.windows.push({ id: Date.now() + idx * 100 + 1, width: 1.5, isPan: false });
+                });
+
+                // Оставшиеся окна распределяем по большим комнатам
+                let extraWins = totalWinCount - roomsCount;
+                if (extraWins > 0) {
+                    let indices = generatedRooms
+                        .map((r, idx) => ({ idx, area: r.area }))
+                        .sort((a, b) => b.area - a.area);
+                    
+                    for (let wIdx = 0; wIdx < extraWins; wIdx++) {
+                        let targetIdx = indices[wIdx % indices.length].idx;
+                        generatedRooms[targetIdx].windows.push({
+                            id: Date.now() + 5000 + wIdx * 100,
+                            width: 1.5,
+                            isPan: false
+                        });
+                    }
+                }
+
+                // Сортируем комнаты от большей площади к меньшей
+                generatedRooms.sort((a, b) => b.area - a.area);
+                this.state.rooms = generatedRooms;
             }
         } else {
             // При выключении: суммируем площади всех комнат и отдаем эту цифру общему ползунку
@@ -5467,6 +5770,10 @@ const app = {
         if (c2) c2.innerHTML = "";
 
         if (!this.state.rooms) return;
+
+        let countFloor1 = 0;
+        let countFloor2 = 0;
+
         this.state.rooms.forEach((r, idx) => {
             let hasRad = !r.sys || r.sys.includes('rad');
             let hasTp = r.sys && r.sys.includes('tp');
@@ -5490,9 +5797,20 @@ const app = {
             let cardBg = this.state.darkMode ? 'var(--surface-light)' : '#fff';
             let cardShadow = this.state.darkMode ? 'none' : '0 1px 2px rgba(0,0,0,0.02)';
 
+            // Вычисляем порядковый номер для текущего этажа
+            let roomIndex = 0;
+            if (r.floor === 2) {
+                countFloor2++;
+                roomIndex = countFloor2;
+            } else {
+                countFloor1++;
+                roomIndex = countFloor1;
+            }
+
             let html = `<div class="zone-card" style="padding:8px; margin-bottom:0; border:1px solid var(--border); border-left:4px solid ${accentColor}; border-radius:6px; background:${cardBg}; box-shadow: ${cardShadow};">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:nowrap; gap:4px;">
                             <div style="display:flex; align-items:center; flex:1; min-width:0;">
+                                <span style="font-weight:700; color:var(--text-sec); font-size:12px; margin-right:4px; user-select:none;">${roomIndex}.</span>
                                 <span contenteditable="true" style="font-weight:700; color:var(--text-main); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; outline:none; padding-right:2px;" onblur="app.updRoom(${r.id}, 'name', this.innerText)">${r.name}</span>
                             </div>
                             

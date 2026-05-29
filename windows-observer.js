@@ -1,8 +1,9 @@
 /**
- * HeatCalc Windows Auto-Calculator Observer
+ * HeatCalc Windows & Thermostats Auto-Calculator Observer
  * 
  * Изолированный скрипт-наблюдатель для автоматического расчета количества окон 
- * на основе площади дома и этажности в калькуляторе HeatCalc.
+ * и количества комнат/термостатов (1 термостат на 1 комнату) на основе площади 
+ * дома и этажности в калькуляторе HeatCalc.
  * Работает как независимая надстройка, не меняя основной код калькулятора.
  */
 (function () {
@@ -11,9 +12,10 @@
         const inpArea = document.getElementById('inp_area');
         const chkFloors = document.getElementById('chk_floors');
         const valWin = document.getElementById('val_win');
+        const chkDetailedRooms = document.getElementById('chk_detailed_rooms');
 
         if (!inpArea || !chkFloors || !valWin) {
-            console.warn('Windows Observer: Необходимые DOM-элементы управления не найдены.');
+            console.warn('Observer: Необходимые DOM-элементы управления не найдены.');
             return;
         }
 
@@ -38,6 +40,29 @@
             return windows;
         }
 
+        // Вычисление количества помещений по алгоритму инженера-проектировщика
+        function calculateRecommendedRooms(area, isSecondFloor) {
+            let rooms = 5;
+            if (area < 80) {
+                rooms = 5;
+            } else if (area >= 81 && area <= 120) {
+                rooms = 7;
+            } else if (area >= 121 && area <= 160) {
+                rooms = 9;
+            } else if (area >= 161 && area <= 200) {
+                rooms = 11;
+            } else if (area >= 201 && area <= 250) {
+                rooms = 14;
+            } else {
+                rooms = 17;
+            }
+
+            if (isSecondFloor) {
+                rooms += 2;
+            }
+            return rooms;
+        }
+
         // Обновление количества окон в калькуляторе с имитацией ручного ввода
         function updateWindowsValue(targetValue) {
             if (parseInt(valWin.innerText) === targetValue) return;
@@ -56,17 +81,46 @@
             }
         }
 
-        // Триггер авторасчета окон при изменении параметров
+        // Обновление количества термостатов (1 термостат на 1 комнату)
+        function updateThermostatsValue(targetValue) {
+            const valZones = document.getElementById('val_zones');
+            if (!valZones) return;
+            if (parseInt(valZones.innerText) === targetValue) return;
+
+            valZones.innerText = targetValue;
+
+            const inputEvent = new Event('input', { bubbles: true });
+            const changeEvent = new Event('change', { bubbles: true });
+            valZones.dispatchEvent(inputEvent);
+            valZones.dispatchEvent(changeEvent);
+
+            if (typeof app !== 'undefined' && typeof app.setZones === 'function') {
+                app.setZones(String(targetValue));
+            }
+        }
+
+        // Триггер авторасчета при изменении параметров
         function handleAutoCalculation() {
             const area = parseInt(inpArea.value) || 150;
             const isSecondFloor = chkFloors.checked;
-            const recommended = calculateRecommendedWindows(area, isSecondFloor);
-            updateWindowsValue(recommended);
+            
+            // 1. Авторасчет окон
+            const recommendedWin = calculateRecommendedWindows(area, isSecondFloor);
+            updateWindowsValue(recommendedWin);
+
+            // 2. Авторасчет термостатов (только при выключенном режиме "По комнатам", так как в покомнатном режиме им управляет app.js)
+            if (typeof app !== 'undefined' && app.state && !app.state.detailedRooms) {
+                const recommendedRooms = calculateRecommendedRooms(area, isSecondFloor);
+                updateThermostatsValue(recommendedRooms);
+            }
         }
 
-        // Подписываемся на события изменения площади и этажности
+        // Подписываемся на события изменения площади, этажности и режима расчета
         inpArea.addEventListener('input', handleAutoCalculation);
         chkFloors.addEventListener('change', handleAutoCalculation);
+        if (chkDetailedRooms) {
+            chkDetailedRooms.addEventListener('change', handleAutoCalculation);
+        }
 
         // Первичный расчет при инициализации страницы
         setTimeout(handleAutoCalculation, 1000);
