@@ -2099,8 +2099,8 @@ const app = {
                         </div>
                         <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">Смета «${n.projectName}»</div>
                         ${n.status === 'confirmed'
-                        ? `<div style="font-size: 11px; color: var(--text-sec);">Заказчик согласовал предложение на сумму <b>${n.totalSum.toLocaleString()} ₽</b>.</div>`
-                        : `<div style="font-size: 11px; color: var(--text-sec); font-style: italic; background: rgba(239,68,68,0.02); border-radius: 6px; padding: 6px; border: 1px dashed rgba(239,68,68,0.15); margin-top: 2px; word-break: break-word;"><b>Замечание:</b> "${n.comment}"</div>`
+                        ? `<div style="font-size: 12px; color: #10B981; font-weight: bold; margin: 4px 0;">🎉 Поздравляем! Смета одобрена заказчиком!</div><div style="font-size: 11px; color: var(--text-sec);">Сумма сметы: <b>${n.totalSum.toLocaleString()} ₽</b>. ${n.comment ? `<br><b>Комментарий:</b> "${n.comment}"` : ''}</div>`
+                        : `<div style="font-size: 12px; color: #EF4444; font-weight: bold; margin: 4px 0;">⚠️ Смета отклонена (требует доработки)</div><div style="font-size: 11px; color: var(--text-sec); font-style: italic; background: rgba(239,68,68,0.02); border-radius: 6px; padding: 6px; border: 1px dashed rgba(239,68,68,0.15); word-break: break-word;"><b>Замечания:</b> "${n.comment}"</div>`
                     }
                     </div>
                 `;
@@ -2945,17 +2945,22 @@ const app = {
     viewAdminEstimate: async function (estId) {
         let est = (this.adminData.userEstimates || []).find(e => String(e.id) === String(estId)) || (this.adminData.recentEstimates || []).find(e => String(e.id) === String(estId));
         if (!est) return;
-        let author = est.users ? (est.users.username || 'Без имени') : 'Неизвестен';
-        let phone = est.users ? (est.users.phone || 'Не указан') : '—';
-        let email = est.users ? (est.users.email || 'Не указан') : '—';
-        let date = new Date(est.created_at).toLocaleDateString();
-        let objArea = est.calc_data && est.calc_data.area ? est.calc_data.area + ' м²' : 'Не указана';
 
-        let exportState = {};
+        // Robustly handle est.users being either an object or a single-element array
+        const uObj = Array.isArray(est.users) ? est.users[0] : est.users;
+        let author = uObj ? (uObj.username || 'Без имени') : 'Неизвестен';
+        let phone = uObj ? (uObj.phone || 'Не указан') : '—';
+        let email = uObj ? (uObj.email || 'Не указан') : '—';
+        let date = est.created_at ? new Date(est.created_at).toLocaleDateString() : '—';
+
+        // Parse calc_data safely
         let st = est.calc_data || {};
         if (typeof st === 'string') {
-            try { st = JSON.parse(st); } catch (e) { console.error(e); }
+            try { st = JSON.parse(st); } catch (e) { console.error("Error parsing calc_data:", e); }
         }
+        let objArea = st && st.area ? st.area + ' м²' : 'Не указана';
+
+        let exportState = {};
         for (let key in st) {
             let val = st[key];
             if (val === false || val === 0 || val === "" || key === 'viewMode' || key === 'showSwapFor' || key === 'collapsedGroups') continue;
@@ -2982,13 +2987,13 @@ const app = {
         let h = `
                     <button class="btn-header-blue" style="margin-bottom: 20px; width: fit-content;" onclick="app.renderAdminMain()">← Назад</button>
                     <div style="background: var(--surface-light); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
-                        <h3 style="margin-top:0; color: var(--text-main);">📋 ${est.project_name}</h3>
+                        <h3 style="margin-top:0; color: var(--text-main);">📋 ${est.project_name || 'Без названия'}</h3>
                         
                         <div style="background: rgba(37, 99, 235, 0.04); border: 1px solid rgba(37, 99, 235, 0.12); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;">
                             <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sec); font-weight: 700; margin-bottom: 10px;">👷 Монтажник</div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
                                 <div><b style="color: var(--text-sec);">Имя:</b> <span style="font-weight: 600; color: var(--text-main);">${author}</span></div>
-                                <div><b style="color: var(--text-sec);">Город:</b> <span style="color: var(--text-main);">${est.calc_data?.tgUser?.city || 'Не указан'}</span></div>
+                                <div><b style="color: var(--text-sec);">Город:</b> <span style="color: var(--text-main);">${st?.tgUser?.city || 'Не указан'}</span></div>
                                 <div><b style="color: var(--text-sec);">📞 Телефон:</b> ${phoneLink}</div>
                                 <div><b style="color: var(--text-sec);">✉️ Email:</b> ${emailLink}</div>
                             </div>
@@ -3030,7 +3035,7 @@ const app = {
                 `;
         document.getElementById('admin_content').innerHTML = h;
 
-        const sharedInvoiceId = est.calc_data?.shared_invoice_id;
+        const sharedInvoiceId = st?.shared_invoice_id;
         const statusContainer = document.getElementById('admin_shared_status_container');
 
         if (!sharedInvoiceId) {
@@ -5149,8 +5154,8 @@ const app = {
             try { seen = seenRaw ? JSON.parse(seenRaw) : {}; } catch (e) { seen = {}; }
 
             const statusLabels = {
-                'confirmed': { label: '✅ Согласована клиентом', icon: '✅' },
-                'needs_revision': { label: '✍️ Отклонена — требуется доработка', icon: '⚠️' },
+                'confirmed': { label: '🎉 Поздравляем! Смета одобрена заказчиком!', icon: '🎉' },
+                'needs_revision': { label: '⚠️ Смета отклонена (требует доработки)', icon: '⚠️' },
                 'sent': { label: 'Отправлена клиенту', icon: '📤' }
             };
 

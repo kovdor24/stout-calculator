@@ -3092,7 +3092,9 @@
                 }
 
                 const projectName = invoiceData?.object_info?.projectName || 'Новый объект';
-                const statusText = status === 'confirmed' ? 'Согласована' : 'Отклонена (требует доработки)';
+                const statusText = status === 'confirmed'
+                    ? 'Поздравляем! Смета одобрена заказчиком!'
+                    : 'Смета отклонена (требует доработки)';
                 const invoiceUrl = window.location.href;
 
                 console.log("[sendStatusEmailNotification] Sending status update to:", managerEmail);
