@@ -7354,6 +7354,30 @@ const app = {
             addToWorks("Монтаж отверстия под дымоход", gasCount, 6000, "шт", wGroup);
         }
 
+        // Подсчет и монтаж стабилизаторов
+        let stabCount = bill.filter(x => x.name.toLowerCase().includes("стабилизатор")).reduce((sum, x) => sum + x.q, 0);
+        if (stabCount > 0) {
+            addToWorks("Монтаж стабилизатора напряжения", stabCount, 1500, "шт", wGroup);
+        }
+
+        // Подсчет и монтаж клапанов Fugas
+        let fugasCount = bill.filter(x => x.name.toLowerCase().includes("fugas")).reduce((sum, x) => sum + x.q, 0);
+        if (fugasCount > 0) {
+            addToWorks("Монтаж комплекта 3-х ходового клапана Fugas", fugasCount, 4500, "компл", wGroup);
+        }
+
+        // Подсчет и монтаж гидравлических стрелок
+        let arrowCount = bill.filter(x => x.name.toLowerCase().includes("гидравлическая стрелка")).reduce((sum, x) => sum + x.q, 0);
+        if (arrowCount > 0) {
+            addToWorks("Монтаж гидравлической стрелки", arrowCount, 6500, "шт", wGroup);
+        }
+
+        // Подсчет и монтаж распределительных коллекторов котельной (стальных)
+        let steelManifoldCount = bill.filter(x => x.name.toLowerCase().includes("стальной распр. коллектор")).reduce((sum, x) => sum + x.q, 0);
+        if (steelManifoldCount > 0) {
+            addToWorks("Монтаж распределительного коллектора котельной", steelManifoldCount, 5500, "шт", wGroup);
+        }
+
         // 2. Бойлер и водоснабжение
         if (this.state.hotWater) {
             addToWorks("Монтаж водонагревателя / бойлера", 1, 9000, "шт", wGroup);
@@ -7362,6 +7386,11 @@ const app = {
             addToWorks("Монтаж гидравлики ГВС (подпитка СО + подключение ГВС)", 1, 9000, "компл", wGroup);
             if (this.state.recirc) {
                 addToWorks("Монтаж системы рециркуляции", 1, 8000, "компл", wGroup);
+            }
+            // Подсчет кранов и американок обвязки бойлера ГВС
+            let dhwTapCount = bill.filter(x => x.group === "2.3. Обвязка Водонагревателя" && (x.name.toLowerCase().includes("американка") || x.name.toLowerCase().includes("кран"))).reduce((sum, x) => sum + x.q, 0);
+            if (dhwTapCount > 0) {
+                addToWorks("Монтаж запорной арматуры и американок бойлера", dhwTapCount, 950, "шт", wGroup);
             }
         }
 
@@ -7399,6 +7428,30 @@ const app = {
         let radGroup = "1.2 Монтаж радиаторного отопления";
         if (this.state.systems.includes('rad') && typeof activeCount !== 'undefined' && activeCount > 0) {
             addToWorks("Монтаж трубопроводов PEX-a... и подключение радиатора", activeCount, 6500, "шт", radGroup);
+
+            // Монтаж механических термоголовок
+            let mechHeads = bill.filter(x => x.group === "Приборы отопления" && x.name.toLowerCase().includes("головка термостатическая") && !x.name.toLowerCase().includes("zigbee")).reduce((sum, x) => sum + x.q, 0);
+            if (mechHeads > 0) {
+                addToWorks("Монтаж механической термоголовки", mechHeads, 350, "шт", radGroup);
+            }
+
+            // Монтаж H-клапанов нижнего подключения
+            let hValves = bill.filter(x => x.group === "Приборы отопления" && x.name.toLowerCase().includes("узел нижн. подкл.")).reduce((sum, x) => sum + x.q, 0);
+            if (hValves > 0) {
+                addToWorks("Монтаж узла нижнего подключения радиатора", hValves, 800, "шт", radGroup);
+            }
+
+            // Монтаж Г-образных трубок подключения радиаторов
+            let gTubes = bill.filter(x => x.group === "3.3. Трубы отопления" && x.name.toLowerCase().includes("трубка г-образная")).reduce((sum, x) => sum + x.q, 0);
+            if (gTubes > 0) {
+                addToWorks("Монтаж Г-образной трубки подключения радиатора", gTubes, 900, "шт", radGroup);
+            }
+
+            // Монтаж настенного регулятора Vartronic
+            let vartronicCount = bill.filter(x => x.name.toLowerCase().includes("vartronic")).reduce((sum, x) => sum + x.q, 0);
+            if (vartronicCount > 0) {
+                addToWorks("Монтаж настенного регулятора Vartronic", vartronicCount, 3500, "шт", radGroup);
+            }
 
             if (typeof manifoldsCount !== 'undefined' && manifoldsCount > 0) {
                 addToWorks("Установка коллектора для радиаторов", manifoldsCount, 6000, "пара", radGroup);
@@ -7447,11 +7500,34 @@ const app = {
             let servos = bill.filter(x => x.name.toLowerCase().includes("сервопривод")).reduce((sum, x) => sum + x.q, 0);
             if (servos > 0) addToWorks("Монтаж сервоприводов", servos, 1000, "шт", autoGroup);
 
+            // Монтаж умных термоголовок Zigbee
+            let smartHeads = bill.filter(x => x.name.toLowerCase().includes("zigbee") && x.name.toLowerCase().includes("головка")).reduce((sum, x) => sum + x.q, 0);
+            if (smartHeads > 0) {
+                addToWorks("Монтаж умной термоголовки Zigbee", smartHeads, 1000, "шт", autoGroup);
+            }
+
+            // Монтаж беспроводного шлюза Zigbee
+            let gateways = bill.filter(x => x.name.toLowerCase().includes("шлюз zigbee")).reduce((sum, x) => sum + x.q, 0);
+            if (gateways > 0) {
+                addToWorks("Монтаж и настройка беспроводного шлюза Zigbee", gateways, 2500, "шт", autoGroup);
+            }
+
             let therms = this.state.ufhZones || 0;
             if (therms > 0) {
                 addToWorks("Монтаж термостатов", therms, 4500, "шт", autoGroup);
                 addToWorks("Монтаж закладной для датчика пола", therms, 1000, "шт", autoGroup);
                 addToWorks("Прокладка провода на термостаты", therms * 15, 100, "м.p.", autoGroup);
+            }
+        }
+
+        // ==========================================
+        // БЛОК: 2.1 Внешнее и внутреннее ГВС (Насосы)
+        // ==========================================
+        if (this.state.hotWater && this.state.recirc) {
+            let recircPumps = bill.filter(x => x.group === "2.3. Обвязка Водонагревателя" && x.name.toLowerCase().includes("насос гвс")).reduce((sum, x) => sum + x.q, 0);
+            if (recircPumps > 0) {
+                let dhwGrp = this.state.water ? "2.2 Внутреннее водоснабжение" : "1.1 Монтаж котельной";
+                addToWorks("Монтаж циркуляционного насоса рециркуляции ГВС", recircPumps, 4500, "шт", dhwGrp);
             }
         }
 
