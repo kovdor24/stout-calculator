@@ -1433,7 +1433,8 @@ body.menu-open .mobile-menu-backdrop {
         border-radius: 6px;
     }
 
-    /* РќР°Р·РІР°РЅРёРµ Рё РђСЂС‚РёРєСѓР» */
+
+    /* Название и Артикул */
     .col-name {
         grid-area: name;
         padding: 0 !important;
@@ -1450,15 +1451,19 @@ body.menu-open .mobile-menu-backdrop {
         padding: 0 !important;
         font-size: 10px !important;
         color: #9CA3AF !important;
-        display: block;
+        display: block !important;
     }
 
-    /* РҐР°Рє: Р”РѕР±Р°РІР»СЏРµРј СЃР»РѕРІРѕ РђР Рў, РµСЃР»Рё РІРЅСѓС‚СЂРё РЅРµ РїСѓСЃС‚Рѕ Рё РЅРµ РїСЂРѕС‡РµСЂРє */
-    .col-sku:not(:empty)::before {
+    .col-sku.hidden-col {
+        display: none !important;
+    }
+
+    /* Хак: Добавляем слово АРТ, если внутри не пусто */
+    .col-sku:not(:empty):not(.hidden-col)::before {
         content: "АРТ: ";
     }
 
-    /* Р¦РµРЅР° (РЎРёРЅСЏСЏ STOUT) */
+    /* Цена (Синяя STOUT) */
     .col-price {
         grid-area: price;
         padding: 0 !important;
