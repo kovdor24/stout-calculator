@@ -5568,15 +5568,16 @@ const app = {
         let chk = document.getElementById('chk_cheaper');
 
         if (cw && chk && sl) {
-            let isAuthorized = !!(this.state.tgUser && this.state.tgUser.authUserId);
+            let isAuthenticated = typeof app !== 'undefined' && app.state && (app.state.tgUser || app.state.user || app.state.currentUser);
+            let isAuthorized = isAuthenticated && !!(this.state.tgUser && this.state.tgUser.authUserId);
             if (isAuthorized && this.isPro()) {
                 cw.style.display = 'flex';
                 chk.checked = (this.state.brandMode === 'rommer');
             } else {
                 cw.style.display = 'none';
+                chk.checked = false;
                 if (this.state.brandMode === 'rommer') {
                     this.state.brandMode = 'stout';
-                    chk.checked = false;
                     setTimeout(() => this.render(), 10);
                 }
             }
