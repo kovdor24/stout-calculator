@@ -7397,9 +7397,11 @@ const app = {
                 addToWorks("Монтаж запорной арматуры и американок бойлера", dhwTapCount, 950, "шт", wGroup);
             }
         }
-
-        if (this.state.water) {
+        if (this.state.waterInput) {
             addToWorks("Монтаж гидравлики ХВС (узел ввода, фильтры, байпас)", 1, 20000, "компл", wGroup);
+            if (this.state.bigBlueFilter) {
+                addToWorks("Монтаж системы фильтрации Big Blue (колбы + картриджи)", 1, 3500, "компл", wGroup);
+            }
         }
 
         // 3. Распределительная гидравлика
