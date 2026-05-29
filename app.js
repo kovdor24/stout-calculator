@@ -5772,14 +5772,17 @@ const app = {
         if (document.getElementById('chk_merge')) document.getElementById('chk_merge').checked = this.state.groupItems;
         if (document.getElementById('chk_sku')) document.getElementById('chk_sku').checked = this.state.showSku;
         if (document.getElementById('chk_scheme')) document.getElementById('chk_scheme').checked = this.state.showScheme;
+
         // Логика доступа для переключателя "КАРТИНКИ"
         let imgWrapper = document.getElementById('images_wrapper');
         let chkImages = document.getElementById('chk_images');
         if (imgWrapper && chkImages) {
-            let isAuthenticated = this.state.tgUser || this.state.user || this.state.currentUser;
+            let isAuthenticated = typeof app !== 'undefined' && app.state && (app.state.tgUser || app.state.user || app.state.currentUser);
             if (!isAuthenticated) {
                 // Полностью скрываем блок для неавторизованных пользователей
                 imgWrapper.style.display = 'none';
+                chkImages.checked = false;
+                this.state.showImages = false;
             } else {
                 imgWrapper.style.display = 'flex';
                 chkImages.checked = (this.state.showImages !== false);
