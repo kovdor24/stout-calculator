@@ -23,8 +23,8 @@
         });
     };
 
-    // 2. Check if Consent is already given
-    if (localStorage.getItem('cookieConsent') === 'accepted') {
+    // 2. Check if Consent is already given or if we are on the invoice page
+    if (localStorage.getItem('cookieConsent') === 'accepted' || window.location.pathname.indexOf('invoice.html') !== -1) {
         window.initMetrika();
         return;
     }
