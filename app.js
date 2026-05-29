@@ -7631,7 +7631,7 @@ const app = {
                 flushBill(grpGen);
             }
 
-            if (totalColdPoints > 0 || totalHotPoints > 0) {
+            if (totalColdPoints > 0 || totalHotPoints > 0 || this.state.well) {
                 // ==========================================
                 // БЛОК: 2.1 Внешнее водоснабжение
                 // ==========================================
