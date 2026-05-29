@@ -3137,8 +3137,25 @@ body.dark-mode .header-totals-block {
     }
 
     /* Hide unselected tabs */
-    body.mob-tab-inputs .output-panel { display: none !important; }
-    body.mob-tab-output .input-panel { display: none !important; }
+    body.mob-tab-inputs .output-panel, body.mob-tab-inputs .profile-panel { display: none !important; }
+    body.mob-tab-output .input-panel, body.mob-tab-output .profile-panel { display: none !important; }
+    body.mob-tab-profile .input-panel, body.mob-tab-profile .output-panel { display: none !important; }
+    body.mob-tab-profile .profile-panel { display: block !important; }
+    
+    /* Desktop fallback: profile panel is always hidden on desktop screens */
+    @media (min-width: 769px) {
+        .profile-panel { display: none !important; }
+    }
+    
+    /* Profile items hover effect */
+    .profile-menu-item:active {
+        background: var(--surface) !important;
+        opacity: 0.85;
+    }
+    .profile-user-card:active {
+        transform: scale(0.98);
+        background: var(--surface) !important;
+    }
 
     body { padding-bottom: 85px !important; }
 

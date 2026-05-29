@@ -4949,6 +4949,26 @@ const app = {
             this.lastSavedStateString = this.getStateSignature();
             this.markAsSaved();
 
+            // Сохраняем объект в историю запрошенных счетов
+            let requestedInvoices = [];
+            try {
+                requestedInvoices = JSON.parse(localStorage.getItem('requested_invoices')) || [];
+            } catch(e) {}
+            
+            const exists = requestedInvoices.some(inv => inv.calc_id === this.state.calc_id);
+            if (!exists) {
+                requestedInvoices.push({
+                    calc_id: this.state.calc_id,
+                    projectName: pName,
+                    date: new Date().toLocaleDateString('ru-RU') + " " + new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'}),
+                    eqSum: eqSum,
+                    worksSum: worksSum,
+                    total: total,
+                    state: JSON.parse(JSON.stringify(this.state))
+                });
+                localStorage.setItem('requested_invoices', JSON.stringify(requestedInvoices));
+            }
+
             // Сразу показываем модалку успеха!
             this.showEmailSuccessModal();
 
@@ -5060,7 +5080,7 @@ const app = {
 
     syncMobileUI: function () {
         if (window.innerWidth > 768) {
-            document.body.classList.remove('mob-tab-inputs', 'mob-tab-output');
+            document.body.classList.remove('mob-tab-inputs', 'mob-tab-output', 'mob-tab-profile');
             return;
         }
         document.querySelectorAll('.mob-nav-item').forEach(el => el.classList.remove('active'));
@@ -5068,14 +5088,191 @@ const app = {
         let navBtn = document.getElementById('mob_nav_' + activeTab);
         if (navBtn) navBtn.classList.add('active');
 
+        document.body.classList.remove('mob-tab-inputs', 'mob-tab-output', 'mob-tab-profile');
         if (activeTab === 'output') {
             document.body.classList.add('mob-tab-output');
-            document.body.classList.remove('mob-tab-inputs');
             window.scrollTo(0, 0);
+        } else if (activeTab === 'profile') {
+            document.body.classList.add('mob-tab-profile');
+            window.scrollTo(0, 0);
+            this.updateProfileTabDetails();
         } else {
             document.body.classList.add('mob-tab-inputs');
-            document.body.classList.remove('mob-tab-output');
         }
+    },
+
+    updateProfileTabDetails: function () {
+        const nameEl = document.getElementById('profile_display_name');
+        const phoneEl = document.getElementById('profile_display_phone');
+        const initialsEl = document.getElementById('profile_initials');
+        const avatarImgEl = document.getElementById('profile_custom_avatar_img');
+        const badgeEl = document.getElementById('profile_notification_badge');
+        
+        let nameVal = "Дмитрий";
+        let phoneVal = "+7 982 610-95-48";
+        let avatarSrc = null;
+
+        // 1. Проверяем Telegram-авторизацию
+        if (this.state.tgUser) {
+            nameVal = [this.state.tgUser.first_name, this.state.tgUser.last_name].filter(Boolean).join(' ') || this.state.tgUser.username || "Дмитрий";
+            phoneVal = this.state.tgUser.phone || "";
+            if (this.state.tgUser.photo_url) {
+                avatarSrc = this.state.tgUser.photo_url;
+            }
+        }
+        
+        // 2. Иначе проверяем ручные настройки из формы профиля
+        const manualName = document.getElementById('profile_name_input')?.value || "";
+        const manualPhone = document.getElementById('profile_phone_input')?.value || "";
+        
+        if (manualName) nameVal = manualName;
+        if (manualPhone) phoneVal = manualPhone;
+
+        // 3. Проверяем пользовательский загруженный аватар
+        const customAvatar = localStorage.getItem('profile_custom_avatar');
+        if (customAvatar) {
+            avatarSrc = customAvatar;
+        }
+
+        if (nameEl) nameEl.innerText = nameVal;
+        if (phoneEl) phoneEl.innerText = phoneVal;
+        
+        if (avatarSrc) {
+            if (avatarImgEl) {
+                avatarImgEl.src = avatarSrc;
+                avatarImgEl.style.display = "block";
+            }
+            if (initialsEl) initialsEl.style.display = "none";
+        } else {
+            if (avatarImgEl) avatarImgEl.style.display = "none";
+            if (initialsEl) {
+                initialsEl.style.display = "flex";
+                initialsEl.innerText = nameVal ? nameVal.charAt(0).toUpperCase() : "Д";
+            }
+        }
+
+        // Синхронизируем бейдж уведомлений с главным бейджем в шапке
+        const mainBadge = document.getElementById('notification_badge');
+        if (badgeEl && mainBadge) {
+            badgeEl.innerText = mainBadge.innerText;
+            badgeEl.style.display = mainBadge.style.display;
+        }
+    },
+
+    handleCustomAvatarUpload: function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64Img = e.target.result;
+            localStorage.setItem('profile_custom_avatar', base64Img);
+            this.updateProfileTabDetails();
+            this.showInAppNotification("Успешно", "Ваша фотография профиля загружена!", "👤");
+        };
+        reader.readAsDataURL(file);
+    },
+
+    showRequestedInvoicesHistory: function () {
+        const container = document.getElementById('profile_subview_container');
+        if (!container) return;
+
+        let requestedInvoices = [];
+        try {
+            requestedInvoices = JSON.parse(localStorage.getItem('requested_invoices')) || [];
+        } catch(e) {}
+
+        if (container.style.display === 'block' && container.dataset.viewType === 'history') {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.dataset.viewType = 'history';
+        container.style.display = 'block';
+
+        if (requestedInvoices.length === 0) {
+            container.innerHTML = `<h4 style="margin-top:0; font-weight:700; color:var(--text-main); font-size:14px; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:10px;">📋 История заказов</h4>
+                                   <div style="text-align:center; padding:20px; color:var(--text-sec); font-size:13px;">У вас пока нет объектов, по которым был запрошен счёт.</div>`;
+            return;
+        }
+
+        let listHtml = "";
+        requestedInvoices.forEach((inv, index) => {
+            listHtml += `<div style="padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:10px; margin-bottom:10px; display:flex; flex-direction:column; gap:6px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <strong style="font-size:13.5px; color:var(--text-main); text-overflow:ellipsis; overflow:hidden; white-space:nowrap; max-width:180px;">${inv.projectName}</strong>
+                                <span style="font-size:10px; color:#10B981; font-weight:700; background:#ECFDF5; border:1px solid #10B981; padding:2px 6px; border-radius:4px;">Счёт запрошен</span>
+                            </div>
+                            <div style="font-size:11px; color:var(--text-sec); font-weight:500;">Дата: ${inv.date}</div>
+                            <div style="font-size:11.5px; color:var(--text-sec); border-top:1px dashed var(--border); padding-top:6px; margin-top:2px;">
+                                Оборудование: <b>${(inv.eqSum || 0).toLocaleString('ru-RU')} ₽</b>
+                                ${inv.worksSum > 0 ? ` | Монтаж: <b>${(inv.worksSum || 0).toLocaleString('ru-RU')} ₽</b>` : ''}
+                            </div>
+                            <button class="btn-subscribe" onclick="app.loadRequestedEstimate(${index})" style="width:100%; height:32px; font-size:11.5px; margin-top:6px; padding:0;">Открыть смету</button>
+                         </div>`;
+        });
+
+        container.innerHTML = `<h4 style="margin-top:0; font-weight:700; color:var(--text-main); font-size:14px; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:10px;">📋 История заказов (${requestedInvoices.length})</h4>
+                               <div style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column;">${listHtml}</div>`;
+    },
+
+    loadRequestedEstimate: function (index) {
+        let requestedInvoices = [];
+        try {
+            requestedInvoices = JSON.parse(localStorage.getItem('requested_invoices')) || [];
+        } catch(e) {}
+
+        const target = requestedInvoices[index];
+        if (target && target.state) {
+            // Загружаем стейт в приложение
+            this.state = target.state;
+            this.saveState();
+            this.syncUI();
+            this.render();
+            this.switchMobileTab('output');
+            this.showInAppNotification("Загружено", `Смета "${target.projectName}" успешно загружена на экран сметы!`, "📂");
+            
+            // Закрываем раскрытое подменю
+            const container = document.getElementById('profile_subview_container');
+            if (container) container.style.display = 'none';
+        }
+    },
+
+    showDeliveryPaymentInfo: function () {
+        const container = document.getElementById('profile_subview_container');
+        if (!container) return;
+
+        if (container.style.display === 'block' && container.dataset.viewType === 'delivery') {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.dataset.viewType = 'delivery';
+        container.style.display = 'block';
+
+        container.innerHTML = `<h4 style="margin-top:0; font-weight:700; color:var(--text-main); font-size:14px; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:10px;">🚚 Доставка и оплата ТЕРЕМ</h4>
+                               <div style="font-size:12.5px; color:var(--text-main); line-height:1.5; display:flex; flex-direction:column; gap:10px;">
+                                   <div><b>Зоны и сроки доставки:</b>
+                                       <ul style="margin:4px 0 0 16px; padding:0; display:flex; flex-direction:column; gap:2px;">
+                                           <li>Москва и МО, Санкт-Петербург и ЛО, Владимир.</li>
+                                           <li>Сроки доставки: 1-2 дня с момента подтверждения заказа.</li>
+                                       </ul>
+                                   </div>
+                                   <div><b>Стоимость доставки:</b>
+                                       <ul style="margin:4px 0 0 16px; padding:0; display:flex; flex-direction:column; gap:2px;">
+                                           <li>По Москве: <b>бесплатно</b> при сумме заказа от 50 000 ₽.</li>
+                                           <li>До 50 000 ₽ или за пределы МКАД: по тарифам ТЕРЕМ.</li>
+                                       </ul>
+                                   </div>
+                                   <div><b>Варианты оплаты:</b>
+                                       <ul style="margin:4px 0 0 16px; padding:0; display:flex; flex-direction:column; gap:2px;">
+                                           <li>Оплата картой онлайн на сайте.</li>
+                                           <li>Безналичный расчёт для юрлиц (выставление счёта).</li>
+                                           <li>Наличными при получении.</li>
+                                       </ul>
+                                   </div>
+                                   <div style="font-size:11px; color:var(--text-sec); border-top:1px solid var(--border); padding-top:8px;">*Подробную информацию вы можете найти на официальном сайте teremopt.ru или уточнить у вашего менеджера после отправки сметы.</div>
+                               </div>`;
     },
 
     // === ТОСТ-УВЕДОМЛЕНИЯ О СМЕНЕ СТАТУСА ===
