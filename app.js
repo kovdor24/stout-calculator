@@ -6786,17 +6786,17 @@ const app = {
             regText = REGION_DESC[this.state.region] || `Мороз до -25°C`;
         }
         if (this.state.detailedRooms) {
-            document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${regText}<br><span style="font-size: 9.5px; opacity: 0.6; display: block; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">СП 131.13330.2020 «Строительная климатология»</span>`;
+            document.getElementById('desc_reg').innerHTML = `<span style="font-size: 10.5px; opacity: 0.95;">📍 ${regText}</span>`;
         } else {
-            document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${regText}`;
+            document.getElementById('desc_reg').innerHTML = `<span style="font-size: 10.5px; opacity: 0.95;">📍 ${regText}</span>`;
         }
         
         let wallText = WALL_DESC[this.state.mat] || `🧱 Индивидуальная стена`;
         if (this.state.wallLayersEnabled && this.state.wallLayers) {
             let totalThick = this.state.wallLayers.reduce((sum, l) => sum + parseInt(l.thick || 0), 0);
-            document.getElementById('desc_mat').innerHTML = `${wallText}<br><span style="font-size: 11px; font-weight: bold; color: var(--primary); margin-top: 4px; display: inline-block;">Пирог: ${totalThick} мм (Коэфф: ${this.state.mat.toFixed(2)})</span>`;
+            document.getElementById('desc_mat').innerHTML = `<span style="font-size: 10.5px; opacity: 0.95; line-height: 1.4; display: inline-block;">${wallText}<br>Пирог: ${totalThick} мм (Коэфф: ${this.state.mat.toFixed(2)})</span>`;
         } else {
-            document.getElementById('desc_mat').innerHTML = wallText;
+            document.getElementById('desc_mat').innerHTML = `<span style="font-size: 10.5px; opacity: 0.95;">${wallText}</span>`;
         }
     },
 
