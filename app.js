@@ -6547,7 +6547,7 @@ const app = {
         } else {
             regText = REGION_DESC[this.state.region] || `Мороз до -25°C`;
         }
-        document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${regText}`;
+        document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${regText}<br><span style="font-size: 11px; opacity: 0.8; display: block; margin-top: 5px;">📂 Источник: <a href="https://docs.cntd.ru/document/573659005" target="_blank" style="color: var(--primary); text-decoration: underline; font-weight: 500;">СП 131.13330.2020 «Строительная климатология»</a></span>`;
         document.getElementById('desc_mat').innerHTML = WALL_DESC[this.state.mat];
     },
 
