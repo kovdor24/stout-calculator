@@ -1,4 +1,67 @@
 const REGION_DESC = { 130: "Мороз до -35°C", 120: "Мороз до -30°C", 100: "Мороз до -25°C", 60: "Мороз до -15°C" };
+const CITIES_DB = [
+    // Россия
+    { name: "Москва", country: "RU", temp: -25 },
+    { name: "Санкт-Петербург", country: "RU", temp: -24 },
+    { name: "Новосибирск", country: "RU", temp: -39 },
+    { name: "Екатеринбург", country: "RU", temp: -32 },
+    { name: "Нижний Новгород", country: "RU", temp: -29 },
+    { name: "Казань", country: "RU", temp: -31 },
+    { name: "Челябинск", country: "RU", temp: -31 },
+    { name: "Самара", country: "RU", temp: -29 },
+    { name: "Омск", country: "RU", temp: -37 },
+    { name: "Ростов-на-Дону", country: "RU", temp: -19 },
+    { name: "Уфа", country: "RU", temp: -32 },
+    { name: "Красноярск", country: "RU", temp: -40 },
+    { name: "Пермь", country: "RU", temp: -33 },
+    { name: "Воронеж", country: "RU", temp: -25 },
+    { name: "Волгоград", country: "RU", temp: -22 },
+    { name: "Краснодар", country: "RU", temp: -15 },
+    { name: "Сочи", country: "RU", temp: -2 },
+    { name: "Якутск", country: "RU", temp: -54 },
+    { name: "Сургут", country: "RU", temp: -43 },
+    { name: "Владивосток", country: "RU", temp: -22 },
+    { name: "Иркутск", country: "RU", temp: -36 },
+    { name: "Хабаровск", country: "RU", temp: -29 },
+    { name: "Тюмень", country: "RU", temp: -35 },
+    { name: "Барнаул", country: "RU", temp: -37 },
+    { name: "Махачкала", country: "RU", temp: -9 },
+
+    // Казахстан
+    { name: "Астана", country: "KZ", temp: -35 },
+    { name: "Алматы", country: "KZ", temp: -19 },
+    { name: "Шымкент", country: "KZ", temp: -11 },
+    { name: "Караганда", country: "KZ", temp: -32 },
+    { name: "Актобе", country: "KZ", temp: -29 },
+    { name: "Тараз", country: "KZ", temp: -16 },
+    { name: "Павлодар", country: "KZ", temp: -36 },
+    { name: "Усть-Каменогорск", country: "KZ", temp: -37 },
+    { name: "Семей", country: "KZ", temp: -37 },
+    { name: "Атырау", country: "KZ", temp: -22 },
+    { name: "Актау", country: "KZ", temp: -10 },
+    { name: "Уральск", country: "KZ", temp: -30 },
+    { name: "Костанай", country: "KZ", temp: -33 },
+    { name: "Петропавловск", country: "KZ", temp: -35 },
+
+    // Беларусь
+    { name: "Минск", country: "BY", temp: -22 },
+    { name: "Гомель", country: "BY", temp: -23 },
+    { name: "Могилев", country: "BY", temp: -23 },
+    { name: "Витебск", country: "BY", temp: -25 },
+    { name: "Гродно", country: "BY", temp: -20 },
+    { name: "Брест", country: "BY", temp: -19 },
+
+    // Украина
+    { name: "Киев", country: "UA", temp: -20 },
+    { name: "Харьков", country: "UA", temp: -22 },
+    { name: "Одесса", country: "UA", temp: -14 },
+    { name: "Днепр", country: "UA", temp: -20 },
+    { name: "Львов", country: "UA", temp: -19 },
+    { name: "Запорожье", country: "UA", temp: -20 },
+    { name: "Кривой Рог", country: "UA", temp: -20 },
+    { name: "Николаев", country: "UA", temp: -17 },
+    { name: "Мариуполь", country: "UA", temp: -19 }
+];
 const WALL_DESC = { 0.8: "⬜ Тёплый (Газобетон)", 1.0: "🧱 Стандарт (Кирпич)", 1.3: "🪵 Холодный (Дерево)" };
 
 const getImg = (item) => {

@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null },
 
     lastSavedStateString: "",
 
@@ -5115,7 +5115,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true,
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true,
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -5623,6 +5623,7 @@ const app = {
         }
 
 
+        this.initCityAutocomplete();
     },
     toggleSwapUI: function (id) { if (this.state.showSwapFor === id) { this.state.showSwapFor = null; } else { this.state.showSwapFor = id; } this.render(); },
     cycleSwap: function (originalId) {
@@ -6187,7 +6188,17 @@ const app = {
         document.getElementById('chk_hw').checked = this.state.hotWater; document.getElementById('blk_res').style.display = this.state.hotWater ? 'flex' : 'none'; document.getElementById('val_res').innerText = this.state.res; document.getElementById('val_zones').innerText = this.state.ufhZones;
         const ufhTabs = document.querySelectorAll('.ufh-tab'); ufhTabs.forEach(t => { t.className = 'tab ufh-tab'; if (t.dataset.type === this.state.ufhCtrl) t.classList.add('multi-active'); });
         const regTabs = document.getElementById('reg_tabs').children; for (let t of regTabs) t.classList.remove('active');
-        if (this.state.region === 130) regTabs[0].classList.add('active'); if (this.state.region === 120) regTabs[1].classList.add('active'); if (this.state.region === 100) regTabs[2].classList.add('active'); if (this.state.region === 60) regTabs[3].classList.add('active');
+        if (!this.state.selectedCity) {
+            if (this.state.region === 130) regTabs[0].classList.add('active'); if (this.state.region === 120) regTabs[1].classList.add('active'); if (this.state.region === 100) regTabs[2].classList.add('active'); if (this.state.region === 60) regTabs[3].classList.add('active');
+        }
+        const cityInput = document.getElementById('city_search');
+        if (cityInput) {
+            cityInput.value = this.state.selectedCity ? this.state.selectedCity.name : '';
+        }
+        const clearBtn = document.getElementById('city_clear_btn');
+        if (clearBtn) {
+            clearBtn.style.display = this.state.selectedCity ? 'block' : 'none';
+        }
         const matTabs = document.getElementById('mat_tabs').children; for (let t of matTabs) t.classList.remove('active');
         if (this.state.mat === 1.3) matTabs[0].classList.add('active'); if (this.state.mat === 1.0) matTabs[1].classList.add('active'); if (this.state.mat === 0.8) matTabs[2].classList.add('active');
         const cTabs = document.querySelectorAll('.cool-tab'); cTabs.forEach(t => { t.classList.remove('active'); if (t.dataset.type === this.state.coolant) t.classList.add('active'); });
@@ -6503,9 +6514,149 @@ const app = {
         this.state.waterZones.forEach(z => z.dist = this.state.area < 120 ? 6 : 10);
         this.syncUI(); this.render();
     },
-    setRegion: function (v) { this.state.region = v; this.syncUI(); this.render(); },
+    setRegion: function (v) {
+        this.state.region = v;
+        this.state.selectedCity = null;
+        const input = document.getElementById('city_search');
+        if (input) input.value = '';
+        const clearBtn = document.getElementById('city_clear_btn');
+        if (clearBtn) clearBtn.style.display = 'none';
+        this.syncUI();
+        this.render();
+    },
     setMat: function (v) { this.state.mat = v; this.syncUI(); this.render(); },
-    updateInfo: function () { document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${REGION_DESC[this.state.region]}`; document.getElementById('desc_mat').innerHTML = WALL_DESC[this.state.mat]; },
+    updateInfo: function () {
+        let regText = "";
+        if (this.state.selectedCity) {
+            regText = `${this.state.selectedCity.name}: Зима до ${this.state.selectedCity.temp}°C (Коэфф: ${(this.state.region / 100).toFixed(2)})`;
+        } else {
+            regText = REGION_DESC[this.state.region] || `Мороз до -25°C`;
+        }
+        document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${regText}`;
+        document.getElementById('desc_mat').innerHTML = WALL_DESC[this.state.mat];
+    },
+
+    // City Climate Lookup Autocomplete Implementation
+    cityHighlightedIndex: -1,
+    citySuggestionsList: [],
+    
+    initCityAutocomplete: function () {
+        document.addEventListener('click', (e) => {
+            const wrapper = e.target.closest('.city-search-wrapper');
+            if (!wrapper) {
+                app.hideCitySuggestions();
+            }
+        });
+    },
+
+    onCitySearchInput: function (val) {
+        const dropdown = document.getElementById('city_suggestions');
+        const clearBtn = document.getElementById('city_clear_btn');
+        if (!dropdown) return;
+
+        if (!val.trim()) {
+            dropdown.style.display = 'none';
+            if (clearBtn) clearBtn.style.display = 'none';
+            this.citySuggestionsList = [];
+            this.cityHighlightedIndex = -1;
+            return;
+        }
+
+        if (clearBtn) clearBtn.style.display = 'block';
+
+        const query = val.toLowerCase();
+        // Находим до 5 совпадений
+        this.citySuggestionsList = CITIES_DB.filter(c => 
+            c.name.toLowerCase().includes(query)
+        ).slice(0, 5);
+
+        this.cityHighlightedIndex = -1;
+        this.renderCitySuggestions();
+    },
+
+    renderCitySuggestions: function () {
+        const dropdown = document.getElementById('city_suggestions');
+        if (!dropdown) return;
+
+        if (this.citySuggestionsList.length === 0) {
+            dropdown.innerHTML = '<div style="padding: 10px 14px; font-size: 13px; opacity: 0.6; text-align: center;">Город не найден</div>';
+            dropdown.style.display = 'block';
+            return;
+        }
+
+        const flags = { RU: "🇷🇺", KZ: "🇰🇿", BY: "🇧🇾", UA: "🇺🇦" };
+        dropdown.innerHTML = this.citySuggestionsList.map((c, i) => {
+            const flag = flags[c.country] || "📍";
+            const highlightedClass = i === this.cityHighlightedIndex ? 'highlighted' : '';
+            return `<div class="city-suggestion-item ${highlightedClass}" onclick="app.selectCity(${CITIES_DB.indexOf(c)})">
+                <span>${flag} ${c.name} <span class="city-suggestion-country">${c.country}</span></span>
+                <span class="city-suggestion-temp">${c.temp}°C</span>
+            </div>`;
+        }).join('');
+        dropdown.style.display = 'block';
+    },
+
+    showCitySuggestions: function () {
+        const input = document.getElementById('city_search');
+        if (input && input.value.trim()) {
+            this.onCitySearchInput(input.value);
+        }
+    },
+
+    hideCitySuggestions: function () {
+        const dropdown = document.getElementById('city_suggestions');
+        if (dropdown) dropdown.style.display = 'none';
+    },
+
+    selectCity: function (index) {
+        const city = CITIES_DB[index];
+        if (!city) return;
+
+        this.state.selectedCity = city;
+        // Физическая формула: K = (20 - T_out) / 45
+        // Умножаем на 100 для соответствия внутренней системе калькулятора (где 100% = 1.0)
+        let coef = Math.round(((20 - city.temp) / 45) * 100);
+        this.state.region = coef;
+
+        this.hideCitySuggestions();
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
+
+    clearCitySearch: function () {
+        this.state.selectedCity = null;
+        this.state.region = 100; // По умолчанию Центр (-25°C)
+        const input = document.getElementById('city_search');
+        if (input) input.value = '';
+        this.hideCitySuggestions();
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
+
+    handleCityKeydown: function (e) {
+        const dropdown = document.getElementById('city_suggestions');
+        if (!dropdown || dropdown.style.display === 'none') return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            this.cityHighlightedIndex = (this.cityHighlightedIndex + 1) % this.citySuggestionsList.length;
+            this.renderCitySuggestions();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            this.cityHighlightedIndex = (this.cityHighlightedIndex - 1 + this.citySuggestionsList.length) % this.citySuggestionsList.length;
+            this.renderCitySuggestions();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (this.cityHighlightedIndex >= 0 && this.cityHighlightedIndex < this.citySuggestionsList.length) {
+                const selected = this.citySuggestionsList[this.cityHighlightedIndex];
+                this.selectCity(CITIES_DB.indexOf(selected));
+            }
+        } else if (e.key === 'Escape') {
+            this.hideCitySuggestions();
+        }
+    },
     toggleFuel: function (f) { let idx = this.state.fuels.indexOf(f); if (idx > -1) { if (this.state.fuels.length > 1) this.state.fuels.splice(idx, 1); } else { this.state.fuels.push(f); } this.syncUI(); this.render(); },
     toggleSys: function (s, event) {
         if ((s === 'tp' || s === 'rad') && !this.checkAccess('pro', event)) return;
