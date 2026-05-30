@@ -5693,6 +5693,12 @@ const app = {
         this.state.wallLayersEnabled = chk;
 
         if (chk) {
+            // Автоматически включаем вентиляцию (естественная по умолчанию)
+            if (!this.state.ventilationEnabled) {
+                this.state.ventilationEnabled = true;
+                this.state.ventilationType = this.state.ventilationType || 'natural';
+            }
+
             let v = this.state.mat;
             if (v >= 1.2) {
                 this.state.wallLayers = [{ matId: "wood_pine", thick: 180 }];
@@ -6061,6 +6067,8 @@ const app = {
                 this.state.rooms.forEach(r => totalA += (parseFloat(r.area) || 0));
                 this.state.area = totalA > 0 ? totalA : 50;
             }
+            // Сбрасываем вентиляцию при возврате в простой режим
+            this.state.ventilationEnabled = false;
         }
 
         this.syncRoomsToState();
@@ -6367,8 +6375,6 @@ const app = {
             let n_eff = 0;
             let tooltipDesc = '';
             let tooltipCalc = '';
-            let docHref = '';
-            let docText = '';
 
             if (this.state.ventilationEnabled) {
                 const vType = this.state.ventilationType || 'natural';
@@ -6382,22 +6388,16 @@ const app = {
 
                 if (vType === 'natural') {
                     n_eff = 0.35;
-                    tooltipDesc = 'Естественный воздухообмен кратностью 0.35 ч⁻¹.';
-                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 0.35 ч⁻¹ * удельный нагрев`;
-                    docHref = 'https://docs.cntd.ru/document/542400616';
-                    docText = 'СП 55.13330.2016 «Дома жилые одноквартирные»';
+                    tooltipDesc = 'Естественный приток 0.35 ч⁻¹.';
+                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 0.35 ч⁻¹ * уд. нагрев`;
                 } else if (vType === 'forced') {
                     n_eff = 1.0;
-                    tooltipDesc = 'Принудительный приток без рекуператора кратностью 1.0 ч⁻¹.';
-                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 1.0 ч⁻¹ * удельный нагрев`;
-                    docHref = 'https://docs.cntd.ru/document/1200177724';
-                    docText = 'СП 60.13330.2020 «Отопление, вентиляция и кондиционирование»';
+                    tooltipDesc = 'Принудительный приток 1.0 ч⁻¹.';
+                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 1.0 ч⁻¹ * уд. нагрев`;
                 } else if (vType === 'recuperator') {
                     n_eff = 0.25;
-                    tooltipDesc = 'Принудительный приток с рекуперацией (эффективность 75%). Эффективная кратность 0.25 ч⁻¹.';
-                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 0.25 ч⁻¹ * удельный нагрев`;
-                    docHref = 'https://docs.cntd.ru/document/1200177724';
-                    docText = 'СП 60.13330.2020 «Отопление, вентиляция и кондиционирование»';
+                    tooltipDesc = 'Рекуперация 75% (эфф. кратность 0.25 ч⁻¹).';
+                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 0.25 ч⁻¹ * уд. нагрев`;
                 }
             }
 
@@ -6415,16 +6415,11 @@ const app = {
             }
             const lblDesc = document.getElementById('lbl_vent_tooltip_desc');
             if (lblDesc) {
-                lblDesc.innerText = tooltipDesc;
+                lblDesc.innerHTML = tooltipDesc;
             }
             const lblCalc = document.getElementById('lbl_vent_tooltip_calc');
             if (lblCalc) {
                 lblCalc.innerText = tooltipCalc;
-            }
-            const lblDocLink = document.getElementById('lbl_vent_doc_link');
-            if (lblDocLink) {
-                lblDocLink.href = docHref;
-                lblDocLink.innerText = docText;
             }
         }
 
@@ -6474,15 +6469,42 @@ const app = {
         if (document.getElementById('chk_water')) document.getElementById('chk_water').checked = this.state.water;
         if (document.getElementById('blk_water_zones')) document.getElementById('blk_water_zones').style.display = this.state.water ? 'flex' : 'none';
         if (document.getElementById('chk_detailed_rooms')) document.getElementById('chk_detailed_rooms').checked = this.state.detailedRooms;
+
         const modeFast = document.getElementById('mode_fast');
         const modePro = document.getElementById('mode_pro');
+        const modeSelectorWrapper = modeFast && modeFast.closest('.mode-selector-tabs');
+
+        const modeIsLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        const modeIsGuest = !this.state.tgUser && !modeIsLocal;
+        const modeIsPro = this.isPro() || modeIsLocal;
+
+        // Управление видимостью блока переключателя
+        if (modeSelectorWrapper) {
+            modeSelectorWrapper.style.display = modeIsGuest ? 'none' : 'flex';
+        }
+
         if (modeFast && modePro) {
+            // Активный таб
             if (this.state.detailedRooms) {
                 modeFast.classList.remove('active');
                 modePro.classList.add('active');
             } else {
                 modeFast.classList.add('active');
                 modePro.classList.remove('active');
+            }
+
+            // Блокировка кнопки Подробный для базового тарифа
+            if (!modeIsPro && !modeIsGuest) {
+                modePro.classList.add('locked');
+                modePro.onclick = function(event) {
+                    event.stopPropagation();
+                    app.showModal('pro');
+                };
+            } else {
+                modePro.classList.remove('locked');
+                modePro.onclick = function(event) {
+                    app.toggleDetailedRooms(true, event);
+                };
             }
         }
         if (document.getElementById('blk_fast_calc')) document.getElementById('blk_fast_calc').style.display = this.state.detailedRooms ? 'none' : 'block';
