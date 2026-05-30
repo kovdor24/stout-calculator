@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, ventilationEnabled: false, ventilationType: 'natural' },
 
     lastSavedStateString: "",
 
@@ -5130,7 +5130,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true,
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, ventilationEnabled: false, ventilationType: 'natural',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -6067,6 +6067,19 @@ const app = {
         this.syncUI();
         this.render();
     },
+    toggleVentilation: function (chk, event) {
+        this.state.ventilationEnabled = chk;
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
+    setVentilationType: function (type, event) {
+        if (event) event.stopPropagation();
+        this.state.ventilationType = type;
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
     addRoom: function () {
         if (!this.state.rooms) this.state.rooms = [];
         let f = 1;
@@ -6323,6 +6336,76 @@ const app = {
             if (lblRes) lblRes.innerText = `${totalR.toFixed(2)} м²·°С/Вт`;
             if (lblCoef) lblCoef.innerText = wallCoef.toFixed(2);
         }
+
+        // Sync Ventilation UI
+        const blkVent = document.getElementById('blk_ventilation_wrapper');
+        if (blkVent) {
+            blkVent.style.display = this.state.detailedRooms ? 'block' : 'none';
+        }
+        if (this.state.detailedRooms) {
+            const chkVent = document.getElementById('chk_vent');
+            if (chkVent) {
+                chkVent.checked = !!this.state.ventilationEnabled;
+            }
+            const blkVentOpts = document.getElementById('blk_vent_opts');
+            if (blkVentOpts) {
+                blkVentOpts.style.display = this.state.ventilationEnabled ? 'flex' : 'none';
+            }
+
+            let houseVol = 0;
+            let h1 = this.state.h1 || 2.7, h2 = this.state.h2 || 2.7;
+            if (this.state.rooms && this.state.rooms.length > 0) {
+                this.state.rooms.forEach(r => {
+                    let rHeight = (r.floor === 2) ? h2 : h1;
+                    houseVol += parseFloat(r.area || 0) * rHeight;
+                });
+            } else {
+                let avgH = (this.state.floors === 2) ? (h1 + h2) / 2 : h1;
+                houseVol = parseFloat(this.state.area || 0) * avgH;
+            }
+
+            let n_eff = 0;
+            let tooltipText = '';
+            if (this.state.ventilationEnabled) {
+                const vType = this.state.ventilationType || 'natural';
+                ['natural', 'forced', 'recuperator'].forEach(t => {
+                    const tabEl = document.getElementById(`vent_tab_${t}`);
+                    if (tabEl) {
+                        if (t === vType) tabEl.classList.add('active');
+                        else tabEl.classList.remove('active');
+                    }
+                });
+
+                if (vType === 'natural') {
+                    n_eff = 0.35;
+                    tooltipText = `Естественный воздухообмен кратностью 0.35 ч⁻¹ (СП 50.13330). Расчет: ${houseVol.toFixed(0)} м³ * 0.35 ч⁻¹ * удельный нагрев.`;
+                } else if (vType === 'forced') {
+                    n_eff = 1.0;
+                    tooltipText = `Принудительный приток без рекуператора кратностью 1.0 ч⁻¹ (СП 60.13330). Расчет: ${houseVol.toFixed(0)} м³ * 1.0 ч⁻¹ * удельный нагрев.`;
+                } else if (vType === 'recuperator') {
+                    n_eff = 0.25;
+                    tooltipText = `Принудительный приток с рекуперацией (эффективность 75%). Эффективная кратность 0.25 ч⁻¹. Расчет: ${houseVol.toFixed(0)} м³ * 0.25 ч⁻¹ * удельный нагрев.`;
+                }
+            }
+
+            let q_vent_w = this.state.ventilationEnabled ? (houseVol * n_eff * 15.3 * (this.state.region / 100)) : 0;
+            let q_vent_kw = q_vent_w / 1000;
+            let airFlow = this.state.ventilationEnabled ? (houseVol * (this.state.ventilationType === 'natural' ? 0.35 : 1.0)) : 0;
+
+            const lblVentLoss = document.getElementById('lbl_vent_loss');
+            if (lblVentLoss) {
+                lblVentLoss.innerText = `${q_vent_kw.toFixed(2)} кВт`;
+            }
+            const lblVentFlow = document.getElementById('lbl_vent_flow');
+            if (lblVentFlow) {
+                lblVentFlow.innerText = airFlow.toFixed(0);
+            }
+            const lblVentTooltip = document.getElementById('lbl_vent_tooltip');
+            if (lblVentTooltip) {
+                lblVentTooltip.innerText = tooltipText;
+            }
+        }
+
         const cTabs = document.querySelectorAll('.cool-tab'); cTabs.forEach(t => { t.classList.remove('active'); if (t.dataset.type === this.state.coolant) t.classList.add('active'); });
         document.getElementById('inp_tp1').max = this.state.area; document.getElementById('inp_tp2').max = this.state.area; document.getElementById('inp_tp1').value = this.state.tp1; document.getElementById('val_tp1').innerText = this.state.tp1; document.getElementById('inp_tp2').value = this.state.tp2; document.getElementById('val_tp2').innerText = this.state.tp2;
         document.getElementById('chk_sku').checked = this.state.showSku;
@@ -7251,8 +7334,9 @@ const app = {
         let avgH = (this.state.floors === 2) ? (h1 + h2) / 2 : h1;
 
         let pwr = 0;
+        let q_vent_w = 0;
+        let totalLoadW = 0;
         if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
-            let totalLoadW = 0;
             this.state.rooms.forEach(r => {
                 let rHeight = (r.floor === 2) ? h2 : h1;
                 let heightCoef = rHeight / 2.7;
@@ -7266,6 +7350,18 @@ const app = {
                     totalLoadW += (wArea * 150 * (this.state.region / 100) * this.state.mat);
                 });
             });
+
+            if (this.state.ventilationEnabled) {
+                let houseVol = 0;
+                this.state.rooms.forEach(r => {
+                    let rHeight = (r.floor === 2) ? h2 : h1;
+                    houseVol += parseFloat(r.area || 0) * rHeight;
+                });
+                let n_eff = (this.state.ventilationType === 'forced') ? 1.0 : (this.state.ventilationType === 'recuperator' ? 0.25 : 0.35);
+                q_vent_w = houseVol * n_eff * 15.3 * (this.state.region / 100);
+                totalLoadW += q_vent_w;
+            }
+
             pwr = (totalLoadW / 1000).toFixed(1);
         } else {
             pwr = (this.state.area * avgH * 37 * (this.state.region / 100) * this.state.mat / 1000).toFixed(1);
@@ -7287,7 +7383,7 @@ const app = {
         document.getElementById('doc_summary').innerHTML = `
             <span class="param-item">🏠 Объект: <b>${this.state.area} м²</b> (${this.state.floors === 2 ? 2 : 1} эт)</span>
             <span class="param-item">👨‍👩‍👧 Проживающих: <b>${this.state.res}</b></span>
-            <span class="param-item">🔥 Теплопотери: <b>${pwr} кВт</b></span>
+            <span class="param-item">🔥 Теплопотери: <b>${pwr} кВт</b>${(this.state.detailedRooms && this.state.ventilationEnabled) ? ` <span style="font-size:11px; opacity:0.8; font-weight:normal;">(отопл. ${((totalLoadW - q_vent_w) / 1000).toFixed(1)} + вент. ${(q_vent_w / 1000).toFixed(1)})</span>` : ''}</span>
             <span class="param-item">📍 Регион: <b>${regionName}</b></span>
             <span class="param-item param-date calculation-date">📅 Дата: <b>${new Date().toLocaleDateString('ru-RU')}</b></span>
         `;
