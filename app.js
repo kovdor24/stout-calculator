@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null },
 
     lastSavedStateString: "",
 
@@ -5130,7 +5130,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true,
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true,
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -6215,7 +6215,63 @@ const app = {
             clearBtn.style.display = this.state.selectedCity ? 'block' : 'none';
         }
         const matTabs = document.getElementById('mat_tabs').children; for (let t of matTabs) t.classList.remove('active');
-        if (this.state.mat === 1.3) matTabs[0].classList.add('active'); if (this.state.mat === 1.0) matTabs[1].classList.add('active'); if (this.state.mat === 0.8) matTabs[2].classList.add('active');
+        if (!this.state.wallLayersEnabled) {
+            if (this.state.mat === 1.3) matTabs[0].classList.add('active'); if (this.state.mat === 1.0) matTabs[1].classList.add('active'); if (this.state.mat === 0.8) matTabs[2].classList.add('active');
+        }
+        
+        // Sync wall layers UI
+        const chkLayers = document.getElementById('chk_wall_layers');
+        if (chkLayers) {
+            chkLayers.checked = !!this.state.wallLayersEnabled;
+        }
+        const blkLayers = document.getElementById('blk_wall_layers');
+        if (blkLayers) {
+            blkLayers.style.display = this.state.wallLayersEnabled ? 'flex' : 'none';
+        }
+        
+        if (this.state.wallLayersEnabled) {
+            const listCont = document.getElementById('wall_layers_list');
+            if (listCont && this.state.wallLayers) {
+                listCont.innerHTML = this.state.wallLayers.map((l, idx) => {
+                    let optionsHtml = WALL_MATERIALS_DB.map(m => {
+                        let sel = m.id === l.matId ? 'selected' : '';
+                        return `<option value="${m.id}" ${sel}>${m.name}</option>`;
+                    }).join('');
+
+                    return `<div class="wall-layer-item">
+                        <span class="wall-layer-num">${idx + 1}</span>
+                        <select class="wall-layer-select" onchange="app.updateWallLayer(${idx}, 'matId', this.value)">
+                            ${optionsHtml}
+                        </select>
+                        <input type="number" class="wall-layer-thick" value="${l.thick}" min="1" max="1000" oninput="app.updateWallLayer(${idx}, 'thick', this.value)">
+                        <span class="wall-layer-unit">мм</span>
+                        <button class="wall-layer-del" onclick="app.removeWallLayer(${idx})">×</button>
+                    </div>`;
+                }).join('');
+            }
+            
+            // Calculate dynamic summary
+            let totalThick = 0;
+            let totalR = 0.115 + 0.043; // Rsi + Rse
+            if (this.state.wallLayers) {
+                this.state.wallLayers.forEach(l => {
+                    let mat = WALL_MATERIALS_DB.find(m => m.id === l.matId);
+                    if (mat) {
+                        totalThick += parseInt(l.thick || 0);
+                        totalR += (parseInt(l.thick || 0) / 1000) / mat.lambda;
+                    }
+                });
+            }
+            let wallCoef = parseFloat((1.8 / totalR).toFixed(2));
+            
+            const lblThick = document.getElementById('lbl_wall_thickness');
+            const lblRes = document.getElementById('lbl_wall_resistance');
+            const lblCoef = document.getElementById('lbl_wall_coef');
+            
+            if (lblThick) lblThick.innerText = `${totalThick} мм`;
+            if (lblRes) lblRes.innerText = `${totalR.toFixed(2)} м²·°С/Вт`;
+            if (lblCoef) lblCoef.innerText = wallCoef.toFixed(2);
+        }
         const cTabs = document.querySelectorAll('.cool-tab'); cTabs.forEach(t => { t.classList.remove('active'); if (t.dataset.type === this.state.coolant) t.classList.add('active'); });
         document.getElementById('inp_tp1').max = this.state.area; document.getElementById('inp_tp2').max = this.state.area; document.getElementById('inp_tp1').value = this.state.tp1; document.getElementById('val_tp1').innerText = this.state.tp1; document.getElementById('inp_tp2').value = this.state.tp2; document.getElementById('val_tp2').innerText = this.state.tp2;
         document.getElementById('chk_sku').checked = this.state.showSku;
@@ -6539,7 +6595,14 @@ const app = {
         this.syncUI();
         this.render();
     },
-    setMat: function (v) { this.state.mat = v; this.syncUI(); this.render(); },
+    setMat: function (v) {
+        this.state.mat = v;
+        this.state.wallLayersEnabled = false;
+        const chk = document.getElementById('chk_wall_layers');
+        if (chk) chk.checked = false;
+        this.syncUI();
+        this.render();
+    },
     updateInfo: function () {
         let regText = "";
         if (this.state.selectedCity) {
@@ -6548,7 +6611,87 @@ const app = {
             regText = REGION_DESC[this.state.region] || `Мороз до -25°C`;
         }
         document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${regText}<br><span style="font-size: 9.5px; opacity: 0.6; display: block; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">СП 131.13330.2020 «Строительная климатология»</span>`;
-        document.getElementById('desc_mat').innerHTML = WALL_DESC[this.state.mat];
+        
+        if (this.state.wallLayersEnabled) {
+            let totalThick = 0;
+            if (this.state.wallLayers) {
+                totalThick = this.state.wallLayers.reduce((sum, l) => sum + parseInt(l.thick || 0), 0);
+            }
+            document.getElementById('desc_mat').innerHTML = `<span>🧱</span> Расчетный пирог: ${totalThick} мм (Коэфф: ${this.state.mat.toFixed(2)})`;
+        } else {
+            document.getElementById('desc_mat').innerHTML = WALL_DESC[this.state.mat] || `🧱 Индивидуальная стена`;
+        }
+    },
+
+    // Custom Wall Layers СП 50.13330 Logic
+    toggleWallLayers: function (chk) {
+        this.state.wallLayersEnabled = chk;
+        if (chk) {
+            this.calculateWallResistance();
+        } else {
+            this.state.mat = 1.0; // Сбрасываем на стандарт кирпич
+        }
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
+
+    calculateWallResistance: function () {
+        if (!this.state.wallLayers || this.state.wallLayers.length === 0) {
+            this.state.mat = 1.0;
+            return;
+        }
+
+        let totalR = 0.115 + 0.043; // Rsi + Rse по СП 50.13330
+        this.state.wallLayers.forEach(l => {
+            let mat = WALL_MATERIALS_DB.find(m => m.id === l.matId);
+            if (mat) {
+                totalR += (parseInt(l.thick || 0) / 1000) / mat.lambda;
+            }
+        });
+
+        // K_wall = 1.8 / R0 (где 1.8 - сопротивление стандартной стены кирпича)
+        let wallCoef = parseFloat((1.8 / totalR).toFixed(2));
+        if (isNaN(wallCoef) || wallCoef < 0.1) wallCoef = 0.1;
+        if (wallCoef > 3.0) wallCoef = 3.0;
+
+        this.state.mat = wallCoef;
+    },
+
+    addWallLayer: function () {
+        if (!this.state.wallLayers) this.state.wallLayers = [];
+        this.state.wallLayers.push({ matId: "polystyrene", thick: 50 });
+        this.calculateWallResistance();
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
+
+    removeWallLayer: function (idx) {
+        if (!this.state.wallLayers) return;
+        this.state.wallLayers.splice(idx, 1);
+        this.calculateWallResistance();
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
+
+    updateWallLayer: function (idx, field, value) {
+        if (!this.state.wallLayers || !this.state.wallLayers[idx]) return;
+        
+        if (field === 'thick') {
+            let num = parseInt(value);
+            if (isNaN(num) || num < 0) num = 0;
+            if (num > 2000) num = 2000;
+            this.state.wallLayers[idx][field] = num;
+        } else {
+            this.state.wallLayers[idx][field] = value;
+        }
+
+        this.calculateWallResistance();
+        this.syncUI();
+        this.render();
+        this.saveState();
     },
 
     // City Climate Lookup Autocomplete Implementation

@@ -226,7 +226,28 @@
                     <div class="tab active" onclick="app.setMat(1.0)">Стандарт</div>
                     <div class="tab" onclick="app.setMat(0.8)">Тёплый</div>
                 </div>
-                <div class="info-card" id="desc_mat"><span>🧱</span> Кирпич + Утеплитель</div>
+                <div class="info-card" id="desc_mat" style="margin-bottom: 8px;"><span>🧱</span> Кирпич + Утеплитель</div>
+                
+                <!-- Конструктор пирога стены (СП 50.13330) -->
+                <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; padding: 4px 0;">
+                    <span style="font-size: 13px; font-weight: 600; color: var(--text-main);">Рассчитать пирог стены</span>
+                    <label class="switch">
+                        <input type="checkbox" id="chk_wall_layers" onchange="app.toggleWallLayers(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div id="blk_wall_layers" style="display: none; flex-direction: column; gap: 8px; margin-top: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-light);">
+                    <div id="wall_layers_list" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Слои будут генерироваться динамически -->
+                    </div>
+                    <button class="btn-add-layer" onclick="app.addWallLayer()" style="width: 100%; padding: 8px; margin-top: 6px; background: transparent; border: 1px dashed var(--primary); color: var(--primary); border-radius: 8px; cursor: pointer; font-size: 12.5px; font-weight: 600; transition: 0.2s;">+ Добавить слой</button>
+                    
+                    <div class="wall-pie-summary" style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 12px; display: flex; flex-direction: column; gap: 4px; color: var(--text-sec);">
+                        <div style="display: flex; justify-content: space-between;"><span>Толщина стены:</span><b id="lbl_wall_thickness" style="color: var(--text-main);">0 мм</b></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Сопротивление R₀:</span><b id="lbl_wall_resistance" style="color: var(--text-main);">0.16 м²·°С/Вт</b></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Расчетный коэфф.:</span><b id="lbl_wall_coef" style="color: var(--primary);">1.00</b></div>
+                    </div>
+                </div>
             </div>
 
             <h4>Тип котла</h4>

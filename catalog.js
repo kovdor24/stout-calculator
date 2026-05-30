@@ -151,6 +151,21 @@ const CITIES_DB = [
     { name: "Ужгород", country: "UA", temp: -16 },
     { name: "Черновцы", country: "UA", temp: -18 }
 ];
+const WALL_MATERIALS_DB = [
+    { id: "brick_clay", name: "Кирпич полнотелый (глиняный)", lambda: 0.70 },
+    { id: "brick_hollow", name: "Кирпич пустотелый", lambda: 0.44 },
+    { id: "gas_d400", name: "Газобетон D400", lambda: 0.117 },
+    { id: "gas_d500", name: "Газобетон D500", lambda: 0.141 },
+    { id: "gas_d600", name: "Газобетон D600", lambda: 0.163 },
+    { id: "ceramic_block", name: "Керамический блок (Теплая керамика)", lambda: 0.16 },
+    { id: "wood_pine", name: "Брус деревянный (сосна/ель)", lambda: 0.15 },
+    { id: "concrete", name: "Железобетон / Монолит", lambda: 2.04 },
+    { id: "polystyrene", name: "Пенополистирол (Пенопласт)", lambda: 0.041 },
+    { id: "minwool", name: "Минеральная вата (базальт)", lambda: 0.042 },
+    { id: "xps", name: "Экструдированный пенополистирол (XPS)", lambda: 0.032 },
+    { id: "plaster_cement", name: "Штукатурка цементная", lambda: 0.93 },
+    { id: "plaster_gypsum", name: "Гипсокартон / Гипсовая штук.", lambda: 0.21 }
+];
 const WALL_DESC = { 0.8: "⬜ Тёплый (Газобетон)", 1.0: "🧱 Стандарт (Кирпич)", 1.3: "🪵 Холодный (Дерево)" };
 
 const getImg = (item) => {
