@@ -6794,7 +6794,7 @@ const app = {
         let wallText = WALL_DESC[this.state.mat] || `🧱 Индивидуальная стена`;
         if (this.state.wallLayersEnabled && this.state.wallLayers) {
             let totalThick = this.state.wallLayers.reduce((sum, l) => sum + parseInt(l.thick || 0), 0);
-            document.getElementById('desc_mat').innerHTML = `${wallText}<br><span style="font-size: 11px; font-weight: bold; color: var(--primary); margin-top: 4px; display: inline-block;">Пирог: ${totalThick} мм (Коэфф: ${this.state.mat.toFixed(2)})</span>`;
+            document.getElementById('desc_mat').innerHTML = `${wallText}<span style="font-size: 9.5px; opacity: 0.6; display: block; margin-top: 5px;">Пирог: ${totalThick} мм (Коэфф: ${this.state.mat.toFixed(2)})</span>`;
         } else {
             document.getElementById('desc_mat').innerHTML = wallText;
         }
