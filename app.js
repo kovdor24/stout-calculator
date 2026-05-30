@@ -4343,7 +4343,7 @@ const app = {
             console.warn('[shareInvoice] Supabase connection failed, falling back to local payload URL:', supabaseErr);
             try {
                 const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
-                const promptMsg = "Создана ссылка без кнопок согласования.\nОшибка БД: " + (supabaseErr.message || JSON.stringify(supabaseErr)) + "\nВозможно, требуется включить VPN.";
+                const promptMsg = "Ссылка готова\nСоздана ссылка без кнопок согласования.\nВозможно, требуется включить VPN и перейти на тариф PRO";
 
                 app.copyToClipboard(shareUrl).then(() => {
                     app.prompt(promptMsg, shareUrl);
