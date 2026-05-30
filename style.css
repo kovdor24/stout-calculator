@@ -5845,9 +5845,4 @@ body.dark-mode .wall-layer-thick-slider-container::after {
     border-color: #374151 transparent transparent transparent;
 }
 
-/* Dynamic Hover Tooltips for Region, Material and Ventilation */
-.control-item:hover #desc_reg,
-.control-item:hover #desc_mat,
-#lbl_vent_summary_row:hover #desc_vent {
-    display: block !important;
-}
+

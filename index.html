@@ -201,7 +201,7 @@
             </div>
 
 
-            <div class="control-item" style="position: relative;"><span class="lbl-sub" style="cursor: help;">Регион строительства</span>
+            <div class="control-item"><span class="lbl-sub">Регион строительства</span>
                 <div class="tabs" id="reg_tabs">
                     <div class="tab active" onclick="app.setRegion(130)">Сибирь</div>
                     <div class="tab" onclick="app.setRegion(120)">Урал</div>
@@ -216,21 +216,15 @@
                     </div>
                     <div id="city_suggestions" class="city-suggestions-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 200px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999;"></div>
                 </div>
-                <!-- Hover Tooltip for Region -->
-                <div class="info-card" id="desc_reg" style="display: none; position: absolute; bottom: calc(100% + 4px); left: 0; width: 100%; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 0; font-family: 'Inter', sans-serif; pointer-events: none; box-sizing: border-box;">
-                    <!-- Будет наполняться динамически -->
-                </div>
+                <div class="info-card" id="desc_reg" style="margin-top: 10px;"></div>
             </div>
-            <div class="control-item" style="position: relative;"><span class="lbl-sub" style="cursor: help;">Материал стен</span>
+            <div class="control-item"><span class="lbl-sub">Материал стен</span>
                 <div class="tabs" id="mat_tabs">
                     <div class="tab" onclick="app.setMat(1.3)">Холодный</div>
                     <div class="tab active" onclick="app.setMat(1.0)">Стандарт</div>
                     <div class="tab" onclick="app.setMat(0.8)">Тёплый</div>
                 </div>
-                <!-- Hover Tooltip for Wall Material -->
-                <div class="info-card" id="desc_mat" style="display: none; position: absolute; bottom: calc(100% + 4px); left: 0; width: 100%; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 0; font-family: 'Inter', sans-serif; pointer-events: none; box-sizing: border-box;">
-                    <!-- Будет наполняться динамически -->
-                </div>
+                <div class="info-card" id="desc_mat" style="margin-top: 10px; margin-bottom: 8px;"></div>
                 
                 <!-- Конструктор пирога стены (СП 50.13330) -->
                 <span class="lbl-sub" id="wall_layers_header_wrapper" style="display: none; margin-top: 20px; margin-bottom: 6px;">Пирог стены</span>
@@ -271,14 +265,11 @@
                             <div class="tab" id="vent_tab_forced" onclick="app.setVentilationType('forced', event)">Принуд.</div>
                             <div class="tab" id="vent_tab_recuperator" onclick="app.setVentilationType('recuperator', event)">Рекупер.</div>
                         </div>
-                        <div id="lbl_vent_summary_row" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 2px; cursor: help; position: relative;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 2px; margin-bottom: 4px;">
                             <span style="color: var(--text-sec); font-size: 12px;">На вентиляцию:</span>
                             <span style="font-weight: 700;"><b id="lbl_vent_loss" style="color: var(--primary);">0.00 кВт</b> <span style="font-size: 10px; color: var(--text-sec); font-weight: normal;">(<span id="lbl_vent_flow">0</span> м³/ч)</span></span>
-                            <!-- Hover Tooltip for Ventilation -->
-                            <div class="info-card" id="desc_vent" style="display: none; position: absolute; bottom: calc(100% + 6px); left: 0; width: 100%; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 0; font-family: 'Inter', sans-serif; pointer-events: none; box-sizing: border-box;">
-                                <!-- Будет наполняться динамически -->
-                            </div>
                         </div>
+                        <div class="info-card" id="desc_vent" style="margin-top: 4px; margin-bottom: 0;"></div>
                     </div>
                 </div>
             </div>
