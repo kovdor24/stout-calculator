@@ -4201,6 +4201,30 @@ body.menu-open .mobile-menu-backdrop {
     .m-total-work { color: var(--text-sec); }
     .m-total-work span { color: #ea580c; font-size: 13.5px; font-weight: 700; margin-left: 2px; }
 
+    /* Адаптивность для узких мобильных экранов */
+    @media screen and (max-width: 480px) {
+        .site-header-left {
+            display: none !important;
+        }
+        .mobile-header-totals {
+            position: static !important;
+            transform: none !important;
+            margin-left: 4px !important;
+            margin-right: auto !important;
+            max-width: calc(100% - 52px) !important;
+            padding: 5px 8px !important;
+            font-size: 11px !important;
+            box-sizing: border-box !important;
+        }
+    }
+
+    @media screen and (max-width: 360px) {
+        .mobile-header-totals {
+            font-size: 10px !important;
+            padding: 5px 6px !important;
+        }
+    }
+
     /* Когда виджет стоимости находится внутри открытого мобильного меню */
     .mobile-sidebar .mobile-header-totals {
         position: static !important;
