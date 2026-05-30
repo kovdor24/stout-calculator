@@ -6292,7 +6292,7 @@ const app = {
                             <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
                                 <span class="wall-layer-num" style="flex-shrink: 0; width: 14px; text-align: center; font-size: 11px; font-weight: 700; color: var(--text-sec);">${idx + 1}</span>
                                 <div class="custom-dropdown" style="position: relative; flex: 1; min-width: 0;">
-                                    <div class="wall-layer-select" onclick="app.toggleMaterialDropdown(${idx}, event)" style="width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: 34px; height: auto; font-size: 12.5px; font-weight: 500; padding: 6px 28px 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-main); cursor: pointer; box-sizing: border-box;">
+                                    <div class="wall-layer-select" onclick="app.toggleMaterialDropdown(${idx}, event)" style="width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: 34px; height: auto; font-size: 12.5px; font-weight: 500; padding: 6px 28px 6px 10px; border: 1px solid var(--border); border-radius: 8px; background-color: var(--surface); color: var(--text-main); cursor: pointer; box-sizing: border-box;">
                                         <span style="white-space: normal; word-break: break-word; display: block; width: 100%; text-align: left; line-height: 1.3;">${currentMat.name}</span>
                                     </div>
                                     <div id="dropdown_options_${idx}" class="custom-dropdown-options" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 250px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; box-sizing: border-box;">
@@ -6365,7 +6365,11 @@ const app = {
             }
 
             let n_eff = 0;
-            let tooltipText = '';
+            let tooltipDesc = '';
+            let tooltipCalc = '';
+            let docHref = '';
+            let docText = '';
+
             if (this.state.ventilationEnabled) {
                 const vType = this.state.ventilationType || 'natural';
                 ['natural', 'forced', 'recuperator'].forEach(t => {
@@ -6378,19 +6382,28 @@ const app = {
 
                 if (vType === 'natural') {
                     n_eff = 0.35;
-                    tooltipText = `Естественный воздухообмен кратностью 0.35 ч⁻¹ (СП 50.13330). Расчет: ${houseVol.toFixed(0)} м³ * 0.35 ч⁻¹ * удельный нагрев.`;
+                    tooltipDesc = 'Естественный воздухообмен кратностью 0.35 ч⁻¹.';
+                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 0.35 ч⁻¹ * удельный нагрев`;
+                    docHref = 'https://docs.cntd.ru/document/542400616';
+                    docText = 'СП 55.13330.2016 «Дома жилые одноквартирные»';
                 } else if (vType === 'forced') {
                     n_eff = 1.0;
-                    tooltipText = `Принудительный приток без рекуператора кратностью 1.0 ч⁻¹ (СП 60.13330). Расчет: ${houseVol.toFixed(0)} м³ * 1.0 ч⁻¹ * удельный нагрев.`;
+                    tooltipDesc = 'Принудительный приток без рекуператора кратностью 1.0 ч⁻¹.';
+                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 1.0 ч⁻¹ * удельный нагрев`;
+                    docHref = 'https://docs.cntd.ru/document/1200177724';
+                    docText = 'СП 60.13330.2020 «Отопление, вентиляция и кондиционирование»';
                 } else if (vType === 'recuperator') {
                     n_eff = 0.25;
-                    tooltipText = `Принудительный приток с рекуперацией (эффективность 75%). Эффективная кратность 0.25 ч⁻¹. Расчет: ${houseVol.toFixed(0)} м³ * 0.25 ч⁻¹ * удельный нагрев.`;
+                    tooltipDesc = 'Принудительный приток с рекуперацией (эффективность 75%). Эффективная кратность 0.25 ч⁻¹.';
+                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 0.25 ч⁻¹ * удельный нагрев`;
+                    docHref = 'https://docs.cntd.ru/document/1200177724';
+                    docText = 'СП 60.13330.2020 «Отопление, вентиляция и кондиционирование»';
                 }
             }
 
             let q_vent_w = this.state.ventilationEnabled ? (houseVol * n_eff * 15.3 * (this.state.region / 100)) : 0;
             let q_vent_kw = q_vent_w / 1000;
-            let airFlow = this.state.ventilationEnabled ? (houseVol * (this.state.ventilationType === 'natural' ? 0.35 : 1.0)) : 0;
+            let airFlow = this.state.ventilationEnabled ? (houseVol * ((this.state.ventilationType || 'natural') === 'natural' ? 0.35 : 1.0)) : 0;
 
             const lblVentLoss = document.getElementById('lbl_vent_loss');
             if (lblVentLoss) {
@@ -6400,9 +6413,18 @@ const app = {
             if (lblVentFlow) {
                 lblVentFlow.innerText = airFlow.toFixed(0);
             }
-            const lblVentTooltip = document.getElementById('lbl_vent_tooltip');
-            if (lblVentTooltip) {
-                lblVentTooltip.innerText = tooltipText;
+            const lblDesc = document.getElementById('lbl_vent_tooltip_desc');
+            if (lblDesc) {
+                lblDesc.innerText = tooltipDesc;
+            }
+            const lblCalc = document.getElementById('lbl_vent_tooltip_calc');
+            if (lblCalc) {
+                lblCalc.innerText = tooltipCalc;
+            }
+            const lblDocLink = document.getElementById('lbl_vent_doc_link');
+            if (lblDocLink) {
+                lblDocLink.href = docHref;
+                lblDocLink.innerText = docText;
             }
         }
 
