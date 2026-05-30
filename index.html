@@ -216,7 +216,7 @@
                     </div>
                     <div id="city_suggestions" class="city-suggestions-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 200px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999;"></div>
                 </div>
-                <div class="info-card" id="desc_reg"><span>📍</span> Зима до -35°C</div>
+                <div class="info-card" id="desc_reg" style="margin-top: 10px;"></div>
             </div>
             <div class="control-item"><span class="lbl-sub">Материал стен</span>
                 <div class="tabs" id="mat_tabs">
@@ -224,7 +224,7 @@
                     <div class="tab active" onclick="app.setMat(1.0)">Стандарт</div>
                     <div class="tab" onclick="app.setMat(0.8)">Тёплый</div>
                 </div>
-                <div class="info-card" id="desc_mat" style="margin-bottom: 8px;"><span>🧱</span> Кирпич + Утеплитель</div>
+                <div class="info-card" id="desc_mat" style="margin-top: 10px; margin-bottom: 8px;"></div>
                 
                 <!-- Конструктор пирога стены (СП 50.13330) -->
                 <span class="lbl-sub" id="wall_layers_header_wrapper" style="display: none; margin-top: 20px; margin-bottom: 6px;">Пирог стены</span>
@@ -277,6 +277,7 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="info-card" id="desc_vent" style="margin-top: 4px; margin-bottom: 0;"></div>
                     </div>
                 </div>
             </div>
