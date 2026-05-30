@@ -4133,7 +4133,17 @@ const app = {
         } else {
             pwr = (this.state.area * avgH * 37 * (this.state.region / 100) * this.state.mat / 1000).toFixed(1);
         }
-        let regionName = "Сибирь"; if (this.state.region === 120) regionName = "Урал"; if (this.state.region === 100) regionName = "Центр"; if (this.state.region === 60) regionName = "Юг";
+        let regionName = "";
+        if (this.state.selectedCity) {
+            regionName = this.state.selectedCity.name;
+        } else {
+            regionName = "Сибирь";
+            if (this.state.region === 150) regionName = "Сибирь";
+            if (this.state.region === 130) regionName = "Сибирь";
+            if (this.state.region === 120) regionName = "Урал";
+            if (this.state.region === 100) regionName = "Центр";
+            if (this.state.region === 60) regionName = "Юг";
+        }
 
         let object_info = {
             projectName: this.state.projectName || "Новый объект",
@@ -4756,12 +4766,17 @@ const app = {
             equipmentText += copyTableText;
             equipmentText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
 
-            // 3. Получаем названия параметров из стейта
-            let regionName = "Центр";
-            if (this.state.region === 120) regionName = "Урал";
-            if (this.state.region === 100) regionName = "Центр";
-            if (this.state.region === 60) regionName = "Юг";
-            if (this.state.region === 150) regionName = "Сибирь";
+            let regionName = "";
+            if (this.state.selectedCity) {
+                regionName = this.state.selectedCity.name;
+            } else {
+                regionName = "Центр";
+                if (this.state.region === 120) regionName = "Урал";
+                if (this.state.region === 100) regionName = "Центр";
+                if (this.state.region === 60) regionName = "Юг";
+                if (this.state.region === 150) regionName = "Сибирь";
+                if (this.state.region === 130) regionName = "Сибирь";
+            }
 
             let boilerName = "Не выбран";
             let fuelArr = [];
@@ -6991,7 +7006,17 @@ const app = {
             pwr = (this.state.area * avgH * 37 * (this.state.region / 100) * this.state.mat / 1000).toFixed(1);
         }
 
-        let regionName = "Сибирь"; if (this.state.region === 120) regionName = "Урал"; if (this.state.region === 100) regionName = "Центр"; if (this.state.region === 60) regionName = "Юг";
+        let regionName = "";
+        if (this.state.selectedCity) {
+            regionName = this.state.selectedCity.name;
+        } else {
+            regionName = "Сибирь";
+            if (this.state.region === 150) regionName = "Сибирь";
+            if (this.state.region === 130) regionName = "Сибирь";
+            if (this.state.region === 120) regionName = "Урал";
+            if (this.state.region === 100) regionName = "Центр";
+            if (this.state.region === 60) regionName = "Юг";
+        }
 
         // Заголовок спецификации
         document.getElementById('doc_summary').innerHTML = `
