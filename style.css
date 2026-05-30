@@ -2045,7 +2045,7 @@ body.dark-mode .btn-add-zone:hover {
 .tooltip-content {
     visibility: hidden;
     position: absolute;
-    z-index: 100;
+    z-index: 9999999 !important;
     bottom: 135%;
     left: 50%;
     transform: translateX(-50%);
@@ -2062,6 +2062,10 @@ body.dark-mode .btn-add-zone:hover {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
     text-align: left;
     font-weight: 400;
+}
+
+.tooltip-wrapper:hover {
+    z-index: 99999999 !important;
 }
 
 .tooltip-wrapper:hover .tooltip-content {
