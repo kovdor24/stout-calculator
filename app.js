@@ -6383,20 +6383,17 @@ const app = {
                 if (vType === 'natural') {
                     n_eff = 0.35;
                     tooltipDesc = 'Естественный воздухообмен кратностью 0.35 ч⁻¹.';
-                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 0.35 ч⁻¹ * удельный нагрев`;
-                    docHref = 'https://docs.cntd.ru/document/542400616';
+                    tooltipCalc = `Расчет: ${houseVol.toFixed(0)} м³ * 0.35 ч⁻¹ * удельный нагрев.`;
                     docText = 'СП 55.13330.2016 «Дома жилые одноквартирные»';
                 } else if (vType === 'forced') {
                     n_eff = 1.0;
                     tooltipDesc = 'Принудительный приток без рекуператора кратностью 1.0 ч⁻¹.';
-                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 1.0 ч⁻¹ * удельный нагрев`;
-                    docHref = 'https://docs.cntd.ru/document/1200177724';
+                    tooltipCalc = `Расчет: ${houseVol.toFixed(0)} м³ * 1.0 ч⁻¹ * удельный нагрев.`;
                     docText = 'СП 60.13330.2020 «Отопление, вентиляция и кондиционирование»';
                 } else if (vType === 'recuperator') {
                     n_eff = 0.25;
                     tooltipDesc = 'Принудительный приток с рекуперацией (эффективность 75%). Эффективная кратность 0.25 ч⁻¹.';
-                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 0.25 ч⁻¹ * удельный нагрев`;
-                    docHref = 'https://docs.cntd.ru/document/1200177724';
+                    tooltipCalc = `Расчет: ${houseVol.toFixed(0)} м³ * 0.25 ч⁻¹ * удельный нагрев.`;
                     docText = 'СП 60.13330.2020 «Отопление, вентиляция и кондиционирование»';
                 }
             }
@@ -6413,18 +6410,21 @@ const app = {
             if (lblVentFlow) {
                 lblVentFlow.innerText = airFlow.toFixed(0);
             }
-            const lblDesc = document.getElementById('lbl_vent_tooltip_desc');
-            if (lblDesc) {
-                lblDesc.innerText = tooltipDesc;
-            }
-            const lblCalc = document.getElementById('lbl_vent_tooltip_calc');
-            if (lblCalc) {
-                lblCalc.innerText = tooltipCalc;
-            }
-            const lblDocLink = document.getElementById('lbl_vent_doc_link');
-            if (lblDocLink) {
-                lblDocLink.href = docHref;
-                lblDocLink.innerText = docText;
+
+            const descVentCard = document.getElementById('desc_vent');
+            if (descVentCard) {
+                if (this.state.ventilationEnabled) {
+                    descVentCard.style.display = 'block';
+                    descVentCard.innerHTML = `
+                        <div style="font-size: 11px; line-height: 1.4; color: var(--text-main); font-weight: 500;">
+                            ${tooltipDesc}<br>
+                            <span style="font-weight: 600; color: var(--primary);">${tooltipCalc}</span>
+                            <span style="font-size: 9.5px; opacity: 0.6; display: block; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${docText}">${docText}</span>
+                        </div>
+                    `;
+                } else {
+                    descVentCard.style.display = 'none';
+                }
             }
         }
 
