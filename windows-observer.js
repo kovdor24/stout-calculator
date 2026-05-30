@@ -40,18 +40,19 @@
             return windows;
         }
 
-        // Вычисление количества помещений по алгоритму инженера-проектировщика
-        function calculateRecommendedRooms(area, isSecondFloor) {
+        // Вычисление количества помещений по алгоритму инженера-проектировщика на основе площади теплого пола
+        function calculateRecommendedRooms(tpArea, isSecondFloor) {
+            if (tpArea === 0) return 0;
             let rooms = 5;
-            if (area < 80) {
+            if (tpArea < 80) {
                 rooms = 5;
-            } else if (area >= 81 && area <= 120) {
+            } else if (tpArea >= 81 && tpArea <= 120) {
                 rooms = 7;
-            } else if (area >= 121 && area <= 160) {
+            } else if (tpArea >= 121 && tpArea <= 160) {
                 rooms = 9;
-            } else if (area >= 161 && area <= 200) {
+            } else if (tpArea >= 161 && tpArea <= 200) {
                 rooms = 11;
-            } else if (area >= 201 && area <= 250) {
+            } else if (tpArea >= 201 && tpArea <= 250) {
                 rooms = 14;
             } else {
                 rooms = 17;
@@ -108,9 +109,10 @@
             const recommendedWin = calculateRecommendedWindows(area, isSecondFloor);
             updateWindowsValue(recommendedWin);
 
-            // 2. Авторасчет термостатов (только при выключенном режиме "По комнатам", так как в покомнатном режиме им управляет app.js)
+            // 2. Авторасчет термостатов на основе площади ТП (только при выключенном режиме "По комнатам", так как в покомнатном режиме им управляет app.js)
             if (typeof app !== 'undefined' && app.state && !app.state.detailedRooms) {
-                const recommendedRooms = calculateRecommendedRooms(area, isSecondFloor);
+                const tpArea = (app.state.tp1 || 0) + (app.state.tp2 || 0);
+                const recommendedRooms = calculateRecommendedRooms(tpArea, isSecondFloor);
                 updateThermostatsValue(recommendedRooms);
             }
         }
@@ -121,6 +123,19 @@
         if (chkDetailedRooms) {
             chkDetailedRooms.addEventListener('change', handleAutoCalculation);
         }
+
+        // Подписываемся на изменение площади теплого пола
+        const inpTp1 = document.getElementById('inp_tp1');
+        const inpTp2 = document.getElementById('inp_tp2');
+        if (inpTp1) inpTp1.addEventListener('input', handleAutoCalculation);
+        if (inpTp2) inpTp2.addEventListener('input', handleAutoCalculation);
+
+        // Дополнительный наблюдатель за системой
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#sys_tp') || e.target.closest('.cool-tab') || e.target.closest('.tab')) {
+                setTimeout(handleAutoCalculation, 100);
+            }
+        });
 
         // Первичный расчет при инициализации страницы
         setTimeout(handleAutoCalculation, 1000);

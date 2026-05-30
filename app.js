@@ -5657,7 +5657,7 @@ const app = {
             this.state.win = tW > 0 ? tW : 1;
             this.state.tp1 = tTp1;
             this.state.tp2 = tTp2;
-            this.state.ufhZones = this.state.rooms.length;
+            this.state.ufhZones = this.state.rooms.filter(r => r.sys && r.sys.includes('tp')).length;
 
             if ((tTp1 + tTp2) > 0 && !this.state.systems.includes('tp')) this.state.systems.push('tp');
             else if ((tTp1 + tTp2) === 0 && this.state.systems.includes('tp')) this.state.systems = this.state.systems.filter(s => s !== 'tp');
@@ -5959,6 +5959,40 @@ const app = {
                             if (generatedRooms[targetIdx].area > 1) {
                                 generatedRooms[targetIdx].area -= 1;
                             }
+                        }
+                    }
+                }
+
+                // Умное распределение теплого пола на основе площади теплого пола (tpArea)
+                let tpArea = (parseFloat(this.state.tp1) || 0) + (parseFloat(this.state.tp2) || 0);
+                if (tpArea > 0) {
+                    let tpRoomsCount = 5;
+                    if (tpArea < 80) tpRoomsCount = 5;
+                    else if (tpArea >= 81 && tpArea <= 120) tpRoomsCount = 7;
+                    else if (tpArea >= 121 && tpArea <= 160) tpRoomsCount = 9;
+                    else if (tpArea >= 161 && tpArea <= 200) tpRoomsCount = 11;
+                    else if (tpArea >= 201 && tpArea <= 250) tpRoomsCount = 14;
+                    else tpRoomsCount = 17;
+
+                    if (floors === 2) {
+                        tpRoomsCount += 2;
+                    }
+                    tpRoomsCount = Math.min(tpRoomsCount, roomsCount);
+
+                    // Сортируем копию комнат для определения приоритета включения теплого пола
+                    const tpPriority = ["санузел", "ванная", "кухня", "гостиная", "прихожая", "холл", "коридор", "котельная", "гардеробная", "кладовая", "спальня", "детская", "кабинет"];
+                    let sortedForTp = [...generatedRooms].map((r, originalIdx) => {
+                        let nameLower = r.name.toLowerCase();
+                        let priorityIndex = tpPriority.findIndex(p => nameLower.includes(p));
+                        if (priorityIndex === -1) priorityIndex = 999;
+                        return { r, priorityIndex, originalIdx };
+                    }).sort((a, b) => a.priorityIndex - b.priorityIndex);
+
+                    // Включаем тёплый пол в первых tpRoomsCount помещениях по приоритету
+                    for (let i = 0; i < tpRoomsCount; i++) {
+                        let room = sortedForTp[i].r;
+                        if (!room.sys.includes('tp')) {
+                            room.sys.push('tp');
                         }
                     }
                 }
