@@ -5685,12 +5685,23 @@ const app = {
     },
     toggleDetailedRooms: function (chk, event) {
         if (!this.checkAccess('pro', event)) {
-            document.getElementById('chk_detailed_rooms').checked = this.state.detailedRooms;
+            const chkDom = document.getElementById('chk_detailed_rooms');
+            if (chkDom) chkDom.checked = this.state.detailedRooms;
             return;
         }
         this.state.detailedRooms = chk;
+        this.state.wallLayersEnabled = chk;
 
         if (chk) {
+            let v = this.state.mat;
+            if (v >= 1.2) {
+                this.state.wallLayers = [{ matId: "wood_pine", thick: 180 }];
+            } else if (v >= 0.9 && v < 1.2) {
+                this.state.wallLayers = [{ matId: "gas_d500", thick: 230 }];
+            } else if (v < 0.9) {
+                this.state.wallLayers = [{ matId: "gas_d400", thick: 300 }, { matId: "minwool", thick: 30 }];
+            }
+            this.calculateWallResistance();
             // Считаем текущую сумму комнат
             let currentRoomsArea = 0;
             if (this.state.rooms) {
@@ -6121,12 +6132,15 @@ const app = {
             let hasTp = r.sys && r.sys.includes('tp');
             let winsHtml = "";
             r.windows.forEach((w, wIdx) => {
-                winsHtml += `<div style="display:inline-flex; align-items:center; background:var(--surface); border:1px solid var(--border); padding:2px 4px; border-radius:4px; gap:4px; font-size:10px; flex-shrink:0;">
-                            <span style="font-weight:600; color:var(--text-sec);">Окно</span>
-                            <input type="number" style="width:44px; border:1px solid var(--border); border-radius:3px; padding:2px; text-align:center; font-size:11px; background:var(--bg); color:var(--text-main);" value="${w.width}" step="0.1" onchange="app.updWindow(${r.id}, ${w.id}, 'width', this.value)">
+                winsHtml += `<div class="room-window-row" style="display:inline-flex; align-items:center; background:var(--surface); border:1px solid var(--border); padding:2px 4px; border-radius:4px; gap:4px; font-size:10px; flex-shrink:0;">
+                            <span class="win-lbl-text" style="font-weight:600; color:var(--text-sec);">Окно</span>
+                            <span class="win-lbl-icon" style="display:none; font-size:11px;">🪟</span>
+                            <input type="number" style="width:38px; border:1px solid var(--border); border-radius:3px; padding:2px; text-align:center; font-size:11px; background:var(--bg); color:var(--text-main);" value="${w.width}" step="0.1" onchange="app.updWindow(${r.id}, ${w.id}, 'width', this.value)">
                             <span style="color:var(--text-sec);">м</span>
                             <label style="display:flex; align-items:center; gap:2px; cursor:pointer; color:var(--text-main); font-size:10px; margin-left:2px;">
-                                <input type="checkbox" ${w.isPan ? 'checked' : ''} onchange="app.updWindow(${r.id}, ${w.id}, 'isPan', this.checked)" style="margin:0; width:12px; height:12px;"> Панорамное
+                                <input type="checkbox" ${w.isPan ? 'checked' : ''} onchange="app.updWindow(${r.id}, ${w.id}, 'isPan', this.checked)" style="margin:0; width:12px; height:12px;"> 
+                                <span class="pan-lbl-text">Панорамное</span>
+                                <span class="pan-lbl-short" style="display:none;">Пан.</span>
                             </label>
                             <span style="color:#EF4444; cursor:pointer; font-weight:bold; margin-left:2px; font-size:14px; line-height:1;" onclick="app.removeWindow(${r.id}, ${w.id})">×</span>
                         </div>`;
@@ -6215,37 +6229,74 @@ const app = {
             clearBtn.style.display = this.state.selectedCity ? 'block' : 'none';
         }
         const matTabs = document.getElementById('mat_tabs').children; for (let t of matTabs) t.classList.remove('active');
-        if (!this.state.wallLayersEnabled) {
-            if (this.state.mat === 1.3) matTabs[0].classList.add('active'); if (this.state.mat === 1.0) matTabs[1].classList.add('active'); if (this.state.mat === 0.8) matTabs[2].classList.add('active');
+        if (this.state.mat >= 1.2) {
+            matTabs[0].classList.add('active');
+        } else if (this.state.mat >= 0.9 && this.state.mat < 1.2) {
+            matTabs[1].classList.add('active');
+        } else if (this.state.mat < 0.9) {
+            matTabs[2].classList.add('active');
         }
         
-        // Sync wall layers UI
-        const chkLayers = document.getElementById('chk_wall_layers');
-        if (chkLayers) {
-            chkLayers.checked = !!this.state.wallLayersEnabled;
+        // Sync City Search visibility
+        const citySearchWrapper = document.querySelector('.city-search-wrapper');
+        if (citySearchWrapper) {
+            citySearchWrapper.style.display = this.state.detailedRooms ? 'block' : 'none';
+        }
+
+        // Sync wall layers UI visibility based on detailedRooms
+        const blkHeader = document.getElementById('wall_layers_header_wrapper');
+        if (blkHeader) {
+            blkHeader.style.display = this.state.detailedRooms ? 'flex' : 'none';
         }
         const blkLayers = document.getElementById('blk_wall_layers');
         if (blkLayers) {
-            blkLayers.style.display = this.state.wallLayersEnabled ? 'flex' : 'none';
+            blkLayers.style.display = this.state.detailedRooms ? 'flex' : 'none';
         }
         
-        if (this.state.wallLayersEnabled) {
+        if (this.state.detailedRooms) {
             const listCont = document.getElementById('wall_layers_list');
             if (listCont && this.state.wallLayers) {
                 listCont.innerHTML = this.state.wallLayers.map((l, idx) => {
+                    let currentMat = WALL_MATERIALS_DB.find(m => m.id === l.matId) || WALL_MATERIALS_DB[0];
+                    let stdList = STANDARD_THICKNESSES[l.matId] || [50, 100, 150, 200];
+                    let minThick = stdList[0];
+                    let maxThick = stdList[stdList.length - 1];
+
                     let optionsHtml = WALL_MATERIALS_DB.map(m => {
-                        let sel = m.id === l.matId ? 'selected' : '';
-                        return `<option value="${m.id}" ${sel}>${m.name}</option>`;
+                        let activeClass = m.id === l.matId ? 'active' : '';
+                        return `<div class="custom-dropdown-option ${activeClass}" onclick="app.updateWallLayer(${idx}, 'matId', '${m.id}', false); document.getElementById('dropdown_options_${idx}').style.display='none'; event.stopPropagation();">
+                            ${m.name}
+                        </div>`;
                     }).join('');
 
-                    return `<div class="wall-layer-item">
-                        <span class="wall-layer-num">${idx + 1}</span>
-                        <select class="wall-layer-select" onchange="app.updateWallLayer(${idx}, 'matId', this.value)">
-                            ${optionsHtml}
-                        </select>
-                        <input type="number" class="wall-layer-thick" value="${l.thick}" min="1" max="1000" oninput="app.updateWallLayer(${idx}, 'thick', this.value)">
-                        <span class="wall-layer-unit">мм</span>
-                        <button class="wall-layer-del" onclick="app.removeWallLayer(${idx})">×</button>
+                    return `<div class="wall-layer-item-wrapper" style="position: relative; width: 100%; box-sizing: border-box;">
+                        <div class="wall-layer-thick-slider-container" id="thick_slider_container_${idx}" style="display: none; position: absolute; z-index: 1000; bottom: 44px; left: 22px; align-items: center; padding: 6px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 2px;">
+                            <input type="range" id="thick_slider_${idx}" min="${minThick}" max="${maxThick}" step="10" value="${l.thick}" oninput="document.getElementById('thick_input_${idx}').value = this.value; app.updateWallLayer(${idx}, 'thick', this.value, true)" onchange="app.updateWallLayer(${idx}, 'thick', this.value, false)" style="width: 140px; accent-color: var(--primary); height: 6px; cursor: pointer;">
+                            <span style="font-size: 11px; color: var(--primary); font-weight: 700; cursor: pointer; user-select: none; padding: 2px 6px; background: var(--primary-light); border-radius: 4px;" onclick="document.getElementById('thick_slider_container_${idx}').style.display = 'none'; app.syncUI(); app.render();">OK</span>
+                        </div>
+                        <div class="wall-layer-item" style="display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box; background: var(--surface-light); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 6px;">
+                            <!-- Row 1: Number & Custom material dropdown -->
+                            <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                                <span class="wall-layer-num" style="flex-shrink: 0; width: 14px; text-align: center; font-size: 11px; font-weight: 700; color: var(--text-sec);">${idx + 1}</span>
+                                <div class="custom-dropdown" style="position: relative; flex: 1; min-width: 0;">
+                                    <div class="wall-layer-select" onclick="app.toggleMaterialDropdown(${idx}, event)" style="width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: 34px; height: auto; font-size: 12.5px; font-weight: 500; padding: 6px 28px 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-main); cursor: pointer; box-sizing: border-box;">
+                                        <span style="white-space: normal; word-break: break-word; display: block; width: 100%; text-align: left; line-height: 1.3;">${currentMat.name}</span>
+                                    </div>
+                                    <div id="dropdown_options_${idx}" class="custom-dropdown-options" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 250px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; box-sizing: border-box;">
+                                        ${optionsHtml}
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Row 2: Thickness input, unit & Delete button -->
+                            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding-left: 22px; box-sizing: border-box;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-size: 11.5px; color: var(--text-sec);">Толщина слоя:</span>
+                                    <input type="number" id="thick_input_${idx}" class="wall-layer-thick" value="${l.thick}" min="${minThick}" max="${maxThick}" onfocus="document.querySelectorAll('.wall-layer-thick-slider-container').forEach(c => c.style.display='none'); document.getElementById('thick_slider_container_${idx}').style.display = 'flex'" oninput="document.getElementById('thick_slider_${idx}').value = this.value; app.updateWallLayer(${idx}, 'thick', this.value, true)" onchange="app.updateWallLayer(${idx}, 'thick', this.value, false)" style="width: 58px; height: 30px; font-size: 12.5px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-main); text-align: center; outline: none; font-weight: 600;">
+                                    <span class="wall-layer-unit" style="font-size: 11.5px; color: var(--text-sec);">мм</span>
+                                </div>
+                                <button class="wall-layer-del" onclick="app.removeWallLayer(${idx})" style="background: transparent; border: none; color: #EF4444; font-size: 18px; cursor: pointer; line-height: 1; padding: 4px; opacity: 0.7; transition: 0.15s;">×</button>
+                            </div>
+                        </div>
                     </div>`;
                 }).join('');
             }
@@ -6318,6 +6369,17 @@ const app = {
         if (document.getElementById('chk_water')) document.getElementById('chk_water').checked = this.state.water;
         if (document.getElementById('blk_water_zones')) document.getElementById('blk_water_zones').style.display = this.state.water ? 'flex' : 'none';
         if (document.getElementById('chk_detailed_rooms')) document.getElementById('chk_detailed_rooms').checked = this.state.detailedRooms;
+        const modeFast = document.getElementById('mode_fast');
+        const modePro = document.getElementById('mode_pro');
+        if (modeFast && modePro) {
+            if (this.state.detailedRooms) {
+                modeFast.classList.remove('active');
+                modePro.classList.add('active');
+            } else {
+                modeFast.classList.add('active');
+                modePro.classList.remove('active');
+            }
+        }
         if (document.getElementById('blk_fast_calc')) document.getElementById('blk_fast_calc').style.display = this.state.detailedRooms ? 'none' : 'block';
         if (document.getElementById('blk_detailed_calc')) document.getElementById('blk_detailed_calc').style.display = this.state.detailedRooms ? 'flex' : 'none';
         if (this.state.detailedRooms) this.renderRoomsUI();
@@ -6597,9 +6659,17 @@ const app = {
     },
     setMat: function (v) {
         this.state.mat = v;
-        this.state.wallLayersEnabled = false;
-        const chk = document.getElementById('chk_wall_layers');
-        if (chk) chk.checked = false;
+        this.state.wallLayersEnabled = !!this.state.detailedRooms;
+        if (this.state.detailedRooms) {
+            if (v === 1.3) {
+                this.state.wallLayers = [{ matId: "wood_pine", thick: 180 }];
+            } else if (v === 1.0) {
+                this.state.wallLayers = [{ matId: "gas_d500", thick: 230 }];
+            } else if (v === 0.8) {
+                this.state.wallLayers = [{ matId: "gas_d400", thick: 300 }, { matId: "minwool", thick: 30 }];
+            }
+            this.calculateWallResistance();
+        }
         this.syncUI();
         this.render();
     },
@@ -6610,16 +6680,18 @@ const app = {
         } else {
             regText = REGION_DESC[this.state.region] || `Мороз до -25°C`;
         }
-        document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${regText}<br><span style="font-size: 9.5px; opacity: 0.6; display: block; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">СП 131.13330.2020 «Строительная климатология»</span>`;
-        
-        if (this.state.wallLayersEnabled) {
-            let totalThick = 0;
-            if (this.state.wallLayers) {
-                totalThick = this.state.wallLayers.reduce((sum, l) => sum + parseInt(l.thick || 0), 0);
-            }
-            document.getElementById('desc_mat').innerHTML = `<span>🧱</span> Расчетный пирог: ${totalThick} мм (Коэфф: ${this.state.mat.toFixed(2)})`;
+        if (this.state.detailedRooms) {
+            document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${regText}<br><span style="font-size: 9.5px; opacity: 0.6; display: block; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">СП 131.13330.2020 «Строительная климатология»</span>`;
         } else {
-            document.getElementById('desc_mat').innerHTML = WALL_DESC[this.state.mat] || `🧱 Индивидуальная стена`;
+            document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${regText}`;
+        }
+        
+        let wallText = WALL_DESC[this.state.mat] || `🧱 Индивидуальная стена`;
+        if (this.state.wallLayersEnabled && this.state.wallLayers) {
+            let totalThick = this.state.wallLayers.reduce((sum, l) => sum + parseInt(l.thick || 0), 0);
+            document.getElementById('desc_mat').innerHTML = `${wallText}<br><span style="font-size: 11px; font-weight: bold; color: var(--primary); margin-top: 4px; display: inline-block;">Пирог: ${totalThick} мм (Коэфф: ${this.state.mat.toFixed(2)})</span>`;
+        } else {
+            document.getElementById('desc_mat').innerHTML = wallText;
         }
     },
 
@@ -6676,22 +6748,68 @@ const app = {
         this.saveState();
     },
 
-    updateWallLayer: function (idx, field, value) {
+    snapToStandardThickness: function (matId, thick) {
+        const std = STANDARD_THICKNESSES[matId] || [50, 100, 150, 200];
+        return std.reduce((prev, curr) => Math.abs(curr - thick) < Math.abs(prev - thick) ? curr : prev);
+    },
+
+    updateWallLayer: function (idx, field, value, skipRender) {
         if (!this.state.wallLayers || !this.state.wallLayers[idx]) return;
         
         if (field === 'thick') {
             let num = parseInt(value);
             if (isNaN(num) || num < 0) num = 0;
             if (num > 2000) num = 2000;
+            
+            if (!skipRender) {
+                num = this.snapToStandardThickness(this.state.wallLayers[idx].matId, num);
+            }
             this.state.wallLayers[idx][field] = num;
         } else {
             this.state.wallLayers[idx][field] = value;
+            
+            let currentThick = this.state.wallLayers[idx].thick;
+            this.state.wallLayers[idx].thick = this.snapToStandardThickness(value, currentThick);
         }
 
         this.calculateWallResistance();
-        this.syncUI();
-        this.render();
+        
+        if (skipRender) {
+            // Buttery smooth live calculations directly in the DOM
+            let totalThick = 0;
+            let totalR = 0.115 + 0.043;
+            this.state.wallLayers.forEach(l => {
+                let mat = WALL_MATERIALS_DB.find(m => m.id === l.matId);
+                if (mat) {
+                    totalThick += parseInt(l.thick || 0);
+                    totalR += (parseInt(l.thick || 0) / 1000) / mat.lambda;
+                }
+            });
+            let wallCoef = parseFloat((1.8 / totalR).toFixed(2));
+            this.state.mat = wallCoef;
+            
+            const lblThick = document.getElementById('lbl_wall_thickness');
+            const lblRes = document.getElementById('lbl_wall_resistance');
+            const lblCoef = document.getElementById('lbl_wall_coef');
+            if (lblThick) lblThick.innerText = `${totalThick} мм`;
+            if (lblRes) lblRes.innerText = `${totalR.toFixed(2)} м²·°С/Вт`;
+            if (lblCoef) lblCoef.innerText = wallCoef.toFixed(2);
+            
+            this.updateInfo();
+        } else {
+            this.syncUI();
+            this.render();
+        }
         this.saveState();
+    },
+
+    toggleMaterialDropdown: function (idx, event) {
+        if (event) event.stopPropagation();
+        const drop = document.getElementById(`dropdown_options_${idx}`);
+        if (!drop) return;
+        const isShown = drop.style.display === 'block';
+        document.querySelectorAll('.custom-dropdown-options').forEach(d => d.style.display = 'none');
+        drop.style.display = isShown ? 'none' : 'block';
     },
 
     // City Climate Lookup Autocomplete Implementation
@@ -6703,6 +6821,10 @@ const app = {
             const wrapper = e.target.closest('.city-search-wrapper');
             if (!wrapper) {
                 app.hideCitySuggestions();
+            }
+            const dropdown = e.target.closest('.custom-dropdown');
+            if (!dropdown) {
+                document.querySelectorAll('.custom-dropdown-options').forEach(d => d.style.display = 'none');
             }
         });
     },

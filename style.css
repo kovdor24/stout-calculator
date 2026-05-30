@@ -2047,8 +2047,8 @@ body.dark-mode .btn-add-zone:hover {
     position: absolute;
     z-index: 9999999 !important;
     bottom: 135%;
-    left: 50%;
-    transform: translateX(-50%);
+    right: -10px;
+    left: auto;
     width: max-content; min-width: 260px; max-width: 420px; white-space: normal;
     background: #1F2937;
     color: #fff;
@@ -2062,6 +2062,16 @@ body.dark-mode .btn-add-zone:hover {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
     text-align: left;
     font-weight: 400;
+}
+
+.tooltip-content::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    right: 12px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #1F2937 transparent transparent transparent;
 }
 
 .tooltip-wrapper:hover {
@@ -5409,19 +5419,42 @@ body.dark-mode .wall-layer-item {
 
 .wall-layer-select {
     flex: 1;
-    font-size: 12px;
-    padding: 6px;
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 7px 28px 7px 10px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 8px;
     background: var(--surface);
     color: var(--text-main);
     outline: none;
     cursor: pointer;
-    min-width: 0; /* Prevents overflow */
+    min-width: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.wall-layer-select:hover {
+    border-color: var(--primary);
+}
+
+.wall-layer-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 body.dark-mode .wall-layer-select {
-    background: #1F2937 !important;
+    background-color: #1F2937 !important;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+body.dark-mode .wall-layer-select:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
 .wall-layer-thick {
@@ -5481,4 +5514,342 @@ body.html2pdf-printing #blk_wall_layers {
     display: none !important;
 }
 
+/* Premium Segmented Mode Selector Tabs */
+.mode-selector-tabs {
+    display: flex;
+    background: var(--surface-light);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+}
 
+.mode-tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    color: var(--text-sec);
+    user-select: none;
+}
+
+.mode-tab:hover {
+    color: var(--text-main);
+}
+
+.mode-tab.active {
+    background: var(--primary);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}
+
+body.dark-mode .mode-tab.active {
+    background: var(--primary);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+}
+
+/* Custom material select dropdown premium options styling */
+.custom-dropdown-options {
+    scrollbar-width: thin;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.custom-dropdown-options::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-dropdown-options::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.custom-dropdown-option {
+    padding: 8px 12px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif !important;
+    transition: background 0.15s ease;
+}
+
+.custom-dropdown-option:hover {
+    background: var(--bg) !important;
+}
+
+.custom-dropdown-option.active {
+    background: var(--primary-light) !important;
+    color: var(--primary) !important;
+    font-weight: 700;
+}
+
+body.dark-mode .custom-dropdown-option.active {
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: #818cf8 !important;
+}
+
+/* Premium styling for City Autocomplete */
+.city-search-input {
+    font-family: 'Inter', sans-serif !important;
+    background: var(--surface-light) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    color: var(--text-main) !important;
+}
+
+.city-suggestions-dropdown {
+    font-family: 'Inter', sans-serif !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+}
+
+.city-suggestion-item {
+    font-family: 'Inter', sans-serif !important;
+    color: var(--text-main) !important;
+}
+
+body.dark-mode .city-suggestions-dropdown {
+    background: #111827 !important;
+}
+
+/* Extra premium adjustments for wall list items */
+.wall-layer-item {
+    background: var(--surface-light) !important;
+    outline: none;
+    cursor: pointer;
+    min-width: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.wall-layer-select:hover {
+    border-color: var(--primary);
+}
+
+.wall-layer-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+body.dark-mode .wall-layer-select {
+    background-color: #1F2937 !important;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+body.dark-mode .wall-layer-select:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.wall-layer-thick {
+    width: 65px;
+    font-size: 12px;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text-main);
+    text-align: center;
+    outline: none;
+}
+
+body.dark-mode .wall-layer-thick {
+    background: #1F2937 !important;
+}
+
+.wall-layer-unit {
+    font-size: 11px;
+    color: var(--text-sec);
+    width: 24px;
+}
+
+.wall-layer-del {
+    background: transparent;
+    border: none;
+    color: #EF4444;
+    font-size: 16px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    opacity: 0.7;
+    transition: 0.15s;
+}
+
+.wall-layer-del:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.btn-add-layer:hover {
+    background: var(--primary-light) !important;
+    border-style: solid !important;
+}
+
+/* Hide wall layers from printing */
+@media print {
+    #chk_wall_layers,
+    #blk_wall_layers,
+    .control-item:has(#chk_wall_layers) > div:nth-child(3) {
+        display: none !important;
+    }
+}
+body.html2pdf-printing #chk_wall_layers,
+body.html2pdf-printing #blk_wall_layers {
+    display: none !important;
+}
+
+/* Premium Segmented Mode Selector Tabs */
+.mode-selector-tabs {
+    display: flex;
+    background: var(--surface-light);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.mode-tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    color: var(--text-sec);
+    user-select: none;
+}
+
+.mode-tab:hover {
+    color: var(--text-main);
+}
+
+.mode-tab.active {
+    background: var(--primary);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}
+
+body.dark-mode .mode-tab.active {
+    background: var(--primary);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+}
+
+/* Custom material select dropdown premium options styling */
+.custom-dropdown-options {
+    scrollbar-width: thin;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.custom-dropdown-options::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-dropdown-options::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.custom-dropdown-option {
+    padding: 8px 12px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif !important;
+    transition: background 0.15s ease;
+}
+
+.custom-dropdown-option:hover {
+    background: var(--bg) !important;
+}
+
+.custom-dropdown-option.active {
+    background: var(--primary-light) !important;
+    color: var(--primary) !important;
+    font-weight: 700;
+}
+
+body.dark-mode .custom-dropdown-option.active {
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: #818cf8 !important;
+}
+
+/* Premium styling for City Autocomplete */
+.city-search-input {
+    font-family: 'Inter', sans-serif !important;
+    background: var(--surface-light) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    color: var(--text-main) !important;
+}
+
+.city-suggestions-dropdown {
+    font-family: 'Inter', sans-serif !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+}
+
+.city-suggestion-item {
+    font-family: 'Inter', sans-serif !important;
+    color: var(--text-main) !important;
+}
+
+body.dark-mode .city-suggestions-dropdown {
+    background: #111827 !important;
+}
+
+/* Extra premium adjustments for wall list items */
+.wall-layer-item {
+    background: var(--surface-light) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    padding: 6px 10px !important;
+}
+
+body.dark-mode .wall-layer-item {
+    background: #151C2C !important;
+    border: 1px solid #262E3F !important;
+}
+
+/* Floating thickness slider popover styles */
+.wall-layer-thick-slider-container {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid var(--border) !important;
+    background: var(--surface) !important;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+body.dark-mode .wall-layer-thick-slider-container {
+    background: #1F2937 !important;
+    border: 1px solid #374151 !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+.wall-layer-thick-slider-container::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    right: 28px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--border) transparent transparent transparent;
+}
+
+body.dark-mode .wall-layer-thick-slider-container::after {
+    border-color: #374151 transparent transparent transparent;
+}
