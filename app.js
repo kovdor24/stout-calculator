@@ -8991,15 +8991,25 @@ const app = {
 
         if (sewerToilets > 0 || (this.state.water && this.state.waterZones.length > 0)) {
             let sectionTitle = "8. Канализация";
+            let singleZone = this.state.waterZones.length === 1;
             
             // Если группировка ВКЛЮЧЕНА (потребители)
             if (!isSewerMerge) {
                 // Сначала выводим инсталляции (если есть) в своей группе, чтобы они были первыми
                 if (sewerToilets > 0) {
-                    addToBill(catalog.water_parts[6], sewerToilets, this.getDesc('install'), "8. Канализация: Инсталляция унитаза");
+                    let label = singleZone ? "Канализация: [Инсталляция]" : `Канализация: [Инсталляция] (${this.state.waterZones[0].name})`;
+                    // Если зон несколько, выведем инсталляции под каждую зону
+                    this.state.waterZones.forEach(z => {
+                        let tCount = parseInt(z.fixtures.toilet) || 0;
+                        if (tCount > 0) {
+                            let grpLabel = singleZone ? "8.1. Канализация: [Инсталляция унитаза]" : `8.1. Канализация: [Инсталляция унитаза] (${z.name})`;
+                            addToBill(catalog.water_parts[6], tCount, this.getDesc('install'), grpLabel);
+                        }
+                    });
                 }
 
                 // Теперь считаем трубы и фитинги по потребителям
+                let subSecIdx = 2;
                 this.state.waterZones.forEach(z => {
                     let f = z.fixtures;
                     let toiletsCount = parseInt(f.toilet) || 0;
@@ -9013,7 +9023,7 @@ const app = {
 
                     // 1. Для инсталляции (D110)
                     if (toiletsCount > 0) {
-                        let grp = `8. Канализация: ${z.name} (Инсталляция)`;
+                        let grp = singleZone ? `8.${subSecIdx++}. Канализация: [Инсталляция]` : `8.${subSecIdx++}. Канализация: [Инсталляция] (${z.name})`;
                         let pipe110_1 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110100");
                         let bend110_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-011087");
                         let plug110 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000110");
@@ -9025,7 +9035,7 @@ const app = {
 
                     // 2. Для Ванны
                     if (bathCount > 0) {
-                        let grp = `8. Канализация: ${z.name} (Ванная)`;
+                        let grp = singleZone ? `8.${subSecIdx++}. Канализация: [Ванная]` : `8.${subSecIdx++}. Канализация: [Ванная] (${z.name})`;
                         let pipe58Len = bathCount * 1.5;
                         let q2 = Math.floor(pipe58Len / 2);
                         let q1 = Math.ceil(pipe58Len % 2);
@@ -9048,7 +9058,7 @@ const app = {
 
                     // 3. Для Душа
                     if (showerCount > 0) {
-                        let grp = `8. Канализация: ${z.name} (Душ)`;
+                        let grp = singleZone ? `8.${subSecIdx++}. Канализация: [Душ]` : `8.${subSecIdx++}. Канализация: [Душ] (${z.name})`;
                         let pipe58Len = showerCount * 1.5;
                         let q2 = Math.floor(pipe58Len / 2);
                         let q1 = Math.ceil(pipe58Len % 2);
@@ -9079,7 +9089,7 @@ const app = {
                     otherFixtures.forEach(fix => {
                         let count = parseInt(f[fix.key]) || 0;
                         if (count > 0) {
-                            let grp = `8. Канализация: ${z.name} (${fix.nameRu})`;
+                            let grp = singleZone ? `8.${subSecIdx++}. Канализация: [${fix.nameRu}]` : `8.${subSecIdx++}. Канализация: [${fix.nameRu}] (${z.name})`;
                             let pipe58Len = count * 1.5;
                             let q2 = Math.floor(pipe58Len / 2);
                             let q1 = Math.ceil(pipe58Len % 2);
@@ -9104,7 +9114,7 @@ const app = {
 
                 // 5. Общие материалы и расходники (стояки, хомуты, смазка)
                 if (totalSewerPoints > 0) {
-                    let grpSewerMain = "8. Канализация: Общие материалы и расходники";
+                    let grpSewerMain = `8.${subSecIdx++}. Канализация: [Общие материалы и расходники]`;
                     let floors = this.state.floors || 1;
                     let area = this.state.area || 150;
                     
@@ -9135,19 +9145,22 @@ const app = {
                 }
 
                 // Смываем все группы по порядку
-                if (sewerToilets > 0) {
-                    flushBill("8. Канализация: Инсталляция унитаза");
-                }
                 this.state.waterZones.forEach(z => {
-                    flushBill(`8. Канализация: ${z.name} (Инсталляция)`);
-                    flushBill(`8. Канализация: ${z.name} (Ванная)`);
-                    flushBill(`8. Канализация: ${z.name} (Душ)`);
-                    flushBill(`8. Канализация: ${z.name} (Раковина)`);
-                    flushBill(`8. Канализация: ${z.name} (Стиральная машина)`);
-                    flushBill(`8. Канализация: ${z.name} (Посудомоечная машина)`);
+                    let grpLabel = singleZone ? "8.1. Канализация: [Инсталляция унитаза]" : `8.1. Канализация: [Инсталляция унитаза] (${z.name})`;
+                    flushBill(grpLabel);
+                });
+                
+                let subSecIdxFlush = 2;
+                this.state.waterZones.forEach(z => {
+                    flushBill(singleZone ? `8.${subSecIdxFlush++}. Канализация: [Инсталляция]` : `8.${subSecIdxFlush++}. Канализация: [Инсталляция] (${z.name})`);
+                    flushBill(singleZone ? `8.${subSecIdxFlush++}. Канализация: [Ванная]` : `8.${subSecIdxFlush++}. Канализация: [Ванная] (${z.name})`);
+                    flushBill(singleZone ? `8.${subSecIdxFlush++}. Канализация: [Душ]` : `8.${subSecIdxFlush++}. Канализация: [Душ] (${z.name})`);
+                    flushBill(singleZone ? `8.${subSecIdxFlush++}. Канализация: [Раковина]` : `8.${subSecIdxFlush++}. Канализация: [Раковина] (${z.name})`);
+                    flushBill(singleZone ? `8.${subSecIdxFlush++}. Канализация: [Стиральная машина]` : `8.${subSecIdxFlush++}. Канализация: [Стиральная машина] (${z.name})`);
+                    flushBill(singleZone ? `8.${subSecIdxFlush++}. Канализация: [Посудомоечная машина]` : `8.${subSecIdxFlush++}. Канализация: [Посудомоечная машина] (${z.name})`);
                 });
                 if (totalSewerPoints > 0) {
-                    flushBill("8. Канализация: Общие материалы и расходники");
+                    flushBill(`8.${subSecIdxFlush++}. Канализация: [Общие материалы и расходники]`);
                 }
 
             } else {
