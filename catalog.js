@@ -1619,6 +1619,17 @@ const catalog = {
         { id: "SFT-0045-000034", name: "Сгон прямой 3/4\" ВР-НР", price: 583, brand: "STOUT",
   availability: 'in_stock' }
     ],
+    outdoor_faucets: [
+        { id: "RVFF-0001-1520150", name: "Кран незамерзающий, длина 150 мм", price: 2359, brand: "ROMMER", availability: 'in_stock' },
+        { id: "RVFF-0001-1520200", name: "Кран незамерзающий, длина 200 мм", price: 2501, brand: "ROMMER", availability: 'in_stock' },
+        { id: "RVFF-0001-1520250", name: "Кран незамерзающий, длина 250 мм", price: 2651, brand: "ROMMER", availability: 'in_stock' },
+        { id: "RVFF-0001-1520300", name: "Кран незамерзающий, длина 300 мм", price: 2810, brand: "ROMMER", availability: 'in_stock' },
+        { id: "RVFF-0001-1520350", name: "Кран незамерзающий, длина 350 мм", price: 2978, brand: "ROMMER", availability: 'in_stock' },
+        { id: "RVFF-0001-1520400", name: "Кран незамерзающий, длина 400 мм", price: 3157, brand: "ROMMER", availability: 'in_stock' },
+        { id: "RVFF-0001-1520450", name: "Кран незамерзающий, длина 450 мм", price: 3346, brand: "ROMMER", availability: 'in_stock' },
+        { id: "RVFF-0001-1520500", name: "Кран незамерзающий, длина 500 мм", price: 3547, brand: "ROMMER", availability: 'in_stock' },
+        { id: "RVFF-0001-1520550", name: "Кран незамерзающий, длина 550 мм", price: 3760, brand: "ROMMER", availability: 'in_stock' }
+    ],
     filter_big_blue: [
         { id: "75185", name: "Колба Big Blue 20'", price: 3745, brand: "UNIPUMP",
   availability: 'in_stock' },

@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, ventilationEnabled: false, ventilationType: 'natural' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, ventilationEnabled: false, ventilationType: 'natural' },
 
     lastSavedStateString: "",
 
@@ -5130,7 +5130,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, ventilationEnabled: false, ventilationType: 'natural',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, ventilationEnabled: false, ventilationType: 'natural',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -5520,6 +5520,12 @@ const app = {
         let xpsAlt = catalog.xps_kit[0]; catalog.mats.forEach(m => { m.alts = [xpsAlt]; }); catalog.xps_kit[0].alts = catalog.mats;
         if (catalog.well_auto) { let waAlts = catalog.well_auto; catalog.well_auto.forEach(a => { a.alts = waAlts; }); }
         if (catalog.convectors_scq && catalog.convectors_scn) { let convAlts = [catalog.convectors_scq[0], catalog.convectors_scn[0]]; catalog.convectors_scq.forEach(c => { c.alts = convAlts; }); catalog.convectors_scn.forEach(c => { c.alts = convAlts; }); }
+        if (catalog.outdoor_faucets && catalog.outdoor_faucet) {
+            let faucetAlts = [...catalog.outdoor_faucets, catalog.outdoor_faucet.find(x => x.id === "SVB-1007-200020")].filter(Boolean);
+            catalog.outdoor_faucets.forEach(f => { f.alts = faucetAlts; });
+            let stdFaucet = catalog.outdoor_faucet.find(x => x.id === "SVB-1007-200020");
+            if (stdFaucet) stdFaucet.alts = faucetAlts;
+        }
         // === ОБХОД АВТОРИЗАЦИИ ДЛЯ ЛОКАЛЬНОЙ РАЗРАБОТКИ ===
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             console.warn('[DEV MODE] Localhost detected — установлена PRO сессия для тестирования.');
@@ -5736,6 +5742,7 @@ const app = {
         }
 
         this.syncRoomsToState();
+        this.autoCalcZones();
         this.syncUI();
         this.render();
     },
@@ -6250,11 +6257,26 @@ const app = {
         });
     },
     setUfhCtrl: function (type) { this.state.ufhCtrl = type; this.syncUI(); this.render(); },
+    setUfhStep: function (floor, step) {
+        if (floor === 1) {
+            this.state.ufhStep1 = parseInt(step) || 150;
+        } else if (floor === 2) {
+            this.state.ufhStep2 = parseInt(step) || 150;
+        }
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
     updZones: function (d) { let n = this.state.ufhZones + d; if (n < 1) n = 1; if (n > 16) n = 16; this.state.ufhZones = n; this.syncUI(); this.render(); },
     setZones: function (v) { let n = parseInt(v); if (isNaN(n) || n < 1) n = 1; if (n > 16) n = 16; this.state.ufhZones = n; this.syncUI(); this.render(); },
     updOutdoorFaucet: function (d) { let n = (parseInt(this.state.outdoorFaucet) || 0) + d; if (n < 0) n = 0; if (n > 5) n = 5; this.state.outdoorFaucet = n; this.syncUI(); this.render(); },
     setOutdoorFaucet: function (v) { let n = parseInt(v); if (isNaN(n) || n < 0) n = 0; if (n > 5) n = 5; this.state.outdoorFaucet = n; this.syncUI(); this.render(); },
     syncUI: function () {
+        this.state.systems = this.state.systems || [];
+        this.state.fuels = this.state.fuels || [];
+        this.state.waterZones = this.state.waterZones || [];
+        this.state.wallLayers = this.state.wallLayers || [];
+
         document.getElementById('inp_area').value = this.state.area; document.getElementById('val_area').innerText = this.state.area;
         if (document.getElementById('blk_h2_wrapper')) document.getElementById('blk_h2_wrapper').style.display = (this.state.floors === 2) ? 'flex' : 'none';
         if (document.getElementById('btn_add_floor')) document.getElementById('btn_add_floor').style.display = (this.state.floors === 2) ? 'none' : 'block';
@@ -6266,6 +6288,34 @@ const app = {
         document.getElementById('fuel_el').className = this.state.fuels.includes('el') ? 'tab multi-active' : 'tab'; document.getElementById('fuel_gas').className = this.state.fuels.includes('gas') ? 'tab multi-active' : 'tab';
         const hasTp = this.state.systems.includes('tp'); document.getElementById('sys_rad').className = this.state.systems.includes('rad') ? 'tab multi-active' : 'tab'; document.getElementById('sys_tp').className = hasTp ? 'tab multi-active' : 'tab';
         document.getElementById('blk_tp_sliders').style.display = hasTp ? 'block' : 'none'; document.getElementById('blk_ufh_ctrl').style.display = hasTp ? 'block' : 'none';
+        if (hasTp) {
+            const step1Block = document.getElementById('blk_step_floor1');
+            if (step1Block) {
+                step1Block.style.display = (this.state.detailedRooms && hasTp) ? 'block' : 'none';
+            }
+            const step2Block = document.getElementById('blk_step_floor2');
+            if (step2Block) {
+                step2Block.style.display = (this.state.detailedRooms && hasTp && this.state.floors === 2) ? 'block' : 'none';
+            }
+
+            const stepVal1 = this.state.ufhStep1 || 150;
+            [100, 150, 200].forEach(s => {
+                const tab = document.getElementById(`ufh_step1_${s}`);
+                if (tab) {
+                    if (s === stepVal1) tab.classList.add('active');
+                    else tab.classList.remove('active');
+                }
+            });
+
+            const stepVal2 = this.state.ufhStep2 || 150;
+            [100, 150, 200].forEach(s => {
+                const tab = document.getElementById(`ufh_step2_${s}`);
+                if (tab) {
+                    if (s === stepVal2) tab.classList.add('active');
+                    else tab.classList.remove('active');
+                }
+            });
+        }
         document.getElementById('chk_hw').checked = this.state.hotWater; document.getElementById('blk_res').style.display = this.state.hotWater ? 'flex' : 'none'; document.getElementById('val_res').innerText = this.state.res; document.getElementById('val_zones').innerText = this.state.ufhZones;
         const ufhTabs = document.querySelectorAll('.ufh-tab'); ufhTabs.forEach(t => { t.className = 'tab ufh-tab'; if (t.dataset.type === this.state.ufhCtrl) t.classList.add('multi-active'); });
         const regTabs = document.getElementById('reg_tabs').children; for (let t of regTabs) t.classList.remove('active');
@@ -6544,6 +6594,11 @@ const app = {
         const roomsHeader = document.getElementById('blk_detailed_rooms_header');
         if (roomsHeader) {
             roomsHeader.style.display = this.state.detailedRooms ? 'block' : 'none';
+            const lbl = roomsHeader.querySelector('.lbl');
+            if (lbl) {
+                const count = this.state.rooms ? this.state.rooms.length : 0;
+                lbl.innerText = `Расчёт по комнатам (${count} комнат)`;
+            }
         }
         if (document.getElementById('chk_detailed_rooms_toggle')) {
             document.getElementById('chk_detailed_rooms_toggle').checked = !!this.state.showDetailedRoomsPanel;
@@ -6808,6 +6863,7 @@ const app = {
         if (this.state.detailedRooms) {
             this.generateRoomsForDetailedCalculation();
         }
+        this.autoCalcZones();
         this.syncUI(); this.render();
     },
     updWin: function (d) {
@@ -6822,6 +6878,7 @@ const app = {
         this.state.floors = chk ? 2 : 1; if (!chk) this.state.tp2 = 0;
         // Автообновление метража для воды
         this.state.waterZones.forEach(z => z.dist = this.state.area < 120 ? 6 : 10);
+        this.autoCalcZones();
         this.syncUI(); this.render();
     },
     setRegion: function (v) {
@@ -7126,14 +7183,20 @@ const app = {
             if (document.getElementById('chk_hw')) document.getElementById('chk_hw').checked = this.state.hotWater;
             return;
         }
-        this.state.hotWater = chk; this.render();
+        this.state.hotWater = chk;
+        this.syncUI();
+        this.render();
+        this.saveState();
     },
     toggleRecirc: function (chk, event) {
         if (!this.checkAccess('pro', event)) {
             if (document.getElementById('chk_recirc')) document.getElementById('chk_recirc').checked = this.state.recirc;
             return;
         }
-        this.state.recirc = chk; this.render();
+        this.state.recirc = chk;
+        this.syncUI();
+        this.render();
+        this.saveState();
     },
     toggleWaterInput: function (chk, event) {
         if (!this.checkAccess('pro', event)) {
@@ -7216,6 +7279,43 @@ const app = {
     },
     updRes: function (d) { let n = this.state.res + d; if (n < 1) n = 1; if (n > 10) n = 10; this.state.res = n; this.syncUI(); this.render(); },
     setRes: function (v) { let n = parseInt(v); if (isNaN(n) || n < 1) n = 1; if (n > 10) n = 10; this.state.res = n; this.syncUI(); this.render(); },
+    autoCalcZones: function () {
+        if (!this.state.detailedRooms) {
+            let tpArea = (parseFloat(this.state.tp1) || 0) + (this.state.floors === 2 ? (parseFloat(this.state.tp2) || 0) : 0);
+            if (tpArea > 0) {
+                let totalA = parseFloat(this.state.area) || 150;
+                let floors = this.state.floors || 1;
+                
+                let roomsCount = 5;
+                if (totalA < 80) roomsCount = 5;
+                else if (totalA >= 81 && totalA <= 120) roomsCount = 7;
+                else if (totalA >= 121 && totalA <= 160) roomsCount = 9;
+                else if (totalA >= 161 && totalA <= 200) roomsCount = 11;
+                else if (totalA >= 201 && totalA <= 250) roomsCount = 14;
+                else roomsCount = 17;
+
+                if (floors === 2) {
+                    roomsCount += 2;
+                }
+
+                let tpRoomsCount = 5;
+                if (tpArea < 80) tpRoomsCount = 5;
+                else if (tpArea >= 81 && tpArea <= 120) tpRoomsCount = 7;
+                else if (tpArea >= 121 && tpArea <= 160) tpRoomsCount = 9;
+                else if (tpArea >= 161 && tpArea <= 200) tpRoomsCount = 11;
+                else if (tpArea >= 201 && tpArea <= 250) tpRoomsCount = 14;
+                else tpRoomsCount = 17;
+
+                if (floors === 2) {
+                    tpRoomsCount += 2;
+                }
+
+                this.state.ufhZones = Math.min(tpRoomsCount, roomsCount);
+            } else {
+                this.state.ufhZones = 1;
+            }
+        }
+    },
     updTp: function (f, v) {
         v = parseInt(v);
         if (isNaN(v) || v < 0) v = 0;
@@ -7229,6 +7329,7 @@ const app = {
             this.state.tp2 = v;
             if (this.state.tp1 + this.state.tp2 > max) this.state.tp1 = max - this.state.tp2;
         }
+        this.autoCalcZones();
         this.syncUI(); this.render();
     },
     setCoolant: function (t, event) {
@@ -7262,7 +7363,7 @@ const app = {
     },
 
     // === НОВАЯ ФУНКЦИЯ ДЛЯ ПОДСКАЗОК ===
-    getDesc: function (type, val1, val2, val3) {
+    getDesc: function (type, val1, val2, val3, val4) {
         const styles = "font-size:11px; line-height:1.4;";
         const head = "font-weight:700; color:#93C5FD; display:block; margin-bottom:4px;";
 
@@ -7281,7 +7382,7 @@ const app = {
             } else if (val2 === 'rad') {
                 formula = `<b>Тип:</b> Радиаторное отопление.<br><b>Формула:</b> 1 пара выходов на 1 радиатор.<br><b>Радиаторов:</b> ${val1} шт.`;
             } else if (val2 === 'ufh') {
-                formula = `<b>Тип:</b> Тёплый пол.<br><b>Формула:</b> Площадь ТП / 12 м² (макс. площадь одной петли).<br><b>Контуров:</b> ${val1} шт.`;
+                formula = `<b>Тип:</b> Тёплый пол.<br><b>Формула:</b> Длина трубы L / 80 м (длина одной петли).<br><b>Контуров:</b> ${val1} шт.`;
             }
             let minWarn = (val1 === 1) ? "<br><br><i>*Выбран блок на 2 выхода (заводской минимум). 1 выход — резерв.</i>" : "";
             return `<span style="${styles}"><span style="${head}">Коллекторный блок</span><b>Зачем:</b> ${why}<br><br>${formula}${minWarn}</span>`;
@@ -7294,9 +7395,28 @@ const app = {
             case 'boiler_el':
                 return `<span style="${styles}"><span style="${head}">Электрический котел</span><b>Зачем:</b> Резервный или основной источник.<br><b>Расчет:</b> По теплопотерям здания.<br><b>Потребность:</b> ${val1} кВт.</span>`;
             case 'boiler_tank':
-                let calcStr = `Жильцы (${val1} чел) × 50 л.`;
-                if (val3 && val3 > (val1 * 50)) calcStr = `Пиковый водоразбор санузлов (${val3} л).`;
-                return `<span style="${styles}"><span style="${head}">Бойлер косвенного нагрева</span><b>Зачем:</b> Комфортное ГВС (запас воды).<br><b>База расчета:</b> ${calcStr}<br><b>Подобранный объем:</b> ${val2} л.<br><b>Норматив:</b> СП 30.13330.2020.</span>`;
+                let calcStr = "";
+                if (val4 === 'fixtures') {
+                    let b = 0, s = 0, bs = 0;
+                    this.state.waterZones = this.state.waterZones || [];
+                    this.state.waterZones.forEach(z => {
+                        if (z && z.fixtures) {
+                            b += (z.fixtures.bath || 0);
+                            s += (z.fixtures.shower || 0);
+                            bs += (z.fixtures.basin || 0);
+                        }
+                    });
+                    let k_sim = 1.0;
+                    let totalFixtures = b + s;
+                    if (totalFixtures === 2) k_sim = 0.7;
+                    else if (totalFixtures === 3) k_sim = 0.5;
+                    else if (totalFixtures >= 4) k_sim = 0.4;
+                    
+                    calcStr = `<b>Расчёт по приборам:</b> Пиковый разбор санузлов с учётом коэффициентов.<br><b>Формула:</b> V = (${b} × 120л (ванна) + ${s} × 50л (душ) + ${bs} × 10л (раковина)) × 0.6 (разбавление до 40°C) × ${k_sim} (коэф. одновременности) = ${val3} л.`;
+                } else {
+                    calcStr = `<b>Расчёт по жильцам:</b> Жильцы (${val1} чел) × 50 л = ${val1 * 50} л.`;
+                }
+                return `<span style="${styles}"><span style="${head}">Бойлер косвенного нагрева</span><b>Зачем:</b> Комфортное ГВС (запас воды).<br><b>Метод подбора:</b> ${calcStr}<br><b>Подобранный объем бойлера:</b> ${val2} л.<br><b>Норматив:</b> СП 30.13330.2020.</span>`;
             case 'chimney':
                 return `<span style="${styles}"><span style="${head}">Дымоход коаксиальный</span><b>Зачем:</b> Безопасный выброс газов и забор воздуха с улицы.<br><b>Стандарт:</b> 60/100 мм (для турбированных котлов).<br><b>Норматив:</b> СП 402.1325800.2018.</span>`;
             case 'stab':
@@ -7321,8 +7441,12 @@ const app = {
                 return `<span style="${styles}"><span style="${head}">Труба (Лучевая разводка)</span><b>Зачем:</b> Индивидуальная трасса к каждому радиатору.<br><b>Формула:</b> (Ср. расстояние до коллектора × 2) + Подъемы.<br><b>Всего:</b> ${val1} м.</span>`;
 
             // === 4. ТЕПЛЫЙ ПОЛ ===
-            case 'ufh_pipe':
-                return `<span style="${styles}"><span style="${head}">Труба теплого пола</span><b>Зачем:</b> Греющий элемент системы.<br><b>Формула:</b> Площадь пола × 7 м (при шаге укладки 150 мм).<br><b>Общая длина:</b> ${val1} м.<br><b>Норматив:</b> СП 60.13330.2020.</span>`;
+            case 'ufh_pipe': {
+                let stepVal1 = this.state.ufhStep1 || 150;
+                let stepVal2 = this.state.ufhStep2 || 150;
+                let stepStr = (this.state.floors === 2 && this.state.tp2 > 0) ? `1 этаж: ${stepVal1} мм, 2 этаж: ${stepVal2} мм` : `${stepVal1} мм`;
+                return `<span style="${styles}"><span style="${head}">Труба теплого пола</span><b>Зачем:</b> Греющий элемент системы.<br><b>Формула:</b> (S / h) × 1.1 для каждого этажа.<br><b>Шаг укладки:</b> ${stepStr}.<br><b>Общая длина:</b> ${val1} м.<br><b>Норматив:</b> СП 60.13330.2020.</span>`;
+            }
             case 'ufh_mat':
                 return `<span style="${styles}"><span style="${head}">Мат с бобышками</span><b>Зачем:</b> Быстрый монтаж и фиксация трубы.<br><b>Расчет:</b> Чистая площадь ТП (${val1} м²) + 5% запас на подрезку.</span>`;
             case 'ufh_xps':
@@ -7712,7 +7836,7 @@ const app = {
                         `;
                     });
                 }
-                let qHtml = `<div class="qty-wrap">${i.q}${tipHtml} <span class="opt-btn" onclick="event.stopPropagation(); app.toggleOpt('${lookupId}')">${!isOpt ? '🗑️' : '➕'}</span></div>`;
+                let qHtml = `<div class="qty-wrap">${i.q}${tipHtml} <span class="opt-btn" onclick="event.stopPropagation(); app.toggleOpt('${lookupId}')" title="${!isOpt ? 'Удалить позицию' : 'Добавить позицию'}">${!isOpt ? '<span style="color:#EF4444; font-weight:bold; font-size:14px; line-height:1;">✖</span>' : '➕'}</span></div>`;
                 let imgContent = getImg(i);
                 let hasAlts = (i.alts && i.alts.length > 0);
                 let imgCellHtml = "";
@@ -7723,8 +7847,8 @@ const app = {
                     imgCellHtml = `<td class="col-img swappable-cursor"><div class="${wrapClass}" onclick="app.toggleSwapUI('${lookupId}')" title="Нажмите, чтобы заменить"><div class="swap-cycle-btn" onclick="event.stopPropagation(); app.cycleSwap('${lookupId}')">${svgIcon}</div>${imgContent}</div></td>`;
                 } else { imgCellHtml = `<td class="col-img">${imgContent}</td>`; }
 
-                let nameClass = hasAlts ? "col-name swappable-cursor" : "col-name";
-                let nameClick = hasAlts ? `onclick="event.stopPropagation(); app.cycleSwap('${lookupId}')" title="Нажмите, чтобы заменить"` : "";
+                let nameClass = "col-name";
+                let nameClick = "";
 
                 rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${i.price.toLocaleString()}</td><td class="col-sum">${i.sum.toLocaleString()}</td></tr>` + locsRows;
             });
@@ -7892,15 +8016,39 @@ const app = {
 
         if (this.state.hotWater) {
             let hw_fixtures_vol = 0;
+            this.state.waterZones = this.state.waterZones || [];
             // Считаем потребность по санузлам (60°C вода)
-            if (this.state.water && this.state.waterZones) {
+            if (this.state.water && this.state.waterZones.length > 0) {
                 let b = 0, s = 0, bs = 0;
-                this.state.waterZones.forEach(z => { b += (z.fixtures.bath || 0); s += (z.fixtures.shower || 0); bs += (z.fixtures.basin || 0); });
-                hw_fixtures_vol = (b * 120) + (s * 50) + (bs * 10);
+                this.state.waterZones.forEach(z => {
+                    if (z && z.fixtures) {
+                        b += (z.fixtures.bath || 0);
+                        s += (z.fixtures.shower || 0);
+                        bs += (z.fixtures.basin || 0);
+                    }
+                });
+                let raw_vol = (b * 120) + (s * 50) + (bs * 10);
+                
+                // 1. Коэффициент разбавления горячей воды 60°C холодной 10°C до комфортных 40°C составляет 0.6 (60% горячей воды)
+                let mixed_vol = raw_vol * 0.6;
+                
+                // 2. Коэффициент одновременного использования (СП 30.13330.2020)
+                let k_sim = 1.0;
+                let totalFixtures = b + s;
+                if (totalFixtures === 2) k_sim = 0.7;
+                else if (totalFixtures === 3) k_sim = 0.5;
+                else if (totalFixtures >= 4) k_sim = 0.4;
+                
+                hw_fixtures_vol = Math.round(mixed_vol * k_sim);
             }
 
             let volByRes = this.state.res >= 10 ? 500 : this.state.res >= 7 ? 300 : this.state.res >= 5 ? 200 : this.state.res >= 3 ? 150 : 100;
-            let targetVol = Math.max(volByRes, hw_fixtures_vol);
+            let targetVol = volByRes;
+            let chosenBy = 'res';
+            if (this.state.water && hw_fixtures_vol > 0) {
+                targetVol = hw_fixtures_vol;
+                chosenBy = 'fixtures';
+            }
 
             let vol = 100;
             if (targetVol > 100 && targetVol <= 150) vol = 150;
@@ -7914,7 +8062,7 @@ const app = {
 
             let warn = targetVol > 500 ? `<br><b style="color:#EF4444; font-size:10px;">⚠️ Требуемый объем ГВС превышает 500л! Добавьте в смету второй бойлер вручную или проверьте количество потребителей ГВС.</b>` : "";
 
-            addToBill(t, 1, this.getDesc('boiler_tank', this.state.res, vol, hw_fixtures_vol) + warn);
+            addToBill(t, 1, this.getDesc('boiler_tank', this.state.res, vol, hw_fixtures_vol, chosenBy) + warn);
         }
         flushBill("1. Котёл + водонагреватель");
 
@@ -7956,14 +8104,28 @@ const app = {
         let hasRad = this.state.systems.includes('rad');
         let hasTp = this.state.systems.includes('tp');
         let radSecs = 0, radMeters = 0, tpMeters = 0;
-        let tpArea = this.state.tp1 + this.state.tp2;
+        let tpArea = this.state.tp1 + (this.state.floors === 2 ? this.state.tp2 : 0);
         if (hasRad) { let load = (hasTp && tpArea > 0) ? pwr * 1000 * 0.7 : pwr * 1000; radSecs = Math.ceil(load / 117); if (radSecs > 0) { let pipe = Math.ceil(this.state.win * (Math.sqrt(this.state.area / (this.state.floors === 2 ? 2 : 1)) + 3) * 1.1); radMeters = pipe * 2; } }
-        tpMeters = hasTp ? tpArea * 7 : 0;
-        // Заранее считаем необходимое количество коллекторов ТП
+        
+        let stepVal1 = this.state.ufhStep1 || 150;
+        let stepVal2 = this.state.ufhStep2 || 150;
         let estMans = 0;
         if (hasTp && tpArea > 0) {
-            let l1 = this.state.tp1 > 0 ? Math.ceil((this.state.tp1 * 7) / 85) : 0; if (l1 === 1) l1 = 2;
-            let l2 = this.state.tp2 > 0 ? Math.ceil((this.state.tp2 * 7) / 85) : 0; if (l2 === 1) l2 = 2;
+            let l1 = 0;
+            let l2 = 0;
+            if (this.state.tp1 > 0) {
+                let h1 = stepVal1 / 1000;
+                let L1 = (this.state.tp1 / h1) * 1.1;
+                l1 = Math.ceil(L1 / 80);
+                tpMeters += L1;
+            }
+            if (this.state.tp2 > 0 && this.state.floors === 2) {
+                let h2 = stepVal2 / 1000;
+                let L2 = (this.state.tp2 / h2) * 1.1;
+                l2 = Math.ceil(L2 / 80);
+                tpMeters += L2;
+            }
+            tpMeters = Math.ceil(tpMeters);
             if (l1 > 0) estMans += Math.ceil(l1 / 12);
             if (l2 > 0) estMans += Math.ceil(l2 / 12);
         }
@@ -8055,16 +8217,46 @@ const app = {
 
                     let roomHasTp = r.sys && r.sys.includes('tp');
                     let roomHasRad = !r.sys || r.sys.includes('rad');
-                    if (roomHasTp) baseRoomLoad = baseRoomLoad * 0.7; // Локальный ТП забирает 30% теплопотерь
+
+                    // 2. Физический лимит теплоотдачи теплого пола по СП 60.13330.2020 (п. 6.4.8)
+                    let ufhStepVal = (r.floor === 2) ? (this.state.ufhStep2 || 150) : (this.state.ufhStep1 || 150);
+                    let qUdeUfh = 70; // Рекомендуемый предел 150мм для жилых комнат (поверхность <= 26°C) -> 70 Вт/м²
+                    if (ufhStepVal === 100) qUdeUfh = 90; // Максимум для ванных комнат (поверхность <= 31°C) -> 90 Вт/м²
+                    else if (ufhStepVal === 200) qUdeUfh = 50; // Краевые/крайние зоны -> 50 Вт/м²
+
+                    let qUfhMax = r.area * qUdeUfh; // Физический предел тепловой мощности теплого пола в этой комнате
 
                     r.windows.forEach((w, wIdx) => {
-                        // 2. Физика: Теплопотери через площадь стекла
+                        // Теплопотери через площадь стекла
                         let wHeight = w.isPan ? 2.5 : 1.5;
                         let wArea = parseFloat(w.width || 1) * wHeight;
                         let windowHeatLoss = wArea * 150 * (this.state.region / 100) * this.state.mat;
 
-                        // 3. Итоговая нагрузка: окно + доля стен
-                        let wLoad = windowHeatLoss + (baseRoomLoad / r.windows.length);
+                        // Итоговая базовая теплопотребность этого оконного участка
+                        let totalWindowLoss = windowHeatLoss + (baseRoomLoad / r.windows.length);
+                        let wLoad = totalWindowLoss;
+
+                        if (roomHasTp && roomHasRad) {
+                            // Совместный режим: радиатор покрывает только дефицит мощности пола
+                            let portionUfh = qUfhMax / r.windows.length; // доля мощности пола на это окно
+                            let deficit = totalWindowLoss - portionUfh;
+                            let minSanitary = (r.area * 30) / r.windows.length; // минимум 30 Вт/м² на окно для отсечки сквозняков по СНиП
+                            wLoad = Math.max(deficit, minSanitary);
+                        } else if (roomHasTp && !roomHasRad) {
+                            // Режим "Только тёплый пол" (радиаторов под окнами нет)
+                            wLoad = 0; 
+                            let roomLossTotal = totalWindowLoss * r.windows.length;
+                            if (roomLossTotal > qUfhMax) {
+                                let deficitTotal = Math.round(roomLossTotal - qUfhMax);
+                                app.tempWarns = app.tempWarns || [];
+                                if (!app.tempWarns.some(x => x.includes(`«${r.name}» недостаточно`))) {
+                                    app.tempWarns.push(`• <b>${r.name} (Только ТП):</b> тёплого пола недостаточно для компенсации теплопотерь! Предельный тепловой поток по СП 60.13330.2020: ${Math.round(qUfhMax)} Вт. Нехватка мощности: <b>${deficitTotal} Вт</b>. Рекомендуется добавить радиатор или улучшить утепление стен.`);
+                                }
+                            }
+                        } else {
+                            // Режим "Только радиаторы"
+                            wLoad = totalWindowLoss;
+                        }
                         roomDemandSum += wLoad; // накапливаем потребность по помещению
 
                         if (w.isPan) {
@@ -8349,11 +8541,28 @@ const app = {
             let q5 = Math.floor(tpMeters / 500); let q1 = Math.ceil((tpMeters % 500) / 100);
             if (q5) addToBill(catalog.pipes[1], q5, this.getDesc('ufh_pipe', tpMeters)); if (q1) addToBill(catalog.pipes[0], q1, this.getDesc('ufh_pipe', tpMeters));
             let loops = 0, mans = 0;
-            const proc = (a, lbl) => {
-                if (a <= 0) return; let l = Math.ceil((a * 7) / 85); if (l === 1) l = 2; loops += l; let n = Math.ceil(l / 12);
-                for (let i = 0; i < n; i++) { let sz = Math.floor(l / n) + (i < (l % n) ? 1 : 0); let m = catalog.manifolds.find(x => x.loops === sz); if (m) { addToBill({ ...m, name: `Коллектор ТП ${sz} вых (${lbl})` }, 1, this.getDesc('manifold', sz, 'ufh')); mans++; if (!needCollector) { addToBill(catalog.mixing_units[0], 1, this.getDesc('ufh_mix')); addToBill(catalog.pumps_mix[0], 1, this.getDesc('pump_std')); } } }
+            const proc = (a, stepVal, lbl) => {
+                if (a <= 0) return;
+                let h = stepVal / 1000;
+                let L = (a / h) * 1.1;
+                let l = Math.ceil(L / 80);
+                loops += l;
+                let n = Math.ceil(l / 12);
+                for (let i = 0; i < n; i++) {
+                    let sz = Math.floor(l / n) + (i < (l % n) ? 1 : 0);
+                    let m = catalog.manifolds.find(x => x.loops === sz);
+                    if (m) {
+                        addToBill({ ...m, name: `Коллектор ТП ${sz} вых (${lbl})` }, 1, this.getDesc('manifold', sz, 'ufh'));
+                        mans++;
+                        if (!needCollector) {
+                            addToBill(catalog.mixing_units[0], 1, this.getDesc('ufh_mix'));
+                            addToBill(catalog.pumps_mix[0], 1, this.getDesc('pump_std'));
+                        }
+                    }
+                }
             };
-            proc(this.state.tp1, "1 этаж"); proc(this.state.tp2, "2 этаж");
+            proc(this.state.tp1, stepVal1, "1 этаж");
+            proc(this.state.floors === 2 ? this.state.tp2 : 0, stepVal2, "2 этаж");
             addToBill(catalog.parts[0], mans * 2, "Концевые фитинги."); addToBill(catalog.parts[3], loops * 2, "Евроконус 16 (ТП)."); addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.");
             addToBill(catalog.protective_sleeves[0], loops, "Втулка красная."); addToBill(catalog.protective_sleeves[1], loops, "Втулка синяя."); addToBill(catalog.label_kits[1], 1, "Наклейки.");
             let grpIns = "4.1. УТЕПЛИТЕЛЬ И КРЕПЁЖ";
@@ -8540,7 +8749,35 @@ const app = {
             if (this.state.outdoorFaucet > 0) {
                 let count = parseInt(this.state.outdoorFaucet) || 1;
                 let grp62 = `6.2. Незамерзающий уличный кран (${count} шт.)`;
-                catalog.outdoor_faucet.forEach(item => addToBill(item, count, "", grp62));
+
+                let chosenFaucet = null;
+                if (this.state.detailedRooms) {
+                    let totalThick = this.state.wallLayers.reduce((sum, l) => sum + parseInt(l.thick || 0), 0);
+                    let requiredLength = totalThick + 50;
+                    chosenFaucet = catalog.outdoor_faucets[0];
+                    for (let f of catalog.outdoor_faucets) {
+                        let len = parseInt(f.name.match(/\d+/)[0]);
+                        if (len >= requiredLength) {
+                            chosenFaucet = f;
+                            break;
+                        }
+                        chosenFaucet = f;
+                    }
+                } else {
+                    chosenFaucet = catalog.outdoor_faucets.find(x => x.name.includes("350 мм")) || catalog.outdoor_faucets[4];
+                }
+
+                if (chosenFaucet) {
+                    let faucetItem = { ...chosenFaucet };
+                    faucetItem.alts = catalog.outdoor_faucets;
+                    addToBill(faucetItem, count, "", grp62);
+                }
+
+                catalog.outdoor_faucet.forEach(item => {
+                    if (item.id !== "SVB-1007-200020") {
+                        addToBill(item, count, "", grp62);
+                    }
+                });
                 addToBill({ id: "SFT-0004-003434", name: "Ниппель 3/4\" НР", price: 207, brand: "STOUT" }, count, "", grp62);
             }
 

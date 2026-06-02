@@ -331,6 +331,14 @@
                             м²</span></div><input type="range" id="inp_tp1" min="0" max="150" value="0"
                         oninput="app.updTp(1,this.value)">
                 </div>
+                <div class="control-item" id="blk_step_floor1" style="display:none; margin-bottom: 12px; margin-top: 6px;">
+                    <span class="lbl-sub" style="margin-bottom: 6px;">Шаг укладки трубы 1 этаж</span>
+                    <div class="tabs" id="ufh_step1_tabs">
+                        <div class="tab" id="ufh_step1_100" onclick="app.setUfhStep(1, 100)">100 мм</div>
+                        <div class="tab active" id="ufh_step1_150" onclick="app.setUfhStep(1, 150)">150 мм</div>
+                        <div class="tab" id="ufh_step1_200" onclick="app.setUfhStep(1, 200)">200 мм</div>
+                    </div>
+                </div>
                 <div id="div_tp2" class="control-item" style="display:none;">
                     <div class="label-row"><span class="lbl">Тёплый пол 2 этаж</span><span class="val"><span
                                 id="val_tp2" class="editable-val" contenteditable="true"
@@ -338,6 +346,14 @@
                                 onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">0</span>
                             м²</span></div><input type="range" id="inp_tp2" min="0" max="150" value="0"
                         oninput="app.updTp(2,this.value)">
+                </div>
+                <div class="control-item" id="blk_step_floor2" style="display:none; margin-bottom: 12px; margin-top: 6px;">
+                    <span class="lbl-sub" style="margin-bottom: 6px;">Шаг укладки трубы 2 этаж</span>
+                    <div class="tabs" id="ufh_step2_tabs">
+                        <div class="tab" id="ufh_step2_100" onclick="app.setUfhStep(2, 100)">100 мм</div>
+                        <div class="tab active" id="ufh_step2_150" onclick="app.setUfhStep(2, 150)">150 мм</div>
+                        <div class="tab" id="ufh_step2_200" onclick="app.setUfhStep(2, 200)">200 мм</div>
+                    </div>
                 </div>
             </div>
 
