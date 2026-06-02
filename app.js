@@ -8774,9 +8774,7 @@ const app = {
                 }
 
                 catalog.outdoor_faucet.forEach(item => {
-                    if (item.id !== "SVB-1007-200020") {
-                        addToBill(item, count, "", grp62);
-                    }
+                    addToBill(item, count, "", grp62);
                 });
                 addToBill({ id: "SFT-0004-003434", name: "Ниппель 3/4\" НР", price: 207, brand: "STOUT" }, count, "", grp62);
             }
