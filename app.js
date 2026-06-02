@@ -9002,7 +9002,7 @@ const app = {
                     this.state.waterZones.forEach(z => {
                         let tCount = parseInt(z.fixtures.toilet) || 0;
                         if (tCount > 0) {
-                            let grpLabel = singleZone ? "8.1. Канализация: [Инсталляция унитаза]" : `8.1. Канализация: [Инсталляция унитаза] (${z.name})`;
+                            let grpLabel = singleZone ? "8.1. Канализация: [Инсталляция]" : `8.1. Канализация: [Инсталляция] (${z.name})`;
                             addToBill(catalog.water_parts[6], tCount, this.getDesc('install'), grpLabel);
                         }
                     });
@@ -9146,7 +9146,7 @@ const app = {
 
                 // Смываем все группы по порядку
                 this.state.waterZones.forEach(z => {
-                    let grpLabel = singleZone ? "8.1. Канализация: [Инсталляция унитаза]" : `8.1. Канализация: [Инсталляция унитаза] (${z.name})`;
+                    let grpLabel = singleZone ? "8.1. Канализация: [Инсталляция]" : `8.1. Канализация: [Инсталляция] (${z.name})`;
                     flushBill(grpLabel);
                 });
                 
