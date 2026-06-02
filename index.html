@@ -129,6 +129,25 @@
                 </div>
             </div>
 
+            <div class="control-item" id="blk_main_area" style="margin-bottom: 15px;">
+                <div class="label-row"><span class="lbl">Основная площадь</span><span class="val"><span
+                            id="val_area" class="editable-val" contenteditable="true"
+                            onblur="app.setArea(this.innerText)"
+                            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">150</span>
+                        м²</span></div><input type="range" id="inp_area" min="50" max="300" step="10" value="150"
+                    oninput="app.setArea(this.value)">
+            </div>
+
+            <div class="control-item toggle-item" id="blk_detailed_rooms_header" style="display: none; margin-bottom: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">
+                <div class="label-row" style="margin-bottom: 0;">
+                    <span class="lbl">Расчёт по комнатам</span>
+                    <label class="switch" style="transform: scale(0.85); transform-origin: right;">
+                        <input type="checkbox" id="chk_detailed_rooms_toggle" onchange="app.toggleDetailedRoomsPanel(this.checked, event)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
             <div id="blk_detailed_calc" style="display:none; flex-direction:column; gap:10px; margin-bottom: 20px;">
                 <div
                     style="background: var(--surface-light); padding: 12px 15px; border-radius: 8px; border: 1px dashed var(--primary); border-left: 4px solid var(--primary); margin-bottom: 0;">
@@ -177,14 +196,6 @@
             </div>
 
             <div id="blk_fast_calc">
-                <div class="control-item">
-                    <div class="label-row"><span class="lbl">Основная площадь</span><span class="val"><span
-                                id="val_area" class="editable-val" contenteditable="true"
-                                onblur="app.setArea(this.innerText)"
-                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">150</span>
-                            м²</span></div><input type="range" id="inp_area" min="50" max="300" step="10" value="150"
-                        oninput="app.setArea(this.value)">
-                </div>
                 <div class="grid-2">
                     <div class="control-card"><span class="lbl">Окна</span>
                         <div class="stepper"><button class="step-btn" onclick="app.updWin(-1)">−</button>
@@ -227,7 +238,15 @@
                 <div class="info-card" id="desc_mat" style="margin-top: 10px; margin-bottom: 8px;"></div>
                 
                 <!-- Конструктор пирога стены (СП 50.13330) -->
-                <span class="lbl-sub" id="wall_layers_header_wrapper" style="display: none; margin-top: 20px; margin-bottom: 6px;">Пирог стены</span>
+                <div class="control-item toggle-item" id="wall_layers_header_wrapper" style="display: none; margin-top: 12px; margin-bottom: 6px; width: 100%;">
+                    <div class="label-row" style="margin-bottom: 0; width: 100%;">
+                        <span class="lbl">Пирог стены</span>
+                        <label class="switch" style="transform: scale(0.85); transform-origin: right;">
+                            <input type="checkbox" id="chk_wall_layers_toggle" onchange="app.toggleWallLayersPanel(this.checked, event)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
                 <div id="blk_wall_layers" style="display: none; flex-direction: column; gap: 8px; margin-top: 6px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-light);">
                     <div id="wall_layers_list" style="display: flex; flex-direction: column; gap: 8px;">
                         <!-- Слои будут генерироваться динамически -->
@@ -277,7 +296,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="info-card" id="desc_vent" style="margin-top: 4px; margin-bottom: 0;"></div>
                     </div>
                 </div>
             </div>
