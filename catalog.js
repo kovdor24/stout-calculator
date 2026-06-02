@@ -1653,7 +1653,27 @@ const catalog = {
   availability: 'in_stock' }
     ],
     plug_34: { id: "SFT-0025-000034", name: "Заглушка 3/4\" НР", price: 176, brand: "STOUT",
-  availability: 'in_stock' }
+  availability: 'in_stock' },
+    sewer_silent: [
+        { id: "SKB-0002-110100", name: "Труба канализационная бесшумная D 110 L 1000", price: 2349, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0002-110200", name: "Труба канализационная бесшумная D 110 L 2000", price: 4334, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0001-058100", name: "Труба канализационная бесшумная D 058 L 1000", price: 857, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0001-058200", name: "Труба канализационная бесшумная D 058 L 2000", price: 1781, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0010-011045", name: "Отвод бесшумный 45° D 110", price: 1235, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0012-011087", name: "Отвод бесшумный 87° D 110", price: 1235, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0010-005845", name: "Отвод бесшумный 45° D 058", price: 413, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0012-005887", name: "Отвод бесшумный 87° D 058", price: 413, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0015-115845", name: "Тройник бесшумный 45° D 110 x 058", price: 1450, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0015-111145", name: "Тройник бесшумный 45° D 110 x 110", price: 2134, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0013-011058", name: "Переход эксцентрический бесшумный D 110 х 58", price: 703, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0005-000058", name: "Заглушка D 058", price: 169, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0005-000110", name: "Заглушка D 110", price: 390, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0006-000058", name: "Муфта соединительная двухраструбная D 58", price: 534, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0006-000110", name: "Муфта соединительная двухраструбная D 110", price: 1276, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0007-000058", name: "Муфта ремонтная D 58", price: 540, brand: "STOUT", availability: 'in_stock' },
+        { id: "SKB-0007-000110", name: "Муфта ремонтная D 110", price: 1289, brand: "STOUT", availability: 'in_stock' },
+        { id: "sewer_lubricant", name: "Смазка силиконовая для труб 150г", price: 290, brand: "STOUT", availability: 'in_stock' }
+    ]
 };
 
 const titanRads = [

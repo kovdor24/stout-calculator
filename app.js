@@ -7490,6 +7490,35 @@ const app = {
             case 'thermostat':
                 return `<span style="${styles}"><span style="${head}">Термостат</span><b>Зачем:</b> Измерение температуры воздуха в комнате.<br><b>Расчет:</b> 1 шт на одну независимую зону (комнату).</span>`;
 
+            case 'sewer_pipe_110':
+                return `<span style="${styles}"><span style="${head}">Труба бесшумная D110</span><b>Зачем:</b> Отвод стоков от унитаза (инсталляции).<br><b>Расчет:</b> По 1 м на каждый унитаз в помещении.</span>`;
+            case 'sewer_pipe_110_main':
+                return `<span style="${styles}"><span style="${head}">Труба бесшумная D110 (Магистраль)</span><b>Зачем:</b> Общие вертикальные стояки и горизонтальные лежаки дома.<br><b>Расчет:</b> По высоте этажей и площади дома.<br><b>Длина:</b> ${val1} м.</span>`;
+            case 'sewer_pipe_58':
+                return `<span style="${styles}"><span style="${head}">Труба бесшумная D58</span><b>Зачем:</b> Отвод стоков от раковины, ванны или душа.<br><b>Расчет:</b> По 1.5 м на каждый сантехприбор в помещении.<br><b>Длина:</b> ${val1} м.</span>`;
+            case 'sewer_bend_110_45':
+                return `<span style="${styles}"><span style="${head}">Отвод бесшумный 110х45°</span><b>Зачем:</b> Плавное изменение направления стояка/лежака.<br><b>Расчет:</b> По 2 шт на стояк/лежак.</span>`;
+            case 'sewer_bend_110_87':
+                return `<span style="${styles}"><span style="${head}">Отвод бесшумный 110х87°</span><b>Зачем:</b> Непосредственное подключение унитаза/инсталляции.</span>`;
+            case 'sewer_bend_58_45':
+                return `<span style="${styles}"><span style="${head}">Отвод бесшумный 58х45°</span><b>Зачем:</b> Изменение направления труб D58.<br><b>Расчет:</b> По 2 шт на каждую точку.</span>`;
+            case 'sewer_bend_58_87':
+                return `<span style="${styles}"><span style="${head}">Отвод бесшумный 58х87°</span><b>Зачем:</b> Вывод трубы из стены (водорозетка).<br><b>Расчет:</b> По 1 шт на каждую точку.</span>`;
+            case 'sewer_tee_110_58':
+                return `<span style="${styles}"><span style="${head}">Тройник бесшумный 110х58х45°</span><b>Зачем:</b> Врезка веток D58 в общую магистраль D110.</span>`;
+            case 'sewer_tee_110_110':
+                return `<span style="${styles}"><span style="${head}">Тройник бесшумный 110х110х45°</span><b>Зачем:</b> Объединение веток D110 от нескольких стояков/унитазов.</span>`;
+            case 'sewer_transition':
+                return `<span style="${styles}"><span style="${head}">Переход эксцентрический</span><b>Зачем:</b> Переход с диаметра D58 на D110.</span>`;
+            case 'sewer_plug_110':
+                return `<span style="${styles}"><span style="${head}">Заглушка D110</span><b>Зачем:</b> Временная герметизация раструбов при монтаже и опрессовке.</span>`;
+            case 'sewer_plug_58':
+                return `<span style="${styles}"><span style="${head}">Заглушка D58</span><b>Зачем:</b> Временная герметизация раструбов при монтаже и опрессовке.</span>`;
+            case 'sewer_coupling_110':
+                return `<span style="${styles}"><span style="${head}">Муфта соединительная D110</span><b>Зачем:</b> Соединение безраструбных отрезков труб.</span>`;
+            case 'sewer_lubricant':
+                return `<span style="${styles}"><span style="${head}">Смазка силиконовая</span><b>Зачем:</b> Облегчение стыковки раструбов и защита уплотнителей.</span>`;
+
             // === 5. ВОДОСНАБЖЕНИЕ ===
             case 'pipe_cw':
                 return `<span style="${styles}"><span style="${head}">Труба PEX-a (ХВС)</span><b>Зачем:</b> Питьевая холодная вода.<br><b>Расчет:</b> Сумма длин трасс до приборов.<br><b>Всего:</b> ${val1} м.<br><b>Норматив:</b> СП 30.13330.2020.</span>`;
@@ -8736,6 +8765,94 @@ const app = {
                 flushBill(grpRecirc);
                 flushBill(grpGen);
             }
+
+            // === РАСЧЕТ МАТЕРИАЛОВ БЕСШУМНОЙ КАНАЛИЗАЦИИ STOUT ===
+            let totalSewerPoints = 0;
+            this.state.waterZones.forEach(z => {
+                let f = z.fixtures;
+                let toiletsCount = parseInt(f.toilet) || 0;
+                let otherCount = (parseInt(f.wash) || 0) + (parseInt(f.dish) || 0) + (parseInt(f.basin) || 0) + (parseInt(f.shower) || 0) + (parseInt(f.bath) || 0);
+                
+                if (toiletsCount > 0 || otherCount > 0) {
+                    totalSewerPoints += toiletsCount + otherCount;
+                    
+                    let grpSewerToilet = `5.4. Канализация STOUT: ${z.name} (для инсталляции унитаза)`;
+                    let grpSewerBath = `5.4. Канализация STOUT: ${z.name} (для раковины, ванны, душа)`;
+
+                    // Для унитазов (D110)
+                    if (toiletsCount > 0) {
+                        let pipe110_1 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110100");
+                        let bend110_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-011087");
+                        let plug110 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000110");
+                        
+                        addToBill(pipe110_1, toiletsCount, this.getDesc('sewer_pipe_110', toiletsCount), grpSewerToilet);
+                        addToBill(bend110_87, toiletsCount, this.getDesc('sewer_bend_110_87', toiletsCount), grpSewerToilet);
+                        addToBill(plug110, toiletsCount, this.getDesc('sewer_plug_110'), grpSewerToilet);
+                    }
+
+                    // Для остальных точек (D58)
+                    if (otherCount > 0) {
+                        let pipe58Len = otherCount * 1.5;
+                        let q2 = Math.floor(pipe58Len / 2);
+                        let q1 = Math.ceil(pipe58Len % 2);
+                        let pipe58_2 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058200");
+                        let pipe58_1 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058100");
+                        let bend58_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-005845");
+                        let bend58_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-005887");
+                        let plug58 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000058");
+
+                        if (q2 > 0) addToBill(pipe58_2, q2, this.getDesc('sewer_pipe_58', pipe58Len), grpSewerBath);
+                        if (q1 > 0) addToBill(pipe58_1, q1, this.getDesc('sewer_pipe_58', pipe58Len), grpSewerBath);
+                        addToBill(bend58_45, otherCount * 2, this.getDesc('sewer_bend_58_45', otherCount * 2), grpSewerBath);
+                        addToBill(bend58_87, otherCount, this.getDesc('sewer_bend_58_87', otherCount), grpSewerBath);
+                        addToBill(plug58, otherCount, this.getDesc('sewer_plug_58'), grpSewerBath);
+
+                        let tee110_58 = catalog.sewer_silent.find(x => x.id === "SKB-0016-115887") || catalog.sewer_silent.find(x => x.id === "SKB-0015-115845");
+                        let transition = catalog.sewer_silent.find(x => x.id === "SKB-0013-011058");
+                        addToBill(tee110_58, 1, this.getDesc('sewer_tee_110_58'), grpSewerBath);
+                        addToBill(transition, 1, this.getDesc('sewer_transition'), grpSewerBath);
+                    }
+                }
+            });
+
+            if (totalSewerPoints > 0) {
+                let grpSewerMain = "5.4. Канализация STOUT: Общие магистрали и расходники";
+                let floors = this.state.floors || 1;
+                let area = this.state.area || 150;
+                
+                let pipe110Len = (floors * 3) + Math.ceil(Math.sqrt(area) * 1.2);
+                let q2 = Math.floor(pipe110Len / 2);
+                let q1 = Math.ceil(pipe110Len % 2);
+                let pipe110_2 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110200");
+                let pipe110_1 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110100");
+                let bend110_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-011045");
+                
+                if (q2 > 0) addToBill(pipe110_2, q2, this.getDesc('sewer_pipe_110_main', pipe110Len), grpSewerMain);
+                if (q1 > 0) addToBill(pipe110_1, q1, this.getDesc('sewer_pipe_110_main', pipe110Len), grpSewerMain);
+                
+                addToBill(bend110_45, floors * 2, this.getDesc('sewer_bend_110_45'), grpSewerMain);
+                
+                let waterZonesWithToilets = this.state.waterZones.filter(z => z.fixtures.toilet > 0).length;
+                if (waterZonesWithToilets > 1) {
+                    let tee110_110 = catalog.sewer_silent.find(x => x.id === "SKB-0016-111187") || catalog.sewer_silent.find(x => x.id === "SKB-0015-111145");
+                    addToBill(tee110_110, waterZonesWithToilets - 1, this.getDesc('sewer_tee_110_110'), grpSewerMain);
+                }
+
+                let lubCount = Math.max(1, Math.ceil(totalSewerPoints / 10));
+                let lub = catalog.sewer_silent.find(x => x.id === "sewer_lubricant");
+                addToBill(lub, lubCount, this.getDesc('sewer_lubricant'), grpSewerMain);
+                
+                let coupling110 = catalog.sewer_silent.find(x => x.id === "SKB-0006-000110");
+                addToBill(coupling110, floors, this.getDesc('sewer_coupling_110'), grpSewerMain);
+            }
+
+            this.state.waterZones.forEach(z => {
+                let grpSewerToilet = `5.4. Канализация STOUT: ${z.name} (для инсталляции унитаза)`;
+                let grpSewerBath = `5.4. Канализация STOUT: ${z.name} (для раковины, ванны, душа)`;
+                flushBill(grpSewerToilet);
+                flushBill(grpSewerBath);
+            });
+            flushBill("5.4. Канализация STOUT: Общие магистрали и расходники");
 
             if (totalColdPoints > 0 || totalHotPoints > 0 || this.state.well) {
                 // ==========================================
