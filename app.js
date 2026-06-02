@@ -5713,11 +5713,23 @@ const app = {
 
             let v = this.state.mat;
             if (v >= 1.2) {
-                this.state.wallLayers = [{ matId: "wood_pine", thick: 180 }];
+                this.state.wallLayers = [
+                    { matId: "wood_pine", thick: 150 },
+                    { matId: "plaster_gypsum", thick: 20 }
+                ];
             } else if (v >= 0.9 && v < 1.2) {
-                this.state.wallLayers = [{ matId: "gas_d500", thick: 230 }];
+                this.state.wallLayers = [
+                    { matId: "gas_d500", thick: 300 },
+                    { matId: "plaster_cement", thick: 20 },
+                    { matId: "plaster_gypsum", thick: 15 }
+                ];
             } else if (v < 0.9) {
-                this.state.wallLayers = [{ matId: "gas_d400", thick: 300 }, { matId: "minwool", thick: 30 }];
+                this.state.wallLayers = [
+                    { matId: "gas_d500", thick: 300 },
+                    { matId: "minwool", thick: 100 },
+                    { matId: "plaster_cement", thick: 10 },
+                    { matId: "plaster_gypsum", thick: 15 }
+                ];
             }
             this.calculateWallResistance();
             // Считаем текущую сумму комнат
@@ -6896,11 +6908,23 @@ const app = {
         this.state.wallLayersEnabled = !!this.state.detailedRooms;
         if (this.state.detailedRooms) {
             if (v === 1.3) {
-                this.state.wallLayers = [{ matId: "wood_pine", thick: 180 }];
+                this.state.wallLayers = [
+                    { matId: "wood_pine", thick: 150 },
+                    { matId: "plaster_gypsum", thick: 20 }
+                ];
             } else if (v === 1.0) {
-                this.state.wallLayers = [{ matId: "gas_d500", thick: 230 }];
+                this.state.wallLayers = [
+                    { matId: "gas_d500", thick: 300 },
+                    { matId: "plaster_cement", thick: 20 },
+                    { matId: "plaster_gypsum", thick: 15 }
+                ];
             } else if (v === 0.8) {
-                this.state.wallLayers = [{ matId: "gas_d400", thick: 300 }, { matId: "minwool", thick: 30 }];
+                this.state.wallLayers = [
+                    { matId: "gas_d500", thick: 300 },
+                    { matId: "minwool", thick: 100 },
+                    { matId: "plaster_cement", thick: 10 },
+                    { matId: "plaster_gypsum", thick: 15 }
+                ];
             }
             this.calculateWallResistance();
         }
