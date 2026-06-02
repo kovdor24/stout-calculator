@@ -5506,6 +5506,8 @@ const app = {
         if (localStorage.getItem('stout_save')) {
             try { this.state = { ...this.state, ...JSON.parse(localStorage.getItem('stout_save')) }; } catch (e) { console.error("Ошибка загрузки сохранения", e); }
         }
+        // Сортируем steelRads по мощности (Тип11 < Тип21 < Тип22 < Тип33)
+        steelRads.sort((a, b) => a.power50 - b.power50);
         let radAlts = [catalog.rads[0], titanRads[0], steelRads[0]];
         catalog.rads.forEach(rad => { rad.alts = radAlts; }); titanRads.forEach(rad => { rad.alts = radAlts; }); steelRads.forEach(rad => { rad.alts = radAlts; });
         let hAlts = catalog.h_valves; catalog.h_valves.forEach(v => { v.alts = hAlts; });
@@ -7498,7 +7500,8 @@ const app = {
                 this.currentSpec.push({ ...finalItem, q: finalQty, group: group });
                 this.calcFinalTotal += (finalItem.price || 0) * finalQty;
 
-                if (forceMerge) {
+                let shouldMergeThisItem = forceMerge || (this.state.detailedRooms && group === "3. Приборы отопления" && tip && tip.includes('|||'));
+                if (shouldMergeThisItem) {
                     let existing = bill.find(x => x.id === finalItem.id && x.group === group);
                     if (existing) {
                         existing.q += finalQty;
@@ -7632,6 +7635,35 @@ const app = {
                         <i class="info-icon" style="${availStyle}">i</i>
                         <div class="tooltip-content">${finalTooltipContent}</div>
                     </div>` : "";
+                // === Кнопка «+» для раскрытия списка помещений (режим Подробный) ===
+                let locsRows = '';
+                let nameBtnHtml = '';
+                if (this.state.detailedRooms && i.locs && i.locs.length > 1) {
+                    const locsId = 'rl_' + (i.id || '').replace(/[^a-z0-9]/gi, '_') + '_' + globalIdx;
+                    nameBtnHtml = `<span class="expand-locs-btn" onclick="event.stopPropagation();(function(b,id){var rs=document.querySelectorAll('tr.'+id);rs.forEach(function(r){r.style.display=r.style.display==='none'?'table-row':'none';});b.textContent=b.textContent==='+'?'\u2212':'+'})(this,'${locsId}')" title="Раскрыть список помещений">+</span>`;
+                    
+                    let subIdx = 1;
+                    i.locs.forEach(locStr => {
+                        let subNum = `${globalIdx}.${subIdx++}`;
+                        // Убираем пули из начала строки, если они есть
+                        let cleanLocStr = locStr.replace(/^•\s*/, '');
+                        let fullSubRowName = `${i.name} — ${cleanLocStr}`;
+                        
+                        locsRows += `
+                            <tr class="${locsId}" style="display:none;background:var(--surface-light);">
+                                <td class="col-idx" style="font-size:11px;color:var(--text-muted);text-align:center;">${subNum}</td>
+                                <td class="col-img"></td>
+                                <td class="col-name" style="font-size:11px;color:var(--text-muted);padding-left:32px;border-left:3px solid var(--primary);">${fullSubRowName}</td>
+                                <td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">-</td>
+                                <td class="col-brand" style="font-size:11px;color:var(--text-muted);text-align:center;">${i.brand || 'STOUT'}</td>
+                                <td class="col-unit" style="font-size:11px;color:var(--text-muted);text-align:center;">шт</td>
+                                <td class="col-qty" style="font-size:11px;color:var(--text-muted);text-align:center;">1</td>
+                                <td class="col-price" style="font-size:11px;color:var(--text-muted);text-align:right;">${i.price.toLocaleString()}</td>
+                                <td class="col-sum" style="font-size:11px;color:var(--text-muted);text-align:right;">${i.price.toLocaleString()}</td>
+                            </tr>
+                        `;
+                    });
+                }
                 let qHtml = `<div class="qty-wrap">${i.q}${tipHtml} <span class="opt-btn" onclick="event.stopPropagation(); app.toggleOpt('${lookupId}')">${!isOpt ? '🗑️' : '➕'}</span></div>`;
                 let imgContent = getImg(i);
                 let hasAlts = (i.alts && i.alts.length > 0);
@@ -7646,7 +7678,7 @@ const app = {
                 let nameClass = hasAlts ? "col-name swappable-cursor" : "col-name";
                 let nameClick = hasAlts ? `onclick="event.stopPropagation(); app.cycleSwap('${lookupId}')" title="Нажмите, чтобы заменить"` : "";
 
-                rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${i.price.toLocaleString()}</td><td class="col-sum">${i.sum.toLocaleString()}</td></tr>`;
+                rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${i.price.toLocaleString()}</td><td class="col-sum">${i.sum.toLocaleString()}</td></tr>` + locsRows;
             });
             h += rows + `<tr class="row-subtotal"><td colspan="9">Итого: ${secTotal.toLocaleString()} ₽</td></tr>`;
             sum += secTotal; bill = [];
@@ -7965,6 +7997,8 @@ const app = {
             if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
                 this.state.rooms.forEach(r => {
                     let roomSCQCount = 0;
+                    let roomFactPowerSum = 0;  // суммарная фактическая мощность приборов помещения
+                    let roomDemandSum = 0;     // суммарная потребность помещения
 
                     // 1. Физика: Базовые потери коробки (учитываем высоту)
                     let rHeight = (r.floor === 2) ? (this.state.h2 || 2.7) : (this.state.h1 || 2.7);
@@ -7983,8 +8017,7 @@ const app = {
 
                         // 3. Итоговая нагрузка: окно + доля стен
                         let wLoad = windowHeatLoss + (baseRoomLoad / r.windows.length);
-
-                        let locInfo = `<span style="font-size:11px; line-height:1.2;">• <b>${r.name} (Окно ${wIdx + 1})</b>: ${w.width}м | Потери: <b>${Math.round(wLoad)} Вт</b></span>`;
+                        roomDemandSum += wLoad; // накапливаем потребность по помещению
 
                         if (w.isPan) {
                             let reqPower70 = wLoad / 0.65;
@@ -7999,36 +8032,63 @@ const app = {
                                 app.tempWarns.push(`• <b>${r.name} (Окно ${wIdx + 1}):</b> дефицит конвектора ~${Math.round(wLoad) - factPower} Вт. Переключите на вентиляторную модель (SCQ).`);
                             }
 
+                            let margin = Math.round(((factPower - wLoad) / wLoad) * 100);
+                            let marginColor = margin >= 0 ? '#10B981' : '#ef4444';
+                            let locInfo = `<span style="font-size:11px; line-height:1.2;">• <b>${r.name} (Окно ${wIdx + 1})</b>: ${w.width}м | Требуются: <b>${Math.round(wLoad)} Вт</b>, подобран: <b>${factPower} Вт</b>, запас: <b style="color:${marginColor};">${margin}%</b></span>`;
+
                             let devInfo = this.getDesc('convector', item.power70, factPower);
                             let cDesc = locInfo + "|||" + devInfo;
 
                             addToBill(item, 1, cDesc, "3. Приборы отопления");
                             totalConvCount++;
                             if (this.state.convectorType === 'scq') roomSCQCount++;
+                            roomFactPowerSum += factPower; // учитываем мощность конвектора по помещению
                         } else if (roomHasRad) {
                             let isRommer = (this.state.brandMode === 'rommer');
                             let reqPwr = Math.round(wLoad);
                             let p50_space = (isRommer && catalog.rads[0].rommer) ? (catalog.rads[0].rommer.power50 || 117) : 117;
                             let p50_titan = (isRommer && titanRads[0].rommer) ? (titanRads[0].rommer.power50 || 128) : 128;
 
-                            let reqSecsSpace = Math.max(4, Math.ceil(reqPwr / p50_space));
-                            if ((reqSecsSpace * 0.08) < w.width * 0.7) reqSecsSpace = Math.max(reqSecsSpace, Math.ceil((w.width * 0.7) / 0.08));
+                            // === Правило ширины 50–90% от ширины окна (СНиП 41-01-2003, допускается до 90% при необходимости) ===
+                            const secW = 0.08; // ширина секции Space/Titan = 80 мм
+                            const minSecsByW = Math.ceil((w.width * 0.50) / secW); // нижняя граница: 50%
+                            const maxSecsByW = Math.floor((w.width * 0.90) / secW); // верхняя граница: 90%
 
-                            // Корректировка для Rommer Optima (только четные 4, 6, 8, 10, 12)
+                            let reqSecsSpace = Math.max(4, Math.max(Math.ceil(reqPwr / p50_space), minSecsByW));
+                            const minByPwrSpace = Math.max(4, Math.ceil(reqPwr / p50_space));
+                            // Не превышать 90% если мощность позволяет меньше
+                            if (reqSecsSpace > maxSecsByW && maxSecsByW >= minByPwrSpace) reqSecsSpace = maxSecsByW;
+
+                            // === Коррекция для Rommer Optima: только чётные секции 4, 6, 8, 10, 12 ===
                             if (isRommer) {
-                                if (reqSecsSpace % 2 !== 0) reqSecsSpace++; // 5->6, 7->8, 9->10, 11->12, 13->14
-                                if (reqSecsSpace > 12) reqSecsSpace = 12;    // 14->12
+                                if (reqSecsSpace % 2 !== 0) {
+                                    // Нечётное число — пробуем пойти ВНИЗ (меньше секций, не нарушает 75%)
+                                    // Если нижнее чётное >= minByPwrSpace → берём его, иначе идём вверх
+                                    const secDown = reqSecsSpace - 1;
+                                    if (secDown >= minByPwrSpace && secDown >= 4) {
+                                        reqSecsSpace = secDown; // вниз: 7→6, 9→8, 11→10
+                                    } else {
+                                        reqSecsSpace = reqSecsSpace + 1; // вверх: 5→6 (нужна мощность)
+                                    }
+                                }
+                                if (reqSecsSpace > 12) reqSecsSpace = 12; // Optima max = 12 секций
                             } else {
                                 if (reqSecsSpace > 14) reqSecsSpace = 14;
                             }
                             let itemSpace = catalog.rads.find(x => x.sec === reqSecsSpace) || catalog.rads[catalog.rads.length - 1];
 
-                            let reqSecsTitan = Math.max(4, Math.ceil(reqPwr / p50_titan));
-                            if ((reqSecsTitan * 0.08) < w.width * 0.7) reqSecsTitan = Math.max(reqSecsTitan, Math.ceil((w.width * 0.7) / 0.08));
+                            let reqSecsTitan = Math.max(4, Math.max(Math.ceil(reqPwr / p50_titan), minSecsByW));
+                            const minByPwrTitan = Math.max(4, Math.ceil(reqPwr / p50_titan));
+                            if (reqSecsTitan > maxSecsByW && maxSecsByW >= minByPwrTitan) reqSecsTitan = maxSecsByW;
                             if (reqSecsTitan > 14) reqSecsTitan = 14;
                             let itemTitan = titanRads.find(x => x.sec === reqSecsTitan) || titanRads[titanRads.length - 1];
 
-                            let bestPanel = steelRads.find(s => s.power50 >= reqPwr && (s.sec / 1000) >= w.width * 0.7) || steelRads.find(s => s.power50 >= reqPwr) || steelRads[steelRads.length - 1];
+                            // === Панельные: выбираем тип (11/21/22/33) по мощности + диапазону ширины 50–90% ===
+                            const panelMinW = w.width * 0.50, panelMaxW = w.width * 0.90;
+                            let bestPanel = steelRads.find(s => s.power50 >= reqPwr && (s.sec/1000) >= panelMinW && (s.sec/1000) <= panelMaxW)
+                                || steelRads.find(s => s.power50 >= reqPwr && (s.sec/1000) >= panelMinW)
+                                || steelRads.find(s => s.power50 >= reqPwr)
+                                || steelRads[steelRads.length - 1];
 
                             let altsList = [itemSpace, itemTitan, bestPanel];
                             itemSpace.alts = altsList; itemTitan.alts = altsList; bestPanel.alts = altsList;
@@ -8067,11 +8127,20 @@ const app = {
                                 demandLabel: "Потребность на окно"
                             });
 
+                            let margin = Math.round(((factPower - reqPwr) / reqPwr) * 100);
+                            let marginColor = margin >= 0 ? '#10B981' : '#ef4444';
+                            let locInfo = `<span style="font-size:11px; line-height:1.2;">• <b>${r.name} (Окно ${wIdx + 1})</b>: ${w.width}м | Требуются: <b>${reqPwr} Вт</b>, подобран: <b>${factPower} Вт</b>, запас: <b style="color:${marginColor};">${margin}%</b></span>`;
+
                             let wDesc = locInfo + "|||" + devInfo;
                             addToBill(activeItem, 1, wDesc, "3. Приборы отопления");
                             totalRadCount++;
+                            roomFactPowerSum += factPower; // учитываем мощность радиатора по помещению
                         }
                     });
+                    // === Проверка покрытия теплопотерь помещения ===
+                    if ((roomHasRad) && roomFactPowerSum > 0 && Math.round(roomDemandSum) > roomFactPowerSum) {
+                        app.tempWarns.push(`• <b>${r.name}:</b> суммарная мощность приборов (${roomFactPowerSum} Вт) меньше теплопотерь помещения (${Math.round(roomDemandSum)} Вт). Дефицит: ~${Math.round(roomDemandSum) - roomFactPowerSum} Вт.`);
+                    }
                     if (roomSCQCount > 0) { totalVartronic += Math.ceil(roomSCQCount / 12); }
                 });
             } else {
@@ -8216,6 +8285,16 @@ const app = {
 
             heatWarnHtml = `⚠️ <b>ВНИМАНИЕ: Нехватка мощности отопления!</b><br>` + app.tempWarns.join('<br>') + `<br><span style="font-weight: 500; display:block; margin-top:6px;">${advice}</span>`;
         }
+        // Сортируем только приборы отопления (радиаторы, конвекторы): сначала крупные, потом мелкие.
+        // Элементы обвязки (3.1., 3.2.) и труб (3.3.) остаются на своих позициях.
+        const isHeater = x => !x.group || !/^\d+\.\d+/.test(x.group);
+        const heaters = bill.filter(isHeater);
+        const grouped = bill.filter(x => !isHeater(x));
+        heaters.sort((a, b) => {
+            const pw = item => item.isPanel ? (item.power50 || 0) : ((item.sec || 0) * (item.power50 || 0)) || (item.power70 ? Math.round(item.power70 * 0.65) : 0);
+            return pw(b) - pw(a);
+        });
+        bill = [...heaters, ...grouped];
         flushBill("3. Приборы отопления", heatWarnHtml);
 
         if (hasTp && tpMeters > 0) {
