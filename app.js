@@ -8766,93 +8766,7 @@ const app = {
                 flushBill(grpGen);
             }
 
-            // === РАСЧЕТ МАТЕРИАЛОВ БЕСШУМНОЙ КАНАЛИЗАЦИИ STOUT ===
-            let totalSewerPoints = 0;
-            this.state.waterZones.forEach(z => {
-                let f = z.fixtures;
-                let toiletsCount = parseInt(f.toilet) || 0;
-                let otherCount = (parseInt(f.wash) || 0) + (parseInt(f.dish) || 0) + (parseInt(f.basin) || 0) + (parseInt(f.shower) || 0) + (parseInt(f.bath) || 0);
-                
-                if (toiletsCount > 0 || otherCount > 0) {
-                    totalSewerPoints += toiletsCount + otherCount;
-                    
-                    let grpSewerToilet = `5.4. Канализация STOUT: ${z.name} (для инсталляции унитаза)`;
-                    let grpSewerBath = `5.4. Канализация STOUT: ${z.name} (для раковины, ванны, душа)`;
 
-                    // Для унитазов (D110)
-                    if (toiletsCount > 0) {
-                        let pipe110_1 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110100");
-                        let bend110_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-011087");
-                        let plug110 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000110");
-                        
-                        addToBill(pipe110_1, toiletsCount, this.getDesc('sewer_pipe_110', toiletsCount), grpSewerToilet);
-                        addToBill(bend110_87, toiletsCount, this.getDesc('sewer_bend_110_87', toiletsCount), grpSewerToilet);
-                        addToBill(plug110, toiletsCount, this.getDesc('sewer_plug_110'), grpSewerToilet);
-                    }
-
-                    // Для остальных точек (D58)
-                    if (otherCount > 0) {
-                        let pipe58Len = otherCount * 1.5;
-                        let q2 = Math.floor(pipe58Len / 2);
-                        let q1 = Math.ceil(pipe58Len % 2);
-                        let pipe58_2 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058200");
-                        let pipe58_1 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058100");
-                        let bend58_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-005845");
-                        let bend58_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-005887");
-                        let plug58 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000058");
-
-                        if (q2 > 0) addToBill(pipe58_2, q2, this.getDesc('sewer_pipe_58', pipe58Len), grpSewerBath);
-                        if (q1 > 0) addToBill(pipe58_1, q1, this.getDesc('sewer_pipe_58', pipe58Len), grpSewerBath);
-                        addToBill(bend58_45, otherCount * 2, this.getDesc('sewer_bend_58_45', otherCount * 2), grpSewerBath);
-                        addToBill(bend58_87, otherCount, this.getDesc('sewer_bend_58_87', otherCount), grpSewerBath);
-                        addToBill(plug58, otherCount, this.getDesc('sewer_plug_58'), grpSewerBath);
-
-                        let tee110_58 = catalog.sewer_silent.find(x => x.id === "SKB-0016-115887") || catalog.sewer_silent.find(x => x.id === "SKB-0015-115845");
-                        let transition = catalog.sewer_silent.find(x => x.id === "SKB-0013-011058");
-                        addToBill(tee110_58, 1, this.getDesc('sewer_tee_110_58'), grpSewerBath);
-                        addToBill(transition, 1, this.getDesc('sewer_transition'), grpSewerBath);
-                    }
-                }
-            });
-
-            if (totalSewerPoints > 0) {
-                let grpSewerMain = "5.4. Канализация STOUT: Общие магистрали и расходники";
-                let floors = this.state.floors || 1;
-                let area = this.state.area || 150;
-                
-                let pipe110Len = (floors * 3) + Math.ceil(Math.sqrt(area) * 1.2);
-                let q2 = Math.floor(pipe110Len / 2);
-                let q1 = Math.ceil(pipe110Len % 2);
-                let pipe110_2 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110200");
-                let pipe110_1 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110100");
-                let bend110_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-011045");
-                
-                if (q2 > 0) addToBill(pipe110_2, q2, this.getDesc('sewer_pipe_110_main', pipe110Len), grpSewerMain);
-                if (q1 > 0) addToBill(pipe110_1, q1, this.getDesc('sewer_pipe_110_main', pipe110Len), grpSewerMain);
-                
-                addToBill(bend110_45, floors * 2, this.getDesc('sewer_bend_110_45'), grpSewerMain);
-                
-                let waterZonesWithToilets = this.state.waterZones.filter(z => z.fixtures.toilet > 0).length;
-                if (waterZonesWithToilets > 1) {
-                    let tee110_110 = catalog.sewer_silent.find(x => x.id === "SKB-0016-111187") || catalog.sewer_silent.find(x => x.id === "SKB-0015-111145");
-                    addToBill(tee110_110, waterZonesWithToilets - 1, this.getDesc('sewer_tee_110_110'), grpSewerMain);
-                }
-
-                let lubCount = Math.max(1, Math.ceil(totalSewerPoints / 10));
-                let lub = catalog.sewer_silent.find(x => x.id === "sewer_lubricant");
-                addToBill(lub, lubCount, this.getDesc('sewer_lubricant'), grpSewerMain);
-                
-                let coupling110 = catalog.sewer_silent.find(x => x.id === "SKB-0006-000110");
-                addToBill(coupling110, floors, this.getDesc('sewer_coupling_110'), grpSewerMain);
-            }
-
-            this.state.waterZones.forEach(z => {
-                let grpSewerToilet = `5.4. Канализация STOUT: ${z.name} (для инсталляции унитаза)`;
-                let grpSewerBath = `5.4. Канализация STOUT: ${z.name} (для раковины, ванны, душа)`;
-                flushBill(grpSewerToilet);
-                flushBill(grpSewerBath);
-            });
-            flushBill("5.4. Канализация STOUT: Общие магистрали и расходники");
 
             if (totalColdPoints > 0 || totalHotPoints > 0 || this.state.well) {
                 // ==========================================
@@ -9065,15 +8979,276 @@ const app = {
         }
 
         // === 8. КАНАЛИЗАЦИЯ ===
+        let totalSewerPoints = 0;
         let sewerToilets = 0;
         if (this.state.waterZones && this.state.waterZones.length > 0) {
             this.state.waterZones.forEach(z => {
                 sewerToilets += z.fixtures.toilet;
             });
         }
-        if (sewerToilets > 0) {
-            addToBill(catalog.water_parts[6], sewerToilets, this.getDesc('install'), "8. Канализация");
-            flushBill("8. Канализация");
+
+        let isSewerMerge = this.state.mergeItems;
+
+        if (sewerToilets > 0 || (this.state.water && this.state.waterZones.length > 0)) {
+            let sectionTitle = "8. Канализация";
+            
+            // Если группировка ВКЛЮЧЕНА (потребители)
+            if (!isSewerMerge) {
+                // Сначала выводим инсталляции (если есть) в своей группе, чтобы они были первыми
+                if (sewerToilets > 0) {
+                    addToBill(catalog.water_parts[6], sewerToilets, this.getDesc('install'), "8. Канализация: Инсталляция унитаза");
+                }
+
+                // Теперь считаем трубы и фитинги по потребителям
+                this.state.waterZones.forEach(z => {
+                    let f = z.fixtures;
+                    let toiletsCount = parseInt(f.toilet) || 0;
+                    let basinCount = parseInt(f.basin) || 0;
+                    let showerCount = parseInt(f.shower) || 0;
+                    let bathCount = parseInt(f.bath) || 0;
+                    let washCount = parseInt(f.wash) || 0;
+                    let dishCount = parseInt(f.dish) || 0;
+
+                    totalSewerPoints += toiletsCount + basinCount + showerCount + bathCount + washCount + dishCount;
+
+                    // 1. Для инсталляции (D110)
+                    if (toiletsCount > 0) {
+                        let grp = `8. Канализация: ${z.name} (Инсталляция)`;
+                        let pipe110_1 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110100");
+                        let bend110_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-011087");
+                        let plug110 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000110");
+                        
+                        addToBill(pipe110_1, toiletsCount, this.getDesc('sewer_pipe_110', toiletsCount), grp);
+                        addToBill(bend110_87, toiletsCount, this.getDesc('sewer_bend_110_87', toiletsCount), grp);
+                        addToBill(plug110, toiletsCount, this.getDesc('sewer_plug_110'), grp);
+                    }
+
+                    // 2. Для Ванны
+                    if (bathCount > 0) {
+                        let grp = `8. Канализация: ${z.name} (Ванная)`;
+                        let pipe58Len = bathCount * 1.5;
+                        let q2 = Math.floor(pipe58Len / 2);
+                        let q1 = Math.ceil(pipe58Len % 2);
+                        let pipe58_2 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058200");
+                        let pipe58_1 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058100");
+                        let bend58_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-005845");
+                        let bend58_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-005887");
+                        let plug58 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000058");
+                        let tee110_58 = catalog.sewer_silent.find(x => x.id === "SKB-0016-115887") || catalog.sewer_silent.find(x => x.id === "SKB-0015-115845");
+                        let transition = catalog.sewer_silent.find(x => x.id === "SKB-0013-011058");
+
+                        if (q2 > 0) addToBill(pipe58_2, q2, this.getDesc('sewer_pipe_58', pipe58Len), grp);
+                        if (q1 > 0) addToBill(pipe58_1, q1, this.getDesc('sewer_pipe_58', pipe58Len), grp);
+                        addToBill(bend58_45, bathCount * 2, this.getDesc('sewer_bend_58_45', bathCount * 2), grp);
+                        addToBill(bend58_87, bathCount, this.getDesc('sewer_bend_58_87', bathCount), grp);
+                        addToBill(plug58, bathCount, this.getDesc('sewer_plug_58'), grp);
+                        addToBill(tee110_58, bathCount, this.getDesc('sewer_tee_110_58'), grp);
+                        addToBill(transition, bathCount, this.getDesc('sewer_transition'), grp);
+                    }
+
+                    // 3. Для Душа
+                    if (showerCount > 0) {
+                        let grp = `8. Канализация: ${z.name} (Душ)`;
+                        let pipe58Len = showerCount * 1.5;
+                        let q2 = Math.floor(pipe58Len / 2);
+                        let q1 = Math.ceil(pipe58Len % 2);
+                        let pipe58_2 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058200");
+                        let pipe58_1 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058100");
+                        let bend58_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-005845");
+                        let bend58_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-005887");
+                        let plug58 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000058");
+                        let tee110_58 = catalog.sewer_silent.find(x => x.id === "SKB-0016-115887") || catalog.sewer_silent.find(x => x.id === "SKB-0015-115845");
+                        let transition = catalog.sewer_silent.find(x => x.id === "SKB-0013-011058");
+
+                        if (q2 > 0) addToBill(pipe58_2, q2, this.getDesc('sewer_pipe_58', pipe58Len), grp);
+                        if (q1 > 0) addToBill(pipe58_1, q1, this.getDesc('sewer_pipe_58', pipe58Len), grp);
+                        addToBill(bend58_45, showerCount * 2, this.getDesc('sewer_bend_58_45', showerCount * 2), grp);
+                        addToBill(bend58_87, showerCount, this.getDesc('sewer_bend_58_87', showerCount), grp);
+                        addToBill(plug58, showerCount, this.getDesc('sewer_plug_58'), grp);
+                        addToBill(tee110_58, showerCount, this.getDesc('sewer_tee_110_58'), grp);
+                        addToBill(transition, showerCount, this.getDesc('sewer_transition'), grp);
+                    }
+
+                    // 4. Для остальных приборов (раковина, стиральная, посудомоечная машина) отдельно на каждый тип
+                    let otherFixtures = [
+                        { key: 'basin', nameRu: 'Раковина' },
+                        { key: 'wash', nameRu: 'Стиральная машина' },
+                        { key: 'dish', nameRu: 'Посудомоечная машина' }
+                    ];
+
+                    otherFixtures.forEach(fix => {
+                        let count = parseInt(f[fix.key]) || 0;
+                        if (count > 0) {
+                            let grp = `8. Канализация: ${z.name} (${fix.nameRu})`;
+                            let pipe58Len = count * 1.5;
+                            let q2 = Math.floor(pipe58Len / 2);
+                            let q1 = Math.ceil(pipe58Len % 2);
+                            let pipe58_2 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058200");
+                            let pipe58_1 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058100");
+                            let bend58_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-005845");
+                            let bend58_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-005887");
+                            let plug58 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000058");
+                            let tee110_58 = catalog.sewer_silent.find(x => x.id === "SKB-0016-115887") || catalog.sewer_silent.find(x => x.id === "SKB-0015-115845");
+                            let transition = catalog.sewer_silent.find(x => x.id === "SKB-0013-011058");
+
+                            if (q2 > 0) addToBill(pipe58_2, q2, this.getDesc('sewer_pipe_58', pipe58Len), grp);
+                            if (q1 > 0) addToBill(pipe58_1, q1, this.getDesc('sewer_pipe_58', pipe58Len), grp);
+                            addToBill(bend58_45, count * 2, this.getDesc('sewer_bend_58_45', count * 2), grp);
+                            addToBill(bend58_87, count, this.getDesc('sewer_bend_58_87', count), grp);
+                            addToBill(plug58, count, this.getDesc('sewer_plug_58'), grp);
+                            addToBill(tee110_58, count, this.getDesc('sewer_tee_110_58'), grp);
+                            addToBill(transition, count, this.getDesc('sewer_transition'), grp);
+                        }
+                    });
+                });
+
+                // 5. Общие материалы и расходники (стояки, хомуты, смазка)
+                if (totalSewerPoints > 0) {
+                    let grpSewerMain = "8. Канализация: Общие материалы и расходники";
+                    let floors = this.state.floors || 1;
+                    let area = this.state.area || 150;
+                    
+                    let pipe110Len = (floors * 3) + Math.ceil(Math.sqrt(area) * 1.2);
+                    let q2 = Math.floor(pipe110Len / 2);
+                    let q1 = Math.ceil(pipe110Len % 2);
+                    let pipe110_2 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110200");
+                    let pipe110_1 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110100");
+                    let bend110_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-011045");
+                    
+                    if (q2 > 0) addToBill(pipe110_2, q2, this.getDesc('sewer_pipe_110_main', pipe110Len), grpSewerMain);
+                    if (q1 > 0) addToBill(pipe110_1, q1, this.getDesc('sewer_pipe_110_main', pipe110Len), grpSewerMain);
+                    
+                    addToBill(bend110_45, floors * 2, this.getDesc('sewer_bend_110_45'), grpSewerMain);
+                    
+                    let waterZonesWithToilets = this.state.waterZones.filter(z => z.fixtures.toilet > 0).length;
+                    if (waterZonesWithToilets > 1) {
+                        let tee110_110 = catalog.sewer_silent.find(x => x.id === "SKB-0016-111187") || catalog.sewer_silent.find(x => x.id === "SKB-0015-111145");
+                        addToBill(tee110_110, waterZonesWithToilets - 1, this.getDesc('sewer_tee_110_110'), grpSewerMain);
+                    }
+
+                    let lubCount = Math.max(1, Math.ceil(totalSewerPoints / 10));
+                    let lub = catalog.sewer_silent.find(x => x.id === "sewer_lubricant");
+                    addToBill(lub, lubCount, this.getDesc('sewer_lubricant'), grpSewerMain);
+                    
+                    let coupling110 = catalog.sewer_silent.find(x => x.id === "SKB-0006-000110");
+                    addToBill(coupling110, floors, this.getDesc('sewer_coupling_110'), grpSewerMain);
+                }
+
+                // Смываем все группы по порядку
+                if (sewerToilets > 0) {
+                    flushBill("8. Канализация: Инсталляция унитаза");
+                }
+                this.state.waterZones.forEach(z => {
+                    flushBill(`8. Канализация: ${z.name} (Инсталляция)`);
+                    flushBill(`8. Канализация: ${z.name} (Ванная)`);
+                    flushBill(`8. Канализация: ${z.name} (Душ)`);
+                    flushBill(`8. Канализация: ${z.name} (Раковина)`);
+                    flushBill(`8. Канализация: ${z.name} (Стиральная машина)`);
+                    flushBill(`8. Канализация: ${z.name} (Посудомоечная машина)`);
+                });
+                if (totalSewerPoints > 0) {
+                    flushBill("8. Канализация: Общие материалы и расходники");
+                }
+
+            } else {
+                // Если группировка ВЫКЛЮЧЕНА (общий список, сортировка от большей цены к меньшей)
+                
+                // 1. Сначала добавляем инсталляцию как первую позицию
+                if (sewerToilets > 0) {
+                    addToBill(catalog.water_parts[6], sewerToilets, this.getDesc('install'), sectionTitle);
+                }
+
+                // 2. Рассчитываем и накапливаем все остальные позиции канализации
+                let sewerItems = {};
+                let addSewerItem = (item, qty, tip) => {
+                    if (!item || qty <= 0) return;
+                    if (!sewerItems[item.id]) {
+                        sewerItems[item.id] = { item: item, qty: 0, tips: [] };
+                    }
+                    sewerItems[item.id].qty += qty;
+                    if (tip && !sewerItems[item.id].tips.includes(tip)) {
+                        sewerItems[item.id].tips.push(tip);
+                    }
+                };
+
+                this.state.waterZones.forEach(z => {
+                    let f = z.fixtures;
+                    let toiletsCount = parseInt(f.toilet) || 0;
+                    let otherCount = (parseInt(f.wash) || 0) + (parseInt(f.dish) || 0) + (parseInt(f.basin) || 0) + (parseInt(f.shower) || 0) + (parseInt(f.bath) || 0);
+
+                    totalSewerPoints += toiletsCount + otherCount;
+
+                    if (toiletsCount > 0) {
+                        let pipe110_1 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110100");
+                        let bend110_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-011087");
+                        let plug110 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000110");
+
+                        addSewerItem(pipe110_1, toiletsCount, this.getDesc('sewer_pipe_110', toiletsCount));
+                        addSewerItem(bend110_87, toiletsCount, this.getDesc('sewer_bend_110_87', toiletsCount));
+                        addSewerItem(plug110, toiletsCount, this.getDesc('sewer_plug_110'));
+                    }
+
+                    if (otherCount > 0) {
+                        let pipe58Len = otherCount * 1.5;
+                        let q2 = Math.floor(pipe58Len / 2);
+                        let q1 = Math.ceil(pipe58Len % 2);
+                        let pipe58_2 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058200");
+                        let pipe58_1 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058100");
+                        let bend58_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-005845");
+                        let bend58_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-005887");
+                        let plug58 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000058");
+                        let tee110_58 = catalog.sewer_silent.find(x => x.id === "SKB-0016-115887") || catalog.sewer_silent.find(x => x.id === "SKB-0015-115845");
+                        let transition = catalog.sewer_silent.find(x => x.id === "SKB-0013-011058");
+
+                        if (q2 > 0) addSewerItem(pipe58_2, q2, this.getDesc('sewer_pipe_58', pipe58Len));
+                        if (q1 > 0) addSewerItem(pipe58_1, q1, this.getDesc('sewer_pipe_58', pipe58Len));
+                        addSewerItem(bend58_45, otherCount * 2, this.getDesc('sewer_bend_58_45', otherCount * 2));
+                        addSewerItem(bend58_87, otherCount, this.getDesc('sewer_bend_58_87', otherCount));
+                        addSewerItem(plug58, otherCount, this.getDesc('sewer_plug_58'));
+                        addSewerItem(tee110_58, otherCount, this.getDesc('sewer_tee_110_58'));
+                        addSewerItem(transition, otherCount, this.getDesc('sewer_transition'));
+                    }
+                });
+
+                if (totalSewerPoints > 0) {
+                    let floors = this.state.floors || 1;
+                    let area = this.state.area || 150;
+                    
+                    let pipe110Len = (floors * 3) + Math.ceil(Math.sqrt(area) * 1.2);
+                    let q2 = Math.floor(pipe110Len / 2);
+                    let q1 = Math.ceil(pipe110Len % 2);
+                    let pipe110_2 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110200");
+                    let pipe110_1 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110100");
+                    let bend110_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-011045");
+                    
+                    if (q2 > 0) addSewerItem(pipe110_2, q2, this.getDesc('sewer_pipe_110_main', pipe110Len));
+                    if (q1 > 0) addSewerItem(pipe110_1, q1, this.getDesc('sewer_pipe_110_main', pipe110Len));
+                    addSewerItem(bend110_45, floors * 2, this.getDesc('sewer_bend_110_45'));
+                    
+                    let waterZonesWithToilets = this.state.waterZones.filter(z => z.fixtures.toilet > 0).length;
+                    if (waterZonesWithToilets > 1) {
+                        let tee110_110 = catalog.sewer_silent.find(x => x.id === "SKB-0016-111187") || catalog.sewer_silent.find(x => x.id === "SKB-0015-111145");
+                        addSewerItem(tee110_110, waterZonesWithToilets - 1, this.getDesc('sewer_tee_110_110'));
+                    }
+
+                    let lubCount = Math.max(1, Math.ceil(totalSewerPoints / 10));
+                    let lub = catalog.sewer_silent.find(x => x.id === "sewer_lubricant");
+                    addSewerItem(lub, lubCount, this.getDesc('sewer_lubricant'));
+                    
+                    let coupling110 = catalog.sewer_silent.find(x => x.id === "SKB-0006-000110");
+                    addSewerItem(coupling110, floors, this.getDesc('sewer_coupling_110'));
+                }
+
+                // Сортируем собранные позиции от большей цены к меньшей
+                let sortedSewerList = Object.values(sewerItems).sort((a, b) => (b.item.price || 0) - (a.item.price || 0));
+                
+                // Добавляем их в счет
+                sortedSewerList.forEach(entry => {
+                    addToBill(entry.item, entry.qty, entry.tips.join('<br>'), sectionTitle);
+                });
+
+                flushBill(sectionTitle);
+            }
         }
 
         // === 9. ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ ===
