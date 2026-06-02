@@ -6343,12 +6343,22 @@ const app = {
             clearBtn.style.display = this.state.selectedCity ? 'block' : 'none';
         }
         const matTabs = document.getElementById('mat_tabs').children; for (let t of matTabs) t.classList.remove('active');
-        if (this.state.mat >= 1.2) {
-            matTabs[0].classList.add('active');
-        } else if (this.state.mat >= 0.9 && this.state.mat < 1.2) {
-            matTabs[1].classList.add('active');
-        } else if (this.state.mat < 0.9) {
-            matTabs[2].classList.add('active');
+        if (this.state.detailedRooms) {
+            if (this.state.mat >= 1.1) {
+                matTabs[0].classList.add('active');
+            } else if (this.state.mat >= 0.55 && this.state.mat < 1.1) {
+                matTabs[1].classList.add('active');
+            } else {
+                matTabs[2].classList.add('active');
+            }
+        } else {
+            if (this.state.mat >= 1.2) {
+                matTabs[0].classList.add('active');
+            } else if (this.state.mat >= 0.9 && this.state.mat < 1.2) {
+                matTabs[1].classList.add('active');
+            } else if (this.state.mat < 0.9) {
+                matTabs[2].classList.add('active');
+            }
         }
         
         // Sync City Search visibility
