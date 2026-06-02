@@ -141,7 +141,7 @@
             <div class="control-item toggle-item" id="blk_detailed_rooms_header" style="display: none; margin-bottom: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">
                 <div class="label-row" style="margin-bottom: 0;">
                     <span class="lbl">Расчёт по комнатам</span>
-                    <label class="switch" style="transform: scale(0.85); transform-origin: right;">
+                    <label class="switch">
                         <input type="checkbox" id="chk_detailed_rooms_toggle" onchange="app.toggleDetailedRoomsPanel(this.checked, event)">
                         <span class="slider"></span>
                     </label>
@@ -241,7 +241,7 @@
                 <div class="control-item toggle-item" id="wall_layers_header_wrapper" style="display: none; margin-top: 12px; margin-bottom: 6px; width: 100%;">
                     <div class="label-row" style="margin-bottom: 0; width: 100%;">
                         <span class="lbl">Пирог стены</span>
-                        <label class="switch" style="transform: scale(0.85); transform-origin: right;">
+                        <label class="switch">
                             <input type="checkbox" id="chk_wall_layers_toggle" onchange="app.toggleWallLayersPanel(this.checked, event)">
                             <span class="slider"></span>
                         </label>
@@ -454,14 +454,14 @@
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
                         <span class="lbl" style="font-size:12px;">Система фильтрации (Big Blue)</span>
-                        <label class="switch" style="transform:scale(0.8); transform-origin:right;">
+                        <label class="switch">
                             <input type="checkbox" id="chk_big_blue" onchange="app.toggleState('bigBlueFilter', this.checked)">
                             <span class="slider"></span>
                         </label>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
                         <span class="lbl" style="font-size:12px;">Подпитка отопления</span>
-                        <label class="switch" style="transform:scale(0.8); transform-origin:right;">
+                        <label class="switch">
                             <input type="checkbox" id="chk_heating_feed" onchange="app.toggleState('heatingFeed', this.checked)">
                             <span class="slider"></span>
                         </label>

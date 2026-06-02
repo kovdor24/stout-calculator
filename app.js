@@ -7735,7 +7735,9 @@ const app = {
                 this.currentSpec.push({ ...finalItem, q: finalQty, group: group });
                 this.calcFinalTotal += (finalItem.price || 0) * finalQty;
 
-                let shouldMergeThisItem = forceMerge || (this.state.detailedRooms && group === "3. Приборы отопления" && tip && tip.includes('|||'));
+                let shouldMergeThisItem = forceMerge || 
+                    (this.state.detailedRooms && group === "3. Приборы отопления" && tip && tip.includes('|||')) ||
+                    (group === "8. Канализация" || (group && (group.includes("Канализация:") || group.includes("[Инсталляция]"))));
                 if (shouldMergeThisItem) {
                     let existing = bill.find(x => x.id === finalItem.id && x.group === group);
                     if (existing) {
@@ -8657,7 +8659,7 @@ const app = {
 
         if (this.state.water && this.state.waterZones.length > 0) {
             let mainTitle = "5. Внутреннее водоснабжение";
-            let isMerge = this.state.mergeItems;
+            let isMerge = !this.state.groupItems;
             let grpCold = isMerge ? mainTitle : "5. Внутреннее водоснабжение";
             let grpHot = isMerge ? mainTitle : "5.1. Внутреннее ГВС";
             let grpRecirc = isMerge ? mainTitle : "5.2. Рециркуляция";
@@ -8987,7 +8989,7 @@ const app = {
             });
         }
 
-        let isSewerMerge = this.state.mergeItems;
+        let isSewerMerge = !this.state.groupItems;
 
         if (sewerToilets > 0 || (this.state.water && this.state.waterZones.length > 0)) {
             let sectionTitle = "8. Канализация";
@@ -8997,12 +8999,12 @@ const app = {
             if (!isSewerMerge) {
                 // Сначала выводим инсталляции (если есть) в своей группе, чтобы они были первыми
                 if (sewerToilets > 0) {
-                    let label = singleZone ? "Канализация: [Инсталляция]" : `Канализация: [Инсталляция] (${this.state.waterZones[0].name})`;
+                    let label = singleZone ? "8. Канализация" : "8. Канализация";
                     // Если зон несколько, выведем инсталляции под каждую зону
                     this.state.waterZones.forEach(z => {
                         let tCount = parseInt(z.fixtures.toilet) || 0;
                         if (tCount > 0) {
-                            let grpLabel = singleZone ? "8.1. Канализация: [Инсталляция]" : `8.1. Канализация: [Инсталляция] (${z.name})`;
+                            let grpLabel = singleZone ? "8.1. [Инсталляция]" : `8.1. [Инсталляция] (${z.name})`;
                             addToBill(catalog.water_parts[6], tCount, this.getDesc('install'), grpLabel);
                         }
                     });
@@ -9145,8 +9147,9 @@ const app = {
                 }
 
                 // Смываем все группы по порядку
+                flushBill("8. Канализация");
                 this.state.waterZones.forEach(z => {
-                    let grpLabel = singleZone ? "8.1. Канализация: [Инсталляция]" : `8.1. Канализация: [Инсталляция] (${z.name})`;
+                    let grpLabel = singleZone ? "8.1. [Инсталляция]" : `8.1. [Инсталляция] (${z.name})`;
                     flushBill(grpLabel);
                 });
                 

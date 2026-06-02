@@ -1672,7 +1672,7 @@ const catalog = {
         { id: "SKB-0006-000110", name: "Муфта соединительная двухраструбная D 110", price: 1276, brand: "STOUT", availability: 'in_stock' },
         { id: "SKB-0007-000058", name: "Муфта ремонтная D 58", price: 540, brand: "STOUT", availability: 'in_stock' },
         { id: "SKB-0007-000110", name: "Муфта ремонтная D 110", price: 1289, brand: "STOUT", availability: 'in_stock' },
-        { id: "sewer_lubricant", name: "Смазка силиконовая для труб 150г", price: 290, brand: "STOUT", availability: 'in_stock' }
+        { id: "sewer_lubricant", article: "900003.R", name: "Смазка силиконовая", price: 313, brand: "Sinikon", availability: 'in_stock' }
     ]
 };
 
