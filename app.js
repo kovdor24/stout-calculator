@@ -7631,7 +7631,7 @@ const app = {
         document.getElementById('doc_summary').innerHTML = `
             <span class="param-item">🏠 Объект: <b>${this.state.area} м²</b> (${this.state.floors === 2 ? 2 : 1} эт)</span>
             <span class="param-item">👨‍👩‍👧 Проживающих: <b>${this.state.res}</b></span>
-            <span class="param-item">🔥 Теплопотери: <b>${pwr} кВт (${Math.round((parseFloat(pwr) * 1000) / this.state.area)} Вт/м²)</b></span>
+            <span class="param-item">🔥 Теплопотери: <b>${pwr} кВт</b> (${Math.round((parseFloat(pwr) * 1000) / this.state.area)} Вт/м²)</span>
             <span class="param-item">📍 Регион: <b>${regionName}</b></span>
             <span class="param-item param-date calculation-date">📅 Дата: <b>${new Date().toLocaleDateString('ru-RU')}</b></span>
         `;
