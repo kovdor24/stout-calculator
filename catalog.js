@@ -1059,6 +1059,8 @@ const catalog = {
     ],
     chimneys: [
         { id: "SCA-6010-210850", name: "Дымоход коаксиальный 60/100", price: 6298, brand: "STOUT", rommer: { id: "RCA-6010-251220", name: "Дымоход коаксиальный 60/100", price: 3260, brand: "ROMMER" },
+  availability: 'in_stock' },
+        { id: "RCA-6100-251220", name: "Дымоход коаксиальный 60/100", price: 2934, brand: "ROMMER",
   availability: 'in_stock' }
     ],
     stabs: [
@@ -1356,11 +1358,14 @@ const catalog = {
         { id: "SDG-0120-001000", name: "Насосно-смесительный узел (без насоса)", price: 25684, rommer: { id: "RDG-0120-008100", name: "Насосно-смесительный узел с термоголовкой (без насоса)", price: 14227, brand: "ROMMER" },
   availability: 'in_stock' }
     ],
-    groups_dn20: [{ id: "SDG-0001-002001", name: "Группа насосная DN20 (Прямая)", price: 16243,
-  availability: 'in_stock' }, { id: "SDG-0002-002001", name: "Группа насосная DN20 (Смес.)", price: 29589,
-  availability: 'in_stock' }],
+    groups_dn20: [
+        { id: "SDG-0001-002001", name: "Группа насосная DN20 (Прямая)", price: 16243, rommer: { id: "RDG-1001-002501", name: "Группа насосная DN25 (Прямая)", price: 9514, brand: "ROMMER" },
+  availability: 'in_stock' },
+        { id: "SDG-0002-002001", name: "Группа насосная DN20 (Смес.)", price: 29589, rommer: { id: "RDG-1002-002501", name: "Насосная группа DN25 (термостатический клапан)", price: 11212, brand: "ROMMER" },
+  availability: 'in_stock' }
+    ],
     groups_dn25: [
-        { id: "SDG-0001-002501", name: "Группа насосная DN25 (Прямая)", price: 17535, rommer: { id: "RDG-1001-002501", name: "Насосная группа прямая 1\"", price: 9514, brand: "ROMMER" },
+        { id: "SDG-0001-002501", name: "Группа насосная DN25 (Прямая)", price: 17535, rommer: { id: "RDG-1001-002501", name: "Группа насосная DN25 (Прямая)", price: 9514, brand: "ROMMER" },
   availability: 'in_stock' },
         { id: "SDG-0002-002501", name: "Группа насосная DN25 (Смес.)", price: 31942, rommer: { id: "RDG-1002-002501", name: "Насосная группа DN25 (термостатический клапан)", price: 11212, brand: "ROMMER" },
   availability: 'in_stock' }
@@ -1406,7 +1411,7 @@ const catalog = {
     ],
     pumps_mix: [{ id: "SPC-0011-2560130", brand: "STOUT", name: "Насос 25/60-130", price: 12666, rommer: { id: "RCP-0004-2560130", name: "Насос циркуляционный PROFI", price: 4768, brand: "ROMMER" },
   availability: 'in_stock' }],
-    hydro_arrow: { id: "SDG-0015-004001", name: "Гидравлическая стрелка 3 м3/час", price: 22082,
+    hydro_arrow: { id: "SDG-0015-004001", name: "Гидравлическая стрелка 3 м3/час", price: 22082, rommer: { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 6596, brand: "ROMMER" },
   availability: 'in_stock' },
     hydro_modular_dn20: [
         { id: "SDG-0016-002502", name: "Стальной распр. коллектор 2 контура DN20", price: 26395,

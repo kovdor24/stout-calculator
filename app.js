@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, ventilationEnabled: false, ventilationType: 'natural' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural' },
 
     lastSavedStateString: "",
 
@@ -5130,7 +5130,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, ventilationEnabled: false, ventilationType: 'natural',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -5520,6 +5520,7 @@ const app = {
         let xpsAlt = catalog.xps_kit[0]; catalog.mats.forEach(m => { m.alts = [xpsAlt]; }); catalog.xps_kit[0].alts = catalog.mats;
         if (catalog.well_auto) { let waAlts = catalog.well_auto; catalog.well_auto.forEach(a => { a.alts = waAlts; }); }
         if (catalog.convectors_scq && catalog.convectors_scn) { let convAlts = [catalog.convectors_scq[0], catalog.convectors_scn[0]]; catalog.convectors_scq.forEach(c => { c.alts = convAlts; }); catalog.convectors_scn.forEach(c => { c.alts = convAlts; }); }
+        if (catalog.chimneys) { let chimneyAlts = [catalog.chimneys[0], catalog.chimneys[1]]; catalog.chimneys.forEach(c => { c.alts = chimneyAlts; }); }
         if (catalog.outdoor_faucets && catalog.outdoor_faucet) {
             let faucetAlts = [...catalog.outdoor_faucets, catalog.outdoor_faucet.find(x => x.id === "SVB-1007-200020")].filter(Boolean);
             catalog.outdoor_faucets.forEach(f => { f.alts = faucetAlts; });
@@ -5664,6 +5665,8 @@ const app = {
         else if (originalId.startsWith('SCS-0001')) { if (this.state.wellAutoType === 'sirio') this.state.wellAutoType = 'top'; else if (this.state.wellAutoType === 'top') this.state.wellAutoType = 'base'; else this.state.wellAutoType = 'sirio'; }
         else if (originalId.startsWith('SCQ') || originalId.startsWith('SCN')) { this.state.convectorType = (this.state.convectorType === 'scq') ? 'scn' : 'scq'; }
         else if (originalId.startsWith('SVT') || originalId.startsWith('SVL')) { this.state.convConnectionType = (this.state.convConnectionType === 'straight') ? 'angled' : 'straight'; }
+        else if (originalId.startsWith('SCA-') || originalId.startsWith('RCA-')) { this.state.chimneyType = (this.state.chimneyType === 'standard') ? 'basic' : 'standard'; }
+        else if (originalId === 'RDG-0015-004002' || originalId === 'RDG-1015-004003') { this.state.hydroArrowType = (this.state.hydroArrowType === 'pro') ? 'standard' : 'pro'; }
         this.state.showSwapFor = null; this.render();
     },
     syncRoomsToState: function () {
@@ -6548,9 +6551,7 @@ const app = {
         let chk = document.getElementById('chk_cheaper');
 
         if (cw && chk && sl) {
-            let isAuthenticated = typeof app !== 'undefined' && app.state && (app.state.tgUser || app.state.user || app.state.currentUser);
-            let isAuthorized = isAuthenticated && !!(this.state.tgUser && this.state.tgUser.authUserId);
-            if (isAuthorized && this.isPro()) {
+            if (this.isPro()) {
                 cw.style.display = 'flex';
                 chk.checked = (this.state.brandMode === 'rommer');
             } else {
@@ -7718,6 +7719,20 @@ const app = {
                 let finalItem = entry.itm;
                 let finalQty = entry.q;
 
+                if (finalItem.id === 'RDG-0015-004002' && this.state.hydroArrowType === 'pro') {
+                    finalItem.id = "RDG-1015-004003";
+                    finalItem.name = "Гидравлическая стрелка 1 1/2\", 3,0 м³/час";
+                    finalItem.price = 16722;
+                    finalItem.brand = "ROMMER";
+                }
+                if (finalItem.id === 'RDG-0015-004002' || finalItem.id === 'RDG-1015-004003') {
+                    finalItem.originalId = finalItem.id;
+                    finalItem.alts = [
+                        { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 6596, brand: "ROMMER" },
+                        { id: "RDG-1015-004003", name: "Гидравлическая стрелка 1 1/2\", 3,0 м³/час", price: 16722, brand: "ROMMER" }
+                    ];
+                }
+
                 let originalPrice = finalItem.price || 0;
                 let finalPrice = originalPrice;
                 if (isPro && this.state.eqDiscount > 0) {
@@ -7763,12 +7778,12 @@ const app = {
                             finalItem.locs = [parts[0]];
                             finalTip = parts[0] + '<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">' + parts[1];
                         }
-                        bill.push({ ...finalItem, q: finalQty, sum: finalItem.price * finalQty, displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: group, originalId: item.id });
+                        bill.push({ ...finalItem, q: finalQty, sum: finalItem.price * finalQty, displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: group, originalId: finalItem.originalId || item.id });
                     }
                 } else {
                     let finalTip = tip;
                     if (tip && tip.includes('|||')) finalTip = tip.split('|||').join('<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">');
-                    bill.push({ ...finalItem, q: finalQty, sum: finalItem.price * finalQty, displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: group, originalId: item.id });
+                    bill.push({ ...finalItem, q: finalQty, sum: finalItem.price * finalQty, displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: group, originalId: finalItem.originalId || item.id });
                 }
             });
         };
@@ -8135,7 +8150,8 @@ const app = {
         selBoilers.forEach(b => {
             if (b.type === 'gas') {
                 let grp = "2.1. Обвязка Газового котла";
-                addToBill(catalog.chimneys[0], 1, this.getDesc('chimney'), grp);
+                let ch = (this.state.chimneyType === 'basic') ? catalog.chimneys[1] : catalog.chimneys[0];
+                addToBill(ch, 1, this.getDesc('chimney'), grp);
                 addToBill(catalog.stabs[0], 1, this.getDesc('stab'), grp);
                 addToBill(catalog.american_34, 2, "Разъемное соед.", grp);
                 addToBill(catalog.ball_valve_34, 2, "Запорная арматура.", grp);
@@ -8224,7 +8240,7 @@ const app = {
         // Вывод оборудования котельной
         if (!useEco) {
             let big = (pwr > 30 || tpArea > 120);
-            let dn25 = big;
+            let dn25 = big || (this.state.brandMode === 'rommer');
             let pmp = null;
 
             // Добавляем коллектор/стрелку только если нужно
@@ -9047,7 +9063,6 @@ const app = {
                         let bend58_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-005887");
                         let plug58 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000058");
                         let tee110_58 = catalog.sewer_silent.find(x => x.id === "SKB-0016-115887") || catalog.sewer_silent.find(x => x.id === "SKB-0015-115845");
-                        let transition = catalog.sewer_silent.find(x => x.id === "SKB-0013-011058");
 
                         if (q2 > 0) addToBill(pipe58_2, q2, this.getDesc('sewer_pipe_58', pipe58Len), grp);
                         if (q1 > 0) addToBill(pipe58_1, q1, this.getDesc('sewer_pipe_58', pipe58Len), grp);
@@ -9055,7 +9070,6 @@ const app = {
                         addToBill(bend58_87, bathCount, this.getDesc('sewer_bend_58_87', bathCount), grp);
                         addToBill(plug58, bathCount, this.getDesc('sewer_plug_58'), grp);
                         addToBill(tee110_58, bathCount, this.getDesc('sewer_tee_110_58'), grp);
-                        addToBill(transition, bathCount, this.getDesc('sewer_transition'), grp);
                     }
 
                     // 3. Для Душа
@@ -9070,7 +9084,6 @@ const app = {
                         let bend58_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-005887");
                         let plug58 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000058");
                         let tee110_58 = catalog.sewer_silent.find(x => x.id === "SKB-0016-115887") || catalog.sewer_silent.find(x => x.id === "SKB-0015-115845");
-                        let transition = catalog.sewer_silent.find(x => x.id === "SKB-0013-011058");
 
                         if (q2 > 0) addToBill(pipe58_2, q2, this.getDesc('sewer_pipe_58', pipe58Len), grp);
                         if (q1 > 0) addToBill(pipe58_1, q1, this.getDesc('sewer_pipe_58', pipe58Len), grp);
@@ -9078,7 +9091,6 @@ const app = {
                         addToBill(bend58_87, showerCount, this.getDesc('sewer_bend_58_87', showerCount), grp);
                         addToBill(plug58, showerCount, this.getDesc('sewer_plug_58'), grp);
                         addToBill(tee110_58, showerCount, this.getDesc('sewer_tee_110_58'), grp);
-                        addToBill(transition, showerCount, this.getDesc('sewer_transition'), grp);
                     }
 
                     // 4. Для остальных приборов (раковина, стиральная, посудомоечная машина) отдельно на каждый тип
@@ -9092,24 +9104,30 @@ const app = {
                         let count = parseInt(f[fix.key]) || 0;
                         if (count > 0) {
                             let grp = singleZone ? `8.${subSecIdx++}. Канализация: [${fix.nameRu}]` : `8.${subSecIdx++}. Канализация: [${fix.nameRu}] (${z.name})`;
-                            let pipe58Len = count * 1.5;
+                            let pipe58Len = count * 1.0;
                             let q2 = Math.floor(pipe58Len / 2);
                             let q1 = Math.ceil(pipe58Len % 2);
+                            
+                            let bend45Qty = count * 2;
+                            let bend87Qty = count;
+                            if (fix.key === 'wash' || fix.key === 'dish') {
+                                bend45Qty = count * 1;
+                                bend87Qty = 0;
+                            }
+                            
                             let pipe58_2 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058200");
                             let pipe58_1 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058100");
                             let bend58_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-005845");
                             let bend58_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-005887");
                             let plug58 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000058");
                             let tee110_58 = catalog.sewer_silent.find(x => x.id === "SKB-0016-115887") || catalog.sewer_silent.find(x => x.id === "SKB-0015-115845");
-                            let transition = catalog.sewer_silent.find(x => x.id === "SKB-0013-011058");
 
                             if (q2 > 0) addToBill(pipe58_2, q2, this.getDesc('sewer_pipe_58', pipe58Len), grp);
                             if (q1 > 0) addToBill(pipe58_1, q1, this.getDesc('sewer_pipe_58', pipe58Len), grp);
-                            addToBill(bend58_45, count * 2, this.getDesc('sewer_bend_58_45', count * 2), grp);
-                            addToBill(bend58_87, count, this.getDesc('sewer_bend_58_87', count), grp);
+                            if (bend45Qty > 0) addToBill(bend58_45, bend45Qty, this.getDesc('sewer_bend_58_45', bend45Qty), grp);
+                            if (bend87Qty > 0) addToBill(bend58_87, bend87Qty, this.getDesc('sewer_bend_58_87', bend87Qty), grp);
                             addToBill(plug58, count, this.getDesc('sewer_plug_58'), grp);
                             addToBill(tee110_58, count, this.getDesc('sewer_tee_110_58'), grp);
-                            addToBill(transition, count, this.getDesc('sewer_transition'), grp);
                         }
                     });
                 });
@@ -9205,24 +9223,32 @@ const app = {
                     }
 
                     if (otherCount > 0) {
-                        let pipe58Len = otherCount * 1.5;
+                        let basins = parseInt(f.basin) || 0;
+                        let showers = parseInt(f.shower) || 0;
+                        let baths = parseInt(f.bath) || 0;
+                        let washes = parseInt(f.wash) || 0;
+                        let dishes = parseInt(f.dish) || 0;
+
+                        let pipe58Len = (basins + washes + dishes) * 1.0 + (showers + baths) * 1.5;
                         let q2 = Math.floor(pipe58Len / 2);
                         let q1 = Math.ceil(pipe58Len % 2);
+                        
+                        let bend45Qty = (basins + showers + baths) * 2 + (washes + dishes) * 1;
+                        let bend87Qty = (basins + showers + baths) * 1;
+
                         let pipe58_2 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058200");
                         let pipe58_1 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058100");
                         let bend58_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-005845");
                         let bend58_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-005887");
                         let plug58 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000058");
                         let tee110_58 = catalog.sewer_silent.find(x => x.id === "SKB-0016-115887") || catalog.sewer_silent.find(x => x.id === "SKB-0015-115845");
-                        let transition = catalog.sewer_silent.find(x => x.id === "SKB-0013-011058");
 
                         if (q2 > 0) addSewerItem(pipe58_2, q2, this.getDesc('sewer_pipe_58', pipe58Len));
                         if (q1 > 0) addSewerItem(pipe58_1, q1, this.getDesc('sewer_pipe_58', pipe58Len));
-                        addSewerItem(bend58_45, otherCount * 2, this.getDesc('sewer_bend_58_45', otherCount * 2));
-                        addSewerItem(bend58_87, otherCount, this.getDesc('sewer_bend_58_87', otherCount));
+                        if (bend45Qty > 0) addSewerItem(bend58_45, bend45Qty, this.getDesc('sewer_bend_58_45', bend45Qty));
+                        if (bend87Qty > 0) addSewerItem(bend58_87, bend87Qty, this.getDesc('sewer_bend_58_87', bend87Qty));
                         addSewerItem(plug58, otherCount, this.getDesc('sewer_plug_58'));
                         addSewerItem(tee110_58, otherCount, this.getDesc('sewer_tee_110_58'));
-                        addSewerItem(transition, otherCount, this.getDesc('sewer_transition'));
                     }
                 });
 
