@@ -2347,7 +2347,7 @@ const app = {
         });
 
         // СОРТИРОВКА (Инструкция пользователя)
-        const sortType = document.getElementById('sort-installers')?.value || 'default';
+        const sortType = document.getElementById('sort-installers')?.value || 'login_desc';
         if (sortType !== 'default') {
             users.sort((a, b) => {
                 if (sortType === 'login_desc') return new Date(b.last_visited || 0) - new Date(a.last_visited || 0);
@@ -3000,197 +3000,225 @@ const app = {
         document.getElementById('admin_content').innerHTML = h;
     },
     viewAdminEstimate: async function (estId) {
-        let est = (this.adminData.userEstimates || []).find(e => String(e.id) === String(estId)) || (this.adminData.recentEstimates || []).find(e => String(e.id) === String(estId));
-        if (!est) return;
-
-        // Robustly handle est.users being either an object or a single-element array
-        const uObj = Array.isArray(est.users) ? est.users[0] : est.users;
-        let author = uObj ? (uObj.username || 'Без имени') : 'Неизвестен';
-        let phone = uObj ? (uObj.phone || 'Не указан') : '—';
-        let email = uObj ? (uObj.email || 'Не указан') : '—';
-        let date = est.created_at ? new Date(est.created_at).toLocaleDateString() : '—';
-
-        // Parse calc_data safely
-        let st = est.calc_data || {};
-        if (typeof st === 'string') {
-            try { st = JSON.parse(st); } catch (e) { console.error("Error parsing calc_data:", e); }
-        }
-        let objArea = st && st.area ? st.area + ' м²' : 'Не указана';
-
-        let exportState = {};
-        for (let key in st) {
-            let val = st[key];
-            if (val === false || val === 0 || val === "" || key === 'viewMode' || key === 'showSwapFor' || key === 'collapsedGroups') continue;
-            if (key === 'tgUser' || key === 'accountType' || key === 'demoUsed' || key === 'darkMode') continue;
-            if (Array.isArray(val) && val.length === 0) continue;
-            if (typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length === 0) continue;
-            exportState[key] = val;
-        }
-        let settings = "";
         try {
-            settings = base64Encode(JSON.stringify(exportState));
-        } catch (e) {
-            settings = btoa(unescape(encodeURIComponent(JSON.stringify(exportState))));
-        }
-
-        // Формируем контактный блок монтажника с кликабельными ссылками
-        let phoneLink = phone !== 'Не указан' && phone !== '—'
-            ? `<a href="tel:${phone.replace(/[^+\d]/g, '')}" style="color: var(--primary); text-decoration: none; font-weight: 600;">${phone}</a>`
-            : `<span style="color: var(--text-sec);">${phone}</span>`;
-        let emailLink = email !== 'Не указан' && email !== '—'
-            ? `<a href="mailto:${email}" style="color: var(--primary); text-decoration: none; font-weight: 600;">${email}</a>`
-            : `<span style="color: var(--text-sec);">${email}</span>`;
-
-        let h = `
-                    <button class="btn-header-blue" style="margin-bottom: 20px; width: fit-content;" onclick="app.renderAdminMain()">← Назад</button>
-                    <div style="background: var(--surface-light); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
-                        <h3 style="margin-top:0; color: var(--text-main);">📋 ${est.project_name || 'Без названия'}</h3>
-                        
-                        <div style="background: rgba(37, 99, 235, 0.04); border: 1px solid rgba(37, 99, 235, 0.12); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;">
-                            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sec); font-weight: 700; margin-bottom: 10px;">👷 Монтажник</div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
-                                <div><b style="color: var(--text-sec);">Имя:</b> <span style="font-weight: 600; color: var(--text-main);">${author}</span></div>
-                                <div><b style="color: var(--text-sec);">Город:</b> <span style="color: var(--text-main);">${st?.tgUser?.city || 'Не указан'}</span></div>
-                                <div><b style="color: var(--text-sec);">📞 Телефон:</b> ${phoneLink}</div>
-                                <div><b style="color: var(--text-sec);">✉️ Email:</b> ${emailLink}</div>
-                            </div>
-                        </div>
-
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px; color: var(--text-main); margin-bottom: 20px;">
-                            <div><b style="color: var(--text-sec);">Дата сохранения:</b> ${date}</div>
-                            <div><b style="color: var(--text-sec);">Площадь объекта:</b> <span style="font-weight: bold; color: var(--text-main);">${objArea}</span></div>
-                            
-                            <div style="grid-column: span 2; height: 1px; background: var(--border); margin: 5px 0;"></div>
-                            
-                            <div><b style="color: var(--text-sec);">Оборудование:</b> <span style="color: #6366F1; font-weight: bold;">${est.eq_sum ? est.eq_sum.toLocaleString() : '0'} ₽</span></div>
-                            <div><b style="color: var(--text-sec);">Монтажные работы:</b> <span style="color: #F97316; font-weight: bold;">${est.works_sum ? est.works_sum.toLocaleString() : '0'} ₽</span></div>
-                            <div style="grid-column: span 2; font-size: 14px; margin-top: 5px;"><b style="color: var(--text-sec);">Итоговая сумма:</b> <span style="color:var(--primary); font-weight:bold; font-size: 18px;">${est.total_sum ? est.total_sum.toLocaleString() : '0'} ₽</span></div>
-                            
-                            <div style="grid-column: span 2; height: 1px; background: var(--border); margin: 5px 0;"></div>
-                            
-                            <div id="admin_shared_status_container" style="grid-column: span 2;">
-                                <div style="color: var(--text-sec); font-size: 12px;">Загрузка статуса предложения...</div>
-                            </div>
-                        </div>
-                        <div style="font-size:12px; color:var(--text-sec); margin-bottom: 15px; line-height: 1.4;">
-                            <i>* В базе данных сохраняются только общие суммы.<br>Чтобы посмотреть детальную спецификацию по позициям, скопируйте код ниже, закройте окно и нажмите иконку 📥 (Загрузить код).</i>
-                        </div>
-                        <div style="margin-top: 15px; margin-bottom: 10px;">
-                            <div style="font-weight: 700; font-size: 12px; color: var(--text-sec); margin-bottom: 6px;">Код сметы для загрузки:</div>
-                            <div style="display: flex; gap: 8px; align-items: center;">
-                                <input type="text" id="admin_est_code_input" value="${settings}" readonly 
-                                    style="flex: 1; height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: #F3F4F6; color: var(--text-sec); font-family: monospace; font-size: 11px; outline: none; box-sizing: border-box;" 
-                                    onclick="this.select();" />
-                                <button id="btn_copy_est_code" class="auth-btn-base btn-email-submit" 
-                                    style="height: 38px; padding: 0 16px; font-size: 12px; white-space: nowrap; margin: 0; min-width: 120px;" 
-                                    onclick="app.copyAdminEstimateCodeDirect('${estId}')">
-                                    Копировать
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-        document.getElementById('admin_content').innerHTML = h;
-
-        const sharedInvoiceId = st?.shared_invoice_id;
-        const statusContainer = document.getElementById('admin_shared_status_container');
-
-        if (!sharedInvoiceId) {
-            if (statusContainer) {
-                statusContainer.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <b style="color: var(--text-sec);">Статус предложения:</b>
-                        <span class="status-badge-cabinet status-cabinet-saved">Сохранена</span>
-                    </div>
-                    <div style="font-size: 11px; color: var(--text-sec); margin-top: 5px;">Клиентская ссылка еще не создавалась.</div>
-                `;
+            let est = (this.adminData.userEstimates || []).find(e => String(e.id) === String(estId)) || (this.adminData.recentEstimates || []).find(e => String(e.id) === String(estId));
+            
+            // Если смета не найдена в локальном кэше (например, из-за пагинации), пробуем загрузить напрямую с сервера
+            if (!est) {
+                console.log(`Estimate ${estId} not found in memory. Fetching from Supabase...`);
+                const { data, error } = await supabaseClient
+                    .from('estimates')
+                    .select('id, user_id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at, users(username, phone, email)')
+                    .eq('id', estId)
+                    .maybeSingle();
+                
+                if (error) {
+                    console.error("Supabase direct fetch error:", error);
+                }
+                if (data) {
+                    est = data;
+                }
             }
-            return;
-        }
 
-        try {
-            const { data: sharedInvoice, error: sharedError } = await supabaseClient
-                .from('shared_invoices')
-                .select('id, object_info, created_at')
-                .eq('id', sharedInvoiceId)
-                .maybeSingle();
+            if (!est) {
+                app.alert("Смета не найдена в базе данных.");
+                return;
+            }
 
-            if (sharedError) throw sharedError;
+            // Robustly handle est.users being either an object or a single-element array
+            const uObj = Array.isArray(est.users) ? est.users[0] : est.users;
+            let author = uObj ? (uObj.username || 'Без имени') : 'Неизвестен';
+            let phone = uObj ? (uObj.phone || 'Не указан') : '—';
+            let email = uObj ? (uObj.email || 'Не указан') : '—';
+            let date = est.created_at ? new Date(est.created_at).toLocaleDateString() : '—';
 
-            if (!sharedInvoice) {
+            // Parse calc_data safely
+            let st = est.calc_data || {};
+            if (typeof st === 'string') {
+                try { st = JSON.parse(st); } catch (e) { console.error("Error parsing calc_data:", e); }
+            }
+            let objArea = st && st.area ? st.area + ' м²' : 'Не указана';
+
+            let exportState = {};
+            if (st && typeof st === 'object') {
+                for (let key in st) {
+                    let val = st[key];
+                    if (val === false || val === 0 || val === "" || key === 'viewMode' || key === 'showSwapFor' || key === 'collapsedGroups') continue;
+                    if (key === 'tgUser' || key === 'accountType' || key === 'demoUsed' || key === 'darkMode') continue;
+                    if (Array.isArray(val) && val.length === 0) continue;
+                    if (typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length === 0) continue;
+                    exportState[key] = val;
+                }
+            }
+            let settings = "";
+            try {
+                settings = base64Encode(JSON.stringify(exportState));
+            } catch (e) {
+                settings = btoa(unescape(encodeURIComponent(JSON.stringify(exportState))));
+            }
+
+            // Формируем контактный блок монтажника с кликабельными ссылками
+            let phoneLink = phone !== 'Не указан' && phone !== '—'
+                ? `<a href="tel:${phone.replace(/[^+\d]/g, '')}" style="color: var(--primary); text-decoration: none; font-weight: 600;">${phone}</a>`
+                : `<span style="color: var(--text-sec);">${phone}</span>`;
+            let emailLink = email !== 'Не указан' && email !== '—'
+                ? `<a href="mailto:${email}" style="color: var(--primary); text-decoration: none; font-weight: 600;">${email}</a>`
+                : `<span style="color: var(--text-sec);">${email}</span>`;
+
+            let h = `
+                        <button class="btn-header-blue" style="margin-bottom: 20px; width: fit-content;" onclick="app.renderAdminMain()">← Назад</button>
+                        <div style="background: var(--surface-light); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
+                            <h3 style="margin-top:0; color: var(--text-main);">📋 ${est.project_name || 'Без названия'}</h3>
+                            
+                            <div style="background: rgba(37, 99, 235, 0.04); border: 1px solid rgba(37, 99, 235, 0.12); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;">
+                                <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sec); font-weight: 700; margin-bottom: 10px;">👷 Монтажник</div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+                                    <div><b style="color: var(--text-sec);">Имя:</b> <span style="font-weight: 600; color: var(--text-main);">${author}</span></div>
+                                    <div><b style="color: var(--text-sec);">Город:</b> <span style="color: var(--text-main);">${st?.tgUser?.city || 'Не указан'}</span></div>
+                                    <div><b style="color: var(--text-sec);">📞 Телефон:</b> ${phoneLink}</div>
+                                    <div><b style="color: var(--text-sec);">✉️ Email:</b> ${emailLink}</div>
+                                </div>
+                            </div>
+
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px; color: var(--text-main); margin-bottom: 20px;">
+                                <div><b style="color: var(--text-sec);">Дата сохранения:</b> ${date}</div>
+                                <div><b style="color: var(--text-sec);">Площадь объекта:</b> <span style="font-weight: bold; color: var(--text-main);">${objArea}</span></div>
+                                
+                                <div style="grid-column: span 2; height: 1px; background: var(--border); margin: 5px 0;"></div>
+                                
+                                <div><b style="color: var(--text-sec);">Оборудование:</b> <span style="color: #6366F1; font-weight: bold;">${est.eq_sum ? est.eq_sum.toLocaleString() : '0'} ₽</span></div>
+                                <div><b style="color: var(--text-sec);">Монтажные работы:</b> <span style="color: #F97316; font-weight: bold;">${est.works_sum ? est.works_sum.toLocaleString() : '0'} ₽</span></div>
+                                <div style="grid-column: span 2; font-size: 14px; margin-top: 5px;"><b style="color: var(--text-sec);">Итоговая сумма:</b> <span style="color:var(--primary); font-weight:bold; font-size: 18px;">${est.total_sum ? est.total_sum.toLocaleString() : '0'} ₽</span></div>
+                                
+                                <div style="grid-column: span 2; height: 1px; background: var(--border); margin: 5px 0;"></div>
+                                
+                                <div id="admin_shared_status_container" style="grid-column: span 2;">
+                                    <div style="color: var(--text-sec); font-size: 12px;">Загрузка статуса предложения...</div>
+                                </div>
+                            </div>
+                            <div style="font-size:12px; color:var(--text-sec); margin-bottom: 15px; line-height: 1.4;">
+                                <i>* В базе данных сохраняются только общие суммы.<br>Чтобы посмотреть детальную спецификацию по позициям, скопируйте код ниже, закройте окно и нажмите иконку 📥 (Загрузить код).</i>
+                            </div>
+                            <div style="margin-top: 15px; margin-bottom: 10px;">
+                                <div style="font-weight: 700; font-size: 12px; color: var(--text-sec); margin-bottom: 6px;">Код сметы для загрузки:</div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <input type="text" id="admin_est_code_input" value="${settings}" readonly 
+                                        style="flex: 1; height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: #F3F4F6; color: var(--text-sec); font-family: monospace; font-size: 11px; outline: none; box-sizing: border-box;" 
+                                        onclick="this.select();" />
+                                    <button id="btn_copy_est_code" class="auth-btn-base btn-email-submit" 
+                                        style="height: 38px; padding: 0 16px; font-size: 12px; white-space: nowrap; margin: 0; min-width: 120px;" 
+                                        onclick="app.copyAdminEstimateCodeDirect('${estId}')">
+                                        Копировать
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+            document.getElementById('admin_content').innerHTML = h;
+
+            const sharedInvoiceId = st?.shared_invoice_id;
+            const statusContainer = document.getElementById('admin_shared_status_container');
+
+            if (!sharedInvoiceId) {
                 if (statusContainer) {
                     statusContainer.innerHTML = `
-                        <div style="color: #EF4444; font-size: 12px;">⚠️ Запись коммерческого предложения удалена или отсутствует в базе.</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <b style="color: var(--text-sec);">Статус предложения:</b>
+                            <span class="status-badge-cabinet status-cabinet-saved">Сохранена</span>
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-sec); margin-top: 5px;">Клиентская ссылка еще не создавалась.</div>
                     `;
                 }
                 return;
             }
 
-            const objInfo = sharedInvoice.object_info || {};
-            const status = objInfo.status || 'sent';
-            const clientComment = objInfo.client_comment || '';
-            const statusUpdatedAt = objInfo.status_updated_at || sharedInvoice.created_at;
+            try {
+                const { data: sharedInvoice, error: sharedError } = await supabaseClient
+                    .from('shared_invoices')
+                    .select('id, object_info, created_at')
+                    .eq('id', sharedInvoiceId)
+                    .maybeSingle();
 
-            let statusBadgeHTML = '';
-            if (status === 'confirmed') {
-                statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-confirmed">✓ Одобрена</span>`;
-            } else if (status === 'needs_revision') {
-                statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-revision">✍ На доработке</span>`;
-            } else {
-                statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-sent">Отправлена клиенту</span>`;
-            }
+                if (sharedError) throw sharedError;
 
-            const formatDateTime = (isoString) => {
-                if (!isoString) return '—';
-                try {
-                    const d = new Date(isoString);
-                    return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                } catch (e) {
-                    return isoString;
+                if (!sharedInvoice) {
+                    if (statusContainer) {
+                        statusContainer.innerHTML = `
+                            <div style="color: #EF4444; font-size: 12px;">⚠️ Запись коммерческого предложения удалена или отсутствует в базе.</div>
+                        `;
+                    }
+                    return;
                 }
-            };
 
-            let commentBlockHTML = '';
-            if (status === 'needs_revision' && clientComment) {
-                commentBlockHTML = `
-                    <div style="margin-top: 12px; background: rgba(239, 68, 68, 0.05); border-left: 4px solid #EF4444; padding: 10px 14px; border-radius: 6px;">
-                        <div style="font-weight: 700; color: #EF4444; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.05em;">✍ Комментарий заказчика (Правки):</div>
-                        <div style="font-size: 12.5px; color: var(--text-main); font-style: italic; white-space: pre-wrap; line-height: 1.4;">"${clientComment}"</div>
-                    </div>
-                `;
-            } else if (status === 'confirmed') {
-                commentBlockHTML = `
-                    <div style="margin-top: 12px; background: rgba(16, 185, 129, 0.05); border-left: 4px solid #10B981; padding: 10px 14px; border-radius: 6px;">
-                        <div style="font-weight: 700; color: #10B981; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.05em;">✓ Комментарий при согласовании:</div>
-                        <div style="font-size: 12.5px; color: var(--text-main); font-style: italic; white-space: pre-wrap; line-height: 1.4;">${clientComment ? `"${clientComment}"` : '<i>Без дополнительных комментариев</i>'}</div>
-                    </div>
-                `;
-            }
+                const objInfo = sharedInvoice.object_info || {};
+                const status = objInfo.status || 'sent';
+                const clientComment = objInfo.client_comment || '';
+                const statusUpdatedAt = objInfo.status_updated_at || sharedInvoice.created_at;
 
-            if (statusContainer) {
-                statusContainer.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <b style="color: var(--text-sec);">Статус предложения:</b>
-                            ${statusBadgeHTML}
+                let statusBadgeHTML = '';
+                if (status === 'confirmed') {
+                    statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-confirmed">✓ Одобрена</span>`;
+                } else if (status === 'needs_revision') {
+                    statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-revision">✍ На доработке</span>`;
+                } else {
+                    statusBadgeHTML = `<span class="status-badge-cabinet status-cabinet-sent">Отправлена клиенту</span>`;
+                }
+
+                const formatDateTime = (isoString) => {
+                    if (!isoString) return '—';
+                    try {
+                        const d = new Date(isoString);
+                        return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    } catch (e) {
+                        return isoString;
+                    }
+                };
+
+                let commentBlockHTML = '';
+                if (status === 'needs_revision' && clientComment) {
+                    commentBlockHTML = `
+                        <div style="margin-top: 12px; background: rgba(239, 68, 68, 0.05); border-left: 4px solid #EF4444; padding: 10px 14px; border-radius: 6px;">
+                            <div style="font-weight: 700; color: #EF4444; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.05em;">✍ Комментарий заказчика (Правки):</div>
+                            <div style="font-size: 12.5px; color: var(--text-main); font-style: italic; white-space: pre-wrap; line-height: 1.4;">"${clientComment}"</div>
                         </div>
-                        <div style="font-size: 11.5px; color: var(--text-sec);">
-                            <b>Дата изменения:</b> ${formatDateTime(statusUpdatedAt)}
+                    `;
+                } else if (status === 'confirmed') {
+                    commentBlockHTML = `
+                        <div style="margin-top: 12px; background: rgba(16, 185, 129, 0.05); border-left: 4px solid #10B981; padding: 10px 14px; border-radius: 6px;">
+                            <div style="font-weight: 700; color: #10B981; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.05em;">✓ Комментарий при согласовании:</div>
+                            <div style="font-size: 12.5px; color: var(--text-main); font-style: italic; white-space: pre-wrap; line-height: 1.4;">${clientComment ? `"${clientComment}"` : '<i>Без дополнительных комментариев</i>'}</div>
                         </div>
-                    </div>
-                    ${commentBlockHTML}
-                    <div style="margin-top: 12px; display: flex; gap: 10px;">
-                        <a href="invoice.html?id=${sharedInvoiceId}" target="_blank" class="btn-header-blue" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: 28px; padding: 0 12px; background: transparent; border: 1px solid var(--primary); color: var(--primary);">🔗 Открыть КП клиента</a>
-                    </div>
-                `;
+                    `;
+                }
+
+                if (statusContainer) {
+                    statusContainer.innerHTML = `
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <b style="color: var(--text-sec);">Статус предложения:</b>
+                                ${statusBadgeHTML}
+                            </div>
+                            <div style="font-size: 11.5px; color: var(--text-sec);">
+                                <b>Дата изменения:</b> ${formatDateTime(statusUpdatedAt)}
+                            </div>
+                        </div>
+                        ${commentBlockHTML}
+                        <div style="margin-top: 12px; display: flex; gap: 10px;">
+                            <a href="invoice.html?id=${sharedInvoiceId}" target="_blank" class="btn-header-blue" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: 28px; padding: 0 12px; background: transparent; border: 1px solid var(--primary); color: var(--primary);">🔗 Открыть КП клиента</a>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error("Error loading shared status details:", e);
+                if (statusContainer) {
+                    statusContainer.innerHTML = `
+                        <div style="color: #EF4444; font-size: 12px;">⚠️ Ошибка загрузки статуса предложения с сервера.</div>
+                    `;
+                }
             }
-        } catch (e) {
-            console.error("Error loading shared status details:", e);
-            if (statusContainer) {
-                statusContainer.innerHTML = `
-                    <div style="color: #EF4444; font-size: 12px;">⚠️ Ошибка загрузки статуса предложения с сервера.</div>
-                `;
-            }
+        } catch (err) {
+            console.error("CRITICAL ERROR in viewAdminEstimate:", err);
+            app.alert("Не удалось загрузить карточку сметы: " + err.message);
         }
     },
     copyAdminEstimateCode: async function (estId) {
