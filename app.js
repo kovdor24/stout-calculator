@@ -3974,7 +3974,13 @@ const app = {
             if (document.getElementById('chk_ufh_auto')) document.getElementById('chk_ufh_auto').checked = this.state.ufhAuto;
             return;
         }
-        this.state.ufhAuto = chk; this.syncUI(); this.render();
+        this.state.ufhAuto = chk;
+        if (chk) {
+            this.autoCalcZones();
+        }
+        this.syncUI();
+        this.render();
+        this.saveState();
     },
 
     toggleGroup: function (name) {
@@ -7343,7 +7349,14 @@ const app = {
     updRes: function (d) { let n = this.state.res + d; if (n < 1) n = 1; if (n > 10) n = 10; this.state.res = n; this.syncUI(); this.render(); },
     setRes: function (v) { let n = parseInt(v); if (isNaN(n) || n < 1) n = 1; if (n > 10) n = 10; this.state.res = n; this.syncUI(); this.render(); },
     autoCalcZones: function () {
-        if (!this.state.detailedRooms) {
+        if (this.state.detailedRooms) {
+            if (this.state.rooms && this.state.rooms.length > 0) {
+                let tpRoomsCount = this.state.rooms.filter(r => r.sys && r.sys.includes('tp')).length;
+                this.state.ufhZones = tpRoomsCount > 0 ? tpRoomsCount : 1;
+            } else {
+                this.state.ufhZones = 1;
+            }
+        } else {
             let tpArea = (parseFloat(this.state.tp1) || 0) + (this.state.floors === 2 ? (parseFloat(this.state.tp2) || 0) : 0);
             if (tpArea > 0) {
                 let totalA = parseFloat(this.state.area) || 150;
