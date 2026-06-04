@@ -3043,10 +3043,10 @@ const app = {
             if (st && typeof st === 'object') {
                 for (let key in st) {
                     let val = st[key];
-                    if (val === false || val === 0 || val === "" || key === 'viewMode' || key === 'showSwapFor' || key === 'collapsedGroups') continue;
+                    if (val === null || val === undefined || val === false || val === 0 || val === "" || key === 'viewMode' || key === 'showSwapFor' || key === 'collapsedGroups') continue;
                     if (key === 'tgUser' || key === 'accountType' || key === 'demoUsed' || key === 'darkMode') continue;
                     if (Array.isArray(val) && val.length === 0) continue;
-                    if (typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length === 0) continue;
+                    if (typeof val === 'object' && Object.keys(val).length === 0) continue;
                     exportState[key] = val;
                 }
             }
@@ -3237,10 +3237,10 @@ const app = {
         let exportState = {};
         for (let key in st) {
             let val = st[key];
-            if (val === false || val === 0 || val === "" || key === 'viewMode' || key === 'showSwapFor' || key === 'collapsedGroups') continue;
+            if (val === null || val === undefined || val === false || val === 0 || val === "" || key === 'viewMode' || key === 'showSwapFor' || key === 'collapsedGroups') continue;
             if (key === 'tgUser' || key === 'accountType' || key === 'demoUsed' || key === 'darkMode') continue;
             if (Array.isArray(val) && val.length === 0) continue;
-            if (typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length === 0) continue;
+            if (typeof val === 'object' && Object.keys(val).length === 0) continue;
             exportState[key] = val;
         }
 
