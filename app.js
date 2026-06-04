@@ -7867,8 +7867,8 @@ const app = {
                 bill.sort((a, b) => {
                     let gA = a.group || "";
                     let gB = b.group || "";
-                    if (!gA && gB) return -1;
-                    if (gA && !gB) return 1;
+                    if (!gA && gB) return 1;  // Пустые группы в конец
+                    if (gA && !gB) return -1; // Непустые группы в начало
                     return gA.localeCompare(gB, 'ru');
                 });
             }
