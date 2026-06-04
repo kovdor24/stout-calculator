@@ -6316,8 +6316,8 @@ const app = {
         this.render();
         this.saveState();
     },
-    updZones: function (d) { let n = this.state.ufhZones + d; if (n < 1) n = 1; if (n > 16) n = 16; this.state.ufhZones = n; this.syncUI(); this.render(); },
-    setZones: function (v) { let n = parseInt(v); if (isNaN(n) || n < 1) n = 1; if (n > 16) n = 16; this.state.ufhZones = n; this.syncUI(); this.render(); },
+    updZones: function (d) { let n = this.state.ufhZones + d; if (n < 0) n = 0; if (n > 16) n = 16; this.state.ufhZones = n; this.syncUI(); this.render(); },
+    setZones: function (v) { let n = parseInt(v); if (isNaN(n) || n < 0) n = 0; if (n > 16) n = 16; this.state.ufhZones = n; this.syncUI(); this.render(); },
     updOutdoorFaucet: function (d) { let n = (parseInt(this.state.outdoorFaucet) || 0) + d; if (n < 0) n = 0; if (n > 5) n = 5; this.state.outdoorFaucet = n; this.syncUI(); this.render(); },
     setOutdoorFaucet: function (v) { let n = parseInt(v); if (isNaN(n) || n < 0) n = 0; if (n > 5) n = 5; this.state.outdoorFaucet = n; this.syncUI(); this.render(); },
     syncUI: function () {
@@ -7352,9 +7352,9 @@ const app = {
         if (this.state.detailedRooms) {
             if (this.state.rooms && this.state.rooms.length > 0) {
                 let tpRoomsCount = this.state.rooms.filter(r => r.sys && r.sys.includes('tp')).length;
-                this.state.ufhZones = tpRoomsCount > 0 ? tpRoomsCount : 1;
+                this.state.ufhZones = tpRoomsCount;
             } else {
-                this.state.ufhZones = 1;
+                this.state.ufhZones = 0;
             }
         } else {
             let tpArea = (parseFloat(this.state.tp1) || 0) + (this.state.floors === 2 ? (parseFloat(this.state.tp2) || 0) : 0);
@@ -7382,7 +7382,7 @@ const app = {
 
                 this.state.ufhZones = Math.min(tpRoomsCount, roomsCount);
             } else {
-                this.state.ufhZones = 1;
+                this.state.ufhZones = 0;
             }
         }
     },
