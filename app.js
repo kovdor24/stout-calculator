@@ -7862,6 +7862,17 @@ const app = {
                 });
             });
 
+            // Сортируем bill по группе, чтобы одинаковые группы шли подряд и не дублировались заголовки
+            if (!forceMerge) {
+                bill.sort((a, b) => {
+                    let gA = a.group || "";
+                    let gB = b.group || "";
+                    if (!gA && gB) return -1;
+                    if (gA && !gB) return 1;
+                    return gA.localeCompare(gB, 'ru');
+                });
+            }
+
             // Считаем сумму оборудования всегда
             let localSecTotal = 0;
             bill.forEach(i => { let lookupId = i.originalId || i.id; if (!this.state.optItems[lookupId]) localSecTotal += i.sum; });
