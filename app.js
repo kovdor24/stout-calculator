@@ -7849,7 +7849,7 @@ const app = {
                 let isSubSection = (i.group && i.group.match(/^\d+\.\d+/));
                 const dashStyle = "1px dashed rgba(0, 0, 0, 0.2)";
                 if (!forceMerge && i.group && i.group !== lastGroup) {
-                    let icon = ""; if (i.group.includes("Газового")) icon = "🔥"; else if (i.group.includes("Электрического")) icon = "⚡"; else if (i.group.includes("Водонагревателя")) icon = "💧";
+                    let icon = ""; if (i.group.includes("Газового")) icon = "🔥"; else if (i.group.includes("Электрического")) icon = "⚡"; else if (i.group.includes("Водонагревателя")) icon = "💧"; else if (i.group.includes("Трубопроводы")) icon = "🔗";
                     let arrow = isCollapsed ? "▶" : "⤵";
                     let txtUnit = isCollapsed ? "компл." : ""; let txtQty = isCollapsed ? "1" : ""; let txtSum = isCollapsed ? groupTotals[i.group].toLocaleString() : "";
                     let headStyle = "";
@@ -8277,6 +8277,163 @@ const app = {
                 if ((rQ + tQ) > 0) addToBill(pmp, rQ + tQ, this.getDesc('pump_std'));
             }
         }
+
+        // === РАСЧЕТ ТРУБ И ПРЕСС-ФИТИНГОВ ИЗ НЕРЖАВЕЮЩЕЙ СТАЛИ ROMMER (на основе 3D-модели) ===
+        let totalBoilerPower = selBoilers.reduce((acc, b) => acc + (b.power || 0), 0);
+        let ss_diameter = (totalBoilerPower <= 30) ? 22 : 28;
+
+        let L_22 = 0;
+        let L_28 = 0;
+
+        // 1. Котлы
+        selBoilers.forEach(b => {
+            if (ss_diameter === 22) {
+                L_22 += 2.0;
+            } else {
+                L_28 += 2.0;
+            }
+        });
+
+        // 2. Бойлер ГВС
+        if (this.state.hotWater) {
+            if (ss_diameter === 22) {
+                L_22 += 4.0;
+            } else {
+                L_28 += 4.0;
+            }
+        }
+
+        // 3. Расширительные баки
+        let heatingExpNeeded = (def > 0);
+        if (heatingExpNeeded) {
+            L_22 += 1.5;
+        }
+        if (this.state.hotWater) {
+            L_22 += 1.5;
+        }
+
+        // Аккумулируем фитинги
+        let fittings = {
+            ss_adapter_fi: {},
+            ss_adapter_mi: {},
+            ss_elbow90_ff: {},
+            ss_elbow45: {},
+            ss_tee: {},
+            ss_tee_red: {}
+        };
+
+        const addFitting = (category, id, qty) => {
+            if (qty <= 0 || !id) return;
+            if (!fittings[category]) fittings[category] = {};
+            if (!fittings[category][id]) fittings[category][id] = 0;
+            fittings[category][id] += qty;
+        };
+
+        // Накапливаем фитинги по узлам
+        // Узлы котлов
+        selBoilers.forEach(b => {
+            if (ss_diameter === 22) {
+                addFitting('ss_adapter_fi', 'RSS-1022-002234', 2);
+                addFitting('ss_elbow90_ff', 'RSS-1003-000022', 2);
+                addFitting('ss_elbow45', 'RSS-1004-000022', 2);
+                addFitting('ss_tee', 'RSS-1013-000022', 2);
+            } else {
+                addFitting('ss_adapter_fi', 'RSS-1022-000281', 2);
+                addFitting('ss_elbow90_ff', 'RSS-1003-000028', 2);
+                addFitting('ss_elbow45', 'RSS-1004-000028', 2);
+                addFitting('ss_tee_red', 'RSS-1014-282228', 2);
+            }
+        });
+
+        // Узел бойлера
+        if (this.state.hotWater) {
+            if (ss_diameter === 22) {
+                addFitting('ss_adapter_fi', 'RSS-1022-002234', 2);
+                addFitting('ss_elbow90_ff', 'RSS-1003-000022', 4);
+                addFitting('ss_elbow45', 'RSS-1004-000022', 2);
+                addFitting('ss_tee', 'RSS-1013-000022', 2);
+            } else {
+                addFitting('ss_adapter_fi', 'RSS-1022-000281', 2);
+                addFitting('ss_elbow90_ff', 'RSS-1003-000028', 4);
+                addFitting('ss_elbow45', 'RSS-1004-000028', 2);
+                addFitting('ss_tee_red', 'RSS-1014-282228', 2);
+            }
+        }
+
+        // Узлы расширительных баков
+        if (heatingExpNeeded) {
+            addFitting('ss_adapter_mi', 'RSS-1021-002234', 1);
+            addFitting('ss_elbow90_ff', 'RSS-1003-000022', 1);
+            if (ss_diameter === 22) {
+                addFitting('ss_tee', 'RSS-1013-000022', 1);
+            } else {
+                addFitting('ss_tee_red', 'RSS-1014-282228', 1);
+            }
+        }
+        if (this.state.hotWater) {
+            addFitting('ss_adapter_mi', 'RSS-1021-002234', 1);
+            addFitting('ss_elbow90_ff', 'RSS-1003-000022', 1);
+            if (ss_diameter === 22) {
+                addFitting('ss_tee', 'RSS-1013-000022', 1);
+            } else {
+                addFitting('ss_tee_red', 'RSS-1014-282228', 1);
+            }
+        }
+
+        let grpName = "2.4. Трубопроводы и фитинги обвязки (Нержавеющая сталь)";
+
+        // Функция добавления труб с комбинированным подбором 2м/4м штанг
+        const addPipesToBill = (L, diam, grp) => {
+            if (L <= 0) return;
+            let p_4m = catalog.ss_pipe_4m.find(p => p.id === `RSS-1001-0000${diam}`);
+            let p_2m = catalog.ss_pipe_2m.find(p => p.id === `RSS-1001-2000${diam}`);
+
+            let qty_2m = 0;
+            let qty_4m = 0;
+
+            if (L <= 2) {
+                qty_2m = 1;
+            } else if (L <= 4) {
+                qty_4m = 1;
+            } else {
+                let n4 = Math.floor(L / 4);
+                let r = L - n4 * 4;
+                qty_4m = n4;
+                if (r > 0) {
+                    if (r <= 2) {
+                        qty_2m = 1;
+                    } else {
+                        qty_4m += 1;
+                    }
+                }
+            }
+
+            if (qty_4m > 0 && p_4m) {
+                addToBill(p_4m, qty_4m * 4, `Штанга 4м. Точный расчетный метраж: ${L} м`, grp);
+            }
+            if (qty_2m > 0 && p_2m) {
+                addToBill(p_2m, qty_2m * 2, `Штанга 2м. Точный расчетный метраж: ${L} м`, grp);
+            }
+        };
+
+        // Добавляем трубы в смету
+        addPipesToBill(L_22, 22, grpName);
+        addPipesToBill(L_28, 28, grpName);
+
+        // Добавляем фитинги в смету
+        for (let catKey in fittings) {
+            let catObj = fittings[catKey];
+            for (let itemId in catObj) {
+                let qty = catObj[itemId];
+                if (qty > 0) {
+                    let item = catalog[catKey].find(x => x.id === itemId);
+                    if (item) {
+                        addToBill(item, qty, "Пресс-фитинг ROMMER.", grpName);
+                    }
+                }
+            }
+        }
+
         flushBill("2. Обвязка котельной");
 
         if (hasRad && radSecs > 0) {
