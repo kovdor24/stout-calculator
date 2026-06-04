@@ -7374,16 +7374,10 @@ const app = {
                     roomsCount += 2;
                 }
 
-                let tpRoomsCount = 5;
-                if (tpArea < 80) tpRoomsCount = 5;
-                else if (tpArea >= 81 && tpArea <= 120) tpRoomsCount = 7;
-                else if (tpArea >= 121 && tpArea <= 160) tpRoomsCount = 9;
-                else if (tpArea >= 161 && tpArea <= 200) tpRoomsCount = 11;
-                else if (tpArea >= 201 && tpArea <= 250) tpRoomsCount = 14;
-                else tpRoomsCount = 17;
-
-                if (floors === 2) {
-                    tpRoomsCount += 2;
+                // Динамический расчет числа комнат (зон) с теплым полом: 1 термостат на каждые 20 м² площади теплого пола
+                let tpRoomsCount = Math.max(1, Math.ceil(tpArea / 20));
+                if (floors === 2 && (parseFloat(this.state.tp1) || 0) > 0 && (parseFloat(this.state.tp2) || 0) > 0) {
+                    tpRoomsCount = Math.max(2, tpRoomsCount);
                 }
 
                 this.state.ufhZones = Math.min(tpRoomsCount, roomsCount);
