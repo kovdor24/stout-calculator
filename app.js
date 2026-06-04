@@ -7789,7 +7789,7 @@ const app = {
                     (this.state.detailedRooms && group === "3. Приборы отопления" && tip && tip.includes('|||')) ||
                     (group === "8. Канализация" || (group && (group.includes("Канализация:") || group.includes("[Инсталляция]"))));
                 if (shouldMergeThisItem) {
-                    let existing = bill.find(x => x.id === finalItem.id && x.group === group);
+                    let existing = bill.find(x => x.id === finalItem.id && (forceMerge ? true : x.group === group));
                     if (existing) {
                         existing.q += finalQty;
                         existing.sum += finalItem.price * finalQty;
@@ -8317,108 +8317,8 @@ const app = {
         let totalBoilerPower = selBoilers.reduce((acc, b) => acc + (b.power || 0), 0);
         let ss_diameter = (totalBoilerPower <= 30) ? 22 : 28;
 
-        let L_22 = 0;
-        let L_28 = 0;
-
-        // 1. Котлы
-        selBoilers.forEach(b => {
-            if (ss_diameter === 22) {
-                L_22 += 2.0;
-            } else {
-                L_28 += 2.0;
-            }
-        });
-
-        // 2. Бойлер ГВС
-        if (this.state.hotWater) {
-            if (ss_diameter === 22) {
-                L_22 += 4.0;
-            } else {
-                L_28 += 4.0;
-            }
-        }
-
-        // 3. Расширительные баки
-        let heatingExpNeeded = (def > 0);
-        if (heatingExpNeeded) {
-            L_22 += 1.5;
-        }
-        if (this.state.hotWater) {
-            L_22 += 1.5;
-        }
-
-        // Аккумулируем фитинги
-        let fittings = {
-            ss_adapter_fi: {},
-            ss_adapter_mi: {},
-            ss_elbow90_ff: {},
-            ss_elbow45: {},
-            ss_tee: {},
-            ss_tee_red: {}
-        };
-
-        const addFitting = (category, id, qty) => {
-            if (qty <= 0 || !id) return;
-            if (!fittings[category]) fittings[category] = {};
-            if (!fittings[category][id]) fittings[category][id] = 0;
-            fittings[category][id] += qty;
-        };
-
-        // Накапливаем фитинги по узлам
-        // Узлы котлов
-        selBoilers.forEach(b => {
-            if (ss_diameter === 22) {
-                addFitting('ss_adapter_fi', 'RSS-1022-002234', 2);
-                addFitting('ss_elbow90_ff', 'RSS-1003-000022', 2);
-                addFitting('ss_elbow45', 'RSS-1004-000022', 2);
-                addFitting('ss_tee', 'RSS-1013-000022', 2);
-            } else {
-                addFitting('ss_adapter_fi', 'RSS-1022-000281', 2);
-                addFitting('ss_elbow90_ff', 'RSS-1003-000028', 2);
-                addFitting('ss_elbow45', 'RSS-1004-000028', 2);
-                addFitting('ss_tee_red', 'RSS-1014-282228', 2);
-            }
-        });
-
-        // Узел бойлера
-        if (this.state.hotWater) {
-            if (ss_diameter === 22) {
-                addFitting('ss_adapter_fi', 'RSS-1022-002234', 2);
-                addFitting('ss_elbow90_ff', 'RSS-1003-000022', 4);
-                addFitting('ss_elbow45', 'RSS-1004-000022', 2);
-                addFitting('ss_tee', 'RSS-1013-000022', 2);
-            } else {
-                addFitting('ss_adapter_fi', 'RSS-1022-000281', 2);
-                addFitting('ss_elbow90_ff', 'RSS-1003-000028', 4);
-                addFitting('ss_elbow45', 'RSS-1004-000028', 2);
-                addFitting('ss_tee_red', 'RSS-1014-282228', 2);
-            }
-        }
-
-        // Узлы расширительных баков
-        if (heatingExpNeeded) {
-            addFitting('ss_adapter_mi', 'RSS-1021-002234', 1);
-            addFitting('ss_elbow90_ff', 'RSS-1003-000022', 1);
-            if (ss_diameter === 22) {
-                addFitting('ss_tee', 'RSS-1013-000022', 1);
-            } else {
-                addFitting('ss_tee_red', 'RSS-1014-282228', 1);
-            }
-        }
-        if (this.state.hotWater) {
-            addFitting('ss_adapter_mi', 'RSS-1021-002234', 1);
-            addFitting('ss_elbow90_ff', 'RSS-1003-000022', 1);
-            if (ss_diameter === 22) {
-                addFitting('ss_tee', 'RSS-1013-000022', 1);
-            } else {
-                addFitting('ss_tee_red', 'RSS-1014-282228', 1);
-            }
-        }
-
-        let grpName = "2.4. Трубопроводы и фитинги обвязки (Нержавеющая сталь)";
-
         // Функция добавления труб с комбинированным подбором 2м/4м штанг
-        const addPipesToBill = (L, diam, grp) => {
+        const addPipesToBill = (L, diam, grp, desc) => {
             if (L <= 0) return;
             let p_4m = catalog.ss_pipe_4m.find(p => p.id === `RSS-1001-0000${diam}`);
             let p_2m = catalog.ss_pipe_2m.find(p => p.id === `RSS-1001-2000${diam}`);
@@ -8444,28 +8344,83 @@ const app = {
             }
 
             if (qty_4m > 0 && p_4m) {
-                addToBill(p_4m, qty_4m * 4, `Штанга 4м. Точный расчетный метраж: ${L} м`, grp);
+                addToBill(p_4m, qty_4m * 4, desc, grp);
             }
             if (qty_2m > 0 && p_2m) {
-                addToBill(p_2m, qty_2m * 2, `Штанга 2м. Точный расчетный метраж: ${L} м`, grp);
+                addToBill(p_2m, qty_2m * 2, desc, grp);
             }
         };
 
-        // Добавляем трубы в смету
-        addPipesToBill(L_22, 22, grpName);
-        addPipesToBill(L_28, 28, grpName);
+        // 1. Котлы
+        selBoilers.forEach(b => {
+            let grp = (b.type === 'gas') ? "2.1. Обвязка Газового котла" : "2.2. Обвязка Электрического котла";
+            let bName = (b.type === 'gas') ? "Газовый котёл" : "Электрический котёл";
+            let descPipe = `Труба из нержавеющей стали AISI 304 для соединения котла (${bName}) с коллектором/гидрострелкой. Расчетная длина: 2.0 м.`;
+            addPipesToBill(2.0, ss_diameter, grp, descPipe);
 
-        // Добавляем фитинги в смету
-        for (let catKey in fittings) {
-            let catObj = fittings[catKey];
-            for (let itemId in catObj) {
-                let qty = catObj[itemId];
-                if (qty > 0) {
-                    let item = catalog[catKey].find(x => x.id === itemId);
-                    if (item) {
-                        addToBill(item, qty, "Пресс-фитинг ROMMER.", grpName);
-                    }
-                }
+            if (ss_diameter === 22) {
+                addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-002234'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 3/4" для подключения нержавеющей трубы к патрубкам котла (${bName}). Требуется: 2 шт.`, grp);
+                addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000022'), 2, `Пресс-угольник 90° В-В для выполнения поворотов трубопровода при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000022'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                addToBill(catalog.ss_tee.find(x => x.id === 'RSS-1013-000022'), 2, `Пресс-тройник для создания ответвлений в контуре обвязки котла (${bName}). Требуется: 2 шт.`, grp);
+            } else {
+                addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-000281'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 1" для подключения нержавеющей трубы к патрубкам котла (${bName}). Требуется: 2 шт.`, grp);
+                addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000028'), 2, `Пресс-угольник 90° В-В для выполнения поворотов трубопровода при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000028'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 2, `Пресс-тройник переходной для создания ответвлений в контуре обвязки котла (${bName}). Требуется: 2 шт.`, grp);
+            }
+        });
+
+        // 2. Бойлер ГВС
+        if (this.state.hotWater) {
+            let grp = "2.3. Обвязка Водонагревателя";
+            let descPipe = `Труба из нержавеющей стали AISI 304 для подключения греющего контура змеевика бойлера ГВС. Расчетная длина: 4.0 м.`;
+            addPipesToBill(4.0, ss_diameter, grp, descPipe);
+
+            if (ss_diameter === 22) {
+                addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-002234'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 3/4" для подключения нержавеющей трубы к патрубкам змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
+                addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000022'), 4, `Пресс-угольник 90° В-В для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
+                addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000022'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
+                addToBill(catalog.ss_tee.find(x => x.id === 'RSS-1013-000022'), 2, `Пресс-тройник для создания ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
+            } else {
+                addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-000281'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 1" для подключения нержавеющей трубы к патрубкам змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
+                addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000028'), 4, `Пресс-угольник 90° В-В для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
+                addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000028'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
+                addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 2, `Пресс-тройник переходной для создания ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
+            }
+
+            // Трубы для расширительного бака ГВС (1.5 м, всегда диаметром 22)
+            let tankPipeDesc = `Труба из нержавеющей стали AISI 304 диаметром 22 мм для подключения расширительного бака ГВС. Расчетная длина: 1.5 м.`;
+            addPipesToBill(1.5, 22, grp, tankPipeDesc);
+            
+            // Фитинги для расширительного бака ГВС (всегда на диаметре 22)
+            addToBill(catalog.ss_adapter_mi.find(x => x.id === 'RSS-1021-002234'), 1, `Переходник с пресс-соединения на наружную резьбу 3/4" для подключения нержавеющей трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
+            addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000022'), 1, `Пресс-угольник 90° В-В диаметром 22 мм для подведения трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
+            if (ss_diameter === 22) {
+                addToBill(catalog.ss_tee.find(x => x.id === 'RSS-1013-000022'), 1, `Пресс-тройник диаметром 22 мм для врезки линии расширительного бака ГВС. Требуется: 1 шт.`, grp);
+            } else {
+                addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 1, `Пресс-тройник переходной 28х22х28 мм для врезки линии расширительного бака ГВС. Требуется: 1 шт.`, grp);
+            }
+        }
+
+        // 3. Расширительный бак отопления
+        let heatingExpNeeded = (def > 0);
+        if (heatingExpNeeded) {
+            let primaryBoiler = selBoilers[0];
+            let grp = (primaryBoiler && primaryBoiler.type === 'gas') ? "2.1. Обвязка Газового котла" : "2.2. Обвязка Электрического котла";
+            let bName = primaryBoiler ? ((primaryBoiler.type === 'gas') ? "газового котла" : "электрического котла") : "котла";
+
+            // Трубы для расширительного бака отопления (1.5 м, всегда диаметром 22)
+            let tankPipeDesc = `Труба из нержавеющей стали AISI 304 диаметром 22 мм для подключения расширительного бака отопления к котлу. Расчетная длина: 1.5 м.`;
+            addPipesToBill(1.5, 22, grp, tankPipeDesc);
+            
+            // Фитинги для расширительного бака отопления (всегда на диаметре 22)
+            addToBill(catalog.ss_adapter_mi.find(x => x.id === 'RSS-1021-002234'), 1, `Переходник с пресс-соединения на наружную резьбу 3/4" для подключения нержавеющей трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
+            addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000022'), 1, `Пресс-угольник 90° В-В диаметром 22 мм для подведения трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
+            if (ss_diameter === 22) {
+                addToBill(catalog.ss_tee.find(x => x.id === 'RSS-1013-000022'), 1, `Пресс-тройник диаметром 22 мм для врезки расширительного бака отопления. Требуется: 1 шт.`, grp);
+            } else {
+                addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 1, `Пресс-тройник переходной 28х22х28 мм для врезки расширительного бака отопления. Требуется: 1 шт.`, grp);
             }
         }
 
