@@ -626,6 +626,17 @@ const app = {
         }
     },
 
+    formatPriceHtml: function (value, appendRuble = false) {
+        const isLoggedIn = !!(this.state.tgUser);
+        const showBlur = !isLoggedIn;
+        
+        const formatted = value.toLocaleString('ru-RU');
+        if (showBlur) {
+            return `<span class="price-blur" onclick="app.showAuthModal(); event.stopPropagation();" title="Войдите или зарегистрируйтесь, чтобы увидеть цену">${formatted}</span> ₽`;
+        }
+        return formatted + (appendRuble ? " ₽" : "");
+    },
+
     // Плавная анимация бегущих цифр (эффект кассы)
     animateNumber: function (obj, start, end, duration) {
         if (!obj) return;
@@ -638,14 +649,27 @@ const app = {
             const easeOut = 1 - Math.pow(1 - progress, 8);
             const currentVal = Math.floor(start + easeOut * (end - start));
 
-            obj.innerText = currentVal.toLocaleString('ru-RU') + " ₽";
+            const valueStr = currentVal.toLocaleString('ru-RU');
+            const isLoggedIn = !!(app.state.tgUser);
+            const showBlur = !isLoggedIn;
+
+            if (showBlur) {
+                obj.innerHTML = `<span class="price-blur" onclick="app.showAuthModal(); event.stopPropagation();" title="Войдите или зарегистрируйтесь, чтобы увидеть цену">${valueStr}</span> ₽`;
+            } else {
+                obj.innerText = valueStr + " ₽";
+            }
 
             if (progress < 1) {
                 // Продолжаем анимацию
                 obj.dataset.animId = window.requestAnimationFrame(step);
             } else {
                 // Финализируем точным значением
-                obj.innerText = end.toLocaleString('ru-RU') + " ₽";
+                const finalStr = end.toLocaleString('ru-RU');
+                if (showBlur) {
+                    obj.innerHTML = `<span class="price-blur" onclick="app.showAuthModal(); event.stopPropagation();" title="Войдите или зарегистрируйтесь, чтобы увидеть цену">${finalStr}</span> ₽`;
+                } else {
+                    obj.innerText = finalStr + " ₽";
+                }
             }
         };
 
@@ -901,13 +925,13 @@ const app = {
     },
 
     checkAccess: function (featureLvl, event) {
+        const isGuest = !this.state.tgUser;
+        const isPro = this.isPro();
+
         const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        if (isLocal) {
+        if (isLocal && !isGuest) {
             return true;
         }
-
-        let isGuest = !this.state.tgUser;
-        let isPro = this.isPro();
 
         if (isGuest) {
             if (event) event.preventDefault();
@@ -3962,10 +3986,6 @@ const app = {
     },
     toggleOpt: function (id) { this.state.optItems[id] = !this.state.optItems[id]; this.render(); },
     toggleDark: function (chk, event) {
-        if (!this.checkAccess('base', event)) {
-            document.getElementById('chk_dark').checked = this.state.darkMode;
-            return;
-        }
         this.state.darkMode = chk; document.body.classList.toggle('dark-mode', chk); this.saveState();
     },
     // Новая функция для переключения автоматики
@@ -6321,6 +6341,14 @@ const app = {
     updOutdoorFaucet: function (d) { let n = (parseInt(this.state.outdoorFaucet) || 0) + d; if (n < 0) n = 0; if (n > 5) n = 5; this.state.outdoorFaucet = n; this.syncUI(); this.render(); },
     setOutdoorFaucet: function (v) { let n = parseInt(v); if (isNaN(n) || n < 0) n = 0; if (n > 5) n = 5; this.state.outdoorFaucet = n; this.syncUI(); this.render(); },
     syncUI: function () {
+        const isGuest = !this.state.tgUser;
+        const isPro = this.isPro();
+        if (isGuest) {
+            this.state.detailedRooms = false;
+            this.state.showDetailedRoomsPanel = false;
+            this.state.showWallLayersPanel = false;
+        }
+
         this.state.systems = this.state.systems || [];
         this.state.fuels = this.state.fuels || [];
         this.state.waterZones = this.state.waterZones || [];
@@ -6613,12 +6641,12 @@ const app = {
         const modeSelectorWrapper = modeFast && modeFast.closest('.mode-selector-tabs');
 
         const modeIsLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        const modeIsGuest = !this.state.tgUser && !modeIsLocal;
-        const modeIsPro = this.isPro() || modeIsLocal;
+        const modeIsGuest = isGuest;
+        const modeIsPro = isPro || (modeIsLocal && !isGuest);
 
-        // Управление видимостью блока переключателя
+        // Управление видимостью блока переключателя (всегда показываем, чтобы гость видел заблокированную вкладку)
         if (modeSelectorWrapper) {
-            modeSelectorWrapper.style.display = modeIsGuest ? 'none' : 'flex';
+            modeSelectorWrapper.style.display = 'flex';
         }
 
         if (modeFast && modePro) {
@@ -6631,8 +6659,14 @@ const app = {
                 modePro.classList.remove('active');
             }
 
-            // Блокировка кнопки Подробный для базового тарифа
-            if (!modeIsPro && !modeIsGuest) {
+            // Блокировка кнопки Подробный
+            if (modeIsGuest) {
+                modePro.classList.add('locked');
+                modePro.onclick = function(event) {
+                    event.stopPropagation();
+                    app.showAuthModal();
+                };
+            } else if (!modeIsPro) {
                 modePro.classList.add('locked');
                 modePro.onclick = function(event) {
                     event.stopPropagation();
@@ -6774,8 +6808,8 @@ const app = {
         if (document.getElementById('chk_dark')) document.getElementById('chk_dark').checked = this.state.darkMode; document.body.classList.toggle('dark-mode', this.state.darkMode);
 
         // === БЛОКИРОВКИ ===
-        const isGuest = !this.state.tgUser;
-        const isPro = this.isPro();
+        document.body.classList.toggle('guest-mode', isGuest);
+        document.body.classList.toggle('base-mode', !isPro && !isGuest);
 
         const cloudBtns = document.querySelector('.header-cloud-btns');
         if (cloudBtns) cloudBtns.style.display = isGuest ? 'none' : 'flex';
@@ -6828,9 +6862,8 @@ const app = {
             }
         };
 
-        // Гость не может редактировать имя и переключать тему
+        // Гость не может редактировать имя
         applyLock('project_name_edit', 'base');
-        applyLock('chk_dark', 'base');
         applyLock('chk_detailed_rooms', 'pro');
 
         // Гость и Базовый не могут использовать PRO фичи
@@ -7956,8 +7989,8 @@ const app = {
                                 <td class="col-brand" style="font-size:11px;color:var(--text-muted);text-align:center;">${i.brand || 'STOUT'}</td>
                                 <td class="col-unit" style="font-size:11px;color:var(--text-muted);text-align:center;">шт</td>
                                 <td class="col-qty" style="font-size:11px;color:var(--text-muted);text-align:center;">1</td>
-                                <td class="col-price" style="font-size:11px;color:var(--text-muted);text-align:right;">${i.price.toLocaleString()}</td>
-                                <td class="col-sum" style="font-size:11px;color:var(--text-muted);text-align:right;">${i.price.toLocaleString()}</td>
+                                <td class="col-price" style="font-size:11px;color:var(--text-muted);text-align:right;">${app.formatPriceHtml(i.price)}</td>
+                                <td class="col-sum" style="font-size:11px;color:var(--text-muted);text-align:right;">${app.formatPriceHtml(i.price)}</td>
                             </tr>
                         `;
                     });
@@ -7976,9 +8009,9 @@ const app = {
                 let nameClass = "col-name";
                 let nameClick = "";
 
-                rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${i.price.toLocaleString()}</td><td class="col-sum">${i.sum.toLocaleString()}</td></tr>` + locsRows;
+                rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${app.formatPriceHtml(i.price)}</td><td class="col-sum">${app.formatPriceHtml(i.sum)}</td></tr>` + locsRows;
             });
-            h += rows + `<tr class="row-subtotal"><td colspan="9">Итого: ${secTotal.toLocaleString()} ₽</td></tr>`;
+            h += rows + `<tr class="row-subtotal"><td colspan="9">Итого: ${app.formatPriceHtml(secTotal, true)}</td></tr>`;
             sum += secTotal; bill = [];
         };
 
@@ -8033,7 +8066,7 @@ const app = {
 
                     let txtUnit = isCollapsed ? "компл." : "";
                     let txtQty = isCollapsed ? "1" : "";
-                    let txtSum = isCollapsed ? secTotal.toLocaleString() : "";
+                    let txtSum = isCollapsed ? app.formatPriceHtml(secTotal) : "";
 
                     let headStyle = `style="background:var(--surface-light); border: ${dashStyle}; color:var(--text-main);"`;
                     if (!isCollapsed) headStyle = `style="background:var(--surface-light); border: ${dashStyle}; border-bottom: none; color:var(--text-main);"`;
@@ -8085,10 +8118,17 @@ const app = {
                             <div class="tooltip-content">${finalTooltipContent}</div>
                         </div>` : "";
 
-                    rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td><td class="col-img hidden-col"></td><td class="col-name"><span class="work-del-btn" onclick="event.stopPropagation(); app.deleteWork('${w.name}')" title="Удалить работу">✖</span>${w.name}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">-</td><td class="col-brand hidden-col"></td><td class="col-unit">${w.unit}</td><td class="col-qty"><div class="qty-wrap">${w.q}${tipHtml}</div></td><td class="col-price"><span class="mob-mult" style="display:none;">${w.q}</span><span class="price-edit" contenteditable="true" onblur="app.updateWorkPrice('${w.name}', this.innerText)" title="Изменить цену">${w.price.toLocaleString()}</span></td><td class="col-sum">${w.sum.toLocaleString()}</td></tr>`;
+                    const isLoggedIn = !!(app.state.tgUser);
+                    let workPriceHtml;
+                    if (!isLoggedIn) {
+                        workPriceHtml = `<span class="price-blur" onclick="app.showAuthModal(); event.stopPropagation();" title="Войдите или зарегистрируйтесь, чтобы увидеть цену">${w.price.toLocaleString()}</span>`;
+                    } else {
+                        workPriceHtml = `<span class="price-edit" contenteditable="true" onblur="app.updateWorkPrice('${w.name}', this.innerText)" title="Изменить цену">${w.price.toLocaleString()}</span>`;
+                    }
+                    rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td><td class="col-img hidden-col"></td><td class="col-name"><span class="work-del-btn" onclick="event.stopPropagation(); app.deleteWork('${w.name}')" title="Удалить работу">✖</span>${w.name}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">-</td><td class="col-brand hidden-col"></td><td class="col-unit">${w.unit}</td><td class="col-qty"><div class="qty-wrap">${w.q}${tipHtml}</div></td><td class="col-price"><span class="mob-mult" style="display:none;">${w.q}</span>${workPriceHtml}</td><td class="col-sum">${app.formatPriceHtml(w.sum)}</td></tr>`;
                 });
 
-                h += rows + `<tr class="row-subtotal"><td colspan="9">Итого: ${secTotal.toLocaleString()} ₽</td></tr>`;
+                h += rows + `<tr class="row-subtotal"><td colspan="9">Итого: ${app.formatPriceHtml(secTotal, true)}</td></tr>`;
                 sum += secTotal;
             }
 
@@ -9686,14 +9726,14 @@ const app = {
         flushWorks();
 
         document.getElementById('tbody').innerHTML = h;
-        document.getElementById('total_sum').innerText = sum.toLocaleString() + " ₽";
+        document.getElementById('total_sum').innerHTML = app.formatPriceHtml(sum, true);
 
         // Toggle and update discount block for PRO users
         let discountBlock = document.getElementById('discount_block');
         if (discountBlock) {
             if (isPro && this.state.viewMode === 'equipment') {
                 discountBlock.style.display = 'flex';
-                document.getElementById('rec_price_val').innerText = (app.originalEqSum || 0).toLocaleString() + " ₽";
+                document.getElementById('rec_price_val').innerHTML = app.formatPriceHtml(app.originalEqSum || 0, true);
                 document.getElementById('eq_discount_slider').value = this.state.eqDiscount || 0;
                 document.getElementById('eq_discount_val').innerText = this.state.eqDiscount || 0;
             } else {
@@ -9720,13 +9760,24 @@ const app = {
                 headerTotals.dataset.lastWorks = 0;
             }
 
+            const currentShowBlur = !app.state.tgUser;
             // Запускаем анимацию Оборудования
             let elEq = document.getElementById('anim_eq_sum');
             let oldEq = parseFloat(headerTotals.dataset.lastEq) || 0;
             let newEq = app.lastEqSum || 0;
-            if (oldEq !== newEq && elEq) {
-                app.animateNumber(elEq, oldEq, newEq, 2400); // Замедлено до 2.4 секунд
+            let lastShowBlurEq = headerTotals.dataset.lastShowBlurEq === 'true';
+            if ((oldEq !== newEq) && elEq) {
+                app.animateNumber(elEq, oldEq, newEq, 2400);
                 headerTotals.dataset.lastEq = newEq;
+                headerTotals.dataset.lastShowBlurEq = String(currentShowBlur);
+            } else if ((lastShowBlurEq !== currentShowBlur) && elEq) {
+                const valueStr = newEq.toLocaleString('ru-RU');
+                if (currentShowBlur) {
+                    elEq.innerHTML = `<span class="price-blur" onclick="app.showAuthModal(); event.stopPropagation();" title="Войдите или зарегистрируйтесь, чтобы увидеть цену">...</span> ₽`.replace('...', valueStr);
+                } else {
+                    elEq.innerText = valueStr + " ₽";
+                }
+                headerTotals.dataset.lastShowBlurEq = String(currentShowBlur);
             }
 
             // Запускаем анимацию Монтажа
@@ -9734,9 +9785,19 @@ const app = {
                 let elWorks = document.getElementById('anim_works_sum');
                 let oldWorks = parseFloat(headerTotals.dataset.lastWorks) || 0;
                 let newWorks = app.lastWorksSum || 0;
-                if (oldWorks !== newWorks && elWorks) {
-                    app.animateNumber(elWorks, oldWorks, newWorks, 2400); // Замедлено до 2.4 секунд
+                let lastShowBlurWorks = headerTotals.dataset.lastShowBlurWorks === 'true';
+                if ((oldWorks !== newWorks) && elWorks) {
+                    app.animateNumber(elWorks, oldWorks, newWorks, 2400);
                     headerTotals.dataset.lastWorks = newWorks;
+                    headerTotals.dataset.lastShowBlurWorks = String(currentShowBlur);
+                } else if ((lastShowBlurWorks !== currentShowBlur) && elWorks) {
+                    const valueStr = newWorks.toLocaleString('ru-RU');
+                    if (currentShowBlur) {
+                        elWorks.innerHTML = `<span class="price-blur" onclick="app.showAuthModal(); event.stopPropagation();" title="Войдите или зарегистрируйтесь, чтобы увидеть цену">...</span> ₽`.replace('...', valueStr);
+                    } else {
+                        elWorks.innerText = valueStr + " ₽";
+                    }
+                    headerTotals.dataset.lastShowBlurWorks = String(currentShowBlur);
                 }
             }
 
@@ -9748,11 +9809,22 @@ const app = {
         let mobileTotals = document.getElementById('mobile_header_totals');
 
         if (mEqEl && mobileTotals) {
+            const currentShowBlur = !app.state.tgUser;
             let oldEq = parseFloat(mobileTotals.dataset.lastEq) || 0;
             let newEq = app.lastEqSum || 0;
+            let lastShowBlurEq = mobileTotals.dataset.lastShowBlurEq === 'true';
             if (oldEq !== newEq) {
                 app.animateNumber(mEqEl, oldEq, newEq, 2400);
                 mobileTotals.dataset.lastEq = newEq;
+                mobileTotals.dataset.lastShowBlurEq = String(currentShowBlur);
+            } else if (lastShowBlurEq !== currentShowBlur) {
+                const valueStr = newEq.toLocaleString('ru-RU');
+                if (currentShowBlur) {
+                    mEqEl.innerHTML = `<span class="price-blur" onclick="app.showAuthModal(); event.stopPropagation();" title="Войдите или зарегистрируйтесь, чтобы увидеть цену">...</span> ₽`.replace('...', valueStr);
+                } else {
+                    mEqEl.innerText = valueStr + " ₽";
+                }
+                mobileTotals.dataset.lastShowBlurEq = String(currentShowBlur);
             }
 
             // Проверяем тариф и авторизацию
@@ -9761,9 +9833,19 @@ const app = {
             if (isPro && mWorkEl) {
                 let oldWorks = parseFloat(mobileTotals.dataset.lastWorks) || 0;
                 let newWorks = app.lastWorksSum || 0;
+                let lastShowBlurWorks = mobileTotals.dataset.lastShowBlurWorks === 'true';
                 if (oldWorks !== newWorks) {
                     app.animateNumber(mWorkEl, oldWorks, newWorks, 2400);
                     mobileTotals.dataset.lastWorks = newWorks;
+                    mobileTotals.dataset.lastShowBlurWorks = String(currentShowBlur);
+                } else if (lastShowBlurWorks !== currentShowBlur) {
+                    const valueStr = newWorks.toLocaleString('ru-RU');
+                    if (currentShowBlur) {
+                        mWorkEl.innerHTML = `<span class="price-blur" onclick="app.showAuthModal(); event.stopPropagation();" title="Войдите или зарегистрируйтесь, чтобы увидеть цену">...</span> ₽`.replace('...', valueStr);
+                    } else {
+                        mWorkEl.innerText = valueStr + " ₽";
+                    }
+                    mobileTotals.dataset.lastShowBlurWorks = String(currentShowBlur);
                 }
                 document.querySelector('.m-total-work').style.display = 'inline';
                 document.querySelector('.m-total-div').style.display = 'inline';

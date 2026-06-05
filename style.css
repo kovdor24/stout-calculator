@@ -5896,4 +5896,26 @@ body.dark-mode .wall-layer-thick-slider-container::after {
     border-color: #374151 transparent transparent transparent;
 }
 
+/* --- PRICE BLUR FOR UNAUTHORIZED USERS --- */
+.price-blur {
+    filter: blur(4px);
+    user-select: none;
+    cursor: pointer;
+    display: inline-block;
+    transition: filter 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(229, 231, 235, 0.2);
+    border-radius: 4px;
+    padding: 0 4px;
+}
+.price-blur:hover {
+    filter: blur(3.5px);
+    background: rgba(229, 231, 235, 0.4);
+}
+body.dark-mode .price-blur {
+    background: rgba(255, 255, 255, 0.05);
+}
+body.dark-mode .price-blur:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
 

@@ -57,7 +57,7 @@
                 font-family: 'Inter', system-ui, -apple-system, sans-serif;
                 font-size: 13px;
                 line-height: 1.5;
-                z-index: 100000;
+                z-index: 2147483647 !important;
                 transform: translateY(40px) scale(0.95);
                 opacity: 0;
                 pointer-events: none;
