@@ -960,7 +960,7 @@ const getImg = (item) => {
     else if (item.name.includes('Мат')) { txt = '🔲'; bg = 'F3E8FF'; }
     else if (item.name.includes('Zigbee') || item.name.includes('Головка') || item.name.includes('Узел') || item.name.includes('Термостат') || item.name.includes('контроллер')) { txt = '🔧'; bg = 'DBEAFE'; }
     else if (item.name.includes('Инсталляция')) { txt = '🚽'; bg = 'F3E8FF'; }
-    return `<img src="img/${item.id}.jpg" class="prod-thumb" onerror="this.onerror=null;this.src='https://placehold.co/100x100/${bg}/555?text=${txt}&font=roboto';">`;
+    return `<img src="img/${item.id}.jpg" class="prod-thumb" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/100x100/${bg}/555?text=${txt}&font=roboto';">`;
 };
 const workPrices = {
     boiler_gas: 20000,
