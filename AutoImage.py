@@ -59,6 +59,23 @@ def get_enclosing_object(text, match_start):
                 break
     return start_idx, end_idx
 
+def clean_nested_objects(text):
+    depth = 0
+    result = []
+    for char in text:
+        if char == '{':
+            depth += 1
+            if depth == 1:
+                result.append(char)
+        elif char == '}':
+            if depth == 1:
+                result.append(char)
+            depth -= 1
+        else:
+            if depth == 1:
+                result.append(char)
+    return "".join(result)
+
 def get_unique_skus():
     if not os.path.exists(CATALOG_PATH):
         print(f"Error: {CATALOG_PATH} not found!")
@@ -73,6 +90,7 @@ def get_unique_skus():
         if start_idx == -1 or end_idx == -1 or start_idx in processed_starts: continue
         processed_starts.add(start_idx)
         obj_text = content[start_idx:end_idx]
+        obj_text = clean_nested_objects(obj_text)
         
         id_val = None
         id_m = re.search(r'["\']?id["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
