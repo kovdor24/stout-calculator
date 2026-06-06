@@ -1721,7 +1721,7 @@ const catalog = {
         { id: "SKB-0007-000110", name: "Муфта ремонтная D 110", price: 1289, brand: "STOUT", availability: 'in_stock',
           rommer: { id: "526007R", article: "526007.R", name: "Муфта рем. D 110 ПП", price: 179, brand: "Sinikon" },
           comfort: { id: "526007K", article: "526007.K", name: "Муфта рем. D 110 Comfort", price: 252, brand: "Sinikon" } },
-        { id: "sewer_lubricant", article: "900003.R", name: "Смазка силиконовая", price: 313, brand: "Sinikon", availability: 'in_stock' }
+        { id: "900003.R", article: "900003.R", name: "Смазка силиконовая", price: 313, brand: "Sinikon", availability: 'in_stock' }
     ],
     // === ОБВЯЗКА КОТЕЛЬНОЙ: ТРУБЫ И ФИТИНГИ ИЗ НЕРЖАВЕЮЩЕЙ СТАЛИ ROMMER ===
     ss_pipe_4m: [
