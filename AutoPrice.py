@@ -280,6 +280,24 @@ def update_catalog_prices():
                 price_local_end = match.end(2) - start_idx
                 new_obj_text = new_obj_text[:price_local_start] + str(new_price) + new_obj_text[price_local_end:]
                 
+            import datetime
+            current_date_str = datetime.datetime.now().strftime('%Y-%m-%d')
+            
+            # 1. Update/insert price_date
+            date_m = re.search(r'(["\']?price_date["\']?\s*:\s*["\'])([^"\']+)(["\'])', new_obj_text, re.IGNORECASE)
+            if date_m:
+                new_obj_text = new_obj_text[:date_m.start(2)] + current_date_str + new_obj_text[date_m.end(2):]
+            else:
+                last_brace = new_obj_text.rfind('}')
+                if last_brace != -1:
+                    last_content_idx = last_brace - 1
+                    while last_content_idx >= 0 and new_obj_text[last_content_idx].isspace():
+                        last_content_idx -= 1
+                    comma = ',' if new_obj_text[last_content_idx] != ',' else ''
+                    insert_str = f"{comma}\n  price_date: '{current_date_str}'"
+                    new_obj_text = new_obj_text[:last_content_idx+1] + insert_str + new_obj_text[last_content_idx+1:]
+            
+            # 2. Update/insert availability
             if new_status:
                 avail_m = re.search(r'(["\']?availability["\']?\s*:\s*["\'])([^"\']+)(["\'])', new_obj_text, re.IGNORECASE)
                 if avail_m:
@@ -290,10 +308,8 @@ def update_catalog_prices():
                         last_content_idx = last_brace - 1
                         while last_content_idx >= 0 and new_obj_text[last_content_idx].isspace():
                             last_content_idx -= 1
-                        if new_obj_text[last_content_idx] != ',':
-                            insert_str = f",\n  availability: '{new_status}'"
-                        else:
-                            insert_str = f"\n  availability: '{new_status}'"
+                        comma = ',' if new_obj_text[last_content_idx] != ',' else ''
+                        insert_str = f"{comma}\n  availability: '{new_status}'"
                         new_obj_text = new_obj_text[:last_content_idx+1] + insert_str + new_obj_text[last_content_idx+1:]
             
             if new_obj_text != obj_text:

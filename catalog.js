@@ -2028,7 +2028,1132 @@ const catalog = {
         { id: "RSS-1028-000035", name: "Уплотнительное кольцо FPM 35", price: 59, brand: "ROMMER", unit: "шт", availability: 'in_stock' },
         { id: "RSS-1028-000042", name: "Уплотнительное кольцо FPM 42", price: 109, brand: "ROMMER", unit: "шт", availability: 'in_stock' },
         { id: "RSS-1028-000054", name: "Уплотнительное кольцо FPM 54", price: 139, brand: "ROMMER", unit: "шт", availability: 'in_stock' }
-    ]
+    ],
+ppr_ekoplastik_pipe: [
+        {
+                "id": "STRS020RCT",
+                "article": "STRS020RCT",
+                "name": "Труба PP-RCT STABI PLUS 20x2,8",
+                "price": 427.9,
+                "brand": "Wavin",
+                "unit": "м",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STRS025RCT",
+                "article": "STRS025RCT",
+                "name": "Труба PP-RCT STABI PLUS 25x3,5",
+                "price": 619.3,
+                "brand": "Wavin",
+                "unit": "м",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STRS032RCT",
+                "article": "STRS032RCT",
+                "name": "Труба PP-RCT STABI PLUS 32x4,4",
+                "price": 940.5,
+                "brand": "Wavin",
+                "unit": "м",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STRS040RCT",
+                "article": "STRS040RCT",
+                "name": "Труба PP-RCT STABI PLUS 40x5,5",
+                "price": 1345.3,
+                "brand": "Wavin",
+                "unit": "м",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STRS050RCT",
+                "article": "STRS050RCT",
+                "name": "Труба PP-RCT STABI PLUS 50x6,9",
+                "price": 2040.5,
+                "brand": "Wavin",
+                "unit": "м",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STRS063RCT",
+                "article": "STRS063RCT",
+                "name": "Труба PP-RCT STABI PLUS 63x8,6",
+                "price": 3047,
+                "brand": "Wavin",
+                "unit": "м",
+                "availability": "in_stock"
+        }
+],
+    ppr_ekoplastik_elbow90: [
+        {
+                "id": "SKO02090RCT",
+                "article": "SKO02090RCT",
+                "name": "Угольник 90° PP-RCT 20х90°",
+                "price": 44,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO02590RCT",
+                "article": "SKO02590RCT",
+                "name": "Угольник 90° PP-RCT 25х90°",
+                "price": 57.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO03290RCT",
+                "article": "SKO03290RCT",
+                "name": "Угольник 90° PP-RCT 32х90°",
+                "price": 88,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO04090RCT",
+                "article": "SKO04090RCT",
+                "name": "Угольник 90° PP-RCT 40х90°",
+                "price": 193.6,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO05090RCT",
+                "article": "SKO05090RCT",
+                "name": "Угольник 90° PP-RCT 50х90°",
+                "price": 412.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO06390RCT",
+                "article": "SKO06390RCT",
+                "name": "Угольник 90° PP-RCT 63x90°",
+                "price": 733.7,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO12045RCT",
+                "article": "SKO12045RCT",
+                "name": "Угольник 90° PP-RCT 20x45°",
+                "price": 90.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO12545XRCT",
+                "article": "SKO12545XRCT",
+                "name": "Угольник 90° PP-RCT 25x45°",
+                "price": 229.9,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO120RCTX",
+                "article": "SKO120RCTX",
+                "name": "Угольник 90° PP-RCT 20x90°",
+                "price": 52.8,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO125RCTX",
+                "article": "SKO125RCTX",
+                "name": "Угольник 90° PP-RCT 25x90°",
+                "price": 79.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO132RCTX",
+                "article": "SKO132RCTX",
+                "name": "Угольник 90° PP-RCT 32x90°",
+                "price": 225.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        }
+],
+    ppr_ekoplastik_elbow45: [
+        {
+                "id": "SKO02045RCT",
+                "article": "SKO02045RCT",
+                "name": "Угольник 45° PP-RCT 20х45°",
+                "price": 58.3,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO02545RCT",
+                "article": "SKO02545RCT",
+                "name": "Угольник 45° PP-RCT 25х45°",
+                "price": 86.9,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO03245RCT",
+                "article": "SKO03245RCT",
+                "name": "Угольник 45° PP-RCT 32x45°",
+                "price": 135.3,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO04045RCT",
+                "article": "SKO04045RCT",
+                "name": "Угольник 45° PP-RCT 40x45°",
+                "price": 238.7,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO05045RCT",
+                "article": "SKO05045RCT",
+                "name": "Угольник 45° PP-RCT 50x45°",
+                "price": 466.4,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SKO06345RCT",
+                "article": "SKO06345RCT",
+                "name": "Угольник 45° PP-RCT 63x45°",
+                "price": 858,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        }
+],
+    ppr_ekoplastik_tee: [
+        {
+                "id": "STK020RCTX",
+                "article": "STK020RCTX",
+                "name": "Тройник PP-RCT 20",
+                "price": 52.8,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STK025RCTX",
+                "article": "STK025RCTX",
+                "name": "Тройник PP-RCT 25",
+                "price": 79.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STK032RCTX",
+                "article": "STK032RCTX",
+                "name": "Тройник PP-RCT 32",
+                "price": 128.7,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STK040RCTX",
+                "article": "STK040RCTX",
+                "name": "Тройник PP-RCT 40",
+                "price": 238.7,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STK050RCTX",
+                "article": "STK050RCTX",
+                "name": "Тройник PP-RCT 50",
+                "price": 498.3,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STK063RCTX",
+                "article": "STK063RCTX",
+                "name": "Тройник PP-RCT 63",
+                "price": 1012,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        }
+],
+    ppr_ekoplastik_tee_red: [
+        {
+                "id": "STKR0252020RCT",
+                "article": "STKR0252020RCT",
+                "name": "Тройник переходной PP-RCT 25x20x20",
+                "price": 255.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR02520RCT",
+                "article": "STKR02520RCT",
+                "name": "Тройник переходной PP-RCT 25x20x25",
+                "price": 77,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR03220RCT",
+                "article": "STKR03220RCT",
+                "name": "Тройник переходной PP-RCT 32x20x32",
+                "price": 145.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR0322025RCT",
+                "article": "STKR0322025RCT",
+                "name": "Тройник переходной PP-RCT 32x20x25",
+                "price": 449.9,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR0322525RCT",
+                "article": "STKR0322525RCT",
+                "name": "Тройник переходной PP-RCT 32x25x25",
+                "price": 302.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR03225RCT",
+                "article": "STKR03225RCT",
+                "name": "Тройник переходной PP-RCT 32x25x32",
+                "price": 159.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR04020RCT",
+                "article": "STKR04020RCT",
+                "name": "Тройник переходной PP-RCT 40x20x40",
+                "price": 341,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR04025RCT",
+                "article": "STKR04025RCT",
+                "name": "Тройник переходной PP-RCT 40x25x40",
+                "price": 352,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR04032RCT",
+                "article": "STKR04032RCT",
+                "name": "Тройник переходной PP-RCT 40x32x40",
+                "price": 380.6,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR05025RCT",
+                "article": "STKR05025RCT",
+                "name": "Тройник переходной PP-RCT 50x25x50",
+                "price": 559.9,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR05032RCT",
+                "article": "STKR05032RCT",
+                "name": "Тройник переходной PP-RCT 50x32x50",
+                "price": 541.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR05040RCT",
+                "article": "STKR05040RCT",
+                "name": "Тройник переходной PP-RCT 50x40x50",
+                "price": 741.4,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR06325RCT",
+                "article": "STKR06325RCT",
+                "name": "Тройник переходной PP-RCT 63x25x63",
+                "price": 1092.3,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR06332RCT",
+                "article": "STKR06332RCT",
+                "name": "Тройник переходной PP-RCT 63x32x63",
+                "price": 1118.7,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR06340RCT",
+                "article": "STKR06340RCT",
+                "name": "Тройник переходной PP-RCT 63x40x63",
+                "price": 1126.4,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKR06350RCT",
+                "article": "STKR06350RCT",
+                "name": "Тройник переходной PP-RCT 63x50x63",
+                "price": 1144,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKI02020RCT",
+                "article": "STKI02020RCT",
+                "name": "Тройник переходной PP-RCT 20х1/2\"",
+                "price": 445.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKI02520RCT",
+                "article": "STKI02520RCT",
+                "name": "Тройник переходной PP-RCT 25х1/2\"",
+                "price": 456.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKI02525RCT",
+                "article": "STKI02525RCT",
+                "name": "Тройник переходной PP-RCT 25х3/4\"",
+                "price": 679.8,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKI03220RCT",
+                "article": "STKI03220RCT",
+                "name": "Тройник переходной PP-RCT 32х1/2\"",
+                "price": 960.3,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKI03225RCT",
+                "article": "STKI03225RCT",
+                "name": "Тройник переходной PP-RCT 32х3/4\"",
+                "price": 803,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKI03232RCT",
+                "article": "STKI03232RCT",
+                "name": "Тройник переходной PP-RCT 32x1\"",
+                "price": 1442.1,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKE02020RCT",
+                "article": "STKE02020RCT",
+                "name": "Тройник переходной PP-RCT 20х1/2\"",
+                "price": 607.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKE02520RCT",
+                "article": "STKE02520RCT",
+                "name": "Тройник переходной PP-RCT 25х1/2\"",
+                "price": 642.4,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKE02525RCT",
+                "article": "STKE02525RCT",
+                "name": "Тройник переходной PP-RCT 25х3/4\"",
+                "price": 883.3,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKE03225RCT",
+                "article": "STKE03225RCT",
+                "name": "Тройник переходной PP-RCT 32х3/4\"",
+                "price": 883.3,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "STKE03232RCT",
+                "article": "STKE03232RCT",
+                "name": "Тройник переходной PP-RCT 32х1\"",
+                "price": 1436.6,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        }
+],
+    ppr_ekoplastik_adapter_fi: [
+        {
+                "id": "SZI02020RCT",
+                "article": "SZI02020RCT",
+                "name": "Муфта комбинированная с ВР PP-RCT 20х1/2''",
+                "price": 346.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZI02025RCT",
+                "article": "SZI02025RCT",
+                "name": "Муфта комбинированная с ВР PP-RCT 20х3/4''",
+                "price": 515.9,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZI02520RCT",
+                "article": "SZI02520RCT",
+                "name": "Муфта комбинированная с ВР PP-RCT 25х1/2''",
+                "price": 382.8,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZI02525RCT",
+                "article": "SZI02525RCT",
+                "name": "Муфта комбинированная с ВР PP-RCT 25х3/4''",
+                "price": 500.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZI03225RCT",
+                "article": "SZI03225RCT",
+                "name": "Муфта комбинированная с ВР PP-RCT 32х3/4''",
+                "price": 805.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZI03232OKRCT",
+                "article": "SZI03232OKRCT",
+                "name": "Муфта комбинированная с ВР PP-RCT 32х1''",
+                "price": 944.9,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZI04040RCT",
+                "article": "SZI04040RCT",
+                "name": "Муфта комбинированная с ВР PP-RCT 40х1 1/4''",
+                "price": 2325.4,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZI05050RCT",
+                "article": "SZI05050RCT",
+                "name": "Муфта комбинированная с ВР PP-RCT 50х1 1/2''",
+                "price": 3306.6,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZI06363RCT",
+                "article": "SZI06363RCT",
+                "name": "Муфта комбинированная с ВР PP-RCT 63х2''",
+                "price": 4985.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        }
+],
+    ppr_ekoplastik_adapter_mi: [
+        {
+                "id": "SZE02020RCT",
+                "article": "SZE02020RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 20х1/2''",
+                "price": 412.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZE02025RCT",
+                "article": "SZE02025RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 20х3/4''",
+                "price": 605,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZE02520RCT",
+                "article": "SZE02520RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 25х1/2''",
+                "price": 496.1,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZE02525RCT",
+                "article": "SZE02525RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 25х3/4''",
+                "price": 589.6,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZE03225RCT",
+                "article": "SZE03225RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 32х3/4''",
+                "price": 1076.9,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZE03232RCT",
+                "article": "SZE03232RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 32х1\"'",
+                "price": 964.7,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZE03232OKRCT",
+                "article": "SZE03232OKRCT",
+                "name": "Муфта комбинированная с НР PP-RCT 32х1\"",
+                "price": 1150.6,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZE04040RCT",
+                "article": "SZE04040RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 40х1 1/4''",
+                "price": 2234.1,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZE05050XX",
+                "article": "SZE05050XX",
+                "name": "Муфта комбинированная с НР PP-RCT 50x1 1/2\"",
+                "price": 3350.6,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZE06363RCT",
+                "article": "SZE06363RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 63х2''",
+                "price": 4660.7,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SSHI02020LFRCT",
+                "article": "SSHI02020LFRCT",
+                "name": "Муфта комбинированная с НР PP-RCT 20х1/2''",
+                "price": 1007.6,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SSHI02525RCT",
+                "article": "SSHI02525RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 25х3/4\"",
+                "price": 1679.7,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SSHE02020LFRCT",
+                "article": "SSHE02020LFRCT",
+                "name": "Муфта комбинированная с НР PP-RCT 20х1/2''",
+                "price": 1241.9,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SSHE02525RCT",
+                "article": "SSHE02525RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 25х3/4\"",
+                "price": 2407.9,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SSI02020RCT",
+                "article": "SSI02020RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 20х1/2\"",
+                "price": 718.3,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SSI02525RCT",
+                "article": "SSI02525RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 25х3/4\"",
+                "price": 1111,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SSI03232RCT",
+                "article": "SSI03232RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 32х1\"",
+                "price": 1863.4,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SSE02020RCT",
+                "article": "SSE02020RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 20x1/2''",
+                "price": 1122,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SSE02525RCT",
+                "article": "SSE02525RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 25x3/4''",
+                "price": 1567.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SSE03232RCT",
+                "article": "SSE03232RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 32x1''",
+                "price": 2542.1,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRS020RCTX",
+                "article": "SRS020RCTX",
+                "name": "Муфта комбинированная с НР PP-RCT 20",
+                "price": 828.3,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRS025RCTX",
+                "article": "SRS025RCTX",
+                "name": "Муфта комбинированная с НР PP-RCT 25",
+                "price": 1300.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRS032RCTX",
+                "article": "SRS032RCTX",
+                "name": "Муфта комбинированная с НР PP-RCT 32",
+                "price": 1666.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRS040RCTX",
+                "article": "SRS040RCTX",
+                "name": "Муфта комбинированная с НР PP-RCT 40",
+                "price": 2966.7,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZM02020RCT",
+                "article": "SZM02020RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 20х1/2''",
+                "price": 689.7,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZM02025RCT",
+                "article": "SZM02025RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 20х3/4''",
+                "price": 808.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZM02525RCT",
+                "article": "SZM02525RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 25х3/4''",
+                "price": 1071.4,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZM02532RCT",
+                "article": "SZM02532RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 25х1''",
+                "price": 1582.9,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SZM02025ERCT",
+                "article": "SZM02025ERCT",
+                "name": "Муфта комбинированная с НР PP-RCT 20х3/4''",
+                "price": 939.4,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SNAM02020RCT",
+                "article": "SNAM02020RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 20x1/2''",
+                "price": 631.4,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SNAM02025RCT",
+                "article": "SNAM02025RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 20x3/4\"",
+                "price": 562.1,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SNAM02525RCT",
+                "article": "SNAM02525RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 25x3/4''",
+                "price": 631.4,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SNAM02532RCT",
+                "article": "SNAM02532RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 25x1\"",
+                "price": 814,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SHM02025RCT",
+                "article": "SHM02025RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 20x3/4''",
+                "price": 453.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SHM02532RCT",
+                "article": "SHM02532RCT",
+                "name": "Муфта комбинированная с НР PP-RCT 25х1\"",
+                "price": 644.6,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SHM03240XX",
+                "article": "SHM03240XX",
+                "name": "Муфта комбинированная с НР PP-RCT 32х1 1/4\"",
+                "price": 935,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        }
+],
+    ppr_ekoplastik_coupling: [
+        {
+                "id": "SNA020RCTX",
+                "article": "SNA020RCTX",
+                "name": "Муфта PP-RCT 20",
+                "price": 37.4,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SNA025RCTX",
+                "article": "SNA025RCTX",
+                "name": "Муфта PP-RCT 25",
+                "price": 52.8,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SNA032RCTX",
+                "article": "SNA032RCTX",
+                "name": "Муфта PP-RCT 32",
+                "price": 62.7,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SNA040RCTX",
+                "article": "SNA040RCTX",
+                "name": "Муфта PP-RCT 40",
+                "price": 159.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SNA050RCTX",
+                "article": "SNA050RCTX",
+                "name": "Муфта PP-RCT 50",
+                "price": 302.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SNA063RCTX",
+                "article": "SNA063RCTX",
+                "name": "Муфта PP-RCT 63",
+                "price": 478.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        }
+],
+    ppr_ekoplastik_coupling_red: [
+        {
+                "id": "SRE02520RCT",
+                "article": "SRE02520RCT",
+                "name": "Муфта переходная PP-RCT 25x20",
+                "price": 55,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE03220RCT",
+                "article": "SRE03220RCT",
+                "name": "Муфта переходная PP-RCT 32x20",
+                "price": 107.8,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE03225RCT",
+                "article": "SRE03225RCT",
+                "name": "Муфта переходная PP-RCT 32x25",
+                "price": 111.1,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE12520RCT",
+                "article": "SRE12520RCT",
+                "name": "Муфта переходная PP-RCT 25x20",
+                "price": 52.8,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE13220RCT",
+                "article": "SRE13220RCT",
+                "name": "Муфта переходная PP-RCT 32x20",
+                "price": 104.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE13225RCT",
+                "article": "SRE13225RCT",
+                "name": "Муфта переходная PP-RCT 32x25",
+                "price": 82.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE14020RCT",
+                "article": "SRE14020RCT",
+                "name": "Муфта переходная PP-RCT 40x20",
+                "price": 124.3,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE14025RCT",
+                "article": "SRE14025RCT",
+                "name": "Муфта переходная PP-RCT 40x25",
+                "price": 124.3,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE14032RCT",
+                "article": "SRE14032RCT",
+                "name": "Муфта переходная PP-RCT 40x32",
+                "price": 135.3,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE15025RCT",
+                "article": "SRE15025RCT",
+                "name": "Муфта переходная PP-RCT 50x25",
+                "price": 350.9,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE15032RCT",
+                "article": "SRE15032RCT",
+                "name": "Муфта переходная PP-RCT 50x32",
+                "price": 206.8,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE15040RCT",
+                "article": "SRE15040RCT",
+                "name": "Муфта переходная PP-RCT 50x40",
+                "price": 123.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE16325RCT",
+                "article": "SRE16325RCT",
+                "name": "Муфта переходная PP-RCT 63x25",
+                "price": 630.3,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE16332RCT",
+                "article": "SRE16332RCT",
+                "name": "Муфта переходная PP-RCT 63x32",
+                "price": 401.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE16340RCT",
+                "article": "SRE16340RCT",
+                "name": "Муфта переходная PP-RCT 63x40",
+                "price": 401.5,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        },
+        {
+                "id": "SRE16350RCT",
+                "article": "SRE16350RCT",
+                "name": "Муфта переходная PP-RCT 63x50",
+                "price": 442.2,
+                "brand": "Wavin",
+                "unit": "шт",
+                "availability": "in_stock"
+        }
+]
 };
 
 const titanRads = [

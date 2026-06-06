@@ -3361,7 +3361,7 @@ body.dark-mode .header-totals-block {
         margin-right: 2px !important;
     }
     .inv-table td.col-price .mob-mult::after {
-        content: " шт × " !important;
+        content: "" !important;
     }
     .inv-table td.col-sku, .inv-table td.col-brand, .inv-table td.col-unit, .inv-table td.col-qty, .inv-table td.col-idx, .inv-table th { display: none !important; }
     body:not(.work-mode) .output-panel.show-sku-mode .inv-table td.col-sku:not(.hidden-col) {
@@ -5923,5 +5923,15 @@ body.dark-mode .price-blur {
 body.dark-mode .price-blur:hover {
     background: rgba(255, 255, 255, 0.1);
 }
+
+.mob-unit-label {
+    display: none;
+}
+@media screen and (max-width: 768px) {
+    .mob-unit-label {
+        display: inline !important;
+    }
+}
+
 
 

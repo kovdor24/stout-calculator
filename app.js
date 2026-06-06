@@ -7801,6 +7801,8 @@ const app = {
                         finalItem.price = src.price;
                         finalItem.brand = src.brand || "ROMMER";
                         if (src.article) finalItem.article = src.article;
+                        if (src.availability) finalItem.availability = src.availability;
+                        if (src.price_date) finalItem.price_date = src.price_date;
                         // Give swap icon if comfort is available
                         if (item.comfort) finalItem.alts = [item.comfort];
                         else finalItem.alts = analog.alts || item.alts;
@@ -7819,6 +7821,23 @@ const app = {
             itemsToAdd.forEach(entry => {
                 let finalItem = entry.itm;
                 let finalQty = entry.q;
+
+                // Разрешаем наличие с учетом даты обновления (лимит 31 день)
+                let actualAvail = finalItem.availability;
+                if (actualAvail === 'in_stock') {
+                    if (finalItem.price_date) {
+                        const uDate = new Date(finalItem.price_date);
+                        if (!isNaN(uDate.getTime())) {
+                            const diffDays = (new Date() - uDate) / (1000 * 60 * 60 * 24);
+                            if (diffDays > 31) {
+                                actualAvail = 'on_order';
+                            }
+                        }
+                    }
+                }
+                if (actualAvail) {
+                    finalItem.availability = actualAvail;
+                }
 
                 if (finalItem.id === 'RDG-0015-004002' && this.state.hydroArrowType === 'pro') {
                     finalItem.id = "RDG-1015-004003";
@@ -8397,41 +8416,51 @@ const app = {
             }
         }
 
-        // === РАСЧЕТ ТРУБ И ПРЕСС-ФИТИНГОВ ИЗ НЕРЖАВЕЮЩЕЙ СТАЛИ ROMMER (на основе 3D-модели) ===
+        // === РАСЧЕТ ТРУБ И ПРЕСС-ФИТИНГОВ ИЗ НЕРЖАВЕЮЩЕЙ СТАЛИ ROMMER / PPR WAVIN EKOPLASTIK (АНАЛОГ) ===
         let totalBoilerPower = selBoilers.reduce((acc, b) => acc + (b.power || 0), 0);
         let ss_diameter = (totalBoilerPower <= 30) ? 22 : 28;
+        let isAnalog = (this.state.brandMode === 'rommer');
 
-        // Функция добавления труб с комбинированным подбором 2м/4м штанг
+        // Функция добавления труб с комбинированным подбором 2м/4м штанг или PPR штанг по 4м
         const addPipesToBill = (L, diam, grp, desc) => {
             if (L <= 0) return;
-            let p_4m = catalog.ss_pipe_4m.find(p => p.id === `RSS-1001-0000${diam}`);
-            let p_2m = catalog.ss_pipe_2m.find(p => p.id === `RSS-1001-2000${diam}`);
-
-            let qty_2m = 0;
-            let qty_4m = 0;
-
-            if (L <= 2) {
-                qty_2m = 1;
-            } else if (L <= 4) {
-                qty_4m = 1;
+            if (isAnalog) {
+                let ppr_diam = (diam === 22) ? 32 : 40;
+                let p_4m = catalog.ppr_ekoplastik_pipe.find(p => p.id === `STRS0${ppr_diam}RCT`);
+                if (p_4m) {
+                    let qty_4m = Math.ceil(L / 4);
+                    addToBill(p_4m, qty_4m * 4, desc.replace('из нержавеющей стали AISI 304', `PP-RCT STABI PLUS ${ppr_diam}x${ppr_diam === 32 ? '4.4' : '5.5'} мм (Чехия)`).replace('нержавеющей трубы', 'трубы PP-RCT STABI PLUS'), grp);
+                }
             } else {
-                let n4 = Math.floor(L / 4);
-                let r = L - n4 * 4;
-                qty_4m = n4;
-                if (r > 0) {
-                    if (r <= 2) {
-                        qty_2m = 1;
-                    } else {
-                        qty_4m += 1;
+                let p_4m = catalog.ss_pipe_4m.find(p => p.id === `RSS-1001-0000${diam}`);
+                let p_2m = catalog.ss_pipe_2m.find(p => p.id === `RSS-1001-2000${diam}`);
+
+                let qty_2m = 0;
+                let qty_4m = 0;
+
+                if (L <= 2) {
+                    qty_2m = 1;
+                } else if (L <= 4) {
+                    qty_4m = 1;
+                } else {
+                    let n4 = Math.floor(L / 4);
+                    let r = L - n4 * 4;
+                    qty_4m = n4;
+                    if (r > 0) {
+                        if (r <= 2) {
+                            qty_2m = 1;
+                        } else {
+                            qty_4m += 1;
+                        }
                     }
                 }
-            }
 
-            if (qty_4m > 0 && p_4m) {
-                addToBill(p_4m, qty_4m * 4, desc, grp);
-            }
-            if (qty_2m > 0 && p_2m) {
-                addToBill(p_2m, qty_2m * 2, desc, grp);
+                if (qty_4m > 0 && p_4m) {
+                    addToBill(p_4m, qty_4m * 4, desc, grp);
+                }
+                if (qty_2m > 0 && p_2m) {
+                    addToBill(p_2m, qty_2m * 2, desc, grp);
+                }
             }
         };
 
@@ -8442,16 +8471,31 @@ const app = {
             let descPipe = `Труба из нержавеющей стали AISI 304 для соединения котла (${bName}) с коллектором/гидрострелкой. Расчетная длина: 2.0 м.`;
             addPipesToBill(2.0, ss_diameter, grp, descPipe);
 
-            if (ss_diameter === 22) {
-                addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-002234'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 3/4" для подключения нержавеющей трубы к патрубкам котла (${bName}). Требуется: 2 шт.`, grp);
-                addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000022'), 2, `Пресс-угольник 90° В-В для выполнения поворотов трубопровода при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
-                addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000022'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
-                addToBill(catalog.ss_tee.find(x => x.id === 'RSS-1013-000022'), 2, `Пресс-тройник для создания ответвлений в контуре обвязки котла (${bName}). Требуется: 2 шт.`, grp);
+            if (isAnalog) {
+                if (ss_diameter === 22) {
+                    addToBill(catalog.ppr_ekoplastik_adapter_fi.find(x => x.id === 'SZI03225RCT'), 2, `Муфта комбинированная с внутренней резьбой 32х3/4" PP-RCT для подключения трубы к патрубкам котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_elbow90.find(x => x.id === 'SKO03290RCT'), 2, `Угольник 90° PP-RCT 32 мм для поворотов трубопровода при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_elbow45.find(x => x.id === 'SKO03245RCT'), 2, `Угольник 45° PP-RCT 32 мм для обхода препятствий и плавных поворотов при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_tee.find(x => x.id === 'STK032RCTX'), 2, `Тройник PP-RCT 32 мм для создания ответвлений в контуре обвязки котла (${bName}). Требуется: 2 шт.`, grp);
+                } else {
+                    addToBill(catalog.ppr_ekoplastik_coupling_red.find(x => x.id === 'SRE14032RCT'), 2, `Муфта переходная 40х32 PP-RCT для перехода на диаметр 32 мм при подключении котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_adapter_fi.find(x => x.id === 'SZI03232OKRCT'), 2, `Муфта комбинированная с внутренней резьбой 32х1" PP-RCT для подключения к патрубкам котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_elbow90.find(x => x.id === 'SKO04090RCT'), 2, `Угольник 90° PP-RCT 40 мм для поворотов трубопровода при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_elbow45.find(x => x.id === 'SKO04045RCT'), 2, `Угольник 45° PP-RCT 40 мм для обхода препятствий и плавных поворотов при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_tee_red.find(x => x.id === 'STKR04032RCT'), 2, `Тройник переходной 40х32х40 PP-RCT для ответвлений в контуре обвязки котла (${bName}). Требуется: 2 шт.`, grp);
+                }
             } else {
-                addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-000281'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 1" для подключения нержавеющей трубы к патрубкам котла (${bName}). Требуется: 2 шт.`, grp);
-                addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000028'), 2, `Пресс-угольник 90° В-В для выполнения поворотов трубопровода при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
-                addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000028'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
-                addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 2, `Пресс-тройник переходной для создания ответвлений в контуре обвязки котла (${bName}). Требуется: 2 шт.`, grp);
+                if (ss_diameter === 22) {
+                    addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-002234'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 3/4" для подключения нержавеющей трубы к патрубкам котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000022'), 2, `Пресс-угольник 90° В-В для выполнения поворотов трубопровода при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000022'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ss_tee.find(x => x.id === 'RSS-1013-000022'), 2, `Пресс-тройник для создания ответвлений в контуре обвязки котла (${bName}). Требуется: 2 шт.`, grp);
+                } else {
+                    addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-000281'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 1" для подключения нержавеющей трубы к патрубкам котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000028'), 2, `Пресс-угольник 90° В-В для выполнения поворотов трубопровода при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000028'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 2, `Пресс-тройник переходной для создания ответвлений в контуре обвязки котла (${bName}). Требуется: 2 шт.`, grp);
+                }
             }
         });
 
@@ -8461,29 +8505,53 @@ const app = {
             let descPipe = `Труба из нержавеющей стали AISI 304 для подключения греющего контура змеевика бойлера ГВС. Расчетная длина: 4.0 м.`;
             addPipesToBill(4.0, ss_diameter, grp, descPipe);
 
-            if (ss_diameter === 22) {
-                addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-002234'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 3/4" для подключения нержавеющей трубы к патрубкам змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
-                addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000022'), 4, `Пресс-угольник 90° В-В для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
-                addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000022'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
-                addToBill(catalog.ss_tee.find(x => x.id === 'RSS-1013-000022'), 2, `Пресс-тройник для создания ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
+            if (isAnalog) {
+                if (ss_diameter === 22) {
+                    addToBill(catalog.ppr_ekoplastik_adapter_fi.find(x => x.id === 'SZI03225RCT'), 2, `Муфта комбинированная с внутренней резьбой 32х3/4" PP-RCT для подключения трубы к змеевику бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_elbow90.find(x => x.id === 'SKO03290RCT'), 4, `Угольник 90° PP-RCT 32 мм для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_elbow45.find(x => x.id === 'SKO03245RCT'), 2, `Угольник 45° PP-RCT 32 мм для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_tee.find(x => x.id === 'STK032RCTX'), 2, `Тройник PP-RCT 32 мм для ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
+                } else {
+                    addToBill(catalog.ppr_ekoplastik_coupling_red.find(x => x.id === 'SRE14032RCT'), 2, `Муфта переходная 40х32 PP-RCT для перехода на диаметр 32 мм при подключении змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_adapter_fi.find(x => x.id === 'SZI03232OKRCT'), 2, `Муфта комбинированная с внутренней резьбой 32х1" PP-RCT для подключения к патрубкам змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_elbow90.find(x => x.id === 'SKO04090RCT'), 4, `Угольник 90° PP-RCT 40 мм для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_elbow45.find(x => x.id === 'SKO04045RCT'), 2, `Угольник 45° PP-RCT 40 мм для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ppr_ekoplastik_tee_red.find(x => x.id === 'STKR04032RCT'), 2, `Тройник переходной 40х32х40 PP-RCT для ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
+                }
             } else {
-                addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-000281'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 1" для подключения нержавеющей трубы к патрубкам змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
-                addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000028'), 4, `Пресс-угольник 90° В-В для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
-                addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000028'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
-                addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 2, `Пресс-тройник переходной для создания ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
+                if (ss_diameter === 22) {
+                    addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-002234'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 3/4" для подключения нержавеющей трубы к патрубкам змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000022'), 4, `Пресс-угольник 90° В-В для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
+                    addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000022'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ss_tee.find(x => x.id === 'RSS-1013-000022'), 2, `Пресс-тройник для создания ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
+                } else {
+                    addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-000281'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 1" для подключения нержавеющей трубы к патрубкам змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000028'), 4, `Пресс-угольник 90° В-В для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
+                    addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000028'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 2, `Пресс-тройник переходной для создания ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
+                }
             }
 
             // Трубы для расширительного бака ГВС (1.5 м, всегда диаметром 22)
             let tankPipeDesc = `Труба из нержавеющей стали AISI 304 диаметром 22 мм для подключения расширительного бака ГВС. Расчетная длина: 1.5 м.`;
             addPipesToBill(1.5, 22, grp, tankPipeDesc);
-            
-            // Фитинги для расширительного бака ГВС (всегда на диаметре 22)
-            addToBill(catalog.ss_adapter_mi.find(x => x.id === 'RSS-1021-002234'), 1, `Переходник с пресс-соединения на наружную резьбу 3/4" для подключения нержавеющей трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
-            addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000022'), 1, `Пресс-угольник 90° В-В диаметром 22 мм для подведения трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
-            if (ss_diameter === 22) {
-                addToBill(catalog.ss_tee.find(x => x.id === 'RSS-1013-000022'), 1, `Пресс-тройник диаметром 22 мм для врезки линии расширительного бака ГВС. Требуется: 1 шт.`, grp);
+
+            if (isAnalog) {
+                addToBill(catalog.ppr_ekoplastik_adapter_mi.find(x => x.id === 'SZE03225RCT'), 1, `Муфта комбинированная с наружной резьбой 32х3/4" PP-RCT для подключения трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
+                addToBill(catalog.ppr_ekoplastik_elbow90.find(x => x.id === 'SKO03290RCT'), 1, `Угольник 90° PP-RCT 32 мм для подведения трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
+                if (ss_diameter === 22) {
+                    addToBill(catalog.ppr_ekoplastik_tee.find(x => x.id === 'STK032RCTX'), 1, `Тройник PP-RCT 32 мм для врезки линии расширительного бака ГВС. Требуется: 1 шт.`, grp);
+                } else {
+                    addToBill(catalog.ppr_ekoplastik_tee_red.find(x => x.id === 'STKR04032RCT'), 1, `Тройник переходной 40х32х40 PP-RCT для врезки линии расширительного бака ГВС. Требуется: 1 шт.`, grp);
+                }
             } else {
-                addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 1, `Пресс-тройник переходной 28х22х28 мм для врезки линии расширительного бака ГВС. Требуется: 1 шт.`, grp);
+                addToBill(catalog.ss_adapter_mi.find(x => x.id === 'RSS-1021-002234'), 1, `Переходник с пресс-соединения на наружную резьбу 3/4" для подключения нержавеющей трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
+                addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000022'), 1, `Пресс-угольник 90° В-В диаметром 22 мм для подведения трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
+                if (ss_diameter === 22) {
+                    addToBill(catalog.ss_tee.find(x => x.id === 'RSS-1013-000022'), 1, `Пресс-тройник диаметром 22 мм для врезки линии расширительного бака ГВС. Требуется: 1 шт.`, grp);
+                } else {
+                    addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 1, `Пресс-тройник переходной 28х22х28 мм для врезки линии расширительного бака ГВС. Требуется: 1 шт.`, grp);
+                }
             }
         }
 
@@ -8497,17 +8565,26 @@ const app = {
             // Трубы для расширительного бака отопления (1.5 м, всегда диаметром 22)
             let tankPipeDesc = `Труба из нержавеющей стали AISI 304 диаметром 22 мм для подключения расширительного бака отопления к котлу. Расчетная длина: 1.5 м.`;
             addPipesToBill(1.5, 22, grp, tankPipeDesc);
-            
-            // Фитинги для расширительного бака отопления (всегда на диаметре 22)
-            addToBill(catalog.ss_adapter_mi.find(x => x.id === 'RSS-1021-002234'), 1, `Переходник с пресс-соединения на наружную резьбу 3/4" для подключения нержавеющей трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
-            addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000022'), 1, `Пресс-угольник 90° В-В диаметром 22 мм для подведения трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
-            if (ss_diameter === 22) {
-                addToBill(catalog.ss_tee.find(x => x.id === 'RSS-1013-000022'), 1, `Пресс-тройник диаметром 22 мм для врезки расширительного бака отопления. Требуется: 1 шт.`, grp);
+
+            if (isAnalog) {
+                addToBill(catalog.ppr_ekoplastik_adapter_mi.find(x => x.id === 'SZE03225RCT'), 1, `Муфта комбинированная с наружной резьбой 32х3/4" PP-RCT для подключения трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
+                addToBill(catalog.ppr_ekoplastik_elbow90.find(x => x.id === 'SKO03290RCT'), 1, `Угольник 90° PP-RCT 32 мм для подведения трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
+                if (ss_diameter === 22) {
+                    addToBill(catalog.ppr_ekoplastik_tee.find(x => x.id === 'STK032RCTX'), 1, `Тройник PP-RCT 32 мм для врезки расширительного бака отопления. Требуется: 1 шт.`, grp);
+                } else {
+                    addToBill(catalog.ppr_ekoplastik_tee_red.find(x => x.id === 'STKR04032RCT'), 1, `Тройник переходной 40х32х40 PP-RCT для врезки расширительного бака отопления. Требуется: 1 шт.`, grp);
+                }
             } else {
-                addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 1, `Пресс-тройник переходной 28х22х28 мм для врезки расширительного бака отопления. Требуется: 1 шт.`, grp);
+                addToBill(catalog.ss_adapter_mi.find(x => x.id === 'RSS-1021-002234'), 1, `Переходник с пресс-соединения на наружную резьбу 3/4" для подключения нержавеющей трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
+                addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000022'), 1, `Пресс-угольник 90° В-В диаметром 22 мм для подведения трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
+                if (ss_diameter === 22) {
+                    addToBill(catalog.ss_tee.find(x => x.id === 'RSS-1013-000022'), 1, `Пресс-тройник диаметром 22 мм для врезки расширительного бака отопления. Требуется: 1 шт.`, grp);
+                } else {
+                    addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 1, `Пресс-тройник переходной 28х22х28 мм для врезки расширительного бака отопления. Требуется: 1 шт.`, grp);
+                }
             }
         }
-
+        
         flushBill("2. Обвязка котельной");
 
         if (hasRad && radSecs > 0) {

@@ -796,8 +796,15 @@
             border: 1px solid #FCA5A5;
         }
 
+        .mob-unit-label {
+            display: none;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
+            .mob-unit-label {
+                display: inline !important;
+            }
             body {
                 padding: 15px 10px;
             }
@@ -969,7 +976,7 @@
             }
 
             #equipment_tbody td.col-qty::after {
-                content: " шт" !important;
+                content: "" !important;
             }
 
             #equipment_tbody td.col-price::before {
@@ -2334,12 +2341,86 @@
             "узла смешения": "Что будет выполнено: Монтаж смесительного узла для обеспечения комфортной температуры теплого пола.\nЧто эта работа включает, этапы и порядок действий: Сборка трехходового термостатического смесителя, установка циркуляционного насоса, подключение байпаса и балансировка узла для стабильного подмеса.",
             "от котла до коллектора": "Что будет выполнено: Прокладка основных подающих и обратных трубопроводов (магистралей).\nЧто эта работа включает, этапы и порядок действий: Монтаж труб большого диаметра (из сшитого полиэтилена или полипропилена) в защитной гофре или теплоизоляции от котла до распределительных коллекторов.",
             "магистральные трубопроводы": "Что будет выполнено: Прокладка основных подающих и обратных трубопроводов (магистралей).\nЧто эта работа включает, этапы и порядок действий: Монтаж труб большого диаметра (из сшитого полиэтилена или полипропилена) в защитной гофре или теплоизоляции от котла до распределительных коллекторов.",
-            "расширительные баки": "Что будет выполнено: Установка расширительных мембранных баков системы отопления.\nЧто эта работа включает, этапы и порядок действий: Крепление бака на стену с помощью прочного кронштейна, монтаж запорно-дренажного клапана для удобного обслуживания бака без слива всей системы.",
-            "опрессовка": "Что будет выполнено: Испытание системы отопления высоким давлением на прочность и герметичность.\nЧто эта работа включает, этапы и порядок действий: Заполнение системы водой или сжатым воздухом, нагнетание давления ручным прессом в 1.5 раза выше рабочего, выдержка и контроль манометров.",
-            "пусконаладка": "Что будет выполнено: Настройка рабочих параметров и первый запуск всей котельной и системы отопления.\nЧто эта работа включает, этапы и порядок действий: Регулировка расходов по контурам, программирование термостатов и контроллеров, настройка мощности горелки котла и балансировка гидравлики.",
-            "электрики котельной": "Что будет выполнено: Монтаж и расключение электрического оборудования котельной.\nЧто эта работа включает, этапы и порядок действий: Прокладка проводов в гофре, сборка и монтаж электрического щитка, подключение датчиков температуры, насосов и сервоприводов.",
-            "pex-a... и подключение радиатора": "Что будет выполнено: Комплексный монтаж и подключение радиатора лучевым (коллекторным) методом.\nЧто эта работа включает, этапы и порядок действий: Установка радиатора по уровню на кронштейны, прокладка труб PEX-a от коллектора в утеплителе, сборка и опрессовка узла нижнего/бокового подключения.",
-            "термоголовки": "Что будет выполнено: Установка автоматического регулятора температуры на клапан радиатора.\nЧто эта работа включает, этапы и порядок действий: Монтаж термоголовки на резьбу термостатического клапана радиатора, калибровка температурной шкалы по желанию клиента для поддержания комфортного климата.",
+                     const discountPercent = compact.o.c || 0; // 'c' is the discount percentage
+
+            function resolveAvailability(avail, priceDate) {
+                if (!avail) return '';
+                let actualAvail = avail;
+                if (actualAvail === 'in_stock') {
+                    if (priceDate) {
+                        const uDate = new Date(priceDate);
+                        if (!isNaN(uDate.getTime())) {
+                            const diffDays = (new Date() - uDate) / (1000 * 60 * 60 * 24);
+                            if (diffDays > 31) {
+                                actualAvail = 'on_order';
+                            }
+                        }
+                    }
+                }
+                return actualAvail;
+            }
+
+            const equipmentList = (compact.i.e || []).map(item => {
+                // If it is in the old full format, return as-is
+                if (item.hasOwnProperty('n') && item.c !== 1) {
+                    return {
+                        name: item.n,
+                        displaySku: item.s,
+                        brand: item.b,
+                        unit: item.u,
+                        q: item.q,
+                        price: item.p,
+                        sum: item.m,
+                        sectionTitle: item.t,
+                        isOpt: !!item.isOpt,
+                        desc: item.desc || item.d || '',
+                        availability: resolveAvailability(item.availability || item.a || '', item.price_date || item.pd || '')
+                    };
+                }
+ 
+                // If it's a custom manually-added item
+                if (item.c === 1) {
+                    const price = item.p || 0;
+                    const q = item.q || 0;
+                    return {
+                        name: item.n || 'Свое оборудование',
+                        displaySku: item.id || '',
+                        brand: item.b || ' ',
+                        unit: item.u || 'шт',
+                        q: q,
+                        price: price,
+                        sum: price * q,
+                        sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
+                        isOpt: false,
+                        desc: item.d || item.desc || '',
+                        availability: ''
+                    };
+                }
+ 
+                // Standard item: look up in catalog.js
+                const catalogItem = findCatalogItem(item.s) || {};
+                let basePrice = catalogItem.price || 0;
+                // Apply discount if any
+                let finalPrice = basePrice;
+                if (discountPercent > 0) {
+                    finalPrice = Math.round(basePrice * (1 - discountPercent / 100));
+                }
+                const q = item.q || 0;
+                
+                return {
+                    name: catalogItem.name || item.s || 'Оборудование',
+                    displaySku: item.s,
+                    brand: catalogItem.brand || 'STOUT',
+                    unit: catalogItem.unit || 'шт',
+                    q: q,
+                    price: finalPrice,
+                    sum: finalPrice * q,
+                    sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
+                    isOpt: item.o === 1,
+                    desc: item.d || catalogItem.desc || '',
+                    availability: resolveAvailability(catalogItem.availability || '', catalogItem.price_date || '')
+                };
+            });�ического регулятора температуры на клапан радиатора.\nЧто эта работа включает, этапы и порядок действий: Монтаж термоголовки на резьбу термостатического клапана радиатора, калибровка температурной шкалы по желанию клиента для поддержания комфортного климата.",
             "узла нижнего подключения радиатора": "Что будет выполнено: Монтаж присоединительной Н-образной арматуры (мультифлекса) на радиатор.\nЧто эта работа включает, этапы и порядок действий: Резьбовая сборка клапана с нижними патрубками радиатора, герметизация стыков, подключение труб отопления через конусные соединения.",
             "г-образной трубки": "Что будет выполнено: Подключение радиатора из стены или пола жесткими хромированными трубками.\nЧто эта работа включает, этапы и порядок действий: Подрезка и жесткая фиксация Г-образных трубок PEX-инструментом, подключение к мультифлексу. Обеспечивает премиальный внешний вид без торчащих пластиковых труб.",
             "регулятора vartronic": "Что будет выполнено: Монтаж комнатного терморегулятора Vartronic для управления климатом.\nЧто эта работа включает, этапы и порядок действий: Настенный монтаж термостата в жилой зоне на высоте 1.5 м, прокладка и подключение слаботочного кабеля управления к исполнительному реле котельной.",
@@ -2918,9 +2999,18 @@
                             }
                         }
 
+                        let availStatusLine = availText ? `<div style="margin-top: 8px; font-weight: 700; color: ${i.availability === 'in_stock' ? '#3B82F6' : '#eab308'}; font-size: 11px;">${availText.trim()}</div>` : '';
+
                         let finalTooltipContent = "";
                         if (friendlyExplanation) {
                             finalTooltipContent += `<div style="font-weight: 700; color: #60A5FA; margin-bottom: 4px; font-size: 11px;">Зачем это нужно:</div><div style="font-size: 11px; line-height: 1.4; color: #E5E7EB;">${friendlyExplanation}</div>`;
+                        }
+                        if (descText) {
+                            if (finalTooltipContent) finalTooltipContent += `<div style="margin-top: 8px;"></div>`;
+                            finalTooltipContent += `<div style="font-weight: 700; color: #34D399; margin-bottom: 4px; font-size: 11px;">Детали расчета:</div><div style="font-size: 11px; line-height: 1.4; color: #E5E7EB;">${descText}</div>`;
+                        }
+                        if (availStatusLine) {
+                            finalTooltipContent += availStatusLine;
                         }
 
                         let tipHtml = finalTooltipContent ? `
@@ -2940,7 +3030,7 @@
                             <td class="col-unit">${i.unit || 'шт'}</td>
                             <td class="col-qty">
                                 <div class="qty-wrap" style="display:inline-flex; align-items:center; justify-content:center; gap:4px; width:100%; position:relative;">
-                                    <span>${i.q}</span>
+                                    <span class="qty-val">${i.q}</span><span class="mob-unit-label"> ${i.unit || 'шт'}</span>
                                     ${tipHtml}
                                 </div>
                             </td>
@@ -3027,8 +3117,8 @@
                             <td class="col-unit">${w.unit || 'услуга'}</td>
                             <td class="col-qty">
                                 <div class="qty-wrap" style="display:inline-flex; align-items:center; justify-content:center; gap:4px; position:relative;">
-                                    <span>${w.q}</span>
-                                    ${tipHtml}
+                                     <span class="qty-val">${w.q}</span><span class="mob-unit-label"> ${w.unit || 'услуга'}</span>
+                                     ${tipHtml}
                                 </div>
                             </td>
                             <td class="col-price">${w.price.toLocaleString()} ₽</td>
