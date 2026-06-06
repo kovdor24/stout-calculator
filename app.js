@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std' },
 
     lastSavedStateString: "",
 
@@ -5744,6 +5744,10 @@ const app = {
         else if (originalId.startsWith('SCQ') || originalId.startsWith('SCN')) { this.state.convectorType = (this.state.convectorType === 'scq') ? 'scn' : 'scq'; }
         else if (originalId.startsWith('SVT') || originalId.startsWith('SVL')) { this.state.convConnectionType = (this.state.convConnectionType === 'straight') ? 'angled' : 'straight'; }
         else if (originalId.startsWith('SCA-') || originalId.startsWith('RCA-')) { this.state.chimneyType = (this.state.chimneyType === 'standard') ? 'basic' : 'standard'; }
+        else if (originalId.startsWith('SKB-') || /^5[0-9]{4,}[RK]?$/.test(originalId)) {
+            // Sinikon sewer items: cycle std ↔ comfort
+            this.state.sewerType = (this.state.sewerType === 'std') ? 'comfort' : 'std';
+        }
         else if (originalId === 'RDG-0015-004002' || originalId === 'RDG-1015-004003') { this.state.hydroArrowType = (this.state.hydroArrowType === 'pro') ? 'standard' : 'pro'; }
         this.state.showSwapFor = null; this.render();
     },
@@ -7789,12 +7793,17 @@ const app = {
 
                     if (analog) {
                         let finalItem = { ...item };
-                        finalItem.id = analog.id;
-                        finalItem.name = analog.name;
-                        finalItem.price = analog.price;
-                        finalItem.brand = analog.brand || "ROMMER";
-                        if (analog.article) finalItem.article = analog.article;
-                        finalItem.alts = analog.alts || item.alts;
+                        // For sewer items with comfort variant, switch to it when sewerType === 'comfort'
+                        let useComfort = (this.state.sewerType === 'comfort') && item.comfort;
+                        let src = useComfort ? item.comfort : analog;
+                        finalItem.id = src.id;
+                        finalItem.name = src.name;
+                        finalItem.price = src.price;
+                        finalItem.brand = src.brand || "ROMMER";
+                        if (src.article) finalItem.article = src.article;
+                        // Give swap icon if comfort is available
+                        if (item.comfort) finalItem.alts = [item.comfort];
+                        else finalItem.alts = analog.alts || item.alts;
                         finalItem.originalId = item.id;
                         itemsToAdd.push({ itm: finalItem, q: qty });
                     } else {
