@@ -1098,11 +1098,11 @@ const catalog = {
   availability: 'in_stock' }
     ],
     tanks_stainless: [
-        { id: "SWH-4110-050100", name: "Бойлер напольный 100л (нержавейка) STOUT", vol: 100, price: 82831, brand: "STOUT", availability: 'in_stock' },
-        { id: "SWH-4110-050150", name: "Бойлер напольный 150л (нержавейка) STOUT", vol: 150, price: 92815, brand: "STOUT", availability: 'in_stock' },
-        { id: "SWH-4110-050200", name: "Бойлер напольный 200л (нержавейка) STOUT", vol: 200, price: 104861, brand: "STOUT", availability: 'in_stock' },
-        { id: "SWH-4110-050300", name: "Бойлер напольный 300л (нержавейка) STOUT", vol: 300, price: 134984, brand: "STOUT", availability: 'in_stock' },
-        { id: "SWH-4110-050500", name: "Бойлер напольный 500л (нержавейка) STOUT", vol: 500, price: 213015, brand: "STOUT", availability: 'in_stock' }
+        { id: "SWH-4110-050100", name: "Бойлер напольный 100л (нержавейка) DUPLEX", vol: 100, price: 82831, brand: "STOUT", availability: 'in_stock' },
+        { id: "SWH-4110-050150", name: "Бойлер напольный 150л (нержавейка) DUPLEX", vol: 150, price: 92815, brand: "STOUT", availability: 'in_stock' },
+        { id: "SWH-4110-050200", name: "Бойлер напольный 200л (нержавейка) DUPLEX", vol: 200, price: 104861, brand: "STOUT", availability: 'in_stock' },
+        { id: "SWH-4110-050300", name: "Бойлер напольный 300л (нержавейка) DUPLEX", vol: 300, price: 134984, brand: "STOUT", availability: 'in_stock' },
+        { id: "SWH-4110-050500", name: "Бойлер напольный 500л (нержавейка) DUPLEX", vol: 500, price: 213015, brand: "STOUT", availability: 'in_stock' }
     ],
     exp_dhw: [{ id: "STW-0015-000012", name: "Расширительный бак для ГВС 12л", vol: 12, price: 2882,
   availability: 'in_stock' }, { id: "STW-0015-000018", name: "Расширительный бак для ГВС 18л", vol: 18, price: 3316,
