@@ -552,7 +552,7 @@ input:checked+.slider:before {
 
 .table-responsive {
     width: 100%;
-    overflow-x: hidden;
+    overflow: visible !important;
     /* Убираем локальный скролл спецификации */
     -webkit-overflow-scrolling: touch;
 }
@@ -1628,7 +1628,7 @@ body.menu-open .mobile-menu-backdrop {
 
 .table-responsive {
     width: 100%;
-    overflow-x: hidden;
+    overflow: visible !important;
     -webkit-overflow-scrolling: touch;
 }
 
@@ -4604,12 +4604,18 @@ body.dark-mode .calc-dialog-btn-cancel:hover {
     }
     
     /* Защита от переполнения на мобильных */
-    #output_panel, 
-    .table-responsive {
+    #output_panel {
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
         overflow-x: auto !important; /* Allow table to scroll horizontally if needed */
+        -webkit-overflow-scrolling: touch;
+    }
+    .table-responsive {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
         -webkit-overflow-scrolling: touch;
     }
 }

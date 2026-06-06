@@ -3861,7 +3861,7 @@ const app = {
         if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { app.alert('Пожалуйста, введите корректный email.'); return; }
 
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
-        if (!tgUser) return;
+        if (!tgUser || (!tgUser.authUserId && !tgUser.email && !tgUser.id)) return;
 
         // 1. Мгновенно сохраняем в локальное состояние для моментального отклика
         this.state.tgUser = this.state.tgUser || {};
