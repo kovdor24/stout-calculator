@@ -5585,7 +5585,7 @@ const app = {
         let radAlts = [catalog.rads[0], titanRads[0], steelRads[0]];
         catalog.rads.forEach(rad => { rad.alts = radAlts; }); titanRads.forEach(rad => { rad.alts = radAlts; }); steelRads.forEach(rad => { rad.alts = radAlts; });
         let hAlts = catalog.h_valves; catalog.h_valves.forEach(v => { v.alts = hAlts; });
-        let boilerAlts = [catalog.tanks_optibase[0], catalog.tanks_standard[0]]; catalog.tanks_optibase.forEach(t => { t.alts = boilerAlts; }); catalog.tanks_standard.forEach(t => { t.alts = boilerAlts; });
+        let boilerAlts = [catalog.tanks_optibase[0], catalog.tanks_standard[0], catalog.tanks_stainless[0]]; catalog.tanks_optibase.forEach(t => { t.alts = boilerAlts; }); catalog.tanks_standard.forEach(t => { t.alts = boilerAlts; }); catalog.tanks_stainless.forEach(t => { t.alts = boilerAlts; });
         let pumpAlts = catalog.pumps_dn25; catalog.pumps_dn25.forEach(p => { p.alts = pumpAlts; });
         let elBoilerAlts = [catalog.boilers_status[0], catalog.boilers_plus[0]]; catalog.boilers_plus.forEach(b => { b.alts = elBoilerAlts; }); catalog.boilers_status.forEach(b => { b.alts = elBoilerAlts; });
         let hydroAlts = catalog.hydro_modular_dn20; catalog.hydro_dn20.forEach(h => { h.alts = hydroAlts; }); catalog.hydro_modular_dn20.forEach(h => { h.alts = catalog.hydro_dn20; });
@@ -5729,7 +5729,11 @@ const app = {
         if (isRad) { if (this.state.radType === 'space') this.state.radType = 'titan'; else if (this.state.radType === 'titan') this.state.radType = 'steel'; else this.state.radType = 'space'; }
         else if ((originalId.startsWith('SHT') || (originalId.startsWith('STE') && originalId.includes('2070'))) && !originalId.includes('2001') && !originalId.includes('2002')) { if (this.state.headType === 'gas') this.state.headType = 'liquid'; else if (this.state.headType === 'liquid') this.state.headType = 'smart'; else this.state.headType = 'gas'; }
         else if (originalId.startsWith('SVH')) { if (this.state.connectionType === 'angled') this.state.connectionType = 'straight'; else this.state.connectionType = 'angled'; }
-        else if (originalId.startsWith('SWH')) { this.state.boilerType = (this.state.boilerType === 'optibase') ? 'standard' : 'optibase'; }
+        else if (originalId.startsWith('SWH')) {
+            if (this.state.boilerType === 'optibase') this.state.boilerType = 'standard';
+            else if (this.state.boilerType === 'standard') this.state.boilerType = 'stainless';
+            else this.state.boilerType = 'optibase';
+        }
         else if (originalId.startsWith('SPC-') && originalId.includes('180')) { if (this.state.pumpType === 'default') this.state.pumpType = 'std'; else if (this.state.pumpType === 'std') this.state.pumpType = 'mini'; else if (this.state.pumpType === 'mini') this.state.pumpType = 'pro'; else this.state.pumpType = 'default'; }
         else if (originalId.startsWith('SEB-')) { this.state.boilerSeries = (this.state.boilerSeries === 'plus') ? 'status' : 'plus'; }
         else if (originalId.startsWith('SDG-0018') || originalId.startsWith('SDG-0016')) { this.state.hydroType = (this.state.hydroType === 'combo') ? 'modular' : 'combo'; }
@@ -8242,9 +8246,9 @@ const app = {
             else if (targetVol > 200 && targetVol <= 300) vol = 300;
             else if (targetVol > 300) vol = 500;
 
-            let tankDb = (this.state.boilerType === 'optibase') ? catalog.tanks_optibase : catalog.tanks_standard;
+            let tankDb = (this.state.boilerType === 'optibase') ? catalog.tanks_optibase : (this.state.boilerType === 'standard' ? catalog.tanks_standard : catalog.tanks_stainless);
             let t = tankDb.find(x => x.vol === vol) || tankDb[tankDb.length - 1];
-            t.alts = [catalog.tanks_optibase[0], catalog.tanks_standard[0]];
+            t.alts = [catalog.tanks_optibase[0], catalog.tanks_standard[0], catalog.tanks_stainless[0]];
 
             let warn = targetVol > 500 ? `<br><b style="color:#EF4444; font-size:10px;">⚠️ Требуемый объем ГВС превышает 500л! Добавьте в смету второй бойлер вручную или проверьте количество потребителей ГВС.</b>` : "";
 
