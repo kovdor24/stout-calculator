@@ -66,24 +66,28 @@ def get_unique_skus():
     with open(CATALOG_PATH, 'r', encoding='utf-8') as f:
         content = f.read()
     
-    skus = set()
+    items = {} # id -> article
     processed_starts = set()
     for match in re.finditer(r'(["\']?price["\']?\s*:\s*)(\d+(?:\.\d+)?)', content, re.IGNORECASE):
         start_idx, end_idx = get_enclosing_object(content, match.start())
         if start_idx == -1 or end_idx == -1 or start_idx in processed_starts: continue
         processed_starts.add(start_idx)
         obj_text = content[start_idx:end_idx]
-        sku = None
+        
+        id_val = None
+        id_m = re.search(r'["\']?id["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
+        if id_m: id_val = id_m.group(1).strip()
+        
+        art_val = None
         art_m = re.search(r'["\']?article["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
-        if art_m: sku = art_m.group(1)
-        else:
-            id_m = re.search(r'["\']?id["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
-            if id_m: sku = id_m.group(1)
-        if sku:
-            skus.add(sku.strip())
-    return sorted(list(skus))
+        if art_m: art_val = art_m.group(1).strip()
+        
+        if id_val:
+            items[id_val] = art_val or id_val
+            
+    return [{"id": k, "article": v} for k, v in sorted(items.items())]
 
-def get_missing_skus(skus):
+def get_missing_skus(items):
     existing_files = set()
     if os.path.exists(IMAGE_DIR):
         for f in os.listdir(IMAGE_DIR):
@@ -91,16 +95,17 @@ def get_missing_skus(skus):
                 existing_files.add(f.lower())
                 
     missing = []
-    for sku in skus:
-        # Check case-insensitive for .jpg, .png, .jpeg, .webp
+    for item in items:
+        item_id = item["id"]
+        # Check case-insensitive for item_id.jpg, png, etc.
         extensions = ['.jpg', '.png', '.jpeg', '.webp']
         found = False
         for ext in extensions:
-            if f"{sku.lower()}{ext}" in existing_files:
+            if f"{item_id.lower()}{ext}" in existing_files:
                 found = True
                 break
         if not found:
-            missing.append(sku)
+            missing.append(item)
     return missing
 
 def optimize_and_save_image(temp_file_path, sku):
@@ -202,7 +207,7 @@ def extract_image_url(driver, sku):
                 
     return None
 
-def process_sku_image(driver, sku):
+def process_sku_image(driver, item):
     try:
         try:
             driver.get(SEARCH_URL)
@@ -210,7 +215,8 @@ def process_sku_image(driver, sku):
             driver.execute_script("window.stop();")
         close_popups(driver)
         
-        raw_sku = sku.strip()
+        search_query = item["article"].strip()
+        save_filename = item["id"].strip()
         img_url = None
         for attempt in range(3):
             try:
@@ -222,11 +228,11 @@ def process_sku_image(driver, sku):
 
                 inp.send_keys(Keys.CONTROL + "a")
                 inp.send_keys(Keys.BACKSPACE)
-                inp.send_keys(raw_sku)
+                inp.send_keys(search_query)
                 
                 # Ждем 2 секунды, чтобы появился живой поиск (выпадающая подсказка со скриншота)
                 time.sleep(2)
-                img_url = extract_image_url(driver, sku)
+                img_url = extract_image_url(driver, save_filename)
                 if img_url:
                     break # Нашли картинку в выпадающей подсказке!
                 
@@ -237,7 +243,7 @@ def process_sku_image(driver, sku):
                     inp.send_keys(Keys.RETURN)
                     
                 time.sleep(2)
-                img_url = extract_image_url(driver, sku)
+                img_url = extract_image_url(driver, save_filename)
                 break
             except StaleElementReferenceException:
                 time.sleep(0.5)
@@ -249,7 +255,7 @@ def process_sku_image(driver, sku):
         if not img_url:
             return "NOT_FOUND"
             
-        success = save_image(img_url, sku)
+        success = save_image(img_url, save_filename)
         if success:
             return "DOWNLOADED"
             
@@ -261,19 +267,19 @@ def update_catalog_images():
     print("=== ЗАПУСК ПАРСЕРА КАРТИНОК С ОПТИМИЗАЦИЕЙ ===")
     
     print("Шаг 1: Извлечение артикулов из catalog.js...")
-    skus = get_unique_skus()
-    print(f"Всего уникальных артикулов в каталоге: {len(skus)}")
+    items = get_unique_skus()
+    print(f"Всего уникальных товаров в каталоге: {len(items)}")
     
-    print("Шаг 2: Определение артикулов без картинок...")
-    missing_skus = get_missing_skus(skus)
-    print(f"Артикулов без картинок: {len(missing_skus)}")
+    print("Шаг 2: Определение товаров без картинок...")
+    missing_items = get_missing_skus(items)
+    print(f"Товаров без картинок: {len(missing_items)}")
     
-    # Save the list of missing skus for local user reference
+    # Save the list of missing ids for local user reference
     with open(MISSING_LIST_PATH, 'w', encoding='utf-8') as f:
-        f.write("\n".join(missing_skus))
+        f.write("\n".join([item["id"] for item in missing_items]))
     print(f"Список артикулов сохранен в {MISSING_LIST_PATH}")
     
-    if not missing_skus:
+    if not missing_items:
         print("Все картинки уже скачаны. Завершение работы.")
         return
         
@@ -305,9 +311,9 @@ def update_catalog_images():
     failed = 0
     
     try:
-        for idx, sku in enumerate(missing_skus):
-            print(f"[{idx+1}/{len(missing_skus)}] Скачиваем и оптимизируем для {sku}...", end=" ")
-            res = process_sku_image(driver, sku)
+        for idx, item in enumerate(missing_items):
+            print(f"[{idx+1}/{len(missing_items)}] Скачиваем и оптимизируем для {item['id']}...", end=" ")
+            res = process_sku_image(driver, item)
             print(res)
             
             if res == "DOWNLOADED":
