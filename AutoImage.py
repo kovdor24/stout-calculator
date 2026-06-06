@@ -211,6 +211,7 @@ def process_sku_image(driver, sku):
         close_popups(driver)
         
         raw_sku = sku.strip()
+        img_url = None
         for attempt in range(3):
             try:
                 wait = WebDriverWait(driver, 5)
@@ -222,11 +223,21 @@ def process_sku_image(driver, sku):
                 inp.send_keys(Keys.CONTROL + "a")
                 inp.send_keys(Keys.BACKSPACE)
                 inp.send_keys(raw_sku)
-                time.sleep(1)
+                
+                # Ждем 2 секунды, чтобы появился живой поиск (выпадающая подсказка со скриншота)
+                time.sleep(2)
+                img_url = extract_image_url(driver, sku)
+                if img_url:
+                    break # Нашли картинку в выпадающей подсказке!
+                
+                # Если в подсказке пусто, нажимаем Enter и ждем загрузки результатов
                 try: 
                     driver.find_element(By.CSS_SELECTOR, "button[type='submit'], .search-btn").click()
                 except: 
                     inp.send_keys(Keys.RETURN)
+                    
+                time.sleep(2)
+                img_url = extract_image_url(driver, sku)
                 break
             except StaleElementReferenceException:
                 time.sleep(0.5)
@@ -235,11 +246,6 @@ def process_sku_image(driver, sku):
                 if attempt == 2: return f"ERR_SEARCH: {str(e)[:25]}"
                 time.sleep(0.5)
                 continue
-
-        # Wait for redirect or search result loading
-        time.sleep(2)
-        
-        img_url = extract_image_url(driver, sku)
         if not img_url:
             return "NOT_FOUND"
             
