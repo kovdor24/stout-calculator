@@ -4483,8 +4483,28 @@ const app = {
             }
         }
     },
-    download: function () {
+    download: async function () {
         if (!this.checkAccess('base')) return;
+
+        let pName = this.state.projectName;
+        if (!pName || pName.trim() === "") {
+            const enteredName = await this.prompt(
+                "Для формирования PDF-файла\nВведите название объекта",
+                "",
+                "Ввод данных"
+            );
+            if (enteredName === null) {
+                return;
+            }
+            const cleanName = enteredName.trim();
+            if (cleanName === "") {
+                app.alert("Название объекта не может быть пустым для формирования PDF.");
+                return;
+            }
+            this.setProjectName(cleanName);
+            this.syncUI();
+        }
+
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
 
         const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
