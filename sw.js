@@ -1,4 +1,4 @@
-const CACHE_NAME = 'heatcalc-v1.5';
+const CACHE_NAME = 'heatcalc-v1.6';
 const ASSETS = [
   '/',
   '/index.html',
@@ -10,6 +10,7 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       // Кэшируем основные ассеты (игнорируя ошибки, чтобы не блокировать SW)
@@ -25,6 +26,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
+      clients.claim();
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {

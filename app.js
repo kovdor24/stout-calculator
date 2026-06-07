@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std' },
 
     lastSavedStateString: "",
 
@@ -838,6 +838,9 @@ const app = {
             return;
         }
         this.state.brandMode = val;
+        if (val === 'rommer') {
+            this.state.pprSystemBrand = 'proaqua';
+        }
         this.saveState();
         this.render();
     },
@@ -5204,7 +5207,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -5590,6 +5593,38 @@ const app = {
         let elBoilerAlts = [catalog.boilers_status[0], catalog.boilers_plus[0]]; catalog.boilers_plus.forEach(b => { b.alts = elBoilerAlts; }); catalog.boilers_status.forEach(b => { b.alts = elBoilerAlts; });
         let hydroAlts = catalog.hydro_modular_dn20; catalog.hydro_dn20.forEach(h => { h.alts = hydroAlts; }); catalog.hydro_modular_dn20.forEach(h => { h.alts = catalog.hydro_dn20; });
         let pipeAlts = catalog.rad_pipes_grey; catalog.insulated_pipes.forEach(p => { p.alts = pipeAlts; }); catalog.rad_pipes_grey.forEach(p => { p.alts = catalog.insulated_pipes; });
+        if (catalog.ppr_proaqua_pipe && catalog.ppr_ekoplastik_pipe) {
+            const ext1 = n => {
+                let clean = n.replace(/SDR\s*\d+/gi, '').replace(/PN\s*\d+/gi, '');
+                let m = clean.match(/\s(\d+)(x|х|\s|мм|$)/i);
+                return m ? m[1] : null;
+            };
+            const extRed = n => {
+                let m = n.match(/\s(\d+x\d+x\d+|\d+x\d+|\d+х\d+х\d+|\d+х\d+)/i);
+                return m ? m[1].replace(/х/g,'x') : null;
+            };
+            const extFiMi = n => {
+                let m = n.match(/\s(\d+х[^ ]+|\d+x[^ ]+)/i);
+                return m ? m[1].replace(/х/g,'x').replace(/['"]/g, '') : null;
+            };
+            const linkPprAlts = (arrE, arrP, ext) => {
+                arrE.forEach(e => {
+                    let s = ext(e.name); if (!s) return;
+                    let p = arrP.find(x => ext(x.name) === s);
+                    if (p) { e.alts = [p]; p.alts = [e]; }
+                });
+            };
+            linkPprAlts(catalog.ppr_ekoplastik_pipe, catalog.ppr_proaqua_pipe, ext1);
+            linkPprAlts(catalog.ppr_ekoplastik_elbow90, catalog.ppr_proaqua_elbow90, ext1);
+            linkPprAlts(catalog.ppr_ekoplastik_elbow45, catalog.ppr_proaqua_elbow45, ext1);
+            linkPprAlts(catalog.ppr_ekoplastik_tee, catalog.ppr_proaqua_tee, ext1);
+            linkPprAlts(catalog.ppr_ekoplastik_tee_red, catalog.ppr_proaqua_tee_red, extRed);
+            linkPprAlts(catalog.ppr_ekoplastik_adapter_fi, catalog.ppr_proaqua_adapter_fi, extFiMi);
+            linkPprAlts(catalog.ppr_ekoplastik_adapter_mi, catalog.ppr_proaqua_adapter_mi, extFiMi);
+            linkPprAlts(catalog.ppr_ekoplastik_coupling, catalog.ppr_proaqua_coupling, ext1);
+            linkPprAlts(catalog.ppr_ekoplastik_coupling_red, catalog.ppr_proaqua_coupling_red, extRed);
+        }
+
         if (catalog.manifolds_rad && catalog.manifolds_chrome_blocks) { let chromeAlt = catalog.manifolds_chrome_blocks[0]; catalog.manifolds_rad.forEach(m => { m.alts = [chromeAlt]; }); catalog.manifolds_chrome_blocks.forEach(m => { m.alts = [catalog.manifolds_rad[0]]; }); }
         let xpsAlt = catalog.xps_kit[0]; catalog.mats.forEach(m => { m.alts = [xpsAlt]; }); catalog.xps_kit[0].alts = catalog.mats;
         if (catalog.well_auto) { let waAlts = catalog.well_auto; catalog.well_auto.forEach(a => { a.alts = waAlts; }); }
@@ -5744,6 +5779,10 @@ const app = {
         else if (originalId.startsWith('SCQ') || originalId.startsWith('SCN')) { this.state.convectorType = (this.state.convectorType === 'scq') ? 'scn' : 'scq'; }
         else if (originalId.startsWith('SVT') || originalId.startsWith('SVL')) { this.state.convConnectionType = (this.state.convConnectionType === 'straight') ? 'angled' : 'straight'; }
         else if (originalId.startsWith('SCA-') || originalId.startsWith('RCA-')) { this.state.chimneyType = (this.state.chimneyType === 'standard') ? 'basic' : 'standard'; }
+        else if (originalId.startsWith('PA') || originalId.includes('RCT')) {
+            this.state.pprSystemBrand = (this.state.pprSystemBrand === 'proaqua' || !this.state.pprSystemBrand) ? 'wavin' : 'proaqua';
+        }
+
         else if (originalId.startsWith('SKB-') || /^5[0-9]{4,}[RK]?$/.test(originalId)) {
             // Sinikon sewer items: cycle std ↔ comfort
             this.state.sewerType = (this.state.sewerType === 'std') ? 'comfort' : 'std';
@@ -7494,6 +7533,16 @@ const app = {
     },
 
     // === НОВАЯ ФУНКЦИЯ ДЛЯ ПОДСКАЗОК ===
+    getPprItem: function(catArr, id) {
+        if (!catArr) return null;
+        let e = catArr.find(x => x.id === id);
+        if (!e) return null;
+        let isPA = (this.state.pprSystemBrand === 'proaqua' || !this.state.pprSystemBrand);
+        if (isPA && e.alts && e.alts.length > 0) {
+            return e.alts[0];
+        }
+        return e;
+    },
     getDesc: function (type, val1, val2, val3, val4) {
         const styles = "font-size:11px; line-height:1.4;";
         const head = "font-weight:700; color:#93C5FD; display:block; margin-bottom:4px;";
@@ -8431,7 +8480,7 @@ const app = {
             if (L <= 0) return;
             if (isAnalog) {
                 let ppr_diam = (diam === 22) ? 32 : 40;
-                let p_4m = catalog.ppr_ekoplastik_pipe.find(p => p.id === `STRS0${ppr_diam}RCT`);
+                let p_4m = this.getPprItem(catalog.ppr_ekoplastik_pipe, `STRS0${ppr_diam}RCT`);
                 if (p_4m) {
                     let qty_4m = Math.ceil(L / 4);
                     addToBill(p_4m, qty_4m, desc.replace('из нержавеющей стали AISI 304', `PP-RCT STABI PLUS ${ppr_diam}x${ppr_diam === 32 ? '4.4' : '5.5'} мм (Чехия)`).replace('нержавеющей трубы', 'трубы PP-RCT STABI PLUS'), grp);
@@ -8478,16 +8527,16 @@ const app = {
 
             if (isAnalog) {
                 if (ss_diameter === 22) {
-                    addToBill(catalog.ppr_ekoplastik_adapter_fi.find(x => x.id === 'SZI03225RCT'), 2, `Муфта комбинированная с внутренней резьбой 32х3/4" PP-RCT для подключения трубы к патрубкам котла (${bName}). Требуется: 2 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_elbow90.find(x => x.id === 'SKO03290RCT'), 2, `Угольник 90° PP-RCT 32 мм для поворотов трубопровода при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_elbow45.find(x => x.id === 'SKO03245RCT'), 2, `Угольник 45° PP-RCT 32 мм для обхода препятствий и плавных поворотов при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_tee.find(x => x.id === 'STK032RCTX'), 2, `Тройник PP-RCT 32 мм для создания ответвлений в контуре обвязки котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_adapter_fi, 'SZI03225RCT'), 2, `Муфта комбинированная с внутренней резьбой 32х3/4" PP-RCT для подключения трубы к патрубкам котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_elbow90, 'SKO03290RCT'), 2, `Угольник 90° PP-RCT 32 мм для поворотов трубопровода при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_elbow45, 'SKO03245RCT'), 2, `Угольник 45° PP-RCT 32 мм для обхода препятствий и плавных поворотов при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_tee, 'STK032RCTX'), 2, `Тройник PP-RCT 32 мм для создания ответвлений в контуре обвязки котла (${bName}). Требуется: 2 шт.`, grp);
                 } else {
-                    addToBill(catalog.ppr_ekoplastik_coupling_red.find(x => x.id === 'SRE14032RCT'), 2, `Муфта переходная 40х32 PP-RCT для перехода на диаметр 32 мм при подключении котла (${bName}). Требуется: 2 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_adapter_fi.find(x => x.id === 'SZI03232OKRCT'), 2, `Муфта комбинированная с внутренней резьбой 32х1" PP-RCT для подключения к патрубкам котла (${bName}). Требуется: 2 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_elbow90.find(x => x.id === 'SKO04090RCT'), 2, `Угольник 90° PP-RCT 40 мм для поворотов трубопровода при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_elbow45.find(x => x.id === 'SKO04045RCT'), 2, `Угольник 45° PP-RCT 40 мм для обхода препятствий и плавных поворотов при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_tee_red.find(x => x.id === 'STKR04032RCT'), 2, `Тройник переходной 40х32х40 PP-RCT для ответвлений в контуре обвязки котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_coupling_red, 'SRE14032RCT'), 2, `Муфта переходная 40х32 PP-RCT для перехода на диаметр 32 мм при подключении котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_adapter_fi, 'SZI03232OKRCT'), 2, `Муфта комбинированная с внутренней резьбой 32х1" PP-RCT для подключения к патрубкам котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_elbow90, 'SKO04090RCT'), 2, `Угольник 90° PP-RCT 40 мм для поворотов трубопровода при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_elbow45, 'SKO04045RCT'), 2, `Угольник 45° PP-RCT 40 мм для обхода препятствий и плавных поворотов при обвязке котла (${bName}). Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_tee_red, 'STKR04032RCT'), 2, `Тройник переходной 40х32х40 PP-RCT для ответвлений в контуре обвязки котла (${bName}). Требуется: 2 шт.`, grp);
                 }
             } else {
                 if (ss_diameter === 22) {
@@ -8512,16 +8561,16 @@ const app = {
 
             if (isAnalog) {
                 if (ss_diameter === 22) {
-                    addToBill(catalog.ppr_ekoplastik_adapter_fi.find(x => x.id === 'SZI03225RCT'), 2, `Муфта комбинированная с внутренней резьбой 32х3/4" PP-RCT для подключения трубы к змеевику бойлера ГВС. Требуется: 2 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_elbow90.find(x => x.id === 'SKO03290RCT'), 4, `Угольник 90° PP-RCT 32 мм для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_elbow45.find(x => x.id === 'SKO03245RCT'), 2, `Угольник 45° PP-RCT 32 мм для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_tee.find(x => x.id === 'STK032RCTX'), 2, `Тройник PP-RCT 32 мм для ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_adapter_fi, 'SZI03225RCT'), 2, `Муфта комбинированная с внутренней резьбой 32х3/4" PP-RCT для подключения трубы к змеевику бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_elbow90, 'SKO03290RCT'), 4, `Угольник 90° PP-RCT 32 мм для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_elbow45, 'SKO03245RCT'), 2, `Угольник 45° PP-RCT 32 мм для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_tee, 'STK032RCTX'), 2, `Тройник PP-RCT 32 мм для ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
                 } else {
-                    addToBill(catalog.ppr_ekoplastik_coupling_red.find(x => x.id === 'SRE14032RCT'), 2, `Муфта переходная 40х32 PP-RCT для перехода на диаметр 32 мм при подключении змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_adapter_fi.find(x => x.id === 'SZI03232OKRCT'), 2, `Муфта комбинированная с внутренней резьбой 32х1" PP-RCT для подключения к патрубкам змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_elbow90.find(x => x.id === 'SKO04090RCT'), 4, `Угольник 90° PP-RCT 40 мм для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_elbow45.find(x => x.id === 'SKO04045RCT'), 2, `Угольник 45° PP-RCT 40 мм для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
-                    addToBill(catalog.ppr_ekoplastik_tee_red.find(x => x.id === 'STKR04032RCT'), 2, `Тройник переходной 40х32х40 PP-RCT для ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_coupling_red, 'SRE14032RCT'), 2, `Муфта переходная 40х32 PP-RCT для перехода на диаметр 32 мм при подключении змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_adapter_fi, 'SZI03232OKRCT'), 2, `Муфта комбинированная с внутренней резьбой 32х1" PP-RCT для подключения к патрубкам змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_elbow90, 'SKO04090RCT'), 4, `Угольник 90° PP-RCT 40 мм для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_elbow45, 'SKO04045RCT'), 2, `Угольник 45° PP-RCT 40 мм для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_tee_red, 'STKR04032RCT'), 2, `Тройник переходной 40х32х40 PP-RCT для ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
                 }
             } else {
                 if (ss_diameter === 22) {
@@ -8542,12 +8591,12 @@ const app = {
             ss_pipes_demand[22].components.push("расширительный бак ГВС");
 
             if (isAnalog) {
-                addToBill(catalog.ppr_ekoplastik_adapter_mi.find(x => x.id === 'SZE03225RCT'), 1, `Муфта комбинированная с наружной резьбой 32х3/4" PP-RCT для подключения трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
-                addToBill(catalog.ppr_ekoplastik_elbow90.find(x => x.id === 'SKO03290RCT'), 1, `Угольник 90° PP-RCT 32 мм для подведения трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
+                addToBill(this.getPprItem(catalog.ppr_ekoplastik_adapter_mi, 'SZE03225RCT'), 1, `Муфта комбинированная с наружной резьбой 32х3/4" PP-RCT для подключения трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
+                addToBill(this.getPprItem(catalog.ppr_ekoplastik_elbow90, 'SKO03290RCT'), 1, `Угольник 90° PP-RCT 32 мм для подведения трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
                 if (ss_diameter === 22) {
-                    addToBill(catalog.ppr_ekoplastik_tee.find(x => x.id === 'STK032RCTX'), 1, `Тройник PP-RCT 32 мм для врезки линии расширительного бака ГВС. Требуется: 1 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_tee, 'STK032RCTX'), 1, `Тройник PP-RCT 32 мм для врезки линии расширительного бака ГВС. Требуется: 1 шт.`, grp);
                 } else {
-                    addToBill(catalog.ppr_ekoplastik_tee_red.find(x => x.id === 'STKR04032RCT'), 1, `Тройник переходной 40х32х40 PP-RCT для врезки линии расширительного бака ГВС. Требуется: 1 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_tee_red, 'STKR04032RCT'), 1, `Тройник переходной 40х32х40 PP-RCT для врезки линии расширительного бака ГВС. Требуется: 1 шт.`, grp);
                 }
             } else {
                 addToBill(catalog.ss_adapter_mi.find(x => x.id === 'RSS-1021-002234'), 1, `Переходник с пресс-соединения на наружную резьбу 3/4" для подключения нержавеющей трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
@@ -8572,12 +8621,12 @@ const app = {
             ss_pipes_demand[22].components.push("расширительный бак отопления");
 
             if (isAnalog) {
-                addToBill(catalog.ppr_ekoplastik_adapter_mi.find(x => x.id === 'SZE03225RCT'), 1, `Муфта комбинированная с наружной резьбой 32х3/4" PP-RCT для подключения трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
-                addToBill(catalog.ppr_ekoplastik_elbow90.find(x => x.id === 'SKO03290RCT'), 1, `Угольник 90° PP-RCT 32 мм для подведения трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
+                addToBill(this.getPprItem(catalog.ppr_ekoplastik_adapter_mi, 'SZE03225RCT'), 1, `Муфта комбинированная с наружной резьбой 32х3/4" PP-RCT для подключения трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
+                addToBill(this.getPprItem(catalog.ppr_ekoplastik_elbow90, 'SKO03290RCT'), 1, `Угольник 90° PP-RCT 32 мм для подведения трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
                 if (ss_diameter === 22) {
-                    addToBill(catalog.ppr_ekoplastik_tee.find(x => x.id === 'STK032RCTX'), 1, `Тройник PP-RCT 32 мм для врезки расширительного бака отопления. Требуется: 1 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_tee, 'STK032RCTX'), 1, `Тройник PP-RCT 32 мм для врезки расширительного бака отопления. Требуется: 1 шт.`, grp);
                 } else {
-                    addToBill(catalog.ppr_ekoplastik_tee_red.find(x => x.id === 'STKR04032RCT'), 1, `Тройник переходной 40х32х40 PP-RCT для врезки расширительного бака отопления. Требуется: 1 шт.`, grp);
+                    addToBill(this.getPprItem(catalog.ppr_ekoplastik_tee_red, 'STKR04032RCT'), 1, `Тройник переходной 40х32х40 PP-RCT для врезки расширительного бака отопления. Требуется: 1 шт.`, grp);
                 }
             } else {
                 addToBill(catalog.ss_adapter_mi.find(x => x.id === 'RSS-1021-002234'), 1, `Переходник с пресс-соединения на наружную резьбу 3/4" для подключения нержавеющей трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
@@ -8597,7 +8646,7 @@ const app = {
                 // Исключаем дублирование названий компонентов
                 let uniqueComponents = [...new Set(d.components)];
                 let listComponents = uniqueComponents.join(", ");
-                let pipeName = isAnalog ? "Труба PP-RCT" : "Труба из нержавеющей стали AISI 304";
+                let pipeName = isAnalog ? ((this.state.pprSystemBrand === 'proaqua' || !this.state.pprSystemBrand) ? "Труба PP-R DUO SDR 6" : "Труба PP-RCT") : "Труба из нержавеющей стали AISI 304";
                 let descPipe = `${pipeName} для обвязки оборудования котельной (${listComponents}). Общая расчетная длина: ${d.length.toFixed(1)} м.`;
                 addPipesToBill(d.length, parseInt(diam), "2.4. Трубопроводы котельной", descPipe);
             }

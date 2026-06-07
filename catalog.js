@@ -3750,7 +3750,1081 @@ ppr_ekoplastik_pipe: [
                 "availability": "in_stock",
   price_date: '2026-06-06'
         }
-]
+],
+
+// --- ProAqua PPR ---
+    ppr_proaqua_pipe: [
+        {
+            "id": "PA39008",
+            "article": "PA39008",
+            "price": 553.56,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Труба PP-R DUO SDR 6 20 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA39010",
+            "article": "PA39010",
+            "price": 808.08,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Труба PP-R DUO SDR 6 25 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA39012",
+            "article": "PA39012",
+            "price": 1460.76,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Труба PP-R DUO SDR 6 32 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA39014",
+            "article": "PA39014",
+            "price": 2220.84,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Труба PP-R DUO SDR 6 40 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA39016",
+            "article": "PA39016",
+            "price": 3392.64,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Труба PP-R DUO SDR 6 50 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA39018",
+            "article": "PA39018",
+            "price": 5246,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Труба PP-R DUO SDR 6 63 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA39020",
+            "article": "PA39020",
+            "price": 8583.28,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Труба PP-R DUO SDR 6 75 мм",
+            "unit": "шт"
+        }
+    ],
+    ppr_proaqua_elbow90: [
+        {
+            "id": "PA13008P",
+            "article": "PA13008P",
+            "price": 10.08,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 90° PP-R 20 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13010P",
+            "article": "PA13010P",
+            "price": 16.11,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 90° PP-R 25 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13012P",
+            "article": "PA13012P",
+            "price": 30.94,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 90° PP-R 32 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13014P",
+            "article": "PA13014P",
+            "price": 58.79,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 90° PP-R 40 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13016P",
+            "article": "PA13016P",
+            "price": 106.26,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 90° PP-R 50 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13018P",
+            "article": "PA13018P",
+            "price": 211.65,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 90° PP-R 63 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13020P",
+            "article": "PA13020P",
+            "price": 422.81,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 90° PP-R 75 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13022P",
+            "article": "PA13022P",
+            "price": 665.21,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 90° PP-R 90 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13024P",
+            "article": "PA13024P",
+            "price": 915.69,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 90° PP-R 110 мм",
+            "unit": "шт"
+        }
+    ],
+    ppr_proaqua_elbow45: [
+        {
+            "id": "PA13508P",
+            "article": "PA13508P",
+            "price": 7.91,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 45° PP-R 20 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13510P",
+            "article": "PA13510P",
+            "price": 13.16,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 45° PP-R 25 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13512P",
+            "article": "PA13512P",
+            "price": 24.72,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 45° PP-R 32 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13514P",
+            "article": "PA13514P",
+            "price": 54.56,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 45° PP-R 40 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13516P",
+            "article": "PA13516P",
+            "price": 92.98,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 45° PP-R 50 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13518P",
+            "article": "PA13518P",
+            "price": 149.65,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 45° PP-R 63 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13520P",
+            "article": "PA13520P",
+            "price": 372.46,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 45° PP-R 75 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13522P",
+            "article": "PA13522P",
+            "price": 657.45,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 45° PP-R 90 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA13524",
+            "article": "PA13524",
+            "price": 738.98,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Угольник 45° PP-R 110 мм",
+            "unit": "шт"
+        }
+    ],
+    ppr_proaqua_tee: [
+        {
+            "id": "PA14008P",
+            "article": "PA14008P",
+            "price": 12.73,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник PP-R 20 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14010P",
+            "article": "PA14010P",
+            "price": 21.14,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник PP-R 25 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14012P",
+            "article": "PA14012P",
+            "price": 39.89,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник PP-R 32 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14014P",
+            "article": "PA14014P",
+            "price": 72.08,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник PP-R 40 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14016P",
+            "article": "PA14016P",
+            "price": 129.75,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник PP-R 50 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14018P",
+            "article": "PA14018P",
+            "price": 262.7,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник PP-R 63 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14020P",
+            "article": "PA14020P",
+            "price": 449.98,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник PP-R 75 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14022P",
+            "article": "PA14022P",
+            "price": 873.71,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник PP-R 90 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14024P",
+            "article": "PA14024P",
+            "price": 1337.12,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник PP-R 110 мм",
+            "unit": "шт"
+        }
+    ],
+    ppr_proaqua_tee_red: [
+        {
+            "id": "PA14518P",
+            "article": "PA14518P",
+            "price": 21.8,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 20х25х20",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14520P",
+            "article": "PA14520P",
+            "price": 22,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 25х20х20",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14521P",
+            "article": "PA14521P",
+            "price": 22.11,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 25х20х25",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14522P",
+            "article": "PA14522P",
+            "price": 27.24,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 25х25х20",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14530P",
+            "article": "PA14530P",
+            "price": 33.95,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 32х20х20",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14531P",
+            "article": "PA14531P",
+            "price": 46.82,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 32х20х25",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14532P",
+            "article": "PA14532P",
+            "price": 34.15,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 32х20х32",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14533P",
+            "article": "PA14533P",
+            "price": 36.23,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 32х25х20",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14534P",
+            "article": "PA14534P",
+            "price": 36.75,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 32х25х25",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14535P",
+            "article": "PA14535P",
+            "price": 34.18,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 32х25х32",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14540P",
+            "article": "PA14540P",
+            "price": 63.95,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 40х20х40",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14541P",
+            "article": "PA14541P",
+            "price": 64.19,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 40х25х40",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14542P",
+            "article": "PA14542P",
+            "price": 68.5,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 40х32х40",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14559P",
+            "article": "PA14559P",
+            "price": 93.75,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 50х20х50",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14550P",
+            "article": "PA14550P",
+            "price": 114.25,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 50х25х50",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14551P",
+            "article": "PA14551P",
+            "price": 126.38,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 50х32х50",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14552P",
+            "article": "PA14552P",
+            "price": 165.86,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 50х40х50",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14560P",
+            "article": "PA14560P",
+            "price": 195.94,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 63х20х63",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14562P",
+            "article": "PA14562P",
+            "price": 202.11,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 63х25х63",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14563P",
+            "article": "PA14563P",
+            "price": 205.79,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 63х32х63",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14564P",
+            "article": "PA14564P",
+            "price": 243.61,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 63х40х63",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14565P",
+            "article": "PA14565P",
+            "price": 336.54,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 63х50х63",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14570P",
+            "article": "PA14570P",
+            "price": 378.23,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 75х25х75",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14571P",
+            "article": "PA14571P",
+            "price": 382.58,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 75х32х75",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14572P",
+            "article": "PA14572P",
+            "price": 550.3,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 75х40х75",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14573P",
+            "article": "PA14573P",
+            "price": 557.05,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 75х50х75",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14574P",
+            "article": "PA14574P",
+            "price": 560.95,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 75х63х75",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14578P",
+            "article": "PA14578P",
+            "price": 603.58,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 90х40х90",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14580P",
+            "article": "PA14580P",
+            "price": 982.4,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 90х50х90",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14582P",
+            "article": "PA14582P",
+            "price": 1074.21,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 90х63х90",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14584P",
+            "article": "PA14584P",
+            "price": 1093.91,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 90х75х90",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14586",
+            "article": "PA14586",
+            "price": 1094.86,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 110х50х110",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14596P",
+            "article": "PA14596P",
+            "price": 1299.7,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 110х63х110",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14598P",
+            "article": "PA14598P",
+            "price": 1768.77,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 110х75х110",
+            "unit": "шт"
+        },
+        {
+            "id": "PA14600P",
+            "article": "PA14600P",
+            "price": 1846.48,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Тройник переходной PP-R 110х90х110",
+            "unit": "шт"
+        }
+    ],
+    ppr_proaqua_adapter_fi: [
+        {
+            "id": "PA22008P",
+            "article": "PA22008P",
+            "price": 92.17,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная ВР PP-R 20х1/2",
+            "unit": "шт"
+        },
+        {
+            "id": "PA22010P",
+            "article": "PA22010P",
+            "price": 141.69,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная ВР PP-R 20х3/4",
+            "unit": "шт"
+        },
+        {
+            "id": "PA22012P",
+            "article": "PA22012P",
+            "price": 99.46,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная ВР PP-R 25х1/2",
+            "unit": "шт"
+        },
+        {
+            "id": "PA22014P",
+            "article": "PA22014P",
+            "price": 139.37,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная ВР PP-R 25х3/4",
+            "unit": "шт"
+        },
+        {
+            "id": "PA22013P",
+            "article": "PA22013P",
+            "price": 281.53,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная ВР PP-R 25х1",
+            "unit": "шт"
+        },
+        {
+            "id": "PA22015P",
+            "article": "PA22015P",
+            "price": 148.64,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная ВР PP-R 32х1/2",
+            "unit": "шт"
+        },
+        {
+            "id": "PA22016P",
+            "article": "PA22016P",
+            "price": 149.68,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная ВР PP-R 32х3/4",
+            "unit": "шт"
+        },
+        {
+            "id": "PA22018P",
+            "article": "PA22018P",
+            "price": 256.94,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная ВР PP-R 32х1",
+            "unit": "шт"
+        },
+        {
+            "id": "PA22020",
+            "article": "PA22020",
+            "price": 320.65,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная ВР PP-R 40х1",
+            "unit": "шт"
+        }
+    ],
+    ppr_proaqua_adapter_mi: [
+        {
+            "id": "PA23008P",
+            "article": "PA23008P",
+            "price": 129.76,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная НР PP-R 20х1/2",
+            "unit": "шт"
+        },
+        {
+            "id": "PA23010P",
+            "article": "PA23010P",
+            "price": 197.98,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная НР PP-R 20х3/4",
+            "unit": "шт"
+        },
+        {
+            "id": "PA23012P",
+            "article": "PA23012P",
+            "price": 138.21,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная НР PP-R 25х1/2",
+            "unit": "шт"
+        },
+        {
+            "id": "PA23014P",
+            "article": "PA23014P",
+            "price": 194.98,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная НР PP-R 25х3/4",
+            "unit": "шт"
+        },
+        {
+            "id": "PA23013P",
+            "article": "PA23013P",
+            "price": 369.93,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная НР PP-R 25х1",
+            "unit": "шт"
+        },
+        {
+            "id": "PA23015P",
+            "article": "PA23015P",
+            "price": 181.01,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная НР PP-R 32х1/2",
+            "unit": "шт"
+        },
+        {
+            "id": "PA23016P",
+            "article": "PA23016P",
+            "price": 199.89,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная НР PP-R 32х3/4",
+            "unit": "шт"
+        },
+        {
+            "id": "PA23018P",
+            "article": "PA23018P",
+            "price": 356.57,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная НР PP-R 32х1",
+            "unit": "шт"
+        },
+        {
+            "id": "PA23020",
+            "article": "PA23020",
+            "price": 434.35,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта комбинированная НР PP-R 40х1",
+            "unit": "шт"
+        }
+    ],
+    ppr_proaqua_coupling: [
+        {
+            "id": "PA12008P",
+            "article": "PA12008P",
+            "price": 7.38,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта соединительная PP-R 20 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12010P",
+            "article": "PA12010P",
+            "price": 11.18,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта соединительная PP-R 25 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12012P",
+            "article": "PA12012P",
+            "price": 20.45,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта соединительная PP-R 32 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12014P",
+            "article": "PA12014P",
+            "price": 38.44,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта соединительная PP-R 40 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12016P",
+            "article": "PA12016P",
+            "price": 62.17,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта соединительная PP-R 50 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12018P",
+            "article": "PA12018P",
+            "price": 118.54,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта соединительная PP-R 63 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12020P",
+            "article": "PA12020P",
+            "price": 226.1,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта соединительная PP-R 75 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12022P",
+            "article": "PA12022P",
+            "price": 369.8,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта соединительная PP-R 90 мм",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12024P",
+            "article": "PA12024P",
+            "price": 694.01,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта соединительная PP-R 110 мм",
+            "unit": "шт"
+        }
+    ],
+    ppr_proaqua_coupling_red: [
+        {
+            "id": "PA12512P",
+            "article": "PA12512P",
+            "price": 9.1,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 25х20",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12514P",
+            "article": "PA12514P",
+            "price": 15.02,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 32х20",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12516P",
+            "article": "PA12516P",
+            "price": 15.88,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 32х25",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12518P",
+            "article": "PA12518P",
+            "price": 23.61,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 40х20",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12520P",
+            "article": "PA12520P",
+            "price": 24.99,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 40х25",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12522P",
+            "article": "PA12522P",
+            "price": 29.36,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 40х32",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12524P",
+            "article": "PA12524P",
+            "price": 39.86,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 50х20",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12526P",
+            "article": "PA12526P",
+            "price": 41.82,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 50х25",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12528P",
+            "article": "PA12528P",
+            "price": 46.14,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 50х32",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12530P",
+            "article": "PA12530P",
+            "price": 54.35,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 50х40",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12531",
+            "article": "PA12531",
+            "price": 69.82,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 63х20",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12532P",
+            "article": "PA12532P",
+            "price": 68.88,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 63х25",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12534P",
+            "article": "PA12534P",
+            "price": 72.49,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 63х32",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12536P",
+            "article": "PA12536P",
+            "price": 76.08,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 63х40",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12538P",
+            "article": "PA12538P",
+            "price": 93.1,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 63х50",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12540P",
+            "article": "PA12540P",
+            "price": 168.27,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 75х50",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12542P",
+            "article": "PA12542P",
+            "price": 212.16,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 75х63",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12544P",
+            "article": "PA12544P",
+            "price": 259.66,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 90х63",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12546P",
+            "article": "PA12546P",
+            "price": 347.22,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 90х75",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12547P",
+            "article": "PA12547P",
+            "price": 417.04,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 110х75",
+            "unit": "шт"
+        },
+        {
+            "id": "PA12548P",
+            "article": "PA12548P",
+            "price": 464.42,
+            "brand": "ProAqua",
+            "availability": "in_stock",
+            "name": "Муфта переходная PP-R 110х90",
+            "unit": "шт"
+        }
+    ],
+
 };
 
 const titanRads = [
