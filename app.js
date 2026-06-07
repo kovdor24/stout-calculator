@@ -8421,6 +8421,11 @@ const app = {
         let ss_diameter = (totalBoilerPower <= 30) ? 22 : 28;
         let isAnalog = (this.state.brandMode === 'rommer');
 
+        let ss_pipes_demand = {
+            22: { length: 0, components: [] },
+            28: { length: 0, components: [] }
+        };
+
         // Функция добавления труб с комбинированным подбором 2м/4м штанг или PPR штанг по 4м
         const addPipesToBill = (L, diam, grp, desc) => {
             if (L <= 0) return;
@@ -8429,7 +8434,7 @@ const app = {
                 let p_4m = catalog.ppr_ekoplastik_pipe.find(p => p.id === `STRS0${ppr_diam}RCT`);
                 if (p_4m) {
                     let qty_4m = Math.ceil(L / 4);
-                    addToBill(p_4m, qty_4m * 4, desc.replace('из нержавеющей стали AISI 304', `PP-RCT STABI PLUS ${ppr_diam}x${ppr_diam === 32 ? '4.4' : '5.5'} мм (Чехия)`).replace('нержавеющей трубы', 'трубы PP-RCT STABI PLUS'), grp);
+                    addToBill(p_4m, qty_4m, desc.replace('из нержавеющей стали AISI 304', `PP-RCT STABI PLUS ${ppr_diam}x${ppr_diam === 32 ? '4.4' : '5.5'} мм (Чехия)`).replace('нержавеющей трубы', 'трубы PP-RCT STABI PLUS'), grp);
                 }
             } else {
                 let p_4m = catalog.ss_pipe_4m.find(p => p.id === `RSS-1001-0000${diam}`);
@@ -8456,10 +8461,10 @@ const app = {
                 }
 
                 if (qty_4m > 0 && p_4m) {
-                    addToBill(p_4m, qty_4m * 4, desc, grp);
+                    addToBill(p_4m, qty_4m, desc, grp);
                 }
                 if (qty_2m > 0 && p_2m) {
-                    addToBill(p_2m, qty_2m * 2, desc, grp);
+                    addToBill(p_2m, qty_2m, desc, grp);
                 }
             }
         };
@@ -8468,8 +8473,8 @@ const app = {
         selBoilers.forEach(b => {
             let grp = (b.type === 'gas') ? "2.1. Обвязка Газового котла" : "2.2. Обвязка Электрического котла";
             let bName = (b.type === 'gas') ? "Газовый котёл" : "Электрический котёл";
-            let descPipe = `Труба из нержавеющей стали AISI 304 для соединения котла (${bName}) с коллектором/гидрострелкой. Расчетная длина: 2.0 м.`;
-            addPipesToBill(2.0, ss_diameter, grp, descPipe);
+            ss_pipes_demand[ss_diameter].length += 2.0;
+            ss_pipes_demand[ss_diameter].components.push(bName === "Газовый котёл" ? "газовый котёл" : "электрический котёл");
 
             if (isAnalog) {
                 if (ss_diameter === 22) {
@@ -8502,8 +8507,8 @@ const app = {
         // 2. Бойлер ГВС
         if (this.state.hotWater) {
             let grp = "2.3. Обвязка Водонагревателя";
-            let descPipe = `Труба из нержавеющей стали AISI 304 для подключения греющего контура змеевика бойлера ГВС. Расчетная длина: 4.0 м.`;
-            addPipesToBill(4.0, ss_diameter, grp, descPipe);
+            ss_pipes_demand[ss_diameter].length += 4.0;
+            ss_pipes_demand[ss_diameter].components.push("греющий контур бойлера");
 
             if (isAnalog) {
                 if (ss_diameter === 22) {
@@ -8533,8 +8538,8 @@ const app = {
             }
 
             // Трубы для расширительного бака ГВС (1.5 м, всегда диаметром 22)
-            let tankPipeDesc = `Труба из нержавеющей стали AISI 304 диаметром 22 мм для подключения расширительного бака ГВС. Расчетная длина: 1.5 м.`;
-            addPipesToBill(1.5, 22, grp, tankPipeDesc);
+            ss_pipes_demand[22].length += 1.5;
+            ss_pipes_demand[22].components.push("расширительный бак ГВС");
 
             if (isAnalog) {
                 addToBill(catalog.ppr_ekoplastik_adapter_mi.find(x => x.id === 'SZE03225RCT'), 1, `Муфта комбинированная с наружной резьбой 32х3/4" PP-RCT для подключения трубы к расширительному баку ГВС. Требуется: 1 шт.`, grp);
@@ -8563,8 +8568,8 @@ const app = {
             let bName = primaryBoiler ? ((primaryBoiler.type === 'gas') ? "газового котла" : "электрического котла") : "котла";
 
             // Трубы для расширительного бака отопления (1.5 м, всегда диаметром 22)
-            let tankPipeDesc = `Труба из нержавеющей стали AISI 304 диаметром 22 мм для подключения расширительного бака отопления к котлу. Расчетная длина: 1.5 м.`;
-            addPipesToBill(1.5, 22, grp, tankPipeDesc);
+            ss_pipes_demand[22].length += 1.5;
+            ss_pipes_demand[22].components.push("расширительный бак отопления");
 
             if (isAnalog) {
                 addToBill(catalog.ppr_ekoplastik_adapter_mi.find(x => x.id === 'SZE03225RCT'), 1, `Муфта комбинированная с наружной резьбой 32х3/4" PP-RCT для подключения трубы к расширительному баку отопления. Требуется: 1 шт.`, grp);
@@ -8582,6 +8587,19 @@ const app = {
                 } else {
                     addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 1, `Пресс-тройник переходной 28х22х28 мм для врезки расширительного бака отопления. Требуется: 1 шт.`, grp);
                 }
+            }
+        }
+
+        // Добавляем суммированные трубы котельной в смету
+        for (let diam in ss_pipes_demand) {
+            let d = ss_pipes_demand[diam];
+            if (d.length > 0) {
+                // Исключаем дублирование названий компонентов
+                let uniqueComponents = [...new Set(d.components)];
+                let listComponents = uniqueComponents.join(", ");
+                let pipeName = isAnalog ? "Труба PP-RCT" : "Труба из нержавеющей стали AISI 304";
+                let descPipe = `${pipeName} для обвязки оборудования котельной (${listComponents}). Общая расчетная длина: ${d.length.toFixed(1)} м.`;
+                addPipesToBill(d.length, parseInt(diam), "2.4. Трубопроводы котельной", descPipe);
             }
         }
         
