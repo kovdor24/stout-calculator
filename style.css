@@ -5936,23 +5936,25 @@ body.dark-mode .price-blur:hover {
 /* Кнопка "Наверх" */
 .to-top-btn {
     position: fixed;
-    bottom: 25px;
-    right: 25px;
-    width: 48px;
-    height: 48px;
+    bottom: 58px; /* Выше кнопки "Сообщить о проблеме" на десктопе */
+    right: 16px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: var(--primary);
-    color: #ffffff;
-    border: none;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--text-main);
+    border: 1px solid var(--border);
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 9999;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(15px);
+    transform: translateY(10px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -5962,24 +5964,60 @@ body.dark-mode .price-blur:hover {
     transform: translateY(0);
 }
 
+.to-top-btn svg {
+    stroke: var(--primary);
+    width: 18px;
+    height: 18px;
+    transition: transform 0.3s ease;
+}
+
 .to-top-btn:hover {
-    background: #2563EB;
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
-    transform: translateY(-3px);
+    transform: translateY(-2px);
+    background: #ffffff;
+    border-color: rgba(37, 99, 235, 0.3);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12);
+}
+
+.to-top-btn:hover svg {
+    transform: translateY(-2px);
 }
 
 .to-top-btn:active {
-    transform: translateY(-1px);
+    transform: translateY(0);
 }
 
-/* На мобильных устройствах приподнимаем кнопку, чтобы она не перекрывала нижнее меню */
+/* Поддержка темной темы */
+body.dark-mode .to-top-btn {
+    background: rgba(31, 41, 55, 0.85);
+    border-color: rgba(75, 85, 99, 0.3);
+    color: #f3f4f6;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .to-top-btn:hover {
+    background: #1f2937;
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+/* На мобильных устройствах скрыта кнопка обратной связи, поэтому перемещаем кнопку Наверх вниз */
 @media screen and (max-width: 768px) {
     .to-top-btn {
         bottom: 95px; /* Приподнимаем над .mobile-bottom-nav */
-        right: 20px;
-        width: 44px;
-        height: 44px;
+        right: 16px;
+        width: 38px;
+        height: 38px;
+        background: var(--primary); /* Яркая контрастная кнопка на мобилке */
+        color: #ffffff;
+        border: none;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+    .to-top-btn svg {
+        stroke: #ffffff;
+    }
+    .to-top-btn:hover {
+        background: #2563EB;
+        transform: translateY(-2px);
     }
 }
 
