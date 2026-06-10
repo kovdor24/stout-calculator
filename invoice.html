@@ -2341,86 +2341,7 @@
             "узла смешения": "Что будет выполнено: Монтаж смесительного узла для обеспечения комфортной температуры теплого пола.\nЧто эта работа включает, этапы и порядок действий: Сборка трехходового термостатического смесителя, установка циркуляционного насоса, подключение байпаса и балансировка узла для стабильного подмеса.",
             "от котла до коллектора": "Что будет выполнено: Прокладка основных подающих и обратных трубопроводов (магистралей).\nЧто эта работа включает, этапы и порядок действий: Монтаж труб большого диаметра (из сшитого полиэтилена или полипропилена) в защитной гофре или теплоизоляции от котла до распределительных коллекторов.",
             "магистральные трубопроводы": "Что будет выполнено: Прокладка основных подающих и обратных трубопроводов (магистралей).\nЧто эта работа включает, этапы и порядок действий: Монтаж труб большого диаметра (из сшитого полиэтилена или полипропилена) в защитной гофре или теплоизоляции от котла до распределительных коллекторов.",
-                     const discountPercent = compact.o.c || 0; // 'c' is the discount percentage
-
-            function resolveAvailability(avail, priceDate) {
-                if (!avail) return '';
-                let actualAvail = avail;
-                if (actualAvail === 'in_stock') {
-                    if (priceDate) {
-                        const uDate = new Date(priceDate);
-                        if (!isNaN(uDate.getTime())) {
-                            const diffDays = (new Date() - uDate) / (1000 * 60 * 60 * 24);
-                            if (diffDays > 31) {
-                                actualAvail = 'on_order';
-                            }
-                        }
-                    }
-                }
-                return actualAvail;
-            }
-
-            const equipmentList = (compact.i.e || []).map(item => {
-                // If it is in the old full format, return as-is
-                if (item.hasOwnProperty('n') && item.c !== 1) {
-                    return {
-                        name: item.n,
-                        displaySku: item.s,
-                        brand: item.b,
-                        unit: item.u,
-                        q: item.q,
-                        price: item.p,
-                        sum: item.m,
-                        sectionTitle: item.t,
-                        isOpt: !!item.isOpt,
-                        desc: item.desc || item.d || '',
-                        availability: resolveAvailability(item.availability || item.a || '', item.price_date || item.pd || '')
-                    };
-                }
- 
-                // If it's a custom manually-added item
-                if (item.c === 1) {
-                    const price = item.p || 0;
-                    const q = item.q || 0;
-                    return {
-                        name: item.n || 'Свое оборудование',
-                        displaySku: item.id || '',
-                        brand: item.b || ' ',
-                        unit: item.u || 'шт',
-                        q: q,
-                        price: price,
-                        sum: price * q,
-                        sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
-                        isOpt: false,
-                        desc: item.d || item.desc || '',
-                        availability: ''
-                    };
-                }
- 
-                // Standard item: look up in catalog.js
-                const catalogItem = findCatalogItem(item.s) || {};
-                let basePrice = catalogItem.price || 0;
-                // Apply discount if any
-                let finalPrice = basePrice;
-                if (discountPercent > 0) {
-                    finalPrice = Math.round(basePrice * (1 - discountPercent / 100));
-                }
-                const q = item.q || 0;
-                
-                return {
-                    name: catalogItem.name || item.s || 'Оборудование',
-                    displaySku: item.s,
-                    brand: catalogItem.brand || 'STOUT',
-                    unit: catalogItem.unit || 'шт',
-                    q: q,
-                    price: finalPrice,
-                    sum: finalPrice * q,
-                    sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
-                    isOpt: item.o === 1,
-                    desc: item.d || catalogItem.desc || '',
-                    availability: resolveAvailability(catalogItem.availability || '', catalogItem.price_date || '')
-                };
-            });�ического регулятора температуры на клапан радиатора.\nЧто эта работа включает, этапы и порядок действий: Монтаж термоголовки на резьбу термостатического клапана радиатора, калибровка температурной шкалы по желанию клиента для поддержания комфортного климата.",
+                     "термоголовки": "Что будет выполнено: Монтаж автоматического регулятора температуры на клапан радиатора.\nЧто эта работа включает, этапы и порядок действий: Монтаж термоголовки на резьбу термостатического клапана радиатора, калибровка температурной шкалы по желанию клиента для поддержания комфортного климата.",
             "узла нижнего подключения радиатора": "Что будет выполнено: Монтаж присоединительной Н-образной арматуры (мультифлекса) на радиатор.\nЧто эта работа включает, этапы и порядок действий: Резьбовая сборка клапана с нижними патрубками радиатора, герметизация стыков, подключение труб отопления через конусные соединения.",
             "г-образной трубки": "Что будет выполнено: Подключение радиатора из стены или пола жесткими хромированными трубками.\nЧто эта работа включает, этапы и порядок действий: Подрезка и жесткая фиксация Г-образных трубок PEX-инструментом, подключение к мультифлексу. Обеспечивает премиальный внешний вид без торчащих пластиковых труб.",
             "регулятора vartronic": "Что будет выполнено: Монтаж комнатного терморегулятора Vartronic для управления климатом.\nЧто эта работа включает, этапы и порядок действий: Настенный монтаж термостата в жилой зоне на высоте 1.5 м, прокладка и подключение слаботочного кабеля управления к исполнительному реле котельной.",
@@ -2448,6 +2369,23 @@
             "монтаж инсталляции": "Что будет выполнено: Установка скрытой рамы (инсталляции) подвесного унитаза.\nЧто эта работа включает, этапы и порядок действий: Надежная фиксация рамы к прочному основанию пола и стены шпильками, выставление высоты слива по регламенту, подключение к системе водоснабжения и канализации.",
             "монтаж радиатора": "Что будет выполнено: Навеска и гидравлическое подключение радиатора отопления.\nЧто эта работа включает, этапы и порядок действий: Разметка и крепление настенных кронштейнов по уровню, установка радиатора, монтаж регулировочных кранов, подсоединение труб отопления."
         };
+
+        function resolveAvailability(avail, priceDate) {
+            if (!avail) return '';
+            let actualAvail = avail;
+            if (actualAvail === 'in_stock') {
+                if (priceDate) {
+                    const uDate = new Date(priceDate);
+                    if (!isNaN(uDate.getTime())) {
+                        const diffDays = (new Date() - uDate) / (1000 * 60 * 60 * 24);
+                        if (diffDays > 31) {
+                            actualAvail = 'on_order';
+                        }
+                    }
+                }
+            }
+            return actualAvail;
+        }
 
         function toggleEquipmentImages(show) {
             if (show) {
@@ -2521,7 +2459,7 @@
                         sectionTitle: item.t,
                         isOpt: !!item.isOpt,
                         desc: item.desc || item.d || '',
-                        availability: item.availability || item.a || ''
+                        availability: resolveAvailability(item.availability || item.a || '', item.price_date || item.pd || '')
                     };
                 }
 
@@ -2565,7 +2503,7 @@
                     sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
                     isOpt: item.o === 1,
                     desc: item.d || catalogItem.desc || '',
-                    availability: catalogItem.availability || ''
+                    availability: resolveAvailability(catalogItem.availability || '', catalogItem.price_date || '')
                 };
             });
 
