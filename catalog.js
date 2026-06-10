@@ -980,357 +980,357 @@ const catalog = {
     dhw_pump: [
         { id: "RCP-0005-152080", name: "Насос ГВС с таймером", price: 11446, brand: "ROMMER", desc: "Насос рециркуляции с таймером.", rommer: { id: "RCP-0005-150480", name: "Насос ГВС", price: 5723, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RCP-0005-151780", name: "Насос ГВС", price: 10406, brand: "ROMMER", desc: "Насос рециркуляции базовый.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RCP-0005-150480", name: "Насос ГВС", price: 5723, brand: "ROMMER", desc: "Бюджетный насос, корпус латунь.",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     dhw_fittings: [
         { id: "SFT-0041-000001", name: "Американка 1\" ВР/НР (Змеевик бойлера)", price: 1016,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVB-0002-000025", name: "Кран шаровой 1\" ВР/ВР (Змеевик бойлера)", price: 1548, rommer: { id: "RBV-0003-2110225", name: "Кран шаровой ВР/ВР бабочка 1\"", price: 905, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0041-000034", name: "Американка 3/4\" ВР/НР (ГВС/Рецирк)", price: 597,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVB-0012-000020", name: "Кран шаровой 3/4\" ВР/ВР (Бабочка)", price: 865, rommer: { id: "RBV-0003-2110220", name: "Кран шаровой ВР/ВР бабочка 3/4\"", price: 464, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RVS-0003-006015", name: "Клапан предохранительный 6 бар", price: 436, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0031-000034", name: "Крестовина 3/4\" ВР", price: 1151,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVC-0012-000020", name: "Клапан обратный пружинный STOUT 3/4\"", price: 1128,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVB-0006-000020", name: "Кран шаровой 3/4\" НР/НР (Вход ХВС)", price: 1175, rommer: { id: "RBV-0007-2410220", name: "Кран шаровой 3/4\" НР/НР", price: 523, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RBV-0007-2410220", name: "Кран шаровой 3/4\" НР/НР", price: 523, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVC-0012-000020", name: "Обратный клапан 3/4\" (Для рециркуляции)", price: 1128,
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     boilers_gas: [
         { id: "GE0Q6QE0CRU", name: "Котёл газовый, одноконтурный (18 кВт)", article: "GE0Q6QE0CRU", price: 56091, power: 18, circuits: 1, type: "gas", brand: "Haier",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "GE0Q6RE0CRU", name: "Котёл газовый, одноконтурный (24 кВт)", article: "GE0Q6RE0CRU", price: 57117, power: 24, circuits: 1, type: "gas", brand: "Haier",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "GE0Q6NE0CRU", name: "Котёл газовый, двухконтурный (18 кВт)", article: "GE0Q6NE0CRU", price: 57117, power: 18, circuits: 2, type: "gas", brand: "Haier",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "GE0Q6PE0CRU", name: "Котёл газовый, двухконтурный (24 кВт)", article: "GE0Q6PE0CRU", price: 58097, power: 24, circuits: 2, type: "gas", brand: "Haier",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     boilers_plus: [
         { id: "SEB-2201-000005", name: "Котёл электрический PLUS (5 кВт)", power: 5, price: 59236, type: "el", exp: 12, vol: 10, desc: "PLUS: Бак 12л, надежная автоматика.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-2201-000007", name: "Котёл электрический PLUS (7 кВт)", power: 7, price: 60121, type: "el", exp: 12, vol: 10, desc: "PLUS: Бак 12л, надежная автоматика.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-2201-000009", name: "Котёл электрический PLUS (9 кВт)", power: 9, price: 61715, type: "el", exp: 12, vol: 10, desc: "PLUS: Бак 12л, надежная автоматика.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-2201-000012", name: "Котёл электрический PLUS (12 кВт)", power: 12, price: 62657, type: "el", exp: 12, vol: 10, desc: "PLUS: Бак 12л, надежная автоматика.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-2201-000014", name: "Котёл электрический PLUS (14 кВт)", power: 14, price: 65191, type: "el", exp: 12, vol: 10, desc: "PLUS: Бак 12л, надежная автоматика.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-2201-000018", name: "Котёл электрический PLUS (18 кВт)", power: 18, price: 69393, type: "el", exp: 12, vol: 10, desc: "PLUS: Бак 12л, надежная автоматика.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-2201-000021", name: "Котёл электрический PLUS (21 кВт)", power: 21, price: 71130, type: "el", exp: 12, vol: 10, desc: "PLUS: Бак 12л, надежная автоматика.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-2201-000024", name: "Котёл электрический PLUS (24 кВт)", power: 24, price: 72724, type: "el", exp: 12, vol: 10, desc: "PLUS: Бак 12л, надежная автоматика.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-2201-000027", name: "Котёл электрический PLUS (27 кВт)", power: 27, price: 74462, type: "el", exp: 12, vol: 10, desc: "PLUS: Бак 12л, надежная автоматика.",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     boilers_status: [
         { id: "SEB-3101-000005", name: "Котёл электрический STATUS (5 кВт)", power: 5, price: 66207, type: "el", exp: 10, vol: 6, desc: "STATUS: Premium. Бак 10л, сенсорный дисплей.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-3101-000007", name: "Котёл электрический STATUS (7 кВт)", power: 7, price: 67505, type: "el", exp: 10, vol: 6, desc: "STATUS: Premium. Бак 10л, сенсорный дисплей.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-3101-000009", name: "Котёл электрический STATUS (9 кВт)", power: 9, price: 69453, type: "el", exp: 10, vol: 6, desc: "STATUS: Premium. Бак 10л, сенсорный дисплей.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-3101-000012", name: "Котёл электрический STATUS (12 кВт)", power: 12, price: 70102, type: "el", exp: 10, vol: 6, desc: "STATUS: Premium. Бак 10л, сенсорный дисплей.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-3101-000014", name: "Котёл электрический STATUS (14 кВт)", power: 14, price: 72698, type: "el", exp: 10, vol: 6, desc: "STATUS: Premium. Бак 10л, сенсорный дисплей.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-3101-000018", name: "Котёл электрический STATUS (18 кВт)", power: 18, price: 77242, type: "el", exp: 10, vol: 6, desc: "STATUS: Premium. Бак 10л, сенсорный дисплей.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-3101-000021", name: "Котёл электрический STATUS (21 кВт)", power: 21, price: 77891, type: "el", exp: 10, vol: 6, desc: "STATUS: Premium. Бак 10л, сенсорный дисплей.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-3101-000024", name: "Котёл электрический STATUS (24 кВт)", power: 24, price: 78540, type: "el", exp: 0, vol: 11, desc: "STATUS: Premium. Внимание: НЕТ встроенного бака!",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SEB-3101-000027", name: "Котёл электрический STATUS (27 кВт)", power: 27, price: 82435, type: "el", exp: 0, vol: 11, desc: "STATUS: Premium. Внимание: НЕТ встроенного бака!",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     chimneys: [
         { id: "SCA-6010-210850", name: "Дымоход коаксиальный 60/100", price: 6298, brand: "STOUT", rommer: { id: "RCA-6010-251220", name: "Дымоход коаксиальный 60/100", price: 3260, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RCA-6100-251220", name: "Дымоход коаксиальный 60/100", price: 2934, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     stabs: [
         { id: "SST-0001-000250", name: "Стабилизатор ST 250", price: 6905, type: "gas",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SST-0001-000600", name: "Стабилизатор ST 600", price: 9578, type: "el",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SST-0001-000900", name: "Стабилизатор ST 900", price: 10322, type: "el",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     valves: [{ id: "SFB-0001-000001", name: "Комплект 3-х ход. клапана Fugas", price: 12916, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' }],
+  price_date: '2026-06-10' }],
     tanks_optibase: [
         { id: "SWH-3110-000100", name: "Бойлер напольный 100л", vol: 100, price: 57183, rommer: { id: "RWH-2110-000150", name: "Бойлер напольный GT 150 л", price: 45265, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SWH-2110-000150", name: "Бойлер напольный OptiBase 150л", vol: 150, price: 55566, rommer: { id: "RWH-2110-000150", name: "Бойлер напольный GT 150 л", price: 45265, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SWH-2110-000200", name: "Бойлер напольный OptiBase 200л", vol: 200, price: 62111, rommer: { id: "RWH-2110-000200", name: "Бойлер напольный GT 200 л", price: 50596, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SWH-2110-000300", name: "Бойлер напольный OptiBase 300л", vol: 300, price: 95889, rommer: { id: "RWH-2110-000300", name: "Бойлер напольный GT 300 л", price: 78112, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SWH-2110-000500", name: "Бойлер напольный OptiBase 500л", vol: 500, price: 155530, rommer: { id: "RWH-2110-000500", name: "Бойлер напольный GT 500 л", price: 112078, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     tanks_standard: [
         { id: "SWH-3110-000100", name: "Бойлер напольный 100л", vol: 100, price: 57183, rommer: { id: "RWH-2110-000150", name: "Бойлер напольный GT 150 л", price: 45265, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SWH-3110-000150", name: "Бойлер напольный 150л", vol: 150, price: 64166, rommer: { id: "RWH-2110-000150", name: "Бойлер напольный GT 150 л", price: 45265, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SWH-3110-000200", name: "Бойлер напольный 200л", vol: 200, price: 66812, rommer: { id: "RWH-2110-000200", name: "Бойлер напольный GT 200 л", price: 50596, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SWH-1110-000300", name: "Бойлер напольный 300л", vol: 300, price: 114954, rommer: { id: "RWH-2110-000300", name: "Бойлер напольный GT 300 л", price: 78112, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SWH-1110-000500", name: "Бойлер напольный 500л", vol: 500, price: 237980, rommer: { id: "RWH-2110-000500", name: "Бойлер напольный GT 500 л", price: 112078, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     tanks_stainless: [
         { id: "SWH-4110-050100", name: "Бойлер напольный 100л (нержавейка) DUPLEX", vol: 100, price: 82831, brand: "STOUT", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SWH-4110-050150", name: "Бойлер напольный 150л (нержавейка) DUPLEX", vol: 150, price: 92815, brand: "STOUT", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SWH-4110-050200", name: "Бойлер напольный 200л (нержавейка) DUPLEX", vol: 200, price: 104861, brand: "STOUT", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SWH-4110-050300", name: "Бойлер напольный 300л (нержавейка) DUPLEX", vol: 300, price: 134984, brand: "STOUT", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SWH-4110-050500", name: "Бойлер напольный 500л (нержавейка) DUPLEX", vol: 500, price: 213015, brand: "STOUT", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     exp_dhw: [{ id: "STW-0015-000012", name: "Расширительный бак для ГВС 12л", vol: 12, price: 2882,
   availability: 'in_stock',
-  price_date: '2026-06-07' }, { id: "STW-0015-000018", name: "Расширительный бак для ГВС 18л", vol: 18, price: 1450,
+  price_date: '2026-06-10' }, { id: "STW-0015-000018", name: "Расширительный бак для ГВС 18л", vol: 18, price: 1450,
   availability: 'in_stock',
-  price_date: '2026-06-07' }, { id: "STW-0015-000024", name: "Расширительный бак для ГВС 24л", vol: 24, price: 3614,
+  price_date: '2026-06-10' }, { id: "STW-0015-000024", name: "Расширительный бак для ГВС 24л", vol: 24, price: 3614,
   availability: 'in_stock',
-  price_date: '2026-06-07' }],
+  price_date: '2026-06-10' }],
     exp_heating: [{ id: "STH-0004-000018", name: "Расширительный бак для отопления 18л", vol: 18, price: 2897,
   availability: 'in_stock',
-  price_date: '2026-06-07' }, { id: "STH-0006-000024", name: "Расширительный бак для отопления 24л", vol: 24, price: 3050,
+  price_date: '2026-06-10' }, { id: "STH-0006-000024", name: "Расширительный бак для отопления 24л", vol: 24, price: 3050,
   availability: 'in_stock',
-  price_date: '2026-06-07' }, { id: "STH-0006-000050", name: "Расширительный бак для отопления 50л", vol: 50, price: 6764,
+  price_date: '2026-06-10' }, { id: "STH-0006-000050", name: "Расширительный бак для отопления 50л", vol: 50, price: 6764,
   availability: 'in_stock',
-  price_date: '2026-06-07' }, { id: "STH-0006-000080", name: "Расширительный бак для отопления 80л", vol: 80, price: 10836,
+  price_date: '2026-06-10' }, { id: "STH-0006-000080", name: "Расширительный бак для отопления 80л", vol: 80, price: 10836,
   availability: 'in_stock',
-  price_date: '2026-06-07' }, { id: "STH-0006-000100", name: "Расширительный бак для отопления 100л", vol: 100, price: 12642,
+  price_date: '2026-06-10' }, { id: "STH-0006-000100", name: "Расширительный бак для отопления 100л", vol: 100, price: 12642,
   availability: 'in_stock',
-  price_date: '2026-06-07' }],
+  price_date: '2026-06-10' }],
     tank_mount: { id: "SAC-0030-000825", name: "Крепление для бака", price: 1266,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     tank_kit: { id: "RVS-0008-002020", name: "Комплект подключения мембранного бака", price: 1330, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     rads: [
         { id: "SRB-0320-050004", name: "Радиатор Space 4 секций", sec: 4, price: 6457, power50: 117, rommer: { id: "RAL-0210-050004", name: "Радиатор Optima 4 секций", price: 3754, brand: "ROMMER", power50: 117 },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SRB-0320-050005", name: "Радиатор Space 5 секций", sec: 5, price: 7528, power50: 117,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SRB-0320-050006", name: "Радиатор Space 6 секций", sec: 6, price: 3933, power50: 117, rommer: { id: "RAL-0210-050006", name: "Радиатор Optima 6 секций", price: 5630, brand: "ROMMER", power50: 117 },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
-        { id: "SRB-0320-050007", name: "Радиатор Space 7 секций", sec: 7, price: 9670, power50: 117,
+  price_date: '2026-06-10' },
+        { id: "SRB-0320-050007", name: "Радиатор Space 7 секций", sec: 7, price: 4428, power50: 117,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SRB-0320-050008", name: "Радиатор Space 8 секций", sec: 8, price: 10741, power50: 117, rommer: { id: "RAL-0210-050008", name: "Радиатор Optima 8 секций", price: 6691, brand: "ROMMER", power50: 117 },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SRB-0320-050009", name: "Радиатор Space 9 секций", sec: 9, price: 11812, power50: 117,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SRB-0320-050010", name: "Радиатор Space 10 секций", sec: 10, price: 12883, power50: 117, rommer: { id: "RAL-0210-050010", name: "Радиатор Optima 10 секций", price: 11628, brand: "ROMMER", power50: 117 },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SRB-0320-050011", name: "Радиатор Space 11 секций", sec: 11, price: 13954, power50: 117,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
-        { id: "SRB-0320-050012", name: "Радиатор Space 12 секций", sec: 12, price: 15025, power50: 117, rommer: { id: "RAL-0210-050012", name: "Радиатор Optima 12 секций", price: 10037, brand: "ROMMER", power50: 117 },
+  price_date: '2026-06-10' },
+        { id: "SRB-0320-050012", name: "Радиатор Space 12 секций", sec: 12, price: 6904, power50: 117, rommer: { id: "RAL-0210-050012", name: "Радиатор Optima 12 секций", price: 10037, brand: "ROMMER", power50: 117 },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SRB-0320-050013", name: "Радиатор Space 13 секций", sec: 13, price: 16096, power50: 117,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SRB-0320-050014", name: "Радиатор Space 14 секций", sec: 14, price: 17167, power50: 117,
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     rad_kits: [{ id: "SFT-0049-000002", name: "Ниппель", price: 157,
   availability: 'in_stock',
-  price_date: '2026-06-07' }],
+  price_date: '2026-06-10' }],
     convectors_scq: [
         { id: "SCQ-1100-0724080", name: "Конвектор SCQ (с вентилятором) 800мм", len: 0.8, power70: 1038, price: 48256, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCQ-1100-0724100", name: "Конвектор SCQ (с вентилятором) 1000мм", len: 1.0, power70: 1491, price: 54363, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCQ-1100-0724125", name: "Конвектор SCQ (с вентилятором) 1250мм", len: 1.25, power70: 2068, price: 62012, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCQ-1100-0724150", name: "Конвектор SCQ (с вентилятором) 1500мм", len: 1.5, power70: 2650, price: 69651, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCQ-1100-0724175", name: "Конвектор SCQ (с вентилятором) 1750мм", len: 1.75, power70: 3234, price: 77290, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCQ-1100-0724200", name: "Конвектор SCQ (с вентилятором) 2000мм", len: 2.0, power70: 3813, price: 84929, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCQ-1100-0724225", name: "Конвектор SCQ (с вентилятором) 2250мм", len: 2.25, power70: 4385, price: 92569, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCQ-1100-0724250", name: "Конвектор SCQ (с вентилятором) 2500мм", len: 2.5, power70: 4942, price: 100208, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCQ-1100-0724275", name: "Конвектор SCQ (с вентилятором) 2750мм", len: 2.75, power70: 5482, price: 107847, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCQ-1100-0724300", name: "Конвектор SCQ (с вентилятором) 3000мм", len: 3.0, power70: 5999, price: 139295, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     convectors_scn: [
         { id: "SCN-1100-0824080", name: "Конвектор SCN (без вентилятора) 800мм", len: 0.8, power70: 277, price: 22276, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCN-1100-0824100", name: "Конвектор SCN (без вентилятора) 1000мм", len: 1.0, power70: 382, price: 26459, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCN-1100-0824120", name: "Конвектор SCN (без вентилятора) 1200мм", len: 1.2, power70: 487, price: 30643, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCN-1100-0824140", name: "Конвектор SCN (без вентилятора) 1400мм", len: 1.4, power70: 591, price: 34826, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCN-1100-0824160", name: "Конвектор SCN (без вентилятора) 1600мм", len: 1.6, power70: 696, price: 39009, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCN-1100-0824180", name: "Конвектор SCN (без вентилятора) 1800мм", len: 1.8, power70: 801, price: 43193, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCN-1100-0824200", name: "Конвектор SCN (без вентилятора) 2000мм", len: 2.0, power70: 905, price: 47375, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCN-1100-0824220", name: "Конвектор SCN (без вентилятора) 2200мм", len: 2.2, power70: 1010, price: 51559, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCN-1100-0824240", name: "Конвектор SCN (без вентилятора) 2400мм", len: 2.4, power70: 1115, price: 55742, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCN-1100-0824260", name: "Конвектор SCN (без вентилятора) 2600мм", len: 2.6, power70: 1219, price: 59926, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCN-1100-0824280", name: "Конвектор SCN (без вентилятора) 2800мм", len: 2.8, power70: 1324, price: 64109, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCN-1100-0824300", name: "Конвектор SCN (без вентилятора) 3000мм", len: 3.0, power70: 1429, price: 68292, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     conv_valves: [
         { id: "SVT-0001-000015", name: "Клапан термостатический, прямой 1/2\"", price: 1180, brand: "STOUT", unit: "шт", rommer: { id: "RVT-0001-100015", name: "Клапан термостатический прямой 1/2\"", price: 776, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVL-1176-000015", name: "Клапан запорно-балансировочный прямой 1/2\"", price: 656, brand: "STOUT", unit: "шт", rommer: { id: "RVL-0001-100015", name: "Клапан запорно-балансировочный прямой/угловой 1/2\"", price: 418, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVT-0005-000015", name: "Клапан термостатический угловой 1/2\"", price: 1614, brand: "STOUT", unit: "шт", rommer: { id: "RVT-0002-100015", name: "Клапан термостатический угловой 1/2\"", price: 769, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVL-1156-000015", name: "Клапан запорно-балансировочный угловой 1/2\"", price: 597, brand: "STOUT", unit: "шт", rommer: { id: "RVL-0002-100015", name: "Клапан запорно-балансировочный прямой/угловой 1/2\"", price: 387, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     conv_parts: [
         { id: "SFA-0020-000016", name: "Монтажная гильза 16", price: 109, brand: "STOUT", unit: "шт", rommer: { id: "RFA-0020-000016", name: "Монтажная гильза 16", price: 85, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RFA-0020-000016", name: "Монтажная гильза 16", price: 85, brand: "ROMMER", unit: "шт" },
         { id: "SFA-0001-001612", name: "Переходник 16xR 1/2\" НР", price: 289, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "703102", name: "Настенный регулятор Vartronic, цвет белый", price: 10942, brand: "Varmann", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     rad_tube_set: [
         { id: "SFA-0025-001650", name: "Трубка Г-образная 16/500 мм (для радиат.)", price: 2863, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFA-0000-162025", name: "Фиксирующая скоба для трубок", price: 449, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFA-0020-000016", name: "Гильза монтажная 16 (аксиальная)", price: 109, brand: "STOUT", rommer: { id: "RFA-0020-000016", name: "Монтажная гильза 16", price: 85, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFC-0027-001520", name: "Фитинг компрессионный 15x3/4\" (для трубки)", price: 566, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     protective_sleeves: [
         { id: "SFA-0035-200016", name: "Защитная втулка красная (для трубы 16 мм)", price: 56, brand: "STOUT" },
@@ -1339,110 +1339,110 @@ const catalog = {
     label_kits: [
         { id: "SFA-0037-100000", name: "Комплект маркировочных наклеек \"ОТОПЛЕНИЕ\"", price: 872, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFA-0037-200000", name: "Комплект маркировочных наклеек \"ТЕПЛЫЙ ПОЛ\"", price: 872, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     heads: [
         { id: "SHT-0001-003015", name: "Головка термостатическая (Газо-жидкостная)", price: 1316, type: 'gas', desc: "Стандартное решение. Быстрая реакция.", rommer: { id: "RHT-0001-103015", name: "Головка термостатическая жидкостная", price: 557, brand: "ROMMER", type: "liquid" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SHT-0002-003015", name: "Головка термостатическая (Жидкостная)", price: 1334, type: 'liquid', desc: "Классическая надежная модель.", rommer: { id: "RHT-0001-103015", name: "Головка термостатическая жидкостная", price: 557, brand: "ROMMER", type: "liquid" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "STE-2070-703011", name: "Умная термостатическая головка Zigbee", price: 3300, type: 'smart', desc: "Управление со смартфона. Требует шлюз.",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     smart_hub: { id: "STE-2071-804010", name: "Беспроводной шлюз Zigbee", price: 4896,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     ufh_mech: [
         { id: "STE-2001-130210", name: "Термостат универсальный, белый", price: 2142, desc: "Механический термостат (Белый).",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "STE-2001-130220", name: "Термостат универсальный, черный", price: 2249, desc: "Механический термостат (Черный).",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ufh_electro: [
         { id: "STE-2002-331212", name: "Терморегулятор универсальный, белый", price: 11603, desc: "Электронный термостат с дисплеем (Белый).",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "STE-2002-331222", name: "Терморегулятор универсальный, черный", price: 12067, desc: "Электронный термостат с дисплеем (Черный).",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     actuators: { id: "STE-0010-230001", name: "Сервопривод компактный 230В (NC)", price: 2458, rommer: { id: "RTE-0010-230001", name: "Сервопривод термоэлектрический (NC) 230В", price: 718, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     wiring_center: { id: "STE-3050-650522", name: "Проводной контроллер", price: 7446,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     h_valves: [
         { id: "SVH-0004-000020", name: "Узел нижн. подкл. (Угловой)", price: 1161, type: 'angled', desc: "Трубы выходят из стены.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVH-0002-000020", name: "Узел нижн. подкл. (Прямой)", price: 1141, type: 'straight', desc: "Трубы выходят из пола.",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     manifolds_rad: [
         { id: "SMS-0922-000002", loops: 2, price: 7643, name: "Коллектор радиаторный 2 вых.", rommer: { id: "RMS-3201-000002", name: "Коллектор радиаторный 1\"x2 вых.", price: 4704, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0922-000003", loops: 3, price: 9477, name: "Коллектор радиаторный 3 вых.", rommer: { id: "RMS-3201-000003", name: "Коллектор радиаторный 1\"x3 вых.", price: 5132, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0922-000004", loops: 4, price: 11320, name: "Коллектор радиаторный 4 вых.", rommer: { id: "RMS-3201-000004", name: "Коллектор радиаторный 1\"x4 вых.", price: 6082, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0922-000005", loops: 5, price: 13418, name: "Коллектор радиаторный 5 вых.", rommer: { id: "RMS-3201-000005", name: "Коллектор радиаторный 1\"x5 вых.", price: 7069, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0922-000006", loops: 6, price: 15374, name: "Коллектор радиаторный 6 вых.", rommer: { id: "RMS-3201-000006", name: "Коллектор радиаторный 1\"x6 вых.", price: 8348, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0922-000007", loops: 7, price: 17792, name: "Коллектор радиаторный 7 вых.", rommer: { id: "RMS-3201-000007", name: "Коллектор радиаторный 1\"x7 вых.", price: 9092, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0922-000008", loops: 8, price: 19985, name: "Коллектор радиаторный 8 вых.", rommer: { id: "RMS-3201-000008", name: "Коллектор радиаторный 1\"x8 вых.", price: 10296, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0922-000009", loops: 9, price: 21902, name: "Коллектор радиаторный 9 вых.", rommer: { id: "RMS-3201-000009", name: "Коллектор радиаторный 1\"x9 вых.", price: 11497, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0922-000010", loops: 10, price: 24063, name: "Коллектор радиаторный 10 вых.", rommer: { id: "RMS-3201-000010", name: "Коллектор радиаторный 1\"x10 вых.", price: 12673, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0922-000011", loops: 11, price: 25961, name: "Коллектор радиаторный 11 вых.", rommer: { id: "RMS-3201-000011", name: "Коллектор радиаторный 1\"x11 вых.", price: 15053, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0922-000012", loops: 12, price: 27830, name: "Коллектор радиаторный 12 вых.", rommer: { id: "RMS-3201-000012", name: "Коллектор радиаторный 1\"x12 вых.", price: 16633, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0922-000013", loops: 13, price: 31212, name: "Коллектор радиаторный 13 вых.",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     manifolds_chrome_blocks: [
         { id: "SMB-6850-013402", name: "Коллекторный блок 1\" x 2 вых", loops: 2, price: 2983, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMB-6850-013403", name: "Коллекторный блок 1\" x 3 вых", loops: 3, price: 4169, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMB-6850-013404", name: "Коллекторный блок 1\" x 4 вых", loops: 4, price: 5511, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     manifold_brackets: { id: "SMB-0002-000002", name: "Кронштейны для коллекторов (пара)", price: 612, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     pipes: [{ id: "SPX-0002-101620", name: "Труба 16x2.0 (100 м)", len: 100, price: 15200, rommer: { id: "RPX-0002-101620", name: "Труба PEX-a 16x2.0 (100 м)", price: 7600, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' }, { id: "SPX-0002-501620", name: "Труба 16x2.0 (500 м)", len: 500, price: 76000, rommer: { id: "RPX-0002-501620", name: "Труба PEX-a 16x2.0 (500 м)", price: 57500, brand: "ROMMER" } }],
+  price_date: '2026-06-10' }, { id: "SPX-0002-501620", name: "Труба 16x2.0 (500 м)", len: 500, price: 76000, rommer: { id: "RPX-0002-501620", name: "Труба PEX-a 16x2.0 (500 м)", price: 57500, brand: "ROMMER" } }],
     insulated_pipes: [
         {
             id: "SPI-0003-001622", name: "Труба 16x2.2 в теплоизоляции (красная)", len: 100, price: 22000, rommer: [
@@ -1450,7 +1450,7 @@ const catalog = {
                 { id: "EFXT018062SUPRK-400", name: "Теплоизоляция 18/6 (Красная)", price: 28, brand: "Energoflex" }
             ],
   availability: 'in_stock',
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             id: "SPI-0004-001622", name: "Труба 16x2.2 в теплоизоляции (синяя)", len: 100, price: 22000, rommer: [
@@ -1458,7 +1458,7 @@ const catalog = {
                 { id: "EFXT018062SUPRS-400", name: "Теплоизоляция 18/6 (Синяя)", price: 28, brand: "Energoflex" }
             ],
   availability: 'in_stock',
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
     ],
     rad_pipes_grey: [
@@ -1466,7 +1466,7 @@ const catalog = {
         { id: "SPX-0001-241622", name: "Труба PEX-a/EVOH серая 16x2.2 (240м)", len: 240, price: 420 },
         { id: "SPX-0001-501622", name: "Труба PEX-a/EVOH серая 16x2.2 (500м)", len: 500, price: 1750,
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     insulation: [
         { id: "EFXT018062SUPRK-400", name: "Теплоизоляция 18/6 (Красная)", price: 28, unit: "м", brand: "Energoflex" },
@@ -1475,78 +1475,78 @@ const catalog = {
     manifolds: [
         { id: "SMS-0917-000002", loops: 2, price: 8479, rommer: { id: "RMS-1200-000002", name: "Коллектор с расходомерами 1\"x2 вых.", price: 4586, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0917-000003", loops: 3, price: 10717, rommer: { id: "RMS-1200-000003", name: "Коллектор с расходомерами 1\"x3 вых.", price: 5819, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0917-000004", loops: 4, price: 12973, rommer: { id: "RMS-1200-000004", name: "Коллектор с расходомерами 1\"x4 вых.", price: 6956, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0917-000005", loops: 5, price: 15532, rommer: { id: "RMS-1200-000005", name: "Коллектор с расходомерами 1\"x5 вых.", price: 7978, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0917-000006", loops: 6, price: 17796, rommer: { id: "RMS-1200-000006", name: "Коллектор с расходомерами 1\"x6 вых.", price: 9088, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0917-000007", loops: 7, price: 20830, rommer: { id: "RMS-1200-000007", name: "Коллектор с расходомерами 1\"x7 вых.", price: 10412, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0917-000008", loops: 8, price: 23477, rommer: { id: "RMS-1200-000008", name: "Коллектор с расходомерами 1\"x8 вых.", price: 11599, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0917-000009", loops: 9, price: 25873, rommer: { id: "RMS-1200-000009", name: "Коллектор с расходомерами 1\"x9 вых.", price: 13010, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0917-000010", loops: 10, price: 28480, rommer: { id: "RMS-1200-000010", name: "Коллектор с расходомерами 1\"x10 вых.", price: 16206, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0917-000011", loops: 11, price: 30864, rommer: { id: "RMS-1200-000011", name: "Коллектор с расходомерами 1\"x11 вых.", price: 17472, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMS-0917-000012", loops: 12, price: 33210, rommer: { id: "RMS-1200-000012", name: "Коллектор с расходомерами 1\"x12 вых.", price: 18783, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     parts: [
         { id: "SMS-1000-010001", name: "Концевой фитинг", price: 2441, rommer: { id: "RMS-1001-010001", name: "Группа концевая для коллектора Rommer", price: 1903, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFC-0020-001622", name: "Евроконус 16x2.2", price: 381,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFA-0029-000016", name: "Фиксатор 90", price: 127,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFC-0020-001620", name: "Евроконус 16x2.0", price: 376, rommer: { id: "RFC-1020-001620", name: "Евроконус 16x2.0", price: 193, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     mixing_units: [
         { id: "SDG-0120-001000", name: "Насосно-смесительный узел (без насоса)", price: 25684, rommer: { id: "RDG-0120-008100", name: "Насосно-смесительный узел с термоголовкой (без насоса)", price: 14227, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     groups_dn20: [
         { id: "SDG-0001-002001", name: "Группа насосная DN20 (Прямая)", price: 16243, rommer: { id: "RDG-1001-002501", name: "Группа насосная DN25 (Прямая)", price: 9514, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SDG-0002-002001", name: "Группа насосная DN20 (Смес.)", price: 29589, rommer: { id: "RDG-1002-002501", name: "Насосная группа DN25 (термостатический клапан)", price: 11212, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     groups_dn25: [
         { id: "SDG-0001-002501", name: "Группа насосная DN25 (Прямая)", price: 17535, rommer: { id: "RDG-1001-002501", name: "Группа насосная DN25 (Прямая)", price: 9514, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SDG-0002-002501", name: "Группа насосная DN25 (Смес.)", price: 31942, rommer: { id: "RDG-1002-002501", name: "Насосная группа DN25 (термостатический клапан)", price: 11212, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     hydro_dn20: [{ id: "SDG-0018-002502", name: "Коллектор-гидрострелка DN20 (2 конт)", price: 50005,
   availability: 'in_stock',
-  price_date: '2026-06-07' }, { id: "SDG-0018-002503", name: "Коллектор-гидрострелка DN20 (3 конт)", price: 57133,
+  price_date: '2026-06-10' }, { id: "SDG-0018-002503", name: "Коллектор-гидрострелка DN20 (3 конт)", price: 57133,
   availability: 'in_stock',
-  price_date: '2026-06-07' }],
+  price_date: '2026-06-10' }],
     hydro_dn25: [
         {
             id: "SDG-0018-004002", name: "Коллектор-гидрострелка DN25 (2 конт)", price: 56826, rommer: [
@@ -1554,7 +1554,7 @@ const catalog = {
                 { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 6596, brand: "ROMMER", rommer: { id: "RDG-1015-004003", name: "Гидравлическая стрелка 1 1/2\", 3,0 м³/час", price: 16722, brand: "ROMMER" } }
             ],
   availability: 'in_stock',
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             id: "SDG-0018-004003", name: "Коллектор-гидрострелка DN25 (3 конт)", price: 64925, rommer: [
@@ -1562,50 +1562,50 @@ const catalog = {
                 { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 6596, brand: "ROMMER", rommer: { id: "RDG-1015-004003", name: "Гидравлическая стрелка 1 1/2\", 3,0 м³/час", price: 16722, brand: "ROMMER" } }
             ],
   availability: 'in_stock',
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         { id: "RDG-1015-004003", name: "Гидравлическая стрелка 1 1/2\", 3,0 м³/час", price: 9446, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     pumps_dn20: [{ id: "RCP-0002-1560130", brand: "ROMMER", name: "Насос 15/60-130", price: 3364,
   availability: 'in_stock',
-  price_date: '2026-06-07' }],
+  price_date: '2026-06-10' }],
     pumps_dn25: [
         { id: "SPC-0011-2560180", name: "Насос циркуляционный 25/60-180", price: 5471, type: 'default', desc: "Базовый насос STOUT 25/60-180.", rommer: { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI", price: 4636, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SPC-0010-2560180", name: "Насос циркуляционный 25/60-180 (Std)", price: 11669, type: 'std', desc: "Классический 3-х скоростной насос.", rommer: { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI", price: 4636, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SPC-0002-2560180", name: "Насос циркуляционный Mini 25/60-180", price: 21680, type: 'mini', desc: "Энергоэффективный (частотный).", rommer: { id: "RCP-0030-2560180", name: "Насос частотный EVO 25/60-180", price: 8434, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SPC-0003-2560180", name: "Насос циркуляционный Mini Pro 25/60-180", price: 30622, type: 'pro', desc: "Премиум Smart (дисплей, авто-адаптация).", rommer: { id: "RCP-0030-2560180", name: "Насос частотный EVO 25/60-180", price: 8434, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     rommer_pumps: [
         { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI", price: 4636, brand: "ROMMER", desc: "Бюджетный насос серии PROFI.",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RCP-0004-2560130", name: "Насос циркуляционный PROFI", price: 4768, brand: "ROMMER", desc: "Бюджетный насос серии PROFI.",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     pumps_mix: [{ id: "SPC-0011-2560130", brand: "STOUT", name: "Насос 25/60-130", price: 12666, rommer: { id: "RCP-0004-2560130", name: "Насос циркуляционный PROFI", price: 4768, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' }],
+  price_date: '2026-06-10' }],
     hydro_arrow: { id: "SDG-0015-004001", name: "Гидравлическая стрелка 3 м3/час", price: 22082, rommer: { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 6596, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     hydro_modular_dn20: [
         { id: "SDG-0016-002502", name: "Стальной распр. коллектор 2 контура DN20", price: 26395,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SDG-0016-002503", name: "Стальной распр. коллектор 3 контура DN20", price: 29180,
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     mats: [
         {
@@ -1616,7 +1616,7 @@ const catalog = {
                 { id: "160028", name: "Лента монтажная X-Glass ТПЛ армированная 50х50м", price: 236, brand: "X-Glass" }
             ],
   availability: 'in_stock',
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
     ],
     xps_kit: [
@@ -1627,103 +1627,103 @@ const catalog = {
     ],
     american_34: { id: "SFT-0041-000034", name: "Разъемное соед. американка ВН 3/4\"", price: 597,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     ball_valve_34: { id: "SVB-0004-000020", name: "Кран шаровой ВР/НР, 3/4\"", price: 1090, rommer: { id: "RBV-0004-2210220", name: "Кран шаровой ВР/НР бабочка 3/4\"", price: 497, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     check_valve_34: { id: "SVC-0011-000020", name: "Клапан обратный пружинный 3/4\"", price: 1547, rommer: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 482, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     rommer_check_valve_34: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 482, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     filter_mag: { id: "SFW-0072-000020", name: "Фильтр-шламоотделитель магнитный 3/4\"", price: 7720, rommer: { id: "RFW-0080-256620", name: "Фильтр-шламоотделитель магнитный 3/4\"", price: 2208, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     nipple_34: { id: "SFT-0003-003434", name: "Ниппель НН 3/4\"", price: 200,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     coolants: [{ id: "WARME-HYDRO-20", brand: "WARME", name: "Hydro, 20л", vol: 20, price: 1017, type: "water",
   availability: 'in_stock',
-  price_date: '2026-06-07' }, { id: "WARME-ECO30-20", brand: "WARME", name: "Eco 30, 20кг", vol: 19, price: 4770, type: "eco30",
+  price_date: '2026-06-10' }, { id: "WARME-ECO30-20", brand: "WARME", name: "Eco 30, 20кг", vol: 19, price: 4770, type: "eco30",
   availability: 'in_stock',
-  price_date: '2026-06-07' }, { id: "WARME-PRO65-20", brand: "WARME", name: "Eco Pro 65, 20кг", vol: 18, price: 6588, type: "pro65",
+  price_date: '2026-06-10' }, { id: "WARME-PRO65-20", brand: "WARME", name: "Eco Pro 65, 20кг", vol: 18, price: 6588, type: "pro65",
   availability: 'in_stock',
-  price_date: '2026-06-07' }],
+  price_date: '2026-06-10' }],
     // === СКВАЖИНА (ROMMER) ===
     well_pumps: [
         { id: "RPW-0012-350215", name: "Насос скважинный 2-44, Ду 75 мм, с кабелем", q_max: 2.7, h_max: 64, price: 12890, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RPW-0012-350221", name: "Насос скважинный 2-63, Ду 75 мм, с кабелем", q_max: 2.7, h_max: 89, price: 16348, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RPW-0012-370227", name: "Насос скважинный 2-81, Ду 75 мм, с кабелем", q_max: 2.7, h_max: 115, price: 22165, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RPW-0012-380239", name: "Насос скважинный 2-111, Ду 75 мм, с кабелем", q_max: 2.7, h_max: 166, price: 35369, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RPW-0012-350321", name: "Насос скважинный 3-51, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 84, price: 18549, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RPW-0012-350326", name: "Насос скважинный 3-63, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 104, price: 21665, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RPW-0012-370331", name: "Насос скважинный 3-77, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 124, price: 32334, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RPW-0012-380337", name: "Насос скважинный 3-92, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 148, price: 35369, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RPW-0012-370428", name: "Насос скважинный 4-76, Ду 75 мм, с кабелем", q_max: 5.4, h_max: 115, price: 32602, brand: "ROMMER",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     well_parts: [
         { id: "10011032", name: "Труба ПНД 32х3.0 питьевая (кратно 5м)", price: 557, brand: "CYKLON", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "75618", name: "Трос 4 мм нерж.сталь (бухта 250 м)", price: 17500, brand: "UNIPUMP", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "39023", name: "Зажим (хомут) для троса 4-5 мм", price: 36, brand: "UNIPUMP", unit: "шт" },
         { id: "83652", name: "Оголовок скважинный 133-152/32", price: 3828, brand: "UNIPUMP",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVC-0011-000032", name: "Клапан обратный с металлическим седлом, 1 1/4\"", price: 3518, brand: "STOUT", unit: "шт", rommer: { id: "RVC-0001-000032", name: "Клапан обратный с метал. седлом 1 1/4\"", price: 1184, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "53003214", name: "Муфта ПНД 32х1 1/4\" НР", price: 108, brand: "Политэк", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "31852", name: "Коуш для крепления троса до 5 мм", price: 21, brand: "UNIPUMP", unit: "шт" },
         { id: "STW-0001-000024", name: "Расширительный бак гидроаккумулятор 24 л (синий)", price: 3442, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "STW-0002-000050", name: "Гидроаккумулятор STOUT 50 л (для водоснабжения)", price: 9648, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "STW-0002-000080", name: "Гидроаккумулятор STOUT 80 л (для водоснабжения)", price: 12642, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "STW-0002-000100", name: "Гидроаккумулятор STOUT 100 л (для водоснабжения)", price: 17077, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "STW-0002-000150", name: "Гидроаккумулятор STOUT 150 л (для водоснабжения)", price: 21957, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     well_auto: [
         { id: "SCS-0001-000070", name: "Блок управления насосом SIRIO UNIVERSAL", price: 38236, brand: "STOUT", unit: "шт", rommer: { id: "RCS-0001-000063", name: "Устройство управления насосом EPC-12 auto", price: 5880, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCS-0001-000063", name: "Устройство управления насосом BRIO-TOP", price: 16078, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SCS-0001-000064", name: "Устройство управления насосом BRIO", price: 5141, brand: "STOUT", unit: "шт",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     // === ВОДОСНАБЖЕНИЕ (НОВОЕ, ПО СКРИНШОТАМ) ===
     // ВОДОСНАБЖЕНИЕ: ТРУБЫ И ИЗОЛЯЦИЯ
@@ -1731,9 +1731,9 @@ const catalog = {
         { id: "SPX-0001-001622", name: "Труба PEX-a 16x2.2 (серая)", price: 175, unit: "м", rommer: { id: "RPX-0001-001622", name: "Труба PEX-a 16x2.2", price: 110, brand: "ROMMER" } },
         { id: "SPX-0001-002028", name: "Труба PEX-a 20x2.8 (серая)", price: 262, unit: "м", rommer: { id: "RPX-0001-002028", name: "Труба PEX-a 20x2.8", price: 180, brand: "ROMMER" } },
         { id: "SPX-0001-002535", name: "Труба PEX-a 25x3.5 (серая)", price: 407, unit: "м", rommer: { id: "RPX-0001-002535", name: "Труба PEX-a 25x3.5", price: 280, brand: "ROMMER" } },
-        { id: "SPX-0001-003244", name: "Труба PEX-a 32x4.4 (серая)", price: 223, unit: "м", rommer: { id: "RPX-0001-003244", name: "Труба PEX-a 32x4.4", price: 450, brand: "ROMMER" },
+        { id: "SPX-0001-003244", name: "Труба PEX-a 32x4.4 (серая)", price: 148, unit: "м", rommer: { id: "RPX-0001-003244", name: "Труба PEX-a 32x4.4", price: 450, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     water_insulation: [
         { id: "EFXT018092SUPRK", name: "Теплоизоляция 18/9 (Красная)", price: 34, unit: "м", brand: "Energoflex" },
@@ -1744,22 +1744,22 @@ const catalog = {
     water_fittings: [
         { id: "SFA-0032-001612", name: "Водорозетка 16x1/2\" (тупиковая)", price: 865,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFA-0040-001612", name: "Угольник проточный 16x1/2\" (Бронза)", price: 2838,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFA-0039-002012", name: "Угольник проточный 20x1/2\" (проходная)", price: 2698,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFA-0027-252525", name: "Кронштейн монтажный (75/150)", price: 895,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFA-0035-100012", name: "Пробка с наружней резьбой (Синяя)", price: 32 },
         { id: "SFA-0035-200012", name: "Пробка с наружней резьбой (Красная)", price: 32 },
         { id: "SFA-0031-000016", name: "Фиксатор поворота 90° (14-18 мм)", price: 81 },
         { id: "SFA-0031-000120", name: "Фиксатор поворота 90° (20 мм)", price: 142,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMF-0003-028032", name: "Дюбель-крюк двойной", price: 7 }
     ],
 
@@ -1767,180 +1767,180 @@ const catalog = {
     water_manifolds_cold: [
         { id: "SMB-6851-343402", name: "Коллектор 3/4\"x2 вых.", loops: 2, price: 1962,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMB-6851-343403", name: "Коллектор 3/4\"x3 вых.", loops: 3, price: 2735,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMB-6851-343404", name: "Коллектор 3/4\"x4 вых.", loops: 4, price: 3686,
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     water_manifolds_hot: [
         { id: "SMB-6851-343402", name: "Коллектор 3/4\"x2 вых.", loops: 2, price: 1962,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMB-6851-343403", name: "Коллектор 3/4\"x3 вых.", loops: 3, price: 2735,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMB-6851-343404", name: "Коллектор 3/4\"x4 вых.", loops: 4, price: 3686,
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     water_manifolds_recirc: [
         { id: "SMB-6851-343402", name: "Коллектор 3/4\"x2 вых.", loops: 2, price: 1962,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMB-6851-343403", name: "Коллектор 3/4\"x3 вых.", loops: 3, price: 2735,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SMB-6851-343404", name: "Коллектор 3/4\"x4 вых.", loops: 4, price: 3686,
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     water_parts: [
         { id: "SFC-0020-001622", name: "Евроконус 16x2.2 (для коллектора)", price: 381,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFC-0020-002028", name: "Евроконус 20x2.8 (для коллектора)", price: 390,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0024-000034", name: "Заглушка коллектора 3/4\" (HP)", price: 158,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFA-0037-300000", name: "Наклейки \"ВОДОСНАБЖЕНИЕ\"", price: 872,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFA-0035-100016", name: "Защитная втулка синяя 16мм", price: 56 },
         { id: "SFA-0035-200016", name: "Защитная втулка красная 16мм", price: 56 },
         { id: "M571-VE-01", name: "Инсталляция с кнопкой хром глянцевая и шумоизоляцией", price: 31648, brand: "AlcaPlast",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFA-0020-000016", name: "Гильза монтажная 16 (аксиальная)", price: 109, brand: "STOUT", rommer: { id: "RFA-0020-000016", name: "Монтажная гильза 16", price: 85, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     water_input_node: [
         { id: "SFT-0045-000034", name: "Сгон прямой 3/4\" ВР-НР", price: 583, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "VTr.136.N.0504", name: "Тройник косой для гильзы под погружной датчик температуры 3/4'' х 1/2''", price: 561, brand: "VALTEC",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "CBL 10-4", name: "Греющий кабель для водопровода, 4 м", price: 7829, brand: "SelfTec DW",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0029-000134", name: "Переходник ВР-НР 1\" х 3/4\"", price: 236, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "6395", name: "Пятивыводной штуцер", price: 836, brand: "Aquario",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0004-000134", name: "Ниппель 1\" х 3/4\" НР", price: 350, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVB-0004-200020", name: "Кран шаровой ВН-НР 3/4\"", price: 1167, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0002-003420", name: "Удлинитель ВН/НР 3/4\" 20 мм", price: 401, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "100035512000", name: "Система защиты от протечки воды", price: 17990, brand: "Neptun",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0004-003434", name: "Ниппель 3/4\" НР", price: 207, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "VT.386.N.05", name: "Фильтр универсальный 3/4''", price: 2770, brand: "VALTEC",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVC-0011-000020", name: "Клапан обратный 3/4’’ ВР", price: 1547, brand: "STOUT", rommer: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 482, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0020-000034", name: "Тройник 3/4\" ВР", price: 504, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0029-003412", name: "Футорка 3/4\" x 1/2\"", price: 156, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0029-001214", name: "Футорка 1/2\" x 1/4\"", price: 108, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SIM-1010-500608", name: "Манометр 6 бар, 1/4''", price: 260, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     outdoor_faucet: [
         { id: "SFT-0004-003434", name: "Ниппель 3/4\" НР", price: 207, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0002-003430", name: "Удлинитель ВН/ВР 3/4\" 30 мм", price: 501, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0020-000034", name: "Тройник 3/4\" ВР", price: 504, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVB-1007-200020", name: "Кран шаровой ВН-НР 3/4\"", price: 1556, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0045-000034", name: "Сгон прямой 3/4\" ВР-НР", price: 583, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     outdoor_faucets: [
         { id: "RVFF-0001-1520150", name: "Кран незамерзающий, длина 150 мм", price: 2123, brand: "ROMMER", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RVFF-0001-1520200", name: "Кран незамерзающий, длина 200 мм", price: 2251, brand: "ROMMER", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RVFF-0001-1520250", name: "Кран незамерзающий, длина 250 мм", price: 2386, brand: "ROMMER", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RVFF-0001-1520300", name: "Кран незамерзающий, длина 300 мм", price: 2529, brand: "ROMMER", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RVFF-0001-1520350", name: "Кран незамерзающий, длина 350 мм", price: 2680, brand: "ROMMER", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RVFF-0001-1520400", name: "Кран незамерзающий, длина 400 мм", price: 2841, brand: "ROMMER", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RVFF-0001-1520450", name: "Кран незамерзающий, длина 450 мм", price: 3012, brand: "ROMMER", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RVFF-0001-1520500", name: "Кран незамерзающий, длина 500 мм", price: 3192, brand: "ROMMER", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RVFF-0001-1520550", name: "Кран незамерзающий, длина 550 мм", price: 3384, brand: "ROMMER", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     filter_big_blue: [
         { id: "75185", name: "Колба Big Blue 20'", price: 3745, brand: "UNIPUMP",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "ВП-20 М-20 ББ", name: "Картридж Big Blue 20", price: 770, brand: "АКВАБРАЙТ",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SVB-1007-200020", name: "Кран шаровой ВН-НР 3/4\"", price: 1556, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0002-003480", name: "Удлинитель ВН/ВР 3/4\" 80 мм", price: 1042, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0002-003430", name: "Удлинитель ВН/ВР 3/4\" 30 мм", price: 501, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0020-000034", name: "Тройник 3/4\" ВР", price: 504, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0004-003434", name: "Ниппель 3/4\" НР", price: 207, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0014-000034", name: "Угольник 90° 3/4\" ВР", price: 462, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0057-000034", name: "Сгон угловой с уплотнительным кольцом 3/4\"", price: 713, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "SFT-0004-000134", name: "Ниппель 1\" х 3/4\" НР", price: 350, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     plug_34: { id: "SFT-0025-000034", name: "Заглушка 3/4\" НР", price: 176, brand: "STOUT",
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     sewer_silent: [
         { id: "SKB-0002-110100", name: "Труба канализационная бесшумная D 110 L 1000", price: 2349, brand: "STOUT", availability: 'in_stock',
           rommer: { id: "500089", article: "500089", name: "Труба кан. ПП D 110 L 1000", price: 589, brand: "Sinikon" },
@@ -1997,526 +1997,526 @@ const catalog = {
           rommer: { id: "526007R", article: "526007.R", name: "Муфта рем. D 110 ПП", price: 179, brand: "Sinikon" },
           comfort: { id: "526007K", article: "526007.K", name: "Муфта рем. D 110 Comfort", price: 252, brand: "Sinikon" } },
         { id: "900003.R", article: "900003.R", name: "Смазка силиконовая", price: 313, brand: "Sinikon", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     // === ОБВЯЗКА КОТЕЛЬНОЙ: ТРУБЫ И ФИТИНГИ ИЗ НЕРЖАВЕЮЩЕЙ СТАЛИ ROMMER ===
     ss_pipe_4m: [
         { id: "RSS-1001-000015", name: "Труба нерж. 304, штанга 4м 15х1", price: 1200, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1001-000018", name: "Труба нерж. 304, штанга 4м 18х1", price: 1636, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1001-000022", name: "Труба нерж. 304, штанга 4м 22х1.2", price: 2212, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1001-000028", name: "Труба нерж. 304, штанга 4м 28х1.2", price: 2860, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1001-000035", name: "Труба нерж. 304, штанга 4м 35х1.5", price: 4476, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1001-000042", name: "Труба нерж. 304, штанга 4м 42х1.5", price: 6544, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1001-000054", name: "Труба нерж. 304, штанга 4м 54х1.5", price: 8452, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_pipe_2m: [
         { id: "RSS-1001-200015", name: "Труба нерж. 304, штанга 2м 15х1", price: 618, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1001-200018", name: "Труба нерж. 304, штанга 2м 18х1", price: 842, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1001-200022", name: "Труба нерж. 304, штанга 2м 22х1.2", price: 1140, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1001-200028", name: "Труба нерж. 304, штанга 2м 28х1.2", price: 1472, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1001-200035", name: "Труба нерж. 304, штанга 2м 35х1.5", price: 2306, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1001-200042", name: "Труба нерж. 304, штанга 2м 42х1.5", price: 3370, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1001-200054", name: "Труба нерж. 304, штанга 2м 54х1.5", price: 4354, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_pipe_4m_ru: [
         { id: "RSS-2001-000018", name: "Труба нерж. 304, штанга 4м (Россия) 18х1", price: 1172, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-2001-000022", name: "Труба нерж. 304, штанга 4м (Россия) 22х1.2", price: 1728, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-2001-000028", name: "Труба нерж. 304, штанга 4м (Россия) 28х1.2", price: 2216, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-2001-000035", name: "Труба нерж. 304, штанга 4м (Россия) 35х1.5", price: 3444, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_elbow90: [
         { id: "RSS-1002-000015", name: "Угольник 90° ВПр-НПр 15", price: 180, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1002-000018", name: "Угольник 90° ВПр-НПр 18", price: 244, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1002-000022", name: "Угольник 90° ВПр-НПр 22", price: 276, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1002-000028", name: "Угольник 90° ВПр-НПр 28", price: 407, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1002-000035", name: "Угольник 90° ВПр-НПр 35", price: 628, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1002-000042", name: "Угольник 90° ВПр-НПр 42", price: 885, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1002-000054", name: "Угольник 90° ВПр-НПр 54", price: 1289, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_elbow90_ff: [
         { id: "RSS-1003-000015", name: "Угольник 90° ВПр-ВПр 15", price: 170, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1003-000018", name: "Угольник 90° ВПр-ВПр 18", price: 275, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1003-000022", name: "Угольник 90° ВПр-ВПр 22", price: 326, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1003-000028", name: "Угольник 90° ВПр-ВПр 28", price: 436, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1003-000035", name: "Угольник 90° ВПр-ВПр 35", price: 648, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1003-000042", name: "Угольник 90° ВПр-ВПр 42", price: 757, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1003-000054", name: "Угольник 90° ВПр-ВПр 54", price: 1303, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_elbow45: [
         { id: "RSS-1004-000015", name: "Угольник 45° ВПр-НПр 15", price: 167, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1004-000018", name: "Угольник 45° ВПр-НПр 18", price: 221, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1004-000022", name: "Угольник 45° ВПр-НПр 22", price: 247, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1004-000028", name: "Угольник 45° ВПр-НПр 28", price: 328, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1004-000035", name: "Угольник 45° ВПр-НПр 35", price: 546, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1004-000042", name: "Угольник 45° ВПр-НПр 42", price: 694, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1004-000054", name: "Угольник 45° ВПр-НПр 54", price: 860, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_elbow45_ff: [
         { id: "RSS-1005-000015", name: "Угольник 45° ВПр-ВПр 15", price: 169, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1005-000018", name: "Угольник 45° ВПр-ВПр 18", price: 263, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1005-000022", name: "Угольник 45° ВПр-ВПр 22", price: 273, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1005-000028", name: "Угольник 45° ВПр-ВПр 28", price: 366, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1005-000035", name: "Угольник 45° ВПр-ВПр 35", price: 551, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1005-000042", name: "Угольник 45° ВПр-ВПр 42", price: 701, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1005-000054", name: "Угольник 45° ВПр-ВПр 54", price: 1128, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_bypass_ff: [
         { id: "RSS-1006-000015", name: "Обвод ВПр-ВПр 15", price: 426, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1006-000018", name: "Обвод ВПр-ВПр 18", price: 567, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1006-000022", name: "Обвод ВПр-ВПр 22", price: 642, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1006-000028", name: "Обвод ВПр-ВПр 28", price: 890, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_bypass: [
         { id: "RSS-1007-000015", name: "Обвод ВПр-НПр 15", price: 421, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1007-000018", name: "Обвод ВПр-НПр 18", price: 590, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1007-000022", name: "Обвод ВПр-НПр 22", price: 642, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_bend90: [
         { id: "RSS-1008-001570", name: "Отвод безраструбный 90° 15х70х160", price: 284, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1008-015100", name: "Отвод безраструбный 90° 15х100х600", price: 795, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_elbow_fi: [
         { id: "RSS-1009-001512", name: "Угольник-переходник ВПр-ВР 15х1/2", price: 445, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1009-001812", name: "Угольник-переходник ВПр-ВР 18х1/2", price: 472, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1009-001834", name: "Угольник-переходник ВПр-ВР 18х3/4", price: 571, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1009-002212", name: "Угольник-переходник ВПр-ВР 22х1/2", price: 591, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1009-002234", name: "Угольник-переходник ВПр-ВР 22х3/4", price: 593, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1009-002834", name: "Угольник-переходник ВПр-ВР 28х3/4", price: 661, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1009-000351", name: "Угольник-переходник ВПр-ВР 35х1", price: 1140, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_elbow_mi: [
         { id: "RSS-1010-001512", name: "Угольник-переходник ВПр-НР 15х1/2", price: 399, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1010-001812", name: "Угольник-переходник ВПр-НР 18х1/2", price: 516, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1010-001834", name: "Угольник-переходник ВПр-НР 18х3/4", price: 571, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1010-002212", name: "Угольник-переходник ВПр-НР 22х1/2", price: 581, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1010-002234", name: "Угольник-переходник ВПр-НР 22х3/4", price: 611, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1010-002834", name: "Угольник-переходник ВПр-НР 28х3/4", price: 756, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1010-000351", name: "Угольник-переходник ВПр-НР 35х1", price: 1058, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_wall_elbow: [
         { id: "RSS-1011-001512", name: "Угольник настенный ВПр-ВР 15х1/2", price: 580, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1011-001812", name: "Угольник настенный ВПр-ВР 18х1/2", price: 716, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1011-002212", name: "Угольник настенный ВПр-ВР 22х1/2", price: 675, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1011-002234", name: "Угольник настенный ВПр-ВР 22х3/4", price: 794, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_wall_elbow_pass: [
         { id: "RSS-1012-001512", name: "Угольник проходной настенный ВПр-ВР 15х1/2", price: 1271, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_tee: [
         { id: "RSS-1013-000015", name: "Тройник равнопроходной ВПр 15", price: 292, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1013-000018", name: "Тройник равнопроходной ВПр 18", price: 393, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1013-000022", name: "Тройник равнопроходной ВПр 22", price: 407, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1013-000028", name: "Тройник равнопроходной ВПр 28", price: 476, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1013-000035", name: "Тройник равнопроходной ВПр 35", price: 773, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1013-000042", name: "Тройник равнопроходной ВПр 42", price: 878, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1013-000054", name: "Тройник равнопроходной ВПр 54", price: 1383, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_tee_red: [
         { id: "RSS-1014-181518", name: "Тройник переходной ВПр 18х15х18", price: 344, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1014-221522", name: "Тройник переходной ВПр 22х15х22", price: 368, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1014-221822", name: "Тройник переходной ВПр 22х18х22", price: 419, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1014-281528", name: "Тройник переходной ВПр 28х15х28", price: 495, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1014-282222", name: "Тройник переходной ВПр 28х22х22", price: 560, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1014-282228", name: "Тройник переходной ВПр 28х22х28", price: 460, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1014-282822", name: "Тройник переходной ВПр 28х28х22", price: 616, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1014-351535", name: "Тройник переходной ВПр 35х15х35", price: 609, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1014-352235", name: "Тройник переходной ВПр 35х22х35", price: 647, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1014-352835", name: "Тройник переходной ВПр 35х28х35", price: 647, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1014-423542", name: "Тройник переходной ВПр 42х35х42", price: 955, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1014-544254", name: "Тройник переходной ВПр 54х42х54", price: 1414, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_tee_fi: [
         { id: "RSS-1015-001512", name: "Тройник-переходник ВПр-ВР 15х1/2", price: 384, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-001812", name: "Тройник-переходник ВПр-ВР 18х1/2", price: 500, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-001834", name: "Тройник-переходник ВПр-ВР 18х3/4", price: 445, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-002212", name: "Тройник-переходник ВПр-ВР 22х1/2", price: 503, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-002234", name: "Тройник-переходник ВПр-ВР 22х3/4", price: 540, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-002812", name: "Тройник-переходник ВПр-ВР 28х1/2", price: 527, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-002834", name: "Тройник-переходник ВПр-ВР 28х3/4", price: 622, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-000281", name: "Тройник-переходник ВПр-ВР 28х1", price: 802, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-003512", name: "Тройник-переходник ВПр-ВР 35х1/2", price: 839, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-000351", name: "Тройник-переходник ВПр-ВР 35х1", price: 915, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-035114", name: "Тройник-переходник ВПр-ВР 35х11/4", price: 1255, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-004212", name: "Тройник-переходник ВПр-ВР 42х1/2", price: 961, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-000421", name: "Тройник-переходник ВПр-ВР 42х1", price: 1217, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-042114", name: "Тройник-переходник ВПр-ВР 42х11/4", price: 1614, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-005412", name: "Тройник-переходник ВПр-ВР 54х1/2", price: 932, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-000541", name: "Тройник-переходник ВПр-ВР 54х1", price: 1106, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1015-054114", name: "Тройник-переходник ВПр-ВР 54х11/4", price: 1548, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_tee_mi: [
         { id: "RSS-1016-001512", name: "Тройник-переходник ВПр-НР 15х1/2", price: 732, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1016-001812", name: "Тройник-переходник ВПр-НР 18х1/2", price: 811, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1016-001834", name: "Тройник-переходник ВПр-НР 18х3/4", price: 823, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1016-002212", name: "Тройник-переходник ВПр-НР 22х1/2", price: 829, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1016-002234", name: "Тройник-переходник ВПр-НР 22х3/4", price: 888, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1016-002812", name: "Тройник-переходник ВПр-НР 28х1/2", price: 931, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1016-002834", name: "Тройник-переходник ВПр-НР 28х3/4", price: 942, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1016-000281", name: "Тройник-переходник ВПр-НР 28х1", price: 869, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1016-000351", name: "Тройник-переходник ВПр-НР 35х1", price: 1023, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1016-035114", name: "Тройник-переходник ВПр-НР 35х11/4", price: 1113, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1016-000421", name: "Тройник-переходник ВПр-НР 42х1", price: 1163, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1016-042114", name: "Тройник-переходник ВПр-НР 42х11/4", price: 1403, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1016-000541", name: "Тройник-переходник ВПр-НР 54х1", price: 1580, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1016-054114", name: "Тройник-переходник ВПр-НР 54х11/4", price: 1867, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_coupling: [
         { id: "RSS-1017-000015", name: "Муфта равнопроходная ВПр 15", price: 131, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1017-000018", name: "Муфта равнопроходная ВПр 18", price: 161, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1017-000022", name: "Муфта равнопроходная ВПр 22", price: 174, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1017-000028", name: "Муфта равнопроходная ВПр 28", price: 209, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1017-000035", name: "Муфта равнопроходная ВПр 35", price: 343, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1017-000042", name: "Муфта равнопроходная ВПр 42", price: 518, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1017-000054", name: "Муфта равнопроходная ВПр 54", price: 618, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_coupling_red: [
         { id: "RSS-1018-001815", name: "Муфта переходная ВПр 18х15", price: 208, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1018-002215", name: "Муфта переходная ВПр 22х15", price: 242, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1018-002218", name: "Муфта переходная ВПр 22х18", price: 252, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1018-002815", name: "Муфта переходная ВПр 28х15", price: 303, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1018-002822", name: "Муфта переходная ВПр 28х22", price: 291, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1018-003528", name: "Муфта переходная ВПр 35х28", price: 449, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1018-004235", name: "Муфта переходная ВПр 42х35", price: 582, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1018-005442", name: "Муфта переходная ВПр 54х42", price: 866, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_coupling_slide: [
         { id: "RSS-1019-000015", name: "Муфта надвижная ВПр 15", price: 214, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1019-000018", name: "Муфта надвижная ВПр 18", price: 244, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1019-000022", name: "Муфта надвижная ВПр 22", price: 310, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1019-000028", name: "Муфта надвижная ВПр 28", price: 370, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1019-000035", name: "Муфта надвижная ВПр 35", price: 505, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1019-000042", name: "Муфта надвижная ВПр 42", price: 596, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1019-000054", name: "Муфта надвижная ВПр 54", price: 900, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_coupling_mf: [
         { id: "RSS-1020-001815", name: "Муфта переходная НПр-ВПр 18х15", price: 218, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-002215", name: "Муфта переходная НПр-ВПр 22х15", price: 219, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-002218", name: "Муфта переходная НПр-ВПр 22х18", price: 231, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-002815", name: "Муфта переходная НПр-ВПр 28х15", price: 277, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-002818", name: "Муфта переходная НПр-ВПр 28х18", price: 296, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-002822", name: "Муфта переходная НПр-ВПр 28х22", price: 299, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-003515", name: "Муфта переходная НПр-ВПр 35х15", price: 381, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-003518", name: "Муфта переходная НПр-ВПр 35х18", price: 367, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-003522", name: "Муфта переходная НПр-ВПр 35х22", price: 354, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-003528", name: "Муфта переходная НПр-ВПр 35х28", price: 397, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-004222", name: "Муфта переходная НПр-ВПр 42х22", price: 507, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-004228", name: "Муфта переходная НПр-ВПр 42х28", price: 562, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-004235", name: "Муфта переходная НПр-ВПр 42х35", price: 579, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-005428", name: "Муфта переходная НПр-ВПр 54х28", price: 725, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-005435", name: "Муфта переходная НПр-ВПр 54х35", price: 743, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1020-005442", name: "Муфта переходная НПр-ВПр 54х42", price: 759, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_adapter_mi: [
         { id: "RSS-1021-001512", name: "Переходник ВПр-НР 15х1/2", price: 265, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1021-001534", name: "Переходник ВПр-НР 15х3/4", price: 377, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1021-001812", name: "Переходник ВПр-НР 18х1/2", price: 319, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1021-001834", name: "Переходник ВПр-НР 18х3/4", price: 372, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1021-002212", name: "Переходник ВПр-НР 22х1/2", price: 314, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1021-002234", name: "Переходник ВПр-НР 22х3/4", price: 401, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1021-000221", name: "Переходник ВПр-НР 22х1", price: 513, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1021-002834", name: "Переходник ВПр-НР 28х3/4", price: 443, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1021-000281", name: "Переходник ВПр-НР 28х1", price: 531, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1021-000351", name: "Переходник ВПр-НР 35х1", price: 832, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1021-035114", name: "Переходник ВПр-НР 35х11/4", price: 802, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1021-042112", name: "Переходник ВПр-НР 42х11/2", price: 882, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1021-000542", name: "Переходник ВПр-НР 54х2", price: 1346, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_adapter_fi: [
         { id: "RSS-1022-001512", name: "Переходник ВПр-ВР 15х1/2", price: 263, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1022-001812", name: "Переходник ВПр-ВР 18х1/2", price: 309, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1022-001834", name: "Переходник ВПр-ВР 18х3/4", price: 389, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1022-002212", name: "Переходник ВПр-ВР 22х1/2", price: 278, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1022-002234", name: "Переходник ВПр-ВР 22х3/4", price: 382, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1022-002834", name: "Переходник ВПр-ВР 28х3/4", price: 461, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1022-000281", name: "Переходник ВПр-ВР 28х1", price: 662, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1022-000351", name: "Переходник ВПр-ВР 35х1", price: 693, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1022-035114", name: "Переходник ВПр-ВР 35х11/4", price: 889, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1022-042112", name: "Переходник ВПр-ВР 42х11/2", price: 934, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1022-000542", name: "Переходник ВПр-ВР 54х2", price: 1402, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_insert_fi: [
         { id: "RSS-1023-001512", name: "Вставка переходная НПр-ВР 15х1/2", price: 254, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1023-001534", name: "Вставка переходная НПр-ВР 15х3/4", price: 375, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1023-001812", name: "Вставка переходная НПр-ВР 18х1/2", price: 297, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1023-001834", name: "Вставка переходная НПр-ВР 18х3/4", price: 384, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1023-000181", name: "Вставка переходная НПр-ВР 18х1", price: 598, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1023-002212", name: "Вставка переходная НПр-ВР 22х1/2", price: 263, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1023-002234", name: "Вставка переходная НПр-ВР 22х3/4", price: 363, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1023-000221", name: "Вставка переходная НПр-ВР 22х1", price: 549, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1023-002834", name: "Вставка переходная НПр-ВР 28х3/4", price: 478, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1023-000281", name: "Вставка переходная НПр-ВР 28х1", price: 632, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1023-035114", name: "Вставка переходная НПр-ВР 35х11/4", price: 797, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1023-042112", name: "Вставка переходная НПр-ВР 42х11/2", price: 1056, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1023-000542", name: "Вставка переходная НПр-ВР 54х2", price: 1534, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_insert_mi: [
         { id: "RSS-1024-001512", name: "Вставка переходная НПр-НР 15х1/2", price: 287, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1024-001534", name: "Вставка переходная НПр-НР 15х3/4", price: 375, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1024-001812", name: "Вставка переходная НПр-НР 18х1/2", price: 331, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1024-001834", name: "Вставка переходная НПр-НР 18х3/4", price: 362, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1024-000181", name: "Вставка переходная НПр-НР 18х1", price: 508, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1024-002212", name: "Вставка переходная НПр-НР 22х1/2", price: 363, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1024-002234", name: "Вставка переходная НПр-НР 22х3/4", price: 402, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1024-000221", name: "Вставка переходная НПр-НР 22х1", price: 395, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1024-002834", name: "Вставка переходная НПр-НР 28х3/4", price: 463, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1024-000281", name: "Вставка переходная НПр-НР 28х1", price: 598, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1024-035114", name: "Вставка переходная НПр-НР 35х11/4", price: 827, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1024-042112", name: "Вставка переходная НПр-НР 42х11/2", price: 1305, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1024-000542", name: "Вставка переходная НПр-НР 54х2", price: 1754, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_plug: [
         { id: "RSS-1025-000015", name: "Заглушка ВПр 15", price: 154, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1025-000018", name: "Заглушка ВПр 18", price: 198, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1025-000022", name: "Заглушка ВПр 22", price: 245, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1025-000028", name: "Заглушка ВПр 28", price: 321, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1025-000035", name: "Заглушка ВПр 35", price: 431, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1025-000042", name: "Заглушка ВПр 42", price: 638, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1025-000054", name: "Заглушка ВПр 54", price: 818, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_union_fi: [
         { id: "RSS-1026-001512", name: "Переходник с накидной гайкой ВПр-ВР 15х1/2", price: 533, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1026-001534", name: "Переходник с накидной гайкой ВПр-ВР 15х3/4", price: 560, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1026-001812", name: "Переходник с накидной гайкой ВПр-ВР 18х1/2", price: 574, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1026-001834", name: "Переходник с накидной гайкой ВПр-ВР 18х3/4", price: 531, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1026-002212", name: "Переходник с накидной гайкой ВПр-ВР 22х1/2", price: 499, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1026-002234", name: "Переходник с накидной гайкой ВПр-ВР 22х3/4", price: 531, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1026-002834", name: "Переходник с накидной гайкой ВПр-ВР 28х3/4", price: 634, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1026-000281", name: "Переходник с накидной гайкой ВПр-ВР 28х1", price: 633, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1026-000351", name: "Переходник с накидной гайкой ВПр-ВР 35х1", price: 953, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1026-035114", name: "Переходник с накидной гайкой ВПр-ВР 35х11/4", price: 1072, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1026-042112", name: "Переходник с накидной гайкой ВПр-ВР 42х11/2", price: 1565, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1026-000542", name: "Переходник с накидной гайкой ВПр-ВР 54х2", price: 2200, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
     ss_oring_epdm: [
         { id: "RSS-1027-000015", name: "Уплотнительное кольцо EPDM 15", price: 11, brand: "ROMMER", unit: "шт", availability: 'in_stock' },
@@ -2534,9 +2534,9 @@ const catalog = {
         { id: "RSS-1028-000028", name: "Уплотнительное кольцо FPM 28", price: 45, brand: "ROMMER", unit: "шт", availability: 'in_stock' },
         { id: "RSS-1028-000035", name: "Уплотнительное кольцо FPM 35", price: 59, brand: "ROMMER", unit: "шт", availability: 'in_stock' },
         { id: "RSS-1028-000042", name: "Уплотнительное кольцо FPM 42", price: 105, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
         { id: "RSS-1028-000054", name: "Уплотнительное кольцо FPM 54", price: 133, brand: "ROMMER", unit: "шт", availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
     ],
 ppr_ekoplastik_pipe: [
         {
@@ -2547,7 +2547,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STRS025RCT",
@@ -2557,7 +2557,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STRS032RCT",
@@ -2567,7 +2567,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STRS040RCT",
@@ -2577,7 +2577,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STRS050RCT",
@@ -2587,7 +2587,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STRS063RCT",
@@ -2597,7 +2597,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
 ],
     ppr_ekoplastik_elbow90: [
@@ -2636,7 +2636,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SKO05090RCT",
@@ -2646,7 +2646,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SKO06390RCT",
@@ -2656,7 +2656,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SKO12045RCT",
@@ -2675,7 +2675,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SKO120RCTX",
@@ -2703,7 +2703,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
 ],
     ppr_ekoplastik_elbow45: [
@@ -2733,7 +2733,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SKO04045RCT",
@@ -2743,7 +2743,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SKO05045RCT",
@@ -2753,7 +2753,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SKO06345RCT",
@@ -2763,7 +2763,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
 ],
     ppr_ekoplastik_tee: [
@@ -2793,7 +2793,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STK040RCTX",
@@ -2803,7 +2803,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STK050RCTX",
@@ -2813,7 +2813,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STK063RCTX",
@@ -2823,7 +2823,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
 ],
     ppr_ekoplastik_tee_red: [
@@ -2835,7 +2835,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR02520RCT",
@@ -2854,7 +2854,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR0322025RCT",
@@ -2864,7 +2864,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR0322525RCT",
@@ -2874,7 +2874,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR03225RCT",
@@ -2884,7 +2884,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR04020RCT",
@@ -2894,7 +2894,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR04025RCT",
@@ -2904,7 +2904,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR04032RCT",
@@ -2914,7 +2914,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR05025RCT",
@@ -2924,7 +2924,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR05032RCT",
@@ -2934,7 +2934,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR05040RCT",
@@ -2944,7 +2944,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR06325RCT",
@@ -2954,7 +2954,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR06332RCT",
@@ -2964,7 +2964,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR06340RCT",
@@ -2974,7 +2974,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKR06350RCT",
@@ -2984,7 +2984,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKI02020RCT",
@@ -2994,7 +2994,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKI02520RCT",
@@ -3004,7 +3004,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKI02525RCT",
@@ -3014,7 +3014,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKI03220RCT",
@@ -3024,7 +3024,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKI03225RCT",
@@ -3034,7 +3034,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKI03232RCT",
@@ -3044,7 +3044,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKE02020RCT",
@@ -3054,7 +3054,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKE02520RCT",
@@ -3064,7 +3064,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKE02525RCT",
@@ -3074,7 +3074,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKE03225RCT",
@@ -3084,7 +3084,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "STKE03232RCT",
@@ -3094,7 +3094,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
 ],
     ppr_ekoplastik_adapter_fi: [
@@ -3106,7 +3106,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZI02025RCT",
@@ -3116,7 +3116,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZI02520RCT",
@@ -3126,7 +3126,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZI02525RCT",
@@ -3136,7 +3136,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZI03225RCT",
@@ -3146,7 +3146,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZI03232OKRCT",
@@ -3156,7 +3156,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZI04040RCT",
@@ -3166,7 +3166,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZI05050RCT",
@@ -3176,7 +3176,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZI06363RCT",
@@ -3186,7 +3186,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
 ],
     ppr_ekoplastik_adapter_mi: [
@@ -3198,7 +3198,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZE02025RCT",
@@ -3208,7 +3208,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZE02520RCT",
@@ -3218,7 +3218,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZE02525RCT",
@@ -3228,7 +3228,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZE03225RCT",
@@ -3238,7 +3238,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZE03232RCT",
@@ -3248,7 +3248,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZE03232OKRCT",
@@ -3258,7 +3258,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZE04040RCT",
@@ -3268,7 +3268,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZE05050XX",
@@ -3278,7 +3278,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZE06363RCT",
@@ -3288,7 +3288,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SSHI02020LFRCT",
@@ -3298,7 +3298,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SSHI02525RCT",
@@ -3308,7 +3308,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SSHE02020LFRCT",
@@ -3318,7 +3318,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SSHE02525RCT",
@@ -3328,7 +3328,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SSI02020RCT",
@@ -3338,7 +3338,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SSI02525RCT",
@@ -3348,7 +3348,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SSI03232RCT",
@@ -3358,7 +3358,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SSE02020RCT",
@@ -3368,7 +3368,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SSE02525RCT",
@@ -3378,7 +3378,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SSE03232RCT",
@@ -3388,7 +3388,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRS020RCTX",
@@ -3398,7 +3398,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRS025RCTX",
@@ -3408,7 +3408,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRS032RCTX",
@@ -3418,7 +3418,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRS040RCTX",
@@ -3428,7 +3428,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZM02020RCT",
@@ -3438,7 +3438,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZM02025RCT",
@@ -3448,7 +3448,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZM02525RCT",
@@ -3458,7 +3458,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZM02532RCT",
@@ -3468,7 +3468,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SZM02025ERCT",
@@ -3478,7 +3478,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SNAM02020RCT",
@@ -3488,7 +3488,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SNAM02025RCT",
@@ -3498,7 +3498,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SNAM02525RCT",
@@ -3508,7 +3508,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SNAM02532RCT",
@@ -3518,7 +3518,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SHM02025RCT",
@@ -3528,7 +3528,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SHM02532RCT",
@@ -3538,7 +3538,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SHM03240XX",
@@ -3586,7 +3586,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SNA050RCTX",
@@ -3596,7 +3596,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SNA063RCTX",
@@ -3606,7 +3606,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
 ],
     ppr_ekoplastik_coupling_red: [
@@ -3627,7 +3627,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRE03225RCT",
@@ -3637,7 +3637,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRE12520RCT",
@@ -3656,7 +3656,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRE13225RCT",
@@ -3675,7 +3675,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRE14025RCT",
@@ -3685,7 +3685,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRE14032RCT",
@@ -3695,7 +3695,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRE15025RCT",
@@ -3705,7 +3705,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRE15032RCT",
@@ -3715,7 +3715,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRE15040RCT",
@@ -3725,7 +3725,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRE16325RCT",
@@ -3735,7 +3735,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRE16332RCT",
@@ -3745,7 +3745,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRE16340RCT",
@@ -3755,7 +3755,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
                 "id": "SRE16350RCT",
@@ -3765,7 +3765,7 @@ ppr_ekoplastik_pipe: [
                 "brand": "Wavin",
                 "unit": "шт",
                 "availability": "in_stock",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
 ],
 
@@ -3779,7 +3779,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Труба PP-R DUO SDR 6 20 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA39010",
@@ -3789,7 +3789,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Труба PP-R DUO SDR 6 25 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA39012",
@@ -3799,7 +3799,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Труба PP-R DUO SDR 6 32 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA39014",
@@ -3809,7 +3809,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Труба PP-R DUO SDR 6 40 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA39016",
@@ -3819,7 +3819,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Труба PP-R DUO SDR 6 50 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA39018",
@@ -3829,7 +3829,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Труба PP-R DUO SDR 6 63 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA39020",
@@ -3839,7 +3839,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Труба PP-R DUO SDR 6 75 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
     ],
     ppr_proaqua_elbow90: [
@@ -3896,7 +3896,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Угольник 90° PP-R 63 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA13020P",
@@ -3906,7 +3906,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Угольник 90° PP-R 75 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA13022P",
@@ -3916,7 +3916,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Угольник 90° PP-R 90 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA13024P",
@@ -3926,7 +3926,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Угольник 90° PP-R 110 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
     ],
     ppr_proaqua_elbow45: [
@@ -3983,7 +3983,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Угольник 45° PP-R 63 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA13520P",
@@ -3993,7 +3993,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Угольник 45° PP-R 75 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA13522P",
@@ -4003,7 +4003,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Угольник 45° PP-R 90 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA13524",
@@ -4013,7 +4013,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Угольник 45° PP-R 110 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
     ],
     ppr_proaqua_tee: [
@@ -4061,7 +4061,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник PP-R 50 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14018P",
@@ -4071,7 +4071,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник PP-R 63 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14020P",
@@ -4081,7 +4081,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник PP-R 75 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14022P",
@@ -4091,7 +4091,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник PP-R 90 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14024P",
@@ -4101,7 +4101,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник PP-R 110 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
     ],
     ppr_proaqua_tee_red: [
@@ -4239,7 +4239,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 50х25х50",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14551P",
@@ -4249,7 +4249,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 50х32х50",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14552P",
@@ -4259,7 +4259,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 50х40х50",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14560P",
@@ -4269,7 +4269,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 63х20х63",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14562P",
@@ -4279,7 +4279,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 63х25х63",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14563P",
@@ -4289,7 +4289,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 63х32х63",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14564P",
@@ -4299,7 +4299,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 63х40х63",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14565P",
@@ -4309,7 +4309,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 63х50х63",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14570P",
@@ -4319,7 +4319,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 75х25х75",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14571P",
@@ -4329,7 +4329,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 75х32х75",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14572P",
@@ -4339,7 +4339,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 75х40х75",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14573P",
@@ -4349,7 +4349,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 75х50х75",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14574P",
@@ -4359,7 +4359,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 75х63х75",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14578P",
@@ -4369,7 +4369,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 90х40х90",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14580P",
@@ -4379,7 +4379,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 90х50х90",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14582P",
@@ -4389,7 +4389,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 90х63х90",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14584P",
@@ -4399,7 +4399,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 90х75х90",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14586",
@@ -4409,7 +4409,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 110х50х110",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14596P",
@@ -4419,7 +4419,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 110х63х110",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14598P",
@@ -4429,7 +4429,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 110х75х110",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA14600P",
@@ -4439,7 +4439,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Тройник переходной PP-R 110х90х110",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
     ],
     ppr_proaqua_adapter_fi: [
@@ -4460,7 +4460,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная ВР PP-R 20х3/4",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA22012P",
@@ -4479,7 +4479,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная ВР PP-R 25х3/4",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA22013P",
@@ -4498,7 +4498,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная ВР PP-R 32х1/2",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA22016P",
@@ -4508,7 +4508,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная ВР PP-R 32х3/4",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA22018P",
@@ -4518,7 +4518,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная ВР PP-R 32х1",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA22020",
@@ -4528,7 +4528,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная ВР PP-R 40х1",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
     ],
     ppr_proaqua_adapter_mi: [
@@ -4540,7 +4540,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная НР PP-R 20х1/2",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA23010P",
@@ -4550,7 +4550,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная НР PP-R 20х3/4",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA23012P",
@@ -4560,7 +4560,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная НР PP-R 25х1/2",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA23014P",
@@ -4570,7 +4570,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная НР PP-R 25х3/4",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA23013P",
@@ -4580,7 +4580,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная НР PP-R 25х1",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA23015P",
@@ -4590,7 +4590,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная НР PP-R 32х1/2",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA23016P",
@@ -4600,7 +4600,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная НР PP-R 32х3/4",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA23018P",
@@ -4610,7 +4610,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная НР PP-R 32х1",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA23020",
@@ -4620,7 +4620,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта комбинированная НР PP-R 40х1",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
     ],
     ppr_proaqua_coupling: [
@@ -4677,7 +4677,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта соединительная PP-R 63 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA12020P",
@@ -4687,7 +4687,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта соединительная PP-R 75 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA12022P",
@@ -4697,7 +4697,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта соединительная PP-R 90 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA12024P",
@@ -4707,7 +4707,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта соединительная PP-R 110 мм",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
     ],
     ppr_proaqua_coupling_red: [
@@ -4854,7 +4854,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта переходная PP-R 75х50",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA12542P",
@@ -4864,7 +4864,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта переходная PP-R 75х63",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA12544P",
@@ -4874,7 +4874,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта переходная PP-R 90х63",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA12546P",
@@ -4884,7 +4884,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта переходная PP-R 90х75",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         },
         {
             "id": "PA12547P",
@@ -4904,7 +4904,7 @@ ppr_ekoplastik_pipe: [
             "availability": "in_stock",
             "name": "Муфта переходная PP-R 110х90",
             "unit": "шт",
-  price_date: '2026-06-07'
+  price_date: '2026-06-10'
         }
     ],
 
@@ -4913,188 +4913,188 @@ ppr_ekoplastik_pipe: [
 const titanRads = [
     { id: "SRB-3320-050004", name: "Радиатор TITAN 4 секций", sec: 4, price: 7410, brand: "STOUT", power50: 128, passportPower: 198,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "SRB-3320-050005", name: "Радиатор TITAN 5 секций", sec: 5, price: 8645, brand: "STOUT", power50: 128, passportPower: 198,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "SRB-3320-050006", name: "Радиатор TITAN 6 секций", sec: 6, price: 9880, brand: "STOUT", power50: 128, passportPower: 198,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "SRB-3320-050007", name: "Радиатор TITAN 7 секций", sec: 7, price: 11115, brand: "STOUT", power50: 128, passportPower: 198,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "SRB-3320-050008", name: "Радиатор TITAN 8 секций", sec: 8, price: 12350, brand: "STOUT", power50: 128, passportPower: 198,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "SRB-3320-050009", name: "Радиатор TITAN 9 секций", sec: 9, price: 13585, brand: "STOUT", power50: 128, passportPower: 198,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "SRB-3320-050010", name: "Радиатор TITAN 10 секций", sec: 10, price: 14820, brand: "STOUT", power50: 128, passportPower: 198,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "SRB-3320-050011", name: "Радиатор TITAN 11 секций", sec: 11, price: 16055, brand: "STOUT", power50: 128, passportPower: 198,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "SRB-3320-050012", name: "Радиатор TITAN 12 секций", sec: 12, price: 17290, brand: "STOUT", power50: 128, passportPower: 198,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "SRB-3320-050013", name: "Радиатор TITAN 13 секций", sec: 13, price: 18525, brand: "STOUT", power50: 128, passportPower: 198,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "SRB-3320-050014", name: "Радиатор TITAN 14 секций", sec: 14, price: 19760, brand: "STOUT", power50: 128, passportPower: 198,
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
 ];
 
 const steelRads = [
     { id: "RRS-2020-215040", name: "Стальной панельный радиатор Ventil (Тип 21)", sec: 400, isPanel: true, price: 6418, brand: "ROMMER", power50: 439, passportPower: 680,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-215050", name: "Стальной панельный радиатор Ventil (Тип 21)", sec: 500, isPanel: true, price: 7113, brand: "ROMMER", power50: 549, passportPower: 850,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225040", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 400, isPanel: true, price: 7317, brand: "ROMMER", power50: 618, passportPower: 958,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-215060", name: "Стальной панельный радиатор Ventil (Тип 21)", sec: 600, isPanel: true, price: 7838, brand: "ROMMER", power50: 659, passportPower: 1020,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225050", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 500, isPanel: true, price: 7953, brand: "ROMMER", power50: 751, passportPower: 1163,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-215070", name: "Стальной панельный радиатор Ventil (Тип 21)", sec: 700, isPanel: true, price: 3182, brand: "ROMMER", power50: 768, passportPower: 1190,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-215080", name: "Стальной панельный радиатор Ventil (Тип 21)", sec: 800, isPanel: true, price: 9211, brand: "ROMMER", power50: 878, passportPower: 1360,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225060", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 600, isPanel: true, price: 3256, brand: "ROMMER", power50: 883, passportPower: 1368,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-215090", name: "Стальной панельный радиатор Ventil (Тип 21)", sec: 900, isPanel: true, price: 9906, brand: "ROMMER", power50: 988, passportPower: 1530,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225070", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 700, isPanel: true, price: 9333, brand: "ROMMER", power50: 1016, passportPower: 1573,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-215100", name: "Стальной панельный радиатор Ventil (Тип 21)", sec: 1000, isPanel: true, price: 10662, brand: "ROMMER", power50: 1098, passportPower: 1700,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225080", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 800, isPanel: true, price: 9986, brand: "ROMMER", power50: 1148, passportPower: 1778,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225090", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 900, isPanel: true, price: 10628, brand: "ROMMER", power50: 1316, passportPower: 2038,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225100", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 1000, isPanel: true, price: 11396, brand: "ROMMER", power50: 1462, passportPower: 2265,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225110", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 1100, isPanel: true, price: 13071, brand: "ROMMER", power50: 1608, passportPower: 2491,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225120", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 1200, isPanel: true, price: 5173, brand: "ROMMER", power50: 1755, passportPower: 2718,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225130", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 1300, isPanel: true, price: 14486, brand: "ROMMER", power50: 1901, passportPower: 2944,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
-    { id: "RRS-2020-225140", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 1400, isPanel: true, price: 5459, brand: "ROMMER", power50: 2047, passportPower: 3171,
+  price_date: '2026-06-10' },
+    { id: "RRS-2020-225140", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 1400, isPanel: true, price: 14559, brand: "ROMMER", power50: 2047, passportPower: 3171,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225150", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 1500, isPanel: true, price: 15294, brand: "ROMMER", power50: 2193, passportPower: 3397,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225160", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 1600, isPanel: true, price: 4077, brand: "ROMMER", power50: 2340, passportPower: 3624,
   availability: 'in_stock' },
     { id: "RRS-2020-225180", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 1800, isPanel: true, price: 19122, brand: "ROMMER", power50: 2632, passportPower: 4076,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225200", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 2000, isPanel: true, price: 21371, brand: "ROMMER", power50: 2924, passportPower: 4529,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225220", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 2200, isPanel: true, price: 22888, brand: "ROMMER", power50: 3217, passportPower: 4982,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225240", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 2400, isPanel: true, price: 24657, brand: "ROMMER", power50: 3510, passportPower: 5436,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225260", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 2600, isPanel: true, price: 26951, brand: "ROMMER", power50: 3802, passportPower: 5889,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-225280", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 2800, isPanel: true, price: 28815, brand: "ROMMER", power50: 4095, passportPower: 6342,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
-    { id: "RRS-2020-225300", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 3000, isPanel: true, price: 30340, brand: "ROMMER", power50: 4387, passportPower: 6795,
+  price_date: '2026-06-10' },
+    { id: "RRS-2020-225300", name: "Стальной панельный радиатор Ventil (Тип 22)", sec: 3000, isPanel: true, price: 11377, brand: "ROMMER", power50: 4387, passportPower: 6795,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     // === ТИП 11: 1 панель + 1 ряд конвекторов, H=500мм ===
     // Мощность Q50 = Q_пасп × 0.646 | Q_пасп(Тип11) ≈ Q_пасп(Тип21) × 0.69 (EN 442)
     { id: "RRS-2020-115040", name: "Стальной панельный радиатор Ventil (Тип 11)", sec: 400,  isPanel: true, price: 5302,  brand: "ROMMER", power50: 303,  passportPower: 469,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-115050", name: "Стальной панельный радиатор Ventil (Тип 11)", sec: 500,  isPanel: true, price: 5813,  brand: "ROMMER", power50: 379,  passportPower: 587,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-115060", name: "Стальной панельный радиатор Ventil (Тип 11)", sec: 600,  isPanel: true, price: 6356,  brand: "ROMMER", power50: 455,  passportPower: 704,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-115070", name: "Стальной панельный радиатор Ventil (Тип 11)", sec: 700,  isPanel: true, price: 6852,  brand: "ROMMER", power50: 531,  passportPower: 822,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-115080", name: "Стальной панельный радиатор Ventil (Тип 11)", sec: 800,  isPanel: true, price: 7379,  brand: "ROMMER", power50: 607,  passportPower: 940,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-115090", name: "Стальной панельный радиатор Ventil (Тип 11)", sec: 900,  isPanel: true, price: 7844,  brand: "ROMMER", power50: 683,  passportPower: 1057,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-115100", name: "Стальной панельный радиатор Ventil (Тип 11)", sec: 1000, isPanel: true, price: 3150,  brand: "ROMMER", power50: 759,  passportPower: 1175,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-115110", name: "Стальной панельный радиатор Ventil (Тип 11)", sec: 1100, isPanel: true, price: 9151,  brand: "ROMMER", power50: 834,  passportPower: 1291,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-115120", name: "Стальной панельный радиатор Ventil (Тип 11)", sec: 1200, isPanel: true, price: 9662,  brand: "ROMMER", power50: 910,  passportPower: 1409,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-115140", name: "Стальной панельный радиатор Ventil (Тип 11)", sec: 1400, isPanel: true, price: 10846, brand: "ROMMER", power50: 1062, passportPower: 1644,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
-    { id: "RRS-2020-115160", name: "Стальной панельный радиатор Ventil (Тип 11)", sec: 1600, isPanel: true, price: 12136, brand: "ROMMER", power50: 1214, passportPower: 1879,
+  price_date: '2026-06-10' },
+    { id: "RRS-2020-115160", name: "Стальной панельный радиатор Ventil (Тип 11)", sec: 1600, isPanel: true, price: 4550, brand: "ROMMER", power50: 1214, passportPower: 1879,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     // === ТИП 33: 3 панели + 3 ряда конвекторов, H=500мм ===
     // Мощность Q50 = Q_пасп × 0.646 | Q_пасп(Тип33) ≈ Q_пасп(Тип22) × 1.38 (EN 442)
     { id: "RRS-2020-335040", name: "Стальной панельный радиатор Ventil (Тип 33)", sec: 400,  isPanel: true, price: 3830, brand: "ROMMER", power50: 810,  passportPower: 1254,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-335050", name: "Стальной панельный радиатор Ventil (Тип 33)", sec: 500,  isPanel: true, price: 11217, brand: "ROMMER", power50: 1013, passportPower: 1568,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-335060", name: "Стальной панельный радиатор Ventil (Тип 33)", sec: 600,  isPanel: true, price: 12312, brand: "ROMMER", power50: 1215, passportPower: 1881,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-335070", name: "Стальной панельный радиатор Ventil (Тип 33)", sec: 700,  isPanel: true, price: 13315, brand: "ROMMER", power50: 1418, passportPower: 2196,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-335080", name: "Стальной панельный радиатор Ventil (Тип 33)", sec: 800,  isPanel: true, price: 14426, brand: "ROMMER", power50: 1620, passportPower: 2508,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-335090", name: "Стальной панельный радиатор Ventil (Тип 33)", sec: 900,  isPanel: true, price: 15398, brand: "ROMMER", power50: 1823, passportPower: 2822,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-335100", name: "Стальной панельный радиатор Ventil (Тип 33)", sec: 1000, isPanel: true, price: 16478, brand: "ROMMER", power50: 2025, passportPower: 3135,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-335110", name: "Стальной панельный радиатор Ventil (Тип 33)", sec: 1100, isPanel: true, price: 18055, brand: "ROMMER", power50: 2228, passportPower: 3449,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-335120", name: "Стальной панельный радиатор Ventil (Тип 33)", sec: 1200, isPanel: true, price: 19106, brand: "ROMMER", power50: 2430, passportPower: 3762,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-335140", name: "Стальной панельный радиатор Ventil (Тип 33)", sec: 1400, isPanel: true, price: 21383, brand: "ROMMER", power50: 2835, passportPower: 4389,
   availability: 'in_stock',
-  price_date: '2026-06-07' },
+  price_date: '2026-06-10' },
     { id: "RRS-2020-335160", name: "Стальной панельный радиатор Ventil (Тип 33)", sec: 1600, isPanel: true, price: 23961, brand: "ROMMER", power50: 3240, passportPower: 5015,
   availability: 'in_stock',
-  price_date: '2026-06-07' }
+  price_date: '2026-06-10' }
 ];
