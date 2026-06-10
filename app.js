@@ -7521,7 +7521,7 @@ const app = {
                     tpRoomsCount = Math.max(2, tpRoomsCount);
                 }
 
-                this.state.ufhZones = Math.min(tpRoomsCount, roomsCount);
+                this.state.ufhZones = tpRoomsCount;
             } else {
                 this.state.ufhZones = 0;
             }

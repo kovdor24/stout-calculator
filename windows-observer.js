@@ -40,28 +40,19 @@
             return windows;
         }
 
-        // Вычисление количества помещений по алгоритму инженера-проектировщика на основе площади теплого пола
+        // Вычисление количества помещений (зон/термостатов) по алгоритму на основе площади теплого пола
         function calculateRecommendedRooms(tpArea, isSecondFloor) {
             if (tpArea === 0) return 0;
-            let rooms = 5;
-            if (tpArea < 80) {
-                rooms = 5;
-            } else if (tpArea >= 81 && tpArea <= 120) {
-                rooms = 7;
-            } else if (tpArea >= 121 && tpArea <= 160) {
-                rooms = 9;
-            } else if (tpArea >= 161 && tpArea <= 200) {
-                rooms = 11;
-            } else if (tpArea >= 201 && tpArea <= 250) {
-                rooms = 14;
-            } else {
-                rooms = 17;
+            
+            // Динамический расчет числа комнат (зон) с теплым полом: 1 термостат на каждые 20 м² площади теплого пола
+            let tpRoomsCount = Math.max(1, Math.ceil(tpArea / 20));
+            
+            // Если этажа два и на обоих есть теплый пол, то минимум 2 термостата
+            if (isSecondFloor && typeof app !== 'undefined' && app.state && (parseFloat(app.state.tp1) || 0) > 0 && (parseFloat(app.state.tp2) || 0) > 0) {
+                tpRoomsCount = Math.max(2, tpRoomsCount);
             }
-
-            if (isSecondFloor) {
-                rooms += 2;
-            }
-            return rooms;
+            
+            return tpRoomsCount;
         }
 
         // Обновление количества окон в калькуляторе с имитацией ручного ввода
