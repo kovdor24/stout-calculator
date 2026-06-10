@@ -6403,8 +6403,26 @@ const app = {
         this.render();
         this.saveState();
     },
-    updZones: function (d) { let n = this.state.ufhZones + d; if (n < 0) n = 0; if (n > 16) n = 16; this.state.ufhZones = n; this.syncUI(); this.render(); },
-    setZones: function (v) { let n = parseInt(v); if (isNaN(n) || n < 0) n = 0; if (n > 16) n = 16; this.state.ufhZones = n; this.syncUI(); this.render(); },
+    updZones: function (d) {
+        let n = this.state.ufhZones + d; if (n < 0) n = 0; if (n > 16) n = 16; this.state.ufhZones = n;
+        this.state.zonesManual = true;
+        this.state.zonesManualArea = this.state.area;
+        this.state.zonesManualTpArea = (parseFloat(this.state.tp1) || 0) + (this.state.floors === 2 ? (parseFloat(this.state.tp2) || 0) : 0);
+        this.state.zonesManualFloors = this.state.floors;
+        this.saveState();
+        this.syncUI(); this.render();
+    },
+    setZones: function (v, isAuto) {
+        let n = parseInt(v); if (isNaN(n) || n < 0) n = 0; if (n > 16) n = 16; this.state.ufhZones = n;
+        if (!isAuto) {
+            this.state.zonesManual = true;
+            this.state.zonesManualArea = this.state.area;
+            this.state.zonesManualTpArea = (parseFloat(this.state.tp1) || 0) + (this.state.floors === 2 ? (parseFloat(this.state.tp2) || 0) : 0);
+            this.state.zonesManualFloors = this.state.floors;
+        }
+        this.saveState();
+        this.syncUI(); this.render();
+    },
     updOutdoorFaucet: function (d) { let n = (parseInt(this.state.outdoorFaucet) || 0) + d; if (n < 0) n = 0; if (n > 5) n = 5; this.state.outdoorFaucet = n; this.syncUI(); this.render(); },
     setOutdoorFaucet: function (v) { let n = parseInt(v); if (isNaN(n) || n < 0) n = 0; if (n > 5) n = 5; this.state.outdoorFaucet = n; this.syncUI(); this.render(); },
     syncUI: function () {
@@ -7025,11 +7043,23 @@ const app = {
     },
     updWin: function (d) {
         if (this.state.detailedRooms) { this.syncUI(); return; } // Блокировка кнопок окон
-        let n = this.state.win + d; if (n < 1) n = 1; this.state.win = n; this.syncUI(); this.render();
+        let n = this.state.win + d; if (n < 1) n = 1; this.state.win = n;
+        this.state.winManual = true;
+        this.state.winManualArea = this.state.area;
+        this.state.winManualFloors = this.state.floors;
+        this.saveState();
+        this.syncUI(); this.render();
     },
-    setWin: function (v) {
+    setWin: function (v, isAuto) {
         if (this.state.detailedRooms) { this.syncUI(); return; } // Блокировка ввода окон
-        let n = parseInt(v); if (isNaN(n) || n < 1) n = 1; if (n > 50) n = 50; this.state.win = n; this.syncUI(); this.render();
+        let n = parseInt(v); if (isNaN(n) || n < 1) n = 1; if (n > 50) n = 50; this.state.win = n;
+        if (!isAuto) {
+            this.state.winManual = true;
+            this.state.winManualArea = this.state.area;
+            this.state.winManualFloors = this.state.floors;
+        }
+        this.saveState();
+        this.syncUI(); this.render();
     },
     toggleFloors: function (chk) {
         this.state.floors = chk ? 2 : 1; if (!chk) this.state.tp2 = 0;
@@ -7458,6 +7488,17 @@ const app = {
             }
         } else {
             let tpArea = (parseFloat(this.state.tp1) || 0) + (this.state.floors === 2 ? (parseFloat(this.state.tp2) || 0) : 0);
+            if (this.state.zonesManual) {
+                let currentArea = this.state.area;
+                let currentFloors = this.state.floors;
+                if (currentArea === this.state.zonesManualArea &&
+                    tpArea === this.state.zonesManualTpArea &&
+                    currentFloors === this.state.zonesManualFloors) {
+                    return;
+                } else {
+                    this.state.zonesManual = false;
+                }
+            }
             if (tpArea > 0) {
                 let totalA = parseFloat(this.state.area) || 150;
                 let floors = this.state.floors || 1;

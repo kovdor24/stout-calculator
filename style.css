@@ -3361,7 +3361,7 @@ body.dark-mode .header-totals-block {
         margin-right: 2px !important;
     }
     .inv-table td.col-price .mob-mult::after {
-        content: "" !important;
+        content: " шт × " !important;
     }
     .inv-table td.col-sku, .inv-table td.col-brand, .inv-table td.col-unit, .inv-table td.col-qty, .inv-table td.col-idx, .inv-table th { display: none !important; }
     body:not(.work-mode) .output-panel.show-sku-mode .inv-table td.col-sku:not(.hidden-col) {

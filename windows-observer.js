@@ -78,7 +78,7 @@
 
             // Дополнительно вызываем нативный метод калькулятора для надежного пересчета сметы
             if (typeof app !== 'undefined' && typeof app.setWin === 'function') {
-                app.setWin(String(targetValue));
+                app.setWin(String(targetValue), true);
             }
         }
 
@@ -96,24 +96,56 @@
             valZones.dispatchEvent(changeEvent);
 
             if (typeof app !== 'undefined' && typeof app.setZones === 'function') {
-                app.setZones(String(targetValue));
+                app.setZones(String(targetValue), true);
             }
         }
 
         // Триггер авторасчета при изменении параметров
         function handleAutoCalculation() {
+            if (typeof app === 'undefined' || !app.state) {
+                // Если объект app еще не готов, выполняем стандартный авторасчет
+                const area = parseInt(inpArea.value) || 150;
+                const isSecondFloor = chkFloors.checked;
+                const recommendedWin = calculateRecommendedWindows(area, isSecondFloor);
+                updateWindowsValue(recommendedWin);
+                return;
+            }
+
             const area = parseInt(inpArea.value) || 150;
             const isSecondFloor = chkFloors.checked;
+            const floors = isSecondFloor ? 2 : 1;
             
             // 1. Авторасчет окон
-            const recommendedWin = calculateRecommendedWindows(area, isSecondFloor);
-            updateWindowsValue(recommendedWin);
+            let shouldAutoCalcWin = true;
+            if (app.state.winManual) {
+                if (app.state.winManualArea === area && app.state.winManualFloors === floors) {
+                    shouldAutoCalcWin = false;
+                } else {
+                    app.state.winManual = false;
+                }
+            }
+            if (shouldAutoCalcWin) {
+                const recommendedWin = calculateRecommendedWindows(area, isSecondFloor);
+                updateWindowsValue(recommendedWin);
+            }
 
             // 2. Авторасчет термостатов на основе площади ТП (только при выключенном режиме "По комнатам", так как в покомнатном режиме им управляет app.js)
-            if (typeof app !== 'undefined' && app.state && !app.state.detailedRooms) {
+            if (!app.state.detailedRooms) {
                 const tpArea = (app.state.tp1 || 0) + (app.state.tp2 || 0);
-                const recommendedRooms = calculateRecommendedRooms(tpArea, isSecondFloor);
-                updateThermostatsValue(recommendedRooms);
+                let shouldAutoCalcZones = true;
+                if (app.state.zonesManual) {
+                    if (app.state.zonesManualArea === area && 
+                        app.state.zonesManualTpArea === tpArea && 
+                        app.state.zonesManualFloors === floors) {
+                        shouldAutoCalcZones = false;
+                    } else {
+                        app.state.zonesManual = false;
+                    }
+                }
+                if (shouldAutoCalcZones) {
+                    const recommendedRooms = calculateRecommendedRooms(tpArea, isSecondFloor);
+                    updateThermostatsValue(recommendedRooms);
+                }
             }
         }
 
