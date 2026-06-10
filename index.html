@@ -1,4 +1,4 @@
-﻿<!-- Reading index.html -->
+<!-- Reading index.html -->
 <html lang="ru">
 
 <head>
@@ -1153,6 +1153,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const header = document.querySelector('.site-header');
             const inputTarget = document.querySelector('.input-panel');
+            const btnToTop = document.getElementById('btn_to_top');
 
             const handleScroll = () => {
                 const scrollY = Math.max(
@@ -1165,6 +1166,14 @@
                         header.classList.add('scrolled');
                     } else {
                         header.classList.remove('scrolled');
+                    }
+                }
+
+                if (btnToTop) {
+                    if (scrollY > 150) {
+                        btnToTop.classList.add('visible');
+                    } else {
+                        btnToTop.classList.remove('visible');
                     }
                 }
             };
@@ -1281,7 +1290,12 @@
         </div>
     </div>
 
-
+    <!-- BUTTON SCROLL TO TOP -->
+    <button id="btn_to_top" class="to-top-btn no-print" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); document.querySelector('.input-panel')?.scrollTo({top: 0, behavior: 'smooth'});" title="Наверх">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"></polyline>
+        </svg>
+    </button>
 
     <!-- MOBILE BOTTOM NAVIGATION -->
     <div class="mobile-bottom-nav">

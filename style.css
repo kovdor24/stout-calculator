@@ -5933,5 +5933,55 @@ body.dark-mode .price-blur:hover {
     }
 }
 
+/* Кнопка "Наверх" */
+.to-top-btn {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(15px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.to-top-btn.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.to-top-btn:hover {
+    background: #2563EB;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+    transform: translateY(-3px);
+}
+
+.to-top-btn:active {
+    transform: translateY(-1px);
+}
+
+/* На мобильных устройствах приподнимаем кнопку, чтобы она не перекрывала нижнее меню */
+@media screen and (max-width: 768px) {
+    .to-top-btn {
+        bottom: 95px; /* Приподнимаем над .mobile-bottom-nav */
+        right: 20px;
+        width: 44px;
+        height: 44px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+}
+
 
 
