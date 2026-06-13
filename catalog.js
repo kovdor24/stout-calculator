@@ -915,6 +915,36 @@ const WALL_MATERIALS_DB = [
 ];
 const WALL_DESC = { 0.8: "⬜ Тёплый (Газобетон)", 1.0: "🧱 Стандарт (Кирпич)", 1.3: "🪵 Холодный (Дерево)" };
 
+// === БАЗЫ МАТЕРИАЛОВ ДЛЯ РАСЧЁТА ТЕПЛОПОТЕРЬ ===
+// Кровля / чердачное перекрытие (R, м²·°C/Вт по СП 50.13330)
+const ROOF_MATERIALS_DB = [
+    { id: "roof_mw200", name: "Мин. вата 200 мм (кровля)", shortName: "Мин.вата 200мм", R: 5.26 },
+    { id: "roof_mw150", name: "Мин. вата 150 мм (кровля)", shortName: "Мин.вата 150мм", R: 3.95 },
+    { id: "roof_mw100", name: "Мин. вата 100 мм (кровля)", shortName: "Мин.вата 100мм", R: 2.63 },
+    { id: "roof_xps150", name: "XPS (Пеноплекс) 150 мм", shortName: "XPS 150мм", R: 4.69 },
+    { id: "roof_xps100", name: "XPS (Пеноплекс) 100 мм", shortName: "XPS 100мм", R: 3.13 },
+    { id: "roof_wood_ins", name: "Деревянное перекрытие утеплённое", shortName: "Дерев. утепл.", R: 4.00 },
+    { id: "roof_concrete", name: "Ж/б перекрытие без утепления", shortName: "Ж/б плита", R: 0.50 }
+];
+
+// Пол / перекрытие над холодным подвалом (R, м²·°C/Вт)
+const FLOOR_MATERIALS_DB = [
+    { id: "floor_ground_ins", name: "Пол по грунту утеплённый (XPS 100мм)", shortName: "Грунт XPS 100мм", R: 2.80 },
+    { id: "floor_ground_ins50", name: "Пол по грунту утеплённый (XPS 50мм)", shortName: "Грунт XPS 50мм", R: 1.90 },
+    { id: "floor_lags_ins", name: "Пол на лагах, мин. вата 150 мм", shortName: "Лаги МВ 150мм", R: 3.20 },
+    { id: "floor_basement_ins", name: "Пол над холодным подвалом (утеплённый)", shortName: "Подвал утепл.", R: 2.50 },
+    { id: "floor_basement_bare", name: "Пол над холодным подвалом (без утепления)", shortName: "Подвал", R: 0.80 },
+    { id: "floor_heated", name: "Пол над отапливаемым помещением", shortName: "Над теплым", R: 0.00 }
+];
+
+// Остекление / окна (R, м²·°C/Вт)
+const GLAZING_DB = [
+    { id: "glz_2cam", name: "Двухкамерный стеклопакет", shortName: "2-кам. СП", R: 0.51 },
+    { id: "glz_3cam", name: "Трёхкамерный стеклопакет (i-стекло)", shortName: "3-кам. СП", R: 0.80 },
+    { id: "glz_1cam", name: "Однокамерный стеклопакет", shortName: "1-кам. СП", R: 0.38 },
+    { id: "glz_single", name: "Одинарное стекло", shortName: "Одинарное", R: 0.17 }
+];
+
 const STANDARD_THICKNESSES = {
     brick_clay: [65, 120, 250, 380, 510, 640],
     brick_hollow: [65, 120, 250, 380, 510, 640],

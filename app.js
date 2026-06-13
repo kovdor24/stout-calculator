@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam' },
 
     lastSavedStateString: "",
 
@@ -4171,25 +4171,7 @@ const app = {
 
         this.render();
 
-        let h1 = this.state.h1 || 2.7, h2 = this.state.h2 || 2.7;
-        let avgH = (this.state.floors === 2) ? (h1 + h2) / 2 : h1;
-        let pwr = 0;
-        if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
-            let totalLoadW = 0;
-            this.state.rooms.forEach(r => {
-                let rHeight = (r.floor === 2) ? h2 : h1;
-                let heightCoef = rHeight / 2.7;
-                totalLoadW += (r.area * heightCoef * 70 * (this.state.region / 100) * this.state.mat);
-                r.windows.forEach(w => {
-                    let wHeight = w.isPan ? 2.5 : 1.5;
-                    let wArea = parseFloat(w.width || 1) * wHeight;
-                    totalLoadW += (wArea * 150 * (this.state.region / 100) * this.state.mat);
-                });
-            });
-            pwr = (totalLoadW / 1000).toFixed(1);
-        } else {
-            pwr = (this.state.area * avgH * 37 * (this.state.region / 100) * this.state.mat / 1000).toFixed(1);
-        }
+        let pwr = this.getHouseHeatLoss();
         let regionName = "";
         if (this.state.selectedCity) {
             regionName = this.state.selectedCity.name;
@@ -4873,26 +4855,7 @@ const app = {
             let viewUrl = "";
 
             try {
-                // Расчет теплопотерь
-                let h1 = this.state.h1 || 2.7, h2 = this.state.h2 || 2.7;
-                let avgH = (this.state.floors === 2) ? (h1 + h2) / 2 : h1;
-                let pwr = 0;
-                if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
-                    let totalLoadW = 0;
-                    this.state.rooms.forEach(r => {
-                        let rHeight = (r.floor === 2) ? h2 : h1;
-                        let heightCoef = rHeight / 2.7;
-                        totalLoadW += (r.area * heightCoef * 70 * (this.state.region / 100) * this.state.mat);
-                        r.windows.forEach(w => {
-                            let wHeight = w.isPan ? 2.5 : 1.5;
-                            let wArea = parseFloat(w.width || 1) * wHeight;
-                            totalLoadW += (wArea * 150 * (this.state.region / 100) * this.state.mat);
-                        });
-                    });
-                    pwr = (totalLoadW / 1000).toFixed(1);
-                } else {
-                    pwr = (this.state.area * avgH * 37 * (this.state.region / 100) * this.state.mat / 1000).toFixed(1);
-                }
+                let pwr = this.getHouseHeatLoss();
 
                 const object_info = {
                     projectName: pName,
@@ -5207,7 +5170,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -5899,6 +5862,162 @@ const app = {
         this.syncUI();
         this.render();
         this.saveState();
+    },
+    setRoofMat: function(id) {
+        this.state.roofMatId = id;
+        this.syncUI();
+        this.saveState();
+        this.render();
+    },
+    setFloorMat: function(id) {
+        this.state.floorMatId = id;
+        this.syncUI();
+        this.saveState();
+        this.render();
+    },
+    setGlazing: function(id) {
+        this.state.glazingMatId = id;
+        this.syncUI();
+        this.saveState();
+        this.render();
+    },
+    toggleConstructDropdown: function(type, event) {
+        if (event) event.stopPropagation();
+        const drop = document.getElementById('dropdown_options_' + type);
+        if (drop) {
+            drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
+        }
+    },
+    toggleRoofPanel: function (chk, event) {
+        if (event) event.stopPropagation();
+        this.state.roofEnabled = chk;
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
+    toggleFloorPanel: function (chk, event) {
+        if (event) event.stopPropagation();
+        this.state.floorEnabled = chk;
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
+    toggleGlazingPanel: function (chk, event) {
+        if (event) event.stopPropagation();
+        this.state.glazingEnabled = chk;
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
+    getRoomHeatLoss: function (r) {
+        const s = this.state;
+        const Tn = s.selectedCity && s.selectedCity.temp !== undefined
+            ? s.selectedCity.temp
+            : (s.region >= 125 ? -24 : s.region >= 115 ? -30 : s.region >= 90 ? -20 : -10);
+
+        // R стен из пирога или fallback по коэффициенту mat
+        let R_wall = 1.8 / (s.mat || 1.0);
+        if (s.wallLayersEnabled && s.wallLayers && s.wallLayers.length > 0) {
+            let totalR = 0.115 + 0.043;
+            s.wallLayers.forEach(function(l) {
+                var mat = (typeof WALL_MATERIALS_DB !== 'undefined') ? WALL_MATERIALS_DB.find(function(m) { return m.id === l.matId; }) : null;
+                if (mat) totalR += (parseInt(l.thick || 0) / 1000) / mat.lambda;
+            });
+            R_wall = totalR;
+        }
+
+        var defaultRoofR = 3.95, defaultFloorR = 2.80, defaultGlzR = 0.51;
+        var R_roof, R_floor, R_glz;
+
+        if (typeof ROOF_MATERIALS_DB !== 'undefined') {
+            var defRoof = ROOF_MATERIALS_DB.find(function(m){ return m.id === 'roof_mw150'; }) || ROOF_MATERIALS_DB[1] || { R: defaultRoofR };
+            var selRoof = s.roofEnabled ? (ROOF_MATERIALS_DB.find(function(m){ return m.id === s.roofMatId; }) || defRoof) : defRoof;
+            R_roof = selRoof.R;
+        } else { R_roof = defaultRoofR; }
+
+        if (typeof FLOOR_MATERIALS_DB !== 'undefined') {
+            var defFloor = FLOOR_MATERIALS_DB.find(function(m){ return m.id === 'floor_ground_ins'; }) || FLOOR_MATERIALS_DB[0] || { R: defaultFloorR };
+            var selFloor = s.floorEnabled ? (FLOOR_MATERIALS_DB.find(function(m){ return m.id === s.floorMatId; }) || defFloor) : defFloor;
+            R_floor = selFloor.R;
+        } else { R_floor = defaultFloorR; }
+
+        if (typeof GLAZING_DB !== 'undefined') {
+            var defGlz = GLAZING_DB.find(function(m){ return m.id === 'glz_2cam'; }) || GLAZING_DB[0] || { R: defaultGlzR };
+            var selGlz = s.glazingEnabled ? (GLAZING_DB.find(function(m){ return m.id === s.glazingMatId; }) || defGlz) : defGlz;
+            R_glz = selGlz.R;
+        } else { R_glz = defaultGlzR; }
+
+        var n_wall = 1.0, n_glz = 1.0, n_roof = 1.0, n_floor = 0.85;
+
+        var Tv = 22;
+        var rName = (r.name || '').toLowerCase();
+        if (/ванн/.test(rName)) Tv = 25;
+        else if (/котельн/.test(rName)) Tv = 16;
+        else if (/коридор|прихожая|тамбур/.test(rName)) Tv = 16;
+        else if (/санузел|туалет|с\/у/.test(rName)) Tv = 20;
+
+        var dT = Tv - Tn;
+        var rFloorNum = parseInt(r.floor) || 1;
+        var rHeight = (rFloorNum === 2) ? (s.h2 || 2.7) : (s.h1 || 2.7);
+        var area = parseFloat(r.area) || 1;
+
+        var perim = 4 * Math.sqrt(area);
+        var outerPerim = perim * 0.6;
+
+        var totalWinArea = 0;
+        (r.windows || []).forEach(function(w) {
+            var wH = w.isPan ? 2.5 : 1.5;
+            totalWinArea += parseFloat(w.width || 1) * wH;
+        });
+
+        var wallArea = Math.max(0, outerPerim * rHeight - totalWinArea);
+
+        var Q_wall  = R_wall > 0 ? wallArea * dT / R_wall * n_wall : 0;
+        var Q_glz   = R_glz  > 0 ? totalWinArea * dT / R_glz * n_glz : 0;
+
+        var totalFloors = parseInt(s.floors || 1);
+        var isTopFloor    = (rFloorNum === totalFloors);
+        var isBottomFloor = (rFloorNum === 1);
+        var Q_roof  = (isTopFloor  && R_roof  > 0) ? area * dT / R_roof  * n_roof  : 0;
+        var Q_floor = (isBottomFloor && R_floor > 0) ? area * dT / R_floor * n_floor : 0;
+
+        return {
+            Q_wall: Q_wall, Q_glz: Q_glz, Q_roof: Q_roof, Q_floor: Q_floor,
+            Q_total: Q_wall + Q_glz + Q_roof + Q_floor,
+            R_wall: R_wall, R_glz: R_glz, R_roof: R_roof, R_floor: R_floor,
+            wallArea: wallArea, totalWinArea: totalWinArea,
+            Tv: Tv, Tn: Tn, dT: dT,
+            n_wall: n_wall, n_glz: n_glz, n_roof: n_roof, n_floor: n_floor
+        };
+    },
+    getHouseHeatLoss: function () {
+        let pwr = 0;
+        let h1 = this.state.h1 || 2.7, h2 = this.state.h2 || 2.7;
+        let avgH = (this.state.floors === 2) ? (h1 + h2) / 2 : h1;
+
+        if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
+            let totalLoadW = 0;
+            this.state.rooms.forEach(r => {
+                let roomLoss = this.getRoomHeatLoss(r);
+                totalLoadW += roomLoss.Q_total;
+            });
+
+            if (this.state.ventilationEnabled) {
+                let houseVol = 0;
+                this.state.rooms.forEach(r => {
+                    let rHeight = (r.floor === 2) ? h2 : h1;
+                    houseVol += parseFloat(r.area || 0) * rHeight;
+                });
+                let n_eff = (this.state.ventilationType === 'forced') ? 1.0 : (this.state.ventilationType === 'recuperator' ? 0.25 : 0.35);
+                let q_vent_w = houseVol * n_eff * 15.3 * (this.state.region / 100);
+                totalLoadW += q_vent_w;
+            }
+
+            pwr = (totalLoadW / 1000).toFixed(1);
+        } else {
+            pwr = (this.state.area * avgH * 37 * (this.state.region / 100) * this.state.mat / 1000).toFixed(1);
+        }
+        return pwr;
     },
     setVentilationType: function (type, event) {
         if (event) event.stopPropagation();
@@ -6673,6 +6792,103 @@ const app = {
             const lblCalc = document.getElementById('lbl_vent_tooltip_calc');
             if (lblCalc) {
                 lblCalc.innerText = tooltipCalc;
+            }
+        }
+
+        // Sync Roof, Floor and Glazing Material UI (PRO mode)
+        const blkRoofMatWrap = document.getElementById('blk_roof_mat_wrapper');
+        const chkRoof = document.getElementById('chk_roof_toggle');
+        const blkRoofContent = document.getElementById('blk_roof_mat_content');
+
+        if (blkRoofMatWrap) {
+            blkRoofMatWrap.style.display = this.state.detailedRooms ? 'block' : 'none';
+        }
+        if (chkRoof) {
+            chkRoof.checked = !!this.state.roofEnabled;
+        }
+        if (blkRoofContent) {
+            blkRoofContent.style.display = (this.state.detailedRooms && this.state.roofEnabled) ? 'flex' : 'none';
+        }
+        if (this.state.detailedRooms && typeof ROOF_MATERIALS_DB !== 'undefined') {
+            const defRoof = ROOF_MATERIALS_DB.find(m => m.id === 'roof_mw150') || ROOF_MATERIALS_DB[1] || { name: '', R: 0 };
+            const selRoof = ROOF_MATERIALS_DB.find(m => m.id === this.state.roofMatId) || defRoof;
+            const selText = document.querySelector('#roof_mat_selected span');
+            if (selText) selText.innerText = selRoof.name;
+            const lblR = document.getElementById('lbl_roof_r');
+            if (lblR) lblR.innerText = `R = ${selRoof.R.toFixed(2)} м²·°C/Вт`;
+
+            const dropOpts = document.getElementById('dropdown_options_roof');
+            if (dropOpts) {
+                dropOpts.innerHTML = ROOF_MATERIALS_DB.map(m => {
+                    const activeClass = m.id === selRoof.id ? 'active' : '';
+                    return `<div class="custom-dropdown-option ${activeClass}" onclick="app.setRoofMat('${m.id}'); document.getElementById('dropdown_options_roof').style.display='none'; event.stopPropagation();">
+                        ${m.name}
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        const blkFloorMatWrap = document.getElementById('blk_floor_mat_wrapper');
+        const chkFloor = document.getElementById('chk_floor_toggle');
+        const blkFloorContent = document.getElementById('blk_floor_mat_content');
+
+        if (blkFloorMatWrap) {
+            blkFloorMatWrap.style.display = this.state.detailedRooms ? 'block' : 'none';
+        }
+        if (chkFloor) {
+            chkFloor.checked = !!this.state.floorEnabled;
+        }
+        if (blkFloorContent) {
+            blkFloorContent.style.display = (this.state.detailedRooms && this.state.floorEnabled) ? 'flex' : 'none';
+        }
+        if (this.state.detailedRooms && typeof FLOOR_MATERIALS_DB !== 'undefined') {
+            const defFloor = FLOOR_MATERIALS_DB.find(m => m.id === 'floor_ground_ins') || FLOOR_MATERIALS_DB[0] || { name: '', R: 0 };
+            const selFloor = FLOOR_MATERIALS_DB.find(m => m.id === this.state.floorMatId) || defFloor;
+            const selText = document.querySelector('#floor_mat_selected span');
+            if (selText) selText.innerText = selFloor.name;
+            const lblR = document.getElementById('lbl_floor_r');
+            if (lblR) lblR.innerText = `R = ${selFloor.R.toFixed(2)} м²·°C/Вт`;
+
+            const dropOpts = document.getElementById('dropdown_options_floor');
+            if (dropOpts) {
+                dropOpts.innerHTML = FLOOR_MATERIALS_DB.map(m => {
+                    const activeClass = m.id === selFloor.id ? 'active' : '';
+                    return `<div class="custom-dropdown-option ${activeClass}" onclick="app.setFloorMat('${m.id}'); document.getElementById('dropdown_options_floor').style.display='none'; event.stopPropagation();">
+                        ${m.name}
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        const blkGlzWrap = document.getElementById('blk_glazing_wrapper');
+        const chkGlz = document.getElementById('chk_glazing_toggle');
+        const blkGlzContent = document.getElementById('blk_glazing_content');
+
+        if (blkGlzWrap) {
+            blkGlzWrap.style.display = this.state.detailedRooms ? 'block' : 'none';
+        }
+        if (chkGlz) {
+            chkGlz.checked = !!this.state.glazingEnabled;
+        }
+        if (blkGlzContent) {
+            blkGlzContent.style.display = (this.state.detailedRooms && this.state.glazingEnabled) ? 'flex' : 'none';
+        }
+        if (this.state.detailedRooms && typeof GLAZING_DB !== 'undefined') {
+            const defGlz = GLAZING_DB.find(m => m.id === 'glz_2cam') || GLAZING_DB[0] || { name: '', R: 0 };
+            const selGlz = GLAZING_DB.find(m => m.id === this.state.glazingMatId) || defGlz;
+            const selText = document.querySelector('#glazing_selected span');
+            if (selText) selText.innerText = selGlz.name;
+            const lblR = document.getElementById('lbl_glz_r');
+            if (lblR) lblR.innerText = `R = ${selGlz.R.toFixed(2)} м²·°C/Вт`;
+
+            const dropOpts = document.getElementById('dropdown_options_glazing');
+            if (dropOpts) {
+                dropOpts.innerHTML = GLAZING_DB.map(m => {
+                    const activeClass = m.id === selGlz.id ? 'active' : '';
+                    return `<div class="custom-dropdown-option ${activeClass}" onclick="app.setGlazing('${m.id}'); document.getElementById('dropdown_options_glazing').style.display='none'; event.stopPropagation();">
+                        ${m.name}
+                    </div>`;
+                }).join('');
             }
         }
 
@@ -7797,39 +8013,7 @@ const app = {
         let h1 = this.state.h1 || 2.7, h2 = this.state.h2 || 2.7;
         let avgH = (this.state.floors === 2) ? (h1 + h2) / 2 : h1;
 
-        let pwr = 0;
-        let q_vent_w = 0;
-        let totalLoadW = 0;
-        if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
-            this.state.rooms.forEach(r => {
-                let rHeight = (r.floor === 2) ? h2 : h1;
-                let heightCoef = rHeight / 2.7;
-                // Считаем стены
-                let baseRoomLoad = (r.area * heightCoef * 70 * (this.state.region / 100) * this.state.mat);
-                totalLoadW += baseRoomLoad;
-                // Прибавляем все окна
-                r.windows.forEach(w => {
-                    let wHeight = w.isPan ? 2.5 : 1.5;
-                    let wArea = parseFloat(w.width || 1) * wHeight;
-                    totalLoadW += (wArea * 150 * (this.state.region / 100) * this.state.mat);
-                });
-            });
-
-            if (this.state.ventilationEnabled) {
-                let houseVol = 0;
-                this.state.rooms.forEach(r => {
-                    let rHeight = (r.floor === 2) ? h2 : h1;
-                    houseVol += parseFloat(r.area || 0) * rHeight;
-                });
-                let n_eff = (this.state.ventilationType === 'forced') ? 1.0 : (this.state.ventilationType === 'recuperator' ? 0.25 : 0.35);
-                q_vent_w = houseVol * n_eff * 15.3 * (this.state.region / 100);
-                totalLoadW += q_vent_w;
-            }
-
-            pwr = (totalLoadW / 1000).toFixed(1);
-        } else {
-            pwr = (this.state.area * avgH * 37 * (this.state.region / 100) * this.state.mat / 1000).toFixed(1);
-        }
+        let pwr = this.getHouseHeatLoss();
 
         let regionName = "";
         if (this.state.selectedCity) {
@@ -8707,11 +8891,8 @@ const app = {
                     let roomFactPowerSum = 0;  // суммарная фактическая мощность приборов помещения
                     let roomDemandSum = 0;     // суммарная потребность помещения
 
-                    // 1. Физика: Базовые потери коробки (учитываем высоту)
-                    let rHeight = (r.floor === 2) ? (this.state.h2 || 2.7) : (this.state.h1 || 2.7);
-                    let heightCoef = rHeight / 2.7;
-                    let baseRoomLoad = (r.area * heightCoef * 70 * (this.state.region / 100) * this.state.mat);
-
+                    // 1. Получаем точный расчет теплопотерь по комнате
+                    let roomLoss = this.getRoomHeatLoss(r);
                     let roomHasTp = r.sys && r.sys.includes('tp');
                     let roomHasRad = !r.sys || r.sys.includes('rad');
 
@@ -8724,13 +8905,16 @@ const app = {
                     let qUfhMax = r.area * qUdeUfh; // Физический предел тепловой мощности теплого пола в этой комнате
 
                     r.windows.forEach((w, wIdx) => {
-                        // Теплопотери через площадь стекла
+                        // Теплопотери через площадь конкретного стекла
                         let wHeight = w.isPan ? 2.5 : 1.5;
                         let wArea = parseFloat(w.width || 1) * wHeight;
-                        let windowHeatLoss = wArea * 150 * (this.state.region / 100) * this.state.mat;
+                        let wLoss = roomLoss.R_glz > 0 ? wArea * roomLoss.dT / roomLoss.R_glz * roomLoss.n_glz : 0;
+
+                        // Распределяем остальные потери комнаты (стены, кровля, пол) поровну между окнами
+                        let wShare = (roomLoss.Q_wall + roomLoss.Q_roof + roomLoss.Q_floor) / r.windows.length;
 
                         // Итоговая базовая теплопотребность этого оконного участка
-                        let totalWindowLoss = windowHeatLoss + (baseRoomLoad / r.windows.length);
+                        let totalWindowLoss = wLoss + wShare;
                         let wLoad = totalWindowLoss;
 
                         if (roomHasTp && roomHasRad) {
