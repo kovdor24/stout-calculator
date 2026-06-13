@@ -7833,6 +7833,7 @@ const app = {
                 return `<span style="${styles}"><span style="${head}">Электрический котел</span><b>Зачем:</b> Резервный или основной источник.<br><b>Расчет:</b> По теплопотерям здания.<br><b>Потребность:</b> ${val1} кВт.</span>`;
             case 'boiler_tank':
                 let calcStr = "";
+                let volByRes = (val1 >= 10 ? 500 : val1 >= 7 ? 300 : val1 >= 5 ? 200 : val1 >= 3 ? 150 : 100);
                 if (val4 === 'fixtures') {
                     let b = 0, s = 0, bs = 0;
                     this.state.waterZones = this.state.waterZones || [];
@@ -7850,6 +7851,9 @@ const app = {
                     else if (totalFixtures >= 4) k_sim = 0.4;
                     
                     calcStr = `<b>Расчёт по приборам:</b> Пиковый разбор санузлов с учётом коэффициентов.<br><b>Формула:</b> V = (${b} × 120л (ванна) + ${s} × 50л (душ) + ${bs} × 10л (раковина)) × 0.6 (разбавление до 40°C) × ${k_sim} (коэф. одновременности) = ${val3} л.`;
+                    if (volByRes > val3) {
+                        calcStr += `<br><i style="color:#60A5FA; font-size:10.5px;">* Принят минимальный объем по жильцам (${volByRes} л) для комфортного последовательного разбора.</i>`;
+                    }
                 } else {
                     calcStr = `<b>Расчёт по жильцам:</b> Жильцы (${val1} чел) × 50 л = ${val1 * 50} л.`;
                 }
@@ -8538,7 +8542,7 @@ const app = {
             let targetVol = volByRes;
             let chosenBy = 'res';
             if (this.state.water && hw_fixtures_vol > 0) {
-                targetVol = hw_fixtures_vol;
+                targetVol = Math.max(volByRes, hw_fixtures_vol);
                 chosenBy = 'fixtures';
             }
 
