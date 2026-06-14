@@ -2448,8 +2448,12 @@
             const equipmentList = (compact.i.e || []).map(item => {
                 // If it is in the old full format, return as-is
                 if (item.hasOwnProperty('n') && item.c !== 1) {
+                    let name = item.n;
+                    if (name && (name.includes('Бастион') || name.includes('бастион') || (item.s && item.s.startsWith('SST-')))) {
+                        name = name.replace(/бастион/gi, '').replace(/\s+/g, ' ').trim();
+                    }
                     return {
-                        name: item.n,
+                        name: name,
                         displaySku: item.s,
                         brand: item.b,
                         unit: item.u,
@@ -2467,8 +2471,12 @@
                 if (item.c === 1) {
                     const price = Math.round(item.p || 0);
                     const q = item.q || 0;
+                    let name = item.n || 'Свое оборудование';
+                    if (name && (name.includes('Бастион') || name.includes('бастион') || (item.id && item.id.startsWith('SST-')))) {
+                        name = name.replace(/бастион/gi, '').replace(/\s+/g, ' ').trim();
+                    }
                     return {
-                        name: item.n || 'Свое оборудование',
+                        name: name,
                         displaySku: item.id || '',
                         brand: item.b || ' ',
                         unit: item.u || 'шт',
@@ -2492,8 +2500,12 @@
                 }
                 const q = item.q || 0;
                 
+                let name = catalogItem.name || item.s || 'Оборудование';
+                if (name && (name.includes('Бастион') || name.includes('бастион') || (item.s && item.s.startsWith('SST-')))) {
+                    name = name.replace(/бастион/gi, '').replace(/\s+/g, ' ').trim();
+                }
                 return {
-                    name: catalogItem.name || item.s || 'Оборудование',
+                    name: name,
                     displaySku: item.s,
                     brand: catalogItem.brand || 'STOUT',
                     unit: catalogItem.unit || 'шт',

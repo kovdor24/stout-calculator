@@ -8934,6 +8934,11 @@ const app = {
                 let finalItem = entry.itm;
                 let finalQty = entry.q;
 
+                // Remove "Бастион" from stabilizer names
+                if (finalItem.name && (finalItem.name.includes('Бастион') || finalItem.name.includes('бастион') || (finalItem.id && finalItem.id.startsWith('SST-')))) {
+                    finalItem.name = finalItem.name.replace(/бастион/gi, '').replace(/\s+/g, ' ').trim();
+                }
+
                 // Разрешаем наличие с учетом даты обновления (лимит 31 день)
                 let actualAvail = finalItem.availability;
                 if (actualAvail === 'in_stock') {
