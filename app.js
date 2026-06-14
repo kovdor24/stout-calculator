@@ -6344,18 +6344,48 @@ const app = {
             allRows += `</tbody></table></div>`;
         });
 
-        if (floorNums.length > 1) {
+        let ventLoss = 0;
+        if (s.ventilationEnabled) {
+            let houseVol = 0;
+            let h1 = s.h1 || 2.7, h2 = s.h2 || 2.7;
+            s.rooms.forEach(r => {
+                let rHeight = (r.floor === 2) ? h2 : h1;
+                houseVol += parseFloat(r.area || 0) * rHeight;
+            });
+            let n_eff = (s.ventilationType === 'forced') ? 1.0 : (s.ventilationType === 'recuperator' ? 0.25 : 0.35);
+            ventLoss = houseVol * n_eff * 15.3 * (s.region / 100);
+        }
+
+        let totalHeatLoss = grandTotalExact + ventLoss;
+        let totalHeatLossKW = (totalHeatLoss / 1000).toFixed(1);
+
+        // Сводная таблица в конце отчета
+        allRows += `
+            <div style="page-break-inside: avoid; display: flex; justify-content: flex-end; margin-top: 15px;">
+                <table style="width: 45%; border-collapse: collapse; border: 1px solid #e5e7eb;">
+                    <tr>
+                        <td style="${TD} text-align: left; font-weight: 600; background: #f9fafb; width: 65%;">Ограждающие конструкции (стены, окна, пол, кровля)</td>
+                        <td style="${TD} font-weight: 700; width: 35%; background: #f9fafb;">${Math.round(grandTotalExact)} Вт</td>
+                    </tr>
+        `;
+
+        if (s.ventilationEnabled) {
             allRows += `
-                <div style="page-break-inside: avoid; display: flex; justify-content: flex-end; margin-top: 10px;">
-                    <table style="width: 30%; border-collapse: collapse;">
-                        <tr>
-                            <td style="${TH} text-align: right;">Итого (общая ${floorNums.join(' + ')} этаж)</td>
-                            <td style="${TD} font-weight: 700; width: 30%; background: #f9fafb;">${Math.round(grandTotalExact)} Вт</td>
-                        </tr>
-                    </table>
-                </div>
+                    <tr>
+                        <td style="${TD} text-align: left; font-weight: 600; background: #f9fafb;">Вентиляция (${s.ventilationType === 'forced' ? 'Принудительная' : (s.ventilationType === 'recuperator' ? 'Рекуперация' : 'Естественная')})</td>
+                        <td style="${TD} font-weight: 700; background: #f9fafb;">${Math.round(ventLoss)} Вт</td>
+                    </tr>
             `;
         }
+
+        allRows += `
+                    <tr style="border-top: 2px solid #3b82f6;">
+                        <td style="${TH} text-align: left; background: #eff6ff; color: #1e3a8a; font-size: 9pt;">ИТОГО ТЕПЛОПОТЕРИ ЗДАНИЯ</td>
+                        <td style="${TD} font-weight: 800; background: #eff6ff; color: #1e3a8a; font-size: 10pt;">${Math.round(totalHeatLoss)} Вт (${totalHeatLossKW} кВт)</td>
+                    </tr>
+                </table>
+            </div>
+        `;
 
         return allRows;
     },
