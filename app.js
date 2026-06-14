@@ -5954,6 +5954,22 @@ const app = {
     },
     syncRoomsToState: function () {
         if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
+            // Сначала проверим суммарную площадь комнат
+            let totalRoomArea = this.state.rooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
+            if (totalRoomArea > 300) {
+                let scale = 300 / totalRoomArea;
+                let runningSum = 0;
+                this.state.rooms.forEach((r, idx) => {
+                    let a = parseFloat(r.area) || 0;
+                    if (idx === this.state.rooms.length - 1) {
+                        r.area = Math.max(1, Math.round((300 - runningSum) * 10) / 10);
+                    } else {
+                        r.area = Math.max(1, Math.round(a * scale * 10) / 10);
+                        runningSum += r.area;
+                    }
+                });
+            }
+
             let tA = 0, tW = 0, tTp1 = 0, tTp2 = 0;
             this.state.rooms.forEach(r => {
                 tA += (parseFloat(r.area) || 0);
@@ -6352,6 +6368,11 @@ const app = {
     },
     addRoom: function () {
         if (!this.state.rooms) this.state.rooms = [];
+        let currentTotal = this.state.rooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
+        if (currentTotal + 15 > 300) {
+            alert("Невозможно добавить комнату, так как общая площадь дома превысит 300 м².");
+            return;
+        }
         let f = 1;
         if (this.state.rooms.length > 0) f = this.state.rooms[this.state.rooms.length - 1].floor || 1;
         this.state.rooms.push({ id: Date.now(), name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: f, sys: ['rad'], windows: [{ id: Date.now() + 1, width: 1.5, isPan: false }] });
@@ -6359,24 +6380,50 @@ const app = {
     },
     addFloor: function () {
         if (this.state.floors === 2) return;
-        this.state.floors = 2;
-        if (document.getElementById('chk_floors')) document.getElementById('chk_floors').checked = true;
         if (!this.state.rooms) this.state.rooms = [];
         
         const firstFloorRooms = this.state.rooms.filter(r => r.floor === 1 || !r.floor);
+        let totalFloor1 = firstFloorRooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
+        
+        if (totalFloor1 >= 300) {
+            alert("Невозможно добавить 2-й этаж, так как площадь 1-го этажа уже равна или превышает 300 м².");
+            return;
+        }
+
+        this.state.floors = 2;
+        if (document.getElementById('chk_floors')) document.getElementById('chk_floors').checked = true;
+
         if (firstFloorRooms.length > 0) {
             let baseId = Date.now();
+            let allowedFloor2 = 300 - totalFloor1;
+            let scaleFactor = allowedFloor2 / totalFloor1;
+            let shouldScale = (totalFloor1 * 2 > 300);
+            let addedFloor2Rooms = [];
+            
             firstFloorRooms.forEach((r, idx) => {
                 let newRoom = JSON.parse(JSON.stringify(r));
                 newRoom.id = baseId + idx * 1000;
                 newRoom.floor = 2;
+                if (shouldScale) {
+                    newRoom.area = Math.max(1, Math.round(r.area * scaleFactor * 10) / 10);
+                }
                 if (newRoom.windows && Array.isArray(newRoom.windows)) {
                     newRoom.windows.forEach((w, wIdx) => {
                         w.id = baseId + idx * 1000 + wIdx + 1;
                     });
                 }
-                this.state.rooms.push(newRoom);
+                addedFloor2Rooms.push(newRoom);
             });
+            
+            if (shouldScale && addedFloor2Rooms.length > 0) {
+                let totalNewSum = totalFloor1 + addedFloor2Rooms.reduce((sum, r) => sum + r.area, 0);
+                if (totalNewSum !== 300) {
+                    let diff = 300 - totalNewSum;
+                    addedFloor2Rooms[addedFloor2Rooms.length - 1].area = Math.max(1, Math.round((addedFloor2Rooms[addedFloor2Rooms.length - 1].area + diff) * 10) / 10);
+                }
+            }
+            
+            this.state.rooms = this.state.rooms.concat(addedFloor2Rooms);
         } else {
             this.state.rooms.push({ id: Date.now(), name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: 2, sys: ['rad'], windows: [{ id: Date.now() + 1, width: 1.5, isPan: false }] });
         }
@@ -6408,7 +6455,22 @@ const app = {
     },
     updRoom: function (id, field, val) {
         let r = this.state.rooms.find(x => x.id === id);
-        if (r) { r[field] = field === 'area' ? (parseFloat(val) || 1) : val; this.syncRoomsToState(); this.syncUI(); this.render(); }
+        if (r) {
+            if (field === 'area') {
+                let num = parseFloat(val);
+                if (isNaN(num) || num < 1) num = 1;
+                let otherTotal = this.state.rooms.filter(x => x.id !== id).reduce((sum, x) => sum + (parseFloat(x.area) || 0), 0);
+                if (otherTotal + num > 300) {
+                    num = 300 - otherTotal;
+                    if (num < 1) num = 1;
+                    alert("Максимальная площадь дома не может превышать 300 м².");
+                }
+                r.area = num;
+            } else {
+                r[field] = val;
+            }
+            this.syncRoomsToState(); this.syncUI(); this.render();
+        }
     },
     updWindow: function (roomId, winId, field, val) {
         let r = this.state.rooms.find(x => x.id === roomId);
@@ -6434,6 +6496,14 @@ const app = {
             let num = parseFloat(val);
             if (isNaN(num) || num < 1) num = 1;
             if (num > 50) num = 50;
+            
+            let otherTotal = this.state.rooms.filter(x => x.id !== roomId).reduce((sum, x) => sum + (parseFloat(x.area) || 0), 0);
+            if (otherTotal + num > 300) {
+                num = 300 - otherTotal;
+                if (num < 1) num = 1;
+                alert("Максимальная площадь дома не может превышать 300 м².");
+            }
+            
             r.area = num;
             this.syncRoomsToState();
             if (skipRender) {
@@ -7620,6 +7690,18 @@ const app = {
         this.syncUI(); this.render();
     },
     toggleFloors: function (chk) {
+        if (chk) {
+            if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
+                const firstFloorRooms = this.state.rooms.filter(r => r.floor === 1 || !r.floor);
+                let totalFloor1 = firstFloorRooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
+                if (totalFloor1 >= 300) {
+                    alert("Невозможно переключить на 2 этажа, так как площадь 1-го этажа уже равна или превышает 300 м².");
+                    if (document.getElementById('chk_floors')) document.getElementById('chk_floors').checked = false;
+                    return;
+                }
+            }
+        }
+
         this.state.floors = chk ? 2 : 1; if (!chk) this.state.tp2 = 0;
         
         // Автоматическое копирование/очистка комнат при изменении этажности
@@ -7628,18 +7710,38 @@ const app = {
                 const roomsFloor2 = this.state.rooms.filter(r => r.floor === 2);
                 if (roomsFloor2.length === 0) {
                     const firstFloorRooms = this.state.rooms.filter(r => r.floor === 1 || !r.floor);
+                    let totalFloor1 = firstFloorRooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
                     let baseId = Date.now();
+                    
+                    let allowedFloor2 = 300 - totalFloor1;
+                    let scaleFactor = allowedFloor2 / totalFloor1;
+                    let shouldScale = (totalFloor1 * 2 > 300);
+                    let addedFloor2Rooms = [];
+                    
                     firstFloorRooms.forEach((r, idx) => {
                         let newRoom = JSON.parse(JSON.stringify(r));
                         newRoom.id = baseId + idx * 1000;
                         newRoom.floor = 2;
+                        if (shouldScale) {
+                            newRoom.area = Math.max(1, Math.round(r.area * scaleFactor * 10) / 10);
+                        }
                         if (newRoom.windows && Array.isArray(newRoom.windows)) {
                             newRoom.windows.forEach((w, wIdx) => {
                                 w.id = baseId + idx * 1000 + wIdx + 1;
                             });
                         }
-                        this.state.rooms.push(newRoom);
+                        addedFloor2Rooms.push(newRoom);
                     });
+                    
+                    if (shouldScale && addedFloor2Rooms.length > 0) {
+                        let totalNewSum = totalFloor1 + addedFloor2Rooms.reduce((sum, r) => sum + r.area, 0);
+                        if (totalNewSum !== 300) {
+                            let diff = 300 - totalNewSum;
+                            addedFloor2Rooms[addedFloor2Rooms.length - 1].area = Math.max(1, Math.round((addedFloor2Rooms[addedFloor2Rooms.length - 1].area + diff) * 10) / 10);
+                        }
+                    }
+                    
+                    this.state.rooms = this.state.rooms.concat(addedFloor2Rooms);
                     this.syncRoomsToState();
                 }
             }
