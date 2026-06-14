@@ -9133,7 +9133,7 @@ const app = {
                     availText = ' (Под заказ)';
                 }
 
-                let descText = i.desc ? i.desc : (i.qtyTip || '');
+                let descText = i.qtyTip ? i.qtyTip : (i.desc || '');
                 let availStatusLine = availText ? `<div style="margin-top: 8px; font-weight: 700; color: ${i.availability === 'in_stock' ? '#22c55e' : '#eab308'};">${availText.trim()}</div>` : '';
                 let finalTooltipContent = `${descText}${availStatusLine}`;
 
