@@ -8432,10 +8432,106 @@ const app = {
                 return `<span style="${styles}"><span style="${head}">${title}</span><b>Зачем:</b> ${why}<br><br>${calc}<br><br>${capacity}</span>`;
             }
             // === 1. КОТЕЛЬНАЯ ===
-            case 'boiler_gas':
-                return `<span style="${styles}"><span style="${head}">Газовый котел</span><b>Зачем:</b> Основной источник тепла.<br><b>Формула:</b> (Площадь × H_потолков × Утепление) + 20% запас.<br><b>Потребность:</b> ${val1} кВт.<br><b>Норматив:</b> СП 60.13330.2020.</span>`;
-            case 'boiler_el':
-                return `<span style="${styles}"><span style="${head}">Электрический котел</span><b>Зачем:</b> Резервный или основной источник.<br><b>Расчет:</b> По теплопотерям здания.<br><b>Потребность:</b> ${val1} кВт.</span>`;
+            case 'boiler_gas': {
+                let targetPwr = val1 || 0;
+                let isBk = this.state.hotWater;
+                let bkText = isBk 
+                    ? "одноконтурный (отопление + нагрев БКН)" 
+                    : "двухконтурный (отопление + проточный нагрев ГВС)";
+                let qty = val3 || 1;
+                let singlePower = val2 || 24;
+                let totalPwrLimit = qty * singlePower;
+                let reqPwr = targetPwr * 1.2;
+                
+                return `<span style="${styles}"><span style="${head}">Газовый котёл Haier</span>` +
+                       `<b>Зачем:</b> Основной энергоэффективный источник тепла для системы отопления и горячего водоснабжения. ` +
+                       `${isBk ? 'Работает в паре с бойлером косвенного нагрева для высокого комфорта ГВС.' : 'Обеспечивает нагрев горячей воды во встроенном теплообменнике (проточный режим).'}<br><br>` +
+                       `<b>Формула подбора:</b> Q_требуемая = Q_теплопотери × 1.2 (коэффициент запаса 20% по СП 60.13330.2020). При каскаде: N_котлов = ⌈Q_требуемая / 24 кВт⌉.<br><br>` +
+                       `<b>Подставленные значения:</b><br>` +
+                       `• Расчетные теплопотери: ${targetPwr.toFixed(1)} кВт.<br>` +
+                       `• С учётом запаса 20%: ${reqPwr.toFixed(1)} кВт.<br>` +
+                       `• Количество котлов в каскаде: ${qty} шт.<br>` +
+                       `• Мощность подобранного котла: ${singlePower} кВт (${bkText}).<br>` +
+                       `• Суммарная мощность каскада: ${totalPwrLimit} кВт.</span>`;
+            }
+            case 'boiler_el': {
+                let targetPwr = val1 || 0;
+                let singlePower = val2 || 18;
+                let qty = val3 || 1;
+                let totalPwrLimit = qty * singlePower;
+                let reqPwr = targetPwr * 1.1;
+                let isStatus = (this.state.boilerSeries === 'status');
+                
+                return `<span style="${styles}"><span style="${head}">Электрический котёл STOUT ${isStatus ? 'STATUS' : 'PLUS'}</span>` +
+                       `<b>Зачем:</b> Резервный или основной источник тепла. Серия ${isStatus ? 'STATUS' : 'PLUS'} оснащена встроенным насосом, расширительным баком и интеллектуальным блоком ротации ТЭНов для экономии электроэнергии и продления ресурса.<br><br>` +
+                       `<b>Формула подбора:</b> Q_требуемая = Q_теплопотери × 1.1 (коэффициент запаса 10%). При каскаде (если требуется более 27 кВт): N_котлов = 2, с мощностью каждого Q_котла ≥ Q_требуемая / 2.<br><br>` +
+                       `<b>Подставленные значения:</b><br>` +
+                       `• Расчетные теплопотери: ${targetPwr.toFixed(1)} кВт.<br>` +
+                       `• С учётом запаса 10%: ${reqPwr.toFixed(1)} кВт.<br>` +
+                       `• Количество котлов: ${qty} шт.<br>` +
+                       `• Мощность подобранного котла: ${singlePower} кВт.<br>` +
+                       `• Суммарная мощность: ${totalPwrLimit} кВт.</span>`;
+            }
+            case 'filter_mag': {
+                let count = this.selBoilers ? this.selBoilers.length : 1;
+                return `<span style="${styles}"><span style="${head}">Фильтр-шламоотделитель магнитный 3/4"</span>` +
+                       `<b>Зачем:</b> Эффективно задерживает мелкие частицы ржавчины, накипи и шлама с помощью мощного неодимового магнита. Предотвращает износ подшипников циркуляционных насосов, засорение теплообменника котла и сохраняет высокий КПД системы отопления.<br><br>` +
+                       `<b>Формула подбора:</b> Устанавливается 1 фильтр на обратную линию перед каждым котлом в системе. Размер 3/4" (DN20) соответствует стандартным патрубкам обвязки бытовых котлов до 28 кВт.<br><br>` +
+                       `<b>Подставленные значения:</b><br>` +
+                       `• Количество котлов в системе: ${count} шт.<br>` +
+                       `• Подобрано фильтров: ${count} шт. (по 1 шт. на котёл).</span>`;
+            }
+            case 'insulated_pipe_red':
+            case 'insulated_pipe_blue': {
+                let isRed = (type === 'insulated_pipe_red');
+                let why = isRed 
+                    ? "Подача горячего теплоносителя от коллектора к радиаторам. Слой теплоизоляции снижает теплопотери в стяжке, предохраняет трубу от механических повреждений и температурных расширений. Красный цвет обозначает подающий трубопровод."
+                    : "Отвод остывшего теплоносителя (обратка) от радиаторов к коллектору. Теплоизоляция сохраняет остаточное тепло, компенсирует расширения и исключает образование конденсата. Синий цвет обозначает обратную линию.";
+                let totalD = this.totalDevicesCount || 0;
+                let avgR = this.avgRun || 0;
+                let neededP = this.neededPipe || 0;
+                let coils = Math.ceil(neededP / 100);
+                
+                return `<span style="${styles}"><span style="${head}">Труба 16x2.2 в теплоизоляции (${isRed ? 'красная' : 'синяя'})</span>` +
+                       `<b>Зачем:</b> ${why}<br><br>` +
+                       `<b>Формула подбора:</b><br>` +
+                       `• Средняя длина трассы: L_ср = √(Площадь / Этажность) + 3 м.<br>` +
+                       `• Общая длина труб: L_общ = Приборы × L_ср × 2 × 1.1 (где 2 — подача + обратка, 1.1 — запас 10%).<br>` +
+                       `• Количество бухт (по 100 м): N_бухт = ⌈L_общ / 100⌉. Делится поровну между красной и синей.<br><br>` +
+                       `<b>Подставленные значения:</b><br>` +
+                       `• Приборов (радиаторы + конвекторы): ${totalD} шт.<br>` +
+                       `• Среднее расстояние L_ср: ${avgR.toFixed(1)} м.<br>` +
+                       `• Расчетная длина: ${totalD} × ${avgR.toFixed(1)} м × 2 × 1.1 = ${neededP} м.<br>` +
+                       `• Всего бухт: ${coils} шт. (по 100 м).<br>` +
+                       `• Выбрано бухт (${isRed ? 'красная' : 'синяя'}): ${val1} шт.</span>`;
+            }
+            case 'double_clip': {
+                let qty = val1 || 0;
+                let context = val2 || 'radiators';
+                let why = "Надежное крепление параллельно идущих трубопроводов (подающего и обратного, либо ГВС и ХВС) к плитам перекрытия или стенам перед заливкой стяжки или штукатуркой штраб.";
+                
+                let details = "";
+                if (context === 'toilet') {
+                    details = `• Крепление подводящих труб к инсталляциям.<br>` +
+                              `• Количество инсталляций: ${qty} шт.<br>` +
+                              `• Расход крепежа: по 1 шт. на инсталляцию.<br>` +
+                              `• Всего дюбель-крюков: ${qty} шт.`;
+                } else {
+                    let ctxText = context === 'radiators' ? 'контура радиаторов' 
+                                : context === 'cw' ? 'ХВС' 
+                                : context === 'hw' ? 'ГВС' 
+                                : 'рециркуляции ГВС';
+                    details = `• Укладка труб для ${ctxText}.<br>` +
+                              `• Общая длина труб: ${qty} м.<br>` +
+                              `• Расход крепежа: 1 шт. на 1 метр трубы.<br>` +
+                              `• Всего дюбель-крюков: ${qty} шт.`;
+                }
+                
+                return `<span style="${styles}"><span style="${head}">Дюбель-крюк двойной</span>` +
+                       `<b>Зачем:</b> ${why}<br><br>` +
+                       `<b>Формула подбора:</b> 1 шт. на 1 метр трубопровода (или по 1 шт. на точку инсталляции унитаза).<br><br>` +
+                       `<b>Подставленные значения:</b><br>${details}</span>`;
+            }
             case 'boiler_tank':
                 let calcStr = "";
                 let volByRes = (val1 >= 10 ? 500 : val1 >= 7 ? 300 : val1 >= 5 ? 200 : val1 >= 3 ? 150 : 100);
@@ -8465,8 +8561,31 @@ const app = {
                 return `<span style="${styles}"><span style="${head}">Бойлер косвенного нагрева</span><b>Зачем:</b> Комфортное ГВС (запас воды).<br><b>Метод подбора:</b> ${calcStr}<br><b>Подобранный объем бойлера:</b> ${val2} л.<br><b>Норматив:</b> СП 30.13330.2020.</span>`;
             case 'chimney':
                 return `<span style="${styles}"><span style="${head}">Дымоход коаксиальный</span><b>Зачем:</b> Безопасный выброс газов и забор воздуха с улицы.<br><b>Стандарт:</b> 60/100 мм (для турбированных котлов).<br><b>Норматив:</b> СП 402.1325800.2018.</span>`;
-            case 'stab':
-                return `<span style="${styles}"><span style="${head}">Стабилизатор напряжения</span><b>Зачем:</b> Защита дорогой электроники котла.<br><b>Важно:</b> Обязательное условие гарантии большинства производителей.</span>`;
+            case 'stab': {
+                let boilerType = val1 || 'gas';
+                let capacity = val2 || 250;
+                let powerVal = val3 || 150;
+                let why = "Защита электронной платы управления котлом и циркуляционных насосов от скачков, просадок и импульсных помех в электрической сети. Является обязательным условием сохранения заводской гарантии.";
+                
+                if (boilerType === 'gas') {
+                    return `<span style="${styles}"><span style="${head}">Стабилизатор напряжения Бастион ST 250</span>` +
+                           `<b>Зачем:</b> ${why}<br><br>` +
+                           `<b>Формула подбора:</b> Мощность стабилизатора P_стаб ≥ P_потребляемая_электрическая × 1.5 (коэффициент запаса на пусковые токи насоса и горелки).<br><br>` +
+                           `<b>Подставленные значения:</b><br>` +
+                           `• Тип котла: Газовый настенный Haier.<br>` +
+                           `• Максимальное электропотребление: ~${powerVal} Вт.<br>` +
+                           `• Требуемая мощность стабилизатора: ${powerVal} × 1.5 = ${(powerVal * 1.5).toFixed(0)} ВА.<br>` +
+                           `• Подобран прибор: ST ${capacity} (номинал ${capacity} ВА).</span>`;
+                } else {
+                    let textLimit = powerVal <= 18 ? "до 18 кВт включительно" : "более 18 кВт";
+                    return `<span style="${styles}"><span style="${head}">Стабилизатор напряжения Бастион ST ${capacity}</span>` +
+                           `<b>Зачем:</b> ${why}<br><br>` +
+                           `<b>Формула подбора:</b> Защищает встроенный насос и электронику электрокотла. Для котлов ${textLimit} подбирается номинал ${capacity} ВА.<br><br>` +
+                           `<b>Подставленные значения:</b><br>` +
+                           `• Тип котла: Электрический STOUT (${powerVal} кВт).<br>` +
+                           `• Подобран прибор: ST ${capacity} (номинал ${capacity} ВА).</span>`;
+                }
+            }
             case 'exp_h':
                 return `<span style="${styles}"><span style="${head}">Расширительный бак (Отопление)</span><b>Зачем:</b> Компенсация расширения воды при нагреве.<br><b>Формула:</b> V_системы (${val1} л) × 0.12 (коэфф. расширения).<br><b>Норматив:</b> СП 41-104-2000.</span>`;
             case 'exp_d':
@@ -8490,8 +8609,29 @@ const app = {
             case 'ufh_pipe': {
                 let stepVal1 = this.state.ufhStep1 || 150;
                 let stepVal2 = this.state.ufhStep2 || 150;
+                let tpArea = this.state.tp1 + (this.state.floors === 2 ? this.state.tp2 : 0);
                 let stepStr = (this.state.floors === 2 && this.state.tp2 > 0) ? `1 этаж: ${stepVal1} мм, 2 этаж: ${stepVal2} мм` : `${stepVal1} мм`;
-                return `<span style="${styles}"><span style="${head}">Труба теплого пола</span><b>Зачем:</b> Греющий элемент системы.<br><b>Формула:</b> (S / h) × 1.1 для каждого этажа.<br><b>Шаг укладки:</b> ${stepStr}.<br><b>Общая длина:</b> ${val1} м.<br><b>Норматив:</b> СП 60.13330.2020.</span>`;
+                
+                let details = "";
+                if (this.state.floors === 2 && this.state.tp2 > 0) {
+                    let L1 = (this.state.tp1 / (stepVal1 / 1000)) * 1.1;
+                    let L2 = (this.state.tp2 / (stepVal2 / 1000)) * 1.1;
+                    details = `1 этаж: (${this.state.tp1} м² / ${stepVal1/1000} м) × 1.1 = ${L1.toFixed(1)} м.<br>2 этаж: (${this.state.tp2} м² / ${stepVal2/1000} м) × 1.1 = ${L2.toFixed(1)} м.`;
+                } else {
+                    let S = this.state.tp1 > 0 ? this.state.tp1 : tpArea;
+                    let step = this.state.tp1 > 0 ? stepVal1 : stepVal2;
+                    let L = (S / (step / 1000)) * 1.1;
+                    details = `(${S} м² / ${step/1000} м) × 1.1 = ${L.toFixed(1)} м.`;
+                }
+                
+                return `<span style="${styles}"><span style="${head}">Труба водяного тёплого пола 16x2.0</span>` +
+                       `<b>Зачем:</b> Труба укладывается змейкой или улиткой в бетонную стяжку и служит нагревательным элементом, обеспечивая комфортный обогрев помещения.<br><br>` +
+                       `<b>Формула подбора:</b> L_трубы = (S_пола / Шаг_укладки) × 1.1 (коэффициент изгиба и запаса 10%).<br><br>` +
+                       `<b>Подставленные значения:</b><br>` +
+                       `• Площадь тёплого пола: ${tpArea} м².<br>` +
+                       `• Шаг укладки: ${stepStr}.<br>` +
+                       `• Расчёт по формуле:<br>${details}<br>` +
+                       `• Общая длина: ${val1} м.</span>`;
             }
             case 'ufh_mat':
                 return `<span style="${styles}"><span style="${head}">Мат с бобышками</span><b>Зачем:</b> Быстрый монтаж и фиксация трубы.<br><b>Расчет:</b> Чистая площадь ТП (${val1} м²) + 5% запас на подрезку.</span>`;
@@ -8588,8 +8728,46 @@ const app = {
             }
             case 'rad_item_detailed':
                 return `<span style="${styles}"><span style="${head}">Прибор отопления</span><b>Мощность по ГОСТ (90/70°C):</b> ${val1} Вт.<br><b style="color:var(--primary);">Факт. теплоотдача (75/65°C):</b> ${val2} Вт.<br><b>Примечание:</b> Прибор подобран с учетом реального температурного графика современных котлов и правила перекрытия окна на 70%.</span>`;
-            case 'coolant':
-                return `<span style="${styles}"><span style="${head}">Теплоноситель</span><b>Зачем:</b> Заполнение системы.<br><b>Формула:</b> V_котлов + V_радиаторов + V_труб + V_ТП + Запас.<br><b>Объем системы:</b> ~${val1} л.</span>`;
+            case 'coolant': {
+                let cl = catalog.coolants.find(c => c.type === this.state.coolant) || catalog.coolants[0];
+                let isWater = (cl.type === 'water');
+                let why = isWater 
+                    ? "Заполнение системы отопления. Деминерализованная вода со специальными присадками (Hydro) не образует накипи, исключает коррозию и продлевает срок службы котла и радиаторов."
+                    : "Низкотемпературный теплоноситель на основе экологичного пропиленгликоля. Предотвращает размораживание системы и разрыв труб при аварийной остановке котла в зимний период.";
+                
+                let bVol = this.boilersVol || 0;
+                let rSecs = this.radSecs || 0;
+                let rMeters = this.radMeters || 0;
+                let tpMet = this.tpMeters || 0;
+                let needCol = this.needCollector || false;
+                
+                let details = `• Объём котлов/бойлеров: ${bVol} л.<br>` +
+                              `• Секции радиаторов: ${rSecs} шт. (объём: ${(rSecs * 0.25).toFixed(1)} л).<br>` +
+                              `• Трубы радиаторов: ${rMeters} м (объём: ${(rMeters * 0.11).toFixed(1)} л).<br>` +
+                              `• Трубы тёплого пола: ${tpMet} м (объём: ${(tpMet * 0.113).toFixed(1)} л).<br>` +
+                              `• Объём коллекторов и арматуры: ${needCol ? 5 : 0} л.<br>` +
+                              `• Общий расчётный объём системы: ${val1} л (с запасом 15% по СП 41-104-2000).`;
+                
+                let canisters = "";
+                if (cl.type === 'pro65') {
+                    let vP = val1 * 0.65;
+                    let vH = val1 * 0.35;
+                    let cPro = Math.ceil(vP / 18);
+                    let cWater = Math.ceil(vH / 20);
+                    canisters = `Для разбавления до -30°С (65% концентрата, 35% воды):<br>` +
+                                `• Требуется концентрата Eco Pro 65: ~${vP.toFixed(0)} л (потребуется ${cPro} канистр по 18л).<br>` +
+                                `• Требуется воды Hydro: ~${vH.toFixed(0)} л (потребуется ${cWater} канистр по 20л).`;
+                } else {
+                    let cQty = Math.ceil(val1 / cl.vol);
+                    canisters = `• Поставляется в канистрах по ${cl.vol} л/кг.<br>` +
+                                `• Итого к заказу: ${cQty} шт.`;
+                }
+                
+                return `<span style="${styles}"><span style="${head}">Теплоноситель (${cl.name})</span>` +
+                       `<b>Зачем:</b> ${why}<br><br>` +
+                       `<b>Формула подбора:</b> V_системы = (V_котлов + N_секций × 0.25 + L_труб_рад × 0.11 + L_труб_тп × 0.113 + V_коллекторов) × 1.15 (запас 15%).<br><br>` +
+                       `<b>Подставленные значения:</b><br>${details}<br><br>${canisters}</span>`;
+            }
 
             default: return "";
         }
@@ -9198,8 +9376,8 @@ const app = {
                 let db = (ft === 'gas') ? catalog.boilers_gas : (this.state.boilerSeries === 'status' ? catalog.boilers_status : catalog.boilers_plus);
                 let b = db.find(x => x.power >= needed);
                 if (ft === 'el') {
-                    if (!b && needed > 27) { let half = needed / 2; let b2 = db.find(x => x.power >= half); if (b2) { b2.alts = (this.state.boilerSeries === 'status') ? catalog.boilers_plus : catalog.boilers_status; addToBill(b2, 2, this.getDesc('boiler_el', needed)); selBoilers.push(b2, b2); } }
-                    else { let t = b || db[db.length - 1]; t.alts = (this.state.boilerSeries === 'status') ? catalog.boilers_plus : catalog.boilers_status; addToBill(t, 1, this.getDesc('boiler_el', needed)); selBoilers.push(t); }
+                    if (!b && needed > 27) { let half = needed / 2; let b2 = db.find(x => x.power >= half); if (b2) { b2.alts = (this.state.boilerSeries === 'status') ? catalog.boilers_plus : catalog.boilers_status; addToBill(b2, 2, this.getDesc('boiler_el', needed, b2.power, 2)); selBoilers.push(b2, b2); } }
+                    else { let t = b || db[db.length - 1]; t.alts = (this.state.boilerSeries === 'status') ? catalog.boilers_plus : catalog.boilers_status; addToBill(t, 1, this.getDesc('boiler_el', needed, t.power, 1)); selBoilers.push(t); }
                 } else if (ft === 'gas') {
                     // === ПОДБОР ГАЗОВОГО КОТЛА HAIER ===
                     // Расчетная мощность (без запаса)
@@ -9222,7 +9400,7 @@ const app = {
                             : catalog.boilers_gas.find(x => x.id === 'GE0Q6RE0CRU');
                     }
                     if (haierBoiler) {
-                        addToBill(haierBoiler, qty, this.getDesc('boiler_gas', parseFloat(pwr)));
+                        addToBill(haierBoiler, qty, this.getDesc('boiler_gas', parseFloat(pwr), haierBoiler.power, qty));
                         for (let k = 0; k < qty; k++) selBoilers.push(haierBoiler);
                     }
                 }
@@ -9288,10 +9466,10 @@ const app = {
                 let grp = "2.1. Обвязка Газового котла";
                 let ch = (this.state.chimneyType === 'basic') ? catalog.chimneys[1] : catalog.chimneys[0];
                 addToBill(ch, 1, this.getDesc('chimney'), grp);
-                addToBill(catalog.stabs[0], 1, this.getDesc('stab'), grp);
+                addToBill(catalog.stabs[0], 1, this.getDesc('stab', 'gas', 250, 150), grp);
                 addToBill(catalog.american_34, 2, "Разъемное соед.", grp);
                 addToBill(catalog.ball_valve_34, 2, "Запорная арматура.", grp);
-                addToBill(catalog.filter_mag, 1, "Защита от шлама.", grp);
+                addToBill(catalog.filter_mag, 1, this.getDesc('filter_mag'), grp);
                 if (this.state.hotWater) { addToBill(catalog.valves[0], 1, this.getDesc('fugas'), grp); addToBill(catalog.nipple_34, 2, "Для фугаса.", grp); }
                 if (selBoilers.length > 1) addToBill(catalog.check_valve_34, 1, "Обратный клапан.", grp);
             }
@@ -9299,10 +9477,12 @@ const app = {
         selBoilers.forEach(b => {
             if (b.type !== 'gas') {
                 let grp = "2.2. Обвязка Электрического котла";
-                let s = b.power <= 18 ? catalog.stabs[1] : catalog.stabs[2]; addToBill(s, 1, this.getDesc('stab'), grp);
+                let s = b.power <= 18 ? catalog.stabs[1] : catalog.stabs[2];
+                let cap = b.power <= 18 ? 600 : 900;
+                addToBill(s, 1, this.getDesc('stab', 'el', cap, b.power), grp);
                 addToBill(catalog.american_34, 2, "Разъемное соед.", grp);
                 addToBill(catalog.ball_valve_34, 2, "Запорная арматура.", grp);
-                addToBill(catalog.filter_mag, 1, "Защита от шлама.", grp);
+                addToBill(catalog.filter_mag, 1, this.getDesc('filter_mag'), grp);
                 if (this.state.hotWater) { addToBill(catalog.valves[0], 1, this.getDesc('fugas'), grp); addToBill(catalog.nipple_34, 2, "Для фугаса.", grp); }
                 if (selBoilers.length > 1) addToBill(catalog.check_valve_34, 1, "Обратный клапан.", grp);
             }
@@ -9370,6 +9550,13 @@ const app = {
         // Расчет объема системы (для бака)
         let boilersVol = 0; if (selBoilers.length > 0) { selBoilers.forEach(b => { boilersVol += (b.vol !== undefined ? b.vol : 6); }); }
         let vSys = (boilersVol + radSecs * 0.25 + radMeters * 0.11 + tpMeters * 0.113 + (needCollector ? 5 : 0)) * 1.15;
+        this.tpMeters = tpMeters;
+        this.tpArea = tpArea;
+        this.radSecs = radSecs;
+        this.radMeters = radMeters;
+        this.boilersVol = boilersVol;
+        this.needCollector = needCollector;
+        this.vSys = vSys;
         let reqExp = vSys * 0.12; let bltin = 0; if (selBoilers.length > 0) { selBoilers.forEach(b => { bltin += (b.exp !== undefined ? b.exp : 0); }); }
         let def = reqExp - bltin; if (def > 0) { let et = catalog.exp_heating.find(t => t.vol >= def) || catalog.exp_heating[4]; addToBill(et, 1, this.getDesc('exp_h', Math.round(vSys))); if (et.vol <= 25) addToBill(catalog.tank_mount, 1, "Крепление бака."); addToBill(catalog.tank_kit, 1, "Подключение бака."); }
 
@@ -9894,17 +10081,20 @@ const app = {
 
             let totalDevicesCount = totalRadCount + totalConvCount;
             let floorArea = this.state.area / (this.state.floors === 2 ? 2 : 1); let avgRun = Math.sqrt(floorArea) + 3; let totalMeters = totalDevicesCount * avgRun * 1.1; let neededPipe = Math.ceil(totalMeters);
+            this.totalDevicesCount = totalDevicesCount;
+            this.avgRun = avgRun;
+            this.neededPipe = neededPipe;
             let pipeGrp = "3.3. Трубы отопления";
             if (neededPipe > 0) {
                 if (this.state.pipeType === 'insulated') {
                     let coils = Math.ceil(neededPipe / 100); let halfCoils = Math.ceil(coils / 2);
-                    let itemRed = catalog.insulated_pipes[0]; itemRed.alts = catalog.rad_pipes_grey; addToBill(itemRed, halfCoils, `Труба в красной изол.`, pipeGrp);
-                    let itemBlue = catalog.insulated_pipes[1]; itemBlue.alts = catalog.rad_pipes_grey; addToBill(itemBlue, halfCoils, `Труба в синей изол.`, pipeGrp);
+                    let itemRed = catalog.insulated_pipes[0]; itemRed.alts = catalog.rad_pipes_grey; addToBill(itemRed, halfCoils, this.getDesc('insulated_pipe_red', halfCoils, neededPipe), pipeGrp);
+                    let itemBlue = catalog.insulated_pipes[1]; itemBlue.alts = catalog.rad_pipes_grey; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
                 } else {
                     let grayItem = (neededPipe > 200) ? catalog.rad_pipes_grey[1] : catalog.rad_pipes_grey[0]; grayItem.alts = catalog.insulated_pipes; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
                     let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, "Изоляция красная.", pipeGrp); addToBill(catalog.insulation[1], insLen, "Изоляция синяя.", pipeGrp);
                 }
-                addToBill(catalog.water_fittings[8], neededPipe, "Дюбель-крюк двойной (1 шт/м трубы).", pipeGrp);
+                addToBill(catalog.water_fittings[8], neededPipe, this.getDesc('double_clip', neededPipe, 'radiators'), pipeGrp);
             }
 
             let reqLoops = (this.state.floors === 2 ? Math.ceil(totalDevicesCount / 2) : totalDevicesCount); if (reqLoops > 12) reqLoops = 12; let manifoldsCount = (this.state.floors === 2) ? 2 : 1;
@@ -10038,7 +10228,7 @@ const app = {
                 let pLen = Math.ceil(totalPipeCold);
                 addToBill(catalog.water_pipes[0], pLen, this.getDesc('pipe_cw', `${pLen} м`), grpCold);
                 addToBill(catalog.water_insulation[1], pLen, this.getDesc('ins_blue', pLen), grpCold);
-                addToBill(catalog.water_fittings[8], pLen, "Дюбель-крюк двойной (1 шт/м трубы ХВС).", grpCold);
+                addToBill(catalog.water_fittings[8], pLen, this.getDesc('double_clip', pLen, 'cw'), grpCold);
                 let socketsCold = totalColdPoints - totalToilets;
                 if (socketsCold > 0) {
                     addToBill(catalog.water_fittings[0], socketsCold, this.getDesc('socket', 'Тупиковая (ХВС)', socketsCold), grpCold);
@@ -10046,7 +10236,7 @@ const app = {
                     addToBill(catalog.water_fittings[4], socketsCold, "Пробка синяя (опрессовка)", grpCold);
                     addToBill(catalog.water_fittings[6], socketsCold, "Фиксатор 90°", grpCold);
                 }
-                if (totalToilets > 0) addToBill(catalog.water_fittings[8], totalToilets, "Фиксатор трубы (к инсталляции)", grpCold);
+                if (totalToilets > 0) addToBill(catalog.water_fittings[8], totalToilets, this.getDesc('double_clip', totalToilets, 'toilet'), grpCold);
             }
 
             if (totalPipeHot > 0) {
@@ -10061,7 +10251,7 @@ const app = {
                 let pLen = Math.ceil(recirc ? (totalPipeHot / 2) : totalPipeHot);
                 addToBill(catalog.water_pipes[0], pLen, this.getDesc('pipe_hw', `${pLen} м`), grpHot);
                 addToBill(catalog.water_insulation[0], pLen, this.getDesc('ins_red', pLen), grpHot);
-                addToBill(catalog.water_fittings[8], pLen, "Дюбель-крюк двойной (1 шт/м трубы ГВС).", grpHot);
+                addToBill(catalog.water_fittings[8], pLen, this.getDesc('double_clip', pLen, 'hw'), grpHot);
                 let totalMixers = 0;
                 this.state.waterZones.forEach(z => totalMixers += (z.fixtures.basin + z.fixtures.shower));
                 if (totalMixers > 0) {
@@ -10088,7 +10278,7 @@ const app = {
                 let pLen = Math.ceil(totalPipeHot / 2);
                 addToBill(catalog.water_pipes[0], pLen, this.getDesc('pipe_hw', `${pLen} м (Обратка)`), grpRecirc);
                 addToBill(catalog.water_insulation[0], pLen, this.getDesc('ins_red', pLen), grpRecirc);
-                addToBill(catalog.water_fittings[8], pLen, "Дюбель-крюк двойной (1 шт/м трубы рецирк.).", grpRecirc);
+                addToBill(catalog.water_fittings[8], pLen, this.getDesc('double_clip', pLen, 'recirc'), grpRecirc);
             }
 
             let collGroups = (totalColdPoints > 0 ? 1 : 0) + (totalHotPoints > 0 ? 1 : 0) + (recirc ? 1 : 0);
