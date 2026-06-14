@@ -8332,6 +8332,105 @@ const app = {
         }
 
         switch (type) {
+            case 'pump_group': {
+                let item = val1;
+                let qty = val2;
+                let purpose = val3; // 'rad' or 'ufh'
+                let inputVal = parseFloat(val4) || 0; // pwr or tpArea
+                let isRommer = (this.state.brandMode === 'rommer');
+                
+                let title = "";
+                let why = "";
+                let calc = "";
+                let capacity = "";
+                
+                if (purpose === 'rad') {
+                    title = isRommer ? "Насосная группа ROMMER DN25 (Прямая)" : (item.id.includes("2001") ? "Насосная группа STOUT DN20 (Прямая)" : "Насосная группа STOUT DN25 (Прямая)");
+                    why = "Подача теплоносителя в контур радиаторного отопления без понижения температуры.";
+                    
+                    let limitText = isRommer 
+                        ? "Для ROMMER по умолчанию всегда выбирается DN25." 
+                        : `Выбор типоразмера зависит от общей мощности системы: до 30 кВт — DN20, выше — DN25.<br><b>Текущие теплопотери:</b> ${inputVal} кВт.`;
+                    
+                    calc = `<b>Подбор по тепловой нагрузке:</b><br>${limitText}<br>` +
+                           `<b>Формула расхода:</b> G = Q / (c × ΔT)<br>` +
+                           `где Q = ${inputVal} кВт, c = 1.163 Вт·ч/(кг·°C), ΔT = 20°C (радиаторы).<br>` +
+                           `<b>Расчётный расход:</b> G = ${inputVal} / (1.163 × 20) = ${(inputVal / (1.163 * 20)).toFixed(2)} м³/ч.`;
+                    
+                    if (isRommer) {
+                        capacity = `<b>Паспортные характеристики (RDG-1001-002501):</b><br>` +
+                                   `• Максимальная мощность: <b>до 48 кВт</b> (при ΔT = 20°C)<br>` +
+                                   `• Максимальный расход: <b>до 2.0 м³/ч</b> (DN25)`;
+                    } else if (item.id.includes("2001")) {
+                        capacity = `<b>Паспортные характеристики (SDG-0001-002001):</b><br>` +
+                                   `• Максимальная мощность: <b>до 20 кВт</b> (при ΔT = 20°C)<br>` +
+                                   `• Максимальный расход: <b>до 0.9 м³/ч</b> (DN20, Kvs = 6.0)`;
+                    } else {
+                        capacity = `<b>Паспортные характеристики (SDG-0001-002501):</b><br>` +
+                                   `• Максимальная мощность: <b>до 50 кВт</b> (при ΔT = 20°C)<br>` +
+                                   `• Максимальный расход: <b>до 2.1 м³/ч</b> (DN25, Kvs = 8.8)`;
+                    }
+                } else if (purpose === 'ufh') {
+                    title = isRommer ? "Насосная группа ROMMER DN25 (Смесительная)" : (item.id.includes("2001") ? "Насосная группа STOUT DN20 (Смесительная)" : "Насосная группа STOUT DN25 (Смесительная)");
+                    why = "Точное регулирование температуры теплоносителя в контуре водяного тёплого пола путём подмеса остывшей воды из обратной линии.";
+                    
+                    let limitText = isRommer 
+                        ? "Для ROMMER по умолчанию всегда выбирается DN25." 
+                        : `Выбор типоразмера зависит от площади тёплого пола: до 120 м² — DN20, выше — DN25.<br><b>Текущая площадь ТП:</b> ${inputVal} м².`;
+                    
+                    let ufhPwr = Math.round(inputVal * 0.08); // Approximate power: 80 W/m²
+                    calc = `<b>Подбор по площади теплого пола:</b><br>${limitText}<br>` +
+                           `<b>Оценка тепловой мощности:</b> Q_тп ≈ ${inputVal} м² × 80 Вт/м² = ${ufhPwr} кВт.<br>` +
+                           `<b>Формула расхода:</b> G = Q_тп / (c × ΔT)<br>` +
+                           `где c = 1.163 Вт·ч/(кг·°C), ΔT = 8°C (перепад температур тёплого пола).<br>` +
+                           `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 8) = ${(ufhPwr / (1.163 * 8)).toFixed(2)} м³/ч.`;
+                    
+                    if (isRommer) {
+                        capacity = `<b>Паспортные характеристики (RDG-1002-002501):</b><br>` +
+                                   `• Максимальная мощность: <b>до 15 кВт</b> (при ΔT = 8°C)<br>` +
+                                   `• Максимальный расход: <b>до 1.6 м³/ч</b> (DN25, Kvs = 3.2)`;
+                    } else if (item.id.includes("2001")) {
+                        capacity = `<b>Паспортные характеристики (SDG-0002-002001):</b><br>` +
+                                   `• Максимальная мощность: <b>до 9 кВт</b> (при ΔT = 8°C, до 100 м²)<br>` +
+                                   `• Максимальный расход: <b>до 0.9 м³/ч</b> (DN20, Kvs = 2.5)`;
+                    } else {
+                        capacity = `<b>Паспортные характеристики (SDG-0002-002501):</b><br>` +
+                                   `• Максимальная мощность: <b>до 24 кВт</b> (при ΔT = 8°C, до 240 м²)<br>` +
+                                   `• Максимальный расход: <b>до 2.1 м³/ч</b> (DN25, Kvs = 4.0)`;
+                    }
+                }
+                
+                return `<span style="${styles}"><span style="${head}">${title}</span><b>Зачем:</b> ${why}<br><br>${calc}<br><br>${capacity}</span>`;
+            }
+            case 'ufh_mix': {
+                let isRommer = (this.state.brandMode === 'rommer');
+                let area = parseFloat(val1) || 0;
+                let title = isRommer 
+                    ? "Насосно-смесительный узел ROMMER с термоголовкой (без насоса)" 
+                    : "Насосно-смесительный узел STOUT (без насоса)";
+                let why = "Поддержание постоянной температуры подачи в контур тёплого пола путём качественного смешивания горячего теплоносителя от котла и остывшего из обратки.";
+                
+                let ufhPwr = Math.round(area * 0.08); // 80 W/m²
+                let calc = `<b>Подбор по площади теплого пола:</b><br>` +
+                           `• Обслуживаемая площадь: ${area} м².<br>` +
+                           `• Оценка тепловой мощности: Q_тп ≈ ${area} м² × 80 Вт/м² = ${ufhPwr} кВт.<br>` +
+                           `<b>Формула расхода:</b> G = Q_тп / (c × ΔT)<br>` +
+                           `где c = 1.163 Вт·ч/(кг·°C), ΔT = 8°C (перепад температур тёплого пола).<br>` +
+                           `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 8) = ${(ufhPwr / (1.163 * 8)).toFixed(2)} м³/ч.`;
+                
+                let capacity = "";
+                if (isRommer) {
+                    capacity = `<b>Паспортные характеристики (RDG-0120-008100):</b><br>` +
+                               `• Максимальная мощность: <b>до 9 кВт</b> (при ΔT = 8°C, до 90-100 м²)<br>` +
+                               `• Максимальный расход: <b>до 1.0 м³/ч</b> (Kvs = 1.8)`;
+                } else {
+                    capacity = `<b>Паспортные характеристики (SDG-0120-001000):</b><br>` +
+                               `• Максимальная мощность: <b>до 11 кВт</b> (при ΔT = 8°C, до 110-120 м²)<br>` +
+                               `• Максимальный расход: <b>до 1.2 м³/ч</b> (Kvs = 2.1)`;
+                }
+                
+                return `<span style="${styles}"><span style="${head}">${title}</span><b>Зачем:</b> ${why}<br><br>${calc}<br><br>${capacity}</span>`;
+            }
             // === 1. КОТЕЛЬНАЯ ===
             case 'boiler_gas':
                 return `<span style="${styles}"><span style="${head}">Газовый котел</span><b>Зачем:</b> Основной источник тепла.<br><b>Формула:</b> (Площадь × H_потолков × Утепление) + 20% запас.<br><b>Потребность:</b> ${val1} кВт.<br><b>Норматив:</b> СП 60.13330.2020.</span>`;
@@ -9306,10 +9405,10 @@ const app = {
             // Если коллектора нет (1 группа), то группа обычно не ставится, насос берется встроенный в котел или ставится отдельно на трубу (здесь упрощение: если нет коллектора, группы не ставим)
             if (needCollector) {
                 if (rQ > 0) {
-                    addToBill(grps[0], rQ, "Группа прямая (Радиаторы).");
+                    addToBill(grps[0], rQ, this.getDesc('pump_group', grps[0], rQ, 'rad', pwr));
                 }
                 if (tQ > 0) {
-                    addToBill(grps[1], tQ, "Группа смесительная (ТП).");
+                    addToBill(grps[1], tQ, this.getDesc('pump_group', grps[1], tQ, 'ufh', tpArea));
                 }
                 if ((rQ + tQ) > 0) addToBill(pmp, rQ + tQ, this.getDesc('pump_std'));
             }
@@ -9861,7 +9960,7 @@ const app = {
                         addToBill({ ...m, name: `Коллектор ТП ${sz} вых (${lbl})` }, 1, this.getDesc('manifold', sz, 'ufh'));
                         mans++;
                         if (!needCollector) {
-                            addToBill(catalog.mixing_units[0], 1, this.getDesc('ufh_mix'));
+                            addToBill(catalog.mixing_units[0], 1, this.getDesc('ufh_mix', tpArea));
                             addToBill(catalog.pumps_mix[0], 1, this.getDesc('pump_std'));
                         }
                     }
