@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam' },
 
     lastSavedStateString: "",
 
@@ -515,6 +515,7 @@ const app = {
         delete s.viewMode;
         delete s.darkMode;
         delete s.collapsedGroups;
+        delete s.revealedToggles;
         delete s.showSwapFor;
         delete s.tgUser;
         delete s.accountType;
@@ -4012,6 +4013,204 @@ const app = {
         else this.state.collapsedGroups.splice(idx, 1);
         this.render();
     },
+    toggleSection: function (name, event) {
+        if (event) event.stopPropagation();
+        if (!this.state.disabledSections) this.state.disabledSections = [];
+        
+        const idx = this.state.disabledSections.indexOf(name);
+        const isDisabling = (idx === -1);
+        
+        if (isDisabling) {
+            this.state.disabledSections.push(name);
+            
+            // --- 1. Equipment -> Works sync ---
+            if (name === "1. Котёл + водонагреватель") {
+                if (!this.state.disabledSections.includes("1.1 Монтаж котла и бойлера")) {
+                    this.state.disabledSections.push("1.1 Монтаж котла и бойлера");
+                }
+            } else if (name === "2. Обвязка котельной") {
+                if (!this.state.disabledSections.includes("1.2 Монтаж обвязки котельной")) {
+                    this.state.disabledSections.push("1.2 Монтаж обвязки котельной");
+                }
+            } else if (name === "3. Приборы отопления") {
+                if (!this.state.disabledSections.includes("1.3 Монтаж радиаторного отопления")) {
+                    this.state.disabledSections.push("1.3 Монтаж радиаторного отопления");
+                }
+            } else if (name === "4. Водяной тёплый пол") {
+                if (!this.state.disabledSections.includes("1.4 Монтаж водяного теплого пола")) {
+                    this.state.disabledSections.push("1.4 Монтаж водяного теплого пола");
+                }
+            } else if (name === "6. Узел ввода ХВС") {
+                if (!this.state.disabledSections.includes("2.2 Монтаж узла ввода ХВС")) {
+                    this.state.disabledSections.push("2.2 Монтаж узла ввода ХВС");
+                }
+            } else if (name.startsWith("5.")) {
+                // If ALL rendered "5." sections are disabled, disable works
+                const all5Titles = Array.from(document.querySelectorAll('.row-sec-title'))
+                    .map(el => el.getAttribute('data-title'))
+                    .filter(t => t && t.startsWith('5.'));
+                const other5Titles = all5Titles.filter(t => t !== name);
+                const allOthersDisabled = other5Titles.every(t => this.state.disabledSections.includes(t));
+                if (allOthersDisabled) {
+                    if (!this.state.disabledSections.includes("2.3 Внутреннее водоснабжение")) {
+                        this.state.disabledSections.push("2.3 Внутреннее водоснабжение");
+                    }
+                }
+            } else if (name.startsWith("7.")) {
+                // If ALL rendered "7." sections are disabled, disable works
+                const all7Titles = Array.from(document.querySelectorAll('.row-sec-title'))
+                    .map(el => el.getAttribute('data-title'))
+                    .filter(t => t && t.startsWith('7.'));
+                const other7Titles = all7Titles.filter(t => t !== name);
+                const allOthersDisabled = other7Titles.every(t => this.state.disabledSections.includes(t));
+                if (allOthersDisabled) {
+                    if (!this.state.disabledSections.includes("2.1 Внешнее водоснабжение")) {
+                        this.state.disabledSections.push("2.1 Внешнее водоснабжение");
+                    }
+                }
+            } else if (name.startsWith("8.")) {
+                // If ALL rendered "8." sections are disabled, disable works
+                const all8Titles = Array.from(document.querySelectorAll('.row-sec-title'))
+                    .map(el => el.getAttribute('data-title'))
+                    .filter(t => t && t.startsWith('8.'));
+                const other8Titles = all8Titles.filter(t => t !== name);
+                const allOthersDisabled = other8Titles.every(t => this.state.disabledSections.includes(t));
+                if (allOthersDisabled) {
+                    if (!this.state.disabledSections.includes("3.1 Внутренняя канализация")) {
+                        this.state.disabledSections.push("3.1 Внутренняя канализация");
+                    }
+                }
+            }
+            
+            // --- 2. Works -> Equipment sync ---
+            else if (name === "1.1 Монтаж котла и бойлера") {
+                if (!this.state.disabledSections.includes("1. Котёл + водонагреватель")) {
+                    this.state.disabledSections.push("1. Котёл + водонагреватель");
+                }
+            } else if (name === "1.2 Монтаж обвязки котельной") {
+                if (!this.state.disabledSections.includes("2. Обвязка котельной")) {
+                    this.state.disabledSections.push("2. Обвязка котельной");
+                }
+            } else if (name === "1.3 Монтаж радиаторного отопления") {
+                if (!this.state.disabledSections.includes("3. Приборы отопления")) {
+                    this.state.disabledSections.push("3. Приборы отопления");
+                }
+            } else if (name === "1.4 Монтаж водяного теплого пола") {
+                if (!this.state.disabledSections.includes("4. Водяной тёплый пол")) {
+                    this.state.disabledSections.push("4. Водяной тёплый пол");
+                }
+            } else if (name === "2.2 Монтаж узла ввода ХВС") {
+                if (!this.state.disabledSections.includes("6. Узел ввода ХВС")) {
+                    this.state.disabledSections.push("6. Узел ввода ХВС");
+                }
+            } else if (name === "2.3 Внутреннее водоснабжение") {
+                // Disable all active "5." equipment sections
+                const all5Titles = Array.from(document.querySelectorAll('.row-sec-title'))
+                    .map(el => el.getAttribute('data-title'))
+                    .filter(t => t && t.startsWith('5.'));
+                all5Titles.forEach(t => {
+                    if (!this.state.disabledSections.includes(t)) {
+                        this.state.disabledSections.push(t);
+                    }
+                });
+            } else if (name === "2.1 Внешнее водоснабжение") {
+                // Disable all active "7." equipment sections
+                const all7Titles = Array.from(document.querySelectorAll('.row-sec-title'))
+                    .map(el => el.getAttribute('data-title'))
+                    .filter(t => t && t.startsWith('7.'));
+                all7Titles.forEach(t => {
+                    if (!this.state.disabledSections.includes(t)) {
+                        this.state.disabledSections.push(t);
+                    }
+                });
+            } else if (name === "3.1 Внутренняя канализация") {
+                // Disable all active "8." equipment sections
+                const all8Titles = Array.from(document.querySelectorAll('.row-sec-title'))
+                    .map(el => el.getAttribute('data-title'))
+                    .filter(t => t && t.startsWith('8.'));
+                all8Titles.forEach(t => {
+                    if (!this.state.disabledSections.includes(t)) {
+                        this.state.disabledSections.push(t);
+                    }
+                });
+            }
+        } else {
+            // Включение раздела
+            this.state.disabledSections.splice(idx, 1);
+            
+            // --- 1. Equipment -> Works sync ---
+            if (name === "1. Котёл + водонагреватель") {
+                const wIdx = this.state.disabledSections.indexOf("1.1 Монтаж котла и бойлера");
+                if (wIdx > -1) this.state.disabledSections.splice(wIdx, 1);
+            } else if (name === "2. Обвязка котельной") {
+                const wIdx = this.state.disabledSections.indexOf("1.2 Монтаж обвязки котельной");
+                if (wIdx > -1) this.state.disabledSections.splice(wIdx, 1);
+            } else if (name === "3. Приборы отопления") {
+                const wIdx = this.state.disabledSections.indexOf("1.3 Монтаж радиаторного отопления");
+                if (wIdx > -1) this.state.disabledSections.splice(wIdx, 1);
+            } else if (name === "4. Водяной тёплый пол") {
+                const wIdx = this.state.disabledSections.indexOf("1.4 Монтаж водяного теплого пола");
+                if (wIdx > -1) this.state.disabledSections.splice(wIdx, 1);
+            } else if (name === "6. Узел ввода ХВС") {
+                const wIdx = this.state.disabledSections.indexOf("2.2 Монтаж узла ввода ХВС");
+                if (wIdx > -1) this.state.disabledSections.splice(wIdx, 1);
+            } else if (name.startsWith("5.")) {
+                // If we enable any "5." section, we must enable "2.3 Внутреннее водоснабжение"
+                const wIdx = this.state.disabledSections.indexOf("2.3 Внутреннее водоснабжение");
+                if (wIdx > -1) this.state.disabledSections.splice(wIdx, 1);
+            } else if (name.startsWith("7.")) {
+                // If we enable any "7." section, we must enable "2.1 Внешнее водоснабжение"
+                const wIdx = this.state.disabledSections.indexOf("2.1 Внешнее водоснабжение");
+                if (wIdx > -1) this.state.disabledSections.splice(wIdx, 1);
+            } else if (name.startsWith("8.")) {
+                // If we enable any "8." section, we must enable "3.1 Внутренняя канализация"
+                const wIdx = this.state.disabledSections.indexOf("3.1 Внутренняя канализация");
+                if (wIdx > -1) this.state.disabledSections.splice(wIdx, 1);
+            }
+            
+            // --- 2. Works -> Equipment sync ---
+            else if (name === "1.1 Монтаж котла и бойлера") {
+                const oIdx = this.state.disabledSections.indexOf("1. Котёл + водонагреватель");
+                if (oIdx > -1) this.state.disabledSections.splice(oIdx, 1);
+            } else if (name === "1.2 Монтаж обвязки котельной") {
+                const oIdx = this.state.disabledSections.indexOf("2. Обвязка котельной");
+                if (oIdx > -1) this.state.disabledSections.splice(oIdx, 1);
+            } else if (name === "1.3 Монтаж радиаторного отопления") {
+                const oIdx = this.state.disabledSections.indexOf("3. Приборы отопления");
+                if (oIdx > -1) this.state.disabledSections.splice(oIdx, 1);
+            } else if (name === "1.4 Монтаж водяного теплого пола") {
+                const oIdx = this.state.disabledSections.indexOf("4. Водяной тёплый пол");
+                if (oIdx > -1) this.state.disabledSections.splice(oIdx, 1);
+            } else if (name === "2.2 Монтаж узла ввода ХВС") {
+                const oIdx = this.state.disabledSections.indexOf("6. Узел ввода ХВС");
+                if (oIdx > -1) this.state.disabledSections.splice(oIdx, 1);
+            } else if (name === "2.3 Внутреннее водоснабжение") {
+                // Enable all "5." equipment sections
+                this.state.disabledSections = this.state.disabledSections.filter(x => !x.startsWith("5."));
+            } else if (name === "2.1 Внешнее водоснабжение") {
+                // Enable all "7." equipment sections
+                this.state.disabledSections = this.state.disabledSections.filter(x => !x.startsWith("7."));
+            } else if (name === "3.1 Внутренняя канализация") {
+                // Enable all "8." equipment sections
+                this.state.disabledSections = this.state.disabledSections.filter(x => !x.startsWith("8."));
+            }
+        }
+        
+        this.saveState();
+        this.render();
+    },
+    toggleRevealToggle: function (name, event) {
+        if (event) event.stopPropagation();
+        if (!this.state.revealedToggles) this.state.revealedToggles = [];
+        const idx = this.state.revealedToggles.indexOf(name);
+        if (idx > -1) {
+            this.state.revealedToggles.splice(idx, 1);
+        } else {
+            this.state.revealedToggles.push(name);
+        }
+        this.saveState();
+        this.render();
+    },
     toggleMerge: function (event) {
         if (!this.checkAccess('pro', event)) {
             let chk = document.getElementById('chk_merge');
@@ -5170,7 +5369,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -5798,27 +5997,38 @@ const app = {
                 this.state.ventilationType = this.state.ventilationType || 'natural';
             }
 
-            let v = this.state.mat;
-            if (v >= 1.2) {
-                this.state.wallLayers = [
-                    { matId: "wood_pine", thick: 150 },
-                    { matId: "plaster_gypsum", thick: 20 }
-                ];
-            } else if (v >= 0.9 && v < 1.2) {
-                this.state.wallLayers = [
-                    { matId: "gas_d500", thick: 300 },
-                    { matId: "plaster_cement", thick: 20 },
-                    { matId: "plaster_gypsum", thick: 15 }
-                ];
-            } else if (v < 0.9) {
-                this.state.wallLayers = [
-                    { matId: "gas_d500", thick: 300 },
-                    { matId: "minwool", thick: 100 },
-                    { matId: "plaster_cement", thick: 10 },
-                    { matId: "plaster_gypsum", thick: 15 }
-                ];
+            const standardMats = [1.3, 1.0, 0.8];
+            const isStandardMat = standardMats.includes(this.state.mat);
+            const matChangedInQuickMode = (this.state.mat !== this.state.lastQuickMat);
+            const needsLayersInit = !this.state.wallLayers || this.state.wallLayers.length === 0 || (isStandardMat && matChangedInQuickMode);
+
+            if (needsLayersInit) {
+                let v = this.state.mat;
+                if (!standardMats.includes(v)) {
+                    v = this.state.lastQuickMat || 1.0;
+                }
+                if (v >= 1.2) {
+                    this.state.wallLayers = [
+                        { matId: "wood_pine", thick: 150 },
+                        { matId: "plaster_gypsum", thick: 20 }
+                    ];
+                } else if (v >= 0.9 && v < 1.2) {
+                    this.state.wallLayers = [
+                        { matId: "gas_d500", thick: 300 },
+                        { matId: "plaster_cement", thick: 20 },
+                        { matId: "plaster_gypsum", thick: 15 }
+                    ];
+                } else if (v < 0.9) {
+                    this.state.wallLayers = [
+                        { matId: "gas_d500", thick: 300 },
+                        { matId: "minwool", thick: 100 },
+                        { matId: "plaster_cement", thick: 10 },
+                        { matId: "plaster_gypsum", thick: 15 }
+                    ];
+                }
+                this.calculateWallResistance();
+                this.state.lastQuickMat = v;
             }
-            this.calculateWallResistance();
             // Считаем текущую сумму комнат
             let currentRoomsArea = 0;
             if (this.state.rooms) {
@@ -5838,6 +6048,9 @@ const app = {
             }
             // Сбрасываем вентиляцию при возврате в простой режим
             this.state.ventilationEnabled = false;
+
+            // Восстанавливаем коэффициент материала для быстрого режима
+            this.state.mat = this.state.lastQuickMat || 1.0;
         }
 
         this.syncRoomsToState();
@@ -7318,6 +7531,7 @@ const app = {
                 ];
             }
             this.calculateWallResistance();
+            this.state.lastQuickMat = v;
         }
         this.syncUI();
         this.render();
@@ -7347,6 +7561,7 @@ const app = {
             this.calculateWallResistance();
         } else {
             this.state.mat = 1.0; // Сбрасываем на стандарт кирпич
+            this.state.lastQuickMat = 1.0;
         }
         this.syncUI();
         this.render();
@@ -7991,6 +8206,31 @@ const app = {
     },
     // ====================================
     render: function () {
+        if (this.state.disabledSections) {
+            const migrations = {
+                "1.1 Монтаж котельной": ["1.1 Монтаж котла и бойлера", "1.2 Монтаж обвязки котельной"],
+                "1.2 Монтаж радиаторного отопления": ["1.3 Монтаж радиаторного отопления"],
+                "1.3 Монтаж водяного теплого пола": ["1.4 Монтаж водяного теплого пола"],
+                "2.2 Внутреннее водоснабжение": ["2.3 Внутреннее водоснабжение"]
+            };
+            let updated = false;
+            for (let oldSec in migrations) {
+                const oldIdx = this.state.disabledSections.indexOf(oldSec);
+                if (oldIdx > -1) {
+                    this.state.disabledSections.splice(oldIdx, 1);
+                    migrations[oldSec].forEach(newSec => {
+                        if (!this.state.disabledSections.includes(newSec)) {
+                            this.state.disabledSections.push(newSec);
+                        }
+                    });
+                    updated = true;
+                }
+            }
+            if (updated) {
+                this.saveState();
+            }
+        }
+
         this.updateHeaderCompanyDetails();
         this.updateDocumentTitle();
 
@@ -8206,6 +8446,32 @@ const app = {
         const flushBill = (title, warn) => {
             if (bill.length === 0) return;
 
+            const isDisabled = this.state.disabledSections && (
+                this.state.disabledSections.includes(title) ||
+                (title.startsWith("5.") && this.state.disabledSections.includes("2.3 Внутреннее водоснабжение")) ||
+                (title.startsWith("7.") && this.state.disabledSections.includes("2.1 Внешнее водоснабжение")) ||
+                (title.startsWith("8.") && this.state.disabledSections.includes("3.1 Внутренняя канализация"))
+            );
+            const isRevealed = this.state.revealedToggles && this.state.revealedToggles.includes(title);
+            if (isDisabled) {
+                if (this.state.viewMode === 'equipment') {
+                    let titleHtml = title + (warn ? `<div class="warn-box">${warn}</div>` : "");
+                    h += `<tr class="row-sec disabled-section" onclick="app.toggleRevealToggle('${title.replace(/'/g, "\\'")}', event)"><td colspan="9">
+                        <div class="row-sec-header-wrap">
+                            <span class="row-sec-title" data-title="${title}">${titleHtml}</span>
+                            <div class="row-sec-toggle-wrap no-print" onclick="event.stopPropagation()" style="${isRevealed ? '' : 'display: none;'}">
+                                <label class="switch">
+                                    <input type="checkbox" onchange="app.toggleSection('${title.replace(/'/g, "\\'")}', event)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </td></tr>`;
+                }
+                bill = [];
+                return;
+            }
+
             // Сохраняем элементы для коммерческого предложения клиенту
             bill.forEach(i => {
                 this.currentEquipmentList.push({
@@ -8248,7 +8514,17 @@ const app = {
             bill.forEach(i => { if (i.group) { if (!groupTotals[i.group]) groupTotals[i.group] = 0; groupTotals[i.group] += i.sum; } });
             let secTotal = 0, rows = "";
             let titleHtml = title + (warn ? `<div class="warn-box">${warn}</div>` : "");
-            h += `<tr class="row-sec"><td colspan="9">${titleHtml}</td></tr>`;
+            h += `<tr class="row-sec" onclick="app.toggleRevealToggle('${title.replace(/'/g, "\\'")}', event)"><td colspan="9">
+                <div class="row-sec-header-wrap">
+                    <span class="row-sec-title" data-title="${title}">${titleHtml}</span>
+                    <div class="row-sec-toggle-wrap no-print" onclick="event.stopPropagation()" style="${isRevealed ? '' : 'display: none;'}">
+                        <label class="switch">
+                            <input type="checkbox" checked onchange="app.toggleSection('${title.replace(/'/g, "\\'")}', event)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </td></tr>`;
             let lastGroup = null;
             bill.forEach((i, arrIndex) => {
                 let lookupId = i.originalId || i.id;
@@ -8348,8 +8624,25 @@ const app = {
         const flushWorks = () => {
             if (worksBill.length === 0) return;
 
-            // Сохраняем элементы для коммерческого предложения клиенту
+            // Фильтруем активные работы (не отключенные пользователем)
+            let activeWorksBill = [];
             worksBill.forEach(w => {
+                let g = w.group || "Прочее";
+                const isDisabled = this.state.disabledSections && (
+                    this.state.disabledSections.includes(g) ||
+                    (g === "1.1 Монтаж котла и бойлера" && this.state.disabledSections.includes("1. Котёл + водонагреватель")) ||
+                    (g === "1.2 Монтаж обвязки котельной" && this.state.disabledSections.includes("2. Обвязка котельной")) ||
+                    (g === "1.3 Монтаж радиаторного отопления" && this.state.disabledSections.includes("3. Приборы отопления")) ||
+                    (g === "1.4 Монтаж водяного теплого пола" && this.state.disabledSections.includes("4. Водяной тёплый пол")) ||
+                    (g === "2.2 Монтаж узла ввода ХВС" && this.state.disabledSections.includes("6. Узел ввода ХВС"))
+                );
+                if (!isDisabled) {
+                    activeWorksBill.push(w);
+                }
+            });
+
+            // Сохраняем элементы для коммерческого предложения клиенту
+            activeWorksBill.forEach(w => {
                 this.currentWorksList.push({
                     name: w.name,
                     q: w.q,
@@ -8361,7 +8654,7 @@ const app = {
             });
 
             // Считаем сумму работ всегда
-            worksBill.forEach(w => { app.lastWorksSum += w.sum; });
+            activeWorksBill.forEach(w => { app.lastWorksSum += w.sum; });
 
             if (this.state.viewMode !== 'works') return; // Рендерим HTML только если выбраны работы
 
@@ -8377,8 +8670,44 @@ const app = {
                 let secTotal = 0;
                 worksByGroup[g].forEach(w => secTotal += w.sum);
 
-                // Главный заголовок секции выводится всегда
-                h += `<tr class="row-sec"><td colspan="9">${g}</td></tr>`;
+                const isDisabled = this.state.disabledSections && (
+                    this.state.disabledSections.includes(g) ||
+                    (g === "1.1 Монтаж котла и бойлера" && this.state.disabledSections.includes("1. Котёл + водонагреватель")) ||
+                    (g === "1.2 Монтаж обвязки котельной" && this.state.disabledSections.includes("2. Обвязка котельной")) ||
+                    (g === "1.3 Монтаж радиаторного отопления" && this.state.disabledSections.includes("3. Приборы отопления")) ||
+                    (g === "1.4 Монтаж водяного теплого пола" && this.state.disabledSections.includes("4. Водяной тёплый пол")) ||
+                    (g === "2.2 Монтаж узла ввода ХВС" && this.state.disabledSections.includes("6. Узел ввода ХВС"))
+                );
+                const isRevealed = this.state.revealedToggles && this.state.revealedToggles.includes(g);
+
+                if (isDisabled) {
+                    // Рендерим только заголовок группы с выключенным переключателем
+                    h += `<tr class="row-sec disabled-section" onclick="app.toggleRevealToggle('${g.replace(/'/g, "\\'")}', event)"><td colspan="9">
+                        <div class="row-sec-header-wrap">
+                            <span class="row-sec-title" data-title="${g}">${g}</span>
+                            <div class="row-sec-toggle-wrap no-print" onclick="event.stopPropagation()" style="${isRevealed ? '' : 'display: none;'}">
+                                <label class="switch">
+                                    <input type="checkbox" onchange="app.toggleSection('${g.replace(/'/g, "\\'")}', event)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </td></tr>`;
+                    continue;
+                }
+
+                // Главный заголовок секции с включенным переключателем
+                h += `<tr class="row-sec" onclick="app.toggleRevealToggle('${g.replace(/'/g, "\\'")}', event)"><td colspan="9">
+                    <div class="row-sec-header-wrap">
+                        <span class="row-sec-title" data-title="${g}">${g}</span>
+                        <div class="row-sec-toggle-wrap no-print" onclick="event.stopPropagation()" style="${isRevealed ? '' : 'display: none;'}">
+                            <label class="switch">
+                                <input type="checkbox" checked onchange="app.toggleSection('${g.replace(/'/g, "\\'")}', event)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </td></tr>`;
 
                 let rows = "";
                 const dashStyle = "1px dashed rgba(0, 0, 0, 0.2)";
@@ -9194,9 +9523,9 @@ const app = {
                 if (plan[0] > 0) addToBill(b4, plan[0] * multiplier, `Блок 4 вых.`, pipeGrp); if (plan[1] > 0) addToBill(b3, plan[1] * multiplier, `Блок 3 вых.`, pipeGrp); if (plan[2] > 0) addToBill(b2, plan[2] * multiplier, `Блок 2 вых.`, pipeGrp); addToBill(catalog.manifold_brackets, manifoldsCount, "Кронштейны.", pipeGrp);
             }
 
-            addToWorks("Монтаж радиатора отопления", totalRadCount, workPrices.rad_point, "точка", "1.2 Монтаж радиаторного отопления");
-            if (totalConvCount > 0) addToWorks("Монтаж внутрипольного конвектора", totalConvCount, 8500, "шт", "1.2 Монтаж радиаторного отопления");
-            if (manifoldsCount > 0) addToWorks("Монтаж коллектора радиаторов", manifoldsCount, workPrices.manifold, "шт", "1.2 Монтаж радиаторного отопления");
+            addToWorks("Монтаж радиатора отопления", totalRadCount, workPrices.rad_point, "точка", "1.3 Монтаж радиаторного отопления");
+            if (totalConvCount > 0) addToWorks("Монтаж внутрипольного конвектора", totalConvCount, 8500, "шт", "1.3 Монтаж радиаторного отопления");
+            if (manifoldsCount > 0) addToWorks("Монтаж коллектора радиаторов", manifoldsCount, workPrices.manifold, "шт", "1.3 Монтаж радиаторного отопления");
         }
 
         let heatWarnHtml = null;
@@ -9405,9 +9734,9 @@ const app = {
                 }
 
                 // ==========================================
-                // БЛОК: 2.2 Внутреннее водоснабжение
+                // БЛОК: 2.3 Внутреннее водоснабжение
                 // ==========================================
-                let wGroup2 = "2.2 Внутреннее водоснабжение";
+                let wGroup2 = "2.3 Внутреннее водоснабжение";
                 if (totalColdPoints > 0) addToWorks("Точка присоединения ХВС (монтаж трубопроводов, водорозетки)", totalColdPoints, 3700, "точка", wGroup2);
                 if (totalHotPoints > 0) addToWorks("Точка присоединения ГВС (монтаж трубопроводов, водорозетки)", totalHotPoints, 4500, "точка", wGroup2);
                 if (this.state.recirc && totalHotPoints > 0) addToWorks("Точка присоединения рециркуляции ГВС", totalHotPoints, 3700, "точка", wGroup2);
@@ -9928,95 +10257,101 @@ const app = {
                   </td></tr>`;
         }
         // ==========================================
-        // БЛОК: 1.1 Монтаж котельной (Логика работ)
+        // БЛОК: 1.1 Монтаж котла и бойлера, 1.2 Монтаж обвязки котельной, 2.2 Монтаж узла ввода ХВС
         // ==========================================
-        let wGroup = "1.1 Монтаж котельной";
+        let boilerGroup = "1.1 Монтаж котла и бойлера";
+        let obvyazkaGroup = "1.2 Монтаж обвязки котельной";
+        let hvsGroup = "2.2 Монтаж узла ввода ХВС";
 
-        // 1. Котлы и дымоудаление
+        // 1. Котлы и дымоудаление (Монтаж котла и бойлера)
         let gasCount = this.state.fuels.includes('gas') ? 1 : 0;
         let elCount = this.state.fuels.includes('el') ? 1 : 0;
 
-        if (elCount > 0) addToWorks("Mонтаж электрического котла", elCount, 18000, "шт", wGroup);
+        if (elCount > 0) addToWorks("Mонтаж электрического котла", elCount, 18000, "шт", boilerGroup);
         if (gasCount > 0) {
-            addToWorks("Монтаж газового котла", gasCount, 20000, "шт", wGroup);
-            addToWorks("Монтаж коаксиального дымохода", gasCount, 10000, "шт", wGroup);
-            addToWorks("Монтаж отверстия под дымоход", gasCount, 6000, "шт", wGroup);
+            addToWorks("Монтаж газового котла", gasCount, 20000, "шт", boilerGroup);
+            addToWorks("Монтаж коаксиального дымохода", gasCount, 10000, "шт", boilerGroup);
+            addToWorks("Монтаж отверстия под дымоход", gasCount, 6000, "шт", boilerGroup);
         }
 
-        // Подсчет и монтаж стабилизаторов
+        // Подсчет и монтаж стабилизаторов (Монтаж котла и бойлера)
         let stabCount = bill.filter(x => x.name.toLowerCase().includes("стабилизатор")).reduce((sum, x) => sum + x.q, 0);
         if (stabCount > 0) {
-            addToWorks("Монтаж стабилизатора напряжения", stabCount, 1500, "шт", wGroup);
+            addToWorks("Монтаж стабилизатора напряжения", stabCount, 1500, "шт", boilerGroup);
         }
 
-        // Подсчет и монтаж клапанов Fugas
+        // Подсчет и монтаж клапанов Fugas (Монтаж котла и бойлера)
         let fugasCount = bill.filter(x => x.name.toLowerCase().includes("fugas")).reduce((sum, x) => sum + x.q, 0);
         if (fugasCount > 0) {
-            addToWorks("Монтаж комплекта 3-х ходового клапана Fugas", fugasCount, 4500, "компл", wGroup);
+            addToWorks("Монтаж комплекта 3-х ходового клапана Fugas", fugasCount, 4500, "компл", boilerGroup);
         }
 
-        // Подсчет и монтаж гидравлических стрелок
+        // Подсчет и монтаж гидравлических стрелок (Обвязка котельной)
         let arrowCount = bill.filter(x => x.name.toLowerCase().includes("гидравлическая стрелка")).reduce((sum, x) => sum + x.q, 0);
         if (arrowCount > 0) {
-            addToWorks("Монтаж гидравлической стрелки", arrowCount, 6500, "шт", wGroup);
+            addToWorks("Монтаж гидравлической стрелки", arrowCount, 6500, "шт", obvyazkaGroup);
         }
 
-        // Подсчет и монтаж распределительных коллекторов котельной (стальных)
+        // Подсчет и монтаж распределительных коллекторов котельной (стальных) (Обвязка котельной)
         let steelManifoldCount = bill.filter(x => x.name.toLowerCase().includes("стальной распр. коллектор")).reduce((sum, x) => sum + x.q, 0);
         if (steelManifoldCount > 0) {
-            addToWorks("Монтаж распределительного коллектора котельной", steelManifoldCount, 5500, "шт", wGroup);
+            addToWorks("Монтаж распределительного коллектора котельной", steelManifoldCount, 5500, "шт", obvyazkaGroup);
         }
 
-        // 2. Бойлер и водоснабжение
+        // 2. Бойлер и водоснабжение (Монтаж котла и бойлера + Обвязка котельной)
         if (this.state.hotWater) {
-            addToWorks("Монтаж водонагревателя / бойлера", 1, 9000, "шт", wGroup);
-            addToWorks("Подключение бойлера косвенного нагрева (монтаж гидравлики)", 1, 12000, "компл", wGroup);
-            addToWorks("Установка расширительного бака водоснабжения", 1, 4500, "шт", wGroup);
-            addToWorks("Монтаж гидравлики ГВС (подпитка СО + подключение ГВС)", 1, 9000, "компл", wGroup);
+            addToWorks("Монтаж водонагревателя / бойлера", 1, 9000, "шт", boilerGroup);
+            addToWorks("Подключение бойлера косвенного нагрева (монтаж гидравлики)", 1, 12000, "компл", boilerGroup);
+            addToWorks("Установка расширительного бака водоснабжения", 1, 4500, "шт", boilerGroup);
+            addToWorks("Монтаж гидравлики ГВС (подпитка СО + подключение ГВС)", 1, 9000, "компл", obvyazkaGroup);
             if (this.state.recirc) {
-                addToWorks("Монтаж системы рециркуляции", 1, 8000, "компл", wGroup);
+                addToWorks("Монтаж системы рециркуляции", 1, 8000, "компл", obvyazkaGroup);
             }
-            // Подсчет кранов и американок обвязки бойлера ГВС
+            // Подсчет кранов и американок обвязки бойлера ГВС (Монтаж котла и бойлера)
             let dhwTapCount = bill.filter(x => x.group === "2.3. Обвязка Водонагревателя" && (x.name.toLowerCase().includes("американка") || x.name.toLowerCase().includes("кран"))).reduce((sum, x) => sum + x.q, 0);
             if (dhwTapCount > 0) {
-                addToWorks("Монтаж запорной арматуры и американок бойлера", dhwTapCount, 950, "шт", wGroup);
+                addToWorks("Монтаж запорной арматуры и американок бойлера", dhwTapCount, 950, "шт", boilerGroup);
             }
         }
         if (this.state.waterInput) {
-            addToWorks("Монтаж гидравлики ХВС (узел ввода, фильтры, байпас)", 1, 20000, "компл", wGroup);
+            addToWorks("Монтаж гидравлики ХВС (узел ввода, фильтры, байпас)", 1, 20000, "компл", hvsGroup);
             if (this.state.bigBlueFilter) {
-                addToWorks("Монтаж системы фильтрации Big Blue (колбы + картриджи)", 1, 3500, "компл", wGroup);
+                addToWorks("Монтаж системы фильтрации Big Blue (колбы + картриджи)", 1, 3500, "компл", hvsGroup);
+            }
+            if (this.state.outdoorFaucet > 0) {
+                let count = parseInt(this.state.outdoorFaucet) || 1;
+                addToWorks("Монтаж незамерзающего уличного крана", count, 5000, "шт", hvsGroup);
             }
         }
 
-        // 3. Распределительная гидравлика
+        // 3. Распределительная гидравлика (Обвязка котельной)
         let isCombo = (this.state.systems.includes('rad') && this.state.systems.includes('tp'));
         if (isCombo) {
-            addToWorks("Монтаж коллектора и гидрострелки", 1, 12000, "шт", wGroup);
-            addToWorks("Монтаж насосной группы", 2, 6500, "шт", wGroup); // Группа на ТП и на Радиаторы
+            addToWorks("Монтаж коллектора и гидрострелки", 1, 12000, "шт", obvyazkaGroup);
+            addToWorks("Монтаж насосной группы", 2, 6500, "шт", obvyazkaGroup); // Группа на ТП и на Радиаторы
         } else if (this.state.systems.includes('tp')) {
-            addToWorks("Монтаж узла смешения теплого пола", 1, 9000, "шт", wGroup);
+            addToWorks("Монтаж узла смешения теплого пола", 1, 9000, "шт", obvyazkaGroup);
         }
 
-        // 4. Трассы (Магистрали)
+        // 4. Трассы (Магистрали) (Обвязка котельной)
         if (this.state.systems.includes('tp') && this.state.area > 0) {
-            addToWorks("Монтаж ГИДРАВЛИКИ: от котла до коллектора т.пола", 1, 15000, "компл", wGroup);
+            addToWorks("Монтаж ГИДРАВЛИКИ: от котла до коллектора т.пола", 1, 15000, "компл", obvyazkaGroup);
         }
         if (this.state.systems.includes('rad')) {
-            addToWorks("Монтаж ГИДРАВЛИКИ: от котла - магистральные трубопроводы радиаторов", 1, 9000, "компл", wGroup);
+            addToWorks("Монтаж ГИДРАВЛИКИ: от котла - магистральные трубопроводы радиаторов", 1, 9000, "компл", obvyazkaGroup);
         }
 
-        // 5. Общие и пусконаладочные работы
-        addToWorks("Монтаж ГИДРАВЛИКИ: расширительные баки, предохранительные клапаны", 1, 9000, "компл", wGroup);
-        addToWorks("Опрессовка котельной", 1, 5000, "компл", wGroup);
-        addToWorks("Пусконаладка котельной", 1, 12000, "компл", wGroup);
-        addToWorks("Монтаж электрики котельной", 1, 12000, "компл", wGroup);
+        // 5. Общие и пусконаладочные работы (Обвязка котельной)
+        addToWorks("Монтаж ГИДРАВЛИКИ: расширительные баки, предохранительные клапаны", 1, 9000, "компл", obvyazkaGroup);
+        addToWorks("Опрессовка котельной", 1, 5000, "компл", obvyazkaGroup);
+        addToWorks("Пусконаладка котельной", 1, 12000, "компл", obvyazkaGroup);
+        addToWorks("Монтаж электрики котельной", 1, 12000, "компл", obvyazkaGroup);
         // ==========================================
 
         // ==========================================
-        // БЛОК: 1.2 Монтаж радиаторного отопления
+        // БЛОК: 1.3 Монтаж радиаторного отопления
         // ==========================================
-        let radGroup = "1.2 Монтаж радиаторного отопления";
+        let radGroup = "1.3 Монтаж радиаторного отопления";
         if (this.state.systems.includes('rad') && typeof activeCount !== 'undefined' && activeCount > 0) {
             addToWorks("Монтаж трубопроводов PEX-a... и подключение радиатора", activeCount, 6500, "шт", radGroup);
 
@@ -10054,9 +10389,9 @@ const app = {
         }
 
         // ==========================================
-        // БЛОК: 1.3 Монтаж водяного теплого пола
+        // БЛОК: 1.4 Монтаж водяного теплого пола
         // ==========================================
-        let tpGroup = "1.3 Монтаж водяного теплого пола";
+        let tpGroup = "1.4 Монтаж водяного теплого пола";
         if (this.state.systems.includes('tp') && typeof tpArea !== 'undefined' && tpArea > 0) {
             addToWorks("Монтаж труб водяного тёплого пола", tpArea, 750, "м²", tpGroup);
             addToWorks("Монтаж утеплителя для укладки ТП", tpArea, 350, "м²", tpGroup);
@@ -10117,7 +10452,7 @@ const app = {
         if (this.state.hotWater && this.state.recirc) {
             let recircPumps = bill.filter(x => x.group === "2.3. Обвязка Водонагревателя" && x.name.toLowerCase().includes("насос гвс")).reduce((sum, x) => sum + x.q, 0);
             if (recircPumps > 0) {
-                let dhwGrp = this.state.water ? "2.2 Внутреннее водоснабжение" : "1.1 Монтаж котельной";
+                let dhwGrp = this.state.water ? "2.3 Внутреннее водоснабжение" : "1.1 Монтаж котла и бойлера";
                 addToWorks("Монтаж циркуляционного насоса рециркуляции ГВС", recircPumps, 4500, "шт", dhwGrp);
             }
         }
