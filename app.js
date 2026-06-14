@@ -9375,7 +9375,7 @@ const app = {
 
         // Вывод оборудования котельной
         if (!useEco) {
-            let big = (pwr > 30 || tpArea > 120);
+            let big = (pwr > 20 || tpArea > 100);
             let dn25 = big || (this.state.brandMode === 'rommer');
             let pmp = null;
 
