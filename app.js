@@ -6362,7 +6362,25 @@ const app = {
         this.state.floors = 2;
         if (document.getElementById('chk_floors')) document.getElementById('chk_floors').checked = true;
         if (!this.state.rooms) this.state.rooms = [];
-        this.state.rooms.push({ id: Date.now(), name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: 2, sys: ['rad'], windows: [{ id: Date.now() + 1, width: 1.5, isPan: false }] });
+        
+        const firstFloorRooms = this.state.rooms.filter(r => r.floor === 1 || !r.floor);
+        if (firstFloorRooms.length > 0) {
+            let baseId = Date.now();
+            firstFloorRooms.forEach((r, idx) => {
+                let newRoom = JSON.parse(JSON.stringify(r));
+                newRoom.id = baseId + idx * 1000;
+                newRoom.floor = 2;
+                if (newRoom.windows && Array.isArray(newRoom.windows)) {
+                    newRoom.windows.forEach((w, wIdx) => {
+                        w.id = baseId + idx * 1000 + wIdx + 1;
+                    });
+                }
+                this.state.rooms.push(newRoom);
+            });
+        } else {
+            this.state.rooms.push({ id: Date.now(), name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: 2, sys: ['rad'], windows: [{ id: Date.now() + 1, width: 1.5, isPan: false }] });
+        }
+        
         this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
     },
     toggleRoomSys: function (roomId, sysType) {
@@ -7603,6 +7621,35 @@ const app = {
     },
     toggleFloors: function (chk) {
         this.state.floors = chk ? 2 : 1; if (!chk) this.state.tp2 = 0;
+        
+        // Автоматическое копирование/очистка комнат при изменении этажности
+        if (chk) {
+            if (this.state.rooms && this.state.rooms.length > 0) {
+                const roomsFloor2 = this.state.rooms.filter(r => r.floor === 2);
+                if (roomsFloor2.length === 0) {
+                    const firstFloorRooms = this.state.rooms.filter(r => r.floor === 1 || !r.floor);
+                    let baseId = Date.now();
+                    firstFloorRooms.forEach((r, idx) => {
+                        let newRoom = JSON.parse(JSON.stringify(r));
+                        newRoom.id = baseId + idx * 1000;
+                        newRoom.floor = 2;
+                        if (newRoom.windows && Array.isArray(newRoom.windows)) {
+                            newRoom.windows.forEach((w, wIdx) => {
+                                w.id = baseId + idx * 1000 + wIdx + 1;
+                            });
+                        }
+                        this.state.rooms.push(newRoom);
+                    });
+                    this.syncRoomsToState();
+                }
+            }
+        } else {
+            if (this.state.rooms && this.state.rooms.length > 0) {
+                this.state.rooms = this.state.rooms.filter(r => r.floor !== 2);
+                this.syncRoomsToState();
+            }
+        }
+
         // Автообновление метража для воды
         this.state.waterZones.forEach(z => z.dist = this.state.area < 120 ? 6 : 10);
         this.autoCalcZones();
