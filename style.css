@@ -1689,6 +1689,11 @@ body.menu-open .mobile-menu-backdrop {
         break-inside: avoid !important;
     }
 
+    .inv-table tr[style*="display:none" i],
+    .inv-table tr[style*="display: none" i] {
+        display: none !important;
+    }
+
     .inv-table td,
     .inv-table th {
         display: table-cell !important;
@@ -3674,6 +3679,11 @@ body.dark-mode .header-totals-block {
         page-break-inside: avoid !important;
     }
 
+    .inv-table tr[style*="display:none" i],
+    .inv-table tr[style*="display: none" i] {
+        display: none !important;
+    }
+
     /* Сбрасываем ячейки обратно в табличный вид, но НЕ трогаем те, что скрыты явно через hidden-col или inline style */
     .inv-table td:not(.hidden-col),
     .inv-table th:not(.hidden-col) {
@@ -4874,6 +4884,11 @@ body.html2pdf-printing .inv-table tr {
     grid-template-areas: unset !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+}
+
+body.html2pdf-printing .inv-table tr[style*="display:none" i],
+body.html2pdf-printing .inv-table tr[style*="display: none" i] {
+    display: none !important;
 }
 
 body.html2pdf-printing tr {
