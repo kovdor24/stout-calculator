@@ -8456,6 +8456,10 @@ const app = {
                     ? '' 
                     : `• Производительность ГВС (Δt=25°C): ${flowRate} л/мин.<br>`;
 
+                let sumPwrLine = qty > 1 
+                    ? `• Суммарная мощность каскада: ${totalPwrLimit} кВт.<br>` 
+                    : '';
+
                 return `<span style="${styles}"><span style="${head}">Газовый котёл Haier</span>` +
                        `<b>Зачем:</b> Основной энергоэффективный источник тепла для системы отопления и горячего водоснабжения. ${gvsText}<br><br>` +
                        `<b>Формула подбора:</b> ${formulaStr}<br><br>` +
@@ -8464,7 +8468,8 @@ const app = {
                        `• Количество котлов${qty > 1 ? ' в каскаде' : ''}: ${qty} шт.<br>` +
                        `• Мощность подобранного котла: ${singlePower} кВт (${bkText}).<br>` +
                        `${gvsValLine}` +
-                       `• Суммарная мощность${qty > 1 ? ' каскада' : ''}: ${totalPwrLimit} кВт.</span>`;
+                       sumPwrLine +
+                       `</span>`;
             }
             case 'boiler_el': {
                 let targetPwr = val1 || 0;
@@ -8478,6 +8483,10 @@ const app = {
                 if (qty > 1) {
                     formulaStr += ` При каскаде (мощность > 27 кВт): N_котлов = 2 (поскольку максимальная паспортная мощность одного прибора в линейке составляет 27 кВт).`;
                 }
+
+                let sumPwrLine = qty > 1 
+                    ? `• Суммарная мощность каскада: ${totalPwrLimit} кВт.<br>` 
+                    : '';
                 
                 return `<span style="${styles}"><span style="${head}">Электрический котёл STOUT ${isStatus ? 'STATUS' : 'PLUS'}</span>` +
                        `<b>Зачем:</b> Дополнительный (резервный) или основной источник тепла в системе отопления. Котлы серии ${isStatus ? 'STATUS' : 'PLUS'} представляют собой mini-котельную со встроенным насосом и расширительным баком, обеспечивая бесшумную работу и высокий уровень автоматизации.<br><br>` +
@@ -8486,7 +8495,8 @@ const app = {
                        `• Расчетные теплопотери здания: ${targetPwr.toFixed(1)} кВт.<br>` +
                        `• Количество котлов${qty > 1 ? ' в каскаде' : ''}: ${qty} шт.<br>` +
                        `• Мощность подобранного котла: ${singlePower} кВт (серия ${seriesText}).<br>` +
-                       `• Суммарная мощность${qty > 1 ? ' каскада' : ''}: ${totalPwrLimit} кВт.</span>`;
+                       sumPwrLine +
+                       `</span>`;
             }
             case 'filter_mag': {
                 let count = this.selBoilers ? this.selBoilers.length : 1;
