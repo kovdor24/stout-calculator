@@ -631,7 +631,8 @@ const app = {
         const isLoggedIn = !!(this.state.tgUser);
         const showBlur = !isLoggedIn;
         
-        const formatted = value.toLocaleString('ru-RU');
+        const roundedValue = Math.round(value || 0);
+        const formatted = roundedValue.toLocaleString('ru-RU');
         if (showBlur) {
             return `<span class="price-blur" onclick="app.showAuthModal(); event.stopPropagation();" title="Войдите или зарегистрируйтесь, чтобы увидеть цену">${formatted}</span> ₽`;
         }
@@ -862,7 +863,7 @@ const app = {
     addCustomEqPrompt: async function () {
         let name = await app.prompt("Введите наименование оборудования:");
         if (!name) return;
-        let price = parseFloat(await app.prompt("Введите цену за единицу, ₽:", "0")) || 0;
+        let price = Math.round(parseFloat(await app.prompt("Введите цену за единицу, ₽:", "0")) || 0);
         let qty = parseInt(await app.prompt("Введите количество, шт:", "1")) || 1;
 
         if (!this.state.userAddedEq) this.state.userAddedEq = [];
@@ -3954,7 +3955,7 @@ const app = {
         let name = await app.prompt("Введите название работы:", "Дополнительная работа");
         if (!name) return;
         let q = parseFloat((await app.prompt("Количество:", "1")).replace(',', '.')) || 1;
-        let price = parseFloat((await app.prompt("Цена за единицу (₽):", "1000")).replace(',', '.')) || 0;
+        let price = Math.round(parseFloat((await app.prompt("Цена за единицу (₽):", "1000")).replace(',', '.')) || 0);
 
         if (!this.state.userAddedWorks) this.state.userAddedWorks = [];
         this.state.userAddedWorks.push({ name: name, q: q, price: price, unit: "шт", group: "5. Дополнительные работы" });
@@ -8661,7 +8662,7 @@ const app = {
                     ];
                 }
 
-                let originalPrice = finalItem.price || 0;
+                let originalPrice = Math.round(finalItem.price || 0);
                 let finalPrice = originalPrice;
                 if (isPro && this.state.eqDiscount > 0) {
                     finalPrice = Math.round(originalPrice * (1 - this.state.eqDiscount / 100));
@@ -8670,13 +8671,13 @@ const app = {
                 let lookupId = finalItem.originalId || finalItem.id;
                 let isOpt = !!this.state.optItems[lookupId];
                 if (!isOpt) {
-                    app.originalEqSum = (app.originalEqSum || 0) + originalPrice * finalQty;
+                    app.originalEqSum = (app.originalEqSum || 0) + Math.round(originalPrice * finalQty);
                 }
 
-                finalItem.price = finalPrice;
+                finalItem.price = Math.round(finalPrice);
 
                 this.currentSpec.push({ ...finalItem, q: finalQty, group: group });
-                this.calcFinalTotal += (finalItem.price || 0) * finalQty;
+                this.calcFinalTotal += Math.round((finalItem.price || 0) * finalQty);
 
                 let shouldMergeThisItem = forceMerge || 
                     (this.state.detailedRooms && group === "3. Приборы отопления" && tip && tip.includes('|||')) ||
@@ -8685,7 +8686,7 @@ const app = {
                     let existing = bill.find(x => x.id === finalItem.id && (forceMerge ? true : x.group === group));
                     if (existing) {
                         existing.q += finalQty;
-                        existing.sum += finalItem.price * finalQty;
+                        existing.sum = Math.round(existing.sum + finalItem.price * finalQty);
                         if (tip && tip.includes('|||')) {
                             let parts = tip.split('|||');
                             let locInfo = parts[0];
@@ -8706,12 +8707,12 @@ const app = {
                             finalItem.locs = [parts[0]];
                             finalTip = parts[0] + '<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">' + parts[1];
                         }
-                        bill.push({ ...finalItem, q: finalQty, sum: finalItem.price * finalQty, displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: group, originalId: finalItem.originalId || item.id });
+                        bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: group, originalId: finalItem.originalId || item.id });
                     }
                 } else {
                     let finalTip = tip;
                     if (tip && tip.includes('|||')) finalTip = tip.split('|||').join('<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">');
-                    bill.push({ ...finalItem, q: finalQty, sum: finalItem.price * finalQty, displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: group, originalId: finalItem.originalId || item.id });
+                    bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: group, originalId: finalItem.originalId || item.id });
                 }
             });
         };
@@ -8721,13 +8722,14 @@ const app = {
             if (this.state.deletedWorks && this.state.deletedWorks.includes(name)) return;
             // Проверяем, есть ли ручная цена
             let price = (this.state.customWorks && this.state.customWorks[name] !== undefined) ? this.state.customWorks[name] : basePrice;
+            price = Math.round(price || 0);
 
             let existing = worksBill.find(x => x.name === name && x.group === group);
             if (existing) {
                 existing.q += qty;
-                existing.sum += price * qty;
+                existing.sum = Math.round(existing.sum + price * qty);
             } else {
-                worksBill.push({ name: name, q: qty, price: price, sum: price * qty, unit: unit, group: group });
+                worksBill.push({ name: name, q: qty, price: price, sum: Math.round(price * qty), unit: unit, group: group });
             }
         };
 

@@ -2454,8 +2454,8 @@
                         brand: item.b,
                         unit: item.u,
                         q: item.q,
-                        price: item.p,
-                        sum: item.m,
+                        price: Math.round(item.p || 0),
+                        sum: Math.round(item.m || 0),
                         sectionTitle: item.t,
                         isOpt: !!item.isOpt,
                         desc: item.desc || item.d || '',
@@ -2465,7 +2465,7 @@
 
                 // If it's a custom manually-added item
                 if (item.c === 1) {
-                    const price = item.p || 0;
+                    const price = Math.round(item.p || 0);
                     const q = item.q || 0;
                     return {
                         name: item.n || 'Свое оборудование',
@@ -2474,7 +2474,7 @@
                         unit: item.u || 'шт',
                         q: q,
                         price: price,
-                        sum: price * q,
+                        sum: Math.round(price * q),
                         sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
                         isOpt: false,
                         desc: item.d || item.desc || '',
@@ -2498,8 +2498,8 @@
                     brand: catalogItem.brand || 'STOUT',
                     unit: catalogItem.unit || 'шт',
                     q: q,
-                    price: finalPrice,
-                    sum: finalPrice * q,
+                    price: Math.round(finalPrice),
+                    sum: Math.round(Math.round(finalPrice) * q),
                     sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
                     isOpt: item.o === 1,
                     desc: item.d || catalogItem.desc || '',
@@ -2509,14 +2509,14 @@
 
             const worksList = (compact.i.w || []).map(item => {
                 // Return as-is, works are already lightweight
-                const price = item.p || 0;
+                const price = Math.round(item.p || 0);
                 const q = item.q || 0;
                 return {
                     name: item.n,
                     qty: q,
                     q: q,
                     price: price,
-                    sum: price * q
+                    sum: Math.round(price * q)
                 };
             });
 
@@ -2544,9 +2544,9 @@
                     works: worksList
                 },
                 totals: {
-                    equipment: compact.t.e,
-                    works: compact.t.w,
-                    grandTotal: compact.t.g
+                    equipment: Math.round(compact.t.e || 0),
+                    works: Math.round(compact.t.w || 0),
+                    grandTotal: Math.round(compact.t.g || 0)
                 }
             };
         }
