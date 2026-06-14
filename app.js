@@ -6232,6 +6232,117 @@ const app = {
         }
         return pwr;
     },
+    renderHeatLossTable: function () {
+        var s = this.state;
+        if (!s.rooms || s.rooms.length === 0) return '';
+
+        var fmt2 = function(v) { return parseFloat(v).toFixed(2); };
+
+        var FONT = "font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 8pt; color: #111827;";
+        var BDR  = "border: 1px solid #e5e7eb;";
+        var TD   = FONT + " " + BDR + " padding: 4px 6px; text-align: center; vertical-align: middle;";
+        var TH   = FONT + " " + BDR + " padding: 6px 8px; text-align: center; vertical-align: middle; background: #f3f4f6; font-weight: 700; color: #374151; white-space: nowrap;";
+
+        var floorNums = [];
+        s.rooms.forEach(function(r) {
+            var f = parseInt(r.floor) || 1;
+            if (floorNums.indexOf(f) < 0) floorNums.push(f);
+        });
+        floorNums.sort(function(a,b){ return a-b; });
+
+        var allRows = '';
+        var self = this;
+        var grandTotalExact = 0;
+
+        floorNums.forEach(function(floorNum) {
+            var floorRooms = s.rooms.filter(function(r){ return (parseInt(r.floor) || 1) === floorNum; });
+            var floorSumExact = 0;
+
+            allRows += `
+                <div style="page-break-inside: avoid; margin-bottom: 24px;">
+                <h3 style="margin:0 0 10px 0; ${FONT} font-size: 14pt; color: var(--primary);">Расчет теплопотерь ${floorNum} этажа</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;">
+                <thead>
+                    <tr>
+                        <th style="${TH} width: 3%;">№</th>
+                        <th style="${TH} width: 12%;">Помещение</th>
+                        <th style="${TH} width: 5%;">S, м²</th>
+                        <th style="${TH} width: 5%;">Tвн,°C</th>
+                        <th style="${TH} width: 15%;">Ограждение</th>
+                        <th style="${TH} width: 8%;">Площадь, м²</th>
+                        <th style="${TH} width: 8%;">R, м²·°C/Вт</th>
+                        <th style="${TH} width: 6%;">dT, °C</th>
+                        <th style="${TH} width: 6%;">n</th>
+                        <th style="${TH} width: 8%;">Q, Вт</th>
+                        <th style="${TH} width: 10%;">Итог, Вт</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            floorRooms.forEach(function(r, idx) {
+                var L = self.getRoomHeatLoss(r);
+                floorSumExact += L.Q_total;
+
+                var items = [];
+                if (L.Q_wall > 0)  items.push({ name: 'Стена', area: L.wallArea, R: L.R_wall, n: L.n_wall, Q: L.Q_wall });
+                if (L.Q_glz > 0)   items.push({ name: 'Остекление', area: L.totalWinArea, R: L.R_glz, n: L.n_glz, Q: L.Q_glz });
+                if (L.Q_roof > 0)  items.push({ name: 'Кровля/чердак', area: r.area, R: L.R_roof, n: L.n_roof, Q: L.Q_roof });
+                if (L.Q_floor > 0) items.push({ name: 'Пол', area: r.area, R: L.R_floor, n: L.n_floor, Q: L.Q_floor });
+
+                if (items.length === 0) return;
+
+                items.forEach(function(item, i) {
+                    var isFirst = (i === 0);
+                    var tr = `<tr>`;
+                    if (isFirst) {
+                        tr += `<td style="${TD}" rowspan="${items.length}">${idx+1}</td>`;
+                        tr += `<td style="${TD}" rowspan="${items.length}">${r.name || 'Помещение '+(idx+1)}</td>`;
+                        tr += `<td style="${TD}" rowspan="${items.length}">${fmt2(r.area)}</td>`;
+                        tr += `<td style="${TD}" rowspan="${items.length}">${L.Tv}</td>`;
+                    }
+                    tr += `<td style="${TD}">${item.name}</td>`;
+                    tr += `<td style="${TD}">${fmt2(item.area)}</td>`;
+                    tr += `<td style="${TD}">${fmt2(item.R)}</td>`;
+                    tr += `<td style="${TD}">${L.dT}</td>`;
+                    tr += `<td style="${TD}">${item.n}</td>`;
+                    tr += `<td style="${TD}">${Math.round(item.Q)}</td>`;
+                    if (isFirst) {
+                        tr += `<td style="${TD} font-weight:700;" rowspan="${items.length}">${Math.round(L.Q_total)}</td>`;
+                    }
+                    tr += `</tr>`;
+                    allRows += tr;
+                });
+            });
+
+            grandTotalExact += floorSumExact;
+            
+            // Subtotal row for the floor
+            allRows += `
+                <tr>
+                    <td colspan="10" style="${TD} text-align: right; font-weight: 700; background: #f9fafb;">Итого ${floorNum} этаж</td>
+                    <td style="${TD} font-weight: 700; background: #f9fafb;">${Math.round(floorSumExact)}</td>
+                </tr>
+            `;
+
+            allRows += `</tbody></table></div>`;
+        });
+
+        if (floorNums.length > 1) {
+            allRows += `
+                <div style="page-break-inside: avoid; display: flex; justify-content: flex-end; margin-top: 10px;">
+                    <table style="width: 30%; border-collapse: collapse;">
+                        <tr>
+                            <td style="${TH} text-align: right;">Итого (общая ${floorNums.join(' + ')} этаж)</td>
+                            <td style="${TD} font-weight: 700; width: 30%; background: #f9fafb;">${Math.round(grandTotalExact)} Вт</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+        }
+
+        return allRows;
+    },
     setVentilationType: function (type, event) {
         if (event) event.stopPropagation();
         this.state.ventilationType = type;
@@ -11159,7 +11270,19 @@ window.addEventListener('beforeprint', function () {
             }
         }
 
-        // --- ШАГ 4: ПРЯЧЕМ ОРИГИНАЛ ОТ ПРИНТЕРА ---
+        // --- ШАГ 4: ТАБЛИЦА ТЕПЛОПОТЕРЬ (Если подробный режим и есть PRO) ---
+        if (isPro && app.state.detailedRooms) {
+            let heatLossHtml = app.renderHeatLossTable();
+            if (heatLossHtml) {
+                let hlContainer = document.createElement('div');
+                hlContainer.id = 'heat_loss_table_page';
+                hlContainer.innerHTML = heatLossHtml;
+                hlContainer.classList.add('print-page-break'); // Разрыв страницы перед таблицей
+                printBin.appendChild(hlContainer);
+            }
+        }
+
+        // --- ШАГ 5: ПРЯЧЕМ ОРИГИНАЛ ОТ ПРИНТЕРА ---
         printArea.classList.add('hide-original-for-print');
         let liveScheme = document.getElementById('dynamic_scheme');
         if (liveScheme) liveScheme.classList.add('hide-original-for-print');
