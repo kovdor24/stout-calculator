@@ -6399,7 +6399,7 @@ const app = {
         }
         let f = 1;
         if (this.state.rooms.length > 0) f = this.state.rooms[this.state.rooms.length - 1].floor || 1;
-        this.state.rooms.push({ id: Date.now(), name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: f, sys: ['rad'], windows: [{ id: Date.now() + 1, width: 1.5, isPan: false }] });
+        this.state.rooms.push({ id: Date.now(), name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: f, sys: [...(this.state.systems || [])], windows: [{ id: Date.now() + 1, width: 1.5, isPan: false }] });
         this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
     },
     addFloor: function () {
@@ -6449,7 +6449,7 @@ const app = {
             
             this.state.rooms = this.state.rooms.concat(addedFloor2Rooms);
         } else {
-            this.state.rooms.push({ id: Date.now(), name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: 2, sys: ['rad'], windows: [{ id: Date.now() + 1, width: 1.5, isPan: false }] });
+            this.state.rooms.push({ id: Date.now(), name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: 2, sys: [...(this.state.systems || [])], windows: [{ id: Date.now() + 1, width: 1.5, isPan: false }] });
         }
         
         this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
@@ -6767,7 +6767,7 @@ const app = {
                 name: roomName,
                 area: roomArea,
                 floor: tpl.floor,
-                sys: ['rad'],
+                sys: [...(this.state.systems || [])],
                 windows: []
             };
         });
