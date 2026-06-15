@@ -5954,7 +5954,7 @@ const app = {
         this.state.showSwapFor = null; this.render();
     },
     syncRoomsToState: function () {
-        if (this.state.detailedRooms && this.state.showDetailedRoomsPanel && this.state.rooms && this.state.rooms.length > 0) {
+        if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
             // Сначала проверим суммарную площадь комнат
             let totalRoomArea = this.state.rooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
             if (totalRoomArea > 300) {
@@ -6218,7 +6218,7 @@ const app = {
         let h1 = this.state.h1 || 2.7, h2 = this.state.h2 || 2.7;
         let avgH = (this.state.floors === 2) ? (h1 + h2) / 2 : h1;
 
-        if (this.state.detailedRooms && this.state.showDetailedRoomsPanel && this.state.rooms && this.state.rooms.length > 0) {
+        if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
             let totalLoadW = 0;
             this.state.rooms.forEach(r => {
                 let roomLoss = this.getRoomHeatLoss(r);
@@ -9821,7 +9821,7 @@ const app = {
             let totalVartronic = 0;
             let heatLoadTotal = Math.round((hasTp && tpArea > 0) ? pwr * 700 : pwr * 1000);
 
-            if (this.state.detailedRooms && this.state.showDetailedRoomsPanel && this.state.rooms && this.state.rooms.length > 0) {
+            if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
                 this.state.rooms.forEach(r => {
                     let roomSCQCount = 0;
                     let roomFactPowerSum = 0;  // суммарная фактическая мощность приборов помещения
