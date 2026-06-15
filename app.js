@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false },
 
     lastSavedStateString: "",
 
@@ -5370,7 +5370,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false,
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -5954,7 +5954,7 @@ const app = {
         this.state.showSwapFor = null; this.render();
     },
     syncRoomsToState: function () {
-        if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
+        if (this.state.detailedRooms && this.state.showDetailedRoomsPanel && this.state.rooms && this.state.rooms.length > 0) {
             // Сначала проверим суммарную площадь комнат
             let totalRoomArea = this.state.rooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
             if (totalRoomArea > 300) {
@@ -6001,18 +6001,8 @@ const app = {
             return;
         }
         this.state.detailedRooms = chk;
-        this.state.wallLayersEnabled = chk;
         if (chk) {
-            this.state.showDetailedRoomsPanel = true;
-            this.state.showWallLayersPanel = true;
-        }
-
-        if (chk) {
-            // Автоматически включаем вентиляцию (естественная по умолчанию)
-            if (!this.state.ventilationEnabled) {
-                this.state.ventilationEnabled = true;
-                this.state.ventilationType = this.state.ventilationType || 'natural';
-            }
+            this.state.ventilationType = this.state.ventilationType || 'natural';
 
             const standardMats = [1.3, 1.0, 0.8];
             const isStandardMat = standardMats.includes(this.state.mat);
@@ -6063,7 +6053,9 @@ const app = {
                 this.state.rooms.forEach(r => totalA += (parseFloat(r.area) || 0));
                 this.state.area = totalA > 0 ? totalA : 50;
             }
-            // Сбрасываем вентиляцию при возврате в простой режим
+            this.state.showDetailedRoomsPanel = false;
+            this.state.showWallLayersPanel = false;
+            this.state.wallLayersEnabled = false;
             this.state.ventilationEnabled = false;
 
             // Восстанавливаем коэффициент материала для быстрого режима
@@ -6089,6 +6081,7 @@ const app = {
     },
     toggleWallLayersPanel: function (chk, event) {
         this.state.showWallLayersPanel = chk;
+        this.state.wallLayersEnabled = chk;
         this.syncUI();
         this.render();
         this.saveState();
@@ -6225,7 +6218,7 @@ const app = {
         let h1 = this.state.h1 || 2.7, h2 = this.state.h2 || 2.7;
         let avgH = (this.state.floors === 2) ? (h1 + h2) / 2 : h1;
 
-        if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
+        if (this.state.detailedRooms && this.state.showDetailedRoomsPanel && this.state.rooms && this.state.rooms.length > 0) {
             let totalLoadW = 0;
             this.state.rooms.forEach(r => {
                 let roomLoss = this.getRoomHeatLoss(r);
@@ -6251,6 +6244,7 @@ const app = {
     },
     renderHeatLossTable: function () {
         var s = this.state;
+        if (!s.showDetailedRoomsPanel) return '';
         if (!s.rooms || s.rooms.length === 0) return '';
 
         var fmt2 = function(v) { return parseFloat(v).toFixed(2); };
@@ -7800,7 +7794,7 @@ const app = {
     },
     setMat: function (v) {
         this.state.mat = v;
-        this.state.wallLayersEnabled = !!this.state.detailedRooms;
+        this.state.wallLayersEnabled = !!(this.state.detailedRooms && this.state.showWallLayersPanel);
         if (this.state.detailedRooms) {
             if (v === 1.3) {
                 this.state.wallLayers = [
@@ -9827,7 +9821,7 @@ const app = {
             let totalVartronic = 0;
             let heatLoadTotal = Math.round((hasTp && tpArea > 0) ? pwr * 700 : pwr * 1000);
 
-            if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
+            if (this.state.detailedRooms && this.state.showDetailedRoomsPanel && this.state.rooms && this.state.rooms.length > 0) {
                 this.state.rooms.forEach(r => {
                     let roomSCQCount = 0;
                     let roomFactPowerSum = 0;  // суммарная фактическая мощность приборов помещения
@@ -11772,7 +11766,7 @@ window.addEventListener('beforeprint', function () {
         }
 
         // --- ШАГ 4: ТАБЛИЦА ТЕПЛОПОТЕРЬ (Если подробный режим и есть PRO) ---
-        if (isPro && app.state.detailedRooms) {
+        if (isPro && app.state.detailedRooms && app.state.showDetailedRoomsPanel) {
             let heatLossHtml = app.renderHeatLossTable();
             if (heatLossHtml) {
                 let hlContainer = document.createElement('div');

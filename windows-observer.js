@@ -121,7 +121,7 @@
             }
 
             // 2. Авторасчет термостатов на основе площади ТП (только при выключенном режиме "По комнатам", так как в покомнатном режиме им управляет app.js)
-            if (!app.state.detailedRooms) {
+            if (!app.state.detailedRooms || !app.state.showDetailedRoomsPanel) {
                 const tpArea = (app.state.tp1 || 0) + (app.state.tp2 || 0);
                 let shouldAutoCalcZones = true;
                 if (app.state.zonesManual) {
@@ -145,6 +145,10 @@
         chkFloors.addEventListener('change', handleAutoCalculation);
         if (chkDetailedRooms) {
             chkDetailedRooms.addEventListener('change', handleAutoCalculation);
+        }
+        const chkDetailedRoomsToggle = document.getElementById('chk_detailed_rooms_toggle');
+        if (chkDetailedRoomsToggle) {
+            chkDetailedRoomsToggle.addEventListener('change', handleAutoCalculation);
         }
 
         // Подписываемся на изменение площади теплого пола
