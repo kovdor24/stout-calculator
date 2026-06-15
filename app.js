@@ -6225,16 +6225,17 @@ const app = {
                 totalLoadW += roomLoss.Q_total;
             });
 
+            let houseVol = 0;
+            this.state.rooms.forEach(r => {
+                let rHeight = (r.floor === 2) ? h2 : h1;
+                houseVol += parseFloat(r.area || 0) * rHeight;
+            });
+            let n_eff = 0.35;
             if (this.state.ventilationEnabled) {
-                let houseVol = 0;
-                this.state.rooms.forEach(r => {
-                    let rHeight = (r.floor === 2) ? h2 : h1;
-                    houseVol += parseFloat(r.area || 0) * rHeight;
-                });
-                let n_eff = (this.state.ventilationType === 'forced') ? 1.0 : (this.state.ventilationType === 'recuperator' ? 0.25 : 0.35);
-                let q_vent_w = houseVol * n_eff * 15.3 * (this.state.region / 100);
-                totalLoadW += q_vent_w;
+                n_eff = (this.state.ventilationType === 'forced') ? 1.0 : (this.state.ventilationType === 'recuperator' ? 0.25 : 0.35);
             }
+            let q_vent_w = houseVol * n_eff * 15.3 * (this.state.region / 100);
+            totalLoadW += q_vent_w;
 
             pwr = (totalLoadW / 1000).toFixed(1);
         } else {
@@ -6339,17 +6340,17 @@ const app = {
             allRows += `</tbody></table></div>`;
         });
 
-        let ventLoss = 0;
+        let houseVol = 0;
+        let h1 = s.h1 || 2.7, h2 = s.h2 || 2.7;
+        s.rooms.forEach(r => {
+            let rHeight = (r.floor === 2) ? h2 : h1;
+            houseVol += parseFloat(r.area || 0) * rHeight;
+        });
+        let n_eff = 0.35;
         if (s.ventilationEnabled) {
-            let houseVol = 0;
-            let h1 = s.h1 || 2.7, h2 = s.h2 || 2.7;
-            s.rooms.forEach(r => {
-                let rHeight = (r.floor === 2) ? h2 : h1;
-                houseVol += parseFloat(r.area || 0) * rHeight;
-            });
-            let n_eff = (s.ventilationType === 'forced') ? 1.0 : (s.ventilationType === 'recuperator' ? 0.25 : 0.35);
-            ventLoss = houseVol * n_eff * 15.3 * (s.region / 100);
+            n_eff = (s.ventilationType === 'forced') ? 1.0 : (s.ventilationType === 'recuperator' ? 0.25 : 0.35);
         }
+        let ventLoss = houseVol * n_eff * 15.3 * (s.region / 100);
 
         let totalHeatLoss = grandTotalExact + ventLoss;
         let totalHeatLossKW = (totalHeatLoss / 1000).toFixed(1);
@@ -6364,14 +6365,12 @@ const app = {
                     </tr>
         `;
 
-        if (s.ventilationEnabled) {
-            allRows += `
-                    <tr>
-                        <td style="${TD} text-align: left; font-weight: 600; background: #f9fafb;">Вентиляция (${s.ventilationType === 'forced' ? 'Принудительная' : (s.ventilationType === 'recuperator' ? 'Рекуперация' : 'Естественная')})</td>
-                        <td style="${TD} font-weight: 700; background: #f9fafb;">${Math.round(ventLoss)} Вт</td>
-                    </tr>
-            `;
-        }
+        allRows += `
+                <tr>
+                    <td style="${TD} text-align: left; font-weight: 600; background: #f9fafb;">Вентиляция (${s.ventilationEnabled ? (s.ventilationType === 'forced' ? 'Принудительная' : (s.ventilationType === 'recuperator' ? 'Рекуперация' : 'Естественная')) : 'Естественная'})</td>
+                    <td style="${TD} font-weight: 700; background: #f9fafb;">${Math.round(ventLoss)} Вт</td>
+                </tr>
+        `;
 
         allRows += `
                     <tr style="border-top: 2px solid #3b82f6;">
