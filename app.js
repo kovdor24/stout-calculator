@@ -998,9 +998,33 @@ const app = {
             let trialBtn = document.getElementById('custom_modal_btn_trial');
             if (trialBtn) {
                 if (this.state.tgUser && this.state.accountType !== 'pro') {
-                    trialBtn.style.display = 'block';
+                    // Show trial button only if demo not yet used
+                    trialBtn.style.display = this.state.demoUsed ? 'none' : 'block';
                 } else {
                     trialBtn.style.display = 'none';
+                }
+            }
+
+            // Show promo code section for logged-in users without distributor binding
+            let promoSection = document.getElementById('promo_code_section');
+            if (promoSection) {
+                if (this.state.tgUser && !this.state.distributorId) {
+                    promoSection.style.display = 'block';
+                } else if (this.state.tgUser && this.state.distributorId) {
+                    // Already bound - show info instead
+                    promoSection.style.display = 'block';
+                    const resultEl = document.getElementById('promo_code_result');
+                    if (resultEl && this.state.distributorInfo) {
+                        resultEl.innerHTML = `✅ Счета выставляет компания: <strong>${this.state.distributorInfo.company_name}</strong>`;
+                        resultEl.style.display = 'block';
+                        resultEl.style.color = 'var(--primary)';
+                        const inputEl = document.getElementById('promo_code_input');
+                        const applyBtn = document.getElementById('promo_code_apply_btn');
+                        if (inputEl) inputEl.style.display = 'none';
+                        if (applyBtn) applyBtn.style.display = 'none';
+                    }
+                } else {
+                    promoSection.style.display = 'none';
                 }
             }
         }
@@ -1072,8 +1096,8 @@ const app = {
         if (btn) btn.innerText = "Активация...";
 
         try {
-            // Дата окончания = текущее время + 14 суток
-            let trialDurationMs = 14 * 24 * 60 * 60 * 1000;
+            // Дата окончания = текущее время + 2 сутки
+            let trialDurationMs = 2 * 24 * 60 * 60 * 1000;
             let endDate = new Date(Date.now() + trialDurationMs).toISOString();
 
             // Сначала найдем пользователя в БД по любому доступному признаку
@@ -1093,7 +1117,7 @@ const app = {
 
             if (!uRow) {
                 app.alert("Профиль пользователя не найден в базе данных. Пожалуйста, попробуйте перезайти в аккаунт.");
-                if (btn) btn.innerText = "Попробовать бесплатно 14 дней";
+                if (btn) btn.innerText = "Попробовать бесплатно 2 дня";
                 return;
             }
 
@@ -1125,11 +1149,11 @@ const app = {
             this.syncUI();
             this.closeModal();
 
-            app.alert("✅ Пробный период на 14 дней успешно активирован! Вам открыты все PRO функции.");
+            app.alert("✅ Пробный период на 2 дня успешно активирован! Вам открыты все PRO функции.");
         } catch (e) {
             console.error("Ошибка активации:", e);
             app.alert("Ошибка активации. Попробуйте позже.");
-            if (btn) btn.innerText = "Попробовать бесплатно 14 дней";
+            if (btn) btn.innerText = "Попробовать бесплатно 2 дня";
         }
     },
 
@@ -1156,46 +1180,21 @@ const app = {
 
             if (!session && !isLocal) {
                 console.log("[saveToCloud] Сессия отсутствует, показываем окно авторизации");
+                app.alert("Для сохранения сметы необходимо авторизоваться.");
                 this.showAuthModal();
                 return false;
             }
 
-            let pName = this.state.projectName;
-            if (!pName) {
-                pName = await app.prompt("Введите название объекта для сохранения в облаке:", "Новый объект");
-                if (!pName) {
-                    console.log("[saveToCloud] Сохранение отменено пользователем (ввод названия объекта)");
-                    return false;
-                }
-                this.state.projectName = pName;
-                this.saveState();
-                this.syncUI();
-                this.render();
-            }
+            // Получаем имя проекта
+            let pName = this.state.projectName ||
+                document.getElementById('project_name_input')?.value?.trim() ||
+                'Мой проект';
 
-            // Проверка наличия города (ищем в стейте, в полях профиля или в localStorage)
+            // Проверка наличия города
             let userCity = (this.state.tgUser && this.state.tgUser.city) ||
                 (this.state.user && this.state.user.city) ||
                 (document.getElementById('profile_city_input') ? document.getElementById('profile_city_input').value.trim() : null) ||
                 localStorage.getItem('user_city');
-
-            if (!userCity) {
-                userCity = await app.prompt("Пожалуйста, укажите ваш город для корректного выставления счёта:");
-                if (!userCity || userCity.trim() === '') {
-                    console.log("[saveToCloud] Сохранение отменено пользователем (ввод города)");
-                    await app.alert("Действие отменено: город обязателен для формирования счёта.");
-                    return false; // Прерываем выполнение
-                }
-                // Сохраняем город для текущей сессии
-                localStorage.setItem('user_city', userCity.trim());
-                if (this.state.tgUser) {
-                    this.state.tgUser.city = userCity.trim();
-                    this.saveState();
-                } else if (this.state.user) {
-                    this.state.user.city = userCity.trim();
-                    this.saveState();
-                }
-            }
 
             let eq = app.lastEqSum || 0;
             let wk = (this.state.accountType === 'pro') ? (app.lastWorksSum || 0) : 0;
@@ -1208,7 +1207,6 @@ const app = {
                 dbUserId = tgUser.id;
             }
             if (!dbUserId && (tgUser || session)) {
-                // Пытаемся получить UUID пользователя из сессии или стейта
                 const authUserId = session ? session.user.id : (tgUser ? tgUser.authUserId : null);
                 const email = session ? session.user.email : (tgUser ? tgUser.email : null);
 
@@ -1225,7 +1223,6 @@ const app = {
                 console.log("[saveToCloud] Найден ID пользователя в БД:", dbUserId);
             }
 
-            // Если в режиме разработки и пользователя нет в БД - используем заглушку или предупреждаем
             if (!dbUserId && !isLocal) {
                 console.warn("[saveToCloud] Профиль пользователя не найден в БД. Сохраняем расчет без привязки к user_id.");
             }
@@ -1243,7 +1240,6 @@ const app = {
             let saveError = null;
             if (this.state.calc_id) {
                 console.log("[saveToCloud] Проверяем существование сметы в БД с share_id:", this.state.calc_id);
-                // Проверяем наличие записи с таким share_id
                 const { data: existing } = await supabaseClient
                     .from('estimates')
                     .select('id, user_id')
@@ -1252,7 +1248,6 @@ const app = {
 
                 console.log("[saveToCloud] Результат проверки сметы в БД:", existing);
                 if (existing && existing.length > 0) {
-                    // Безопасность: обновляем ТОЛЬКО если запись принадлежит текущему пользователю
                     if (String(existing[0].user_id) === String(dbUserId)) {
                         console.log("[saveToCloud] Смета своя. Обновляем...");
                         const { error } = await supabaseClient
@@ -1269,7 +1264,6 @@ const app = {
                     }
                 } else {
                     console.log("[saveToCloud] Сметы с таким share_id нет. Создаем...");
-                    // Создаем новую запись
                     const { error } = await supabaseClient
                         .from('estimates')
                         .insert([insertData]);
@@ -1277,7 +1271,6 @@ const app = {
                 }
             } else {
                 console.log("[saveToCloud] У сметы нет share_id. Создаем новую запись...");
-                // Если кода нет - всегда вставляем новую запись
                 const { error } = await supabaseClient
                     .from('estimates')
                     .insert([insertData]);
@@ -1300,6 +1293,349 @@ const app = {
             return false;
         }
     },
+
+    applyPromoCode: async function (code) {
+        if (!code || !code.trim()) {
+            app.alert('Пожалуйста, введите промокод.');
+            return;
+        }
+        code = code.trim().toUpperCase();
+
+        const tgUser = this.state.tgUser;
+        if (!tgUser) {
+            app.alert('Сначала авторизуйтесь!');
+            return;
+        }
+
+        const applyBtn = document.getElementById('promo_code_apply_btn');
+        const resultEl = document.getElementById('promo_code_result');
+        if (applyBtn) { applyBtn.disabled = true; applyBtn.innerText = 'Проверка...'; }
+        if (resultEl) { resultEl.style.display = 'none'; }
+
+        try {
+            // Ищем промокод в таблице distributors
+            const { data: dist, error } = await supabaseClient
+                .from('distributors')
+                .select('*')
+                .eq('promo_code', code)
+                .eq('is_active', true)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (!dist) {
+                if (resultEl) {
+                    resultEl.innerHTML = '❌ Промокод не найден или недействителен.';
+                    resultEl.style.color = '#EF4444';
+                    resultEl.style.display = 'block';
+                }
+                if (applyBtn) { applyBtn.disabled = false; applyBtn.innerText = 'Применить'; }
+                return;
+            }
+
+            // Проверяем, не привязан ли уже к другому дистрибьютору (одноразовая привязка)
+            if (this.state.distributorId && this.state.distributorId !== dist.id) {
+                if (resultEl) {
+                    resultEl.innerHTML = '⚠️ Вы уже привязаны к другому поставщику. Изменение возможно только через администратора.';
+                    resultEl.style.color = '#D97706';
+                    resultEl.style.display = 'block';
+                }
+                if (applyBtn) { applyBtn.disabled = false; applyBtn.innerText = 'Применить'; }
+                return;
+            }
+
+            // Присваиваем PRO на 3 месяца
+            const proEndDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+
+            // Найдём ID пользователя в БД
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            const authUserId = session?.user?.id || tgUser?.authUserId;
+            const email = session?.user?.email || tgUser?.email;
+
+            let uRow = null;
+            if (authUserId) {
+                let { data } = await supabaseClient.from('users').select('id').eq('auth_user_id', authUserId).maybeSingle();
+                uRow = data;
+            }
+            if (!uRow && email) {
+                let { data } = await supabaseClient.from('users').select('id').eq('email', email).maybeSingle();
+                uRow = data;
+            }
+            if (!uRow && tgUser.id) {
+                let { data } = await supabaseClient.from('users').select('id').eq('id', tgUser.id).maybeSingle();
+                uRow = data;
+            }
+
+            if (!uRow) {
+                if (resultEl) {
+                    resultEl.innerHTML = '❌ Профиль не найден. Попробуйте перезайти в аккаунт.';
+                    resultEl.style.color = '#EF4444';
+                    resultEl.style.display = 'block';
+                }
+                if (applyBtn) { applyBtn.disabled = false; applyBtn.innerText = 'Применить'; }
+                return;
+            }
+
+            // Обновляем запись пользователя
+            const { error: updErr } = await supabaseClient.from('users').update({
+                account_type: 'pro',
+                demo_ends_at: proEndDate,
+                distributor_id: dist.id
+            }).eq('id', uRow.id);
+
+            if (updErr) throw updErr;
+
+            // Обновляем локальное состояние
+            this.state.accountType = 'pro';
+            this.state.distributorId = dist.id;
+            this.state.distributorInfo = {
+                company_name: dist.company_name,
+                manager_name: dist.manager_name,
+                manager_email: dist.manager_email,
+                manager_phone: dist.manager_phone
+            };
+            if (this.state.tgUser) {
+                this.state.tgUser.account_type = 'pro';
+                if (!this.state.tgUser.id) this.state.tgUser.id = uRow.id;
+            }
+
+            this.saveState();
+            this.syncUI();
+            this.closeModal();
+
+            app.alert(`✅ Промокод принят! Компания-поставщик: ${dist.company_name}. Вам присвоен тариф PRO на 3 месяца.`);
+
+        } catch (e) {
+            console.error('[applyPromoCode] Error:', e);
+            if (resultEl) {
+                resultEl.innerHTML = '❌ Ошибка при проверке промокода. Попробуйте позже.';
+                resultEl.style.color = '#EF4444';
+                resultEl.style.display = 'block';
+            }
+            if (applyBtn) { applyBtn.disabled = false; applyBtn.innerText = 'Применить'; }
+        }
+    },
+
+    loadDistributorInfo: async function () {
+        if (!this.state.distributorId) return;
+        try {
+            const { data: dist } = await supabaseClient
+                .from('distributors')
+                .select('company_name, manager_name, manager_email, manager_phone')
+                .eq('id', this.state.distributorId)
+                .maybeSingle();
+            if (dist) {
+                this.state.distributorInfo = dist;
+                this.saveState();
+            }
+        } catch (e) {
+            console.warn('[loadDistributorInfo] Error:', e);
+        }
+    },
+
+    showSupplierSection: function () {
+        const subview = document.getElementById('profile_subview_container');
+        if (!subview) return;
+
+        if (this.state.distributorId && this.state.distributorInfo) {
+            const d = this.state.distributorInfo;
+            subview.innerHTML = `
+                <h4 style="margin: 0 0 16px; font-size: 15px; color: var(--text-main);">🏢 Ваш поставщик</h4>
+                <div style="display: grid; gap: 10px; font-size: 14px;">
+                    <div style="display: flex; gap: 8px;">
+                        <span style="color: var(--text-sec); min-width: 120px;">Компания:</span>
+                        <b style="color: var(--text-main);">${d.company_name || '—'}</b>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <span style="color: var(--text-sec); min-width: 120px;">Менеджер:</span>
+                        <b style="color: var(--text-main);">${d.manager_name || '—'}</b>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <span style="color: var(--text-sec); min-width: 120px;">Email:</span>
+                        <a href="mailto:${d.manager_email}" style="color: var(--primary); text-decoration: none; font-weight: 600;">${d.manager_email || '—'}</a>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <span style="color: var(--text-sec); min-width: 120px;">Телефон:</span>
+                        <a href="tel:${(d.manager_phone || '').replace(/[^+\\d]/g, '')}" style="color: var(--primary); text-decoration: none; font-weight: 600;">${d.manager_phone || '—'}</a>
+                    </div>
+                </div>
+                <div style="margin-top: 16px; padding: 12px; background: rgba(37,99,235,0.06); border-radius: 8px; font-size: 12px; color: var(--text-sec);">
+                    💡 Счёт на оборудование выставляет компания <strong>${d.company_name}</strong>. При запросе счёта менеджер получит копию на email.
+                </div>
+            `;
+        } else if (this.state.distributorId && !this.state.distributorInfo) {
+            subview.innerHTML = `<div style="color: var(--text-sec); font-size: 13px;">Загрузка данных поставщика...</div>`;
+            this.loadDistributorInfo().then(() => this.showSupplierSection());
+        } else {
+            subview.innerHTML = `
+                <h4 style="margin: 0 0 12px; font-size: 15px; color: var(--text-main);">🏢 Поставщик не привязан</h4>
+                <p style="font-size: 13px; color: var(--text-sec); margin: 0 0 14px;">Введите промокод дистрибьютора при выборе тарифа PRO, чтобы привязать поставщика.</p>
+                <button class="auth-btn-base btn-email-submit" style="width: 100%; height: 38px;" onclick="app.showModal('pro')">Перейти к выбору тарифа</button>
+            `;
+        }
+
+        subview.style.display = 'block';
+    },
+
+    renderAdminDistributors: function () {
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+
+        const dists = (this.adminData && this.adminData.distributors) || [];
+
+        let tableRows = '';
+        if (dists.length === 0) {
+            tableRows = '<tr><td colspan="6" style="text-align:center; padding: 30px; color: var(--text-sec);">Промокодов нет. Добавьте первый.</td></tr>';
+        } else {
+            dists.forEach((d, i) => {
+                const statusBadge = d.is_active
+                    ? '<span style="background:#D1FAE5; color:#059669; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;">Активен</span>'
+                    : '<span style="background:#FEE2E2; color:#EF4444; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;">Выкл</span>';
+                tableRows += `<tr>
+                    <td style="color:var(--text-sec);">${i + 1}</td>
+                    <td><b>${d.company_name || '—'}</b></td>
+                    <td style="font-weight:700; color:var(--primary); font-size:13px; letter-spacing:0.05em;">${d.promo_code}</td>
+                    <td><div style="font-size:12px;">${d.manager_name || '—'}<br><span style="color:var(--text-sec);">${d.manager_email || ''}</span><br><span style="color:var(--text-sec);">${d.manager_phone || ''}</span></div></td>
+                    <td>${statusBadge}</td>
+                    <td style="text-align:right;">
+                        <div style="display:flex; gap:6px; justify-content:flex-end;">
+                            <button class="btn-ctrl" style="height:28px; font-size:11px;" onclick="app.editDistributor('${d.id}')">✏️ Изменить</button>
+                            <button class="btn-ctrl" style="height:28px; font-size:11px; color:#EF4444;" onclick="app.deleteDistributor('${d.id}')">🗑</button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        content.innerHTML += `
+            <div style="margin-bottom: 20px;">
+                <h3 style="margin: 0 0 16px; color: var(--text-main);">🏢 Промокоды дистрибьюторов</h3>
+
+                <div style="background: var(--surface-light); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 14px; font-size: 14px; color: var(--text-main);" id="dist_form_title">➕ Добавить промокод</h4>
+                    <input type="hidden" id="dist_edit_id">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div>
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Название компании *</label>
+                            <input type="text" id="dist_company" placeholder="ООО Теплоком" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Промокод * (только заглавные буквы)</label>
+                            <input type="text" id="dist_code" placeholder="TEPLOKOM2024" maxlength="20" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; box-sizing: border-box;" oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Имя менеджера</label>
+                            <input type="text" id="dist_manager" placeholder="Иван Петров" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Email менеджера *</label>
+                            <input type="email" id="dist_email" placeholder="manager@teplokom.ru" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Телефон менеджера</label>
+                            <input type="text" id="dist_phone" placeholder="+7 (999) 999-99-99" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Статус</label>
+                            <select id="dist_active" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                                <option value="1">Активен</option>
+                                <option value="0">Выключен</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="auth-btn-base btn-email-submit" style="height: 36px; padding: 0 20px; font-size: 13px;" onclick="app.saveDistributor()">💾 Сохранить</button>
+                        <button class="auth-btn-base" style="height: 36px; padding: 0 16px; font-size: 13px; background: var(--surface-light); color: var(--text-sec);" onclick="app.resetDistributorForm()">✕ Отмена</button>
+                    </div>
+                </div>
+
+                <table class="inv-table">
+                    <thead><tr><th style="width:30px;">#</th><th>Компания</th><th>Промокод</th><th>Менеджер</th><th>Статус</th><th style="text-align:right;">Действия</th></tr></thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            </div>
+        `;
+    },
+
+    saveDistributor: async function () {
+        const id = document.getElementById('dist_edit_id').value;
+        const company = document.getElementById('dist_company').value.trim();
+        const code = document.getElementById('dist_code').value.trim().toUpperCase();
+        const manager = document.getElementById('dist_manager').value.trim();
+        const email = document.getElementById('dist_email').value.trim();
+        const phone = document.getElementById('dist_phone').value.trim();
+        const isActive = document.getElementById('dist_active').value === '1';
+
+        if (!company || !code || !email) {
+            app.alert('Обязательные поля: Название компании, Промокод, Email менеджера.');
+            return;
+        }
+
+        const payload = {
+            company_name: company,
+            promo_code: code,
+            manager_name: manager,
+            manager_email: email,
+            manager_phone: phone,
+            is_active: isActive
+        };
+
+        try {
+            if (id) {
+                const { error } = await supabaseClient.from('distributors').update(payload).eq('id', id);
+                if (error) throw error;
+                app.alert('✅ Промокод обновлен.');
+            } else {
+                const { error } = await supabaseClient.from('distributors').insert([payload]);
+                if (error) throw error;
+                app.alert('✅ Промокод добавлен.');
+            }
+            this.loadAdminData();
+            this._adminTab = 'distributors';
+        } catch (e) {
+            app.alert('Ошибка: ' + e.message);
+        }
+    },
+
+    editDistributor: function (id) {
+        const dist = (this.adminData.distributors || []).find(d => String(d.id) === String(id));
+        if (!dist) return;
+        document.getElementById('dist_edit_id').value = dist.id;
+        document.getElementById('dist_company').value = dist.company_name || '';
+        document.getElementById('dist_code').value = dist.promo_code || '';
+        document.getElementById('dist_manager').value = dist.manager_name || '';
+        document.getElementById('dist_email').value = dist.manager_email || '';
+        document.getElementById('dist_phone').value = dist.manager_phone || '';
+        document.getElementById('dist_active').value = dist.is_active ? '1' : '0';
+        const titleEl = document.getElementById('dist_form_title');
+        if (titleEl) titleEl.textContent = '✏️ Редактировать промокод';
+    },
+
+    resetDistributorForm: function () {
+        document.getElementById('dist_edit_id').value = '';
+        document.getElementById('dist_company').value = '';
+        document.getElementById('dist_code').value = '';
+        document.getElementById('dist_manager').value = '';
+        document.getElementById('dist_email').value = '';
+        document.getElementById('dist_phone').value = '';
+        document.getElementById('dist_active').value = '1';
+        const titleEl = document.getElementById('dist_form_title');
+        if (titleEl) titleEl.textContent = '➕ Добавить промокод';
+    },
+
+    deleteDistributor: async function (id) {
+        if (!await app.confirm('Удалить этот промокод? Это действие необратимо.')) return;
+        try {
+            const { error } = await supabaseClient.from('distributors').delete().eq('id', id);
+            if (error) throw error;
+            app.alert('✅ Промокод удален.');
+            this.loadAdminData();
+            this._adminTab = 'distributors';
+        } catch (e) {
+            app.alert('Ошибка: ' + e.message);
+        }
+    },
+
 
     loadFromCloudList: async function () {
         const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -1524,6 +1860,39 @@ const app = {
             if (this.queue && typeof this.queue.addJob === 'function') {
                 this.queue.addJob(job);
             }
+
+            // === ДУБЛИРОВАНИЕ НА EMAIL МЕНЕДЖЕРА ДИСТРИБЬЮТОРА ===
+            if (this.state.distributorInfo && this.state.distributorInfo.manager_email) {
+                const distEmail = this.state.distributorInfo.manager_email;
+                const distCompany = this.state.distributorInfo.company_name || 'Дистрибьютор';
+
+                const distTemplateParams = {
+                    ...templateParams,
+                    to_email: distEmail,
+                    email_subject: `[Дистрибьютор] Запрос счёта от ${tgUser.first_name || 'Монтажника'} — ${est.project_name || 'Проект'}`,
+                    equipment_list: `[Копия для дистрибьютора ${distCompany}]\nМонтажник: ${tgUser.first_name || ''} ${tgUser.phone || ''} (${tgUser.email || ''})\nОборудование: ${eqSum.toLocaleString('ru-RU')} ₽\nРаботы: ${worksSum.toLocaleString('ru-RU')} ₽\nИТОГО: ${total.toLocaleString('ru-RU')} ₽`
+                };
+
+                const distJob = {
+                    id: "invoice_dist_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+                    stateData: est.calc_data,
+                    eqSum: eqSum,
+                    worksSum: worksSum,
+                    templateParams: distTemplateParams,
+                    serviceId: EMAILJS_SERVICE_ID,
+                    templateId: EMAILJS_TEMPLATE_ID,
+                    emailJsKey: EMAILJS_PUBLIC_KEY,
+                    retries: 0,
+                    status: "pending",
+                    created_at: Date.now() + 1
+                };
+
+                if (this.queue && typeof this.queue.addJob === 'function') {
+                    this.queue.addJob(distJob);
+                }
+                console.log(`[invoice] Дублирование счёта отправлено менеджеру дистрибьютора: ${distEmail}`);
+            }
+            // ====================================================
 
             if (btnEl) {
                 btnEl.innerHTML = '✓ Счёт заказан';
@@ -2261,7 +2630,7 @@ const app = {
         try {
             // 1. Fetch Users (Paginated)
             let { data: users, error: errU, count: totalUsers } = await supabaseClient.from('users')
-                .select('id, username, email, phone, created_at, last_visited, last_device, account_type, demo_ends_at, city, location, avatar_url', { count: 'exact' })
+                .select('id, username, email, phone, created_at, last_visited, last_device, account_type, demo_ends_at, city, location, avatar_url, distributor_id', { count: 'exact' })
                 .order('created_at', { ascending: false })
                 .range(offset, offset + this._adminPageSize - 1);
 
@@ -2323,6 +2692,15 @@ const app = {
                 allMessages = data || [];
             } catch (e) { console.warn("Could not load messages history:", e); }
 
+            // 8. Fetch distributors list
+            let distributors = [];
+            try {
+                let { data } = await supabaseClient.from('distributors')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                distributors = data || [];
+            } catch (e) { console.warn("Could not load distributors:", e); }
+
             this.adminData = {
                 users: users || [],
                 userEstimates: userEsts || [],
@@ -2333,7 +2711,8 @@ const app = {
                 totalWorks,
                 sharedStatusesAdmin,
                 allUsersDropdown,
-                messages: allMessages
+                messages: allMessages,
+                distributors: distributors
             };
             this.renderAdminMain();
         } catch (error) {
@@ -2351,15 +2730,22 @@ const app = {
         const { users, userEstimates, recentEstimates, totalUsers, totalEstimates, totalEq, totalWorks } = this.adminData;
 
         let navHtml = `
-            <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-shrink: 0; width: 100%;">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-shrink: 0; width: 100%; flex-wrap: wrap;">
                 <button id="admin_tab_stats" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'stats' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'stats' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'stats' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('stats')">📊 Монтажники и Сметы</button>
                 <button id="admin_tab_messages" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'messages' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'messages' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'messages' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('messages')">💬 Сообщения и Рассылка</button>
+                <button id="admin_tab_distributors" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'distributors' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'distributors' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'distributors' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('distributors')">🏢 Промокоды</button>
             </div>
         `;
 
         if (this._adminTab === 'messages') {
             content.innerHTML = navHtml;
             this.renderAdminMessages();
+            return;
+        }
+
+        if (this._adminTab === 'distributors') {
+            content.innerHTML = navHtml;
+            this.renderAdminDistributors();
             return;
         }
 
@@ -3763,13 +4149,13 @@ const app = {
             let { data: upsertResult, error: upsertError } = await supabaseClient
                 .from('users')
                 .upsert(upsertObj, { onConflict: 'auth_user_id', ignoreDuplicates: false })
-                .select('id, account_type, demo_ends_at, username, phone, city');
+                .select('id, account_type, demo_ends_at, username, phone, city, distributor_id');
 
             if (upsertError) {
                 console.warn('Upsert по auth_user_id не удался, используем fallback:', upsertError.message);
                 let { data: uDataList } = await supabaseClient
                     .from('users')
-                    .select('id, account_type, demo_ends_at, username, phone, city')
+                    .select('id, account_type, demo_ends_at, username, phone, city, distributor_id')
                     .eq('email', email)
                     .limit(1);
                 let uData = uDataList ? uDataList[0] : null;
@@ -3777,7 +4163,7 @@ const app = {
                     let { data: newUList } = await supabaseClient
                         .from('users')
                         .insert([{ auth_user_id: authUserId, email: email, username: fullName, phone: existingPhone, city: existingCity || undefined, utm_source: utm, registration_ip: clientIp, ...updatePayload }])
-                        .select('id, account_type, demo_ends_at, username, phone, city');
+                        .select('id, account_type, demo_ends_at, username, phone, city, distributor_id');
                     upsertResult = newUList;
                 } else {
                     await supabaseClient.from('users').update({ auth_user_id: authUserId, city: existingCity || uData.city || undefined, ...updatePayload }).eq('id', uData.id);
@@ -3816,6 +4202,15 @@ const app = {
                 if (uRow.phone && uRow.phone !== phone) this.state.tgUser.phone = uRow.phone;
                 if (uRow.username && uRow.username !== fullName) this.state.tgUser.first_name = uRow.username;
                 if (uRow.city) this.state.tgUser.city = uRow.city;
+
+                // Загружаем привязку к дистрибьютору
+                if (uRow.distributor_id) {
+                    this.state.distributorId = uRow.distributor_id;
+                    // Загружаем полные данные дистрибьютора в фоне
+                    if (!this.state.distributorInfo) {
+                        this.loadDistributorInfo();
+                    }
+                }
 
                 // City check removed immediately after registration; now validated on actions
             } else {
@@ -3982,12 +4377,100 @@ const app = {
         this.state.viewMode = mode;
         let tEq = document.getElementById('tab_equipment');
         let tWk = document.getElementById('tab_works');
+        let t3d = document.getElementById('tab_3d');
         if (tEq && tWk) {
             tEq.classList.toggle('active', mode === 'equipment');
             tWk.classList.toggle('active', mode === 'works');
         }
+        if (t3d) {
+            t3d.classList.toggle('active', mode === '3d');
+        }
         document.body.classList.toggle('work-mode', mode === 'works');
-        this.render();
+
+        let tableResponsive = document.querySelector('.table-responsive');
+        let docFooter = document.querySelector('.doc-footer');
+        let discountBlock = document.getElementById('discount_block');
+        let footerBtns = document.querySelector('.footer-btns');
+        let panel3d = document.getElementById('panel_3d');
+
+        if (mode === '3d') {
+            if (tableResponsive) tableResponsive.style.display = 'none';
+            if (docFooter) docFooter.style.display = 'none';
+            if (discountBlock) discountBlock.style.display = 'none';
+            if (footerBtns) footerBtns.style.display = 'none';
+            if (panel3d) {
+                panel3d.style.display = 'block';
+            }
+            
+            // First run render to ensure app.currentEquipmentList is updated
+            this.render();
+
+            if (panel3d) {
+                if (window.Boiler3D) {
+                    window.Boiler3D.initAndRender(panel3d, this.state, this.currentEquipmentList);
+                } else {
+                    this.loadBoiler3D(panel3d);
+                }
+            }
+        } else {
+            if (tableResponsive) tableResponsive.style.display = 'block';
+            if (docFooter) docFooter.style.display = 'flex';
+            if (footerBtns) footerBtns.style.display = 'flex';
+            if (panel3d) {
+                panel3d.style.display = 'none';
+                if (window.Boiler3D) {
+                    window.Boiler3D.dispose();
+                }
+            }
+            this.render();
+        }
+    },
+    loadBoiler3D: function (panel3d) {
+        if (this.is3DLoading) return;
+        this.is3DLoading = true;
+
+        panel3d.innerHTML = `
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; background: #0f172a; font-family: 'Inter', sans-serif;">
+                <div style="width: 48px; height: 48px; border: 4px solid rgba(59, 130, 246, 0.2); border-top-color: #3b82f6; border-radius: 50%; animation: stout-spin 1s linear infinite;"></div>
+                <div style="margin-top: 16px; font-weight: 600; font-size: 15px; color: #94a3b8; letter-spacing: 0.5px;">Загрузка 3D компонентов...</div>
+            </div>
+            <style>
+                @keyframes stout-spin { to { transform: rotate(360deg); } }
+            </style>
+        `;
+
+        const loadScript = (src) => {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = src;
+                s.onload = resolve;
+                s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        };
+
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js')
+            .then(() => loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js'))
+            .then(() => loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js'))
+            .then(() => loadScript('./boiler-3d.js'))
+            .then(() => {
+                this.is3DLoading = false;
+                if (window.Boiler3D) {
+                    window.Boiler3D.initAndRender(panel3d, this.state, this.currentEquipmentList);
+                }
+            })
+            .catch(err => {
+                this.is3DLoading = false;
+                panel3d.innerHTML = `
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #f87171; padding: 24px; text-align: center; font-family: 'Inter', sans-serif;">
+                        <span style="font-size: 32px; margin-bottom: 12px;">⚠️</span>
+                        <div style="font-weight: 700; font-size: 16px; color: #f1f5f9;">Ошибка загрузки 3D модулей</div>
+                        <div style="font-size: 13px; margin-top: 6px; color: #94a3b8; max-width: 300px; line-height: 1.5;">Не удалось загрузить библиотеки Three.js. Проверьте интернет-соединение.</div>
+                        <button onclick="app.setViewMode('3d')" style="margin-top: 20px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">Повторить попытку</button>
+                    </div>
+                `;
+                console.error('Failed to load 3D scripts:', err);
+            });
     },
     toggleOpt: function (id) { this.state.optItems[id] = !this.state.optItems[id]; this.render(); },
     toggleDark: function (chk, event) {
@@ -11211,6 +11694,13 @@ const app = {
             }
         }
         this.saveState();
+
+        if (this.state.viewMode === '3d') {
+            let panel3d = document.getElementById('panel_3d');
+            if (panel3d && window.Boiler3D) {
+                window.Boiler3D.initAndRender(panel3d, this.state, this.currentEquipmentList);
+            }
+        }
 
         if (this.isAppReady) {
             // Сравниваем текущие инженерные настройки с последними сохраненными
