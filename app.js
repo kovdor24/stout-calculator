@@ -1344,8 +1344,21 @@ const app = {
                 return;
             }
 
-            // Присваиваем PRO на 3 месяца
-            const proEndDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+            // Проверяем срок действия промокода (valid_days / valid_until)
+            if (dist.valid_until && new Date(dist.valid_until) < new Date()) {
+                if (resultEl) {
+                    resultEl.innerHTML = '❌ Срок действия этого промокода истёк.';
+                    resultEl.style.color = '#EF4444';
+                    resultEl.style.display = 'block';
+                }
+                if (applyBtn) { applyBtn.disabled = false; applyBtn.innerText = 'Применить'; }
+                return;
+            }
+
+            // Вычисляем дату окончания PRO из поля pro_months (по умолчанию 3)
+            const proMonths = dist.pro_months || 3;
+            const proMs = proMonths * 30 * 24 * 60 * 60 * 1000;
+            const proEndDate = new Date(Date.now() + proMs).toISOString();
 
             // Найдём ID пользователя в БД
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -1403,7 +1416,7 @@ const app = {
             this.syncUI();
             this.closeModal();
 
-            app.alert(`✅ Промокод принят! Компания-поставщик: ${dist.company_name}. Вам присвоен тариф PRO на 3 месяца.`);
+            app.alert(`✅ Промокод принят! Компания-поставщик: ${dist.company_name}. Вам присвоен тариф PRO на ${proMonths} мес.`);
 
         } catch (e) {
             console.error('[applyPromoCode] Error:', e);
@@ -1491,11 +1504,13 @@ const app = {
                 const statusBadge = d.is_active
                     ? '<span style="background:#D1FAE5; color:#059669; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;">Активен</span>'
                     : '<span style="background:#FEE2E2; color:#EF4444; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;">Выкл</span>';
+                const validUntilText = d.valid_until ? new Date(d.valid_until).toLocaleDateString('ru-RU') : '∞';
                 tableRows += `<tr>
                     <td style="color:var(--text-sec);">${i + 1}</td>
                     <td><b>${d.company_name || '—'}</b></td>
                     <td style="font-weight:700; color:var(--primary); font-size:13px; letter-spacing:0.05em;">${d.promo_code}</td>
                     <td><div style="font-size:12px;">${d.manager_name || '—'}<br><span style="color:var(--text-sec);">${d.manager_email || ''}</span><br><span style="color:var(--text-sec);">${d.manager_phone || ''}</span></div></td>
+                    <td style="text-align:center;"><b style="color:var(--primary);">${d.pro_months || 3}</b><br><span style="font-size:10px; color:var(--text-sec);">до ${validUntilText}</span></td>
                     <td>${statusBadge}</td>
                     <td style="text-align:right;">
                         <div style="display:flex; gap:6px; justify-content:flex-end;">
@@ -1536,6 +1551,14 @@ const app = {
                             <input type="text" id="dist_phone" placeholder="+7 (999) 999-99-99" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                         </div>
                         <div>
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Месяцев PRO при активации</label>
+                            <input type="number" id="dist_pro_months" min="1" max="36" value="3" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Действителен до (необяз.)</label>
+                            <input type="date" id="dist_valid_until" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                        </div>
+                        <div>
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Статус</label>
                             <select id="dist_active" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                                 <option value="1">Активен</option>
@@ -1550,7 +1573,7 @@ const app = {
                 </div>
 
                 <table class="inv-table">
-                    <thead><tr><th style="width:30px;">#</th><th>Компания</th><th>Промокод</th><th>Менеджер</th><th>Статус</th><th style="text-align:right;">Действия</th></tr></thead>
+                    <thead><tr><th style="width:30px;">#</th><th>Компания</th><th>Промокод</th><th>Менеджер</th><th>PRO мес.</th><th>Статус</th><th style="text-align:right;">Действия</th></tr></thead>
                     <tbody>${tableRows}</tbody>
                 </table>
             </div>
@@ -1564,6 +1587,8 @@ const app = {
         const manager = document.getElementById('dist_manager').value.trim();
         const email = document.getElementById('dist_email').value.trim();
         const phone = document.getElementById('dist_phone').value.trim();
+        const proMonths = parseInt(document.getElementById('dist_pro_months')?.value || '3', 10) || 3;
+        const validUntilVal = document.getElementById('dist_valid_until')?.value || '';
         const isActive = document.getElementById('dist_active').value === '1';
 
         if (!company || !code || !email) {
@@ -1577,6 +1602,8 @@ const app = {
             manager_name: manager,
             manager_email: email,
             manager_phone: phone,
+            pro_months: proMonths,
+            valid_until: validUntilVal ? new Date(validUntilVal).toISOString() : null,
             is_active: isActive
         };
 
@@ -1606,9 +1633,15 @@ const app = {
         document.getElementById('dist_manager').value = dist.manager_name || '';
         document.getElementById('dist_email').value = dist.manager_email || '';
         document.getElementById('dist_phone').value = dist.manager_phone || '';
+        if (document.getElementById('dist_pro_months')) document.getElementById('dist_pro_months').value = dist.pro_months || 3;
+        if (document.getElementById('dist_valid_until') && dist.valid_until) {
+            document.getElementById('dist_valid_until').value = dist.valid_until.split('T')[0];
+        }
         document.getElementById('dist_active').value = dist.is_active ? '1' : '0';
         const titleEl = document.getElementById('dist_form_title');
         if (titleEl) titleEl.textContent = '✏️ Редактировать промокод';
+        // Прокручиваем к форме
+        document.getElementById('dist_form_title')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
 
     resetDistributorForm: function () {
@@ -1618,6 +1651,8 @@ const app = {
         document.getElementById('dist_manager').value = '';
         document.getElementById('dist_email').value = '';
         document.getElementById('dist_phone').value = '';
+        if (document.getElementById('dist_pro_months')) document.getElementById('dist_pro_months').value = '3';
+        if (document.getElementById('dist_valid_until')) document.getElementById('dist_valid_until').value = '';
         document.getElementById('dist_active').value = '1';
         const titleEl = document.getElementById('dist_form_title');
         if (titleEl) titleEl.textContent = '➕ Добавить промокод';
