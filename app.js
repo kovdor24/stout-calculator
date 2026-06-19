@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std' },
 
     lastSavedStateString: "",
 
@@ -5903,7 +5903,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "",
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "",
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -6553,7 +6553,9 @@ const app = {
         else if (originalId.startsWith('SEB-')) { this.state.boilerSeries = (this.state.boilerSeries === 'plus') ? 'status' : 'plus'; }
         else if (originalId.startsWith('SDG-0018') || originalId.startsWith('SDG-0016')) { this.state.hydroType = (this.state.hydroType === 'combo') ? 'modular' : 'combo'; }
         else if (originalId.startsWith('SMS-0922') || originalId.startsWith('SMB-6850')) { this.state.radManifoldType = (this.state.radManifoldType === 'standard') ? 'chrome' : 'standard'; }
-        else if (originalId.startsWith('SPI-') || originalId.startsWith('SPX-')) { this.state.pipeType = (this.state.pipeType === 'insulated') ? 'split' : 'insulated'; }
+        else if (originalId.endsWith('_rad') || originalId.startsWith('SPI-0003-')) { this.state.pipeType = (this.state.pipeType === 'insulated') ? 'split' : (this.state.pipeType === 'split') ? 'insulated_mp' : (this.state.pipeType === 'insulated_mp') ? 'split_mp' : 'insulated'; }
+        else if (originalId.endsWith('_ufh') || originalId.startsWith('SPX-0002-') || originalId.startsWith('SPM-0001-')) { this.state.ufhPipeMaterial = (this.state.ufhPipeMaterial === 'pex') ? 'metal_plastic' : 'pex'; }
+        else if (originalId.endsWith('_water') || (originalId.startsWith('SPX-0001-') && !originalId.endsWith('_rad'))) { this.state.waterPipeMaterial = (this.state.waterPipeMaterial === 'pex') ? 'metal_plastic' : 'pex'; }
         else if (originalId.startsWith('SMF-0001') || originalId === '418318') { this.state.ufhBaseType = (this.state.ufhBaseType === 'mat') ? 'xps' : 'mat'; }
         else if (originalId.startsWith('SCS-0001')) { if (this.state.wellAutoType === 'sirio') this.state.wellAutoType = 'top'; else if (this.state.wellAutoType === 'top') this.state.wellAutoType = 'base'; else this.state.wellAutoType = 'sirio'; }
         else if (originalId.startsWith('SCQ') || originalId.startsWith('SCN')) { this.state.convectorType = (this.state.convectorType === 'scq') ? 'scn' : 'scq'; }
@@ -9560,7 +9562,7 @@ const app = {
                         // Give swap icon if comfort is available
                         if (item.comfort) finalItem.alts = [item.comfort];
                         else finalItem.alts = analog.alts || item.alts;
-                        finalItem.originalId = item.id;
+                        finalItem.originalId = item.originalId || item.id;
                         itemsToAdd.push({ itm: finalItem, q: qty });
                     } else {
                         itemsToAdd.push({ itm: { ...item }, q: qty });
@@ -10239,12 +10241,17 @@ const app = {
         }
 
         if (hasTp && tpArea > 0) {
-            // Если Эко-схема, в котельной группы ТП не ставим. Иначе - ставим по группе на каждый коллектор ТП (но минимум 1).
-            tQ = useEco ? 0 : (estMans > 0 ? estMans : 1);
+            // Если Эко-схема, проверяем тип смесительного узла (может быть переключен на насосную группу)
+            if (useEco) {
+                let activeMixType = this.state.ufhMixType || 'std';
+                tQ = (activeMixType === 'dn20' || activeMixType === 'dn25') ? 1 : 0;
+            } else {
+                tQ = (estMans > 0 ? estMans : 1);
+            }
         }
 
-        // Коллектор нужен, если общих групп быстрого монтажа >= 2
-        let needCollector = (rQ + tQ) >= 2;
+        // Коллектор нужен, если есть хотя бы одна насосная группа
+        let needCollector = (rQ + tQ) >= 1;
 
         // Расчет объема системы (для бака)
         let boilersVol = 0; if (selBoilers.length > 0) { selBoilers.forEach(b => { boilersVol += (b.vol !== undefined ? b.vol : 6); }); }
@@ -10260,23 +10267,24 @@ const app = {
         let def = reqExp - bltin; if (def > 0) { let et = catalog.exp_heating.find(t => t.vol >= def) || catalog.exp_heating[4]; addToBill(et, 1, this.getDesc('exp_h', Math.round(vSys))); if (et.vol <= 25) addToBill(catalog.tank_mount, 1, "Крепление бака."); addToBill(catalog.tank_kit, 1, "Подключение бака."); }
 
         // Вывод оборудования котельной
-        if (!useEco) {
-            let big = (pwr > 20 || tpArea > 100);
-            let dn25 = big || (this.state.brandMode === 'rommer');
-            let pmp = null;
+        let useAnalogSec2 = ((this.state.sectionAnalog || {})["2. Обвязка котельной"] !== undefined) 
+            ? this.state.sectionAnalog["2. Обвязка котельной"] 
+            : (this.state.brandMode === 'rommer');
+        let big = (pwr > 20 || tpArea > 100);
+        let dn25 = big || useAnalogSec2 || (this.state.ufhMixType === 'dn25');
+        let pmp = null;
 
-            // Добавляем коллектор/стрелку только если нужно
-            if (needCollector) {
-                let circuits = rQ + tQ;
-                let idx = (circuits > 2) ? 1 : 0;
-                if (dn25) {
-                    let item = catalog.hydro_dn25[idx]; addToBill(item, 1, "Гидравлическая развязка (DN25).");
+        if (needCollector) {
+            // Добавляем коллектор/стрелку
+            let circuits = rQ + tQ;
+            let idx = (circuits > 2) ? 1 : 0;
+            if (dn25) {
+                let item = catalog.hydro_dn25[idx]; addToBill(item, 1, "Гидравлическая развязка (DN25).");
+            } else {
+                if (this.state.hydroType === 'combo') {
+                    let item = catalog.hydro_dn20[idx]; item.alts = catalog.hydro_modular_dn20; addToBill(item, 1, "Коллектор-гидрострелка (Комби).");
                 } else {
-                    if (this.state.hydroType === 'combo') {
-                        let item = catalog.hydro_dn20[idx]; item.alts = catalog.hydro_modular_dn20; addToBill(item, 1, "Коллектор-гидрострелка (Комби).");
-                    } else {
-                        let item = catalog.hydro_modular_dn20[idx]; item.alts = catalog.hydro_dn20; addToBill(item, 1, "Распр. коллектор."); addToBill(catalog.hydro_arrow, 1, "Гидравлическая стрелка.");
-                    }
+                    let item = catalog.hydro_modular_dn20[idx]; item.alts = catalog.hydro_dn20; addToBill(item, 1, "Распр. коллектор."); addToBill(catalog.hydro_arrow, 1, "Гидравлическая стрелка.");
                 }
             }
 
@@ -10287,16 +10295,26 @@ const app = {
                 pmp = catalog.pumps_dn20[0];
             }
 
-            // Добавляем группы и насосы ТОЛЬКО если они рассчитаны и нужен коллектор
-            // Если коллектора нет (1 группа), то группа обычно не ставится, насос берется встроенный в котел или ставится отдельно на трубу (здесь упрощение: если нет коллектора, группы не ставим)
-            if (needCollector) {
-                if (rQ > 0) {
-                    addToBill(grps[0], rQ, this.getDesc('pump_group', grps[0], rQ, 'rad', pwr));
-                }
-                if (tQ > 0) {
-                    addToBill(grps[1], tQ, this.getDesc('pump_group', grps[1], tQ, 'ufh', tpArea));
-                }
-                if ((rQ + tQ) > 0) addToBill(pmp, rQ + tQ, this.getDesc('pump_std'));
+            // Добавляем группы и насосы
+            if (rQ > 0) {
+                addToBill(grps[0], rQ, this.getDesc('pump_group', grps[0], rQ, 'rad', pwr));
+            }
+            if (tQ > 0) {
+                addToBill(grps[1], tQ, this.getDesc('pump_group', grps[1], tQ, 'ufh', tpArea));
+            }
+            if ((rQ + tQ) > 0) addToBill(pmp, rQ + tQ, this.getDesc('pump_std'));
+        } else if (hasTp && tpArea > 0) {
+            // Если коллектор не нужен (tQ = 0, rQ = 0), но теплый пол есть, добавляем смесительный узел в обвязку котельной
+            let mixItem = { ...catalog.mixing_units[0] };
+            let desc = this.getDesc('ufh_mix', tpArea);
+            let pumpItem = catalog.pumps_mix[0];
+
+            // Explicitly set alts array to support the swap button
+            mixItem.alts = [catalog.mixing_units[0], catalog.groups_dn20[1], catalog.groups_dn25[1]];
+
+            addToBill(mixItem, 1, desc);
+            if (pumpItem) {
+                addToBill(pumpItem, 1, this.getDesc('pump_std'));
             }
         }
 
@@ -10747,7 +10765,8 @@ const app = {
                 let activeHValve = catalog.h_valves.find(v => v.type === this.state.connectionType) || catalog.h_valves[0]; activeHValve.alts = catalog.h_valves; addToBill(activeHValve, totalRadCount, this.getDesc('rad_valves'), grp);
                 if (this.state.radType === 'steel' && !this.state.detailedRooms) { addToBill(catalog.rad_kits[0], totalRadCount * 2, "Ниппель переходной.", grp); }
                 if (activeHValve.id === 'SVH-0002-000020') { addToBill(catalog.rad_tube_set[0], totalRadCount * 2, "Трубка Г-образная.", grp); addToBill(catalog.rad_tube_set[1], totalRadCount, "Скоба фиксатор.", grp); addToBill(catalog.rad_tube_set[2], totalRadCount * 2, "Гильза 16.", grp); addToBill(catalog.rad_tube_set[3], totalRadCount * 2, "Фитинг компрессионный.", grp); }
-                addToBill(catalog.parts[1], totalRadCount * 2, "Евроконус 16 (Рад).", grp); addToBill(catalog.parts[2], totalRadCount * 2, "Фиксатор 90°.", grp); addToBill(catalog.protective_sleeves[0], totalRadCount, "Втулка (под).", grp); addToBill(catalog.protective_sleeves[1], totalRadCount, "Втулка (обр).", grp); addToBill(catalog.label_kits[0], 1, "Наклейки.", grp);
+                let radEurocone = (this.state.pipeType === 'insulated_mp' || this.state.pipeType === 'split_mp') ? catalog.parts[3] : catalog.parts[1];
+                addToBill(radEurocone, totalRadCount * 2, "Евроконус 16 (Рад).", grp); addToBill(catalog.parts[2], totalRadCount * 2, "Фиксатор 90°.", grp); addToBill(catalog.protective_sleeves[0], totalRadCount, "Втулка (под).", grp); addToBill(catalog.protective_sleeves[1], totalRadCount, "Втулка (обр).", grp); addToBill(catalog.label_kits[0], 1, "Наклейки.", grp);
             }
 
             // Обвязка КОНВЕКТОРОВ (строго без биноклей)
@@ -10788,10 +10807,17 @@ const app = {
             if (neededPipe > 0) {
                 if (this.state.pipeType === 'insulated') {
                     let coils = Math.ceil(neededPipe / 100); let halfCoils = Math.ceil(coils / 2);
-                    let itemRed = catalog.insulated_pipes[0]; itemRed.alts = catalog.rad_pipes_grey; addToBill(itemRed, halfCoils, this.getDesc('insulated_pipe_red', halfCoils, neededPipe), pipeGrp);
-                    let itemBlue = catalog.insulated_pipes[1]; itemBlue.alts = catalog.rad_pipes_grey; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
-                } else {
-                    let grayItem = (neededPipe > 200) ? catalog.rad_pipes_grey[1] : catalog.rad_pipes_grey[0]; grayItem.alts = catalog.insulated_pipes; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
+                    let itemRed = { ...catalog.insulated_pipes[0], originalId: catalog.insulated_pipes[0].id + "_rad" }; itemRed.alts = catalog.rad_pipes_grey; addToBill(itemRed, halfCoils, this.getDesc('insulated_pipe_red', halfCoils, neededPipe), pipeGrp);
+                    let itemBlue = { ...catalog.insulated_pipes[1], originalId: catalog.insulated_pipes[1].id + "_rad" }; itemBlue.alts = catalog.rad_pipes_grey; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
+                } else if (this.state.pipeType === 'insulated_mp') {
+                    let coils = Math.ceil(neededPipe / 100); let halfCoils = Math.ceil(coils / 2);
+                    let itemRed = { ...catalog.insulated_pipes_mp_red[0], originalId: catalog.insulated_pipes_mp_red[0].id + "_rad" }; itemRed.alts = catalog.metal_plastic_pipes; addToBill(itemRed, halfCoils, this.getDesc('insulated_pipe_red', halfCoils, neededPipe), pipeGrp);
+                    let itemBlue = { ...catalog.insulated_pipes_mp_blue[0], originalId: catalog.insulated_pipes_mp_blue[0].id + "_rad" }; itemBlue.alts = catalog.metal_plastic_pipes; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
+                } else if (this.state.pipeType === 'split_mp') {
+                    let grayItem = (neededPipe > 200) ? { ...catalog.metal_plastic_pipes[1] } : { ...catalog.metal_plastic_pipes[0] }; grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes_mp_red; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
+                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, "Изоляция красная.", pipeGrp); addToBill(catalog.insulation[1], insLen, "Изоляция синяя.", pipeGrp);
+                } else { // 'split'
+                    let grayItem = (neededPipe > 200) ? { ...catalog.rad_pipes_grey[1] } : { ...catalog.rad_pipes_grey[0] }; grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
                     let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, "Изоляция красная.", pipeGrp); addToBill(catalog.insulation[1], insLen, "Изоляция синяя.", pipeGrp);
                 }
                 addToBill(catalog.water_fittings[8], neededPipe, this.getDesc('double_clip', neededPipe, 'radiators'), pipeGrp);
@@ -10834,8 +10860,31 @@ const app = {
 
         currentSectionTitle = "4. Водяной тёплый пол";
         if (hasTp && tpMeters > 0) {
-            let q5 = Math.floor(tpMeters / 500); let q1 = Math.ceil((tpMeters % 500) / 100);
-            if (q5) addToBill(catalog.pipes[1], q5, this.getDesc('ufh_pipe', tpMeters)); if (q1) addToBill(catalog.pipes[0], q1, this.getDesc('ufh_pipe', tpMeters));
+            if (this.state.ufhPipeMaterial === 'metal_plastic') {
+                let q2 = Math.floor(tpMeters / 200); let q1 = Math.ceil((tpMeters % 200) / 100);
+                if (q2) {
+                    let pipe2 = { ...catalog.metal_plastic_pipes[1], originalId: catalog.metal_plastic_pipes[1].id + "_ufh" };
+                    pipe2.alts = [catalog.pipes[0]];
+                    addToBill(pipe2, q2, this.getDesc('ufh_pipe', tpMeters));
+                }
+                if (q1) {
+                    let pipe1 = { ...catalog.metal_plastic_pipes[0], originalId: catalog.metal_plastic_pipes[0].id + "_ufh" };
+                    pipe1.alts = [catalog.pipes[0]];
+                    addToBill(pipe1, q1, this.getDesc('ufh_pipe', tpMeters));
+                }
+            } else {
+                let q5 = Math.floor(tpMeters / 500); let q1 = Math.ceil((tpMeters % 500) / 100);
+                if (q5) {
+                    let pipe5 = { ...catalog.pipes[1], originalId: catalog.pipes[1].id + "_ufh" };
+                    pipe5.alts = [catalog.metal_plastic_pipes[0]];
+                    addToBill(pipe5, q5, this.getDesc('ufh_pipe', tpMeters));
+                }
+                if (q1) {
+                    let pipe1 = { ...catalog.pipes[0], originalId: catalog.pipes[0].id + "_ufh" };
+                    pipe1.alts = [catalog.metal_plastic_pipes[0]];
+                    addToBill(pipe1, q1, this.getDesc('ufh_pipe', tpMeters));
+                }
+            }
             let loops = 0, mans = 0;
             const proc = (a, stepVal, lbl) => {
                 if (a <= 0) return;
@@ -10850,48 +10899,6 @@ const app = {
                     if (m) {
                         addToBill({ ...m, name: `Коллектор ТП ${sz} вых (${lbl})` }, 1, this.getDesc('manifold', sz, 'ufh'));
                         mans++;
-                        if (!needCollector) {
-                            let activeMixType = this.state.ufhMixType || 'std';
-                            let brand = this.state.brandMode;
-                            
-                            // Auto-correct to compatible type if necessary
-                            if (!this.isUfhMixTypeCompatible(activeMixType, tpArea, brand)) {
-                                if (this.isUfhMixTypeCompatible('dn20', tpArea, brand)) {
-                                    activeMixType = 'dn20';
-                                } else {
-                                    activeMixType = 'dn25';
-                                }
-                                this.state.ufhMixType = activeMixType;
-                            }
-
-                            let mixItem = null;
-                            let pumpItem = null;
-                            let desc = "";
-
-                            if (activeMixType === 'dn20') {
-                                mixItem = { ...catalog.groups_dn20[1] };
-                                desc = this.getDesc('pump_group', mixItem, 1, 'ufh', tpArea);
-                                pumpItem = catalog.pumps_dn20[0];
-                            } else if (activeMixType === 'dn25') {
-                                mixItem = { ...catalog.groups_dn25[1] };
-                                desc = this.getDesc('pump_group', mixItem, 1, 'ufh', tpArea);
-                                pumpItem = catalog.pumps_dn25.find(p => p.type === this.state.pumpType) || catalog.pumps_dn25[0];
-                                pumpItem.alts = catalog.pumps_dn25;
-                            } else {
-                                // Default 'std'
-                                mixItem = { ...catalog.mixing_units[0] };
-                                desc = this.getDesc('ufh_mix', tpArea);
-                                pumpItem = catalog.pumps_mix[0];
-                            }
-
-                            // Explicitly set alts array to support the swap button
-                            mixItem.alts = [catalog.mixing_units[0], catalog.groups_dn20[1], catalog.groups_dn25[1]];
-
-                            addToBill(mixItem, 1, desc);
-                            if (pumpItem) {
-                                addToBill(pumpItem, 1, this.getDesc('pump_std'));
-                            }
-                        }
                     }
                 }
             };
@@ -10938,6 +10945,16 @@ const app = {
             let totalPipeCold = 0, totalPipeHot = 0;
             let recirc = this.state.recirc;
 
+            let waterPipe = null;
+            if (this.state.waterPipeMaterial === 'metal_plastic') {
+                waterPipe = { ...catalog.water_pipes_mp[0], originalId: catalog.water_pipes_mp[0].id + "_water" };
+                waterPipe.alts = [catalog.water_pipes[0]];
+            } else {
+                waterPipe = { ...catalog.water_pipes[0], originalId: catalog.water_pipes[0].id + "_water" };
+                waterPipe.alts = [catalog.water_pipes_mp[0]];
+            }
+            let waterEurocone = (this.state.waterPipeMaterial === 'metal_plastic') ? catalog.parts[3] : catalog.water_parts[0];
+
             this.state.waterZones.forEach(z => {
                 let f = z.fixtures;
                 totalToilets += f.toilet;
@@ -10963,10 +10980,10 @@ const app = {
                 if (q4) addToBill(catalog.water_manifolds_cold[2], q4, descColl, grpCold);
                 if (q3) addToBill(catalog.water_manifolds_cold[1], q3, descColl, grpCold);
                 if (q2) addToBill(catalog.water_manifolds_cold[0], q2, descColl, grpCold);
-                addToBill(catalog.water_parts[0], totalColdPoints, this.getDesc('eurocone_water', totalColdPoints), grpCold);
+                addToBill(waterEurocone, totalColdPoints, this.getDesc('eurocone_water', totalColdPoints), grpCold);
                 addToBill(catalog.water_parts[2], 1, "Заглушка коллектора", grpCold);
                 let pLen = Math.ceil(totalPipeCold);
-                addToBill(catalog.water_pipes[0], pLen, this.getDesc('pipe_cw', `${pLen} м`), grpCold);
+                addToBill(waterPipe, pLen, this.getDesc('pipe_cw', `${pLen} м`), grpCold);
                 addToBill(catalog.water_insulation[1], pLen, this.getDesc('ins_blue', pLen), grpCold);
                 addToBill(catalog.water_fittings[8], pLen, this.getDesc('double_clip', pLen, 'cw'), grpCold);
                 let socketsCold = totalColdPoints - totalToilets;
@@ -10986,10 +11003,10 @@ const app = {
                 if (q4) addToBill(catalog.water_manifolds_hot[2], q4, descColl, grpHot);
                 if (q3) addToBill(catalog.water_manifolds_hot[1], q3, descColl, grpHot);
                 if (q2) addToBill(catalog.water_manifolds_hot[0], q2, descColl, grpHot);
-                addToBill(catalog.water_parts[0], totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpHot);
+                addToBill(waterEurocone, totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpHot);
                 addToBill(catalog.water_parts[2], 1, "Заглушка коллектора", grpHot);
                 let pLen = Math.ceil(recirc ? (totalPipeHot / 2) : totalPipeHot);
-                addToBill(catalog.water_pipes[0], pLen, this.getDesc('pipe_hw', `${pLen} м`), grpHot);
+                addToBill(waterPipe, pLen, this.getDesc('pipe_hw', `${pLen} м`), grpHot);
                 addToBill(catalog.water_insulation[0], pLen, this.getDesc('ins_red', pLen), grpHot);
                 addToBill(catalog.water_fittings[8], pLen, this.getDesc('double_clip', pLen, 'hw'), grpHot);
                 let totalMixers = 0;
@@ -11013,10 +11030,10 @@ const app = {
                 if (q4) addToBill(catalog.water_manifolds_recirc[2], q4, descColl, grpRecirc);
                 if (q3) addToBill(catalog.water_manifolds_recirc[1], q3, descColl, grpRecirc);
                 if (q2) addToBill(catalog.water_manifolds_recirc[0], q2, descColl, grpRecirc);
-                addToBill(catalog.water_parts[0], totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpRecirc);
+                addToBill(waterEurocone, totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpRecirc);
                 addToBill(catalog.water_parts[2], 1, "Заглушка коллектора", grpRecirc);
                 let pLen = Math.ceil(totalPipeHot / 2);
-                addToBill(catalog.water_pipes[0], pLen, this.getDesc('pipe_hw', `${pLen} м (Обратка)`), grpRecirc);
+                addToBill(waterPipe, pLen, this.getDesc('pipe_hw', `${pLen} м (Обратка)`), grpRecirc);
                 addToBill(catalog.water_insulation[0], pLen, this.getDesc('ins_red', pLen), grpRecirc);
                 addToBill(catalog.water_fittings[8], pLen, this.getDesc('double_clip', pLen, 'recirc'), grpRecirc);
             }
@@ -11651,12 +11668,12 @@ const app = {
         }
 
         // 3. Распределительная гидравлика (Обвязка котельной)
-        let isCombo = (this.state.systems.includes('rad') && this.state.systems.includes('tp'));
-        if (isCombo) {
+        if (needCollector) {
             addToWorks("Монтаж коллектора и гидрострелки", 1, 12000, "шт", obvyazkaGroup);
-            addToWorks("Монтаж насосной группы", 2, 6500, "шт", obvyazkaGroup); // Группа на ТП и на Радиаторы
-        } else if (this.state.systems.includes('tp')) {
-            addToWorks("Монтаж узла смешения теплого пола", 1, 9000, "шт", obvyazkaGroup);
+            addToWorks("Монтаж насосной группы", rQ + tQ, 6500, "шт", obvyazkaGroup);
+        } else if (hasTp && tpArea > 0) {
+            addToWorks("Сборка и установка узла подмеса", 1, 6000, "шт", obvyazkaGroup);
+            addToWorks("Установка насоса", 1, 3000, "шт", obvyazkaGroup);
         }
 
         // 4. Трассы (Магистрали) (Обвязка котельной)
@@ -11730,11 +11747,7 @@ const app = {
                 if (tpCabs > 0) addToWorks("Монтаж и обвязка распределительных шкафов", tpCabs, 6000, "шт", tpGroup);
             }
 
-            // Если используется Эко-схема (локальный подмес)
-            if (typeof useEco !== 'undefined' && useEco) {
-                addToWorks("Сборка и установка узла подмеса", 1, 6000, "шт", tpGroup);
-                addToWorks("Установка насоса", 1, 3000, "шт", tpGroup);
-            }
+
 
             addToWorks("Опрессовка систем водяного тёплого пола", 1, 5000, "компл", tpGroup);
         }

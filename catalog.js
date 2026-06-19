@@ -990,7 +990,13 @@ const getImg = (item) => {
     else if (item.name.includes('Мат')) { txt = '🔲'; bg = 'F3E8FF'; }
     else if (item.name.includes('Zigbee') || item.name.includes('Головка') || item.name.includes('Узел') || item.name.includes('Термостат') || item.name.includes('контроллер')) { txt = '🔧'; bg = 'DBEAFE'; }
     else if (item.name.includes('Инсталляция')) { txt = '🚽'; bg = 'F3E8FF'; }
-    return `<img src="img/${item.id}.jpg" class="prod-thumb" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/100x100/${bg}/555?text=${txt}&font=roboto';">`;
+    let imgSrc = `img/${item.id}.jpg`;
+    if (item.id.startsWith('SPI-0001-') || item.id.startsWith('SPI-0002-')) {
+        imgSrc = 'img/SPI-0003-001622.jpg';
+    } else if (item.id.startsWith('SPM-0001-') || item.id.startsWith('SPM-0002-')) {
+        imgSrc = 'img/SPX-0001-001622.jpg';
+    }
+    return `<img src="${imgSrc}" class="prod-thumb" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/100x100/${bg}/555?text=${txt}&font=roboto';">`;
 };
 const workPrices = {
     boiler_gas: 20000,
@@ -1473,6 +1479,22 @@ const catalog = {
     pipes: [{ id: "SPX-0002-101620", name: "Труба 16x2.0 (100 м)", len: 100, price: 15200, rommer: { id: "RPX-0002-101620", name: "Труба PEX-a 16x2.0 (100 м)", price: 7600, brand: "ROMMER" },
   availability: 'in_stock',
   price_date: '2026-06-06' }, { id: "SPX-0002-501620", name: "Труба 16x2.0 (500 м)", len: 500, price: 76000, rommer: { id: "RPX-0002-501620", name: "Труба PEX-a 16x2.0 (500 м)", price: 57500, brand: "ROMMER" } }],
+    metal_plastic_pipes: [
+        { id: "SPM-0001-101620", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 16x2.0 (100 м)", len: 100, price: 15151, brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' },
+        { id: "SPM-0001-201620", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 16x2.0 (200 м)", len: 200, price: 30302, brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' }
+    ],
+    insulated_pipes_mp_red: [
+        { id: "SPI-0001-101620", name: "Труба металлопластиковая в теплоизоляции (красная) 16x2.0 (100 м)", len: 100, price: 23428, brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' },
+        { id: "SPI-0001-102020", name: "Труба металлопластиковая в теплоизоляции (красная) 20x2.0 (100 м)", len: 100, price: 36981, brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' },
+        { id: "SPI-0001-052630", name: "Труба металлопластиковая в теплоизоляции (красная) 26x3.0 (50 м)", len: 50, price: 31260, brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' },
+        { id: "SPI-0001-053230", name: "Труба металлопластиковая в теплоизоляции (красная) 32x3.0 (50 м)", len: 50, price: 44076, brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' }
+    ],
+    insulated_pipes_mp_blue: [
+        { id: "SPI-0002-101620", name: "Труба металлопластиковая в теплоизоляции (синяя) 16x2.0 (100 м)", len: 100, price: 23428, brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' },
+        { id: "SPI-0002-102020", name: "Труба металлопластиковая в теплоизоляции (синяя) 20x2.0 (100 м)", len: 100, price: 36981, brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' },
+        { id: "SPI-0002-052630", name: "Труба металлопластиковая в теплоизоляции (синяя) 26x3.0 (50 м)", len: 50, price: 31217, brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' },
+        { id: "SPI-0002-053230", name: "Труба металлопластиковая в теплоизоляции (синяя) 32x3.0 (50 м)", len: 50, price: 44076, brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' }
+    ],
     insulated_pipes: [
         {
             id: "SPI-0003-001622", name: "Труба 16x2.2 в теплоизоляции (красная)", len: 100, price: 22000, rommer: [
@@ -1549,7 +1571,8 @@ const catalog = {
   price_date: '2026-06-06' },
         { id: "SFC-0020-001620", name: "Евроконус 16x2.0", price: 376, rommer: { id: "RFC-1020-001620", name: "Евроконус 16x2.0", price: 193, brand: "ROMMER" },
   availability: 'in_stock',
-  price_date: '2026-06-06' }
+  price_date: '2026-06-06' },
+        { id: "SFC-0020-002020", name: "Евроконус 20x2.0", price: 371, availability: 'in_stock', price_date: '2026-06-06' }
     ],
     mixing_units: [
         { id: "SDG-0120-001000", name: "Насосно-смесительный узел (без насоса)", price: 25684, rommer: { id: "RDG-0120-008100", name: "Насосно-смесительный узел с термоголовкой (без насоса)", price: 14227, brand: "ROMMER" },
@@ -1765,6 +1788,12 @@ const catalog = {
   availability: 'in_stock',
   price_date: '2026-06-06' }
     ],
+    water_pipes_mp: [
+        { id: "SPM-0002-001620", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 16x2.0", price: 151.51, unit: "м", brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' },
+        { id: "SPM-0002-002020", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 20x2.0", price: 257.36, unit: "м", brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' },
+        { id: "SPM-0002-002630", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 26x3.0", price: 466.98, unit: "м", brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' },
+        { id: "SPM-0002-003230", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 32x3.0", price: 684.20, unit: "м", brand: "STOUT", availability: 'in_stock', price_date: '2026-06-06' }
+    ],
     water_insulation: [
         { id: "EFXT018092SUPRK", name: "Теплоизоляция 18/9 (Красная)", price: 34, unit: "м", brand: "Energoflex" },
         { id: "EFXT018092SUPRS", name: "Теплоизоляция 18/9 (Синяя)", price: 34, unit: "м", brand: "Energoflex" }
@@ -1846,6 +1875,9 @@ const catalog = {
   availability: 'in_stock',
   price_date: '2026-06-06' },
         { id: "SFA-0020-000016", name: "Гильза монтажная 16 (аксиальная)", price: 109, brand: "STOUT", rommer: { id: "RFA-0020-000016", name: "Монтажная гильза 16", price: 85, brand: "ROMMER" },
+  availability: 'in_stock',
+  price_date: '2026-06-06' },
+        { id: "SFC-0020-002020", name: "Евроконус 20x2.0 (для коллектора)", price: 371,
   availability: 'in_stock',
   price_date: '2026-06-06' }
     ],
