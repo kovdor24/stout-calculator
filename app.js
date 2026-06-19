@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std' },
 
     lastSavedStateString: "",
 
@@ -840,6 +840,7 @@ const app = {
             return;
         }
         this.state.brandMode = val;
+        this.state.sectionAnalog = {}; // Сбрасываем точечные переопределения
         if (val === 'rommer') {
             this.state.pprSystemBrand = 'proaqua';
         }
@@ -1166,7 +1167,7 @@ const app = {
         }
         this._saveRateLimit.count++;
         if (this._saveRateLimit.count > 5) {
-            app.alert("Слишком много запросов на сохранение. Пожалуйста, подождите минуту.");
+            if (!silent) app.alert("Слишком много запросов на сохранение. Пожалуйста, подождите минуту.");
             return false;
         }
 
@@ -1226,6 +1227,9 @@ const app = {
             if (!dbUserId && !isLocal) {
                 console.warn("[saveToCloud] Профиль пользователя не найден в БД. Сохраняем расчет без привязки к user_id.");
             }
+
+            const todayStr = new Date().toLocaleDateString('ru-RU');
+            this.state.last_saved_date = todayStr;
 
             const insertData = {
                 project_name: pName,
@@ -4532,6 +4536,17 @@ const app = {
         else this.state.collapsedGroups.splice(idx, 1);
         this.render();
     },
+    toggleSectionAnalog: function (title, val, event) {
+        if (!this.checkAccess('pro', event)) {
+            // Если нет PRO доступа, перерендер сбросит чекбокс обратно к его корректному значению
+            this.render();
+            return;
+        }
+        if (!this.state.sectionAnalog) this.state.sectionAnalog = {};
+        this.state.sectionAnalog[title] = !!val;
+        this.saveState();
+        this.render();
+    },
     toggleSection: function (name, event) {
         if (event) event.stopPropagation();
         if (!this.state.disabledSections) this.state.disabledSections = [];
@@ -5888,7 +5903,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false,
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "",
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -5899,7 +5914,72 @@ const app = {
         this.render();
     },
     // =============================
-    saveState: function () { localStorage.setItem('stout_save', JSON.stringify(this.state)); },
+    saveState: function () { 
+        localStorage.setItem('stout_save', JSON.stringify(this.state)); 
+        app.triggerAutoSave();
+    },
+
+    _autoSaveTimeout: null,
+    triggerAutoSave: function () {
+        if (this._autoSaveTimeout) {
+            clearTimeout(this._autoSaveTimeout);
+        }
+        this._autoSaveTimeout = setTimeout(() => {
+            this.runAutoSave();
+        }, 3000);
+    },
+
+    runAutoSave: async function () {
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+            const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+
+            if (!session && !tgUser && !isLocal) {
+                return;
+            }
+
+            if (!this.hasUnsavedChanges) {
+                return;
+            }
+
+            const todayStr = new Date().toLocaleDateString('ru-RU');
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+            let shouldCreateNew = false;
+            if (!this.state.calc_id) {
+                this.state.calc_id = String(Math.floor(100000 + Math.random() * 900000));
+                this.state.last_saved_date = todayStr;
+                shouldCreateNew = true;
+            } else if (!this.state.last_saved_date || this.state.last_saved_date !== todayStr) {
+                this.state.calc_id = String(Math.floor(100000 + Math.random() * 900000));
+                this.state.last_saved_date = todayStr;
+                shouldCreateNew = true;
+            }
+
+            if (shouldCreateNew) {
+                let pName = this.state.projectName || 
+                            document.getElementById('project_name_input')?.value?.trim() || 
+                            'Мой проект';
+                
+                if (!pName || pName === 'Мой проект' || pName.startsWith('Автосохранение')) {
+                    pName = `Автосохранение (${todayStr} ${timeStr})`;
+                } else {
+                    let cleanName = pName.replace(/\s*\(Автосохранение.*?\)/g, '').trim();
+                    pName = `${cleanName} (Автосохранение ${todayStr} ${timeStr})`;
+                }
+                
+                this.state.projectName = pName;
+                let inputEl = document.getElementById('project_name_input');
+                if (inputEl) inputEl.value = pName;
+            }
+
+            await this.saveToCloud(true);
+        } catch (e) {
+            console.error("[runAutoSave] Ошибка автосохранения:", e);
+        }
+    },
 
     switchMobileTab: function (tab) {
         if (window.innerWidth > 768) return;
@@ -6274,6 +6354,12 @@ const app = {
         let elBoilerAlts = [catalog.boilers_status[0], catalog.boilers_plus[0]]; catalog.boilers_plus.forEach(b => { b.alts = elBoilerAlts; }); catalog.boilers_status.forEach(b => { b.alts = elBoilerAlts; });
         let hydroAlts = catalog.hydro_modular_dn20; catalog.hydro_dn20.forEach(h => { h.alts = hydroAlts; }); catalog.hydro_modular_dn20.forEach(h => { h.alts = catalog.hydro_dn20; });
         let pipeAlts = catalog.rad_pipes_grey; catalog.insulated_pipes.forEach(p => { p.alts = pipeAlts; }); catalog.rad_pipes_grey.forEach(p => { p.alts = catalog.insulated_pipes; });
+        if (catalog.mixing_units && catalog.groups_dn20 && catalog.groups_dn25) {
+            let ufhMixAlts = [catalog.mixing_units[0], catalog.groups_dn20[1], catalog.groups_dn25[1]];
+            catalog.mixing_units.forEach(mu => { mu.alts = ufhMixAlts; });
+            catalog.groups_dn20.forEach(g => { if (g.id.includes("0002")) g.alts = ufhMixAlts; });
+            catalog.groups_dn25.forEach(g => { if (g.id.includes("0002")) g.alts = ufhMixAlts; });
+        }
         if (catalog.ppr_proaqua_pipe && catalog.ppr_ekoplastik_pipe) {
             const ext1 = n => {
                 let clean = n.replace(/SDR\s*\d+/gi, '').replace(/PN\s*\d+/gi, '');
@@ -6439,6 +6525,19 @@ const app = {
 
         this.initCityAutocomplete();
     },
+    isUfhMixTypeCompatible: function (type, area, brand) {
+        if (type === 'std') {
+            let limit = (brand === 'rommer') ? 100 : 120;
+            return area <= limit;
+        }
+        if (type === 'dn20') {
+            return area <= 120;
+        }
+        if (type === 'dn25') {
+            return true;
+        }
+        return false;
+    },
     toggleSwapUI: function (id) { if (this.state.showSwapFor === id) { this.state.showSwapFor = null; } else { this.state.showSwapFor = id; } this.render(); },
     cycleSwap: function (originalId) {
         let isRad = (catalog.rads.find(x => x.id === originalId) || titanRads.find(x => x.id === originalId) || steelRads.find(x => x.id === originalId));
@@ -6469,6 +6568,22 @@ const app = {
             this.state.sewerType = (this.state.sewerType === 'std') ? 'comfort' : 'std';
         }
         else if (originalId === 'RDG-0015-004002' || originalId === 'RDG-1015-004003') { this.state.hydroArrowType = (this.state.hydroArrowType === 'pro') ? 'standard' : 'pro'; }
+        else if (originalId === 'SDG-0120-001000' || originalId === 'SDG-0002-002001' || originalId === 'SDG-0002-002501') {
+            let tpArea = this.tpArea || 0;
+            let brand = this.state.brandMode;
+            let nextType = this.state.ufhMixType || 'std';
+            
+            for (let i = 0; i < 3; i++) {
+                if (nextType === 'std') nextType = 'dn20';
+                else if (nextType === 'dn20') nextType = 'dn25';
+                else nextType = 'std';
+                
+                if (this.isUfhMixTypeCompatible(nextType, tpArea, brand)) {
+                    this.state.ufhMixType = nextType;
+                    break;
+                }
+            }
+        }
         this.state.showSwapFor = null; this.render();
     },
     syncRoomsToState: function () {
@@ -9386,11 +9501,27 @@ const app = {
         `;
 
         let bill = [];
+        let currentSectionTitle = '';
+        let sectionHasAnalogItems = false;
         const addToBill = (item, qty, tip, group = null) => {
             if (!item || qty <= 0) return;
 
+            if (item.rommer || ANALOG_MAP[item.id]) sectionHasAnalogItems = true;
+            let secTitle = currentSectionTitle;
+            if (group) {
+                if (group.startsWith("5.1.")) secTitle = "5.1. Внутреннее ГВС";
+                else if (group.startsWith("5.2.")) secTitle = "5.2. Рециркуляция";
+                else if (group.startsWith("5.3.")) secTitle = "5.3. Общие материалы";
+                else if (group.startsWith("7.1.")) secTitle = "7.1. Обвязка скважинного насоса";
+                else if (group.startsWith("8.")) secTitle = group;
+                else if (group.startsWith("9. Своё оборудование")) secTitle = "9. Своё оборудование";
+            }
+            const _ga = this.state.brandMode === 'rommer';
+            const _so = (this.state.sectionAnalog || {})[secTitle];
+            const useAnalog = _so !== undefined ? _so : _ga;
+
             let itemsToAdd = [];
-            if (this.state.brandMode === 'rommer' && (item.rommer || ANALOG_MAP[item.id])) {
+            if (useAnalog && (item.rommer || ANALOG_MAP[item.id])) {
                 // Считаем базу ОДИН РАЗ для этого исходного товара
                 this.calcBaseTotal += (item.price || 0) * qty;
 
@@ -9555,7 +9686,11 @@ const app = {
         let h = "", sum = 0, globalIdx = 1, showSku = document.getElementById('chk_sku').checked;
 
         const flushBill = (title, warn) => {
-            if (bill.length === 0) return;
+            currentSectionTitle = title;
+            if (bill.length === 0) {
+                sectionHasAnalogItems = false;
+                return;
+            }
 
             const isDisabled = this.state.disabledSections && (
                 this.state.disabledSections.includes(title) ||
@@ -9580,6 +9715,7 @@ const app = {
                     </td></tr>`;
                 }
                 bill = [];
+                sectionHasAnalogItems = false;
                 return;
             }
 
@@ -9619,20 +9755,39 @@ const app = {
             app.lastEqSum += localSecTotal;
 
             // Но рендерим HTML только если мы на вкладке Оборудования
-            if (this.state.viewMode === 'works') { bill = []; return; }
+            if (this.state.viewMode === 'works') { bill = []; sectionHasAnalogItems = false; return; }
 
             let groupTotals = {};
             bill.forEach(i => { if (i.group) { if (!groupTotals[i.group]) groupTotals[i.group] = 0; groupTotals[i.group] += i.sum; } });
             let secTotal = 0, rows = "";
             let titleHtml = title + (warn ? `<div class="warn-box">${warn}</div>` : "");
+
+            // Per-section аналог
+            const _globalAnalog = this.state.brandMode === 'rommer';
+            const _secOverride = (this.state.sectionAnalog || {})[title];
+            const _secAnalogActive = _secOverride !== undefined ? _secOverride : _globalAnalog;
+            const _analogBadge = (sectionHasAnalogItems && isPro) ? `
+                <div class="row-sec-toggle-wrap sec-analog-badge${_secAnalogActive ? ' active' : ''} no-print" onclick="event.stopPropagation()" style="${isRevealed ? '' : 'display:none;'}">
+                    <span class="sec-analog-label">АНАЛОГ</span>
+                    <label class="switch">
+                        <input type="checkbox" ${_secAnalogActive ? 'checked' : ''}
+                            onchange="app.toggleSectionAnalog('${title.replace(/'/g, "\\'")}', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>` : '';
+
             h += `<tr class="row-sec" onclick="app.toggleRevealToggle('${title.replace(/'/g, "\\'")}', event)"><td colspan="9">
                 <div class="row-sec-header-wrap">
                     <span class="row-sec-title" data-title="${title}">${titleHtml}</span>
-                    <div class="row-sec-toggle-wrap no-print" onclick="event.stopPropagation()" style="${isRevealed ? '' : 'display: none;'}">
-                        <label class="switch">
-                            <input type="checkbox" checked onchange="app.toggleSection('${title.replace(/'/g, "\\'")}', event)">
-                            <span class="slider"></span>
-                        </label>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        ${_analogBadge}
+                        <div class="row-sec-toggle-wrap no-print" onclick="event.stopPropagation()" style="${isRevealed ? '' : 'display: none;'}">
+                            <span class="sec-toggle-label">РАЗДЕЛ</span>
+                            <label class="switch">
+                                <input type="checkbox" checked onchange="app.toggleSection('${title.replace(/'/g, "\\'")}', event)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </td></tr>`;
@@ -9729,7 +9884,7 @@ const app = {
                 rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${app.formatPriceHtml(i.price)}</td><td class="col-sum">${app.formatPriceHtml(i.sum)}</td></tr>` + locsRows;
             });
             h += rows + `<tr class="row-subtotal"><td colspan="9">Итого: ${app.formatPriceHtml(secTotal, true)}</td></tr>`;
-            sum += secTotal; bill = [];
+            sum += secTotal; bill = []; sectionHasAnalogItems = false;
         };
 
         const flushWorks = () => {
@@ -9911,6 +10066,7 @@ const app = {
         };
 
         // === 1. КОТЁЛ + ВОДОНАГРЕВАТЕЛЬ ===
+        currentSectionTitle = "1. Котёл + водонагреватель";
         let selBoilers = [], boilerCnt = 0;
         ['gas', 'el'].forEach(ft => {
             if (this.state.fuels.includes(ft)) {
@@ -10003,6 +10159,7 @@ const app = {
         flushBill("1. Котёл + водонагреватель");
 
         // === 2. ОБВЯЗКА КОТЕЛЬНОЙ ===
+        currentSectionTitle = "2. Обвязка котельной";
         selBoilers.forEach(b => {
             if (b.type === 'gas') {
                 let grp = "2.1. Обвязка Газового котла";
@@ -10332,6 +10489,7 @@ const app = {
         
         flushBill("2. Обвязка котельной");
 
+        currentSectionTitle = "3. Приборы отопления";
         if (hasRad && radSecs > 0) {
             let totalRadCount = 0;
             let totalConvCount = 0;
@@ -10674,6 +10832,7 @@ const app = {
         bill = [...heaters, ...grouped];
         flushBill("3. Приборы отопления", heatWarnHtml);
 
+        currentSectionTitle = "4. Водяной тёплый пол";
         if (hasTp && tpMeters > 0) {
             let q5 = Math.floor(tpMeters / 500); let q1 = Math.ceil((tpMeters % 500) / 100);
             if (q5) addToBill(catalog.pipes[1], q5, this.getDesc('ufh_pipe', tpMeters)); if (q1) addToBill(catalog.pipes[0], q1, this.getDesc('ufh_pipe', tpMeters));
@@ -10692,8 +10851,46 @@ const app = {
                         addToBill({ ...m, name: `Коллектор ТП ${sz} вых (${lbl})` }, 1, this.getDesc('manifold', sz, 'ufh'));
                         mans++;
                         if (!needCollector) {
-                            addToBill(catalog.mixing_units[0], 1, this.getDesc('ufh_mix', tpArea));
-                            addToBill(catalog.pumps_mix[0], 1, this.getDesc('pump_std'));
+                            let activeMixType = this.state.ufhMixType || 'std';
+                            let brand = this.state.brandMode;
+                            
+                            // Auto-correct to compatible type if necessary
+                            if (!this.isUfhMixTypeCompatible(activeMixType, tpArea, brand)) {
+                                if (this.isUfhMixTypeCompatible('dn20', tpArea, brand)) {
+                                    activeMixType = 'dn20';
+                                } else {
+                                    activeMixType = 'dn25';
+                                }
+                                this.state.ufhMixType = activeMixType;
+                            }
+
+                            let mixItem = null;
+                            let pumpItem = null;
+                            let desc = "";
+
+                            if (activeMixType === 'dn20') {
+                                mixItem = { ...catalog.groups_dn20[1] };
+                                desc = this.getDesc('pump_group', mixItem, 1, 'ufh', tpArea);
+                                pumpItem = catalog.pumps_dn20[0];
+                            } else if (activeMixType === 'dn25') {
+                                mixItem = { ...catalog.groups_dn25[1] };
+                                desc = this.getDesc('pump_group', mixItem, 1, 'ufh', tpArea);
+                                pumpItem = catalog.pumps_dn25.find(p => p.type === this.state.pumpType) || catalog.pumps_dn25[0];
+                                pumpItem.alts = catalog.pumps_dn25;
+                            } else {
+                                // Default 'std'
+                                mixItem = { ...catalog.mixing_units[0] };
+                                desc = this.getDesc('ufh_mix', tpArea);
+                                pumpItem = catalog.pumps_mix[0];
+                            }
+
+                            // Explicitly set alts array to support the swap button
+                            mixItem.alts = [catalog.mixing_units[0], catalog.groups_dn20[1], catalog.groups_dn25[1]];
+
+                            addToBill(mixItem, 1, desc);
+                            if (pumpItem) {
+                                addToBill(pumpItem, 1, this.getDesc('pump_std'));
+                            }
                         }
                     }
                 }
@@ -10729,6 +10926,7 @@ const app = {
             flushBill("4. Водяной тёплый пол", warn);
         }
 
+        currentSectionTitle = "5. Внутреннее водоснабжение";
         if (this.state.water && this.state.waterZones.length > 0) {
             let mainTitle = "5. Внутреннее водоснабжение";
             let isMerge = !this.state.groupItems;
@@ -10880,6 +11078,7 @@ const app = {
         }
 
         // === 6. УЗЕЛ ВВОДА ХВС ===
+        currentSectionTitle = "6. Узел ввода ХВС";
         if (this.state.waterInput) {
             let ni = catalog.water_input_node;
             let grp61 = "6.1. Ввод ХВС в дом";
@@ -10961,6 +11160,7 @@ const app = {
         }
 
         // === 7. СКВАЖИНА (Внешнее водоснабжение) ===
+        currentSectionTitle = "7. Внешнее водоснабжение";
         if (this.state.well) {
             let grpWell = "7. Внешнее водоснабжение";
             let q = 0;
@@ -11023,7 +11223,7 @@ const app = {
             if (tankItem) addToBill(tankItem, 1, tankDesc, grpWellTie);
 
             let cableLen = parseInt(this.state.wellDepth) + 3;
-            let coilsCount = Math.ceil(cableLen / 250);
+            let coilsCount = Math.ceil(cableLen / 10) * 10;
             let cableDesc = `<span style="font-size:11px; line-height:1.4;">Расчетная длина троса: <b>${cableLen} м</b>.<br>Трос 4 мм: Разрывная нагрузка ~920 кг.</span>`;
             addToBill(catalog.well_parts[1], coilsCount, cableDesc, grpWellTie);
 
@@ -11033,7 +11233,7 @@ const app = {
             addToBill(catalog.well_parts[4], 1, valveDesc, grpWellTie);
 
             let pipeLen = parseInt(this.state.wellDepth) + parseInt(this.state.wellDist) + 5;
-            let pipePieces = Math.ceil(pipeLen / 5);
+            let pipePieces = Math.ceil(pipeLen / 5) * 5;
             let pipeDesc = `<span style="font-size:11px; line-height:1.4;">Расчетная длина: <b>${pipeLen} м</b>.<br><b>Почему 32х3.0 питьевая?</b> Стенка 3.0 мм (PN16) гарантированно выдерживает высокое давление глубоководного насоса без сплющивания и разрывов. Питьевая труба (из первичного полиэтилена с синей полосой) абсолютно безопасна для здоровья и не придает воде химический запах.</span>`;
             addToBill(catalog.well_parts[0], pipePieces, pipeDesc, grpWellTie);
 
@@ -11053,6 +11253,7 @@ const app = {
         }
 
         // === 8. КАНАЛИЗАЦИЯ ===
+        currentSectionTitle = "8. Канализация";
         let totalSewerPoints = 0;
         let sewerToilets = 0;
         if (this.state.waterZones && this.state.waterZones.length > 0) {
@@ -11350,6 +11551,7 @@ const app = {
         }
 
         // === 9. ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ ===
+        currentSectionTitle = "9. Дополнительные материалы";
         let cl = catalog.coolants.find(c => c.type === this.state.coolant);
         if (cl) {
             if (cl.type === 'pro65') {
@@ -11362,6 +11564,7 @@ const app = {
         flushBill("9. Дополнительные материалы");
 
         // 9. СВОЁ ОБОРУДОВАНИЕ (Только для вкладки оборудования)
+        currentSectionTitle = "9. Своё оборудование";
         if (this.state.viewMode === 'equipment') {
             if (this.state.userAddedEq && this.state.userAddedEq.length > 0) {
                 this.state.userAddedEq.forEach(eq => {

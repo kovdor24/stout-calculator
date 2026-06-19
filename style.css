@@ -6197,3 +6197,27 @@ body.dark-mode #printed_dynamic_scheme img {
     background: var(--surface-light) !important;
     color: var(--text-sec) !important;
 }
+
+/* --- Стили для переключателя АНАЛОГ в заголовках разделов --- */
+.sec-analog-badge {
+    transition: all 0.2s ease;
+}
+
+.sec-analog-label,
+.sec-toggle-label {
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--text-sec);
+    letter-spacing: 0.05em;
+    user-select: none;
+    line-height: 1;
+    margin-right: 6px;
+}
+
+.sec-analog-badge.active .sec-analog-label {
+    color: #F97316;
+}
+
+body.dark-mode .sec-analog-badge.active .sec-analog-label {
+    color: #fb923c;
+}

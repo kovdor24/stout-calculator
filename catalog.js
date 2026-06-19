@@ -1711,10 +1711,10 @@ const catalog = {
   price_date: '2026-06-06' }
     ],
     well_parts: [
-        { id: "10011032", name: "Труба ПНД 32х3.0 питьевая (кратно 5м)", price: 557, brand: "CYKLON", unit: "шт",
+        { id: "10011032", name: "Труба ПНД 32х3.0 питьевая (кратно 5м)", price: 111.4, brand: "CYKLON", unit: "м",
   availability: 'in_stock',
   price_date: '2026-06-06' },
-        { id: "75618", name: "Трос 4 мм нерж.сталь (бухта 250 м)", price: 17500, brand: "UNIPUMP", unit: "шт",
+        { id: "75618", name: "Трос 4 мм нерж.сталь (кратно 10м)", price: 70, brand: "UNIPUMP", unit: "м",
   availability: 'in_stock',
   price_date: '2026-06-06' },
         { id: "39023", name: "Зажим (хомут) для троса 4-5 мм", price: 36, brand: "UNIPUMP", unit: "шт" },
