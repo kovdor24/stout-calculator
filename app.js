@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor' },
 
     lastSavedStateString: "",
 
@@ -5907,7 +5907,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -6558,8 +6558,12 @@ const app = {
         else if (originalId.startsWith('SDG-0018') || originalId.startsWith('SDG-0016')) { this.state.hydroType = (this.state.hydroType === 'combo') ? 'modular' : 'combo'; }
         else if (originalId.startsWith('SMS-0922') || (originalId.startsWith('SMB-6850') && !originalId.endsWith('_water'))) { this.state.radManifoldType = (this.state.radManifoldType === 'standard') ? 'chrome' : 'standard'; }
         else if (originalId.startsWith('SMB-6851-') || (originalId.startsWith('SMB-6850-') && originalId.endsWith('_water'))) { this.state.waterManifoldType = (this.state.waterManifoldType === 'block') ? 'standard' : 'block'; }
-        else if (originalId.startsWith('SAC-0020-000004') || originalId.startsWith('SAC-0020-010004')) { this.state.sewerClampsType = (this.state.sewerClampsType === 'standard') ? 'heavy' : 'standard'; }
-        else if (originalId.startsWith('SAC-0020-000002') || originalId.startsWith('SAC-0020-300002')) { this.state.sewerClampsD58Type = (this.state.sewerClampsD58Type === 'standard') ? 'direct' : 'standard'; }
+        else if (originalId === 'SAC-0022-283020_boiler') {
+            if (this.state.boilerFrameType === 'profile_single') this.state.boilerFrameType = 'profile_double';
+            else if (this.state.boilerFrameType === 'profile_double') this.state.boilerFrameType = 'direct_single';
+            else if (this.state.boilerFrameType === 'direct_single') this.state.boilerFrameType = 'direct_double';
+            else this.state.boilerFrameType = 'profile_single';
+        }
         else if (originalId === 'SAC-0020-411040_boiler') { this.state.boilerFrameFastenerType = (this.state.boilerFrameFastenerType === 'anchor') ? 'stud' : 'anchor'; }
         
         else if (originalId.startsWith('SAC-0030-000825')) { this.state.expansionTankMountType = (this.state.expansionTankMountType === 'standard') ? 'stout' : 'standard'; }
@@ -10080,6 +10084,9 @@ const app = {
 
         // === 1. КОТЁЛ + ВОДОНАГРЕВАТЕЛЬ ===
         currentSectionTitle = "1. Котёл + водонагреватель";
+        let useAnalogSec2 = ((this.state.sectionAnalog || {})["2. Обвязка котельной"] !== undefined) 
+            ? this.state.sectionAnalog["2. Обвязка котельной"] 
+            : (this.state.brandMode === 'rommer');
         let selBoilers = [], boilerCnt = 0;
         ['gas', 'el'].forEach(ft => {
             if (this.state.fuels.includes(ft)) {
@@ -10204,7 +10211,46 @@ const app = {
             let vol = this.state.res >= 10 ? 500 : this.state.res >= 7 ? 300 : this.state.res >= 5 ? 200 : this.state.res >= 3 ? 150 : 100;
             let exp = catalog.exp_dhw.find(x => x.vol >= vol * 0.1) || catalog.exp_dhw[2];
             addToBill(exp, 1, this.getDesc('exp_d', vol, exp.vol), grp);
-            addToBill(catalog.tank_mount, 1, "Крепление", grp); addToBill(catalog.tank_kit, 1, "Подключение бака", grp);
+            if (exp.vol <= 25) {
+                if (useAnalogSec2) { // PPR/Rommer
+                    let isStout = (this.state.expansionTankMountType === 'stout');
+                    let mountItem = isStout 
+                        ? catalog.mounting_system.find(x => x.id === "SAC-0030-000825") 
+                        : catalog.mounting_system.find(x => x.id === "ASKON-83115");
+                    if (mountItem) {
+                        let itemCopy = { ...mountItem, originalId: "SAC-0030-000825" };
+                        itemCopy.alts = [isStout 
+                            ? catalog.mounting_system.find(x => x.id === "ASKON-83115") 
+                            : catalog.mounting_system.find(x => x.id === "SAC-0030-000825")
+                        ];
+                        addToBill(itemCopy, 1, "Крепление расширительного бака ГВС (L-кронштейн или комплект STOUT).", grp);
+                    }
+                    addToBill(catalog.tank_kit, 1, "Подключение расширительного бака ГВС.", grp);
+                } else { // Stainless steel (Stout)
+                    let clampItem = catalog.mounting_system.find(x => x.id === "SAC-0020-000034"); // 3/4"
+                    let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                    if (clampItem) addToBill(clampItem, 1, "Хомут 3/4\" для фиксации трубы подводки перед расширительным баком ГВС.", grp);
+                    if (studItem) addToBill(studItem, 1, "Шпилька-шуруп с дюбелем для крепления хомута подводки бака ГВС.", grp);
+                    
+                    addToBill(catalog.tank_kit, 1, "Отсечной вентиль для подключения расширительного бака ГВС.", grp);
+                    let maleElbow = catalog.ss_elbow_mi.find(x => x.id === "RSS-1010-002234");
+                    let pressElbow = catalog.ss_elbow90.find(x => x.id === "RSS-1002-000022");
+                    if (maleElbow) addToBill(maleElbow, 1, "Угольник-переходник 90° ВПр-НР 22х3/4\" для подключения к вентилю бака.", grp);
+                    if (pressElbow) addToBill(pressElbow, 2, "Угольник 90° ВПр-НПр 22 для обвязки бака.", grp);
+                    
+                    let frameBoilerPower = selBoilers.reduce((acc, b) => acc + (b.power || 0), 0);
+                    let frameSsDiameter = (frameBoilerPower <= 30) ? 22 : 28;
+                    if (frameSsDiameter === 22) {
+                        let teeItem = catalog.ss_tee.find(x => x.id === "RSS-1013-000022");
+                        if (teeItem) addToBill(teeItem, 1, "Тройник равнопроходной ВПр 22 для врезки расширительного бака ГВС.", grp);
+                    } else {
+                        let teeItem = catalog.ss_tee_red.find(x => x.id === "RSS-1014-282228");
+                        if (teeItem) addToBill(teeItem, 1, "Тройник переходной ВПр 28х22х28 для врезки расширительного бака ГВС.", grp);
+                    }
+                }
+            } else {
+                addToBill(catalog.tank_kit, 1, "Подключение расширительного бака ГВС.", grp);
+            }
             addToBill(catalog.dhw_fittings[0], 2, "Американка 1\" (Змеевик)", grp); addToBill(catalog.dhw_fittings[1], 2, "Кран 1\" (Змеевик)", grp);
             addToBill(catalog.dhw_fittings[2], 1, "Американка 3/4\" (ГВС)", grp); addToBill(catalog.dhw_fittings[3], 1, "Кран 3/4\" (ГВС)", grp);
             addToBill(catalog.dhw_fittings[4], 1, "Клапан 6 бар", grp); addToBill(catalog.dhw_fittings[5], 1, "Крестовина 3/4\"", grp); addToBill(catalog.dhw_fittings[6], 1, "Клапан обратный (ХВС)", grp); addToBill(catalog.dhw_fittings[7], 1, "Кран 3/4\" (ХВС)", grp);
@@ -10276,71 +10322,129 @@ const app = {
         this.vSys = vSys;
         let reqExp = vSys * 0.12; let bltin = 0; if (selBoilers.length > 0) { selBoilers.forEach(b => { bltin += (b.exp !== undefined ? b.exp : 0); }); }
         let def = reqExp - bltin; if (def > 0) { let et = catalog.exp_heating.find(t => t.vol >= def) || catalog.exp_heating[4]; addToBill(et, 1, this.getDesc('exp_h', Math.round(vSys))); if (et.vol <= 25) {
-                let isStout = (this.state.expansionTankMountType === 'stout');
-                let mountItem = isStout 
-                    ? catalog.mounting_system.find(x => x.id === "SAC-0030-000825") 
-                    : catalog.mounting_system.find(x => x.id === "ASKON-83115");
-                if (mountItem) {
-                    let itemCopy = { ...mountItem, originalId: "SAC-0030-000825" };
-                    itemCopy.alts = [isStout 
-                        ? catalog.mounting_system.find(x => x.id === "ASKON-83115") 
-                        : catalog.mounting_system.find(x => x.id === "SAC-0030-000825")
-                    ];
-                    addToBill(itemCopy, 1, "Крепление расширительного бака.");
+                if (useAnalogSec2) { // PPR/Rommer
+                    let isStout = (this.state.expansionTankMountType === 'stout');
+                    let mountItem = isStout 
+                        ? catalog.mounting_system.find(x => x.id === "SAC-0030-000825") 
+                        : catalog.mounting_system.find(x => x.id === "ASKON-83115");
+                    if (mountItem) {
+                        let itemCopy = { ...mountItem, originalId: "SAC-0030-000825" };
+                        itemCopy.alts = [isStout 
+                            ? catalog.mounting_system.find(x => x.id === "ASKON-83115") 
+                            : catalog.mounting_system.find(x => x.id === "SAC-0030-000825")
+                        ];
+                        addToBill(itemCopy, 1, "Крепление расширительного бака.");
+                    }
+                    addToBill(catalog.tank_kit, 1, "Подключение бака.");
+                } else { // Stainless steel (Stout)
+                    let clampItem = catalog.mounting_system.find(x => x.id === "SAC-0020-000034"); // 3/4"
+                    let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                    if (clampItem) addToBill(clampItem, 1, "Хомут 3/4\" для фиксации трубы подводки перед расширительным баком отопления.");
+                    if (studItem) addToBill(studItem, 1, "Шпилька-шуруп с дюбелем для крепления хомута подводки бака отопления.");
+                    
+                    addToBill(catalog.tank_kit, 1, "Отсечной вентиль для подключения расширительного бака.");
+                    let maleElbow = catalog.ss_elbow_mi.find(x => x.id === "RSS-1010-002234");
+                    let pressElbow = catalog.ss_elbow90.find(x => x.id === "RSS-1002-000022");
+                    if (maleElbow) addToBill(maleElbow, 1, "Угольник-переходник 90° ВПр-НР 22х3/4\" для подключения к вентилю бака.");
+                    if (pressElbow) addToBill(pressElbow, 2, "Угольник 90° ВПр-НПр 22 для обвязки бака.");
+                    
+                    let frameBoilerPower = selBoilers.reduce((acc, b) => acc + (b.power || 0), 0);
+                    let frameSsDiameter = (frameBoilerPower <= 30) ? 22 : 28;
+                    if (frameSsDiameter === 22) {
+                        let teeItem = catalog.ss_tee.find(x => x.id === "RSS-1013-000022");
+                        if (teeItem) addToBill(teeItem, 1, "Тройник равнопроходной ВПр 22 для врезки расширительного бака.");
+                    } else {
+                        let teeItem = catalog.ss_tee_red.find(x => x.id === "RSS-1014-282228");
+                        if (teeItem) addToBill(teeItem, 1, "Тройник переходной ВПр 28х22х28 для врезки расширительного бака.");
+                    }
                 }
-            } addToBill(catalog.tank_kit, 1, "Подключение бака."); }
-
-        // Вывод оборудования котельной
-        let useAnalogSec2 = ((this.state.sectionAnalog || {})["2. Обвязка котельной"] !== undefined) 
-            ? this.state.sectionAnalog["2. Обвязка котельной"] 
-            : (this.state.brandMode === 'rommer');
+            } else {
+                addToBill(catalog.tank_kit, 1, "Подключение бака.");
+            }
+        }
         let big = (pwr > 20 || tpArea > 100);
         let dn25 = big || useAnalogSec2 || (this.state.ufhMixType === 'dn25');
         let pmp = null;
 
         if (needCollector) {
-            // Несущий каркас (рама) коллектора котельной на базе C-образного профиля и консолей STOUT
-            let profileItem = catalog.mounting_system.find(x => x.id === "SAC-0022-283020");
-            let consoleItem = catalog.mounting_system.find(x => x.id === "SAC-0021-281530");
-            if (profileItem) {
-                addToBill(profileItem, 1, "Монтажный перфорированный С-образный профиль для сборки несущей рамы (2м).");
-            }
-            if (consoleItem) {
-                addToBill(consoleItem, 2, "Несущая консоль перфорированная для монтажной рамы котельной.");
-            }
-
-            // Подбор крепежа рамы к стене (анкеры или шпильки-шурупы с дюбелями)
-            let isAnchor = (this.state.boilerFrameFastenerType === 'anchor' || !this.state.boilerFrameFastenerType);
-            let fastenerItem = isAnchor
-                ? catalog.mounting_system.find(x => x.id === "SAC-0020-411040")
-                : catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
-            
-            if (fastenerItem) {
-                let itemCopy = { ...fastenerItem, originalId: "SAC-0020-411040_boiler" };
-                itemCopy.alts = [isAnchor
-                    ? catalog.mounting_system.find(x => x.id === "SAC-0020-400100")
-                    : catalog.mounting_system.find(x => x.id === "SAC-0020-411040")
-                ];
-                addToBill(itemCopy, 4, isAnchor 
-                    ? "Анкер забивной стальной для крепления рамы к стене." 
-                    : "Шпилька-шуруп с дюбелем для крепления рамы к стене.");
-            }
-
-            // Подбор хомутов под диаметр трубы котлового контура
+            // Несущий каркас (рама) или хомуты коллектора котельной на базе C-образного профиля и консолей STOUT
             let frameBoilerPower = selBoilers.reduce((acc, b) => acc + (b.power || 0), 0);
             let frameSsDiameter = (frameBoilerPower <= 30) ? 22 : 28;
-            let frameIsAnalog = (this.state.brandMode === 'rommer');
             
+            let isDoubleMode = (this.state.boilerFrameType === 'profile_double' || this.state.boilerFrameType === 'direct_double');
             let clampId = "";
-            if (frameIsAnalog) {
+            if (useAnalogSec2) { // PPR/Rommer
                 let ppr_diam = (frameSsDiameter === 22) ? 32 : 40;
-                clampId = (ppr_diam === 32) ? "SAC-0020-000001" : "SAC-0020-000114";
-            } else {
-                clampId = (frameSsDiameter === 22) ? "SAC-0020-000012" : "SAC-0020-000034";
+                if (isDoubleMode) {
+                    clampId = (ppr_diam === 32) ? "SAC-0020-200001" : "SAC-0020-300114"; // fallback to single M8 1 1/4" for 40
+                } else {
+                    clampId = (ppr_diam === 32) ? "SAC-0020-300001" : "SAC-0020-300114";
+                }
+            } else { // Stainless steel/Stout
+                if (isDoubleMode) {
+                    clampId = (frameSsDiameter === 22) ? "SAC-0020-200012" : "SAC-0020-200034";
+                } else {
+                    clampId = (frameSsDiameter === 22) ? "SAC-0020-300012" : "SAC-0020-300034";
+                }
             }
             let clampItem = catalog.mounting_system.find(x => x.id === clampId);
-            if (clampItem) {
-                addToBill(clampItem, 4, "Трубный хомут для фиксации трубопроводов котлового контура на консолях.");
+
+            if (this.state.boilerFrameType === 'profile_single' || this.state.boilerFrameType === 'profile_double') {
+                // В режимах рамы:
+                let profileItem = catalog.mounting_system.find(x => x.id === "SAC-0022-283020");
+                if (profileItem) {
+                    let itemCopy = { ...profileItem, originalId: "SAC-0022-283020_boiler", alts: [catalog.mounting_system.find(x => x.id === "SAC-0020-200012")] };
+                    addToBill(itemCopy, 1, "Монтажный перфорированный С-образный профиль для сборки несущей рамы (2м).");
+                }
+                
+                let consoleItem = catalog.mounting_system.find(x => x.id === "SAC-0021-281530");
+                if (consoleItem) {
+                    let itemCopy = { ...consoleItem, originalId: "SAC-0022-283020_boiler", alts: [catalog.mounting_system.find(x => x.id === "SAC-0020-200012")] };
+                    addToBill(itemCopy, 2, "Несущая консоль перфорированная для монтажной рамы котельной.");
+                }
+                
+                let isAnchor = (this.state.boilerFrameFastenerType === 'anchor' || !this.state.boilerFrameFastenerType);
+                let fastenerItem = isAnchor
+                    ? catalog.mounting_system.find(x => x.id === "SAC-0020-411040")
+                    : catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                
+                if (fastenerItem) {
+                    let itemCopy = { ...fastenerItem, originalId: "SAC-0020-411040_boiler" };
+                    itemCopy.alts = [isAnchor
+                        ? catalog.mounting_system.find(x => x.id === "SAC-0020-400100")
+                        : catalog.mounting_system.find(x => x.id === "SAC-0020-411040")
+                    ];
+                    addToBill(itemCopy, 4, isAnchor 
+                        ? "Анкер забивной стальной для крепления рамы к стене." 
+                        : "Шпилька-шуруп с дюбелем для крепления рамы к стене.");
+                }
+                
+                let clampQty = (this.state.boilerFrameType === 'profile_single') ? 4 : 2;
+                if (clampItem) {
+                    let itemCopy = { ...clampItem, originalId: "SAC-0022-283020_boiler", alts: [catalog.mounting_system.find(x => x.id === "SAC-0020-200012")] };
+                    addToBill(itemCopy, clampQty, isDoubleMode 
+                        ? "Двойной трубный хомут для фиксации трубопроводов котлового контура на консолях."
+                        : "Трубный хомут одновинтовой для фиксации трубопроводов котлового контура на консолях.");
+                }
+            } else if (this.state.boilerFrameType === 'direct_single') {
+                // В режиме настенного монтажа одинарными хомутами:
+                let qty = 4 * selBoilers.length + 6;
+                if (clampItem) {
+                    let itemCopy = { ...clampItem, originalId: "SAC-0022-283020_boiler", alts: [catalog.mounting_system.find(x => x.id === "SAC-0022-283020")] };
+                    addToBill(itemCopy, qty, "Хомут трубный одновинтовой для прямого настенного монтажа труб котлового контура.");
+                }
+                
+                let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                if (studItem) {
+                    addToBill(studItem, qty, "Шпилька-шуруп с дюбелем для настенных хомутов котлового контура.");
+                }
+            } else if (this.state.boilerFrameType === 'direct_double') {
+                // В режиме настенного монтажа двойными хомутами:
+                let qty = 2 * selBoilers.length + 3;
+                if (clampItem) {
+                    let itemCopy = { ...clampItem, originalId: "SAC-0022-283020_boiler", alts: [catalog.mounting_system.find(x => x.id === "SAC-0022-283020")] };
+                    addToBill(itemCopy, qty, "Двойной трубный хомут для прямого настенного монтажа труб котлового контура (комплект со шпилькой и дюбелем).");
+                }
             }
 
 
@@ -11222,15 +11326,14 @@ const app = {
             }
 
             let collGroups = (totalColdPoints > 0 ? 1 : 0) + (totalHotPoints > 0 ? 1 : 0) + (recirc ? 1 : 0);
-            if (collGroups > 0) addToBill(catalog.manifold_brackets, collGroups, "Пара кронштейнов на каждый коллектор", grpGen);
-            if (collGroups > 1) {
-                let railItem = catalog.mounting_system.find(x => x.id === "SAC-0020-503120");
-                if (railItem) {
-                    addToBill(railItem, 2, "Вертикальные монтажные шины для сборки коллекторного узла.", grpGen);
+            if (collGroups > 0) {
+                let clampItem = catalog.mounting_system.find(x => x.id === "SAC-0020-300001");
+                if (clampItem) {
+                    addToBill(clampItem, 2 * collGroups, "Хомут одновинтовой с гайкой M8 1\" для крепления коллекторов водоснабжения.", grpGen);
                 }
                 let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
                 if (studItem) {
-                    addToBill(studItem, 4, "Комплект крепежа монтажных шин к стене.", grpGen);
+                    addToBill(studItem, 2 * collGroups, "Шпилька сантехническая M8x100 для крепления коллекторов водоснабжения к стене.", grpGen);
                 }
             }
             addToBill(catalog.water_parts[3], 1, "Наклейки", grpGen);
@@ -11644,33 +11747,24 @@ const app = {
                     let countClamps58 = Math.ceil(totalPipe58 / 1.0);
 
                     if (countClamps110 > 0) {
-                        let isHeavy = (this.state.sewerClampsType === 'heavy');
-                        let clamp110 = catalog.mounting_system.find(x => x.id === (isHeavy ? "SAC-0020-010004" : "SAC-0020-000004"));
+                        let clamp110 = catalog.mounting_system.find(x => x.id === "SAC-0020-010004");
                         if (clamp110) {
-                            let clampItem = { ...clamp110, originalId: "SAC-0020-000004" };
-                            clampItem.alts = [catalog.mounting_system.find(x => x.id === (isHeavy ? "SAC-0020-000004" : "SAC-0020-010004"))];
-                            addToBill(clampItem, countClamps110, "Крепление стояка канализации D110.", grpSewerMain);
+                            addToBill(clamp110, countClamps110, "Крепление стояка канализации D110 (тяжелая серия).", grpSewerMain);
                         }
                     }
 
                     if (countClamps58 > 0) {
-                        let isDirect = (this.state.sewerClampsD58Type === 'direct');
-                        let clamp58 = catalog.mounting_system.find(x => x.id === (isDirect ? "SAC-0020-300002" : "SAC-0020-000002"));
+                        let clamp58 = catalog.mounting_system.find(x => x.id === "SAC-0020-000002");
                         if (clamp58) {
-                            let clampItem = { ...clamp58, originalId: "SAC-0020-000002" };
-                            clampItem.alts = [catalog.mounting_system.find(x => x.id === (isDirect ? "SAC-0020-000002" : "SAC-0020-300002"))];
-                            addToBill(clampItem, countClamps58, "Крепление отводов канализации D50.", grpSewerMain);
+                            addToBill(clamp58, countClamps58, "Крепление отводов канализации D50/D58.", grpSewerMain);
                         }
                     }
 
-                    let totalStuds = countClamps110;
-                    if (this.state.sewerClampsD58Type === 'standard') {
-                        totalStuds += countClamps58;
-                    }
+                    let totalStuds = countClamps110 + countClamps58;
                     if (totalStuds > 0) {
                         let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
                         if (studItem) {
-                            addToBill(studItem, totalStuds, "Шпилька-шуруп с дюбелем для хомутов.", grpSewerMain);
+                            addToBill(studItem, totalStuds, "Шпилька-шуруп с дюбелем для хомутов канализации.", grpSewerMain);
                         }
                     }
                 }
@@ -11805,33 +11899,24 @@ const app = {
                     let countClamps58 = Math.ceil(totalPipe58 / 1.0);
 
                     if (countClamps110 > 0) {
-                        let isHeavy = (this.state.sewerClampsType === 'heavy');
-                        let clamp110 = catalog.mounting_system.find(x => x.id === (isHeavy ? "SAC-0020-010004" : "SAC-0020-000004"));
+                        let clamp110 = catalog.mounting_system.find(x => x.id === "SAC-0020-010004");
                         if (clamp110) {
-                            let clampItem = { ...clamp110, originalId: "SAC-0020-000004" };
-                            clampItem.alts = [catalog.mounting_system.find(x => x.id === (isHeavy ? "SAC-0020-000004" : "SAC-0020-010004"))];
-                            addSewerItem(clampItem, countClamps110, "Крепление стояка канализации D110.");
+                            addSewerItem(clamp110, countClamps110, "Крепление стояка канализации D110 (тяжелая серия).");
                         }
                     }
 
                     if (countClamps58 > 0) {
-                        let isDirect = (this.state.sewerClampsD58Type === 'direct');
-                        let clamp58 = catalog.mounting_system.find(x => x.id === (isDirect ? "SAC-0020-300002" : "SAC-0020-000002"));
+                        let clamp58 = catalog.mounting_system.find(x => x.id === "SAC-0020-000002");
                         if (clamp58) {
-                            let clampItem = { ...clamp58, originalId: "SAC-0020-000002" };
-                            clampItem.alts = [catalog.mounting_system.find(x => x.id === (isDirect ? "SAC-0020-000002" : "SAC-0020-300002"))];
-                            addSewerItem(clampItem, countClamps58, "Крепление отводов канализации D50.");
+                            addSewerItem(clamp58, countClamps58, "Крепление отводов канализации D50/D58.");
                         }
                     }
 
-                    let totalStuds = countClamps110;
-                    if (this.state.sewerClampsD58Type === 'standard') {
-                        totalStuds += countClamps58;
-                    }
+                    let totalStuds = countClamps110 + countClamps58;
                     if (totalStuds > 0) {
                         let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
                         if (studItem) {
-                            addSewerItem(studItem, totalStuds, "Шпилька-шуруп с дюбелем для хомутов.");
+                            addSewerItem(studItem, totalStuds, "Шпилька-шуруп с дюбелем для хомутов канализации.");
                         }
                     }
                 }
