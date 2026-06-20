@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150' },
 
     lastSavedStateString: "",
 
@@ -5907,7 +5907,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -6567,6 +6567,21 @@ const app = {
         else if (originalId === 'SAC-0020-411040_boiler') { this.state.boilerFrameFastenerType = (this.state.boilerFrameFastenerType === 'anchor') ? 'stud' : 'anchor'; }
         
         else if (originalId.startsWith('SAC-0030-000825')) { this.state.expansionTankMountType = (this.state.expansionTankMountType === 'standard') ? 'stout' : 'standard'; }
+        else if (originalId === 'SAC-0022-600001') {
+            if (this.state.mountPlateSingleType === 'SAC-0022-600001') this.state.mountPlateSingleType = 'SAC-0022-600100';
+            else if (this.state.mountPlateSingleType === 'SAC-0022-600100') this.state.mountPlateSingleType = 'SAC-0022-600150';
+            else this.state.mountPlateSingleType = 'SAC-0022-600001';
+        }
+        else if (originalId === 'SAC-0022-600100') {
+            if (this.state.mountPlateDouble100Type === 'SAC-0022-600100') this.state.mountPlateDouble100Type = 'SAC-0022-600150';
+            else if (this.state.mountPlateDouble100Type === 'SAC-0022-600150') this.state.mountPlateDouble100Type = 'SAC-0022-600001';
+            else this.state.mountPlateDouble100Type = 'SAC-0022-600100';
+        }
+        else if (originalId === 'SAC-0022-600150') {
+            if (this.state.mountPlateDouble150Type === 'SAC-0022-600150') this.state.mountPlateDouble150Type = 'SAC-0022-600001';
+            else if (this.state.mountPlateDouble150Type === 'SAC-0022-600001') this.state.mountPlateDouble150Type = 'SAC-0022-600100';
+            else this.state.mountPlateDouble150Type = 'SAC-0022-600150';
+        }
         else if (originalId.startsWith('SAC-0020-2000') || (originalId.startsWith('SAC-0020-0000') && (originalId.endsWith('_cw') || originalId.endsWith('_hw') || originalId.endsWith('_recirc'))) || (originalId.startsWith('SMF-0003') && (originalId.endsWith('_cw') || originalId.endsWith('_hw') || originalId.endsWith('_recirc')))) { if (this.state.pipeMountType === 'hidden') this.state.pipeMountType = 'double'; else if (this.state.pipeMountType === 'double') this.state.pipeMountType = 'single'; else this.state.pipeMountType = 'hidden'; }
         else if (originalId.endsWith('_rad') || originalId.startsWith('SPI-0003-')) { this.state.pipeType = (this.state.pipeType === 'insulated') ? 'split' : (this.state.pipeType === 'split') ? 'insulated_mp' : (this.state.pipeType === 'insulated_mp') ? 'split_mp' : 'insulated'; }
         else if (originalId.endsWith('_ufh') || originalId.startsWith('SPX-0002-') || originalId.startsWith('SPM-0001-')) { this.state.ufhPipeMaterial = (this.state.ufhPipeMaterial === 'pex') ? 'metal_plastic' : 'pex'; }
@@ -9817,7 +9832,7 @@ const app = {
                 let isSubSection = (i.group && i.group.match(/^\d+\.\d+/));
                 const dashStyle = "1px dashed rgba(0, 0, 0, 0.2)";
                 if (!forceMerge && i.group && i.group !== lastGroup) {
-                    let icon = ""; if (i.group.includes("Газового")) icon = "🔥"; else if (i.group.includes("Электрического")) icon = "⚡"; else if (i.group.includes("Водонагревателя")) icon = "💧"; else if (i.group.includes("Трубопроводы")) icon = "🔗";
+                    let icon = ""; if (i.group.includes("Газового")) icon = "🔥"; else if (i.group.includes("Электрического")) icon = "⚡"; else if (i.group.includes("Водонагревателя")) icon = "💧"; else if (i.group.includes("Трубопроводы")) icon = "🔗"; else if (i.group.includes("Гидравлика")) icon = "🎛️";
                     let arrow = isCollapsed ? "▶" : "⤵";
                     let txtUnit = isCollapsed ? "компл." : ""; let txtQty = isCollapsed ? "1" : ""; let txtSum = isCollapsed ? groupTotals[i.group].toLocaleString() : "";
                     let headStyle = "";
@@ -10449,15 +10464,16 @@ const app = {
 
 
             // Добавляем коллектор/стрелку
+            let grpHydro = "2.4. Гидравлика котельной";
             let circuits = rQ + tQ;
             let idx = (circuits > 2) ? 1 : 0;
             if (dn25) {
-                let item = catalog.hydro_dn25[idx]; addToBill(item, 1, "Гидравлическая развязка (DN25).");
+                let item = catalog.hydro_dn25[idx]; addToBill(item, 1, "Гидравлическая развязка (DN25).", grpHydro);
             } else {
                 if (this.state.hydroType === 'combo') {
-                    let item = catalog.hydro_dn20[idx]; item.alts = catalog.hydro_modular_dn20; addToBill(item, 1, "Коллектор-гидрострелка (Комби).");
+                    let item = catalog.hydro_dn20[idx]; item.alts = catalog.hydro_modular_dn20; addToBill(item, 1, "Коллектор-гидрострелка (Комби).", grpHydro);
                 } else {
-                    let item = catalog.hydro_modular_dn20[idx]; item.alts = catalog.hydro_dn20; addToBill(item, 1, "Распр. коллектор."); addToBill(catalog.hydro_arrow, 1, "Гидравлическая стрелка.");
+                    let item = catalog.hydro_modular_dn20[idx]; item.alts = catalog.hydro_dn20; addToBill(item, 1, "Распр. коллектор.", grpHydro); addToBill(catalog.hydro_arrow, 1, "Гидравлическая стрелка.", grpHydro);
                 }
             }
 
@@ -10470,14 +10486,15 @@ const app = {
 
             // Добавляем группы и насосы
             if (rQ > 0) {
-                addToBill(grps[0], rQ, this.getDesc('pump_group', grps[0], rQ, 'rad', pwr));
+                addToBill(grps[0], rQ, this.getDesc('pump_group', grps[0], rQ, 'rad', pwr), grpHydro);
             }
             if (tQ > 0) {
-                addToBill(grps[1], tQ, this.getDesc('pump_group', grps[1], tQ, 'ufh', tpArea));
+                addToBill(grps[1], tQ, this.getDesc('pump_group', grps[1], tQ, 'ufh', tpArea), grpHydro);
             }
-            if ((rQ + tQ) > 0) addToBill(pmp, rQ + tQ, this.getDesc('pump_std'));
+            if ((rQ + tQ) > 0) addToBill(pmp, rQ + tQ, this.getDesc('pump_std'), grpHydro);
         } else if (hasTp && tpArea > 0) {
             // Если коллектор не нужен (tQ = 0, rQ = 0), но теплый пол есть, добавляем смесительный узел в обвязку котельной
+            let grpHydro = "2.4. Гидравлика котельной";
             let mixItem = { ...catalog.mixing_units[0] };
             let desc = this.getDesc('ufh_mix', tpArea);
             let pumpItem = catalog.pumps_mix[0];
@@ -10485,9 +10502,9 @@ const app = {
             // Explicitly set alts array to support the swap button
             mixItem.alts = [catalog.mixing_units[0], catalog.groups_dn20[1], catalog.groups_dn25[1]];
 
-            addToBill(mixItem, 1, desc);
+            addToBill(mixItem, 1, desc, grpHydro);
             if (pumpItem) {
-                addToBill(pumpItem, 1, this.getDesc('pump_std'));
+                addToBill(pumpItem, 1, this.getDesc('pump_std'), grpHydro);
             }
         }
 
@@ -10674,7 +10691,7 @@ const app = {
                 let listComponents = uniqueComponents.join(", ");
                 let pipeName = isAnalog ? ((this.state.pprSystemBrand === 'proaqua' || !this.state.pprSystemBrand) ? "Труба PP-R DUO SDR 6" : "Труба PP-RCT") : "Труба из нержавеющей стали AISI 304";
                 let descPipe = `${pipeName} для обвязки оборудования котельной (${listComponents}). Общая расчетная длина: ${d.length.toFixed(1)} м.`;
-                addPipesToBill(d.length, parseInt(diam), "2.4. Трубопроводы котельной", descPipe);
+                addPipesToBill(d.length, parseInt(diam), "2.5. Трубопроводы котельной", descPipe);
             }
         }
         
@@ -11337,9 +11354,57 @@ const app = {
                 }
             }
             addToBill(catalog.water_parts[3], 1, "Наклейки", grpGen);
-            let totalBrackets = 0;
-            this.state.waterZones.forEach(z => { totalBrackets += (z.fixtures.basin + z.fixtures.shower + (z.fixtures.bath || 0) + z.fixtures.wash); });
-            if (totalBrackets > 0) addToBill(catalog.water_fittings[3], totalBrackets, "Монтажная планка (Для смесителей)", grpGen);
+            let tToilet = 0, tWash = 0, tDish = 0, tBasin = 0, tBath = 0, tShower = 0;
+            this.state.waterZones.forEach(z => {
+                if (z && z.fixtures) {
+                    tToilet += (z.fixtures.toilet || 0);
+                    tWash += (z.fixtures.wash || 0);
+                    tDish += (z.fixtures.dish || 0);
+                    tBasin += (z.fixtures.basin || 0);
+                    tBath += (z.fixtures.bath || 0);
+                    tShower += (z.fixtures.shower || 0);
+                }
+            });
+
+            let plateSingleObj = catalog.mounting_system.find(x => x.id === "SAC-0022-600001");
+            let plate100Obj = catalog.mounting_system.find(x => x.id === "SAC-0022-600100");
+            let plate150Obj = catalog.mounting_system.find(x => x.id === "SAC-0022-600150");
+
+            let qtySingle = tToilet + tWash + tDish;
+            if (qtySingle > 0 && plateSingleObj) {
+                let activeSingle = catalog.mounting_system.find(x => x.id === this.state.mountPlateSingleType) || plateSingleObj;
+                let itemCopy = {
+                    ...activeSingle,
+                    originalId: "SAC-0022-600001",
+                    alts: [plate100Obj, plate150Obj].filter(Boolean)
+                };
+                let tip = `Подобрано для одинарного подключения ХВС: Унитаз: ${tToilet} шт, Стиральная машина: ${tWash} шт, Посудомоечная машина: ${tDish} шт`;
+                addToBill(itemCopy, qtySingle, tip, grpGen);
+            }
+
+            let qty100 = tBasin;
+            if (qty100 > 0 && plate100Obj) {
+                let active100 = catalog.mounting_system.find(x => x.id === this.state.mountPlateDouble100Type) || plate100Obj;
+                let itemCopy = {
+                    ...active100,
+                    originalId: "SAC-0022-600100",
+                    alts: [plate150Obj, plateSingleObj].filter(Boolean)
+                };
+                let tip = `Подобрано для межосевого расстояния 100мм: Раковина: ${tBasin} шт`;
+                addToBill(itemCopy, qty100, tip, grpGen);
+            }
+
+            let qty150 = tBath + tShower;
+            if (qty150 > 0 && plate150Obj) {
+                let active150 = catalog.mounting_system.find(x => x.id === this.state.mountPlateDouble150Type) || plate150Obj;
+                let itemCopy = {
+                    ...active150,
+                    originalId: "SAC-0022-600150",
+                    alts: [plateSingleObj, plate100Obj].filter(Boolean)
+                };
+                let tip = `Подобрано для межосевого расстояния 150мм: Ванна: ${tBath} шт, Душ: ${tShower} шт`;
+                addToBill(itemCopy, qty150, tip, grpGen);
+            }
             let allPipe = totalPipeCold + totalPipeHot;
 
             if (isMerge) {
