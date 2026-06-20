@@ -11576,7 +11576,6 @@ const app = {
                     
                     let coupling110 = catalog.sewer_silent.find(x => x.id === "SKB-0006-000110");
                     addToBill(coupling110, floors, this.getDesc('sewer_coupling_110'), grpSewerMain);
-                }
 
                     // Добавление крепежной системы для канализации (Раздел 6)
                     let totalPipe58 = 0;
@@ -11621,6 +11620,7 @@ const app = {
                             addToBill(studItem, totalStuds, "Шпилька-шуруп с дюбелем для хомутов.", grpSewerMain);
                         }
                     }
+                }
 
                 // Смываем все группы по порядку
                 flushBill("8. Канализация");
@@ -11737,7 +11737,6 @@ const app = {
                     
                     let coupling110 = catalog.sewer_silent.find(x => x.id === "SKB-0006-000110");
                     addSewerItem(coupling110, floors, this.getDesc('sewer_coupling_110'));
-                }
 
                     // Добавление крепежной системы для канализации (Раздел 6) - общего списка
                     let totalPipe58 = 0;
@@ -11782,6 +11781,7 @@ const app = {
                             addSewerItem(studItem, totalStuds, "Шпилька-шуруп с дюбелем для хомутов.");
                         }
                     }
+                }
 
                 // Сортируем собранные позиции от большей цены к меньшей
                 let sortedSewerList = Object.values(sewerItems).sort((a, b) => (b.item.price || 0) - (a.item.price || 0));
