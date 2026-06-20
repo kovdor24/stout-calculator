@@ -11190,6 +11190,16 @@ const app = {
 
             let collGroups = (totalColdPoints > 0 ? 1 : 0) + (totalHotPoints > 0 ? 1 : 0) + (recirc ? 1 : 0);
             if (collGroups > 0) addToBill(catalog.manifold_brackets, collGroups, "Пара кронштейнов на каждый коллектор", grpGen);
+            if (collGroups > 1) {
+                let railItem = catalog.mounting_system.find(x => x.id === "SAC-0020-503120");
+                if (railItem) {
+                    addToBill(railItem, 2, "Вертикальные монтажные шины для сборки коллекторного узла.", grpGen);
+                }
+                let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                if (studItem) {
+                    addToBill(studItem, 4, "Комплект крепежа монтажных шин к стене.", grpGen);
+                }
+            }
             addToBill(catalog.water_parts[3], 1, "Наклейки", grpGen);
             let totalBrackets = 0;
             this.state.waterZones.forEach(z => { totalBrackets += (z.fixtures.basin + z.fixtures.shower + (z.fixtures.bath || 0) + z.fixtures.wash); });
