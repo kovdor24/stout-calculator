@@ -131,44 +131,23 @@ def get_price_card_isolation(driver, sku, old_price):
 
 def process_sku_v42(driver, sku, old_price):
     try:
+        raw_sku = sku.strip()
+        search_url = f"https://www.teremonline.ru/search/?q={raw_sku}"
+        
         try:
-            driver.get(SEARCH_URL)
+            driver.get(search_url)
         except TimeoutException:
             driver.execute_script("window.stop();")
+            
         close_popups(driver)
-        raw_sku = sku.strip()
-        for attempt in range(3):
-            try:
-                wait = WebDriverWait(driver, 5)
-                try: inp = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='search'], input[name='q'], input[placeholder*='поиск']")))
-                except:
-                    inp = next((i for i in driver.find_elements(By.TAG_NAME, "input") if i.is_displayed() and i.size['width'] > 50), None)
-                if not inp: return "ERR: Поле поиска"
-
-                inp.send_keys(Keys.CONTROL + "a")
-                inp.send_keys(Keys.BACKSPACE)
-                
-                inp.send_keys(raw_sku)
-                time.sleep(1)
-                try: 
-                    driver.find_element(By.CSS_SELECTOR, "button[type='submit'], .search-btn").click()
-                except: 
-                    inp.send_keys(Keys.RETURN)
-                break
-            except StaleElementReferenceException:
-                time.sleep(0.5)
-                continue
-            except Exception as e:
-                if attempt == 2: return f"ERR: {str(e)[:20]}"
-                time.sleep(0.5)
-                continue
-
-        res = "NOT_FOUND"
-        for _ in range(8):
-            time.sleep(1)
-            res = get_price_card_isolation(driver, sku, old_price)
-            if isinstance(res, dict): return res
-            if isinstance(res, str) and (res.startswith("ERR_DIFF") or res == "NOT_FOUND"): continue
+        
+        # Check for bot protection / CDN block pages
+        title_lower = driver.title.lower()
+        page_source_lower = driver.page_source.lower()
+        if "ddos-guard" in title_lower or "cloudflare" in title_lower or "captcha" in page_source_lower or "access denied" in page_source_lower or "blocked" in title_lower:
+            return "ERR: BLOCKED_BY_CDN"
+            
+        res = get_price_card_isolation(driver, sku, old_price)
         return res
     except Exception as e: return f"ERR: {str(e)[:20]}"
 
@@ -194,11 +173,16 @@ def update_catalog_prices():
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_experimental_option("excludeSwitches", ["enable-logging"])
-        
-        # Жестко отключаем прокси, чтобы пускать трафик напрямую
         options.add_argument("--no-proxy-server") 
         
+        # Скрываем автоматизацию и ставим реальный User-Agent для обхода блокировок DDoS-Guard / Cloudflare
+        options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        
         driver = webdriver.Chrome(options=options)
+        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+            "source": "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+        })
         driver.set_page_load_timeout(30)
         driver.set_window_size(1920, 1080)
         print("Браузер успешно запущен!\n")
@@ -257,6 +241,14 @@ def update_catalog_prices():
         else:
             res = process_sku_v42(driver, sku, old_price)
             price_cache[sku] = res
+            # Небольшая пауза для имитации поведения человека
+            import random
+            time.sleep(random.uniform(1.2, 2.5))
+            
+        if isinstance(res, str) and "BLOCKED_BY_CDN" in res:
+            print("-> БЛОКИРОВКА CDN (DDoS-Guard)")
+            print("\n[!] Остановка: Обнаружена блокировка робота сайтом. Парсинг прерван.")
+            break
             
         if isinstance(res, str) and res == "NOT_FOUND":
             not_found_streak += 1
