@@ -4887,6 +4887,37 @@ ppr_ekoplastik_pipe: [
         }
     ],
 
+    mounting_system: [
+        { id: "ASKON-83115", name: "Кронштейн для расширительного бака L-образный Askon", price: 420, brand: "Askon", availability: "in_stock" },
+        { id: "SAC-0020-000012", name: "Хомут для труб с гайкой 1/2\" (20–24 мм) STOUT", price: 39, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-000034", name: "Хомут для труб с гайкой 3/4\" (25–29 мм) STOUT", price: 48, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-000001", name: "Хомут для труб с гайкой 1\" (32–37 мм) STOUT", price: 52, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-000114", name: "Хомут для труб с гайкой 1 1/4\" (40–45 мм) STOUT", price: 56, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-000112", name: "Хомут для труб с гайкой 1 1/2\" (47–52 мм) STOUT", price: 59, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-000002", name: "Хомут для труб с гайкой 2\" (57–63 мм) STOUT", price: 61, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-000212", name: "Хомут для труб с гайкой 2 1/2\" (75–80 мм) STOUT", price: 112, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-000003", name: "Хомут для труб с гайкой 3\" (88–94 мм) STOUT", price: 122, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-000004", name: "Хомут для труб с гайкой 4\" (113–118 мм) STOUT", price: 143, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-010004", name: "Хомут для труб тяжелой серии с гайкой 4\" (108–116 мм) STOUT", price: 162, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-300012", name: "Хомут для труб одновинтовой с гайкой M8 1/2\" (20–23 мм) STOUT", price: 55, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-300034", name: "Хомут для труб одновинтовой с гайкой M8 3/4\" (25–28 мм) STOUT", price: 60, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-300001", name: "Хомут для труб одновинтовой с гайкой M8 1\" (31–35 мм) STOUT", price: 65, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-300114", name: "Хомут для труб одновинтовой с гайкой M8 1 1/4\" (40–45 мм) STOUT", price: 75, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-300112", name: "Хомут для труб одновинтовой с гайкой M8 1 1/2\" (48–52 мм) STOUT", price: 82, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-300002", name: "Хомут для труб одновинтовой с гайкой M8 2\" (57–60 мм) STOUT", price: 82, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-200012", name: "Хомут для труб двойной с гайкой 1/2\" (20–24 мм) STOUT", price: 140, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-200034", name: "Хомут для труб двойной с гайкой 3/4\" (25–29 мм) STOUT", price: 147, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-200038", name: "Хомут для труб двойной с гайкой 3/8\" (14–18 мм) STOUT", price: 131, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0021-281530", name: "Консоль монтажная перфорированная 28х15х300 мм STOUT", price: 889, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0022-283020", name: "Профиль монтажный перфорированный С-образный 28х30х2000 мм STOUT", price: 1863, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0030-000825", name: "Комплект крепления мембранных расширительных баков 8–25 л STOUT", price: 1266, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-503120", name: "Шина сантехническая (монтажный профиль) 50x3x1200 мм STOUT", price: 1254, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-503200", name: "Шина сантехническая (монтажный профиль) 50x3x2000 мм STOUT", price: 1819, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-400100", name: "Шпилька сантехническая M8x100 в комплекте с дюбелем M10x50 STOUT", price: 22, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-411040", name: "Анкер забивной стальной M10х12х40 мм STOUT", price: 23, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-421040", name: "Анкер забивной стальной M10х12х35 мм STOUT", price: 82, brand: "STOUT", availability: "in_stock" }
+    ],
+
 };
 
 const titanRads = [

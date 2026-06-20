@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile', expansionTankMountType: 'standard', pipeMountType: 'double' },
 
     lastSavedStateString: "",
 
@@ -5907,7 +5907,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "",
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile', expansionTankMountType: 'standard', pipeMountType: 'double',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -6558,6 +6558,11 @@ const app = {
         else if (originalId.startsWith('SDG-0018') || originalId.startsWith('SDG-0016')) { this.state.hydroType = (this.state.hydroType === 'combo') ? 'modular' : 'combo'; }
         else if (originalId.startsWith('SMS-0922') || (originalId.startsWith('SMB-6850') && !originalId.endsWith('_water'))) { this.state.radManifoldType = (this.state.radManifoldType === 'standard') ? 'chrome' : 'standard'; }
         else if (originalId.startsWith('SMB-6851-') || (originalId.startsWith('SMB-6850-') && originalId.endsWith('_water'))) { this.state.waterManifoldType = (this.state.waterManifoldType === 'block') ? 'standard' : 'block'; }
+        else if (originalId.startsWith('SAC-0020-000004') || originalId.startsWith('SAC-0020-010004')) { this.state.sewerClampsType = (this.state.sewerClampsType === 'standard') ? 'heavy' : 'standard'; }
+        else if (originalId.startsWith('SAC-0020-000002') || originalId.startsWith('SAC-0020-300002')) { this.state.sewerClampsD58Type = (this.state.sewerClampsD58Type === 'standard') ? 'direct' : 'standard'; }
+        else if (originalId.startsWith('SAC-0021-281530') || originalId.startsWith('SAC-0022-283020') || originalId.startsWith('SAC-0020-503200')) { this.state.boilerFrameType = (this.state.boilerFrameType === 'profile') ? 'flat_strip' : 'profile'; }
+        else if (originalId.startsWith('SAC-0030-000825')) { this.state.expansionTankMountType = (this.state.expansionTankMountType === 'standard') ? 'stout' : 'standard'; }
+        else if (originalId.startsWith('SAC-0020-2000') || (originalId.startsWith('SAC-0020-0000') && (originalId.endsWith('_cw') || originalId.endsWith('_hw') || originalId.endsWith('_recirc')))) { this.state.pipeMountType = (this.state.pipeMountType === 'double') ? 'single' : 'double'; }
         else if (originalId.endsWith('_rad') || originalId.startsWith('SPI-0003-')) { this.state.pipeType = (this.state.pipeType === 'insulated') ? 'split' : (this.state.pipeType === 'split') ? 'insulated_mp' : (this.state.pipeType === 'insulated_mp') ? 'split_mp' : 'insulated'; }
         else if (originalId.endsWith('_ufh') || originalId.startsWith('SPX-0002-') || originalId.startsWith('SPM-0001-')) { this.state.ufhPipeMaterial = (this.state.ufhPipeMaterial === 'pex') ? 'metal_plastic' : 'pex'; }
         else if (originalId.endsWith('_water') || (originalId.startsWith('SPX-0001-') && !originalId.endsWith('_rad'))) { this.state.waterPipeMaterial = (this.state.waterPipeMaterial === 'pex') ? 'metal_plastic' : 'pex'; }
@@ -10269,7 +10274,20 @@ const app = {
         this.needCollector = needCollector;
         this.vSys = vSys;
         let reqExp = vSys * 0.12; let bltin = 0; if (selBoilers.length > 0) { selBoilers.forEach(b => { bltin += (b.exp !== undefined ? b.exp : 0); }); }
-        let def = reqExp - bltin; if (def > 0) { let et = catalog.exp_heating.find(t => t.vol >= def) || catalog.exp_heating[4]; addToBill(et, 1, this.getDesc('exp_h', Math.round(vSys))); if (et.vol <= 25) addToBill(catalog.tank_mount, 1, "Крепление бака."); addToBill(catalog.tank_kit, 1, "Подключение бака."); }
+        let def = reqExp - bltin; if (def > 0) { let et = catalog.exp_heating.find(t => t.vol >= def) || catalog.exp_heating[4]; addToBill(et, 1, this.getDesc('exp_h', Math.round(vSys))); if (et.vol <= 25) {
+                let isStout = (this.state.expansionTankMountType === 'stout');
+                let mountItem = isStout 
+                    ? catalog.mounting_system.find(x => x.id === "SAC-0030-000825") 
+                    : catalog.mounting_system.find(x => x.id === "ASKON-83115");
+                if (mountItem) {
+                    let itemCopy = { ...mountItem, originalId: "SAC-0030-000825" };
+                    itemCopy.alts = [isStout 
+                        ? catalog.mounting_system.find(x => x.id === "ASKON-83115") 
+                        : catalog.mounting_system.find(x => x.id === "SAC-0030-000825")
+                    ];
+                    addToBill(itemCopy, 1, "Крепление расширительного бака.");
+                }
+            } addToBill(catalog.tank_kit, 1, "Подключение бака."); }
 
         // Вывод оборудования котельной
         let useAnalogSec2 = ((this.state.sectionAnalog || {})["2. Обвязка котельной"] !== undefined) 
@@ -10280,6 +10298,30 @@ const app = {
         let pmp = null;
 
         if (needCollector) {
+            // Добавление рамы/шины для монтажа коллектора
+            let isProfile = (this.state.boilerFrameType === 'profile');
+            let mainFrameItem = isProfile
+                ? catalog.mounting_system.find(x => x.id === "SAC-0021-281530")
+                : catalog.mounting_system.find(x => x.id === "SAC-0020-503200");
+            
+            if (mainFrameItem) {
+                let itemCopy = { ...mainFrameItem, originalId: "SAC-0021-281530" };
+                itemCopy.alts = [isProfile
+                    ? catalog.mounting_system.find(x => x.id === "SAC-0020-503200")
+                    : catalog.mounting_system.find(x => x.id === "SAC-0021-281530")
+                ];
+                addToBill(itemCopy, isProfile ? 2 : 1, "Несущая опора коллектора котельной.");
+            }
+
+            if (isProfile) {
+                let profileItem = catalog.mounting_system.find(x => x.id === "SAC-0022-283020");
+                if (profileItem) addToBill(profileItem, 1, "Профиль перфорированный для сборки рамы.");
+            }
+
+            let frameStuds = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+            if (frameStuds) addToBill(frameStuds, 4, "Комплект крепежа рамы к стене.");
+
+
             // Добавляем коллектор/стрелку
             let circuits = rQ + tQ;
             let idx = (circuits > 2) ? 1 : 0;
@@ -11000,6 +11042,34 @@ const app = {
                 addToBill(waterPipe, pLen, this.getDesc('pipe_cw', `${pLen} м`), grpCold);
                 addToBill(catalog.water_insulation[1], pLen, this.getDesc('ins_blue', pLen), grpCold);
                 addToBill(catalog.water_fittings[8], pLen, this.getDesc('double_clip', pLen, 'cw'), grpCold);
+
+                // Крепление трубопровода ХВС
+                let countClampsCW = Math.ceil(pLen / 1.2);
+                if (countClampsCW > 0) {
+                    let isDouble = (this.state.pipeMountType === 'double');
+                    let clampCW = catalog.mounting_system.find(x => x.id === (isDouble ? "SAC-0020-200038" : "SAC-0020-000012"));
+                    if (clampCW) {
+                        let clampItem = { ...clampCW };
+                        if (isDouble) {
+                            clampItem.originalId = "SAC-0020-200038";
+                            clampItem.alts = [
+                                { ...catalog.mounting_system.find(x => x.id === "SAC-0020-000012"), id: "SAC-0020-000012_cw", originalId: "SAC-0020-000012_cw" }
+                            ];
+                            addToBill(clampItem, countClampsCW, "Сдвоенный хомут для прокладки ХВС.", grpCold);
+                            let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                            if (studItem) addToBill(studItem, countClampsCW, "Шпилька-шуруп с дюбелем для хомутов ХВС.", grpCold);
+                        } else {
+                            clampItem.id = "SAC-0020-000012_cw";
+                            clampItem.originalId = "SAC-0020-000012_cw";
+                            clampItem.alts = [
+                                { ...catalog.mounting_system.find(x => x.id === "SAC-0020-200038"), id: "SAC-0020-200038", originalId: "SAC-0020-200038" }
+                            ];
+                            addToBill(clampItem, countClampsCW * 2, "Одиночный хомут для прокладки ХВС.", grpCold);
+                            let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                            if (studItem) addToBill(studItem, countClampsCW * 2, "Шпилька-шуруп с дюбелем для хомутов ХВС.", grpCold);
+                        }
+                    }
+                }
                 let socketsCold = totalColdPoints - totalToilets;
                 if (socketsCold > 0) {
                     addToBill(catalog.water_fittings[0], socketsCold, this.getDesc('socket', 'Тупиковая (ХВС)', socketsCold), grpCold);
@@ -11023,6 +11093,34 @@ const app = {
                 addToBill(waterPipe, pLen, this.getDesc('pipe_hw', `${pLen} м`), grpHot);
                 addToBill(catalog.water_insulation[0], pLen, this.getDesc('ins_red', pLen), grpHot);
                 addToBill(catalog.water_fittings[8], pLen, this.getDesc('double_clip', pLen, 'hw'), grpHot);
+
+                // Крепление трубопровода ГВС
+                let countClampsHW = Math.ceil(pLen / 1.2);
+                if (countClampsHW > 0) {
+                    let isDouble = (this.state.pipeMountType === 'double');
+                    let clampHW = catalog.mounting_system.find(x => x.id === (isDouble ? "SAC-0020-200038" : "SAC-0020-000012"));
+                    if (clampHW) {
+                        let clampItem = { ...clampHW };
+                        if (isDouble) {
+                            clampItem.originalId = "SAC-0020-200038";
+                            clampItem.alts = [
+                                { ...catalog.mounting_system.find(x => x.id === "SAC-0020-000012"), id: "SAC-0020-000012_hw", originalId: "SAC-0020-000012_hw" }
+                            ];
+                            addToBill(clampItem, countClampsHW, "Сдвоенный хомут для прокладки ГВС.", grpHot);
+                            let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                            if (studItem) addToBill(studItem, countClampsHW, "Шпилька-шуруп с дюбелем для хомутов ГВС.", grpHot);
+                        } else {
+                            clampItem.id = "SAC-0020-000012_hw";
+                            clampItem.originalId = "SAC-0020-000012_hw";
+                            clampItem.alts = [
+                                { ...catalog.mounting_system.find(x => x.id === "SAC-0020-200038"), id: "SAC-0020-200038", originalId: "SAC-0020-200038" }
+                            ];
+                            addToBill(clampItem, countClampsHW * 2, "Одиночный хомут для прокладки ГВС.", grpHot);
+                            let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                            if (studItem) addToBill(studItem, countClampsHW * 2, "Шпилька-шуруп с дюбелем для хомутов ГВС.", grpHot);
+                        }
+                    }
+                }
                 let totalMixers = 0;
                 this.state.waterZones.forEach(z => totalMixers += (z.fixtures.basin + z.fixtures.shower));
                 if (totalMixers > 0) {
@@ -11050,6 +11148,34 @@ const app = {
                 addToBill(waterPipe, pLen, this.getDesc('pipe_hw', `${pLen} м (Обратка)`), grpRecirc);
                 addToBill(catalog.water_insulation[0], pLen, this.getDesc('ins_red', pLen), grpRecirc);
                 addToBill(catalog.water_fittings[8], pLen, this.getDesc('double_clip', pLen, 'recirc'), grpRecirc);
+
+                // Крепление трубопровода рециркуляции ГВС
+                let countClampsRecirc = Math.ceil(pLen / 1.2);
+                if (countClampsRecirc > 0) {
+                    let isDouble = (this.state.pipeMountType === 'double');
+                    let clampRecirc = catalog.mounting_system.find(x => x.id === (isDouble ? "SAC-0020-200038" : "SAC-0020-000012"));
+                    if (clampRecirc) {
+                        let clampItem = { ...clampRecirc };
+                        if (isDouble) {
+                            clampItem.originalId = "SAC-0020-200038";
+                            clampItem.alts = [
+                                { ...catalog.mounting_system.find(x => x.id === "SAC-0020-000012"), id: "SAC-0020-000012_recirc", originalId: "SAC-0020-000012_recirc" }
+                            ];
+                            addToBill(clampItem, countClampsRecirc, "Сдвоенный хомут для рециркуляции ГВС.", grpRecirc);
+                            let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                            if (studItem) addToBill(studItem, countClampsRecirc, "Шпилька-шуруп с дюбелем для хомутов рециркуляции ГВС.", grpRecirc);
+                        } else {
+                            clampItem.id = "SAC-0020-000012_recirc";
+                            clampItem.originalId = "SAC-0020-000012_recirc";
+                            clampItem.alts = [
+                                { ...catalog.mounting_system.find(x => x.id === "SAC-0020-200038"), id: "SAC-0020-200038", originalId: "SAC-0020-200038" }
+                            ];
+                            addToBill(clampItem, countClampsRecirc * 2, "Одиночный хомут для рециркуляции ГВС.", grpRecirc);
+                            let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                            if (studItem) addToBill(studItem, countClampsRecirc * 2, "Шпилька-шуруп с дюбелем для хомутов рециркуляции ГВС.", grpRecirc);
+                        }
+                    }
+                }
             }
 
             let collGroups = (totalColdPoints > 0 ? 1 : 0) + (totalHotPoints > 0 ? 1 : 0) + (recirc ? 1 : 0);
@@ -11452,6 +11578,50 @@ const app = {
                     addToBill(coupling110, floors, this.getDesc('sewer_coupling_110'), grpSewerMain);
                 }
 
+                    // Добавление крепежной системы для канализации (Раздел 6)
+                    let totalPipe58 = 0;
+                    this.state.waterZones.forEach(z => {
+                        let f = z.fixtures;
+                        totalPipe58 += (parseInt(f.bath) || 0) * 1.5;
+                        totalPipe58 += (parseInt(f.shower) || 0) * 1.5;
+                        totalPipe58 += (parseInt(f.basin) || 0) * 1.0;
+                        totalPipe58 += (parseInt(f.wash) || 0) * 1.0;
+                        totalPipe58 += (parseInt(f.dish) || 0) * 1.0;
+                    });
+                    let countClamps110 = floors + Math.ceil(Math.max(0, pipe110Len - floors * 3) / 1.5);
+                    let countClamps58 = Math.ceil(totalPipe58 / 1.0);
+
+                    if (countClamps110 > 0) {
+                        let isHeavy = (this.state.sewerClampsType === 'heavy');
+                        let clamp110 = catalog.mounting_system.find(x => x.id === (isHeavy ? "SAC-0020-010004" : "SAC-0020-000004"));
+                        if (clamp110) {
+                            let clampItem = { ...clamp110, originalId: "SAC-0020-000004" };
+                            clampItem.alts = [catalog.mounting_system.find(x => x.id === (isHeavy ? "SAC-0020-000004" : "SAC-0020-010004"))];
+                            addToBill(clampItem, countClamps110, "Крепление стояка канализации D110.", grpSewerMain);
+                        }
+                    }
+
+                    if (countClamps58 > 0) {
+                        let isDirect = (this.state.sewerClampsD58Type === 'direct');
+                        let clamp58 = catalog.mounting_system.find(x => x.id === (isDirect ? "SAC-0020-300002" : "SAC-0020-000002"));
+                        if (clamp58) {
+                            let clampItem = { ...clamp58, originalId: "SAC-0020-000002" };
+                            clampItem.alts = [catalog.mounting_system.find(x => x.id === (isDirect ? "SAC-0020-000002" : "SAC-0020-300002"))];
+                            addToBill(clampItem, countClamps58, "Крепление отводов канализации D50.", grpSewerMain);
+                        }
+                    }
+
+                    let totalStuds = countClamps110;
+                    if (this.state.sewerClampsD58Type === 'standard') {
+                        totalStuds += countClamps58;
+                    }
+                    if (totalStuds > 0) {
+                        let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                        if (studItem) {
+                            addToBill(studItem, totalStuds, "Шпилька-шуруп с дюбелем для хомутов.", grpSewerMain);
+                        }
+                    }
+
                 // Смываем все группы по порядку
                 flushBill("8. Канализация");
                 this.state.waterZones.forEach(z => {
@@ -11568,6 +11738,50 @@ const app = {
                     let coupling110 = catalog.sewer_silent.find(x => x.id === "SKB-0006-000110");
                     addSewerItem(coupling110, floors, this.getDesc('sewer_coupling_110'));
                 }
+
+                    // Добавление крепежной системы для канализации (Раздел 6) - общего списка
+                    let totalPipe58 = 0;
+                    this.state.waterZones.forEach(z => {
+                        let f = z.fixtures;
+                        totalPipe58 += (parseInt(f.bath) || 0) * 1.5;
+                        totalPipe58 += (parseInt(f.shower) || 0) * 1.5;
+                        totalPipe58 += (parseInt(f.basin) || 0) * 1.0;
+                        totalPipe58 += (parseInt(f.wash) || 0) * 1.0;
+                        totalPipe58 += (parseInt(f.dish) || 0) * 1.0;
+                    });
+                    let countClamps110 = floors + Math.ceil(Math.max(0, pipe110Len - floors * 3) / 1.5);
+                    let countClamps58 = Math.ceil(totalPipe58 / 1.0);
+
+                    if (countClamps110 > 0) {
+                        let isHeavy = (this.state.sewerClampsType === 'heavy');
+                        let clamp110 = catalog.mounting_system.find(x => x.id === (isHeavy ? "SAC-0020-010004" : "SAC-0020-000004"));
+                        if (clamp110) {
+                            let clampItem = { ...clamp110, originalId: "SAC-0020-000004" };
+                            clampItem.alts = [catalog.mounting_system.find(x => x.id === (isHeavy ? "SAC-0020-000004" : "SAC-0020-010004"))];
+                            addSewerItem(clampItem, countClamps110, "Крепление стояка канализации D110.");
+                        }
+                    }
+
+                    if (countClamps58 > 0) {
+                        let isDirect = (this.state.sewerClampsD58Type === 'direct');
+                        let clamp58 = catalog.mounting_system.find(x => x.id === (isDirect ? "SAC-0020-300002" : "SAC-0020-000002"));
+                        if (clamp58) {
+                            let clampItem = { ...clamp58, originalId: "SAC-0020-000002" };
+                            clampItem.alts = [catalog.mounting_system.find(x => x.id === (isDirect ? "SAC-0020-000002" : "SAC-0020-300002"))];
+                            addSewerItem(clampItem, countClamps58, "Крепление отводов канализации D50.");
+                        }
+                    }
+
+                    let totalStuds = countClamps110;
+                    if (this.state.sewerClampsD58Type === 'standard') {
+                        totalStuds += countClamps58;
+                    }
+                    if (totalStuds > 0) {
+                        let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                        if (studItem) {
+                            addSewerItem(studItem, totalStuds, "Шпилька-шуруп с дюбелем для хомутов.");
+                        }
+                    }
 
                 // Сортируем собранные позиции от большей цены к меньшей
                 let sortedSewerList = Object.values(sewerItems).sort((a, b) => (b.item.price || 0) - (a.item.price || 0));
