@@ -1180,9 +1180,11 @@ const app = {
             console.log("[saveToCloud] Сессия Supabase получена:", session ? "Активна" : "Нет сессии");
 
             if (!session && !isLocal) {
-                console.log("[saveToCloud] Сессия отсутствует, показываем окно авторизации");
-                app.alert("Для сохранения сметы необходимо авторизоваться.");
-                this.showAuthModal();
+                console.log("[saveToCloud] Сессия отсутствует");
+                if (!silent) {
+                    app.alert("Для сохранения сметы необходимо авторизоваться.");
+                    this.showAuthModal();
+                }
                 return false;
             }
 
@@ -1293,7 +1295,9 @@ const app = {
             return true;
         } catch (error) {
             console.error("[saveToCloud] Критическая ошибка в блоке catch:", error);
-            app.alert("❌ Ошибка при сохранении в облако: " + error.message);
+            if (!silent) {
+                app.alert("❌ Ошибка при сохранении в облако: " + error.message);
+            }
             return false;
         }
     },
