@@ -206,30 +206,40 @@ def extract_image_url(driver, sku):
     og_img = soup.find('meta', property='og:image')
     if og_img and og_img.get('content'):
         url = og_img.get('content')
-        if '/upload/' in url:
+        if '/upload/' in url and 'logo' not in url.lower() and 'brand' not in url.lower():
             return url
             
     # Try 2: Look for image tag with itemprop="image"
     itemprop_img = soup.find('img', itemprop='image')
     if itemprop_img and itemprop_img.get('src'):
-        return itemprop_img.get('src')
+        url = itemprop_img.get('src')
+        if 'logo' not in url.lower() and 'brand' not in url.lower():
+            return url
         
     # Try 3: Search for common product detail page gallery structures
     gallery_img = soup.select('.product-gallery img, .js-product-gallery img, .product-image img, .detail-gallery img, .product-card__gallery img')
     for img in gallery_img:
         src = img.get('src') or img.get('data-src')
         if src and ('/upload/' in src):
-            return src
-            
-    # Try 4: Fallback to any image inside product containers or matching iblock
-    all_imgs = soup.find_all('img')
-    for img in all_imgs:
-        src = img.get('src') or img.get('data-src')
-        if src and ('/upload/' in src):
             src_lower = src.lower()
-            if 'logo' not in src_lower and 'banner' not in src_lower and 'icon' not in src_lower and 'arrow' not in src_lower:
+            if 'logo' not in src_lower and 'banner' not in src_lower and 'icon' not in src_lower and 'arrow' not in src_lower and 'brand' not in src_lower:
                 return src
                 
+    # Try 4: Search only inside the first product item on the search page
+    first_item = soup.select_one('.product-item, .product-item-container, .product-card')
+    if first_item:
+        img_els = first_item.select('.product-item-image-original, .product-item-image-alternative, img')
+        for el in img_els:
+            src = el.get('src') or el.get('data-src') or el.get('style') or ''
+            if 'background-image' in src:
+                bg_match = re.search(r"url\(['\"]?([^'\"]+)['\"]?\)", src)
+                if bg_match:
+                    src = bg_match.group(1)
+            if src and ('/upload/' in src):
+                src_lower = src.lower()
+                if 'logo' not in src_lower and 'banner' not in src_lower and 'icon' not in src_lower and 'arrow' not in src_lower and 'brand' not in src_lower:
+                    return src
+                    
     return None
 
 def process_sku_image(driver, item):
