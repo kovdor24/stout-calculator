@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile', expansionTankMountType: 'standard', pipeMountType: 'hidden' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor' },
 
     lastSavedStateString: "",
 
@@ -5907,7 +5907,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile', expansionTankMountType: 'standard', pipeMountType: 'hidden',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -6560,6 +6560,7 @@ const app = {
         else if (originalId.startsWith('SMB-6851-') || (originalId.startsWith('SMB-6850-') && originalId.endsWith('_water'))) { this.state.waterManifoldType = (this.state.waterManifoldType === 'block') ? 'standard' : 'block'; }
         else if (originalId.startsWith('SAC-0020-000004') || originalId.startsWith('SAC-0020-010004')) { this.state.sewerClampsType = (this.state.sewerClampsType === 'standard') ? 'heavy' : 'standard'; }
         else if (originalId.startsWith('SAC-0020-000002') || originalId.startsWith('SAC-0020-300002')) { this.state.sewerClampsD58Type = (this.state.sewerClampsD58Type === 'standard') ? 'direct' : 'standard'; }
+        else if (originalId === 'SAC-0020-411040_boiler') { this.state.boilerFrameFastenerType = (this.state.boilerFrameFastenerType === 'anchor') ? 'stud' : 'anchor'; }
         
         else if (originalId.startsWith('SAC-0030-000825')) { this.state.expansionTankMountType = (this.state.expansionTankMountType === 'standard') ? 'stout' : 'standard'; }
         else if (originalId.startsWith('SAC-0020-2000') || (originalId.startsWith('SAC-0020-0000') && (originalId.endsWith('_cw') || originalId.endsWith('_hw') || originalId.endsWith('_recirc'))) || (originalId.startsWith('SMF-0003') && (originalId.endsWith('_cw') || originalId.endsWith('_hw') || originalId.endsWith('_recirc')))) { if (this.state.pipeMountType === 'hidden') this.state.pipeMountType = 'double'; else if (this.state.pipeMountType === 'double') this.state.pipeMountType = 'single'; else this.state.pipeMountType = 'hidden'; }
@@ -10298,16 +10299,48 @@ const app = {
         let pmp = null;
 
         if (needCollector) {
-            // Монтажные консоли для сборного коллектора Rommer (для Stout они входят в комплект)
-            if (useAnalogSec2) {
-                let consoleItem = catalog.mounting_system.find(x => x.id === "SAC-0021-281530");
-                if (consoleItem) {
-                    addToBill(consoleItem, 2, "Несущая опора коллектора котельной (консоли).");
-                }
-                let frameStuds = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
-                if (frameStuds) {
-                    addToBill(frameStuds, 4, "Комплект крепежа рамы к стене.");
-                }
+            // Несущий каркас (рама) коллектора котельной на базе C-образного профиля и консолей STOUT
+            let profileItem = catalog.mounting_system.find(x => x.id === "SAC-0022-283020");
+            let consoleItem = catalog.mounting_system.find(x => x.id === "SAC-0021-281530");
+            if (profileItem) {
+                addToBill(profileItem, 1, "Монтажный перфорированный С-образный профиль для сборки несущей рамы (2м).");
+            }
+            if (consoleItem) {
+                addToBill(consoleItem, 2, "Несущая консоль перфорированная для монтажной рамы котельной.");
+            }
+
+            // Подбор крепежа рамы к стене (анкеры или шпильки-шурупы с дюбелями)
+            let isAnchor = (this.state.boilerFrameFastenerType === 'anchor' || !this.state.boilerFrameFastenerType);
+            let fastenerItem = isAnchor
+                ? catalog.mounting_system.find(x => x.id === "SAC-0020-411040")
+                : catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+            
+            if (fastenerItem) {
+                let itemCopy = { ...fastenerItem, originalId: "SAC-0020-411040_boiler" };
+                itemCopy.alts = [isAnchor
+                    ? catalog.mounting_system.find(x => x.id === "SAC-0020-400100")
+                    : catalog.mounting_system.find(x => x.id === "SAC-0020-411040")
+                ];
+                addToBill(itemCopy, 4, isAnchor 
+                    ? "Анкер забивной стальной для крепления рамы к стене." 
+                    : "Шпилька-шуруп с дюбелем для крепления рамы к стене.");
+            }
+
+            // Подбор хомутов под диаметр трубы котлового контура
+            let frameBoilerPower = selBoilers.reduce((acc, b) => acc + (b.power || 0), 0);
+            let frameSsDiameter = (frameBoilerPower <= 30) ? 22 : 28;
+            let frameIsAnalog = (this.state.brandMode === 'rommer');
+            
+            let clampId = "";
+            if (frameIsAnalog) {
+                let ppr_diam = (frameSsDiameter === 22) ? 32 : 40;
+                clampId = (ppr_diam === 32) ? "SAC-0020-000001" : "SAC-0020-000114";
+            } else {
+                clampId = (frameSsDiameter === 22) ? "SAC-0020-000012" : "SAC-0020-000034";
+            }
+            let clampItem = catalog.mounting_system.find(x => x.id === clampId);
+            if (clampItem) {
+                addToBill(clampItem, 4, "Трубный хомут для фиксации трубопроводов котлового контура на консолях.");
             }
 
 
