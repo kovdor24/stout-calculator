@@ -6221,3 +6221,51 @@ body.dark-mode #printed_dynamic_scheme img {
 body.dark-mode .sec-analog-badge.active .sec-analog-label {
     color: #fb923c;
 }
+
+/* --- СТИЛИ ДЛЯ ВЫБОРА РАЗДЕЛОВ ПЕЧАТИ / ШАРИНГА --- */
+.share-option-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--surface);
+    user-select: none;
+    box-sizing: border-box;
+}
+
+.share-option-card:hover {
+    border-color: var(--primary);
+    background: var(--surface-light);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.share-option-card.selected {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.share-option-card input[type="checkbox"] {
+    accent-color: var(--primary);
+    outline: none;
+}
+
+body.dark-mode .share-option-card {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .share-option-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .share-option-card.selected {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: #3b82f6;
+}

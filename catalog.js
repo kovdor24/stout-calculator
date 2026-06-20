@@ -990,12 +990,10 @@ const getImg = (item) => {
     else if (item.name.includes('Мат')) { txt = '🔲'; bg = 'F3E8FF'; }
     else if (item.name.includes('Zigbee') || item.name.includes('Головка') || item.name.includes('Узел') || item.name.includes('Термостат') || item.name.includes('контроллер')) { txt = '🔧'; bg = 'DBEAFE'; }
     else if (item.name.includes('Инсталляция')) { txt = '🚽'; bg = 'F3E8FF'; }
-    let imgSrc = `img/${item.id}.jpg`;
-    if (item.id.startsWith('SPI-0001-') || item.id.startsWith('SPI-0002-')) {
-        imgSrc = 'img/SPI-0003-001622.jpg';
-    } else if (item.id.startsWith('SPM-0001-') || item.id.startsWith('SPM-0002-')) {
-        imgSrc = 'img/SPX-0001-001622.jpg';
+    if (item.id.startsWith('SPI-0001-') || item.id.startsWith('SPI-0002-') || item.id.startsWith('SPM-0001-') || item.id.startsWith('SPM-0002-')) {
+        return `<img src="https://placehold.co/100x100/${bg}/555?text=${txt}&font=roboto" class="prod-thumb" loading="lazy" decoding="async">`;
     }
+    let imgSrc = `img/${item.id}.jpg`;
     return `<img src="${imgSrc}" class="prod-thumb" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/100x100/${bg}/555?text=${txt}&font=roboto';">`;
 };
 const workPrices = {

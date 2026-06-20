@@ -1226,8 +1226,14 @@ const app = {
                 console.log("[saveToCloud] Найден ID пользователя в БД:", dbUserId);
             }
 
-            if (!dbUserId && !isLocal) {
-                console.warn("[saveToCloud] Профиль пользователя не найден в БД. Сохраняем расчет без привязки к user_id.");
+            if (!dbUserId) {
+                if (silent) {
+                    console.log("[saveToCloud] Профиль пользователя не найден в БД. Отмена автосохранения во избежание записи с неизвестным монтажником.");
+                    return false;
+                }
+                if (!isLocal) {
+                    console.warn("[saveToCloud] Профиль пользователя не найден в БД. Сохраняем расчет без привязки к user_id.");
+                }
             }
 
             const todayStr = new Date().toLocaleDateString('ru-RU');
@@ -2016,6 +2022,7 @@ const app = {
             this.lastSavedStateString = this.getStateSignature();
             this.hasUnsavedChanges = false;
             this.updateSaveBtnUI();
+            this.resetAutosaveBaseline();
             app.alert("✅ Смета успешно загружена!");
         } catch (error) { app.alert("Ошибка загрузки сметы: " + error.message); }
     },
@@ -4867,6 +4874,109 @@ const app = {
     isValidUUID: function (str) {
         return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
     },
+
+    openShareOptionsModal: function (actionType) {
+        this.shareActionType = actionType;
+        const titleEl = document.getElementById('share_options_modal_title');
+        const descEl = document.getElementById('share_options_modal_desc');
+        const iconEl = document.getElementById('share_options_modal_icon');
+        const btnTextEl = document.getElementById('btn_confirm_share_options_text');
+
+        // Reset check states
+        const chkEq = document.getElementById('share_opt_eq');
+        const chkWorks = document.getElementById('share_opt_works');
+        if (chkEq) chkEq.checked = true;
+        if (chkWorks) chkWorks.checked = true;
+
+        if (actionType === 'share') {
+            if (titleEl) titleEl.innerText = "Создание ссылки для клиента";
+            if (descEl) descEl.innerText = "Выберите, какие сметы будут доступны клиенту по ссылке. Клиент увидит только выбранные разделы в режиме чтения (без возможности редактирования).";
+            if (btnTextEl) btnTextEl.innerText = "Создать ссылку";
+            if (iconEl) {
+                iconEl.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>`;
+            }
+        } else {
+            if (titleEl) titleEl.innerText = "Печать сметы";
+            if (descEl) descEl.innerText = "Выберите, какие разделы сметы вывести на печать или сохранить в PDF-файл.";
+            if (btnTextEl) btnTextEl.innerText = "Открыть окно печати";
+            if (iconEl) {
+                iconEl.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>`;
+            }
+        }
+
+        this.updateShareOptionsUI();
+        const overlay = document.getElementById('share_options_modal_overlay');
+        if (overlay) overlay.style.display = 'flex';
+    },
+
+    closeShareOptionsModal: function () {
+        const overlay = document.getElementById('share_options_modal_overlay');
+        if (overlay) overlay.style.display = 'none';
+    },
+
+    toggleShareOption: function (option) {
+        const chk = document.getElementById('share_opt_' + option);
+        if (chk) {
+            chk.checked = !chk.checked;
+            this.updateShareOptionsUI();
+        }
+    },
+
+    updateShareOptionsUI: function () {
+        const chkEq = document.getElementById('share_opt_eq');
+        const chkWorks = document.getElementById('share_opt_works');
+        const cardEq = document.getElementById('card_opt_eq');
+        const cardWorks = document.getElementById('card_opt_works');
+        const btn = document.getElementById('btn_confirm_share_options');
+
+        const showEq = chkEq ? chkEq.checked : false;
+        const showWorks = chkWorks ? chkWorks.checked : false;
+
+        if (cardEq) {
+            if (showEq) cardEq.classList.add('selected');
+            else cardEq.classList.remove('selected');
+        }
+        if (cardWorks) {
+            if (showWorks) cardWorks.classList.add('selected');
+            else cardWorks.classList.remove('selected');
+        }
+
+        // Disable button if nothing is checked
+        if (btn) {
+            btn.disabled = (!showEq && !showWorks);
+        }
+    },
+
+    confirmShareOptions: function () {
+        const chkEq = document.getElementById('share_opt_eq');
+        const chkWorks = document.getElementById('share_opt_works');
+        const showEq = chkEq ? chkEq.checked : false;
+        const showWorks = chkWorks ? chkWorks.checked : false;
+
+        if (!showEq && !showWorks) {
+            app.alert("Пожалуйста, выберите хотя бы один раздел сметы.");
+            return;
+        }
+
+        this.closeShareOptionsModal();
+
+        if (this.shareActionType === 'share') {
+            this.executeShareInvoice(showEq, showWorks);
+        } else {
+            this.executeDownload(showEq, showWorks);
+        }
+    },
+
     shareInvoice: async function () {
         if (!this.checkAccess('base')) return;
 
@@ -4898,6 +5008,16 @@ const app = {
             this.state.projectName = pName;
             this.saveState();
             this.syncUI();
+        }
+
+        this.openShareOptionsModal('share');
+    },
+
+    executeShareInvoice: async function (showEq, showWorks) {
+        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (isLocal && (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16)) {
+            tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99", email: "test@installer.ru" };
         }
 
         // Генерируем уникальный ID расчета (если еще нет), чтобы избежать дубликатов при saveToCloud
@@ -4944,14 +5064,14 @@ const app = {
         };
 
         let items = {
-            equipment: this.currentEquipmentList || [],
-            works: this.currentWorksList || []
+            equipment: showEq ? (this.currentEquipmentList || []) : [],
+            works: showWorks ? (this.currentWorksList || []) : []
         };
 
         let totals = {
-            equipment: app.lastEqSum || 0,
-            works: app.lastWorksSum || 0,
-            grandTotal: (app.lastEqSum || 0) + (app.lastWorksSum || 0)
+            equipment: showEq ? (app.lastEqSum || 0) : 0,
+            works: showWorks ? (app.lastWorksSum || 0) : 0,
+            grandTotal: (showEq ? (app.lastEqSum || 0) : 0) + (showWorks ? (app.lastWorksSum || 0) : 0)
         };
 
         const btn = document.getElementById('btn_share_trigger');
@@ -5238,6 +5358,20 @@ const app = {
             app.alert("Пожалуйста, укажите Ваше Имя, Телефон и Город в профиле. Они необходимы для формирования красивой печатной сметы.");
             this.showProfileModal();
             return;
+        }
+
+        this.openShareOptionsModal('print');
+    },
+    executeDownload: async function (showEq, showWorks) {
+        this.printOptions = {
+            eq: showEq,
+            works: showWorks
+        };
+
+        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (isLocal && (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16)) {
+            tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99" };
         }
 
         const printBlock = document.getElementById('print_master_contacts');
@@ -5916,6 +6050,14 @@ const app = {
         this.saveState();
         this.syncUI();
         this.render();
+        this.resetAutosaveBaseline();
+    },
+
+    resetAutosaveBaseline: function () {
+        this.initialEqSum = app.lastEqSum || 0;
+        this.initialWorksSum = app.lastWorksSum || 0;
+        this.initialWorksListJson = JSON.stringify(this.currentWorksList || []);
+        console.log("[resetAutosaveBaseline] Baseline updated:", this.initialEqSum, this.initialWorksSum);
     },
     // =============================
     saveState: function () { 
@@ -5935,15 +6077,51 @@ const app = {
 
     runAutoSave: async function () {
         try {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-            const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
-
-            if (!session && !tgUser && !isLocal) {
+            // 1. Автосохранение должно работать, только на тарифе PRO
+            if (!this.isPro()) {
+                console.log("[runAutoSave] Autosave skipped: not a PRO user.");
                 return;
             }
 
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+
+            // 2. Смет автосохранения с неизвестным монтажником быть не должно - это ошибка
+            let dbUserId = null;
+            if (tgUser && tgUser.id && !/^\d+$/.test(String(tgUser.id))) {
+                dbUserId = tgUser.id;
+            }
+            if (!dbUserId && session && session.user) {
+                let { data: uData } = await supabaseClient.from('users').select('id').eq('auth_user_id', session.user.id).maybeSingle();
+                if (uData) dbUserId = uData.id;
+            }
+
+            if (!dbUserId) {
+                console.log("[runAutoSave] Autosave skipped: installer (user_id) is unknown or not logged in.");
+                return;
+            }
+
+            // 3. Сохранение должно происходить, только если изменилась стоимость при заходе или монтажные работы
+            const currentEq = app.lastEqSum || 0;
+            const currentWorks = app.lastWorksSum || 0;
+            const currentWorksJson = JSON.stringify(this.currentWorksList || []);
+
+            // Инициализируем baseline если почему-то не задано
+            if (this.initialEqSum === undefined) this.initialEqSum = currentEq;
+            if (this.initialWorksSum === undefined) this.initialWorksSum = currentWorks;
+            if (this.initialWorksListJson === undefined) this.initialWorksListJson = currentWorksJson;
+
+            const isPriceChanged = (currentEq !== this.initialEqSum);
+            const isWorksChanged = (currentWorks !== this.initialWorksSum) || (currentWorksJson !== this.initialWorksListJson);
+
+            if (!isPriceChanged && !isWorksChanged) {
+                console.log("[runAutoSave] Autosave skipped: cost and works haven't changed since entry.");
+                return;
+            }
+
+            // 4. Проверяем изменения относительно последней сохраненной сигнатуры
             if (!this.hasUnsavedChanges) {
+                console.log("[runAutoSave] Autosave skipped: no unsaved changes relative to last saved signature.");
                 return;
             }
 
@@ -6412,6 +6590,7 @@ const app = {
             console.warn('[DEV MODE] Localhost detected — установлена PRO сессия для тестирования.');
             this.state.accountType = 'pro';
             this.state.tgUser = {
+                id: '0279a53c-452b-474f-8626-08be2c2b32da',
                 first_name: "Dima Ibatullin",
                 username: "dima_ibatullin",
                 account_type: "pro",
@@ -6443,6 +6622,7 @@ const app = {
         this.isAppReady = true;
         this.lastSavedStateString = this.getStateSignature();
         this.updateSaveBtnUI();
+        this.resetAutosaveBaseline();
 
         // Фоновый запуск очереди отправки писем
         if (this.queue && typeof this.queue.start === 'function') {
@@ -9541,9 +9721,10 @@ const app = {
             if (item.rommer || ANALOG_MAP[item.id]) sectionHasAnalogItems = true;
             let secTitle = currentSectionTitle;
             if (group) {
-                if (group.startsWith("5.1.")) secTitle = "5.1. Внутреннее ГВС";
-                else if (group.startsWith("5.2.")) secTitle = "5.2. Рециркуляция";
-                else if (group.startsWith("5.3.")) secTitle = "5.3. Общие материалы";
+                if (group.startsWith("5.1.")) secTitle = "5.1. Внутреннее водоснабжение";
+                else if (group.startsWith("5.2.")) secTitle = "5.2. Внутреннее ГВС";
+                else if (group.startsWith("5.3.")) secTitle = "5.3. Рециркуляция";
+                else if (group.startsWith("5.4.")) secTitle = "5.4. Общие материалы";
                 else if (group.startsWith("7.1.")) secTitle = "7.1. Обвязка скважинного насоса";
                 else if (group.startsWith("8.")) secTitle = group;
                 else if (group.startsWith("9. Своё оборудование")) secTitle = "9. Своё оборудование";
@@ -9658,14 +9839,24 @@ const app = {
 
                 finalItem.price = Math.round(finalPrice);
 
-                this.currentSpec.push({ ...finalItem, q: finalQty, group: group });
+                let itemGroup = group;
+                if (!forceMerge && secTitle === "2. Обвязка котельной") {
+                    let isMountingSystem = catalog.mounting_system.some(x => x.id === finalItem.id || x.id === finalItem.originalId);
+                    if (isMountingSystem) {
+                        itemGroup = "2.7. Крепёж котельной";
+                    } else if (!itemGroup || itemGroup === "") {
+                        itemGroup = "2.6. Общие материалы";
+                    }
+                }
+
+                this.currentSpec.push({ ...finalItem, q: finalQty, group: itemGroup });
                 this.calcFinalTotal += Math.round((finalItem.price || 0) * finalQty);
 
                 let shouldMergeThisItem = forceMerge || 
-                    (this.state.detailedRooms && group === "3. Приборы отопления" && tip && tip.includes('|||')) ||
-                    (group === "8. Канализация" || (group && (group.includes("Канализация:") || group.includes("[Инсталляция]"))));
+                    (this.state.detailedRooms && itemGroup === "3. Приборы отопления" && tip && tip.includes('|||')) ||
+                    (itemGroup === "8. Канализация" || (itemGroup && (itemGroup.includes("Канализация:") || itemGroup.includes("[Инсталляция]"))));
                 if (shouldMergeThisItem) {
-                    let existing = bill.find(x => x.id === finalItem.id && (forceMerge ? true : x.group === group));
+                    let existing = bill.find(x => x.id === finalItem.id && (forceMerge ? true : x.group === itemGroup));
                     if (existing) {
                         existing.q += finalQty;
                         existing.sum = Math.round(existing.sum + finalItem.price * finalQty);
@@ -9689,12 +9880,12 @@ const app = {
                             finalItem.locs = [parts[0]];
                             finalTip = parts[0] + '<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">' + parts[1];
                         }
-                        bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: group, originalId: finalItem.originalId || item.id });
+                        bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
                     }
                 } else {
                     let finalTip = tip;
                     if (tip && tip.includes('|||')) finalTip = tip.split('|||').join('<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">');
-                    bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: group, originalId: finalItem.originalId || item.id });
+                    bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
                 }
             });
         };
@@ -9832,7 +10023,12 @@ const app = {
                 let isSubSection = (i.group && i.group.match(/^\d+\.\d+/));
                 const dashStyle = "1px dashed rgba(0, 0, 0, 0.2)";
                 if (!forceMerge && i.group && i.group !== lastGroup) {
-                    let icon = ""; if (i.group.includes("Газового")) icon = "🔥"; else if (i.group.includes("Электрического")) icon = "⚡"; else if (i.group.includes("Водонагревателя")) icon = "💧"; else if (i.group.includes("Трубопроводы")) icon = "🔗"; else if (i.group.includes("Гидравлика")) icon = "🎛️";
+                    let icon = ""; 
+                    if (i.group.includes("Газового")) icon = "🔥"; 
+                    else if (i.group.includes("Электрического")) icon = "⚡"; 
+                    else if (i.group.includes("Водонагревателя")) icon = "💧"; 
+                    else if (i.group.includes("Трубопроводы") || i.group.includes("Крепёж")) icon = "🔗"; 
+                    else if (i.group.includes("Гидравлика")) icon = "🎛️";
                     let arrow = isCollapsed ? "▶" : "⤵";
                     let txtUnit = isCollapsed ? "компл." : ""; let txtQty = isCollapsed ? "1" : ""; let txtSum = isCollapsed ? groupTotals[i.group].toLocaleString() : "";
                     let headStyle = "";
@@ -10298,6 +10494,18 @@ const app = {
             tpMeters = Math.ceil(tpMeters);
             if (l1 > 0) estMans += Math.ceil(l1 / 12);
             if (l2 > 0) estMans += Math.ceil(l2 / 12);
+        }
+
+        // Автоматически корректируем тип смесительного узла, если он не совместим с текущей площадью теплого пола
+        if (hasTp && tpArea > 0) {
+            let brand = this.state.brandMode;
+            if (!this.isUfhMixTypeCompatible(this.state.ufhMixType, tpArea, brand)) {
+                if (tpArea <= 120) {
+                    this.state.ufhMixType = 'dn20';
+                } else {
+                    this.state.ufhMixType = 'dn25';
+                }
+            }
         }
 
         // Эко-схема (локальные узлы) ставится, если нет радиаторов и коллекторов ТП не больше 2-х
@@ -11136,10 +11344,10 @@ const app = {
                 return finalItem;
             };
             let isMerge = !this.state.groupItems;
-            let grpCold = isMerge ? mainTitle : "5. Внутреннее водоснабжение";
-            let grpHot = isMerge ? mainTitle : "5.1. Внутреннее ГВС";
-            let grpRecirc = isMerge ? mainTitle : "5.2. Рециркуляция";
-            let grpGen = isMerge ? mainTitle : "5.3. Общие материалы";
+            let grpCold = isMerge ? mainTitle : "5.1. Внутреннее водоснабжение";
+            let grpHot = isMerge ? mainTitle : "5.2. Внутреннее ГВС";
+            let grpRecirc = isMerge ? mainTitle : "5.3. Рециркуляция";
+            let grpGen = isMerge ? mainTitle : "5.4. Общие материалы";
             let totalColdPoints = 0, totalHotPoints = 0, totalToilets = 0;
             let totalPipeCold = 0, totalPipeHot = 0;
             let recirc = this.state.recirc;
@@ -11181,6 +11389,15 @@ const app = {
                 if (q2) addToBill(getWaterManifold(catalog.water_manifolds_cold[0]), q2, descColl, grpCold);
                 addToBill(waterEurocone, totalColdPoints, this.getDesc('eurocone_water', totalColdPoints), grpCold);
                 addToBill(catalog.water_parts[2], 1, "Заглушка коллектора", grpCold);
+                // Крепление коллектора ХВС
+                let clampItem = catalog.mounting_system.find(x => x.id === "SAC-0020-300001");
+                if (clampItem) {
+                    addToBill(clampItem, 2, "Хомут одновинтовой с гайкой M8 1\" для крепления коллектора водоснабжения (ХВС).", grpCold);
+                }
+                let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                if (studItem) {
+                    addToBill(studItem, 2, "Шпилька сантехническая M8x100 для крепления коллектора водоснабжения к стене (ХВС).", grpCold);
+                }
                 let pLen = Math.ceil(totalPipeCold);
                 addToBill(waterPipe, pLen, this.getDesc('pipe_cw', `${pLen} м`), grpCold);
                 addToBill(catalog.water_insulation[1], pLen, this.getDesc('ins_blue', pLen), grpCold);
@@ -11239,6 +11456,15 @@ const app = {
                 if (q2) addToBill(getWaterManifold(catalog.water_manifolds_hot[0]), q2, descColl, grpHot);
                 addToBill(waterEurocone, totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpHot);
                 addToBill(catalog.water_parts[2], 1, "Заглушка коллектора", grpHot);
+                // Крепление коллектора ГВС
+                let clampItem = catalog.mounting_system.find(x => x.id === "SAC-0020-300001");
+                if (clampItem) {
+                    addToBill(clampItem, 2, "Хомут одновинтовой с гайкой M8 1\" для крепления коллектора водоснабжения (ГВС).", grpHot);
+                }
+                let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                if (studItem) {
+                    addToBill(studItem, 2, "Шпилька сантехническая M8x100 для крепления коллектора водоснабжения к стене (ГВС).", grpHot);
+                }
                 let pLen = Math.ceil(recirc ? (totalPipeHot / 2) : totalPipeHot);
                 addToBill(waterPipe, pLen, this.getDesc('pipe_hw', `${pLen} м`), grpHot);
                 addToBill(catalog.water_insulation[0], pLen, this.getDesc('ins_red', pLen), grpHot);
@@ -11279,7 +11505,7 @@ const app = {
                     }
                 }
                 let totalMixers = 0;
-                this.state.waterZones.forEach(z => totalMixers += (z.fixtures.basin + z.fixtures.shower));
+                this.state.waterZones.forEach(z => totalMixers += (z.fixtures.basin + z.fixtures.shower + (z.fixtures.bath || 0)));
                 if (totalMixers > 0) {
                     let socketItem = recirc ? catalog.water_fittings[1] : catalog.water_fittings[0];
                     let sName = recirc ? "Угольник проточный (Бронза)" : "Водорозетка тупиковая";
@@ -11301,6 +11527,15 @@ const app = {
                 if (q2) addToBill(getWaterManifold(catalog.water_manifolds_recirc[0]), q2, descColl, grpRecirc);
                 addToBill(waterEurocone, totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpRecirc);
                 addToBill(catalog.water_parts[2], 1, "Заглушка коллектора", grpRecirc);
+                // Крепление коллектора рециркуляции ГВС
+                let clampItem = catalog.mounting_system.find(x => x.id === "SAC-0020-300001");
+                if (clampItem) {
+                    addToBill(clampItem, 2, "Хомут одновинтовой с гайкой M8 1\" для крепления коллектора водоснабжения (Рециркуляция).", grpRecirc);
+                }
+                let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
+                if (studItem) {
+                    addToBill(studItem, 2, "Шпилька сантехническая M8x100 для крепления коллектора водоснабжения к стене (Рециркуляция).", grpRecirc);
+                }
                 let pLen = Math.ceil(totalPipeHot / 2);
                 addToBill(waterPipe, pLen, this.getDesc('pipe_hw', `${pLen} м (Обратка)`), grpRecirc);
                 addToBill(catalog.water_insulation[0], pLen, this.getDesc('ins_red', pLen), grpRecirc);
@@ -11342,17 +11577,7 @@ const app = {
                 }
             }
 
-            let collGroups = (totalColdPoints > 0 ? 1 : 0) + (totalHotPoints > 0 ? 1 : 0) + (recirc ? 1 : 0);
-            if (collGroups > 0) {
-                let clampItem = catalog.mounting_system.find(x => x.id === "SAC-0020-300001");
-                if (clampItem) {
-                    addToBill(clampItem, 2 * collGroups, "Хомут одновинтовой с гайкой M8 1\" для крепления коллекторов водоснабжения.", grpGen);
-                }
-                let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
-                if (studItem) {
-                    addToBill(studItem, 2 * collGroups, "Шпилька сантехническая M8x100 для крепления коллекторов водоснабжения к стене.", grpGen);
-                }
-            }
+            // Крепления коллекторов были распределены по соответствующим подразделам ХВС, ГВС и рециркуляции
             addToBill(catalog.water_parts[3], 1, "Наклейки", grpGen);
             let tToilet = 0, tWash = 0, tDish = 0, tBasin = 0, tBath = 0, tShower = 0;
             this.state.waterZones.forEach(z => {
@@ -11446,7 +11671,7 @@ const app = {
                 // ==========================================
                 let totalFixtures = 0;
                 this.state.waterZones.forEach(z => {
-                    totalFixtures += z.fixtures.toilet + z.fixtures.basin + z.fixtures.shower + z.fixtures.wash + z.fixtures.dish;
+                    totalFixtures += z.fixtures.toilet + z.fixtures.basin + z.fixtures.shower + z.fixtures.wash + z.fixtures.dish + (z.fixtures.bath || 0);
                 });
 
                 let sewerGroup = "3.1 Внутренняя канализация";
@@ -12867,33 +13092,42 @@ window.addEventListener('beforeprint', function () {
     }
     printBin.innerHTML = '';
 
+    // Retrieve selected options from app.printOptions (default to true if undefined)
+    const showEq = app.printOptions ? app.printOptions.eq : true;
+    const showWorks = app.printOptions ? app.printOptions.works : true;
+
     // Запоминаем текущее состояние
     let originalMode = app.state.viewMode;
     let printArea = document.getElementById('print-area');
 
     if (printArea) {
         // --- ШАГ 1: ЛИСТ ОБОРУДОВАНИЯ ---
-        app.state.viewMode = 'equipment';
-        app.render();
-        let eqClone = printArea.cloneNode(true);
-        eqClone.id = 'print_eq_clone';
-        // Убираем схему и табы
-        let eqScheme = eqClone.querySelector('#dynamic_scheme');
-        if (eqScheme) eqScheme.remove();
-        let eqTabs = eqClone.querySelector('.main-view-tabs');
-        if (eqTabs) eqTabs.style.display = 'none';
-        printBin.appendChild(eqClone);
+        if (showEq) {
+            app.state.viewMode = 'equipment';
+            app.render();
+            let eqClone = printArea.cloneNode(true);
+            eqClone.id = 'print_eq_clone';
+            // Убираем схему и табы
+            let eqScheme = eqClone.querySelector('#dynamic_scheme');
+            if (eqScheme) eqScheme.remove();
+            let eqTabs = eqClone.querySelector('.main-view-tabs');
+            if (eqTabs) eqTabs.style.display = 'none';
+            printBin.appendChild(eqClone);
+        }
 
         // --- ШАГ 2: ЛИСТ МОНТАЖНЫХ РАБОТ (Если есть PRO или активный триал) ---
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
         let isTrialActive = trialUntil > Date.now();
         let isPro = (app.state.accountType === 'pro' || isTrialActive || (app.state.tgUser && ['pro', 'admin'].includes(app.state.tgUser.account_type)));
-        if (isPro) {
+        
+        if (showWorks && isPro) {
             app.state.viewMode = 'works';
             app.render();
             let worksClone = printArea.cloneNode(true);
             worksClone.id = 'print_works_clone';
-            worksClone.classList.add('print-page-break'); // Разрыв страницы
+            if (showEq) {
+                worksClone.classList.add('print-page-break'); // Разрыв страницы
+            }
             let worksScheme = worksClone.querySelector('#dynamic_scheme');
             if (worksScheme) worksScheme.remove();
             let wTabs = worksClone.querySelector('.main-view-tabs');
@@ -12925,26 +13159,29 @@ window.addEventListener('beforeprint', function () {
             printBin.appendChild(worksClone);
         }
 
-        // --- ШАГ 3: СХЕМА (На отдельном листе) ---
-        if (app.state.showScheme) {
-            app.state.viewMode = 'equipment'; // Схема генерится только на этой вкладке
-            app.render();
-            let currentScheme = document.getElementById('dynamic_scheme');
-            if (currentScheme) {
-                let schemeClone = currentScheme.cloneNode(true);
-                printBin.appendChild(schemeClone);
+        // --- ШАГ 3 & 4: СХЕМА и ТАБЛИЦА ТЕПЛОПОТЕРЬ (Только если включена схема, PRO и выбраны ОБА раздела) ---
+        if (showEq && showWorks && isPro) {
+            // --- ШАГ 3: СХЕМА (На отдельном листе) ---
+            if (app.state.showScheme) {
+                app.state.viewMode = 'equipment'; // Схема генерится только на этой вкладке
+                app.render();
+                let currentScheme = document.getElementById('dynamic_scheme');
+                if (currentScheme) {
+                    let schemeClone = currentScheme.cloneNode(true);
+                    printBin.appendChild(schemeClone);
+                }
             }
-        }
 
-        // --- ШАГ 4: ТАБЛИЦА ТЕПЛОПОТЕРЬ (Если подробный режим и есть PRO) ---
-        if (isPro && app.state.detailedRooms && app.state.showDetailedRoomsPanel) {
-            let heatLossHtml = app.renderHeatLossTable();
-            if (heatLossHtml) {
-                let hlContainer = document.createElement('div');
-                hlContainer.id = 'heat_loss_table_page';
-                hlContainer.innerHTML = heatLossHtml;
-                hlContainer.classList.add('print-page-break'); // Разрыв страницы перед таблицей
-                printBin.appendChild(hlContainer);
+            // --- ШАГ 4: ТАБЛИЦА ТЕПЛОПОТЕРЬ (Если подробный режим и есть PRO) ---
+            if (app.state.detailedRooms && app.state.showDetailedRoomsPanel) {
+                let heatLossHtml = app.renderHeatLossTable();
+                if (heatLossHtml) {
+                    let hlContainer = document.createElement('div');
+                    hlContainer.id = 'heat_loss_table_page';
+                    hlContainer.innerHTML = heatLossHtml;
+                    hlContainer.classList.add('print-page-break'); // Разрыв страницы перед таблицей
+                    printBin.appendChild(hlContainer);
+                }
             }
         }
 
