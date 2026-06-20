@@ -4888,7 +4888,7 @@ ppr_ekoplastik_pipe: [
     ],
 
     mounting_system: [
-        { id: "ASKON-83115", name: "Кронштейн для расширительного бака L-образный Askon", price: 420, brand: "Askon", availability: "in_stock" },
+        { id: "ASKON-83115", name: "Кронштейн для расширительного бака L-образный", price: 420, brand: "Askon", availability: "in_stock" },
         { id: "SAC-0020-000012", name: "Хомут для труб с гайкой 1/2\" (20–24 мм) STOUT", price: 39, brand: "STOUT", availability: "in_stock" },
         { id: "SAC-0020-000034", name: "Хомут для труб с гайкой 3/4\" (25–29 мм) STOUT", price: 48, brand: "STOUT", availability: "in_stock" },
         { id: "SAC-0020-000001", name: "Хомут для труб с гайкой 1\" (32–37 мм) STOUT", price: 52, brand: "STOUT", availability: "in_stock" },
