@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std' },
 
     lastSavedStateString: "",
 
@@ -5903,7 +5903,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "",
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "",
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -6552,7 +6552,8 @@ const app = {
         else if (originalId.startsWith('SPC-') && originalId.includes('180')) { if (this.state.pumpType === 'default') this.state.pumpType = 'std'; else if (this.state.pumpType === 'std') this.state.pumpType = 'mini'; else if (this.state.pumpType === 'mini') this.state.pumpType = 'pro'; else this.state.pumpType = 'default'; }
         else if (originalId.startsWith('SEB-')) { this.state.boilerSeries = (this.state.boilerSeries === 'plus') ? 'status' : 'plus'; }
         else if (originalId.startsWith('SDG-0018') || originalId.startsWith('SDG-0016')) { this.state.hydroType = (this.state.hydroType === 'combo') ? 'modular' : 'combo'; }
-        else if (originalId.startsWith('SMS-0922') || originalId.startsWith('SMB-6850')) { this.state.radManifoldType = (this.state.radManifoldType === 'standard') ? 'chrome' : 'standard'; }
+        else if (originalId.startsWith('SMS-0922') || (originalId.startsWith('SMB-6850') && !originalId.endsWith('_water'))) { this.state.radManifoldType = (this.state.radManifoldType === 'standard') ? 'chrome' : 'standard'; }
+        else if (originalId.startsWith('SMB-6851-') || (originalId.startsWith('SMB-6850-') && originalId.endsWith('_water'))) { this.state.waterManifoldType = (this.state.waterManifoldType === 'block') ? 'standard' : 'block'; }
         else if (originalId.endsWith('_rad') || originalId.startsWith('SPI-0003-')) { this.state.pipeType = (this.state.pipeType === 'insulated') ? 'split' : (this.state.pipeType === 'split') ? 'insulated_mp' : (this.state.pipeType === 'insulated_mp') ? 'split_mp' : 'insulated'; }
         else if (originalId.endsWith('_ufh') || originalId.startsWith('SPX-0002-') || originalId.startsWith('SPM-0001-')) { this.state.ufhPipeMaterial = (this.state.ufhPipeMaterial === 'pex') ? 'metal_plastic' : 'pex'; }
         else if (originalId.endsWith('_water') || (originalId.startsWith('SPX-0001-') && !originalId.endsWith('_rad'))) { this.state.waterPipeMaterial = (this.state.waterPipeMaterial === 'pex') ? 'metal_plastic' : 'pex'; }
@@ -10936,6 +10937,15 @@ const app = {
         currentSectionTitle = "5. Внутреннее водоснабжение";
         if (this.state.water && this.state.waterZones.length > 0) {
             let mainTitle = "5. Внутреннее водоснабжение";
+            let collType = this.state.waterManifoldType || 'standard';
+            const getWaterManifold = (baseItem) => {
+                let blockItem = catalog.manifolds_chrome_blocks.find(m => m.loops === baseItem.loops) || baseItem;
+                let isBlock = (collType === 'block');
+                let finalItem = isBlock ? { ...blockItem } : { ...baseItem };
+                finalItem.originalId = baseItem.id + "_water";
+                finalItem.alts = isBlock ? [baseItem] : [blockItem];
+                return finalItem;
+            };
             let isMerge = !this.state.groupItems;
             let grpCold = isMerge ? mainTitle : "5. Внутреннее водоснабжение";
             let grpHot = isMerge ? mainTitle : "5.1. Внутреннее ГВС";
@@ -10977,9 +10987,9 @@ const app = {
                 let needed = totalColdPoints, q4 = Math.floor(needed / 4), rem = needed % 4, q3 = 0, q2 = 0;
                 if (rem === 3) q3 = 1; else if (rem === 2) q2 = 1; else if (rem === 1) { if (q4 > 0) { q4--; q3 = 1; q2 = 1 } else { q2 = 1 } }
                 let descColl = this.getDesc('manifold', totalColdPoints, 'cw');
-                if (q4) addToBill(catalog.water_manifolds_cold[2], q4, descColl, grpCold);
-                if (q3) addToBill(catalog.water_manifolds_cold[1], q3, descColl, grpCold);
-                if (q2) addToBill(catalog.water_manifolds_cold[0], q2, descColl, grpCold);
+                if (q4) addToBill(getWaterManifold(catalog.water_manifolds_cold[2]), q4, descColl, grpCold);
+                if (q3) addToBill(getWaterManifold(catalog.water_manifolds_cold[1]), q3, descColl, grpCold);
+                if (q2) addToBill(getWaterManifold(catalog.water_manifolds_cold[0]), q2, descColl, grpCold);
                 addToBill(waterEurocone, totalColdPoints, this.getDesc('eurocone_water', totalColdPoints), grpCold);
                 addToBill(catalog.water_parts[2], 1, "Заглушка коллектора", grpCold);
                 let pLen = Math.ceil(totalPipeCold);
@@ -11000,9 +11010,9 @@ const app = {
                 let needed = totalHotPoints, q4 = Math.floor(needed / 4), rem = needed % 4, q3 = 0, q2 = 0;
                 if (rem === 3) q3 = 1; else if (rem === 2) q2 = 1; else if (rem === 1) { if (q4 > 0) { q4--; q3 = 1; q2 = 1 } else { q2 = 1 } }
                 let descColl = this.getDesc('manifold', totalHotPoints, recirc ? 'hw_recirc' : 'hw_std');
-                if (q4) addToBill(catalog.water_manifolds_hot[2], q4, descColl, grpHot);
-                if (q3) addToBill(catalog.water_manifolds_hot[1], q3, descColl, grpHot);
-                if (q2) addToBill(catalog.water_manifolds_hot[0], q2, descColl, grpHot);
+                if (q4) addToBill(getWaterManifold(catalog.water_manifolds_hot[2]), q4, descColl, grpHot);
+                if (q3) addToBill(getWaterManifold(catalog.water_manifolds_hot[1]), q3, descColl, grpHot);
+                if (q2) addToBill(getWaterManifold(catalog.water_manifolds_hot[0]), q2, descColl, grpHot);
                 addToBill(waterEurocone, totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpHot);
                 addToBill(catalog.water_parts[2], 1, "Заглушка коллектора", grpHot);
                 let pLen = Math.ceil(recirc ? (totalPipeHot / 2) : totalPipeHot);
@@ -11027,9 +11037,9 @@ const app = {
                 let needed = totalHotPoints, q4 = Math.floor(needed / 4), rem = needed % 4, q3 = 0, q2 = 0;
                 if (rem === 3) q3 = 1; else if (rem === 2) q2 = 1; else if (rem === 1) { if (q4 > 0) { q4--; q3 = 1; q2 = 1 } else { q2 = 1 } }
                 let descColl = this.getDesc('manifold', totalHotPoints, 'recirc');
-                if (q4) addToBill(catalog.water_manifolds_recirc[2], q4, descColl, grpRecirc);
-                if (q3) addToBill(catalog.water_manifolds_recirc[1], q3, descColl, grpRecirc);
-                if (q2) addToBill(catalog.water_manifolds_recirc[0], q2, descColl, grpRecirc);
+                if (q4) addToBill(getWaterManifold(catalog.water_manifolds_recirc[2]), q4, descColl, grpRecirc);
+                if (q3) addToBill(getWaterManifold(catalog.water_manifolds_recirc[1]), q3, descColl, grpRecirc);
+                if (q2) addToBill(getWaterManifold(catalog.water_manifolds_recirc[0]), q2, descColl, grpRecirc);
                 addToBill(waterEurocone, totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpRecirc);
                 addToBill(catalog.water_parts[2], 1, "Заглушка коллектора", grpRecirc);
                 let pLen = Math.ceil(totalPipeHot / 2);
