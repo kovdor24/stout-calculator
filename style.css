@@ -189,18 +189,19 @@ body {
     line-height: 1.4;
 }
 
+/* Масштаб страницы: -20% */
+#page_scale_wrapper {
+    zoom: 0.8;
+}
+
 /* Исправляем конфликт scale и position: fixed.  */
 /* Раньше трансформ был на body, что ломало координаты всех модальных окон */
 @media screen and (max-width: 1550px) {
     #page_scale_wrapper {
-        zoom: 0.9;
-    }
-
-    .input-panel {
-        max-height: 115vh !important;
-        /* Increase further to prevent cutoff in scaled coordinate system */
+        zoom: 0.8;
     }
 }
+
 
 
 
@@ -223,8 +224,9 @@ body {
     border-radius: var(--radius);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     position: sticky;
-    top: 20px;
-    max-height: 95vh;
+    top: 10px;
+    /* 125vh = 100vh / zoom(0.8) — компенсация масштаба, чтобы панель заняла весь экран */
+    max-height: calc(125vh - 60px);
     overflow-y: auto;
 }
 
@@ -637,6 +639,7 @@ input:checked+.slider:before {
 }
 
 .show-swap-ui .swap-cycle-btn,
+.swappable-cursor:hover .swap-cycle-btn,
 .inv-table tr.active-row .swap-cycle-btn {
     display: flex;
     animation: popIn 0.2s forwards;
@@ -6269,3 +6272,84 @@ body.dark-mode .share-option-card.selected {
     background: rgba(59, 130, 246, 0.08);
     border-color: #3b82f6;
 }
+
+/* Swap Option Cards styling */
+.swap-option-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    background: var(--surface-light);
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.swap-option-card:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.swap-option-card.active {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.swap-option-card .prod-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    padding: 4px;
+    flex-shrink: 0;
+}
+
+.swap-option-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 4px;
+}
+
+.swap-option-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    line-height: 1.3;
+}
+
+.swap-option-brand {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.swap-option-price {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+    white-space: nowrap;
+}
+
+body.dark-mode .swap-option-card {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .swap-option-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary);
+}
+
+body.dark-mode .swap-option-card.active {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: var(--primary);
+}
+
+
+

@@ -1583,6 +1583,9 @@ const catalog = {
   price_date: '2026-06-06' },
         { id: "SDG-0002-002001", name: "Группа насосная DN20 (Смес.)", price: 29589, rommer: { id: "RDG-1002-002501", name: "Насосная группа DN25 (термостатический клапан)", price: 11212, brand: "ROMMER" },
   availability: 'in_stock',
+  price_date: '2026-06-06' },
+        { id: "SDG-0003-002001", name: "Группа насосная DN20 (под сервопривод)", price: 29589, rommer: { id: "RDG-1003-002501", name: "Группа насосная DN25 (под сервопривод)", price: 11212, brand: "ROMMER" },
+  availability: 'in_stock',
   price_date: '2026-06-06' }
     ],
     groups_dn25: [
@@ -1590,6 +1593,9 @@ const catalog = {
   availability: 'in_stock',
   price_date: '2026-06-06' },
         { id: "SDG-0002-002501", name: "Группа насосная DN25 (Смес.)", price: 31942, rommer: { id: "RDG-1002-002501", name: "Насосная группа DN25 (термостатический клапан)", price: 11212, brand: "ROMMER" },
+  availability: 'in_stock',
+  price_date: '2026-06-06' },
+        { id: "SDG-0003-002501", name: "Группа насосная DN25 (под сервопривод)", price: 31942, rommer: { id: "RDG-1003-002501", name: "Группа насосная DN25 (под сервопривод)", price: 11212, brand: "ROMMER" },
   availability: 'in_stock',
   price_date: '2026-06-06' }
     ],
@@ -1650,6 +1656,32 @@ const catalog = {
     hydro_arrow: { id: "SDG-0015-004001", name: "Гидравлическая стрелка 3 м3/час", price: 22082, rommer: { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 6596, brand: "ROMMER" },
   availability: 'in_stock',
   price_date: '2026-06-06' },
+    servo_rotary_sensor: {
+        id: "SVM-0025-230017",
+        name: "Сервопривод с датчиком",
+        price: 48906,
+        rommer: {
+            id: "RVM-0015-230017",
+            name: "Сервопривод с датчиком",
+            price: 15810,
+            brand: "ROMMER"
+        },
+        availability: 'in_stock',
+        price_date: '2026-06-06'
+    },
+    servo_rotary_std: {
+        id: "SVM-0005-230001",
+        name: "Сервопривод 230V",
+        price: 19197,
+        rommer: {
+            id: "ROT-0001-230001",
+            name: "Сервопривод 230V",
+            price: 5900,
+            brand: "ROMMER"
+        },
+        availability: 'in_stock',
+        price_date: '2026-06-06'
+    },
     hydro_modular_dn20: [
         { id: "SDG-0016-002502", name: "Стальной распр. коллектор 2 контура DN20", price: 26395,
   availability: 'in_stock',

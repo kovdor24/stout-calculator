@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 100, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null },
 
     lastSavedStateString: "",
 
@@ -1136,6 +1136,7 @@ const app = {
             if (error) throw error;
 
             this.state.accountType = 'pro';
+            this.state.groupItems = true; // По умолчанию группировка включена для PRO
             this.state.demoUsed = true;
             localStorage.setItem('pro_trial_until', Date.now() + trialDurationMs);
 
@@ -1414,6 +1415,7 @@ const app = {
 
             // Обновляем локальное состояние
             this.state.accountType = 'pro';
+            this.state.groupItems = true; // По умолчанию группировка включена для PRO
             this.state.distributorId = dist.id;
             this.state.distributorInfo = {
                 company_name: dist.company_name,
@@ -2136,6 +2138,7 @@ const app = {
     checkConnectionStatus: async function () {
         const dot = document.getElementById('vpn_status_dot');
         const btn = document.getElementById('btn_notifications');
+        const btnShare = document.getElementById('btn_share_trigger');
         if (!dot) return;
 
         try {
@@ -2150,10 +2153,14 @@ const app = {
             // Если все успешно — зеленая точка (соединение работает)
             dot.style.backgroundColor = '#10B981';
             if (btn) btn.setAttribute('title', 'Соединение с базой активно (VPN работает)');
+            // Показываем кнопку «Ссылка для клиента» только при активном VPN
+            if (btnShare) btnShare.style.display = '';
         } catch (e) {
             // В случае ошибки или тайм-аута — красная точка (нужен VPN)
             dot.style.backgroundColor = '#EF4444';
             if (btn) btn.setAttribute('title', 'Нет соединения с базой (включите VPN)');
+            // Скрываем кнопку «Ссылка для клиента» без VPN
+            if (btnShare) btnShare.style.display = 'none';
         }
     },
 
@@ -4247,6 +4254,9 @@ const app = {
                     }
                 }
                 this.state.accountType = accType;
+                if (accType === 'pro' && !this.state.groupItems) {
+                    this.state.groupItems = true; // По умолчанию группировка включена для PRO
+                }
                 this.state.tgUser.id = uRow.id;
                 this.state.tgUser.demo_ends_at = uRow.demo_ends_at;
                 if (uRow.phone && uRow.phone !== phone) this.state.tgUser.phone = uRow.phone;
@@ -6041,7 +6051,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 150, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 100, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -6077,16 +6087,14 @@ const app = {
 
     runAutoSave: async function () {
         try {
-            // 1. Автосохранение должно работать, только на тарифе PRO
-            if (!this.isPro()) {
-                console.log("[runAutoSave] Autosave skipped: not a PRO user.");
-                return;
-            }
+            // 1. Только PRO
+            if (!this.isPro()) return;
 
             const { data: { session } } = await supabaseClient.auth.getSession();
-            const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+            const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user)
+                ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
 
-            // 2. Смет автосохранения с неизвестным монтажником быть не должно - это ошибка
+            // 2. Нужен известный пользователь
             let dbUserId = null;
             if (tgUser && tgUser.id && !/^\d+$/.test(String(tgUser.id))) {
                 dbUserId = tgUser.id;
@@ -6095,73 +6103,110 @@ const app = {
                 let { data: uData } = await supabaseClient.from('users').select('id').eq('auth_user_id', session.user.id).maybeSingle();
                 if (uData) dbUserId = uData.id;
             }
-
             if (!dbUserId) {
-                console.log("[runAutoSave] Autosave skipped: installer (user_id) is unknown or not logged in.");
+                console.log("[runAutoSave] Skipped: user unknown.");
                 return;
             }
 
-            // 3. Сохранение должно происходить, только если изменилась стоимость при заходе или монтажные работы
+            // 3. Не чаще одного раза в 15 минут
+            const AUTOSAVE_INTERVAL_MS = 15 * 60 * 1000;
+            const now = Date.now();
+            if (this._lastAutoSaveTime && (now - this._lastAutoSaveTime) < AUTOSAVE_INTERVAL_MS) {
+                console.log("[runAutoSave] Skipped: too soon (< 15 min).");
+                return;
+            }
+
+            // 4. Только если стоимость изменилась более чем на 10%
             const currentEq = app.lastEqSum || 0;
-            const currentWorks = app.lastWorksSum || 0;
-            const currentWorksJson = JSON.stringify(this.currentWorksList || []);
-
-            // Инициализируем baseline если почему-то не задано
-            if (this.initialEqSum === undefined) this.initialEqSum = currentEq;
-            if (this.initialWorksSum === undefined) this.initialWorksSum = currentWorks;
-            if (this.initialWorksListJson === undefined) this.initialWorksListJson = currentWorksJson;
-
-            const isPriceChanged = (currentEq !== this.initialEqSum);
-            const isWorksChanged = (currentWorks !== this.initialWorksSum) || (currentWorksJson !== this.initialWorksListJson);
-
-            if (!isPriceChanged && !isWorksChanged) {
-                console.log("[runAutoSave] Autosave skipped: cost and works haven't changed since entry.");
-                return;
-            }
-
-            // 4. Проверяем изменения относительно последней сохраненной сигнатуры
-            if (!this.hasUnsavedChanges) {
-                console.log("[runAutoSave] Autosave skipped: no unsaved changes relative to last saved signature.");
-                return;
-            }
-
-            const todayStr = new Date().toLocaleDateString('ru-RU');
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
-            let shouldCreateNew = false;
-            if (!this.state.calc_id) {
-                this.state.calc_id = String(Math.floor(100000 + Math.random() * 900000));
-                this.state.last_saved_date = todayStr;
-                shouldCreateNew = true;
-            } else if (!this.state.last_saved_date || this.state.last_saved_date !== todayStr) {
-                this.state.calc_id = String(Math.floor(100000 + Math.random() * 900000));
-                this.state.last_saved_date = todayStr;
-                shouldCreateNew = true;
-            }
-
-            if (shouldCreateNew) {
-                let pName = this.state.projectName || 
-                            document.getElementById('project_name_input')?.value?.trim() || 
-                            'Мой проект';
-                
-                if (!pName || pName === 'Мой проект' || pName.startsWith('Автосохранение')) {
-                    pName = `Автосохранение (${todayStr} ${timeStr})`;
-                } else {
-                    let cleanName = pName.replace(/\s*\(Автосохранение.*?\)/g, '').trim();
-                    pName = `${cleanName} (Автосохранение ${todayStr} ${timeStr})`;
+            const baseEq = this._autoSaveBaseEq !== undefined ? this._autoSaveBaseEq : currentEq;
+            if (baseEq > 0) {
+                const changePct = Math.abs(currentEq - baseEq) / baseEq;
+                if (changePct < 0.10) {
+                    console.log(`[runAutoSave] Skipped: change ${(changePct * 100).toFixed(1)}% < 10%.`);
+                    return;
                 }
-                
-                this.state.projectName = pName;
-                let inputEl = document.getElementById('project_name_input');
-                if (inputEl) inputEl.value = pName;
+            } else if (currentEq === 0) {
+                console.log("[runAutoSave] Skipped: zero cost.");
+                return;
             }
 
-            await this.saveToCloud(true);
+            // 5. Нет несохранённых изменений
+            if (!this.hasUnsavedChanges) {
+                console.log("[runAutoSave] Skipped: no unsaved changes.");
+                return;
+            }
+
+            // 6. Формируем имя: оригинальное название + "(автосохранение)"
+            const todayStr = new Date().toLocaleDateString('ru-RU');
+            const now2 = new Date();
+            const timeStr = now2.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+            let baseName = this.state.projectName ||
+                document.getElementById('project_name_input')?.value?.trim() || '';
+            // Чистим старые суффиксы если есть
+            let cleanName = baseName.replace(/\s*\(автосохранение.*?\)/gi, '').trim();
+            if (!cleanName || cleanName === 'Мой проект') cleanName = '';
+            let autoName = cleanName
+                ? `${cleanName} (автосохранение)`
+                : `Автосохранение (${todayStr} ${timeStr})`;
+
+            // 7. Один авто-слот в день: используем auto_calc_id (не трогаем calc_id оригинала)
+            if (!this._autoCalcId || this._autoCalcIdDate !== todayStr) {
+                // Новый день — новый авто-слот
+                this._autoCalcId = String(Math.floor(100000 + Math.random() * 900000));
+                this._autoCalcIdDate = todayStr;
+                console.log("[runAutoSave] New daily auto-slot:", this._autoCalcId);
+            }
+
+            const eq = app.lastEqSum || 0;
+            const wk = (this.state.accountType === 'pro') ? (app.lastWorksSum || 0) : 0;
+            const total = eq + wk;
+
+            const autoData = {
+                project_name: autoName,
+                share_id: this._autoCalcId,
+                calc_data: { ...this.state, projectName: autoName, calc_id: this._autoCalcId },
+                total_sum: total,
+                eq_sum: eq,
+                works_sum: wk,
+                user_id: dbUserId
+            };
+
+            // 8. Проверяем: есть ли уже запись с этим auto_calc_id — если да, UPDATE, иначе INSERT
+            const { data: existing } = await supabaseClient
+                .from('estimates')
+                .select('id, user_id')
+                .eq('share_id', this._autoCalcId)
+                .limit(1);
+
+            let saveError = null;
+            if (existing && existing.length > 0 && String(existing[0].user_id) === String(dbUserId)) {
+                const { error } = await supabaseClient
+                    .from('estimates')
+                    .update(autoData)
+                    .eq('id', existing[0].id);
+                saveError = error;
+                console.log("[runAutoSave] Updated existing auto-slot.");
+            } else {
+                const { error } = await supabaseClient
+                    .from('estimates')
+                    .insert([autoData]);
+                saveError = error;
+                console.log("[runAutoSave] Created new auto-slot.");
+            }
+
+            if (saveError) throw saveError;
+
+            // 9. Обновляем метки времени и базовое значение стоимости
+            this._lastAutoSaveTime = Date.now();
+            this._autoSaveBaseEq = currentEq;
+            console.log(`[runAutoSave] Auto-saved: "${autoName}" at ${timeStr}`);
+
         } catch (e) {
             console.error("[runAutoSave] Ошибка автосохранения:", e);
         }
     },
+
 
     switchMobileTab: function (tab) {
         if (window.innerWidth > 768) return;
@@ -6526,21 +6571,75 @@ const app = {
         if (localStorage.getItem('stout_save')) {
             try { this.state = { ...this.state, ...JSON.parse(localStorage.getItem('stout_save')) }; } catch (e) { console.error("Ошибка загрузки сохранения", e); }
         }
+        // Инициализируем Rommer аналоги для нечетных секций радиаторов Space и Titan
+        catalog.rads.forEach(rad => {
+            if (!rad.rommer) {
+                let targetSec = rad.sec;
+                if (targetSec % 2 !== 0) {
+                    targetSec = targetSec + 1;
+                }
+                if (targetSec > 12) targetSec = 12;
+                let evenRad = catalog.rads.find(x => x.sec === targetSec && x.rommer);
+                if (evenRad) {
+                    rad.rommer = evenRad.rommer;
+                }
+            }
+        });
+        titanRads.forEach(rad => {
+            if (!rad.rommer) {
+                let targetSec = rad.sec;
+                if (targetSec % 2 !== 0) {
+                    targetSec = targetSec + 1;
+                }
+                if (targetSec > 12) targetSec = 12;
+                let evenRad = catalog.rads.find(x => x.sec === targetSec && x.rommer);
+                if (evenRad) {
+                    rad.rommer = evenRad.rommer;
+                }
+            }
+        });
+
         // Сортируем steelRads по мощности (Тип11 < Тип21 < Тип22 < Тип33)
         steelRads.sort((a, b) => a.power50 - b.power50);
         let radAlts = [catalog.rads[0], titanRads[0], steelRads[0]];
         catalog.rads.forEach(rad => { rad.alts = radAlts; }); titanRads.forEach(rad => { rad.alts = radAlts; }); steelRads.forEach(rad => { rad.alts = radAlts; });
         let hAlts = catalog.h_valves; catalog.h_valves.forEach(v => { v.alts = hAlts; });
-        let boilerAlts = [catalog.tanks_optibase[0], catalog.tanks_standard[0], catalog.tanks_stainless[0]]; catalog.tanks_optibase.forEach(t => { t.alts = boilerAlts; }); catalog.tanks_standard.forEach(t => { t.alts = boilerAlts; }); catalog.tanks_stainless.forEach(t => { t.alts = boilerAlts; });
+        const setBoilerAlts = (t) => {
+            let opti = catalog.tanks_optibase.find(x => x.vol === t.vol);
+            let std = catalog.tanks_standard.find(x => x.vol === t.vol);
+            let stainless = catalog.tanks_stainless.find(x => x.vol === t.vol);
+            t.alts = [opti, std, stainless].filter(Boolean);
+        };
+        catalog.tanks_optibase.forEach(setBoilerAlts);
+        catalog.tanks_standard.forEach(setBoilerAlts);
+        catalog.tanks_stainless.forEach(setBoilerAlts);
         let pumpAlts = catalog.pumps_dn25; catalog.pumps_dn25.forEach(p => { p.alts = pumpAlts; });
-        let elBoilerAlts = [catalog.boilers_status[0], catalog.boilers_plus[0]]; catalog.boilers_plus.forEach(b => { b.alts = elBoilerAlts; }); catalog.boilers_status.forEach(b => { b.alts = elBoilerAlts; });
+        catalog.boilers_plus.forEach(b => {
+            let alt = catalog.boilers_status.find(x => x.power === b.power);
+            b.alts = alt ? [alt] : [];
+        });
+        catalog.boilers_status.forEach(b => {
+            let alt = catalog.boilers_plus.find(x => x.power === b.power);
+            b.alts = alt ? [alt] : [];
+        });
         let hydroAlts = catalog.hydro_modular_dn20; catalog.hydro_dn20.forEach(h => { h.alts = hydroAlts; }); catalog.hydro_modular_dn20.forEach(h => { h.alts = catalog.hydro_dn20; });
         let pipeAlts = catalog.rad_pipes_grey; catalog.insulated_pipes.forEach(p => { p.alts = pipeAlts; }); catalog.rad_pipes_grey.forEach(p => { p.alts = catalog.insulated_pipes; });
         if (catalog.mixing_units && catalog.groups_dn20 && catalog.groups_dn25) {
-            let ufhMixAlts = [catalog.mixing_units[0], catalog.groups_dn20[1], catalog.groups_dn25[1]];
+            let ufhMixAlts = [
+                catalog.mixing_units[0],
+                catalog.groups_dn20[1],
+                catalog.groups_dn25[1],
+                catalog.groups_dn20[2],
+                catalog.groups_dn25[2]
+            ].filter(Boolean);
             catalog.mixing_units.forEach(mu => { mu.alts = ufhMixAlts; });
-            catalog.groups_dn20.forEach(g => { if (g.id.includes("0002")) g.alts = ufhMixAlts; });
-            catalog.groups_dn25.forEach(g => { if (g.id.includes("0002")) g.alts = ufhMixAlts; });
+            catalog.groups_dn20.forEach(g => { if (g.id.includes("0002") || g.id.includes("0003")) g.alts = ufhMixAlts; });
+            catalog.groups_dn25.forEach(g => { if (g.id.includes("0002") || g.id.includes("0003")) g.alts = ufhMixAlts; });
+        }
+        if (catalog.servo_rotary_sensor && catalog.servo_rotary_std) {
+            let servoAlts = [catalog.servo_rotary_sensor, catalog.servo_rotary_std];
+            catalog.servo_rotary_sensor.alts = servoAlts;
+            catalog.servo_rotary_std.alts = servoAlts;
         }
         if (catalog.ppr_proaqua_pipe && catalog.ppr_ekoplastik_pipe) {
             const ext1 = n => {
@@ -6589,6 +6688,7 @@ const app = {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             console.warn('[DEV MODE] Localhost detected — установлена PRO сессия для тестирования.');
             this.state.accountType = 'pro';
+            this.state.groupItems = true; // По умолчанию группировка включена для PRO
             this.state.tgUser = {
                 id: '0279a53c-452b-474f-8626-08be2c2b32da',
                 first_name: "Dima Ibatullin",
@@ -6709,16 +6809,28 @@ const app = {
 
         this.initCityAutocomplete();
     },
+    getPower: function () {
+        let regVal = (this.state.region !== undefined) ? (this.state.region / 100) : 1.0;
+        let matVal = (this.state.mat !== undefined) ? this.state.mat : 1.0;
+        return Math.round((this.state.area || 0) * matVal * regVal / 100);
+    },
     isUfhMixTypeCompatible: function (type, area, brand) {
+        let flow = (area * 0.08) / (1.163 * 8);
         if (type === 'std') {
-            let limit = (brand === 'rommer') ? 100 : 120;
-            return area <= limit;
+            let limitArea = (brand === 'rommer') ? 100 : 120;
+            let limitFlow = (brand === 'rommer') ? 1.0 : 1.2;
+            return area <= limitArea && flow <= limitFlow;
         }
-        if (type === 'dn20') {
-            return area <= 120;
-        }
-        if (type === 'dn25') {
-            return true;
+        if (brand === 'rommer') {
+            if (type === 'dn20') return area <= 120 && flow <= 1.6;
+            if (type === 'dn20_servo') return area <= 150 && flow <= 1.6;
+            if (type === 'dn25') return area <= 150 && flow <= 1.6;
+            if (type === 'dn25_servo') return area <= 250;
+        } else { // stout
+            if (type === 'dn20') return area <= 120 && flow <= 0.9;
+            if (type === 'dn20_servo') return area <= 150 && flow <= 0.9;
+            if (type === 'dn25') return area <= 200 && flow <= 2.1;
+            if (type === 'dn25_servo') return area <= 300;
         }
         return false;
     },
@@ -6780,15 +6892,15 @@ const app = {
             this.state.sewerType = (this.state.sewerType === 'std') ? 'comfort' : 'std';
         }
         else if (originalId === 'RDG-0015-004002' || originalId === 'RDG-1015-004003') { this.state.hydroArrowType = (this.state.hydroArrowType === 'pro') ? 'standard' : 'pro'; }
-        else if (originalId === 'SDG-0120-001000' || originalId === 'SDG-0002-002001' || originalId === 'SDG-0002-002501') {
+        else if (originalId === 'SDG-0120-001000' || originalId === 'SDG-0002-002001' || originalId === 'SDG-0002-002501' || originalId === 'SDG-0003-002001' || originalId === 'SDG-0003-002501') {
             let tpArea = this.tpArea || 0;
             let brand = this.state.brandMode;
             let nextType = this.state.ufhMixType || 'std';
+            const cycle = ['std', 'dn20', 'dn20_servo', 'dn25', 'dn25_servo'];
             
-            for (let i = 0; i < 3; i++) {
-                if (nextType === 'std') nextType = 'dn20';
-                else if (nextType === 'dn20') nextType = 'dn25';
-                else nextType = 'std';
+            for (let i = 0; i < 5; i++) {
+                let currIdx = cycle.indexOf(nextType);
+                nextType = cycle[(currIdx + 1) % cycle.length];
                 
                 if (this.isUfhMixTypeCompatible(nextType, tpArea, brand)) {
                     this.state.ufhMixType = nextType;
@@ -6796,7 +6908,768 @@ const app = {
                 }
             }
         }
+        else if (originalId === 'SVM-0025-230017' || originalId === 'SVM-0005-230001') {
+            let tQ = this.tQ_val || 1;
+            let defaultServoType = (tQ > 1) ? 'std' : 'sensor';
+            let currentServoType = this.state.servoType || defaultServoType;
+            this.state.servoType = (currentServoType === 'std') ? 'sensor' : 'std';
+        }
         this.state.showSwapFor = null; this.render();
+    },
+    getCheapestAlternative: function(item) {
+        if (!item) return null;
+        let options = [];
+        
+        let addCandidate = (cand) => {
+            if (!cand) return;
+            if (options.some(x => x.id === cand.id)) return;
+            options.push(cand);
+            
+            if (cand.comfort) {
+                addCandidate(cand.comfort);
+            }
+            
+            let analog = cand.rommer;
+            if (!analog && ANALOG_MAP[cand.id]) {
+                let targetId = ANALOG_MAP[cand.id];
+                for (let catKey in catalog) {
+                    if (Array.isArray(catalog[catKey])) {
+                        let found = catalog[catKey].find(x => x.id === targetId);
+                        if (found) { analog = found; break; }
+                    }
+                }
+            }
+            if (analog) {
+                if (Array.isArray(analog)) {
+                    let totalPrice = analog.reduce((sum, sub) => sum + (sub.price || 0), 0);
+                    let finalAnalog = {
+                        ...cand,
+                        id: analog[0].id,
+                        name: analog[0].name,
+                        price: totalPrice,
+                        brand: "ROMMER"
+                    };
+                    if (analog[0].article) finalAnalog.article = analog[0].article;
+                    addCandidate(finalAnalog);
+                } else {
+                    let finalAnalog = {
+                        ...cand,
+                        id: analog.id,
+                        name: analog.name,
+                        price: analog.price,
+                        brand: analog.brand || "ROMMER"
+                    };
+                    if (analog.article) finalAnalog.article = analog.article;
+                    addCandidate(finalAnalog);
+                }
+            }
+        };
+        
+        addCandidate(item);
+        
+        let alts = item.alts || [];
+        alts.forEach(alt => {
+            addCandidate(alt);
+        });
+        
+        let cheapest = null;
+        options.forEach(opt => {
+            if (opt.price && opt.price > 0) {
+                if (!cheapest || opt.price < cheapest.price) {
+                    cheapest = opt;
+                }
+            }
+        });
+        
+        return cheapest || item;
+    },
+    openSwapModal: function (lookupId) {
+        let item = this.currentEquipmentList.find(x => x.id === lookupId || x.displaySku === lookupId);
+        if (!item) {
+            item = this.currentEquipmentList.find(x => (x.originalId || x.id) === lookupId);
+        }
+        if (!item) return;
+
+        let alts = item.alts || [];
+        let customAlts = null;
+        let isRommer = this.state.brandMode === 'rommer';
+
+        if (item.originalId === 'SAC-0022-283020_boiler') {
+            customAlts = [
+                { id: 'SAC-0022-283020', name: 'Одинарная монтажная рама (C-профиль)', brand: 'STOUT', price: catalog.mounting_system.find(x => x.id === 'SAC-0022-283020')?.price || 0 },
+                { id: 'SAC-0022-283020_double', name: 'Двойная монтажная рама (C-профиль)', brand: 'STOUT', price: (catalog.mounting_system.find(x => x.id === 'SAC-0022-283020')?.price || 0) * 2 },
+                { id: 'SAC-0020-200012_single', name: 'Настенный монтаж (одиночные хомуты)', brand: 'STOUT', price: catalog.mounting_system.find(x => x.id === 'SAC-0020-300012')?.price || 0 },
+                { id: 'SAC-0020-200012', name: 'Настенный монтаж (двойные хомуты)', brand: 'STOUT', price: catalog.mounting_system.find(x => x.id === 'SAC-0020-200012')?.price || 0 }
+            ];
+        }
+        else if (item.originalId === 'SAC-0020-411040_boiler') {
+            customAlts = [
+                { id: 'SAC-0020-411040', name: 'Анкер забивной стальной', brand: 'STOUT', price: catalog.mounting_system.find(x => x.id === 'SAC-0020-411040')?.price || 0 },
+                { id: 'SAC-0020-400100', name: 'Шпилька-шуруп с дюбелем', brand: 'STOUT', price: catalog.mounting_system.find(x => x.id === 'SAC-0020-400100')?.price || 0 }
+            ];
+        }
+        else if (item.originalId && (item.originalId.startsWith('SAC-0020-2000') || (item.originalId.startsWith('SAC-0020-0000') && (item.originalId.endsWith('_cw') || item.originalId.endsWith('_hw') || item.originalId.endsWith('_recirc'))) || (item.originalId.startsWith('SMF-0003') && (item.originalId.endsWith('_cw') || item.originalId.endsWith('_hw') || item.originalId.endsWith('_recirc'))))) {
+            customAlts = [
+                { id: 'hidden', name: 'Скрытая прокладка (в стене/полу)', brand: 'STOUT', price: 0 },
+                { id: 'double', name: 'Открытая прокладка (двойные хомуты)', brand: 'STOUT', price: 0 },
+                { id: 'single', name: 'Открытая прокладка (одинарные хомуты)', brand: 'STOUT', price: 0 }
+            ];
+        }
+        else if (item.originalId && (item.originalId.endsWith('_rad') || item.originalId.startsWith('SPI-0003-'))) {
+            let p_ins = 0, p_split = 0, p_ins_mp = 0, p_split_mp = 0;
+            let b_ins = 'STOUT', b_split = 'STOUT', b_ins_mp = 'STOUT', b_split_mp = 'STOUT';
+            
+            let insulatedItem = catalog.insulated_pipes ? catalog.insulated_pipes[0] : null;
+            if (isRommer) {
+                p_ins = 138;
+                b_ins = 'ROMMER';
+            } else if (insulatedItem) {
+                p_ins = (insulatedItem.price || 0) / (insulatedItem.len || 100);
+            }
+            
+            let splitItem = catalog.rad_pipes_grey ? catalog.rad_pipes_grey[0] : null;
+            if (isRommer) {
+                p_split = 110;
+                b_split = 'ROMMER';
+            } else if (splitItem) {
+                p_split = splitItem.price || 0;
+            }
+            
+            let insulatedMpItem = catalog.insulated_pipes_mp_red ? catalog.insulated_pipes_mp_red[0] : null;
+            if (insulatedMpItem) {
+                p_ins_mp = (insulatedMpItem.price || 0) / (insulatedMpItem.len || 100);
+            }
+            
+            let splitMpItem = catalog.water_pipes_mp ? catalog.water_pipes_mp[0] : null;
+            if (splitMpItem) {
+                p_split_mp = splitMpItem.price || 0;
+            }
+            
+            customAlts = [
+                { id: 'insulated', name: 'Труба PEX-a в теплоизоляции', brand: b_ins, price: p_ins },
+                { id: 'split', name: 'Труба PEX-a без изоляции (бухты)', brand: b_split, price: p_split },
+                { id: 'insulated_mp', name: 'Труба металлопластиковая в теплоизоляции', brand: b_ins_mp, price: p_ins_mp },
+                { id: 'split_mp', name: 'Труба металлопластиковая без изоляции', brand: b_split_mp, price: p_split_mp }
+            ];
+        }
+        else if (item.originalId && (item.originalId.endsWith('_ufh') || item.originalId.startsWith('SPX-0002-') || item.originalId.startsWith('SPM-0001-'))) {
+            let p_pex = 0, p_mp = 0;
+            let b_pex = 'STOUT', b_mp = 'STOUT';
+            
+            let pexItem = catalog.pipes ? catalog.pipes[0] : null;
+            if (isRommer) {
+                p_pex = pexItem?.rommer?.price || 7600;
+                b_pex = 'ROMMER';
+            } else {
+                p_pex = pexItem?.price || 15200;
+            }
+            
+            let mpItem = catalog.metal_plastic_pipes ? catalog.metal_plastic_pipes[0] : null;
+            p_mp = mpItem?.price || 15151;
+            
+            customAlts = [
+                { id: 'pex', name: 'Труба PEX-a (полиэтилен)', brand: b_pex, price: p_pex },
+                { id: 'metal_plastic', name: 'Труба металлопластиковая', brand: b_mp, price: p_mp }
+            ];
+        }
+        else if (item.originalId && (item.originalId.endsWith('_water') || (item.originalId.startsWith('SPX-0001-') && !item.originalId.endsWith('_rad'))) && !item.originalId.startsWith('SMB-') && !item.originalId.startsWith('RMS-')) {
+            let p_pex = 0, p_mp = 0;
+            let b_pex = 'STOUT', b_mp = 'STOUT';
+            
+            let pexItem = catalog.water_pipes ? catalog.water_pipes[0] : null;
+            if (isRommer) {
+                p_pex = pexItem?.rommer?.price || 110;
+                b_pex = 'ROMMER';
+            } else {
+                p_pex = pexItem?.price || 175;
+            }
+            
+            let mpItem = catalog.water_pipes_mp ? catalog.water_pipes_mp[0] : null;
+            p_mp = mpItem?.price || 151.51;
+            
+            customAlts = [
+                { id: 'pex', name: 'Труба PEX-a (полиэтилен)', brand: b_pex, price: p_pex },
+                { id: 'metal_plastic', name: 'Труба металлопластиковая', brand: b_mp, price: p_mp }
+            ];
+        }
+        else if (item.originalId && (item.originalId.startsWith('SMF-0001') || item.originalId === '418318')) {
+            let p_mat = catalog.mats ? catalog.mats[0]?.price || 991 : 991;
+            let p_xps = catalog.xps_kit ? catalog.xps_kit[0]?.price || 299 : 299;
+            customAlts = [
+                { id: 'mat', name: 'Маты с бобышками STOUT', brand: 'STOUT', price: p_mat },
+                { id: 'xps', name: 'Пенополистирол XPS + скобы', brand: 'Technonicol', price: p_xps }
+            ];
+        }
+        else if (item.originalId && item.originalId.startsWith('SCS-0001')) {
+            let sirioItem = catalog.well_auto ? catalog.well_auto.find(x => x.id === 'SCS-0001-000070') : null;
+            let topItem = catalog.well_auto ? catalog.well_auto.find(x => x.id === 'SCS-0001-000063') : null;
+            let baseItem = catalog.well_auto ? catalog.well_auto.find(x => x.id === 'SCS-0001-000064') : null;
+            
+            let sirioPrice = sirioItem?.price || 38236;
+            let sirioBrand = 'STOUT';
+            let sirioName = 'Частотный регулятор Sirio';
+            if (isRommer && sirioItem?.rommer) {
+                sirioPrice = sirioItem.rommer.price || 5880;
+                sirioBrand = 'ROMMER';
+                sirioName = 'Электронное реле давления (EPC-12 auto)';
+            }
+            
+            let topPrice = topItem?.price || 16078;
+            let basePriceVal = baseItem?.price || 5141;
+            
+            customAlts = [
+                { id: 'sirio', name: sirioName, brand: sirioBrand, price: sirioPrice },
+                { id: 'top', name: 'Электронное реле давления', brand: 'STOUT', price: topPrice },
+                { id: 'base', name: 'Механическое реле давления', brand: 'STOUT', price: basePriceVal }
+            ];
+        }
+        else if (item.originalId && (item.originalId.startsWith('SCQ') || item.originalId.startsWith('SCN'))) {
+            let itemLen = item.len || 1.0;
+            let scqPrice = 48256, scnPrice = 22276;
+            if (catalog.convectors_scq && catalog.convectors_scn) {
+                let closestScq = catalog.convectors_scq.reduce((prev, curr) => Math.abs(curr.len - itemLen) < Math.abs(prev.len - itemLen) ? curr : prev, catalog.convectors_scq[0]);
+                let closestScn = catalog.convectors_scn.reduce((prev, curr) => Math.abs(curr.len - itemLen) < Math.abs(prev.len - itemLen) ? curr : prev, catalog.convectors_scn[0]);
+                scqPrice = closestScq?.price || 48256;
+                scnPrice = closestScn?.price || 22276;
+            }
+            
+            customAlts = [
+                { id: 'scn', name: 'Естественная конвекция (без вентилятора)', brand: 'STOUT', price: scnPrice },
+                { id: 'scq', name: 'Принудительная конвекция (с вентилятором)', brand: 'STOUT', price: scqPrice }
+            ];
+        }
+        else if (item.originalId && (item.originalId.startsWith('SVT') || item.originalId.startsWith('SVL'))) {
+            let straightPrice = 1836, angledPrice = 2211;
+            if (catalog.conv_valves) {
+                let svt_str = catalog.conv_valves.find(x => x.id === 'SVT-0001-000015');
+                let svl_str = catalog.conv_valves.find(x => x.id === 'SVL-1176-000015');
+                let svt_ang = catalog.conv_valves.find(x => x.id === 'SVT-0005-000015');
+                let svl_ang = catalog.conv_valves.find(x => x.id === 'SVL-1156-000015');
+                if (isRommer) {
+                    straightPrice = (svt_str?.rommer?.price || svt_str?.price || 0) + (svl_str?.rommer?.price || svl_str?.price || 0);
+                    angledPrice = (svt_ang?.rommer?.price || svt_ang?.price || 0) + (svl_ang?.rommer?.price || svl_ang?.price || 0);
+                } else {
+                    straightPrice = (svt_str?.price || 0) + (svl_str?.price || 0);
+                    angledPrice = (svt_ang?.price || 0) + (svl_ang?.price || 0);
+                }
+            }
+            
+            customAlts = [
+                { id: 'straight', name: 'Прямое подключение конвектора', brand: isRommer ? 'ROMMER' : 'STOUT', price: straightPrice },
+                { id: 'angled', name: 'Угловое подключение конвектора', brand: isRommer ? 'ROMMER' : 'STOUT', price: angledPrice }
+            ];
+        }
+        else if (item.originalId && (item.originalId.startsWith('SCA-') || item.originalId.startsWith('RCA-'))) {
+            let p0 = isRommer ? (catalog.chimneys[0].rommer?.price || catalog.chimneys[0].price) : catalog.chimneys[0].price;
+            let p1 = catalog.chimneys[1].price;
+            let name0 = isRommer ? (catalog.chimneys[0].rommer?.name || catalog.chimneys[0].name) : catalog.chimneys[0].name;
+            let name1 = catalog.chimneys[1].name;
+            customAlts = [
+                { id: 'standard', name: name0, brand: isRommer ? 'ROMMER' : 'STOUT', price: p0 },
+                { id: 'basic', name: name1, brand: 'ROMMER', price: p1 }
+            ];
+        }
+        else if (item.originalId && (item.originalId.startsWith('PA') || item.originalId.includes('RCT'))) {
+            customAlts = [
+                { id: 'proaqua', name: 'Полипропилен Pro Aqua (Россия)', brand: 'Pro Aqua', price: 0 },
+                { id: 'wavin', name: 'Полипропилен Wavin Ekoplastik (Чехия)', brand: 'Wavin Ekoplastik', price: 0 }
+            ];
+        }
+        else if (item.originalId && (item.originalId.startsWith('SKB-') || /^5[0-9]{4,}[RK]?$/.test(item.originalId))) {
+            let stoutSewer = catalog.sewer_silent ? catalog.sewer_silent.find(x => x.id === item.originalId || x.id === item.id) : null;
+            let stdPrice = 0, comfortPrice = 0;
+            let stdBrand = 'Sinikon', comfortBrand = 'Sinikon';
+            let stdName = 'Канализация Стандарт';
+            
+            if (stoutSewer) {
+                if (isRommer) {
+                    stdPrice = stoutSewer.rommer?.price || 0;
+                    stdBrand = stoutSewer.rommer?.brand || 'Sinikon';
+                    stdName = stoutSewer.rommer?.name || 'Канализация Стандарт';
+                } else {
+                    stdPrice = stoutSewer.price || 0;
+                    stdBrand = 'STOUT';
+                    stdName = stoutSewer.name || 'Канализация Стандарт (STOUT)';
+                }
+                comfortPrice = stoutSewer.comfort?.price || 0;
+                comfortBrand = stoutSewer.comfort?.brand || 'Sinikon';
+            }
+            
+            customAlts = [
+                { id: 'std', name: stdName, brand: stdBrand, price: stdPrice },
+                { id: 'comfort', name: stoutSewer?.comfort?.name || 'Канализация Комфорт (бесшумная)', brand: comfortBrand, price: comfortPrice }
+            ];
+        }
+        else if (item.originalId === 'RDG-0015-004002' || item.originalId === 'RDG-1015-004003') {
+            let p0 = catalog.hydro_dn25?.find(x => x.id === 'RDG-0015-004002')?.price || catalog.hydro_arrow?.rommer?.price || 6596;
+            let p1 = catalog.hydro_dn25?.find(x => x.id === 'RDG-1015-004003')?.price || 16722;
+            customAlts = [
+                { id: 'standard', name: 'Гидравлический разделитель (Стандарт)', brand: 'ROMMER', price: p0 },
+                { id: 'pro', name: 'Гидравлический разделитель (Pro с накидными гайками)', brand: 'ROMMER', price: p1 }
+            ];
+        }
+
+        let modal = document.getElementById('swap_modal_overlay');
+        let body = document.getElementById('swap_modal_body');
+        let title = document.getElementById('swap_modal_title');
+        if (!modal || !body) return;
+
+        title.innerHTML = `
+            <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; text-transform: none !important;">Варианты замены:</div>
+            <div style="font-size: 13px; font-weight: 500; color: var(--text-sec); text-transform: none !important;">${item.name}</div>
+        `;
+
+        let basePrice = item.price || 0;
+        let getPriceDiffHtml = (targetPrice, isRowActive) => {
+            if (isRowActive) {
+                return `<span style="color: var(--text-sec); font-weight: 600;">0%</span>`;
+            }
+            if (basePrice > 0 && targetPrice > 0) {
+                let percentDiff = Math.round(((targetPrice - basePrice) / basePrice) * 100);
+                if (percentDiff > 0) {
+                    return `<span style="color: #ef4444; font-weight: bold;">+${percentDiff}%</span>`;
+                } else if (percentDiff < 0) {
+                    return `<span style="color: #22c55e; font-weight: bold;">${percentDiff}%</span>`;
+                } else {
+                    return `<span style="color: var(--text-sec); font-weight: 600;">0%</span>`;
+                }
+            }
+            return `<span style="color: var(--text-sec); font-weight: 600;">-</span>`;
+        };
+
+        let html = `
+            <table class="inv-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr>
+                        <th class="col-idx" style="text-align: center; width: 40px;">#</th>
+                        <th class="col-img" style="width: 65px; text-align: center;">Фото</th>
+                        <th class="col-name" style="text-align: left;">Наименование</th>
+                        <th class="col-brand" style="text-align: center; width: 90px;">Бренд</th>
+                        <th class="col-pct" style="text-align: right; width: 110px;">Изм. цена (%)</th>
+                        <th style="text-align: right; width: 100px;">Цена</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        if (customAlts) {
+            // First determine isActive for each custom alt
+            customAlts.forEach(alt => {
+                let isActive = false;
+                if (item.originalId === 'SAC-0022-283020_boiler') {
+                    if (alt.id === 'SAC-0022-283020') isActive = (this.state.boilerFrameType === 'profile_single');
+                    else if (alt.id === 'SAC-0022-283020_double') isActive = (this.state.boilerFrameType === 'profile_double');
+                    else if (alt.id === 'SAC-0020-200012_single') isActive = (this.state.boilerFrameType === 'direct_single');
+                    else if (alt.id === 'SAC-0020-200012') isActive = (this.state.boilerFrameType === 'direct_double');
+                }
+                else if (item.originalId === 'SAC-0020-411040_boiler') {
+                    isActive = (alt.id === 'SAC-0020-411040' && this.state.boilerFrameFastenerType === 'anchor') || (alt.id === 'SAC-0020-400100' && this.state.boilerFrameFastenerType === 'stud');
+                }
+                else if (alt.id === 'hidden' || alt.id === 'double' || alt.id === 'single') {
+                    isActive = (alt.id === this.state.pipeMountType);
+                }
+                else if (alt.id === 'insulated' || alt.id === 'split' || alt.id === 'insulated_mp' || alt.id === 'split_mp') {
+                    isActive = (alt.id === this.state.pipeType);
+                }
+                else if (alt.id === 'pex' || alt.id === 'metal_plastic') {
+                    if (item.originalId.endsWith('_ufh') || item.originalId.startsWith('SPX-0002-') || item.originalId.startsWith('SPM-0001-')) {
+                        isActive = (alt.id === this.state.ufhPipeMaterial);
+                    } else {
+                        isActive = (alt.id === this.state.waterPipeMaterial);
+                    }
+                }
+                else if (alt.id === 'mat' || alt.id === 'xps') {
+                    isActive = (alt.id === this.state.ufhBaseType);
+                }
+                else if (alt.id === 'sirio' || alt.id === 'top' || alt.id === 'base') {
+                    isActive = (alt.id === this.state.wellAutoType);
+                }
+                else if (alt.id === 'scq' || alt.id === 'scn') {
+                    isActive = (alt.id === this.state.convectorType);
+                }
+                else if (alt.id === 'straight' || alt.id === 'angled') {
+                    isActive = (alt.id === this.state.convConnectionType);
+                }
+                else if (alt.id === 'standard' || alt.id === 'basic') {
+                    isActive = (alt.id === this.state.chimneyType);
+                }
+                else if (alt.id === 'proaqua' || alt.id === 'wavin') {
+                    isActive = (alt.id === this.state.pprSystemBrand);
+                }
+                else if (alt.id === 'std' || alt.id === 'comfort') {
+                    isActive = (alt.id === this.state.sewerType);
+                }
+                else if (alt.id === 'standard' || alt.id === 'pro') {
+                    isActive = (alt.id === this.state.hydroArrowType);
+                }
+                alt.isActive = isActive;
+            });
+
+            // Set basePrice to the active option's price if found
+            let activeAlt = customAlts.find(alt => alt.isActive);
+            if (activeAlt) {
+                basePrice = activeAlt.price || 0;
+            }
+
+            customAlts.sort((a, b) => (a.price || 0) - (b.price || 0));
+            customAlts.forEach((alt, idx) => {
+                let isActive = alt.isActive;
+
+                let activeClass = isActive ? "active-row" : "";
+                let activeStyle = isActive ? "background-color: var(--primary-light);" : "";
+                let badgeHtml = isActive ? `<span style="font-size: 10px; background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px;">Выбран</span>` : "";
+                let imgHtml = getImg(alt);
+                let diffHtml = getPriceDiffHtml(alt.price, isActive);
+                let priceText = alt.price > 0 ? this.formatPriceHtml(alt.price, true) : "-";
+
+                html += `
+                    <tr class="${activeClass}" style="cursor: pointer; ${activeStyle}" onclick="app.selectSwapAlternative('${item.originalId || item.id}', '${alt.id}')">
+                        <td class="col-idx" style="text-align: center; font-size: 13px;">${idx + 1}</td>
+                        <td class="col-img">${imgHtml}</td>
+                        <td class="col-name" style="font-size: 13px; font-weight: 600; text-align: left;">${alt.name}${badgeHtml}</td>
+                        <td class="col-brand" style="text-align: center; font-size: 13px;">${alt.brand || 'STOUT'}</td>
+                        <td class="col-pct" style="text-align: right; font-weight: 700; font-size: 13px;">${diffHtml}</td>
+                        <td style="text-align: right; font-weight: 700; font-size: 13px; white-space: nowrap;">${priceText}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            let uniqueAlts = [];
+            let seenIds = new Set();
+            
+            let altsToProcess = [...alts];
+            let isCurrentInAlts = alts.some(alt => {
+                if (!alt) return false;
+                if (alt.id === item.id || alt.id === item.originalId) return true;
+                if (isRommer) {
+                    let analogId = alt.rommer?.id || ANALOG_MAP[alt.id];
+                    if (analogId === item.id) return true;
+                }
+                return false;
+            });
+            
+            if (!isCurrentInAlts) {
+                let baseItem = null;
+                let lookupKey = item.originalId || item.id;
+                for (let catKey in catalog) {
+                    if (Array.isArray(catalog[catKey])) {
+                        let found = catalog[catKey].find(x => x.id === lookupKey);
+                        if (found) { baseItem = found; break; }
+                    }
+                }
+                if (!baseItem && typeof titanRads !== 'undefined') {
+                    baseItem = titanRads.find(x => x.id === lookupKey);
+                }
+                if (!baseItem && typeof steelRads !== 'undefined') {
+                    baseItem = steelRads.find(x => x.id === lookupKey);
+                }
+                if (!baseItem) {
+                    baseItem = item;
+                }
+                altsToProcess.unshift(baseItem);
+            }
+            
+            altsToProcess.forEach(alt => {
+                if (!alt) return;
+                
+                let isUfhMix = (item.originalId === 'SDG-0120-001000' || item.originalId === 'SDG-0002-002001' || item.originalId === 'SDG-0002-002501' || item.originalId === 'SDG-0003-002001' || item.originalId === 'SDG-0003-002501');
+                if (isUfhMix) {
+                    let altType = 'std';
+                    if (alt.id === 'SDG-0002-002001') altType = 'dn20';
+                    else if (alt.id === 'SDG-0002-002501') altType = 'dn25';
+                    else if (alt.id === 'SDG-0003-002001') altType = 'dn20_servo';
+                    else if (alt.id === 'SDG-0003-002501') altType = 'dn25_servo';
+                    
+                    if (!this.isUfhMixTypeCompatible(altType, this.tpArea || 0, this.state.brandMode)) {
+                        return;
+                    }
+                    
+                    let pwr = this.getPower();
+                    let brand = this.state.brandMode;
+                    let useAnalogSec2 = this.state.sectionAnalog && this.state.sectionAnalog['2.4. Гидравлика котельной'];
+                    let radNeedsDn25 = (pwr > 20) || (brand === 'rommer') || useAnalogSec2;
+                    if (radNeedsDn25 && (altType === 'dn20' || altType === 'dn20_servo')) {
+                        return;
+                    }
+                }
+
+                // Stout Option
+                let displayItemStout = { ...alt };
+                displayItemStout.brand = displayItemStout.brand || "STOUT";
+                
+                // Rommer Option
+                let analog = alt.rommer;
+                if (!analog && ANALOG_MAP[alt.id]) {
+                    let targetId = ANALOG_MAP[alt.id];
+                    for (let catKey in catalog) {
+                        if (Array.isArray(catalog[catKey])) {
+                            let f = catalog[catKey].find(x => x.id === targetId);
+                            if (f) { analog = f; break; }
+                        }
+                    }
+                }
+                
+                let displayItemRommer = null;
+                if (analog) {
+                    if (Array.isArray(analog)) {
+                        let totalPrice = analog.reduce((sum, sub) => sum + (sub.price || 0), 0);
+                        displayItemRommer = {
+                            ...alt,
+                            id: analog[0].id,
+                            name: analog[0].name,
+                            price: totalPrice,
+                            brand: "ROMMER"
+                        };
+                        if (analog[0].article) displayItemRommer.article = analog[0].article;
+                    } else {
+                        displayItemRommer = {
+                            ...alt,
+                            id: analog.id,
+                            name: analog.name,
+                            price: analog.price,
+                            brand: analog.brand || "ROMMER"
+                        };
+                        if (analog.article) displayItemRommer.article = analog.article;
+                    }
+                }
+
+                // Comfort Option (Sinikon comfort)
+                let displayItemComfort = null;
+                if (alt.comfort) {
+                    displayItemComfort = {
+                        ...alt,
+                        id: alt.comfort.id,
+                        name: alt.comfort.name,
+                        price: alt.comfort.price,
+                        brand: alt.comfort.brand || "Sinikon"
+                    };
+                    if (alt.comfort.article) displayItemComfort.article = alt.comfort.article;
+                }
+
+                let candidates = [displayItemStout, displayItemRommer, displayItemComfort].filter(Boolean);
+                candidates.forEach(displayAlt => {
+                    let id = displayAlt.id;
+                    if (seenIds.has(id)) return;
+                    seenIds.add(id);
+                    uniqueAlts.push({ original: alt, display: displayAlt });
+                });
+            });
+
+            uniqueAlts.sort((a, b) => (a.display.price || 0) - (b.display.price || 0));
+
+            uniqueAlts.forEach((entry, idx) => {
+                let alt = entry.original;
+                let displayAlt = entry.display;
+                let img = getImg(displayAlt);
+                
+                let isActive = (displayAlt.id === item.id);
+                let activeClass = isActive ? "active-row" : "";
+                let activeStyle = isActive ? "background-color: var(--primary-light);" : "";
+                let badgeHtml = isActive ? `<span style="font-size: 10px; background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px;">Выбран</span>` : "";
+                let diffHtml = getPriceDiffHtml(displayAlt.price, isActive);
+                let priceText = displayAlt.price > 0 ? this.formatPriceHtml(displayAlt.price, true) : "-";
+
+                html += `
+                    <tr class="${activeClass}" style="cursor: pointer; ${activeStyle}" onclick="app.selectSwapAlternative('${item.originalId || item.id}', '${displayAlt.id}')">
+                        <td class="col-idx" style="text-align: center; font-size: 13px;">${idx + 1}</td>
+                        <td class="col-img" style="text-align: center;">${img}</td>
+                        <td class="col-name" style="font-size: 13px; font-weight: 600; text-align: left;">${displayAlt.name}${badgeHtml}</td>
+                        <td class="col-brand" style="text-align: center; font-size: 13px;">${displayAlt.brand || 'STOUT'}</td>
+                        <td class="col-pct" style="text-align: right; font-weight: 700; font-size: 13px;">${diffHtml}</td>
+                        <td style="text-align: right; font-weight: 700; font-size: 13px; white-space: nowrap;">${priceText}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        html += `
+                </tbody>
+            </table>
+        `;
+
+        body.innerHTML = html;
+        modal.style.display = 'flex';
+    },
+    closeSwapModal: function () {
+        let modal = document.getElementById('swap_modal_overlay');
+        if (modal) modal.style.display = 'none';
+    },
+    toggleSwapUI: function (id) {
+        this.openSwapModal(id);
+    },
+    selectSwapAlternative: function (originalId, chosenId) {
+        if (!this.state.swaps) this.state.swaps = {};
+        this.state.swaps[originalId] = chosenId;
+
+        // Synchronize red/blue insulated pipe swaps
+        if (originalId === 'SPI-0003-001622_rad') {
+            if (chosenId === 'SPI-0003-001622') {
+                this.state.swaps['SPI-0004-001622_rad'] = 'SPI-0004-001622';
+            } else if (chosenId === 'RPX-0001-001622') {
+                this.state.swaps['SPI-0004-001622_rad'] = 'RPX-0001-001622';
+            }
+        } else if (originalId === 'SPI-0004-001622_rad') {
+            if (chosenId === 'SPI-0004-001622') {
+                this.state.swaps['SPI-0003-001622_rad'] = 'SPI-0003-001622';
+            } else if (chosenId === 'RPX-0001-001622') {
+                this.state.swaps['SPI-0003-001622_rad'] = 'RPX-0001-001622';
+            }
+        } else if (originalId.startsWith('SPI-0001-') && originalId.endsWith('_rad')) {
+            let blueId = originalId.replace('SPI-0001-', 'SPI-0002-');
+            if (chosenId.startsWith('SPI-0001-')) {
+                this.state.swaps[blueId] = chosenId.replace('SPI-0001-', 'SPI-0002-');
+            } else {
+                this.state.swaps[blueId] = chosenId;
+            }
+        } else if (originalId.startsWith('SPI-0002-') && originalId.endsWith('_rad')) {
+            let redId = originalId.replace('SPI-0002-', 'SPI-0001-');
+            if (chosenId.startsWith('SPI-0002-')) {
+                this.state.swaps[redId] = chosenId.replace('SPI-0002-', 'SPI-0001-');
+            } else {
+                this.state.swaps[redId] = chosenId;
+            }
+        }
+
+        let isRad = (catalog.rads.find(x => x.id === originalId) || titanRads.find(x => x.id === originalId) || steelRads.find(x => x.id === originalId));
+        if (isRad) {
+            if (chosenId.includes("0020")) this.state.radType = 'space';
+            else if (chosenId.includes("0023")) this.state.radType = 'titan';
+            else this.state.radType = 'steel';
+        }
+        else if ((originalId.startsWith('SHT') || (originalId.startsWith('STE') && originalId.includes('2070'))) && !originalId.includes('2001') && !originalId.includes('2002')) {
+            if (chosenId.startsWith("SHT-0001") || chosenId.startsWith("RHT-0001")) this.state.headType = 'gas';
+            else if (chosenId.startsWith("SHT-0002") || chosenId.startsWith("RHT-0002")) this.state.headType = 'liquid';
+            else this.state.headType = 'smart';
+        }
+        else if (originalId.startsWith('SVH') || originalId.startsWith('RVH')) {
+            if (chosenId.includes("0001")) this.state.connectionType = 'angled';
+            else this.state.connectionType = 'straight';
+        }
+        else if (originalId.startsWith('SWH') || originalId.startsWith('RWH')) {
+            if (catalog.tanks_stainless.some(x => x.id === chosenId)) this.state.boilerType = 'stainless';
+            else if (catalog.tanks_standard.some(x => x.id === chosenId)) this.state.boilerType = 'standard';
+            else if (catalog.tanks_optibase.some(x => x.id === chosenId)) this.state.boilerType = 'optibase';
+        }
+        else if (originalId.startsWith('SPC-') && originalId.includes('180')) {
+            let pmp = catalog.pumps_dn25.find(p => p.id === chosenId || (p.rommer && p.rommer.id === chosenId));
+            if (pmp) this.state.pumpType = pmp.type;
+        }
+        else if (originalId.startsWith('SEB-')) {
+            if (chosenId.includes("3101") || chosenId.includes("status")) this.state.boilerSeries = 'status';
+            else this.state.boilerSeries = 'plus';
+        }
+        else if (originalId.startsWith('SDG-0018') || originalId.startsWith('SDG-0016')) {
+            if (chosenId.startsWith("SDG-0018") || chosenId.startsWith("RDG-0018")) this.state.hydroType = 'combo';
+            else this.state.hydroType = 'modular';
+        }
+        else if (originalId.startsWith('SMS-0922') || (originalId.startsWith('SMB-6850') && !originalId.endsWith('_water'))) {
+            if (chosenId.startsWith("SMB-6850")) this.state.radManifoldType = 'chrome';
+            else this.state.radManifoldType = 'standard';
+        }
+        else if (originalId.startsWith('SMB-6851-') || (originalId.startsWith('SMB-6850-') && originalId.endsWith('_water'))) {
+            if (chosenId.startsWith("SMB-6850")) this.state.waterManifoldType = 'block';
+            else this.state.waterManifoldType = 'standard';
+        }
+        else if (originalId === 'SAC-0022-283020_boiler') {
+            if (chosenId === 'SAC-0022-283020') this.state.boilerFrameType = 'profile_single';
+            else if (chosenId === 'SAC-0022-283020_double') this.state.boilerFrameType = 'profile_double';
+            else if (chosenId === 'SAC-0020-200012_single') this.state.boilerFrameType = 'direct_single';
+            else if (chosenId === 'SAC-0020-200012') this.state.boilerFrameType = 'direct_double';
+        }
+        else if (originalId === 'SAC-0020-411040_boiler') {
+            if (chosenId === 'SAC-0020-411040') this.state.boilerFrameFastenerType = 'anchor';
+            else this.state.boilerFrameFastenerType = 'stud';
+        }
+        else if (originalId.startsWith('SAC-0030-000825')) {
+            if (chosenId.includes("ASKON")) this.state.expansionTankMountType = 'standard';
+            else this.state.expansionTankMountType = 'stout';
+        }
+        else if (originalId === 'SAC-0022-600001' || originalId === 'SAC-0022-600100' || originalId === 'SAC-0022-600150') {
+            this.state.mountPlateSingleType = chosenId;
+        }
+        else if (originalId.startsWith('SAC-0020-2000') || (originalId.startsWith('SAC-0020-0000') && (originalId.endsWith('_cw') || originalId.endsWith('_hw') || originalId.endsWith('_recirc'))) || (originalId.startsWith('SMF-0003') && (originalId.endsWith('_cw') || originalId.endsWith('_hw') || originalId.endsWith('_recirc')))) {
+            if (chosenId === 'hidden') this.state.pipeMountType = 'hidden';
+            else if (chosenId === 'double') this.state.pipeMountType = 'double';
+            else this.state.pipeMountType = 'single';
+        }
+        else if (originalId.endsWith('_rad') || originalId.startsWith('SPI-0003-')) {
+            if (chosenId === 'insulated') this.state.pipeType = 'insulated';
+            else if (chosenId === 'split') this.state.pipeType = 'split';
+            else if (chosenId === 'insulated_mp') this.state.pipeType = 'insulated_mp';
+            else if (chosenId === 'split_mp') this.state.pipeType = 'split_mp';
+            else {
+                if (chosenId.startsWith('SPI-0003-') || chosenId.startsWith('SPI-0004-')) {
+                    this.state.pipeType = 'insulated';
+                } else if (chosenId.startsWith('SPX-0001-')) {
+                    this.state.pipeType = 'split';
+                } else if (chosenId.startsWith('SPI-0001-') || chosenId.startsWith('SPI-0002-')) {
+                    this.state.pipeType = 'insulated_mp';
+                } else if (chosenId.startsWith('SPM-0001-')) {
+                    this.state.pipeType = 'split_mp';
+                } else if (chosenId.startsWith('RPX-0001-')) {
+                    if (originalId.includes('SPI-0003') || originalId.includes('SPI-0004') || originalId.includes('insulated')) {
+                        this.state.pipeType = 'insulated';
+                    } else if (originalId.includes('SPX-0001') || originalId.includes('split')) {
+                        this.state.pipeType = 'split';
+                    }
+                }
+            }
+        }
+        else if (originalId.endsWith('_ufh') || originalId.startsWith('SPX-0002-') || originalId.startsWith('SPM-0001-')) {
+            if (chosenId.includes("SPX") || chosenId === 'pex') this.state.ufhPipeMaterial = 'pex';
+            else this.state.ufhPipeMaterial = 'metal_plastic';
+        }
+        else if (originalId.endsWith('_water') || (originalId.startsWith('SPX-0001-') && !originalId.endsWith('_rad'))) {
+            if (chosenId.includes("SPX") || chosenId === 'pex') this.state.waterPipeMaterial = 'pex';
+            else this.state.waterPipeMaterial = 'metal_plastic';
+        }
+        else if (originalId.startsWith('SMF-0001') || originalId === '418318') {
+            if (chosenId === '418318' || chosenId === 'xps') this.state.ufhBaseType = 'xps';
+            else this.state.ufhBaseType = 'mat';
+        }
+        else if (originalId.startsWith('SCS-0001')) {
+            if (chosenId.includes("sirio") || chosenId === 'sirio') this.state.wellAutoType = 'sirio';
+            else if (chosenId.includes("top") || chosenId === 'top') this.state.wellAutoType = 'top';
+            else this.state.wellAutoType = 'base';
+        }
+        else if (originalId.startsWith('SCQ') || originalId.startsWith('SCN')) {
+            if (chosenId.toLowerCase().startsWith("scq")) this.state.convectorType = 'scq';
+            else this.state.convectorType = 'scn';
+        }
+        else if (originalId.startsWith('SVT') || originalId.startsWith('SVL')) {
+            if (chosenId.startsWith("SVT") || chosenId === 'straight') this.state.convConnectionType = 'straight';
+            else this.state.convConnectionType = 'angled';
+        }
+        else if (originalId.startsWith('SCA-') || originalId.startsWith('RCA-')) {
+            if (chosenId.includes("standard") || chosenId === 'standard') this.state.chimneyType = 'standard';
+            else this.state.chimneyType = 'basic';
+        }
+        else if (originalId.startsWith('PA') || originalId.includes('RCT')) {
+            if (chosenId.startsWith("PA") || chosenId === 'proaqua') this.state.pprSystemBrand = 'proaqua';
+            else this.state.pprSystemBrand = 'wavin';
+        }
+        else if (originalId.startsWith('SKB-') || /^5[0-9]{4,}[RK]?$/.test(originalId)) {
+            if (chosenId === 'comfort') this.state.sewerType = 'comfort';
+            else this.state.sewerType = 'std';
+        }
+        else if (originalId === 'RDG-0015-004002' || originalId === 'RDG-1015-004003') {
+            if (chosenId === 'pro' || chosenId.includes("RDG-1015-004003")) this.state.hydroArrowType = 'pro';
+            else this.state.hydroArrowType = 'standard';
+        }
+        else if (originalId === 'SDG-0120-001000' || originalId === 'SDG-0002-002001' || originalId === 'SDG-0002-002501' || originalId === 'SDG-0003-002001' || originalId === 'SDG-0003-002501') {
+            if (chosenId === 'SDG-0120-001000' || chosenId === 'RDG-0120-008100') this.state.ufhMixType = 'std';
+            else if (chosenId === 'SDG-0002-002001') this.state.ufhMixType = 'dn20';
+            else if (chosenId === 'SDG-0002-002501' || chosenId === 'RDG-1002-002501') this.state.ufhMixType = 'dn25';
+            else if (chosenId === 'SDG-0003-002001') this.state.ufhMixType = 'dn20_servo';
+            else if (chosenId === 'SDG-0003-002501' || chosenId === 'RDG-1003-002501') this.state.ufhMixType = 'dn25_servo';
+        }
+        else if (originalId === 'SVM-0025-230017' || originalId === 'SVM-0005-230001') {
+            if (chosenId === 'SVM-0025-230017' || chosenId === 'RVM-0015-230017') this.state.servoType = 'sensor';
+            else this.state.servoType = 'std';
+        }
+
+        this.closeSwapModal();
+        this.render();
     },
     syncRoomsToState: function () {
         if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
@@ -7364,15 +8237,31 @@ const app = {
         if (r) {
             let num = parseFloat(val);
             if (isNaN(num) || num < 1) num = 1;
-            if (num > 50) num = 50;
-            
-            let otherTotal = this.state.rooms.filter(x => x.id !== roomId).reduce((sum, x) => sum + (parseFloat(x.area) || 0), 0);
+            if (num > 150) num = 150;
+
+            let otherRooms = this.state.rooms.filter(x => x.id !== roomId);
+            let otherTotal = otherRooms.reduce((sum, x) => sum + (parseFloat(x.area) || 0), 0);
+
             if (otherTotal + num > 300) {
-                num = 300 - otherTotal;
-                if (num < 1) num = 1;
-                alert("Максимальная площадь дома не может превышать 300 м².");
+                // Автоматически уменьшаем другие комнаты пропорционально
+                let available = 300 - num;
+                if (available < otherRooms.length) available = otherRooms.length; // мин 1м² на комнату
+                if (otherTotal > 0) {
+                    let scale = available / otherTotal;
+                    let distributed = 0;
+                    otherRooms.forEach((x, i) => {
+                        if (i < otherRooms.length - 1) {
+                            let newA = Math.max(1, Math.round(x.area * scale * 10) / 10);
+                            x.area = newA;
+                            distributed += newA;
+                        } else {
+                            // Последняя комната получает остаток
+                            x.area = Math.max(1, Math.round((available - distributed) * 10) / 10);
+                        }
+                    });
+                }
             }
-            
+
             r.area = num;
             this.syncRoomsToState();
             if (skipRender) {
@@ -7767,7 +8656,7 @@ const app = {
                                     <span style="font-size:10px; color:var(--text-sec); font-weight:600; cursor:pointer;" onclick="app.showRoomAreaSlider(${r.id}, event)">м²</span>
                                     
                                     <div class="room-area-slider-container" id="room_area_slider_container_${r.id}" style="display: none; position: absolute; z-index: 1000; bottom: 36px; right: 0; align-items: center; padding: 6px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 2px;">
-                                        <input type="range" id="room_area_slider_${r.id}" min="1" max="50" step="1" value="${r.area}" oninput="document.getElementById('room_area_input_${r.id}').value = this.value; app.updRoomArea(${r.id}, this.value, true)" onchange="app.updRoomArea(${r.id}, this.value, false)" style="width: 140px; accent-color: var(--primary); height: 6px; cursor: pointer;">
+                                        <input type="range" id="room_area_slider_${r.id}" min="1" max="150" step="1" value="${r.area}" oninput="document.getElementById('room_area_input_${r.id}').value = this.value; app.updRoomArea(${r.id}, this.value, true)" onchange="app.updRoomArea(${r.id}, this.value, false)" style="width: 140px; accent-color: var(--primary); height: 6px; cursor: pointer;">
                                         <span style="font-size: 11px; color: var(--primary); font-weight: 700; cursor: pointer; user-select: none; padding: 2px 6px; background: var(--primary-light); border-radius: 4px;" onclick="document.getElementById('room_area_slider_container_${r.id}').style.display = 'none'; event.stopPropagation();">OK</span>
                                     </div>
                                 </div>
@@ -8180,13 +9069,16 @@ const app = {
         let sw = document.getElementById('scheme_wrapper');
         let chkScheme = document.getElementById('chk_scheme');
         if (sw && chkScheme) {
-            let isAuthenticated = this.state.tgUser || this.state.user || this.state.currentUser;
-            if (!isAuthenticated) {
-                // Полностью скрываем блок для неавторизованных пользователей
-                sw.style.display = 'none';
-            } else {
+            const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+            const adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
+            const tgEmail = this.state.tgUser && this.state.tgUser.email ? this.state.tgUser.email.toLowerCase() : '';
+            const userEmail = this.state.user && this.state.user.email ? this.state.user.email.toLowerCase() : '';
+            const isAdmin = adminEmails.includes(tgEmail) || adminEmails.includes(userEmail);
+            if (isLocal || isAdmin) {
                 sw.style.display = 'flex';
                 chkScheme.checked = this.state.showScheme;
+            } else {
+                sw.style.display = 'none';
             }
         }
         // Логика доступа для переключателя "УДЕШЕВИТЬ / АНАЛОГ"
@@ -8520,7 +9412,7 @@ const app = {
             } else {
                 btnPrint.style.display = '';
                 btnPrint.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>Печать`;
-                if (btnShare) btnShare.style.display = '';
+                // Видимость кнопки «Ссылка для клиента» управляется через checkConnectionStatus (VPN)
             }
         }
     },
@@ -9170,6 +10062,52 @@ const app = {
         }
 
         switch (type) {
+            case 'hydro_collector': {
+                // val1 = dn25 (bool), val2 = circuits, val3 = hydroType ('combo'|'modular'|'dn25'), val4 = {rQ, tQ, pwr, tpArea}
+                let hDn25 = val1;
+                let hCircuits = val2 || 0;
+                let hType = val3 || 'dn25';
+                let hCtx = val4 || {};
+                let hRQ = hCtx.rQ || 0; let hTQ = hCtx.tQ || 0;
+                let hPwr = hCtx.pwr || 0; let hTpArea = hCtx.tpArea || 0;
+                let hIsRommer = (this.state.brandMode === 'rommer');
+
+                let hTitle = hDn25
+                    ? `Коллектор-гидрострелка DN25 (${hCircuits} конт.)`
+                    : (hType === 'modular'
+                        ? `Распределительный коллектор DN20 (${hCircuits} конт.)`
+                        : `Коллектор-гидрострелка DN20 (${hCircuits} конт.)`);
+
+                // Почему этот DN
+                let hDnWhy = '';
+                if (hIsRommer) {
+                    hDnWhy = 'Аналог (ROMMER): по умолчанию всегда DN25.';
+                } else if (hPwr > 20) {
+                    hDnWhy = `Мощность системы ${hPwr} кВт > 20 кВт → выбран DN25.`;
+                } else if (hDn25) {
+                    hDnWhy = `Тип узла тёплого пола требует DN25.`;
+                } else {
+                    hDnWhy = `Мощность системы ${hPwr} кВт ≤ 20 кВт → выбран DN20.`;
+                }
+
+                // Почему это количество контуров
+                let hContWhy = `rQ (радиаторы) = ${hRQ}, tQ (тёплый пол) = ${hTQ}. ` +
+                    `Итого контуров: ${hCircuits}. ` +
+                    (hCircuits > 2 ? '> 2 → 3-контурный коллектор.' : '≤ 2 → 2-контурный коллектор.');
+
+                // Расход через коллектор
+                let hFlowRad = hPwr > 0 ? (hPwr / (1.163 * 20)).toFixed(2) : '—';
+                let hFlowUfh = hTpArea > 0 ? ((hTpArea * 0.08) / (1.163 * 8)).toFixed(2) : '—';
+
+                return `<span style="${styles}"><span style="${head}">${hTitle}</span>` +
+                    `<b>Зачем:</b> Гидравлическая развязка между котловым и распределительными контурами. Устраняет взаимное влияние насосов контуров друг на друга.<br><br>` +
+                    `<b>Выбор DN:</b> ${hDnWhy}<br><br>` +
+                    `<b>Выбор числа контуров:</b> ${hContWhy}<br><br>` +
+                    `<b>Расчётные расходы по контурам:</b><br>` +
+                    (hRQ > 0 ? `• Радиаторы: G = ${hPwr} кВт / (1.163 × 20°C) = <b>${hFlowRad} м³/ч</b><br>` : '') +
+                    (hTQ > 0 ? `• Тёплый пол: G = ${hTpArea} м² × 80 Вт/м² / (1.163 × 8°C) = <b>${hFlowUfh} м³/ч</b><br><br>` : '<br>') +
+                    `<b>Паспортные данные:</b> Максимальный суммарный расход через коллектор — <b>3.0 м³/ч</b>.</span>`;
+            }
             case 'pump_group': {
                 let item = val1;
                 let qty = val2;
@@ -9190,10 +10128,17 @@ const app = {
                         ? "Для ROMMER по умолчанию всегда выбирается DN25." 
                         : `Выбор типоразмера зависит от общей мощности системы: до 30 кВт — DN20, выше — DN25.<br><b>Текущие теплопотери:</b> ${inputVal} кВт.`;
                     
+                    let maxFlow = isRommer ? 2.0 : (item.id.includes("2001") ? 0.9 : 2.1);
+                    let flow = parseFloat((inputVal / (1.163 * 20)).toFixed(2));
+                    let checkResult = (flow <= maxFlow) 
+                        ? `<b style="color: #10B981;">✔ Проверка расхода пройдена:</b> расчетный расход ${flow} м³/ч не превышает максимальный расход группы ${maxFlow} м³/ч.`
+                        : `<b style="color: #EF4444;">❌ Проверка расхода не пройдена:</b> расчетный расход ${flow} м³/ч превышает максимальный расход группы ${maxFlow} м³/ч!`;
+
                     calc = `<b>Подбор по тепловой нагрузке:</b><br>${limitText}<br>` +
                            `<b>Формула расхода:</b> G = Q / (c × ΔT)<br>` +
                            `где Q = ${inputVal} кВт, c = 1.163 Вт·ч/(кг·°C), ΔT = 20°C (радиаторы).<br>` +
-                           `<b>Расчётный расход:</b> G = ${inputVal} / (1.163 × 20) = ${(inputVal / (1.163 * 20)).toFixed(2)} м³/ч.`;
+                           `<b>Расчётный расход:</b> G = ${inputVal} / (1.163 × 20) = ${flow.toFixed(2)} м³/ч.<br>` +
+                           `${checkResult}`;
                     
                     if (isRommer) {
                         capacity = `<b>Паспортные характеристики (RDG-1001-002501):</b><br>` +
@@ -9217,11 +10162,18 @@ const app = {
                         : `Выбор типоразмера зависит от площади тёплого пола: до 120 м² — DN20, выше — DN25.<br><b>Текущая площадь ТП:</b> ${inputVal} м².`;
                     
                     let ufhPwr = Math.round(inputVal * 0.08); // Approximate power: 80 W/m²
+                    let maxFlow = isRommer ? 1.6 : (item.id.includes("2001") ? 0.9 : 2.1);
+                    let flow = parseFloat((ufhPwr / (1.163 * 8)).toFixed(2));
+                    let checkResult = (flow <= maxFlow) 
+                        ? `<b style="color: #10B981;">✔ Проверка расхода пройдена:</b> расчетный расход ${flow} м³/ч не превышает максимальный расход группы ${maxFlow} м³/ч.`
+                        : `<b style="color: #EF4444;">❌ Проверка расхода не пройдена:</b> расчетный расход ${flow} м³/ч превышает максимальный расход группы ${maxFlow} м³/ч!`;
+
                     calc = `<b>Подбор по площади теплого пола:</b><br>${limitText}<br>` +
                            `<b>Оценка тепловой мощности:</b> Q_тп ≈ ${inputVal} м² × 80 Вт/м² = ${ufhPwr} кВт.<br>` +
                            `<b>Формула расхода:</b> G = Q_тп / (c × ΔT)<br>` +
                            `где c = 1.163 Вт·ч/(кг·°C), ΔT = 8°C (перепад температур тёплого пола).<br>` +
-                           `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 8) = ${(ufhPwr / (1.163 * 8)).toFixed(2)} м³/ч.`;
+                           `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 8) = ${flow.toFixed(2)} м³/ч.<br>` +
+                           `${checkResult}`;
                     
                     if (isRommer) {
                         capacity = `<b>Паспортные характеристики (RDG-1002-002501):</b><br>` +
@@ -9249,12 +10201,19 @@ const app = {
                 let why = "Поддержание постоянной температуры подачи в контур тёплого пола путём качественного смешивания горячего теплоносителя от котла и остывшего из обратки.";
                 
                 let ufhPwr = Math.round(area * 0.08); // 80 W/m²
+                let maxFlow = isRommer ? 1.0 : 1.2;
+                let flow = parseFloat((ufhPwr / (1.163 * 8)).toFixed(2));
+                let checkResult = (flow <= maxFlow) 
+                    ? `<b style="color: #10B981;">✔ Проверка расхода пройдена:</b> расчетный расход ${flow} м³/ч не превышает максимальный расход узла ${maxFlow} м³/ч.`
+                    : `<b style="color: #EF4444;">❌ Проверка расхода не пройдена:</b> расчетный расход ${flow} м³/ч превышает максимальный расход узла ${maxFlow} м³/ч!`;
+
                 let calc = `<b>Подбор по площади теплого пола:</b><br>` +
                            `• Обслуживаемая площадь: ${area} м².<br>` +
                            `• Оценка тепловой мощности: Q_тп ≈ ${area} м² × 80 Вт/м² = ${ufhPwr} кВт.<br>` +
                            `<b>Формула расхода:</b> G = Q_тп / (c × ΔT)<br>` +
                            `где c = 1.163 Вт·ч/(кг·°C), ΔT = 8°C (перепад температур тёплого пола).<br>` +
-                           `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 8) = ${(ufhPwr / (1.163 * 8)).toFixed(2)} м³/ч.`;
+                           `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 8) = ${flow.toFixed(2)} м³/ч.<br>` +
+                           `${checkResult}`;
                 
                 let capacity = "";
                 if (isRommer) {
@@ -9715,10 +10674,20 @@ const app = {
         let bill = [];
         let currentSectionTitle = '';
         let sectionHasAnalogItems = false;
+        // Вспомогательная функция: копирует item и добавляет .alts = [rommer], если alts ещё не заданы
+        const withRommerAlt = (item) => {
+            if (!item) return item;
+            if (item.alts && item.alts.length > 0) return item; // alts уже есть — не перезаписываем
+            const rommer = item.rommer;
+            if (!rommer) return item;
+            return { ...item, alts: [rommer] };
+        };
+
         const addToBill = (item, qty, tip, group = null) => {
             if (!item || qty <= 0) return;
 
             if (item.rommer || ANALOG_MAP[item.id]) sectionHasAnalogItems = true;
+
             let secTitle = currentSectionTitle;
             if (group) {
                 if (group.startsWith("5.1.")) secTitle = "5.1. Внутреннее водоснабжение";
@@ -9733,55 +10702,132 @@ const app = {
             const _so = (this.state.sectionAnalog || {})[secTitle];
             const useAnalog = _so !== undefined ? _so : _ga;
 
-            let itemsToAdd = [];
-            if (useAnalog && (item.rommer || ANALOG_MAP[item.id])) {
-                // Считаем базу ОДИН РАЗ для этого исходного товара
-                this.calcBaseTotal += (item.price || 0) * qty;
+            let lookupKey = item.originalId || item.id;
+            let manualSwapId = this.state.swaps && this.state.swaps[lookupKey];
+            let activeItem = item;
+            let forceAnalog = false;
+            let forceStout = false;
 
-                if (item.rommer && Array.isArray(item.rommer)) {
-                    // Если это массив аналогов (сборка или пирог)
-                    item.rommer.forEach(sub => {
-                        let finalSub = { ...sub };
-                        finalSub.brand = sub.brand || "ROMMER"; // Явно прописываем бренд, если не указан
-                        itemsToAdd.push({ itm: finalSub, q: qty });
-                    });
-                } else {
-                    // Обработка аналогов
-                    let analog = item.rommer;
-                    if (!analog && ANALOG_MAP[item.id]) {
-                        let targetId = ANALOG_MAP[item.id];
-                        for (let catKey in catalog) {
-                            if (Array.isArray(catalog[catKey])) {
-                                let f = catalog[catKey].find(x => x.id === targetId);
-                                if (f) { analog = f; break; }
-                            }
+            let isCustomToggle = ['standard', 'basic', 'pro', 'std', 'comfort', 'insulated', 'split', 'insulated_mp', 'split_mp', 'pex', 'metal_plastic', 'mat', 'xps', 'sirio', 'top', 'base', 'scq', 'scn', 'straight', 'angled', 'proaqua', 'wavin', 'double', 'single', 'hidden', 'sensor'].includes(manualSwapId);
+
+            if (manualSwapId && !isCustomToggle) {
+                let analog = item.rommer;
+                if (!analog && ANALOG_MAP[item.id]) {
+                    let targetId = ANALOG_MAP[item.id];
+                    for (let catKey in catalog) {
+                        if (Array.isArray(catalog[catKey])) {
+                            let f = catalog[catKey].find(x => x.id === targetId);
+                            if (f) { analog = f; break; }
                         }
                     }
-
-                    if (analog) {
-                        let finalItem = { ...item };
-                        // For sewer items with comfort variant, switch to it when sewerType === 'comfort'
-                        let useComfort = (this.state.sewerType === 'comfort') && item.comfort;
-                        let src = useComfort ? item.comfort : analog;
-                        finalItem.id = src.id;
-                        finalItem.name = src.name;
-                        finalItem.price = src.price;
-                        finalItem.brand = src.brand || "ROMMER";
-                        if (src.article) finalItem.article = src.article;
-                        if (src.availability) finalItem.availability = src.availability;
-                        if (src.price_date) finalItem.price_date = src.price_date;
-                        // Give swap icon if comfort is available
-                        if (item.comfort) finalItem.alts = [item.comfort];
-                        else finalItem.alts = analog.alts || item.alts;
-                        finalItem.originalId = item.originalId || item.id;
-                        itemsToAdd.push({ itm: finalItem, q: qty });
-                    } else {
-                        itemsToAdd.push({ itm: { ...item }, q: qty });
+                }
+                
+                let analogId = analog ? (Array.isArray(analog) ? analog[0].id : analog.id) : null;
+                if (analogId && manualSwapId === analogId) {
+                    forceAnalog = true;
+                } else if (manualSwapId === item.id) {
+                    forceStout = true;
+                } else {
+                    let foundItem = null;
+                    for (let catKey in catalog) {
+                        if (Array.isArray(catalog[catKey])) {
+                            let found = catalog[catKey].find(x => x.id === manualSwapId);
+                            if (found) { foundItem = found; break; }
+                        }
                     }
+                    if (!foundItem && typeof titanRads !== 'undefined') {
+                        foundItem = titanRads.find(x => x.id === manualSwapId);
+                    }
+                    if (!foundItem && typeof steelRads !== 'undefined') {
+                        foundItem = steelRads.find(x => x.id === manualSwapId);
+                    }
+                    if (foundItem) {
+                        activeItem = { ...foundItem };
+                        activeItem.originalId = lookupKey;
+                    }
+                }
+            } else if (useAnalog) {
+                let cheapest = this.getCheapestAlternative(item);
+                if (cheapest) {
+                    if (cheapest.id === item.id) {
+                        forceStout = true;
+                    } else {
+                        let analog = item.rommer;
+                        if (!analog && ANALOG_MAP[item.id]) {
+                            let targetId = ANALOG_MAP[item.id];
+                            for (let catKey in catalog) {
+                                if (Array.isArray(catalog[catKey])) {
+                                    let f = catalog[catKey].find(x => x.id === targetId);
+                                    if (f) { analog = f; break; }
+                                }
+                            }
+                        }
+                        let analogId = analog ? (Array.isArray(analog) ? analog[0].id : analog.id) : null;
+                        if (analogId && cheapest.id === analogId) {
+                            forceAnalog = true;
+                        } else {
+                            activeItem = { ...cheapest };
+                            activeItem.originalId = lookupKey;
+                        }
+                    }
+                }
+            }
+
+            let itemsToAdd = [];
+            let useAnalogOutput = forceAnalog || (useAnalog && !forceStout && (activeItem.rommer || ANALOG_MAP[activeItem.id]));
+
+            if (useAnalogOutput) {
+                this.calcBaseTotal += (item.price || 0) * qty;
+                
+                let analog = activeItem.rommer;
+                if (!analog && ANALOG_MAP[activeItem.id]) {
+                    let targetId = ANALOG_MAP[activeItem.id];
+                    for (let catKey in catalog) {
+                        if (Array.isArray(catalog[catKey])) {
+                            let f = catalog[catKey].find(x => x.id === targetId);
+                            if (f) { analog = f; break; }
+                        }
+                    }
+                }
+                
+                if (analog && Array.isArray(analog)) {
+                    analog.forEach(sub => {
+                        let finalSub = { ...sub };
+                        finalSub.brand = sub.brand || "ROMMER";
+                        itemsToAdd.push({ itm: finalSub, q: qty });
+                    });
+                } else if (analog) {
+                    let finalItem = { ...activeItem };
+                    let useComfort = (this.state.sewerType === 'comfort') && activeItem.comfort;
+                    let src = useComfort ? activeItem.comfort : analog;
+                    finalItem.id = src.id;
+                    finalItem.name = src.name;
+                    finalItem.price = src.price;
+                    finalItem.brand = src.brand || "ROMMER";
+                    if (src.article) finalItem.article = src.article;
+                    if (src.availability) finalItem.availability = src.availability;
+                    if (src.price_date) finalItem.price_date = src.price_date;
+                    if (activeItem.comfort) finalItem.alts = [activeItem.comfort];
+                    else finalItem.alts = analog.alts || activeItem.alts;
+                    finalItem.originalId = activeItem.originalId || activeItem.id;
+                    itemsToAdd.push({ itm: finalItem, q: qty });
+                } else {
+                    itemsToAdd.push({ itm: { ...activeItem }, q: qty });
                 }
             } else {
                 this.calcBaseTotal += (item.price || 0) * qty;
-                itemsToAdd.push({ itm: { ...item }, q: qty });
+                let finalItem = { ...activeItem };
+                if (this.state.sewerType === 'comfort' && finalItem.comfort) {
+                    let src = finalItem.comfort;
+                    finalItem.id = src.id;
+                    finalItem.name = src.name;
+                    finalItem.price = src.price;
+                    finalItem.brand = src.brand || "STOUT";
+                    if (src.article) finalItem.article = src.article;
+                    if (src.availability) finalItem.availability = src.availability;
+                    if (src.price_date) finalItem.price_date = src.price_date;
+                }
+                itemsToAdd.push({ itm: finalItem, q: qty });
             }
 
             // Добавляем все сформированные позиции в смету
@@ -9850,7 +10896,7 @@ const app = {
                 }
 
                 this.currentSpec.push({ ...finalItem, q: finalQty, group: itemGroup });
-                this.calcFinalTotal += Math.round((finalItem.price || 0) * finalQty);
+                this.calcFinalTotal += Math.round(originalPrice * finalQty);
 
                 let shouldMergeThisItem = forceMerge || 
                     (this.state.detailedRooms && itemGroup === "3. Приборы отопления" && tip && tip.includes('|||')) ||
@@ -9957,7 +11003,9 @@ const app = {
                     sectionTitle: title,
                     isOpt: !!this.state.optItems[i.originalId || i.id],
                     availability: i.availability,
-                    desc: i.qtyTip || ""
+                    desc: i.qtyTip || "",
+                    alts: i.alts,
+                    originalId: i.originalId || i.id
                 });
             });
 
@@ -10100,10 +11148,9 @@ const app = {
                 let hasAlts = (i.alts && i.alts.length > 0);
                 let imgCellHtml = "";
                 if (hasAlts) {
-                    let isOpen = (this.state.showSwapFor === lookupId);
-                    let wrapClass = isOpen ? "img-wrap show-swap-ui" : "img-wrap";
+                    let wrapClass = "img-wrap";
                     let svgIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>`;
-                    imgCellHtml = `<td class="col-img swappable-cursor"><div class="${wrapClass}" onclick="app.toggleSwapUI('${lookupId}')" title="Нажмите, чтобы заменить"><div class="swap-cycle-btn" onclick="event.stopPropagation(); app.cycleSwap('${lookupId}')">${svgIcon}</div>${imgContent}</div></td>`;
+                    imgCellHtml = `<td class="col-img swappable-cursor"><div class="${wrapClass}" onclick="app.openSwapModal('${lookupId}')" title="Нажмите, чтобы заменить"><div class="swap-cycle-btn" onclick="event.stopPropagation(); app.openSwapModal('${lookupId}')">${svgIcon}</div>${imgContent}</div></td>`;
                 } else { imgCellHtml = `<td class="col-img">${imgContent}</td>`; }
 
                 let nameClass = "col-name";
@@ -10305,8 +11352,8 @@ const app = {
                 let db = (ft === 'gas') ? catalog.boilers_gas : (this.state.boilerSeries === 'status' ? catalog.boilers_status : catalog.boilers_plus);
                 let b = db.find(x => x.power >= needed);
                 if (ft === 'el') {
-                    if (!b && needed > 27) { let half = needed / 2; let b2 = db.find(x => x.power >= half); if (b2) { b2.alts = (this.state.boilerSeries === 'status') ? catalog.boilers_plus : catalog.boilers_status; addToBill(b2, 2, this.getDesc('boiler_el', needed, b2.power, 2)); selBoilers.push(b2, b2); } }
-                    else { let t = b || db[db.length - 1]; t.alts = (this.state.boilerSeries === 'status') ? catalog.boilers_plus : catalog.boilers_status; addToBill(t, 1, this.getDesc('boiler_el', needed, t.power, 1)); selBoilers.push(t); }
+                    if (!b && needed > 27) { let half = needed / 2; let b2 = db.find(x => x.power >= half); if (b2) { addToBill(b2, 2, this.getDesc('boiler_el', needed, b2.power, 2)); selBoilers.push(b2, b2); } }
+                    else { let t = b || db[db.length - 1]; addToBill(t, 1, this.getDesc('boiler_el', needed, t.power, 1)); selBoilers.push(t); }
                 } else if (ft === 'gas') {
                     // === ПОДБОР ГАЗОВОГО КОТЛА HAIER ===
                     // Расчетная мощность (без запаса)
@@ -10381,7 +11428,10 @@ const app = {
 
             let tankDb = (this.state.boilerType === 'optibase') ? catalog.tanks_optibase : (this.state.boilerType === 'standard' ? catalog.tanks_standard : catalog.tanks_stainless);
             let t = tankDb.find(x => x.vol === vol) || tankDb[tankDb.length - 1];
-            t.alts = [catalog.tanks_optibase[0], catalog.tanks_standard[0], catalog.tanks_stainless[0]];
+            let opti = catalog.tanks_optibase.find(x => x.vol === vol);
+            let std = catalog.tanks_standard.find(x => x.vol === vol);
+            let stainless = catalog.tanks_stainless.find(x => x.vol === vol);
+            t.alts = [opti, std, stainless].filter(Boolean);
 
             let warn = targetVol > 500 ? `<br><b style="color:#EF4444; font-size:10px;">⚠️ Требуемый объем ГВС превышает 500л! Добавьте в смету второй бойлер вручную или проверьте количество потребителей ГВС.</b>` : "";
 
@@ -10398,10 +11448,10 @@ const app = {
                 addToBill(ch, 1, this.getDesc('chimney'), grp);
                 addToBill(catalog.stabs[0], 1, this.getDesc('stab', 'gas', 250, 150), grp);
                 addToBill(catalog.american_34, 2, "Разъемное соед.", grp);
-                addToBill(catalog.ball_valve_34, 2, "Запорная арматура.", grp);
-                addToBill(catalog.filter_mag, 1, this.getDesc('filter_mag'), grp);
+                addToBill(withRommerAlt(catalog.ball_valve_34), 2, "Запорная арматура.", grp);
+                addToBill(withRommerAlt(catalog.filter_mag), 1, this.getDesc('filter_mag'), grp);
                 if (this.state.hotWater) { addToBill(catalog.valves[0], 1, this.getDesc('fugas'), grp); addToBill(catalog.nipple_34, 2, "Для фугаса.", grp); }
-                if (selBoilers.length > 1) addToBill(catalog.check_valve_34, 1, "Обратный клапан.", grp);
+                if (selBoilers.length > 1) addToBill(withRommerAlt(catalog.check_valve_34), 1, "Обратный клапан.", grp);
             }
         });
         selBoilers.forEach(b => {
@@ -10411,10 +11461,10 @@ const app = {
                 let cap = b.power <= 18 ? 600 : 900;
                 addToBill(s, 1, this.getDesc('stab', 'el', cap, b.power), grp);
                 addToBill(catalog.american_34, 2, "Разъемное соед.", grp);
-                addToBill(catalog.ball_valve_34, 2, "Запорная арматура.", grp);
-                addToBill(catalog.filter_mag, 1, this.getDesc('filter_mag'), grp);
+                addToBill(withRommerAlt(catalog.ball_valve_34), 2, "Запорная арматура.", grp);
+                addToBill(withRommerAlt(catalog.filter_mag), 1, this.getDesc('filter_mag'), grp);
                 if (this.state.hotWater) { addToBill(catalog.valves[0], 1, this.getDesc('fugas'), grp); addToBill(catalog.nipple_34, 2, "Для фугаса.", grp); }
-                if (selBoilers.length > 1) addToBill(catalog.check_valve_34, 1, "Обратный клапан.", grp);
+                if (selBoilers.length > 1) addToBill(withRommerAlt(catalog.check_valve_34), 1, "Обратный клапан.", grp);
             }
         });
         if (this.state.hotWater) {
@@ -10496,16 +11546,43 @@ const app = {
             if (l2 > 0) estMans += Math.ceil(l2 / 12);
         }
 
-        // Автоматически корректируем тип смесительного узла, если он не совместим с текущей площадью теплого пола
+        // Автоматически корректируем тип смесительного узла при изменении площади или несовместимости
         if (hasTp && tpArea > 0) {
             let brand = this.state.brandMode;
-            if (!this.isUfhMixTypeCompatible(this.state.ufhMixType, tpArea, brand)) {
-                if (tpArea <= 120) {
-                    this.state.ufhMixType = 'dn20';
+            let useAnalogSec2 = this.state.sectionAnalog && this.state.sectionAnalog['2.4. Гидравлика котельной'];
+            
+            // Проверяем, требует ли радиаторный контур DN25
+            let radNeedsDn25 = (pwr > 20) || (brand === 'rommer') || useAnalogSec2;
+            
+            let isCompatible = this.isUfhMixTypeCompatible(this.state.ufhMixType, tpArea, brand);
+            let areaChanged = (this.lastTpArea !== undefined && this.lastTpArea !== tpArea);
+            
+            if (areaChanged || !isCompatible) {
+                // Если радиаторы или бренд требуют DN25, исключаем DN20 из кандидатов для унификации размеров
+                let candidates = [];
+                if (radNeedsDn25) {
+                    candidates = ['std', 'dn25', 'dn25_servo'];
                 } else {
-                    this.state.ufhMixType = 'dn25';
+                    candidates = ['std', 'dn20', 'dn25', 'dn20_servo', 'dn25_servo'];
                 }
+                
+                let chosen = null;
+                for (let type of candidates) {
+                    if (this.isUfhMixTypeCompatible(type, tpArea, brand)) {
+                        chosen = type;
+                        break;
+                    }
+                }
+                
+                if (!chosen) {
+                    chosen = 'dn25_servo';
+                }
+                
+                this.state.ufhMixType = chosen;
             }
+            this.lastTpArea = tpArea;
+        } else {
+            this.lastTpArea = 0;
         }
 
         // Эко-схема (локальные узлы) ставится, если нет радиаторов и коллекторов ТП не больше 2-х
@@ -10513,31 +11590,50 @@ const app = {
 
         // Логика расчета насосных групп
         let rQ = 0, tQ = 0;
-        if (hasRad) {
-            // Если есть радиаторы и дом большой/2 этажа - ставим группы на радиаторы
-            if (this.state.area > 150 || this.state.floors === 2 || pwr > 20) {
-                rQ = (this.state.floors === 2) ? 2 : 1;
+        if (hasTp && tpArea > 0) {
+            let activeMixType = this.state.ufhMixType || 'std';
+            if (activeMixType === 'std') {
+                tQ = 0;
+            } else {
+                tQ = (estMans > 0 ? estMans : 1);
             }
         }
 
-        if (hasTp && tpArea > 0) {
-            // Если Эко-схема, проверяем тип смесительного узла (может быть переключен на насосную группу)
-            if (useEco) {
-                let activeMixType = this.state.ufhMixType || 'std';
-                tQ = (activeMixType === 'dn20' || activeMixType === 'dn25') ? 1 : 0;
-            } else {
-                tQ = (estMans > 0 ? estMans : 1);
+        if (hasRad) {
+            // Встроенного насоса настенного котла хватает на радиаторы мощностью до 20 кВт (площадь до 150 м2)
+            // Если требуется коллектор (из-за других насосных групп, т.е. tQ > 0), то на радиаторы также ставится группа.
+            if (this.state.area > 150 || this.state.floors === 2 || pwr > 20 || tQ > 0) {
+                rQ = (this.state.floors === 2) ? 2 : 1;
             }
         }
 
         // Коллектор нужен, если есть хотя бы одна насосная группа
         let needCollector = (rQ + tQ) >= 1;
 
+        // Если коллектор нужен из-за радиаторов, но ТП выбран локальный узел подмеса (std) —
+        // автоматически переключаем на централизованный узел в коллекторе (dn20/dn25).
+        // Узел подмеса и коллектор — взаимоисключающие позиции.
+        if (needCollector && hasTp && tpArea > 0 && (this.state.ufhMixType || 'std') === 'std') {
+            let _brand = this.state.brandMode;
+            let _useAnalogSec2 = this.state.sectionAnalog && this.state.sectionAnalog['2.4. Гидравлика котельной'];
+            let _radNeedsDn25 = (pwr > 20) || (_brand === 'rommer') || _useAnalogSec2;
+            let _candidates = _radNeedsDn25 ? ['dn25', 'dn25_servo'] : ['dn20', 'dn20_servo', 'dn25', 'dn25_servo'];
+            for (let _type of _candidates) {
+                if (this.isUfhMixTypeCompatible(_type, tpArea, _brand)) {
+                    this.state.ufhMixType = _type;
+                    tQ = (estMans > 0 ? estMans : 1);
+                    needCollector = (rQ + tQ) >= 1;
+                    break;
+                }
+            }
+        }
+
         // Расчет объема системы (для бака)
         let boilersVol = 0; if (selBoilers.length > 0) { selBoilers.forEach(b => { boilersVol += (b.vol !== undefined ? b.vol : 6); }); }
         let vSys = (boilersVol + radSecs * 0.25 + radMeters * 0.11 + tpMeters * 0.113 + (needCollector ? 5 : 0)) * 1.15;
         this.tpMeters = tpMeters;
         this.tpArea = tpArea;
+        this.tQ_val = tQ;
         this.radSecs = radSecs;
         this.radMeters = radMeters;
         this.boilersVol = boilersVol;
@@ -10585,8 +11681,9 @@ const app = {
                 addToBill(catalog.tank_kit, 1, "Подключение бака.");
             }
         }
-        let big = (pwr > 20 || tpArea > 100);
-        let dn25 = big || useAnalogSec2 || (this.state.ufhMixType === 'dn25');
+        let brand = this.state.brandMode;
+        let radNeedsDn25 = (pwr > 20) || (brand === 'rommer') || useAnalogSec2;
+        let dn25 = radNeedsDn25 || (this.state.ufhMixType === 'dn25' || this.state.ufhMixType === 'dn25_servo');
         let pmp = null;
 
         if (needCollector) {
@@ -10675,13 +11772,18 @@ const app = {
             let grpHydro = "2.4. Гидравлика котельной";
             let circuits = rQ + tQ;
             let idx = (circuits > 2) ? 1 : 0;
+            let hCtx = { rQ, tQ, pwr, tpArea };
             if (dn25) {
-                let item = catalog.hydro_dn25[idx]; addToBill(item, 1, "Гидравлическая развязка (DN25).", grpHydro);
+                let item = catalog.hydro_dn25[idx];
+                addToBill(item, 1, this.getDesc('hydro_collector', true, circuits, 'dn25', hCtx), grpHydro);
             } else {
                 if (this.state.hydroType === 'combo') {
-                    let item = catalog.hydro_dn20[idx]; item.alts = catalog.hydro_modular_dn20; addToBill(item, 1, "Коллектор-гидрострелка (Комби).", grpHydro);
+                    let item = catalog.hydro_dn20[idx]; item.alts = catalog.hydro_modular_dn20;
+                    addToBill(item, 1, this.getDesc('hydro_collector', false, circuits, 'combo', hCtx), grpHydro);
                 } else {
-                    let item = catalog.hydro_modular_dn20[idx]; item.alts = catalog.hydro_dn20; addToBill(item, 1, "Распр. коллектор.", grpHydro); addToBill(catalog.hydro_arrow, 1, "Гидравлическая стрелка.", grpHydro);
+                    let item = catalog.hydro_modular_dn20[idx]; item.alts = catalog.hydro_dn20;
+                    addToBill(item, 1, this.getDesc('hydro_collector', false, circuits, 'modular', hCtx), grpHydro);
+                    addToBill(catalog.hydro_arrow, 1, `Гидрострелка — выравнивает давление между котловым и распределительными контурами. Применяется в модульной схеме (коллектор + стрелка раздельно). Макс. расход: 3.0 м³/ч.`, grpHydro);
                 }
             }
 
@@ -10693,22 +11795,60 @@ const app = {
             }
 
             // Добавляем группы и насосы
+            let radPump = pmp;
             if (rQ > 0) {
                 addToBill(grps[0], rQ, this.getDesc('pump_group', grps[0], rQ, 'rad', pwr), grpHydro);
+                addToBill(radPump, rQ, this.getDesc('pump_std'), grpHydro);
             }
             if (tQ > 0) {
-                addToBill(grps[1], tQ, this.getDesc('pump_group', grps[1], tQ, 'ufh', tpArea), grpHydro);
+                let activeMixType = this.state.ufhMixType || 'std';
+                let defaultServoType = (tQ > 1) ? 'std' : 'sensor';
+                let activeServoType = this.state.servoType || defaultServoType;
+
+                if (activeMixType === 'dn25' || activeMixType === 'dn25_servo') {
+                    let ufhGrp = (activeMixType === 'dn25_servo') ? catalog.groups_dn25[2] : catalog.groups_dn25[1];
+                    addToBill(ufhGrp, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
+                    
+                    let ufhPump = catalog.pumps_dn25.find(p => p.type === this.state.pumpType) || catalog.pumps_dn25[0];
+                    addToBill(ufhPump, tQ, this.getDesc('pump_std'), grpHydro);
+                    
+                    if (activeMixType === 'dn25_servo') {
+                        let servoItem = (activeServoType === 'sensor') ? catalog.servo_rotary_sensor : catalog.servo_rotary_std;
+                        if (servoItem) {
+                            addToBill(servoItem, tQ, "Сервопривод для автоматического управления трехходовым смесительным клапаном группы отопления.", grpHydro);
+                        }
+                    }
+                } else if (activeMixType === 'dn20' || activeMixType === 'dn20_servo') {
+                    let ufhGrp = (activeMixType === 'dn20_servo') ? catalog.groups_dn20[2] : catalog.groups_dn20[1];
+                    addToBill(ufhGrp, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
+                    
+                    let ufhPump = catalog.pumps_dn20[0];
+                    addToBill(ufhPump, tQ, this.getDesc('pump_std'), grpHydro);
+                    
+                    if (activeMixType === 'dn20_servo') {
+                        let servoItem = (activeServoType === 'sensor') ? catalog.servo_rotary_sensor : catalog.servo_rotary_std;
+                        if (servoItem) {
+                            addToBill(servoItem, tQ, "Сервопривод для автоматического управления трехходовым смесительным клапаном группы отопления.", grpHydro);
+                        }
+                    }
+                }
             }
-            if ((rQ + tQ) > 0) addToBill(pmp, rQ + tQ, this.getDesc('pump_std'), grpHydro);
-        } else if (hasTp && tpArea > 0) {
-            // Если коллектор не нужен (tQ = 0, rQ = 0), но теплый пол есть, добавляем смесительный узел в обвязку котельной
+        }
+
+        // Локальный узел подмеса ('std') — только если коллектора НЕТ (взаимоисключающие позиции)
+        if (hasTp && tpArea > 0 && (this.state.ufhMixType || 'std') === 'std' && !needCollector) {
             let grpHydro = "2.4. Гидравлика котельной";
             let mixItem = { ...catalog.mixing_units[0] };
             let desc = this.getDesc('ufh_mix', tpArea);
-            let pumpItem = catalog.pumps_mix[0];
+            let pumpItem = withRommerAlt(catalog.pumps_mix[0]);
 
-            // Explicitly set alts array to support the swap button
-            mixItem.alts = [catalog.mixing_units[0], catalog.groups_dn20[1], catalog.groups_dn25[1]];
+            mixItem.alts = [
+                catalog.mixing_units[0],
+                catalog.groups_dn20[1],
+                catalog.groups_dn25[1],
+                catalog.groups_dn20[2],
+                catalog.groups_dn25[2]
+            ].filter(Boolean);
 
             addToBill(mixItem, 1, desc, grpHydro);
             if (pumpItem) {
@@ -11258,29 +12398,30 @@ const app = {
 
         currentSectionTitle = "4. Водяной тёплый пол";
         if (hasTp && tpMeters > 0) {
+            let grpPipe = "4.1. Трубы тёплого пола и коллектор";
             if (this.state.ufhPipeMaterial === 'metal_plastic') {
                 let q2 = Math.floor(tpMeters / 200); let q1 = Math.ceil((tpMeters % 200) / 100);
                 if (q2) {
                     let pipe2 = { ...catalog.metal_plastic_pipes[1], originalId: catalog.metal_plastic_pipes[1].id + "_ufh" };
                     pipe2.alts = [catalog.pipes[0]];
-                    addToBill(pipe2, q2, this.getDesc('ufh_pipe', tpMeters));
+                    addToBill(pipe2, q2, this.getDesc('ufh_pipe', tpMeters), grpPipe);
                 }
                 if (q1) {
                     let pipe1 = { ...catalog.metal_plastic_pipes[0], originalId: catalog.metal_plastic_pipes[0].id + "_ufh" };
                     pipe1.alts = [catalog.pipes[0]];
-                    addToBill(pipe1, q1, this.getDesc('ufh_pipe', tpMeters));
+                    addToBill(pipe1, q1, this.getDesc('ufh_pipe', tpMeters), grpPipe);
                 }
             } else {
                 let q5 = Math.floor(tpMeters / 500); let q1 = Math.ceil((tpMeters % 500) / 100);
                 if (q5) {
                     let pipe5 = { ...catalog.pipes[1], originalId: catalog.pipes[1].id + "_ufh" };
                     pipe5.alts = [catalog.metal_plastic_pipes[0]];
-                    addToBill(pipe5, q5, this.getDesc('ufh_pipe', tpMeters));
+                    addToBill(pipe5, q5, this.getDesc('ufh_pipe', tpMeters), grpPipe);
                 }
                 if (q1) {
                     let pipe1 = { ...catalog.pipes[0], originalId: catalog.pipes[0].id + "_ufh" };
                     pipe1.alts = [catalog.metal_plastic_pipes[0]];
-                    addToBill(pipe1, q1, this.getDesc('ufh_pipe', tpMeters));
+                    addToBill(pipe1, q1, this.getDesc('ufh_pipe', tpMeters), grpPipe);
                 }
             }
             let loops = 0, mans = 0;
@@ -11295,21 +12436,22 @@ const app = {
                     let sz = Math.floor(l / n) + (i < (l % n) ? 1 : 0);
                     let m = catalog.manifolds.find(x => x.loops === sz);
                     if (m) {
-                        addToBill({ ...m, name: `Коллектор ТП ${sz} вых (${lbl})` }, 1, this.getDesc('manifold', sz, 'ufh'));
+                        addToBill({ ...m, name: `Коллектор ТП ${sz} вых (${lbl})` }, 1, this.getDesc('manifold', sz, 'ufh'), grpPipe);
                         mans++;
                     }
                 }
             };
             proc(this.state.tp1, stepVal1, "1 этаж");
             proc(this.state.floors === 2 ? this.state.tp2 : 0, stepVal2, "2 этаж");
-            addToBill(catalog.parts[0], mans * 2, "Концевые фитинги."); addToBill(catalog.parts[3], loops * 2, "Евроконус 16 (ТП)."); addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.");
-            addToBill(catalog.protective_sleeves[0], loops, "Втулка красная."); addToBill(catalog.protective_sleeves[1], loops, "Втулка синяя."); addToBill(catalog.label_kits[1], 1, "Наклейки.");
-            let grpIns = "4.1. УТЕПЛИТЕЛЬ И КРЕПЁЖ";
+            addToBill(catalog.parts[0], mans * 2, "Концевые фитинги.", grpPipe); addToBill(catalog.parts[3], loops * 2, "Евроконус 16 (ТП).", grpPipe); addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.", grpPipe);
+            addToBill(catalog.protective_sleeves[0], loops, "Втулка красная.", grpPipe); addToBill(catalog.protective_sleeves[1], loops, "Втулка синяя.", grpPipe); addToBill(catalog.label_kits[1], 1, "Наклейки.", grpPipe);
+            let grpIns = "4.2. УТЕПЛИТЕЛЬ И КРЕПЁЖ";
+
             if (this.state.ufhBaseType === 'mat') { let mt = catalog.mats[0]; mt.alts = [catalog.xps_kit[0]]; let mc = Math.ceil((tpArea / mt.area) * 1.05); addToBill(mt, mc, this.getDesc('ufh_mat', tpArea), grpIns); }
             else { let xpsItem = catalog.xps_kit[0]; xpsItem.alts = catalog.mats; let sheets = Math.ceil((tpArea / xpsItem.area) * 1.05); addToBill(xpsItem, sheets, this.getDesc('ufh_xps', tpArea), grpIns); let totalDowels = Math.ceil(tpArea * 5); addToBill(catalog.xps_kit[1], Math.ceil(totalDowels / 100), `Дюбеля.`, grpIns); let totalStaples = Math.ceil(tpMeters * 2.5); addToBill(catalog.xps_kit[2], Math.ceil(totalStaples / 25), `Скобы.`, grpIns); let tapeRolls = Math.ceil((sheets * 1.76 * 1.1) / 50); addToBill(catalog.xps_kit[3], tapeRolls, `Скотч.`, grpIns); }
 
             if (this.state.ufhAuto) {
-                let grpAuto = "4.2. АВТОМАТИКА ТЁПЛОГО ПОЛА";
+                let grpAuto = "4.3. АВТОМАТИКА ТЁПЛОГО ПОЛА";
                 addToBill(catalog.actuators, loops, this.getDesc('actuator'), grpAuto);
                 let zones = this.state.ufhZones;
                 let activeStatBase = (this.state.ufhCtrl === 'mech') ? catalog.ufh_mech[0] : catalog.ufh_electro[0];
@@ -11399,7 +12541,6 @@ const app = {
                     addToBill(studItem, 2, "Шпилька сантехническая M8x100 для крепления коллектора водоснабжения к стене (ХВС).", grpCold);
                 }
                 let pLen = Math.ceil(totalPipeCold);
-                addToBill(waterPipe, pLen, this.getDesc('pipe_cw', `${pLen} м`), grpCold);
                 addToBill(catalog.water_insulation[1], pLen, this.getDesc('ins_blue', pLen), grpCold);
 
                 // Крепление трубопровода ХВС
@@ -11466,7 +12607,6 @@ const app = {
                     addToBill(studItem, 2, "Шпилька сантехническая M8x100 для крепления коллектора водоснабжения к стене (ГВС).", grpHot);
                 }
                 let pLen = Math.ceil(recirc ? (totalPipeHot / 2) : totalPipeHot);
-                addToBill(waterPipe, pLen, this.getDesc('pipe_hw', `${pLen} м`), grpHot);
                 addToBill(catalog.water_insulation[0], pLen, this.getDesc('ins_red', pLen), grpHot);
 
                 // Крепление трубопровода ГВС
@@ -11537,7 +12677,6 @@ const app = {
                     addToBill(studItem, 2, "Шпилька сантехническая M8x100 для крепления коллектора водоснабжения к стене (Рециркуляция).", grpRecirc);
                 }
                 let pLen = Math.ceil(totalPipeHot / 2);
-                addToBill(waterPipe, pLen, this.getDesc('pipe_hw', `${pLen} м (Обратка)`), grpRecirc);
                 addToBill(catalog.water_insulation[0], pLen, this.getDesc('ins_red', pLen), grpRecirc);
 
                 // Крепление трубопровода рециркуляции ГВС
@@ -11578,6 +12717,22 @@ const app = {
             }
 
             // Крепления коллекторов были распределены по соответствующим подразделам ХВС, ГВС и рециркуляции
+            let pLenCold = totalColdPoints > 0 ? Math.ceil(totalPipeCold) : 0;
+            let pLenHot = totalPipeHot > 0 ? Math.ceil(recirc ? (totalPipeHot / 2) : totalPipeHot) : 0;
+            let pLenRecirc = (recirc && totalHotPoints > 0) ? Math.ceil(totalPipeHot / 2) : 0;
+            let totalWaterPipe = pLenCold + pLenHot + pLenRecirc;
+            if (totalWaterPipe > 0) {
+                let totalWaterCoils = Math.ceil(totalWaterPipe / 100);
+                let qtyWaterPipe = totalWaterCoils * 100;
+                let pipeTip = `Труба перемещена в общие материалы.<br>` +
+                              `<b>Расчетный метраж:</b><br>` +
+                              `• ХВС: ${pLenCold} м<br>` +
+                              (pLenHot > 0 ? `• ГВС: ${pLenHot} м<br>` : "") +
+                              (pLenRecirc > 0 ? `• Рециркуляция ГВС: ${pLenRecirc} м<br>` : "") +
+                              `• Итого расчетный метраж: ${totalWaterPipe} м.<br>` +
+                              `• Выбрано бухт (по 100 м): ${totalWaterCoils} шт. (всего ${qtyWaterPipe} м).`;
+                addToBill(waterPipe, qtyWaterPipe, pipeTip, grpGen);
+            }
             addToBill(catalog.water_parts[3], 1, "Наклейки", grpGen);
             let tToilet = 0, tWash = 0, tDish = 0, tBasin = 0, tBath = 0, tShower = 0;
             this.state.waterZones.forEach(z => {
@@ -12619,11 +13774,15 @@ const app = {
         // Моментальное обновление бейджа с процентом экономии
         let dBadge = document.getElementById('discount_badge');
         if (dBadge) {
-            if (this.state.brandMode === 'rommer' && this.calcBaseTotal > this.calcFinalTotal) {
+            if (this.calcBaseTotal > this.calcFinalTotal) {
                 let diff = this.calcBaseTotal - this.calcFinalTotal;
                 let percent = Math.round((diff / this.calcBaseTotal) * 100);
-                dBadge.textContent = 'Экономия ' + percent + '%';
-                dBadge.style.display = 'block';
+                if (percent > 0) {
+                    dBadge.textContent = 'Экономия ' + percent + '%';
+                    dBadge.style.display = 'block';
+                } else {
+                    dBadge.style.display = 'none';
+                }
             } else {
                 dBadge.style.display = 'none';
             }
