@@ -7731,24 +7731,24 @@ const app = {
                     cursor: pointer;
                     font-size: 11px;
                     font-weight: 600;
-                    color: #64748b;
+                    color: var(--text-sec);
                     background: transparent;
                     border-radius: 8px;
                     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
                 }
                 .swap-tab:hover {
-                    color: #0f172a;
+                    color: var(--text-main);
                 }
                 .swap-tab.active {
                     font-weight: 700;
-                    background: #ffffff;
-                    color: #0f172a;
+                    background: var(--surface);
+                    color: var(--text-main);
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
                 }
                 .swap-tabs-wrapper {
                     display: inline-flex;
                     width: 100%;
-                    background: #f1f5f9;
+                    background: var(--bg);
                     border: none;
                     padding: 3px;
                     border-radius: 10px;
@@ -7778,8 +7778,8 @@ const app = {
                     height: 16px;
                     width: 16px;
                     border-radius: 50%;
-                    background: #fff;
-                    border: 1px solid #cbd5e1;
+                    background: var(--surface);
+                    border: 1px solid var(--border);
                     box-shadow: 0 2px 4px rgba(0,0,0,0.08);
                     cursor: pointer;
                     pointer-events: auto;
@@ -7794,8 +7794,8 @@ const app = {
                     height: 16px;
                     width: 16px;
                     border-radius: 50%;
-                    background: #fff;
-                    border: 1px solid #cbd5e1;
+                    background: var(--surface);
+                    border: 1px solid var(--border);
                     box-shadow: 0 2px 4px rgba(0,0,0,0.08);
                     cursor: pointer;
                     pointer-events: auto;
@@ -7809,15 +7809,15 @@ const app = {
                     transition: background-color 0.2s;
                 }
                 .inv-table tbody tr:hover {
-                    background-color: #f8fafc !important;
+                    background-color: var(--surface-light) !important;
                 }
             </style>
-            <div style="font-size:12px; font-weight:700; color:#334155; font-family:sans-serif; margin-bottom:2px; display:flex; justify-content:space-between;">
+            <div style="font-size:12px; font-weight:700; color:var(--text-main); font-family:sans-serif; margin-bottom:2px; display:flex; justify-content:space-between;">
                 <span>Диапазон высот:</span>
                 <span id="swapHeightLabel" style="color: var(--primary);">${minHeight} мм — ${maxHeight} мм</span>
             </div>
             <div class="swap-slider-container" onclick="app.clickSwapSliderTrack(event, '${origId}')">
-                <div style="position:absolute; left:9px; right:9px; top:9px; height:6px; background:#E2E8F0; border-radius:3px;"></div>
+                <div style="position:absolute; left:9px; right:9px; top:9px; height:6px; background:var(--border); border-radius:3px;"></div>
                 <div id="swapTrackHighlight" style="position:absolute; left:calc(9px + ${leftPct}% * 0.98); width:calc(${widthPct}% * 0.98); top:9px; height:6px; background:var(--primary); border-radius:3px;"></div>
                 
                 <input type="range" min="0" max="${heights.length - 1}" value="${minIdx}" id="swapRadMinH"
@@ -7834,7 +7834,7 @@ const app = {
             <div id="swapHeightTicks" style="display:flex; justify-content:space-between; width:100%; padding:0 8px; box-sizing:border-box; font-family:sans-serif; margin-top:-8px; margin-bottom:2px;">
                 ${heights.map((h, i) => {
             const active = i >= minIdx && i <= maxIdx;
-            return `<span data-idx="${i}" style="font-size:11px; font-weight:${active ? '700' : '500'}; color:${active ? 'var(--primary)' : '#64748b'}; cursor:pointer; transition:all 0.15s ease;" onclick="app.clickSwapHeightScale('${origId}', ${i})">${h} мм</span>`;
+            return `<span data-idx="${i}" style="font-size:11px; font-weight:${active ? '700' : '500'}; color:${active ? 'var(--primary)' : 'var(--text-sec)'}; cursor:pointer; transition:all 0.15s ease;" onclick="app.clickSwapHeightScale('${origId}', ${i})">${h} мм</span>`;
         }).join('')}
             </div>
         `;
@@ -7860,10 +7860,10 @@ const app = {
         const priceStr = origPrice > 0 ? this.formatPriceHtml(origPrice, true) : '—';
 
         title.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:12px; gap:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:12px; gap:16px;">
                 <div>
-                    <h3 style="margin:0; font-size:18px; font-weight:700; color:#0f172a;">Варианты замены</h3>
-                    <span style="font-size:12px; color:#64748b; display:block; margin-top:2px; font-weight:500;">${item.name || ''}</span>
+                    <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main);">Варианты замены</h3>
+                    <span style="font-size:12px; color:var(--text-sec); display:block; margin-top:2px; font-weight:500;">${item.name || ''}</span>
                 </div>
                 <div style="display:flex; gap:8px; flex-shrink:0;">
                     <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
@@ -7877,23 +7877,23 @@ const app = {
         `;
 
         body.innerHTML = `
-            <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px; margin-bottom:12px; box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.02), 0 4px 6px -4px rgba(15, 23, 42, 0.02);">
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px; margin-bottom:12px; box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.02), 0 4px 6px -4px rgba(15, 23, 42, 0.02);">
                 <div style="display:grid; grid-template-columns: ${currentM === 'steel' ? '1.1fr 1fr 1.3fr' : '1fr 1fr'}; gap:12px;">
                     <div>
-                        <div style="font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Тип прибора:</div>
+                        <div style="font-size:10px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Тип прибора:</div>
                         <div class="swap-tabs-wrapper">
                             ${materialsHtml}
                         </div>
                     </div>
                     <div>
-                        <div style="font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Подключение:</div>
+                        <div style="font-size:10px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Подключение:</div>
                         <div class="swap-tabs-wrapper">
                             ${connectionsHtml}
                         </div>
                     </div>
                     ${currentM === 'steel' ? `
                     <div>
-                        <div style="font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Тип панели:</div>
+                        <div style="font-size:10px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Тип панели:</div>
                         <div class="swap-tabs-wrapper">
                             ${panelTypeHtml}
                         </div>
@@ -7901,7 +7901,7 @@ const app = {
                 </div>
 
                 <div>
-                    <div style="font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px;">Высота прибора:</div>
+                    <div style="font-size:10px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px;">Высота прибора:</div>
                     <div style="width:100%;">
                         ${rangeSliderHtml}
                     </div>
@@ -7910,13 +7910,13 @@ const app = {
 
             <div style="display:flex; flex-direction:row; flex-wrap:wrap; justify-content:space-between; margin-bottom:8px; padding:0 4px;">
                 ${(item.instanceKeys && item.instanceKeys.length > 1) ? `
-                <label style="display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:#334155; cursor:pointer; user-select:none;">
-                    <input type="checkbox" id="replaceGroupCb" style="width:16px; height:16px; border-radius:4px; border:1px solid #cbd5e1; accent-color:var(--primary); cursor:pointer;" ${this.state.swapGroupReplace ? 'checked' : ''}>
+                <label style="display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:var(--text-main); cursor:pointer; user-select:none;">
+                    <input type="checkbox" id="replaceGroupCb" style="width:16px; height:16px; border-radius:4px; border:1px solid var(--border); accent-color:var(--primary); cursor:pointer;" ${this.state.swapGroupReplace ? 'checked' : ''}>
                     Применить ко всей группе (${item.instanceKeys.length} шт.)
                 </label>
                 ` : ''}
-                <label style="display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:#334155; cursor:pointer; user-select:none;">
-                    <input type="checkbox" id="replaceAllCb" style="width:16px; height:16px; border-radius:4px; border:1px solid #cbd5e1; accent-color:var(--primary); cursor:pointer;" ${this.state.swapAllReplace ? 'checked' : ''}>
+                <label style="display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:var(--text-main); cursor:pointer; user-select:none;">
+                    <input type="checkbox" id="replaceAllCb" style="width:16px; height:16px; border-radius:4px; border:1px solid var(--border); accent-color:var(--primary); cursor:pointer;" ${this.state.swapAllReplace ? 'checked' : ''}>
                     Применить ко всем приборам отопления в проекте
                 </label>
             </div>
