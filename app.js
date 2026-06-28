@@ -11643,7 +11643,7 @@ const app = {
             const useAnalog = _so !== undefined ? _so : _ga;
 
             let lookupKey = item.originalId || item.id;
-            let manualSwapId = this.state.swaps && this.state.swaps[lookupKey];
+            let manualSwapId = (item.noMerge) ? null : (this.state.swaps && this.state.swaps[lookupKey]);
             let activeItem = item;
             let forceAnalog = false;
             let forceStout = false;
