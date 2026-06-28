@@ -7924,12 +7924,6 @@ const app = {
             ${this._renderRadSwapTable(item, minHeight, maxHeight, currentM, currentC)}
         `;
         modal.style.display = 'flex';
-        setTimeout(() => {
-            const activeRow = body.querySelector('tr[style*="var(--primary-light)"]');
-            if (activeRow) {
-                activeRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
-            }
-        }, 100);
     },
     changeSwapHeightRange: function (originalId, newMinVal, newMaxVal) {
         const item = this.currentEquipmentList.find(x => (x.originalId || x.id) === originalId || x.id === originalId);
