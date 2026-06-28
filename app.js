@@ -7375,6 +7375,56 @@ const app = {
                 { id: 'pro', name: 'Гидравлический разделитель (Pro с накидными гайками)', brand: 'ROMMER', price: p1 }
             ];
         }
+        else if (_origId0.startsWith('SMS-0922') || (_origId0.startsWith('SMB-6850') && !_origId0.endsWith('_water')) || _origId0.startsWith('RMS-3201') || _origId0.startsWith('RMS-1210') || _origId0.startsWith('RMS-1001')) {
+            let loops = this.state.lastRadLoops || item.loops || 8;
+            let stdStout = catalog.manifolds_rad.find(x => x.loops === loops) || catalog.manifolds_rad[catalog.manifolds_rad.length - 1];
+            let stdStoutPrice = stdStout.price;
+            let stdRommerPrice = stdStout.rommer ? stdStout.rommer.price : stdStout.price;
+            
+            const assemblyMap = { 2: [0, 0, 1], 3: [0, 1, 0], 4: [1, 0, 0], 5: [0, 1, 1], 6: [0, 2, 0], 7: [1, 1, 0], 8: [2, 0, 0], 9: [1, 1, 1], 10: [1, 2, 0], 11: [2, 1, 0], 12: [3, 0, 0] };
+            let plan = assemblyMap[loops] || [3, 0, 0];
+            let b4 = catalog.manifolds_chrome_blocks[2];
+            let b3 = catalog.manifolds_chrome_blocks[1];
+            let b2 = catalog.manifolds_chrome_blocks[0];
+            
+            let chromeStoutPrice = 0;
+            if (plan[0] > 0) chromeStoutPrice += b4.price * plan[0] * 2;
+            if (plan[1] > 0) chromeStoutPrice += b3.price * plan[1] * 2;
+            if (plan[2] > 0) chromeStoutPrice += b2.price * plan[2] * 2;
+            chromeStoutPrice += catalog.manifold_brackets.price;
+            
+            let chromeRommerPrice = 0;
+            if (plan[0] > 0) chromeRommerPrice += b4.rommer.price * plan[0] * 2;
+            if (plan[1] > 0) chromeRommerPrice += b3.rommer.price * plan[1] * 2;
+            if (plan[2] > 0) chromeRommerPrice += b2.rommer.price * plan[2] * 2;
+
+            customAlts = [
+                { id: stdStout.id, name: `Коллектор радиаторный (Стандарт, ${loops} вых.)`, brand: 'STOUT', price: stdStoutPrice },
+                { id: stdStout.rommer.id, name: `Коллектор радиаторный (Стандарт, ${loops} вых.)`, brand: 'ROMMER', price: stdRommerPrice },
+                { id: 'chrome', name: `Регулировочные блоки (комплект на ${loops} вых.)`, brand: 'STOUT', price: chromeStoutPrice },
+                { id: 'chrome_rommer', name: `Регулировочные блоки полностью укомплектован (${loops} вых.)`, brand: 'ROMMER', price: chromeRommerPrice }
+            ];
+            
+            let activeId = '';
+            let currentSwapVal = this.state.swaps && this.state.swaps[stdStout.id];
+            if (currentSwapVal) {
+                activeId = currentSwapVal;
+            } else {
+                let useRommer = (this.state.brandMode === 'rommer');
+                let secAnalog = this.state.sectionAnalog && this.state.sectionAnalog['3. Приборы отопления'];
+                let isRommer = secAnalog !== undefined ? secAnalog : useRommer;
+                
+                if (this.state.radManifoldType === 'chrome') {
+                    activeId = isRommer ? 'chrome_rommer' : 'chrome';
+                } else {
+                    activeId = isRommer ? stdStout.rommer.id : stdStout.id;
+                }
+            }
+            
+            customAlts.forEach(alt => {
+                alt.isActive = (alt.id === activeId);
+            });
+        }
 
         let modal = document.getElementById('swap_modal_overlay');
         let body = document.getElementById('swap_modal_body');
@@ -7555,6 +7605,9 @@ const app = {
                 }
                 else if (alt.id === 'standard' || alt.id === 'pro') {
                     isActive = (alt.id === this.state.hydroArrowType);
+                }
+                else if (alt.id === 'chrome' || alt.id === 'chrome_rommer' || alt.id.startsWith('SMS-0922') || alt.id.startsWith('RMS-3201') || alt.id.startsWith('RMS-1210') || alt.id.startsWith('RMS-1001') || alt.id.startsWith('SMB-6850')) {
+                    isActive = alt.isActive;
                 }
                 alt.isActive = isActive;
             });
@@ -8608,9 +8661,21 @@ const app = {
             if (chosenId.startsWith("SDG-0018") || chosenId.startsWith("RDG-0018")) this.state.hydroType = 'combo';
             else this.state.hydroType = 'modular';
         }
-        else if (originalId.startsWith('SMS-0922') || (originalId.startsWith('SMB-6850') && !originalId.endsWith('_water'))) {
-            if (chosenId.startsWith("SMB-6850")) this.state.radManifoldType = 'chrome';
-            else this.state.radManifoldType = 'standard';
+        else if (originalId.startsWith('SMS-0922') || (originalId.startsWith('SMB-6850') && !originalId.endsWith('_water')) || originalId.startsWith('RMS-3201') || originalId.startsWith('RMS-1210') || originalId.startsWith('RMS-1001')) {
+            let loops = this.state.lastRadLoops || 8;
+            let stdStout = catalog.manifolds_rad.find(x => x.loops === loops) || catalog.manifolds_rad[catalog.manifolds_rad.length - 1];
+            let stdId = stdStout.id;
+            
+            delete this.state.swaps[stdId];
+            if (stdStout.rommer) delete this.state.swaps[stdStout.rommer.id];
+            
+            this.state.swaps[stdId] = chosenId;
+            
+            if (chosenId === 'chrome' || chosenId === 'chrome_rommer') {
+                this.state.radManifoldType = 'chrome';
+            } else {
+                this.state.radManifoldType = 'standard';
+            }
         }
         else if (originalId.startsWith('SMB-6851-') || (originalId.startsWith('SMB-6850-') && originalId.endsWith('_water'))) {
             if (chosenId.startsWith("SMB-6850")) this.state.waterManifoldType = 'block';
@@ -13710,20 +13775,37 @@ const app = {
             }
 
             let reqLoops = (this.state.floors === 2 ? Math.ceil(totalDevicesCount / 2) : totalDevicesCount); if (reqLoops > 12) reqLoops = 12; let manifoldsCount = (this.state.floors === 2) ? 2 : 1;
-            if (this.state.radManifoldType === 'standard') {
-                let m = catalog.manifolds_rad.find(x => x.loops === reqLoops) || catalog.manifolds_rad[catalog.manifolds_rad.length - 1];
+            this.state.lastRadLoops = reqLoops;
+
+            let m = catalog.manifolds_rad.find(x => x.loops === reqLoops) || catalog.manifolds_rad[catalog.manifolds_rad.length - 1];
+            let radManifoldMode = this.state.radManifoldType || 'standard';
+            if (m) {
+                let swapVal = this.state.swaps && this.state.swaps[m.id];
+                if (swapVal === 'chrome' || swapVal === 'chrome_rommer') {
+                    radManifoldMode = 'chrome';
+                } else if (swapVal && (swapVal.startsWith('SMS-0922') || swapVal.startsWith('RMS-3201'))) {
+                    radManifoldMode = 'standard';
+                }
+            }
+
+            if (radManifoldMode === 'standard') {
                 if (m) {
-                    let matchingChrome = catalog.manifolds_chrome_blocks.find(x => x.loops === m.loops);
-                    m.alts = matchingChrome ? [matchingChrome] : [];
+                    m.alts = [];
                     addToBill(m, manifoldsCount, this.getDesc('manifold', totalDevicesCount, 'rad'), pipeGrp);
                 }
             }
             else {
                 const assemblyMap = { 2: [0, 0, 1], 3: [0, 1, 0], 4: [1, 0, 0], 5: [0, 1, 1], 6: [0, 2, 0], 7: [1, 1, 0], 8: [2, 0, 0], 9: [1, 1, 1], 10: [1, 2, 0], 11: [2, 1, 0], 12: [3, 0, 0] }; let plan = assemblyMap[reqLoops] || [3, 0, 0]; let b4 = catalog.manifolds_chrome_blocks[2]; let b3 = catalog.manifolds_chrome_blocks[1]; let b2 = catalog.manifolds_chrome_blocks[0];
-                [b4, b3, b2].forEach(b => {
-                    let matchingStd = catalog.manifolds_rad.find(x => x.loops === b.loops);
-                    b.alts = matchingStd ? [matchingStd] : [];
-                });
+                let isRommerChrome = m && (this.state.swaps && this.state.swaps[m.id] === 'chrome_rommer');
+                if (isRommerChrome) {
+                    this.state.swaps[b4.id] = b4.rommer.id;
+                    this.state.swaps[b3.id] = b3.rommer.id;
+                    this.state.swaps[b2.id] = b2.rommer.id;
+                } else if (m && this.state.swaps && this.state.swaps[m.id] === 'chrome') {
+                    delete this.state.swaps[b4.id];
+                    delete this.state.swaps[b3.id];
+                    delete this.state.swaps[b2.id];
+                }
                 let multiplier = manifoldsCount * 2;
                 if (plan[0] > 0) addToBill(b4, plan[0] * multiplier, `Блок 4 вых.`, pipeGrp); if (plan[1] > 0) addToBill(b3, plan[1] * multiplier, `Блок 3 вых.`, pipeGrp); if (plan[2] > 0) addToBill(b2, plan[2] * multiplier, `Блок 2 вых.`, pipeGrp); addToBill(catalog.manifold_brackets, manifoldsCount, "Кронштейны.", pipeGrp);
             }
