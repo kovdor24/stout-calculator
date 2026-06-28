@@ -7182,7 +7182,7 @@ const app = {
                 p_ins = 138;
                 b_ins = 'ROMMER';
             } else if (insulatedItem) {
-                p_ins = (insulatedItem.price || 0) / (insulatedItem.len || 100);
+                p_ins = insulatedItem.price || 0;
             }
 
             let splitItem = catalog.rad_pipes_grey ? catalog.rad_pipes_grey[0] : null;
@@ -7195,7 +7195,7 @@ const app = {
 
             let insulatedMpItem = catalog.insulated_pipes_mp_red ? catalog.insulated_pipes_mp_red[0] : null;
             if (insulatedMpItem) {
-                p_ins_mp = (insulatedMpItem.price || 0) / (insulatedMpItem.len || 100);
+                p_ins_mp = insulatedMpItem.price || 0;
             }
 
             let splitMpItem = catalog.water_pipes_mp ? catalog.water_pipes_mp[0] : null;
