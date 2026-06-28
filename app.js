@@ -7097,8 +7097,20 @@ const app = {
         const _origIdForTank = item.originalId || item.id || '';
         if (_origIdForTank.startsWith('SWH') || _origIdForTank.startsWith('RWH')) {
             this._tankSwapId = lookupId;
-            if (!this.state.tankSwapMount) this.state.tankSwapMount = this.state.tankMount || 'floor';
-            if (!this.state.tankSwapHeat) this.state.tankSwapHeat = this.state.tankHeat || 'cos';
+            let mount = 'floor';
+            let heat = 'cos';
+            let vol = item.vol || 100;
+
+            if (catalog.tanks_stainless && catalog.tanks_stainless.some(x => x.id === _origIdForTank)) { mount = 'floor'; heat = 'comb'; }
+            else if (catalog.tanks_floor_comb && catalog.tanks_floor_comb.some(x => x.id === _origIdForTank)) { mount = 'floor'; heat = 'comb'; }
+            else if (catalog.tanks_wall_cos && catalog.tanks_wall_cos.some(x => x.id === _origIdForTank)) { mount = 'wall'; heat = 'cos'; }
+            else if (catalog.tanks_wall_comb && catalog.tanks_wall_comb.some(x => x.id === _origIdForTank)) { mount = 'wall'; heat = 'comb'; }
+            else if (catalog.tanks_standard && catalog.tanks_standard.some(x => x.id === _origIdForTank)) { mount = 'floor'; heat = 'cos'; }
+            else if (catalog.tanks_optibase && catalog.tanks_optibase.some(x => x.id === _origIdForTank)) { mount = 'floor'; heat = 'cos'; }
+
+            this.state.tankSwapMount = mount;
+            this.state.tankSwapHeat = heat;
+            this.state.tankSwapVol = vol;
             const _allTankGroups = [
                 { mount: 'floor', heat: 'cos',  arr: catalog.tanks_standard },
                 { mount: 'floor', heat: 'cos',  arr: catalog.tanks_optibase },
