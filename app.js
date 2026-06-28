@@ -2063,6 +2063,10 @@ const app = {
 
     showAuthModal: function () {
         document.getElementById('auth_modal_overlay').style.display = 'flex';
+        if (this.currentAuthTab !== 'register') {
+            const tw = document.getElementById('auth_terms_wrapper');
+            if (tw) tw.style.display = 'none';
+        }
         let tgWrapper = document.getElementById('auth_modal_tg_wrapper');
         if (tgWrapper && tgWrapper.children.length === 0) {
             let script = document.createElement('script');
@@ -3794,6 +3798,7 @@ const app = {
         const submitBtn = document.getElementById('auth_submit_btn');
         const forgotLink = document.getElementById('auth_forgot_link');
 
+        const termsWrapper = document.getElementById('auth_terms_wrapper');
         if (tab === 'login') {
             tabLogin.classList.add('active');
             tabRegister.classList.remove('active');
@@ -3801,6 +3806,7 @@ const app = {
             registerFields.style.display = 'none';
             submitBtn.innerText = 'Войти';
             forgotLink.style.display = 'block';
+            if (termsWrapper) termsWrapper.style.display = 'none';
         } else {
             tabLogin.classList.remove('active');
             tabRegister.classList.add('active');
@@ -3808,6 +3814,7 @@ const app = {
             registerFields.style.display = 'block';
             submitBtn.innerText = 'Зарегистрироваться';
             forgotLink.style.display = 'none';
+            if (termsWrapper) termsWrapper.style.display = 'flex';
         }
     },
 
@@ -4061,7 +4068,7 @@ const app = {
         document.getElementById('auth_main_view').style.display = 'block';
         document.getElementById('auth_verify_view').style.display = 'none';
         document.getElementById('auth_forgot_view').style.display = 'none';
-        document.getElementById('auth_terms_wrapper').style.display = 'block';
+        document.getElementById('auth_terms_wrapper').style.display = this.currentAuthTab === 'register' ? 'flex' : 'none';
     },
 
     showPasswordResetSuccessModal: function () {
