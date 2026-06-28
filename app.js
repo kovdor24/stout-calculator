@@ -7849,35 +7849,37 @@ const app = {
         const rangeSliderHtml = `
             <style>
                 .swap-tab {
-                    flex: 1;
-                    border: none;
+                    border: 1px solid var(--primary);
                     outline: none;
-                    padding: 6px 10px;
+                    padding: 3px 10px;
                     cursor: pointer;
-                    font-size: 11px;
-                    font-weight: 600;
-                    color: var(--text-sec);
+                    font-size: 12px;
+                    font-weight: 500;
+                    color: var(--primary);
                     background: transparent;
-                    border-radius: 8px;
-                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                    border-radius: 5px;
+                    margin: 2px;
+                    transition: all 0.15s ease;
                 }
                 .swap-tab:hover {
-                    color: var(--text-main);
+                    background: var(--primary);
+                    color: #fff;
                 }
                 .swap-tab.active {
                     font-weight: 700;
-                    background: var(--surface);
-                    color: var(--text-main);
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+                    background: var(--primary);
+                    color: #fff;
+                    box-shadow: none;
                 }
                 .swap-tabs-wrapper {
-                    display: inline-flex;
+                    display: flex;
+                    flex-wrap: wrap;
                     width: 100%;
-                    background: var(--bg);
+                    background: transparent;
                     border: none;
-                    padding: 3px;
-                    border-radius: 10px;
+                    padding: 0;
                     box-sizing: border-box;
+                    align-items: center;
                 }
                 .swap-slider-container {
                     position: relative;
