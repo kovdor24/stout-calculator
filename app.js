@@ -12392,8 +12392,6 @@ const app = {
                     if (i.group.includes("Газового")) icon = "🔥";
                     else if (i.group.includes("Электрического")) icon = "⚡";
                     else if (i.group.includes("Водонагревателя")) icon = "💧";
-                    else if (i.group.includes("Трубопроводы") || i.group.includes("Крепёж")) icon = "🔗";
-                    else if (i.group.includes("Гидравлика")) icon = "🎛️";
                     let arrow = isCollapsed ? "▶" : "⤵";
                     let txtUnit = isCollapsed ? "компл." : ""; let txtQty = isCollapsed ? "1" : ""; let txtSum = isCollapsed ? groupTotals[i.group].toLocaleString() : "";
                     let headStyle = "";
