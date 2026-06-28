@@ -49,11 +49,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.86">
+    <link rel="stylesheet" href="style.css?v=1.94">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=1.86" defer></script>
-    <script src="app.js?v=1.86" defer></script>
+    <script src="catalog.js?v=1.94" defer></script>
+    <script src="app.js?v=1.94" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -1321,10 +1321,10 @@
             <button class="auth-btn-base btn-email-submit" style="width: 100%; height: 42px;" onclick="app.closeEmailSuccessModal()">Понятно</button>
         </div>
     </div>
-    <div id="swap_modal_overlay" class="auth-modal-overlay" style="display: none; z-index: 100002;" onclick="if(event.target === this) app.closeSwapModal()">
-        <div class="auth-modal-content" style="max-width: 800px; width: 95%; max-height: 85vh; display: flex; flex-direction: column; padding: 24px; box-sizing: border-box; border-radius: 12px; background: var(--bg);">
-            <span class="auth-modal-close" onclick="app.closeSwapModal()" style="top: 16px; right: 20px;">&times;</span>
-            <h3 id="swap_modal_title" style="margin-top: 0; margin-bottom: 16px; text-align: left; line-height: 1.4;">Замена оборудования</h3>
+    <div id="swap_modal_overlay" class="auth-modal-overlay" style="display: none; z-index: 100002; backdrop-filter: blur(8px); background: rgba(15, 23, 42, 0.15);" onclick="if(event.target === this) app.closeSwapModal()">
+        <div class="auth-modal-content" style="max-width: 950px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; padding: 24px 28px; box-sizing: border-box; border-radius: 24px; background: var(--bg); box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15); border: 1px solid var(--border); zoom: 0.8;">
+            <span class="auth-modal-close" onclick="app.closeSwapModal()" style="top: 20px; right: 24px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: var(--surface-light); border-radius: 50%; color: var(--text-main); font-size: 20px; cursor: pointer; transition: all 0.2s; border: none; font-weight: normal; line-height: 1;">&times;</span>
+            <h3 id="swap_modal_title" style="margin-top: 0; margin-bottom: 12px; text-align: left; line-height: 1.4; color: var(--text-main);">Замена оборудования</h3>
             <div id="swap_modal_body" style="overflow-y: auto; flex-grow: 1; padding-right: 4px;"></div>
         </div>
     </div>

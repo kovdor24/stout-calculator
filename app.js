@@ -630,7 +630,7 @@ const app = {
     formatPriceHtml: function (value, appendRuble = false) {
         const isLoggedIn = !!(this.state.tgUser);
         const showBlur = !isLoggedIn;
-        
+
         const roundedValue = Math.round(value || 0);
         const formatted = roundedValue.toLocaleString('ru-RU');
         if (showBlur) {
@@ -3474,7 +3474,7 @@ const app = {
     viewAdminEstimate: async function (estId) {
         try {
             let est = (this.adminData.userEstimates || []).find(e => String(e.id) === String(estId)) || (this.adminData.recentEstimates || []).find(e => String(e.id) === String(estId));
-            
+
             // Если смета не найдена в локальном кэше (например, из-за пагинации), пробуем загрузить напрямую с сервера
             if (!est) {
                 console.log(`Estimate ${estId} not found in memory. Fetching from Supabase...`);
@@ -3483,7 +3483,7 @@ const app = {
                     .select('id, user_id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at, users(username, phone, email)')
                     .eq('id', estId)
                     .maybeSingle();
-                
+
                 if (error) {
                     console.error("Supabase direct fetch error:", error);
                 }
@@ -4461,7 +4461,7 @@ const app = {
             if (panel3d) {
                 panel3d.style.display = 'block';
             }
-            
+
             // First run render to ensure app.currentEquipmentList is updated
             this.render();
 
@@ -4571,13 +4571,13 @@ const app = {
     toggleSection: function (name, event) {
         if (event) event.stopPropagation();
         if (!this.state.disabledSections) this.state.disabledSections = [];
-        
+
         const idx = this.state.disabledSections.indexOf(name);
         const isDisabling = (idx === -1);
-        
+
         if (isDisabling) {
             this.state.disabledSections.push(name);
-            
+
             // --- 1. Equipment -> Works sync ---
             if (name === "1. Котёл + водонагреватель") {
                 if (!this.state.disabledSections.includes("1.1 Монтаж котла и бойлера")) {
@@ -4636,7 +4636,7 @@ const app = {
                     }
                 }
             }
-            
+
             // --- 2. Works -> Equipment sync ---
             else if (name === "1.1 Монтаж котла и бойлера") {
                 if (!this.state.disabledSections.includes("1. Котёл + водонагреватель")) {
@@ -4692,7 +4692,7 @@ const app = {
         } else {
             // Включение раздела
             this.state.disabledSections.splice(idx, 1);
-            
+
             // --- 1. Equipment -> Works sync ---
             if (name === "1. Котёл + водонагреватель") {
                 const wIdx = this.state.disabledSections.indexOf("1.1 Монтаж котла и бойлера");
@@ -4722,7 +4722,7 @@ const app = {
                 const wIdx = this.state.disabledSections.indexOf("3.1 Внутренняя канализация");
                 if (wIdx > -1) this.state.disabledSections.splice(wIdx, 1);
             }
-            
+
             // --- 2. Works -> Equipment sync ---
             else if (name === "1.1 Монтаж котла и бойлера") {
                 const oIdx = this.state.disabledSections.indexOf("1. Котёл + водонагреватель");
@@ -4750,7 +4750,7 @@ const app = {
                 this.state.disabledSections = this.state.disabledSections.filter(x => !x.startsWith("8."));
             }
         }
-        
+
         this.saveState();
         this.render();
     },
@@ -5946,14 +5946,14 @@ const app = {
             let requestedInvoices = [];
             try {
                 requestedInvoices = JSON.parse(localStorage.getItem('requested_invoices')) || [];
-            } catch(e) {}
-            
+            } catch (e) { }
+
             const exists = requestedInvoices.some(inv => inv.calc_id === this.state.calc_id);
             if (!exists) {
                 requestedInvoices.push({
                     calc_id: this.state.calc_id,
                     projectName: pName,
-                    date: new Date().toLocaleDateString('ru-RU') + " " + new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'}),
+                    date: new Date().toLocaleDateString('ru-RU') + " " + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
                     eqSum: eqSum,
                     worksSum: worksSum,
                     total: total,
@@ -6070,8 +6070,8 @@ const app = {
         console.log("[resetAutosaveBaseline] Baseline updated:", this.initialEqSum, this.initialWorksSum);
     },
     // =============================
-    saveState: function () { 
-        localStorage.setItem('stout_save', JSON.stringify(this.state)); 
+    saveState: function () {
+        localStorage.setItem('stout_save', JSON.stringify(this.state));
         app.triggerAutoSave();
     },
 
@@ -6245,7 +6245,7 @@ const app = {
         const initialsEl = document.getElementById('profile_initials');
         const avatarImgEl = document.getElementById('profile_custom_avatar_img');
         const badgeEl = document.getElementById('profile_notification_badge');
-        
+
         let nameVal = "Войти в аккаунт";
         let phoneVal = "Нажмите для авторизации";
         let avatarSrc = null;
@@ -6268,7 +6268,7 @@ const app = {
                 phoneVal = manualPhone || "Нажмите для авторизации";
             }
         }
-        
+
         // 3. Проверяем пользовательский загруженный аватар
         const customAvatar = localStorage.getItem('profile_custom_avatar');
         if (customAvatar) {
@@ -6277,7 +6277,7 @@ const app = {
 
         if (nameEl) nameEl.innerText = nameVal;
         if (phoneEl) phoneEl.innerText = phoneVal;
-        
+
         // 4. Отрисовка тарифа и даты действия под именем пользователя
         if (statusEl) {
             if (tgUser) {
@@ -6311,7 +6311,7 @@ const app = {
         if (logoutItem) {
             logoutItem.style.display = tgUser ? 'flex' : 'none';
         }
-        
+
         if (avatarSrc) {
             if (avatarImgEl) {
                 avatarImgEl.src = avatarSrc;
@@ -6337,7 +6337,7 @@ const app = {
     handleCustomAvatarUpload: function (event) {
         const file = event.target.files[0];
         if (!file) return;
-        
+
         const reader = new FileReader();
         reader.onload = (e) => {
             const base64Img = e.target.result;
@@ -6355,7 +6355,7 @@ const app = {
         let requestedInvoices = [];
         try {
             requestedInvoices = JSON.parse(localStorage.getItem('requested_invoices')) || [];
-        } catch(e) {}
+        } catch (e) { }
 
         if (container.style.display === 'block' && container.dataset.viewType === 'history') {
             container.style.display = 'none';
@@ -6395,7 +6395,7 @@ const app = {
         let requestedInvoices = [];
         try {
             requestedInvoices = JSON.parse(localStorage.getItem('requested_invoices')) || [];
-        } catch(e) {}
+        } catch (e) { }
 
         const target = requestedInvoices[index];
         if (target && target.state) {
@@ -6406,7 +6406,7 @@ const app = {
             this.render();
             this.switchMobileTab('output');
             this.showInAppNotification("Загружено", `Смета "${target.projectName}" успешно загружена на экран сметы!`, "📂");
-            
+
             // Закрываем раскрытое подменю
             const container = document.getElementById('profile_subview_container');
             if (container) container.style.display = 'none';
@@ -6601,8 +6601,43 @@ const app = {
 
         // Сортируем steelRads по мощности (Тип11 < Тип21 < Тип22 < Тип33)
         steelRads.sort((a, b) => a.power50 - b.power50);
-        let radAlts = [catalog.rads[0], titanRads[0], steelRads[0]];
-        catalog.rads.forEach(rad => { rad.alts = radAlts; }); titanRads.forEach(rad => { rad.alts = radAlts; }); steelRads.forEach(rad => { rad.alts = radAlts; });
+
+        // Добавляем длину к имени для стальных панельных радиаторов
+        steelRads.forEach(rad => {
+            if (rad.sec && !rad.name.includes('мм')) {
+                rad.name += ` ${rad.sec} мм`;
+            }
+        });
+
+        // Заполняем .rommer для нечётных секций новых STOUT-серий (аналогично init catalog.rads выше)
+        [spaceRuRads, spaceRu350Rads, titanSideRads, titanSide350Rads, titanSide200Rads, aluminumRads, aluminum350Rads].forEach(arr => {
+            arr.forEach(rad => {
+                if (!rad.rommer) {
+                    let targetSec = rad.sec % 2 !== 0 ? rad.sec + 1 : rad.sec;
+                    if (targetSec > 12) targetSec = 12;
+                    const evenRad = arr.find(x => x.sec === targetSec && x.rommer);
+                    if (evenRad) rad.rommer = evenRad.rommer;
+                }
+            });
+        });
+
+        // Все доступные серии радиаторов для выбора при замене
+        let radAlts = [
+            catalog.rads[0],        // Space нижнее 500мм
+            titanRads[0],           // TITAN нижнее 500мм
+            spaceRuRads[0],         // Space (Россия) боковое 500мм
+            titanSideRads[0],       // TITAN боковое 500мм
+            spaceRu350Rads[0],      // Space (Россия) боковое 350мм
+            titanSide350Rads[0],    // TITAN боковое 350мм
+            titanSide200Rads[0],    // TITAN боковое 200мм
+            aluminumRads[0],        // Алюм. боковое 500мм
+            aluminum350Rads[0],     // Алюм. боковое 350мм
+            rommerPlusAlRads[0],    // ROMMER Plus 200 Al 500мм
+            rommerPlusAl200Rads[0], // ROMMER Plus 200 Al 200мм
+            steelRads[0],           // Стальные панельные
+        ];
+        const allRadArrays = [catalog.rads, titanRads, spaceRuRads, spaceRu350Rads, titanSideRads, titanSide350Rads, titanSide200Rads, aluminumRads, aluminum350Rads, rommerPlusAlRads, rommerPlusAl200Rads, steelRads];
+        allRadArrays.forEach(arr => arr.forEach(rad => { rad.alts = radAlts; }));
         let hAlts = catalog.h_valves; catalog.h_valves.forEach(v => { v.alts = hAlts; });
         const setBoilerAlts = (t) => {
             let opti = catalog.tanks_optibase.find(x => x.vol === t.vol);
@@ -6649,11 +6684,11 @@ const app = {
             };
             const extRed = n => {
                 let m = n.match(/\s(\d+x\d+x\d+|\d+x\d+|\d+х\d+х\d+|\d+х\d+)/i);
-                return m ? m[1].replace(/х/g,'x') : null;
+                return m ? m[1].replace(/х/g, 'x') : null;
             };
             const extFiMi = n => {
                 let m = n.match(/\s(\d+х[^ ]+|\d+x[^ ]+)/i);
-                return m ? m[1].replace(/х/g,'x').replace(/['"]/g, '') : null;
+                return m ? m[1].replace(/х/g, 'x').replace(/['"]/g, '') : null;
             };
             const linkPprAlts = (arrE, arrP, ext) => {
                 arrE.forEach(e => {
@@ -6836,8 +6871,13 @@ const app = {
     },
     toggleSwapUI: function (id) { if (this.state.showSwapFor === id) { this.state.showSwapFor = null; } else { this.state.showSwapFor = id; } this.render(); },
     cycleSwap: function (originalId) {
-        let isRad = (catalog.rads.find(x => x.id === originalId) || titanRads.find(x => x.id === originalId) || steelRads.find(x => x.id === originalId));
-        if (isRad) { if (this.state.radType === 'space') this.state.radType = 'titan'; else if (this.state.radType === 'titan') this.state.radType = 'steel'; else this.state.radType = 'space'; }
+        const allRadSeries = [catalog.rads, titanRads, spaceRuRads, spaceRu350Rads, titanSideRads, titanSide350Rads, titanSide200Rads, aluminumRads, aluminum350Rads, rommerPlusAlRads, rommerPlusAl200Rads, steelRads];
+        let isRad = allRadSeries.some(arr => arr.find(x => x.id === originalId));
+        const radTypeOrder = ['space', 'titan', 'space_ru', 'space_ru350', 'titan_side', 'titan_side350', 'titan_side200', 'aluminum', 'aluminum350', 'plus_al', 'plus_al200', 'steel'];
+        if (isRad) {
+            const curIdx = radTypeOrder.indexOf(this.state.radType);
+            this.state.radType = radTypeOrder[(curIdx + 1) % radTypeOrder.length] || 'space';
+        }
         else if ((originalId.startsWith('SHT') || (originalId.startsWith('STE') && originalId.includes('2070'))) && !originalId.includes('2001') && !originalId.includes('2002')) { if (this.state.headType === 'gas') this.state.headType = 'liquid'; else if (this.state.headType === 'liquid') this.state.headType = 'smart'; else this.state.headType = 'gas'; }
         else if (originalId.startsWith('SVH')) { if (this.state.connectionType === 'angled') this.state.connectionType = 'straight'; else this.state.connectionType = 'angled'; }
         else if (originalId.startsWith('SWH')) {
@@ -6857,7 +6897,7 @@ const app = {
             else this.state.boilerFrameType = 'profile_single';
         }
         else if (originalId === 'SAC-0020-411040_boiler') { this.state.boilerFrameFastenerType = (this.state.boilerFrameFastenerType === 'anchor') ? 'stud' : 'anchor'; }
-        
+
         else if (originalId.startsWith('SAC-0030-000825')) { this.state.expansionTankMountType = (this.state.expansionTankMountType === 'standard') ? 'stout' : 'standard'; }
         else if (originalId === 'SAC-0022-600001') {
             if (this.state.mountPlateSingleType === 'SAC-0022-600001') this.state.mountPlateSingleType = 'SAC-0022-600100';
@@ -6897,11 +6937,11 @@ const app = {
             let brand = this.state.brandMode;
             let nextType = this.state.ufhMixType || 'std';
             const cycle = ['std', 'dn20', 'dn20_servo', 'dn25', 'dn25_servo'];
-            
+
             for (let i = 0; i < 5; i++) {
                 let currIdx = cycle.indexOf(nextType);
                 nextType = cycle[(currIdx + 1) % cycle.length];
-                
+
                 if (this.isUfhMixTypeCompatible(nextType, tpArea, brand)) {
                     this.state.ufhMixType = nextType;
                     break;
@@ -6916,19 +6956,19 @@ const app = {
         }
         this.state.showSwapFor = null; this.render();
     },
-    getCheapestAlternative: function(item) {
+    getCheapestAlternative: function (item) {
         if (!item) return null;
         let options = [];
-        
+
         let addCandidate = (cand) => {
             if (!cand) return;
             if (options.some(x => x.id === cand.id)) return;
             options.push(cand);
-            
+
             if (cand.comfort) {
                 addCandidate(cand.comfort);
             }
-            
+
             let analog = cand.rommer;
             if (!analog && ANALOG_MAP[cand.id]) {
                 let targetId = ANALOG_MAP[cand.id];
@@ -6964,14 +7004,14 @@ const app = {
                 }
             }
         };
-        
+
         addCandidate(item);
-        
+
         let alts = item.alts || [];
         alts.forEach(alt => {
             addCandidate(alt);
         });
-        
+
         let cheapest = null;
         options.forEach(opt => {
             if (opt.price && opt.price > 0) {
@@ -6980,15 +7020,52 @@ const app = {
                 }
             }
         });
-        
+
         return cheapest || item;
     },
     openSwapModal: function (lookupId) {
+        // Clear previous swap filter states to reset for the newly clicked item
+        delete this.state.swapHeightMinIndex;
+        delete this.state.swapHeightMaxIndex;
+        delete this.state.swapHeight;
+        delete this.state.swapMaterialFilter;
+        delete this.state.swapConnectionType;
+        delete this.state.swapWindowWidth;
+        delete this.state.swapGroupReplace;
+        delete this.state.swapAllReplace;
+
         let item = this.currentEquipmentList.find(x => x.id === lookupId || x.displaySku === lookupId);
         if (!item) {
             item = this.currentEquipmentList.find(x => (x.originalId || x.id) === lookupId);
         }
+        if (!item) {
+            const merged = this.currentEquipmentList.find(x => x.instanceKeys && x.instanceKeys.includes(lookupId));
+            if (merged) item = { ...merged, originalId: lookupId };
+        }
         if (!item) return;
+
+        // Ширина окна для фильтра замен (из карты, собранной при render)
+        const _origId0 = item.originalId || item.id;
+        let _swapWW = this.swapWindowWidthMap && this.swapWindowWidthMap[_origId0];
+        if (!_swapWW && item.instanceKeys && item.instanceKeys.length > 0) {
+            for (const ik of item.instanceKeys) {
+                if (this.swapWindowWidthMap && this.swapWindowWidthMap[ik]) {
+                    _swapWW = this.swapWindowWidthMap[ik];
+                    break;
+                }
+            }
+        }
+        if (_swapWW) this.state.swapWindowWidth = _swapWW;
+
+        // ── Секционные радиаторы → новый модал с табами высот ──
+        {
+            const _cid = item.originalId || item.id || '';
+            const _isSecRad = this._getSecRadSeries().some(s => s.arr && s.arr.some(x => x.id === _cid || x.id === item.id));
+            if (_isSecRad) {
+                this._openRadSwapModal(item);
+                return;
+            }
+        }
 
         let alts = item.alts || [];
         let customAlts = null;
@@ -7018,7 +7095,7 @@ const app = {
         else if (item.originalId && (item.originalId.endsWith('_rad') || item.originalId.startsWith('SPI-0003-'))) {
             let p_ins = 0, p_split = 0, p_ins_mp = 0, p_split_mp = 0;
             let b_ins = 'STOUT', b_split = 'STOUT', b_ins_mp = 'STOUT', b_split_mp = 'STOUT';
-            
+
             let insulatedItem = catalog.insulated_pipes ? catalog.insulated_pipes[0] : null;
             if (isRommer) {
                 p_ins = 138;
@@ -7026,7 +7103,7 @@ const app = {
             } else if (insulatedItem) {
                 p_ins = (insulatedItem.price || 0) / (insulatedItem.len || 100);
             }
-            
+
             let splitItem = catalog.rad_pipes_grey ? catalog.rad_pipes_grey[0] : null;
             if (isRommer) {
                 p_split = 110;
@@ -7034,17 +7111,17 @@ const app = {
             } else if (splitItem) {
                 p_split = splitItem.price || 0;
             }
-            
+
             let insulatedMpItem = catalog.insulated_pipes_mp_red ? catalog.insulated_pipes_mp_red[0] : null;
             if (insulatedMpItem) {
                 p_ins_mp = (insulatedMpItem.price || 0) / (insulatedMpItem.len || 100);
             }
-            
+
             let splitMpItem = catalog.water_pipes_mp ? catalog.water_pipes_mp[0] : null;
             if (splitMpItem) {
                 p_split_mp = splitMpItem.price || 0;
             }
-            
+
             customAlts = [
                 { id: 'insulated', name: 'Труба PEX-a в теплоизоляции', brand: b_ins, price: p_ins },
                 { id: 'split', name: 'Труба PEX-a без изоляции (бухты)', brand: b_split, price: p_split },
@@ -7055,7 +7132,7 @@ const app = {
         else if (item.originalId && (item.originalId.endsWith('_ufh') || item.originalId.startsWith('SPX-0002-') || item.originalId.startsWith('SPM-0001-'))) {
             let p_pex = 0, p_mp = 0;
             let b_pex = 'STOUT', b_mp = 'STOUT';
-            
+
             let pexItem = catalog.pipes ? catalog.pipes[0] : null;
             if (isRommer) {
                 p_pex = pexItem?.rommer?.price || 7600;
@@ -7063,10 +7140,10 @@ const app = {
             } else {
                 p_pex = pexItem?.price || 15200;
             }
-            
+
             let mpItem = catalog.metal_plastic_pipes ? catalog.metal_plastic_pipes[0] : null;
             p_mp = mpItem?.price || 15151;
-            
+
             customAlts = [
                 { id: 'pex', name: 'Труба PEX-a (полиэтилен)', brand: b_pex, price: p_pex },
                 { id: 'metal_plastic', name: 'Труба металлопластиковая', brand: b_mp, price: p_mp }
@@ -7075,7 +7152,7 @@ const app = {
         else if (item.originalId && (item.originalId.endsWith('_water') || (item.originalId.startsWith('SPX-0001-') && !item.originalId.endsWith('_rad'))) && !item.originalId.startsWith('SMB-') && !item.originalId.startsWith('RMS-')) {
             let p_pex = 0, p_mp = 0;
             let b_pex = 'STOUT', b_mp = 'STOUT';
-            
+
             let pexItem = catalog.water_pipes ? catalog.water_pipes[0] : null;
             if (isRommer) {
                 p_pex = pexItem?.rommer?.price || 110;
@@ -7083,10 +7160,10 @@ const app = {
             } else {
                 p_pex = pexItem?.price || 175;
             }
-            
+
             let mpItem = catalog.water_pipes_mp ? catalog.water_pipes_mp[0] : null;
             p_mp = mpItem?.price || 151.51;
-            
+
             customAlts = [
                 { id: 'pex', name: 'Труба PEX-a (полиэтилен)', brand: b_pex, price: p_pex },
                 { id: 'metal_plastic', name: 'Труба металлопластиковая', brand: b_mp, price: p_mp }
@@ -7104,7 +7181,7 @@ const app = {
             let sirioItem = catalog.well_auto ? catalog.well_auto.find(x => x.id === 'SCS-0001-000070') : null;
             let topItem = catalog.well_auto ? catalog.well_auto.find(x => x.id === 'SCS-0001-000063') : null;
             let baseItem = catalog.well_auto ? catalog.well_auto.find(x => x.id === 'SCS-0001-000064') : null;
-            
+
             let sirioPrice = sirioItem?.price || 38236;
             let sirioBrand = 'STOUT';
             let sirioName = 'Частотный регулятор Sirio';
@@ -7113,10 +7190,10 @@ const app = {
                 sirioBrand = 'ROMMER';
                 sirioName = 'Электронное реле давления (EPC-12 auto)';
             }
-            
+
             let topPrice = topItem?.price || 16078;
             let basePriceVal = baseItem?.price || 5141;
-            
+
             customAlts = [
                 { id: 'sirio', name: sirioName, brand: sirioBrand, price: sirioPrice },
                 { id: 'top', name: 'Электронное реле давления', brand: 'STOUT', price: topPrice },
@@ -7132,7 +7209,7 @@ const app = {
                 scqPrice = closestScq?.price || 48256;
                 scnPrice = closestScn?.price || 22276;
             }
-            
+
             customAlts = [
                 { id: 'scn', name: 'Естественная конвекция (без вентилятора)', brand: 'STOUT', price: scnPrice },
                 { id: 'scq', name: 'Принудительная конвекция (с вентилятором)', brand: 'STOUT', price: scqPrice }
@@ -7153,7 +7230,7 @@ const app = {
                     angledPrice = (svt_ang?.price || 0) + (svl_ang?.price || 0);
                 }
             }
-            
+
             customAlts = [
                 { id: 'straight', name: 'Прямое подключение конвектора', brand: isRommer ? 'ROMMER' : 'STOUT', price: straightPrice },
                 { id: 'angled', name: 'Угловое подключение конвектора', brand: isRommer ? 'ROMMER' : 'STOUT', price: angledPrice }
@@ -7180,7 +7257,7 @@ const app = {
             let stdPrice = 0, comfortPrice = 0;
             let stdBrand = 'Sinikon', comfortBrand = 'Sinikon';
             let stdName = 'Канализация Стандарт';
-            
+
             if (stoutSewer) {
                 if (isRommer) {
                     stdPrice = stoutSewer.rommer?.price || 0;
@@ -7194,7 +7271,7 @@ const app = {
                 comfortPrice = stoutSewer.comfort?.price || 0;
                 comfortBrand = stoutSewer.comfort?.brand || 'Sinikon';
             }
-            
+
             customAlts = [
                 { id: 'std', name: stdName, brand: stdBrand, price: stdPrice },
                 { id: 'comfort', name: stoutSewer?.comfort?.name || 'Канализация Комфорт (бесшумная)', brand: comfortBrand, price: comfortPrice }
@@ -7336,7 +7413,7 @@ const app = {
         } else {
             let uniqueAlts = [];
             let seenIds = new Set();
-            
+
             let altsToProcess = [...alts];
             let isCurrentInAlts = alts.some(alt => {
                 if (!alt) return false;
@@ -7347,7 +7424,7 @@ const app = {
                 }
                 return false;
             });
-            
+
             if (!isCurrentInAlts) {
                 let baseItem = null;
                 let lookupKey = item.originalId || item.id;
@@ -7368,10 +7445,10 @@ const app = {
                 }
                 altsToProcess.unshift(baseItem);
             }
-            
+
             altsToProcess.forEach(alt => {
                 if (!alt) return;
-                
+
                 let isUfhMix = (item.originalId === 'SDG-0120-001000' || item.originalId === 'SDG-0002-002001' || item.originalId === 'SDG-0002-002501' || item.originalId === 'SDG-0003-002001' || item.originalId === 'SDG-0003-002501');
                 if (isUfhMix) {
                     let altType = 'std';
@@ -7379,11 +7456,11 @@ const app = {
                     else if (alt.id === 'SDG-0002-002501') altType = 'dn25';
                     else if (alt.id === 'SDG-0003-002001') altType = 'dn20_servo';
                     else if (alt.id === 'SDG-0003-002501') altType = 'dn25_servo';
-                    
+
                     if (!this.isUfhMixTypeCompatible(altType, this.tpArea || 0, this.state.brandMode)) {
                         return;
                     }
-                    
+
                     let pwr = this.getPower();
                     let brand = this.state.brandMode;
                     let useAnalogSec2 = this.state.sectionAnalog && this.state.sectionAnalog['2.4. Гидравлика котельной'];
@@ -7396,7 +7473,7 @@ const app = {
                 // Stout Option
                 let displayItemStout = { ...alt };
                 displayItemStout.brand = displayItemStout.brand || "STOUT";
-                
+
                 // Rommer Option
                 let analog = alt.rommer;
                 if (!analog && ANALOG_MAP[alt.id]) {
@@ -7408,7 +7485,7 @@ const app = {
                         }
                     }
                 }
-                
+
                 let displayItemRommer = null;
                 if (analog) {
                     if (Array.isArray(analog)) {
@@ -7461,7 +7538,7 @@ const app = {
                 let alt = entry.original;
                 let displayAlt = entry.display;
                 let img = getImg(displayAlt);
-                
+
                 let isActive = (displayAlt.id === item.id);
                 let activeClass = isActive ? "active-row" : "";
                 let activeStyle = isActive ? "background-color: var(--primary-light);" : "";
@@ -7490,6 +7567,774 @@ const app = {
         body.innerHTML = html;
         modal.style.display = 'flex';
     },
+    // ═══════════════════════════════════════════════════════════════
+    // РАДИАТОРНЫЙ МОДАЛ: высоты, пересчёт секций, групповая замена
+    // ═══════════════════════════════════════════════════════════════
+    getRadHeightFromId: function (id) {
+        if (!id) return 500;
+        // Панельные ID: RRS-XXXX-{2-значный тип}{H}{3-значная ширина}, H*100 = высота мм
+        if (id.startsWith('RRS-')) { const m = id.match(/^RRS-\d{4}-\d{2}(\d)\d+/); return m ? parseInt(m[1], 10) * 100 : 500; }
+        // Секционные ID: PREFIX-XXXX-HHHsss  где HHH * 10 = высота мм
+        const m = id.match(/^[A-Z]{3}-\d{4}-(\d{3})\d{3}/);
+        return m ? parseInt(m[1], 10) * 10 : 500;
+    },
+    getPowerAtDt50: function (item) {
+        if (item.power50) return item.power50;
+        if (item.passportPower) return Math.round(item.passportPower * Math.pow(50 / 70, 1.3));
+
+        const lookupId = item.originalId || item.id;
+        let found = null;
+        for (let catKey in catalog) {
+            if (Array.isArray(catalog[catKey])) {
+                found = catalog[catKey].find(x => x.id === lookupId);
+                if (found) break;
+            }
+        }
+        if (!found && typeof titanRads !== 'undefined') found = titanRads.find(x => x.id === lookupId);
+        if (!found && typeof steelRads !== 'undefined') found = steelRads.find(x => x.id === lookupId);
+
+        if (!found) {
+            const allRadArrays = [spaceRuRads, spaceRu350Rads, titanSideRads, titanSide350Rads, titanSide200Rads, aluminumRads, aluminum350Rads, rommerPlusAlRads, rommerPlusAl200Rads];
+            for (let arr of allRadArrays) {
+                found = arr.find(x => x.id === lookupId);
+                if (found) break;
+            }
+        }
+
+        if (found) {
+            if (found.power50) return found.power50;
+            if (found.passportPower) return Math.round(found.passportPower * Math.pow(50 / 70, 1.3));
+        }
+
+        return 100;
+    },
+    calculateNewSections: function (oldSec, oldP50, newArr) {
+        if (!newArr || newArr.length === 0) return null;
+        const newP50 = this.getPowerAtDt50(newArr[0]);
+        const needed = Math.ceil((oldSec * oldP50) / newP50);
+        const clamped = Math.max(newArr[0].sec, Math.min(newArr[newArr.length - 1].sec, needed));
+        return newArr.find(x => x.sec >= clamped) || newArr[newArr.length - 1];
+    },
+    _getSecRadSeries: function () {
+        return [
+            { arr: catalog.rads, type: 'space', h: 500, bottom: true },
+            { arr: titanRads, type: 'titan', h: 500, bottom: true },
+            { arr: spaceRuRads, type: 'space_ru', h: 500 },
+            { arr: titanSideRads, type: 'titan_side', h: 500 },
+            { arr: aluminumRads, type: 'aluminum', h: 500 },
+            { arr: rommerOptimaBmRads, type: null, h: 500 },
+            { arr: rommerProfiAlRads, type: null, h: 500 },
+            { arr: rommerProfiBmRads, type: null, h: 500 },
+            { arr: rommerPlusBmRads, type: null, h: 500 },
+            { arr: rommerPlusAlRads, type: 'plus_al', h: 200 },
+            { arr: spaceRu350Rads, type: 'space_ru350', h: 350 },
+            { arr: titanSide350Rads, type: 'titan_side350', h: 350 },
+            { arr: aluminum350Rads, type: 'aluminum350', h: 350 },
+            { arr: titanSide200Rads, type: 'titan_side200', h: 200 },
+            { arr: rommerPlusAl200Rads, type: 'plus_al200', h: 200 },
+            { arr: rommerPlusBm200Rads, type: null, h: 200 },
+            { arr: steelRads, type: null, h: 500, isPanel: true },
+        ];
+    },
+    _getRadMaterial: function (s) {
+        if (s.isPanel) return 'steel';
+        if (!s.arr || s.arr.length === 0) return 'all';
+        const first = s.arr[0];
+        const id = first.id || '';
+        if (id.startsWith('RRS-')) return 'steel';
+        if (id.startsWith('SRA-') || id.startsWith('RAL-')) return 'aluminum';
+        if (id.startsWith('SRB-') || id.startsWith('RBM-')) return 'bimetal';
+        return 'all';
+    },
+    _openRadSwapModal: function (item) {
+        const modal = document.getElementById('swap_modal_overlay');
+        const body = document.getElementById('swap_modal_body');
+        const title = document.getElementById('swap_modal_title');
+        if (!modal || !body) return;
+
+        const origId = item.originalId || item.id;
+        const currentH = this.state.swapHeight || item.height || this.getRadHeightFromId(origId);
+        const currentM = this.state.swapMaterialFilter || 'all';
+        const currentC = this.state.swapConnectionType || 'all';
+
+        const allSer = this._getSecRadSeries();
+        const availableSeries = allSer.filter(s => {
+            if (currentM !== 'all' && this._getRadMaterial(s) !== currentM) return false;
+            if (currentC === 'side' && s.bottom) return false;
+            if (currentC === 'bottom' && !s.bottom && !s.isPanel) return false;
+            return true;
+        });
+
+        const heights = [200, 300, 350, 400, 500, 600];
+
+        let minIdx = this.state.hasOwnProperty('swapHeightMinIndex') ? this.state.swapHeightMinIndex : null;
+        let maxIdx = this.state.hasOwnProperty('swapHeightMaxIndex') ? this.state.swapHeightMaxIndex : null;
+
+        if (minIdx === null || maxIdx === null || minIdx >= heights.length || maxIdx >= heights.length) {
+            if (currentH === 'all' || item.isPanel) {
+                minIdx = 0;
+                maxIdx = heights.length - 1;
+            } else {
+                const idx = heights.indexOf(currentH);
+                if (idx !== -1) {
+                    minIdx = idx;
+                    maxIdx = idx;
+                } else {
+                    minIdx = 0;
+                    maxIdx = heights.length - 1;
+                }
+            }
+        }
+        if (minIdx < 0) minIdx = 0;
+        if (maxIdx >= heights.length) maxIdx = heights.length - 1;
+        if (minIdx > maxIdx) minIdx = maxIdx;
+
+        this.state.swapHeightMinIndex = minIdx;
+        this.state.swapHeightMaxIndex = maxIdx;
+
+        const minHeight = heights[minIdx] || 0;
+        const maxHeight = heights[maxIdx] || 9999;
+
+        const materials = [
+            { key: 'steel', label: 'Стальной' },
+            { key: 'aluminum', label: 'Алюминиевый' },
+            { key: 'bimetal', label: 'Биметалл' },
+            { key: 'all', label: 'Все' }
+        ];
+        const materialsHtml = materials.map(m => {
+            const on = m.key === currentM;
+            return `<button onclick="app.switchSwapRadMaterial('${origId}','${m.key}')"
+                class="swap-tab ${on ? 'active' : ''}">${m.label}</button>`;
+        }).join('');
+
+        const connections = [
+            { key: 'side', label: 'Боковое' },
+            { key: 'bottom', label: 'Нижнее' },
+            { key: 'all', label: 'Все' }
+        ];
+        const connectionsHtml = connections.map(c => {
+            const on = c.key === currentC;
+            return `<button onclick="app.switchSwapRadConnection('${origId}','${c.key}')"
+                class="swap-tab ${on ? 'active' : ''}">${c.label}</button>`;
+        }).join('');
+
+        const leftPct = heights.length > 1 ? (minIdx / (heights.length - 1)) * 100 : 0;
+        const widthPct = heights.length > 1 ? ((maxIdx - minIdx) / (heights.length - 1)) * 100 : 100;
+
+        const rangeSliderHtml = `
+            <style>
+                .swap-tab {
+                    flex: 1;
+                    border: none;
+                    outline: none;
+                    padding: 6px 10px;
+                    cursor: pointer;
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: #64748b;
+                    background: transparent;
+                    border-radius: 8px;
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .swap-tab:hover {
+                    color: #0f172a;
+                }
+                .swap-tab.active {
+                    font-weight: 700;
+                    background: #ffffff;
+                    color: #0f172a;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+                }
+                .swap-tabs-wrapper {
+                    display: inline-flex;
+                    width: 100%;
+                    background: #f1f5f9;
+                    border: none;
+                    padding: 3px;
+                    border-radius: 10px;
+                    box-sizing: border-box;
+                }
+                .swap-slider-container {
+                    position: relative;
+                    width: 100%;
+                    height: 24px;
+                    margin-top: 2px;
+                    margin-bottom: 2px;
+                }
+                .swap-range-slider {
+                    position: absolute;
+                    width: 100%;
+                    height: 6px;
+                    top: 9px;
+                    left: 0;
+                    background: none;
+                    pointer-events: none;
+                    -webkit-appearance: none;
+                    appearance: none;
+                    margin: 0;
+                    padding: 0;
+                }
+                .swap-range-slider::-webkit-slider-thumb {
+                    height: 16px;
+                    width: 16px;
+                    border-radius: 50%;
+                    background: #fff;
+                    border: 1px solid #cbd5e1;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+                    cursor: pointer;
+                    pointer-events: auto;
+                    -webkit-appearance: none;
+                    transition: transform 0.1s ease, border-color 0.1s ease;
+                }
+                .swap-range-slider::-webkit-slider-thumb:hover {
+                    transform: scale(1.15);
+                    border-color: var(--primary);
+                }
+                .swap-range-slider::-moz-range-thumb {
+                    height: 16px;
+                    width: 16px;
+                    border-radius: 50%;
+                    background: #fff;
+                    border: 1px solid #cbd5e1;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+                    cursor: pointer;
+                    pointer-events: auto;
+                    transition: transform 0.1s ease, border-color 0.1s ease;
+                }
+                .swap-range-slider::-moz-range-thumb:hover {
+                    transform: scale(1.15);
+                    border-color: var(--primary);
+                }
+                .inv-table tbody tr {
+                    transition: background-color 0.2s;
+                }
+                .inv-table tbody tr:hover {
+                    background-color: #f8fafc !important;
+                }
+            </style>
+            <div style="font-size:12px; font-weight:700; color:#334155; font-family:sans-serif; margin-bottom:2px; display:flex; justify-content:space-between;">
+                <span>Диапазон высот:</span>
+                <span id="swapHeightLabel" style="color: var(--primary);">${minHeight} мм — ${maxHeight} мм</span>
+            </div>
+            <div class="swap-slider-container" onclick="app.clickSwapSliderTrack(event, '${origId}')">
+                <div style="position:absolute; left:9px; right:9px; top:9px; height:6px; background:#E2E8F0; border-radius:3px;"></div>
+                <div id="swapTrackHighlight" style="position:absolute; left:calc(9px + ${leftPct}% * 0.98); width:calc(${widthPct}% * 0.98); top:9px; height:6px; background:var(--primary); border-radius:3px;"></div>
+                
+                <input type="range" min="0" max="${heights.length - 1}" value="${minIdx}" id="swapRadMinH"
+                    class="swap-range-slider" style="z-index: ${this.state.swapLastActive === 'min' ? 10 : 9};"
+                    oninput="app.onSliderDragging('${origId}')"
+                    onchange="app.onMinSliderInput('${origId}', this)">
+                    
+                <input type="range" min="0" max="${heights.length - 1}" value="${maxIdx}" id="swapRadMaxH"
+                    class="swap-range-slider" style="z-index: ${this.state.swapLastActive === 'max' ? 10 : 9};"
+                    oninput="app.onSliderDragging('${origId}')"
+                    onchange="app.onMaxSliderInput('${origId}', this)">
+            </div>
+            
+            <div id="swapHeightTicks" style="display:flex; justify-content:space-between; width:100%; padding:0 8px; box-sizing:border-box; font-family:sans-serif; margin-top:-8px; margin-bottom:2px;">
+                ${heights.map((h, i) => {
+            const active = i >= minIdx && i <= maxIdx;
+            return `<span data-idx="${i}" style="font-size:11px; font-weight:${active ? '700' : '500'}; color:${active ? 'var(--primary)' : '#64748b'}; cursor:pointer; transition:all 0.15s ease;" onclick="app.clickSwapHeightScale('${origId}', ${i})">${h} мм</span>`;
+        }).join('')}
+            </div>
+        `;
+
+        const currentPT = this.state.swapPanelType || 'all';
+        const panelTypeFilters = [
+            { key: 'all', label: 'Все' },
+            { key: '11', label: 'Тип 11' },
+            { key: '21', label: 'Тип 21' },
+            { key: '22', label: 'Тип 22' },
+            { key: '33', label: 'Тип 33' },
+        ];
+        const panelTypeHtml = panelTypeFilters.map(pt => {
+            const on = pt.key === currentPT;
+            return `<button onclick="app.switchSwapPanelType('${origId}','${pt.key}')"
+                class="swap-tab ${on ? 'active' : ''}">${pt.label}</button>`;
+        }).join('');
+
+        const oldSec = item.sec || 1;
+        const oldP50 = this.getPowerAtDt50(item);
+        const totalPower = item.isPanel ? oldP50 : (oldSec * oldP50);
+        const origPrice = item.price || 0;
+        const priceStr = origPrice > 0 ? this.formatPriceHtml(origPrice, true) : '—';
+
+        title.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:12px; gap:16px;">
+                <div>
+                    <h3 style="margin:0; font-size:18px; font-weight:700; color:#0f172a;">Варианты замены</h3>
+                    <span style="font-size:12px; color:#64748b; display:block; margin-top:2px; font-weight:500;">${item.name || ''}</span>
+                </div>
+                <div style="display:flex; gap:8px; flex-shrink:0;">
+                    <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                        Теплоотдача: <span style="font-weight:800;">${totalPower} Вт</span>
+                    </div>
+                    <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
+                        Цена: <span style="font-weight:800;">${priceStr}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        body.innerHTML = `
+            <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px; margin-bottom:12px; box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.02), 0 4px 6px -4px rgba(15, 23, 42, 0.02);">
+                <div style="display:grid; grid-template-columns: ${currentM === 'steel' ? '1.1fr 1fr 1.3fr' : '1fr 1fr'}; gap:12px;">
+                    <div>
+                        <div style="font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Тип прибора:</div>
+                        <div class="swap-tabs-wrapper">
+                            ${materialsHtml}
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Подключение:</div>
+                        <div class="swap-tabs-wrapper">
+                            ${connectionsHtml}
+                        </div>
+                    </div>
+                    ${currentM === 'steel' ? `
+                    <div>
+                        <div style="font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Тип панели:</div>
+                        <div class="swap-tabs-wrapper">
+                            ${panelTypeHtml}
+                        </div>
+                    </div>` : ''}
+                </div>
+
+                <div>
+                    <div style="font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px;">Высота прибора:</div>
+                    <div style="width:100%;">
+                        ${rangeSliderHtml}
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; flex-direction:row; flex-wrap:wrap; justify-content:space-between; margin-bottom:8px; padding:0 4px;">
+                ${(item.instanceKeys && item.instanceKeys.length > 1) ? `
+                <label style="display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:#334155; cursor:pointer; user-select:none;">
+                    <input type="checkbox" id="replaceGroupCb" style="width:16px; height:16px; border-radius:4px; border:1px solid #cbd5e1; accent-color:var(--primary); cursor:pointer;" ${this.state.swapGroupReplace ? 'checked' : ''}>
+                    Применить ко всей группе (${item.instanceKeys.length} шт.)
+                </label>
+                ` : ''}
+                <label style="display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:#334155; cursor:pointer; user-select:none;">
+                    <input type="checkbox" id="replaceAllCb" style="width:16px; height:16px; border-radius:4px; border:1px solid #cbd5e1; accent-color:var(--primary); cursor:pointer;" ${this.state.swapAllReplace ? 'checked' : ''}>
+                    Применить ко всем приборам отопления в проекте
+                </label>
+            </div>
+            
+            ${this._renderRadSwapTable(item, minHeight, maxHeight, currentM, currentC)}
+        `;
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            const activeRow = body.querySelector('tr[style*="var(--primary-light)"]');
+            if (activeRow) {
+                activeRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }
+        }, 100);
+    },
+    changeSwapHeightRange: function (originalId, newMinVal, newMaxVal) {
+        const item = this.currentEquipmentList.find(x => (x.originalId || x.id) === originalId || x.id === originalId);
+        if (!item) return;
+
+        this.state.swapGroupReplace = document.getElementById('replaceGroupCb')?.checked || false;
+        this.state.swapAllReplace = document.getElementById('replaceAllCb')?.checked || false;
+
+        const allSer = this._getSecRadSeries();
+        const currentM = this.state.swapMaterialFilter || 'all';
+        const currentC = this.state.swapConnectionType || 'all';
+
+        const seriesForHeights = allSer.filter(s => {
+            if (currentM !== 'all' && this._getRadMaterial(s) !== currentM) return false;
+            if (currentC === 'side' && s.bottom) return false;
+            if (currentC === 'bottom' && !s.bottom && !s.isPanel) return false;
+            return true;
+        });
+        const heightsSet = new Set();
+        seriesForHeights.forEach(s => {
+            if (s.isPanel) {
+                s.arr.forEach(p => {
+                    if (currentC === 'side' && p.bottom) return;
+                    if (currentC === 'bottom' && !p.bottom) return;
+                    const h = this.getRadHeightFromId(p.id);
+                    heightsSet.add(h);
+                });
+            } else {
+                heightsSet.add(s.h);
+            }
+        });
+        const heights = [...heightsSet].sort((a, b) => a - b);
+
+        let minIdx = this.state.hasOwnProperty('swapHeightMinIndex') ? this.state.swapHeightMinIndex : 0;
+        let maxIdx = this.state.hasOwnProperty('swapHeightMaxIndex') ? this.state.swapHeightMaxIndex : heights.length - 1;
+
+        if (newMinVal !== null) {
+            minIdx = parseInt(newMinVal);
+            if (minIdx > maxIdx) maxIdx = minIdx;
+        }
+        if (newMaxVal !== null) {
+            maxIdx = parseInt(newMaxVal);
+            if (maxIdx < minIdx) minIdx = maxIdx;
+        }
+
+        this.state.swapHeightMinIndex = minIdx;
+        this.state.swapHeightMaxIndex = maxIdx;
+
+        this._openRadSwapModal(item);
+    },
+    onSliderDragging: function (originalId) {
+        const minEl = document.getElementById('swapRadMinH');
+        const maxEl = document.getElementById('swapRadMaxH');
+        if (!minEl || !maxEl) return;
+
+        let minVal = parseInt(minEl.value);
+        let maxVal = parseInt(maxEl.value);
+
+        if (minVal > maxVal) {
+            const temp = minVal;
+            minVal = maxVal;
+            maxVal = temp;
+        }
+
+        const heights = [200, 300, 350, 400, 500, 600];
+        const minHeight = heights[minVal];
+        const maxHeight = heights[maxVal];
+
+        const label = document.getElementById('swapHeightLabel');
+        if (label) label.innerText = `${minHeight} мм — ${maxHeight} мм`;
+
+        const leftPct = heights.length > 1 ? (minVal / (heights.length - 1)) * 100 : 0;
+        const widthPct = heights.length > 1 ? ((maxVal - minVal) / (heights.length - 1)) * 100 : 100;
+        const highlight = document.getElementById('swapTrackHighlight');
+        if (highlight) {
+            highlight.style.left = `calc(9px + ${leftPct}% * 0.98)`;
+            highlight.style.width = `calc(${widthPct}% * 0.98)`;
+        }
+
+        const ticksContainer = document.getElementById('swapHeightTicks');
+        if (ticksContainer) {
+            Array.from(ticksContainer.children).forEach((span) => {
+                const idx = parseInt(span.getAttribute('data-idx'));
+                const active = idx >= minVal && idx <= maxVal;
+                span.style.fontWeight = active ? '700' : '500';
+                span.style.color = active ? 'var(--primary)' : 'var(--text-sec)';
+            });
+        }
+    },
+    clickSwapHeightScale: function (originalId, targetIdx) {
+        let minIdx = this.state.hasOwnProperty('swapHeightMinIndex') ? this.state.swapHeightMinIndex : 0;
+        let maxIdx = this.state.hasOwnProperty('swapHeightMaxIndex') ? this.state.swapHeightMaxIndex : 5;
+
+        const distMin = Math.abs(targetIdx - minIdx);
+        const distMax = Math.abs(targetIdx - maxIdx);
+
+        if (distMin < distMax) {
+            minIdx = targetIdx;
+            this.state.swapLastActive = 'min';
+        } else if (distMax < distMin) {
+            maxIdx = targetIdx;
+            this.state.swapLastActive = 'max';
+        } else {
+            if (targetIdx < minIdx) {
+                minIdx = targetIdx;
+                this.state.swapLastActive = 'min';
+            } else {
+                maxIdx = targetIdx;
+                this.state.swapLastActive = 'max';
+            }
+        }
+
+        this.changeSwapHeightRange(originalId, minIdx, maxIdx);
+    },
+    clickSwapSliderTrack: function (event, originalId) {
+        if (event.target.classList.contains('swap-range-slider')) return;
+
+        const container = event.currentTarget;
+        const rect = container.getBoundingClientRect();
+        const clickX = event.clientX - rect.left;
+
+        const trackWidth = rect.width - 18;
+        const fraction = Math.max(0, Math.min(1, (clickX - 9) / trackWidth));
+
+        const heightsCount = 7;
+        const targetIdx = Math.round(fraction * (heightsCount - 1));
+
+        this.clickSwapHeightScale(originalId, targetIdx);
+    },
+    onMinSliderInput: function (originalId, el) {
+        let val = parseInt(el.value);
+        const maxEl = document.getElementById('swapRadMaxH');
+        let maxVal = maxEl ? parseInt(maxEl.value) : val;
+        let minVal = val;
+
+        if (minVal > maxVal) {
+            minVal = maxVal;
+            maxVal = val;
+            this.state.swapLastActive = 'max';
+        } else {
+            this.state.swapLastActive = 'min';
+        }
+
+        this.changeSwapHeightRange(originalId, minVal, maxVal);
+    },
+    onMaxSliderInput: function (originalId, el) {
+        let val = parseInt(el.value);
+        const minEl = document.getElementById('swapRadMinH');
+        let minVal = minEl ? parseInt(minEl.value) : val;
+        let maxVal = val;
+
+        if (maxVal < minVal) {
+            maxVal = minVal;
+            minVal = val;
+            this.state.swapLastActive = 'min';
+        } else {
+            this.state.swapLastActive = 'max';
+        }
+
+        this.changeSwapHeightRange(originalId, minVal, maxVal);
+    },
+    _findSwapItem: function (lookupId) {
+        let item = this.currentEquipmentList.find(x => x.id === lookupId || x.displaySku === lookupId);
+        if (!item) item = this.currentEquipmentList.find(x => (x.originalId || x.id) === lookupId);
+        if (!item) {
+            const merged = this.currentEquipmentList.find(x => x.instanceKeys && x.instanceKeys.includes(lookupId));
+            if (merged) item = { ...merged, originalId: lookupId };
+        }
+        return item || null;
+    },
+    switchSwapRadMaterial: function (originalId, material) {
+        const item = this._findSwapItem(originalId);
+        if (!item) return;
+        this.state.swapGroupReplace = document.getElementById('replaceGroupCb')?.checked || false;
+        this.state.swapAllReplace = document.getElementById('replaceAllCb')?.checked || false;
+        this.state.swapMaterialFilter = material;
+        if (material !== 'steel') this.state.swapPanelType = 'all';
+        this._openRadSwapModal(item);
+    },
+    switchSwapRadConnection: function (originalId, connection) {
+        const item = this._findSwapItem(originalId);
+        if (!item) return;
+        this.state.swapGroupReplace = document.getElementById('replaceGroupCb')?.checked || false;
+        this.state.swapAllReplace = document.getElementById('replaceAllCb')?.checked || false;
+        this.state.swapConnectionType = connection;
+        this._openRadSwapModal(item);
+    },
+    switchSwapPanelType: function (originalId, panelType) {
+        const item = this._findSwapItem(originalId);
+        if (!item) return;
+        this.state.swapGroupReplace = document.getElementById('replaceGroupCb')?.checked || false;
+        this.state.swapAllReplace = document.getElementById('replaceAllCb')?.checked || false;
+        this.state.swapPanelType = panelType;
+        this._openRadSwapModal(item);
+    },
+    toggleSwapSort: function (originalId, field) {
+        const item = this.currentEquipmentList.find(x => (x.originalId || x.id) === originalId || x.id === originalId);
+        if (!item) return;
+
+        this.state.swapGroupReplace = document.getElementById('replaceGroupCb')?.checked || false;
+        this.state.swapAllReplace = document.getElementById('replaceAllCb')?.checked || false;
+
+        const currentField = this.state.swapSortField || 'price';
+        const currentOrder = this.state.swapSortOrder || (currentField === 'price' ? 'asc' : 'desc');
+
+        if (currentField === field) {
+            this.state.swapSortOrder = currentOrder === 'desc' ? 'asc' : 'desc';
+        } else {
+            this.state.swapSortField = field;
+            this.state.swapSortOrder = field === 'price' ? 'asc' : 'desc';
+        }
+
+        this._openRadSwapModal(item);
+    },
+    _renderRadSwapTable: function (item, minH, maxH, material = 'all', connection = 'all') {
+        const origId = item.originalId || item.id;
+        const oldSec = item.sec || 1;
+        const oldP50 = this.getPowerAtDt50(item);
+        const origPrice = item.price || 0;
+        const targetPower = item.isPanel ? oldP50 : (oldSec * oldP50);
+        const allSeries = this._getSecRadSeries();
+        const winWidthM = this.state.swapWindowWidth || null; // м, для фильтра 50–90% ширины окна
+        const panelTypeFilter = this.state.swapPanelType || 'all';
+
+        let series = allSeries;
+        series = series.filter(s => (s.h >= minH && s.h <= maxH) || s.isPanel);
+        if (connection === 'side') {
+            series = series.filter(s => !s.bottom);
+        } else if (connection === 'bottom') {
+            series = series.filter(s => s.bottom || s.isPanel);
+        }
+
+        if (material !== 'all') {
+            series = series.filter(s => this._getRadMaterial(s) === material);
+        }
+
+        const candidatesList = [];
+        series.forEach(s => {
+            if (!s.arr || s.arr.length === 0) return;
+            if (s.isPanel) {
+                s.arr.forEach(panelItem => {
+                    const ph = panelItem.height || this.getRadHeightFromId(panelItem.id);
+                    if (ph < minH || ph > maxH) return;
+                    if (connection === 'side' && panelItem.bottom) return;
+                    if (connection === 'bottom' && !panelItem.bottom) return;
+                    if (panelTypeFilter !== 'all' && !(panelItem.name && panelItem.name.includes(`Тип ${panelTypeFilter}`))) return;
+                    if (panelItem.power50 < targetPower) return;
+                    if (winWidthM) {
+                        const rW = (panelItem.sec || 0) / 1000; // sec — ширина панели в мм → метры
+                        if (rW < winWidthM * 0.5 || rW > winWidthM * 0.9) return;
+                    }
+                    candidatesList.push({
+                        candidate: panelItem,
+                        series: s,
+                        isActive: panelItem.id === item.id || panelItem.id === origId,
+                        name: panelItem.name + ' ' + ph + '×' + panelItem.sec + ' мм',
+                        brand: panelItem.brand || 'ROMMER',
+                        price: panelItem.price || 0,
+                        power: panelItem.power50 || 0,
+                        isPanel: true
+                    });
+                });
+            } else {
+                const candidate = this.calculateNewSections(1, targetPower, s.arr);
+                if (candidate && (candidate.sec * candidate.power50) >= targetPower) {
+                    if (winWidthM) {
+                        const rW = candidate.sec * 0.08; // 80 мм на секцию → метры
+                        if (rW < winWidthM * 0.5 || rW > winWidthM * 0.9) return;
+                    }
+                    const isActive = s.arr.some(x => x.id === item.id || x.id === origId);
+                    let candName = candidate.name || '';
+                    if (minH !== maxH) candName += ` (${s.h} мм)`;
+                    candidatesList.push({
+                        candidate: candidate,
+                        series: s,
+                        isBottom: !!s.bottom,
+                        isActive: isActive,
+                        name: candName + (s.bottom ? ' (нижнее)' : ' (боковое)'),
+                        brand: candidate.brand || 'STOUT',
+                        price: candidate.price || 0,
+                        power: candidate.sec * candidate.power50,
+                        isPanel: false
+                    });
+                }
+            }
+        });
+
+        // Deduplicate (panels can appear via multiple series entries)
+        const _seen = new Set();
+        const uniqueList = candidatesList.filter(e => {
+            if (_seen.has(e.candidate.id)) return false;
+            _seen.add(e.candidate.id);
+            return true;
+        });
+
+        // Sorting
+        const sortField = this.state.swapSortField || 'price';
+        const sortOrder = this.state.swapSortOrder || (sortField === 'price' ? 'asc' : 'desc');
+
+        uniqueList.sort((a, b) => {
+            const valA = a[sortField];
+            const valB = b[sortField];
+            if (sortOrder === 'desc') {
+                return valB - valA;
+            } else {
+                return valA - valB;
+            }
+        });
+
+        let rows = '';
+        let idx = 0;
+        uniqueList.forEach(entry => {
+            const candidate = entry.candidate;
+            const isActive = entry.isActive;
+            const activeSt = isActive ? 'background:var(--primary-light);' : '';
+            const badge = isActive ? `<span style="font-size:10px;background:var(--primary);color:#fff;padding:2px 6px;border-radius:4px;font-weight:bold;margin-left:6px;">Выбран</span>` : '';
+
+            let diffHtml = `<span style="color:var(--text-sec);">—</span>`;
+            if (origPrice > 0 && candidate.price > 0) {
+                const pct = Math.round(((candidate.price - origPrice) / origPrice) * 100);
+                const col = pct > 0 ? '#ef4444' : pct < 0 ? '#22c55e' : 'var(--text-sec)';
+                diffHtml = `<span style="color:${col};font-weight:bold;">${pct > 0 ? '+' : ''}${pct}%</span>`;
+            }
+            const priceHtml = candidate.price > 0 ? this.formatPriceHtml(candidate.price, true) : '—';
+            const candPower = entry.isPanel ? candidate.power50 : (candidate.sec * candidate.power50);
+            const powerCol = candPower >= targetPower ? '#22c55e' : candPower >= targetPower * 0.85 ? '#f59e0b' : '#ef4444';
+            const powerHtml = `<span style="font-size:11px;color:${powerCol};font-weight:600;"> (${candPower} Вт)</span>`;
+            idx++;
+
+            rows += `<tr style="cursor:pointer;${activeSt}" onclick="app.selectSwapRadiator('${origId}','${candidate.id}',${candidate.sec},document.getElementById('replaceGroupCb')?.checked||false)">
+                <td style="text-align:center;font-size:13px;padding:7px 4px;">${idx}</td>
+                <td style="text-align:center;padding:4px;">${getImg(candidate)}</td>
+                <td style="font-size:13px;font-weight:600;padding:7px 6px;">${entry.name}${powerHtml}${badge}</td>
+                <td style="text-align:center;font-size:12px;padding:7px 4px;">${entry.brand}</td>
+                <td style="text-align:right;font-size:13px;padding:7px 4px;">${diffHtml}</td>
+                <td style="text-align:right;font-weight:700;font-size:13px;padding:7px 4px;white-space:nowrap;">${priceHtml}</td>
+            </tr>`;
+        });
+
+        if (!rows) return `<p style="color:var(--text-sec);padding:12px 0;">Нет доступных серий для выбранного диапазона высот</p>`;
+
+        const priceArrow = sortField === 'price' ? (sortOrder === 'desc' ? ' ▼' : ' ▲') : '';
+        const powerArrow = sortField === 'power' ? (sortOrder === 'desc' ? ' ▼' : ' ▲') : '';
+        const winNote = winWidthM ? `<div style="font-size:11px;color:var(--text-sec);margin-bottom:6px;">Ширина окна: <b>${winWidthM} м</b> → допустимая ширина радиатора: <b>${Math.round(winWidthM * 500)}–${Math.round(winWidthM * 900)} мм</b></div>` : '';
+
+        return winNote + `<table class="inv-table" style="width:100%;border-collapse:collapse;">
+            <thead><tr>
+                <th style="width:32px;text-align:center;">#</th>
+                <th style="width:60px;text-align:center;">Фото</th>
+                <th style="text-align:left;cursor:pointer;user-select:none;" onclick="app.toggleSwapSort('${origId}','power')">Серия / Модель${powerArrow}</th>
+                <th style="width:70px;text-align:center;">Бренд</th>
+                <th style="width:80px;text-align:right;">Δ цена</th>
+                <th style="width:100px;text-align:right;cursor:pointer;user-select:none;" onclick="app.toggleSwapSort('${origId}','price')">Цена${priceArrow}</th>
+            </tr></thead><tbody>${rows}</tbody></table>`;
+    },
+    selectSwapRadiator: function (originalId, chosenId, chosenSec, _legacyApplyAll) {
+        if (!this.state.swaps) this.state.swaps = {};
+        const allSeries = this._getSecRadSeries();
+        const chosenSeries = allSeries.find(s => s.arr && s.arr.find(x => x.id === chosenId));
+
+        const applyGroup = document.getElementById('replaceGroupCb')?.checked || false;
+        const applyAll = document.getElementById('replaceAllCb')?.checked || false;
+
+        if (applyAll) {
+            // Apply to ALL radiators in the entire project!
+            if (chosenSeries) {
+                if (chosenSeries.isPanel) {
+                    this.state.radType = 'steel';
+                } else if (chosenSeries.type) {
+                    this.state.radType = chosenSeries.type;
+                }
+            }
+
+            this.currentEquipmentList.forEach(eq => {
+                const eqId = eq.originalId || eq.id;
+                const isRad = allSeries.some(s => s.arr && s.arr.some(x => x.id === eqId || (eq.instanceKeys && eq.instanceKeys.some(ik => x.id === ik || ik.startsWith(x.id)))));
+                if (isRad) {
+                    if (eq.instanceKeys && eq.instanceKeys.length > 0) {
+                        eq.instanceKeys.forEach(ik => {
+                            this.state.swaps[ik] = chosenId;
+                        });
+                    } else {
+                        this.state.swaps[eqId] = chosenId;
+                    }
+                }
+            });
+        } else if (applyGroup) {
+            const item = this.currentEquipmentList.find(x => (x.originalId || x.id) === originalId || x.id === originalId || (x.instanceKeys && x.instanceKeys.includes(originalId)));
+            if (item && item.instanceKeys && item.instanceKeys.length > 0) {
+                // Apply chosen item to every window in this group
+                item.instanceKeys.forEach(ik => {
+                    this.state.swaps[ik] = chosenId;
+                });
+            } else {
+                this.state.swaps[originalId] = chosenId;
+            }
+        } else {
+            // Single instance replacement
+            this.state.swaps[originalId] = chosenId;
+        }
+
+        this.closeSwapModal();
+        this.render();
+    },
+    // ═══════════════════════════════════════════════════════════════
     closeSwapModal: function () {
         let modal = document.getElementById('swap_modal_overlay');
         if (modal) modal.style.display = 'none';
@@ -7530,10 +8375,17 @@ const app = {
             }
         }
 
-        let isRad = (catalog.rads.find(x => x.id === originalId) || titanRads.find(x => x.id === originalId) || steelRads.find(x => x.id === originalId));
+        const _allRadSeries = [catalog.rads, titanRads, spaceRuRads, spaceRu350Rads, titanSideRads, titanSide350Rads, titanSide200Rads, aluminumRads, aluminum350Rads, rommerPlusAlRads, rommerPlusAl200Rads, steelRads];
+        let isRad = _allRadSeries.some(arr => arr.find(x => x.id === originalId));
         if (isRad) {
-            if (chosenId.includes("0020")) this.state.radType = 'space';
-            else if (chosenId.includes("0023")) this.state.radType = 'titan';
+            if (spaceRuRads.find(x => x.id === chosenId)) this.state.radType = 'space_ru';
+            else if (spaceRu350Rads.find(x => x.id === chosenId)) this.state.radType = 'space_ru350';
+            else if (titanSideRads.find(x => x.id === chosenId)) this.state.radType = 'titan_side';
+            else if (titanSide350Rads.find(x => x.id === chosenId)) this.state.radType = 'titan_side350';
+            else if (aluminumRads.find(x => x.id === chosenId)) this.state.radType = 'aluminum';
+            else if (aluminum350Rads.find(x => x.id === chosenId)) this.state.radType = 'aluminum350';
+            else if (catalog.rads.find(x => x.id === chosenId)) this.state.radType = 'space';
+            else if (titanRads.find(x => x.id === chosenId)) this.state.radType = 'titan';
             else this.state.radType = 'steel';
         }
         else if ((originalId.startsWith('SHT') || (originalId.startsWith('STE') && originalId.includes('2070'))) && !originalId.includes('2001') && !originalId.includes('2002')) {
@@ -7804,25 +8656,25 @@ const app = {
         this.render();
         this.saveState();
     },
-    setRoofMat: function(id) {
+    setRoofMat: function (id) {
         this.state.roofMatId = id;
         this.syncUI();
         this.saveState();
         this.render();
     },
-    setFloorMat: function(id) {
+    setFloorMat: function (id) {
         this.state.floorMatId = id;
         this.syncUI();
         this.saveState();
         this.render();
     },
-    setGlazing: function(id) {
+    setGlazing: function (id) {
         this.state.glazingMatId = id;
         this.syncUI();
         this.saveState();
         this.render();
     },
-    toggleConstructDropdown: function(type, event) {
+    toggleConstructDropdown: function (type, event) {
         if (event) event.stopPropagation();
         const drop = document.getElementById('dropdown_options_' + type);
         if (drop) {
@@ -7860,8 +8712,8 @@ const app = {
         let R_wall = 1.8 / (s.mat || 1.0);
         if (s.wallLayersEnabled && s.wallLayers && s.wallLayers.length > 0) {
             let totalR = 0.115 + 0.043;
-            s.wallLayers.forEach(function(l) {
-                var mat = (typeof WALL_MATERIALS_DB !== 'undefined') ? WALL_MATERIALS_DB.find(function(m) { return m.id === l.matId; }) : null;
+            s.wallLayers.forEach(function (l) {
+                var mat = (typeof WALL_MATERIALS_DB !== 'undefined') ? WALL_MATERIALS_DB.find(function (m) { return m.id === l.matId; }) : null;
                 if (mat) totalR += (parseInt(l.thick || 0) / 1000) / mat.lambda;
             });
             R_wall = totalR;
@@ -7871,20 +8723,20 @@ const app = {
         var R_roof, R_floor, R_glz;
 
         if (typeof ROOF_MATERIALS_DB !== 'undefined') {
-            var defRoof = ROOF_MATERIALS_DB.find(function(m){ return m.id === 'roof_mw150'; }) || ROOF_MATERIALS_DB[1] || { R: defaultRoofR };
-            var selRoof = s.roofEnabled ? (ROOF_MATERIALS_DB.find(function(m){ return m.id === s.roofMatId; }) || defRoof) : defRoof;
+            var defRoof = ROOF_MATERIALS_DB.find(function (m) { return m.id === 'roof_mw150'; }) || ROOF_MATERIALS_DB[1] || { R: defaultRoofR };
+            var selRoof = s.roofEnabled ? (ROOF_MATERIALS_DB.find(function (m) { return m.id === s.roofMatId; }) || defRoof) : defRoof;
             R_roof = selRoof.R;
         } else { R_roof = defaultRoofR; }
 
         if (typeof FLOOR_MATERIALS_DB !== 'undefined') {
-            var defFloor = FLOOR_MATERIALS_DB.find(function(m){ return m.id === 'floor_ground_ins'; }) || FLOOR_MATERIALS_DB[0] || { R: defaultFloorR };
-            var selFloor = s.floorEnabled ? (FLOOR_MATERIALS_DB.find(function(m){ return m.id === s.floorMatId; }) || defFloor) : defFloor;
+            var defFloor = FLOOR_MATERIALS_DB.find(function (m) { return m.id === 'floor_ground_ins'; }) || FLOOR_MATERIALS_DB[0] || { R: defaultFloorR };
+            var selFloor = s.floorEnabled ? (FLOOR_MATERIALS_DB.find(function (m) { return m.id === s.floorMatId; }) || defFloor) : defFloor;
             R_floor = selFloor.R;
         } else { R_floor = defaultFloorR; }
 
         if (typeof GLAZING_DB !== 'undefined') {
-            var defGlz = GLAZING_DB.find(function(m){ return m.id === 'glz_2cam'; }) || GLAZING_DB[0] || { R: defaultGlzR };
-            var selGlz = s.glazingEnabled ? (GLAZING_DB.find(function(m){ return m.id === s.glazingMatId; }) || defGlz) : defGlz;
+            var defGlz = GLAZING_DB.find(function (m) { return m.id === 'glz_2cam'; }) || GLAZING_DB[0] || { R: defaultGlzR };
+            var selGlz = s.glazingEnabled ? (GLAZING_DB.find(function (m) { return m.id === s.glazingMatId; }) || defGlz) : defGlz;
             R_glz = selGlz.R;
         } else { R_glz = defaultGlzR; }
 
@@ -7906,20 +8758,20 @@ const app = {
         var outerPerim = perim * 0.6;
 
         var totalWinArea = 0;
-        (r.windows || []).forEach(function(w) {
+        (r.windows || []).forEach(function (w) {
             var wH = w.isPan ? 2.5 : 1.5;
             totalWinArea += parseFloat(w.width || 1) * wH;
         });
 
         var wallArea = Math.max(0, outerPerim * rHeight - totalWinArea);
 
-        var Q_wall  = R_wall > 0 ? wallArea * dT / R_wall * n_wall : 0;
-        var Q_glz   = R_glz  > 0 ? totalWinArea * dT / R_glz * n_glz : 0;
+        var Q_wall = R_wall > 0 ? wallArea * dT / R_wall * n_wall : 0;
+        var Q_glz = R_glz > 0 ? totalWinArea * dT / R_glz * n_glz : 0;
 
         var totalFloors = parseInt(s.floors || 1);
-        var isTopFloor    = (rFloorNum === totalFloors);
+        var isTopFloor = (rFloorNum === totalFloors);
         var isBottomFloor = (rFloorNum === 1);
-        var Q_roof  = (isTopFloor  && R_roof  > 0) ? area * dT / R_roof  * n_roof  : 0;
+        var Q_roof = (isTopFloor && R_roof > 0) ? area * dT / R_roof * n_roof : 0;
         var Q_floor = (isBottomFloor && R_floor > 0) ? area * dT / R_floor * n_floor : 0;
 
         return {
@@ -7966,26 +8818,26 @@ const app = {
         if (!s.showDetailedRoomsPanel) return '';
         if (!s.rooms || s.rooms.length === 0) return '';
 
-        var fmt2 = function(v) { return parseFloat(v).toFixed(2); };
+        var fmt2 = function (v) { return parseFloat(v).toFixed(2); };
 
         var FONT = "font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 8pt; color: #111827;";
-        var BDR  = "border: 1px solid #e5e7eb;";
-        var TD   = FONT + " " + BDR + " padding: 4px 6px; text-align: center; vertical-align: middle;";
-        var TH   = FONT + " " + BDR + " padding: 6px 8px; text-align: center; vertical-align: middle; background: #f3f4f6; font-weight: 700; color: #374151; white-space: nowrap;";
+        var BDR = "border: 1px solid #e5e7eb;";
+        var TD = FONT + " " + BDR + " padding: 4px 6px; text-align: center; vertical-align: middle;";
+        var TH = FONT + " " + BDR + " padding: 6px 8px; text-align: center; vertical-align: middle; background: #f3f4f6; font-weight: 700; color: #374151; white-space: nowrap;";
 
         var floorNums = [];
-        s.rooms.forEach(function(r) {
+        s.rooms.forEach(function (r) {
             var f = parseInt(r.floor) || 1;
             if (floorNums.indexOf(f) < 0) floorNums.push(f);
         });
-        floorNums.sort(function(a,b){ return a-b; });
+        floorNums.sort(function (a, b) { return a - b; });
 
         var allRows = '';
         var self = this;
         var grandTotalExact = 0;
 
-        floorNums.forEach(function(floorNum) {
-            var floorRooms = s.rooms.filter(function(r){ return (parseInt(r.floor) || 1) === floorNum; });
+        floorNums.forEach(function (floorNum) {
+            var floorRooms = s.rooms.filter(function (r) { return (parseInt(r.floor) || 1) === floorNum; });
             var floorSumExact = 0;
 
             allRows += `
@@ -8010,24 +8862,24 @@ const app = {
                 <tbody>
             `;
 
-            floorRooms.forEach(function(r, idx) {
+            floorRooms.forEach(function (r, idx) {
                 var L = self.getRoomHeatLoss(r);
                 floorSumExact += L.Q_total;
 
                 var items = [];
-                if (L.Q_wall > 0)  items.push({ name: 'Стена', area: L.wallArea, R: L.R_wall, n: L.n_wall, Q: L.Q_wall });
-                if (L.Q_glz > 0)   items.push({ name: 'Остекление', area: L.totalWinArea, R: L.R_glz, n: L.n_glz, Q: L.Q_glz });
-                if (L.Q_roof > 0)  items.push({ name: 'Кровля/чердак', area: r.area, R: L.R_roof, n: L.n_roof, Q: L.Q_roof });
+                if (L.Q_wall > 0) items.push({ name: 'Стена', area: L.wallArea, R: L.R_wall, n: L.n_wall, Q: L.Q_wall });
+                if (L.Q_glz > 0) items.push({ name: 'Остекление', area: L.totalWinArea, R: L.R_glz, n: L.n_glz, Q: L.Q_glz });
+                if (L.Q_roof > 0) items.push({ name: 'Кровля/чердак', area: r.area, R: L.R_roof, n: L.n_roof, Q: L.Q_roof });
                 if (L.Q_floor > 0) items.push({ name: 'Пол', area: r.area, R: L.R_floor, n: L.n_floor, Q: L.Q_floor });
 
                 if (items.length === 0) return;
 
-                items.forEach(function(item, i) {
+                items.forEach(function (item, i) {
                     var isFirst = (i === 0);
                     var tr = `<tr>`;
                     if (isFirst) {
-                        tr += `<td style="${TD}" rowspan="${items.length}">${idx+1}</td>`;
-                        tr += `<td style="${TD}" rowspan="${items.length}">${r.name || 'Помещение '+(idx+1)}</td>`;
+                        tr += `<td style="${TD}" rowspan="${items.length}">${idx + 1}</td>`;
+                        tr += `<td style="${TD}" rowspan="${items.length}">${r.name || 'Помещение ' + (idx + 1)}</td>`;
                         tr += `<td style="${TD}" rowspan="${items.length}">${fmt2(r.area)}</td>`;
                         tr += `<td style="${TD}" rowspan="${items.length}">${L.Tv}</td>`;
                     }
@@ -8046,7 +8898,7 @@ const app = {
             });
 
             grandTotalExact += floorSumExact;
-            
+
             // Subtotal row for the floor
             allRows += `
                 <tr>
@@ -8108,6 +8960,12 @@ const app = {
         this.render();
         this.saveState();
     },
+    getDefaultWindowWidth: function (area) {
+        const a = parseFloat(area) || 15;
+        if (a < 12) return 1.2;
+        if (a >= 20) return 1.8;
+        return 1.5;
+    },
     addRoom: function () {
         if (!this.state.rooms) this.state.rooms = [];
         let currentTotal = this.state.rooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
@@ -8117,16 +8975,17 @@ const app = {
         }
         let f = 1;
         if (this.state.rooms.length > 0) f = this.state.rooms[this.state.rooms.length - 1].floor || 1;
-        this.state.rooms.push({ id: Date.now(), name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: f, sys: [...(this.state.systems || [])], windows: [{ id: Date.now() + 1, width: 1.5, isPan: false }] });
+        const wWidth = this.getDefaultWindowWidth(15);
+        this.state.rooms.push({ id: Date.now(), name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: f, sys: [...new Set([...(this.state.systems || []), 'rad'])], windows: [{ id: Date.now() + 1, width: wWidth, isPan: false }] });
         this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
     },
     addFloor: function () {
         if (this.state.floors === 2) return;
         if (!this.state.rooms) this.state.rooms = [];
-        
+
         const firstFloorRooms = this.state.rooms.filter(r => r.floor === 1 || !r.floor);
         let totalFloor1 = firstFloorRooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
-        
+
         if (totalFloor1 >= 300) {
             alert("Невозможно добавить 2-й этаж, так как площадь 1-го этажа уже равна или превышает 300 м².");
             return;
@@ -8141,7 +9000,7 @@ const app = {
             let scaleFactor = allowedFloor2 / totalFloor1;
             let shouldScale = (totalFloor1 * 2 > 300);
             let addedFloor2Rooms = [];
-            
+
             firstFloorRooms.forEach((r, idx) => {
                 let newRoom = JSON.parse(JSON.stringify(r));
                 newRoom.id = baseId + idx * 1000;
@@ -8156,7 +9015,7 @@ const app = {
                 }
                 addedFloor2Rooms.push(newRoom);
             });
-            
+
             if (shouldScale && addedFloor2Rooms.length > 0) {
                 let totalNewSum = totalFloor1 + addedFloor2Rooms.reduce((sum, r) => sum + r.area, 0);
                 if (totalNewSum !== 300) {
@@ -8164,12 +9023,13 @@ const app = {
                     addedFloor2Rooms[addedFloor2Rooms.length - 1].area = Math.max(1, Math.round((addedFloor2Rooms[addedFloor2Rooms.length - 1].area + diff) * 10) / 10);
                 }
             }
-            
+
             this.state.rooms = this.state.rooms.concat(addedFloor2Rooms);
         } else {
-            this.state.rooms.push({ id: Date.now(), name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: 2, sys: [...(this.state.systems || [])], windows: [{ id: Date.now() + 1, width: 1.5, isPan: false }] });
+            const wWidth = this.getDefaultWindowWidth(15);
+            this.state.rooms.push({ id: Date.now(), name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: 2, sys: [...new Set([...(this.state.systems || []), 'rad'])], windows: [{ id: Date.now() + 1, width: wWidth, isPan: false }] });
         }
-        
+
         this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
     },
     toggleRoomSys: function (roomId, sysType) {
@@ -8187,12 +9047,21 @@ const app = {
     },
     addWindow: function (roomId) {
         let r = this.state.rooms.find(x => x.id === roomId);
-        if (r) r.windows.push({ id: Date.now(), width: 1.5, isPan: false });
+        if (r) {
+            const wWidth = this.getDefaultWindowWidth(r.area);
+            r.windows.push({ id: Date.now(), width: wWidth, isPan: false });
+        }
         this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
     },
     removeWindow: function (roomId, winId) {
         let r = this.state.rooms.find(x => x.id === roomId);
-        if (r) { r.windows = r.windows.filter(w => w.id !== winId); if (r.windows.length === 0) r.windows.push({ id: Date.now(), width: 1.5, isPan: false }); }
+        if (r) {
+            r.windows = r.windows.filter(w => w.id !== winId);
+            if (r.windows.length === 0) {
+                const wWidth = this.getDefaultWindowWidth(r.area);
+                r.windows.push({ id: Date.now(), width: wWidth, isPan: false });
+            }
+        }
         this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
     },
     updRoom: function (id, field, val) {
@@ -8218,7 +9087,15 @@ const app = {
         let r = this.state.rooms.find(x => x.id === roomId);
         if (r) {
             let w = r.windows.find(x => x.id === winId);
-            if (w) { w[field] = field === 'width' ? (parseFloat(val) || 1.0) : val; this.render(); }
+            if (w) {
+                if (field === 'width') {
+                    w.width = parseFloat(val) || 1.0;
+                    w.isManualWidth = true;
+                } else {
+                    w[field] = val;
+                }
+                this.render();
+            }
         }
     },
     showRoomAreaSlider: function (roomId, event) {
@@ -8227,9 +9104,39 @@ const app = {
             event.preventDefault();
         }
         document.querySelectorAll('.room-area-slider-container').forEach(c => c.style.display = 'none');
+        document.querySelectorAll('.win-width-slider-container').forEach(c => c.style.display = 'none');
         const container = document.getElementById(`room_area_slider_container_${roomId}`);
         if (container) {
             container.style.display = 'flex';
+        }
+    },
+    showWindowWidthSlider: function (roomId, winId, event) {
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+        document.querySelectorAll('.room-area-slider-container').forEach(c => c.style.display = 'none');
+        document.querySelectorAll('.win-width-slider-container').forEach(c => c.style.display = 'none');
+        const container = document.getElementById(`win_width_slider_container_${winId}`);
+        if (container) {
+            container.style.display = 'flex';
+        }
+    },
+    updWindowWidthManual: function (roomId, winId, val, skipRender) {
+        let r = this.state.rooms.find(x => x.id === roomId);
+        if (r) {
+            let w = r.windows.find(x => x.id === winId);
+            if (w) {
+                w.width = parseFloat(val) || 1.2;
+                w.isManualWidth = true;
+                this.syncRoomsToState();
+                if (skipRender) {
+                    this.render();
+                } else {
+                    this.syncUI();
+                    this.render();
+                }
+            }
         }
     },
     updRoomArea: function (roomId, val, skipRender) {
@@ -8250,19 +9157,34 @@ const app = {
                     let scale = available / otherTotal;
                     let distributed = 0;
                     otherRooms.forEach((x, i) => {
+                        let newA;
                         if (i < otherRooms.length - 1) {
-                            let newA = Math.max(1, Math.round(x.area * scale * 10) / 10);
+                            newA = Math.max(1, Math.round(x.area * scale * 10) / 10);
                             x.area = newA;
                             distributed += newA;
                         } else {
-                            // Последняя комната получает остаток
-                            x.area = Math.max(1, Math.round((available - distributed) * 10) / 10);
+                            newA = Math.max(1, Math.round((available - distributed) * 10) / 10);
+                            x.area = newA;
+                        }
+                        if (x.windows) {
+                            x.windows.forEach(w => {
+                                if (!w.isManualWidth) {
+                                    w.width = this.getDefaultWindowWidth(newA);
+                                }
+                            });
                         }
                     });
                 }
             }
 
             r.area = num;
+            if (r.windows) {
+                r.windows.forEach(w => {
+                    if (!w.isManualWidth) {
+                        w.width = this.getDefaultWindowWidth(num);
+                    }
+                });
+            }
             this.syncRoomsToState();
             if (skipRender) {
                 this.render();
@@ -8501,7 +9423,7 @@ const app = {
                 name: roomName,
                 area: roomArea,
                 floor: tpl.floor,
-                sys: [...(this.state.systems || [])],
+                sys: [...new Set([...(this.state.systems || []), 'rad'])],
                 windows: []
             };
         });
@@ -8575,7 +9497,8 @@ const app = {
         if (totalWinCount < roomsCount) totalWinCount = roomsCount;
 
         generatedRooms.forEach((r, idx) => {
-            r.windows.push({ id: Date.now() + idx * 100 + 1, width: 1.5, isPan: false });
+            const wWidth = this.getDefaultWindowWidth(r.area);
+            r.windows.push({ id: Date.now() + idx * 100 + 1, width: wWidth, isPan: false });
         });
 
         let extraWins = totalWinCount - roomsCount;
@@ -8583,12 +9506,14 @@ const app = {
             let indices = generatedRooms
                 .map((r, idx) => ({ idx, area: r.area }))
                 .sort((a, b) => b.area - a.area);
-            
+
             for (let wIdx = 0; wIdx < extraWins; wIdx++) {
                 let targetIdx = indices[wIdx % indices.length].idx;
-                generatedRooms[targetIdx].windows.push({
+                const targetRoom = generatedRooms[targetIdx];
+                const wWidth = this.getDefaultWindowWidth(targetRoom.area);
+                targetRoom.windows.push({
                     id: Date.now() + 5000 + wIdx * 100,
-                    width: 1.5,
+                    width: wWidth,
                     isPan: false
                 });
             }
@@ -8616,7 +9541,21 @@ const app = {
                 winsHtml += `<div class="room-window-row" style="display:inline-flex; align-items:center; background:var(--surface); border:1px solid var(--border); padding:2px 4px; border-radius:4px; gap:4px; font-size:10px; flex-shrink:0;">
                             <span class="win-lbl-text" style="font-weight:600; color:var(--text-sec);">Окно</span>
                             <span class="win-lbl-icon" style="display:none; font-size:11px;">🪟</span>
-                            <input type="number" style="width:38px; border:1px solid var(--border); border-radius:3px; padding:2px; text-align:center; font-size:11px; background:var(--bg); color:var(--text-main);" value="${w.width}" step="0.1" onchange="app.updWindow(${r.id}, ${w.id}, 'width', this.value)">
+                            
+                            <div style="position: relative; display:inline-flex; align-items:center; gap:2px;">
+                                <input type="number" id="win_width_input_${w.id}" style="width:38px; border:1px solid var(--border); border-radius:3px; padding:2px; text-align:center; font-size:11px; background:var(--bg); color:var(--text-main); font-weight:800; cursor:pointer;" value="${w.width}" step="0.1" onfocus="app.showWindowWidthSlider(${r.id}, ${w.id}, event)" onclick="app.showWindowWidthSlider(${r.id}, ${w.id}, event)" onchange="app.updWindowWidthManual(${r.id}, ${w.id}, this.value, false)">
+                                
+                                <div class="win-width-slider-container" id="win_width_slider_container_${w.id}" style="display: none; position: absolute; z-index: 1000; bottom: 28px; left: 0; align-items: center; flex-direction: column; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 150px;" onclick="event.stopPropagation();">
+                                    <div style="display: flex; gap: 4px; width: 100%; justify-content: space-between;">
+                                        <button style="font-size: 9px; padding: 2px 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--text-main); font-weight:700;" onclick="document.getElementById('win_width_input_${w.id}').value = 1.2; app.updWindowWidthManual(${r.id}, ${w.id}, 1.2, false); event.stopPropagation();">1.2 м</button>
+                                        <button style="font-size: 9px; padding: 2px 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--text-main); font-weight:700;" onclick="document.getElementById('win_width_input_${w.id}').value = 1.5; app.updWindowWidthManual(${r.id}, ${w.id}, 1.5, false); event.stopPropagation();">1.5 м</button>
+                                        <button style="font-size: 9px; padding: 2px 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--text-main); font-weight:700;" onclick="document.getElementById('win_width_input_${w.id}').value = 1.8; app.updWindowWidthManual(${r.id}, ${w.id}, 1.8, false); event.stopPropagation();">1.8 м</button>
+                                    </div>
+                                    <input type="range" id="win_width_slider_${w.id}" min="0.5" max="3.0" step="0.1" value="${w.width}" oninput="document.getElementById('win_width_input_${w.id}').value = this.value; app.updWindowWidthManual(${r.id}, ${w.id}, this.value, true)" onchange="app.updWindowWidthManual(${r.id}, ${w.id}, this.value, false)" style="width: 130px; accent-color: var(--primary); height: 6px; cursor: pointer;">
+                                    <span style="font-size: 10px; color: var(--primary); font-weight: 700; cursor: pointer; user-select: none; padding: 2px 6px; background: var(--primary-light); border-radius: 4px; align-self: flex-end;" onclick="document.getElementById('win_width_slider_container_${w.id}').style.display = 'none'; event.stopPropagation();">OK</span>
+                                </div>
+                            </div>
+                            
                             <span style="color:var(--text-sec);">м</span>
                             <label style="display:flex; align-items:center; gap:2px; cursor:pointer; color:var(--text-main); font-size:10px; margin-left:2px;">
                                 <input type="checkbox" ${w.isPan ? 'checked' : ''} onchange="app.updWindow(${r.id}, ${w.id}, 'isPan', this.checked)" style="margin:0; width:12px; height:12px;"> 
@@ -8799,7 +9738,7 @@ const app = {
                 matTabs[2].classList.add('active');
             }
         }
-        
+
         // Sync City Search visibility
         const citySearchWrapper = document.querySelector('.city-search-wrapper');
         if (citySearchWrapper) {
@@ -8815,7 +9754,7 @@ const app = {
         if (blkLayers) {
             blkLayers.style.display = (this.state.detailedRooms && this.state.showWallLayersPanel) ? 'flex' : 'none';
         }
-        
+
         if (this.state.detailedRooms) {
             const listCont = document.getElementById('wall_layers_list');
             if (listCont && this.state.wallLayers) {
@@ -8863,7 +9802,7 @@ const app = {
                     </div>`;
                 }).join('');
             }
-            
+
             // Calculate dynamic summary
             let totalThick = 0;
             let totalR = 0.115 + 0.043; // Rsi + Rse
@@ -8877,11 +9816,11 @@ const app = {
                 });
             }
             let wallCoef = parseFloat((1.8 / totalR).toFixed(2));
-            
+
             const lblThick = document.getElementById('lbl_wall_thickness');
             const lblRes = document.getElementById('lbl_wall_resistance');
             const lblCoef = document.getElementById('lbl_wall_coef');
-            
+
             if (lblThick) lblThick.innerText = `${totalThick} мм`;
             if (lblRes) lblRes.innerText = `${totalR.toFixed(2)} м²·°С/Вт`;
             if (lblCoef) lblCoef.innerText = wallCoef.toFixed(2);
@@ -9136,25 +10075,25 @@ const app = {
             // Блокировка кнопки Подробный
             if (modeIsGuest) {
                 modePro.classList.add('locked');
-                modePro.onclick = function(event) {
+                modePro.onclick = function (event) {
                     event.stopPropagation();
                     app.showAuthModal();
                 };
             } else if (!modeIsPro) {
                 modePro.classList.add('locked');
-                modePro.onclick = function(event) {
+                modePro.onclick = function (event) {
                     event.stopPropagation();
                     app.showModal('pro');
                 };
             } else {
                 modePro.classList.remove('locked');
-                modePro.onclick = function(event) {
+                modePro.onclick = function (event) {
                     app.toggleDetailedRooms(true, event);
                 };
             }
         }
         if (document.getElementById('blk_fast_calc')) document.getElementById('blk_fast_calc').style.display = this.state.detailedRooms ? 'none' : 'block';
-        
+
         // Sync Room-by-room calculation switch header and checkbox
         const roomsHeader = document.getElementById('blk_detailed_rooms_header');
         if (roomsHeader) {
@@ -9464,7 +10403,7 @@ const app = {
         }
 
         this.state.floors = chk ? 2 : 1; if (!chk) this.state.tp2 = 0;
-        
+
         // Автоматическое копирование/очистка комнат при изменении этажности
         if (chk) {
             if (this.state.rooms && this.state.rooms.length > 0) {
@@ -9473,12 +10412,12 @@ const app = {
                     const firstFloorRooms = this.state.rooms.filter(r => r.floor === 1 || !r.floor);
                     let totalFloor1 = firstFloorRooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
                     let baseId = Date.now();
-                    
+
                     let allowedFloor2 = 300 - totalFloor1;
                     let scaleFactor = allowedFloor2 / totalFloor1;
                     let shouldScale = (totalFloor1 * 2 > 300);
                     let addedFloor2Rooms = [];
-                    
+
                     firstFloorRooms.forEach((r, idx) => {
                         let newRoom = JSON.parse(JSON.stringify(r));
                         newRoom.id = baseId + idx * 1000;
@@ -9493,7 +10432,7 @@ const app = {
                         }
                         addedFloor2Rooms.push(newRoom);
                     });
-                    
+
                     if (shouldScale && addedFloor2Rooms.length > 0) {
                         let totalNewSum = totalFloor1 + addedFloor2Rooms.reduce((sum, r) => sum + r.area, 0);
                         if (totalNewSum !== 300) {
@@ -9501,7 +10440,7 @@ const app = {
                             addedFloor2Rooms[addedFloor2Rooms.length - 1].area = Math.max(1, Math.round((addedFloor2Rooms[addedFloor2Rooms.length - 1].area + diff) * 10) / 10);
                         }
                     }
-                    
+
                     this.state.rooms = this.state.rooms.concat(addedFloor2Rooms);
                     this.syncRoomsToState();
                 }
@@ -9565,7 +10504,7 @@ const app = {
             regText = REGION_DESC[this.state.region] || `Мороз до -25°C`;
         }
         document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${regText}`;
-        
+
         let wallText = WALL_DESC[this.state.mat] || `🧱 Индивидуальная стена`;
         if (this.state.wallLayersEnabled && this.state.wallLayers) {
             let totalThick = this.state.wallLayers.reduce((sum, l) => sum + parseInt(l.thick || 0), 0);
@@ -9636,25 +10575,25 @@ const app = {
 
     updateWallLayer: function (idx, field, value, skipRender) {
         if (!this.state.wallLayers || !this.state.wallLayers[idx]) return;
-        
+
         if (field === 'thick') {
             let num = parseInt(value);
             if (isNaN(num) || num < 0) num = 0;
             if (num > 2000) num = 2000;
-            
+
             if (!skipRender) {
                 num = this.snapToStandardThickness(this.state.wallLayers[idx].matId, num);
             }
             this.state.wallLayers[idx][field] = num;
         } else {
             this.state.wallLayers[idx][field] = value;
-            
+
             let currentThick = this.state.wallLayers[idx].thick;
             this.state.wallLayers[idx].thick = this.snapToStandardThickness(value, currentThick);
         }
 
         this.calculateWallResistance();
-        
+
         if (skipRender) {
             // Buttery smooth live calculations directly in the DOM
             let totalThick = 0;
@@ -9668,14 +10607,14 @@ const app = {
             });
             let wallCoef = parseFloat((1.8 / totalR).toFixed(2));
             this.state.mat = wallCoef;
-            
+
             const lblThick = document.getElementById('lbl_wall_thickness');
             const lblRes = document.getElementById('lbl_wall_resistance');
             const lblCoef = document.getElementById('lbl_wall_coef');
             if (lblThick) lblThick.innerText = `${totalThick} мм`;
             if (lblRes) lblRes.innerText = `${totalR.toFixed(2)} м²·°С/Вт`;
             if (lblCoef) lblCoef.innerText = wallCoef.toFixed(2);
-            
+
             this.updateInfo();
         } else {
             this.syncUI();
@@ -9696,7 +10635,7 @@ const app = {
     // City Climate Lookup Autocomplete Implementation
     cityHighlightedIndex: -1,
     citySuggestionsList: [],
-    
+
     initCityAutocomplete: function () {
         document.addEventListener('click', (e) => {
             const wrapper = e.target.closest('.city-search-wrapper');
@@ -9706,6 +10645,12 @@ const app = {
             const dropdown = e.target.closest('.custom-dropdown');
             if (!dropdown) {
                 document.querySelectorAll('.custom-dropdown-options').forEach(d => d.style.display = 'none');
+            }
+            if (!e.target.closest('.room-area-slider-container') && !e.target.closest('input[id^="room_area_input_"]') && !e.target.closest('span[onclick^="app.showRoomAreaSlider"]')) {
+                document.querySelectorAll('.room-area-slider-container').forEach(c => c.style.display = 'none');
+            }
+            if (!e.target.closest('.win-width-slider-container') && !e.target.closest('input[id^="win_width_input_"]')) {
+                document.querySelectorAll('.win-width-slider-container').forEach(c => c.style.display = 'none');
             }
         });
     },
@@ -9727,7 +10672,7 @@ const app = {
 
         const query = val.toLowerCase();
         // Находим до 5 совпадений
-        this.citySuggestionsList = CITIES_DB.filter(c => 
+        this.citySuggestionsList = CITIES_DB.filter(c =>
             c.name.toLowerCase().includes(query)
         ).slice(0, 5);
 
@@ -9954,7 +10899,7 @@ const app = {
             if (tpArea > 0) {
                 let totalA = parseFloat(this.state.area) || 150;
                 let floors = this.state.floors || 1;
-                
+
                 let roomsCount = 5;
                 if (totalA < 80) roomsCount = 5;
                 else if (totalA >= 81 && totalA <= 120) roomsCount = 7;
@@ -10026,7 +10971,7 @@ const app = {
     },
 
     // === НОВАЯ ФУНКЦИЯ ДЛЯ ПОДСКАЗОК ===
-    getPprItem: function(catArr, id) {
+    getPprItem: function (catArr, id) {
         if (!catArr) return null;
         let e = catArr.find(x => x.id === id);
         if (!e) return null;
@@ -10114,159 +11059,159 @@ const app = {
                 let purpose = val3; // 'rad' or 'ufh'
                 let inputVal = parseFloat(val4) || 0; // pwr or tpArea
                 let isRommer = (this.state.brandMode === 'rommer');
-                
+
                 let title = "";
                 let why = "";
                 let calc = "";
                 let capacity = "";
-                
+
                 if (purpose === 'rad') {
                     title = isRommer ? "Насосная группа ROMMER DN25 (Прямая)" : (item.id.includes("2001") ? "Насосная группа STOUT DN20 (Прямая)" : "Насосная группа STOUT DN25 (Прямая)");
                     why = "Подача теплоносителя в контур радиаторного отопления без понижения температуры.";
-                    
-                    let limitText = isRommer 
-                        ? "Для ROMMER по умолчанию всегда выбирается DN25." 
+
+                    let limitText = isRommer
+                        ? "Для ROMMER по умолчанию всегда выбирается DN25."
                         : `Выбор типоразмера зависит от общей мощности системы: до 30 кВт — DN20, выше — DN25.<br><b>Текущие теплопотери:</b> ${inputVal} кВт.`;
-                    
+
                     let maxFlow = isRommer ? 2.0 : (item.id.includes("2001") ? 0.9 : 2.1);
                     let flow = parseFloat((inputVal / (1.163 * 20)).toFixed(2));
-                    let checkResult = (flow <= maxFlow) 
+                    let checkResult = (flow <= maxFlow)
                         ? `<b style="color: #10B981;">✔ Проверка расхода пройдена:</b> расчетный расход ${flow} м³/ч не превышает максимальный расход группы ${maxFlow} м³/ч.`
                         : `<b style="color: #EF4444;">❌ Проверка расхода не пройдена:</b> расчетный расход ${flow} м³/ч превышает максимальный расход группы ${maxFlow} м³/ч!`;
 
                     calc = `<b>Подбор по тепловой нагрузке:</b><br>${limitText}<br>` +
-                           `<b>Формула расхода:</b> G = Q / (c × ΔT)<br>` +
-                           `где Q = ${inputVal} кВт, c = 1.163 Вт·ч/(кг·°C), ΔT = 20°C (радиаторы).<br>` +
-                           `<b>Расчётный расход:</b> G = ${inputVal} / (1.163 × 20) = ${flow.toFixed(2)} м³/ч.<br>` +
-                           `${checkResult}`;
-                    
+                        `<b>Формула расхода:</b> G = Q / (c × ΔT)<br>` +
+                        `где Q = ${inputVal} кВт, c = 1.163 Вт·ч/(кг·°C), ΔT = 20°C (радиаторы).<br>` +
+                        `<b>Расчётный расход:</b> G = ${inputVal} / (1.163 × 20) = ${flow.toFixed(2)} м³/ч.<br>` +
+                        `${checkResult}`;
+
                     if (isRommer) {
                         capacity = `<b>Паспортные характеристики (RDG-1001-002501):</b><br>` +
-                                   `• Максимальная мощность: <b>до 48 кВт</b> (при ΔT = 20°C)<br>` +
-                                   `• Максимальный расход: <b>до 2.0 м³/ч</b> (DN25)`;
+                            `• Максимальная мощность: <b>до 48 кВт</b> (при ΔT = 20°C)<br>` +
+                            `• Максимальный расход: <b>до 2.0 м³/ч</b> (DN25)`;
                     } else if (item.id.includes("2001")) {
                         capacity = `<b>Паспортные характеристики (SDG-0001-002001):</b><br>` +
-                                   `• Максимальная мощность: <b>до 20 кВт</b> (при ΔT = 20°C)<br>` +
-                                   `• Максимальный расход: <b>до 0.9 м³/ч</b> (DN20, Kvs = 6.0)`;
+                            `• Максимальная мощность: <b>до 20 кВт</b> (при ΔT = 20°C)<br>` +
+                            `• Максимальный расход: <b>до 0.9 м³/ч</b> (DN20, Kvs = 6.0)`;
                     } else {
                         capacity = `<b>Паспортные характеристики (SDG-0001-002501):</b><br>` +
-                                   `• Максимальная мощность: <b>до 50 кВт</b> (при ΔT = 20°C)<br>` +
-                                   `• Максимальный расход: <b>до 2.1 м³/ч</b> (DN25, Kvs = 8.8)`;
+                            `• Максимальная мощность: <b>до 50 кВт</b> (при ΔT = 20°C)<br>` +
+                            `• Максимальный расход: <b>до 2.1 м³/ч</b> (DN25, Kvs = 8.8)`;
                     }
                 } else if (purpose === 'ufh') {
                     title = isRommer ? "Насосная группа ROMMER DN25 (Смесительная)" : (item.id.includes("2001") ? "Насосная группа STOUT DN20 (Смесительная)" : "Насосная группа STOUT DN25 (Смесительная)");
                     why = "Точное регулирование температуры теплоносителя в контуре водяного тёплого пола путём подмеса остывшей воды из обратной линии.";
-                    
-                    let limitText = isRommer 
-                        ? "Для ROMMER по умолчанию всегда выбирается DN25." 
+
+                    let limitText = isRommer
+                        ? "Для ROMMER по умолчанию всегда выбирается DN25."
                         : `Выбор типоразмера зависит от площади тёплого пола: до 120 м² — DN20, выше — DN25.<br><b>Текущая площадь ТП:</b> ${inputVal} м².`;
-                    
+
                     let ufhPwr = Math.round(inputVal * 0.08); // Approximate power: 80 W/m²
                     let maxFlow = isRommer ? 1.6 : (item.id.includes("2001") ? 0.9 : 2.1);
                     let flow = parseFloat((ufhPwr / (1.163 * 8)).toFixed(2));
-                    let checkResult = (flow <= maxFlow) 
+                    let checkResult = (flow <= maxFlow)
                         ? `<b style="color: #10B981;">✔ Проверка расхода пройдена:</b> расчетный расход ${flow} м³/ч не превышает максимальный расход группы ${maxFlow} м³/ч.`
                         : `<b style="color: #EF4444;">❌ Проверка расхода не пройдена:</b> расчетный расход ${flow} м³/ч превышает максимальный расход группы ${maxFlow} м³/ч!`;
 
                     calc = `<b>Подбор по площади теплого пола:</b><br>${limitText}<br>` +
-                           `<b>Оценка тепловой мощности:</b> Q_тп ≈ ${inputVal} м² × 80 Вт/м² = ${ufhPwr} кВт.<br>` +
-                           `<b>Формула расхода:</b> G = Q_тп / (c × ΔT)<br>` +
-                           `где c = 1.163 Вт·ч/(кг·°C), ΔT = 8°C (перепад температур тёплого пола).<br>` +
-                           `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 8) = ${flow.toFixed(2)} м³/ч.<br>` +
-                           `${checkResult}`;
-                    
+                        `<b>Оценка тепловой мощности:</b> Q_тп ≈ ${inputVal} м² × 80 Вт/м² = ${ufhPwr} кВт.<br>` +
+                        `<b>Формула расхода:</b> G = Q_тп / (c × ΔT)<br>` +
+                        `где c = 1.163 Вт·ч/(кг·°C), ΔT = 8°C (перепад температур тёплого пола).<br>` +
+                        `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 8) = ${flow.toFixed(2)} м³/ч.<br>` +
+                        `${checkResult}`;
+
                     if (isRommer) {
                         capacity = `<b>Паспортные характеристики (RDG-1002-002501):</b><br>` +
-                                   `• Максимальная мощность: <b>до 15 кВт</b> (при ΔT = 8°C)<br>` +
-                                   `• Максимальный расход: <b>до 1.6 м³/ч</b> (DN25, Kvs = 3.2)`;
+                            `• Максимальная мощность: <b>до 15 кВт</b> (при ΔT = 8°C)<br>` +
+                            `• Максимальный расход: <b>до 1.6 м³/ч</b> (DN25, Kvs = 3.2)`;
                     } else if (item.id.includes("2001")) {
                         capacity = `<b>Паспортные характеристики (SDG-0002-002001):</b><br>` +
-                                   `• Максимальная мощность: <b>до 9 кВт</b> (при ΔT = 8°C, до 100 м²)<br>` +
-                                   `• Максимальный расход: <b>до 0.9 м³/ч</b> (DN20, Kvs = 2.5)`;
+                            `• Максимальная мощность: <b>до 9 кВт</b> (при ΔT = 8°C, до 100 м²)<br>` +
+                            `• Максимальный расход: <b>до 0.9 м³/ч</b> (DN20, Kvs = 2.5)`;
                     } else {
                         capacity = `<b>Паспортные характеристики (SDG-0002-002501):</b><br>` +
-                                   `• Максимальная мощность: <b>до 24 кВт</b> (при ΔT = 8°C, до 240 м²)<br>` +
-                                   `• Максимальный расход: <b>до 2.1 м³/ч</b> (DN25, Kvs = 4.0)`;
+                            `• Максимальная мощность: <b>до 24 кВт</b> (при ΔT = 8°C, до 240 м²)<br>` +
+                            `• Максимальный расход: <b>до 2.1 м³/ч</b> (DN25, Kvs = 4.0)`;
                     }
                 }
-                
+
                 return `<span style="${styles}"><span style="${head}">${title}</span><b>Зачем:</b> ${why}<br><br>${calc}<br><br>${capacity}</span>`;
             }
             case 'ufh_mix': {
                 let isRommer = (this.state.brandMode === 'rommer');
                 let area = parseFloat(val1) || 0;
-                let title = isRommer 
-                    ? "Насосно-смесительный узел ROMMER с термоголовкой (без насоса)" 
+                let title = isRommer
+                    ? "Насосно-смесительный узел ROMMER с термоголовкой (без насоса)"
                     : "Насосно-смесительный узел STOUT (без насоса)";
                 let why = "Поддержание постоянной температуры подачи в контур тёплого пола путём качественного смешивания горячего теплоносителя от котла и остывшего из обратки.";
-                
+
                 let ufhPwr = Math.round(area * 0.08); // 80 W/m²
                 let maxFlow = isRommer ? 1.0 : 1.2;
                 let flow = parseFloat((ufhPwr / (1.163 * 8)).toFixed(2));
-                let checkResult = (flow <= maxFlow) 
+                let checkResult = (flow <= maxFlow)
                     ? `<b style="color: #10B981;">✔ Проверка расхода пройдена:</b> расчетный расход ${flow} м³/ч не превышает максимальный расход узла ${maxFlow} м³/ч.`
                     : `<b style="color: #EF4444;">❌ Проверка расхода не пройдена:</b> расчетный расход ${flow} м³/ч превышает максимальный расход узла ${maxFlow} м³/ч!`;
 
                 let calc = `<b>Подбор по площади теплого пола:</b><br>` +
-                           `• Обслуживаемая площадь: ${area} м².<br>` +
-                           `• Оценка тепловой мощности: Q_тп ≈ ${area} м² × 80 Вт/м² = ${ufhPwr} кВт.<br>` +
-                           `<b>Формула расхода:</b> G = Q_тп / (c × ΔT)<br>` +
-                           `где c = 1.163 Вт·ч/(кг·°C), ΔT = 8°C (перепад температур тёплого пола).<br>` +
-                           `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 8) = ${flow.toFixed(2)} м³/ч.<br>` +
-                           `${checkResult}`;
-                
+                    `• Обслуживаемая площадь: ${area} м².<br>` +
+                    `• Оценка тепловой мощности: Q_тп ≈ ${area} м² × 80 Вт/м² = ${ufhPwr} кВт.<br>` +
+                    `<b>Формула расхода:</b> G = Q_тп / (c × ΔT)<br>` +
+                    `где c = 1.163 Вт·ч/(кг·°C), ΔT = 8°C (перепад температур тёплого пола).<br>` +
+                    `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 8) = ${flow.toFixed(2)} м³/ч.<br>` +
+                    `${checkResult}`;
+
                 let capacity = "";
                 if (isRommer) {
                     capacity = `<b>Паспортные характеристики (RDG-0120-008100):</b><br>` +
-                               `• Максимальная мощность: <b>до 9 кВт</b> (при ΔT = 8°C, до 90-100 м²)<br>` +
-                               `• Максимальный расход: <b>до 1.0 м³/ч</b> (Kvs = 1.8)`;
+                        `• Максимальная мощность: <b>до 9 кВт</b> (при ΔT = 8°C, до 90-100 м²)<br>` +
+                        `• Максимальный расход: <b>до 1.0 м³/ч</b> (Kvs = 1.8)`;
                 } else {
                     capacity = `<b>Паспортные характеристики (SDG-0120-001000):</b><br>` +
-                               `• Максимальная мощность: <b>до 11 кВт</b> (при ΔT = 8°C, до 110-120 м²)<br>` +
-                               `• Максимальный расход: <b>до 1.2 м³/ч</b> (Kvs = 2.1)`;
+                        `• Максимальная мощность: <b>до 11 кВт</b> (при ΔT = 8°C, до 110-120 м²)<br>` +
+                        `• Максимальный расход: <b>до 1.2 м³/ч</b> (Kvs = 2.1)`;
                 }
-                
+
                 return `<span style="${styles}"><span style="${head}">${title}</span><b>Зачем:</b> ${why}<br><br>${calc}<br><br>${capacity}</span>`;
             }
             // === 1. КОТЕЛЬНАЯ ===
             case 'boiler_gas': {
                 let targetPwr = val1 || 0;
                 let isBk = this.state.hotWater;
-                let bkText = isBk 
-                    ? "одноконтурный (отопление + нагрев БКН)" 
+                let bkText = isBk
+                    ? "одноконтурный (отопление + нагрев БКН)"
                     : "двухконтурный (отопление + проточный нагрев ГВС)";
                 let qty = val3 || 1;
                 let singlePower = val2 || 24;
                 let totalPwrLimit = qty * singlePower;
-                
+
                 let formulaStr = `Q_требуемая = Q_теплопотери (согласно расчёту теплопотерь здания по СП 60.13330.2020).`;
                 if (qty > 1) {
                     formulaStr += ` При каскаде: N_котлов = ⌈Q_требуемая / 24 кВт⌉.`;
                 }
-                
+
                 let flowRate = (singlePower <= 18) ? "10.5" : "13.7";
-                let gvsText = isBk 
-                    ? 'Работает в паре с бойлером косвенного нагрева для высокого комфорта ГВС.' 
+                let gvsText = isBk
+                    ? 'Работает в паре с бойлером косвенного нагрева для высокого комфорта ГВС.'
                     : `Обеспечивает нагрев горячей воды во встроенном вторичном теплообменнике в проточном режиме с производительностью ГВС (Δt=25°C) — ${flowRate} л/мин.`;
-                
-                let gvsValLine = isBk 
-                    ? '' 
+
+                let gvsValLine = isBk
+                    ? ''
                     : `• Производительность ГВС (Δt=25°C): ${flowRate} л/мин.<br>`;
 
-                let sumPwrLine = qty > 1 
-                    ? `• Суммарная мощность каскада: ${totalPwrLimit} кВт.<br>` 
+                let sumPwrLine = qty > 1
+                    ? `• Суммарная мощность каскада: ${totalPwrLimit} кВт.<br>`
                     : '';
 
                 return `<span style="${styles}"><span style="${head}">Газовый котёл Haier</span>` +
-                       `<b>Зачем:</b> Основной энергоэффективный источник тепла для системы отопления и горячего водоснабжения. ${gvsText}<br><br>` +
-                       `<b>Формула подбора:</b> ${formulaStr}<br><br>` +
-                       `<b>Подставленные значения:</b><br>` +
-                       `• Расчетные теплопотери здания: ${targetPwr.toFixed(1)} кВт.<br>` +
-                       `• Количество котлов${qty > 1 ? ' в каскаде' : ''}: ${qty} шт.<br>` +
-                       `• Мощность подобранного котла: ${singlePower} кВт (${bkText}).<br>` +
-                       `${gvsValLine}` +
-                       sumPwrLine +
-                       `</span>`;
+                    `<b>Зачем:</b> Основной энергоэффективный источник тепла для системы отопления и горячего водоснабжения. ${gvsText}<br><br>` +
+                    `<b>Формула подбора:</b> ${formulaStr}<br><br>` +
+                    `<b>Подставленные значения:</b><br>` +
+                    `• Расчетные теплопотери здания: ${targetPwr.toFixed(1)} кВт.<br>` +
+                    `• Количество котлов${qty > 1 ? ' в каскаде' : ''}: ${qty} шт.<br>` +
+                    `• Мощность подобранного котла: ${singlePower} кВт (${bkText}).<br>` +
+                    `${gvsValLine}` +
+                    sumPwrLine +
+                    `</span>`;
             }
             case 'boiler_el': {
                 let targetPwr = val1 || 0;
@@ -10275,85 +11220,85 @@ const app = {
                 let totalPwrLimit = qty * singlePower;
                 let isStatus = (this.state.boilerSeries === 'status');
                 let seriesText = isStatus ? "STATUS (электронное управление, встроенный расширительный бак и циркуляционный насос)" : "PLUS (интеллектуальное управление ступенями мощности)";
-                
+
                 let formulaStr = `Q_требуемая = Q_теплопотери (согласно расчёту теплопотерь здания по СП 60.13330.2020).`;
                 if (qty > 1) {
                     formulaStr += ` При каскаде (мощность > 27 кВт): N_котлов = 2 (поскольку максимальная паспортная мощность одного прибора в линейке составляет 27 кВт).`;
                 }
 
-                let sumPwrLine = qty > 1 
-                    ? `• Суммарная мощность каскада: ${totalPwrLimit} кВт.<br>` 
+                let sumPwrLine = qty > 1
+                    ? `• Суммарная мощность каскада: ${totalPwrLimit} кВт.<br>`
                     : '';
-                
+
                 return `<span style="${styles}"><span style="${head}">Электрический котёл STOUT ${isStatus ? 'STATUS' : 'PLUS'}</span>` +
-                       `<b>Зачем:</b> Дополнительный (резервный) или основной источник тепла в системе отопления. Котлы серии ${isStatus ? 'STATUS' : 'PLUS'} представляют собой mini-котельную со встроенным насосом и расширительным баком, обеспечивая бесшумную работу и высокий уровень автоматизации.<br><br>` +
-                       `<b>Формула подбора:</b> ${formulaStr}<br><br>` +
-                       `<b>Подставленные значения:</b><br>` +
-                       `• Расчетные теплопотери здания: ${targetPwr.toFixed(1)} кВт.<br>` +
-                       `• Количество котлов${qty > 1 ? ' в каскаде' : ''}: ${qty} шт.<br>` +
-                       `• Мощность подобранного котла: ${singlePower} кВт (серия ${seriesText}).<br>` +
-                       sumPwrLine +
-                       `</span>`;
+                    `<b>Зачем:</b> Дополнительный (резервный) или основной источник тепла в системе отопления. Котлы серии ${isStatus ? 'STATUS' : 'PLUS'} представляют собой mini-котельную со встроенным насосом и расширительным баком, обеспечивая бесшумную работу и высокий уровень автоматизации.<br><br>` +
+                    `<b>Формула подбора:</b> ${formulaStr}<br><br>` +
+                    `<b>Подставленные значения:</b><br>` +
+                    `• Расчетные теплопотери здания: ${targetPwr.toFixed(1)} кВт.<br>` +
+                    `• Количество котлов${qty > 1 ? ' в каскаде' : ''}: ${qty} шт.<br>` +
+                    `• Мощность подобранного котла: ${singlePower} кВт (серия ${seriesText}).<br>` +
+                    sumPwrLine +
+                    `</span>`;
             }
             case 'filter_mag': {
                 let count = this.selBoilers ? this.selBoilers.length : 1;
                 return `<span style="${styles}"><span style="${head}">Фильтр-шламоотделитель магнитный 3/4"</span>` +
-                       `<b>Зачем:</b> Эффективно задерживает мелкие частицы ржавчины, накипи и шлама с помощью мощного неодимового магнита. Предотвращает износ подшипников циркуляционных насосов, засорение теплообменника котла и сохраняет высокий КПД системы отопления.<br><br>` +
-                       `<b>Формула подбора:</b> Устанавливается 1 фильтр на обратную линию перед каждым котлом в системе. Размер 3/4" (DN20) соответствует стандартным патрубкам обвязки бытовых котлов до 28 кВт.<br><br>` +
-                       `<b>Подставленные значения:</b><br>` +
-                       `• Количество котлов в системе: ${count} шт.<br>` +
-                       `• Подобрано фильтров: ${count} шт. (по 1 шт. на котёл).</span>`;
+                    `<b>Зачем:</b> Эффективно задерживает мелкие частицы ржавчины, накипи и шлама с помощью мощного неодимового магнита. Предотвращает износ подшипников циркуляционных насосов, засорение теплообменника котла и сохраняет высокий КПД системы отопления.<br><br>` +
+                    `<b>Формула подбора:</b> Устанавливается 1 фильтр на обратную линию перед каждым котлом в системе. Размер 3/4" (DN20) соответствует стандартным патрубкам обвязки бытовых котлов до 28 кВт.<br><br>` +
+                    `<b>Подставленные значения:</b><br>` +
+                    `• Количество котлов в системе: ${count} шт.<br>` +
+                    `• Подобрано фильтров: ${count} шт. (по 1 шт. на котёл).</span>`;
             }
             case 'insulated_pipe_red':
             case 'insulated_pipe_blue': {
                 let isRed = (type === 'insulated_pipe_red');
-                let why = isRed 
+                let why = isRed
                     ? "Подача горячего теплоносителя от коллектора к радиаторам. Слой теплоизоляции снижает теплопотери в стяжке, предохраняет трубу от механических повреждений и температурных расширений. Красный цвет обозначает подающий трубопровод."
                     : "Отвод остывшего теплоносителя (обратка) от радиаторов к коллектору. Теплоизоляция сохраняет остаточное тепло, компенсирует расширения и исключает образование конденсата. Синий цвет обозначает обратную линию.";
                 let totalD = this.totalDevicesCount || 0;
                 let avgR = this.avgRun || 0;
                 let neededP = this.neededPipe || 0;
                 let coils = Math.ceil(neededP / 100);
-                
+
                 return `<span style="${styles}"><span style="${head}">Труба 16x2.2 в теплоизоляции (${isRed ? 'красная' : 'синяя'})</span>` +
-                       `<b>Зачем:</b> ${why}<br><br>` +
-                       `<b>Формула подбора:</b><br>` +
-                       `• Средняя длина трассы: L_ср = √(Площадь / Этажность) + 3 м.<br>` +
-                       `• Общая длина труб: L_общ = Приборы × L_ср × 2 × 1.1 (где 2 — подача + обратка, 1.1 — запас 10%).<br>` +
-                       `• Количество бухт (по 100 м): N_бухт = ⌈L_общ / 100⌉. Делится поровну между красной и синей.<br><br>` +
-                       `<b>Подставленные значения:</b><br>` +
-                       `• Приборов (радиаторы + конвекторы): ${totalD} шт.<br>` +
-                       `• Среднее расстояние L_ср: ${avgR.toFixed(1)} м.<br>` +
-                       `• Расчетная длина: ${totalD} × ${avgR.toFixed(1)} м × 2 × 1.1 = ${neededP} м.<br>` +
-                       `• Всего бухт: ${coils} шт. (по 100 м).<br>` +
-                       `• Выбрано бухт (${isRed ? 'красная' : 'синяя'}): ${val1} шт.</span>`;
+                    `<b>Зачем:</b> ${why}<br><br>` +
+                    `<b>Формула подбора:</b><br>` +
+                    `• Средняя длина трассы: L_ср = √(Площадь / Этажность) + 3 м.<br>` +
+                    `• Общая длина труб: L_общ = Приборы × L_ср × 2 × 1.1 (где 2 — подача + обратка, 1.1 — запас 10%).<br>` +
+                    `• Количество бухт (по 100 м): N_бухт = ⌈L_общ / 100⌉. Делится поровну между красной и синей.<br><br>` +
+                    `<b>Подставленные значения:</b><br>` +
+                    `• Приборов (радиаторы + конвекторы): ${totalD} шт.<br>` +
+                    `• Среднее расстояние L_ср: ${avgR.toFixed(1)} м.<br>` +
+                    `• Расчетная длина: ${totalD} × ${avgR.toFixed(1)} м × 2 × 1.1 = ${neededP} м.<br>` +
+                    `• Всего бухт: ${coils} шт. (по 100 м).<br>` +
+                    `• Выбрано бухт (${isRed ? 'красная' : 'синяя'}): ${val1} шт.</span>`;
             }
             case 'double_clip': {
                 let qty = val1 || 0;
                 let context = val2 || 'radiators';
                 let why = "Надежное крепление параллельно идущих трубопроводов (подающего и обратного, либо ГВС и ХВС) к плитам перекрытия или стенам перед заливкой стяжки или штукатуркой штраб.";
-                
+
                 let details = "";
                 if (context === 'toilet') {
                     details = `• Крепление подводящих труб к инсталляциям.<br>` +
-                              `• Количество инсталляций: ${qty} шт.<br>` +
-                              `• Расход крепежа: по 1 шт. на инсталляцию.<br>` +
-                              `• Всего дюбель-крюков: ${qty} шт.`;
+                        `• Количество инсталляций: ${qty} шт.<br>` +
+                        `• Расход крепежа: по 1 шт. на инсталляцию.<br>` +
+                        `• Всего дюбель-крюков: ${qty} шт.`;
                 } else {
-                    let ctxText = context === 'radiators' ? 'контура радиаторов' 
-                                : context === 'cw' ? 'ХВС' 
-                                : context === 'hw' ? 'ГВС' 
+                    let ctxText = context === 'radiators' ? 'контура радиаторов'
+                        : context === 'cw' ? 'ХВС'
+                            : context === 'hw' ? 'ГВС'
                                 : 'рециркуляции ГВС';
                     details = `• Укладка труб для ${ctxText}.<br>` +
-                              `• Общая длина труб: ${qty} м.<br>` +
-                              `• Расход крепежа: 1 шт. на 1 метр трубы.<br>` +
-                              `• Всего дюбель-крюков: ${qty} шт.`;
+                        `• Общая длина труб: ${qty} м.<br>` +
+                        `• Расход крепежа: 1 шт. на 1 метр трубы.<br>` +
+                        `• Всего дюбель-крюков: ${qty} шт.`;
                 }
-                
+
                 return `<span style="${styles}"><span style="${head}">Дюбель-крюк двойной</span>` +
-                       `<b>Зачем:</b> ${why}<br><br>` +
-                       `<b>Формула подбора:</b> 1 шт. на 1 метр трубопровода (или по 1 шт. на точку инсталляции унитаза).<br><br>` +
-                       `<b>Подставленные значения:</b><br>${details}</span>`;
+                    `<b>Зачем:</b> ${why}<br><br>` +
+                    `<b>Формула подбора:</b> 1 шт. на 1 метр трубопровода (или по 1 шт. на точку инсталляции унитаза).<br><br>` +
+                    `<b>Подставленные значения:</b><br>${details}</span>`;
             }
             case 'boiler_tank':
                 let calcStr = "";
@@ -10373,7 +11318,7 @@ const app = {
                     if (totalFixtures === 2) k_sim = 0.7;
                     else if (totalFixtures === 3) k_sim = 0.5;
                     else if (totalFixtures >= 4) k_sim = 0.4;
-                    
+
                     calcStr = `<b>Расчёт по приборам:</b> Пиковый разбор санузлов с учётом коэффициентов.<br><b>Формула:</b> V = (${b} × 120л (ванна) + ${s} × 50л (душ) + ${bs} × 10л (раковина)) × 0.6 (разбавление до 40°C) × ${k_sim} (коэф. одновременности) = ${val3} л.`;
                     if (volByRes > val3) {
                         calcStr += `<br><i style="color:#60A5FA; font-size:10.5px;">* Принят минимальный объем по жильцам (${volByRes} л) для комфортного последовательного разбора.</i>`;
@@ -10389,24 +11334,24 @@ const app = {
                 let capacity = val2 || 250;
                 let powerVal = val3 || 150;
                 let why = "Защита электронной платы управления котлом и циркуляционных насосов от скачков, просадок и импульсных помех в электрической сети. Является обязательным условием сохранения заводской гарантии.";
-                
+
                 if (boilerType === 'gas') {
                     return `<span style="${styles}"><span style="${head}">Стабилизатор напряжения ST 250</span>` +
-                           `<b>Зачем:</b> ${why}<br><br>` +
-                           `<b>Формула подбора:</b> Мощность стабилизатора P_стаб ≥ P_потребляемая_электрическая × 1.5 (коэффициент запаса на пусковые токи насоса и горелки).<br><br>` +
-                           `<b>Подставленные значения:</b><br>` +
-                           `• Тип котла: Газовый настенный Haier.<br>` +
-                           `• Максимальное электропотребление: ~${powerVal} Вт.<br>` +
-                           `• Требуемая мощность стабилизатора: ${powerVal} × 1.5 = ${(powerVal * 1.5).toFixed(0)} ВА.<br>` +
-                           `• Подобран прибор: ST ${capacity} (номинал ${capacity} ВА).</span>`;
+                        `<b>Зачем:</b> ${why}<br><br>` +
+                        `<b>Формула подбора:</b> Мощность стабилизатора P_стаб ≥ P_потребляемая_электрическая × 1.5 (коэффициент запаса на пусковые токи насоса и горелки).<br><br>` +
+                        `<b>Подставленные значения:</b><br>` +
+                        `• Тип котла: Газовый настенный Haier.<br>` +
+                        `• Максимальное электропотребление: ~${powerVal} Вт.<br>` +
+                        `• Требуемая мощность стабилизатора: ${powerVal} × 1.5 = ${(powerVal * 1.5).toFixed(0)} ВА.<br>` +
+                        `• Подобран прибор: ST ${capacity} (номинал ${capacity} ВА).</span>`;
                 } else {
                     let textLimit = powerVal <= 18 ? "до 18 кВт включительно" : "более 18 кВт";
                     return `<span style="${styles}"><span style="${head}">Стабилизатор напряжения ST ${capacity}</span>` +
-                           `<b>Зачем:</b> ${why}<br><br>` +
-                           `<b>Формула подбора:</b> Защищает встроенный насос и электронику электрокотла. Для котлов ${textLimit} подбирается номинал ${capacity} ВА.<br><br>` +
-                           `<b>Подставленные значения:</b><br>` +
-                           `• Тип котла: Электрический STOUT (${powerVal} кВт).<br>` +
-                           `• Подобран прибор: ST ${capacity} (номинал ${capacity} ВА).</span>`;
+                        `<b>Зачем:</b> ${why}<br><br>` +
+                        `<b>Формула подбора:</b> Защищает встроенный насос и электронику электрокотла. Для котлов ${textLimit} подбирается номинал ${capacity} ВА.<br><br>` +
+                        `<b>Подставленные значения:</b><br>` +
+                        `• Тип котла: Электрический STOUT (${powerVal} кВт).<br>` +
+                        `• Подобран прибор: ST ${capacity} (номинал ${capacity} ВА).</span>`;
                 }
             }
             case 'exp_h':
@@ -10434,27 +11379,27 @@ const app = {
                 let stepVal2 = this.state.ufhStep2 || 150;
                 let tpArea = this.state.tp1 + (this.state.floors === 2 ? this.state.tp2 : 0);
                 let stepStr = (this.state.floors === 2 && this.state.tp2 > 0) ? `1 этаж: ${stepVal1} мм, 2 этаж: ${stepVal2} мм` : `${stepVal1} мм`;
-                
+
                 let details = "";
                 if (this.state.floors === 2 && this.state.tp2 > 0) {
                     let L1 = (this.state.tp1 / (stepVal1 / 1000)) * 1.1;
                     let L2 = (this.state.tp2 / (stepVal2 / 1000)) * 1.1;
-                    details = `1 этаж: (${this.state.tp1} м² / ${stepVal1/1000} м) × 1.1 = ${L1.toFixed(1)} м.<br>2 этаж: (${this.state.tp2} м² / ${stepVal2/1000} м) × 1.1 = ${L2.toFixed(1)} м.`;
+                    details = `1 этаж: (${this.state.tp1} м² / ${stepVal1 / 1000} м) × 1.1 = ${L1.toFixed(1)} м.<br>2 этаж: (${this.state.tp2} м² / ${stepVal2 / 1000} м) × 1.1 = ${L2.toFixed(1)} м.`;
                 } else {
                     let S = this.state.tp1 > 0 ? this.state.tp1 : tpArea;
                     let step = this.state.tp1 > 0 ? stepVal1 : stepVal2;
                     let L = (S / (step / 1000)) * 1.1;
-                    details = `(${S} м² / ${step/1000} м) × 1.1 = ${L.toFixed(1)} м.`;
+                    details = `(${S} м² / ${step / 1000} м) × 1.1 = ${L.toFixed(1)} м.`;
                 }
-                
+
                 return `<span style="${styles}"><span style="${head}">Труба водяного тёплого пола 16x2.0</span>` +
-                       `<b>Зачем:</b> Труба укладывается змейкой или улиткой в бетонную стяжку и служит нагревательным элементом, обеспечивая комфортный обогрев помещения.<br><br>` +
-                       `<b>Формула подбора:</b> L_трубы = (S_пола / Шаг_укладки) × 1.1 (коэффициент изгиба и запаса 10%).<br><br>` +
-                       `<b>Подставленные значения:</b><br>` +
-                       `• Площадь тёплого пола: ${tpArea} м².<br>` +
-                       `• Шаг укладки: ${stepStr}.<br>` +
-                       `• Расчёт по формуле:<br>${details}<br>` +
-                       `• Общая длина: ${val1} м.</span>`;
+                    `<b>Зачем:</b> Труба укладывается змейкой или улиткой в бетонную стяжку и служит нагревательным элементом, обеспечивая комфортный обогрев помещения.<br><br>` +
+                    `<b>Формула подбора:</b> L_трубы = (S_пола / Шаг_укладки) × 1.1 (коэффициент изгиба и запаса 10%).<br><br>` +
+                    `<b>Подставленные значения:</b><br>` +
+                    `• Площадь тёплого пола: ${tpArea} м².<br>` +
+                    `• Шаг укладки: ${stepStr}.<br>` +
+                    `• Расчёт по формуле:<br>${details}<br>` +
+                    `• Общая длина: ${val1} м.</span>`;
             }
             case 'ufh_mat':
                 return `<span style="${styles}"><span style="${head}">Мат с бобышками</span><b>Зачем:</b> Быстрый монтаж и фиксация трубы.<br><b>Расчет:</b> Чистая площадь ТП (${val1} м²) + 5% запас на подрезку.</span>`;
@@ -10554,23 +11499,23 @@ const app = {
             case 'coolant': {
                 let cl = catalog.coolants.find(c => c.type === this.state.coolant) || catalog.coolants[0];
                 let isWater = (cl.type === 'water');
-                let why = isWater 
+                let why = isWater
                     ? "Заполнение системы отопления. Деминерализованная вода со специальными присадками (Hydro) не образует накипи, исключает коррозию и продлевает срок службы котла и радиаторов."
                     : "Низкотемпературный теплоноситель на основе экологичного пропиленгликоля. Предотвращает размораживание системы и разрыв труб при аварийной остановке котла в зимний период.";
-                
+
                 let bVol = this.boilersVol || 0;
                 let rSecs = this.radSecs || 0;
                 let rMeters = this.radMeters || 0;
                 let tpMet = this.tpMeters || 0;
                 let needCol = this.needCollector || false;
-                
+
                 let details = `• Объём котлов/бойлеров: ${bVol} л.<br>` +
-                              `• Секции радиаторов: ${rSecs} шт. (объём: ${(rSecs * 0.25).toFixed(1)} л).<br>` +
-                              `• Трубы радиаторов: ${rMeters} м (объём: ${(rMeters * 0.11).toFixed(1)} л).<br>` +
-                              `• Трубы тёплого пола: ${tpMet} м (объём: ${(tpMet * 0.113).toFixed(1)} л).<br>` +
-                              `• Объём коллекторов и арматуры: ${needCol ? 5 : 0} л.<br>` +
-                              `• Общий расчётный объём системы: ${val1} л (с запасом 15% по СП 41-104-2000).`;
-                
+                    `• Секции радиаторов: ${rSecs} шт. (объём: ${(rSecs * 0.25).toFixed(1)} л).<br>` +
+                    `• Трубы радиаторов: ${rMeters} м (объём: ${(rMeters * 0.11).toFixed(1)} л).<br>` +
+                    `• Трубы тёплого пола: ${tpMet} м (объём: ${(tpMet * 0.113).toFixed(1)} л).<br>` +
+                    `• Объём коллекторов и арматуры: ${needCol ? 5 : 0} л.<br>` +
+                    `• Общий расчётный объём системы: ${val1} л (с запасом 15% по СП 41-104-2000).`;
+
                 let canisters = "";
                 if (cl.type === 'pro65') {
                     let vP = val1 * 0.65;
@@ -10578,18 +11523,18 @@ const app = {
                     let cPro = Math.ceil(vP / 18);
                     let cWater = Math.ceil(vH / 20);
                     canisters = `Для разбавления до -30°С (65% концентрата, 35% воды):<br>` +
-                                `• Требуется концентрата Eco Pro 65: ~${vP.toFixed(0)} л (потребуется ${cPro} канистр по 18л).<br>` +
-                                `• Требуется воды Hydro: ~${vH.toFixed(0)} л (потребуется ${cWater} канистр по 20л).`;
+                        `• Требуется концентрата Eco Pro 65: ~${vP.toFixed(0)} л (потребуется ${cPro} канистр по 18л).<br>` +
+                        `• Требуется воды Hydro: ~${vH.toFixed(0)} л (потребуется ${cWater} канистр по 20л).`;
                 } else {
                     let cQty = Math.ceil(val1 / cl.vol);
                     canisters = `• Поставляется в канистрах по ${cl.vol} л/кг.<br>` +
-                                `• Итого к заказу: ${cQty} шт.`;
+                        `• Итого к заказу: ${cQty} шт.`;
                 }
-                
+
                 return `<span style="${styles}"><span style="${head}">Теплоноситель (${cl.name})</span>` +
-                       `<b>Зачем:</b> ${why}<br><br>` +
-                       `<b>Формула подбора:</b> V_системы = (V_котлов + N_секций × 0.25 + L_труб_рад × 0.11 + L_труб_тп × 0.113 + V_коллекторов) × 1.15 (запас 15%).<br><br>` +
-                       `<b>Подставленные значения:</b><br>${details}<br><br>${canisters}</span>`;
+                    `<b>Зачем:</b> ${why}<br><br>` +
+                    `<b>Формула подбора:</b> V_системы = (V_котлов + N_секций × 0.25 + L_труб_рад × 0.11 + L_труб_тп × 0.113 + V_коллекторов) × 1.15 (запас 15%).<br><br>` +
+                    `<b>Подставленные значения:</b><br>${details}<br><br>${canisters}</span>`;
             }
 
             default: return "";
@@ -10640,6 +11585,7 @@ const app = {
         this.currentWorksList = [];
         app.tempWarns = []; // Массив для сбора предупреждений о дефиците мощности
         this.currentSpec = []; // Список оборудования для генерации схемы
+        this.swapWindowWidthMap = {}; // originalId → min ширина окна (м) для фильтра замен
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
         let isTrialActive = trialUntil > Date.now();
         let isPro = (this.state.accountType === 'pro' || isTrialActive);
@@ -10721,7 +11667,7 @@ const app = {
                         }
                     }
                 }
-                
+
                 let analogId = analog ? (Array.isArray(analog) ? analog[0].id : analog.id) : null;
                 if (analogId && manualSwapId === analogId) {
                     forceAnalog = true;
@@ -10778,7 +11724,7 @@ const app = {
 
             if (useAnalogOutput) {
                 this.calcBaseTotal += (item.price || 0) * qty;
-                
+
                 let analog = activeItem.rommer;
                 if (!analog && ANALOG_MAP[activeItem.id]) {
                     let targetId = ANALOG_MAP[activeItem.id];
@@ -10789,7 +11735,7 @@ const app = {
                         }
                     }
                 }
-                
+
                 if (analog && Array.isArray(analog)) {
                     analog.forEach(sub => {
                         let finalSub = { ...sub };
@@ -10898,7 +11844,7 @@ const app = {
                 this.currentSpec.push({ ...finalItem, q: finalQty, group: itemGroup });
                 this.calcFinalTotal += Math.round(originalPrice * finalQty);
 
-                let shouldMergeThisItem = forceMerge || 
+                let shouldMergeThisItem = forceMerge ||
                     (this.state.detailedRooms && itemGroup === "3. Приборы отопления" && tip && tip.includes('|||')) ||
                     (itemGroup === "8. Канализация" || (itemGroup && (itemGroup.includes("Канализация:") || itemGroup.includes("[Инсталляция]"))));
                 if (shouldMergeThisItem) {
@@ -10914,7 +11860,11 @@ const app = {
                                 let oldParts = existing.qtyTip ? existing.qtyTip.split('|||') : [];
                                 existing.locs = oldParts.length > 1 ? [oldParts[0]] : [existing.qtyTip];
                             }
-                            if (!existing.locs.includes(locInfo)) existing.locs.push(locInfo);
+                            if (!existing.instanceKeys) existing.instanceKeys = [existing.originalId || existing.id];
+                            if (!existing.locs.includes(locInfo)) {
+                                existing.locs.push(locInfo);
+                                existing.instanceKeys.push(finalItem.originalId || finalItem.id);
+                            }
                             existing.qtyTip = existing.locs.join('<br>') + '<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">' + devInfo;
                         } else if (tip && (!existing.qtyTip || !existing.qtyTip.includes(tip))) {
                             existing.qtyTip = existing.qtyTip ? existing.qtyTip + "<br>" + tip : tip;
@@ -10924,6 +11874,7 @@ const app = {
                         if (tip && tip.includes('|||')) {
                             let parts = tip.split('|||');
                             finalItem.locs = [parts[0]];
+                            finalItem.instanceKeys = [finalItem.originalId || finalItem.id];
                             finalTip = parts[0] + '<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">' + parts[1];
                         }
                         bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
@@ -11005,7 +11956,11 @@ const app = {
                     availability: i.availability,
                     desc: i.qtyTip || "",
                     alts: i.alts,
-                    originalId: i.originalId || i.id
+                    originalId: i.originalId || i.id,
+                    sec: i.sec,
+                    isPanel: i.isPanel,
+                    power50: i.power50,
+                    instanceKeys: i.instanceKeys
                 });
             });
 
@@ -11071,11 +12026,11 @@ const app = {
                 let isSubSection = (i.group && i.group.match(/^\d+\.\d+/));
                 const dashStyle = "1px dashed rgba(0, 0, 0, 0.2)";
                 if (!forceMerge && i.group && i.group !== lastGroup) {
-                    let icon = ""; 
-                    if (i.group.includes("Газового")) icon = "🔥"; 
-                    else if (i.group.includes("Электрического")) icon = "⚡"; 
-                    else if (i.group.includes("Водонагревателя")) icon = "💧"; 
-                    else if (i.group.includes("Трубопроводы") || i.group.includes("Крепёж")) icon = "🔗"; 
+                    let icon = "";
+                    if (i.group.includes("Газового")) icon = "🔥";
+                    else if (i.group.includes("Электрического")) icon = "⚡";
+                    else if (i.group.includes("Водонагревателя")) icon = "💧";
+                    else if (i.group.includes("Трубопроводы") || i.group.includes("Крепёж")) icon = "🔗";
                     else if (i.group.includes("Гидравлика")) icon = "🎛️";
                     let arrow = isCollapsed ? "▶" : "⤵";
                     let txtUnit = isCollapsed ? "компл." : ""; let txtQty = isCollapsed ? "1" : ""; let txtSum = isCollapsed ? groupTotals[i.group].toLocaleString() : "";
@@ -11117,21 +12072,34 @@ const app = {
                 // === Кнопка «+» для раскрытия списка помещений (режим Подробный) ===
                 let locsRows = '';
                 let nameBtnHtml = '';
-                if (this.state.detailedRooms && i.locs && i.locs.length > 1) {
+                if (this.state.detailedRooms && i.locs && i.locs.length > 0) {
                     const locsId = 'rl_' + (i.id || '').replace(/[^a-z0-9]/gi, '_') + '_' + globalIdx;
-                    nameBtnHtml = `<span class="expand-locs-btn" onclick="event.stopPropagation();(function(b,id){var rs=document.querySelectorAll('tr.'+id);rs.forEach(function(r){r.style.display=r.style.display==='none'?'table-row':'none';});b.textContent=b.textContent==='+'?'\u2212':'+'})(this,'${locsId}')" title="Раскрыть список помещений">+</span>`;
-                    
+                    const roomNames = [...new Set(i.locs.map(locStr => {
+                        let clean = locStr.replace(/<[^>]*>/g, '').replace(/^•\s*/, '').trim();
+                        let m = clean.match(/^([^(:]+)/);
+                        return m ? m[1].trim() : clean;
+                    }))];
+                    const roomsLabel = `<span style="font-size:11px;color:var(--text-sec);margin-left:6px;font-style:italic;">(${roomNames.join(', ')})</span>`;
+
+                    if (i.locs.length > 1) {
+                        nameBtnHtml = `<span class="expand-locs-btn" onclick="event.stopPropagation();(function(b,id){var rs=document.querySelectorAll('tr.'+id);rs.forEach(function(r){r.style.display=r.style.display==='none'?'table-row':'none';});b.textContent=b.textContent==='+'?'\u2212':'+'})(this,'${locsId}')" title="Раскрыть список помещений">+</span>${roomsLabel}`;
+                    } else {
+                        nameBtnHtml = roomsLabel;
+                    }
+
                     let subIdx = 1;
-                    i.locs.forEach(locStr => {
+                    const _swapSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>`;
+                    i.locs.forEach((locStr, locIdx) => {
                         let subNum = `${globalIdx}.${subIdx++}`;
-                        // Убираем пули из начала строки, если они есть
                         let cleanLocStr = locStr.replace(/^•\s*/, '');
                         let fullSubRowName = `${i.name} — ${cleanLocStr}`;
-                        
+                        const subKey = i.instanceKeys && i.instanceKeys[locIdx];
+                        const subSwapBtn = subKey ? `<div onclick="event.stopPropagation();app.openSwapModal('${subKey}')" title="Заменить этот радиатор" style="cursor:pointer;color:var(--primary);display:inline-flex;align-items:center;justify-content:center;">${_swapSvg}</div>` : '';
+
                         locsRows += `
                             <tr class="${locsId}" style="display:none;background:var(--surface-light);">
                                 <td class="col-idx" style="font-size:11px;color:var(--text-muted);text-align:center;">${subNum}</td>
-                                <td class="col-img"></td>
+                                <td class="col-img" style="text-align:center;">${subSwapBtn}</td>
                                 <td class="col-name" style="font-size:11px;color:var(--text-muted);padding-left:32px;border-left:3px solid var(--primary);">${fullSubRowName}</td>
                                 <td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">-</td>
                                 <td class="col-brand" style="font-size:11px;color:var(--text-muted);text-align:center;">${i.brand || 'STOUT'}</td>
@@ -11342,8 +12310,8 @@ const app = {
 
         // === 1. КОТЁЛ + ВОДОНАГРЕВАТЕЛЬ ===
         currentSectionTitle = "1. Котёл + водонагреватель";
-        let useAnalogSec2 = ((this.state.sectionAnalog || {})["2. Обвязка котельной"] !== undefined) 
-            ? this.state.sectionAnalog["2. Обвязка котельной"] 
+        let useAnalogSec2 = ((this.state.sectionAnalog || {})["2. Обвязка котельной"] !== undefined)
+            ? this.state.sectionAnalog["2. Обвязка котельной"]
             : (this.state.brandMode === 'rommer');
         let selBoilers = [], boilerCnt = 0;
         ['gas', 'el'].forEach(ft => {
@@ -11398,17 +12366,17 @@ const app = {
                     }
                 });
                 let raw_vol = (b * 120) + (s * 50) + (bs * 10);
-                
+
                 // 1. Коэффициент разбавления горячей воды 60°C холодной 10°C до комфортных 40°C составляет 0.6 (60% горячей воды)
                 let mixed_vol = raw_vol * 0.6;
-                
+
                 // 2. Коэффициент одновременного использования (СП 30.13330.2020)
                 let k_sim = 1.0;
                 let totalFixtures = b + s;
                 if (totalFixtures === 2) k_sim = 0.7;
                 else if (totalFixtures === 3) k_sim = 0.5;
                 else if (totalFixtures >= 4) k_sim = 0.4;
-                
+
                 hw_fixtures_vol = Math.round(mixed_vol * k_sim);
             }
 
@@ -11475,13 +12443,13 @@ const app = {
             if (exp.vol <= 25) {
                 if (useAnalogSec2) { // PPR/Rommer
                     let isStout = (this.state.expansionTankMountType === 'stout');
-                    let mountItem = isStout 
-                        ? catalog.mounting_system.find(x => x.id === "SAC-0030-000825") 
+                    let mountItem = isStout
+                        ? catalog.mounting_system.find(x => x.id === "SAC-0030-000825")
                         : catalog.mounting_system.find(x => x.id === "ASKON-83115");
                     if (mountItem) {
                         let itemCopy = { ...mountItem, originalId: "SAC-0030-000825" };
-                        itemCopy.alts = [isStout 
-                            ? catalog.mounting_system.find(x => x.id === "ASKON-83115") 
+                        itemCopy.alts = [isStout
+                            ? catalog.mounting_system.find(x => x.id === "ASKON-83115")
                             : catalog.mounting_system.find(x => x.id === "SAC-0030-000825")
                         ];
                         addToBill(itemCopy, 1, "Крепление расширительного бака ГВС (L-кронштейн или комплект STOUT).", grp);
@@ -11492,13 +12460,13 @@ const app = {
                     let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
                     if (clampItem) addToBill(clampItem, 1, "Хомут 3/4\" для фиксации трубы подводки перед расширительным баком ГВС.", grp);
                     if (studItem) addToBill(studItem, 1, "Шпилька-шуруп с дюбелем для крепления хомута подводки бака ГВС.", grp);
-                    
+
                     addToBill(catalog.tank_kit, 1, "Отсечной вентиль для подключения расширительного бака ГВС.", grp);
                     let maleElbow = catalog.ss_elbow_mi.find(x => x.id === "RSS-1010-002234");
                     let pressElbow = catalog.ss_elbow90.find(x => x.id === "RSS-1002-000022");
                     if (maleElbow) addToBill(maleElbow, 1, "Угольник-переходник 90° ВПр-НР 22х3/4\" для подключения к вентилю бака.", grp);
                     if (pressElbow) addToBill(pressElbow, 2, "Угольник 90° ВПр-НПр 22 для обвязки бака.", grp);
-                    
+
                     let frameBoilerPower = selBoilers.reduce((acc, b) => acc + (b.power || 0), 0);
                     let frameSsDiameter = (frameBoilerPower <= 30) ? 22 : 28;
                     if (frameSsDiameter === 22) {
@@ -11522,7 +12490,7 @@ const app = {
         let radSecs = 0, radMeters = 0, tpMeters = 0;
         let tpArea = this.state.tp1 + (this.state.floors === 2 ? this.state.tp2 : 0);
         if (hasRad) { let load = (hasTp && tpArea > 0) ? pwr * 1000 * 0.7 : pwr * 1000; radSecs = Math.ceil(load / 117); if (radSecs > 0) { let pipe = Math.ceil(this.state.win * (Math.sqrt(this.state.area / (this.state.floors === 2 ? 2 : 1)) + 3) * 1.1); radMeters = pipe * 2; } }
-        
+
         let stepVal1 = this.state.ufhStep1 || 150;
         let stepVal2 = this.state.ufhStep2 || 150;
         let estMans = 0;
@@ -11550,13 +12518,13 @@ const app = {
         if (hasTp && tpArea > 0) {
             let brand = this.state.brandMode;
             let useAnalogSec2 = this.state.sectionAnalog && this.state.sectionAnalog['2.4. Гидравлика котельной'];
-            
+
             // Проверяем, требует ли радиаторный контур DN25
             let radNeedsDn25 = (pwr > 20) || (brand === 'rommer') || useAnalogSec2;
-            
+
             let isCompatible = this.isUfhMixTypeCompatible(this.state.ufhMixType, tpArea, brand);
             let areaChanged = (this.lastTpArea !== undefined && this.lastTpArea !== tpArea);
-            
+
             if (areaChanged || !isCompatible) {
                 // Если радиаторы или бренд требуют DN25, исключаем DN20 из кандидатов для унификации размеров
                 let candidates = [];
@@ -11565,7 +12533,7 @@ const app = {
                 } else {
                     candidates = ['std', 'dn20', 'dn25', 'dn20_servo', 'dn25_servo'];
                 }
-                
+
                 let chosen = null;
                 for (let type of candidates) {
                     if (this.isUfhMixTypeCompatible(type, tpArea, brand)) {
@@ -11573,11 +12541,11 @@ const app = {
                         break;
                     }
                 }
-                
+
                 if (!chosen) {
                     chosen = 'dn25_servo';
                 }
-                
+
                 this.state.ufhMixType = chosen;
             }
             this.lastTpArea = tpArea;
@@ -11640,16 +12608,17 @@ const app = {
         this.needCollector = needCollector;
         this.vSys = vSys;
         let reqExp = vSys * 0.12; let bltin = 0; if (selBoilers.length > 0) { selBoilers.forEach(b => { bltin += (b.exp !== undefined ? b.exp : 0); }); }
-        let def = reqExp - bltin; if (def > 0) { let et = catalog.exp_heating.find(t => t.vol >= def) || catalog.exp_heating[4]; addToBill(et, 1, this.getDesc('exp_h', Math.round(vSys))); if (et.vol <= 25) {
+        let def = reqExp - bltin; if (def > 0) {
+            let et = catalog.exp_heating.find(t => t.vol >= def) || catalog.exp_heating[4]; addToBill(et, 1, this.getDesc('exp_h', Math.round(vSys))); if (et.vol <= 25) {
                 if (useAnalogSec2) { // PPR/Rommer
                     let isStout = (this.state.expansionTankMountType === 'stout');
-                    let mountItem = isStout 
-                        ? catalog.mounting_system.find(x => x.id === "SAC-0030-000825") 
+                    let mountItem = isStout
+                        ? catalog.mounting_system.find(x => x.id === "SAC-0030-000825")
                         : catalog.mounting_system.find(x => x.id === "ASKON-83115");
                     if (mountItem) {
                         let itemCopy = { ...mountItem, originalId: "SAC-0030-000825" };
-                        itemCopy.alts = [isStout 
-                            ? catalog.mounting_system.find(x => x.id === "ASKON-83115") 
+                        itemCopy.alts = [isStout
+                            ? catalog.mounting_system.find(x => x.id === "ASKON-83115")
                             : catalog.mounting_system.find(x => x.id === "SAC-0030-000825")
                         ];
                         addToBill(itemCopy, 1, "Крепление расширительного бака.");
@@ -11660,13 +12629,13 @@ const app = {
                     let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
                     if (clampItem) addToBill(clampItem, 1, "Хомут 3/4\" для фиксации трубы подводки перед расширительным баком отопления.");
                     if (studItem) addToBill(studItem, 1, "Шпилька-шуруп с дюбелем для крепления хомута подводки бака отопления.");
-                    
+
                     addToBill(catalog.tank_kit, 1, "Отсечной вентиль для подключения расширительного бака.");
                     let maleElbow = catalog.ss_elbow_mi.find(x => x.id === "RSS-1010-002234");
                     let pressElbow = catalog.ss_elbow90.find(x => x.id === "RSS-1002-000022");
                     if (maleElbow) addToBill(maleElbow, 1, "Угольник-переходник 90° ВПр-НР 22х3/4\" для подключения к вентилю бака.");
                     if (pressElbow) addToBill(pressElbow, 2, "Угольник 90° ВПр-НПр 22 для обвязки бака.");
-                    
+
                     let frameBoilerPower = selBoilers.reduce((acc, b) => acc + (b.power || 0), 0);
                     let frameSsDiameter = (frameBoilerPower <= 30) ? 22 : 28;
                     if (frameSsDiameter === 22) {
@@ -11690,7 +12659,7 @@ const app = {
             // Несущий каркас (рама) или хомуты коллектора котельной на базе C-образного профиля и консолей STOUT
             let frameBoilerPower = selBoilers.reduce((acc, b) => acc + (b.power || 0), 0);
             let frameSsDiameter = (frameBoilerPower <= 30) ? 22 : 28;
-            
+
             let isDoubleMode = (this.state.boilerFrameType === 'profile_double' || this.state.boilerFrameType === 'direct_double');
             let clampId = "";
             if (useAnalogSec2) { // PPR/Rommer
@@ -11716,33 +12685,33 @@ const app = {
                     let itemCopy = { ...profileItem, originalId: "SAC-0022-283020_boiler", alts: [catalog.mounting_system.find(x => x.id === "SAC-0020-200012")] };
                     addToBill(itemCopy, 1, "Монтажный перфорированный С-образный профиль для сборки несущей рамы (2м).");
                 }
-                
+
                 let consoleItem = catalog.mounting_system.find(x => x.id === "SAC-0021-281530");
                 if (consoleItem) {
                     let itemCopy = { ...consoleItem, originalId: "SAC-0022-283020_boiler", alts: [catalog.mounting_system.find(x => x.id === "SAC-0020-200012")] };
                     addToBill(itemCopy, 2, "Несущая консоль перфорированная для монтажной рамы котельной.");
                 }
-                
+
                 let isAnchor = (this.state.boilerFrameFastenerType === 'anchor' || !this.state.boilerFrameFastenerType);
                 let fastenerItem = isAnchor
                     ? catalog.mounting_system.find(x => x.id === "SAC-0020-411040")
                     : catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
-                
+
                 if (fastenerItem) {
                     let itemCopy = { ...fastenerItem, originalId: "SAC-0020-411040_boiler" };
                     itemCopy.alts = [isAnchor
                         ? catalog.mounting_system.find(x => x.id === "SAC-0020-400100")
                         : catalog.mounting_system.find(x => x.id === "SAC-0020-411040")
                     ];
-                    addToBill(itemCopy, 4, isAnchor 
-                        ? "Анкер забивной стальной для крепления рамы к стене." 
+                    addToBill(itemCopy, 4, isAnchor
+                        ? "Анкер забивной стальной для крепления рамы к стене."
                         : "Шпилька-шуруп с дюбелем для крепления рамы к стене.");
                 }
-                
+
                 let clampQty = (this.state.boilerFrameType === 'profile_single') ? 4 : 2;
                 if (clampItem) {
                     let itemCopy = { ...clampItem, originalId: "SAC-0022-283020_boiler", alts: [catalog.mounting_system.find(x => x.id === "SAC-0020-200012")] };
-                    addToBill(itemCopy, clampQty, isDoubleMode 
+                    addToBill(itemCopy, clampQty, isDoubleMode
                         ? "Двойной трубный хомут для фиксации трубопроводов котлового контура на консолях."
                         : "Трубный хомут одновинтовой для фиксации трубопроводов котлового контура на консолях.");
                 }
@@ -11753,7 +12722,7 @@ const app = {
                     let itemCopy = { ...clampItem, originalId: "SAC-0022-283020_boiler", alts: [catalog.mounting_system.find(x => x.id === "SAC-0022-283020")] };
                     addToBill(itemCopy, qty, "Хомут трубный одновинтовой для прямого настенного монтажа труб котлового контура.");
                 }
-                
+
                 let studItem = catalog.mounting_system.find(x => x.id === "SAC-0020-400100");
                 if (studItem) {
                     addToBill(studItem, qty, "Шпилька-шуруп с дюбелем для настенных хомутов котлового контура.");
@@ -11808,10 +12777,10 @@ const app = {
                 if (activeMixType === 'dn25' || activeMixType === 'dn25_servo') {
                     let ufhGrp = (activeMixType === 'dn25_servo') ? catalog.groups_dn25[2] : catalog.groups_dn25[1];
                     addToBill(ufhGrp, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
-                    
+
                     let ufhPump = catalog.pumps_dn25.find(p => p.type === this.state.pumpType) || catalog.pumps_dn25[0];
                     addToBill(ufhPump, tQ, this.getDesc('pump_std'), grpHydro);
-                    
+
                     if (activeMixType === 'dn25_servo') {
                         let servoItem = (activeServoType === 'sensor') ? catalog.servo_rotary_sensor : catalog.servo_rotary_std;
                         if (servoItem) {
@@ -11821,10 +12790,10 @@ const app = {
                 } else if (activeMixType === 'dn20' || activeMixType === 'dn20_servo') {
                     let ufhGrp = (activeMixType === 'dn20_servo') ? catalog.groups_dn20[2] : catalog.groups_dn20[1];
                     addToBill(ufhGrp, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
-                    
+
                     let ufhPump = catalog.pumps_dn20[0];
                     addToBill(ufhPump, tQ, this.getDesc('pump_std'), grpHydro);
-                    
+
                     if (activeMixType === 'dn20_servo') {
                         let servoItem = (activeServoType === 'sensor') ? catalog.servo_rotary_sensor : catalog.servo_rotary_std;
                         if (servoItem) {
@@ -12042,7 +13011,7 @@ const app = {
                 addPipesToBill(d.length, parseInt(diam), "2.5. Трубопроводы котельной", descPipe);
             }
         }
-        
+
         flushBill("2. Обвязка котельной");
 
         currentSectionTitle = "3. Приборы отопления";
@@ -12092,7 +13061,7 @@ const app = {
                             wLoad = Math.max(deficit, minSanitary);
                         } else if (roomHasTp && !roomHasRad) {
                             // Режим "Только тёплый пол" (радиаторов под окнами нет)
-                            wLoad = 0; 
+                            wLoad = 0;
                             let roomLossTotal = totalWindowLoss * r.windows.length;
                             if (roomLossTotal > qUfhMax) {
                                 let deficitTotal = Math.round(roomLossTotal - qUfhMax);
@@ -12171,35 +13140,138 @@ const app = {
                             if (reqSecsTitan > 14) reqSecsTitan = 14;
                             let itemTitan = titanRads.find(x => x.sec === reqSecsTitan) || titanRads[titanRads.length - 1];
 
+                            // === Дополнительные серии радиаторов ===
+                            const pickSect = (arr, p50, maxS) => {
+                                let n = Math.max(4, Math.max(Math.ceil(reqPwr / p50), minSecsByW));
+                                if (n > maxSecsByW && maxSecsByW >= Math.ceil(reqPwr / p50)) n = maxSecsByW;
+                                if (n > maxS) n = maxS;
+                                return arr.find(x => x.sec === n) || arr[arr.length - 1];
+                            };
+                            const p50_spaceRu = isRommer ? (spaceRuRads[0]?.rommer?.power50 || 82) : (spaceRuRads[0]?.power50 || 116);
+                            const p50_titanSide = isRommer ? (titanSideRads[0]?.rommer?.power50 || 91) : (titanSideRads[0]?.power50 || 126);
+                            const p50_aluminum = isRommer ? (aluminumRads[0]?.rommer?.power50 || 100) : (aluminumRads[0]?.power50 || 107);
+                            const p50_spaceRu350 = spaceRu350Rads[0]?.rommer?.power50 || spaceRu350Rads[0]?.power50 || 85;
+                            const p50_titan350 = isRommer ? (titanSide350Rads[0]?.rommer?.power50 || 76) : (titanSide350Rads[0]?.power50 || 104);
+                            const p50_alum350 = isRommer ? (aluminum350Rads[0]?.rommer?.power50 || 74) : (aluminum350Rads[0]?.power50 || 83);
+                            const p50_titan200 = isRommer ? (titanSide200Rads[0]?.rommer?.power50 || 66) : (titanSide200Rads[0]?.power50 || 66);
+                            const p50_plusAl = rommerPlusAlRads[0]?.power50 || 117;
+                            const p50_plusAl200 = rommerPlusAl200Rads[0]?.power50 || 72;
+                            const maxRomSec = isRommer ? 12 : 14;
+                            let itemSpaceRu = pickSect(spaceRuRads, p50_spaceRu, maxRomSec);
+                            let itemTitanSide = pickSect(titanSideRads, p50_titanSide, maxRomSec);
+                            let itemAluminum = pickSect(aluminumRads, p50_aluminum, isRommer ? 12 : 12);
+                            let itemSpaceRu350 = pickSect(spaceRu350Rads, p50_spaceRu350, 14);
+                            let itemTitan350 = pickSect(titanSide350Rads, p50_titan350, maxRomSec);
+                            let itemAlum350 = pickSect(aluminum350Rads, p50_alum350, 12);
+                            let itemTitan200 = pickSect(titanSide200Rads, p50_titan200, 14);
+                            let itemPlusAl = pickSect(rommerPlusAlRads, p50_plusAl, 12);
+                            let itemPlusAl200 = pickSect(rommerPlusAl200Rads, p50_plusAl200, 14);
+
                             // === Панельные: выбираем тип (11/21/22/33) по мощности + диапазону ширины 50–90% ===
                             const panelMinW = w.width * 0.50, panelMaxW = w.width * 0.90;
-                            let bestPanel = steelRads.find(s => s.power50 >= reqPwr && (s.sec/1000) >= panelMinW && (s.sec/1000) <= panelMaxW)
-                                || steelRads.find(s => s.power50 >= reqPwr && (s.sec/1000) >= panelMinW)
-                                || steelRads.find(s => s.power50 >= reqPwr)
-                                || steelRads[steelRads.length - 1];
+                            const defaultSteelRads = steelRads.filter(s => app.getRadHeightFromId(s.id) === 500);
+                            let bestPanel = defaultSteelRads.find(s => s.power50 >= reqPwr && (s.sec / 1000) >= panelMinW && (s.sec / 1000) <= panelMaxW)
+                                || defaultSteelRads.find(s => s.power50 >= reqPwr && (s.sec / 1000) >= panelMinW)
+                                || defaultSteelRads.find(s => s.power50 >= reqPwr)
+                                || defaultSteelRads[defaultSteelRads.length - 1];
 
-                            let altsList = [itemSpace, itemTitan, bestPanel];
-                            itemSpace.alts = altsList; itemTitan.alts = altsList; bestPanel.alts = altsList;
+                            let altsList = [itemSpace, itemTitan, itemSpaceRu, itemTitanSide, itemSpaceRu350, itemTitan350, itemTitan200, itemAluminum, itemAlum350, itemPlusAl, itemPlusAl200, bestPanel];
+                            altsList.forEach(x => { if (x) x.alts = altsList; });
 
                             let activeItem, factPower;
-                            let effectiveRadType = this.state.radType;
-
-                            if (isRommer && effectiveRadType === 'titan') {
-                                effectiveRadType = 'space'; // Роммер Титан не существует, берем Оптиму (Space)
-                            }
+                            const effectiveRadType = this.state.radType;
 
                             if (effectiveRadType === 'steel') {
                                 activeItem = bestPanel; factPower = bestPanel.power50;
-                                if (this.state.radType === 'space') {
-                                    activeItem = { ...itemSpace, rommer: bestPanel };
-                                } else if (this.state.radType === 'titan') {
-                                    activeItem = { ...itemTitan, rommer: bestPanel };
-                                }
                             } else if (effectiveRadType === 'titan') {
                                 activeItem = itemTitan; factPower = itemTitan.sec * p50_titan;
+                            } else if (effectiveRadType === 'space_ru') {
+                                activeItem = itemSpaceRu; factPower = itemSpaceRu.sec * p50_spaceRu;
+                            } else if (effectiveRadType === 'space_ru350') {
+                                activeItem = itemSpaceRu350; factPower = itemSpaceRu350.sec * p50_spaceRu350;
+                            } else if (effectiveRadType === 'titan_side') {
+                                activeItem = itemTitanSide; factPower = itemTitanSide.sec * p50_titanSide;
+                            } else if (effectiveRadType === 'titan_side350') {
+                                activeItem = itemTitan350; factPower = itemTitan350.sec * p50_titan350;
+                            } else if (effectiveRadType === 'aluminum') {
+                                activeItem = itemAluminum; factPower = itemAluminum.sec * p50_aluminum;
+                            } else if (effectiveRadType === 'aluminum350') {
+                                activeItem = itemAlum350; factPower = itemAlum350.sec * p50_alum350;
                             } else {
                                 activeItem = itemSpace; factPower = itemSpace.sec * p50_space;
                             }
+
+                            // Применяем ручную замену (если выбрана пользователем) и пересчитываем фактическую мощность индивидуально под теплопотери
+                            const baseKey = activeItem.originalId || activeItem.id;
+                            const instanceKey = `${baseKey}_r${r.id}_w${wIdx}`; // уникальный ключ этого окна
+                            const _rww = parseFloat(w.width) || 0;
+                            if (_rww > 0) this.swapWindowWidthMap[instanceKey] = _rww; // ширина именно этого окна
+                            // Ручная замена: сначала ищем per-окно, затем общую (для обратной совместимости)
+                            let manualSwapId = null;
+                            if (this.state.swaps) {
+                                if (this.state.swaps[instanceKey]) {
+                                    manualSwapId = this.state.swaps[instanceKey];
+                                } else {
+                                    // Поиск по суффиксу _r{roomId}_w{winIdx}
+                                    const suffix = `_r${r.id}_w${wIdx}`;
+                                    const foundKey = Object.keys(this.state.swaps).find(k => k.endsWith(suffix));
+                                    if (foundKey) {
+                                        manualSwapId = this.state.swaps[foundKey];
+                                        this.state.swaps[instanceKey] = manualSwapId; // Синхронизируем ключ
+                                    }
+                                }
+                                if (!manualSwapId && this.state.swaps[baseKey]) {
+                                    manualSwapId = this.state.swaps[baseKey];
+                                }
+                            }
+                            let lookupKey = instanceKey;
+                            if (manualSwapId) {
+                                let targetSeries = null;
+                                const allSeries = this._getSecRadSeries();
+                                for (let s of allSeries) {
+                                    if (s.arr && s.arr.some(x => x.id === manualSwapId)) {
+                                        targetSeries = s;
+                                        break;
+                                    }
+                                }
+
+                                if (targetSeries) {
+                                    let targetItem = null;
+                                    if (targetSeries.isPanel) {
+                                        const swappedRad = targetSeries.arr.find(x => x.id === manualSwapId);
+                                        if (swappedRad) {
+                                            const panelHeight = this.getRadHeightFromId(manualSwapId);
+                                            let panelType = 'Тип 22';
+                                            if (swappedRad.name.includes('Тип 11')) panelType = 'Тип 11';
+                                            else if (swappedRad.name.includes('Тип 21')) panelType = 'Тип 21';
+                                            else if (swappedRad.name.includes('Тип 22')) panelType = 'Тип 22';
+                                            else if (swappedRad.name.includes('Тип 33')) panelType = 'Тип 33';
+
+                                            const filtered = targetSeries.arr.filter(p => this.getRadHeightFromId(p.id) === panelHeight && p.name && p.name.includes(panelType));
+                                            if (filtered.length > 0) {
+                                                targetItem = filtered.find(x => x.power50 >= reqPwr) || filtered[filtered.length - 1];
+                                            }
+                                        }
+                                    } else {
+                                        const p50 = isRommer ? (targetSeries.arr[0]?.rommer?.power50 || targetSeries.arr[0]?.power50 || 100) : (targetSeries.arr[0]?.power50 || 100);
+                                        targetItem = pickSect(targetSeries.arr, p50, isRommer ? 12 : 14);
+                                    }
+
+                                    if (targetItem) {
+                                        activeItem = { ...targetItem };
+                                        activeItem.originalId = lookupKey;
+                                        if (activeItem.isPanel) {
+                                            factPower = activeItem.power50;
+                                        } else {
+                                            const p50 = isRommer ? (targetSeries.arr[0]?.rommer?.power50 || targetSeries.arr[0]?.power50 || 100) : (targetSeries.arr[0]?.power50 || 100);
+                                            factPower = activeItem.sec * p50;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Каждый радиатор индивидуален: уникальный ключ + запрет слияния в счёте
+                            activeItem = { ...activeItem, originalId: instanceKey, noMerge: true };
 
                             if (factPower < reqPwr) {
                                 app.tempWarns.push(`• <b>${r.name} (Окно ${wIdx + 1}):</b> дефицит мощности радиатора ~${reqPwr - factPower} Вт.`);
@@ -12255,7 +13327,8 @@ const app = {
                 let secPerRadTitan = Math.max(4, Math.min(14, Math.ceil(totalSecTitan / countTitan)));
                 let itemTitan = titanRads.find(x => x.sec === secPerRadTitan) || titanRads[titanRads.length - 1];
 
-                let bestPanel = steelRads.find(s => s.power50 >= loadPerWindow) || steelRads[steelRads.length - 1];
+                const defaultSteelRads = steelRads.filter(s => app.getRadHeightFromId(s.id) === 500);
+                let bestPanel = defaultSteelRads.find(s => s.power50 >= loadPerWindow) || defaultSteelRads[defaultSteelRads.length - 1];
                 let countSteel = Math.max(win, Math.ceil(heatLoadTotal / bestPanel.power50));
 
                 let altsList = [itemSpace, itemTitan, bestPanel];
@@ -12725,12 +13798,12 @@ const app = {
                 let totalWaterCoils = Math.ceil(totalWaterPipe / 100);
                 let qtyWaterPipe = totalWaterCoils * 100;
                 let pipeTip = `Труба перемещена в общие материалы.<br>` +
-                              `<b>Расчетный метраж:</b><br>` +
-                              `• ХВС: ${pLenCold} м<br>` +
-                              (pLenHot > 0 ? `• ГВС: ${pLenHot} м<br>` : "") +
-                              (pLenRecirc > 0 ? `• Рециркуляция ГВС: ${pLenRecirc} м<br>` : "") +
-                              `• Итого расчетный метраж: ${totalWaterPipe} м.<br>` +
-                              `• Выбрано бухт (по 100 м): ${totalWaterCoils} шт. (всего ${qtyWaterPipe} м).`;
+                    `<b>Расчетный метраж:</b><br>` +
+                    `• ХВС: ${pLenCold} м<br>` +
+                    (pLenHot > 0 ? `• ГВС: ${pLenHot} м<br>` : "") +
+                    (pLenRecirc > 0 ? `• Рециркуляция ГВС: ${pLenRecirc} м<br>` : "") +
+                    `• Итого расчетный метраж: ${totalWaterPipe} м.<br>` +
+                    `• Выбрано бухт (по 100 м): ${totalWaterCoils} шт. (всего ${qtyWaterPipe} м).`;
                 addToBill(waterPipe, qtyWaterPipe, pipeTip, grpGen);
             }
             addToBill(catalog.water_parts[3], 1, "Наклейки", grpGen);
@@ -13025,7 +14098,7 @@ const app = {
         if (sewerToilets > 0 || (this.state.water && this.state.waterZones.length > 0)) {
             let sectionTitle = "8. Канализация";
             let singleZone = this.state.waterZones.length === 1;
-            
+
             // Если группировка ВКЛЮЧЕНА (потребители)
             if (!isSewerMerge) {
                 // Сначала выводим инсталляции (если есть) в своей группе, чтобы они были первыми
@@ -13060,7 +14133,7 @@ const app = {
                         let pipe110_1 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110100");
                         let bend110_87 = catalog.sewer_silent.find(x => x.id === "SKB-0012-011087");
                         let plug110 = catalog.sewer_silent.find(x => x.id === "SKB-0005-000110");
-                        
+
                         addToBill(pipe110_1, toiletsCount, this.getDesc('sewer_pipe_110', toiletsCount), grp);
                         addToBill(bend110_87, toiletsCount, this.getDesc('sewer_bend_110_87', toiletsCount), grp);
                         addToBill(plug110, toiletsCount, this.getDesc('sewer_plug_110'), grp);
@@ -13122,14 +14195,14 @@ const app = {
                             let pipe58Len = count * 1.0;
                             let q2 = Math.floor(pipe58Len / 2);
                             let q1 = Math.ceil(pipe58Len % 2);
-                            
+
                             let bend45Qty = count * 2;
                             let bend87Qty = count;
                             if (fix.key === 'wash' || fix.key === 'dish') {
                                 bend45Qty = count * 1;
                                 bend87Qty = 0;
                             }
-                            
+
                             let pipe58_2 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058200");
                             let pipe58_1 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058100");
                             let bend58_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-005845");
@@ -13152,19 +14225,19 @@ const app = {
                     let grpSewerMain = `8.${subSecIdx++}. Канализация: [Общие материалы и расходники]`;
                     let floors = this.state.floors || 1;
                     let area = this.state.area || 150;
-                    
+
                     let pipe110Len = (floors * 3) + Math.ceil(Math.sqrt(area) * 1.2);
                     let q2 = Math.floor(pipe110Len / 2);
                     let q1 = Math.ceil(pipe110Len % 2);
                     let pipe110_2 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110200");
                     let pipe110_1 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110100");
                     let bend110_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-011045");
-                    
+
                     if (q2 > 0) addToBill(pipe110_2, q2, this.getDesc('sewer_pipe_110_main', pipe110Len), grpSewerMain);
                     if (q1 > 0) addToBill(pipe110_1, q1, this.getDesc('sewer_pipe_110_main', pipe110Len), grpSewerMain);
-                    
+
                     addToBill(bend110_45, floors * 2, this.getDesc('sewer_bend_110_45'), grpSewerMain);
-                    
+
                     let waterZonesWithToilets = this.state.waterZones.filter(z => z.fixtures.toilet > 0).length;
                     if (waterZonesWithToilets > 1) {
                         let tee110_110 = catalog.sewer_silent.find(x => x.id === "SKB-0016-111187") || catalog.sewer_silent.find(x => x.id === "SKB-0015-111145");
@@ -13174,7 +14247,7 @@ const app = {
                     let lubCount = Math.max(1, Math.ceil(totalSewerPoints / 10));
                     let lub = catalog.sewer_silent.find(x => x.id === "sewer_lubricant");
                     addToBill(lub, lubCount, this.getDesc('sewer_lubricant'), grpSewerMain);
-                    
+
                     let coupling110 = catalog.sewer_silent.find(x => x.id === "SKB-0006-000110");
                     addToBill(coupling110, floors, this.getDesc('sewer_coupling_110'), grpSewerMain);
 
@@ -13220,7 +14293,7 @@ const app = {
                     let grpLabel = singleZone ? "8.1. [Инсталляция]" : `8.1. [Инсталляция] (${z.name})`;
                     flushBill(grpLabel);
                 });
-                
+
                 let subSecIdxFlush = 2;
                 this.state.waterZones.forEach(z => {
                     flushBill(singleZone ? `8.${subSecIdxFlush++}. Канализация: [Инсталляция]` : `8.${subSecIdxFlush++}. Канализация: [Инсталляция] (${z.name})`);
@@ -13236,7 +14309,7 @@ const app = {
 
             } else {
                 // Если группировка ВЫКЛЮЧЕНА (общий список, сортировка от большей цены к меньшей)
-                
+
                 // 1. Сначала добавляем инсталляцию как первую позицию
                 if (sewerToilets > 0) {
                     addToBill(catalog.water_parts[6], sewerToilets, this.getDesc('install'), sectionTitle);
@@ -13282,7 +14355,7 @@ const app = {
                         let pipe58Len = (basins + washes + dishes) * 1.0 + (showers + baths) * 1.5;
                         let q2 = Math.floor(pipe58Len / 2);
                         let q1 = Math.ceil(pipe58Len % 2);
-                        
+
                         let bend45Qty = (basins + showers + baths) * 2 + (washes + dishes) * 1;
                         let bend87Qty = (basins + showers + baths) * 1;
 
@@ -13305,18 +14378,18 @@ const app = {
                 if (totalSewerPoints > 0) {
                     let floors = this.state.floors || 1;
                     let area = this.state.area || 150;
-                    
+
                     let pipe110Len = (floors * 3) + Math.ceil(Math.sqrt(area) * 1.2);
                     let q2 = Math.floor(pipe110Len / 2);
                     let q1 = Math.ceil(pipe110Len % 2);
                     let pipe110_2 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110200");
                     let pipe110_1 = catalog.sewer_silent.find(x => x.id === "SKB-0002-110100");
                     let bend110_45 = catalog.sewer_silent.find(x => x.id === "SKB-0010-011045");
-                    
+
                     if (q2 > 0) addSewerItem(pipe110_2, q2, this.getDesc('sewer_pipe_110_main', pipe110Len));
                     if (q1 > 0) addSewerItem(pipe110_1, q1, this.getDesc('sewer_pipe_110_main', pipe110Len));
                     addSewerItem(bend110_45, floors * 2, this.getDesc('sewer_bend_110_45'));
-                    
+
                     let waterZonesWithToilets = this.state.waterZones.filter(z => z.fixtures.toilet > 0).length;
                     if (waterZonesWithToilets > 1) {
                         let tee110_110 = catalog.sewer_silent.find(x => x.id === "SKB-0016-111187") || catalog.sewer_silent.find(x => x.id === "SKB-0015-111145");
@@ -13326,7 +14399,7 @@ const app = {
                     let lubCount = Math.max(1, Math.ceil(totalSewerPoints / 10));
                     let lub = catalog.sewer_silent.find(x => x.id === "sewer_lubricant");
                     addSewerItem(lub, lubCount, this.getDesc('sewer_lubricant'));
-                    
+
                     let coupling110 = catalog.sewer_silent.find(x => x.id === "SKB-0006-000110");
                     addSewerItem(coupling110, floors, this.getDesc('sewer_coupling_110'));
 
@@ -13368,7 +14441,7 @@ const app = {
 
                 // Сортируем собранные позиции от большей цены к меньшей
                 let sortedSewerList = Object.values(sewerItems).sort((a, b) => (b.item.price || 0) - (a.item.price || 0));
-                
+
                 // Добавляем их в счет
                 sortedSewerList.forEach(entry => {
                     addToBill(entry.item, entry.qty, entry.tips.join('<br>'), sectionTitle);
@@ -14278,7 +15351,7 @@ window.addEventListener('beforeprint', function () {
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
         let isTrialActive = trialUntil > Date.now();
         let isPro = (app.state.accountType === 'pro' || isTrialActive || (app.state.tgUser && ['pro', 'admin'].includes(app.state.tgUser.account_type)));
-        
+
         if (showWorks && isPro) {
             app.state.viewMode = 'works';
             app.render();
