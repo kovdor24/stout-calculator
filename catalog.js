@@ -994,7 +994,7 @@ const getImg = (item) => {
         return `<img src="https://placehold.co/100x100/${bg}/555?text=${txt}&font=roboto" class="prod-thumb" loading="lazy" decoding="async">`;
     }
     let imgSrc = `img/${item.id}.jpg`;
-    return `<img src="${imgSrc}" class="prod-thumb" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/100x100/${bg}/555?text=${txt}&font=roboto';">`;
+    return `<img src="${imgSrc}" class="prod-thumb" loading="lazy" decoding="async" onerror="this.onerror=null;this.style.visibility='hidden';">`;
 };
 const workPrices = {
     boiler_gas: 20000,
