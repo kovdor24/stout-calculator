@@ -7399,11 +7399,15 @@ const app = {
             if (plan[2] > 0) chromeRommerPrice += b2.rommer.price * plan[2] * 2;
 
             customAlts = [
-                { id: stdStout.id, name: `Коллектор радиаторный (Стандарт, ${loops} вых.)`, brand: 'STOUT', price: stdStoutPrice },
-                { id: stdStout.rommer.id, name: `Коллектор радиаторный (Стандарт, ${loops} вых.)`, brand: 'ROMMER', price: stdRommerPrice },
-                { id: 'chrome', name: `Регулировочные блоки (комплект на ${loops} вых.)`, brand: 'STOUT', price: chromeStoutPrice },
-                { id: 'chrome_rommer', name: `Регулировочные блоки полностью укомплектован (${loops} вых.)`, brand: 'ROMMER', price: chromeRommerPrice }
+                { id: stdStout.id, name: `Коллектор радиаторный (Стандарт, ${loops} вых.)`, brand: 'STOUT', price: stdStoutPrice }
             ];
+            if (stdStout.rommer) {
+                customAlts.push({ id: stdStout.rommer.id, name: `Коллектор радиаторный (Стандарт, ${loops} вых.)`, brand: 'ROMMER', price: stdRommerPrice });
+            }
+            customAlts.push({ id: 'chrome', name: `Регулировочные блоки (комплект на ${loops} вых.)`, brand: 'STOUT', price: chromeStoutPrice });
+            if (b4.rommer || b3.rommer || b2.rommer) {
+                customAlts.push({ id: 'chrome_rommer', name: `Регулировочные блоки полностью укомплектован (${loops} вых.)`, brand: 'ROMMER', price: chromeRommerPrice });
+            }
             
             let activeId = '';
             let currentSwapVal = this.state.swaps && this.state.swaps[stdStout.id];
@@ -7417,7 +7421,7 @@ const app = {
                 if (this.state.radManifoldType === 'chrome') {
                     activeId = isRommer ? 'chrome_rommer' : 'chrome';
                 } else {
-                    activeId = isRommer ? stdStout.rommer.id : stdStout.id;
+                    activeId = (isRommer && stdStout.rommer) ? stdStout.rommer.id : stdStout.id;
                 }
             }
             
