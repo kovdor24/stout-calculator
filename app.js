@@ -501,7 +501,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 100, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 100, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null },
 
     lastSavedStateString: "",
 
@@ -6051,7 +6051,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 100, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 100, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -6639,15 +6639,11 @@ const app = {
         const allRadArrays = [catalog.rads, titanRads, spaceRuRads, spaceRu350Rads, titanSideRads, titanSide350Rads, titanSide200Rads, aluminumRads, aluminum350Rads, rommerPlusAlRads, rommerPlusAl200Rads, steelRads];
         allRadArrays.forEach(arr => arr.forEach(rad => { rad.alts = radAlts; }));
         let hAlts = catalog.h_valves; catalog.h_valves.forEach(v => { v.alts = hAlts; });
+        const allTankArrays = [catalog.tanks_optibase, catalog.tanks_standard, catalog.tanks_stainless, catalog.tanks_floor_comb, catalog.tanks_wall_cos, catalog.tanks_wall_comb];
         const setBoilerAlts = (t) => {
-            let opti = catalog.tanks_optibase.find(x => x.vol === t.vol);
-            let std = catalog.tanks_standard.find(x => x.vol === t.vol);
-            let stainless = catalog.tanks_stainless.find(x => x.vol === t.vol);
-            t.alts = [opti, std, stainless].filter(Boolean);
+            t.alts = allTankArrays.flatMap(db => db.filter(x => x !== t && x.vol === t.vol)).filter(Boolean);
         };
-        catalog.tanks_optibase.forEach(setBoilerAlts);
-        catalog.tanks_standard.forEach(setBoilerAlts);
-        catalog.tanks_stainless.forEach(setBoilerAlts);
+        allTankArrays.forEach(arr => arr.forEach(setBoilerAlts));
         let pumpAlts = catalog.pumps_dn25; catalog.pumps_dn25.forEach(p => { p.alts = pumpAlts; });
         catalog.boilers_plus.forEach(b => {
             let alt = catalog.boilers_status.find(x => x.power === b.power);
@@ -6881,9 +6877,12 @@ const app = {
         else if ((originalId.startsWith('SHT') || (originalId.startsWith('STE') && originalId.includes('2070'))) && !originalId.includes('2001') && !originalId.includes('2002')) { if (this.state.headType === 'gas') this.state.headType = 'liquid'; else if (this.state.headType === 'liquid') this.state.headType = 'smart'; else this.state.headType = 'gas'; }
         else if (originalId.startsWith('SVH')) { if (this.state.connectionType === 'angled') this.state.connectionType = 'straight'; else this.state.connectionType = 'angled'; }
         else if (originalId.startsWith('SWH')) {
-            if (this.state.boilerType === 'optibase') this.state.boilerType = 'standard';
-            else if (this.state.boilerType === 'standard') this.state.boilerType = 'stainless';
-            else this.state.boilerType = 'optibase';
+            let _m = this.state.tankMount || 'floor', _h = this.state.tankHeat || 'cos';
+            if (_m === 'floor' && _h === 'cos') {
+                this.state.boilerType = (this.state.boilerType === 'optibase') ? 'standard' : 'optibase';
+            } else if (_m === 'floor' && _h === 'comb') {
+                this.state.boilerType = (this.state.boilerType === 'stainless') ? 'standard' : 'stainless';
+            }
         }
         else if (originalId.startsWith('SPC-') && originalId.includes('180')) { if (this.state.pumpType === 'default') this.state.pumpType = 'std'; else if (this.state.pumpType === 'std') this.state.pumpType = 'mini'; else if (this.state.pumpType === 'mini') this.state.pumpType = 'pro'; else this.state.pumpType = 'default'; }
         else if (originalId.startsWith('SEB-')) { this.state.boilerSeries = (this.state.boilerSeries === 'plus') ? 'status' : 'plus'; }
@@ -7033,6 +7032,14 @@ const app = {
         delete this.state.swapWindowWidth;
         delete this.state.swapGroupReplace;
         delete this.state.swapAllReplace;
+        // Сбрасываем фильтры бойлера при открытии новой позиции (не бойлерной)
+        const _lkId = lookupId || '';
+        if (!_lkId.startsWith('SWH') && !_lkId.startsWith('RWH')) {
+            this._tankSwapId = null;
+            this.state.tankSwapMount = null;
+            this.state.tankSwapHeat = null;
+            this.state.tankSwapVol = null;
+        }
 
         let item = this.currentEquipmentList.find(x => x.id === lookupId || x.displaySku === lookupId);
         if (!item) {
@@ -7068,8 +7075,33 @@ const app = {
         }
 
         let alts = item.alts || [];
+        let _allVolsAlts = [];
         let customAlts = null;
         let isRommer = this.state.brandMode === 'rommer';
+
+        // Для бойлеров: показываем позиции по swap-фильтрам
+        const _origIdForTank = item.originalId || item.id || '';
+        if (_origIdForTank.startsWith('SWH') || _origIdForTank.startsWith('RWH')) {
+            this._tankSwapId = lookupId;
+            if (!this.state.tankSwapMount) this.state.tankSwapMount = this.state.tankMount || 'floor';
+            if (!this.state.tankSwapHeat) this.state.tankSwapHeat = this.state.tankHeat || 'cos';
+            const _allTankGroups = [
+                { mount: 'floor', heat: 'cos',  arr: catalog.tanks_standard },
+                { mount: 'floor', heat: 'cos',  arr: catalog.tanks_optibase },
+                { mount: 'floor', heat: 'comb', arr: catalog.tanks_floor_comb },
+                { mount: 'floor', heat: 'comb', arr: catalog.tanks_stainless },
+                { mount: 'wall',  heat: 'cos',  arr: catalog.tanks_wall_cos },
+                { mount: 'wall',  heat: 'comb', arr: catalog.tanks_wall_comb },
+            ];
+            let _sm = this.state.tankSwapMount;
+            let _sh = this.state.tankSwapHeat;
+            let _sv = this.state.tankSwapVol;
+            _allVolsAlts = _allTankGroups
+                .filter(g => _sm === 'all' || g.mount === _sm)
+                .filter(g => _sh === 'all' || g.heat === _sh)
+                .flatMap(g => g.arr);
+            alts = _sv === null ? _allVolsAlts : _allVolsAlts.filter(x => x.vol === _sv);
+        }
 
         if (item.originalId === 'SAC-0022-283020_boiler') {
             customAlts = [
@@ -7291,12 +7323,46 @@ const app = {
         let title = document.getElementById('swap_modal_title');
         if (!modal || !body) return;
 
-        title.innerHTML = `
-            <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; text-transform: none !important;">Варианты замены:</div>
-            <div style="font-size: 13px; font-weight: 500; color: var(--text-sec); text-transform: none !important;">${item.name}</div>
-        `;
-
         let basePrice = item.price || 0;
+
+        const _tankCoilKwMap = {
+            'SWH-3110-000100': 24, 'SWH-3110-000150': 24, 'SWH-3110-000200': 24,
+            'SWH-1110-000300': 32, 'SWH-1110-000500': 69.5,
+            'SWH-4110-050100': 26, 'SWH-4110-050150': 32, 'SWH-4110-050200': 32, 'SWH-4110-050300': 48, 'SWH-4110-050500': 64,
+            'SWH-2110-000150': 31, 'SWH-2110-000200': 40.2, 'SWH-2110-000300': 55.6, 'SWH-2110-000400': 73.5, 'SWH-2110-000500': 73.5,
+            'SWH-2110-200200': '31 + 40,2', 'SWH-2110-200300': '38,5 + 55,6', 'SWH-2110-200400': '38,5 + 73,5', 'SWH-2110-200500': '38,5 + 73,5',
+            'SWH-1110-050100': 24, 'SWH-1110-050150': 32, 'SWH-1110-050200': 32, 'SWH-1110-050300': 32,
+            'SWH-3210-000080': 18.5, 'SWH-3210-000100': 18.5, 'SWH-3210-000150': 18.5, 'SWH-3210-000200': 18.5,
+            'SWH-1210-050075': 18.5, 'SWH-1210-050100': 18.5, 'SWH-1210-050150': 24, 'SWH-1210-050200': 24,
+            'RWH-2110-000150': 35, 'RWH-2110-000200': 38, 'RWH-2110-000300': 49, 'RWH-2110-000500': 60,
+        };
+        const _tankItemId = item.originalId || item.id || '';
+        const _coilKw = _tankCoilKwMap[_tankItemId];
+        const _priceStr = basePrice > 0 ? this.formatPriceHtml(basePrice, true) : '—';
+
+        if (_coilKw) {
+            title.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main); text-transform:none;">Варианты замены</h3>
+                        <span style="font-size:12px; color:var(--text-sec); display:block; margin-top:2px; font-weight:500; text-transform:none;">${item.name || ''}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap;">
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            ${typeof _coilKw === 'string' && _coilKw.includes('+') ? 'Мощность теплообменников' : 'Мощность теплообменника'}: <span style="font-weight:800;">${_coilKw} кВт</span>
+                        </div>
+                        <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
+                            Цена: <span style="font-weight:800;">${_priceStr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            title.innerHTML = `
+                <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; text-transform: none !important;">Варианты замены:</div>
+                <div style="font-size: 13px; font-weight: 500; color: var(--text-sec); text-transform: none !important;">${item.name}</div>
+            `;
+        }
         let getPriceDiffHtml = (targetPrice, isRowActive) => {
             if (isRowActive) {
                 return `<span style="color: var(--text-sec); font-weight: 600;">0%</span>`;
@@ -7314,16 +7380,57 @@ const app = {
             return `<span style="color: var(--text-sec); font-weight: 600;">-</span>`;
         };
 
-        let html = `
+        const _isTankItem = (lookupId || '').startsWith('SWH') || (lookupId || '').startsWith('RWH');
+        let _tankFiltersHtml = '';
+        if (_isTankItem) {
+            let _sm = this.state.tankSwapMount || this.state.tankMount || 'floor';
+            let _sh = this.state.tankSwapHeat || this.state.tankHeat || 'cos';
+            let _sv = this.state.tankSwapVol;
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            // Уникальные объёмы из полного набора (без фильтра по литражу) — чтобы кнопки не исчезали
+            let _vols = [...new Set(_allVolsAlts.map(x => x.vol))].sort((a,b) => a-b);
+            let _volHtml = _vols.map(v => `<span onclick="app.setTankSwapVol(${v})" ${_b(_sv===v)}>${v} л</span>`).join('') +
+                           `<span onclick="app.setTankSwapVol(null)" ${_b(_sv===null)}>ВСЕ</span>`;
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span onclick="app.setTankSwapMount('floor')" ${_b(_sm==='floor')}>Напольный</span>` +
+                `<span onclick="app.setTankSwapMount('wall')" ${_b(_sm==='wall')}>Настенный</span>` +
+                `<span onclick="app.setTankSwapMount('all')" ${_b(_sm==='all')}>ВСЕ</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span onclick="app.setTankSwapHeat('cos')" ${_b(_sh==='cos')}>Без ТЭНа</span>` +
+                `<span onclick="app.setTankSwapHeat('comb')" ${_b(_sh==='comb')}>ТЭН</span>` +
+                `<span onclick="app.setTankSwapHeat('all')" ${_b(_sh==='all')}>ВСЕ</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                _volHtml +
+                `</div>` +
+                `</div>`;
+        }
+
+        const _tsSortField = _isTankItem ? (this._tankSwapSort || 'price') : null;
+        const _tsSortOrder = _isTankItem ? (this._tankSwapSortOrder || 'asc') : null;
+        const _priceArrow = _tsSortField === 'price' ? (_tsSortOrder === 'asc' ? ' ▲' : ' ▼') : '';
+        const _coilArrow = _tsSortField === 'coil' ? (_tsSortOrder === 'asc' ? ' ▲' : ' ▼') : '';
+        const _sortStyle = 'cursor:pointer;user-select:none;text-decoration:underline dotted;';
+        const _nameTh = _isTankItem
+            ? `<th class="col-name" style="text-align:left;${_sortStyle}" onclick="app.toggleTankSwapSort('coil')">Наименование${_coilArrow}</th>`
+            : `<th class="col-name" style="text-align:left;">Наименование</th>`;
+        const _priceTh = _isTankItem
+            ? `<th style="text-align:right;width:100px;${_sortStyle}" onclick="app.toggleTankSwapSort('price')">Цена${_priceArrow}</th>`
+            : `<th style="text-align:right;width:100px;">Цена</th>`;
+
+        let html = _tankFiltersHtml + `
             <table class="inv-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
                 <thead>
                     <tr>
                         <th class="col-idx" style="text-align: center; width: 40px;">#</th>
                         <th class="col-img" style="width: 65px; text-align: center;">Фото</th>
-                        <th class="col-name" style="text-align: left;">Наименование</th>
+                        ${_nameTh}
                         <th class="col-brand" style="text-align: center; width: 90px;">Бренд</th>
                         <th class="col-pct" style="text-align: right; width: 110px;">Изм. цена (%)</th>
-                        <th style="text-align: right; width: 100px;">Цена</th>
+                        ${_priceTh}
                     </tr>
                 </thead>
                 <tbody>
@@ -7443,7 +7550,9 @@ const app = {
                 if (!baseItem) {
                     baseItem = item;
                 }
-                altsToProcess.unshift(baseItem);
+                // Для бойлеров: не добавлять текущий если он не входит в полностью отфильтрованный набор (mount+heat+vol)
+                let skipAdd = _isTankItem && baseItem && !alts.some(x => x.id === baseItem.id);
+                if (!skipAdd) altsToProcess.unshift(baseItem);
             }
 
             altsToProcess.forEach(alt => {
@@ -7524,6 +7633,10 @@ const app = {
                 }
 
                 let candidates = [displayItemStout, displayItemRommer, displayItemComfort].filter(Boolean);
+                // При фильтре "ТЭН" исключаем GT-серию (без ТЭНа, RWH-2110-0xxx) из результатов
+                if (_isTankItem && this.state.tankSwapHeat === 'comb') {
+                    candidates = candidates.filter(d => !(d.id && d.id.startsWith('RWH-2110-0')));
+                }
                 candidates.forEach(displayAlt => {
                     let id = displayAlt.id;
                     if (seenIds.has(id)) return;
@@ -7532,7 +7645,17 @@ const app = {
                 });
             });
 
-            uniqueAlts.sort((a, b) => (a.display.price || 0) - (b.display.price || 0));
+            if (_isTankItem) {
+                const _sf = this._tankSwapSort || 'price';
+                const _dir = (this._tankSwapSortOrder || 'asc') === 'asc' ? 1 : -1;
+                const _coilVal = (d) => { let v = _tankCoilKwMap[d.id]; return typeof v === 'number' ? v : (typeof v === 'string' ? parseFloat(v) || 0 : 0); };
+                uniqueAlts.sort((a, b) => {
+                    if (_sf === 'coil') return (_coilVal(a.display) - _coilVal(b.display)) * _dir;
+                    return ((a.display.price || 0) - (b.display.price || 0)) * _dir;
+                });
+            } else {
+                uniqueAlts.sort((a, b) => (a.display.price || 0) - (b.display.price || 0));
+            }
 
             uniqueAlts.forEach((entry, idx) => {
                 let alt = entry.original;
@@ -7545,12 +7668,14 @@ const app = {
                 let badgeHtml = isActive ? `<span style="font-size: 10px; background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px;">Выбран</span>` : "";
                 let diffHtml = getPriceDiffHtml(displayAlt.price, isActive);
                 let priceText = displayAlt.price > 0 ? this.formatPriceHtml(displayAlt.price, true) : "-";
+                let _rowCoilKw = _isTankItem ? _tankCoilKwMap[displayAlt.id] : null;
+                let _rowCoilStr = _rowCoilKw ? ` <span style="color:var(--text-sec);font-size:11px;font-weight:500;">(${_rowCoilKw} кВт)</span>` : '';
 
                 html += `
                     <tr class="${activeClass}" style="cursor: pointer; ${activeStyle}" onclick="app.selectSwapAlternative('${item.originalId || item.id}', '${displayAlt.id}')">
                         <td class="col-idx" style="text-align: center; font-size: 13px;">${idx + 1}</td>
                         <td class="col-img" style="text-align: center;">${img}</td>
-                        <td class="col-name" style="font-size: 13px; font-weight: 600; text-align: left;">${displayAlt.name}${badgeHtml}</td>
+                        <td class="col-name" style="font-size: 13px; font-weight: 600; text-align: left;">${displayAlt.name}${_rowCoilStr}${badgeHtml}</td>
                         <td class="col-brand" style="text-align: center; font-size: 13px;">${displayAlt.brand || 'STOUT'}</td>
                         <td class="col-pct" style="text-align: right; font-weight: 700; font-size: 13px;">${diffHtml}</td>
                         <td style="text-align: right; font-weight: 700; font-size: 13px; white-space: nowrap;">${priceText}</td>
@@ -8392,9 +8517,12 @@ const app = {
             else this.state.connectionType = 'straight';
         }
         else if (originalId.startsWith('SWH') || originalId.startsWith('RWH')) {
-            if (catalog.tanks_stainless.some(x => x.id === chosenId)) this.state.boilerType = 'stainless';
-            else if (catalog.tanks_standard.some(x => x.id === chosenId)) this.state.boilerType = 'standard';
-            else if (catalog.tanks_optibase.some(x => x.id === chosenId)) this.state.boilerType = 'optibase';
+            if (catalog.tanks_stainless.some(x => x.id === chosenId)) { this.state.boilerType = 'stainless'; this.state.tankMount = 'floor'; this.state.tankHeat = 'comb'; }
+            else if (catalog.tanks_floor_comb.some(x => x.id === chosenId)) { this.state.boilerType = 'standard'; this.state.tankMount = 'floor'; this.state.tankHeat = 'comb'; }
+            else if (catalog.tanks_wall_cos.some(x => x.id === chosenId)) { this.state.tankMount = 'wall'; this.state.tankHeat = 'cos'; }
+            else if (catalog.tanks_wall_comb.some(x => x.id === chosenId)) { this.state.tankMount = 'wall'; this.state.tankHeat = 'comb'; }
+            else if (catalog.tanks_standard.some(x => x.id === chosenId)) { this.state.boilerType = 'standard'; this.state.tankMount = 'floor'; this.state.tankHeat = 'cos'; }
+            else if (catalog.tanks_optibase.some(x => x.id === chosenId)) { this.state.boilerType = 'optibase'; this.state.tankMount = 'floor'; this.state.tankHeat = 'cos'; }
         }
         else if (originalId.startsWith('SPC-') && originalId.includes('180')) {
             let pmp = catalog.pumps_dn25.find(p => p.id === chosenId || (p.rommer && p.rommer.id === chosenId));
@@ -9615,6 +9743,69 @@ const app = {
         });
     },
     setUfhCtrl: function (type) { this.state.ufhCtrl = type; this.syncUI(); this.render(); },
+    getTankDb: function () {
+        let mount = this.state.tankMount || 'floor';
+        let heat = this.state.tankHeat || 'cos';
+        let type = this.state.boilerType || 'optibase';
+        if (mount === 'wall') {
+            return heat === 'comb' ? catalog.tanks_wall_comb : catalog.tanks_wall_cos;
+        }
+        if (heat === 'comb') {
+            return type === 'stainless' ? catalog.tanks_stainless : catalog.tanks_floor_comb;
+        }
+        return type === 'optibase' ? catalog.tanks_optibase : catalog.tanks_standard;
+    },
+    setTankMount: function (mount) {
+        this.state.tankMount = mount;
+        this.state.tankVol = null;
+        if (mount === 'wall') { this.state.boilerType = 'standard'; }
+        this.saveState(); this.render(); this._reopenTankSwapModal();
+    },
+    setTankHeat: function (heat) {
+        this.state.tankHeat = heat;
+        this.state.tankVol = null;
+        if (heat === 'comb' && this.state.boilerType === 'optibase') this.state.boilerType = 'standard';
+        this.saveState(); this.render(); this._reopenTankSwapModal();
+    },
+    setTankSeries: function (type) {
+        this.state.boilerType = type;
+        this.state.tankVol = null;
+        this.render(); this._reopenTankSwapModal();
+    },
+    setTankVol: function (vol) {
+        this.state.tankVol = vol;
+        this.render(); this._reopenTankSwapModal();
+    },
+    setTankSwapMount: function (val) {
+        this.state.tankSwapMount = val;
+        this.state.tankSwapVol = null;
+        if (this._tankSwapId) this.openSwapModal(this._tankSwapId);
+    },
+    setTankSwapHeat: function (val) {
+        this.state.tankSwapHeat = val;
+        this.state.tankSwapVol = null;
+        if (this._tankSwapId) this.openSwapModal(this._tankSwapId);
+    },
+    setTankSwapVol: function (val) {
+        this.state.tankSwapVol = val;
+        if (this._tankSwapId) this.openSwapModal(this._tankSwapId);
+    },
+    toggleTankSwapSort: function (field) {
+        if (this._tankSwapSort === field) {
+            this._tankSwapSortOrder = this._tankSwapSortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+            this._tankSwapSort = field;
+            this._tankSwapSortOrder = 'asc';
+        }
+        if (this._tankSwapId) this.openSwapModal(this._tankSwapId);
+    },
+    _reopenTankSwapModal: function () {
+        let modal = document.getElementById('swap_modal_overlay');
+        if (!modal || modal.style.display === 'none' || modal.style.display === '') return;
+        if (this._tankSwapId) {
+            this.openSwapModal(this._tankSwapId);
+        }
+    },
     setUfhStep: function (floor, step) {
         if (floor === 1) {
             this.state.ufhStep1 = parseInt(step) || 150;
@@ -12382,20 +12573,28 @@ const app = {
                 chosenBy = 'fixtures';
             }
 
-            let vol = 100;
-            if (targetVol > 100 && targetVol <= 150) vol = 150;
-            else if (targetVol > 150 && targetVol <= 200) vol = 200;
-            else if (targetVol > 200 && targetVol <= 300) vol = 300;
-            else if (targetVol > 300) vol = 500;
+            let isWall = (this.state.tankMount === 'wall');
+            let vol;
+            if (this.state.tankVol) {
+                vol = this.state.tankVol;
+            } else {
+                vol = isWall ? 80 : 100;
+                if (targetVol > 80 && targetVol <= 100) vol = 100;
+                else if (targetVol > 100 && targetVol <= 150) vol = 150;
+                else if (targetVol > 150 && targetVol <= 200) vol = 200;
+                else if (targetVol > 200 && targetVol <= 300) vol = isWall ? 200 : 300;
+                else if (targetVol > 300) vol = isWall ? 200 : 500;
+            }
 
-            let tankDb = (this.state.boilerType === 'optibase') ? catalog.tanks_optibase : (this.state.boilerType === 'standard' ? catalog.tanks_standard : catalog.tanks_stainless);
-            let t = tankDb.find(x => x.vol === vol) || tankDb[tankDb.length - 1];
-            let opti = catalog.tanks_optibase.find(x => x.vol === vol);
-            let std = catalog.tanks_standard.find(x => x.vol === vol);
-            let stainless = catalog.tanks_stainless.find(x => x.vol === vol);
-            t.alts = [opti, std, stainless].filter(Boolean);
+            let tankDb = this.getTankDb();
+            let t = { ...( tankDb.find(x => x.vol === vol) || tankDb[tankDb.length - 1] ) };
 
-            let warn = targetVol > 500 ? `<br><b style="color:#EF4444; font-size:10px;">⚠️ Требуемый объем ГВС превышает 500л! Добавьте в смету второй бойлер вручную или проверьте количество потребителей ГВС.</b>` : "";
+            let allTankDbs = [catalog.tanks_optibase, catalog.tanks_standard, catalog.tanks_stainless, catalog.tanks_floor_comb, catalog.tanks_wall_cos, catalog.tanks_wall_comb];
+            let baseItem = tankDb.find(x => x.vol === vol) || tankDb[tankDb.length - 1];
+            t.alts = allTankDbs.flatMap(db => db.filter(x => x !== baseItem && x.vol === vol)).filter(Boolean);
+
+            let warnWall = isWall && targetVol > 200 ? `<br><b style="color:#EF4444; font-size:10px;">⚠️ Для настенного выбран максимальный объём 200л. Для бо́льшего объёма используйте напольный бойлер.</b>` : "";
+            let warn = targetVol > 500 ? `<br><b style="color:#EF4444; font-size:10px;">⚠️ Требуемый объем ГВС превышает 500л! Добавьте в смету второй бойлер вручную или проверьте количество потребителей ГВС.</b>` : warnWall;
 
             addToBill(t, 1, this.getDesc('boiler_tank', this.state.res, vol, hw_fixtures_vol, chosenBy) + warn);
         }
