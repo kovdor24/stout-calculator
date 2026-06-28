@@ -7067,8 +7067,22 @@ const app = {
         // ── Секционные радиаторы → новый модал с табами высот ──
         {
             const _cid = item.originalId || item.id || '';
-            const _isSecRad = this._getSecRadSeries().some(s => s.arr && s.arr.some(x => x.id === _cid || x.id === item.id));
-            if (_isSecRad) {
+            const allSer = this._getSecRadSeries();
+            const matchedSeries = allSer.find(s => s.arr && s.arr.some(x => x.id === _cid || x.id === item.id));
+            if (matchedSeries) {
+                // Предустановка фильтров на основе параметров выбранного прибора под замену
+                let hVal = item.height || this.getRadHeightFromId(_cid) || matchedSeries.h;
+                this.state.swapHeight = hVal;
+                this.state.swapMaterialFilter = this._getRadMaterial(matchedSeries);
+                this.state.swapConnectionType = (matchedSeries.bottom || item.bottom || (item.name && (item.name.includes('Ventil') || item.name.includes('нижнее')))) ? 'bottom' : 'side';
+
+                const heights = [200, 300, 350, 400, 500, 600];
+                const idx = heights.indexOf(hVal);
+                if (idx !== -1) {
+                    this.state.swapHeightMinIndex = idx;
+                    this.state.swapHeightMaxIndex = idx;
+                }
+
                 this._openRadSwapModal(item);
                 return;
             }
