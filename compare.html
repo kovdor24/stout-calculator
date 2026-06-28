@@ -231,7 +231,9 @@ const analyzBtn = document.getElementById('analyzeBtn');
 const uploadEl  = document.getElementById('uploadZone');
 const fileEl    = document.getElementById('fileInput');
 
-apiKeyEl.value = localStorage.getItem('hc_gemini_key') || '';
+const DEFAULT_GEMINI_KEY = 'AQ.Ab8RN6I2gUvoP8Jx7jFREqDedh1lz460ltXNnZFaJsVPpFWk_g';
+apiKeyEl.value = localStorage.getItem('hc_gemini_key') || DEFAULT_GEMINI_KEY;
+if (!localStorage.getItem('hc_gemini_key')) localStorage.setItem('hc_gemini_key', DEFAULT_GEMINI_KEY);
 apiKeyEl.addEventListener('input', () => { if (apiKeyEl.value.trim()) localStorage.setItem('hc_gemini_key', apiKeyEl.value.trim()); });
 
 // ── File events ────────────────────────────────────
