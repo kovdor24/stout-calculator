@@ -13243,7 +13243,13 @@ const app = {
 
                                             const filtered = targetSeries.arr.filter(p => this.getRadHeightFromId(p.id) === panelHeight && p.name && p.name.includes(panelType));
                                             if (filtered.length > 0) {
-                                                targetItem = filtered.find(x => x.power50 >= reqPwr) || filtered[filtered.length - 1];
+                                                // Сортируем по длине в мм по возрастанию
+                                                filtered.sort((a, b) => a.sec - b.sec);
+                                                const panelMinW = w.width * 0.50, panelMaxW = w.width * 0.90;
+                                                targetItem = filtered.find(s => s.power50 >= reqPwr && (s.sec / 1000) >= panelMinW && (s.sec / 1000) <= panelMaxW)
+                                                    || filtered.find(s => s.power50 >= reqPwr && (s.sec / 1000) >= panelMinW)
+                                                    || filtered.find(s => s.power50 >= reqPwr)
+                                                    || filtered[filtered.length - 1];
                                             }
                                         }
                                     } else {
