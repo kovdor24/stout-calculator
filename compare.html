@@ -303,7 +303,7 @@ function buildCatalogText() {
 
 // ── Gemini API ─────────────────────────────────────
 async function callGemini(key, promptText, fileContent) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
 
     const parts = [{ text: promptText }];
     if (fileContent) {
