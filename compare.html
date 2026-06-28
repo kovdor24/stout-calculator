@@ -232,6 +232,7 @@ const uploadEl  = document.getElementById('uploadZone');
 const fileEl    = document.getElementById('fileInput');
 
 apiKeyEl.value = localStorage.getItem('hc_gemini_key') || '';
+apiKeyEl.addEventListener('input', () => { if (apiKeyEl.value.trim()) localStorage.setItem('hc_gemini_key', apiKeyEl.value.trim()); });
 
 // ── File events ────────────────────────────────────
 uploadEl.addEventListener('click', () => fileEl.click());
