@@ -7023,22 +7023,27 @@ const app = {
         return cheapest || item;
     },
     openSwapModal: function (lookupId) {
-        // Clear previous swap filter states to reset for the newly clicked item
-        delete this.state.swapHeightMinIndex;
-        delete this.state.swapHeightMaxIndex;
-        delete this.state.swapHeight;
-        delete this.state.swapMaterialFilter;
-        delete this.state.swapConnectionType;
-        delete this.state.swapWindowWidth;
-        delete this.state.swapGroupReplace;
-        delete this.state.swapAllReplace;
-        // Сбрасываем фильтры бойлера при открытии новой позиции (не бойлерной)
-        const _lkId = lookupId || '';
-        if (!_lkId.startsWith('SWH') && !_lkId.startsWith('RWH')) {
-            this._tankSwapId = null;
-            this.state.tankSwapMount = null;
-            this.state.tankSwapHeat = null;
-            this.state.tankSwapVol = null;
+        let isFirstOpen = (this._lastSwapLookupId !== lookupId) || !document.getElementById('swap_modal_overlay') || document.getElementById('swap_modal_overlay').style.display === 'none';
+        this._lastSwapLookupId = lookupId;
+
+        if (isFirstOpen) {
+            // Clear previous swap filter states to reset for the newly clicked item
+            delete this.state.swapHeightMinIndex;
+            delete this.state.swapHeightMaxIndex;
+            delete this.state.swapHeight;
+            delete this.state.swapMaterialFilter;
+            delete this.state.swapConnectionType;
+            delete this.state.swapWindowWidth;
+            delete this.state.swapGroupReplace;
+            delete this.state.swapAllReplace;
+            // Сбрасываем фильтры бойлера при открытии новой позиции (не бойлерной)
+            const _lkId = lookupId || '';
+            if (!_lkId.startsWith('SWH') && !_lkId.startsWith('RWH')) {
+                this._tankSwapId = null;
+                this.state.tankSwapMount = null;
+                this.state.tankSwapHeat = null;
+                this.state.tankSwapVol = null;
+            }
         }
 
         let item = this.currentEquipmentList.find(x => x.id === lookupId || x.displaySku === lookupId);
@@ -7070,17 +7075,19 @@ const app = {
             const allSer = this._getSecRadSeries();
             const matchedSeries = allSer.find(s => s.arr && s.arr.some(x => x.id === _cid || x.id === item.id));
             if (matchedSeries) {
-                // Предустановка фильтров на основе параметров выбранного прибора под замену
-                let hVal = item.height || this.getRadHeightFromId(_cid) || matchedSeries.h;
-                this.state.swapHeight = hVal;
-                this.state.swapMaterialFilter = this._getRadMaterial(matchedSeries);
-                this.state.swapConnectionType = (matchedSeries.bottom || item.bottom || (item.name && (item.name.includes('Ventil') || item.name.includes('нижнее')))) ? 'bottom' : 'side';
+                if (isFirstOpen) {
+                    // Предустановка фильтров на основе параметров выбранного прибора под замену
+                    let hVal = item.height || this.getRadHeightFromId(_cid) || matchedSeries.h;
+                    this.state.swapHeight = hVal;
+                    this.state.swapMaterialFilter = this._getRadMaterial(matchedSeries);
+                    this.state.swapConnectionType = (matchedSeries.bottom || item.bottom || (item.name && (item.name.includes('Ventil') || item.name.includes('нижнее')))) ? 'bottom' : 'side';
 
-                const heights = [200, 300, 350, 400, 500, 600];
-                const idx = heights.indexOf(hVal);
-                if (idx !== -1) {
-                    this.state.swapHeightMinIndex = idx;
-                    this.state.swapHeightMaxIndex = idx;
+                    const heights = [200, 300, 350, 400, 500, 600];
+                    const idx = heights.indexOf(hVal);
+                    if (idx !== -1) {
+                        this.state.swapHeightMinIndex = idx;
+                        this.state.swapHeightMaxIndex = idx;
+                    }
                 }
 
                 this._openRadSwapModal(item);
@@ -7097,20 +7104,22 @@ const app = {
         const _origIdForTank = item.originalId || item.id || '';
         if (_origIdForTank.startsWith('SWH') || _origIdForTank.startsWith('RWH')) {
             this._tankSwapId = lookupId;
-            let mount = 'floor';
-            let heat = 'cos';
-            let vol = item.vol || 100;
+            if (isFirstOpen) {
+                let mount = 'floor';
+                let heat = 'cos';
+                let vol = item.vol || 100;
 
-            if (catalog.tanks_stainless && catalog.tanks_stainless.some(x => x.id === _origIdForTank)) { mount = 'floor'; heat = 'comb'; }
-            else if (catalog.tanks_floor_comb && catalog.tanks_floor_comb.some(x => x.id === _origIdForTank)) { mount = 'floor'; heat = 'comb'; }
-            else if (catalog.tanks_wall_cos && catalog.tanks_wall_cos.some(x => x.id === _origIdForTank)) { mount = 'wall'; heat = 'cos'; }
-            else if (catalog.tanks_wall_comb && catalog.tanks_wall_comb.some(x => x.id === _origIdForTank)) { mount = 'wall'; heat = 'comb'; }
-            else if (catalog.tanks_standard && catalog.tanks_standard.some(x => x.id === _origIdForTank)) { mount = 'floor'; heat = 'cos'; }
-            else if (catalog.tanks_optibase && catalog.tanks_optibase.some(x => x.id === _origIdForTank)) { mount = 'floor'; heat = 'cos'; }
+                if (catalog.tanks_stainless && catalog.tanks_stainless.some(x => x.id === _origIdForTank)) { mount = 'floor'; heat = 'comb'; }
+                else if (catalog.tanks_floor_comb && catalog.tanks_floor_comb.some(x => x.id === _origIdForTank)) { mount = 'floor'; heat = 'comb'; }
+                else if (catalog.tanks_wall_cos && catalog.tanks_wall_cos.some(x => x.id === _origIdForTank)) { mount = 'wall'; heat = 'cos'; }
+                else if (catalog.tanks_wall_comb && catalog.tanks_wall_comb.some(x => x.id === _origIdForTank)) { mount = 'wall'; heat = 'comb'; }
+                else if (catalog.tanks_standard && catalog.tanks_standard.some(x => x.id === _origIdForTank)) { mount = 'floor'; heat = 'cos'; }
+                else if (catalog.tanks_optibase && catalog.tanks_optibase.some(x => x.id === _origIdForTank)) { mount = 'floor'; heat = 'cos'; }
 
-            this.state.tankSwapMount = mount;
-            this.state.tankSwapHeat = heat;
-            this.state.tankSwapVol = vol;
+                this.state.tankSwapMount = mount;
+                this.state.tankSwapHeat = heat;
+                this.state.tankSwapVol = vol;
+            }
             const _allTankGroups = [
                 { mount: 'floor', heat: 'cos',  arr: catalog.tanks_standard },
                 { mount: 'floor', heat: 'cos',  arr: catalog.tanks_optibase },
