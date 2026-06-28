@@ -6704,7 +6704,16 @@ const app = {
             linkPprAlts(catalog.ppr_ekoplastik_coupling_red, catalog.ppr_proaqua_coupling_red, extRed);
         }
 
-        if (catalog.manifolds_rad && catalog.manifolds_chrome_blocks) { let chromeAlt = catalog.manifolds_chrome_blocks[0]; catalog.manifolds_rad.forEach(m => { m.alts = [chromeAlt]; }); catalog.manifolds_chrome_blocks.forEach(m => { m.alts = [catalog.manifolds_rad[0]]; }); }
+        if (catalog.manifolds_rad && catalog.manifolds_chrome_blocks) {
+            catalog.manifolds_rad.forEach(m => {
+                let chromeAlt = catalog.manifolds_chrome_blocks.find(x => x.loops === m.loops);
+                m.alts = chromeAlt ? [chromeAlt] : [];
+            });
+            catalog.manifolds_chrome_blocks.forEach(m => {
+                let stdAlt = catalog.manifolds_rad.find(x => x.loops === m.loops);
+                m.alts = stdAlt ? [stdAlt] : [];
+            });
+        }
         let xpsAlt = catalog.xps_kit[0]; catalog.mats.forEach(m => { m.alts = [xpsAlt]; }); catalog.xps_kit[0].alts = catalog.mats;
         if (catalog.well_auto) { let waAlts = catalog.well_auto; catalog.well_auto.forEach(a => { a.alts = waAlts; }); }
         if (catalog.convectors_scq && catalog.convectors_scn) { let convAlts = [catalog.convectors_scq[0], catalog.convectors_scn[0]]; catalog.convectors_scq.forEach(c => { c.alts = convAlts; }); catalog.convectors_scn.forEach(c => { c.alts = convAlts; }); }
@@ -13701,9 +13710,21 @@ const app = {
             }
 
             let reqLoops = (this.state.floors === 2 ? Math.ceil(totalDevicesCount / 2) : totalDevicesCount); if (reqLoops > 12) reqLoops = 12; let manifoldsCount = (this.state.floors === 2) ? 2 : 1;
-            if (this.state.radManifoldType === 'standard') { let m = catalog.manifolds_rad.find(x => x.loops === reqLoops) || catalog.manifolds_rad[catalog.manifolds_rad.length - 1]; if (m) { m.alts = [catalog.manifolds_chrome_blocks[0]]; addToBill(m, manifoldsCount, this.getDesc('manifold', totalDevicesCount, 'rad'), pipeGrp); } }
+            if (this.state.radManifoldType === 'standard') {
+                let m = catalog.manifolds_rad.find(x => x.loops === reqLoops) || catalog.manifolds_rad[catalog.manifolds_rad.length - 1];
+                if (m) {
+                    let matchingChrome = catalog.manifolds_chrome_blocks.find(x => x.loops === m.loops);
+                    m.alts = matchingChrome ? [matchingChrome] : [];
+                    addToBill(m, manifoldsCount, this.getDesc('manifold', totalDevicesCount, 'rad'), pipeGrp);
+                }
+            }
             else {
-                const assemblyMap = { 2: [0, 0, 1], 3: [0, 1, 0], 4: [1, 0, 0], 5: [0, 1, 1], 6: [0, 2, 0], 7: [1, 1, 0], 8: [2, 0, 0], 9: [1, 1, 1], 10: [1, 2, 0], 11: [2, 1, 0], 12: [3, 0, 0] }; let plan = assemblyMap[reqLoops] || [3, 0, 0]; let b4 = catalog.manifolds_chrome_blocks[2]; let b3 = catalog.manifolds_chrome_blocks[1]; let b2 = catalog.manifolds_chrome_blocks[0]; let stdAlt = catalog.manifolds_rad.find(x => x.loops === reqLoops) || catalog.manifolds_rad[0];[b4, b3, b2].forEach(b => b.alts = [stdAlt]); let multiplier = manifoldsCount * 2;
+                const assemblyMap = { 2: [0, 0, 1], 3: [0, 1, 0], 4: [1, 0, 0], 5: [0, 1, 1], 6: [0, 2, 0], 7: [1, 1, 0], 8: [2, 0, 0], 9: [1, 1, 1], 10: [1, 2, 0], 11: [2, 1, 0], 12: [3, 0, 0] }; let plan = assemblyMap[reqLoops] || [3, 0, 0]; let b4 = catalog.manifolds_chrome_blocks[2]; let b3 = catalog.manifolds_chrome_blocks[1]; let b2 = catalog.manifolds_chrome_blocks[0];
+                [b4, b3, b2].forEach(b => {
+                    let matchingStd = catalog.manifolds_rad.find(x => x.loops === b.loops);
+                    b.alts = matchingStd ? [matchingStd] : [];
+                });
+                let multiplier = manifoldsCount * 2;
                 if (plan[0] > 0) addToBill(b4, plan[0] * multiplier, `Блок 4 вых.`, pipeGrp); if (plan[1] > 0) addToBill(b3, plan[1] * multiplier, `Блок 3 вых.`, pipeGrp); if (plan[2] > 0) addToBill(b2, plan[2] * multiplier, `Блок 2 вых.`, pipeGrp); addToBill(catalog.manifold_brackets, manifoldsCount, "Кронштейны.", pipeGrp);
             }
 
