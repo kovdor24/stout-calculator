@@ -7376,7 +7376,26 @@ const app = {
             ];
         }
         else if (_origId0.startsWith('SMS-0922') || (_origId0.startsWith('SMB-6850') && !_origId0.endsWith('_water')) || _origId0.startsWith('RMS-3201') || _origId0.startsWith('RMS-1210') || _origId0.startsWith('RMS-1001')) {
-            let loops = this.state.lastRadLoops || item.loops || 8;
+            let loops = 8;
+            let baseItem = null;
+            let lookupKey = item.originalId || item.id;
+            for (let catKey in catalog) {
+                if (Array.isArray(catalog[catKey])) {
+                    let found = catalog[catKey].find(x => x.id === lookupKey);
+                    if (found) { baseItem = found; break; }
+                }
+            }
+            if (baseItem && baseItem.loops) {
+                loops = baseItem.loops;
+            } else {
+                let activeManifold = this.currentEquipmentList.find(x => x.originalId && x.originalId.startsWith('SMS-0922'));
+                if (activeManifold) {
+                    let catManifold = catalog.manifolds_rad.find(x => x.id === activeManifold.originalId);
+                    if (catManifold) loops = catManifold.loops;
+                } else {
+                    loops = this.state.lastRadLoops || 8;
+                }
+            }
             let stdStout = catalog.manifolds_rad.find(x => x.loops === loops) || catalog.manifolds_rad[catalog.manifolds_rad.length - 1];
             let stdStoutPrice = stdStout.price;
             let stdRommerPrice = stdStout.rommer ? stdStout.rommer.price : stdStout.price;
@@ -8666,7 +8685,25 @@ const app = {
             else this.state.hydroType = 'modular';
         }
         else if (originalId.startsWith('SMS-0922') || (originalId.startsWith('SMB-6850') && !originalId.endsWith('_water')) || originalId.startsWith('RMS-3201') || originalId.startsWith('RMS-1210') || originalId.startsWith('RMS-1001')) {
-            let loops = this.state.lastRadLoops || 8;
+            let loops = 8;
+            let baseItem = null;
+            for (let catKey in catalog) {
+                if (Array.isArray(catalog[catKey])) {
+                    let found = catalog[catKey].find(x => x.id === originalId);
+                    if (found) { baseItem = found; break; }
+                }
+            }
+            if (baseItem && baseItem.loops) {
+                loops = baseItem.loops;
+            } else {
+                let activeManifold = this.currentEquipmentList.find(x => x.originalId && x.originalId.startsWith('SMS-0922'));
+                if (activeManifold) {
+                    let catManifold = catalog.manifolds_rad.find(x => x.id === activeManifold.originalId);
+                    if (catManifold) loops = catManifold.loops;
+                } else {
+                    loops = this.state.lastRadLoops || 8;
+                }
+            }
             let stdStout = catalog.manifolds_rad.find(x => x.loops === loops) || catalog.manifolds_rad[catalog.manifolds_rad.length - 1];
             let stdId = stdStout.id;
             
