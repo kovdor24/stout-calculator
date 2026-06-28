@@ -649,6 +649,32 @@ input:checked+.slider:before {
     cursor: pointer;
 }
 
+.swap-alt-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 14px;
+    height: 14px;
+    background: #2563EB;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid #fff;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.4);
+    pointer-events: none;
+    z-index: 5;
+    transition: transform 0.15s;
+}
+
+.swappable-cursor:hover .swap-alt-badge {
+    transform: scale(1.2);
+}
+
+body.dark-mode .swap-alt-badge {
+    border-color: #1e293b;
+}
+
 .swappable-cursor:hover .prod-thumb {
     border-color: var(--primary);
 }
@@ -4824,6 +4850,7 @@ body.html2pdf-printing .input-panel,
 body.html2pdf-printing .btn-print,
 body.html2pdf-printing .sku-control,
 body.html2pdf-printing .swap-cycle-btn,
+body.html2pdf-printing .swap-alt-badge,
 body.html2pdf-printing .main-view-tabs,
 body.html2pdf-printing .footer-btns,
 body.html2pdf-printing footer,
@@ -4937,6 +4964,7 @@ body.html2pdf-printing .col-sku::before  { content: "" !important; }
 /* Hide mobile-specific buttons and elements */
 body.html2pdf-printing .qty-wrap .opt-btn,
 body.html2pdf-printing .swap-cycle-btn,
+body.html2pdf-printing .swap-alt-badge,
 body.html2pdf-printing .work-del-btn,
 body.html2pdf-printing .mob-mult {
     display: none !important;

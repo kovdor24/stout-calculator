@@ -6707,7 +6707,9 @@ const app = {
         if (catalog.manifolds_rad && catalog.manifolds_chrome_blocks) {
             catalog.manifolds_rad.forEach(m => {
                 let chromeAlt = catalog.manifolds_chrome_blocks.find(x => x.loops === m.loops);
-                m.alts = chromeAlt ? [chromeAlt] : [];
+                // Loops 2-4 have direct chrome match; 5-12 assembled via assemblyMap in openSwapModal
+                const hasChromeOption = chromeAlt || (m.loops >= 2 && m.loops <= 12);
+                m.alts = hasChromeOption ? [chromeAlt || catalog.manifolds_chrome_blocks[0]] : [];
             });
             catalog.manifolds_chrome_blocks.forEach(m => {
                 let stdAlt = catalog.manifolds_rad.find(x => x.loops === m.loops);
@@ -7385,16 +7387,10 @@ const app = {
                     if (found) { baseItem = found; break; }
                 }
             }
-            if (baseItem && baseItem.loops) {
+            if (baseItem && baseItem.loops && (baseItem.id.startsWith('SMS-0922') || baseItem.id.startsWith('RMS-3201') || baseItem.id.startsWith('SMB-6850'))) {
                 loops = baseItem.loops;
             } else {
-                let activeManifold = this.currentEquipmentList.find(x => x.originalId && x.originalId.startsWith('SMS-0922'));
-                if (activeManifold) {
-                    let catManifold = catalog.manifolds_rad.find(x => x.id === activeManifold.originalId);
-                    if (catManifold) loops = catManifold.loops;
-                } else {
-                    loops = this.state.lastRadLoops || 8;
-                }
+                loops = this.state.lastRadLoops || 8;
             }
             let stdStout = catalog.manifolds_rad.find(x => x.loops === loops) || catalog.manifolds_rad[catalog.manifolds_rad.length - 1];
             let stdStoutPrice = stdStout.price;
@@ -12485,7 +12481,8 @@ const app = {
                 if (hasAlts) {
                     let wrapClass = "img-wrap";
                     let svgIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>`;
-                    imgCellHtml = `<td class="col-img swappable-cursor"><div class="${wrapClass}" onclick="app.openSwapModal('${lookupId}')" title="Нажмите, чтобы заменить"><div class="swap-cycle-btn" onclick="event.stopPropagation(); app.openSwapModal('${lookupId}')">${svgIcon}</div>${imgContent}</div></td>`;
+                    const badgeSvg = `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>`;
+                    imgCellHtml = `<td class="col-img swappable-cursor"><div class="${wrapClass}" onclick="app.openSwapModal('${lookupId}')" title="Нажмите, чтобы заменить"><div class="swap-alt-badge">${badgeSvg}</div><div class="swap-cycle-btn" onclick="event.stopPropagation(); app.openSwapModal('${lookupId}')">${svgIcon}</div>${imgContent}</div></td>`;
                 } else { imgCellHtml = `<td class="col-img">${imgContent}</td>`; }
 
                 let nameClass = "col-name";
@@ -13819,19 +13816,16 @@ const app = {
             this.state.lastRadLoops = reqLoops;
 
             let m = catalog.manifolds_rad.find(x => x.loops === reqLoops) || catalog.manifolds_rad[catalog.manifolds_rad.length - 1];
-            let radManifoldMode = this.state.radManifoldType || 'standard';
+            let radManifoldMode = 'standard';
             if (m) {
                 let swapVal = this.state.swaps && this.state.swaps[m.id];
                 if (swapVal === 'chrome' || swapVal === 'chrome_rommer') {
                     radManifoldMode = 'chrome';
-                } else if (swapVal && (swapVal.startsWith('SMS-0922') || swapVal.startsWith('RMS-3201'))) {
-                    radManifoldMode = 'standard';
                 }
             }
 
             if (radManifoldMode === 'standard') {
                 if (m) {
-                    m.alts = [];
                     addToBill(m, manifoldsCount, this.getDesc('manifold', totalDevicesCount, 'rad'), pipeGrp);
                 }
             }
