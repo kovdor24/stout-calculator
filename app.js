@@ -2030,14 +2030,6 @@ const app = {
     },
 
     loginGoogle: async function () {
-        if (!document.getElementById('chk_terms').checked) {
-            app.alert("Для продолжения необходимо принять условия Публичной оферты.");
-            return;
-        }
-        if (!document.getElementById('chk_privacy').checked) {
-            app.alert("Для продолжения необходимо дать согласие на обработку персональных данных.");
-            return;
-        }
         try {
             const { data, error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
