@@ -7044,6 +7044,9 @@ const app = {
                 this.state.tankSwapHeat = null;
                 this.state.tankSwapVol = null;
             }
+            if (!_lkId.startsWith('SEB-')) {
+                this.state.swapBoilerPower = null;
+            }
         }
 
         let item = this.currentEquipmentList.find(x => x.id === lookupId || x.displaySku === lookupId);
@@ -7096,6 +7099,16 @@ const app = {
         }
 
         let alts = item.alts || [];
+        const _isElBoiler = _origId0.startsWith('SEB-');
+        if (_isElBoiler) {
+            if (isFirstOpen) {
+                this.state.swapBoilerPower = item.power || 12;
+            }
+            let selectedPower = this.state.swapBoilerPower || item.power || 12;
+            let statusBoiler = catalog.boilers_status.find(x => x.power === selectedPower);
+            let plusBoiler = catalog.boilers_plus.find(x => x.power === selectedPower);
+            alts = [statusBoiler, plusBoiler].filter(Boolean);
+        }
         let _allVolsAlts = [];
         let customAlts = null;
         let isRommer = this.state.brandMode === 'rommer';
@@ -7441,6 +7454,18 @@ const app = {
                 `</div>` +
                 `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
                 _volHtml +
+                `</div>` +
+                `</div>`;
+        } else if (_isElBoiler) {
+            let _sp = this.state.swapBoilerPower || item.power || 12;
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            let _powers = [5, 7, 9, 12, 14, 18, 21, 24, 27];
+            let _powerHtml = _powers.map(p => `<span onclick="app.setBoilerSwapPower(${p})" ${_b(_sp===p)}>${p} кВт</span>`).join('');
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Мощность:</span>` +
+                _powerHtml +
                 `</div>` +
                 `</div>`;
         }
@@ -9827,6 +9852,10 @@ const app = {
     setTankSwapVol: function (val) {
         this.state.tankSwapVol = val;
         if (this._tankSwapId) this.openSwapModal(this._tankSwapId);
+    },
+    setBoilerSwapPower: function (val) {
+        this.state.swapBoilerPower = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
     },
     toggleTankSwapSort: function (field) {
         if (this._tankSwapSort === field) {
