@@ -6639,7 +6639,7 @@ const app = {
         const allRadArrays = [catalog.rads, titanRads, spaceRuRads, spaceRu350Rads, titanSideRads, titanSide350Rads, titanSide200Rads, aluminumRads, aluminum350Rads, rommerPlusAlRads, rommerPlusAl200Rads, steelRads];
         allRadArrays.forEach(arr => arr.forEach(rad => { rad.alts = radAlts; }));
         let hAlts = catalog.h_valves; catalog.h_valves.forEach(v => { v.alts = hAlts; });
-        const allTankArrays = [catalog.tanks_optibase, catalog.tanks_standard, catalog.tanks_stainless, catalog.tanks_floor_comb, catalog.tanks_wall_cos, catalog.tanks_wall_comb];
+        const allTankArrays = [catalog.tanks_optibase, catalog.tanks_standard, catalog.tanks_stainless, catalog.tanks_floor_comb, catalog.tanks_wall_cos, catalog.tanks_wall_comb].filter(Boolean);
         const setBoilerAlts = (t) => {
             t.alts = allTankArrays.flatMap(db => db.filter(x => x !== t && x.vol === t.vol)).filter(Boolean);
         };
@@ -7097,6 +7097,7 @@ const app = {
             let _sh = this.state.tankSwapHeat;
             let _sv = this.state.tankSwapVol;
             _allVolsAlts = _allTankGroups
+                .filter(g => g.arr)
                 .filter(g => _sm === 'all' || g.mount === _sm)
                 .filter(g => _sh === 'all' || g.heat === _sh)
                 .flatMap(g => g.arr);
@@ -8519,12 +8520,12 @@ const app = {
             else this.state.connectionType = 'straight';
         }
         else if (originalId.startsWith('SWH') || originalId.startsWith('RWH')) {
-            if (catalog.tanks_stainless.some(x => x.id === chosenId)) { this.state.boilerType = 'stainless'; this.state.tankMount = 'floor'; this.state.tankHeat = 'comb'; }
-            else if (catalog.tanks_floor_comb.some(x => x.id === chosenId)) { this.state.boilerType = 'standard'; this.state.tankMount = 'floor'; this.state.tankHeat = 'comb'; }
-            else if (catalog.tanks_wall_cos.some(x => x.id === chosenId)) { this.state.tankMount = 'wall'; this.state.tankHeat = 'cos'; }
-            else if (catalog.tanks_wall_comb.some(x => x.id === chosenId)) { this.state.tankMount = 'wall'; this.state.tankHeat = 'comb'; }
-            else if (catalog.tanks_standard.some(x => x.id === chosenId)) { this.state.boilerType = 'standard'; this.state.tankMount = 'floor'; this.state.tankHeat = 'cos'; }
-            else if (catalog.tanks_optibase.some(x => x.id === chosenId)) { this.state.boilerType = 'optibase'; this.state.tankMount = 'floor'; this.state.tankHeat = 'cos'; }
+            if (catalog.tanks_stainless && catalog.tanks_stainless.some(x => x.id === chosenId)) { this.state.boilerType = 'stainless'; this.state.tankMount = 'floor'; this.state.tankHeat = 'comb'; }
+            else if (catalog.tanks_floor_comb && catalog.tanks_floor_comb.some(x => x.id === chosenId)) { this.state.boilerType = 'standard'; this.state.tankMount = 'floor'; this.state.tankHeat = 'comb'; }
+            else if (catalog.tanks_wall_cos && catalog.tanks_wall_cos.some(x => x.id === chosenId)) { this.state.tankMount = 'wall'; this.state.tankHeat = 'cos'; }
+            else if (catalog.tanks_wall_comb && catalog.tanks_wall_comb.some(x => x.id === chosenId)) { this.state.tankMount = 'wall'; this.state.tankHeat = 'comb'; }
+            else if (catalog.tanks_standard && catalog.tanks_standard.some(x => x.id === chosenId)) { this.state.boilerType = 'standard'; this.state.tankMount = 'floor'; this.state.tankHeat = 'cos'; }
+            else if (catalog.tanks_optibase && catalog.tanks_optibase.some(x => x.id === chosenId)) { this.state.boilerType = 'optibase'; this.state.tankMount = 'floor'; this.state.tankHeat = 'cos'; }
         }
         else if (originalId.startsWith('SPC-') && originalId.includes('180')) {
             let pmp = catalog.pumps_dn25.find(p => p.id === chosenId || (p.rommer && p.rommer.id === chosenId));
@@ -9750,10 +9751,10 @@ const app = {
         let heat = this.state.tankHeat || 'cos';
         let type = this.state.boilerType || 'optibase';
         if (mount === 'wall') {
-            return heat === 'comb' ? catalog.tanks_wall_comb : catalog.tanks_wall_cos;
+            return (heat === 'comb' ? catalog.tanks_wall_comb : catalog.tanks_wall_cos) || catalog.tanks_standard;
         }
         if (heat === 'comb') {
-            return type === 'stainless' ? catalog.tanks_stainless : catalog.tanks_floor_comb;
+            return (type === 'stainless' ? catalog.tanks_stainless : catalog.tanks_floor_comb) || catalog.tanks_standard;
         }
         return type === 'optibase' ? catalog.tanks_optibase : catalog.tanks_standard;
     },
@@ -12591,7 +12592,7 @@ const app = {
             let tankDb = this.getTankDb();
             let t = { ...( tankDb.find(x => x.vol === vol) || tankDb[tankDb.length - 1] ) };
 
-            let allTankDbs = [catalog.tanks_optibase, catalog.tanks_standard, catalog.tanks_stainless, catalog.tanks_floor_comb, catalog.tanks_wall_cos, catalog.tanks_wall_comb];
+            let allTankDbs = [catalog.tanks_optibase, catalog.tanks_standard, catalog.tanks_stainless, catalog.tanks_floor_comb, catalog.tanks_wall_cos, catalog.tanks_wall_comb].filter(Boolean);
             let baseItem = tankDb.find(x => x.vol === vol) || tankDb[tankDb.length - 1];
             t.alts = allTankDbs.flatMap(db => db.filter(x => x !== baseItem && x.vol === vol)).filter(Boolean);
 
