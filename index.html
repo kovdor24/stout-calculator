@@ -1024,18 +1024,18 @@
                     </div>
                 </div>
                 <!-- Promo Code Section -->
-                <div id="promo_code_section" style="margin: 20px auto 0; max-width: 280px; display: none;">
+                <div id="promo_code_section" style="margin: 10px auto 0; max-width: 320px; padding: 6px 10px; background: var(--surface-light); border: 1px solid var(--border); border-radius: 10px; display: none;">
                     <div style="display: flex; gap: 6px; align-items: center;">
                         <input type="text" id="promo_code_input" placeholder="Промокод" maxlength="32"
-                            style="flex: 1; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-main); opacity: 0.7; font-size: 12px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; outline: none;"
+                            style="flex: 1; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; outline: none;"
                             oninput="this.value = this.value.toUpperCase()">
                         <button type="button" id="promo_code_apply_btn" onclick="app.applyPromoCode(document.getElementById('promo_code_input').value)"
-                            style="padding: 6px 12px; background: transparent; color: var(--text-sec); border: 1px solid var(--border); border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; white-space: nowrap; transition: 0.2s;"
-                            onmouseover="this.style.background='var(--surface-light)'; this.style.color='var(--text-main)'" onmouseout="this.style.background='transparent'; this.style.color='var(--text-sec)'">
+                            style="padding: 6px 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap; transition: 0.2s;"
+                            onmouseover="this.style.background='var(--primary-dark, #1d4ed8)'" onmouseout="this.style.background='var(--primary)'">
                             Применить
                         </button>
                     </div>
-                    <div id="promo_code_result" style="margin-top: 6px; font-size: 11px; display: none; text-align: center;"></div>
+                    <div id="promo_code_result" style="margin-top: 6px; font-size: 11px; display: none;"></div>
                 </div>
 
                 <button id="custom_modal_btn_trial" class="btn-trial-14" style="display:none;" onclick="app.activateTrial14()">Попробовать бесплатно 2 дня</button>
