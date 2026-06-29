@@ -3966,6 +3966,10 @@ const app = {
 
             if (error) throw error;
             this.closeAuthModal();
+            app.alert('✅ Вход выполнен успешно! Страница будет перезагружена через 5 секунд.');
+            setTimeout(() => {
+                window.location.replace(window.location.pathname + window.location.search);
+            }, 5000);
         } catch (err) {
             console.error("Детали ошибки входа (Supabase):", err);
             const userFriendlyMsg = getFriendlyErrorMessage(err, 'Неверный логин или пароль');
@@ -4145,8 +4149,11 @@ const app = {
 
             if (error) throw error;
 
-            app.alert('Регистрация успешна!'); // Оставляем успех как алерт или можно тоже в UI
+            app.alert('✅ Регистрация успешна! Страница будет перезагружена через 5 секунд.');
             this.closeAuthModal();
+            setTimeout(() => {
+                window.location.replace(window.location.pathname + window.location.search);
+            }, 5000);
         } catch (err) {
             console.error("Детали ошибки создания аккаунта (Supabase):", err);
 
@@ -4400,10 +4407,12 @@ const app = {
             this.syncUI();
             this.render();
 
-            console.log("[handleAuthSession] Запланирована принудительная перезагрузка через 6 секунд для обновления сессии...");
-            setTimeout(() => {
-                window.location.replace(window.location.pathname + window.location.search);
-            }, 6000);
+            if (isGoogleCallback) {
+                console.log("[handleAuthSession] Запланирована принудительная перезагрузка через 6 секунд для обновления сессии...");
+                setTimeout(() => {
+                    window.location.replace(window.location.pathname + window.location.search);
+                }, 6000);
+            }
         } catch (error) {
             console.error('Ошибка авторизации:', error);
         } finally {
