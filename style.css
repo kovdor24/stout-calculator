@@ -3776,42 +3776,53 @@ body.dark-mode .header-totals-block {
 }
 
 /* === PRO MODAL & TARIFF CARDS === */
+#custom_modal_overlay .custom-modal {
+    padding: 20px 25px 20px !important;
+    max-width: 630px !important;
+    border-radius: 20px !important;
+}
+
+#custom_modal_overlay .custom-modal .auth-modal-close {
+    top: 15px !important;
+    right: 15px !important;
+}
+
 .pro-modal-content {
     text-align: center;
-    padding: 10px 10px 0;
+    padding: 0;
 }
 
 .pro-modal-content h2 {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 800;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     line-height: 1.2;
     color: var(--text-main);
 }
 
 #custom_modal_text {
     text-align: center;
-    margin: 0 auto 30px;
+    margin: 0 auto 15px;
     color: var(--text-sec);
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 13px;
+    line-height: 1.4;
     max-width: 480px;
 }
 
 .tariff-cards {
     display: flex;
-    gap: 20px;
+    gap: 15px;
     margin-bottom: 10px;
     justify-content: center;
 }
 
 .btn-trial-14 {
     display: block;
-    margin: 12px auto 0;
+    margin: 10px auto 0;
     background: none;
     border: none;
     color: var(--text-sec);
-    font-size: 12px;
+    font-size: 11px;
     cursor: pointer;
     text-decoration: underline;
     text-decoration-style: dashed;
@@ -3825,8 +3836,8 @@ body.dark-mode .header-totals-block {
 .tariff-card {
     background: var(--surface-light);
     border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 30px 20px;
+    border-radius: 16px;
+    padding: 20px 15px;
     flex: 1;
     max-width: 295px;
     position: relative;
@@ -3838,48 +3849,48 @@ body.dark-mode .header-totals-block {
 
 .tariff-card:hover {
     border-color: var(--primary);
-    transform: translateY(-6px);
-    box-shadow: 0 16px 36px rgba(37, 99, 235, 0.1);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.1);
     background: var(--surface);
 }
 
 .tariff-card h3 {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-sec);
-    margin-top: 10px;
-    margin-bottom: 20px;
+    margin-top: 5px;
+    margin-bottom: 12px;
     text-align: center;
 }
 
 .tariff-card .price {
-    font-size: 38px;
+    font-size: 32px;
     font-weight: 800;
     color: var(--text-main);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     letter-spacing: -0.02em;
 }
 
 .tariff-card .price-sub {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-sec);
-    margin-bottom: 25px;
+    margin-bottom: 15px;
     text-align: center;
     line-height: 1.4;
 }
 
 .badge {
     position: absolute;
-    top: -12px;
+    top: -10px;
     left: 50%;
     transform: translateX(-50%);
     background: #10B981;
     color: #fff;
-    padding: 4px 12px;
+    padding: 3px 10px;
     border-radius: 20px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 800;
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
     white-space: nowrap;
@@ -3887,13 +3898,13 @@ body.dark-mode .header-totals-block {
 
 .btn-subscribe {
     width: 100%;
-    padding: 14px 20px;
+    padding: 10px 16px;
     background: var(--primary);
     color: #fff;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;
     cursor: pointer;
     text-decoration: none;
     display: flex;
