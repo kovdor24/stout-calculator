@@ -1043,11 +1043,14 @@ const app = {
         localStorage.setItem('pro_trial_until', trialUntil);
 
         this.closeModal();
-        app.alert('✅ Тестовый период на 3 дня успешно активирован!');
+        app.alert('✅ Тестовый период на 3 дня успешно активирован! Страница будет перезагружена через 6 секунд.');
 
         // Синхронизируем UI и перерисовываем смету без перезагрузки страницы
         this.syncUI();
         this.render();
+        setTimeout(() => {
+            window.location.replace(window.location.pathname + window.location.search);
+        }, 6000);
     },
 
     formatPhone: function (e) {
@@ -1151,7 +1154,10 @@ const app = {
             this.syncUI();
             this.closeModal();
 
-            app.alert("✅ Пробный период на 2 дня успешно активирован! Вам открыты все PRO функции.");
+            app.alert("✅ Пробный период на 2 дня успешно активирован! Вам открыты все PRO функции. Страница будет перезагружена через 6 секунд.");
+            setTimeout(() => {
+                window.location.replace(window.location.pathname + window.location.search);
+            }, 6000);
         } catch (e) {
             console.error("Ошибка активации:", e);
             app.alert("Ошибка активации. Попробуйте позже.");
@@ -1432,7 +1438,10 @@ const app = {
             this.syncUI();
             this.closeModal();
 
-            app.alert(`✅ Промокод принят! Компания-поставщик: ${dist.company_name}. Вам присвоен тариф PRO на ${proMonths} мес.`);
+            app.alert(`✅ Промокод принят! Компания-поставщик: ${dist.company_name}. Вам присвоен тариф PRO на ${proMonths} мес. Страница будет перезагружена через 6 секунд.`);
+            setTimeout(() => {
+                window.location.replace(window.location.pathname + window.location.search);
+            }, 6000);
 
         } catch (e) {
             console.error('[applyPromoCode] Error:', e);
@@ -2681,9 +2690,32 @@ const app = {
         if (content) content.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 50px;">Загрузка данных...</div>';
 
         try {
+            const tariffFilter = document.getElementById('admin_filter_tariff')?.value || 'all';
+            const expiryFilter = document.getElementById('admin_filter_expiry')?.value || 'all';
+
             // 1. Fetch Users (Paginated)
-            let { data: users, error: errU, count: totalUsers } = await supabaseClient.from('users')
-                .select('id, username, email, phone, created_at, last_visited, last_device, account_type, demo_ends_at, city, location, avatar_url, distributor_id', { count: 'exact' })
+            let query = supabaseClient.from('users')
+                .select('id, username, email, phone, created_at, last_visited, last_device, account_type, demo_ends_at, city, location, avatar_url, distributor_id, pro_expires_at', { count: 'exact' });
+
+            if (tariffFilter === 'base') {
+                query = query.eq('account_type', 'base');
+            } else if (tariffFilter === 'pro') {
+                query = query.eq('account_type', 'pro');
+            } else if (tariffFilter === 'pro_trial') {
+                query = query.eq('account_type', 'pro').is('distributor_id', null).is('pro_expires_at', null);
+            } else if (tariffFilter === 'pro_promo') {
+                query = query.eq('account_type', 'pro').not('distributor_id', 'is', null);
+            } else if (tariffFilter === 'pro_paid') {
+                query = query.eq('account_type', 'pro').not('pro_expires_at', 'is', null);
+            }
+
+            if (expiryFilter === 'active') {
+                query = query.eq('account_type', 'pro').or(`demo_ends_at.is.null,demo_ends_at.gte.${new Date().toISOString()}`);
+            } else if (expiryFilter === 'expired') {
+                query = query.eq('account_type', 'pro').lt('demo_ends_at', new Date().toISOString());
+            }
+
+            let { data: users, error: errU, count: totalUsers } = await query
                 .order('created_at', { ascending: false })
                 .range(offset, offset + this._adminPageSize - 1);
 
@@ -2822,9 +2854,22 @@ const app = {
                 if (sortType === 'login_asc') return new Date(a.last_visited || 0) - new Date(b.last_visited || 0);
                 if (sortType === 'ltv_desc') return (b.ltv || 0) - (a.ltv || 0);
                 if (sortType === 'ltv_asc') return (a.ltv || 0) - (b.ltv || 0);
+                if (sortType === 'expiry_asc') {
+                    const dateA = a.demo_ends_at ? new Date(a.demo_ends_at).getTime() : Infinity;
+                    const dateB = b.demo_ends_at ? new Date(b.demo_ends_at).getTime() : Infinity;
+                    return dateA - dateB;
+                }
+                if (sortType === 'expiry_desc') {
+                    const dateA = a.demo_ends_at ? new Date(a.demo_ends_at).getTime() : 0;
+                    const dateB = b.demo_ends_at ? new Date(b.demo_ends_at).getTime() : 0;
+                    return dateB - dateA;
+                }
                 return 0;
             });
         }
+
+        const tariffFilter = document.getElementById('admin_filter_tariff')?.value || 'all';
+        const expiryFilter = document.getElementById('admin_filter_expiry')?.value || 'all';
 
         let h = `
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
@@ -2836,14 +2881,29 @@ const app = {
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                         <h4 style="margin: 0;">👥 Монтажники</h4>
-                        <div style="display: flex; gap: 10px; width: 100%; max-width: 580px;">
-                            <input type="text" id="admin_search_input" placeholder="🔍 Поиск по имени..." style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 12px; outline: none;" onkeyup="app.filterAdminData(this.value)">
+                        <div style="display: flex; gap: 10px; width: 100%; max-width: 780px; flex-wrap: wrap;">
+                            <input type="text" id="admin_search_input" placeholder="🔍 Поиск по имени..." style="flex: 1.5; min-width: 150px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 12px; outline: none;" onkeyup="app.filterAdminData(this.value)">
+                            <select id="admin_filter_tariff" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer;">
+                                <option value="all" ${tariffFilter === 'all' ? 'selected' : ''}>Все тарифы</option>
+                                <option value="base" ${tariffFilter === 'base' ? 'selected' : ''}>Базовый</option>
+                                <option value="pro" ${tariffFilter === 'pro' ? 'selected' : ''}>PRO (Все)</option>
+                                <option value="pro_trial" ${tariffFilter === 'pro_trial' ? 'selected' : ''}>PRO: пробный</option>
+                                <option value="pro_promo" ${tariffFilter === 'pro_promo' ? 'selected' : ''}>PRO: промокод</option>
+                                <option value="pro_paid" ${tariffFilter === 'pro_paid' ? 'selected' : ''}>PRO: оплата</option>
+                            </select>
+                            <select id="admin_filter_expiry" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer;">
+                                <option value="all" ${expiryFilter === 'all' ? 'selected' : ''}>Все сроки</option>
+                                <option value="active" ${expiryFilter === 'active' ? 'selected' : ''}>Активные</option>
+                                <option value="expired" ${expiryFilter === 'expired' ? 'selected' : ''}>Истекшие</option>
+                            </select>
                             <select id="sort-installers" onchange="app.renderAdminMain()" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer;">
                                 <option value="default" ${sortType === 'default' ? 'selected' : ''}>Сортировка</option>
                                 <option value="login_desc" ${sortType === 'login_desc' ? 'selected' : ''}>Вход: сначала новые</option>
                                 <option value="login_asc" ${sortType === 'login_asc' ? 'selected' : ''}>Вход: сначала старые</option>
                                 <option value="ltv_desc" ${sortType === 'ltv_desc' ? 'selected' : ''}>LTV: по убыванию</option>
                                 <option value="ltv_asc" ${sortType === 'ltv_asc' ? 'selected' : ''}>LTV: по возрастанию</option>
+                                <option value="expiry_asc" ${sortType === 'expiry_asc' ? 'selected' : ''}>Срок PRO: по возрастанию</option>
+                                <option value="expiry_desc" ${sortType === 'expiry_desc' ? 'selected' : ''}>Срок PRO: по убыванию</option>
                             </select>
                             <button class="btn-header-blue" style="background: #10B981; color: white; border-color: #10B981; font-weight: bold; padding: 0 15px; height: 34px;" onclick="app.exportAdminToExcel()">📊 Excel</button>
                         </div>
@@ -2856,8 +2916,21 @@ const app = {
         users.forEach((u, i) => {
             let date = new Date(u.created_at).toLocaleDateString();
             let isExpired = u.account_type === 'pro' && u.demo_ends_at && (new Date(u.demo_ends_at) < new Date());
-            let badge = (u.account_type === 'pro' && !isExpired) ? '<span style="color:#D97706; font-weight:bold;">PRO</span>' : 'Базовый';
-            if (isExpired) badge += ' <span style="color:#EF4444; font-size:9px; font-weight:700;">(ИСТЁК)</span>';
+            let badge = '';
+            if (u.account_type === 'pro') {
+                let proType = 'пробный';
+                if (u.distributor_id) proType = 'промокод';
+                else if (u.pro_expires_at) proType = 'оплата';
+
+                let dateStr = u.demo_ends_at ? new Date(u.demo_ends_at).toLocaleDateString('ru-RU') : 'навсегда';
+                if (isExpired) {
+                    badge = `<span style="color:#EF4444; font-weight:bold;">PRO до ${dateStr}</span> <span style="font-size:10px; color:#EF4444;">(${proType}) (ИСТЁК)</span>`;
+                } else {
+                    badge = `<span style="color:#D97706; font-weight:bold;">PRO до ${dateStr}</span> <span style="font-size:10px; color:var(--text-sec);">(${proType})</span>`;
+                }
+            } else {
+                badge = 'Базовый - без срока';
+            }
             let name = u.username || u.email || 'Без имени';
             let phone = u.phone || 'Нет телефона';
             let device = u.last_device || 'Неизвестно';
@@ -2929,7 +3002,15 @@ const app = {
                     </tr>`;
         });
         h += `</tbody></table>`;
+        const searchQuery = document.getElementById('admin_search_input')?.value || '';
         content.innerHTML = navHtml + h;
+        if (searchQuery) {
+            const input = document.getElementById('admin_search_input');
+            if (input) {
+                input.value = searchQuery;
+                this.filterAdminData(searchQuery);
+            }
+        }
     },
 
     switchAdminTab: function (tab) {
@@ -3366,6 +3447,10 @@ const app = {
         userEstimates.forEach(e => { ltv += (e.total_sum || 0); if (e.calc_data && e.calc_data.area) totalArea += parseFloat(e.calc_data.area); });
         let avgArea = userEstimates.length > 0 ? Math.round(totalArea / userEstimates.length) : 0;
 
+        let proSubtype = 'trial';
+        if (user.distributor_id) proSubtype = 'promo';
+        else if (user.pro_expires_at) proSubtype = 'paid';
+
         let h = `
                     <button class="btn-header-blue" style="margin-bottom: 20px; width: fit-content;" onclick="app.renderAdminMain()">← Назад</button>
                     <div style="background: var(--surface-light); padding: 25px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 30px;">
@@ -3422,6 +3507,21 @@ const app = {
                                         <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Истекает (для PRO)</label>
                                         <input type="date" id="admin_edit_date" value="${proDateInput}" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                     </div>
+                                    <div id="admin_edit_subtype_wrapper" style="display: ${user.account_type === 'pro' ? 'block' : 'none'};">
+                                        <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Источник PRO</label>
+                                        <select id="admin_edit_subtype" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
+                                            <option value="trial" ${proSubtype === 'trial' ? 'selected' : ''}>Пробный</option>
+                                            <option value="promo" ${proSubtype === 'promo' ? 'selected' : ''}>Промокод</option>
+                                            <option value="paid" ${proSubtype === 'paid' ? 'selected' : ''}>Оплата</option>
+                                        </select>
+                                    </div>
+                                    <div id="admin_edit_distributor_wrapper" style="display: ${user.account_type === 'pro' && proSubtype === 'promo' ? 'block' : 'none'};">
+                                        <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Дистрибьютор</label>
+                                        <select id="admin_edit_distributor" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
+                                            <option value="">Не выбран</option>
+                                            ${(this.adminData.distributors || []).map(d => `<option value="${d.id}" ${user.distributor_id === d.id ? 'selected' : ''}>${d.company_name} (${d.promo_code})</option>`).join('')}
+                                        </select>
+                                    </div>
                                 </div>
                                 <button class="auth-btn-base btn-email-submit" style="width:100%; height:34px; font-size:12px;" onclick="app.updateAdminUserTariff('${user.id}')">💾 Применить настройки</button>
                             </div>
@@ -3436,7 +3536,26 @@ const app = {
                             </div>
                         </div>
                     </div>
+        `;
 
+        setTimeout(() => {
+            const tariffSel = document.getElementById('admin_edit_tariff');
+            const subSel = document.getElementById('admin_edit_subtype');
+            const subWrap = document.getElementById('admin_edit_subtype_wrapper');
+            const distWrap = document.getElementById('admin_edit_distributor_wrapper');
+            if (tariffSel && subSel && subWrap && distWrap) {
+                tariffSel.addEventListener('change', function() {
+                    const isProSelected = this.value === 'pro';
+                    subWrap.style.display = isProSelected ? 'block' : 'none';
+                    distWrap.style.display = (isProSelected && subSel.value === 'promo') ? 'block' : 'none';
+                });
+                subSel.addEventListener('change', function() {
+                    distWrap.style.display = this.value === 'promo' ? 'block' : 'none';
+                });
+            }
+        }, 50);
+
+        h += `
                     <h4 style="margin:0 0 15px 10px; color:var(--text-main);">📋 Сметы пользователя (${userEstimates.length})</h4>
                     <table class="inv-table">
                         <thead><tr><th style="width:30px;">#</th><th>Название объекта</th><th>Сумма</th><th style="text-align:right;">Дата / Опции</th></tr></thead>
@@ -4281,12 +4400,10 @@ const app = {
             this.syncUI();
             this.render();
 
-            if (isGoogleCallback) {
-                console.log("[handleAuthSession] Запланирована принудительная перезагрузка через 5 секунд для обновления сессии...");
-                setTimeout(() => {
-                    window.location.replace(window.location.pathname + window.location.search);
-                }, 5000);
-            }
+            console.log("[handleAuthSession] Запланирована принудительная перезагрузка через 6 секунд для обновления сессии...");
+            setTimeout(() => {
+                window.location.replace(window.location.pathname + window.location.search);
+            }, 6000);
         } catch (error) {
             console.error('Ошибка авторизации:', error);
         } finally {
@@ -4296,9 +4413,34 @@ const app = {
     updateAdminUserTariff: async function (userId) {
         let type = document.getElementById('admin_edit_tariff').value;
         let dateVal = document.getElementById('admin_edit_date').value;
+        let subtype = document.getElementById('admin_edit_subtype')?.value || 'trial';
+        let distributorId = document.getElementById('admin_edit_distributor')?.value || null;
+
         let updateData = { account_type: type };
-        if (dateVal) updateData.demo_ends_at = new Date(dateVal).toISOString();
-        else updateData.demo_ends_at = null;
+        if (dateVal) {
+            updateData.demo_ends_at = new Date(dateVal).toISOString();
+        } else {
+            updateData.demo_ends_at = null;
+        }
+
+        if (type === 'pro') {
+            if (subtype === 'paid') {
+                updateData.pro_expires_at = updateData.demo_ends_at;
+                updateData.distributor_id = null;
+            } else if (subtype === 'promo') {
+                updateData.pro_expires_at = null;
+                updateData.distributor_id = distributorId || null;
+            } else {
+                // trial
+                updateData.pro_expires_at = null;
+                updateData.distributor_id = null;
+            }
+        } else {
+            updateData.pro_expires_at = null;
+            updateData.distributor_id = null;
+            updateData.demo_ends_at = null;
+        }
+
         try {
             const { error } = await supabaseClient.from('users').update(updateData).eq('id', userId);
             if (error) throw error;
