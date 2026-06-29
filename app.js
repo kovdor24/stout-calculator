@@ -29,7 +29,7 @@ const CONTEST_CATS_2026 = [
     { key: 'chimney',        label: 'Дымоход',             pts: 5,  emoji: '🏭', test: (id)       => id.startsWith('SCA-') },
     { key: 'pump',           label: 'Насос',               pts: 4,  emoji: '💧', test: (id)       => id.startsWith('SPC-') },
     { key: 'tank_exp',       label: 'Бак мембранный',      pts: 4,  emoji: '🛢️', test: (id)       => id.startsWith('STH-') || id.startsWith('STW-') },
-    { key: 'manifold_water', label: 'Коллектор воды',      pts: 3,  emoji: '🚿', test: (id, name) => id.startsWith('SMB-6851-') || name.includes('3/4') },
+    { key: 'manifold_water', label: 'Коллектор воды',      pts: 3,  emoji: '🚿', test: (id, name, item) => (id.startsWith('SMB-6851-') || name.includes('3/4')) && (item && (item.group === '5.1. Внутреннее водоснабжение' || (item.group === '5. Внутреннее водоснабжение' && item.desc && (item.desc.includes('ХВС') || item.desc.includes('Холодная вода'))))) },
     { key: 'flex_conn',      label: 'Гибкая подводка',     pts: 3,  emoji: '🔗', test: (id, name) => name.includes('гибк') },
     { key: 'valve',          label: 'Арматура',            pts: 2,  emoji: '🔧', test: (id)       => id.startsWith('SVT-') || id.startsWith('SVL-') || id.startsWith('SFB-') || id.startsWith('SBV-') },
 ];
@@ -15447,7 +15447,7 @@ const app = {
             const id = item.originalId || item.id || '';
             const name = (item.name || '').toLowerCase();
             for (const cat of CONTEST_CATS_2026) {
-                if (cat.test(id, name)) {
+                if (cat.test(id, name, item)) {
                     catQty[cat.key] = (catQty[cat.key] || 0) + (item.q || 1);
                     break;
                 }
