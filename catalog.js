@@ -1034,6 +1034,83 @@ const catalog = {
         { id: "GE0Q6NE0CRU", name: "Котёл газовый, двухконтурный (18 кВт)", article: "GE0Q6NE0CRU", price: 63464, power: 18, circuits: 2, type: "gas", brand: "Haier", availability: "in_stock", price_date: "2026-06-06" },
         { id: "GE0Q6PE0CRU", name: "Котёл газовый, двухконтурный (24 кВт)", article: "GE0Q6PE0CRU", price: 64553, power: 24, circuits: 2, type: "gas", brand: "Haier", availability: "in_stock", price_date: "2026-06-06" }
     ],
+    boilers_baxi: [
+        // ECO Nova
+        { id: "100023936", name: "ECO Nova 10F", price: 77330, power: 10, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "100023937", name: "ECO Nova 14F", price: 77805, power: 14, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "100023938", name: "ECO Nova 18F", price: 78850, power: 18, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "100023939", name: "ECO Nova 24F", price: 79895, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "100023940", name: "ECO Nova 31F", price: 109630, power: 31, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "100023941", name: "ECO Nova 1.24F", price: 79515, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "100023942", name: "ECO Nova 1.31F", price: 108015, power: 31, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        // ECO4S
+        { id: "7659666", name: "ECO4S 1.24 F", price: 89870, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7659668", name: "ECO4S 10 F", price: 91295, power: 10, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7659669", name: "ECO4S 18 F", price: 95095, power: 18, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7659670", name: "ECO4S 24 F", price: 98420, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7659762", name: "ECO4S 24", price: 91675, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        // ECO Life
+        { id: "7860077", name: "ECO Life 1.14F", price: 82840, power: 14, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7814104", name: "ECO Life 24F", price: 83790, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7813724", name: "ECO Life 31F", price: 115140, power: 31, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7814105", name: "ECO Life 1.24F", price: 83505, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7814108", name: "ECO Life 1.31F", price: 113430, power: 31, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        // LUNA 3
+        { id: "CSE45224366", name: "LUNA 3 240 i", price: 124165, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE45624366", name: "LUNA 3 240 Fi", price: 141930, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE45628366", name: "LUNA 3 280 Fi", price: 153235, power: 28, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE45631366", name: "LUNA 3 310 Fi", price: 156750, power: 31, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE45531366", name: "LUNA 3 1.310 Fi", price: 137465, power: 31, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        // ECO Four
+        { id: "CSE46114354", name: "ECO Four 1.14", price: 83315, power: 14, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE46514354", name: "ECO Four 1.14 F", price: 99180, power: 14, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE46124354", name: "ECO Four 1.24", price: 93955, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE46524354", name: "ECO Four 1.24 F", price: 104785, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE46224354", name: "ECO Four 24", price: 108205, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE46624354", name: "ECO Four 24 F", price: 120650, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        // LUNA 3 Comfort
+        { id: "CSE45224358", name: "LUNA 3 Comfort 240 i", price: 128250, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE45624358", name: "LUNA 3 Comfort 240 Fi", price: 150955, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE45124358", name: "LUNA 3 Comfort 1.240 i", price: 121410, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE45524358", name: "LUNA 3 Comfort 1.240 Fi", price: 135945, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE45631358", name: "LUNA 3 Comfort 310 Fi", price: 163400, power: 31, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSE45531358", name: "LUNA 3 Comfort 1.310 Fi", price: 147155, power: 31, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        // NUVOLA 3 Comfort
+        { id: "CSB45424358", name: "NUVOLA 3 Comfort 240 i", price: 220495, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSB45428358", name: "NUVOLA 3 Comfort 280 i", price: 231895, power: 28, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSB45724358", name: "NUVOLA 3 Comfort 240 Fi", price: 241015, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSB45728358", name: "NUVOLA 3 Comfort 280 Fi", price: 248330, power: 28, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "CSB45732358", name: "NUVOLA 3 Comfort 320 Fi", price: 272745, power: 32, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        // NUVOLA Duo-tec+ (конденсационный, встроенный бойлер)
+        { id: "7219553", name: "NUVOLA Duo-tec+ 16", price: 269230, power: 16, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7219554", name: "NUVOLA Duo-tec+ 24", price: 277400, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7219555", name: "NUVOLA Duo-tec+ 33", price: 293645, power: 33, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        // LUNA Platinum+ (конденсационный)
+        { id: "7219688", name: "LUNA Platinum+ 1.12 GA", price: 172425, power: 12, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7219689", name: "LUNA Platinum+ 1.18 GA", price: 181450, power: 18, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7219690", name: "LUNA Platinum+ 1.24 GA", price: 186010, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7219691", name: "LUNA Platinum+ 1.32 GA", price: 200925, power: 32, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7219692", name: "LUNA Platinum+ 24 GA", price: 199215, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "7219693", name: "LUNA Platinum+ 33 GA", price: 207195, power: 33, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        // LUNA Duo-tec E (конденсационный)
+        { id: "A7720022", name: "LUNA Duo-tec E 1.12", price: 150480, power: 12, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "A7720023", name: "LUNA Duo-tec E 1.24", price: 155990, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "A7720024", name: "LUNA Duo-tec E 1.28", price: 169290, power: 28, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "A7720025", name: "LUNA Duo-tec E 24", price: 167010, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "A7720026", name: "LUNA Duo-tec E 28", price: 179170, power: 28, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "A7720027", name: "LUNA Duo-tec E 33", price: 187150, power: 33, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "A7720028", name: "LUNA Duo-tec E 40", price: 201590, power: 40, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        // LUNA Duo-tec MP (конденсационный)
+        { id: "7106815", name: "LUNA Duo-tec MP 1.35", price: 306565, power: 35, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        // Duo-tec Compact (конденсационный)
+        { id: "A7722037", name: "Duo-tec Compact 1.24", price: 129865, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "A7722038", name: "Duo-tec Compact 24", price: 140220, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "A7722039", name: "Duo-tec Compact 28", price: 141835, power: 28, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        // LUNA AIR / IN Plus (конденсационный, уличный/внутренний)
+        { id: "A7810404", name: "LUNA AIR 24", price: 191330, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "A7810405", name: "LUNA AIR 28", price: 194655, power: 28, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "A7810446", name: "LUNA IN PLUS 1.24", price: 202920, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" }
+    ],
     boilers_plus: [
         { id: "SEB-2201-000005", name: "Котёл электрический PLUS (5 кВт)", power: 5, price: 84623, type: "el", exp: 12, vol: 10, desc: "PLUS: Бак 12л, надежная автоматика.", availability: "in_stock", price_date: "2026-06-27" },
         { id: "SEB-2201-000007", name: "Котёл электрический PLUS (7 кВт)", power: 7, price: 85887, type: "el", exp: 12, vol: 10, desc: "PLUS: Бак 12л, надежная автоматика.", availability: "in_stock", price_date: "2026-06-27" },

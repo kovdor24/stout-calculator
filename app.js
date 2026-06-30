@@ -7253,6 +7253,11 @@ const app = {
             } else {
                 this.state.wellPumpCableFilter = null;
             }
+            if (_lkId !== 'gas_boiler_auto') {
+                this.state.gasBoilerCircuits = null;
+                this.state.gasBoilerCond = null;
+                this.state.gasBoilerPower = null;
+            }
             this.state.swapSortField = null;
             this.state.swapSortDir = null;
         }
@@ -7758,6 +7763,28 @@ const app = {
                     </div>
                 </div>
             `;
+        } else if (_origId0 === 'gas_boiler_auto') {
+            const _gbData = [...catalog.boilers_gas, ...(catalog.boilers_baxi || [])].find(p => p.id === item.id) || item;
+            const _gbDhwBadge = (_gbData.circuits === 2)
+                ? `<div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">ГВС: <span style="font-weight:800;">${_gbData.dhw != null ? _gbData.dhw + ' л/мин' : '—'}</span></div>`
+                : '';
+            title.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main); text-transform:none;">Варианты замены</h3>
+                        <span style="font-size:12px; color:var(--text-sec); display:block; margin-top:2px; font-weight:500; text-transform:none;">${_gbData.name || ''}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap;">
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Мощность: <span style="font-weight:800;">${_gbData.power != null ? _gbData.power + ' кВт' : '—'}</span>
+                        </div>
+                        ${_gbDhwBadge}
+                        <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
+                            Цена: <span style="font-weight:800;">${_priceStr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         } else {
             title.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
@@ -7890,6 +7917,47 @@ const app = {
                     return a.name && a.name.includes(_needle);
                 });
             }
+        } else if (_origId0 === 'gas_boiler_auto') {
+            if (isFirstOpen) {
+                const _gbCur = [...catalog.boilers_gas, ...(catalog.boilers_baxi || [])].find(b => b.id === item.id);
+                if (_gbCur) {
+                    this.state.gasBoilerCircuits = _gbCur.circuits ? String(_gbCur.circuits) : 'all';
+                    this.state.gasBoilerPower = _gbCur.power || 'all';
+                }
+            }
+            const _gc = this.state.gasBoilerCircuits || 'all';
+            const _gt = this.state.gasBoilerCond || 'all';
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Контуры:</span>` +
+                `<span onclick="app.setGasBoilerCircuits('1')" ${_b(_gc==='1')}>Одноконтурный</span>` +
+                `<span onclick="app.setGasBoilerCircuits('2')" ${_b(_gc==='2')}>Двухконтурный</span>` +
+                `<span onclick="app.setGasBoilerCircuits('all')" ${_b(_gc==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Тип:</span>` +
+                `<span onclick="app.setGasBoilerCond('traditional')" ${_b(_gt==='traditional')}>Традиционный</span>` +
+                `<span onclick="app.setGasBoilerCond('cond')" ${_b(_gt==='cond')}>Конденсационный</span>` +
+                `<span onclick="app.setGasBoilerCond('all')" ${_b(_gt==='all')}>Все</span>` +
+                `</div>` +
+                `</div>`;
+            const _gp = this.state.gasBoilerPower || 'all';
+            const _allGbPowers = [...new Set([...catalog.boilers_gas, ...(catalog.boilers_baxi || [])].map(b => b.power).filter(Boolean))].sort((a, b) => a - b);
+            const _powerBtns = _allGbPowers.map(p => `<span onclick="app.setGasBoilerPower(${p})" ${_b(_gp===p)}>${p} кВт</span>`).join('');
+            _tankFiltersHtml = _tankFiltersHtml.replace('</div>', '') +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Мощность:</span>` +
+                _powerBtns +
+                `<span onclick="app.setGasBoilerPower('all')" ${_b(_gp==='all')}>Все</span>` +
+                `</div>` +
+                `</div>`;
+            const _isCond = (b) => b.brand === 'BAXI' && /Duo-tec|Platinum\+|LUNA AIR|LUNA IN PLUS/.test(b.name);
+            if (_gc !== 'all') alts = alts.filter(b => String(b.circuits) === _gc);
+            if (_gt === 'traditional') alts = alts.filter(b => !_isCond(b));
+            else if (_gt === 'cond') alts = alts.filter(b => _isCond(b));
+            if (_gp !== 'all') alts = alts.filter(b => b.power === _gp);
         }
 
         const _tsSortField = _isTankItem ? (this._tankSwapSort || 'price') : null;
@@ -8058,7 +8126,7 @@ const app = {
                     baseItem = item;
                 }
                 // Для бойлеров: не добавлять текущий если он не входит в полностью отфильтрованный набор (mount+heat+vol)
-                let skipAdd = _isTankItem && baseItem && !alts.some(x => x.id === baseItem.id);
+                let skipAdd = (_isTankItem || _origId0 === 'gas_boiler_auto') && baseItem && !alts.some(x => x.id === baseItem.id);
                 if (!skipAdd) altsToProcess.unshift(baseItem);
             }
 
@@ -8161,7 +8229,13 @@ const app = {
                     return ((a.display.price || 0) - (b.display.price || 0)) * _dir;
                 });
             } else {
-                uniqueAlts.sort((a, b) => (a.display.price || 0) - (b.display.price || 0));
+                const _sign = _ssd === 'asc' ? 1 : -1;
+                uniqueAlts.sort((a, b) => {
+                    if (_ssf === 'price') return _sign * ((a.display.price || 0) - (b.display.price || 0));
+                    if (_ssf === 'name' && _origId0 === 'gas_boiler_auto') return _sign * ((a.original.power || 0) - (b.original.power || 0));
+                    if (_ssf === 'name') return _sign * (a.display.name || '').localeCompare(b.display.name || '', 'ru');
+                    return (a.display.price || 0) - (b.display.price || 0);
+                });
             }
 
             uniqueAlts.forEach((entry, idx) => {
@@ -8177,12 +8251,18 @@ const app = {
                 let priceText = displayAlt.price > 0 ? this.formatPriceHtml(displayAlt.price, true) : "-";
                 let _rowCoilKw = _isTankItem ? _tankCoilKwMap[displayAlt.id] : null;
                 let _rowCoilStr = _rowCoilKw ? ` <span style="color:var(--text-sec);font-size:11px;font-weight:500;">(${_rowCoilKw} кВт)</span>` : '';
+                let _nameDisplay = displayAlt.name;
+                if (_origId0 === 'gas_boiler_auto' && alt.power != null && alt.brand !== 'Haier') {
+                    const _cirStr = alt.circuits === 1 ? 'одноконтурный' : alt.circuits === 2 ? 'двухконтурный' : '';
+                    _nameDisplay = `Котёл газовый, ${_cirStr} (${alt.power} кВт) ${displayAlt.name}`;
+                    _rowCoilStr = '';
+                }
 
                 html += `
                     <tr class="${activeClass}" style="cursor: pointer; ${activeStyle}" onclick="app.selectSwapAlternative('${item.originalId || item.id}', '${displayAlt.id}')">
                         <td class="col-idx" style="text-align: center; font-size: 13px;">${idx + 1}</td>
                         <td class="col-img" style="text-align: center;">${img}</td>
-                        <td class="col-name" style="font-size: 13px; font-weight: 600; text-align: left;">${displayAlt.name}${_rowCoilStr}${badgeHtml}</td>
+                        <td class="col-name" style="font-size: 13px; font-weight: 600; text-align: left;">${_nameDisplay}${_rowCoilStr}${badgeHtml}</td>
                         <td class="col-brand" style="text-align: center; font-size: 13px;">${displayAlt.brand || 'STOUT'}</td>
                         <td class="col-pct" style="text-align: right; font-weight: 700; font-size: 13px;">${diffHtml}</td>
                         <td style="text-align: right; font-weight: 700; font-size: 13px; white-space: nowrap;">${priceText}</td>
@@ -10369,6 +10449,18 @@ const app = {
     },
     setWellPumpCable: function (val) {
         this.state.wellPumpCableFilter = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setGasBoilerCircuits: function (val) {
+        this.state.gasBoilerCircuits = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setGasBoilerCond: function (val) {
+        this.state.gasBoilerCond = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setGasBoilerPower: function (val) {
+        this.state.gasBoilerPower = val;
         if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
     },
     toggleSwapSort: function (field) {
@@ -13120,19 +13212,27 @@ const app = {
                     let qty = Math.ceil(targetPower / 24);
                     let powerPerBoiler = targetPower / qty;
 
+                    let _gasSwapId = this.state.swaps && this.state.swaps['gas_boiler_auto'];
                     let haierBoiler;
-                    if (!this.state.hotWater) {
-                        // Бойлер ВЫКЛЮЧЕН → двухконтурный котёл (ГВС встроен)
-                        haierBoiler = powerPerBoiler <= 18
-                            ? catalog.boilers_gas.find(x => x.id === 'GE0Q6NE0CRU')
-                            : catalog.boilers_gas.find(x => x.id === 'GE0Q6PE0CRU');
-                    } else {
-                        // Бойлер ВКЛЮЧЕН → одноконтурный котёл (ГВС через бойлер)
-                        haierBoiler = powerPerBoiler <= 18
-                            ? catalog.boilers_gas.find(x => x.id === 'GE0Q6QE0CRU')
-                            : catalog.boilers_gas.find(x => x.id === 'GE0Q6RE0CRU');
+                    if (_gasSwapId) {
+                        haierBoiler = [...catalog.boilers_gas, ...(catalog.boilers_baxi || [])].find(x => x.id === _gasSwapId);
+                    }
+                    if (!haierBoiler) {
+                        if (!this.state.hotWater) {
+                            // Бойлер ВЫКЛЮЧЕН → двухконтурный котёл (ГВС встроен)
+                            haierBoiler = powerPerBoiler <= 18
+                                ? catalog.boilers_gas.find(x => x.id === 'GE0Q6NE0CRU')
+                                : catalog.boilers_gas.find(x => x.id === 'GE0Q6PE0CRU');
+                        } else {
+                            // Бойлер ВКЛЮЧЕН → одноконтурный котёл (ГВС через бойлер)
+                            haierBoiler = powerPerBoiler <= 18
+                                ? catalog.boilers_gas.find(x => x.id === 'GE0Q6QE0CRU')
+                                : catalog.boilers_gas.find(x => x.id === 'GE0Q6RE0CRU');
+                        }
                     }
                     if (haierBoiler) {
+                        const _gbCircStr = haierBoiler.circuits === 1 ? 'одноконтурный' : 'двухконтурный';
+                        haierBoiler = { ...haierBoiler, name: `Котёл газовый, ${_gbCircStr} (${haierBoiler.power} кВт)`, originalId: 'gas_boiler_auto', alts: [...catalog.boilers_gas, ...(catalog.boilers_baxi || [])] };
                         addToBill(haierBoiler, qty, this.getDesc('boiler_gas', parseFloat(pwr), haierBoiler.power, qty));
                         for (let k = 0; k < qty; k++) selBoilers.push(haierBoiler);
                     }
@@ -14229,18 +14329,18 @@ const app = {
                     let itemBlue = { ...catalog.insulated_pipes_mp_blue[0], originalId: catalog.insulated_pipes_mp_blue[0].id + "_rad" }; itemBlue.alts = catalog.metal_plastic_pipes; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
                 } else if (this.state.pipeType === 'split_mp') {
                     let grayItem = (neededPipe > 200) ? { ...catalog.metal_plastic_pipes[1] } : { ...catalog.metal_plastic_pipes[0] }; grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes_mp_red; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
-                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp);
+                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
                 } else if (this.state.pipeType === 'stable_16') {
                     let coils = Math.ceil(neededPipe / 100);
                     let stbItem = { ...catalog.stable_pipes[0], originalId: catalog.stable_pipes[0].id + "_rad" }; stbItem.alts = catalog.insulated_pipes; addToBill(stbItem, coils, this.getDesc('rad_pipe', neededPipe), pipeGrp);
-                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp);
+                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
                 } else if (this.state.pipeType === 'stable_16_r') {
                     let coils = Math.ceil(neededPipe / 100);
                     let stbItem = { ...catalog.stable_pipes[0].rommer, originalId: catalog.stable_pipes[0].id + "_rad" }; stbItem.alts = catalog.insulated_pipes; addToBill(stbItem, coils, this.getDesc('rad_pipe', neededPipe), pipeGrp);
-                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp);
+                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
                 } else { // 'split'
                     let grayItem = (neededPipe > 200) ? { ...catalog.rad_pipes_grey[1] } : { ...catalog.rad_pipes_grey[0] }; grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
-                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp);
+                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
                 }
                 addToBill(catalog.water_fittings[8], neededPipe, this.getDesc('double_clip', neededPipe, 'radiators'), pipeGrp);
             }
