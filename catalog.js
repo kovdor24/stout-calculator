@@ -1219,6 +1219,12 @@ const catalog = {
         { id: "SPM-0001-101620", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 16x2.0 (100 м)", len: 100, price: 152, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
         { id: "SPM-0001-201620", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 16x2.0 (200 м)", len: 200, price: 152, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" }
     ],
+    stable_pipes: [
+        { id: "SPS-0002-001626", name: "Труба стабильная PE-Xa/Al/PE-RT 16.2х2.6 (100 м)", len: 100, price: 301.92, brand: "STOUT", availability: "in_stock", price_date: "2026-06-30", rommer: { id: "RPS-0001-001626", name: "Труба стабильная PE-Xa/Al/PE-RT 16.2х2.6 (100 м)", len: 100, price: 207.00, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" } },
+        { id: "SPS-0002-002029", name: "Труба стабильная PE-Xa/Al/PE-RT II 20х2.9 (100 м)",   len: 100, price: 429.42, brand: "STOUT", availability: "in_stock", price_date: "2026-06-30", rommer: { id: "RPS-0001-002029", name: "Труба стабильная PE-Xa/Al/PE-RT II 20х2.9 (100 м)",   len: 100, price: 293.00, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" } },
+        { id: "SPS-0002-002537", name: "Труба стабильная PE-Xa/Al/PE-RT II 25х3.7 (50 м)",    len: 50,  price: 604.86, brand: "STOUT", availability: "in_stock", price_date: "2026-06-30", rommer: { id: "RPS-0001-002537", name: "Труба стабильная PE-Xa/Al/PE-RT II 25х3.7 (50 м)",    len: 50,  price: 413.00, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" } },
+        { id: "SPS-0002-003247", name: "Труба стабильная PE-Xa/Al/PE-RT II 32х4.7 (50 м)",    len: 50,  price: 1142.40, brand: "STOUT", availability: "in_stock", price_date: "2026-06-30", rommer: { id: "RPS-0001-003247", name: "Труба стабильная PE-Xa/Al/PE-RT II 32х4.7 (50 м)",    len: 50,  price: 780.00, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" } },
+    ],
     insulated_pipes_mp_red: [
         { id: "SPI-0001-101620", name: "Труба металлопластиковая в теплоизоляции (красная) 16x2.0 (100 м)", len: 100, price: 234, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
         { id: "SPI-0001-102020", name: "Труба металлопластиковая в теплоизоляции (красная) 20x2.0 (100 м)", len: 100, price: 370, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
@@ -1241,8 +1247,8 @@ const catalog = {
         { id: "SPX-0001-501622", name: "Труба PEX-a/EVOH серая 16x2.2 (500м)", len: 500, price: 197, availability: "in_stock", price_date: "2026-06-27" }
     ],
     insulation: [
-        { id: "EFXT018062SUPRK-400", name: "Теплоизоляция 18/6 (Красная)", price: 28, unit: "м", brand: "Energoflex" },
-        { id: "EFXT018062SUPRS-400", name: "Теплоизоляция 18/6 (Синяя)", price: 28, unit: "м", brand: "Energoflex" }
+        { id: "RIC-0002-180602", name: "Трубка ПРОТЕКТ ПРО 18/6, 2м (красная)", dn: 18, thick: 6, len: 2, pack: 184, price: 27.59, unit: "м", brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RIC-0001-180602", name: "Трубка ПРОТЕКТ ПРО 18/6, 2м (синяя)",  dn: 18, thick: 6, len: 2, pack: 184, price: 27.59, unit: "м", brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" }
     ],
     manifolds: [
         { id: "SMS-0917-000002", loops: 2, price: 8111, rommer: { id: "RMS-1200-000002", name: "Коллектор с расходомерами 1\"x2 вых.", price: 4586, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" }, availability: "in_stock", price_date: "2026-06-27" },
@@ -1323,6 +1329,14 @@ const catalog = {
     check_valve_34: { id: "SVC-0011-000020", name: "Клапан обратный пружинный 3/4\"", price: 1547, rommer: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 535, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" }, availability: "in_stock", price_date: "2026-06-06" },
     rommer_check_valve_34: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 535, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" },
     filter_mag: { id: "SFW-0072-000020", name: "Фильтр-шламоотделитель магнитный 3/4\"", price: 9231, rommer: { id: "RFW-0080-256620", name: "Фильтр-шламоотделитель магнитный 3/4\"", price: 2598, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" }, availability: "in_stock", price_date: "2026-06-27" },
+    filter_mag_alts: [
+        { id: "RFW-0081-000820", name: "Сепаратор шлама поворотный ВР 3/4\"",      price: 6695,  brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RFW-0081-000825", name: "Сепаратор шлама поворотный ВР 1\"",         price: 7207,  brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RFW-0081-000832", name: "Сепаратор шлама поворотный ВР 1 1/4\"",     price: 8055,  brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RFW-0081-002920", name: "Сепаратор шлама с щётками поворотный ВР 3/4\"",   price: 7025,  brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RFW-0081-002925", name: "Сепаратор шлама с щётками поворотный ВР 1\"",     price: 7937,  brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30", qtyRatio: 0.5 },
+        { id: "RFW-0081-002932", name: "Сепаратор шлама с щётками поворотный ВР 1 1/4\"", price: 8731,  brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30", qtyRatio: 0.5 },
+    ],
     nipple_34: { id: "SFT-0003-003434", name: "Ниппель НН 3/4\"", price: 239, availability: "in_stock", price_date: "2026-06-27" },
     coolants: [
         { id: "WARME-HYDRO-20", brand: "WARME", name: "Hydro, 20л", vol: 20, price: 1017, type: "water", availability: "in_stock", price_date: "2026-06-06" },
@@ -1338,7 +1352,14 @@ const catalog = {
         { id: "RPW-0012-350326", name: "Насос скважинный 3-63, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 104, price: 24373, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" },
         { id: "RPW-0012-370331", name: "Насос скважинный 3-77, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 124, price: 36376, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" },
         { id: "RPW-0012-380337", name: "Насос скважинный 3-92, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 148, price: 39790, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RPW-0012-370428", name: "Насос скважинный 4-76, Ду 75 мм, с кабелем", q_max: 5.4, h_max: 115, price: 36678, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RPW-0012-370428", name: "Насос скважинный 4-76, Ду 75 мм, с кабелем", q_max: 5.4, h_max: 115, price: 36678, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" },
+        { id: "RPW-1012-350270",  name: "Насос скважинный RHS 2-70, кабель 50 м",  q_max: 4.5, h_max: 83,  watt: 800,  price: 24888.91, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RPW-1012-360295",  name: "Насос скважинный RHS 2-95, кабель 60 м",  q_max: 4.5, h_max: 108, watt: 1100, price: 31719.62, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RPW-1012-3802135", name: "Насос скважинный RHS 2-135, кабель 80 м", q_max: 4.5, h_max: 152, watt: 1500, price: 51164.90, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RPW-1012-330345",  name: "Насос скважинный RHS 3-45, кабель 30 м",  q_max: 7.9, h_max: 52,  watt: 800,  price: 22010.07, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RPW-1012-350365",  name: "Насос скважинный RHS 3-65, кабель 50 м",  q_max: 7.9, h_max: 77,  watt: 1100, price: 28291.18, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RPW-1012-360390",  name: "Насос скважинный RHS 3-90, кабель 60 м",  q_max: 7.9, h_max: 102, watt: 1500, price: 40591.69, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RPW-1012-3703110", name: "Насос скважинный RHS 3-110, кабель 70 м", q_max: 7.9, h_max: 128, watt: 2200, price: 55587.85, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" }
     ],
     well_parts: [
         { id: "10011032", name: "Труба ПНД 32х3.0 питьевая (кратно 5м)", price: 112.4, brand: "CYKLON", unit: "м", availability: "in_stock", price_date: "2026-06-06" },
@@ -1374,6 +1395,14 @@ const catalog = {
     water_insulation: [
         { id: "EFXT018092SUPRK", name: "Теплоизоляция 18/9 (Красная)", price: 34, unit: "м", brand: "Energoflex" },
         { id: "EFXT018092SUPRS", name: "Теплоизоляция 18/9 (Синяя)", price: 34, unit: "м", brand: "Energoflex" }
+    ],
+    insulation_pro: [
+        { id: "RIC-0001-180602", name: "Трубка ПРОТЕКТ ПРО 18/6, 2м (синяя)",  dn: 18, thick: 6, len: 2, pack: 184, price: 27.59, unit: "м", brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RIC-0001-220602", name: "Трубка ПРОТЕКТ ПРО 22/6, 2м (синяя)",  dn: 22, thick: 6, len: 2, pack: 160, price: 29.31, unit: "м", brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RIC-0001-280602", name: "Трубка ПРОТЕКТ ПРО 28/6, 2м (синяя)",  dn: 28, thick: 6, len: 2, pack: 120, price: 36.21, unit: "м", brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RIC-0002-180602", name: "Трубка ПРОТЕКТ ПРО 18/6, 2м (красная)", dn: 18, thick: 6, len: 2, pack: 184, price: 27.59, unit: "м", brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RIC-0002-220602", name: "Трубка ПРОТЕКТ ПРО 22/6, 2м (красная)", dn: 22, thick: 6, len: 2, pack: 160, price: 29.31, unit: "м", brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
+        { id: "RIC-0002-280602", name: "Трубка ПРОТЕКТ ПРО 28/6, 2м (красная)", dn: 28, thick: 6, len: 2, pack: 120, price: 36.21, unit: "м", brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" }
     ],
     water_fittings: [
         { id: "SFA-0032-001612", name: "Водорозетка 16x1/2\" (тупиковая)", price: 919, availability: "in_stock", price_date: "2026-06-27" },
@@ -2098,6 +2127,9 @@ const catalog = {
         { id: "SAC-0022-600001", name: "Монтажная планка одинарная", price: 285, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
         { id: "SAC-0022-600100", name: "Монтажная планка двойная 100мм", price: 320, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
         { id: "SAC-0022-600150", name: "Монтажная планка двойная 150мм", price: 330, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" }
+    ],
+    ufh_mat: [
+        { id: "RMF-0001-032530", name: "Подложка для теплого пола 3 мм / 25 м × 1.2 м (30 м²)", thick: 3, len: 25, width: 1.2, pack_m2: 30, price: 2667.90, unit: "рул.", brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" }
     ]
 };
 

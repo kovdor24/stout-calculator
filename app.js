@@ -34,6 +34,24 @@ const CONTEST_CATS_2026 = [
     { key: 'valve',          label: 'Арматура',            pts: 2,  emoji: '🔧', test: (id)       => id.startsWith('SVT-') || id.startsWith('SVL-') || id.startsWith('SFB-') || id.startsWith('SBV-') },
 ];
 
+// === ВИТРИНА ПРИЗОВ КОНКУРСА STOUT 2026 ===
+const CONTEST_PRIZES_2026 = [
+    { label: 'Комплект спецодежды', pts: 10000, emoji: '👔' },
+    { label: 'Жилет',               pts: 3000,  emoji: '🦺' },
+    { label: 'Беспров. зарядное',   pts: 3000,  emoji: '🔌' },
+    { label: 'Непромок. рюкзак',    pts: 2000,  emoji: '🎒' },
+    { label: 'Спортивная сумка',     pts: 1500,  emoji: '👜' },
+    { label: 'Футболка',             pts: 1500,  emoji: '👕' },
+    { label: 'Термостакан',          pts: 1300,  emoji: '🥤' },
+    { label: 'Зонт',                 pts: 1000,  emoji: '☂️' },
+    { label: 'Бутылка для воды',     pts: 1000,  emoji: '💧' },
+    { label: 'Перчатки рабочие',     pts: 1000,  emoji: '🧤' },
+    { label: 'Кепка',                pts: 500,   emoji: '🧢' },
+    { label: 'Ланчбокс',             pts: 500,   emoji: '🍱' },
+    { label: 'Кружка',               pts: 500,   emoji: '☕' },
+];
+// ===================================
+
 // ===================================
 // === OFFLINE SHARE LINK GENERATOR (COMPRESSION & BASE64) ===
 function compactPayload(data) {
@@ -7225,6 +7243,18 @@ const app = {
             if (!_lkId.startsWith('SEB-')) {
                 this.state.swapBoilerPower = null;
             }
+            if (_lkId !== 'SFW-0072-000020') {
+                this.state.filterMagSize = null;
+            }
+            if (_lkId !== 'well_pump_auto') {
+                this.state.wellPumpFlowFilter = null;
+                this.state.wellPumpHeadFilter = null;
+                this.state.wellPumpCableFilter = null;
+            } else {
+                this.state.wellPumpCableFilter = null;
+            }
+            this.state.swapSortField = null;
+            this.state.swapSortDir = null;
         }
 
         let item = this.currentEquipmentList.find(x => x.id === lookupId || x.displaySku === lookupId);
@@ -7381,11 +7411,15 @@ const app = {
                 p_split_mp = splitMpItem.price || 0;
             }
 
+            const _stb16 = catalog.stable_pipes && catalog.stable_pipes[0];
+            const _stb16r = _stb16 && _stb16.rommer;
             customAlts = [
                 { id: 'insulated', name: 'Труба PEX-a в теплоизоляции', brand: b_ins, price: p_ins },
-                { id: 'split', name: 'Труба PEX-a без изоляции (бухты)', brand: b_split, price: p_split },
+                { id: 'split', name: 'Труба PEX-a без изоляции', brand: b_split, price: p_split },
                 { id: 'insulated_mp', name: 'Труба металлопластиковая в теплоизоляции', brand: b_ins_mp, price: p_ins_mp },
-                { id: 'split_mp', name: 'Труба металлопластиковая без изоляции', brand: b_split_mp, price: p_split_mp }
+                { id: 'split_mp', name: 'Труба металлопластиковая без изоляции', brand: b_split_mp, price: p_split_mp },
+                ...(_stb16 ? [{ id: 'stable_16', name: _stb16.name, brand: 'STOUT', price: _stb16.price }] : []),
+                ...(_stb16r ? [{ id: 'stable_16_r', name: _stb16r.name, brand: 'ROMMER', price: _stb16r.price }] : [])
             ];
         }
         else if (item.originalId && (item.originalId.endsWith('_ufh') || item.originalId.startsWith('SPX-0002-') || item.originalId.startsWith('SPM-0001-'))) {
@@ -7611,6 +7645,34 @@ const app = {
                 alt.isActive = (alt.id === activeId);
             });
         }
+        else if (_origId0 === 'well_pump_auto') {
+            const _curWellPump = this.state.swaps && this.state.swaps['well_pump_auto'];
+            customAlts = catalog.well_pumps.map(p => ({ id: p.id, name: p.name, brand: p.brand || 'ROMMER', price: p.price }));
+            customAlts.forEach(alt => {
+                alt.isActive = _curWellPump ? (alt.id === _curWellPump) : (alt.id === item.id);
+            });
+            if (isFirstOpen) {
+                const _mSeries = (item.name||'').match(/(\d+)-\d+/);
+                const _mHead   = (item.name||'').match(/\d+-(\d+)/);
+                this.state.wellPumpFlowFilter = _mSeries ? _mSeries[1] : 'all';
+                this.state.wellPumpHeadFilter = _mHead   ? _mHead[1]   : 'all';
+            }
+        }
+        else if (_origId0 === 'SFW-0072-000020') {
+            if (isFirstOpen) {
+                this.state.filterMagSize = '34';
+            }
+            const _fm = catalog.filter_mag;
+            const _curSwap = this.state.swaps && this.state.swaps['SFW-0072-000020'];
+            customAlts = [
+                { id: _fm.id,        name: _fm.name,        brand: 'STOUT',  price: _fm.price },
+                { id: _fm.rommer.id, name: _fm.rommer.name, brand: 'ROMMER', price: _fm.rommer.price },
+                ...(catalog.filter_mag_alts || [])
+            ];
+            customAlts.forEach(alt => {
+                alt.isActive = _curSwap ? (alt.id === _curSwap) : (alt.id === _fm.id);
+            });
+        }
 
         let modal = document.getElementById('swap_modal_overlay');
         let body = document.getElementById('swap_modal_body');
@@ -7632,7 +7694,14 @@ const app = {
         };
         const _tankItemId = item.originalId || item.id || '';
         const _coilKw = _tankCoilKwMap[_tankItemId];
-        const _priceStr = basePrice > 0 ? this.formatPriceHtml(basePrice, true) : '—';
+        // Цена выбранного варианта (из swaps, иначе цена исходного товара)
+        const _swapId = this.state.swaps && this.state.swaps[_origId0];
+        let _selectedPrice = basePrice;
+        if (customAlts) {
+            const _sa = customAlts.find(a => a.isActive || (_swapId && a.id === _swapId));
+            if (_sa) _selectedPrice = _sa.price || basePrice;
+        }
+        const _priceStr = _selectedPrice > 0 ? this.formatPriceHtml(_selectedPrice, true) : '—';
 
         if (_coilKw) {
             title.innerHTML = `
@@ -7651,10 +7720,55 @@ const app = {
                     </div>
                 </div>
             `;
+        } else if (_origId0 === 'SFW-0072-000020') {
+            title.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main); text-transform:none;">Варианты замены</h3>
+                        <span style="font-size:12px; color:var(--text-sec); display:block; margin-top:2px; font-weight:500; text-transform:none;">${item.name || ''}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap;">
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Подключение: <span style="font-weight:800;">3/4"</span>
+                        </div>
+                        <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
+                            Цена: <span style="font-weight:800;">${_priceStr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (_origId0 === 'well_pump_auto') {
+            const _wpData = catalog.well_pumps.find(p => p.id === item.id) || item;
+            title.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main); text-transform:none;">Варианты замены</h3>
+                        <span style="font-size:12px; color:var(--text-sec); display:block; margin-top:2px; font-weight:500; text-transform:none;">${_wpData.name || ''}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap;">
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Расход: <span style="font-weight:800;">${_wpData.q_max != null ? _wpData.q_max + ' м³/ч' : '—'}</span>
+                        </div>
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Напор: <span style="font-weight:800;">${_wpData.h_max != null ? _wpData.h_max + ' м' : '—'}</span>
+                        </div>
+                        <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
+                            Цена: <span style="font-weight:800;">${_priceStr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         } else {
             title.innerHTML = `
-                <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; text-transform: none !important;">Варианты замены:</div>
-                <div style="font-size: 13px; font-weight: 500; color: var(--text-sec); text-transform: none !important;">${item.name}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main); text-transform:none;">Варианты замены</h3>
+                        <span style="font-size:12px; color:var(--text-sec); display:block; margin-top:2px; font-weight:500; text-transform:none;">${item.name || ''}</span>
+                    </div>
+                    <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08); flex-shrink:0;">
+                        Цена: <span style="font-weight:800;">${_priceStr}</span>
+                    </div>
+                </div>
             `;
         }
         let getPriceDiffHtml = (targetPrice, isRowActive) => {
@@ -7676,7 +7790,47 @@ const app = {
 
         const _isTankItem = (lookupId || '').startsWith('SWH') || (lookupId || '').startsWith('RWH');
         let _tankFiltersHtml = '';
-        if (_isTankItem) {
+        if (_origId0 === 'well_pump_auto') {
+            const _wf = this.state.wellPumpFlowFilter || 'all';
+            const _wc = this.state.wellPumpCableFilter || 'cable';
+            const _wh = this.state.wellPumpHeadFilter || 'all';
+            const _wb = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            const _getSeries = (name) => { const m = (name||'').match(/(\d+)-\d+/); return m ? m[1] : null; };
+            const _getHead = (name) => { const m = (name||'').match(/\d+-(\d+)/); return m ? m[1] : null; };
+            const _hasCable = (name) => (name||'').toLowerCase().includes('кабел');
+            // Список напоров из текущего flow-фильтра для динамических кнопок
+            const _headsAvail = [...new Set(catalog.well_pumps
+                .filter(p => _wf === 'all' || _getSeries(p.name) === _wf)
+                .map(p => _getHead(p.name)).filter(Boolean)
+            )].sort((a, b) => +a - +b);
+            const _headBtns = _headsAvail.map(h => `<span onclick="app.setWellPumpHead('${h}')" ${_wb(_wh===h)}>${h} м</span>`).join('');
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Расход:</span>` +
+                `<span onclick="app.setWellPumpFlow('2')" ${_wb(_wf==='2')}>2 м³/ч</span>` +
+                `<span onclick="app.setWellPumpFlow('3')" ${_wb(_wf==='3')}>3 м³/ч</span>` +
+                `<span onclick="app.setWellPumpFlow('4')" ${_wb(_wf==='4')}>4 м³/ч</span>` +
+                `<span onclick="app.setWellPumpFlow('all')" ${_wb(_wf==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Напор:</span>` +
+                _headBtns +
+                `<span onclick="app.setWellPumpHead('all')" ${_wb(_wh==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Кабель:</span>` +
+                `<span onclick="app.setWellPumpCable('cable')" ${_wb(_wc==='cable')}>С кабелем</span>` +
+                `<span onclick="app.setWellPumpCable('nocable')" ${_wb(_wc==='nocable')}>Без кабеля</span>` +
+                `<span onclick="app.setWellPumpCable('all')" ${_wb(_wc==='all')}>Все</span>` +
+                `</div>` +
+                `</div>`;
+            if (_wf !== 'all') customAlts = customAlts.filter(a => _getSeries(a.name) === _wf);
+            if (_wh !== 'all') customAlts = customAlts.filter(a => _getHead(a.name) === _wh);
+            if (_wc === 'cable') customAlts = customAlts.filter(a => _hasCable(a.name));
+            else if (_wc === 'nocable') customAlts = customAlts.filter(a => !_hasCable(a.name));
+            // 'all' — без фильтрации
+        } else if (_isTankItem) {
             let _sm = this.state.tankSwapMount || this.state.tankMount || 'floor';
             let _sh = this.state.tankSwapHeat || this.state.tankHeat || 'cos';
             let _sv = this.state.tankSwapVol;
@@ -7713,6 +7867,29 @@ const app = {
                 _powerHtml +
                 `</div>` +
                 `</div>`;
+        } else if (_origId0 === 'SFW-0072-000020') {
+            const _sz = this.state.filterMagSize || 'all';
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Подключение:</span>` +
+                `<span onclick="app.setFilterMagSize('34')" ${_b(_sz==='34')}>3/4"</span>` +
+                `<span onclick="app.setFilterMagSize('1')" ${_b(_sz==='1')}>1"</span>` +
+                `<span onclick="app.setFilterMagSize('114')" ${_b(_sz==='114')}>1 1/4"</span>` +
+                `<span onclick="app.setFilterMagSize('all')" ${_b(_sz==='all')}>Все</span>` +
+                `</div>` +
+                `</div>`;
+
+            // Фильтрация списка по размеру
+            if (_sz !== 'all' && customAlts) {
+                const _sizeMap = { '34': '3/4"', '1': ['1"', 'ВР 1"'], '114': '1 1/4"' };
+                const _needle = _sz === '1' ? 'ВР 1"' : _sizeMap[_sz];
+                customAlts = customAlts.filter(a => {
+                    if (_sz === '1') return a.name && a.name.includes('ВР 1"') && !a.name.includes('1 1/4');
+                    return a.name && a.name.includes(_needle);
+                });
+            }
         }
 
         const _tsSortField = _isTankItem ? (this._tankSwapSort || 'price') : null;
@@ -7720,12 +7897,28 @@ const app = {
         const _priceArrow = _tsSortField === 'price' ? (_tsSortOrder === 'asc' ? ' ▲' : ' ▼') : '';
         const _coilArrow = _tsSortField === 'coil' ? (_tsSortOrder === 'asc' ? ' ▲' : ' ▼') : '';
         const _sortStyle = 'cursor:pointer;user-select:none;text-decoration:underline dotted;';
+        const _isFmag = _origId0 === 'SFW-0072-000020';
+        const _ssf = this.state.swapSortField;
+        const _ssd = this.state.swapSortDir || 'asc';
+        const _ssA = (f) => _ssf === f ? (_ssd === 'asc' ? ' ▲' : ' ▼') : '';
+        // Применяем универсальную сортировку для не-бойлерных таблиц
+        if (_ssf && !_isTankItem) {
+            const _sign = _ssd === 'asc' ? 1 : -1;
+            const _dnVal = (name) => (name || '').includes('1 1/4') ? 1.25 : (name || '').includes(' 1"') ? 1.0 : 0.75;
+            const _sortFn = (a, b) => _ssf === 'price'
+                ? _sign * ((a.price || 0) - (b.price || 0))
+                : _isFmag
+                    ? _sign * (_dnVal(a.name) - _dnVal(b.name))
+                    : _sign * (a.name || '').localeCompare(b.name || '', 'ru');
+            if (customAlts) customAlts = [...customAlts].sort(_sortFn);
+            else alts = [...alts].sort(_sortFn);
+        }
         const _nameTh = _isTankItem
             ? `<th class="col-name" style="text-align:left;${_sortStyle}" onclick="app.toggleTankSwapSort('coil')">Наименование${_coilArrow}</th>`
-            : `<th class="col-name" style="text-align:left;">Наименование</th>`;
+            : `<th class="col-name" style="text-align:left;${_sortStyle}" onclick="app.toggleSwapSort('name')">Наименование${_ssA('name')}</th>`;
         const _priceTh = _isTankItem
             ? `<th style="text-align:right;width:100px;${_sortStyle}" onclick="app.toggleTankSwapSort('price')">Цена${_priceArrow}</th>`
-            : `<th style="text-align:right;width:100px;">Цена</th>`;
+            : `<th style="text-align:right;width:100px;${_sortStyle}" onclick="app.toggleSwapSort('price')">Цена${_ssA('price')}</th>`;
 
         let html = _tankFiltersHtml + `
             <table class="inv-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
@@ -7758,7 +7951,7 @@ const app = {
                 else if (alt.id === 'hidden' || alt.id === 'double' || alt.id === 'single') {
                     isActive = (alt.id === this.state.pipeMountType);
                 }
-                else if (alt.id === 'insulated' || alt.id === 'split' || alt.id === 'insulated_mp' || alt.id === 'split_mp') {
+                else if (alt.id === 'insulated' || alt.id === 'split' || alt.id === 'insulated_mp' || alt.id === 'split_mp' || alt.id === 'stable_16' || alt.id === 'stable_16_r') {
                     isActive = (alt.id === this.state.pipeType);
                 }
                 else if (alt.id === 'pex' || alt.id === 'metal_plastic') {
@@ -7795,6 +7988,9 @@ const app = {
                 else if (alt.id === 'chrome' || alt.id === 'chrome_rommer' || alt.id.startsWith('SMS-0922') || alt.id.startsWith('RMS-3201') || alt.id.startsWith('RMS-1210') || alt.id.startsWith('RMS-1001') || alt.id.startsWith('SMB-6850')) {
                     isActive = alt.isActive;
                 }
+                else {
+                    isActive = alt.isActive;
+                }
                 alt.isActive = isActive;
             });
 
@@ -7804,7 +8000,9 @@ const app = {
                 basePrice = activeAlt.price || 0;
             }
 
-            customAlts.sort((a, b) => (a.price || 0) - (b.price || 0));
+            if (!this.state.swapSortField) {
+                customAlts.sort((a, b) => (a.price || 0) - (b.price || 0));
+            }
             customAlts.forEach((alt, idx) => {
                 let isActive = alt.isActive;
 
@@ -8776,6 +8974,21 @@ const app = {
         if (!this.state.swaps) this.state.swaps = {};
         this.state.swaps[originalId] = chosenId;
 
+        // Сохраняем коэффициент количества (напр. 1" сепаратор заменяет 2 шт. 3/4")
+        if (!this.state.swapQtyRatios) this.state.swapQtyRatios = {};
+        let _chosenQtyRatio = null;
+        for (const _ck in catalog) {
+            if (Array.isArray(catalog[_ck])) {
+                const _fi = catalog[_ck].find(x => x.id === chosenId);
+                if (_fi) { _chosenQtyRatio = _fi.qtyRatio || null; break; }
+            }
+        }
+        if (_chosenQtyRatio) {
+            this.state.swapQtyRatios[originalId] = _chosenQtyRatio;
+        } else {
+            delete this.state.swapQtyRatios[originalId];
+        }
+
         // Synchronize red/blue insulated pipe swaps
         if (originalId === 'SPI-0003-001622_rad') {
             if (chosenId === 'SPI-0003-001622') {
@@ -8907,11 +9120,17 @@ const app = {
             else if (chosenId === 'double') this.state.pipeMountType = 'double';
             else this.state.pipeMountType = 'single';
         }
+        else if (originalId === 'well_pump_auto') {
+            if (!this.state.swaps) this.state.swaps = {};
+            this.state.swaps['well_pump_auto'] = chosenId;
+        }
         else if (originalId.endsWith('_rad') || originalId.startsWith('SPI-0003-')) {
             if (chosenId === 'insulated') this.state.pipeType = 'insulated';
             else if (chosenId === 'split') this.state.pipeType = 'split';
             else if (chosenId === 'insulated_mp') this.state.pipeType = 'insulated_mp';
             else if (chosenId === 'split_mp') this.state.pipeType = 'split_mp';
+            else if (chosenId === 'stable_16' || chosenId === 'SPS-0002-001626') this.state.pipeType = 'stable_16';
+            else if (chosenId === 'stable_16_r' || chosenId === 'RPS-0001-001626') this.state.pipeType = 'stable_16_r';
             else {
                 if (chosenId.startsWith('SPI-0003-') || chosenId.startsWith('SPI-0004-')) {
                     this.state.pipeType = 'insulated';
@@ -10133,6 +10352,32 @@ const app = {
     },
     setBoilerSwapPower: function (val) {
         this.state.swapBoilerPower = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setFilterMagSize: function (val) {
+        this.state.filterMagSize = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setWellPumpFlow: function (val) {
+        this.state.wellPumpFlowFilter = val;
+        this.state.wellPumpHeadFilter = null;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setWellPumpHead: function (val) {
+        this.state.wellPumpHeadFilter = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setWellPumpCable: function (val) {
+        this.state.wellPumpCableFilter = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    toggleSwapSort: function (field) {
+        if (this.state.swapSortField === field) {
+            this.state.swapSortDir = this.state.swapSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.state.swapSortField = field;
+            this.state.swapSortDir = 'asc';
+        }
         if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
     },
     toggleTankSwapSort: function (field) {
@@ -12469,6 +12714,21 @@ const app = {
                 return;
             }
 
+            // Применяем коэффициент количества (1" сепаратор = 2 шт. 3/4")
+            if (this.state.swapQtyRatios) {
+                bill.forEach(entry => {
+                    const _r = this.state.swapQtyRatios[entry.originalId || entry.id];
+                    if (_r && _r !== 1) {
+                        const _nq = Math.max(1, Math.ceil(entry.q * _r));
+                        if (_nq !== entry.q) {
+                            this.calcFinalTotal -= entry.price * (entry.q - _nq);
+                            entry.q = _nq;
+                            entry.sum = Math.round(entry.price * _nq);
+                        }
+                    }
+                });
+            }
+
             // Сохраняем элементы для коммерческого предложения клиенту
             bill.forEach(i => {
                 this.currentEquipmentList.push({
@@ -13969,10 +14229,18 @@ const app = {
                     let itemBlue = { ...catalog.insulated_pipes_mp_blue[0], originalId: catalog.insulated_pipes_mp_blue[0].id + "_rad" }; itemBlue.alts = catalog.metal_plastic_pipes; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
                 } else if (this.state.pipeType === 'split_mp') {
                     let grayItem = (neededPipe > 200) ? { ...catalog.metal_plastic_pipes[1] } : { ...catalog.metal_plastic_pipes[0] }; grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes_mp_red; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
-                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, "Изоляция красная.", pipeGrp); addToBill(catalog.insulation[1], insLen, "Изоляция синяя.", pipeGrp);
+                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp);
+                } else if (this.state.pipeType === 'stable_16') {
+                    let coils = Math.ceil(neededPipe / 100);
+                    let stbItem = { ...catalog.stable_pipes[0], originalId: catalog.stable_pipes[0].id + "_rad" }; stbItem.alts = catalog.insulated_pipes; addToBill(stbItem, coils, this.getDesc('rad_pipe', neededPipe), pipeGrp);
+                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp);
+                } else if (this.state.pipeType === 'stable_16_r') {
+                    let coils = Math.ceil(neededPipe / 100);
+                    let stbItem = { ...catalog.stable_pipes[0].rommer, originalId: catalog.stable_pipes[0].id + "_rad" }; stbItem.alts = catalog.insulated_pipes; addToBill(stbItem, coils, this.getDesc('rad_pipe', neededPipe), pipeGrp);
+                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp);
                 } else { // 'split'
                     let grayItem = (neededPipe > 200) ? { ...catalog.rad_pipes_grey[1] } : { ...catalog.rad_pipes_grey[0] }; grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
-                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, "Изоляция красная.", pipeGrp); addToBill(catalog.insulation[1], insLen, "Изоляция синяя.", pipeGrp);
+                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> ceil(трасса ÷ 2), округление до чётного.<br><b>Расчёт:</b> ceil(${neededPipe} ÷ 2) = ${insLen} м.</span>`, pipeGrp);
                 }
                 addToBill(catalog.water_fittings[8], neededPipe, this.getDesc('double_clip', neededPipe, 'radiators'), pipeGrp);
             }
@@ -14090,7 +14358,7 @@ const app = {
             let grpIns = "4.2. УТЕПЛИТЕЛЬ И КРЕПЁЖ";
 
             if (this.state.ufhBaseType === 'mat') { let mt = catalog.mats[0]; mt.alts = [catalog.xps_kit[0]]; let mc = Math.ceil((tpArea / mt.area) * 1.05); addToBill(mt, mc, this.getDesc('ufh_mat', tpArea), grpIns); }
-            else { let xpsItem = catalog.xps_kit[0]; xpsItem.alts = catalog.mats; let sheets = Math.ceil((tpArea / xpsItem.area) * 1.05); addToBill(xpsItem, sheets, this.getDesc('ufh_xps', tpArea), grpIns); let totalDowels = Math.ceil(tpArea * 5); addToBill(catalog.xps_kit[1], Math.ceil(totalDowels / 100), `Дюбеля.`, grpIns); let totalStaples = Math.ceil(tpMeters * 2.5); addToBill(catalog.xps_kit[2], Math.ceil(totalStaples / 25), `Скобы.`, grpIns); let tapeRolls = Math.ceil((sheets * 1.76 * 1.1) / 50); addToBill(catalog.xps_kit[3], tapeRolls, `Скотч.`, grpIns); }
+            else { let xpsItem = catalog.xps_kit[0]; xpsItem.alts = catalog.mats; let sheets = Math.ceil((tpArea / xpsItem.area) * 1.05); addToBill(xpsItem, sheets, this.getDesc('ufh_xps', tpArea), grpIns); if (catalog.ufh_mat && catalog.ufh_mat[0]) { let matRolls = Math.ceil(tpArea / catalog.ufh_mat[0].pack_m2); addToBill(catalog.ufh_mat[0], matRolls, `Подложка 3 мм, ${tpArea} м² (рулон 30 м²).`, grpIns); } let totalDowels = Math.ceil(tpArea * 5); addToBill(catalog.xps_kit[1], Math.ceil(totalDowels / 100), `Дюбеля.`, grpIns); let totalStaples = Math.ceil(tpMeters * 2.5); addToBill(catalog.xps_kit[2], Math.ceil(totalStaples / 25), `Скобы.`, grpIns); let tapeRolls = Math.ceil((sheets * 1.76 * 1.1) / 50); addToBill(catalog.xps_kit[3], tapeRolls, `Скотч.`, grpIns); }
 
             if (this.state.ufhAuto) {
                 let grpAuto = "4.3. АВТОМАТИКА ТЁПЛОГО ПОЛА";
@@ -14576,7 +14844,14 @@ const app = {
             let h = (this.state.wellDepth + (this.state.wellDist / 10) + floorsH + 30) * 1.1;
 
             let validPumps = catalog.well_pumps.filter(p => p.q_max >= (q * 0.9) && p.h_max >= (h + 20));
-            let pump = validPumps.length > 0 ? validPumps[0] : catalog.well_pumps[catalog.well_pumps.length - 1];
+            let _wellPumpSwapId = this.state.swaps && this.state.swaps['well_pump_auto'];
+            let pump;
+            if (_wellPumpSwapId) {
+                pump = catalog.well_pumps.find(p => p.id === _wellPumpSwapId) || validPumps[0] || catalog.well_pumps[catalog.well_pumps.length - 1];
+            } else {
+                pump = validPumps.length > 0 ? validPumps[0] : catalog.well_pumps[catalog.well_pumps.length - 1];
+            }
+            pump = { ...pump, originalId: 'well_pump_auto', alts: catalog.well_pumps };
 
             let pumpDesc = `<span style="font-size:11px; line-height:1.4;"><span style="font-weight:700; color:#93C5FD; display:block; margin-bottom:4px;">Скважинный насос ROMMER</span><b>Расчет:</b> Потребность ${q.toFixed(1)} м³/ч, Напор ${Math.round(h)} м.<br><b>Формула напора:</b> Глубина (${this.state.wellDepth}м) + Трасса/10 + Высота этажей + 30м (Давление) + 10% запас.<br><i>*Насос включает кабель питания.</i></span>`;
 
@@ -15522,6 +15797,26 @@ const app = {
             })
             .join('');
 
+        const prizesOpen = !!this._contestPrizesOpen;
+        const prizesHtml = CONTEST_PRIZES_2026.map(p => {
+            const canAfford = totalPts >= p.pts;
+            const pct = Math.min(100, Math.round(totalPts / p.pts * 100));
+            const remaining = (p.pts - totalPts).toLocaleString('ru-RU');
+            const statusHtml = canAfford
+                ? `<div class="cw-prize-status ok">✅ Уже хватает!</div>`
+                : `<div class="cw-prize-progress"><div class="cw-prize-progress-fill" style="width:${pct}%"></div></div><div class="cw-prize-status">ещё ${remaining} баллов</div>`;
+            return `<div class="cw-prize${canAfford ? ' can-afford' : ''}">
+                <span class="cw-prize-emoji">${p.emoji}</span>
+                <div class="cw-prize-body">
+                    <div class="cw-prize-row">
+                        <span class="cw-prize-name">${p.label}</span>
+                        <span class="cw-prize-pts">${p.pts.toLocaleString('ru-RU')} баллов</span>
+                    </div>
+                    ${statusHtml}
+                </div>
+            </div>`;
+        }).join('');
+
         el.innerHTML = `
             <div class="cw-card">
                 <div class="cw-header">
@@ -15535,7 +15830,16 @@ const app = {
                 <div class="cw-achievements">
                     ${earnedAch}${lockedAch}
                 </div>
+                <button class="cw-prizes-toggle" onclick="app.toggleContestPrizes()">
+                    🎁 Витрина призов <span class="cw-prizes-arrow">${prizesOpen ? '▲' : '▼'}</span>
+                </button>
+                ${prizesOpen ? `<div class="cw-prizes-list">${prizesHtml}</div>` : ''}
             </div>`;
+    },
+
+    toggleContestPrizes() {
+        this._contestPrizesOpen = !this._contestPrizesOpen;
+        this.renderContestWidget();
     },
 
     showContestToast(label, pts, type = 'gain') {
