@@ -6904,7 +6904,12 @@ const app = {
         let xpsAlt = catalog.xps_kit[0]; catalog.mats.forEach(m => { m.alts = [xpsAlt]; }); catalog.xps_kit[0].alts = catalog.mats;
         if (catalog.well_auto) { let waAlts = catalog.well_auto; catalog.well_auto.forEach(a => { a.alts = waAlts; }); }
         if (catalog.convectors_scq && catalog.convectors_scn) { let convAlts = [catalog.convectors_scq[0], catalog.convectors_scn[0]]; catalog.convectors_scq.forEach(c => { c.alts = convAlts; }); catalog.convectors_scn.forEach(c => { c.alts = convAlts; }); }
-        if (catalog.chimneys) { let chimneyAlts = [catalog.chimneys[0], catalog.chimneys[1]]; catalog.chimneys.forEach(c => { c.alts = chimneyAlts; }); }
+        if (catalog.chimneys) { let chimneyAlts = catalog.chimneys; catalog.chimneys.forEach(c => { c.alts = chimneyAlts; }); }
+        if (catalog.well_parts) {
+            let muftaOld = catalog.well_parts.find(x => x.id === '53003214');
+            let muftaNew = catalog.well_parts.find(x => x.id === 'SFH-0002-032114');
+            if (muftaOld && muftaNew) { let muftaAlts = [muftaOld, muftaNew]; muftaOld.alts = muftaAlts; muftaNew.alts = muftaAlts; }
+        }
         if (catalog.outdoor_faucets && catalog.outdoor_faucet) {
             let faucetAlts = [...catalog.outdoor_faucets, catalog.outdoor_faucet.find(x => x.id === "SVB-1007-200020")].filter(Boolean);
             catalog.outdoor_faucets.forEach(f => { f.alts = faucetAlts; });
@@ -7122,7 +7127,7 @@ const app = {
             this.state.pprSystemBrand = (this.state.pprSystemBrand === 'proaqua' || !this.state.pprSystemBrand) ? 'wavin' : 'proaqua';
         }
 
-        else if (originalId.startsWith('SKB-') || /^5[0-9]{4,}[RK]?$/.test(originalId)) {
+        else if (originalId.startsWith('SKB-') || /^5[0-9]{5}[RK]?$/.test(originalId)) {
             // Sinikon sewer items: cycle std ↔ comfort
             this.state.sewerType = (this.state.sewerType === 'std') ? 'comfort' : 'std';
         }
@@ -7536,12 +7541,10 @@ const app = {
         }
         else if (item.originalId && (item.originalId.startsWith('SCA-') || item.originalId.startsWith('RCA-'))) {
             let p0 = isRommer ? (catalog.chimneys[0].rommer?.price || catalog.chimneys[0].price) : catalog.chimneys[0].price;
-            let p1 = catalog.chimneys[1].price;
             let name0 = isRommer ? (catalog.chimneys[0].rommer?.name || catalog.chimneys[0].name) : catalog.chimneys[0].name;
-            let name1 = catalog.chimneys[1].name;
             customAlts = [
                 { id: 'standard', name: name0, brand: isRommer ? 'ROMMER' : 'STOUT', price: p0 },
-                { id: 'basic', name: name1, brand: 'ROMMER', price: p1 }
+                ...catalog.chimneys.slice(1).map(c => ({ id: c.id, name: c.name, brand: c.brand || 'ROMMER', price: c.price }))
             ];
         }
         else if (item.originalId && (item.originalId.startsWith('PA') || item.originalId.includes('RCT'))) {
@@ -7550,7 +7553,7 @@ const app = {
                 { id: 'wavin', name: 'Полипропилен Wavin Ekoplastik (Чехия)', brand: 'Wavin Ekoplastik', price: 0 }
             ];
         }
-        else if (item.originalId && (item.originalId.startsWith('SKB-') || /^5[0-9]{4,}[RK]?$/.test(item.originalId))) {
+        else if (item.originalId && (item.originalId.startsWith('SKB-') || /^5[0-9]{5}[RK]?$/.test(item.originalId))) {
             let stoutSewer = catalog.sewer_silent ? catalog.sewer_silent.find(x => x.id === item.originalId || x.id === item.id) : null;
             let stdPrice = 0, comfortPrice = 0;
             let stdBrand = 'Sinikon', comfortBrand = 'Sinikon';
@@ -7785,6 +7788,33 @@ const app = {
                     </div>
                 </div>
             `;
+        } else if (catalog.manifolds_chrome_blocks.find(m => m.id === item.id) || catalog.water_manifolds_rommer.find(m => m.id === item.id) || catalog.water_manifolds_stout.find(m => m.id === item.id) || catalog.water_manifolds_cold.find(m => m.id === item.id)) {
+            const _cmData = catalog.water_manifolds_stout.find(m => m.id === item.id) || catalog.water_manifolds_rommer.find(m => m.id === item.id) || catalog.manifolds_chrome_blocks.find(m => m.id === item.id) || catalog.water_manifolds_cold.find(m => m.id === item.id) || item;
+            const _cmIn = _cmData.inSize ? `${_cmData.inSize}"` : '—';
+            const _cmOut = _cmData.outSize ? `${_cmData.outSize}"` : '—';
+            const _cmLoops = _cmData.loops != null ? _cmData.loops : (item.loops != null ? item.loops : '—');
+            title.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main); text-transform:none;">Варианты замены</h3>
+                        <span style="font-size:12px; color:var(--text-sec); display:block; margin-top:2px; font-weight:500; text-transform:none;">${item.name || ''}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap;">
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Вход: <span style="font-weight:800;">${_cmIn}</span>
+                        </div>
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Выход: <span style="font-weight:800;">${_cmOut}</span>
+                        </div>
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Кол-во выходов: <span style="font-weight:800;">${_cmLoops}</span>
+                        </div>
+                        <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
+                            Цена: <span style="font-weight:800;">${_priceStr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         } else {
             title.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
@@ -7958,6 +7988,78 @@ const app = {
             if (_gt === 'traditional') alts = alts.filter(b => !_isCond(b));
             else if (_gt === 'cond') alts = alts.filter(b => _isCond(b));
             if (_gp !== 'all') alts = alts.filter(b => b.power === _gp);
+        } else if (item.originalId && (item.originalId.startsWith('SCA-') || item.originalId.startsWith('RCA-'))) {
+            const _cht = this.state.chimneySwapType || 'all';
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Тип:</span>` +
+                `<span onclick="app.setChimneySwapType('trad')" ${_b(_cht==='trad')}>Традиционный</span>` +
+                `<span onclick="app.setChimneySwapType('cond')" ${_b(_cht==='cond')}>Конденсационный</span>` +
+                `<span onclick="app.setChimneySwapType('all')" ${_b(_cht==='all')}>Все</span>` +
+                `</div>` +
+                `</div>`;
+            if (_cht !== 'all' && customAlts) {
+                customAlts = customAlts.filter(a => {
+                    const c = catalog.chimneys.find(x => x.id === a.id) || catalog.chimneys[0];
+                    return (c.chimType || 'trad') === _cht;
+                });
+            }
+        } else if (item.originalId && item.originalId.startsWith('SMB-6851-')) {
+            const _findWM = (id) => catalog.water_manifolds_rommer.find(m => m.id === id) || catalog.water_manifolds_stout.find(m => m.id === id) || catalog.water_manifolds_cold.find(m => m.id === id);
+            if (isFirstOpen) {
+                const _curM = _findWM(item.id);
+                this.state.waterManifoldIn = _curM ? _curM.inSize : 'all';
+                this.state.waterManifoldOut = _curM ? _curM.outSize : 'all';
+                this.state.waterManifoldConn = _curM ? _curM.connType : 'all';
+                this.state.waterManifoldLoops = _curM ? _curM.loops : 'all';
+                this.state.waterManifoldSeries = _curM ? _curM.series : null;
+            }
+            const _win = this.state.waterManifoldIn || 'all';
+            const _wout = this.state.waterManifoldOut || 'all';
+            const _wct = this.state.waterManifoldConn || 'all';
+            const _wloops = this.state.waterManifoldLoops || 'all';
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Вход:</span>` +
+                `<span onclick="app.setWaterManifoldIn('3/4')" ${_b(_win==='3/4')}>3/4"</span>` +
+                `<span onclick="app.setWaterManifoldIn('1')" ${_b(_win==='1')}>1"</span>` +
+                `<span onclick="app.setWaterManifoldIn('all')" ${_b(_win==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Выход:</span>` +
+                `<span onclick="app.setWaterManifoldOut('1/2')" ${_b(_wout==='1/2')}>1/2"</span>` +
+                `<span onclick="app.setWaterManifoldOut('3/4')" ${_b(_wout==='3/4')}>3/4"</span>` +
+                `<span onclick="app.setWaterManifoldOut('all')" ${_b(_wout==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Уплотнение:</span>` +
+                `<span onclick="app.setWaterManifoldConn('flat')" ${_b(_wct==='flat')}>Плоское</span>` +
+                `<span onclick="app.setWaterManifoldConn('ek')" ${_b(_wct==='ek')}>Евроконус</span>` +
+                `<span onclick="app.setWaterManifoldConn('compression')" ${_b(_wct==='compression')}>Компрессионный</span>` +
+                `<span onclick="app.setWaterManifoldConn('all')" ${_b(_wct==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Выходов:</span>` +
+                `<span onclick="app.setWaterManifoldLoops(2)" ${_b(_wloops===2)}>2</span>` +
+                `<span onclick="app.setWaterManifoldLoops(3)" ${_b(_wloops===3)}>3</span>` +
+                `<span onclick="app.setWaterManifoldLoops(4)" ${_b(_wloops===4)}>4</span>` +
+                `<span onclick="app.setWaterManifoldLoops('all')" ${_b(_wloops==='all')}>Все</span>` +
+                `</div>` +
+                `</div>`;
+            const _wseries = this.state.waterManifoldSeries;
+            alts = alts.filter(a => {
+                if (a.series === undefined) return true;
+                if (_wseries && a.series !== _wseries) return false;
+                if (_win !== 'all' && a.inSize !== _win) return false;
+                if (_wout !== 'all' && a.outSize !== _wout) return false;
+                if (_wct !== 'all' && a.connType !== _wct) return false;
+                if (_wloops !== 'all' && a.loops !== _wloops) return false;
+                return true;
+            });
         }
 
         const _tsSortField = _isTankItem ? (this._tankSwapSort || 'price') : null;
@@ -9262,7 +9364,7 @@ const app = {
             if (chosenId.startsWith("PA") || chosenId === 'proaqua') this.state.pprSystemBrand = 'proaqua';
             else this.state.pprSystemBrand = 'wavin';
         }
-        else if (originalId.startsWith('SKB-') || /^5[0-9]{4,}[RK]?$/.test(originalId)) {
+        else if (originalId.startsWith('SKB-') || /^5[0-9]{5}[RK]?$/.test(originalId)) {
             if (chosenId === 'comfort') this.state.sewerType = 'comfort';
             else this.state.sewerType = 'std';
         }
@@ -10461,6 +10563,26 @@ const app = {
     },
     setGasBoilerPower: function (val) {
         this.state.gasBoilerPower = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setChimneySwapType: function (val) {
+        this.state.chimneySwapType = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setWaterManifoldIn: function (val) {
+        this.state.waterManifoldIn = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setWaterManifoldOut: function (val) {
+        this.state.waterManifoldOut = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setWaterManifoldConn: function (val) {
+        this.state.waterManifoldConn = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setWaterManifoldLoops: function (val) {
+        this.state.waterManifoldLoops = val;
         if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
     },
     toggleSwapSort: function (field) {
@@ -12557,6 +12679,7 @@ const app = {
                     if (foundItem) {
                         activeItem = { ...foundItem };
                         activeItem.originalId = lookupKey;
+                        if ((!activeItem.alts || !activeItem.alts.length) && item.alts && item.alts.length) activeItem.alts = item.alts;
                     }
                 }
             } else if (useAnalog) {
@@ -12581,6 +12704,7 @@ const app = {
                         } else {
                             activeItem = { ...cheapest };
                             activeItem.originalId = lookupKey;
+                            if ((!activeItem.alts || !activeItem.alts.length) && item.alts && item.alts.length) activeItem.alts = item.alts;
                         }
                     }
                 }
@@ -14488,11 +14612,14 @@ const app = {
             let mainTitle = "5. Внутреннее водоснабжение";
             let collType = this.state.waterManifoldType || 'standard';
             const getWaterManifold = (baseItem) => {
-                let blockItem = catalog.manifolds_chrome_blocks.find(m => m.loops === baseItem.loops) || baseItem;
+                let blockItemRaw = catalog.manifolds_chrome_blocks.find(m => m.loops === baseItem.loops) || baseItem;
+                // Убираем .rommer у "блочного" коллектора в контексте водоснабжения — это аналог для радиаторного блока отопления, а не для воды
+                let blockItem = blockItemRaw.rommer ? { ...blockItemRaw, rommer: undefined } : blockItemRaw;
+                let defaultItem = catalog.water_manifolds_stout.find(m => m.loops === baseItem.loops && m.inSize === '1' && m.connType === 'ek') || baseItem;
                 let isBlock = (collType === 'block');
-                let finalItem = isBlock ? { ...blockItem } : { ...baseItem };
+                let finalItem = isBlock ? { ...blockItem } : { ...defaultItem };
                 finalItem.originalId = baseItem.id + "_water";
-                finalItem.alts = isBlock ? [baseItem] : [blockItem];
+                finalItem.alts = [baseItem, blockItem].concat(catalog.water_manifolds_rommer || []).concat(catalog.water_manifolds_stout || []);
                 return finalItem;
             };
             let isMerge = !this.state.groupItems;
@@ -15013,7 +15140,7 @@ const app = {
             addToBill(catalog.well_parts[0], pipePieces, pipeDesc, grpWellTie);
 
             let muftaDesc = `<span style="font-size:11px; line-height:1.4;"><b>Назначение:</b> Компрессионный переходник для соединения пластиковой трубы с металлическим оборудованием.<br><b>Монтаж:</b> 2 штуки. Первая муфта вкручивается в обратный клапан насоса (внизу), вторая — в скважинный оголовок (наверху).</span>`;
-            addToBill(catalog.well_parts[5], 2, muftaDesc, grpWellTie);
+            addToBill(catalog.well_parts.find(x => x.id === 'SFH-0002-032114') || catalog.well_parts[5], 2, muftaDesc, grpWellTie);
 
             let clipDesc = `<span style="font-size:11px; line-height:1.4;"><b>Монтаж:</b> По 2 зажима на каждую петлю (снизу у насоса и сверху у оголовка) для надежной фиксации и страховки.<br><b>Назначение:</b> Надежно фиксируют петли страховочного троса. Рекомендуется использовать зажимы, устойчивые к коррозии, чтобы избежать обрыва в агрессивной среде скважины.</span>`;
             addToBill(catalog.well_parts[2], 4, clipDesc, grpWellTie);
