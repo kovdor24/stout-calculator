@@ -6903,6 +6903,14 @@ const app = {
         }
         let xpsAlt = catalog.xps_kit[0]; catalog.mats.forEach(m => { m.alts = [xpsAlt]; }); catalog.xps_kit[0].alts = catalog.mats;
         if (catalog.well_auto) { let waAlts = catalog.well_auto; catalog.well_auto.forEach(a => { a.alts = waAlts; }); }
+        if (catalog.ufh_mech && catalog.ufh_electro && catalog.thermostats_stout) {
+            let statAlts = [...catalog.ufh_mech, ...catalog.ufh_electro, ...catalog.thermostats_stout];
+            statAlts.forEach(s => { s.alts = statAlts; });
+        }
+        if (catalog.actuators && catalog.actuators_rommer) {
+            let actAlts = [catalog.actuators, ...catalog.actuators_rommer];
+            actAlts.forEach(a => { a.alts = actAlts; });
+        }
         if (catalog.convectors_scq && catalog.convectors_scn) { let convAlts = [catalog.convectors_scq[0], catalog.convectors_scn[0]]; catalog.convectors_scq.forEach(c => { c.alts = convAlts; }); catalog.convectors_scn.forEach(c => { c.alts = convAlts; }); }
         if (catalog.chimneys) { let chimneyAlts = catalog.chimneys; catalog.chimneys.forEach(c => { c.alts = chimneyAlts; }); }
         if (catalog.well_parts) {
@@ -7497,11 +7505,29 @@ const app = {
             let topPrice = topItem?.price || 16078;
             let basePriceVal = baseItem?.price || 5141;
 
+            let epc12Item = catalog.well_auto ? catalog.well_auto.find(x => x.id === 'RCS-0001-000063') : null;
+            let epc2Item = catalog.well_auto ? catalog.well_auto.find(x => x.id === 'RCS-0001-000052') : null;
+            let epc4Item = catalog.well_auto ? catalog.well_auto.find(x => x.id === 'RCS-0001-000064') : null;
+            let epc5Item = catalog.well_auto ? catalog.well_auto.find(x => x.id === 'RCS-0001-000055') : null;
+
             customAlts = [
-                { id: 'sirio', name: sirioName, brand: sirioBrand, price: sirioPrice },
-                { id: 'top', name: 'Электронное реле давления', brand: 'STOUT', price: topPrice },
-                { id: 'base', name: 'Механическое реле давления', brand: 'STOUT', price: basePriceVal }
+                { id: 'sirio', name: sirioName, brand: sirioBrand, price: sirioPrice, ctrlType: 'electronic', driveType: 'frequency' },
+                { id: 'top', name: topItem?.name || 'Устройство управления насосом BRIO-TOP', brand: 'STOUT', price: topPrice, ctrlType: 'electronic', driveType: 'relay' },
+                { id: 'base', name: baseItem?.name || 'Устройство управления насосом BRIO', brand: 'STOUT', price: basePriceVal, ctrlType: 'mechanical', driveType: 'relay' }
             ];
+            if (epc12Item) customAlts.push({ id: 'epc12auto', name: epc12Item.name, brand: 'ROMMER', price: epc12Item.price, ctrlType: 'electronic', driveType: 'relay' });
+            if (epc2Item) customAlts.push({ id: 'epc2', name: epc2Item.name, brand: 'ROMMER', price: epc2Item.price, ctrlType: 'mechanical', driveType: 'relay' });
+            if (epc4Item) customAlts.push({ id: 'epc4', name: epc4Item.name, brand: 'ROMMER', price: epc4Item.price, ctrlType: 'mechanical', driveType: 'relay' });
+            if (epc5Item) customAlts.push({ id: 'epc5', name: epc5Item.name, brand: 'ROMMER', price: epc5Item.price, ctrlType: 'mechanical', driveType: 'relay' });
+
+            let krs5Item = catalog.well_relays ? catalog.well_relays.find(x => x.id === 'RCS-0001-000005') : null;
+            let krs6Item = catalog.well_relays ? catalog.well_relays.find(x => x.id === 'RCS-0001-000003') : null;
+            if (krs5Item && krs6Item) {
+                customAlts.push({ id: 'relay_krs5', name: `${krs5Item.name} + ${krs6Item.name}`, brand: 'ROMMER', price: krs5Item.price + krs6Item.price, ctrlType: 'mechanical', driveType: 'relay' });
+            }
+
+            if (this.state.wellAutoCtrl && this.state.wellAutoCtrl !== 'all') customAlts = customAlts.filter(a => a.ctrlType === this.state.wellAutoCtrl);
+            if (this.state.wellAutoDrive && this.state.wellAutoDrive !== 'all') customAlts = customAlts.filter(a => a.driveType === this.state.wellAutoDrive);
         }
         else if (item.originalId && (item.originalId.startsWith('SCQ') || item.originalId.startsWith('SCN'))) {
             let itemLen = item.len || 1.0;
@@ -7815,6 +7841,61 @@ const app = {
                     </div>
                 </div>
             `;
+        } else if (catalog.ufh_mech.find(m => m.id === item.id) || catalog.ufh_electro.find(m => m.id === item.id) || catalog.thermostats_stout.find(m => m.id === item.id)) {
+            const _thData = catalog.ufh_mech.find(m => m.id === item.id) || catalog.ufh_electro.find(m => m.id === item.id) || catalog.thermostats_stout.find(m => m.id === item.id) || item;
+            const _thCtrl = _thData.ctrlType === 'mech' ? 'Механический' : (_thData.ctrlType === 'electronic' ? 'Электронный' : '—');
+            const _thWifi = _thData.wifi === true ? 'С Wi-Fi' : (_thData.wifi === false ? 'Без Wi-Fi' : '—');
+            const _thColorMap = { white: 'Белый', black: 'Чёрный', gray: 'Серый' };
+            const _thColor = _thColorMap[_thData.color] || '—';
+            const _thCurrent = _thData.current != null ? `${_thData.current}А` : '—';
+            title.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main); text-transform:none;">Варианты замены</h3>
+                        <span style="font-size:12px; color:var(--text-sec); display:block; margin-top:2px; font-weight:500; text-transform:none;">${item.name || ''}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap;">
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Тип: <span style="font-weight:800;">${_thCtrl}</span>
+                        </div>
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Wi-Fi: <span style="font-weight:800;">${_thWifi}</span>
+                        </div>
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Цвет: <span style="font-weight:800;">${_thColor}</span>
+                        </div>
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Ток: <span style="font-weight:800;">${_thCurrent}</span>
+                        </div>
+                        <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
+                            Цена: <span style="font-weight:800;">${_priceStr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (catalog.actuators && (item.id === catalog.actuators.id || (catalog.actuators_rommer && catalog.actuators_rommer.find(m => m.id === item.id)))) {
+            const _acData = (catalog.actuators_rommer && catalog.actuators_rommer.find(m => m.id === item.id)) || (item.id === catalog.actuators.id ? catalog.actuators : item);
+            const _acType = _acData.type === 'nc' ? 'Нормально закрытый' : (_acData.type === 'no' ? 'Нормально открытый' : '—');
+            const _acVoltage = _acData.voltage != null ? `${_acData.voltage}В` : '—';
+            title.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main); text-transform:none;">Варианты замены</h3>
+                        <span style="font-size:12px; color:var(--text-sec); display:block; margin-top:2px; font-weight:500; text-transform:none;">${item.name || ''}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap;">
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Тип: <span style="font-weight:800;">${_acType}</span>
+                        </div>
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Вольтаж: <span style="font-weight:800;">${_acVoltage}</span>
+                        </div>
+                        <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
+                            Цена: <span style="font-weight:800;">${_priceStr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         } else {
             title.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
@@ -8060,6 +8141,103 @@ const app = {
                 if (_wloops !== 'all' && a.loops !== _wloops) return false;
                 return true;
             });
+        } else if (item.originalId && item.originalId.startsWith('SCS-0001')) {
+            const _wac = this.state.wellAutoCtrl || 'all';
+            const _wad = this.state.wellAutoDrive || 'all';
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Тип:</span>` +
+                `<span onclick="app.setWellAutoCtrl('electronic')" ${_b(_wac==='electronic')}>Электронное</span>` +
+                `<span onclick="app.setWellAutoCtrl('mechanical')" ${_b(_wac==='mechanical')}>Механическое</span>` +
+                `<span onclick="app.setWellAutoCtrl('all')" ${_b(_wac==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Привод:</span>` +
+                `<span onclick="app.setWellAutoDrive('relay')" ${_b(_wad==='relay')}>Релейное</span>` +
+                `<span onclick="app.setWellAutoDrive('frequency')" ${_b(_wad==='frequency')}>Частотное</span>` +
+                `<span onclick="app.setWellAutoDrive('all')" ${_b(_wad==='all')}>Все</span>` +
+                `</div>` +
+                `</div>`;
+        } else if (catalog.ufh_mech.find(x => x.id === item.id) || catalog.ufh_electro.find(x => x.id === item.id) || catalog.thermostats_stout.find(x => x.id === item.id)) {
+            if (isFirstOpen) {
+                const _curTh = catalog.ufh_mech.find(x => x.id === item.id) || catalog.ufh_electro.find(x => x.id === item.id) || catalog.thermostats_stout.find(x => x.id === item.id);
+                this.state.thermoCtrl = _curTh && _curTh.ctrlType ? _curTh.ctrlType : 'all';
+                this.state.thermoWifi = _curTh && _curTh.wifi !== undefined ? String(_curTh.wifi) : 'all';
+                this.state.thermoColor = _curTh && _curTh.color ? _curTh.color : 'all';
+                this.state.thermoCurrent = _curTh && _curTh.current != null ? String(_curTh.current) : 'all';
+            }
+            const _tc = this.state.thermoCtrl || 'all';
+            const _tw = this.state.thermoWifi || 'all';
+            const _tco = this.state.thermoColor || 'all';
+            const _tcur = this.state.thermoCurrent || 'all';
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Тип:</span>` +
+                `<span onclick="app.setThermoCtrl('mech')" ${_b(_tc==='mech')}>Механический</span>` +
+                `<span onclick="app.setThermoCtrl('electronic')" ${_b(_tc==='electronic')}>Электронный</span>` +
+                `<span onclick="app.setThermoCtrl('all')" ${_b(_tc==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Wi-Fi:</span>` +
+                `<span onclick="app.setThermoWifi('false')" ${_b(_tw==='false')}>Без Wi-Fi</span>` +
+                `<span onclick="app.setThermoWifi('true')" ${_b(_tw==='true')}>С Wi-Fi</span>` +
+                `<span onclick="app.setThermoWifi('all')" ${_b(_tw==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Цвет:</span>` +
+                `<span onclick="app.setThermoColor('white')" ${_b(_tco==='white')}>Белый</span>` +
+                `<span onclick="app.setThermoColor('black')" ${_b(_tco==='black')}>Чёрный</span>` +
+                `<span onclick="app.setThermoColor('all')" ${_b(_tco==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Ток:</span>` +
+                `<span onclick="app.setThermoCurrent('3')" ${_b(_tcur==='3')}>3А</span>` +
+                `<span onclick="app.setThermoCurrent('16')" ${_b(_tcur==='16')}>16А</span>` +
+                `<span onclick="app.setThermoCurrent('all')" ${_b(_tcur==='all')}>Все</span>` +
+                `</div>` +
+                `</div>`;
+            alts = alts.filter(a => {
+                if (a.ctrlType === undefined) return true;
+                if (_tc !== 'all' && a.ctrlType !== _tc) return false;
+                if (_tw !== 'all' && String(a.wifi) !== _tw) return false;
+                if (_tco !== 'all' && a.color !== _tco) return false;
+                if (_tcur !== 'all' && a.current !== Number(_tcur)) return false;
+                return true;
+            });
+        } else if (catalog.actuators && (item.id === catalog.actuators.id || (catalog.actuators_rommer && catalog.actuators_rommer.find(x => x.id === item.id)))) {
+            if (isFirstOpen) {
+                const _curAc = (catalog.actuators_rommer && catalog.actuators_rommer.find(x => x.id === item.id)) || (item.id === catalog.actuators.id ? catalog.actuators : null);
+                this.state.actuatorType = _curAc && _curAc.type ? _curAc.type : 'all';
+                this.state.actuatorVoltage = _curAc && _curAc.voltage != null ? String(_curAc.voltage) : 'all';
+            }
+            const _at = this.state.actuatorType || 'all';
+            const _av = this.state.actuatorVoltage || 'all';
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Тип:</span>` +
+                `<span onclick="app.setActuatorType('no')" ${_b(_at==='no')}>Нормально открытый</span>` +
+                `<span onclick="app.setActuatorType('nc')" ${_b(_at==='nc')}>Нормально закрытый</span>` +
+                `<span onclick="app.setActuatorType('all')" ${_b(_at==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Напряжение:</span>` +
+                `<span onclick="app.setActuatorVoltage('24')" ${_b(_av==='24')}>24В</span>` +
+                `<span onclick="app.setActuatorVoltage('230')" ${_b(_av==='230')}>220В</span>` +
+                `<span onclick="app.setActuatorVoltage('all')" ${_b(_av==='all')}>Все</span>` +
+                `</div>` +
+                `</div>`;
+            alts = alts.filter(a => {
+                if (a.type === undefined) return true;
+                if (_at !== 'all' && a.type !== _at) return false;
+                if (_av !== 'all' && a.voltage !== Number(_av)) return false;
+                return true;
+            });
         }
 
         const _tsSortField = _isTankItem ? (this._tankSwapSort || 'price') : null;
@@ -8134,7 +8312,7 @@ const app = {
                 else if (alt.id === 'mat' || alt.id === 'xps') {
                     isActive = (alt.id === this.state.ufhBaseType);
                 }
-                else if (alt.id === 'sirio' || alt.id === 'top' || alt.id === 'base') {
+                else if (alt.id === 'sirio' || alt.id === 'top' || alt.id === 'base' || alt.id === 'epc12auto' || alt.id === 'epc2' || alt.id === 'epc4' || alt.id === 'epc5' || alt.id === 'relay_krs5') {
                     isActive = (alt.id === this.state.wellAutoType);
                 }
                 else if (alt.id === 'scq' || alt.id === 'scn') {
@@ -8228,7 +8406,9 @@ const app = {
                     baseItem = item;
                 }
                 // Для бойлеров: не добавлять текущий если он не входит в полностью отфильтрованный набор (mount+heat+vol)
-                let skipAdd = (_isTankItem || _origId0 === 'gas_boiler_auto') && baseItem && !alts.some(x => x.id === baseItem.id);
+                let _isThermoItem = catalog.ufh_mech.find(x => x.id === item.id) || catalog.ufh_electro.find(x => x.id === item.id) || catalog.thermostats_stout.find(x => x.id === item.id);
+                let _isActuatorItem = catalog.actuators && (item.id === catalog.actuators.id || (catalog.actuators_rommer && catalog.actuators_rommer.find(x => x.id === item.id)));
+                let skipAdd = (_isTankItem || _origId0 === 'gas_boiler_auto' || _isThermoItem || _isActuatorItem) && baseItem && !alts.some(x => x.id === baseItem.id);
                 if (!skipAdd) altsToProcess.unshift(baseItem);
             }
 
@@ -9344,8 +9524,13 @@ const app = {
             else this.state.ufhBaseType = 'mat';
         }
         else if (originalId.startsWith('SCS-0001')) {
-            if (chosenId.includes("sirio") || chosenId === 'sirio') this.state.wellAutoType = 'sirio';
-            else if (chosenId.includes("top") || chosenId === 'top') this.state.wellAutoType = 'top';
+            if (chosenId === 'sirio') this.state.wellAutoType = 'sirio';
+            else if (chosenId === 'top') this.state.wellAutoType = 'top';
+            else if (chosenId === 'epc12auto') this.state.wellAutoType = 'epc12auto';
+            else if (chosenId === 'epc2') this.state.wellAutoType = 'epc2';
+            else if (chosenId === 'epc4') this.state.wellAutoType = 'epc4';
+            else if (chosenId === 'epc5') this.state.wellAutoType = 'epc5';
+            else if (chosenId === 'relay_krs5') this.state.wellAutoType = 'relay_krs5';
             else this.state.wellAutoType = 'base';
         }
         else if (originalId.startsWith('SCQ') || originalId.startsWith('SCN')) {
@@ -10484,7 +10669,16 @@ const app = {
             }
         });
     },
-    setUfhCtrl: function (type) { this.state.ufhCtrl = type; this.syncUI(); this.render(); },
+    setUfhCtrl: function (type) {
+        this.state.ufhCtrl = type;
+        this.state.thermoCtrl = (type === 'electro') ? 'electronic' : 'mech';
+        if (this.state.swaps) {
+            delete this.state.swaps[catalog.ufh_mech[0].id];
+            delete this.state.swaps[catalog.ufh_electro[0].id];
+        }
+        this.syncUI();
+        this.render();
+    },
     getTankDb: function () {
         let mount = this.state.tankMount || 'floor';
         let heat = this.state.tankHeat || 'cos';
@@ -10583,6 +10777,39 @@ const app = {
     },
     setWaterManifoldLoops: function (val) {
         this.state.waterManifoldLoops = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setWellAutoCtrl: function (val) {
+        this.state.wellAutoCtrl = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setWellAutoDrive: function (val) {
+        this.state.wellAutoDrive = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setThermoCtrl: function (val) {
+        this.state.thermoCtrl = val;
+        if (val !== 'all') { this.state.ufhCtrl = (val === 'electronic') ? 'electro' : 'mech'; this.syncUI(); this.render(); }
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setThermoWifi: function (val) {
+        this.state.thermoWifi = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setThermoColor: function (val) {
+        this.state.thermoColor = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setThermoCurrent: function (val) {
+        this.state.thermoCurrent = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setActuatorType: function (val) {
+        this.state.actuatorType = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setActuatorVoltage: function (val) {
+        this.state.actuatorVoltage = val;
         if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
     },
     toggleSwapSort: function (field) {
@@ -12643,7 +12870,7 @@ const app = {
             let forceAnalog = false;
             let forceStout = false;
 
-            let isCustomToggle = ['standard', 'basic', 'pro', 'std', 'comfort', 'insulated', 'split', 'insulated_mp', 'split_mp', 'pex', 'metal_plastic', 'mat', 'xps', 'sirio', 'top', 'base', 'scq', 'scn', 'straight', 'angled', 'proaqua', 'wavin', 'double', 'single', 'hidden', 'sensor'].includes(manualSwapId);
+            let isCustomToggle = ['standard', 'basic', 'pro', 'std', 'comfort', 'insulated', 'split', 'insulated_mp', 'split_mp', 'pex', 'metal_plastic', 'mat', 'xps', 'sirio', 'top', 'base', 'epc12auto', 'epc2', 'epc4', 'epc5', 'relay_krs5', 'scq', 'scn', 'straight', 'angled', 'proaqua', 'wavin', 'double', 'single', 'hidden', 'sensor'].includes(manualSwapId);
 
             if (manualSwapId && !isCustomToggle) {
                 let analog = item.rommer;
@@ -15087,18 +15314,39 @@ const app = {
 
             let activeAuto;
             let autoDesc = "";
-            if (this.state.wellAutoType === 'sirio') {
+            let isRelayCombo = (this.state.wellAutoType === 'relay_krs5');
+            if (isRelayCombo) {
+                let krs5Base = catalog.well_relays.find(x => x.id === 'RCS-0001-000005');
+                let krs6Base = catalog.well_relays.find(x => x.id === 'RCS-0001-000003');
+                let relayDesc = `<span style="font-size:11px; line-height:1.4;"><b>Автоматика (ROMMER):</b> ${krs5Base.name} + ${krs6Base.name}. Механическая пара реле давления и защиты от сухого хода вместо цифрового блока управления.</span>`;
+                if (krs5Base) addToBill({ ...krs5Base, originalId: 'SCS-0001-000070', alts: catalog.well_auto }, 1, relayDesc, grpWellTie);
+                if (krs6Base) addToBill(krs6Base, 1, relayDesc, grpWellTie);
+            } else if (this.state.wellAutoType === 'sirio') {
                 activeAuto = catalog.well_auto.find(a => a.id === 'SCS-0001-000070');
                 autoDesc = `<span style="font-size:11px; line-height:1.4;"><b>Автоматика (Инвертор):</b> Частотный преобразователь STOUT SIRIO. Поддерживает идеальное давление (как в квартире) за счет плавного изменения оборотов насоса. Гарантирует плавный пуск, защищает от гидроударов и экономит ресурс двигателя.</span>`;
             } else if (this.state.wellAutoType === 'top') {
                 activeAuto = catalog.well_auto.find(a => a.id === 'SCS-0001-000063');
                 autoDesc = `<span style="font-size:11px; line-height:1.4;"><b>Автоматика (Премиум):</b> Цифровой контроллер STOUT BRIO-TOP. Настройка давления включения/выключения с кнопок, защита от сухого хода с авто-рестартом, защита от замерзания.</span>`;
+            } else if (this.state.wellAutoType === 'epc12auto') {
+                activeAuto = catalog.well_auto.find(a => a.id === 'RCS-0001-000063');
+                autoDesc = `<span style="font-size:11px; line-height:1.4;"><b>Автоматика (ROMMER):</b> Цифровой регулятор давления EPC-12 auto. Запускается и останавливается в соответствии с данными о состоянии давления воды в трубопроводе.</span>`;
+            } else if (this.state.wellAutoType === 'epc2') {
+                activeAuto = catalog.well_auto.find(a => a.id === 'RCS-0001-000052');
+                autoDesc = `<span style="font-size:11px; line-height:1.4;"><b>Автоматика (ROMMER):</b> Блок насосной автоматики EPC-2 — комбинация реле давления и реле протока.</span>`;
+            } else if (this.state.wellAutoType === 'epc4') {
+                activeAuto = catalog.well_auto.find(a => a.id === 'RCS-0001-000064');
+                autoDesc = `<span style="font-size:11px; line-height:1.4;"><b>Автоматика (ROMMER):</b> Устройство управления насосом EPC-4. Включает насос при открытии водоразборных кранов и выключает при прекращении разбора воды.</span>`;
+            } else if (this.state.wellAutoType === 'epc5') {
+                activeAuto = catalog.well_auto.find(a => a.id === 'RCS-0001-000055');
+                autoDesc = `<span style="font-size:11px; line-height:1.4;"><b>Автоматика (ROMMER):</b> Блок насосной автоматики EPC-5 — защищает насос от работы на «закрытую задвижку» и от «сухого хода».</span>`;
             } else {
                 activeAuto = catalog.well_auto.find(a => a.id === 'SCS-0001-000064');
                 autoDesc = `<span style="font-size:11px; line-height:1.4;"><b>Автоматика (Базовая):</b> Электронное реле STOUT BRIO. Включает насос при падении давления и выключает при прекращении потока. Имеет базовую защиту от "сухого хода".</span>`;
             }
-            if (!activeAuto) activeAuto = catalog.well_auto[0];
-            addToBill(activeAuto, 1, autoDesc, grpWellTie);
+            if (!isRelayCombo) {
+                if (!activeAuto) activeAuto = catalog.well_auto[0];
+                addToBill({ ...activeAuto, originalId: 'SCS-0001-000070' }, 1, autoDesc, grpWellTie);
+            }
 
             let t24 = catalog.well_parts.find(x => x.id === "STW-0001-000024");
             let t50 = catalog.well_parts.find(x => x.id === "STW-0002-000050");

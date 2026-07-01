@@ -1260,14 +1260,36 @@ const catalog = {
     ],
     smart_hub: { id: "STE-2071-804010", name: "Беспроводной шлюз Zigbee", price: 6120, availability: "in_stock", price_date: "2026-06-27" },
     ufh_mech: [
-        { id: "STE-2001-130210", name: "Термостат универсальный, белый", price: 2142, desc: "Механический термостат (Белый).", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "STE-2001-130220", name: "Термостат универсальный, черный", price: 2249, desc: "Механический термостат (Черный).", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "STE-2001-130210", name: "Термостат универсальный, белый", price: 2142.00, desc: "Механический термостат (Белый).", ctrlType: "mech", wifi: false, color: "white", current: 3, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "STE-2001-130220", name: "Термостат универсальный, черный", price: 2249.10, desc: "Механический термостат (Черный).", ctrlType: "mech", wifi: false, color: "black", current: 3, availability: "in_stock", price_date: "2026-07-01" }
     ],
     ufh_electro: [
-        { id: "STE-2002-331212", name: "Терморегулятор универсальный, белый", price: 11603, desc: "Электронный термостат с дисплеем (Белый).", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "STE-2002-331222", name: "Терморегулятор универсальный, черный", price: 12067, desc: "Электронный термостат с дисплеем (Черный).", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "STE-2002-331212", name: "Терморегулятор универсальный, белый", price: 11602.50, desc: "Электронный термостат с дисплеем (Белый).", ctrlType: "electronic", wifi: true, color: "white", current: 3, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "STE-2002-331222", name: "Терморегулятор универсальный, черный", price: 12066.60, desc: "Электронный термостат с дисплеем (Черный).", ctrlType: "electronic", wifi: true, color: "black", current: 3, availability: "in_stock", price_date: "2026-07-01" }
     ],
-    actuators: { id: "STE-0010-230001", name: "Сервопривод компактный 230В (NC)", price: 2939, rommer: { id: "RTE-0010-230001", name: "Сервопривод термоэлектрический (NC) 230В", price: 760, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" }, availability: "in_stock", price_date: "2026-06-27" },
+    thermostats_stout: [
+        { id: "STE-2001-110710", name: "Термостат тёплого пола 16А, белый", price: 2356.20, brand: "STOUT", unit: "шт", ctrlType: "mech", wifi: false, color: "white", current: 16, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "STE-2001-110720", name: "Термостат тёплого пола 16А, чёрный", price: 2468.40, brand: "STOUT", unit: "шт", ctrlType: "mech", wifi: false, color: "black", current: 16, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "STE-2002-311722", name: "Термостат, сенсорный экран, чёрный", price: 12530.70, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "black", current: 16, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "STE-2002-311712", name: "Термостат, сенсорный экран, белый", price: 12066.60, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "white", current: 16, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "STE-3001-130210", name: "STE-3001 Термостат тёплого пола 3А, белый", price: 1009.80, brand: "STOUT", unit: "шт", ctrlType: "mech", wifi: false, color: "white", current: 3, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "STE-3001-110710", name: "STE-3001 Термостат тёплого пола 16А, белый", price: 1111.80, brand: "STOUT", unit: "шт", ctrlType: "mech", wifi: false, color: "white", current: 16, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "STE-3002-331212", name: "Термостат, белый", price: 4998.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "white", current: 3, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "STE-3002-311712", name: "Термостат, белый", price: 5202.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "white", current: 16, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "STE-3002-331222", name: "Термостат, чёрный", price: 5202.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "black", current: 3, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "STE-3002-311722", name: "Термостат, чёрный", price: 5406.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "black", current: 16, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "STE-3003-231232", name: "Термостат, с кнопками, серый", price: 5253.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "gray", current: 3, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "STE-3003-211732", name: "Термостат, с кнопками, серый", price: 5457.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "gray", current: 16, availability: "in_stock", price_date: "2026-07-01" }
+    ],
+    actuators: { id: "STE-0010-230001", name: "Сервопривод компактный 230В (NC)", price: 2939, type: "nc", voltage: 230, rommer: { id: "RTE-0010-230001", name: "Сервопривод термоэлектрический (NC) 230В", price: 760, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" }, availability: "in_stock", price_date: "2026-06-27" },
+    actuators_rommer: [
+        { id: "RTE-0010-024001", name: "Сервопривод компактный НЗ, 24В", price: 965.11, brand: "ROMMER", unit: "шт", type: "nc", voltage: 24, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "RTE-0010-024002", name: "Сервопривод компактный НО, 24В", price: 965.11, brand: "ROMMER", unit: "шт", type: "no", voltage: 24, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "RTE-0010-230001", name: "Сервопривод компактный НЗ, 230В", price: 760.39, brand: "ROMMER", unit: "шт", type: "nc", voltage: 230, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "RTE-0010-230002", name: "Сервопривод компактный НО, 230В", price: 760.39, brand: "ROMMER", unit: "шт", type: "no", voltage: 230, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "RTE-0020-024001", name: "Сервопривод с поворотным фиксатором штока НЗ, 24В", price: 1165.64, brand: "ROMMER", unit: "шт", type: "nc", voltage: 24, availability: "in_stock", price_date: "2026-07-01" },
+        { id: "RTE-0020-230001", name: "Сервопривод с поворотным фиксатором штока НЗ, 230В", price: 1119.40, brand: "ROMMER", unit: "шт", type: "nc", voltage: 230, availability: "in_stock", price_date: "2026-07-01" }
+    ],
     wiring_center: { id: "STE-3050-650522", name: "Проводной контроллер", price: 7446, availability: "in_stock", price_date: "2026-06-27" },
     h_valves: [
         { id: "SVH-0004-000020", name: "Узел нижн. подкл. (Угловой)", price: 1389, type: "angled", desc: "Трубы выходят из стены.", availability: "in_stock", price_date: "2026-06-27" },
@@ -1468,7 +1490,16 @@ const catalog = {
     well_auto: [
         { id: "SCS-0001-000070", name: "Блок управления насосом SIRIO UNIVERSAL", price: 47795, brand: "STOUT", unit: "шт", rommer: { id: "RCS-0001-000063", name: "Устройство управления насосом EPC-12 auto", price: 5880, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SCS-0001-000063", name: "Устройство управления насосом BRIO-TOP", price: 19223, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SCS-0001-000064", name: "Устройство управления насосом BRIO", price: 6147, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "SCS-0001-000064", name: "Устройство управления насосом BRIO", price: 6147, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
+        { id: "RCS-0001-000071", name: "Устройство управления насосом EPC-17", price: 0, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "RCS-0001-000052", name: "Блок насосной автоматики EPC-2", price: 2654.44, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "RCS-0001-000064", name: "Устройство управления насосом EPC-4", price: 2284.83, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "RCS-0001-000055", name: "Блок насосной автоматики EPC-5", price: 2721.64, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" }
+    ],
+    well_relays: [
+        { id: "RCS-0001-000005", name: "Реле давления KRS-5, 1/4\"", price: 604.81, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "RCS-0001-000003", name: "Реле сухого хода KRS-6, 1/4\"", price: 655.21, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "RCS-0001-000053", name: "Реле давления для водоснабжения со встроенным манометром KRS-7", price: 1159.22, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" }
     ],
     water_pipes: [
         { id: "SPX-0001-001622", name: "Труба PEX-a 16x2.2 (серая)", price: 197, unit: "м", rommer: { id: "RPX-0001-001622", name: "Труба PEX-a 16x2.2", price: 86, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" }, availability: "in_stock", price_date: "2026-06-27" },
