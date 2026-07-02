@@ -6847,18 +6847,35 @@ const app = {
                 catalog.mixing_units.find(m => m.id === 'RDG-0120-009000'),
                 catalog.mixing_units.find(m => m.id === 'RDG-0120-009001'),
                 catalog.mixing_units.find(m => m.id === 'RDG-0120-005010'),
+                catalog.groups_dn20[0],
+                catalog.groups_dn25[0],
                 catalog.groups_dn20[1],
                 catalog.groups_dn25[1],
                 catalog.groups_dn20[2],
                 catalog.groups_dn25[2],
                 catalog.groups_dn20.find(g => g.id === 'SDG-0007-002001'),
                 catalog.groups_dn25.find(g => g.id === 'SDG-0007-002501'),
+                catalog.groups_dn32 && catalog.groups_dn32.find(g => g.id === 'SDG-0001-003201'),
                 catalog.groups_dn32 && catalog.groups_dn32.find(g => g.id === 'SDG-0007-003201')
             ].filter(Boolean);
             catalog.mixing_units.forEach(mu => { mu.alts = ufhMixAlts; });
-            catalog.groups_dn20.forEach(g => { if (g.id.includes("0002") || g.id.includes("0003") || g.id === 'SDG-0007-002001') g.alts = ufhMixAlts; });
-            catalog.groups_dn25.forEach(g => { if (g.id.includes("0002") || g.id.includes("0003") || g.id === 'SDG-0007-002501') g.alts = ufhMixAlts; });
-            if (catalog.groups_dn32) catalog.groups_dn32.forEach(g => { if (g.id === 'SDG-0007-003201') g.alts = ufhMixAlts; });
+            catalog.groups_dn20.forEach(g => { g.alts = ufhMixAlts; });
+            catalog.groups_dn25.forEach(g => { g.alts = ufhMixAlts; });
+            if (catalog.groups_dn32) catalog.groups_dn32.forEach(g => { g.alts = ufhMixAlts; });
+        }
+        if (catalog.collectors_dn20 || catalog.collectors_dn25 || catalog.collectors_dn32 || catalog.hydro_dn20 || catalog.hydro_dn25) {
+            let collectorAlts = [
+                ...(catalog.collectors_dn20 || []),
+                ...(catalog.collectors_dn25 || []),
+                ...(catalog.collectors_dn32 || []),
+                ...((catalog.hydro_dn20 || []).filter(h => h.id === 'SDG-0018-002502' || h.id === 'SDG-0018-002503')),
+                ...((catalog.hydro_dn25 || []).filter(h => h.id === 'SDG-0018-004002' || h.id === 'SDG-0018-004003'))
+            ];
+            collectorAlts.forEach(c => { c.alts = collectorAlts; });
+        }
+        if (catalog.hydro_separators && catalog.hydro_arrow) {
+            catalog.hydro_arrow.alts = catalog.hydro_separators;
+            catalog.hydro_separators.forEach(h => { h.alts = catalog.hydro_separators; });
         }
         if (catalog.servo_rotary_sensor && catalog.servo_rotary_std) {
             let servoAlts = [catalog.servo_rotary_sensor, catalog.servo_rotary_std];
@@ -7074,7 +7091,7 @@ const app = {
         return Math.round((this.state.area || 0) * matVal * regVal / 100);
     },
     isUfhMixTypeCompatible: function (type, area, brand) {
-        let flow = (area * 0.08) / (1.163 * 8);
+        let flow = (area * 0.08) / (1.163 * 5);
         if (type === 'std') {
             let limitArea = (brand === 'rommer') ? 100 : 120;
             let limitFlow = (brand === 'rommer') ? 1.0 : 1.2;
@@ -7084,13 +7101,13 @@ const app = {
             if (type === 'dn20') return area <= 120 && flow <= 1.6;
             if (type === 'dn20_servo') return area <= 150 && flow <= 1.6;
             if (type === 'dn25') return area <= 150 && flow <= 1.6;
-            if (type === 'dn25_servo') return area <= 250;
+            if (type === 'dn25_servo') return area <= 116;
         } else { // stout
             if (type === 'dn20') return area <= 120 && flow <= 0.9;
             if (type === 'dn20_servo') return area <= 150 && flow <= 0.9;
             if (type === 'dn25') return area <= 200 && flow <= 2.1;
-            if (type === 'dn25_servo') return area <= 300;
-            if (type === 'dn32_servo') return area <= 335;
+            if (type === 'dn25_servo') return area <= 153;
+            if (type === 'dn32_servo') return area <= 210;
         }
         return false;
     },
@@ -7115,7 +7132,7 @@ const app = {
         }
         else if (originalId.startsWith('SPC-') && originalId.includes('180')) { if (this.state.pumpType === 'default') this.state.pumpType = 'std'; else if (this.state.pumpType === 'std') this.state.pumpType = 'mini'; else if (this.state.pumpType === 'mini') this.state.pumpType = 'pro'; else this.state.pumpType = 'default'; }
         else if (originalId.startsWith('SEB-')) { this.state.boilerSeries = (this.state.boilerSeries === 'plus') ? 'status' : 'plus'; }
-        else if (originalId.startsWith('SDG-0018') || originalId.startsWith('SDG-0016')) { this.state.hydroType = (this.state.hydroType === 'combo') ? 'modular' : 'combo'; }
+        else if (originalId === 'SDG-0018-002502' || originalId === 'SDG-0018-002503' || originalId === 'SDG-0016-002502' || originalId === 'SDG-0016-002503') { this.state.hydroType = (this.state.hydroType === 'combo') ? 'modular' : 'combo'; }
         else if (originalId.startsWith('SMS-0922') || (originalId.startsWith('SMB-6850') && !originalId.endsWith('_water'))) { this.state.radManifoldType = (this.state.radManifoldType === 'standard') ? 'chrome' : 'standard'; }
         else if (originalId.startsWith('SMB-6851-') || (originalId.startsWith('SMB-6850-') && originalId.endsWith('_water'))) { this.state.waterManifoldType = (this.state.waterManifoldType === 'block') ? 'standard' : 'block'; }
         else if (originalId === 'SAC-0022-283020_boiler') {
@@ -8001,6 +8018,32 @@ const app = {
                     </div>
                 </div>
             `;
+        } else if (_origId0 === 'SDG-0120-001000' || _origId0 === 'SDG-0002-002001' || _origId0 === 'SDG-0002-002501' || _origId0 === 'SDG-0003-002001' || _origId0 === 'SDG-0003-002501' || _origId0 === 'SDG-0007-003201' || _origId0 === 'SDG-0001-002001' || _origId0 === 'SDG-0001-002501' || _origId0 === 'SDG-0001-003201') {
+            const _hdrDnMatch = (item.name || '').match(/DN(20|25|32)/);
+            const _hdrDn = _hdrDnMatch ? `DN${_hdrDnMatch[1]}` : null;
+            const _hdrRad = (item.name || '').match(/для радиаторов\s*(\d+(?:[.,]\d+)?)\s*кВт/);
+            const _hdrUfhTp = (item.name || '').match(/тёплого пола\s*(\d+(?:[.,]\d+)?)\s*кВт/);
+            const _hdrUfhTp2 = (item.name || '').match(/(\d+(?:[.,]\d+)?)\s*кВт\s*ТП/);
+            const _hdrUfhSingle = !_hdrRad ? (item.name || '').match(/(\d+(?:[.,]\d+)?)\s*кВт/) : null;
+            let _hdrBadges = '';
+            if (_hdrDn) _hdrBadges += `<div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">Типоразмер: <span style="font-weight:800;">${_hdrDn}</span></div>`;
+            if (_hdrRad) _hdrBadges += `<div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">Радиаторы: <span style="font-weight:800;">${_hdrRad[1]} кВт</span></div>`;
+            if (_hdrUfhTp || _hdrUfhTp2) _hdrBadges += `<div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">Тёплый пол: <span style="font-weight:800;">${(_hdrUfhTp || _hdrUfhTp2)[1]} кВт</span></div>`;
+            if (!_hdrRad && !_hdrUfhTp && !_hdrUfhTp2 && _hdrUfhSingle) _hdrBadges += `<div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">Мощность: <span style="font-weight:800;">${_hdrUfhSingle[1]} кВт</span></div>`;
+            title.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main); text-transform:none;">Варианты замены</h3>
+                        <span style="font-size:12px; color:var(--text-sec); display:block; margin-top:2px; font-weight:500; text-transform:none;">${item.name || ''}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap;">
+                        ${_hdrBadges}
+                        <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
+                            Цена: <span style="font-weight:800;">${_priceStr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         } else {
             title.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
@@ -8305,9 +8348,10 @@ const app = {
                 `<span onclick="app.setManifoldLoopsFilter('all')" ${_b(_mLoopsF==='all')}>Все</span>` +
                 `</div>` +
                 `</div>`;
-        } else if (_origId0 === 'SDG-0120-001000' || _origId0 === 'SDG-0002-002001' || _origId0 === 'SDG-0002-002501' || _origId0 === 'SDG-0003-002001' || _origId0 === 'SDG-0003-002501' || _origId0 === 'SDG-0007-003201') {
+        } else if (_origId0 === 'SDG-0120-001000' || _origId0 === 'SDG-0002-002001' || _origId0 === 'SDG-0002-002501' || _origId0 === 'SDG-0003-002001' || _origId0 === 'SDG-0003-002501' || _origId0 === 'SDG-0007-003201' || _origId0 === 'SDG-0001-002001' || _origId0 === 'SDG-0001-002501' || _origId0 === 'SDG-0001-003201') {
             const _umClassify = (id) => {
                 if (id === 'SDG-0120-001000' || id === 'RDG-0120-008000' || id === 'RDG-0120-009000' || id === 'RDG-0120-009001' || id === 'RDG-0120-005010') return { cat: 'unit' };
+                if (id === 'SDG-0001-002001' || id === 'SDG-0001-002501' || id === 'SDG-0001-003201') return { cat: 'group', dn: id.includes('002001') ? 'dn20' : (id.includes('003201') ? 'dn32' : 'dn25'), kind: 'direct' };
                 if (id === 'SDG-0002-002001') return { cat: 'group', dn: 'dn20', kind: 'thermo' };
                 if (id === 'SDG-0002-002501') return { cat: 'group', dn: 'dn25', kind: 'thermo' };
                 if (id === 'SDG-0003-002001' || id === 'SDG-0007-002001') return { cat: 'group', dn: 'dn20', kind: 'servo' };
@@ -8315,23 +8359,43 @@ const app = {
                 if (id === 'SDG-0007-003201') return { cat: 'group', dn: 'dn32', kind: 'servo' };
                 return { cat: 'group' };
             };
+            const _umKwExtract = (name) => {
+                const mTp = (name || '').match(/тёплого пола\s*(\d+(?:[.,]\d+)?)\s*кВт/);
+                if (mTp) return parseFloat(mTp[1].replace(',', '.'));
+                const mTp2 = (name || '').match(/(\d+(?:[.,]\d+)?)\s*кВт\s*(?:для\s*)?(?:тёплого пола|ТП)/);
+                if (mTp2) return parseFloat(mTp2[1].replace(',', '.'));
+                const m = (name || '').match(/(\d+(?:[.,]\d+)?)\s*кВт/);
+                return m ? parseFloat(m[1].replace(',', '.')) : null;
+            };
             if (isFirstOpen) {
                 const _cur = _umClassify(_origId0);
                 this.state.ufhMixCategoryFilter = _cur.cat;
                 this.state.ufhMixDnFilter = _cur.dn || 'all';
                 this.state.ufhMixKindFilter = _cur.kind || 'all';
+                const _curKw = _umKwExtract(item.name);
+                this.state.ufhMixPowerFilter = _curKw !== null ? [String(_curKw)] : [];
             }
             const _umCat = this.state.ufhMixCategoryFilter || 'group';
             const _umDn = this.state.ufhMixDnFilter || 'all';
             const _umKind = this.state.ufhMixKindFilter || 'all';
+            const _umPower = Array.isArray(this.state.ufhMixPowerFilter) ? this.state.ufhMixPowerFilter : [];
             const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            const _umPowerOptions = [...new Set(
+                alts.filter(a => _umClassify(a.id).cat === _umCat).map(a => _umKwExtract(a.name)).filter(v => v !== null)
+            )].sort((x, y) => x - y);
+            const _umPowerBtns = _umPowerOptions.map(v => `<span onclick="app.setUfhMixPowerFilter('${v}')" ${_b(_umPower.includes(String(v)))}>${v} кВт</span>`).join('');
+            const _umHasUnit = alts.some(a => _umClassify(a.id).cat === 'unit');
+            const _umKindsPresent = [...new Set(alts.filter(a => _umClassify(a.id).cat === 'group').map(a => _umClassify(a.id).kind).filter(Boolean))];
+            const _umShowKind = _umKindsPresent.length > 1;
             _tankFiltersHtml =
                 `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
-                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
-                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Тип:</span>` +
-                `<span onclick="app.setUfhMixCategoryFilter('unit')" ${_b(_umCat==='unit')}>Узел подмеса</span>` +
-                `<span onclick="app.setUfhMixCategoryFilter('group')" ${_b(_umCat==='group')}>Насосная группа</span>` +
-                `</div>` +
+                (_umHasUnit ?
+                    `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                    `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Тип:</span>` +
+                    `<span onclick="app.setUfhMixCategoryFilter('unit')" ${_b(_umCat==='unit')}>Узел подмеса</span>` +
+                    `<span onclick="app.setUfhMixCategoryFilter('group')" ${_b(_umCat==='group')}>Насосная группа</span>` +
+                    `</div>`
+                    : '') +
                 (_umCat === 'group' ?
                     `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
                     `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Типоразмер:</span>` +
@@ -8340,13 +8404,21 @@ const app = {
                     `<span onclick="app.setUfhMixDnFilter('dn32')" ${_b(_umDn==='dn32')}>DN32</span>` +
                     `<span onclick="app.setUfhMixDnFilter('all')" ${_b(_umDn==='all')}>Все</span>` +
                     `</div>` +
-                    `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
-                    `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Клапан:</span>` +
-                    `<span onclick="app.setUfhMixKindFilter('thermo')" ${_b(_umKind==='thermo')}>Термостатическая</span>` +
-                    `<span onclick="app.setUfhMixKindFilter('servo')" ${_b(_umKind==='servo')}>Под сервопривод</span>` +
-                    `<span onclick="app.setUfhMixKindFilter('all')" ${_b(_umKind==='all')}>Все</span>` +
-                    `</div>`
+                    (_umShowKind ?
+                        `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                        `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Клапан:</span>` +
+                        `<span onclick="app.setUfhMixKindFilter('direct')" ${_b(_umKind==='direct')}>Прямая</span>` +
+                        `<span onclick="app.setUfhMixKindFilter('thermo')" ${_b(_umKind==='thermo')}>Термостатическая</span>` +
+                        `<span onclick="app.setUfhMixKindFilter('servo')" ${_b(_umKind==='servo')}>Под сервопривод</span>` +
+                        `<span onclick="app.setUfhMixKindFilter('all')" ${_b(_umKind==='all')}>Все</span>` +
+                        `</div>`
+                        : '')
                     : '') +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Мощность:</span>` +
+                _umPowerBtns +
+                `<span onclick="app.setUfhMixPowerFilter('all')" ${_b(_umPower.length===0)}>Все</span>` +
+                `</div>` +
                 `</div>`;
             alts = alts.filter(a => {
                 const c = _umClassify(a.id);
@@ -8355,6 +8427,99 @@ const app = {
                     if (_umDn !== 'all' && c.dn !== _umDn) return false;
                     if (_umKind !== 'all' && c.kind !== _umKind) return false;
                 }
+                if (_umPower.length > 0 && !_umPower.includes(String(_umKwExtract(a.name)))) return false;
+                return true;
+            });
+        } else if ((catalog.collectors_dn20 && catalog.collectors_dn20.some(c => c.id === _origId0)) || (catalog.collectors_dn25 && catalog.collectors_dn25.some(c => c.id === _origId0)) || (catalog.collectors_dn32 && catalog.collectors_dn32.some(c => c.id === _origId0)) || _origId0 === 'SDG-0018-002502' || _origId0 === 'SDG-0018-002503' || _origId0 === 'SDG-0018-004002' || _origId0 === 'SDG-0018-004003') {
+            const _colLoopsMap = {
+                'SDG-0016-002502': 2, 'SDG-0016-002503': 3,
+                'SDG-0016-004002': 2, 'SDG-0016-004003': 3, 'SDG-0016-004004': 4, 'SDG-0016-004005': 5, 'SDG-0016-004006': 6,
+                'SDG-0016-005002': 2, 'SDG-0016-005003': 3, 'SDG-0016-005004': 4, 'SDG-0016-005005': 5, 'SDG-0016-005006': 6,
+                'SDG-0017-004023': 3, 'SDG-0017-004035': 5,
+                'SDG-0018-002502': 2, 'SDG-0018-002503': 3, 'SDG-0018-004002': 2, 'SDG-0018-004003': 3
+            };
+            const _colFlexSet = new Set(['SDG-0017-004023', 'SDG-0017-004035']);
+            const _colDnOf = (id) => {
+                if (catalog.collectors_dn20 && catalog.collectors_dn20.some(c => c.id === id)) return 'dn20';
+                if (catalog.collectors_dn25 && catalog.collectors_dn25.some(c => c.id === id)) return 'dn25';
+                if (catalog.collectors_dn32 && catalog.collectors_dn32.some(c => c.id === id)) return 'dn32';
+                if (id === 'SDG-0018-002502' || id === 'SDG-0018-002503') return 'dn20';
+                if (id === 'SDG-0018-004002' || id === 'SDG-0018-004003') return 'dn25';
+                return null;
+            };
+            if (isFirstOpen) {
+                this.state.colDnFilter = _colDnOf(_origId0) || 'all';
+                this.state.colConnFilter = _colFlexSet.has(_origId0) ? 'updown' : 'standard';
+                this.state.colLoopsFilter = _colLoopsMap[_origId0] !== undefined ? [String(_colLoopsMap[_origId0])] : [];
+            }
+            const _colDn = this.state.colDnFilter || 'all';
+            const _colConn = this.state.colConnFilter || 'all';
+            const _colLoops = Array.isArray(this.state.colLoopsFilter) ? this.state.colLoopsFilter : [];
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            const _colLoopsOptions = [...new Set(
+                alts.filter(a => (_colDn === 'all' || _colDnOf(a.id) === _colDn) && !_colFlexSet.has(a.id)).map(a => _colLoopsMap[a.id]).filter(v => v !== undefined)
+            )].sort((x, y) => x - y);
+            const _colLoopsBtns = _colLoopsOptions.map(v => `<span onclick="app.setColLoopsFilter('${v}')" ${_b(_colLoops.includes(String(v)))}>${v}</span>`).join('');
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">DN:</span>` +
+                `<span onclick="app.setColDnFilter('dn20')" ${_b(_colDn==='dn20')}>DN20</span>` +
+                `<span onclick="app.setColDnFilter('dn25')" ${_b(_colDn==='dn25')}>DN25</span>` +
+                `<span onclick="app.setColDnFilter('dn32')" ${_b(_colDn==='dn32')}>DN32</span>` +
+                `<span onclick="app.setColDnFilter('all')" ${_b(_colDn==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Кол-во насосных групп:</span>` +
+                _colLoopsBtns +
+                `<span onclick="app.setColLoopsFilter('all')" ${_b(_colLoops.length===0)}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Подключение:</span>` +
+                `<span onclick="app.setColConnFilter('standard')" ${_b(_colConn==='standard')}>Стандартное</span>` +
+                `<span onclick="app.setColConnFilter('updown')" ${_b(_colConn==='updown')}>Верх-Низ</span>` +
+                `<span onclick="app.setColConnFilter('all')" ${_b(_colConn==='all')}>Все</span>` +
+                `</div>` +
+                `</div>`;
+            alts = alts.filter(a => {
+                if (_colDn !== 'all' && _colDnOf(a.id) !== _colDn) return false;
+                const _isFlex = _colFlexSet.has(a.id);
+                if (_colConn === 'standard' && _isFlex) return false;
+                if (_colConn === 'updown' && !_isFlex) return false;
+                if (_colLoops.length > 0 && (_isFlex || !_colLoops.includes(String(_colLoopsMap[a.id])))) return false;
+                return true;
+            });
+        } else if (_origId0 === 'SDG-0015-004001' || (catalog.hydro_separators && catalog.hydro_separators.some(h => h.id === _origId0))) {
+            const _hsFlowOf = (name) => {
+                const m = (name || '').match(/(\d+(?:[.,]\d+)?)\s*м[3³]\s*\/\s*ч/);
+                return m ? parseFloat(m[1].replace(',', '.')) : null;
+            };
+            if (isFirstOpen) {
+                const _curFlow = _hsFlowOf(item.name);
+                this.state.hsFlowFilter = _curFlow !== null ? [String(_curFlow)] : [];
+            }
+            const _hsFlow = Array.isArray(this.state.hsFlowFilter) ? this.state.hsFlowFilter : [];
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            const _hsFlowOptions = [...new Set(alts.map(a => _hsFlowOf(a.name)).filter(v => v !== null))].sort((x, y) => x - y);
+            const _hsFlowToKwRad = (v) => Math.round(v * 1.163 * 10);
+            const _hsFlowToKwUfh = (v) => Math.round(v * 1.163 * 5);
+            const _hsFlowBtns = _hsFlowOptions.map(v => `<span onclick="app.setHsFlowFilter('${v}')" ${_b(_hsFlow.includes(String(v)))}>${v} м³/ч</span>`).join('');
+            const _hsPowerBtns = _hsFlowOptions.map(v => `<span onclick="app.setHsFlowFilter('${v}')" ${_b(_hsFlow.includes(String(v)))}>${_hsFlowToKwRad(v)} кВт / ${_hsFlowToKwUfh(v)} кВт</span>`).join('');
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Расход:</span>` +
+                _hsFlowBtns +
+                `<span onclick="app.setHsFlowFilter('all')" ${_b(_hsFlow.length===0)}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Мощность, (радиаторы / тёплый пол):</span>` +
+                _hsPowerBtns +
+                `<span onclick="app.setHsFlowFilter('all')" ${_b(_hsFlow.length===0)}>Все</span>` +
+                `</div>` +
+                `</div>`;
+            alts = alts.filter(a => {
+                if (_hsFlow.length > 0 && !_hsFlow.includes(String(_hsFlowOf(a.name)))) return false;
                 return true;
             });
         } else if (catalog.ufh_mech.find(x => x.id === item.id) || catalog.ufh_electro.find(x => x.id === item.id) || catalog.thermostats_stout.find(x => x.id === item.id)) {
@@ -8605,7 +8770,8 @@ const app = {
                 // Для бойлеров: не добавлять текущий если он не входит в полностью отфильтрованный набор (mount+heat+vol)
                 let _isThermoItem = catalog.ufh_mech.find(x => x.id === item.id) || catalog.ufh_electro.find(x => x.id === item.id) || catalog.thermostats_stout.find(x => x.id === item.id);
                 let _isActuatorItem = catalog.actuators && (item.id === catalog.actuators.id || (catalog.actuators_rommer && catalog.actuators_rommer.find(x => x.id === item.id)));
-                let skipAdd = (_isTankItem || _origId0 === 'gas_boiler_auto' || _isThermoItem || _isActuatorItem) && baseItem && !alts.some(x => x.id === baseItem.id);
+                let _isUfhMixItem = (_origId0 === 'SDG-0120-001000' || _origId0 === 'SDG-0002-002001' || _origId0 === 'SDG-0002-002501' || _origId0 === 'SDG-0003-002001' || _origId0 === 'SDG-0003-002501' || _origId0 === 'SDG-0007-003201');
+                let skipAdd = (_isTankItem || _origId0 === 'gas_boiler_auto' || _isThermoItem || _isActuatorItem || _isUfhMixItem) && baseItem && !alts.some(x => x.id === baseItem.id);
                 if (!skipAdd) altsToProcess.unshift(baseItem);
             }
 
@@ -8631,7 +8797,7 @@ const app = {
                     let pwr = this.getPower();
                     let brand = this.state.brandMode;
                     let useAnalogSec2 = this.state.sectionAnalog && this.state.sectionAnalog['2.4. Гидравлика котельной'];
-                    let radNeedsDn25 = (pwr > 20) || (brand === 'rommer') || useAnalogSec2;
+                    let radNeedsDn25 = (brand === 'rommer') || (this.state.manualDnOverride ? (this.state.manualDnOverride !== 'dn20') : ((pwr > 10) || useAnalogSec2));
                     if (!_manualUfhOverride && radNeedsDn25 && (altType === 'dn20' || altType === 'dn20_servo')) {
                         return;
                     }
@@ -8695,6 +8861,16 @@ const app = {
                 if (_isTankItem && this.state.tankSwapHeat === 'comb') {
                     candidates = candidates.filter(d => !(d.id && d.id.startsWith('RWH-2110-0')));
                 }
+                // Фильтр "Типоразмер" в модалке узла подмеса/насосных групп: скрываем строки,
+                // у которых в собственном названии не тот DN (например, ROMMER-аналог физически DN25,
+                // даже если он подставлен к DN20-позиции STOUT)
+                const _isUfhMixItemForDnFilter = (_origId0 === 'SDG-0120-001000' || _origId0 === 'SDG-0002-002001' || _origId0 === 'SDG-0002-002501' || _origId0 === 'SDG-0003-002001' || _origId0 === 'SDG-0003-002501' || _origId0 === 'SDG-0007-003201' || _origId0 === 'SDG-0001-002001' || _origId0 === 'SDG-0001-002501' || _origId0 === 'SDG-0001-003201');
+                if (_isUfhMixItemForDnFilter && this.state.ufhMixDnFilter && this.state.ufhMixDnFilter !== 'all') {
+                    const _umDnLabel = { dn20: 'DN20', dn25: 'DN25', dn32: 'DN32' }[this.state.ufhMixDnFilter];
+                    // ROMMER-позиции без "универсального корпуса" не пишут DN в названии — они все физически DN25
+                    const _umRommerDnFallback = { 'RDG-1002-012501': 'DN25', 'RDG-1003-012501': 'DN25', 'RDG-1004-002501': 'DN25' };
+                    candidates = candidates.filter(d => (d.name && d.name.includes(_umDnLabel)) || _umRommerDnFallback[d.id] === _umDnLabel);
+                }
                 candidates.forEach(displayAlt => {
                     let id = displayAlt.id;
                     if (seenIds.has(id)) return;
@@ -8713,9 +8889,19 @@ const app = {
                 });
             } else {
                 const _sign = _ssd === 'asc' ? 1 : -1;
+                const _isUfhMixSort = (_origId0 === 'SDG-0120-001000' || _origId0 === 'SDG-0002-002001' || _origId0 === 'SDG-0002-002501' || _origId0 === 'SDG-0003-002001' || _origId0 === 'SDG-0003-002501' || _origId0 === 'SDG-0007-003201');
+                const _kwVal = (name) => {
+                    const mTp = (name || '').match(/тёплого пола\s*(\d+(?:[.,]\d+)?)\s*кВт/);
+                    if (mTp) return parseFloat(mTp[1].replace(',', '.'));
+                    const mTp2 = (name || '').match(/(\d+(?:[.,]\d+)?)\s*кВт\s*(?:для\s*)?(?:тёплого пола|ТП)/);
+                    if (mTp2) return parseFloat(mTp2[1].replace(',', '.'));
+                    const m = (name || '').match(/(\d+(?:[.,]\d+)?)\s*кВт/);
+                    return m ? parseFloat(m[1].replace(',', '.')) : 0;
+                };
                 uniqueAlts.sort((a, b) => {
                     if (_ssf === 'price') return _sign * ((a.display.price || 0) - (b.display.price || 0));
                     if (_ssf === 'name' && _origId0 === 'gas_boiler_auto') return _sign * ((a.original.power || 0) - (b.original.power || 0));
+                    if (_ssf === 'name' && _isUfhMixSort) return _sign * (_kwVal(a.display.name) - _kwVal(b.display.name));
                     if (_ssf === 'name') return _sign * (a.display.name || '').localeCompare(b.display.name || '', 'ru');
                     return (a.display.price || 0) - (b.display.price || 0);
                 });
@@ -9619,9 +9805,14 @@ const app = {
             if (chosenId.includes("3101") || chosenId.includes("status")) this.state.boilerSeries = 'status';
             else this.state.boilerSeries = 'plus';
         }
-        else if (originalId.startsWith('SDG-0018') || originalId.startsWith('SDG-0016')) {
+        else if (originalId === 'SDG-0018-002502' || originalId === 'SDG-0018-002503' || originalId === 'SDG-0016-002502' || originalId === 'SDG-0016-002503') {
             if (chosenId.startsWith("SDG-0018") || chosenId.startsWith("RDG-0018")) this.state.hydroType = 'combo';
             else this.state.hydroType = 'modular';
+            if (catalog.collectors_dn20 && catalog.collectors_dn20.some(c => c.id === chosenId)) this.state.manualDnOverride = 'dn20';
+            else if (catalog.collectors_dn25 && catalog.collectors_dn25.some(c => c.id === chosenId)) this.state.manualDnOverride = 'dn25';
+            else if (catalog.collectors_dn32 && catalog.collectors_dn32.some(c => c.id === chosenId)) this.state.manualDnOverride = 'dn25';
+            else if (chosenId === 'SDG-0018-002502' || chosenId === 'SDG-0018-002503') this.state.manualDnOverride = 'dn20';
+            else if (chosenId === 'SDG-0018-004002' || chosenId === 'SDG-0018-004003') this.state.manualDnOverride = 'dn25';
         }
         else if (originalId.startsWith('SMS-0922') || (originalId.startsWith('SMB-6850') && !originalId.endsWith('_water')) || originalId.startsWith('RMS-3201') || originalId.startsWith('RMS-1210') || originalId.startsWith('RMS-1001')) {
             let loops = 8;
@@ -9760,11 +9951,23 @@ const app = {
         }
         else if (originalId === 'SDG-0120-001000' || originalId === 'SDG-0002-002001' || originalId === 'SDG-0002-002501' || originalId === 'SDG-0003-002001' || originalId === 'SDG-0003-002501' || originalId === 'SDG-0007-003201') {
             if (chosenId === 'SDG-0120-001000' || chosenId === 'RDG-0120-008100') this.state.ufhMixType = 'std';
-            else if (chosenId === 'SDG-0002-002001') this.state.ufhMixType = 'dn20';
-            else if (chosenId === 'SDG-0002-002501' || chosenId === 'RDG-1002-002501') this.state.ufhMixType = 'dn25';
-            else if (chosenId === 'SDG-0003-002001') this.state.ufhMixType = 'dn20_servo';
-            else if (chosenId === 'SDG-0003-002501' || chosenId === 'RDG-1003-002501') this.state.ufhMixType = 'dn25_servo';
-            else if (chosenId === 'SDG-0007-003201') this.state.ufhMixType = 'dn32_servo';
+            else if (chosenId === 'SDG-0002-002001') { this.state.ufhMixType = 'dn20'; this.state.manualDnOverride = 'dn20'; }
+            else if (chosenId === 'SDG-0002-002501' || chosenId === 'RDG-1002-002501') { this.state.ufhMixType = 'dn25'; this.state.manualDnOverride = 'dn25'; }
+            else if (chosenId === 'SDG-0003-002001') { this.state.ufhMixType = 'dn20_servo'; this.state.manualDnOverride = 'dn20'; }
+            else if (chosenId === 'SDG-0003-002501' || chosenId === 'RDG-1003-002501') { this.state.ufhMixType = 'dn25_servo'; this.state.manualDnOverride = 'dn25'; }
+            else if (chosenId === 'SDG-0007-003201') { this.state.ufhMixType = 'dn32_servo'; this.state.manualDnOverride = 'dn25'; }
+        }
+        else if (originalId === 'SDG-0001-002001' || originalId === 'SDG-0001-002501' || originalId === 'SDG-0001-003201') {
+            if (chosenId === 'SDG-0001-002001') this.state.manualDnOverride = 'dn20';
+            else if (chosenId === 'SDG-0001-002501' || chosenId === 'RDG-1001-002501') this.state.manualDnOverride = 'dn25';
+            else if (chosenId === 'SDG-0001-003201') this.state.manualDnOverride = 'dn25';
+        }
+        else if (originalId.startsWith('SDG-0016-') || originalId.startsWith('SDG-0017-') || originalId === 'SDG-0018-002502' || originalId === 'SDG-0018-002503' || originalId === 'SDG-0018-004002' || originalId === 'SDG-0018-004003') {
+            if (catalog.collectors_dn20 && catalog.collectors_dn20.some(c => c.id === chosenId)) this.state.manualDnOverride = 'dn20';
+            else if (catalog.collectors_dn25 && catalog.collectors_dn25.some(c => c.id === chosenId)) this.state.manualDnOverride = 'dn25';
+            else if (catalog.collectors_dn32 && catalog.collectors_dn32.some(c => c.id === chosenId)) this.state.manualDnOverride = 'dn25';
+            else if (chosenId === 'SDG-0018-002502' || chosenId === 'SDG-0018-002503') this.state.manualDnOverride = 'dn20';
+            else if (chosenId === 'SDG-0018-004002' || chosenId === 'SDG-0018-004003') this.state.manualDnOverride = 'dn25';
         }
         else if (originalId === 'SVM-0025-230017' || originalId === 'SVM-0005-230001') {
             if (chosenId === 'SVM-0025-230017' || chosenId === 'RVM-0015-230017') this.state.servoType = 'sensor';
@@ -11033,14 +11236,73 @@ const app = {
     setUfhMixCategoryFilter: function (val) {
         this.state.ufhMixCategoryFilter = val;
         if (val === 'unit') { this.state.ufhMixDnFilter = 'all'; this.state.ufhMixKindFilter = 'all'; }
+        this.state.ufhMixPowerFilter = [];
         if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
     },
     setUfhMixDnFilter: function (val) {
         this.state.ufhMixDnFilter = val;
+        this.state.ufhMixPowerFilter = [];
         if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
     },
     setUfhMixKindFilter: function (val) {
         this.state.ufhMixKindFilter = val;
+        this.state.ufhMixPowerFilter = [];
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setUfhMixPowerFilter: function (val) {
+        if (val === 'all') {
+            this.state.ufhMixPowerFilter = [];
+        } else {
+            if (!Array.isArray(this.state.ufhMixPowerFilter)) this.state.ufhMixPowerFilter = [];
+            const idx = this.state.ufhMixPowerFilter.indexOf(val);
+            if (idx === -1) this.state.ufhMixPowerFilter.push(val);
+            else this.state.ufhMixPowerFilter.splice(idx, 1);
+            this.state.ufhMixDnFilter = 'all';
+            this.state.ufhMixKindFilter = 'all';
+        }
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setColDnFilter: function (val) {
+        this.state.colDnFilter = val;
+        this.state.colLoopsFilter = [];
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setColConnFilter: function (val) {
+        this.state.colConnFilter = val;
+        this.state.colLoopsFilter = [];
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setColLoopsFilter: function (val) {
+        if (val === 'all') {
+            this.state.colLoopsFilter = [];
+        } else {
+            if (!Array.isArray(this.state.colLoopsFilter)) this.state.colLoopsFilter = [];
+            const idx = this.state.colLoopsFilter.indexOf(val);
+            if (idx === -1) this.state.colLoopsFilter.push(val);
+            else this.state.colLoopsFilter.splice(idx, 1);
+        }
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setHsFlowFilter: function (val) {
+        if (val === 'all') {
+            this.state.hsFlowFilter = [];
+        } else {
+            if (!Array.isArray(this.state.hsFlowFilter)) this.state.hsFlowFilter = [];
+            const idx = this.state.hsFlowFilter.indexOf(val);
+            if (idx === -1) this.state.hsFlowFilter.push(val);
+            else this.state.hsFlowFilter.splice(idx, 1);
+        }
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setHcLoopsFilter: function (val) {
+        if (val === 'all') {
+            this.state.hcLoopsFilter = [];
+        } else {
+            if (!Array.isArray(this.state.hcLoopsFilter)) this.state.hcLoopsFilter = [];
+            const idx = this.state.hcLoopsFilter.indexOf(val);
+            if (idx === -1) this.state.hcLoopsFilter.push(val);
+            else this.state.hcLoopsFilter.splice(idx, 1);
+        }
         if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
     },
     toggleSwapSort: function (field) {
@@ -12474,12 +12736,12 @@ const app = {
                 let hDnWhy = '';
                 if (hIsRommer) {
                     hDnWhy = 'Аналог (ROMMER): по умолчанию всегда DN25.';
-                } else if (hPwr > 20) {
-                    hDnWhy = `Мощность системы ${hPwr} кВт > 20 кВт → выбран DN25.`;
+                } else if (hPwr > 10) {
+                    hDnWhy = `Мощность системы ${hPwr} кВт > 10 кВт → выбран DN25.`;
                 } else if (hDn25) {
                     hDnWhy = `Тип узла тёплого пола требует DN25.`;
                 } else {
-                    hDnWhy = `Мощность системы ${hPwr} кВт ≤ 20 кВт → выбран DN20.`;
+                    hDnWhy = `Мощность системы ${hPwr} кВт ≤ 10 кВт → выбран DN20.`;
                 }
 
                 // Почему это количество контуров
@@ -12488,8 +12750,8 @@ const app = {
                     (hCircuits > 2 ? '> 2 → 3-контурный коллектор.' : '≤ 2 → 2-контурный коллектор.');
 
                 // Расход через коллектор
-                let hFlowRad = hPwr > 0 ? (hPwr / (1.163 * 20)).toFixed(2) : '—';
-                let hFlowUfh = hTpArea > 0 ? ((hTpArea * 0.08) / (1.163 * 8)).toFixed(2) : '—';
+                let hFlowRad = hPwr > 0 ? (hPwr / (1.163 * 10)).toFixed(2) : '—';
+                let hFlowUfh = hTpArea > 0 ? ((hTpArea * 0.08) / (1.163 * 5)).toFixed(2) : '—';
 
                 return `<span style="${styles}"><span style="${head}">${hTitle}</span>` +
                     `<b>Зачем:</b> Гидравлическая развязка между котловым и распределительными контурами. Устраняет взаимное влияние насосов контуров друг на друга.<br><br>` +
@@ -12497,7 +12759,7 @@ const app = {
                     `<b>Выбор числа контуров:</b> ${hContWhy}<br><br>` +
                     `<b>Расчётные расходы по контурам:</b><br>` +
                     (hRQ > 0 ? `• Радиаторы: G = ${hPwr} кВт / (1.163 × 20°C) = <b>${hFlowRad} м³/ч</b><br>` : '') +
-                    (hTQ > 0 ? `• Тёплый пол: G = ${hTpArea} м² × 80 Вт/м² / (1.163 × 8°C) = <b>${hFlowUfh} м³/ч</b><br><br>` : '<br>') +
+                    (hTQ > 0 ? `• Тёплый пол: G = ${hTpArea} м² × 80 Вт/м² / (1.163 × 5°C) = <b>${hFlowUfh} м³/ч</b><br><br>` : '<br>') +
                     `<b>Паспортные данные:</b> Максимальный суммарный расход через коллектор — <b>3.0 м³/ч</b>.</span>`;
             }
             case 'pump_group': {
@@ -12520,36 +12782,36 @@ const app = {
 
                     let limitText = isRommer
                         ? "Для ROMMER по умолчанию всегда выбирается DN25."
-                        : `Выбор типоразмера зависит от общей мощности системы: до 30 кВт — DN20, выше — DN25.<br><b>Текущие теплопотери:</b> ${inputVal} кВт.`;
+                        : `Выбор типоразмера зависит от общей мощности системы: до 10 кВт — DN20, выше — DN25.<br><b>Текущие теплопотери:</b> ${inputVal} кВт.`;
 
                     let maxFlow = isDn32 ? 2.9 : (isRommer ? 2.0 : (item.id.includes("2001") ? 0.9 : 2.1));
-                    let flow = parseFloat((inputVal / (1.163 * 20)).toFixed(2));
+                    let flow = parseFloat((inputVal / (1.163 * 10)).toFixed(2));
                     let checkResult = (flow <= maxFlow)
                         ? `<b style="color: #10B981;">✔ Проверка расхода пройдена:</b> расчетный расход ${flow} м³/ч не превышает максимальный расход группы ${maxFlow} м³/ч.`
                         : `<b style="color: #EF4444;">❌ Проверка расхода не пройдена:</b> расчетный расход ${flow} м³/ч превышает максимальный расход группы ${maxFlow} м³/ч!`;
 
                     calc = `<b>Подбор по тепловой нагрузке:</b><br>${limitText}<br>` +
                         `<b>Формула расхода:</b> G = Q / (c × ΔT)<br>` +
-                        `где Q = ${inputVal} кВт, c = 1.163 Вт·ч/(кг·°C), ΔT = 20°C (радиаторы).<br>` +
-                        `<b>Расчётный расход:</b> G = ${inputVal} / (1.163 × 20) = ${flow.toFixed(2)} м³/ч.<br>` +
+                        `где Q = ${inputVal} кВт, c = 1.163 Вт·ч/(кг·°C), ΔT = 10°C (радиаторы).<br>` +
+                        `<b>Расчётный расход:</b> G = ${inputVal} / (1.163 × 10) = ${flow.toFixed(2)} м³/ч.<br>` +
                         `${checkResult}`;
 
                     if (isDn32) {
                         capacity = `<b>Паспортные характеристики (${item.id}):</b><br>` +
-                            `• Мощность (с насосом на 2-й скорости, расход 2.9 м³/ч): для радиаторов до 67 кВт, для тёплого пола до 27 кВт<br>` +
+                            `• Мощность (с насосом на 2-й скорости, расход 2.9 м³/ч): для радиаторов до 34 кВт<br>` +
                             `• Максимальный расход клапана: <b>до 3.6 м³/ч</b> (DN32) — на 2-й скорости насоса ограничивает не клапан, а насос (2.9 м³/ч)<br>` +
                             `• <b style="color:#F59E0B;">⚠ Насос в комплект не входит.</b> Расчёт на примере RCP-0004-3260180 (DN32, напор 6 м) на 2-й скорости; при другом насосе или скорости пересчитайте.`;
                     } else if (isRommer) {
                         capacity = `<b>Паспортные характеристики (RDG-1001-002501):</b><br>` +
-                            `• Мощность: для радиаторов до 48 кВт, для тёплого пола до 15 кВт<br>` +
+                            `• Мощность: для радиаторов до 23 кВт<br>` +
                             `• Максимальный расход: <b>до 2.0 м³/ч</b> (DN25)`;
                     } else if (item.id.includes("2001")) {
                         capacity = `<b>Паспортные характеристики (SDG-0001-002001):</b><br>` +
-                            `• Мощность: для радиаторов до 20 кВт, для тёплого пола до 9 кВт<br>` +
+                            `• Мощность: для радиаторов до 10 кВт<br>` +
                             `• Максимальный расход: <b>до 0.9 м³/ч</b> (DN20, Kvs = 6.0)`;
                     } else {
                         capacity = `<b>Паспортные характеристики (SDG-0001-002501):</b><br>` +
-                            `• Мощность: для радиаторов до 50 кВт, для тёплого пола до 24 кВт<br>` +
+                            `• Мощность: для радиаторов до 24 кВт<br>` +
                             `• Максимальный расход: <b>до 2.1 м³/ч</b> (DN25, Kvs = 8.8)`;
                     }
                 } else if (purpose === 'ufh') {
@@ -12564,7 +12826,7 @@ const app = {
 
                     let ufhPwr = Math.round(inputVal * 0.08); // Approximate power: 80 W/m²
                     let maxFlow = isDn32 ? 2.9 : (isRommer ? 1.6 : (item.id.includes("2001") ? 0.9 : 2.1));
-                    let flow = parseFloat((ufhPwr / (1.163 * 8)).toFixed(2));
+                    let flow = parseFloat((ufhPwr / (1.163 * 5)).toFixed(2));
                     let checkResult = (flow <= maxFlow)
                         ? `<b style="color: #10B981;">✔ Проверка расхода пройдена:</b> расчетный расход ${flow} м³/ч не превышает максимальный расход группы ${maxFlow} м³/ч.`
                         : `<b style="color: #EF4444;">❌ Проверка расхода не пройдена:</b> расчетный расход ${flow} м³/ч превышает максимальный расход группы ${maxFlow} м³/ч!`;
@@ -12572,26 +12834,26 @@ const app = {
                     calc = `<b>Подбор по площади теплого пола:</b><br>${limitText}<br>` +
                         `<b>Оценка тепловой мощности:</b> Q_тп ≈ ${inputVal} м² × 80 Вт/м² = ${ufhPwr} кВт.<br>` +
                         `<b>Формула расхода:</b> G = Q_тп / (c × ΔT)<br>` +
-                        `где c = 1.163 Вт·ч/(кг·°C), ΔT = 8°C (перепад температур тёплого пола).<br>` +
-                        `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 8) = ${flow.toFixed(2)} м³/ч.<br>` +
+                        `где c = 1.163 Вт·ч/(кг·°C), ΔT = 5°C (перепад температур тёплого пола).<br>` +
+                        `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 5) = ${flow.toFixed(2)} м³/ч.<br>` +
                         `${checkResult}`;
 
                     if (isDn32) {
                         capacity = `<b>Паспортные характеристики (${item.id}):</b><br>` +
-                            `• Мощность (с насосом на 2-й скорости, расход 2.9 м³/ч): для радиаторов до 67 кВт, для тёплого пола до 27 кВт<br>` +
+                            `• Мощность (с насосом на 2-й скорости, расход 2.9 м³/ч): для радиаторов до 34 кВт, для тёплого пола до 17 кВт<br>` +
                             `• Максимальный расход клапана: <b>до 3.6 м³/ч</b> (DN32) — на 2-й скорости насоса ограничивает не клапан, а насос (2.9 м³/ч)<br>` +
                             `• <b style="color:#F59E0B;">⚠ Насос в комплект не входит.</b> Расчёт на примере RCP-0004-3260180 (DN32, напор 6 м) на 2-й скорости; при другом насосе или скорости пересчитайте.`;
                     } else if (isRommer) {
                         capacity = `<b>Паспортные характеристики (RDG-1002-002501):</b><br>` +
-                            `• Мощность: для радиаторов до 48 кВт, для тёплого пола до 15 кВт<br>` +
+                            `• Мощность: для радиаторов до 23 кВт, для тёплого пола до 9 кВт<br>` +
                             `• Максимальный расход: <b>до 1.6 м³/ч</b> (DN25, Kvs = 3.2)`;
                     } else if (item.id.includes("2001")) {
                         capacity = `<b>Паспортные характеристики (SDG-0002-002001):</b><br>` +
-                            `• Мощность: для радиаторов до 20 кВт, для тёплого пола до 9 кВт (до 100 м²)<br>` +
+                            `• Мощность: для радиаторов до 10 кВт, для тёплого пола до 5 кВт (до ~65 м²)<br>` +
                             `• Максимальный расход: <b>до 0.9 м³/ч</b> (DN20, Kvs = 2.5)`;
                     } else {
                         capacity = `<b>Паспортные характеристики (SDG-0002-002501):</b><br>` +
-                            `• Мощность: для радиаторов до 50 кВт, для тёплого пола до 24 кВт (до 240 м²)<br>` +
+                            `• Мощность: для радиаторов до 24 кВт, для тёплого пола до 12 кВт (до ~153 м²)<br>` +
                             `• Максимальный расход: <b>до 2.1 м³/ч</b> (DN25, Kvs = 4.0)`;
                     }
                 }
@@ -12602,13 +12864,13 @@ const app = {
                 let isRommer = (this.state.brandMode === 'rommer');
                 let area = parseFloat(val1) || 0;
                 let title = isRommer
-                    ? "Насосно-смесительный узел ROMMER с термоголовкой (без насоса)"
-                    : "Насосно-смесительный узел STOUT (без насоса)";
+                    ? "Узел подмеса ROMMER с термоголовкой (без насоса)"
+                    : "Узел подмеса STOUT (без насоса)";
                 let why = "Поддержание постоянной температуры подачи в контур тёплого пола путём качественного смешивания горячего теплоносителя от котла и остывшего из обратки.";
 
                 let ufhPwr = Math.round(area * 0.08); // 80 W/m²
                 let maxFlow = isRommer ? 1.0 : 1.2;
-                let flow = parseFloat((ufhPwr / (1.163 * 8)).toFixed(2));
+                let flow = parseFloat((ufhPwr / (1.163 * 5)).toFixed(2));
                 let checkResult = (flow <= maxFlow)
                     ? `<b style="color: #10B981;">✔ Проверка расхода пройдена:</b> расчетный расход ${flow} м³/ч не превышает максимальный расход узла ${maxFlow} м³/ч.`
                     : `<b style="color: #EF4444;">❌ Проверка расхода не пройдена:</b> расчетный расход ${flow} м³/ч превышает максимальный расход узла ${maxFlow} м³/ч!`;
@@ -12617,18 +12879,18 @@ const app = {
                     `• Обслуживаемая площадь: ${area} м².<br>` +
                     `• Оценка тепловой мощности: Q_тп ≈ ${area} м² × 80 Вт/м² = ${ufhPwr} кВт.<br>` +
                     `<b>Формула расхода:</b> G = Q_тп / (c × ΔT)<br>` +
-                    `где c = 1.163 Вт·ч/(кг·°C), ΔT = 8°C (перепад температур тёплого пола).<br>` +
-                    `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 8) = ${flow.toFixed(2)} м³/ч.<br>` +
+                    `где c = 1.163 Вт·ч/(кг·°C), ΔT = 5°C (перепад температур тёплого пола).<br>` +
+                    `<b>Расчётный расход:</b> G = ${ufhPwr} / (1.163 × 5) = ${flow.toFixed(2)} м³/ч.<br>` +
                     `${checkResult}`;
 
                 let capacity = "";
                 if (isRommer) {
                     capacity = `<b>Паспортные характеристики (RDG-0120-008100):</b><br>` +
-                        `• Максимальная мощность: <b>до 9 кВт</b> (при ΔT = 8°C, до 90-100 м²)<br>` +
+                        `• Максимальная мощность: <b>до 6 кВт</b> (при ΔT = 5°C, до ~73 м²)<br>` +
                         `• Максимальный расход: <b>до 1.0 м³/ч</b> (Kvs = 1.8)`;
                 } else {
                     capacity = `<b>Паспортные характеристики (SDG-0120-001000):</b><br>` +
-                        `• Максимальная мощность: <b>до 11 кВт</b> (при ΔT = 8°C, до 110-120 м²)<br>` +
+                        `• Максимальная мощность: <b>до 7 кВт</b> (при ΔT = 5°C, до ~87 м²)<br>` +
                         `• Максимальный расход: <b>до 1.2 м³/ч</b> (Kvs = 2.1)`;
                 }
 
@@ -13249,6 +13511,13 @@ const app = {
                     finalItem.name = finalItem.name.replace(/бастион/gi, '').replace(/\s+/g, ' ').trim();
                 }
 
+                // Насосная группа встала в контур тёплого пола — в смете показываем только релевантную мощность
+                if (item._uiUfhOnly && finalItem.name) {
+                    finalItem.name = finalItem.name
+                        .replace(/для радиаторов\s*\d+(?:[.,]\d+)?\s*кВт,\s*/i, '')
+                        .replace(/до\s*\d+(?:[.,]\d+)?\s*кВт для радиаторов\s*\/\s*/i, 'до ');
+                }
+
                 // Разрешаем наличие с учетом даты обновления (лимит 31 день)
                 let actualAvail = finalItem.availability;
                 if (actualAvail === 'in_stock') {
@@ -13268,7 +13537,7 @@ const app = {
 
                 if (finalItem.id === 'RDG-0015-004002' && this.state.hydroArrowType === 'pro') {
                     finalItem.id = "RDG-1015-004003";
-                    finalItem.name = "Гидравлическая стрелка 1 1/2\", 3,0 м³/час";
+                    finalItem.name = "Гидравлическая стрелка 1 1/2\", 3,0 м³/ч";
                     finalItem.price = 16722;
                     finalItem.brand = "ROMMER";
                 }
@@ -13276,7 +13545,7 @@ const app = {
                     finalItem.originalId = finalItem.id;
                     finalItem.alts = [
                         { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 6596, brand: "ROMMER" },
-                        { id: "RDG-1015-004003", name: "Гидравлическая стрелка 1 1/2\", 3,0 м³/час", price: 16722, brand: "ROMMER" }
+                        { id: "RDG-1015-004003", name: "Гидравлическая стрелка 1 1/2\", 3,0 м³/ч", price: 16722, brand: "ROMMER" }
                     ];
                 }
 
@@ -14013,15 +14282,30 @@ const app = {
             let useAnalogSec2 = this.state.sectionAnalog && this.state.sectionAnalog['2.4. Гидравлика котельной'];
 
             // Проверяем, требует ли радиаторный контур DN25
-            let radNeedsDn25 = (pwr > 20) || (brand === 'rommer') || useAnalogSec2;
+            let radNeedsDn25 = (brand === 'rommer') || (this.state.manualDnOverride ? (this.state.manualDnOverride !== 'dn20') : ((pwr > 10) || useAnalogSec2));
+
+            // Ручная смена DN (насосной группы или коллектора) сразу синхронизирует тип узла тёплого пола
+            if (this.state.manualDnOverride && brand !== 'rommer') {
+                let _curType = this.state.ufhMixType || 'std';
+                if (this.state.manualDnOverride === 'dn25' && (_curType === 'dn20' || _curType === 'dn20_servo')) {
+                    this.state.ufhMixType = (_curType === 'dn20_servo') ? 'dn25_servo' : 'dn25';
+                } else if (this.state.manualDnOverride === 'dn20' && (_curType === 'dn25' || _curType === 'dn25_servo')) {
+                    this.state.ufhMixType = (_curType === 'dn25_servo') ? 'dn20_servo' : 'dn20';
+                }
+            }
 
             let isCompatible = this.isUfhMixTypeCompatible(this.state.ufhMixType, tpArea, brand);
             let areaChanged = (this.lastTpArea !== undefined && this.lastTpArea !== tpArea);
 
             if (areaChanged || !isCompatible) {
-                // Если радиаторы или бренд требуют DN25, исключаем DN20 из кандидатов для унификации размеров
+                // Ручной override DN — не даём автопроверке по площади откатить его обратно на другой DN
                 let candidates = [];
-                if (radNeedsDn25) {
+                if (this.state.manualDnOverride === 'dn20' && brand !== 'rommer') {
+                    candidates = ['dn20_servo', 'dn20', 'std'];
+                } else if (this.state.manualDnOverride === 'dn25') {
+                    candidates = ['dn25_servo', 'dn25', 'std'];
+                } else if (radNeedsDn25) {
+                    // Если радиаторы или бренд требуют DN25, исключаем DN20 из кандидатов для унификации размеров
                     candidates = ['std', 'dn25', 'dn25_servo'];
                 } else {
                     candidates = ['std', 'dn20', 'dn25', 'dn20_servo', 'dn25_servo'];
@@ -14036,7 +14320,8 @@ const app = {
                 }
 
                 if (!chosen) {
-                    chosen = 'dn25_servo';
+                    if (this.state.manualDnOverride === 'dn20' && brand !== 'rommer') chosen = 'dn20_servo';
+                    else chosen = 'dn25_servo';
                 }
 
                 this.state.ufhMixType = chosen;
@@ -14077,7 +14362,7 @@ const app = {
         if (needCollector && hasTp && tpArea > 0 && (this.state.ufhMixType || 'std') === 'std') {
             let _brand = this.state.brandMode;
             let _useAnalogSec2 = this.state.sectionAnalog && this.state.sectionAnalog['2.4. Гидравлика котельной'];
-            let _radNeedsDn25 = (pwr > 20) || (_brand === 'rommer') || _useAnalogSec2;
+            let _radNeedsDn25 = (_brand === 'rommer') || (this.state.manualDnOverride ? (this.state.manualDnOverride !== 'dn20') : ((pwr > 10) || _useAnalogSec2));
             let _candidates = _radNeedsDn25 ? ['dn25', 'dn25_servo'] : ['dn20', 'dn20_servo', 'dn25', 'dn25_servo'];
             for (let _type of _candidates) {
                 if (this.isUfhMixTypeCompatible(_type, tpArea, _brand)) {
@@ -14144,7 +14429,7 @@ const app = {
             }
         }
         let brand = this.state.brandMode;
-        let radNeedsDn25 = (pwr > 20) || (brand === 'rommer') || useAnalogSec2;
+        let radNeedsDn25 = (brand === 'rommer') || (this.state.manualDnOverride ? (this.state.manualDnOverride !== 'dn20') : ((pwr > 10) || useAnalogSec2));
         let dn25 = radNeedsDn25 || (this.state.ufhMixType === 'dn25' || this.state.ufhMixType === 'dn25_servo');
         let pmp = null;
 
@@ -14236,8 +14521,17 @@ const app = {
             let idx = (circuits > 2) ? 1 : 0;
             let hCtx = { rQ, tQ, pwr, tpArea };
             if (dn25) {
-                let item = catalog.hydro_dn25[idx];
-                addToBill(item, 1, this.getDesc('hydro_collector', true, circuits, 'dn25', hCtx), grpHydro);
+                if (circuits > 3 && catalog.collectors_dn25) {
+                    const _dn25CollectorByLoops = { 2: 'SDG-0016-004002', 3: 'SDG-0016-004003', 4: 'SDG-0016-004004', 5: 'SDG-0016-004005', 6: 'SDG-0016-004006' };
+                    let clampedCircuits = Math.min(circuits, 6);
+                    let collItem = catalog.collectors_dn25.find(c => c.id === _dn25CollectorByLoops[clampedCircuits]) || catalog.collectors_dn25[catalog.collectors_dn25.length - 1];
+                    collItem.alts = catalog.collectors_dn25;
+                    addToBill(collItem, 1, this.getDesc('hydro_collector', true, circuits, 'dn25', hCtx), grpHydro);
+                    addToBill(catalog.hydro_arrow, 1, `Гидрострелка — выравнивает давление между котловым и распределительными контурами. Применяется при количестве контуров > 3 (модульная схема: коллектор + стрелка раздельно). Макс. расход: 3.0 м³/ч.`, grpHydro);
+                } else {
+                    let item = catalog.hydro_dn25[idx];
+                    addToBill(item, 1, this.getDesc('hydro_collector', true, circuits, 'dn25', hCtx), grpHydro);
+                }
             } else {
                 if (this.state.hydroType === 'combo') {
                     let item = catalog.hydro_dn20[idx]; item.alts = catalog.hydro_modular_dn20;
@@ -14269,7 +14563,7 @@ const app = {
 
                 if (activeMixType === 'dn32_servo') {
                     let ufhGrp = catalog.groups_dn32.find(g => g.id === 'SDG-0007-003201');
-                    addToBill(ufhGrp, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
+                    addToBill({ ...ufhGrp, _uiUfhOnly: true }, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
 
                     let ufhPump = catalog.pumps_dn25.find(p => p.type === this.state.pumpType) || catalog.pumps_dn25[0];
                     addToBill(ufhPump, tQ, this.getDesc('pump_std'), grpHydro);
@@ -14280,7 +14574,7 @@ const app = {
                     }
                 } else if (activeMixType === 'dn25' || activeMixType === 'dn25_servo') {
                     let ufhGrp = (activeMixType === 'dn25_servo') ? catalog.groups_dn25[2] : catalog.groups_dn25[1];
-                    addToBill(ufhGrp, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
+                    addToBill({ ...ufhGrp, _uiUfhOnly: true }, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
 
                     let ufhPump = catalog.pumps_dn25.find(p => p.type === this.state.pumpType) || catalog.pumps_dn25[0];
                     addToBill(ufhPump, tQ, this.getDesc('pump_std'), grpHydro);
@@ -14293,7 +14587,7 @@ const app = {
                     }
                 } else if (activeMixType === 'dn20' || activeMixType === 'dn20_servo') {
                     let ufhGrp = (activeMixType === 'dn20_servo') ? catalog.groups_dn20[2] : catalog.groups_dn20[1];
-                    addToBill(ufhGrp, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
+                    addToBill({ ...ufhGrp, _uiUfhOnly: true }, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
 
                     let ufhPump = catalog.pumps_dn20[0];
                     addToBill(ufhPump, tQ, this.getDesc('pump_std'), grpHydro);
