@@ -6843,14 +6843,22 @@ const app = {
         if (catalog.mixing_units && catalog.groups_dn20 && catalog.groups_dn25) {
             let ufhMixAlts = [
                 catalog.mixing_units[0],
+                catalog.mixing_units.find(m => m.id === 'RDG-0120-008000'),
+                catalog.mixing_units.find(m => m.id === 'RDG-0120-009000'),
+                catalog.mixing_units.find(m => m.id === 'RDG-0120-009001'),
+                catalog.mixing_units.find(m => m.id === 'RDG-0120-005010'),
                 catalog.groups_dn20[1],
                 catalog.groups_dn25[1],
                 catalog.groups_dn20[2],
-                catalog.groups_dn25[2]
+                catalog.groups_dn25[2],
+                catalog.groups_dn20.find(g => g.id === 'SDG-0007-002001'),
+                catalog.groups_dn25.find(g => g.id === 'SDG-0007-002501'),
+                catalog.groups_dn32 && catalog.groups_dn32.find(g => g.id === 'SDG-0007-003201')
             ].filter(Boolean);
             catalog.mixing_units.forEach(mu => { mu.alts = ufhMixAlts; });
-            catalog.groups_dn20.forEach(g => { if (g.id.includes("0002") || g.id.includes("0003")) g.alts = ufhMixAlts; });
-            catalog.groups_dn25.forEach(g => { if (g.id.includes("0002") || g.id.includes("0003")) g.alts = ufhMixAlts; });
+            catalog.groups_dn20.forEach(g => { if (g.id.includes("0002") || g.id.includes("0003") || g.id === 'SDG-0007-002001') g.alts = ufhMixAlts; });
+            catalog.groups_dn25.forEach(g => { if (g.id.includes("0002") || g.id.includes("0003") || g.id === 'SDG-0007-002501') g.alts = ufhMixAlts; });
+            if (catalog.groups_dn32) catalog.groups_dn32.forEach(g => { if (g.id === 'SDG-0007-003201') g.alts = ufhMixAlts; });
         }
         if (catalog.servo_rotary_sensor && catalog.servo_rotary_std) {
             let servoAlts = [catalog.servo_rotary_sensor, catalog.servo_rotary_std];
@@ -6899,6 +6907,17 @@ const app = {
             catalog.manifolds_chrome_blocks.forEach(m => {
                 let stdAlt = catalog.manifolds_rad.find(x => x.loops === m.loops);
                 m.alts = stdAlt ? [stdAlt] : [];
+            });
+        }
+        if (catalog.manifolds && catalog.manifolds_full_kit && catalog.manifolds_shutoff) {
+            const _mfPools = [catalog.manifolds, catalog.manifolds_full_kit, catalog.manifolds_shutoff, catalog.manifolds_shutoff_auto];
+            _mfPools.forEach(pool => {
+                pool.forEach(m => {
+                    m.alts = _mfPools
+                        .filter(p => p !== pool)
+                        .map(p => p.find(x => x.loops === m.loops))
+                        .filter(Boolean);
+                });
             });
         }
         let xpsAlt = catalog.xps_kit[0]; catalog.mats.forEach(m => { m.alts = [xpsAlt]; }); catalog.xps_kit[0].alts = catalog.mats;
@@ -7071,6 +7090,7 @@ const app = {
             if (type === 'dn20_servo') return area <= 150 && flow <= 0.9;
             if (type === 'dn25') return area <= 200 && flow <= 2.1;
             if (type === 'dn25_servo') return area <= 300;
+            if (type === 'dn32_servo') return area <= 500;
         }
         return false;
     },
@@ -7140,13 +7160,13 @@ const app = {
             this.state.sewerType = (this.state.sewerType === 'std') ? 'comfort' : 'std';
         }
         else if (originalId === 'RDG-0015-004002' || originalId === 'RDG-1015-004003') { this.state.hydroArrowType = (this.state.hydroArrowType === 'pro') ? 'standard' : 'pro'; }
-        else if (originalId === 'SDG-0120-001000' || originalId === 'SDG-0002-002001' || originalId === 'SDG-0002-002501' || originalId === 'SDG-0003-002001' || originalId === 'SDG-0003-002501') {
+        else if (originalId === 'SDG-0120-001000' || originalId === 'SDG-0002-002001' || originalId === 'SDG-0002-002501' || originalId === 'SDG-0003-002001' || originalId === 'SDG-0003-002501' || originalId === 'SDG-0007-003201') {
             let tpArea = this.tpArea || 0;
             let brand = this.state.brandMode;
             let nextType = this.state.ufhMixType || 'std';
-            const cycle = ['std', 'dn20', 'dn20_servo', 'dn25', 'dn25_servo'];
+            const cycle = ['std', 'dn20', 'dn20_servo', 'dn25', 'dn25_servo', 'dn32_servo'];
 
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < cycle.length; i++) {
                 let currIdx = cycle.indexOf(nextType);
                 nextType = cycle[(currIdx + 1) % cycle.length];
 
@@ -7163,6 +7183,23 @@ const app = {
             this.state.servoType = (currentServoType === 'std') ? 'sensor' : 'std';
         }
         this.state.showSwapFor = null; this.render();
+    },
+    findManifoldVariant: function (id) {
+        const pools = [catalog.manifolds, catalog.manifolds_full_kit, catalog.manifolds_shutoff, catalog.manifolds_shutoff_auto];
+        for (const pool of pools) {
+            for (const m of pool) {
+                if (m.id === id) return m;
+                if (m.rommer && m.rommer.id === id) return m.rommer;
+            }
+        }
+        return null;
+    },
+    manifoldAttrsFor: function (id) {
+        if (catalog.manifolds.some(x => x.id === id || (x.rommer && x.rommer.id === id))) return { valveType: 'none', airVent: 'none', drainValve: false };
+        if (catalog.manifolds_full_kit.some(x => x.id === id || (x.rommer && x.rommer.id === id))) return { valveType: 'thermo', airVent: 'auto', drainValve: true };
+        if (catalog.manifolds_shutoff.some(x => x.id === id || (x.rommer && x.rommer.id === id))) return { valveType: 'none', airVent: 'auto', drainValve: true };
+        if (catalog.manifolds_shutoff_auto.some(x => x.id === id)) return { valveType: 'none', airVent: 'auto', drainValve: true };
+        return { valveType: 'none', airVent: 'none', drainValve: false };
     },
     getCheapestAlternative: function (item) {
         if (!item) return null;
@@ -7679,6 +7716,58 @@ const app = {
                 alt.isActive = (alt.id === activeId);
             });
         }
+        else if (_origId0.startsWith('SMS-0917') || _origId0.startsWith('SMS-0907') || _origId0.startsWith('SMS-0927')) {
+            let defaultLoops = item.loops || 8;
+            let lookupKey = item.originalId || item.id;
+            for (let catKey in catalog) {
+                if (Array.isArray(catalog[catKey])) {
+                    let found = catalog[catKey].find(x => x.id === lookupKey);
+                    if (found && found.loops) { defaultLoops = found.loops; break; }
+                }
+            }
+            let basicM = catalog.manifolds.find(x => x.loops === defaultLoops) || catalog.manifolds[catalog.manifolds.length - 1];
+            let defaultM = catalog.manifolds_full_kit.find(x => x.loops === defaultLoops) || catalog.manifolds_full_kit[catalog.manifolds_full_kit.length - 1];
+            const _curManifoldSwap = this.state.swaps && this.state.swaps[basicM.id];
+
+            if (isFirstOpen) {
+                this.state.manifoldLoopsFilter = defaultLoops;
+                const _curAttrs = this.manifoldAttrsFor(_curManifoldSwap || defaultM.id);
+                this.state.manifoldValveFilter = _curAttrs.valveType;
+                this.state.manifoldAirVentFilter = _curAttrs.airVent;
+                this.state.manifoldDrainFilter = String(_curAttrs.drainValve);
+            }
+            const _mLoopsF = this.state.manifoldLoopsFilter || defaultLoops;
+            const _mValveF = this.state.manifoldValveFilter || 'all';
+            const _mAirF = this.state.manifoldAirVentFilter || 'all';
+            const _mDrainF = this.state.manifoldDrainFilter || 'all';
+
+            const _byLoops = (arr) => _mLoopsF === 'all' ? arr : arr.filter(x => x.loops === _mLoopsF);
+
+            customAlts = [];
+            _byLoops(catalog.manifolds).forEach(m => {
+                customAlts.push({ id: m.id, name: `Коллектор с расходомерами (${m.loops} вых.)`, brand: 'STOUT', price: m.price, valveType: 'none', airVent: 'none', drainValve: false });
+                if (m.rommer) customAlts.push({ id: m.rommer.id, name: `Коллектор с расходомерами (${m.loops} вых.)`, brand: 'ROMMER', price: m.rommer.price, valveType: 'none', airVent: 'none', drainValve: false });
+            });
+            _byLoops(catalog.manifolds_full_kit).forEach(m => {
+                customAlts.push({ id: m.id, name: `Коллектор с расходомерами, полный комплект (${m.loops} вых.)`, brand: 'STOUT', price: m.price, valveType: 'thermo', airVent: 'auto', drainValve: true });
+                if (m.rommer) customAlts.push({ id: m.rommer.id, name: `Коллектор с расходомерами, полный комплект (${m.loops} вых.)`, brand: 'ROMMER', price: m.rommer.price, valveType: 'thermo', airVent: 'auto', drainValve: true });
+            });
+            _byLoops(catalog.manifolds_shutoff).forEach(m => {
+                customAlts.push({ id: m.id, name: `Коллектор с запорными клапанами (${m.loops} вых.)`, brand: 'STOUT', price: m.price, valveType: 'none', airVent: 'auto', drainValve: true });
+                if (m.rommer) customAlts.push({ id: m.rommer.id, name: `Коллектор с запорными клапанами (${m.loops} вых.)`, brand: 'ROMMER', price: m.rommer.price, valveType: 'none', airVent: 'auto', drainValve: true });
+            });
+            _byLoops(catalog.manifolds_shutoff_auto).forEach(m => {
+                customAlts.push({ id: m.id, name: `Коллектор с запорными клапанами, раздвижные кронштейны (${m.loops} вых.)`, brand: 'ROMMER', price: m.price, valveType: 'none', airVent: 'auto', drainValve: true });
+            });
+
+            if (_mValveF !== 'all') customAlts = customAlts.filter(a => a.valveType === _mValveF);
+            if (_mAirF !== 'all') customAlts = customAlts.filter(a => a.airVent === _mAirF);
+            if (_mDrainF !== 'all') customAlts = customAlts.filter(a => String(a.drainValve) === _mDrainF);
+
+            customAlts.forEach(alt => {
+                alt.isActive = _curManifoldSwap ? (alt.id === _curManifoldSwap) : (alt.id === defaultM.id);
+            });
+        }
         else if (_origId0 === 'well_pump_auto') {
             const _curWellPump = this.state.swaps && this.state.swaps['well_pump_auto'];
             customAlts = catalog.well_pumps.map(p => ({ id: p.id, name: p.name, brand: p.brand || 'ROMMER', price: p.price }));
@@ -7731,9 +7820,10 @@ const app = {
         // Цена выбранного варианта (из swaps, иначе цена исходного товара)
         const _swapId = this.state.swaps && this.state.swaps[_origId0];
         let _selectedPrice = basePrice;
+        let _selectedAltName = '';
         if (customAlts) {
             const _sa = customAlts.find(a => a.isActive || (_swapId && a.id === _swapId));
-            if (_sa) _selectedPrice = _sa.price || basePrice;
+            if (_sa) { _selectedPrice = _sa.price || basePrice; _selectedAltName = _sa.name || ''; }
         }
         const _priceStr = _selectedPrice > 0 ? this.formatPriceHtml(_selectedPrice, true) : '—';
 
@@ -7890,6 +7980,21 @@ const app = {
                         <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
                             Вольтаж: <span style="font-weight:800;">${_acVoltage}</span>
                         </div>
+                        <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
+                            Цена: <span style="font-weight:800;">${_priceStr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (_origId0.startsWith('SMS-0917') || _origId0.startsWith('SMS-0907') || _origId0.startsWith('SMS-0927')) {
+            title.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main); text-transform:none;">Варианты замены</h3>
+                        <span style="font-size:12px; color:var(--text-sec); display:block; margin-top:2px; font-weight:500; text-transform:none;">${item.name || ''}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap;">
+                        ${_selectedAltName ? `<div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">Выбрано: <span style="font-weight:800;">${_selectedAltName}</span></div>` : ''}
                         <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
                             Цена: <span style="font-weight:800;">${_priceStr}</span>
                         </div>
@@ -8160,6 +8265,98 @@ const app = {
                 `<span onclick="app.setWellAutoDrive('all')" ${_b(_wad==='all')}>Все</span>` +
                 `</div>` +
                 `</div>`;
+        } else if (_origId0.startsWith('SMS-0917') || _origId0.startsWith('SMS-0907') || _origId0.startsWith('SMS-0927')) {
+            const _mValveF = this.state.manifoldValveFilter || 'all';
+            const _mAirF = this.state.manifoldAirVentFilter || 'all';
+            const _mDrainF = this.state.manifoldDrainFilter || 'all';
+            const _mLoopsF = this.state.manifoldLoopsFilter || 'all';
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            const _mLoopsAvail = [...new Set([
+                ...catalog.manifolds.map(x => x.loops),
+                ...catalog.manifolds_full_kit.map(x => x.loops),
+                ...catalog.manifolds_shutoff.map(x => x.loops),
+                ...catalog.manifolds_shutoff_auto.map(x => x.loops)
+            ])].sort((a, b) => a - b);
+            const _mLoopsBtns = _mLoopsAvail.map(l => `<span onclick="app.setManifoldLoopsFilter(${l})" ${_b(_mLoopsF === l)}>${l}</span>`).join('');
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Краны:</span>` +
+                `<span onclick="app.setManifoldValveFilter('none')" ${_b(_mValveF==='none')}>Без кранов</span>` +
+                `<span onclick="app.setManifoldValveFilter('thermo')" ${_b(_mValveF==='thermo')}>Краны с термометрами</span>` +
+                `<span onclick="app.setManifoldValveFilter('all')" ${_b(_mValveF==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Воздухоотводчик:</span>` +
+                `<span onclick="app.setManifoldAirVentFilter('none')" ${_b(_mAirF==='none')}>Нет</span>` +
+                `<span onclick="app.setManifoldAirVentFilter('manual')" ${_b(_mAirF==='manual')}>Ручной</span>` +
+                `<span onclick="app.setManifoldAirVentFilter('auto')" ${_b(_mAirF==='auto')}>Автоматический</span>` +
+                `<span onclick="app.setManifoldAirVentFilter('all')" ${_b(_mAirF==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Сливной кран:</span>` +
+                `<span onclick="app.setManifoldDrainFilter('false')" ${_b(_mDrainF==='false')}>Нет</span>` +
+                `<span onclick="app.setManifoldDrainFilter('true')" ${_b(_mDrainF==='true')}>Да</span>` +
+                `<span onclick="app.setManifoldDrainFilter('all')" ${_b(_mDrainF==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Выходов:</span>` +
+                _mLoopsBtns +
+                `<span onclick="app.setManifoldLoopsFilter('all')" ${_b(_mLoopsF==='all')}>Все</span>` +
+                `</div>` +
+                `</div>`;
+        } else if (_origId0 === 'SDG-0120-001000' || _origId0 === 'SDG-0002-002001' || _origId0 === 'SDG-0002-002501' || _origId0 === 'SDG-0003-002001' || _origId0 === 'SDG-0003-002501' || _origId0 === 'SDG-0007-003201') {
+            const _umClassify = (id) => {
+                if (id === 'SDG-0120-001000' || id === 'RDG-0120-008000' || id === 'RDG-0120-009000' || id === 'RDG-0120-009001' || id === 'RDG-0120-005010') return { cat: 'unit' };
+                if (id === 'SDG-0002-002001') return { cat: 'group', dn: 'dn20', kind: 'thermo' };
+                if (id === 'SDG-0002-002501') return { cat: 'group', dn: 'dn25', kind: 'thermo' };
+                if (id === 'SDG-0003-002001' || id === 'SDG-0007-002001') return { cat: 'group', dn: 'dn20', kind: 'servo' };
+                if (id === 'SDG-0003-002501' || id === 'SDG-0007-002501') return { cat: 'group', dn: 'dn25', kind: 'servo' };
+                if (id === 'SDG-0007-003201') return { cat: 'group', dn: 'dn32', kind: 'servo' };
+                return { cat: 'group' };
+            };
+            if (isFirstOpen) {
+                const _cur = _umClassify(_origId0);
+                this.state.ufhMixCategoryFilter = _cur.cat;
+                this.state.ufhMixDnFilter = _cur.dn || 'all';
+                this.state.ufhMixKindFilter = _cur.kind || 'all';
+            }
+            const _umCat = this.state.ufhMixCategoryFilter || 'group';
+            const _umDn = this.state.ufhMixDnFilter || 'all';
+            const _umKind = this.state.ufhMixKindFilter || 'all';
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Тип:</span>` +
+                `<span onclick="app.setUfhMixCategoryFilter('unit')" ${_b(_umCat==='unit')}>Узел подмеса</span>` +
+                `<span onclick="app.setUfhMixCategoryFilter('group')" ${_b(_umCat==='group')}>Насосная группа</span>` +
+                `</div>` +
+                (_umCat === 'group' ?
+                    `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                    `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Типоразмер:</span>` +
+                    `<span onclick="app.setUfhMixDnFilter('dn20')" ${_b(_umDn==='dn20')}>DN20</span>` +
+                    `<span onclick="app.setUfhMixDnFilter('dn25')" ${_b(_umDn==='dn25')}>DN25</span>` +
+                    `<span onclick="app.setUfhMixDnFilter('dn32')" ${_b(_umDn==='dn32')}>DN32</span>` +
+                    `<span onclick="app.setUfhMixDnFilter('all')" ${_b(_umDn==='all')}>Все</span>` +
+                    `</div>` +
+                    `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                    `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Клапан:</span>` +
+                    `<span onclick="app.setUfhMixKindFilter('thermo')" ${_b(_umKind==='thermo')}>Термостатическая</span>` +
+                    `<span onclick="app.setUfhMixKindFilter('servo')" ${_b(_umKind==='servo')}>Под сервопривод</span>` +
+                    `<span onclick="app.setUfhMixKindFilter('all')" ${_b(_umKind==='all')}>Все</span>` +
+                    `</div>`
+                    : '') +
+                `</div>`;
+            alts = alts.filter(a => {
+                const c = _umClassify(a.id);
+                if (c.cat !== _umCat) return false;
+                if (c.cat === 'group') {
+                    if (_umDn !== 'all' && c.dn !== _umDn) return false;
+                    if (_umKind !== 'all' && c.kind !== _umKind) return false;
+                }
+                return true;
+            });
         } else if (catalog.ufh_mech.find(x => x.id === item.id) || catalog.ufh_electro.find(x => x.id === item.id) || catalog.thermostats_stout.find(x => x.id === item.id)) {
             if (isFirstOpen) {
                 const _curTh = catalog.ufh_mech.find(x => x.id === item.id) || catalog.ufh_electro.find(x => x.id === item.id) || catalog.thermostats_stout.find(x => x.id === item.id);
@@ -8415,15 +8612,19 @@ const app = {
             altsToProcess.forEach(alt => {
                 if (!alt) return;
 
-                let isUfhMix = (item.originalId === 'SDG-0120-001000' || item.originalId === 'SDG-0002-002001' || item.originalId === 'SDG-0002-002501' || item.originalId === 'SDG-0003-002001' || item.originalId === 'SDG-0003-002501');
+                let isUfhMix = (item.originalId === 'SDG-0120-001000' || item.originalId === 'SDG-0002-002001' || item.originalId === 'SDG-0002-002501' || item.originalId === 'SDG-0003-002001' || item.originalId === 'SDG-0003-002501' || item.originalId === 'SDG-0007-003201');
                 if (isUfhMix) {
                     let altType = 'std';
                     if (alt.id === 'SDG-0002-002001') altType = 'dn20';
                     else if (alt.id === 'SDG-0002-002501') altType = 'dn25';
-                    else if (alt.id === 'SDG-0003-002001') altType = 'dn20_servo';
-                    else if (alt.id === 'SDG-0003-002501') altType = 'dn25_servo';
+                    else if (alt.id === 'SDG-0003-002001' || alt.id === 'SDG-0007-002001') altType = 'dn20_servo';
+                    else if (alt.id === 'SDG-0003-002501' || alt.id === 'SDG-0007-002501') altType = 'dn25_servo';
+                    else if (alt.id === 'SDG-0007-003201') altType = 'dn32_servo';
 
-                    if (!this.isUfhMixTypeCompatible(altType, this.tpArea || 0, this.state.brandMode)) {
+                    // Ручной выбор DN/типа клапана через фильтры модалки отменяет автоподбор по мощности/площади
+                    let _manualUfhOverride = (this.state.ufhMixDnFilter && this.state.ufhMixDnFilter !== 'all') || (this.state.ufhMixKindFilter && this.state.ufhMixKindFilter !== 'all');
+
+                    if (!_manualUfhOverride && !this.isUfhMixTypeCompatible(altType, this.tpArea || 0, this.state.brandMode)) {
                         return;
                     }
 
@@ -8431,7 +8632,7 @@ const app = {
                     let brand = this.state.brandMode;
                     let useAnalogSec2 = this.state.sectionAnalog && this.state.sectionAnalog['2.4. Гидравлика котельной'];
                     let radNeedsDn25 = (pwr > 20) || (brand === 'rommer') || useAnalogSec2;
-                    if (radNeedsDn25 && (altType === 'dn20' || altType === 'dn20_servo')) {
+                    if (!_manualUfhOverride && radNeedsDn25 && (altType === 'dn20' || altType === 'dn20_servo')) {
                         return;
                     }
                 }
@@ -9557,12 +9758,13 @@ const app = {
             if (chosenId === 'pro' || chosenId.includes("RDG-1015-004003")) this.state.hydroArrowType = 'pro';
             else this.state.hydroArrowType = 'standard';
         }
-        else if (originalId === 'SDG-0120-001000' || originalId === 'SDG-0002-002001' || originalId === 'SDG-0002-002501' || originalId === 'SDG-0003-002001' || originalId === 'SDG-0003-002501') {
+        else if (originalId === 'SDG-0120-001000' || originalId === 'SDG-0002-002001' || originalId === 'SDG-0002-002501' || originalId === 'SDG-0003-002001' || originalId === 'SDG-0003-002501' || originalId === 'SDG-0007-003201') {
             if (chosenId === 'SDG-0120-001000' || chosenId === 'RDG-0120-008100') this.state.ufhMixType = 'std';
             else if (chosenId === 'SDG-0002-002001') this.state.ufhMixType = 'dn20';
             else if (chosenId === 'SDG-0002-002501' || chosenId === 'RDG-1002-002501') this.state.ufhMixType = 'dn25';
             else if (chosenId === 'SDG-0003-002001') this.state.ufhMixType = 'dn20_servo';
             else if (chosenId === 'SDG-0003-002501' || chosenId === 'RDG-1003-002501') this.state.ufhMixType = 'dn25_servo';
+            else if (chosenId === 'SDG-0007-003201') this.state.ufhMixType = 'dn32_servo';
         }
         else if (originalId === 'SVM-0025-230017' || originalId === 'SVM-0005-230001') {
             if (chosenId === 'SVM-0025-230017' || chosenId === 'RVM-0015-230017') this.state.servoType = 'sensor';
@@ -10787,6 +10989,22 @@ const app = {
         this.state.wellAutoDrive = val;
         if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
     },
+    setManifoldValveFilter: function (val) {
+        this.state.manifoldValveFilter = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setManifoldAirVentFilter: function (val) {
+        this.state.manifoldAirVentFilter = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setManifoldDrainFilter: function (val) {
+        this.state.manifoldDrainFilter = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setManifoldLoopsFilter: function (val) {
+        this.state.manifoldLoopsFilter = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
     setThermoCtrl: function (val) {
         this.state.thermoCtrl = val;
         if (val !== 'all') { this.state.ufhCtrl = (val === 'electronic') ? 'electro' : 'mech'; this.syncUI(); this.render(); }
@@ -10810,6 +11028,19 @@ const app = {
     },
     setActuatorVoltage: function (val) {
         this.state.actuatorVoltage = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setUfhMixCategoryFilter: function (val) {
+        this.state.ufhMixCategoryFilter = val;
+        if (val === 'unit') { this.state.ufhMixDnFilter = 'all'; this.state.ufhMixKindFilter = 'all'; }
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setUfhMixDnFilter: function (val) {
+        this.state.ufhMixDnFilter = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setUfhMixKindFilter: function (val) {
+        this.state.ufhMixKindFilter = val;
         if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
     },
     toggleSwapSort: function (field) {
@@ -14022,7 +14253,18 @@ const app = {
                 let defaultServoType = (tQ > 1) ? 'std' : 'sensor';
                 let activeServoType = this.state.servoType || defaultServoType;
 
-                if (activeMixType === 'dn25' || activeMixType === 'dn25_servo') {
+                if (activeMixType === 'dn32_servo') {
+                    let ufhGrp = catalog.groups_dn32.find(g => g.id === 'SDG-0007-003201');
+                    addToBill(ufhGrp, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
+
+                    let ufhPump = catalog.pumps_dn25.find(p => p.type === this.state.pumpType) || catalog.pumps_dn25[0];
+                    addToBill(ufhPump, tQ, this.getDesc('pump_std'), grpHydro);
+
+                    let servoItem = (activeServoType === 'sensor') ? catalog.servo_rotary_sensor : catalog.servo_rotary_std;
+                    if (servoItem) {
+                        addToBill(servoItem, tQ, "Сервопривод для автоматического управления трехходовым смесительным клапаном группы отопления.", grpHydro);
+                    }
+                } else if (activeMixType === 'dn25' || activeMixType === 'dn25_servo') {
                     let ufhGrp = (activeMixType === 'dn25_servo') ? catalog.groups_dn25[2] : catalog.groups_dn25[1];
                     addToBill(ufhGrp, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
 
@@ -14058,14 +14300,6 @@ const app = {
             let mixItem = { ...catalog.mixing_units[0] };
             let desc = this.getDesc('ufh_mix', tpArea);
             let pumpItem = withRommerAlt(catalog.pumps_mix[0]);
-
-            mixItem.alts = [
-                catalog.mixing_units[0],
-                catalog.groups_dn20[1],
-                catalog.groups_dn25[1],
-                catalog.groups_dn20[2],
-                catalog.groups_dn25[2]
-            ].filter(Boolean);
 
             addToBill(mixItem, 1, desc, grpHydro);
             if (pumpItem) {
@@ -14785,7 +15019,7 @@ const app = {
                     addToBill(pipe1, q1, this.getDesc('ufh_pipe', tpMeters), grpPipe);
                 }
             }
-            let loops = 0, mans = 0;
+            let loops = 0, mans = 0, mansNoFitting = 0;
             const proc = (a, stepVal, lbl) => {
                 if (a <= 0) return;
                 let h = stepVal / 1000;
@@ -14795,16 +15029,23 @@ const app = {
                 let n = Math.ceil(l / 12);
                 for (let i = 0; i < n; i++) {
                     let sz = Math.floor(l / n) + (i < (l % n) ? 1 : 0);
-                    let m = catalog.manifolds.find(x => x.loops === sz);
-                    if (m) {
-                        addToBill({ ...m, name: `Коллектор ТП ${sz} вых (${lbl})` }, 1, this.getDesc('manifold', sz, 'ufh'), grpPipe);
+                    let stdM = catalog.manifolds.find(x => x.loops === sz);
+                    if (stdM) {
+                        let swapVal = this.state.swaps && this.state.swaps[stdM.id];
+                        let defaultM = catalog.manifolds_full_kit.find(x => x.loops === sz) || catalog.manifolds_full_kit[catalog.manifolds_full_kit.length - 1];
+                        let mSel = (swapVal && this.findManifoldVariant(swapVal)) || defaultM || stdM;
+                        let dispLoops = mSel.loops || sz;
+                        addToBill({ ...mSel, originalId: stdM.id, name: `Коллектор ТП ${dispLoops} вых (${lbl})` }, 1, this.getDesc('manifold', dispLoops, 'ufh'), grpPipe);
                         mans++;
+                        let mAttrs = this.manifoldAttrsFor(mSel.id);
+                        if (mAttrs.airVent === 'none' && !mAttrs.drainValve) mansNoFitting++;
                     }
                 }
             };
             proc(this.state.tp1, stepVal1, "1 этаж");
             proc(this.state.floors === 2 ? this.state.tp2 : 0, stepVal2, "2 этаж");
-            addToBill(catalog.parts[0], mans * 2, "Концевые фитинги.", grpPipe); addToBill(catalog.parts[3], loops * 2, "Евроконус 16 (ТП).", grpPipe); addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.", grpPipe);
+            if (mansNoFitting > 0) addToBill(catalog.parts[0], mansNoFitting * 2, "Концевые фитинги.", grpPipe);
+            addToBill(catalog.parts[3], loops * 2, "Евроконус 16 (ТП).", grpPipe); addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.", grpPipe);
             addToBill(catalog.protective_sleeves[0], loops, "Втулка красная.", grpPipe); addToBill(catalog.protective_sleeves[1], loops, "Втулка синяя.", grpPipe); addToBill(catalog.label_kits[1], 1, "Наклейки.", grpPipe);
             let grpIns = "4.2. УТЕПЛИТЕЛЬ И КРЕПЁЖ";
 
