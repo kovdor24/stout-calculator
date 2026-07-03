@@ -16739,6 +16739,11 @@ const app = {
 
         if (this.state.brandMode !== 'stout') { el.innerHTML = ''; return; }
 
+        // Запускаем (или продолжаем) загрузку рейтинга в фоне
+        if (!this._stoutRating || this._stoutRating.status === 'error') {
+            this.fetchStoutRating(); // async, перерисует виджет сам после загрузки
+        }
+
         const list = this.currentEquipmentList || [];
 
         // Подсчёт количества по категориям конкурса
@@ -16853,6 +16858,7 @@ const app = {
                     <div class="cw-xp-bar">${xpBar}</div>
                     ${xpLabel}
                 </div>
+                ${this._renderRatingBlock()}
                 <div class="cw-achievements">
                     ${earnedAch}${lockedAch}
                 </div>
@@ -16866,6 +16872,172 @@ const app = {
     toggleContestPrizes() {
         this._contestPrizesOpen = !this._contestPrizesOpen;
         this.renderContestWidget();
+    },
+
+    // === РЕЙТИНГ STOUT: рендер блока ===
+    _renderRatingBlock() {
+        const st = this._stoutRating;
+        if (!st || st.status === 'loading') {
+            return `<div class="cw-rating-block loading">
+                <span class="cw-rating-icon">⏳</span>
+                <span class="cw-rating-text">Загружаю рейтинг…</span>
+            </div>`;
+        }
+        if (st.status === 'not-found') {
+            return `<div class="cw-rating-block not-found">
+                <span class="cw-rating-icon">🔍</span>
+                <div class="cw-rating-text">
+                    <div class="cw-rating-label">Вы ещё не участвуете в конкурсе</div>
+                    <div class="cw-rating-sub">Данные с сайта profi-stout.pro</div>
+                </div>
+                <button class="cw-rating-refresh" onclick="app.refreshStoutRating()" title="Обновить рейтинг">↻</button>
+            </div>`;
+        }
+        if (st.status === 'error') {
+            return `<div class="cw-rating-block not-found">
+                <span class="cw-rating-icon">⚠️</span>
+                <div class="cw-rating-text">
+                    <div class="cw-rating-label">Не удалось загрузить рейтинг</div>
+                    <div class="cw-rating-sub">Нет соединения с сайтом STOUT</div>
+                </div>
+                <button class="cw-rating-refresh" onclick="app.refreshStoutRating()" title="Повторить">↻</button>
+            </div>`;
+        }
+        // found
+        const medal = st.place === 1 ? '🥇' : st.place === 2 ? '🥈' : st.place === 3 ? '🥉' : '🏅';
+        return `<div class="cw-rating-block found">
+            <span class="cw-rating-medal">${medal}</span>
+            <div class="cw-rating-text">
+                <div class="cw-rating-label">Место в конкурсе STOUT&nbsp;2026</div>
+                <div class="cw-rating-position">#${st.place} · ${st.name}</div>
+                <div class="cw-rating-sub">${st.points.toLocaleString('ru-RU')} баллов · из ${st.total} участников</div>
+            </div>
+            <button class="cw-rating-refresh" onclick="app.refreshStoutRating()" title="Обновить рейтинг">↻</button>
+        </div>`;
+    },
+
+    // === ЗАГРУЗКА РЕЙТИНГА STOUT через официальный API ===
+    async fetchStoutRating() {
+        const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 часа
+        const now = Date.now();
+        if (this._stoutRatingTs && (now - this._stoutRatingTs) < CACHE_TTL &&
+            this._stoutRating && this._stoutRating.status !== 'error') {
+            return;
+        }
+
+        this._stoutRating = { status: 'loading' };
+        this.renderContestWidget();
+
+        const BASE = 'https://profi-stout.promo-online.pro';
+        const CREDS = { login: '+79826109548', password: 'ibatullin2020' };
+        const TIMEOUT_MS = 10000; // 10 секунд на каждый запрос
+
+        // Хелпер: fetch с таймаутом
+        const fetchT = (url, opts) => {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+            return fetch(url, { ...opts, signal: ctrl.signal })
+                .finally(() => clearTimeout(timer));
+        };
+
+        try {
+            // Шаг 1: Получаем токен (из кэша или логинимся)
+            let token = this._stoutToken || localStorage.getItem('_stout_token');
+            let profileId = this._stoutProfileId || localStorage.getItem('_stout_profile_id');
+
+            if (!token) {
+                const loginResp = await fetchT(`${BASE}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(CREDS)
+                });
+                if (!loginResp.ok) throw new Error('Login failed: ' + loginResp.status);
+                const loginData = await loginResp.json();
+                token = loginData.token;
+                profileId = loginData.profile_id;
+                if (!token) throw new Error('No token in login response');
+                this._stoutToken = token;
+                this._stoutProfileId = profileId;
+                localStorage.setItem('_stout_token', token);
+                localStorage.setItem('_stout_profile_id', String(profileId));
+            }
+
+            const authHeaders = {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${token}`
+            };
+
+            // Шаг 2: Получаем список конкурсов, берём актуальный (is_actual=true)
+            let taskId = this._stoutTaskId;
+            if (!taskId) {
+                const tasksResp = await fetchT(`${BASE}/tasks/api/task/history-list`, {
+                    method: 'POST',
+                    headers: authHeaders,
+                    body: JSON.stringify({ type_id: 1, profile_id: profileId })
+                });
+                if (!tasksResp.ok) throw new Error('Tasks failed: ' + tasksResp.status);
+                const tasksData = await tasksResp.json();
+                const tasks = tasksData.tasks || tasksData || [];
+                const actualTask = Array.isArray(tasks)
+                    ? (tasks.find(t => t.is_actual) || tasks[0])
+                    : null;
+                if (!actualTask) throw new Error('No task found');
+                taskId = actualTask.id;
+                this._stoutTaskId = taskId;
+            }
+
+            // Шаг 3: Получаем рейтинг (список победителей)
+            const winnersResp = await fetch(`${BASE}/tasks/api/task/winners-list`, {
+                method: 'POST',
+                headers: authHeaders,
+                body: JSON.stringify({ task_id: taskId, profile_id: profileId })
+            });
+            if (!winnersResp.ok) {
+                if (winnersResp.status === 401 || winnersResp.status === 403) {
+                    this._stoutToken = null;
+                    localStorage.removeItem('_stout_token');
+                }
+                throw new Error('Winners failed: ' + winnersResp.status);
+            }
+            const winnersData = await winnersResp.json();
+            const winners = winnersData.winners || winnersData || [];
+
+            if (!Array.isArray(winners) || winners.length === 0) {
+                this._stoutRatingTs = Date.now();
+                this._stoutRating = { status: 'not-found', total: 0 };
+                this.renderContestWidget();
+                return;
+            }
+
+            // Шаг 4: Ищем себя по profile_id (точное совпадение)
+            const me = winners.find(w => String(w.profile_id) === String(profileId));
+
+            this._stoutRatingTs = Date.now();
+
+            if (me) {
+                const place = me.order_number || (winners.indexOf(me) + 1);
+                const name = me.name || me.full_name || me.fio || '';
+                const points = me.points || me.bonuses || me.score || 0;
+                this._stoutRating = { status: 'found', place, name, points, total: winners.length };
+            } else {
+                this._stoutRating = { status: 'not-found', total: winners.length };
+            }
+
+        } catch (e) {
+            console.warn('STOUT rating fetch error:', e);
+            this._stoutRating = { status: 'error' };
+        }
+        this.renderContestWidget();
+    },
+
+    refreshStoutRating() {
+        this._stoutRatingTs = 0;
+        this._stoutRating = null;
+        this._stoutToken = null;
+        this._stoutTaskId = null;
+        localStorage.removeItem('_stout_token');
+        localStorage.removeItem('_stout_profile_id');
+        this.fetchStoutRating();
     },
 
     showContestToast(label, pts, type = 'gain') {

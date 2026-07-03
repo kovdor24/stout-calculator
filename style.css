@@ -6500,6 +6500,81 @@ body.dark-mode .cw-achieve.earned {
 
 .cw-achieve.locked { opacity: 0.45; }
 
+/* Блок рейтинга STOUT (динамический) */
+.cw-rating-block {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-light);
+    min-height: 36px;
+}
+.cw-rating-block.loading {
+    opacity: 0.6;
+}
+.cw-rating-block.found {
+    border-color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+.cw-rating-block.not-found {
+    border-color: var(--border);
+    background: var(--surface-light);
+    opacity: 0.8;
+}
+.cw-rating-medal {
+    font-size: 22px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+.cw-rating-icon {
+    font-size: 15px;
+    flex-shrink: 0;
+}
+.cw-rating-text {
+    flex: 1;
+    min-width: 0;
+}
+.cw-rating-label {
+    font-size: 10.5px;
+    color: var(--text-sec);
+    font-weight: 500;
+}
+.cw-rating-position {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cw-rating-sub {
+    font-size: 10px;
+    color: var(--text-sec);
+    margin-top: 1px;
+}
+.cw-rating-refresh {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--text-sec);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, border-color 0.15s;
+    padding: 0;
+}
+.cw-rating-refresh:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
 /* Витрина призов */
 .cw-prizes-toggle {
     display: flex;
