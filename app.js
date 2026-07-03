@@ -5055,7 +5055,9 @@ const app = {
         };
         const encoded = await encodePayload(payload);
         const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
-        return `${baseOrigin}/invoice.html?data=${encoded}`;
+        // "data" передаётся во фрагменте (#), а не в query (?), так как фрагмент не отправляется
+        // на сервер — это позволяет избежать ошибки 414 "URI Too Long" для больших смет.
+        return `${baseOrigin}/invoice.html#data=${encoded}`;
     },
     generateCustomInvoiceId: function () {
         // Генерируем стандартный UUID v4, совместимый с типом UUID в Supabase

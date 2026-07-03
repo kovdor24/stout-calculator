@@ -2613,6 +2613,16 @@
             }
         }
 
+        function getDataParam() {
+            // "data" может быть либо в query (?data=...), либо во фрагменте (#data=...).
+            // Фрагмент не отправляется на сервер, поэтому используется для больших смет,
+            // чтобы избежать ошибки 414 "URI Too Long".
+            const fromQuery = new URLSearchParams(window.location.search).get('data');
+            if (fromQuery) return fromQuery;
+            const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+            return new URLSearchParams(hash).get('data');
+        }
+
         async function decodePayload(str) {
             if (str.startsWith('c_')) {
                 const raw = decodeURIComponent(str.substring(2));
@@ -2649,7 +2659,7 @@
 
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
-            const dataParam = urlParams.get('data');
+            const dataParam = getDataParam();
             invoiceId = id;
 
             const preloader = document.getElementById('preloader');
@@ -3130,8 +3140,7 @@
             const getInvoiceContainer = document.getElementById('get_invoice_container');
             const btnGetInvoice = document.getElementById('btn_get_invoice');
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const isOffline = urlParams.has('data');
+            const isOffline = !!getDataParam();
 
             if (isOffline) {
                 if (confirmBtn) confirmBtn.style.display = 'none';
