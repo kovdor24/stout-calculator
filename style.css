@@ -1584,6 +1584,54 @@ body.menu-open .mobile-menu-backdrop {
     gap: 3px;
 }
 
+.qty-num-input {
+    width: 30px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 13px;
+    font-family: inherit;
+    color: inherit;
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--border);
+    padding: 0;
+    -moz-appearance: textfield;
+}
+
+.qty-num-input::-webkit-outer-spin-button,
+.qty-num-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.qty-step {
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.2s;
+    cursor: pointer;
+    width: 21px;
+    height: 21px;
+    line-height: 21px;
+    text-align: center;
+    border-radius: 4px;
+    background: var(--surface-light);
+    color: var(--text-sec);
+    font-weight: 800;
+    font-size: 16px;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.qty-step:hover {
+    background: var(--primary);
+    color: #fff;
+}
+
+.qty-wrap.qty-open .qty-step {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 .warn-box {
     display: block;
     margin-top: 5px;
@@ -2006,27 +2054,33 @@ body.menu-open .mobile-menu-backdrop {
     width: 100% !important;
     max-width: none !important;
     box-sizing: border-box !important;
-    margin: 10px 0 !important;
-    padding: 14px 20px !important;
-    border: 1px dashed var(--primary) !important;
-    border-radius: 12px !important;
-    color: var(--primary) !important;
+    margin: 0 !important;
+    padding: 8px 10px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    color: var(--text-sec) !important;
     cursor: pointer !important;
-    font-weight: 700 !important;
-    font-size: 14px !important;
+    font-weight: 400 !important;
+    font-size: 12px !important;
     transition: all 0.2s ease !important;
     text-align: center !important;
-    background: rgba(37, 99, 235, 0.03) !important;
+    background: transparent !important;
+    opacity: 0.7;
 }
 
 .btn-add-custom:hover {
-    background: rgba(37, 99, 235, 0.08) !important;
-    border-style: solid !important;
+    background: var(--surface-light) !important;
+    color: var(--primary) !important;
+    opacity: 1;
 }
 
 body.dark-mode .btn-add-custom {
-    background: rgba(59, 130, 246, 0.05) !important;
-    border-color: #3b82f6 !important;
+    background: transparent !important;
+    color: var(--text-sec) !important;
+}
+
+body.dark-mode .btn-add-custom:hover {
+    background: rgba(59, 130, 246, 0.1) !important;
     color: #3b82f6 !important;
 }
 
@@ -3751,6 +3805,8 @@ body.dark-mode .header-totals-block {
 
     /* Кнопки opt/qty скрываем */
     .qty-wrap .opt-btn { display: none !important; }
+    .qty-wrap .qty-step { display: none !important; }
+    .qty-num-input { border-bottom: none !important; pointer-events: none !important; }
     .mob-mult { display: none !important; }
 
     /* Мобильный серый фон для qty/unit убираем */
@@ -4615,6 +4671,162 @@ body.dark-mode .calc-dialog-btn-cancel:hover {
     background: #2563EB;
 }
 
+.eq-search-card {
+    max-width: 480px;
+}
+
+.eq-name-wrap {
+    position: relative;
+}
+
+.eq-name-wrap input {
+    padding-right: 42px !important;
+}
+
+.eq-mic-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--text-sec);
+    transition: 0.2s;
+}
+
+.eq-mic-btn:hover {
+    background: var(--surface-light);
+    color: var(--primary);
+}
+
+.eq-mic-btn.listening {
+    color: #EF4444;
+    animation: eq-mic-pulse 1s ease-in-out infinite;
+}
+
+@keyframes eq-mic-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.eq-search-results {
+    display: none;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-light);
+}
+
+.eq-search-results.open {
+    display: block;
+}
+
+.eq-search-nomatch {
+    margin: 0;
+    font-size: 12px;
+    color: var(--warn-text, #b45309);
+    background: var(--warn-bg, rgba(245, 158, 11, 0.1));
+    border: 1px solid var(--warn-border, rgba(245, 158, 11, 0.3));
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.eq-search-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.eq-search-item:last-child {
+    border-bottom: none;
+}
+
+.eq-search-item:hover {
+    background: var(--primary-light);
+}
+
+.eq-search-item-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.eq-search-item-meta {
+    font-size: 11px;
+    color: var(--text-sec);
+}
+
+.eq-search-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.eq-price-input,
+.eq-qty-input {
+    -moz-appearance: textfield;
+}
+
+/* Тот же бордер/фон, что и у поля поиска (.calc-dialog-input), а не тёмный от общего
+   правила body.dark-mode input[type="number"] — оно специфичнее и иначе перебивает */
+body.dark-mode input[type="number"].eq-price-input,
+body.dark-mode input[type="number"].eq-qty-input {
+    background: #111827;
+    border: 1px solid #4B5563;
+    color: var(--text-main);
+}
+
+.eq-price-input::-webkit-outer-spin-button,
+.eq-price-input::-webkit-inner-spin-button,
+.eq-qty-input::-webkit-outer-spin-button,
+.eq-qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.eq-search-row {
+    display: flex;
+    gap: 8px;
+}
+
+.eq-search-label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-sec);
+    line-height: 1.5;
+    flex: 1;
+}
+
+.eq-qty-label {
+    max-width: 100px;
+    flex: 0 0 100px;
+}
+
+.eq-qty-wrap {
+    width: 100%;
+}
+
+.eq-qty-wrap .eq-qty-input {
+    width: 40px;
+    text-align: center;
+    padding: 10px 4px;
+}
+
 /* === ИСПРАВЛЕНИЯ МОБИЛЬНОЙ ВЕРСИИ И ГОРИЗОНТАЛЬНОГО СКРОЛЛА === */
 @media screen and (max-width: 768px) {
     .input-panel {
@@ -4975,11 +5187,17 @@ body.html2pdf-printing .col-sku::before  { content: "" !important; }
 
 /* Hide mobile-specific buttons and elements */
 body.html2pdf-printing .qty-wrap .opt-btn,
+body.html2pdf-printing .qty-wrap .qty-step,
 body.html2pdf-printing .swap-cycle-btn,
 body.html2pdf-printing .swap-alt-badge,
 body.html2pdf-printing .work-del-btn,
 body.html2pdf-printing .mob-mult {
     display: none !important;
+}
+
+body.html2pdf-printing .qty-num-input {
+    border-bottom: none !important;
+    pointer-events: none !important;
 }
 
 body.html2pdf-printing .col-qty, 
@@ -6575,124 +6793,57 @@ body.dark-mode .cw-achieve.earned {
     border-color: var(--primary);
 }
 
-/* Витрина призов */
-.cw-prizes-toggle {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    width: 100%;
-    background: none;
-    border: 1px dashed var(--border);
+/* Правила конкурса */
+.cw-rules-details {
+    margin-top: 10px;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 11.5px;
+    background: var(--surface-light);
+    overflow: hidden;
+}
+
+.cw-rules-summary {
+    padding: 8px 10px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--text-sec);
     cursor: pointer;
-    text-align: left;
+    user-select: none;
     transition: background 0.15s, color 0.15s;
-}
-
-.cw-prizes-toggle:hover {
-    background: var(--surface-light);
-    color: var(--primary);
-}
-
-.cw-prizes-arrow { margin-left: auto; font-size: 10px; }
-
-.cw-prizes-list {
     display: flex;
-    flex-direction: column;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-    background: var(--surface-light);
+    align-items: center;
 }
 
-.cw-prize {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 7px 10px;
-    border-bottom: 1px solid var(--border);
-    transition: background 0.2s;
-}
-
-.cw-prize:last-child { border-bottom: none; }
-
-.cw-prize.can-afford {
-    background: #f0fdf4;
-}
-
-body.dark-mode .cw-prize.can-afford {
-    background: #052e16;
-}
-
-.cw-prize-emoji { flex-shrink: 0; font-size: 16px; line-height: 1.4; }
-
-.cw-prize-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-}
-
-.cw-prize-row {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 6px;
-}
-
-.cw-prize-name {
-    font-size: 11.5px;
-    font-weight: 600;
-    color: var(--text-main);
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.cw-prize.can-afford .cw-prize-name { color: #15803d; }
-body.dark-mode .cw-prize.can-afford .cw-prize-name { color: #4ade80; }
-
-.cw-prize-pts {
-    font-size: 10.5px;
-    font-weight: 700;
-    color: var(--primary);
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.cw-prize-status {
-    font-size: 10.5px;
-    color: var(--text-sec);
-    line-height: 1;
-}
-
-.cw-prize-status.ok {
-    color: #16a34a;
-    font-weight: 700;
-}
-
-body.dark-mode .cw-prize-status.ok { color: #4ade80; }
-
-.cw-prize-progress {
-    height: 4px;
+.cw-rules-summary:hover {
     background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
+    color: var(--primary);
 }
 
-.cw-prize-progress-fill {
-    height: 100%;
-    background: var(--primary);
-    border-radius: 2px;
-    transition: width 0.4s ease;
-    min-width: 2px;
+.cw-rules-content {
+    padding: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--text-main);
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.cw-rules-content p {
+    margin: 0 0 6px 0;
+}
+
+.cw-rules-content p:last-child {
+    margin-bottom: 0;
+}
+
+.cw-rules-content ul {
+    margin: 0 0 8px 0;
+    padding-left: 16px;
+}
+
+.cw-rules-content li {
+    margin-bottom: 3px;
 }
 
 /* Квест STATUS */

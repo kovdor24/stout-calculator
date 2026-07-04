@@ -1629,6 +1629,110 @@ const catalog = {
         { id: "SFA-0031-000120", name: "Фиксатор поворота 90° (20 мм)", price: 158, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SMF-0003-028032", name: "Дюбель-крюк двойной", price: 8, availability: "in_stock", price_date: "2026-06-27" }
     ],
+    water_fittings_press_mp: [
+        // Латунные пресс-фитинги STOUT для труб PE-Xb/Al/PE-Xb
+        // Переходник с наружной резьбой
+        { id: "SFP-0001-001216", name: "Переходник с наружной резьбой 1/2\"х16", price: 372.90, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0001-003416", name: "Переходник с наружной резьбой 3/4\"x16", price: 744.70, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0001-001220", name: "Переходник с наружной резьбой 1/2\"х20", price: 498.30, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0001-003420", name: "Переходник с наружной резьбой 3/4\"х20", price: 668.80, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0001-003426", name: "Переходник с наружной резьбой 3/4\"х26", price: 842.60, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0001-000126", name: "Переходник с наружной резьбой 1\"х26", price: 943.80, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0001-000132", name: "Переходник с наружной резьбой 1\"х32", price: 1368.40, availability: "in_stock", price_date: "2026-07-04" },
+        // Переходник с внутренней резьбой
+        { id: "SFP-0002-001216", name: "Переходник с внутренней резьбой 1/2\"х16", price: 568.70, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0002-001220", name: "Переходник с внутренней резьбой 1/2\"х20", price: 665.50, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0002-003420", name: "Переходник с внутренней резьбой 3/4\"х20", price: 794.20, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0002-003426", name: "Переходник с внутренней резьбой 3/4\"х26", price: 887.70, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0002-000126", name: "Переходник с внутренней резьбой 1\"х26", price: 1026.30, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0002-000132", name: "Переходник с внутренней резьбой 1\"х32", price: 1472.90, availability: "in_stock", price_date: "2026-07-04" },
+        // Муфта соединительная равнопроходная
+        { id: "SFP-0003-001616", name: "Муфта соединительная равнопроходная 16х16", price: 674.30, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0003-002020", name: "Муфта соединительная равнопроходная 20х20", price: 785.40, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0003-002626", name: "Муфта соединительная равнопроходная 26х26", price: 1343.10, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0003-003232", name: "Муфта соединительная равнопроходная 32х32", price: 1981.10, availability: "in_stock", price_date: "2026-07-04" },
+        // Муфта соединительная переходная
+        { id: "SFP-0004-002016", name: "Муфта соединительная переходная 20х16", price: 976.80, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0004-002620", name: "Муфта соединительная переходная 26х20", price: 1302.40, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0004-003226", name: "Муфта соединительная переходная 32х26", price: 1809.50, availability: "in_stock", price_date: "2026-07-04" },
+        // Тройник переходной
+        { id: "SFP-0005-162016", name: "Тройник переходной 16x20x16", price: 1397.00, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-201616", name: "Тройник переходной 20х16х16", price: 1294.70, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-201620", name: "Тройник переходной 20х16х20", price: 1344.20, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-202016", name: "Тройник переходной 20х20х16", price: 1350.80, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-202620", name: "Тройник переходной 20х26х20", price: 1912.90, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-261620", name: "Тройник переходной 26х16х20", price: 1881.00, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-261626", name: "Тройник переходной 26х16х26", price: 1881.00, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-262016", name: "Тройник переходной 26х20х16", price: 1898.60, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-262020", name: "Тройник переходной 26х20х20", price: 1898.60, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-262026", name: "Тройник переходной 26х20х26", price: 1881.00, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-262616", name: "Тройник переходной 26х26х16", price: 1912.90, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-262620", name: "Тройник переходной 26х26х20", price: 1895.30, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-263226", name: "Тройник переходной 26х32х26", price: 3111.90, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-322026", name: "Тройник переходной 32х20х26", price: 3138.30, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-322032", name: "Тройник переходной 32х20х32", price: 3285.70, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-322626", name: "Тройник переходной 32х26х26", price: 3285.70, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-322632", name: "Тройник переходной 32х26х32", price: 3285.70, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0005-323226", name: "Тройник переходной 32x32x26", price: 3285.70, availability: "in_stock", price_date: "2026-07-04" },
+        // Тройник равнопроходный
+        { id: "SFP-0006-161616", name: "Тройник равнопроходный 16х16х16", price: 926.20, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0006-202020", name: "Тройник равнопроходный 20х20х20", price: 1353.00, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0006-262626", name: "Тройник равнопроходный 26х26х26", price: 1960.20, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0006-323232", name: "Тройник равнопроходный 32х32х32", price: 3342.90, availability: "in_stock", price_date: "2026-07-04" },
+        // Тройник-переходник с внутренней резьбой
+        { id: "SFP-0007-001216", name: "Тройник-переходник с внутренней резьбой 16х1/2\"х16", price: 1174.80, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0007-001220", name: "Тройник-переходник с внутренней резьбой 20х1/2\"х20", price: 1386.00, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0007-003420", name: "Тройник-переходник с внутренней резьбой 20х3/4\"х20", price: 1593.90, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0007-003426", name: "Тройник-переходник с внутренней резьбой 26х3/4\"х26", price: 1955.80, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0007-000132", name: "Тройник-переходник с внутренней резьбой 32х1\"х32", price: 3187.80, availability: "in_stock", price_date: "2026-07-04" },
+        // Тройник-переходник с наружной резьбой
+        { id: "SFP-0008-161216", name: "Тройник-переходник с наружной резьбой 16х1/2\"х16", price: 1174.80, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0008-201220", name: "Тройник-переходник с наружной резьбой 20х1/2\"х20", price: 1386.00, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0008-203420", name: "Тройник-переходник с наружной резьбой 20х3/4\"х20", price: 1593.90, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0008-263426", name: "Тройник-переходник с наружной резьбой 26х3/4\"х26", price: 1955.80, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0008-320132", name: "Тройник-переходник с наружной резьбой 32х1\"х32", price: 3213.10, availability: "in_stock", price_date: "2026-07-04" },
+        // Угольник 90°
+        { id: "SFP-0009-001616", name: "Угольник 90° 16х16", price: 771.10, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0009-002020", name: "Угольник 90° 20х20", price: 970.20, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0009-002626", name: "Угольник 90° 26х26", price: 1464.10, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0009-003232", name: "Угольник 90° 32х32", price: 2326.50, availability: "in_stock", price_date: "2026-07-04" },
+        // Угольник-переходник с внутренней резьбой
+        { id: "SFP-0010-001216", name: "Угольник-переходник с внутренней резьбой 1/2\"х16", price: 523.60, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0010-001220", name: "Угольник-переходник с внутренней резьбой 1/2\"х20", price: 799.70, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0010-003420", name: "Угольник-переходник с внутренней резьбой 3/4\"х20", price: 1259.50, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0010-003426", name: "Угольник-переходник с внутренней резьбой 3/4\"х26", price: 1367.30, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0010-000126", name: "Угольник-переходник с внутренней резьбой 1\"х26", price: 1765.50, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0010-000132", name: "Угольник-переходник с внутренней резьбой 1\"х32", price: 2064.70, availability: "in_stock", price_date: "2026-07-04" },
+        // Угольник-переходник с наружной резьбой
+        { id: "SFP-0011-001216", name: "Угольник-переходник с наружной резьбой 1/2\"х16", price: 553.30, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0011-001220", name: "Угольник-переходник с наружной резьбой 1/2\"х20", price: 805.20, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0011-003420", name: "Угольник-переходник с наружной резьбой 3/4\"х20", price: 1260.60, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0011-003426", name: "Угольник-переходник с наружной резьбой 3/4\"х26", price: 1321.10, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0011-000126", name: "Угольник-переходник с наружной резьбой 1\"х26", price: 1765.50, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0011-000132", name: "Угольник-переходник с наружной резьбой 1\"х32", price: 2064.70, availability: "in_stock", price_date: "2026-07-04" },
+        // Угольник настенный с креплением удлиненный
+        { id: "SFP-0012-001216", name: "Угольник настенный с креплением удлиненный 1/2\"х16", price: 986.70, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0012-001220", name: "Угольник настенный с креплением удлиненный 1/2\"х20", price: 1196.80, availability: "in_stock", price_date: "2026-07-04" },
+        // Угольник настенный с креплением короткий
+        { id: "SFP-0018-001216", name: "Угольник настенный с креплением короткий 1/2\"х16", price: 800.80, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0018-001220", name: "Угольник настенный с креплением короткий 1/2\"х20", price: 995.50, availability: "in_stock", price_date: "2026-07-04" },
+        // Настенный комплект для смесителя
+        { id: "SFP-0013-001216", name: "Настенный комплект для смесителя 1/2\"x16", price: 1985.50, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0013-001220", name: "Настенный комплект для смесителя 1/2\"x20", price: 2090.00, availability: "in_stock", price_date: "2026-07-04" },
+        // Вентиль с хромированной ручкой
+        { id: "SFP-0014-001616", name: "Вентиль с хромированной ручкой 16х16", price: 4375.80, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0014-002020", name: "Вентиль с хромированной ручкой 20х20", price: 4456.10, availability: "in_stock", price_date: "2026-07-04" },
+        // Переходник с накидной гайкой
+        { id: "SFP-0016-001216", name: "Переходник с накидной гайкой 1/2\"x16", price: 534.60, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0016-001220", name: "Переходник с накидной гайкой 1/2\"x20", price: 634.70, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0016-003416", name: "Переходник с накидной гайкой 3/4\"x16", price: 966.90, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0016-003420", name: "Переходник с накидной гайкой 3/4\"x20", price: 997.70, availability: "in_stock", price_date: "2026-07-04" },
+        // Зажимная втулка
+        { id: "SFP-0019-000016", name: "Зажимная втулка 16", price: 136.40, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0019-000017", name: "Зажимная втулка 20", price: 183.70, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0019-000018", name: "Зажимная втулка 26", price: 228.80, availability: "in_stock", price_date: "2026-07-04" },
+        { id: "SFP-0019-000019", name: "Зажимная втулка 32", price: 444.40, availability: "in_stock", price_date: "2026-07-04" }
+    ],
     water_manifolds_cold: [
         { id: "SMB-6851-343402", name: "Коллектор 3/4\"х3/4\"х2 вых.", loops: 2, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 1876.88, availability: "in_stock", price_date: "2026-07-01" },
         { id: "SMB-6851-343403", name: "Коллектор 3/4\"х3/4\"х3 вых.", loops: 3, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 2616.50, availability: "in_stock", price_date: "2026-07-01" },

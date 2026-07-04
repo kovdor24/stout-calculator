@@ -32,25 +32,11 @@ const CONTEST_CATS_2026 = [
     { key: 'manifold_water', label: 'Коллектор воды',      pts: 3,  emoji: '🚿', test: (id, name, item) => (id.startsWith('SMB-6851-') || name.includes('3/4')) && (item && (item.group === '5.1. Внутреннее водоснабжение' || (item.group === '5. Внутреннее водоснабжение' && item.desc && (item.desc.includes('ХВС') || item.desc.includes('Холодная вода'))))) },
     { key: 'flex_conn',      label: 'Гибкая подводка',     pts: 3,  emoji: '🔗', test: (id, name) => name.includes('гибк') },
     { key: 'valve',          label: 'Арматура',            pts: 2,  emoji: '🔧', test: (id)       => id.startsWith('SVT-') || id.startsWith('SVL-') || id.startsWith('SFB-') || id.startsWith('SBV-') },
+    { key: 'pipes_fittings', label: 'Трубы и фитинги',     pts: 1,  emoji: '➿', test: (id, name, item) => (name.includes('труб') && (item.q || 1) >= 20) || name.includes('фитинг') || id.startsWith('SFP-') || id.startsWith('SFA-') || id.startsWith('SFC-') || id.startsWith('SFH-') || id.startsWith('SPX-') },
+    { key: 'mats',           label: 'Маты',                pts: 1,  emoji: '🧱', test: (id, name) => name.includes('мат') || id.startsWith('SPM-') },
 ];
 
-// === ВИТРИНА ПРИЗОВ КОНКУРСА STOUT 2026 ===
-const CONTEST_PRIZES_2026 = [
-    { label: 'Комплект спецодежды', pts: 10000, emoji: '👔' },
-    { label: 'Жилет',               pts: 3000,  emoji: '🦺' },
-    { label: 'Беспров. зарядное',   pts: 3000,  emoji: '🔌' },
-    { label: 'Непромок. рюкзак',    pts: 2000,  emoji: '🎒' },
-    { label: 'Спортивная сумка',     pts: 1500,  emoji: '👜' },
-    { label: 'Футболка',             pts: 1500,  emoji: '👕' },
-    { label: 'Термостакан',          pts: 1300,  emoji: '🥤' },
-    { label: 'Зонт',                 pts: 1000,  emoji: '☂️' },
-    { label: 'Бутылка для воды',     pts: 1000,  emoji: '💧' },
-    { label: 'Перчатки рабочие',     pts: 1000,  emoji: '🧤' },
-    { label: 'Кепка',                pts: 500,   emoji: '🧢' },
-    { label: 'Ланчбокс',             pts: 500,   emoji: '🍱' },
-    { label: 'Кружка',               pts: 500,   emoji: '☕' },
-];
-// ===================================
+
 
 // ===================================
 // === OFFLINE SHARE LINK GENERATOR (COMPRESSION & BASE64) ===
@@ -536,7 +522,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: false, area: 100, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 100, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null },
 
     lastSavedStateString: "",
 
@@ -895,24 +881,402 @@ const app = {
         this.saveState(); this.render();
     },
 
-    // Открыть ввод своего оборудования (аналог монтажных работ)
-    addCustomEqPrompt: async function () {
-        let name = await app.prompt("Введите наименование оборудования:");
-        if (!name) return;
-        let price = Math.round(parseFloat(await app.prompt("Введите цену за единицу, ₽:", "0")) || 0);
-        let qty = parseInt(await app.prompt("Введите количество, шт:", "1")) || 1;
+    // Строим плоский поисковый индекс по всему каталогу (один раз, с кешированием)
+    // Разбивает текст на слова (>=3 букв) и числа, отдельно нормализуя размеры вида 3/4"х1/2"х16
+    // Просторечные названия/сокращения монтажников → канонические слова из каталога.
+    // Заменяем (не дописываем), иначе само жаргонное слово останется как обязательный
+    // токен и никогда не найдётся в названии позиции буквально.
+    _SEARCH_SLANG: [
+        [/термоголов[а-я]*/i, 'головка термостатическая'],
+        [/шитик[а-я]*|сшит[а-я]*/i, 'pex'],
+        [/папа[а-я]*/i, 'наружная резьба'],
+        [/мама[а-я]*/i, 'внутренняя резьба']
+    ],
 
-        if (!this.state.userAddedEq) this.state.userAddedEq = [];
-        this.state.userAddedEq.push({
-            id: 'custom_' + Date.now(),
-            name: name,
-            price: price,
-            q: qty,
-            brand: " ", // Пробел обманывает дефолтную проверку, чтобы не писался STOUT
-            desc: "Добавлено самостоятельно в ручном режиме" // Включает системный значок (i)
+    _expandSlang: function (text) {
+        let out = text;
+        this._SEARCH_SLANG.forEach(([re, canonical]) => { out = out.replace(re, canonical); });
+        return out;
+    },
+
+    // Сравнение слова из каталога (a) со словом из запроса (b) с учётом окончаний падежей
+    // ("наружная" ~ "наружной"): для слов от 5 букв сравниваем только первые 5 символов.
+    // Для коротких слов (<5) префиксное совпадение разрешаем только если:
+    //   - оба слова длиной от 4 букв ("болт" ~ "болты"), или
+    //   - слово из каталога — явное сокращение с точкой в исходном названии ("вых." ~ "выходов").
+    // Иначе короткие слова вроде "пол" будут случайно находиться внутри "полотенце" и т.п.
+    _stemEq: function (a, b, abbrevSet, n = 5) {
+        if (a.length >= n && b.length >= n) return a.slice(0, n) === b.slice(0, n);
+        const shorter = a.length <= b.length ? a : b;
+        const longer = a.length <= b.length ? b : a;
+        if (shorter.length >= 4 && longer.startsWith(shorter)) return true;
+        if (abbrevSet && abbrevSet.has(a) && b.startsWith(a)) return true;
+        return a === b;
+    },
+
+    // Слова-маркеры количества выходов/контуров: число прямо перед таким словом — это счётчик
+    // ("...х3 вых." → 3 выхода), а не часть размера трубы/резьбы (как "3" в "3/4")
+    _SEARCH_COUNT_MARKERS: ['вых', 'выход', 'контур', 'петл', 'зон', 'канал'],
+
+    _tokenizeSearchText: function (text) {
+        text = (text || '').toLowerCase().replace(/ё/g, 'е');
+        // "х"/"x" между размерами — просто разделитель, не буква слова
+        text = text.replace(/(\d)[xх]/g, '$1 ').replace(/[xх](\d)/g, ' $1');
+        const words = [];
+        const numbers = [];
+        const abbrev = new Set();
+        const countedNumbers = new Set();
+        let lastNumber = null;
+        // Слово + необязательная точка сразу за ним — так отличаем "вых." (сокращение) от обычного слова
+        const tokenRe = /([a-zа-я0-9]+)(\.?)/gi;
+        let m;
+        while ((m = tokenRe.exec(text))) {
+            const tok = m[1];
+            if (!tok) continue;
+            if (/^\d+$/.test(tok)) {
+                const n = tok.replace(/^0+(?=\d)/, '');
+                numbers.push(n);
+                lastNumber = n;
+            } else if (tok.length >= 3) {
+                words.push(tok);
+                if (m[2] === '.') abbrev.add(tok);
+                if (lastNumber !== null && this._SEARCH_COUNT_MARKERS.some(marker => tok.startsWith(marker))) {
+                    countedNumbers.add(lastNumber);
+                }
+                lastNumber = null;
+            } else {
+                lastNumber = null; // короткий мусорный токен между числом и словом рвёт связь
+            }
+        }
+        return { words, numbers, abbrev, countedNumbers };
+    },
+
+    _buildCatalogSearchIndex: function () {
+        if (this._catalogSearchIndex) return this._catalogSearchIndex;
+        const idx = [];
+        const seen = new Set();
+        const pushItem = (it) => {
+            if (!it || !it.id || !it.name || typeof it.price !== 'number') return;
+            if (seen.has(it.id)) return;
+            seen.add(it.id);
+            const t = this._tokenizeSearchText(it.name);
+            idx.push({ id: it.id, name: it.name, price: it.price, brand: it.brand || 'STOUT', article: it.article || it.id, _words: t.words, _numbers: new Set(t.numbers), _abbrev: t.abbrev, _countedNumbers: t.countedNumbers });
+            if (it.rommer && it.rommer.id && it.rommer.name && !seen.has(it.rommer.id)) {
+                seen.add(it.rommer.id);
+                const rt = this._tokenizeSearchText(it.rommer.name);
+                idx.push({ id: it.rommer.id, name: it.rommer.name, price: it.rommer.price, brand: it.rommer.brand || 'ROMMER', article: it.rommer.id, _words: rt.words, _numbers: new Set(rt.numbers), _abbrev: rt.abbrev, _countedNumbers: rt.countedNumbers });
+            }
+        };
+        for (const key in catalog) {
+            if (Array.isArray(catalog[key])) catalog[key].forEach(pushItem);
+        }
+        this._catalogSearchIndex = idx;
+        return idx;
+    },
+
+    // Догружаем расширенный прайс-лист (позиции STOUT/ROMMER, которых нет в catalog.js) в фоне,
+    // один раз, и добавляем в тот же поисковый индекс. Пока не загрузился — поиск просто идёт по catalog.js.
+    _ensurePriceExtraLoaded: function () {
+        if (this._priceExtraLoadPromise) return this._priceExtraLoadPromise;
+        this._buildCatalogSearchIndex();
+        this._priceExtraLoadPromise = fetch('price_extra.json')
+            .then(r => r.ok ? r.json() : [])
+            .then(items => {
+                const idx = this._catalogSearchIndex;
+                const seen = new Set(idx.map(it => it.id));
+                (items || []).forEach(it => {
+                    if (!it || !it.id || !it.name || typeof it.price !== 'number' || seen.has(it.id)) return;
+                    seen.add(it.id);
+                    const t = this._tokenizeSearchText(it.name);
+                    idx.push({ id: it.id, name: it.name, price: it.price, brand: it.brand || 'STOUT', article: it.id, _words: t.words, _numbers: new Set(t.numbers), _abbrev: t.abbrev, _countedNumbers: t.countedNumbers, extra: true });
+                });
+            })
+            .catch(() => { });
+        return this._priceExtraLoadPromise;
+    },
+
+    // Поиск по каталогу: разбираем запрос на слова/числа и ищем совпадения независимо от порядка
+    // ("Коллектор 5 выходов" находит "...х5 вых."), плюс отдельно — точное совпадение по артикулу.
+    searchCatalog: function (query) {
+        query = (query || '').trim();
+        if (query.length < 2) return [];
+        const idx = this._buildCatalogSearchIndex();
+        const qUpper = query.toUpperCase();
+        const { words: qWords, numbers: qNumbers, countedNumbers: qCounted } = this._tokenizeSearchText(this._expandSlang(query));
+
+        const results = idx.filter(it => {
+            if (it.article && it.article.toUpperCase().includes(qUpper)) return true;
+            if (!qWords.length && !qNumbers.length) return false;
+            const wordMatch = qWords.every(qw => it._words.some(w => this._stemEq(w, qw, it._abbrev)));
+            // Если в запросе число стоит перед "выходов"/"контуров" и т.п., ищем его именно там же
+            // в названии позиции, а не любое совпадение (иначе "3" из "3/4" даёт мусор на "3 выхода")
+            const numberMatch = qNumbers.every(qn => qCounted.has(qn) ? (it._countedNumbers && it._countedNumbers.has(qn)) : it._numbers.has(qn));
+            return wordMatch && numberMatch;
         });
-        this.saveState();
-        this.render();
+
+        results.sort((a, b) => {
+            const aArt = (a.article || a.id).toUpperCase().includes(qUpper) ? 0 : 1;
+            const bArt = (b.article || b.id).toUpperCase().includes(qUpper) ? 0 : 1;
+            if (aArt !== bArt) return aArt - bArt;
+            if (!!a.extra !== !!b.extra) return a.extra ? 1 : -1; // сначала проверенные позиции из catalog.js
+            return a.name.length - b.name.length;
+        });
+        return results.slice(0, 20);
+    },
+
+    // Открыть ввод своего оборудования: умный поиск по каталогу (название/артикул) + ручной ввод
+    addCustomEqPrompt: function (sectionTitle) {
+        sectionTitle = sectionTitle || '9. Дополнительные материалы';
+        if (document.body.classList.contains('menu-open')) {
+            try { this.toggleMenu(); } catch (e) { }
+        }
+        // Догружаем расширенный прайс-лист в фоне; когда придёт — обновим уже показанные подсказки
+        this._ensurePriceExtraLoaded().then(() => {
+            if (nameInput && nameInput.value.trim().length >= 2 && document.body.contains(nameInput)) {
+                renderResults(app.searchCatalog(nameInput.value));
+            }
+        });
+
+        const overlay = document.createElement('div');
+        overlay.className = 'calc-dialog-overlay';
+
+        const card = document.createElement('div');
+        card.className = 'calc-dialog-card eq-search-card';
+
+        const titleEl = document.createElement('h3');
+        titleEl.className = 'calc-dialog-title';
+        titleEl.innerText = 'Добавить оборудование';
+        card.appendChild(titleEl);
+
+        const msgEl = document.createElement('p');
+        msgEl.className = 'calc-dialog-message';
+        msgEl.innerText = 'Введите название или артикул — покажем совпадения из каталога, либо впишите своё вручную.';
+        card.appendChild(msgEl);
+
+        const nameWrap = document.createElement('div');
+        nameWrap.className = 'eq-name-wrap';
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'calc-dialog-input';
+        nameInput.placeholder = 'Название или артикул...';
+        nameWrap.appendChild(nameInput);
+
+        // Голосовой ввод (если браузер поддерживает Web Speech API — Chrome/Edge/Safari, не Firefox)
+        const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognitionCtor) {
+            const micBtn = document.createElement('button');
+            micBtn.type = 'button';
+            micBtn.className = 'eq-mic-btn';
+            micBtn.title = 'Голосовой ввод';
+            micBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
+            nameWrap.appendChild(micBtn);
+
+            const recognition = new SpeechRecognitionCtor();
+            recognition.lang = 'ru-RU';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            let listening = false;
+            recognition.onstart = () => { listening = true; micBtn.classList.add('listening'); };
+            recognition.onend = () => { listening = false; micBtn.classList.remove('listening'); };
+            recognition.onerror = () => { listening = false; micBtn.classList.remove('listening'); };
+            recognition.onresult = (e) => {
+                const transcript = e.results[0][0].transcript;
+                nameInput.value = transcript;
+                nameInput.dispatchEvent(new Event('input'));
+                nameInput.focus();
+            };
+
+            micBtn.onclick = (e) => {
+                e.preventDefault();
+                if (listening) { recognition.stop(); return; }
+                try { recognition.start(); } catch (err) { }
+            };
+        }
+
+        card.appendChild(nameWrap);
+
+        const resultsBox = document.createElement('div');
+        resultsBox.className = 'eq-search-results';
+        card.appendChild(resultsBox);
+
+        const notFoundHint = document.createElement('p');
+        notFoundHint.className = 'eq-search-nomatch';
+        notFoundHint.innerText = 'Совпадений в каталоге нет — впишите цену вручную ниже.';
+        notFoundHint.style.display = 'none';
+        card.appendChild(notFoundHint);
+
+        const fieldsWrap = document.createElement('div');
+        fieldsWrap.className = 'eq-search-fields';
+        fieldsWrap.innerHTML = `
+            <div class="eq-search-row">
+                <label class="eq-search-label">Цена за ед., ₽
+                    <input type="number" class="calc-dialog-input eq-price-input" min="0">
+                </label>
+                <label class="eq-search-label eq-qty-label">Кол-во
+                    <div class="qty-wrap eq-qty-wrap">
+                        <span class="qty-step">−</span>
+                        <input type="number" class="calc-dialog-input eq-qty-input" min="1" value="1">
+                        <span class="qty-step">+</span>
+                    </div>
+                </label>
+            </div>
+        `;
+        card.appendChild(fieldsWrap);
+        fieldsWrap.style.display = 'none'; // появляются только после выбора/подтверждения названия
+
+        const priceInput = fieldsWrap.querySelector('.eq-price-input');
+        const qtyInput = fieldsWrap.querySelector('.eq-qty-input');
+        const qtyWrap = fieldsWrap.querySelector('.eq-qty-wrap');
+        const qtySteps = fieldsWrap.querySelectorAll('.eq-qty-wrap .qty-step');
+        qtyWrap.onclick = () => qtyWrap.classList.add('qty-open');
+        qtyInput.onfocus = () => qtyWrap.classList.add('qty-open');
+        qtySteps[0].onclick = (e) => {
+            e.stopPropagation();
+            qtyWrap.classList.add('qty-open');
+            qtyInput.value = Math.max(1, (parseInt(qtyInput.value) || 1) - 1);
+        };
+        qtySteps[1].onclick = (e) => {
+            e.stopPropagation();
+            qtyWrap.classList.add('qty-open');
+            qtyInput.value = Math.max(1, (parseInt(qtyInput.value) || 1) + 1);
+        };
+
+        const revealFields = () => { fieldsWrap.style.display = ''; };
+
+        let selectedArticle = null;
+        let searchTimer = null;
+        let lastResults = [];
+
+        // Закрыть выпадающий список без показа "совпадений нет" — используется после выбора позиции
+        const closeResults = () => {
+            lastResults = [];
+            resultsBox.innerHTML = '';
+            resultsBox.classList.remove('open');
+            notFoundHint.style.display = 'none';
+        };
+
+        const renderResults = (list) => {
+            lastResults = list || [];
+            if (!lastResults.length) {
+                resultsBox.innerHTML = '';
+                resultsBox.classList.remove('open');
+                notFoundHint.style.display = (nameInput.value.trim().length >= 2) ? 'block' : 'none';
+                return;
+            }
+            notFoundHint.style.display = 'none';
+            resultsBox.classList.add('open');
+            resultsBox.innerHTML = lastResults.map(it => `
+                <div class="eq-search-item" data-id="${it.id}">
+                    <span class="eq-search-item-name">${it.name}</span>
+                    <span class="eq-search-item-meta">${it.article}${it.brand ? ' · ' + it.brand : ''} · ${Math.round(it.price).toLocaleString('ru-RU')} ₽</span>
+                </div>
+            `).join('');
+            Array.from(resultsBox.querySelectorAll('.eq-search-item')).forEach((el, i) => {
+                el.onclick = () => {
+                    const found = lastResults[i];
+                    if (!found) return;
+                    nameInput.value = found.name;
+                    priceInput.value = Math.round(found.price);
+                    selectedArticle = found.article || found.id;
+                    closeResults();
+                    revealFields();
+                    priceInput.focus();
+                    priceInput.select();
+                };
+            });
+        };
+
+        nameInput.oninput = () => {
+            selectedArticle = null;
+            notFoundHint.style.display = 'none';
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => renderResults(app.searchCatalog(nameInput.value)), 120);
+        };
+
+        const closeModal = () => {
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 200);
+        };
+
+        const btnContainer = document.createElement('div');
+        btnContainer.className = 'calc-dialog-buttons';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
+        cancelBtn.innerText = 'Отмена';
+        cancelBtn.onclick = closeModal;
+
+        const okBtn = document.createElement('button');
+        okBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
+        okBtn.innerText = 'Добавить';
+        okBtn.onclick = () => {
+            const name = (nameInput.value || '').trim();
+            if (!name) { nameInput.focus(); return; }
+
+            // Поля цены/кол-ва ещё не показаны — это первое подтверждение названия, не добавление
+            if (fieldsWrap.style.display === 'none') {
+                closeResults();
+                revealFields();
+                priceInput.focus();
+                priceInput.select();
+                return;
+            }
+
+            const price = Math.round(parseFloat(priceInput.value) || 0);
+            const qty = Math.max(1, parseInt(qtyInput.value) || 1);
+
+            if (!app.state.userAddedEq) app.state.userAddedEq = [];
+            app.state.userAddedEq.push({
+                id: 'custom_' + Date.now(),
+                name: name,
+                price: price,
+                q: qty,
+                brand: " ", // Пробел обманывает дефолтную проверку, чтобы не писался STOUT
+                desc: selectedArticle ? `Добавлено из каталога (арт. ${selectedArticle})` : "Добавлено самостоятельно в ручном режиме",
+                section: sectionTitle
+            });
+            app.saveState();
+            closeModal();
+            app.render();
+        };
+
+        nameInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (resultsBox.classList.contains('open') && lastResults.length) {
+                    // Есть подсказки — выбираем первую
+                    resultsBox.querySelector('.eq-search-item').click();
+                } else {
+                    // Совпадений нет — подтверждаем ручной ввод и открываем цену/кол-во
+                    closeResults();
+                    revealFields();
+                    priceInput.focus();
+                    priceInput.select();
+                }
+            } else if (e.key === 'Escape') {
+                closeModal();
+            }
+        };
+
+        const submitOnEnter = (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); okBtn.click(); }
+            else if (e.key === 'Escape') { closeModal(); }
+        };
+        priceInput.onkeydown = submitOnEnter;
+        qtyInput.onkeydown = submitOnEnter;
+
+        btnContainer.appendChild(cancelBtn);
+        btnContainer.appendChild(okBtn);
+        card.appendChild(btnContainer);
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+
+        setTimeout(() => {
+            overlay.classList.add('active');
+            nameInput.focus();
+        }, 10);
     },
 
     // Удаление своего оборудования
@@ -4718,6 +5082,46 @@ const app = {
             });
     },
     toggleOpt: function (id) { this.state.optItems[id] = !this.state.optItems[id]; this.render(); },
+    setQty: function (id, value) {
+        if (value === '' || value === null || value === undefined) {
+            // Поле очистили не введя цифру — отменяем редактирование, возвращаем расчётное количество
+            if (this.state.qtyOverrides && this.state.qtyOverrides[id] !== undefined) {
+                delete this.state.qtyOverrides[id];
+                this.saveState();
+            }
+            this.render();
+            return;
+        }
+        let n = Math.round(parseFloat(value));
+        if (isNaN(n) || n < 0) n = 0;
+        if (!this.state.qtyOverrides) this.state.qtyOverrides = {};
+        if (n <= 0) {
+            delete this.state.qtyOverrides[id];
+            this.state.optItems[id] = true;
+        } else {
+            this.state.qtyOverrides[id] = n;
+            if (this.state.optItems[id]) delete this.state.optItems[id];
+        }
+        this.saveState();
+        this.render();
+    },
+    stepQty: function (id, delta, currentQty) {
+        this.revealQty(id);
+        let base = (this.state.qtyOverrides && this.state.qtyOverrides[id] !== undefined) ? this.state.qtyOverrides[id] : currentQty;
+        this.setQty(id, base + delta);
+    },
+    revealQty: function (id) {
+        if (!this._qtyOpenIds) this._qtyOpenIds = {};
+        if (!this._qtyHideTimers) this._qtyHideTimers = {};
+        const wasOpen = !!this._qtyOpenIds[id];
+        this._qtyOpenIds[id] = true;
+        clearTimeout(this._qtyHideTimers[id]);
+        this._qtyHideTimers[id] = setTimeout(() => {
+            delete this._qtyOpenIds[id];
+            this.render();
+        }, 5000);
+        if (!wasOpen) this.render();
+    },
     toggleDark: function (chk, event) {
         this.state.darkMode = chk; document.body.classList.toggle('dark-mode', chk); this.saveState();
     },
@@ -6238,7 +6642,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, darkMode: currentDarkMode, area: 100, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 100, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -13641,6 +14045,20 @@ const app = {
 
         const flushBill = (title, warn) => {
             currentSectionTitle = title;
+
+            // Своё оборудование, добавленное именно в этот раздел ("+ Добавить" в конце раздела).
+            // Позиции без раздела (старые сохранённые сметы) или со старым служебным
+            // "9. Своё оборудование" попадают в "9. Дополнительные материалы".
+            if (this.state.userAddedEq && this.state.userAddedEq.length) {
+                this.state.userAddedEq.forEach(eq => {
+                    let sec = eq.section || '9. Дополнительные материалы';
+                    if (sec === '9. Своё оборудование') sec = '9. Дополнительные материалы';
+                    if (sec === title) {
+                        addToBill({ id: eq.id, name: eq.name, price: eq.price, brand: eq.brand || ' ' }, eq.q, eq.desc || '');
+                    }
+                });
+            }
+
             if (bill.length === 0) {
                 sectionHasAnalogItems = false;
                 return;
@@ -13684,6 +14102,19 @@ const app = {
                             entry.q = _nq;
                             entry.sum = Math.round(entry.price * _nq);
                         }
+                    }
+                });
+            }
+
+            // Ручной оверрайд количества позиции (пользователь изменил вручную в смете)
+            if (this.state.qtyOverrides) {
+                bill.forEach(entry => {
+                    const ovKey = entry.originalId || entry.id;
+                    const _ov = this.state.qtyOverrides[ovKey];
+                    if (_ov !== undefined && _ov !== entry.q) {
+                        this.calcFinalTotal -= entry.price * (entry.q - _ov);
+                        entry.q = _ov;
+                        entry.sum = Math.round(entry.price * _ov);
                     }
                 });
             }
@@ -13858,7 +14289,9 @@ const app = {
                         `;
                     });
                 }
-                let qHtml = `<div class="qty-wrap">${i.q}${tipHtml} <span class="opt-btn" onclick="event.stopPropagation(); app.toggleOpt('${lookupId}')" title="${!isOpt ? 'Удалить позицию' : 'Добавить позицию'}">${!isOpt ? '<span style="color:#EF4444; font-weight:bold; font-size:14px; line-height:1;">✖</span>' : '➕'}</span></div>`;
+                let qtyOpen = !!(this._qtyOpenIds && this._qtyOpenIds[lookupId]);
+                let qtyEditable = `<span class="qty-step" onclick="event.stopPropagation(); app.stepQty('${lookupId}', -1, ${i.q})">−</span><input type="number" class="qty-num-input" min="0" value="${i.q}" onclick="event.stopPropagation(); app.revealQty('${lookupId}')" onchange="event.stopPropagation(); app.setQty('${lookupId}', this.value)" onkeydown="if(event.key==='Enter') this.blur();"><span class="qty-step" onclick="event.stopPropagation(); app.stepQty('${lookupId}', 1, ${i.q})">+</span>`;
+                let qHtml = `<div class="qty-wrap${qtyOpen ? ' qty-open' : ''}">${qtyEditable}${tipHtml} <span class="opt-btn" onclick="event.stopPropagation(); app.toggleOpt('${lookupId}')" title="${!isOpt ? 'Удалить позицию' : 'Добавить позицию'}">${!isOpt ? '<span style="color:#EF4444; font-weight:bold; font-size:14px; line-height:1;">✖</span>' : '➕'}</span></div>`;
                 let imgContent = getImg(i);
                 let hasAlts = (i.alts && i.alts.length > 0);
                 let imgCellHtml = "";
@@ -13874,7 +14307,13 @@ const app = {
 
                 rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${app.formatPriceHtml(i.price)}</td><td class="col-sum">${app.formatPriceHtml(i.sum)}</td></tr>` + locsRows;
             });
-            h += rows + `<tr class="row-subtotal"><td colspan="9">Итого: ${app.formatPriceHtml(secTotal, true)}</td></tr>`;
+            let addCustomRow = "";
+            if (this.state.viewMode === 'equipment') {
+                addCustomRow = `<tr class="hide-custom-eq-btn no-print"><td colspan="9">
+                    <div class="btn-add-custom" onclick="app.addCustomEqPrompt('${title.replace(/'/g, "\\'")}')">+ Добавить своё оборудование</div>
+                </td></tr>`;
+            }
+            h += rows + addCustomRow + `<tr class="row-subtotal"><td colspan="9">Итого: ${app.formatPriceHtml(secTotal, true)}</td></tr>`;
             sum += secTotal; bill = []; sectionHasAnalogItems = false;
         };
 
@@ -16321,7 +16760,7 @@ const app = {
             }
         }
 
-        // === 9. ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ ===
+        // === 9. ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ (включая своё оборудование без привязки к разделу) ===
         currentSectionTitle = "9. Дополнительные материалы";
         let cl = catalog.coolants.find(c => c.type === this.state.coolant);
         if (cl) {
@@ -16333,26 +16772,6 @@ const app = {
             }
         }
         flushBill("9. Дополнительные материалы");
-
-        // 9. СВОЁ ОБОРУДОВАНИЕ (Только для вкладки оборудования)
-        currentSectionTitle = "9. Своё оборудование";
-        if (this.state.viewMode === 'equipment') {
-            if (this.state.userAddedEq && this.state.userAddedEq.length > 0) {
-                this.state.userAddedEq.forEach(eq => {
-                    // Передаем объект как есть, без крестиков, выравнивание будет стандартным
-                    let customEqItem = { ...eq, brand: " " };
-                    addToBill(customEqItem, eq.q, eq.desc || "", "9. Своё оборудование");
-                });
-                flushBill("9. Своё оборудование");
-            }
-
-            // Кнопка добавления (со специальным классом no-print для скрытия при печати)
-            h += `<tr class="hide-custom-eq-btn no-print"><td colspan="100">
-                    <div class="btn-add-custom" onclick="app.addCustomEqPrompt()">
-                        + Добавить своё оборудование
-                    </div>
-                  </td></tr>`;
-        }
         // ==========================================
         // БЛОК: 1.1 Монтаж котла и бойлера, 1.2 Монтаж обвязки котельной, 2.2 Монтаж узла ввода ХВС
         // ==========================================
@@ -16739,8 +17158,12 @@ const app = {
 
         if (this.state.brandMode !== 'stout') { el.innerHTML = ''; return; }
 
-        // Запускаем (или продолжаем) загрузку рейтинга в фоне
-        if (!this._stoutRating || this._stoutRating.status === 'error') {
+        // Запускаем (или продолжаем) загрузку рейтинга в фоне.
+        // При ошибке — не чаще раза в минуту (иначе каждый ре-рендер бил бы
+        // по login и мог сжечь лимит попыток на сервере).
+        const RETRY_COOLDOWN = 60 * 1000;
+        const canRetry = !this._stoutRatingTs || (Date.now() - this._stoutRatingTs) > RETRY_COOLDOWN;
+        if (!this._stoutRating || (this._stoutRating.status === 'error' && canRetry)) {
             this.fetchStoutRating(); // async, перерисует виджет сам после загрузки
         }
 
@@ -16808,9 +17231,9 @@ const app = {
         if (totalPts >= 200) {
             xpLabel = `<span class="cw-xp-label bonus">🎉 БОНУС: +${(totalPts * 10).toLocaleString('ru-RU')} ₽ за объект</span>`;
         } else if (totalPts >= 100) {
-            xpLabel = `<span class="cw-xp-label good">✅ ФОРМА STOUT ПОЛУЧЕНА! До бонуса: ещё ${200 - totalPts} XP</span>`;
+            xpLabel = `<span class="cw-xp-label good">✅ ФОРМА ПОЛУЧЕНА! (комбинезон + куртка)</span>`;
         } else {
-            xpLabel = `<span class="cw-xp-label">${totalPts} / 100 XP &nbsp;·&nbsp; до формы ещё ${100 - totalPts}</span>`;
+            xpLabel = `<span class="cw-xp-label">${totalPts} / 100 XP &nbsp;·&nbsp; до формы (комбинезон + куртка) ещё ${100 - totalPts}</span>`;
         }
 
         // Достижения
@@ -16828,26 +17251,6 @@ const app = {
             })
             .join('');
 
-        const prizesOpen = !!this._contestPrizesOpen;
-        const prizesHtml = CONTEST_PRIZES_2026.map(p => {
-            const canAfford = totalPts >= p.pts;
-            const pct = Math.min(100, Math.round(totalPts / p.pts * 100));
-            const remaining = (p.pts - totalPts).toLocaleString('ru-RU');
-            const statusHtml = canAfford
-                ? `<div class="cw-prize-status ok">✅ Уже хватает!</div>`
-                : `<div class="cw-prize-progress"><div class="cw-prize-progress-fill" style="width:${pct}%"></div></div><div class="cw-prize-status">ещё ${remaining} баллов</div>`;
-            return `<div class="cw-prize${canAfford ? ' can-afford' : ''}">
-                <span class="cw-prize-emoji">${p.emoji}</span>
-                <div class="cw-prize-body">
-                    <div class="cw-prize-row">
-                        <span class="cw-prize-name">${p.label}</span>
-                        <span class="cw-prize-pts">${p.pts.toLocaleString('ru-RU')} баллов</span>
-                    </div>
-                    ${statusHtml}
-                </div>
-            </div>`;
-        }).join('');
-
         el.innerHTML = `
             <div class="cw-card">
                 <div class="cw-header">
@@ -16862,16 +17265,25 @@ const app = {
                 <div class="cw-achievements">
                     ${earnedAch}${lockedAch}
                 </div>
-                <button class="cw-prizes-toggle" onclick="app.toggleContestPrizes()">
-                    🎁 Витрина призов <span class="cw-prizes-arrow">${prizesOpen ? '▲' : '▼'}</span>
-                </button>
-                ${prizesOpen ? `<div class="cw-prizes-list">${prizesHtml}</div>` : ''}
+                <details class="cw-rules-details">
+                    <summary class="cw-rules-summary">📜 Правила конкурса STOUT 2026</summary>
+                    <div class="cw-rules-content">
+                        <p><b>📅 Период:</b> 1 апреля – 30 ноября 2026 г.</p>
+                        <p><b>🎁 Призовые места:</b></p>
+                        <ul>
+                            <li>🥇 <b>1–10 место:</b> 150 000 ₽</li>
+                            <li>🥈 <b>11–15 место:</b> 100 000 ₽</li>
+                            <li>🥉 <b>16–20 место:</b> 50 000 ₽</li>
+                            <li>📦 <b>21–30 место:</b> Ящик для инструментов</li>
+                        </ul>
+                        <p><b>👔 Гарантированные призы:</b></p>
+                        <ul>
+                            <li>👕 <b>От 100 баллов:</b> Форма STOUT (полукомбинезон + куртка)</li>
+                            <li>💰 <b>От 200 баллов:</b> Денежное вознаграждение <b>1 балл = 10 ₽</b></li>
+                        </ul>
+                    </div>
+                </details>
             </div>`;
-    },
-
-    toggleContestPrizes() {
-        this._contestPrizesOpen = !this._contestPrizesOpen;
-        this.renderContestWidget();
     },
 
     // === РЕЙТИНГ STOUT: рендер блока ===
@@ -16928,9 +17340,18 @@ const app = {
         this._stoutRating = { status: 'loading' };
         this.renderContestWidget();
 
-        const BASE = 'https://profi-stout.promo-online.pro';
+        // baseURL реального фронтенда profi-stout — уже включает "/api",
+        // а вызовы идут с относительным путём вида "api/login" (без ведущего
+        const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        const BASE = isLocal ? 'https://profi-stout.promo-online.pro/api' : 'stout_proxy.php?path=';
+        const APP_TOKEN = 'Pns2wxxcAnrd6z8vlero6OVNVtv8ksJVg-TsL3D7GOHPIRDnt2MU6VJ7tZshxhn_';
         const CREDS = { login: '+79826109548', password: 'ibatullin2020' };
         const TIMEOUT_MS = 10000; // 10 секунд на каждый запрос
+
+        const baseHeaders = {
+            'Content-Type': 'application/json',
+            'X-Token': APP_TOKEN
+        };
 
         // Хелпер: fetch с таймаутом
         const fetchT = (url, opts) => {
@@ -16948,7 +17369,7 @@ const app = {
             if (!token) {
                 const loginResp = await fetchT(`${BASE}/api/login`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: baseHeaders,
                     body: JSON.stringify(CREDS)
                 });
                 if (!loginResp.ok) throw new Error('Login failed: ' + loginResp.status);
@@ -16963,8 +17384,8 @@ const app = {
             }
 
             const authHeaders = {
-                'Content-Type': 'application/json',
-                'Authorization': `Token ${token}`
+                ...baseHeaders,
+                'Authorization': `Bearer ${token}`
             };
 
             // Шаг 2: Получаем список конкурсов, берём актуальный (is_actual=true)
@@ -16987,7 +17408,7 @@ const app = {
             }
 
             // Шаг 3: Получаем рейтинг (список победителей)
-            const winnersResp = await fetch(`${BASE}/tasks/api/task/winners-list`, {
+            const winnersResp = await fetchT(`${BASE}/tasks/api/task/winners-list`, {
                 method: 'POST',
                 headers: authHeaders,
                 body: JSON.stringify({ task_id: taskId, profile_id: profileId })
@@ -17025,6 +17446,7 @@ const app = {
 
         } catch (e) {
             console.warn('STOUT rating fetch error:', e);
+            this._stoutRatingTs = Date.now();
             this._stoutRating = { status: 'error' };
         }
         this.renderContestWidget();
