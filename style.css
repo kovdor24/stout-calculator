@@ -4699,7 +4699,8 @@ body.dark-mode .calc-dialog-btn-cancel:hover {
     justify-content: center;
     border-radius: 50%;
     color: var(--text-sec);
-    transition: 0.2s;
+    transition: background 0.2s, color 0.2s;
+    z-index: 1;
 }
 
 .eq-mic-btn:hover {
@@ -4707,14 +4708,89 @@ body.dark-mode .calc-dialog-btn-cancel:hover {
     color: var(--primary);
 }
 
-.eq-mic-btn.listening {
-    color: #EF4444;
-    animation: eq-mic-pulse 1s ease-in-out infinite;
+.eq-mic-icon {
+    position: relative;
+    z-index: 2;
 }
 
-@keyframes eq-mic-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+/* Пульсирующие кольца вокруг кнопки, как индикатор "можно говорить" у голосовых
+   колонок (Алиса и т.п.) — по умолчанию невидимы, включаются классами состояния */
+.eq-mic-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.35), transparent 70%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.eq-mic-btn.mic-listening .eq-mic-icon,
+.eq-mic-btn.mic-speaking .eq-mic-icon {
+    color: #7C3AED;
+}
+
+.eq-mic-btn.mic-listening .eq-mic-ring-1 {
+    animation: eq-mic-ring-pulse 1.6s ease-out infinite;
+}
+
+.eq-mic-btn.mic-listening .eq-mic-ring-2 {
+    animation: eq-mic-ring-pulse 1.6s ease-out infinite 0.8s;
+}
+
+/* Речь распознаётся активно — кольца пульсируют быстрее и ярче, цвет уходит в "живой" фиолетово-розовый */
+.eq-mic-btn.mic-speaking .eq-mic-icon {
+    color: #DB2777;
+}
+
+.eq-mic-btn.mic-speaking .eq-mic-ring-1 {
+    background: radial-gradient(circle, rgba(219, 39, 119, 0.45), transparent 70%);
+    animation: eq-mic-ring-pulse 0.7s ease-out infinite;
+}
+
+.eq-mic-btn.mic-speaking .eq-mic-ring-2 {
+    background: radial-gradient(circle, rgba(219, 39, 119, 0.45), transparent 70%);
+    animation: eq-mic-ring-pulse 0.7s ease-out infinite 0.35s;
+}
+
+@keyframes eq-mic-ring-pulse {
+    0% { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(2.6); opacity: 0; }
+}
+
+.eq-mic-status {
+    position: absolute;
+    right: 4px;
+    top: calc(100% + 4px);
+    max-width: 260px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #7C3AED;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s;
+    z-index: 3;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.eq-mic-status.open {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.eq-mic-status.error {
+    color: #EF4444;
+    white-space: normal;
 }
 
 .eq-search-results {

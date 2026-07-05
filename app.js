@@ -1223,8 +1223,40 @@ const app = {
             micBtn.type = 'button';
             micBtn.className = 'eq-mic-btn';
             micBtn.title = 'Голосовой ввод';
-            micBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
+            micBtn.innerHTML = `
+                <span class="eq-mic-ring eq-mic-ring-1"></span>
+                <span class="eq-mic-ring eq-mic-ring-2"></span>
+                <svg class="eq-mic-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
             nameWrap.appendChild(micBtn);
+
+            const micStatus = document.createElement('div');
+            micStatus.className = 'eq-mic-status';
+            nameWrap.appendChild(micStatus);
+
+            // Короткий восходящий "бип-боп" сигнал активации микрофона (как у голосовых
+            // колонок) — синтезируем на Web Audio API, чтобы не тащить аудиофайл
+            const playActivationChime = () => {
+                try {
+                    const Ctx = window.AudioContext || window.webkitAudioContext;
+                    if (!Ctx) return;
+                    const ctx = new Ctx();
+                    const now = ctx.currentTime;
+                    [{ f: 587, t: 0, d: 0.09 }, { f: 880, t: 0.09, d: 0.14 }].forEach(n => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.value = n.f;
+                        gain.gain.setValueAtTime(0.0001, now + n.t);
+                        gain.gain.exponentialRampToValueAtTime(0.2, now + n.t + 0.01);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, now + n.t + n.d);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + n.t);
+                        osc.stop(now + n.t + n.d + 0.02);
+                    });
+                    setTimeout(() => { try { ctx.close(); } catch (e) { } }, 500);
+                } catch (e) { }
+            };
 
             const recognition = new SpeechRecognitionCtor();
             recognition.lang = 'ru-RU';
@@ -1232,20 +1264,72 @@ const app = {
             recognition.maxAlternatives = 1;
 
             let listening = false;
-            recognition.onstart = () => { listening = true; micBtn.classList.add('listening'); };
-            recognition.onend = () => { listening = false; micBtn.classList.remove('listening'); };
-            recognition.onerror = () => { listening = false; micBtn.classList.remove('listening'); };
+            const setMicState = (state) => {
+                micBtn.classList.remove('mic-listening', 'mic-speaking');
+                if (state === 'listening') micBtn.classList.add('mic-listening');
+                if (state === 'speaking') micBtn.classList.add('mic-speaking');
+            };
+
+            recognition.onstart = () => {
+                listening = true;
+                setMicState('listening');
+                micStatus.textContent = 'Слушаю… говорите';
+                micStatus.classList.add('open');
+            };
+            // Микрофон реально начал захват звука — это момент "можно говорить"
+            recognition.onaudiostart = () => { playActivationChime(); };
+            // Обнаружена именно речь (не фоновый шум) — переключаем на более активную анимацию
+            recognition.onspeechstart = () => {
+                setMicState('speaking');
+                micStatus.textContent = 'Распознаю…';
+            };
+            recognition.onspeechend = () => { micStatus.textContent = 'Обрабатываю…'; };
             recognition.onresult = (e) => {
                 const transcript = e.results[0][0].transcript;
                 nameInput.value = transcript;
                 nameInput.dispatchEvent(new Event('input'));
                 nameInput.focus();
             };
+            recognition.onnomatch = () => { micStatus.textContent = 'Не удалось разобрать речь — попробуйте ещё раз'; };
+            recognition.onerror = (e) => {
+                listening = false;
+                setMicState(null);
+                const messages = {
+                    'not-allowed': 'Доступ к микрофону запрещён — разрешите в настройках браузера',
+                    'permission-denied': 'Доступ к микрофону запрещён — разрешите в настройках браузера',
+                    'no-speech': 'Не расслышал — попробуйте ещё раз',
+                    'audio-capture': 'Микрофон не найден',
+                    'network': 'Нет соединения для распознавания речи',
+                    'aborted': ''
+                };
+                const msg = messages[e.error] !== undefined ? messages[e.error] : 'Не получилось распознать речь';
+                if (msg) {
+                    micStatus.textContent = msg;
+                    micStatus.classList.add('open', 'error');
+                    setTimeout(() => { micStatus.classList.remove('open', 'error'); }, 3000);
+                } else {
+                    micStatus.classList.remove('open');
+                }
+            };
+            recognition.onend = () => {
+                listening = false;
+                setMicState(null);
+                if (!micStatus.classList.contains('error')) micStatus.classList.remove('open');
+            };
 
             micBtn.onclick = (e) => {
                 e.preventDefault();
                 if (listening) { recognition.stop(); return; }
-                try { recognition.start(); } catch (err) { }
+                micStatus.classList.remove('error');
+                try {
+                    recognition.start();
+                } catch (err) {
+                    // start() иногда бросает синхронно ("already started" и т.п.) —
+                    // это НЕ проходит через onerror, поэтому раньше падало молча
+                    micStatus.textContent = 'Не удалось запустить микрофон, попробуйте ещё раз';
+                    micStatus.classList.add('open', 'error');
+                    setTimeout(() => { micStatus.classList.remove('open', 'error'); }, 3000);
+                }
             };
         }
 
