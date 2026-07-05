@@ -7445,8 +7445,8 @@ body.dark-mode .cw-status-promo {
     width: 100%;
     height: 3px;
     background: var(--border);
-    overflow: hidden;
-    pointer-events: none;
+    overflow: visible; /* иначе отметка над полосой обрежется */
+    pointer-events: auto; /* нужен title-тултип при наведении на отметку */
     z-index: 1;
 }
 
@@ -7454,5 +7454,23 @@ body.dark-mode .cw-status-promo {
     height: 100%;
     width: 0%;
     background: linear-gradient(90deg, #F59E0B, #16A34A);
+    border-radius: 0 2px 2px 0;
     transition: width 0.5s ease;
+}
+
+.header-fill-bar-marker {
+    position: absolute;
+    bottom: 6px;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1px 6px;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    transition: left 0.5s ease;
+    cursor: default;
 }

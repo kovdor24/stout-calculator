@@ -49,11 +49,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.35">
+    <link rel="stylesheet" href="style.css?v=2.36">
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.14" defer></script>
-    <script src="app.js?v=2.54" defer></script>
+    <script src="app.js?v=2.55" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -84,8 +84,9 @@
     </div>
     <div id="page_scale_wrapper">
         <header class="site-header">
-            <div id="header_fill_bar" class="header-fill-bar no-print" style="display:none;" title="Примерная оценка: сколько оборудования подобрано от типового объекта такой площади">
+            <div id="header_fill_bar" class="header-fill-bar no-print" style="display:none;" title="Примерная оценка: на сколько % рассчитан объект">
                 <div id="header_fill_bar_fill" class="header-fill-bar-fill" style="width:0%"></div>
+                <div id="header_fill_bar_marker" class="header-fill-bar-marker" style="left:0%">0%</div>
             </div>
             <div class="site-header-left">
                 <img id="top_left_logo" src="img/stout_logo.png" alt="STOUT" class="stout-logo-img">
@@ -98,7 +99,7 @@
                     <span class="m-total-div">|</span>
                     <span class="m-total-work">Монтаж: <span id="m_tot_work">0 ₽</span></span>
                 </div>
-                <span id="m_fill_pct_wrap" class="fill-pct-wrap fill-pct-row" style="display:none;" title="Примерная оценка заполненности объекта">≈<b id="m_fill_pct_val" class="fill-pct-val">0%</b> от объекта</span>
+                <span id="m_fill_pct_wrap" class="fill-pct-wrap fill-pct-row" style="display:none;" title="Примерная оценка: на сколько % рассчитан объект">≈ на <b id="m_fill_pct_val" class="fill-pct-val">0%</b> рассчитан объект</span>
             </div>
 
             <div class="site-header-right">

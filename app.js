@@ -18133,8 +18133,7 @@ const app = {
                 if (isPro) {
                     sumsHtml += `<span style="margin:0 10px; color:var(--border);">|</span> <span style="color:var(--text-sec); font-size:11px; margin-right:4px;">Монтаж:</span> <b id="anim_works_sum" style="color:#F97316; font-size:14px;">0 ₽</b>`;
                 }
-                const progressHtml = `<span id="fill_pct_wrap" class="fill-pct-wrap fill-pct-row" style="display:none;" title="Примерная оценка: сколько оборудования подобрано от типового объекта такой площади">≈<b id="fill_pct_val" class="fill-pct-val">0%</b> от объекта</span>`;
-                headerTotals.innerHTML = `<div class="header-totals-sums-row">${sumsHtml}</div>${progressHtml}`;
+                headerTotals.innerHTML = `<div class="header-totals-sums-row">${sumsHtml}</div>`;
                 headerTotals.dataset.isPro = String(isPro);
                 headerTotals.dataset.lastEq = 0;
                 headerTotals.dataset.lastWorks = 0;
@@ -18182,24 +18181,22 @@ const app = {
             }
 
             // Индикатор "на сколько % подобран объект" (по стоимости оборудования от площади) —
-            // текст в бейдже + полоса на всю ширину по нижнему краю липкой шапки (header_fill_bar)
-            const fillWrap = document.getElementById('fill_pct_wrap');
+            // в веб-версии живёт только на полосе по нижнему краю шапки: сама полоса + плавающая
+            // отметка с цифрой на уровне заполнения, подсказка — по наведению (title).
             const fillPct = this.getFillPercent();
-            if (fillWrap) {
-                if (fillPct === null) {
-                    fillWrap.style.display = 'none';
-                } else {
-                    fillWrap.style.display = 'inline-flex';
-                    document.getElementById('fill_pct_val').innerText = fillPct + '%';
-                }
-            }
             const headerFillBar = document.getElementById('header_fill_bar');
             if (headerFillBar) {
                 if (fillPct === null) {
                     headerFillBar.style.display = 'none';
                 } else {
                     headerFillBar.style.display = 'block';
-                    document.getElementById('header_fill_bar_fill').style.width = Math.min(100, fillPct) + '%';
+                    const clamped = Math.min(100, fillPct);
+                    document.getElementById('header_fill_bar_fill').style.width = clamped + '%';
+                    const marker = document.getElementById('header_fill_bar_marker');
+                    if (marker) {
+                        marker.style.left = clamped + '%';
+                        marker.innerText = fillPct + '%';
+                    }
                 }
             }
 
