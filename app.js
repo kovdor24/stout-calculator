@@ -18252,18 +18252,8 @@ const app = {
                 document.querySelector('.m-total-work').style.display = 'none';
                 document.querySelector('.m-total-div').style.display = 'none';
             }
-
-            // Индикатор "на сколько % подобран объект" — та же оценка, что и в десктопной шапке
-            const mFillWrap = document.getElementById('m_fill_pct_wrap');
-            const mFillPct = this.getFillPercent();
-            if (mFillWrap) {
-                if (mFillPct === null) {
-                    mFillWrap.style.display = 'none';
-                } else {
-                    mFillWrap.style.display = 'inline-flex';
-                    document.getElementById('m_fill_pct_val').innerText = mFillPct + '%';
-                }
-            }
+            // Индикатор "на сколько % подобран объект" на мобильных — тот же header_fill_bar
+            // (общий для десктопа и мобильных), отдельный текстовый бейдж не нужен — дублировал бы.
         }
         // ===================================================
         // Очищаем старую схему и вставляем новую ПЕРЕД таблицей спецификации
