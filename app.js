@@ -1305,9 +1305,10 @@ const app = {
         const t = (' ' + (text || '').toLowerCase() + ' ').replace(/ё/g, 'е');
         const results = [];
 
-        // Площадь дома
+        // Площадь дома — после "дом/площадь/коттедж" разрешаем и полное "метров", и голое "м"
+        // ("дом 200 м"), но не даём "м" быть началом другого слова (иначе смотри следующий тест).
         let m = t.match(/(\d{2,4})\s*(?:кв\.?\s*м\.?|м2|м²|квадрат[а-я]*)/i);
-        if (!m) m = t.match(/(?:дом[а-я]*|площад[а-я]*|коттедж[а-я]*)\D{0,15}(\d{2,4})\s*метр[а-я]*/i);
+        if (!m) m = t.match(/(?:дом[а-я]*|площад[а-я]*|коттедж[а-я]*)\D{0,15}(\d{2,4})\s*(?:метр[а-я]*|м(?![а-я]))/i);
         if (m) {
             const area = Math.max(20, Math.min(1000, parseInt(m[1], 10)));
             results.push({ field: 'area', value: area, label: 'Площадь дома', display: `${area} м²` });
@@ -1398,6 +1399,18 @@ const app = {
         }
         if (/гвс|горяч[а-я]*\s*вод[а-я]*|бойлер[а-я]*/i.test(t)) {
             results.push({ field: 'hotWater', value: true, label: 'Горячая вода', display: 'нужна' });
+        }
+
+        // Объём бойлера в литрах ("бойлер 200 л", "на 200 литров")
+        const tankM = t.match(/(\d{2,4})\s*л(?:итр[а-я]*)?(?![а-я])/i);
+        if (tankM) {
+            const vol = Math.max(30, Math.min(1000, parseInt(tankM[1], 10)));
+            results.push({ field: 'tankVol', value: vol, label: 'Объём бойлера', display: `${vol} л` });
+        }
+
+        // Скважина/колодец
+        if (/скважин[а-я]*|колодц[а-я]*|колодец/i.test(t)) {
+            results.push({ field: 'well', value: true, label: 'Скважина', display: 'есть' });
         }
 
         // Вентиляция — стем "рекупера" (не "рекуперат"), т.к. общий для "рекуператор" и "рекуперация"
@@ -1540,6 +1553,8 @@ const app = {
                     if (r.ctrl) this.state.ufhCtrl = r.ctrl;
                     break;
                 }
+                case 'tankVol': this.state.tankVol = r.value; break;
+                case 'well': this.state.well = r.value; break;
             }
         });
         this.syncUI();
@@ -1634,12 +1649,15 @@ const app = {
 
         let lastResults = null;
 
+        let lastParsedText = '';
+
         actionBtn.onclick = () => {
             if (!lastResults) {
                 const text = textInput.value.trim();
                 if (!text) { textInput.focus(); return; }
                 const results = this.parseHouseQuery(text);
                 lastResults = results;
+                lastParsedText = text;
                 if (!results.length) {
                     previewBox.innerHTML = `<p class="eq-search-nomatch">Не удалось ничего распознать — попробуйте описать подробнее: площадь, этажность, отопление, тёплый пол.</p>`;
                     previewBox.style.display = '';
@@ -1656,8 +1674,12 @@ const app = {
             }
         };
 
+        // Сбрасываем распознанное только если текст РЕАЛЬНО изменился — на мобильных браузерах
+        // событие "input" иногда прилетает само (автокоррекция при потере фокуса), и если сбрасывать
+        // по любому input, клик по "Применить" на телефоне мог попадать на уже сброшенное состояние
+        // и вместо применения снова показывать то же самое распознавание ("как будто ничего не происходит").
         textInput.oninput = () => {
-            if (lastResults) {
+            if (lastResults && textInput.value.trim() !== lastParsedText) {
                 lastResults = null;
                 previewBox.style.display = 'none';
                 actionBtn.innerText = '✨ Распознать';
