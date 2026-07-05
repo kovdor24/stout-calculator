@@ -5541,6 +5541,60 @@ body.dark-mode .desktop-feedback-btn:hover {
     max-width: 480px;
 }
 
+.ai-chat-card {
+    height: 78vh;
+    max-height: 640px;
+}
+
+.ai-chat-log {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 2px;
+    min-height: 120px;
+}
+
+.ai-chat-bubble {
+    max-width: 85%;
+    padding: 9px 13px;
+    border-radius: 16px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.ai-chat-assistant {
+    align-self: flex-start;
+    background: var(--surface-light);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+    color: var(--text-main);
+}
+
+.ai-chat-user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #7C3AED, #2563EB);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.ai-chat-bubble .ai-parse-preview-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-sec);
+    margin-bottom: 4px;
+}
+
+.ai-chat-bubble .ai-parse-preview-item {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 13px;
+}
+
 .ai-parse-input-wrap .eq-mic-btn {
     top: 16px;
     transform: none;

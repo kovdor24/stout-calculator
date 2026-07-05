@@ -1699,33 +1699,46 @@ const app = {
             try { this.toggleMenu(); } catch (e) { }
         }
 
+        const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
         const overlay = document.createElement('div');
         overlay.className = 'calc-dialog-overlay';
 
         const card = document.createElement('div');
-        card.className = 'calc-dialog-card ai-parse-card';
+        card.className = 'calc-dialog-card ai-parse-card ai-chat-card';
 
         const titleEl = document.createElement('h3');
         titleEl.className = 'calc-dialog-title';
         titleEl.innerText = '✨ Умное заполнение параметров';
         card.appendChild(titleEl);
 
-        const msgEl = document.createElement('p');
-        msgEl.className = 'calc-dialog-message';
-        msgEl.innerText = 'Опишите объект простыми словами голосом или текстом — сами расставим нужные параметры слева.';
-        card.appendChild(msgEl);
+        const chatLog = document.createElement('div');
+        chatLog.className = 'ai-chat-log';
+        card.appendChild(chatLog);
+
+        const addBubble = (role, html) => {
+            const b = document.createElement('div');
+            b.className = 'ai-chat-bubble ai-chat-' + role;
+            b.innerHTML = html;
+            chatLog.appendChild(b);
+            chatLog.scrollTop = chatLog.scrollHeight;
+            return b;
+        };
+
+        addBubble('assistant', 'Опишите объект простыми словами голосом или текстом — сразу выставлю нужные параметры слева. Например: «150 квадратов, высота потолков 3 метра, везде тёплый пол и заливаем антифриз».');
 
         const inputWrap = document.createElement('div');
         inputWrap.className = 'eq-name-wrap ai-parse-input-wrap';
 
         const textInput = document.createElement('textarea');
         textInput.className = 'calc-dialog-input ai-parse-textarea';
-        textInput.rows = 3;
-        textInput.placeholder = 'Например: дом 200 м2, везде тёплые полы, отопление газовым котлом...';
+        textInput.rows = 2;
+        textInput.placeholder = 'Напишите сообщение...';
         inputWrap.appendChild(textInput);
 
         const voiceUI = this._createVoiceMicButton((transcript) => {
             textInput.value = transcript;
+            textInput.focus();
         });
         if (voiceUI) {
             inputWrap.appendChild(voiceUI.micBtn);
@@ -1733,24 +1746,19 @@ const app = {
         }
         card.appendChild(inputWrap);
 
-        const previewBox = document.createElement('div');
-        previewBox.className = 'ai-parse-preview';
-        previewBox.style.display = 'none';
-        card.appendChild(previewBox);
-
         const btnRow = document.createElement('div');
         btnRow.className = 'calc-dialog-buttons';
 
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
-        cancelBtn.innerText = 'Отмена';
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
+        closeBtn.innerText = 'Готово';
 
-        const actionBtn = document.createElement('button');
-        actionBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
-        actionBtn.innerText = '✨ Распознать';
+        const sendBtn = document.createElement('button');
+        sendBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
+        sendBtn.innerText = 'Отправить';
 
-        btnRow.appendChild(cancelBtn);
-        btnRow.appendChild(actionBtn);
+        btnRow.appendChild(closeBtn);
+        btnRow.appendChild(sendBtn);
         card.appendChild(btnRow);
 
         overlay.appendChild(card);
@@ -1762,60 +1770,38 @@ const app = {
             overlay.classList.remove('active');
             setTimeout(() => overlay.remove(), 200);
         };
-        cancelBtn.onclick = close;
+        closeBtn.onclick = close;
         overlay.onclick = (e) => { if (e.target === overlay) close(); };
 
-        let lastResults = null;
+        // Каждое сообщение обрабатывается сразу и независимо: нашли параметры — тут же
+        // применяем их и подтверждаем в ответном сообщении; чат можно продолжать сколько угодно —
+        // это не одноразовая форма "напечатал → результат", а диалог, как с настоящим ассистентом.
+        const sendMessage = () => {
+            const text = textInput.value.trim();
+            if (!text) { textInput.focus(); return; }
+            addBubble('user', escapeHtml(text));
+            textInput.value = '';
 
-        let lastParsedText = '';
-
-        const runAction = () => {
-            if (!lastResults) {
-                const text = textInput.value.trim();
-                if (!text) { textInput.focus(); return; }
-                lastParsedText = text;
-                const results = this.parseHouseQuery(text);
-                if (!results.length) {
-                    lastResults = null;
-                    const intent = this.detectSpecialIntent(text);
-                    previewBox.innerHTML = (intent && intent.message)
-                        ? `<p class="ai-parse-intent-msg">${intent.message}</p>`
-                        : `<p class="eq-search-nomatch">Не удалось ничего распознать — попробуйте описать подробнее: площадь, этажность, отопление, тёплый пол.</p>`;
-                    previewBox.style.display = '';
-                    return;
-                }
-                lastResults = results;
-                previewBox.innerHTML = `<div class="ai-parse-preview-title">Распознано:</div>` +
-                    results.map(r => `<div class="ai-parse-preview-item"><span class="ai-parse-preview-check">✓</span><span class="ai-parse-preview-label">${r.label}:</span><span class="ai-parse-preview-value">${r.display}</span></div>`).join('');
-                previewBox.style.display = '';
-                actionBtn.innerText = '✅ Применить';
+            const results = this.parseHouseQuery(text);
+            if (results.length) {
+                this.applyParsedResults(results);
+                const list = results.map(r => `<div class="ai-parse-preview-item"><span class="ai-parse-preview-check">✓</span><span class="ai-parse-preview-label">${r.label}:</span><span class="ai-parse-preview-value">${r.display}</span></div>`).join('');
+                addBubble('assistant', `<div class="ai-parse-preview-title">Готово, установил:</div>${list}`);
             } else {
-                this.applyParsedResults(lastResults);
-                close();
-                this.showAiParseToast(lastResults.length);
+                const intent = this.detectSpecialIntent(text);
+                const msg = (intent && intent.message) ? intent.message : 'Не удалось ничего распознать — попробуйте описать подробнее: площадь, этажность, отопление, тёплый пол.';
+                addBubble('assistant', msg);
             }
+            textInput.focus();
         };
 
-        actionBtn.onclick = runAction;
+        sendBtn.onclick = sendMessage;
 
-        // Enter в поле — сразу запускает распознавание (или применение, если уже распознано),
-        // как по клику на кнопку. Shift+Enter — обычный перенос строки, не трогаем.
+        // Enter отправляет сообщение, Shift+Enter — обычный перенос строки
         textInput.onkeydown = (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                runAction();
-            }
-        };
-
-        // Сбрасываем распознанное только если текст РЕАЛЬНО изменился — на мобильных браузерах
-        // событие "input" иногда прилетает само (автокоррекция при потере фокуса), и если сбрасывать
-        // по любому input, клик по "Применить" на телефоне мог попадать на уже сброшенное состояние
-        // и вместо применения снова показывать то же самое распознавание ("как будто ничего не происходит").
-        textInput.oninput = () => {
-            if (lastResults && textInput.value.trim() !== lastParsedText) {
-                lastResults = null;
-                previewBox.style.display = 'none';
-                actionBtn.innerText = '✨ Распознать';
+                sendMessage();
             }
         };
     },
