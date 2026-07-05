@@ -1601,6 +1601,85 @@ const app = {
         this.saveState();
     },
 
+    // Плавающая кнопка ИИ-заполнения: обычный тап открывает модалку, долгое нажатие (450мс)
+    // включает режим перетаскивания — можно унести кнопку туда, где она не перекрывает интерфейс.
+    // Позиция запоминается в localStorage и восстанавливается при следующем открытии.
+    initAiFabDrag: function () {
+        const btn = document.getElementById('ai_parse_fab_btn');
+        if (!btn) return;
+
+        try {
+            const saved = JSON.parse(localStorage.getItem('ai_fab_pos') || 'null');
+            if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
+                btn.style.left = saved.left + 'px';
+                btn.style.top = saved.top + 'px';
+                btn.style.right = 'auto';
+                btn.style.bottom = 'auto';
+            }
+        } catch (e) { }
+
+        let longPressTimer = null;
+        let dragging = false;
+        let moved = false;
+        let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+
+        const getXY = (e) => (e.touches && e.touches.length) ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY };
+
+        const onMove = (e) => {
+            if (!dragging) return;
+            const { x, y } = getXY(e);
+            const dx = x - startX, dy = y - startY;
+            if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
+            const maxLeft = window.innerWidth - btn.offsetWidth - 4;
+            const maxTop = window.innerHeight - btn.offsetHeight - 4;
+            btn.style.left = Math.max(4, Math.min(maxLeft, startLeft + dx)) + 'px';
+            btn.style.top = Math.max(4, Math.min(maxTop, startTop + dy)) + 'px';
+            btn.style.right = 'auto';
+            btn.style.bottom = 'auto';
+            e.preventDefault();
+        };
+
+        const endDrag = () => {
+            clearTimeout(longPressTimer);
+            if (dragging) {
+                dragging = false;
+                btn.classList.remove('dragging');
+                if (moved) {
+                    const rect = btn.getBoundingClientRect();
+                    localStorage.setItem('ai_fab_pos', JSON.stringify({ left: rect.left, top: rect.top }));
+                }
+            }
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', endDrag);
+        };
+
+        btn.addEventListener('pointerdown', (e) => {
+            const { x, y } = getXY(e);
+            startX = x; startY = y;
+            const rect = btn.getBoundingClientRect();
+            startLeft = rect.left; startTop = rect.top;
+            moved = false;
+            longPressTimer = setTimeout(() => {
+                dragging = true;
+                moved = false;
+                btn.classList.add('dragging');
+                if (navigator.vibrate) navigator.vibrate(15);
+            }, 450);
+            document.addEventListener('pointermove', onMove, { passive: false });
+            document.addEventListener('pointerup', endDrag);
+        });
+
+        btn.addEventListener('click', (e) => {
+            if (moved) {
+                e.preventDefault();
+                e.stopPropagation();
+                moved = false;
+                return;
+            }
+            this.openAiParseModal();
+        });
+    },
+
     showAiParseToast: function (count) {
         let el = document.getElementById('ai_parse_toast');
         if (!el) {
@@ -8217,6 +8296,7 @@ const app = {
 
 
         this.initCityAutocomplete();
+        this.initAiFabDrag();
     },
     getPower: function () {
         let regVal = (this.state.region !== undefined) ? (this.state.region / 100) : 1.0;
