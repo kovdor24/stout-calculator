@@ -1326,6 +1326,7 @@ const app = {
         else if (/гвс|горяч[а-я]*\s*вод[а-я]*|бойлер[а-я]*/i.test(t)) { fields.push('hotWater'); fields.push('tankVol'); }
         if (/скважин[а-я]*|колодец|колодц[а-я]*/i.test(t)) fields.push('well');
         if (/водоснабжен[а-я]*/i.test(t)) fields.push('waterEnabled');
+        if (/санузел|санузл[а-я]*|туалет[а-я]*|ванная[а-я]*|ванн[а-я]*/i.test(t)) fields.push('waterZones');
         if (/вентиляц[а-я]*/i.test(t)) fields.push('ventilationType');
         if (/количество\s*окон|число\s*окон/i.test(t)) fields.push('win');
         if (/потолк[а-я]*|высот[а-я]*\s*потолк[а-я]*/i.test(t)) fields.push('h');
@@ -1407,7 +1408,7 @@ const app = {
                 'камер', 'стекл', 'пакет', 'напылен', 'аргон', 'рамк', 'мультифункциональн',
                 'автоматик', 'напряму', 'вручну', 'глазок', 'умн', 'покомнатн', 'зональн', 'позонн', 'терморегулятор',
                 'вайфай', 'сервопривод', 'сервак', 'контроллер', 'клеммник', 'телефон', 'зонт', 'термоголов', 'термух', 'крутилк', 'барашк', 'термоклапан',
-                'город', 'водоснабжен'];
+                'город', 'водоснабжен', 'санузел', 'санузл', 'туалет', 'ванная', 'ванн', 'стиральн', 'посудомо', 'буд'];
             // Разговорные названия городов, которых нет в официальной базе городов дословно
             // ("Питер"/"СПб" вместо "Санкт-Петербург", "мск" вместо "Москва")
             const CITY_NICKNAMES = { 'питер': 'санкт-петербург', 'спб': 'санкт-петербург', 'мск': 'москва' };
@@ -1505,6 +1506,31 @@ const app = {
         // Водоснабжение (внутренняя разводка воды)
         if (/водоснабжен[а-я]*/i.test(t)) {
             results.push({ field: 'waterEnabled', value: true, label: 'Водоснабжение', display: 'нужно' });
+        }
+
+        // Санузлы и сантехника в них — то же самое, что создаётся вручную кнопкой "Добавить санузел"
+        // (state.waterZones). Наличие хотя бы одного санузла с унитазом само по себе включает в смету
+        // и водоснабжение, и канализацию — отдельно спрашивать про канализацию не нужно.
+        if (/санузел|санузл[а-я]*|туалет[а-я]*|ванная[а-я]*|ванн[а-я]*/i.test(t)) {
+            const sanM = t.match(/(\d{1,2})\s*санузл[а-я]*|(\d{1,2})\s*туалет[а-я]*/i);
+            const count = Math.max(1, Math.min(10, sanM ? parseInt(sanM[1] || sanM[2], 10) : 1));
+            const fixtures = { toilet: 1, basin: 1, bath: 0, shower: 0, wash: 0, dish: 0 };
+            if (/ванн[а-я]*/i.test(t)) fixtures.bath = 1;
+            if (/душ[а-я]*/i.test(t)) fixtures.shower = 1;
+            if (!fixtures.bath && !fixtures.shower) fixtures.shower = 1; // хотя бы один излив по умолчанию
+            if (/стиральн[а-я]*/i.test(t)) fixtures.wash = 1;
+            if (/посудомо[а-я]*/i.test(t)) fixtures.dish = 1;
+            const zones = Array.from({ length: count }, (_, i) => ({
+                id: Date.now() + i, name: `Санузел ${i + 1}`, dist: 8, fixtures: { ...fixtures }
+            }));
+            const fixtureLabels = [];
+            if (fixtures.toilet) fixtureLabels.push('унитаз');
+            if (fixtures.basin) fixtureLabels.push('раковина');
+            if (fixtures.bath) fixtureLabels.push('ванна');
+            if (fixtures.shower) fixtureLabels.push('душ');
+            if (fixtures.wash) fixtureLabels.push('стиральная машина');
+            if (fixtures.dish) fixtureLabels.push('посудомоечная машина');
+            results.push({ field: 'waterZones', value: zones, label: 'Санузлы', display: `${count} шт. (${fixtureLabels.join(', ')})` });
         }
 
         // Вентиляция — стем "рекупера" (не "рекуперат"), т.к. общий для "рекуператор" и "рекуперация"
@@ -1650,6 +1676,7 @@ const app = {
                 case 'tankVol': this.state.tankVol = r.value; break;
                 case 'well': this.state.well = r.value; break;
                 case 'waterEnabled': this.state.water = r.value; break;
+                case 'waterZones': this.state.waterZones = r.value; this.state.water = true; break;
                 case 'radType': this.state.radType = r.value; break;
             }
         });
@@ -1946,9 +1973,9 @@ const app = {
             },
             {
                 key: 'water',
-                addressed: () => accumulated.has('waterEnabled') || declined.has('water'),
-                question: 'Будете делать водоснабжение внутри дома?',
-                yesField: { field: 'waterEnabled', value: true, label: 'Водоснабжение', display: 'нужно' },
+                addressed: () => accumulated.has('waterEnabled') || accumulated.has('waterZones') || declined.has('water'),
+                question: 'Будете делать водоснабжение? Если да — сколько санузлов и что в них: унитаз, раковина, душ или ванна?',
+                ambiguousYes: true, // просим описать подробно, а не просто "да" — иначе не собрать канализацию
             },
             {
                 key: 'well',
