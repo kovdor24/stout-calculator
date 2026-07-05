@@ -959,7 +959,10 @@ const app = {
         const shorter = a.length <= b.length ? a : b;
         const longer = a.length <= b.length ? b : a;
         if (shorter.length >= 4 && longer.startsWith(shorter)) return true;
-        if (abbrevSet && abbrevSet.has(a) && b.startsWith(a)) return true;
+        // Ограничиваем длину: сокращение вроде "вых." законно тянется до "выходов" (+4 буквы),
+        // но "метал." (сокращение от "металлический") не должно совпадать с "металлопластиковая" —
+        // это совсем другое слово, просто начинающееся с тех же букв
+        if (abbrevSet && abbrevSet.has(a) && b.startsWith(a) && b.length <= a.length * 3) return true;
         return a === b;
     },
 
