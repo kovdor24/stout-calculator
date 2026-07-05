@@ -3239,22 +3239,25 @@ body.dark-mode .header-totals-block {
     /* Bottom Navigation Bar */
     .mobile-bottom-nav {
         display: flex !important;
+        align-items: center;
         position: fixed;
         bottom: 0;
         left: 0;
         width: 100%;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border-top: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(26px) saturate(180%);
+        -webkit-backdrop-filter: blur(26px) saturate(180%);
+        border-top: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 -8px 30px rgba(0, 0, 0, 0.08);
+        border-radius: 20px 20px 0 0;
         z-index: 10000002 !important;
         padding-bottom: env(safe-area-inset-bottom, 15px);
-        box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
     }
 
     body.dark-mode .mobile-bottom-nav {
-        background: rgba(31, 41, 55, 0.95);
-        box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
+        background: rgba(28, 28, 32, 0.68);
+        border-top-color: rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 -8px 30px rgba(0, 0, 0, 0.35);
     }
     .mob-nav-item {
         flex: 1;
@@ -3264,20 +3267,84 @@ body.dark-mode .header-totals-block {
         justify-content: center;
         padding: 8px 0;
         color: var(--text-sec);
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
+        letter-spacing: 0.01em;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: color 0.25s ease;
     }
     .mob-nav-item svg {
-        margin-bottom: 4px;
+        margin-bottom: 3px;
         stroke: var(--text-sec);
+        transition: stroke 0.25s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .mob-nav-item.active {
         color: var(--primary);
     }
     .mob-nav-item.active svg {
         stroke: var(--primary);
+        animation: mob-nav-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes mob-nav-pop {
+        0% { transform: scale(1); }
+        45% { transform: scale(1.22); }
+        100% { transform: scale(1); }
+    }
+
+    /* Центральная приподнятая кнопка ИИ-заполнения в нижнем меню */
+    .mob-nav-fab-wrap {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        position: relative;
+    }
+
+    .mob-nav-fab {
+        position: relative;
+        margin-top: -26px;
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 255, 255, 0.85);
+        background: linear-gradient(135deg, #7C3AED, #2563EB);
+        box-shadow: 0 8px 20px -4px rgba(124, 58, 237, 0.55), 0 4px 10px -2px rgba(37, 99, 235, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #fff;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+    }
+
+    body.dark-mode .mob-nav-fab {
+        border-color: rgba(28, 28, 32, 0.85);
+    }
+
+    .mob-nav-fab:active {
+        transform: scale(0.9);
+        box-shadow: 0 4px 12px -4px rgba(124, 58, 237, 0.5), 0 2px 6px -2px rgba(37, 99, 235, 0.3);
+    }
+
+    .mob-nav-fab .ai-parse-fab-icon {
+        position: relative;
+        z-index: 1;
+        width: 26px;
+        height: 26px;
+    }
+
+    .mob-nav-fab-label {
+        margin-top: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-sec);
+        letter-spacing: 0.01em;
+    }
+
+    .mob-nav-fab .ai-parse-fab-glow {
+        border-radius: 50%;
     }
 
     /* Hide unselected tabs */
@@ -5485,22 +5552,10 @@ body.dark-mode .desktop-feedback-btn:hover {
 }
 
 @media screen and (max-width: 768px) {
+    /* На мобильных кнопка ИИ переезжает в нижнее меню (см. .mob-nav-fab) —
+       плавающую версию поверх интерфейса скрываем, чтобы не дублировать */
     .ai-parse-fab {
-        bottom: 95px; /* На одной высоте с кнопкой "Наверх", левее неё */
-        right: 64px;
-        padding: 0;
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        justify-content: center;
-        z-index: 10000003; /* Выше .mobile-bottom-nav (10000002), иначе кнопка прячется под ней */
-    }
-    .ai-parse-fab span:not(.ai-parse-fab-glow) {
-        display: none;
-    }
-    .ai-parse-fab-icon {
-        width: 26px;
-        height: 26px;
+        display: none !important;
     }
 }
 
