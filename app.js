@@ -17612,7 +17612,7 @@ const app = {
         // baseURL реального фронтенда profi-stout — уже включает "/api",
         // а вызовы идут с относительным путём вида "api/login" (без ведущего
         const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-        const BASE = isLocal ? 'https://profi-stout.promo-online.pro/api' : 'stout_proxy.php?path=';
+        const BASE = isLocal ? 'https://profi-stout.promo-online.pro/api' : `${supabaseUrl}/functions/v1/stout-proxy?path=`;
         const APP_TOKEN = 'Pns2wxxcAnrd6z8vlero6OVNVtv8ksJVg-TsL3D7GOHPIRDnt2MU6VJ7tZshxhn_';
         const CREDS = { login: '+79826109548', password: 'ibatullin2020' };
         const TIMEOUT_MS = 10000; // 10 секунд на каждый запрос
