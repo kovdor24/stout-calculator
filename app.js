@@ -17666,6 +17666,9 @@ const app = {
             this.currentEquipmentList = [];
             this.currentWorksList = [];
             this.currentSpec = [];
+            app.lastEqSum = 0;
+            app.lastWorksSum = 0;
+            app.originalEqSum = 0;
         }
 
         document.getElementById('tbody').innerHTML = h;
