@@ -7323,3 +7323,29 @@ body.dark-mode .cw-status-promo {
 }
 
 
+
+/* ===================================================== */
+/*   ПЛАНШЕТ В ПОРТРЕТНОЙ ОРИЕНТАЦИИ — усиленный оверрайд */
+/*   (гарантированно выигрывает у любых конфликтов выше)  */
+/* ===================================================== */
+@media screen and (max-width: 1024px) and (orientation: portrait) {
+    .doc-header .sku-control,
+    .site-header-right > .header-main-controls,
+    .site-header-right > .header-auth-block {
+        display: none !important;
+    }
+    .container {
+        flex-direction: column !important;
+    }
+    .input-panel,
+    .output-panel,
+    .inv-table,
+    .doc-header {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    #page_scale_wrapper {
+        zoom: 1 !important;
+    }
+}
