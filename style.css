@@ -1373,7 +1373,7 @@ body.menu-open .mobile-menu-backdrop {
     }
 
     /* 3. CSS Grid для строк товаров */
-    .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal) {
+    .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.empty-state-row) {
         display: grid;
         grid-template-columns: auto 1fr 55px;
         /* Авто под картинку, 1fr под текст, 55px под кол-во */
@@ -1389,7 +1389,7 @@ body.menu-open .mobile-menu-backdrop {
     }
 
     /* === МОНТАЖНЫЕ РАБОТЫ: без картинок — убираем колонку img из grid === */
-    body.work-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal) {
+    body.work-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.empty-state-row) {
         grid-template-columns: 1fr 55px !important;
         grid-template-rows: auto auto !important;
         grid-template-areas:
@@ -1429,7 +1429,7 @@ body.menu-open .mobile-menu-backdrop {
         overflow: visible !important;
     }
 
-    body.hide-images-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal) {
+    body.hide-images-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.empty-state-row) {
         grid-template-columns: 1fr 55px !important;
         grid-template-areas:
             "name  qty"
@@ -3331,7 +3331,7 @@ body.dark-mode .header-totals-block {
     }
 
     /* Redefine Table for iPhone 15 widths (Pyaterochka / Perekrestok Flat UI) */
-    .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.hide-custom-work-btn):not(.hide-custom-eq-btn) {
+    .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.empty-state-row):not(.hide-custom-work-btn):not(.hide-custom-eq-btn) {
         display: grid !important;
         grid-template-columns: 64px 1fr auto !important;
         grid-template-rows: auto auto !important;
@@ -3350,7 +3350,7 @@ body.dark-mode .header-totals-block {
     }
     
     /* Remove image placeholder offset specifically in installation works tab on mobile */
-    body.work-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.hide-custom-work-btn):not(.hide-custom-eq-btn) {
+    body.work-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.empty-state-row):not(.hide-custom-work-btn):not(.hide-custom-eq-btn) {
         grid-template-columns: 1fr auto !important;
         grid-template-rows: auto auto !important;
         grid-template-areas: 
@@ -3457,7 +3457,7 @@ body.dark-mode .header-totals-block {
     body.hide-images-mode .inv-table td.col-img {
         display: none !important;
     }
-    body.hide-images-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.hide-custom-work-btn):not(.hide-custom-eq-btn) {
+    body.hide-images-mode .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.empty-state-row):not(.hide-custom-work-btn):not(.hide-custom-eq-btn) {
         grid-template-columns: 1fr auto !important;
         grid-template-areas: 
             "name sum"
@@ -5372,10 +5372,12 @@ body.html2pdf-printing .doc-footer {
     cursor: pointer;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: scale(0.5);
+    transform-origin: bottom right;
 }
 
 .desktop-feedback-btn:hover {
-    transform: translateY(-2px);
+    transform: scale(0.5) translateY(-4px);
     background: #fff;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 10px 10px -5px rgba(0, 0, 0, 0.06);
     border-color: rgba(37, 99, 235, 0.3);
@@ -5445,6 +5447,26 @@ body.dark-mode .desktop-feedback-btn:hover {
 .ai-parse-fab:hover {
     transform: translateY(-2px) scale(1.03);
     box-shadow: 0 20px 30px -5px rgba(124, 58, 237, 0.55), 0 10px 10px -5px rgba(37, 99, 235, 0.3);
+}
+
+/* Искры ИИ-иконки: лёгкое масштабирование при наведении, вразнобой для эффекта мерцания */
+.ai-spark {
+    transform-origin: center;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ai-parse-fab:hover .ai-spark-big {
+    transform: scale(1.15) rotate(10deg);
+}
+
+.ai-parse-fab:hover .ai-spark-sm1 {
+    transform: scale(1.3) rotate(-15deg);
+    transition-delay: 0.05s;
+}
+
+.ai-parse-fab:hover .ai-spark-sm2 {
+    transform: scale(1.3) rotate(15deg);
+    transition-delay: 0.1s;
 }
 
 .ai-parse-fab-glow {

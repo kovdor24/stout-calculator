@@ -1569,7 +1569,7 @@ const app = {
             el.id = 'ai_parse_toast';
             document.body.appendChild(el);
         }
-        el.innerHTML = `<span class="ct-icon">🤖</span><div><div class="ct-title">Готово!</div><div class="ct-sub">Заполнено параметров: ${count}</div></div>`;
+        el.innerHTML = `<span class="ct-icon">✨</span><div><div class="ct-title">Готово!</div><div class="ct-sub">Заполнено параметров: ${count}</div></div>`;
         el.className = 'contest-toast visible no-print';
         clearTimeout(this._aiParseToastTimer);
         this._aiParseToastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
@@ -1589,7 +1589,7 @@ const app = {
 
         const titleEl = document.createElement('h3');
         titleEl.className = 'calc-dialog-title';
-        titleEl.innerText = '🤖 Умное заполнение параметров';
+        titleEl.innerText = '✨ Умное заполнение параметров';
         card.appendChild(titleEl);
 
         const msgEl = document.createElement('p');
@@ -17659,7 +17659,7 @@ const app = {
                 <div class="empty-state-hint">
                     <span class="empty-state-icon">🏠</span>
                     <div class="empty-state-title">Параметры объекта не заданы</div>
-                    <div class="empty-state-text">Измените параметры объекта слева (площадь, отопление, материалы), чтобы начать подбор оборудования — либо нажмите «🤖 ИИ-заполнение» и опишите объект словами.</div>
+                    <div class="empty-state-text">Измените параметры объекта слева (площадь, отопление, материалы), чтобы начать подбор оборудования — либо нажмите «✨ ИИ-заполнение» и опишите объект словами.</div>
                 </div>
             </td></tr>`;
             sum = 0;
