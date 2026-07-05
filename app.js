@@ -1325,6 +1325,7 @@ const app = {
         if (/объ[её]м\s*бойлер[а-я]*|литраж[а-я]*/i.test(t)) fields.push('tankVol');
         else if (/гвс|горяч[а-я]*\s*вод[а-я]*|бойлер[а-я]*/i.test(t)) { fields.push('hotWater'); fields.push('tankVol'); }
         if (/скважин[а-я]*|колодец|колодц[а-я]*/i.test(t)) fields.push('well');
+        if (/водоснабжен[а-я]*/i.test(t)) fields.push('waterEnabled');
         if (/вентиляц[а-я]*/i.test(t)) fields.push('ventilationType');
         if (/количество\s*окон|число\s*окон/i.test(t)) fields.push('win');
         if (/потолк[а-я]*|высот[а-я]*\s*потолк[а-я]*/i.test(t)) fields.push('h');
@@ -1406,7 +1407,7 @@ const app = {
                 'камер', 'стекл', 'пакет', 'напылен', 'аргон', 'рамк', 'мультифункциональн',
                 'автоматик', 'напряму', 'вручну', 'глазок', 'умн', 'покомнатн', 'зональн', 'позонн', 'терморегулятор',
                 'вайфай', 'сервопривод', 'сервак', 'контроллер', 'клеммник', 'телефон', 'зонт', 'термоголов', 'термух', 'крутилк', 'барашк', 'термоклапан',
-                'город'];
+                'город', 'водоснабжен'];
             // Разговорные названия городов, которых нет в официальной базе городов дословно
             // ("Питер"/"СПб" вместо "Санкт-Петербург", "мск" вместо "Москва")
             const CITY_NICKNAMES = { 'питер': 'санкт-петербург', 'спб': 'санкт-петербург', 'мск': 'москва' };
@@ -1499,6 +1500,11 @@ const app = {
         // Скважина/колодец
         if (/скважин[а-я]*|колодц[а-я]*|колодец/i.test(t)) {
             results.push({ field: 'well', value: true, label: 'Скважина', display: 'есть' });
+        }
+
+        // Водоснабжение (внутренняя разводка воды)
+        if (/водоснабжен[а-я]*/i.test(t)) {
+            results.push({ field: 'waterEnabled', value: true, label: 'Водоснабжение', display: 'нужно' });
         }
 
         // Вентиляция — стем "рекупера" (не "рекуперат"), т.к. общий для "рекуператор" и "рекуперация"
@@ -1643,6 +1649,7 @@ const app = {
                 }
                 case 'tankVol': this.state.tankVol = r.value; break;
                 case 'well': this.state.well = r.value; break;
+                case 'waterEnabled': this.state.water = r.value; break;
                 case 'radType': this.state.radType = r.value; break;
             }
         });
@@ -1909,11 +1916,112 @@ const app = {
             return `<div class="ai-parse-preview-title">${title}</div>${list}`;
         };
 
+        // === Второй этап: ненавязчивые уточняющие вопросы по незаполненным разделам ===
+        // Задаются по одному, только когда пользователь реально сообщил что-то новое, и только
+        // о том, что ещё не обсуждалось. Если пользователь сказал "хватит"/"это всё" — прекращаем.
+        const declined = new Set();
+        let pendingTopic = null;
+        let stopAsking = false;
+
+        const hasSystem = (s) => { const r = accumulated.get('systems'); return !!(r && r.value.includes(s)); };
+
+        const TOPICS = [
+            {
+                key: 'heating',
+                addressed: () => hasSystem('tp') || hasSystem('rad') || declined.has('heating'),
+                question: 'Отопление будет тёплым полом, радиаторами, или и то и другое?',
+                ambiguousYes: true,
+            },
+            {
+                key: 'ufhAuto',
+                addressed: () => !hasSystem('tp') || accumulated.has('ufhAuto') || declined.has('ufhAuto'),
+                question: 'Хотите подобрать автоматику для тёплого пола — термоголовки или электронную?',
+                yesField: { field: 'ufhAuto', value: true, ctrl: 'mech', label: 'Автоматика отопления', display: 'механическая (термоголовки)' },
+            },
+            {
+                key: 'hotWater',
+                addressed: () => accumulated.has('hotWater') || declined.has('hotWater'),
+                question: 'Нужна ли горячая вода — будет бойлер?',
+                yesField: { field: 'hotWater', value: true, label: 'Горячая вода', display: 'нужна' },
+            },
+            {
+                key: 'water',
+                addressed: () => accumulated.has('waterEnabled') || declined.has('water'),
+                question: 'Будете делать водоснабжение внутри дома?',
+                yesField: { field: 'waterEnabled', value: true, label: 'Водоснабжение', display: 'нужно' },
+            },
+            {
+                key: 'well',
+                addressed: () => accumulated.has('well') || declined.has('well'),
+                question: 'Нужна ли скважина — с обвязкой (насосная станция, автоматика)?',
+                yesField: { field: 'well', value: true, label: 'Скважина', display: 'есть, с обвязкой' },
+            },
+            {
+                key: 'ventilation',
+                addressed: () => accumulated.has('ventilationType') || declined.has('ventilation'),
+                question: 'Нужна принудительная вентиляция с рекуперацией, или хватит естественной?',
+                yesField: { field: 'ventilationType', value: 'forced', label: 'Вентиляция', display: 'принудительная' },
+            },
+        ];
+
+        const isBareYes = (s) => /^(да|нужен|нужна|нужно|давай|давайте|хочу|хотим|можно|надо|конечно|ага|угу|согласен|согласна)[.!\s]*$/i.test(s.trim());
+        const isBareNo = (s) => /^(нет|не\s*нужен|не\s*нужна|не\s*нужно|не\s*надо|не\s*хочу|не\s*будем|пока\s*не|не\s*сейчас|не\s*требуется)[.!\s]*$/i.test(s.trim());
+        const isStopPhrase = (s) => /это\s*вс[её]|больше\s*ничего|хватит|достаточно|на\s*этом\s*вс[её]|готово|всё\s*на\s*этом|сформ[а-я]*\s*смет[а-я]*|остальн[а-я]*\s*не\s*нужн[а-я]*/i.test(s.toLowerCase());
+
+        // После того как что-то реально обсудили — предлагаем следующий незаполненный раздел
+        const askFollowUp = () => {
+            if (stopAsking) return;
+            const topic = TOPICS.find(x => !x.addressed());
+            if (!topic) { pendingTopic = null; return; }
+            pendingTopic = topic.key;
+            addBubble('assistant', topic.question);
+        };
+
         const sendMessage = () => {
             const text = textInput.value.trim();
             if (!text) { textInput.focus(); return; }
             addBubble('user', escapeHtml(text));
             textInput.value = '';
+
+            // Пользователь явно говорит, что вопросов больше не нужно
+            if (isStopPhrase(text)) {
+                stopAsking = true;
+                pendingTopic = null;
+                addBubble('assistant', accumulated.size
+                    ? renderAccumulated('Хорошо! Вот что учтено — нажмите «Применить», когда будете готовы:')
+                    : 'Хорошо, больше вопросов не будет.');
+                textInput.focus();
+                return;
+            }
+
+            // Короткий да/нет в ответ на только что заданный вопрос — понимаем в контексте
+            if (pendingTopic) {
+                const topic = TOPICS.find(x => x.key === pendingTopic);
+                if (topic) {
+                    if (topic.ambiguousYes && isBareYes(text)) {
+                        addBubble('assistant', topic.question);
+                        textInput.focus();
+                        return;
+                    }
+                    if (isBareYes(text) && topic.yesField) {
+                        accumulated.set(topic.yesField.field, topic.yesField);
+                        pendingTopic = null;
+                        applyBtn.style.display = '';
+                        addBubble('assistant', renderAccumulated('Учёл. Сейчас распознано:'));
+                        askFollowUp();
+                        textInput.focus();
+                        return;
+                    }
+                    if (isBareNo(text)) {
+                        declined.add(topic.key);
+                        pendingTopic = null;
+                        addBubble('assistant', 'Хорошо, пропускаю.');
+                        askFollowUp();
+                        textInput.focus();
+                        return;
+                    }
+                }
+            }
 
             // Команда удаления ("убери бойлер", "удали город") — проверяем раньше обычного
             // разбора, иначе, например, "убери бойлер" сам распознался бы как "нужна горячая вода".
@@ -1922,6 +2030,7 @@ const app = {
                 let removedAny = false;
                 deleteFields.forEach(f => { if (accumulated.delete(f)) removedAny = true; });
                 applyBtn.style.display = accumulated.size ? '' : 'none';
+                pendingTopic = null;
                 addBubble('assistant', removedAny
                     ? renderAccumulated('Убрал. Сейчас учтено:')
                     : 'Не нашёл это среди уже распознанного.');
@@ -1933,7 +2042,9 @@ const app = {
             if (results.length) {
                 results.forEach(r => accumulated.set(r.field, r));
                 applyBtn.style.display = '';
+                pendingTopic = null;
                 addBubble('assistant', renderAccumulated('Учёл. Сейчас распознано:'));
+                askFollowUp();
             } else {
                 const intent = this.detectSpecialIntent(text);
                 const msg = (intent && intent.message) ? intent.message : 'Не удалось ничего распознать — попробуйте описать подробнее: площадь, этажность, отопление, тёплый пол.';
