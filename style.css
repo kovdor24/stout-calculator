@@ -5352,11 +5352,11 @@ body.html2pdf-printing .doc-footer {
 
 /* Desktop Floating Action Button (FAB) */
 .desktop-feedback-btn {
+    display: none !important; /* Временно скрыта — пока не нужна */
     position: fixed;
     bottom: 16px;
     right: 16px;
     z-index: 9999;
-    display: flex;
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
@@ -5372,12 +5372,10 @@ body.html2pdf-printing .doc-footer {
     cursor: pointer;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: scale(0.5);
-    transform-origin: bottom right;
 }
 
 .desktop-feedback-btn:hover {
-    transform: scale(0.5) translateY(-4px);
+    transform: translateY(-2px);
     background: #fff;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 10px 10px -5px rgba(0, 0, 0, 0.06);
     border-color: rgba(37, 99, 235, 0.3);
@@ -5491,14 +5489,18 @@ body.dark-mode .desktop-feedback-btn:hover {
         bottom: 95px; /* На одной высоте с кнопкой "Наверх", левее неё */
         right: 64px;
         padding: 0;
-        width: 40px;
-        height: 40px;
+        width: 48px;
+        height: 48px;
         border-radius: 50%;
         justify-content: center;
         z-index: 10000003; /* Выше .mobile-bottom-nav (10000002), иначе кнопка прячется под ней */
     }
     .ai-parse-fab span:not(.ai-parse-fab-glow) {
         display: none;
+    }
+    .ai-parse-fab-icon {
+        width: 26px;
+        height: 26px;
     }
 }
 

@@ -1383,11 +1383,23 @@ const app = {
         // Система отопления: тёплый пол / радиаторы
         const systems = [];
         if (/т[её]пл[а-я]*\s*пол[а-я]*/i.test(t)) systems.push('tp');
-        if (/радиатор[а-я]*|батаре[а-я]*/i.test(t)) systems.push('rad');
+        if (/радиатор[а-я]*|батаре[а-я]*|панельник[а-я]*/i.test(t)) systems.push('rad');
         if (systems.length) {
             results.push({ field: 'systems', value: systems, label: 'Система отопления', display: systems.map(s => s === 'tp' ? 'Тёплый пол' : 'Радиаторы').join(' + ') });
             if (systems.includes('tp') && /везде|весь\s*дом|во\s*всех\s*комнатах|по\s*всей\s*площад[а-я]*|полность[а-я]*/i.test(t)) {
                 results.push({ field: 'ufhEverywhere', value: true, label: 'Тёплый пол', display: 'по всей площади дома' });
+            }
+            // Тип радиатора — влияет на подбор конкретной серии прямо в смете (это не поле
+            // левой панели, а настройка типа радиаторов в самом оборудовании). Порядок слов не
+            // важен ("радиаторы стальные" и "стальные радиаторы" — оба варианта).
+            if (systems.includes('rad')) {
+                if (/панельник[а-я]*|стальн[а-я]*/i.test(t)) {
+                    results.push({ field: 'radType', value: 'steel', label: 'Тип радиатора', display: 'стальной панельный' });
+                } else if (/алюминь[а-я]*|алюминиев[а-я]*/i.test(t)) {
+                    results.push({ field: 'radType', value: 'aluminum', label: 'Тип радиатора', display: 'алюминиевый секционный' });
+                } else if (/биметалл[а-я]*/i.test(t)) {
+                    results.push({ field: 'radType', value: 'space', label: 'Тип радиатора', display: 'биметаллический секционный' });
+                }
             }
         }
 
@@ -1555,6 +1567,7 @@ const app = {
                 }
                 case 'tankVol': this.state.tankVol = r.value; break;
                 case 'well': this.state.well = r.value; break;
+                case 'radType': this.state.radType = r.value; break;
             }
         });
         this.syncUI();
@@ -1651,7 +1664,7 @@ const app = {
 
         let lastParsedText = '';
 
-        actionBtn.onclick = () => {
+        const runAction = () => {
             if (!lastResults) {
                 const text = textInput.value.trim();
                 if (!text) { textInput.focus(); return; }
@@ -1671,6 +1684,17 @@ const app = {
                 this.applyParsedResults(lastResults);
                 close();
                 this.showAiParseToast(lastResults.length);
+            }
+        };
+
+        actionBtn.onclick = runAction;
+
+        // Enter в поле — сразу запускает распознавание (или применение, если уже распознано),
+        // как по клику на кнопку. Shift+Enter — обычный перенос строки, не трогаем.
+        textInput.onkeydown = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                runAction();
             }
         };
 
