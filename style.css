@@ -6898,6 +6898,43 @@ body.dark-mode .cw-achieve.earned {
     border-color: var(--primary);
 }
 
+/* Сворачиваемый блок: рейтинг + достижения + правила */
+.cw-details {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-light);
+    overflow: hidden;
+}
+
+.cw-details-summary {
+    padding: 8px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-sec);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+}
+
+.cw-details-summary:hover {
+    background: var(--border);
+    color: var(--primary);
+}
+
+.cw-details-content {
+    padding: 10px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.cw-details-content .cw-rules-details {
+    margin-top: 0;
+}
+
 /* Правила конкурса */
 .cw-rules-details {
     margin-top: 10px;

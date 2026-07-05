@@ -1081,8 +1081,10 @@ const app = {
             .then(items => {
                 const idx = this._catalogSearchIndex;
                 const seen = new Set(idx.map(it => it.id));
+                const isSparePart = /комплектующ|запасны?е\s+част/i;
                 (items || []).forEach(it => {
                     if (!it || !it.id || !it.name || typeof it.price !== 'number' || seen.has(it.id)) return;
+                    if (isSparePart.test(it.name)) return;
                     seen.add(it.id);
                     const brand = it.brand || 'STOUT';
                     const t = this._tokenizeSearchText(it.name + ' ' + brand);
@@ -17530,26 +17532,31 @@ const app = {
                     <div class="cw-xp-bar">${xpBar}</div>
                     ${xpLabel}
                 </div>
-                ${this._renderRatingBlock()}
-                <div class="cw-achievements">
-                    ${earnedAch}${lockedAch}
-                </div>
-                <details class="cw-rules-details">
-                    <summary class="cw-rules-summary">📜 Правила конкурса STOUT 2026</summary>
-                    <div class="cw-rules-content">
-                        <p><b>📅 Период:</b> 1 апреля – 30 ноября 2026 г.</p>
-                        <p><b>🎁 Призовые места:</b></p>
-                        <ul>
-                            <li>🥇 <b>1–10 место:</b> 150 000 ₽</li>
-                            <li>🥈 <b>11–15 место:</b> 100 000 ₽</li>
-                            <li>🥉 <b>16–20 место:</b> 50 000 ₽</li>
-                            <li>📦 <b>21–30 место:</b> Ящик для инструментов</li>
-                        </ul>
-                        <p><b>👔 Гарантированные призы:</b></p>
-                        <ul>
-                            <li>👕 <b>От 100 баллов:</b> Форма STOUT (полукомбинезон + куртка)</li>
-                            <li>💰 <b>От 200 баллов:</b> Денежное вознаграждение <b>1 балл = 10 ₽</b></li>
-                        </ul>
+                <details class="cw-details">
+                    <summary class="cw-details-summary">🔍 Подробнее</summary>
+                    <div class="cw-details-content">
+                        ${this._renderRatingBlock()}
+                        <div class="cw-achievements">
+                            ${earnedAch}${lockedAch}
+                        </div>
+                        <details class="cw-rules-details">
+                            <summary class="cw-rules-summary">📜 Правила конкурса STOUT 2026</summary>
+                            <div class="cw-rules-content">
+                                <p><b>📅 Период:</b> 1 апреля – 30 ноября 2026 г.</p>
+                                <p><b>🎁 Призовые места:</b></p>
+                                <ul>
+                                    <li>🥇 <b>1–10 место:</b> 150 000 ₽</li>
+                                    <li>🥈 <b>11–15 место:</b> 100 000 ₽</li>
+                                    <li>🥉 <b>16–20 место:</b> 50 000 ₽</li>
+                                    <li>📦 <b>21–30 место:</b> Ящик для инструментов</li>
+                                </ul>
+                                <p><b>👔 Гарантированные призы:</b></p>
+                                <ul>
+                                    <li>👕 <b>От 100 баллов:</b> Форма STOUT (полукомбинезон + куртка)</li>
+                                    <li>💰 <b>От 200 баллов:</b> Денежное вознаграждение <b>1 балл = 10 ₽</b></li>
+                                </ul>
+                            </div>
+                        </details>
                     </div>
                 </details>
             </div>`;
