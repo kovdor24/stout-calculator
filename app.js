@@ -890,7 +890,10 @@ const app = {
         [/термоголов[а-я]*/i, 'головка термостатическая'],
         [/шитик[а-я]*|сшит[а-я]*/i, 'pex'],
         [/папа[а-я]*/i, 'наружная резьба'],
-        [/мама[а-я]*/i, 'внутренняя резьба']
+        [/мама[а-я]*/i, 'внутренняя резьба'],
+        // "штабил"/"стабил" — жаргон монтажников для трубы PE-Xa/Al/PE-RT ("стабильная").
+        // Искл. "изат" — чтобы не путать со "стабилизатором" (совсем другой товар)
+        [/[шс]табил(?!изат)[а-я]*/i, 'стабильная']
     ],
 
     _expandSlang: function (text) {
@@ -900,13 +903,15 @@ const app = {
     },
 
     // Сравнение слова из каталога (a) со словом из запроса (b) с учётом окончаний падежей
-    // ("наружная" ~ "наружной"): для слов от 5 букв сравниваем только первые 5 символов.
+    // ("наружная" ~ "наружной", "труба" ~ "трубу"): для слов от 5 букв сравниваем первые n-1
+    // символов — на 1 короче порога входа, иначе для слов ровно в 5 букв сравнение
+    // вырождается в точное совпадение и не прощает даже однобуквенное окончание.
     // Для коротких слов (<5) префиксное совпадение разрешаем только если:
     //   - оба слова длиной от 4 букв ("болт" ~ "болты"), или
     //   - слово из каталога — явное сокращение с точкой в исходном названии ("вых." ~ "выходов").
     // Иначе короткие слова вроде "пол" будут случайно находиться внутри "полотенце" и т.п.
     _stemEq: function (a, b, abbrevSet, n = 5) {
-        if (a.length >= n && b.length >= n) return a.slice(0, n) === b.slice(0, n);
+        if (a.length >= n && b.length >= n) return a.slice(0, n - 1) === b.slice(0, n - 1);
         const shorter = a.length <= b.length ? a : b;
         const longer = a.length <= b.length ? b : a;
         if (shorter.length >= 4 && longer.startsWith(shorter)) return true;
@@ -951,6 +956,19 @@ const app = {
         return { words, numbers, abbrev, countedNumbers };
     },
 
+    // Некоторые позиции (например, котлы BAXI) названы просто моделью ("Duo-tec Compact 24") без
+    // общих слов вроде "котёл газовый двухконтурный конденсационный" — по ним обычный поиск не
+    // найдёт ничего. Добавляем эти слова только для поиска, не трогая отображаемое название.
+    _boilerSearchKeywords: function (it) {
+        if (typeof it.power !== 'number' || typeof it.circuits !== 'number' || !it.type) return '';
+        let kw = 'котел ';
+        if (it.type === 'gas') kw += 'газовый ';
+        else if (it.type === 'el') kw += 'электрический ';
+        kw += (it.circuits === 2 ? 'двухконтурный' : 'одноконтурный');
+        if (it.cond) kw += ' конденсационный';
+        return kw;
+    },
+
     _buildCatalogSearchIndex: function () {
         if (this._catalogSearchIndex) return this._catalogSearchIndex;
         const idx = [];
@@ -959,11 +977,11 @@ const app = {
             if (!it || !it.id || !it.name || typeof it.price !== 'number') return;
             if (seen.has(it.id)) return;
             seen.add(it.id);
-            const t = this._tokenizeSearchText(it.name);
+            const t = this._tokenizeSearchText(it.name + ' ' + this._boilerSearchKeywords(it));
             idx.push({ id: it.id, name: it.name, price: it.price, brand: it.brand || 'STOUT', article: it.article || it.id, _words: t.words, _numbers: new Set(t.numbers), _abbrev: t.abbrev, _countedNumbers: t.countedNumbers });
             if (it.rommer && it.rommer.id && it.rommer.name && !seen.has(it.rommer.id)) {
                 seen.add(it.rommer.id);
-                const rt = this._tokenizeSearchText(it.rommer.name);
+                const rt = this._tokenizeSearchText(it.rommer.name + ' ' + this._boilerSearchKeywords(it));
                 idx.push({ id: it.rommer.id, name: it.rommer.name, price: it.rommer.price, brand: it.rommer.brand || 'ROMMER', article: it.rommer.id, _words: rt.words, _numbers: new Set(rt.numbers), _abbrev: rt.abbrev, _countedNumbers: rt.countedNumbers });
             }
         };
@@ -1024,6 +1042,26 @@ const app = {
         return results.slice(0, 20);
     },
 
+    // Когда точного совпадения нет (например, опечатка или позиция, которой нет у STOUT/ROMMER,
+    // как "конденсационный котёл"), показываем ближайшее — по частичному совпадению слов, а не
+    // требуя совпадения всех сразу. Ранжируем по числу совпавших слов.
+    searchCatalogLoose: function (query) {
+        query = (query || '').trim();
+        if (query.length < 2) return [];
+        const idx = this._buildCatalogSearchIndex();
+        const { words: qWords } = this._tokenizeSearchText(this._expandSlang(query));
+        if (!qWords.length) return [];
+
+        const scored = [];
+        idx.forEach(it => {
+            let matched = 0;
+            qWords.forEach(qw => { if (it._words.some(w => this._stemEq(w, qw, it._abbrev))) matched++; });
+            if (matched > 0) scored.push({ it, matched });
+        });
+        scored.sort((a, b) => (b.matched - a.matched) || (a.it.name.length - b.it.name.length));
+        return scored.slice(0, 10).map(s => s.it);
+    },
+
     // Открыть ввод своего оборудования: умный поиск по каталогу (название/артикул) + ручной ввод
     addCustomEqPrompt: function (sectionTitle) {
         sectionTitle = sectionTitle || '9. Дополнительные материалы';
@@ -1033,7 +1071,8 @@ const app = {
         // Догружаем расширенный прайс-лист в фоне; когда придёт — обновим уже показанные подсказки
         this._ensurePriceExtraLoaded().then(() => {
             if (nameInput && nameInput.value.trim().length >= 2 && document.body.contains(nameInput)) {
-                renderResults(app.searchCatalog(nameInput.value));
+                const r = searchWithFallback(nameInput.value);
+                renderResults(r.list, r.loose);
             }
         });
 
@@ -1157,15 +1196,29 @@ const app = {
             notFoundHint.style.display = 'none';
         };
 
-        const renderResults = (list) => {
+        // Если строгий поиск ничего не даёт — пробуем ослабленный (по частичному совпадению слов)
+        // и показываем как "похожие позиции", а не молчим
+        const searchWithFallback = (query) => {
+            const strict = app.searchCatalog(query);
+            if (strict.length) return { list: strict, loose: false };
+            return { list: app.searchCatalogLoose(query), loose: true };
+        };
+
+        const renderResults = (list, isLoose) => {
             lastResults = list || [];
             if (!lastResults.length) {
                 resultsBox.innerHTML = '';
                 resultsBox.classList.remove('open');
+                notFoundHint.innerText = 'Совпадений в каталоге нет — впишите цену вручную ниже.';
                 notFoundHint.style.display = (nameInput.value.trim().length >= 2) ? 'block' : 'none';
                 return;
             }
-            notFoundHint.style.display = 'none';
+            if (isLoose) {
+                notFoundHint.innerText = 'Точного совпадения нет — возможно, подойдёт похожее:';
+                notFoundHint.style.display = 'block';
+            } else {
+                notFoundHint.style.display = 'none';
+            }
             resultsBox.classList.add('open');
             resultsBox.innerHTML = lastResults.map(it => `
                 <div class="eq-search-item" data-id="${it.id}">
@@ -1192,7 +1245,10 @@ const app = {
             selectedArticle = null;
             notFoundHint.style.display = 'none';
             clearTimeout(searchTimer);
-            searchTimer = setTimeout(() => renderResults(app.searchCatalog(nameInput.value)), 120);
+            searchTimer = setTimeout(() => {
+                const r = searchWithFallback(nameInput.value);
+                renderResults(r.list, r.loose);
+            }, 120);
         };
 
         const closeModal = () => {
