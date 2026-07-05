@@ -11730,13 +11730,20 @@ const app = {
         };
     },
     // Примерная оценка "на сколько % подобран объект" — сравнивает уже посчитанную сумму
-    // оборудования (app.lastEqSum) с грубой оценкой полного комплекта для такой площади.
-    // ВАЖНО: коэффициент ₽/м² — приблизительный, подберите под свои реальные проекты.
-    _FILL_PERCENT_PRICE_PER_M2: 4000,
+    // оборудования (app.lastEqSum) с оценкой полного комплекта для такой площади.
+    // Коэффициенты получены не на глаз, а прогоном настоящего render() с полностью
+    // укомплектованным объектом (отопление+ГВС+скважина+2 санузла+вентиляция+автоматика)
+    // на нескольких площадях (80/100/150/200/250/300 м²) и линейной регрессией по точкам:
+    // 80м²→952 485₽, 100м²→1 159 345₽, 150м²→1 428 868₽, 200м²→1 744 956₽,
+    // 250м²→2 062 885₽, 300м²→2 428 915₽. Полная стоимость растёт не строго пропорционально
+    // площади — часть оборудования (котёл, скважина, вентиляция) имеет фиксированную стоимость
+    // независимо от площади, поэтому модель "база + за м²", а не просто "за м²".
+    _FILL_PERCENT_BASE: 460000,
+    _FILL_PERCENT_PER_M2: 6500,
     getFillPercent: function () {
         const area = this.state.area || 0;
         if (area <= 0) return null;
-        const estimatedTotal = area * this._FILL_PERCENT_PRICE_PER_M2;
+        const estimatedTotal = this._FILL_PERCENT_BASE + area * this._FILL_PERCENT_PER_M2;
         if (estimatedTotal <= 0) return null;
         const pct = Math.round(((this.lastEqSum || 0) / estimatedTotal) * 100);
         return Math.max(0, Math.min(150, pct));
@@ -18122,12 +18129,12 @@ const app = {
 
             // Строим HTML каркас только 1 раз (или при смене тарифа), чтобы не сбрасывать анимацию
             if (!headerTotals.innerHTML.includes('anim_eq_sum') || headerTotals.dataset.isPro !== String(isPro)) {
-                let html = `<span style="color:var(--text-sec); font-size:11px; margin-right:4px;">Оборудование:</span> <b id="anim_eq_sum" style="color:var(--primary); font-size:14px;">0 ₽</b>`;
+                let sumsHtml = `<span style="color:var(--text-sec); font-size:11px; margin-right:4px;">Оборудование:</span> <b id="anim_eq_sum" style="color:var(--primary); font-size:14px;">0 ₽</b>`;
                 if (isPro) {
-                    html += `<span style="margin:0 10px; color:var(--border);">|</span> <span style="color:var(--text-sec); font-size:11px; margin-right:4px;">Монтаж:</span> <b id="anim_works_sum" style="color:#F97316; font-size:14px;">0 ₽</b>`;
+                    sumsHtml += `<span style="margin:0 10px; color:var(--border);">|</span> <span style="color:var(--text-sec); font-size:11px; margin-right:4px;">Монтаж:</span> <b id="anim_works_sum" style="color:#F97316; font-size:14px;">0 ₽</b>`;
                 }
-                html += `<span id="fill_pct_wrap" class="fill-pct-wrap" style="display:none;" title="Примерная оценка: сколько оборудования подобрано от типового объекта такой площади"><span style="margin:0 10px; color:var(--border);">|</span><span class="fill-pct-bar"><span id="fill_pct_fill" class="fill-pct-fill" style="width:0%"></span></span><b id="fill_pct_val" class="fill-pct-val">0%</b></span>`;
-                headerTotals.innerHTML = html;
+                const progressHtml = `<span id="fill_pct_wrap" class="fill-pct-wrap fill-pct-row" style="display:none;" title="Примерная оценка: сколько оборудования подобрано от типового объекта такой площади"><span class="fill-pct-bar"><span id="fill_pct_fill" class="fill-pct-fill" style="width:0%"></span></span><b id="fill_pct_val" class="fill-pct-val">0%</b></span>`;
+                headerTotals.innerHTML = `<div class="header-totals-sums-row">${sumsHtml}</div>${progressHtml}`;
                 headerTotals.dataset.isPro = String(isPro);
                 headerTotals.dataset.lastEq = 0;
                 headerTotals.dataset.lastWorks = 0;

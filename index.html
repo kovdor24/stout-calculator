@@ -49,11 +49,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.33">
+    <link rel="stylesheet" href="style.css?v=2.34">
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.14" defer></script>
-    <script src="app.js?v=2.52" defer></script>
+    <script src="app.js?v=2.53" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -90,11 +90,12 @@
 
             <!-- Mobile Header Totals (Visible only on mobile) -->
             <div id="mobile_header_totals" class="mobile-header-totals">
-                <span class="m-total-eq">Оборудование: <span id="m_tot_eq">0 ₽</span></span>
-                <span class="m-total-div">|</span>
-                <span class="m-total-work">Монтаж: <span id="m_tot_work">0 ₽</span></span>
-                <span id="m_fill_pct_wrap" class="fill-pct-wrap" style="display:none;" title="Примерная оценка заполненности объекта">
+                <div class="m-totals-sums-row">
+                    <span class="m-total-eq">Оборудование: <span id="m_tot_eq">0 ₽</span></span>
                     <span class="m-total-div">|</span>
+                    <span class="m-total-work">Монтаж: <span id="m_tot_work">0 ₽</span></span>
+                </div>
+                <span id="m_fill_pct_wrap" class="fill-pct-wrap fill-pct-row" style="display:none;" title="Примерная оценка заполненности объекта">
                     <span class="fill-pct-bar"><span id="m_fill_pct_fill" class="fill-pct-fill" style="width:0%"></span></span>
                     <b id="m_fill_pct_val" class="fill-pct-val">0%</b>
                 </span>
