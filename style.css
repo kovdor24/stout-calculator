@@ -4883,6 +4883,18 @@ body.dark-mode .calc-dialog-btn-cancel:hover {
     padding: 6px 10px;
 }
 
+/* Дружелюбный ответ "перехватчика" (тест связи/приветствие/помощь) — не предупреждение, а живой ответ */
+.ai-parse-intent-msg {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-main);
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
 .eq-search-item {
     padding: 8px 12px;
     cursor: pointer;
