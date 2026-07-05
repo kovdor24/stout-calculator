@@ -1218,7 +1218,7 @@ body.menu-open .mobile-menu-backdrop {
     visibility: visible;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait) {
     html, body {
         max-width: 100vw;
         overflow-x: hidden;
@@ -3226,7 +3226,7 @@ body.dark-mode .header-totals-block {
 }/* ========================================= */
 /*       MOBILE APP OVERHAUL (BOTTOM NAV)      */
 /* ========================================= */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait) {
     body, input, select, textarea, button {
         font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
     }
@@ -3737,7 +3737,7 @@ body.dark-mode .header-totals-block {
     }
 }
 
-@media screen and (min-width: 769px) {
+@media screen and (min-width: 769px) and (orientation: landscape), screen and (min-width: 1025px) {
     .mobile-bottom-nav { display: none !important; }
 }
 
@@ -4314,18 +4314,18 @@ body.menu-open .mobile-menu-backdrop {
 }
 
 /* Ensure desktop grouping works */
-@media screen and (min-width: 769px) {
+@media screen and (min-width: 769px) and (orientation: landscape), screen and (min-width: 1025px) {
     .sku-control { display: flex; align-items: center; gap: 15px; }
     .sku-toggle-group { display: flex; align-items: center; gap: 8px; }
     .sku-toggle-group .sku-label { margin: 0 !important; }
 }
 
-@media screen and (min-width: 769px) {
+@media screen and (min-width: 769px) and (orientation: landscape), screen and (min-width: 1025px) {
     .menu-toggle-btn { display: none !important; }
     .mobile-header-totals { display: none !important; }
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait) {
     .menu-toggle-btn {
         display: flex !important;
     }
@@ -4468,7 +4468,7 @@ body.dark-mode .mobile-sidebar .footer-btns {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait) {
     .calculation-date {
         display: none !important;
     }
@@ -4554,6 +4554,10 @@ body.dark-mode .status-cabinet-revision {
     left: 0;
     width: 100vw;
     height: 100vh;
+    /* dvh учитывает появление клавиатуры/панелей браузера (100vh на некоторых
+       Android-планшетах не уменьшается при открытии клавиатуры, из-за чего
+       отцентрированное окно съезжает выше видимой области) */
+    height: 100dvh;
     background: rgba(15, 23, 42, 0.4);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
@@ -4563,6 +4567,8 @@ body.dark-mode .status-cabinet-revision {
     z-index: 99999999 !important; /* На самом верху, выше бокового меню */
     opacity: 0;
     transition: opacity 0.2s ease;
+    padding: 16px;
+    box-sizing: border-box;
 }
 
 .calc-dialog-overlay.active {
@@ -4957,7 +4963,7 @@ body.dark-mode input[type="number"].eq-qty-input {
 }
 
 /* === ИСПРАВЛЕНИЯ МОБИЛЬНОЙ ВЕРСИИ И ГОРИЗОНТАЛЬНОГО СКРОЛЛА === */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait) {
     .input-panel {
         width: 100% !important;
         max-width: 100% !important;
@@ -5431,7 +5437,7 @@ body.dark-mode .desktop-feedback-btn:hover {
 }
 
 /* Responsive constraints for the FAB button */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait) {
     .desktop-feedback-btn {
         display: none !important;
     }
@@ -5508,7 +5514,7 @@ body.dark-mode .desktop-feedback-btn:hover {
     50% { background-position: 100% 50%; opacity: 0.7; }
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait) {
     .ai-parse-fab {
         bottom: 95px; /* На одной высоте с кнопкой "Наверх", левее неё */
         right: 64px;
@@ -5543,7 +5549,8 @@ body.dark-mode .desktop-feedback-btn:hover {
 
 .ai-chat-card {
     height: 78vh;
-    max-height: 640px;
+    height: 78dvh;
+    max-height: min(640px, 100%);
 }
 
 .ai-chat-log {
@@ -5908,7 +5915,7 @@ body.dark-mode .cookie-banner {
     transform: scale(0.98);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-width: 1024px) and (orientation: portrait) {
     .cookie-banner {
         bottom: calc(76px + env(safe-area-inset-bottom, 15px)) !important;
     }
@@ -6546,7 +6553,7 @@ body.dark-mode .price-blur:hover {
 .mob-unit-label {
     display: none;
 }
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait) {
     .mob-unit-label {
         display: inline !important;
     }
@@ -6620,7 +6627,7 @@ body.dark-mode .to-top-btn:hover {
 }
 
 /* На мобильных устройствах скрыта кнопка обратной связи, поэтому перемещаем кнопку Наверх вниз */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait) {
     .to-top-btn {
         bottom: 95px; /* Приподнимаем над .mobile-bottom-nav */
         right: 16px;

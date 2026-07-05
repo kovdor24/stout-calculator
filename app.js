@@ -581,7 +581,7 @@ const app = {
         document.body.appendChild(sidebar);
 
         window.addEventListener('resize', () => {
-            if (window.innerWidth > 768) {
+            if (!this.isMobileLayout()) {
                 if (document.body.classList.contains('menu-open')) {
                     app.toggleMenu();
                 } else {
@@ -591,8 +591,15 @@ const app = {
         });
     },
 
+    // Мобильная/компактная раскладка: узкий экран (телефон) ИЛИ планшет в портретной ориентации
+    // (до 1024px) — должно совпадать с брейкпоинтами в style.css, иначе кнопки будут видны
+    // по CSS, но не будут работать по JS (или наоборот).
+    isMobileLayout: function () {
+        return window.innerWidth <= 768 || (window.innerWidth <= 1024 && window.matchMedia('(orientation: portrait)').matches);
+    },
+
     toggleMenu: function () {
-        const isMobile = window.innerWidth <= 768;
+        const isMobile = this.isMobileLayout();
         if (!isMobile) return;
 
         this.initMobileMenu();
@@ -1767,8 +1774,29 @@ const app = {
         requestAnimationFrame(() => overlay.classList.add('active'));
         setTimeout(() => textInput.focus(), 50);
 
+        // На некоторых планшетах/Android-браузерах 100vh/100dvh не пересчитывается при открытии
+        // клавиатуры — окно центрируется по полной высоте и уезжает за пределы видимой области.
+        // visualViewport даёт актуальную видимую высоту с учётом клавиатуры — подгоняем оверлей под неё.
+        const syncViewport = () => {
+            if (!window.visualViewport) return;
+            overlay.style.height = window.visualViewport.height + 'px';
+            overlay.style.top = window.visualViewport.offsetTop + 'px';
+            // Явно ограничиваем карточку по факту видимой области — vh/dvh привязаны
+            // к полному документу, а не к оверлею, и не везде корректно уменьшаются под клавиатуру
+            card.style.maxHeight = Math.max(240, window.visualViewport.height - 32) + 'px';
+        };
+        if (window.visualViewport) {
+            syncViewport();
+            window.visualViewport.addEventListener('resize', syncViewport);
+            window.visualViewport.addEventListener('scroll', syncViewport);
+        }
+
         const close = () => {
             overlay.classList.remove('active');
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', syncViewport);
+                window.visualViewport.removeEventListener('scroll', syncViewport);
+            }
             setTimeout(() => overlay.remove(), 200);
         };
         overlay.onclick = (e) => { if (e.target === overlay) close(); };
@@ -7603,14 +7631,14 @@ const app = {
 
 
     switchMobileTab: function (tab) {
-        if (window.innerWidth > 768) return;
+        if (!this.isMobileLayout()) return;
         this.state.mobTab = tab;
         this.syncMobileUI();
         this.saveState();
     },
 
     syncMobileUI: function () {
-        if (window.innerWidth > 768) {
+        if (!this.isMobileLayout()) {
             document.body.classList.remove('mob-tab-inputs', 'mob-tab-output', 'mob-tab-profile');
             return;
         }
