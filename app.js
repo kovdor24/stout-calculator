@@ -1304,6 +1304,39 @@ const app = {
         return { micBtn, micStatus };
     },
 
+    // Команда удаления/отмены отдельного поля из уже накопленного в чате ("убери бойлер",
+    // "удали город", "отмени скважину"). Проверяется ДО parseHouseQuery, иначе, например,
+    // "убери бойлер" сам по себе распознался бы как "нужна горячая вода" (там есть слово "бойлер").
+    // Возвращает массив ключей полей на удаление или null, если это не команда удаления.
+    detectDeleteIntent: function (text) {
+        const t = (' ' + (text || '').toLowerCase() + ' ').replace(/ё/g, 'е');
+        const hasDeleteVerb = /удали[а-я]*|убери[а-я]*|убрать|отмени[а-я]*|не\s*нужен|не\s*нужна|не\s*нужно/i.test(t);
+        if (!hasDeleteVerb) return null;
+
+        const fields = [];
+        if (/город/i.test(t)) fields.push('city');
+        if (/площад[а-я]*|метраж[а-я]*/i.test(t)) fields.push('area');
+        if (/этаж[а-я]*/i.test(t)) fields.push('floors');
+        if (/материал\s*стен|стен[а-я]*/i.test(t)) fields.push('mat');
+        if (/тип\s*радиатор[а-я]*|панельник[а-я]*|алюминь[а-я]*|алюминиев[а-я]*|биметалл[а-я]*/i.test(t)) fields.push('radType');
+        else if (/котел|котл[а-я]*|источник\s*тепла|топливо/i.test(t)) fields.push('fuels');
+        if (/тепл[а-я]*\s*пол[а-я]*|радиатор[а-я]*|систем[а-я]*\s*отоплени[а-я]*/i.test(t)) { fields.push('systems'); fields.push('ufhEverywhere'); }
+        if (/жиль[а-я]*|проживающ[а-я]*/i.test(t)) fields.push('res');
+        if (/объ[её]м\s*бойлер[а-я]*|литраж[а-я]*/i.test(t)) fields.push('tankVol');
+        else if (/гвс|горяч[а-я]*\s*вод[а-я]*|бойлер[а-я]*/i.test(t)) { fields.push('hotWater'); fields.push('tankVol'); }
+        if (/скважин[а-я]*|колодец|колодц[а-я]*/i.test(t)) fields.push('well');
+        if (/вентиляц[а-я]*/i.test(t)) fields.push('ventilationType');
+        if (/количество\s*окон|число\s*окон/i.test(t)) fields.push('win');
+        if (/потолк[а-я]*|высот[а-я]*\s*потолк[а-я]*/i.test(t)) fields.push('h');
+        if (/теплоносител[а-я]*|антифриз[а-я]*/i.test(t)) fields.push('coolant');
+        if (/кровл[а-я]*|крыш[а-я]*|черда[а-я]*/i.test(t)) fields.push('roofMat');
+        if (/материал\s*пола|основани[а-я]*\s*пола/i.test(t)) fields.push('floorMat');
+        if (/остеклени[а-я]*|стеклопакет[а-я]*/i.test(t)) fields.push('glazingMat');
+        if (/автоматик[а-я]*/i.test(t)) fields.push('ufhAuto');
+
+        return fields.length ? fields : null;
+    },
+
     // Перехватчик нецелевых фраз для ИИ-заполнения: проверка связи, приветствия, вопросы
     // "что ты умеешь" и мат/спам — распознаются ДО обычного разбора параметров и получают
     // отдельный дружелюбный ответ вместо "ничего не нашли". Вызывается только когда
@@ -1372,12 +1405,22 @@ const app = {
                 'лага', 'доска', 'фанер', 'каркасн', 'подвал', 'цокольн', 'пустотк', 'грунт', 'земл', 'ушп', 'уфф', 'стяжк',
                 'камер', 'стекл', 'пакет', 'напылен', 'аргон', 'рамк', 'мультифункциональн',
                 'автоматик', 'напряму', 'вручну', 'глазок', 'умн', 'покомнатн', 'зональн', 'позонн', 'терморегулятор',
-                'вайфай', 'сервопривод', 'сервак', 'контроллер', 'клеммник', 'телефон', 'зонт', 'термоголов', 'термух', 'крутилк', 'барашк', 'термоклапан'];
+                'вайфай', 'сервопривод', 'сервак', 'контроллер', 'клеммник', 'телефон', 'зонт', 'термоголов', 'термух', 'крутилк', 'барашк', 'термоклапан',
+                'город'];
+            // Разговорные названия городов, которых нет в официальной базе городов дословно
+            // ("Питер"/"СПб" вместо "Санкт-Петербург", "мск" вместо "Москва")
+            const CITY_NICKNAMES = { 'питер': 'санкт-петербург', 'спб': 'санкт-петербург', 'мск': 'москва' };
+            let foundCity = null;
+            for (const nick in CITY_NICKNAMES) {
+                if (new RegExp('(?<![а-я])' + nick + '(?![а-я])', 'i').test(t)) {
+                    foundCity = CITIES_DB.find(c => c.name.toLowerCase().replace(/ё/g, 'е') === CITY_NICKNAMES[nick]);
+                    if (foundCity) break;
+                }
+            }
             const queryWords = t.split(/[^а-я]+/)
                 .filter(w => w.length >= 4)
                 .filter(w => !DOMAIN_STOPSTEMS.some(s => w.startsWith(s)));
-            let foundCity = null;
-            for (const c of CITIES_DB) {
+            for (const c of (foundCity ? [] : CITIES_DB)) {
                 if (!c || !c.name) continue;
                 const cityWords = c.name.toLowerCase().replace(/ё/g, 'е').split(/[^а-я]+/).filter(Boolean);
                 const keyWord = cityWords.reduce((a, b) => (b.length > a.length ? b : a), '');
@@ -1714,14 +1757,62 @@ const app = {
         const card = document.createElement('div');
         card.className = 'calc-dialog-card ai-parse-card ai-chat-card';
 
+        const titleRow = document.createElement('div');
+        titleRow.className = 'ai-chat-title-row';
+
         const titleEl = document.createElement('h3');
         titleEl.className = 'calc-dialog-title';
         titleEl.innerText = '✨ Умное заполнение параметров';
-        card.appendChild(titleEl);
+        titleRow.appendChild(titleEl);
+
+        // Озвучка ответов ассистента (Web Speech Synthesis) — вкл/выкл запоминается между сеансами
+        const ttsSupported = 'speechSynthesis' in window;
+        let ttsEnabled = ttsSupported && localStorage.getItem('ai_tts_enabled') !== '0';
+        let ruVoice = null;
+        const pickVoice = () => {
+            if (!ttsSupported) return;
+            const voices = window.speechSynthesis.getVoices();
+            ruVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ru')) || null;
+        };
+        if (ttsSupported) {
+            pickVoice();
+            window.speechSynthesis.onvoiceschanged = pickVoice;
+        }
+        const ttsBtn = document.createElement('button');
+        ttsBtn.type = 'button';
+        ttsBtn.className = 'ai-chat-tts-btn';
+        const updateTtsBtn = () => {
+            ttsBtn.innerHTML = ttsEnabled ? '🔊' : '🔇';
+            ttsBtn.title = ttsEnabled ? 'Озвучка включена — нажмите, чтобы выключить' : 'Озвучка выключена — нажмите, чтобы включить';
+        };
+        if (ttsSupported) {
+            updateTtsBtn();
+            ttsBtn.onclick = () => {
+                ttsEnabled = !ttsEnabled;
+                localStorage.setItem('ai_tts_enabled', ttsEnabled ? '1' : '0');
+                updateTtsBtn();
+                if (!ttsEnabled) window.speechSynthesis.cancel();
+            };
+            titleRow.appendChild(ttsBtn);
+        }
+        card.appendChild(titleRow);
 
         const chatLog = document.createElement('div');
         chatLog.className = 'ai-chat-log';
         card.appendChild(chatLog);
+
+        const speak = (text) => {
+            if (!ttsSupported || !ttsEnabled) return;
+            try {
+                window.speechSynthesis.cancel(); // не даём репликам накладываться друг на друга
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.lang = 'ru-RU';
+                if (ruVoice) utter.voice = ruVoice;
+                utter.rate = 1.02;
+                utter.pitch = 1.05;
+                window.speechSynthesis.speak(utter);
+            } catch (e) { }
+        };
 
         const addBubble = (role, html) => {
             const b = document.createElement('div');
@@ -1729,6 +1820,7 @@ const app = {
             b.innerHTML = html;
             chatLog.appendChild(b);
             chatLog.scrollTop = chatLog.scrollHeight;
+            if (role === 'assistant') speak(b.textContent);
             return b;
         };
 
@@ -1797,14 +1889,25 @@ const app = {
                 window.visualViewport.removeEventListener('resize', syncViewport);
                 window.visualViewport.removeEventListener('scroll', syncViewport);
             }
+            if (ttsSupported) window.speechSynthesis.cancel();
             setTimeout(() => overlay.remove(), 200);
         };
         overlay.onclick = (e) => { if (e.target === overlay) close(); };
 
         // Копим распознанное по всему диалогу (по полю — новое сообщение может уточнить/
-        // переопределить ранее сказанное), но НЕ применяем сразу: кнопка "Применить"
-        // появляется, как только хоть что-то распознано, и применяет всё накопленное разом.
+        // переопределить ранее сказанное, например если голос не так расслышал город), но
+        // НЕ применяем сразу: кнопка "Применить" появляется, как только хоть что-то распознано,
+        // и применяет всё накопленное разом.
         const accumulated = new Map();
+
+        // Показываем ПОЛНЫЙ накопленный список после каждого сообщения (а не только то, что
+        // изменилось этим сообщением) — чтобы было видно, что ранее сказанное не потерялось.
+        const renderAccumulated = (title) => {
+            const results = Array.from(accumulated.values());
+            if (!results.length) return `<div class="ai-parse-preview-title">${title}</div><div class="ai-parse-preview-item">— пока ничего не задано —</div>`;
+            const list = results.map(r => `<div class="ai-parse-preview-item"><span class="ai-parse-preview-check">✓</span><span class="ai-parse-preview-label">${r.label}:</span><span class="ai-parse-preview-value">${r.display}</span></div>`).join('');
+            return `<div class="ai-parse-preview-title">${title}</div>${list}`;
+        };
 
         const sendMessage = () => {
             const text = textInput.value.trim();
@@ -1812,12 +1915,25 @@ const app = {
             addBubble('user', escapeHtml(text));
             textInput.value = '';
 
+            // Команда удаления ("убери бойлер", "удали город") — проверяем раньше обычного
+            // разбора, иначе, например, "убери бойлер" сам распознался бы как "нужна горячая вода".
+            const deleteFields = this.detectDeleteIntent(text);
+            if (deleteFields) {
+                let removedAny = false;
+                deleteFields.forEach(f => { if (accumulated.delete(f)) removedAny = true; });
+                applyBtn.style.display = accumulated.size ? '' : 'none';
+                addBubble('assistant', removedAny
+                    ? renderAccumulated('Убрал. Сейчас учтено:')
+                    : 'Не нашёл это среди уже распознанного.');
+                textInput.focus();
+                return;
+            }
+
             const results = this.parseHouseQuery(text);
             if (results.length) {
                 results.forEach(r => accumulated.set(r.field, r));
                 applyBtn.style.display = '';
-                const list = results.map(r => `<div class="ai-parse-preview-item"><span class="ai-parse-preview-check">✓</span><span class="ai-parse-preview-label">${r.label}:</span><span class="ai-parse-preview-value">${r.display}</span></div>`).join('');
-                addBubble('assistant', `<div class="ai-parse-preview-title">Распознал:</div>${list}`);
+                addBubble('assistant', renderAccumulated('Учёл. Сейчас распознано:'));
             } else {
                 const intent = this.detectSpecialIntent(text);
                 const msg = (intent && intent.message) ? intent.message : 'Не удалось ничего распознать — попробуйте описать подробнее: площадь, этажность, отопление, тёплый пол.';

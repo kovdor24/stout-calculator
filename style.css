@@ -5553,6 +5553,40 @@ body.dark-mode .desktop-feedback-btn:hover {
     max-height: min(640px, 100%);
 }
 
+.ai-chat-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.ai-chat-title-row .calc-dialog-title {
+    margin: 0;
+}
+
+.ai-chat-tts-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface-light);
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+}
+
+.ai-chat-tts-btn:hover {
+    background: var(--border);
+}
+
+.ai-chat-tts-btn:active {
+    transform: scale(0.92);
+}
+
 .ai-chat-log {
     flex: 1;
     overflow-y: auto;
