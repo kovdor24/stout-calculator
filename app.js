@@ -893,7 +893,42 @@ const app = {
         [/мама[а-я]*/i, 'внутренняя резьба'],
         // "штабил"/"стабил" — жаргон монтажников для трубы PE-Xa/Al/PE-RT ("стабильная").
         // Искл. "изат" — чтобы не путать со "стабилизатором" (совсем другой товар)
-        [/[шс]табил(?!изат)[а-я]*/i, 'стабильная']
+        [/[шс]табил(?!изат)[а-я]*/i, 'стабильная'],
+        // "водонагреватель"/"водогрей"/"бочка"/"косвеник" — в каталоге такие позиции
+        // всегда называются "Бойлер"
+        [/водонагревател[а-я]*|водогре[а-я]*/i, 'бойлер'],
+        [/бочк[а-я]*/i, 'бойлер'],
+        [/косвеник[а-я]*/i, 'бойлер'],
+        // "ГБМ"/"ГБМка" — жаргонное сокращение для "насосная группа" (так называются в каталоге)
+        [/гбмк?[а-я]*/i, 'насосная группа'],
+        // "радик" — жаргон для "радиатор"
+        [/радик[а-я]*/i, 'радиатор'],
+        // "полотенчик" — жаргон для "полотенцесушитель"
+        [/полотенчик[а-я]*/i, 'полотенцесушитель'],
+        // "штаны"/"бинокли" — жаргон для узла нижнего подключения радиатора (в каталоге — Ventil)
+        [/штаны[а-я]*|бинокл[а-я]*/i, 'ventil'],
+        // "мембранник"/"мембранка" — жаргон для мембранного (расширительного) бака.
+        // В каталоге эти позиции всегда во множественном/родительном падеже ("мембранного
+        // бака", "мембранных баков") — берём только корень, без "бак" (которого в этой форме нет)
+        [/мембранник[а-я]*|мембранк[а-я]*/i, 'мембранного'],
+        // "трёхходовик"/"трехходовик" — жаргон для 3-ходового клапана/смесителя
+        [/тр[её]х?ходовик[а-я]*/i, '3 ходовой'],
+        // "шаровик" — жаргон для шарового крана
+        [/шаровик[а-я]*/i, 'шаровой'],
+        // "нержавейка" — жаргон для нержавеющей стали
+        [/нержавейк[а-я]*/i, 'нержавеющей'],
+        // "конденсатник" — жаргонное существительное для "конденсационный [котёл]";
+        // отдельно ловим частую опечатку с пропущенной "н" ("кондесатник")
+        [/конденсатник[а-я]*|кондесатник[а-я]*/i, 'конденсационный'],
+        // Частые кириллические варианты/опечатки названий брендов — бренд теперь тоже
+        // индексируется для поиска (см. _buildCatalogSearchIndex), но название бренда там
+        // хранится латиницей ("stout"/"rommer"), поэтому кириллические варианты запроса
+        // нужно явно переводить в них
+        [/ст[ао]ут[а-я]*/i, 'stout'],
+        [/р[оу]м+[еэ]р[а-я]*/i, 'rommer'],
+        // Бренд-конкурент (не продаём) — ненавязчиво подсказываем эквивалент STOUT: у Henco
+        // основной продукт — металлопластиковая труба PE-Xb/Al/PE-Xb, она есть у STOUT/ROMMER
+        [/хенк[оа][а-я]*|henco[a-я]*/i, 'металлопластиковая']
     ],
 
     _expandSlang: function (text) {
@@ -903,15 +938,24 @@ const app = {
     },
 
     // Сравнение слова из каталога (a) со словом из запроса (b) с учётом окончаний падежей
-    // ("наружная" ~ "наружной", "труба" ~ "трубу"): для слов от 5 букв сравниваем первые n-1
-    // символов — на 1 короче порога входа, иначе для слов ровно в 5 букв сравнение
-    // вырождается в точное совпадение и не прощает даже однобуквенное окончание.
+    // ("наружная" ~ "наружной", "труба" ~ "трубу"). Для слов от 5 букв общий префикс должен
+    // покрывать не меньше 70% длины короткого слова (но не меньше 4 букв) — это гибче
+    // фиксированного числа символов: короткие 5-буквенные слова прощают 1 букву окончания,
+    // а длинные однокоренные-но-разные слова (например "стабильная"/"стабилизатор" или
+    // "водонагреватель"/"водоснабжение", у которых общий префикс всего 4-6 букв при длине
+    // 10+) не считаются совпадением просто по случайному общему корню.
     // Для коротких слов (<5) префиксное совпадение разрешаем только если:
     //   - оба слова длиной от 4 букв ("болт" ~ "болты"), или
     //   - слово из каталога — явное сокращение с точкой в исходном названии ("вых." ~ "выходов").
     // Иначе короткие слова вроде "пол" будут случайно находиться внутри "полотенце" и т.п.
     _stemEq: function (a, b, abbrevSet, n = 5) {
-        if (a.length >= n && b.length >= n) return a.slice(0, n - 1) === b.slice(0, n - 1);
+        if (a.length >= n && b.length >= n) {
+            const minLen = Math.min(a.length, b.length);
+            const needed = Math.max(4, Math.ceil(minLen * 0.7));
+            let common = 0;
+            while (common < minLen && a[common] === b[common]) common++;
+            return common >= needed;
+        }
         const shorter = a.length <= b.length ? a : b;
         const longer = a.length <= b.length ? b : a;
         if (shorter.length >= 4 && longer.startsWith(shorter)) return true;
@@ -922,6 +966,12 @@ const app = {
     // Слова-маркеры количества выходов/контуров: число прямо перед таким словом — это счётчик
     // ("...х3 вых." → 3 выхода), а не часть размера трубы/резьбы (как "3" в "3/4")
     _SEARCH_COUNT_MARKERS: ['вых', 'выход', 'контур', 'петл', 'зон', 'канал'],
+
+    // Единицы измерения — сами по себе ничего не ищут (число рядом уже несёт смысл), а как
+    // обязательное слово почти никогда не встречаются в названиях каталога буквально, из-за
+    // чего вся строгая проверка проваливалась целиком ("24 квт" не находил ничего просто
+    // потому что ни один товар не содержит слово "квт")
+    _SEARCH_UNIT_STOPWORDS: new Set(['квт', 'вт', 'квтч', 'атм', 'бар', 'мпа', 'кпа', 'гкал']),
 
     _tokenizeSearchText: function (text) {
         text = (text || '').toLowerCase().replace(/ё/g, 'е');
@@ -942,7 +992,7 @@ const app = {
                 const n = tok.replace(/^0+(?=\d)/, '');
                 numbers.push(n);
                 lastNumber = n;
-            } else if (tok.length >= 3) {
+            } else if (tok.length >= 3 && !this._SEARCH_UNIT_STOPWORDS.has(tok)) {
                 words.push(tok);
                 if (m[2] === '.') abbrev.add(tok);
                 if (lastNumber !== null && this._SEARCH_COUNT_MARKERS.some(marker => tok.startsWith(marker))) {
@@ -977,17 +1027,34 @@ const app = {
             if (!it || !it.id || !it.name || typeof it.price !== 'number') return;
             if (seen.has(it.id)) return;
             seen.add(it.id);
-            const t = this._tokenizeSearchText(it.name + ' ' + this._boilerSearchKeywords(it));
-            idx.push({ id: it.id, name: it.name, price: it.price, brand: it.brand || 'STOUT', article: it.article || it.id, _words: t.words, _numbers: new Set(t.numbers), _abbrev: t.abbrev, _countedNumbers: t.countedNumbers });
+            const brand = it.brand || 'STOUT';
+            const t = this._tokenizeSearchText(it.name + ' ' + brand + ' ' + this._boilerSearchKeywords(it));
+            idx.push({ id: it.id, name: it.name, price: it.price, brand: brand, article: it.article || it.id, _words: t.words, _numbers: new Set(t.numbers), _abbrev: t.abbrev, _countedNumbers: t.countedNumbers });
             if (it.rommer && it.rommer.id && it.rommer.name && !seen.has(it.rommer.id)) {
                 seen.add(it.rommer.id);
-                const rt = this._tokenizeSearchText(it.rommer.name + ' ' + this._boilerSearchKeywords(it));
-                idx.push({ id: it.rommer.id, name: it.rommer.name, price: it.rommer.price, brand: it.rommer.brand || 'ROMMER', article: it.rommer.id, _words: rt.words, _numbers: new Set(rt.numbers), _abbrev: rt.abbrev, _countedNumbers: rt.countedNumbers });
+                const rBrand = it.rommer.brand || 'ROMMER';
+                const rt = this._tokenizeSearchText(it.rommer.name + ' ' + rBrand + ' ' + this._boilerSearchKeywords(it));
+                idx.push({ id: it.rommer.id, name: it.rommer.name, price: it.rommer.price, brand: rBrand, article: it.rommer.id, _words: rt.words, _numbers: new Set(rt.numbers), _abbrev: rt.abbrev, _countedNumbers: rt.countedNumbers });
             }
         };
         for (const key in catalog) {
             if (Array.isArray(catalog[key])) catalog[key].forEach(pushItem);
         }
+        // Радиаторные линейки хранятся отдельными глобальными const-массивами вне объекта
+        // catalog (см. catalog.js) — они не попадают в window, поэтому обращаемся к ним
+        // напрямую по имени (как и остальной код app.js уже делает для titanRads/steelRads)
+        const extraArrays = [];
+        if (typeof titanRads !== 'undefined') extraArrays.push(titanRads);
+        if (typeof steelRads !== 'undefined') extraArrays.push(steelRads);
+        if (typeof spaceRuRads !== 'undefined') extraArrays.push(spaceRuRads);
+        if (typeof titanSideRads !== 'undefined') extraArrays.push(titanSideRads);
+        if (typeof aluminumRads !== 'undefined') extraArrays.push(aluminumRads);
+        if (typeof rommerProfiAlRads !== 'undefined') extraArrays.push(rommerProfiAlRads);
+        if (typeof rommerOptimaBmRads !== 'undefined') extraArrays.push(rommerOptimaBmRads);
+        if (typeof rommerProfiBmRads !== 'undefined') extraArrays.push(rommerProfiBmRads);
+        if (typeof rommerPlusBmRads !== 'undefined') extraArrays.push(rommerPlusBmRads);
+        if (typeof rommerPlusAlRads !== 'undefined') extraArrays.push(rommerPlusAlRads);
+        extraArrays.forEach(arr => { if (Array.isArray(arr)) arr.forEach(pushItem); });
         this._catalogSearchIndex = idx;
         return idx;
     },
@@ -1005,8 +1072,9 @@ const app = {
                 (items || []).forEach(it => {
                     if (!it || !it.id || !it.name || typeof it.price !== 'number' || seen.has(it.id)) return;
                     seen.add(it.id);
-                    const t = this._tokenizeSearchText(it.name);
-                    idx.push({ id: it.id, name: it.name, price: it.price, brand: it.brand || 'STOUT', article: it.id, _words: t.words, _numbers: new Set(t.numbers), _abbrev: t.abbrev, _countedNumbers: t.countedNumbers, extra: true });
+                    const brand = it.brand || 'STOUT';
+                    const t = this._tokenizeSearchText(it.name + ' ' + brand);
+                    idx.push({ id: it.id, name: it.name, price: it.price, brand: brand, article: it.id, _words: t.words, _numbers: new Set(t.numbers), _abbrev: t.abbrev, _countedNumbers: t.countedNumbers, extra: true });
                 });
             })
             .catch(() => { });
@@ -1042,23 +1110,58 @@ const app = {
         return results.slice(0, 20);
     },
 
+    // Расстояние Левенштейна — сколько правок (вставить/удалить/заменить букву) нужно, чтобы
+    // превратить одно слово в другое. Используется только в ослабленном поиске — прощает
+    // опечатки, которые _stemEq (точный по правилам падежей) не ловит.
+    _levenshtein: function (a, b) {
+        if (a === b) return 0;
+        const al = a.length, bl = b.length;
+        if (al === 0) return bl;
+        if (bl === 0) return al;
+        let prev = new Array(bl + 1);
+        for (let j = 0; j <= bl; j++) prev[j] = j;
+        for (let i = 1; i <= al; i++) {
+            const cur = [i];
+            for (let j = 1; j <= bl; j++) {
+                const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+            }
+            prev = cur;
+        }
+        return prev[bl];
+    },
+
+    // Опечатка прощается, если правок нужно не больше ~30% длины более короткого слова
+    // (не меньше 1) — "кондесатник" против "конденсационный" и т.п.
+    _fuzzyWordMatch: function (w, qw) {
+        const maxDist = Math.max(1, Math.floor(Math.min(w.length, qw.length) * 0.3));
+        return this._levenshtein(w, qw) <= maxDist;
+    },
+
     // Когда точного совпадения нет (например, опечатка или позиция, которой нет у STOUT/ROMMER,
-    // как "конденсационный котёл"), показываем ближайшее — по частичному совпадению слов, а не
-    // требуя совпадения всех сразу. Ранжируем по числу совпавших слов.
+    // как "конденсационный котёл"), показываем ближайшее — по частичному совпадению слов
+    // (включая опечатки), а не требуя совпадения всех сразу. Ранжируем по числу совпавших слов.
     searchCatalogLoose: function (query) {
         query = (query || '').trim();
         if (query.length < 2) return [];
         const idx = this._buildCatalogSearchIndex();
-        const { words: qWords } = this._tokenizeSearchText(this._expandSlang(query));
+        const { words: qWords, numbers: qNumbers, countedNumbers: qCounted } = this._tokenizeSearchText(this._expandSlang(query));
         if (!qWords.length) return [];
+
+        // Если в запросе было число (мощность, размер и т.п.) — им нельзя пренебрегать даже
+        // в ослабленном поиске, иначе "24 квт" покажет вперемешку все мощности подряд
+        const numberOk = (it) => qNumbers.every(qn => qCounted.has(qn) ? (it._countedNumbers && it._countedNumbers.has(qn)) : it._numbers.has(qn));
 
         const scored = [];
         idx.forEach(it => {
             let matched = 0;
-            qWords.forEach(qw => { if (it._words.some(w => this._stemEq(w, qw, it._abbrev))) matched++; });
-            if (matched > 0) scored.push({ it, matched });
+            qWords.forEach(qw => {
+                if (it._words.some(w => this._stemEq(w, qw, it._abbrev) || this._fuzzyWordMatch(w, qw))) matched++;
+            });
+            if (matched > 0) scored.push({ it, matched, numOk: numberOk(it) });
         });
-        scored.sort((a, b) => (b.matched - a.matched) || (a.it.name.length - b.it.name.length));
+        // Сначала те, что совпали и по числам, среди них — по числу совпавших слов
+        scored.sort((a, b) => (b.numOk - a.numOk) || (b.matched - a.matched) || (a.it.name.length - b.it.name.length));
         return scored.slice(0, 10).map(s => s.it);
     },
 
