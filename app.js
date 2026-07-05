@@ -11729,6 +11729,18 @@ const app = {
             n_wall: n_wall, n_glz: n_glz, n_roof: n_roof, n_floor: n_floor
         };
     },
+    // Примерная оценка "на сколько % подобран объект" — сравнивает уже посчитанную сумму
+    // оборудования (app.lastEqSum) с грубой оценкой полного комплекта для такой площади.
+    // ВАЖНО: коэффициент ₽/м² — приблизительный, подберите под свои реальные проекты.
+    _FILL_PERCENT_PRICE_PER_M2: 4000,
+    getFillPercent: function () {
+        const area = this.state.area || 0;
+        if (area <= 0) return null;
+        const estimatedTotal = area * this._FILL_PERCENT_PRICE_PER_M2;
+        if (estimatedTotal <= 0) return null;
+        const pct = Math.round(((this.lastEqSum || 0) / estimatedTotal) * 100);
+        return Math.max(0, Math.min(150, pct));
+    },
     getHouseHeatLoss: function () {
         let pwr = 0;
         let h1 = this.state.h1 || 2.7, h2 = this.state.h2 || 2.7;
@@ -18114,6 +18126,7 @@ const app = {
                 if (isPro) {
                     html += `<span style="margin:0 10px; color:var(--border);">|</span> <span style="color:var(--text-sec); font-size:11px; margin-right:4px;">Монтаж:</span> <b id="anim_works_sum" style="color:#F97316; font-size:14px;">0 ₽</b>`;
                 }
+                html += `<span id="fill_pct_wrap" class="fill-pct-wrap" style="display:none;" title="Примерная оценка: сколько оборудования подобрано от типового объекта такой площади"><span style="margin:0 10px; color:var(--border);">|</span><span class="fill-pct-bar"><span id="fill_pct_fill" class="fill-pct-fill" style="width:0%"></span></span><b id="fill_pct_val" class="fill-pct-val">0%</b></span>`;
                 headerTotals.innerHTML = html;
                 headerTotals.dataset.isPro = String(isPro);
                 headerTotals.dataset.lastEq = 0;
@@ -18158,6 +18171,19 @@ const app = {
                         elWorks.innerText = valueStr + " ₽";
                     }
                     headerTotals.dataset.lastShowBlurWorks = String(currentShowBlur);
+                }
+            }
+
+            // Индикатор "на сколько % подобран объект" (по стоимости оборудования от площади)
+            const fillWrap = document.getElementById('fill_pct_wrap');
+            const fillPct = this.getFillPercent();
+            if (fillWrap) {
+                if (fillPct === null) {
+                    fillWrap.style.display = 'none';
+                } else {
+                    fillWrap.style.display = 'inline-flex';
+                    document.getElementById('fill_pct_fill').style.width = Math.min(100, fillPct) + '%';
+                    document.getElementById('fill_pct_val').innerText = fillPct + '%';
                 }
             }
 
@@ -18212,6 +18238,19 @@ const app = {
             } else {
                 document.querySelector('.m-total-work').style.display = 'none';
                 document.querySelector('.m-total-div').style.display = 'none';
+            }
+
+            // Индикатор "на сколько % подобран объект" — та же оценка, что и в десктопной шапке
+            const mFillWrap = document.getElementById('m_fill_pct_wrap');
+            const mFillPct = this.getFillPercent();
+            if (mFillWrap) {
+                if (mFillPct === null) {
+                    mFillWrap.style.display = 'none';
+                } else {
+                    mFillWrap.style.display = 'inline-flex';
+                    document.getElementById('m_fill_pct_fill').style.width = Math.min(100, mFillPct) + '%';
+                    document.getElementById('m_fill_pct_val').innerText = mFillPct + '%';
+                }
             }
         }
         // ===================================================

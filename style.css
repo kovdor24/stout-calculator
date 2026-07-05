@@ -7383,3 +7383,34 @@ body.dark-mode .cw-status-promo {
         zoom: 1 !important;
     }
 }
+
+/* Индикатор "на сколько % подобран объект" в липкой шапке (десктоп + мобильная) */
+.fill-pct-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.fill-pct-bar {
+    width: 34px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--border);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.fill-pct-fill {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #F59E0B, #16A34A);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.fill-pct-val {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-sec);
+    white-space: nowrap;
+}
