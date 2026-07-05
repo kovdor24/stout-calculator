@@ -5413,6 +5413,140 @@ body.dark-mode .desktop-feedback-btn:hover {
     }
 }
 
+/* Плавающая кнопка "умного" заполнения параметров дома по тексту/голосу */
+.ai-parse-fab {
+    position: fixed;
+    bottom: 102px; /* Выше кнопки "Наверх" (58px + 36px + отступ) на десктопе */
+    right: 16px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px 9px 12px;
+    border-radius: 24px;
+    border: none;
+    background: linear-gradient(135deg, #7C3AED, #2563EB);
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.45), 0 8px 10px -6px rgba(37, 99, 235, 0.25);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s;
+    overflow: visible;
+}
+
+.ai-parse-fab svg {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+}
+
+.ai-parse-fab:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 20px 30px -5px rgba(124, 58, 237, 0.55), 0 10px 10px -5px rgba(37, 99, 235, 0.3);
+}
+
+.ai-parse-fab-glow {
+    position: absolute;
+    inset: -3px;
+    border-radius: 26px;
+    background: linear-gradient(135deg, #7C3AED, #2563EB, #7C3AED);
+    background-size: 200% 200%;
+    opacity: 0.55;
+    filter: blur(8px);
+    z-index: 0;
+    animation: ai-parse-glow-shift 3.5s ease-in-out infinite;
+}
+
+@keyframes ai-parse-glow-shift {
+    0%, 100% { background-position: 0% 50%; opacity: 0.4; }
+    50% { background-position: 100% 50%; opacity: 0.7; }
+}
+
+@media screen and (max-width: 768px) {
+    .ai-parse-fab {
+        bottom: 95px; /* На одной высоте с кнопкой "Наверх", левее неё */
+        right: 64px;
+        padding: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        justify-content: center;
+        z-index: 10000003; /* Выше .mobile-bottom-nav (10000002), иначе кнопка прячется под ней */
+    }
+    .ai-parse-fab span:not(.ai-parse-fab-glow) {
+        display: none;
+    }
+}
+
+/* Модалка "умного" заполнения — превью распознанных полей */
+.ai-parse-card {
+    max-width: 480px;
+}
+
+.ai-parse-input-wrap .eq-mic-btn {
+    top: 16px;
+    transform: none;
+}
+
+.ai-parse-input-wrap .eq-mic-status {
+    top: auto;
+    bottom: 6px;
+}
+
+.ai-parse-textarea {
+    resize: vertical;
+    min-height: 70px;
+    padding-right: 42px !important;
+    font-family: inherit;
+}
+
+.ai-parse-preview {
+    background: var(--surface-light);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ai-parse-preview-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-sec);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 2px;
+}
+
+.ai-parse-preview-item {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.ai-parse-preview-check {
+    color: #16a34a;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+body.dark-mode .ai-parse-preview-check {
+    color: #4ade80;
+}
+
+.ai-parse-preview-label {
+    color: var(--text-sec);
+}
+
+.ai-parse-preview-value {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
 /* Feedback Modal Container */
 .feedback-modal {
     max-width: 440px !important;
@@ -6933,6 +7067,35 @@ body.dark-mode .cw-achieve.earned {
 
 .cw-details-content .cw-rules-details {
     margin-top: 0;
+}
+
+/* Подсказка "объект не настроен" вместо пустой сметы */
+.empty-state-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    padding: 48px 20px;
+    color: var(--text-sec);
+}
+
+.empty-state-icon {
+    font-size: 36px;
+    opacity: 0.6;
+    margin-bottom: 6px;
+}
+
+.empty-state-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.empty-state-text {
+    font-size: 13px;
+    max-width: 420px;
+    line-height: 1.5;
 }
 
 /* Правила конкурса */

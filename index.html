@@ -49,11 +49,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.21">
+    <link rel="stylesheet" href="style.css?v=2.24">
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.14" defer></script>
-    <script src="app.js?v=2.32" defer></script>
+    <script src="app.js?v=2.39" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -1368,6 +1368,13 @@
     <button class="desktop-feedback-btn no-print" onclick="app.openFeedbackModal()" title="Сообщить о проблеме">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         <span>Сообщить о проблеме</span>
+    </button>
+
+    <!-- ПЛАВАЮЩАЯ КНОПКА "УМНОГО" ЗАПОЛНЕНИЯ ПАРАМЕТРОВ ДОМА -->
+    <button class="ai-parse-fab no-print" onclick="app.openAiParseModal()" title="Заполнить параметры голосом или текстом">
+        <span class="ai-parse-fab-glow"></span>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a2 2 0 0 1 2 2v2h-4V4a2 2 0 0 1 2-2z"></path><rect x="4" y="8" width="16" height="12" rx="3"></rect><circle cx="9" cy="14" r="1.5" fill="currentColor" stroke="none"></circle><circle cx="15" cy="14" r="1.5" fill="currentColor" stroke="none"></circle><path d="M2 13h2"></path><path d="M20 13h2"></path></svg>
+        <span>ИИ-заполнение</span>
     </button>
 
     <!-- МОДАЛЬНОЕ ОКНО УВЕДОМЛЕНИЙ -->

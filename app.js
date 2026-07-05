@@ -1179,6 +1179,492 @@ const app = {
         return scored.slice(0, 10).map(s => s.it);
     },
 
+    // Переиспользуемая кнопка голосового ввода (Web Speech API) — вызывающий код сам решает,
+    // что делать с распознанным текстом через колбэк onTranscript
+    _createVoiceMicButton: function (onTranscript) {
+        const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognitionCtor) return null;
+
+        const micBtn = document.createElement('button');
+        micBtn.type = 'button';
+        micBtn.className = 'eq-mic-btn';
+        micBtn.title = 'Голосовой ввод';
+        micBtn.innerHTML = `
+            <span class="eq-mic-ring eq-mic-ring-1"></span>
+            <span class="eq-mic-ring eq-mic-ring-2"></span>
+            <svg class="eq-mic-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
+
+        const micStatus = document.createElement('div');
+        micStatus.className = 'eq-mic-status';
+
+        // Короткий восходящий "бип-боп" сигнал активации микрофона (как у голосовых
+        // колонок) — синтезируем на Web Audio API, чтобы не тащить аудиофайл
+        const playActivationChime = () => {
+            try {
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx) return;
+                const ctx = new Ctx();
+                const now = ctx.currentTime;
+                [{ f: 587, t: 0, d: 0.09 }, { f: 880, t: 0.09, d: 0.14 }].forEach(n => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = n.f;
+                    gain.gain.setValueAtTime(0.0001, now + n.t);
+                    gain.gain.exponentialRampToValueAtTime(0.2, now + n.t + 0.01);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + n.t + n.d);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + n.t);
+                    osc.stop(now + n.t + n.d + 0.02);
+                });
+                setTimeout(() => { try { ctx.close(); } catch (e) { } }, 500);
+            } catch (e) { }
+        };
+
+        const recognition = new SpeechRecognitionCtor();
+        recognition.lang = 'ru-RU';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        let listening = false;
+        const setMicState = (state) => {
+            micBtn.classList.remove('mic-listening', 'mic-speaking');
+            if (state === 'listening') micBtn.classList.add('mic-listening');
+            if (state === 'speaking') micBtn.classList.add('mic-speaking');
+        };
+
+        recognition.onstart = () => {
+            listening = true;
+            setMicState('listening');
+            micStatus.textContent = 'Слушаю… говорите';
+            micStatus.classList.add('open');
+        };
+        // Микрофон реально начал захват звука — это момент "можно говорить"
+        recognition.onaudiostart = () => { playActivationChime(); };
+        // Обнаружена именно речь (не фоновый шум) — переключаем на более активную анимацию
+        recognition.onspeechstart = () => {
+            setMicState('speaking');
+            micStatus.textContent = 'Распознаю…';
+        };
+        recognition.onspeechend = () => { micStatus.textContent = 'Обрабатываю…'; };
+        recognition.onresult = (e) => {
+            const transcript = e.results[0][0].transcript;
+            onTranscript(transcript);
+        };
+        recognition.onnomatch = () => { micStatus.textContent = 'Не удалось разобрать речь — попробуйте ещё раз'; };
+        recognition.onerror = (e) => {
+            listening = false;
+            setMicState(null);
+            const messages = {
+                'not-allowed': 'Доступ к микрофону запрещён — разрешите в настройках браузера',
+                'permission-denied': 'Доступ к микрофону запрещён — разрешите в настройках браузера',
+                'no-speech': 'Не расслышал — попробуйте ещё раз',
+                'audio-capture': 'Микрофон не найден',
+                'network': 'Нет соединения для распознавания речи',
+                'aborted': ''
+            };
+            const msg = messages[e.error] !== undefined ? messages[e.error] : 'Не получилось распознать речь';
+            if (msg) {
+                micStatus.textContent = msg;
+                micStatus.classList.add('open', 'error');
+                setTimeout(() => { micStatus.classList.remove('open', 'error'); }, 3000);
+            } else {
+                micStatus.classList.remove('open');
+            }
+        };
+        recognition.onend = () => {
+            listening = false;
+            setMicState(null);
+            if (!micStatus.classList.contains('error')) micStatus.classList.remove('open');
+        };
+
+        micBtn.onclick = (e) => {
+            e.preventDefault();
+            if (listening) { recognition.stop(); return; }
+            micStatus.classList.remove('error');
+            try {
+                recognition.start();
+            } catch (err) {
+                // start() иногда бросает синхронно ("already started" и т.п.) —
+                // это НЕ проходит через onerror, поэтому раньше падало молча
+                micStatus.textContent = 'Не удалось запустить микрофон, попробуйте ещё раз';
+                micStatus.classList.add('open', 'error');
+                setTimeout(() => { micStatus.classList.remove('open', 'error'); }, 3000);
+            }
+        };
+
+        return { micBtn, micStatus };
+    },
+
+    // Разбор свободного текстового описания объекта в параметры левой панели —
+    // без ИИ, набором правил (числа/ключевые слова), по образцу умного поиска оборудования.
+    // ВАЖНО: в JS \w не включает кириллицу, поэтому окончания слов везде матчим через [а-я]*,
+    // а не \w* (как и в остальном поиске по каталогу — см. _SEARCH_SLANG).
+    parseHouseQuery: function (text) {
+        const t = (' ' + (text || '').toLowerCase() + ' ').replace(/ё/g, 'е');
+        const results = [];
+
+        // Площадь дома
+        let m = t.match(/(\d{2,4})\s*(?:кв\.?\s*м\.?|м2|м²|квадрат[а-я]*)/i);
+        if (!m) m = t.match(/(?:дом[а-я]*|площад[а-я]*|коттедж[а-я]*)\D{0,15}(\d{2,4})\s*метр[а-я]*/i);
+        if (m) {
+            const area = Math.max(20, Math.min(1000, parseInt(m[1], 10)));
+            results.push({ field: 'area', value: area, label: 'Площадь дома', display: `${area} м²` });
+        }
+
+        // Этажность
+        if (/двухэтажн[а-я]*|в\s*два\s*этажа|2\s*этажа|два\s*этажа/i.test(t)) {
+            results.push({ field: 'floors', value: 2, label: 'Этажность', display: '2 этажа' });
+        } else if (/одноэтажн[а-я]*|в\s*один\s*этаж|1\s*этаж|один\s*этаж/i.test(t)) {
+            results.push({ field: 'floors', value: 1, label: 'Этажность', display: '1 этаж' });
+        }
+
+        // Город (сверяем по базе городов из catalog.js) — сравниваем по целым словам через
+        // тот же нечёткий "общий корень" алгоритм, что и в поиске оборудования (_stemEq),
+        // чтобы не ловить случайные совпадения подстрок (например "азов" внутри "газовым")
+        // и допускать падежные окончания ("в москве" -> "москва").
+        if (typeof CITIES_DB !== 'undefined') {
+            // Стоп-слова — собственный "отопительный" словарь парсера. Нужны, чтобы слова вроде
+            // "котельной"/"горячая" не путались с похожими по звучанию городами (Котельнич,
+            // Горячий Ключ) — такие совпадения реально возникают почти в каждом запросе.
+            const DOMAIN_STOPSTEMS = ['дом', 'площад', 'коттедж', 'этаж', 'тепл', 'пол', 'холодн', 'дерев', 'брус', 'сруб',
+                'бревенчат', 'утепл', 'энергоэффективн', 'кирпич', 'газобетон', 'пеноблок', 'блочн', 'газ', 'котл', 'котел',
+                'электр', 'отоплен', 'радиатор', 'батаре', 'комнат', 'человек', 'жильц', 'гвс', 'горяч', 'вод', 'бойлер',
+                'рекупера', 'принудительн', 'вентиляц', 'окон', 'окна', 'квадрат', 'метр', 'расчет', 'расчёт', 'везде', 'полность',
+                'потолк', 'высот', 'чист', 'черн', 'плит', 'перекрыт', 'балок', 'ригел', 'свет', 'антифриз', 'тосол', 'незамерз',
+                'жижа', 'дистилл', 'скважин', 'кран', 'эко', 'зелен', 'пропилен', 'сороковк', 'тридцатк', 'этилен', 'красн', 'ядовит',
+                'кровл', 'черда', 'мансард', 'вата', 'базальт', 'роквул', 'урса', 'пеноплэкс', 'эппс', 'пенопласт', 'экструз', 'слое', 'слоя',
+                'лага', 'доска', 'фанер', 'каркасн', 'подвал', 'цокольн', 'пустотк', 'грунт', 'земл', 'ушп', 'уфф', 'стяжк',
+                'камер', 'стекл', 'пакет', 'напылен', 'аргон', 'рамк', 'мультифункциональн',
+                'автоматик', 'напряму', 'вручну', 'глазок', 'умн', 'покомнатн', 'зональн', 'позонн', 'терморегулятор',
+                'вайфай', 'сервопривод', 'сервак', 'контроллер', 'клеммник', 'телефон', 'зонт', 'термоголов', 'термух', 'крутилк', 'барашк', 'термоклапан'];
+            const queryWords = t.split(/[^а-я]+/)
+                .filter(w => w.length >= 4)
+                .filter(w => !DOMAIN_STOPSTEMS.some(s => w.startsWith(s)));
+            let foundCity = null;
+            for (const c of CITIES_DB) {
+                if (!c || !c.name) continue;
+                const cityWords = c.name.toLowerCase().replace(/ё/g, 'е').split(/[^а-я]+/).filter(Boolean);
+                const keyWord = cityWords.reduce((a, b) => (b.length > a.length ? b : a), '');
+                if (keyWord.length < 4) continue;
+                if (queryWords.some(w => this._stemEq(w, keyWord, null))) { foundCity = c; break; }
+            }
+            if (foundCity) {
+                results.push({ field: 'city', value: foundCity, label: 'Город', display: foundCity.name });
+            }
+        }
+
+        // Материал/утепление стен (быстрый режим — коэффициент mat).
+        // Голое "утепление"/"тепло" без слова "стены"/"дом" рядом не считаем за стены, если в тексте
+        // есть слово "крыша/кровля/чердак" — иначе оно перетягивает на себя утепление кровли
+        // ("крыша холодная, без утепления" не должно ставить стены тёплыми).
+        const hasRoofWordForWalls = /кровл[а-я]*|крыш[а-я]*|черда[а-я]*/i.test(t);
+        if (/энергоэффективн[а-я]*|т[её]пл[а-я]*\s*стен[а-я]*|стен[а-я]*\s*т[её]пл[а-я]*|т[её]пл[а-я]*\s*дом/i.test(t)
+            || (!hasRoofWordForWalls && /утепл[а-я]*/i.test(t))) {
+            results.push({ field: 'mat', value: 0.8, label: 'Материал стен', display: 'Тёплый' });
+        } else if (/холодн[а-я]*\s*(?:стен[а-я]*|дом)|дерев[а-я]*\s*дом|брус[а-я]*|сруб[а-я]*|бревенчат[а-я]*|каркасн[а-я]*/i.test(t)) {
+            results.push({ field: 'mat', value: 1.3, label: 'Материал стен', display: 'Холодный' });
+        } else if (/кирпич[а-я]*|газобетон[а-я]*|пеноблок[а-я]*|блочн[а-я]*/i.test(t)) {
+            results.push({ field: 'mat', value: 1.0, label: 'Материал стен', display: 'Стандарт' });
+        }
+
+        // Источник тепла (котёл) — достаточно самого упоминания "газ"/"электричество" и любых
+        // производных форм (газовый, на газе, электро, электрический и т.п.), без привязки к
+        // соседству со словом "котёл" — если топливо вообще упомянуто, значит имеется в виду котёл на нём
+        const fuels = [];
+        if (/газ[а-я]*/i.test(t)) fuels.push('gas');
+        if (/электр[а-я]*/i.test(t)) fuels.push('el');
+        if (fuels.length) {
+            results.push({ field: 'fuels', value: fuels, label: 'Источник тепла', display: fuels.map(f => f === 'gas' ? 'Газ' : 'Электро').join(' + ') });
+        }
+
+        // Система отопления: тёплый пол / радиаторы
+        const systems = [];
+        if (/т[её]пл[а-я]*\s*пол[а-я]*/i.test(t)) systems.push('tp');
+        if (/радиатор[а-я]*|батаре[а-я]*/i.test(t)) systems.push('rad');
+        if (systems.length) {
+            results.push({ field: 'systems', value: systems, label: 'Система отопления', display: systems.map(s => s === 'tp' ? 'Тёплый пол' : 'Радиаторы').join(' + ') });
+            if (systems.includes('tp') && /везде|весь\s*дом|во\s*всех\s*комнатах|по\s*всей\s*площад[а-я]*|полность[а-я]*/i.test(t)) {
+                results.push({ field: 'ufhEverywhere', value: true, label: 'Тёплый пол', display: 'по всей площади дома' });
+            }
+        }
+
+        // ГВС / количество жильцов
+        const resM = t.match(/на\s*(\d{1,2})\s*(?:человек[а-я]*|чел\.?|жильц[а-я]*|проживающ[а-я]*)/i);
+        if (resM) {
+            const res = parseInt(resM[1], 10);
+            results.push({ field: 'res', value: res, label: 'Жильцов', display: `${res} чел.` });
+        }
+        if (/гвс|горяч[а-я]*\s*вод[а-я]*|бойлер[а-я]*/i.test(t)) {
+            results.push({ field: 'hotWater', value: true, label: 'Горячая вода', display: 'нужна' });
+        }
+
+        // Вентиляция — стем "рекупера" (не "рекуперат"), т.к. общий для "рекуператор" и "рекуперация"
+        if (/рекупера[а-я]*/i.test(t)) {
+            results.push({ field: 'ventilationType', value: 'recuperator', label: 'Вентиляция', display: 'с рекуперацией' });
+        } else if (/принудительн[а-я]*\s*вентиляц[а-я]*/i.test(t)) {
+            results.push({ field: 'ventilationType', value: 'forced', label: 'Вентиляция', display: 'принудительная' });
+        }
+
+        // Количество окон (быстрый режим)
+        const winM = t.match(/(\d{1,2})\s*окон[а-я]*|(\d{1,2})\s*окна[а-я]*/i);
+        if (winM) {
+            const n = parseInt(winM[1] || winM[2], 10);
+            results.push({ field: 'win', value: n, label: 'Количество окон', display: `${n} шт.` });
+        }
+
+        // Высота потолков — "потолки 3 метра", "высота 2.8", "в чистоте 2.9", "до плиты/до балок",
+        // "второй свет" (очень высокие потолки, без перекрытия)
+        if (/втор[а-я]*\s*свет/i.test(t)) {
+            results.push({ field: 'h', value: 5, label: 'Высота потолков', display: '5 м (второй свет)' });
+        } else {
+            const hM = t.match(/(?:потолк[а-я]*|высот[а-я]*|в\s*чистоте|в\s*черне|черновой|до\s*плит[а-я]*|до\s*перекрыти[а-я]*|до\s*балок|до\s*ригел[а-я]*)\D{0,12}(\d(?:[.,]\d)?)/i);
+            if (hM) {
+                const h = Math.max(2, Math.min(6, parseFloat(hM[1].replace(',', '.'))));
+                results.push({ field: 'h', value: h, label: 'Высота потолков', display: `${h} м` });
+            }
+        }
+
+        // Теплоноситель — сначала проверяем специфичные признаки конкретного вида (цвет/температура/
+        // хим.название), и только потом общее неконкретное "антифриз/незамерзайка" (по умолчанию — эко-30)
+        if (/сороковк[а-я]*|минус\s*сорок[а-я]*|шестьдесят\s*пят[а-я]*|красн[а-я]*|этилен[а-я]*|\sядовит[а-я]*|\sяд\s/i.test(t)) {
+            results.push({ field: 'coolant', value: 'pro65', label: 'Теплоноситель', display: 'антифриз до -40°C' });
+        } else if (/тридцатк[а-я]*|минус\s*тридцат[а-я]*|\sэко[а-я]*|зелен[а-я]*|пропилен[а-я]*/i.test(t)) {
+            results.push({ field: 'coolant', value: 'eco30', label: 'Теплоноситель', display: 'антифриз до -30°C' });
+        } else if (/антифриз[а-я]*|тосол[а-я]*|незамерзайк[а-я]*|незамерзающ[а-я]*|\sжижа\s/i.test(t)) {
+            results.push({ field: 'coolant', value: 'eco30', label: 'Теплоноситель', display: 'антифриз до -30°C' });
+        } else if (/дистиллят[а-я]*|водичк[а-я]*|из\s*скважин[а-я]*|из-?под\s*кран[а-я]*|прост[а-я]*\s*вод[а-я]*|обычн[а-я]*\s*вод[а-я]*/i.test(t)) {
+            results.push({ field: 'coolant', value: 'water', label: 'Теплоноситель', display: 'вода' });
+        }
+
+        // Кровля — утеплена ли, и если да, каким материалом и в какую толщину
+        // ("двухсотка"=200мм, "сотка"=100мм, "в N слоёв" = N*50мм). Смотрим на окно текста вокруг
+        // слова "крыша/кровля/чердак" (а не на весь текст), чтобы не путать порядок слов
+        // ("чердак утеплен" и "утеплённый чердак" — оба варианта) и не цепляться за "тёплый пол"
+        // или другие "тепл"-слова, упомянутые совсем в другом месте фразы.
+        const roofWordM = t.match(/кровл[а-я]*|крыш[а-я]*|черда[а-я]*|мансард[а-я]*/i);
+        if (roofWordM) {
+            const winStart = Math.max(0, roofWordM.index - 20);
+            const roofWin = t.slice(winStart, roofWordM.index + roofWordM[0].length + 20);
+            // Сначала проверяем "холодную" версию — она явно содержит отрицание ("без утепления"),
+            // а бесхозное "утепл" внутри "БЕЗ утепления" иначе перепутается с положительным "утеплена"
+            const isRoofCold = /холодн[а-я]*|гол[а-я]*|без\s*утеплен[а-я]*|неутепленн[а-я]*/i.test(roofWin);
+            const isRoofWarm = !isRoofCold && /тепл[а-я]*|мансард[а-я]*|утепл[а-я]*|жил[а-я]*/i.test(roofWin);
+            if (isRoofWarm) {
+                const isXps = /пеноплэкс[а-я]*|эппс|пенопласт[а-я]*|экструз[а-я]*/i.test(t);
+                let thick = 0;
+                if (/двухсотк[а-я]*|200\s*мм|в\s*четыре\s*сло[а-я]*|4\s*сло[а-я]*/i.test(t)) thick = 200;
+                else if (/сотк[а-я]*|100\s*мм/i.test(t)) thick = 100;
+                else if (/150\s*мм|в\s*три\s*сло[а-я]*|3\s*сло[а-я]*/i.test(t)) thick = 150;
+                let roofMatId;
+                if (isXps) roofMatId = thick >= 150 ? 'roof_xps150' : 'roof_xps100';
+                else roofMatId = thick >= 200 ? 'roof_mw200' : (thick === 100 ? 'roof_mw100' : 'roof_mw150');
+                results.push({ field: 'roofMat', value: { enabled: true, matId: roofMatId }, label: 'Кровля', display: 'утеплённая' + (thick ? ` (${thick} мм)` : '') });
+            } else if (isRoofCold) {
+                results.push({ field: 'roofMat', value: { enabled: false }, label: 'Кровля', display: 'холодная (без утепления)' });
+            }
+        }
+
+        // Пол (основание) — по грунту / по лагам (дерево) / над подвалом
+        if (/по\s*лага[а-я]*|деревянн[а-я]*\s*пол[а-я]*|деревянн[а-я]*\s*перекрыти[а-я]*|на\s*доска[а-я]*|фанер[а-я]*\s*по\s*лага[а-я]*|каркасн[а-я]*\s*перекрыти[а-я]*/i.test(t)) {
+            results.push({ field: 'floorMat', value: 'floor_lags_ins', label: 'Пол (основание)', display: 'по лагам (дерево)' });
+        } else if (/над\s*подвал[а-я]*|с\s*подвал[а-я]*|цокольн[а-я]*\s*этаж[а-я]*|плит[а-я]*\s*перекрыти[а-я]*|пустотк[а-я]*|жб\s*перекрыти[а-я]*/i.test(t)) {
+            results.push({ field: 'floorMat', value: 'floor_basement_ins', label: 'Пол (основание)', display: 'над подвалом' });
+        } else if (/по\s*грунт[а-я]*|по\s*земл[а-я]*|монолитн[а-я]*\s*плит[а-я]*|ушп|уфф|бетонн[а-я]*\s*пол[а-я]*|черновая\s*стяжк[а-я]*/i.test(t)) {
+            results.push({ field: 'floorMat', value: 'floor_ground_ins', label: 'Пол (основание)', display: 'по грунту' });
+        }
+
+        // Остекление — счёт по камерам стеклопакета (не по стёклам). Стем "камер" (не "камерк"),
+        // чтобы ловить и разговорное "камерка", и прилагательное "камерный/камерное".
+        if (/трехкамер[а-я]*|трёхкамер[а-я]*|в\s*четыре\s*стекл[а-я]*|энергосберегающ[а-я]*|с\s*напылени[а-я]*|с\s*аргон[а-я]*|и-стекл[а-я]*|мультифункциональн[а-я]*|тепл[а-я]*\s*рамк[а-я]*/i.test(t)) {
+            results.push({ field: 'glazingMat', value: 'glz_3cam', label: 'Остекление', display: 'трёхкамерное' });
+        } else if (/двухкамер[а-я]*|в\s*три\s*стекл[а-я]*|двойн[а-я]*\s*пакет[а-я]*/i.test(t)) {
+            results.push({ field: 'glazingMat', value: 'glz_2cam', label: 'Остекление', display: 'двухкамерное' });
+        } else if (/однокамер[а-я]*|в\s*два\s*стекл[а-я]*|одинарн[а-я]*\s*пакет[а-я]*|прост[а-я]*\s*окн[а-я]*|стандартн[а-я]*\s*окн[а-я]*/i.test(t)) {
+            results.push({ field: 'glazingMat', value: 'glz_1cam', label: 'Остекление', display: 'однокамерное' });
+        }
+
+        // Автоматика тёплого пола/радиаторов — механическая (термоголовки) или электронная (умный дом)
+        if (/без\s*автоматик[а-я]*|напряму[а-я]*|вручну[а-я]*|на\s*глазок|прост[а-я]*\s*кран[а-я]*/i.test(t)) {
+            results.push({ field: 'ufhAuto', value: false, label: 'Автоматика отопления', display: 'без автоматики' });
+        } else if (/умн[а-я]*\s*дом|покомнатн[а-я]*|зональн[а-я]*|позонн[а-я]*|терморегулятор[а-я]*|комнатн[а-я]*\s*термостат[а-я]*|вайфай[а-я]*\s*термостат[а-я]*|сервопривод[а-я]*|серваки|контроллер[а-я]*|клеммник[а-я]*|управлени[а-я]*\s*с\s*телефон[а-я]*|\szont\b|\sзонт\s/i.test(t)) {
+            results.push({ field: 'ufhAuto', value: true, ctrl: 'electro', label: 'Автоматика отопления', display: 'электронная (покомнатная)' });
+        } else if (/термоголов[а-я]*|термух[а-я]*|крутилк[а-я]*|барашк[а-я]*|термоклапан[а-я]*/i.test(t)) {
+            results.push({ field: 'ufhAuto', value: true, ctrl: 'mech', label: 'Автоматика отопления', display: 'механическая (термоголовки)' });
+        }
+
+        return results;
+    },
+
+    // Применяет распознанные параметры к state и перерисовывает левую панель + смету
+    applyParsedResults: function (results) {
+        results.forEach(r => {
+            switch (r.field) {
+                case 'area': this.state.area = r.value; break;
+                case 'floors': this.state.floors = r.value; break;
+                case 'city': {
+                    const city = r.value;
+                    this.state.selectedCity = city;
+                    this.state.region = Math.round(((20 - city.temp) / 45) * 100);
+                    break;
+                }
+                case 'mat': this.state.mat = r.value; break;
+                case 'fuels': this.state.fuels = r.value; break;
+                case 'systems': this.state.systems = r.value; break;
+                case 'ufhEverywhere': {
+                    const area = this.state.area || 100;
+                    if (this.state.floors === 2) {
+                        this.state.tp1 = Math.round(area / 2);
+                        this.state.tp2 = Math.round(area / 2);
+                    } else {
+                        this.state.tp1 = area;
+                    }
+                    break;
+                }
+                case 'res': this.state.res = r.value; break;
+                case 'hotWater': this.state.hotWater = r.value; break;
+                case 'ventilationType': this.state.ventilationEnabled = true; this.state.ventilationType = r.value; break;
+                case 'win': this.state.win = r.value; break;
+                case 'h': this.state.h1 = r.value; this.state.h2 = r.value; break;
+                case 'coolant': this.state.coolant = r.value; break;
+                case 'roofMat': {
+                    this.state.roofEnabled = r.value.enabled;
+                    if (r.value.matId) this.state.roofMatId = r.value.matId;
+                    break;
+                }
+                case 'floorMat': this.state.floorEnabled = true; this.state.floorMatId = r.value; break;
+                case 'glazingMat': this.state.glazingEnabled = true; this.state.glazingMatId = r.value; break;
+                case 'ufhAuto': {
+                    this.state.ufhAuto = r.value;
+                    if (r.ctrl) this.state.ufhCtrl = r.ctrl;
+                    break;
+                }
+            }
+        });
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
+
+    showAiParseToast: function (count) {
+        let el = document.getElementById('ai_parse_toast');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'ai_parse_toast';
+            document.body.appendChild(el);
+        }
+        el.innerHTML = `<span class="ct-icon">🤖</span><div><div class="ct-title">Готово!</div><div class="ct-sub">Заполнено параметров: ${count}</div></div>`;
+        el.className = 'contest-toast visible no-print';
+        clearTimeout(this._aiParseToastTimer);
+        this._aiParseToastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+    },
+
+    // Плавающая кнопка "умного" заполнения параметров дома по свободному тексту/голосу
+    openAiParseModal: function () {
+        if (document.body.classList.contains('menu-open')) {
+            try { this.toggleMenu(); } catch (e) { }
+        }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'calc-dialog-overlay';
+
+        const card = document.createElement('div');
+        card.className = 'calc-dialog-card ai-parse-card';
+
+        const titleEl = document.createElement('h3');
+        titleEl.className = 'calc-dialog-title';
+        titleEl.innerText = '🤖 Умное заполнение параметров';
+        card.appendChild(titleEl);
+
+        const msgEl = document.createElement('p');
+        msgEl.className = 'calc-dialog-message';
+        msgEl.innerText = 'Опишите объект простыми словами голосом или текстом — сами расставим нужные параметры слева.';
+        card.appendChild(msgEl);
+
+        const inputWrap = document.createElement('div');
+        inputWrap.className = 'eq-name-wrap ai-parse-input-wrap';
+
+        const textInput = document.createElement('textarea');
+        textInput.className = 'calc-dialog-input ai-parse-textarea';
+        textInput.rows = 3;
+        textInput.placeholder = 'Например: дом 200 м2, везде тёплые полы, отопление газовым котлом...';
+        inputWrap.appendChild(textInput);
+
+        const voiceUI = this._createVoiceMicButton((transcript) => {
+            textInput.value = transcript;
+        });
+        if (voiceUI) {
+            inputWrap.appendChild(voiceUI.micBtn);
+            inputWrap.appendChild(voiceUI.micStatus);
+        }
+        card.appendChild(inputWrap);
+
+        const previewBox = document.createElement('div');
+        previewBox.className = 'ai-parse-preview';
+        previewBox.style.display = 'none';
+        card.appendChild(previewBox);
+
+        const btnRow = document.createElement('div');
+        btnRow.className = 'calc-dialog-buttons';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
+        cancelBtn.innerText = 'Отмена';
+
+        const actionBtn = document.createElement('button');
+        actionBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
+        actionBtn.innerText = '✨ Распознать';
+
+        btnRow.appendChild(cancelBtn);
+        btnRow.appendChild(actionBtn);
+        card.appendChild(btnRow);
+
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('active'));
+        setTimeout(() => textInput.focus(), 50);
+
+        const close = () => {
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 200);
+        };
+        cancelBtn.onclick = close;
+        overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+        let lastResults = null;
+
+        actionBtn.onclick = () => {
+            if (!lastResults) {
+                const text = textInput.value.trim();
+                if (!text) { textInput.focus(); return; }
+                const results = this.parseHouseQuery(text);
+                lastResults = results;
+                if (!results.length) {
+                    previewBox.innerHTML = `<p class="eq-search-nomatch">Не удалось ничего распознать — попробуйте описать подробнее: площадь, этажность, отопление, тёплый пол.</p>`;
+                    previewBox.style.display = '';
+                    return;
+                }
+                previewBox.innerHTML = `<div class="ai-parse-preview-title">Распознано:</div>` +
+                    results.map(r => `<div class="ai-parse-preview-item"><span class="ai-parse-preview-check">✓</span><span class="ai-parse-preview-label">${r.label}:</span><span class="ai-parse-preview-value">${r.display}</span></div>`).join('');
+                previewBox.style.display = '';
+                actionBtn.innerText = '✅ Применить';
+            } else {
+                this.applyParsedResults(lastResults);
+                close();
+                this.showAiParseToast(lastResults.length);
+            }
+        };
+
+        textInput.oninput = () => {
+            if (lastResults) {
+                lastResults = null;
+                previewBox.style.display = 'none';
+                actionBtn.innerText = '✨ Распознать';
+            }
+        };
+    },
+
     // Открыть ввод своего оборудования: умный поиск по каталогу (название/артикул) + ручной ввод
     addCustomEqPrompt: function (sectionTitle) {
         sectionTitle = sectionTitle || '9. Дополнительные материалы';
@@ -1219,120 +1705,14 @@ const app = {
         nameWrap.appendChild(nameInput);
 
         // Голосовой ввод (если браузер поддерживает Web Speech API — Chrome/Edge/Safari, не Firefox)
-        const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognitionCtor) {
-            const micBtn = document.createElement('button');
-            micBtn.type = 'button';
-            micBtn.className = 'eq-mic-btn';
-            micBtn.title = 'Голосовой ввод';
-            micBtn.innerHTML = `
-                <span class="eq-mic-ring eq-mic-ring-1"></span>
-                <span class="eq-mic-ring eq-mic-ring-2"></span>
-                <svg class="eq-mic-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
-            nameWrap.appendChild(micBtn);
-
-            const micStatus = document.createElement('div');
-            micStatus.className = 'eq-mic-status';
-            nameWrap.appendChild(micStatus);
-
-            // Короткий восходящий "бип-боп" сигнал активации микрофона (как у голосовых
-            // колонок) — синтезируем на Web Audio API, чтобы не тащить аудиофайл
-            const playActivationChime = () => {
-                try {
-                    const Ctx = window.AudioContext || window.webkitAudioContext;
-                    if (!Ctx) return;
-                    const ctx = new Ctx();
-                    const now = ctx.currentTime;
-                    [{ f: 587, t: 0, d: 0.09 }, { f: 880, t: 0.09, d: 0.14 }].forEach(n => {
-                        const osc = ctx.createOscillator();
-                        const gain = ctx.createGain();
-                        osc.type = 'sine';
-                        osc.frequency.value = n.f;
-                        gain.gain.setValueAtTime(0.0001, now + n.t);
-                        gain.gain.exponentialRampToValueAtTime(0.2, now + n.t + 0.01);
-                        gain.gain.exponentialRampToValueAtTime(0.0001, now + n.t + n.d);
-                        osc.connect(gain);
-                        gain.connect(ctx.destination);
-                        osc.start(now + n.t);
-                        osc.stop(now + n.t + n.d + 0.02);
-                    });
-                    setTimeout(() => { try { ctx.close(); } catch (e) { } }, 500);
-                } catch (e) { }
-            };
-
-            const recognition = new SpeechRecognitionCtor();
-            recognition.lang = 'ru-RU';
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
-
-            let listening = false;
-            const setMicState = (state) => {
-                micBtn.classList.remove('mic-listening', 'mic-speaking');
-                if (state === 'listening') micBtn.classList.add('mic-listening');
-                if (state === 'speaking') micBtn.classList.add('mic-speaking');
-            };
-
-            recognition.onstart = () => {
-                listening = true;
-                setMicState('listening');
-                micStatus.textContent = 'Слушаю… говорите';
-                micStatus.classList.add('open');
-            };
-            // Микрофон реально начал захват звука — это момент "можно говорить"
-            recognition.onaudiostart = () => { playActivationChime(); };
-            // Обнаружена именно речь (не фоновый шум) — переключаем на более активную анимацию
-            recognition.onspeechstart = () => {
-                setMicState('speaking');
-                micStatus.textContent = 'Распознаю…';
-            };
-            recognition.onspeechend = () => { micStatus.textContent = 'Обрабатываю…'; };
-            recognition.onresult = (e) => {
-                const transcript = e.results[0][0].transcript;
-                nameInput.value = transcript;
-                nameInput.dispatchEvent(new Event('input'));
-                nameInput.focus();
-            };
-            recognition.onnomatch = () => { micStatus.textContent = 'Не удалось разобрать речь — попробуйте ещё раз'; };
-            recognition.onerror = (e) => {
-                listening = false;
-                setMicState(null);
-                const messages = {
-                    'not-allowed': 'Доступ к микрофону запрещён — разрешите в настройках браузера',
-                    'permission-denied': 'Доступ к микрофону запрещён — разрешите в настройках браузера',
-                    'no-speech': 'Не расслышал — попробуйте ещё раз',
-                    'audio-capture': 'Микрофон не найден',
-                    'network': 'Нет соединения для распознавания речи',
-                    'aborted': ''
-                };
-                const msg = messages[e.error] !== undefined ? messages[e.error] : 'Не получилось распознать речь';
-                if (msg) {
-                    micStatus.textContent = msg;
-                    micStatus.classList.add('open', 'error');
-                    setTimeout(() => { micStatus.classList.remove('open', 'error'); }, 3000);
-                } else {
-                    micStatus.classList.remove('open');
-                }
-            };
-            recognition.onend = () => {
-                listening = false;
-                setMicState(null);
-                if (!micStatus.classList.contains('error')) micStatus.classList.remove('open');
-            };
-
-            micBtn.onclick = (e) => {
-                e.preventDefault();
-                if (listening) { recognition.stop(); return; }
-                micStatus.classList.remove('error');
-                try {
-                    recognition.start();
-                } catch (err) {
-                    // start() иногда бросает синхронно ("already started" и т.п.) —
-                    // это НЕ проходит через onerror, поэтому раньше падало молча
-                    micStatus.textContent = 'Не удалось запустить микрофон, попробуйте ещё раз';
-                    micStatus.classList.add('open', 'error');
-                    setTimeout(() => { micStatus.classList.remove('open', 'error'); }, 3000);
-                }
-            };
+        const voiceUI = this._createVoiceMicButton((transcript) => {
+            nameInput.value = transcript;
+            nameInput.dispatchEvent(new Event('input'));
+            nameInput.focus();
+        });
+        if (voiceUI) {
+            nameWrap.appendChild(voiceUI.micBtn);
+            nameWrap.appendChild(voiceUI.micStatus);
         }
 
         card.appendChild(nameWrap);
@@ -6913,7 +7293,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 100, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -13166,6 +13546,7 @@ const app = {
             return;
         }
         this.state.hotWater = chk;
+        if (chk && !this.state.res) this.state.res = 3;
         this.syncUI();
         this.render();
         this.saveState();
@@ -14012,7 +14393,7 @@ const app = {
         document.getElementById('doc_summary').innerHTML = `
             <span class="param-item">🏠 Объект: <b>${this.state.area} м²</b> (${this.state.floors === 2 ? 2 : 1} эт)</span>
             <span class="param-item">👨‍👩‍👧 Проживающих: <b>${this.state.res}</b></span>
-            <span class="param-item">🔥 Теплопотери: <b>${pwr} кВт</b> (${Math.round((parseFloat(pwr) * 1000) / this.state.area)} Вт/м²)</span>
+            <span class="param-item">🔥 Теплопотери: <b>${pwr} кВт</b> (${this.state.area > 0 ? Math.round((parseFloat(pwr) * 1000) / this.state.area) : 0} Вт/м²)</span>
             <span class="param-item">📍 Регион: <b>${regionName}</b></span>
             <span class="param-item param-date calculation-date">📅 Дата: <b>${new Date().toLocaleDateString('ru-RU')}</b></span>
         `;
@@ -17248,6 +17629,22 @@ const app = {
         }
 
         flushWorks();
+
+        // Объект ещё не настроен (площадь 0 — сразу после сброса) — вместо частично
+        // посчитанной сметы показываем подсказку и не выводим никакого оборудования
+        if (this.state.area <= 0) {
+            h = `<tr class="empty-state-row"><td colspan="9">
+                <div class="empty-state-hint">
+                    <span class="empty-state-icon">🏠</span>
+                    <div class="empty-state-title">Параметры объекта не заданы</div>
+                    <div class="empty-state-text">Измените параметры объекта слева (площадь, отопление, материалы), чтобы начать подбор оборудования — либо нажмите «🤖 ИИ-заполнение» и опишите объект словами.</div>
+                </div>
+            </td></tr>`;
+            sum = 0;
+            this.currentEquipmentList = [];
+            this.currentWorksList = [];
+            this.currentSpec = [];
+        }
 
         document.getElementById('tbody').innerHTML = h;
         document.getElementById('total_sum').innerHTML = app.formatPriceHtml(sum, true);
