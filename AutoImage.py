@@ -1,6 +1,8 @@
 import re
 import time
+import random
 import os
+import json
 import urllib3
 import urllib.request
 import traceback
@@ -9,9 +11,25 @@ from PIL import Image, ImageChops
 
 # --- CONFIG ---
 CATALOG_PATH = "catalog.js"
+PRICE_EXTRA_PATH = "price_extra.json"
 SEARCH_URL = 'https://www.teremonline.ru'
 IMAGE_DIR = "img"
 MISSING_LIST_PATH = "articles_without_images.txt"
+
+# --- ВЕЖЛИВОСТЬ К САЙТУ (чтобы не словить бан/капчу при больших объёмах) ---
+DELAY_MIN = 1.5              # мин. пауза между запросами, сек
+DELAY_MAX = 3.5              # макс. пауза между запросами, сек
+BATCH_SIZE = 40               # каждые N товаров — длинная пауза
+BATCH_PAUSE_MIN = 20          # мин. длинная пауза, сек
+BATCH_PAUSE_MAX = 45          # макс. длинная пауза, сек
+RESTART_BROWSER_EVERY = 250   # пересоздавать браузер каждые N товаров (новая "сессия")
+MAX_CONSECUTIVE_ERRORS = 6    # подряд ошибок/ERR_* — стоп-кран, похоже на блокировку
+
+# Экшен на GitHub запускается вручную (workflow_dispatch) на общем раннере ubuntu-latest,
+# и жёстко ограничен ~6 часами на джобу — если скрипт не уложится, шаг коммита не выполнится
+# и все скачанные за этот прогон картинки будут потеряны. Поэтому обрабатываем ограниченными
+# порциями за один запуск; остальное подтянется следующим ручным запуском workflow.
+MAX_ITEMS_PER_RUN = 800
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -102,7 +120,24 @@ def get_unique_skus():
         
         if id_val:
             items[id_val] = art_val or id_val
-            
+
+    # Дополнительно берём позиции из price_extra.json — расширенный прайс-лист
+    # STOUT/ROMMER, который теперь тоже участвует в поиске "Добавить оборудование",
+    # но раньше не попадал в скачивание картинок
+    if os.path.exists(PRICE_EXTRA_PATH):
+        try:
+            with open(PRICE_EXTRA_PATH, 'r', encoding='utf-8') as f:
+                extra_items = json.load(f)
+            added = 0
+            for it in extra_items:
+                id_val = (it.get('id') or '').strip()
+                if id_val and id_val not in items:
+                    items[id_val] = id_val
+                    added += 1
+            print(f"Из {PRICE_EXTRA_PATH} добавлено артикулов: {added}")
+        except Exception as e:
+            print(f"Не удалось прочитать {PRICE_EXTRA_PATH}: {e}")
+
     return [{"id": k, "article": v} for k, v in sorted(items.items())]
 
 def get_missing_skus(items):
@@ -324,12 +359,18 @@ def update_catalog_images():
     if not missing_items:
         print("Все картинки уже скачаны. Завершение работы.")
         return
-        
+
+    total_missing = len(missing_items)
+    if total_missing > MAX_ITEMS_PER_RUN:
+        print(f"Всего не хватает {total_missing} картинок, но за один прогон обрабатываем не более "
+              f"{MAX_ITEMS_PER_RUN} (лимит времени джобы на GitHub Actions). Остальные "
+              f"{total_missing - MAX_ITEMS_PER_RUN} подтянутся при следующих запусках workflow.")
+        missing_items = missing_items[:MAX_ITEMS_PER_RUN]
+
     print("Шаг 3: Очистка старых процессов...")
     kill_zombies()
-    
-    print("Шаг 4: Инициализация Selenium...")
-    try:
+
+    def launch_driver():
         options = Options()
         options.add_argument("--log-level=3")
         options.page_load_strategy = 'eager'
@@ -338,11 +379,16 @@ def update_catalog_images():
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_experimental_option("excludeSwitches", ["enable-logging"])
-        options.add_argument("--no-proxy-server") 
-        
-        driver = webdriver.Chrome(options=options)
-        driver.set_page_load_timeout(30)
-        driver.set_window_size(1920, 1080)
+        options.add_argument("--no-proxy-server")
+
+        d = webdriver.Chrome(options=options)
+        d.set_page_load_timeout(30)
+        d.set_window_size(1920, 1080)
+        return d
+
+    print("Шаг 4: Инициализация Selenium...")
+    try:
+        driver = launch_driver()
         print("Браузер успешно запущен!\n")
     except Exception as e:
         print(f"Ошибка браузера: {e}")
@@ -351,23 +397,48 @@ def update_catalog_images():
     downloaded = 0
     not_found = 0
     failed = 0
-    
+    consecutive_errors = 0
+
     try:
         for idx, item in enumerate(missing_items):
             print(f"[{idx+1}/{len(missing_items)}] Скачиваем и оптимизируем для {item['id']}...", end=" ")
             res = process_sku_image(driver, item)
             print(res)
-            
+
             if res == "DOWNLOADED":
                 downloaded += 1
+                consecutive_errors = 0
             elif res == "NOT_FOUND":
                 not_found += 1
+                consecutive_errors = 0
             else:
                 failed += 1
-                
-            # Add a small delay between requests
-            time.sleep(1.5)
-            
+                consecutive_errors += 1
+
+            # Стоп-кран: подряд идущие ошибки чаще всего значат, что сайт начал блокировать
+            # (капча/редирект/бан IP), а не что это просто случайные сетевые сбои
+            if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
+                print(f"\n[!] {MAX_CONSECUTIVE_ERRORS} ошибок подряд — похоже на блокировку сайтом. "
+                      f"Останавливаемся раньше срока, чтобы не усугублять; уже скачанное сохранится.")
+                break
+
+            # Пересоздаём браузер каждые N товаров — не тянем одну и ту же "сессию" часами
+            if (idx + 1) % RESTART_BROWSER_EVERY == 0 and (idx + 1) < len(missing_items):
+                try:
+                    driver.quit()
+                except Exception:
+                    pass
+                time.sleep(random.uniform(BATCH_PAUSE_MIN, BATCH_PAUSE_MAX))
+                driver = launch_driver()
+
+            # Каждые BATCH_SIZE товаров — длинная пауза, дальше обычная случайная задержка
+            if (idx + 1) % BATCH_SIZE == 0:
+                pause = random.uniform(BATCH_PAUSE_MIN, BATCH_PAUSE_MAX)
+                print(f"   ...пауза {pause:.0f} сек. после пачки из {BATCH_SIZE}...")
+                time.sleep(pause)
+            else:
+                time.sleep(random.uniform(DELAY_MIN, DELAY_MAX))
+
     finally:
         driver.quit()
         print("\n=== РЕЗУЛЬТАТЫ РАБОТЫ ===")

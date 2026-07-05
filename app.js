@@ -1337,8 +1337,11 @@ const app = {
             resultsBox.classList.add('open');
             resultsBox.innerHTML = lastResults.map(it => `
                 <div class="eq-search-item" data-id="${it.id}">
-                    <span class="eq-search-item-name">${it.name}</span>
-                    <span class="eq-search-item-meta">${it.article}${it.brand ? ' · ' + it.brand : ''} · ${Math.round(it.price).toLocaleString('ru-RU')} ₽</span>
+                    <img src="img/${it.id}.jpg" class="eq-search-item-img" loading="lazy" decoding="async" onerror="this.style.display='none'">
+                    <div class="eq-search-item-text">
+                        <span class="eq-search-item-name">${it.name}</span>
+                        <span class="eq-search-item-meta">${it.article}${it.brand ? ' · ' + it.brand : ''} · ${Math.round(it.price).toLocaleString('ru-RU')} ₽</span>
+                    </div>
                 </div>
             `).join('') + `<div class="eq-search-item eq-search-manual">Ни один вариант не подходит — ввести своё название и цену вручную</div>`;
             Array.from(resultsBox.querySelectorAll('.eq-search-item')).forEach((el, i) => {
