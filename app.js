@@ -1725,7 +1725,7 @@ const app = {
             return b;
         };
 
-        addBubble('assistant', 'Опишите объект простыми словами голосом или текстом — сразу выставлю нужные параметры слева. Например: «150 квадратов, высота потолков 3 метра, везде тёплый пол и заливаем антифриз».');
+        addBubble('assistant', 'Опишите объект простыми словами голосом или текстом — я распознаю параметры, а когда закончите, нажмите «Применить». Например: «150 квадратов, высота потолков 3 метра, везде тёплый пол и заливаем антифриз».');
 
         const inputWrap = document.createElement('div');
         inputWrap.className = 'eq-name-wrap ai-parse-input-wrap';
@@ -1749,15 +1749,16 @@ const app = {
         const btnRow = document.createElement('div');
         btnRow.className = 'calc-dialog-buttons';
 
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
-        closeBtn.innerText = 'Готово';
+        const applyBtn = document.createElement('button');
+        applyBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
+        applyBtn.innerText = '✅ Применить';
+        applyBtn.style.display = 'none';
 
         const sendBtn = document.createElement('button');
         sendBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
         sendBtn.innerText = 'Отправить';
 
-        btnRow.appendChild(closeBtn);
+        btnRow.appendChild(applyBtn);
         btnRow.appendChild(sendBtn);
         card.appendChild(btnRow);
 
@@ -1770,12 +1771,13 @@ const app = {
             overlay.classList.remove('active');
             setTimeout(() => overlay.remove(), 200);
         };
-        closeBtn.onclick = close;
         overlay.onclick = (e) => { if (e.target === overlay) close(); };
 
-        // Каждое сообщение обрабатывается сразу и независимо: нашли параметры — тут же
-        // применяем их и подтверждаем в ответном сообщении; чат можно продолжать сколько угодно —
-        // это не одноразовая форма "напечатал → результат", а диалог, как с настоящим ассистентом.
+        // Копим распознанное по всему диалогу (по полю — новое сообщение может уточнить/
+        // переопределить ранее сказанное), но НЕ применяем сразу: кнопка "Применить"
+        // появляется, как только хоть что-то распознано, и применяет всё накопленное разом.
+        const accumulated = new Map();
+
         const sendMessage = () => {
             const text = textInput.value.trim();
             if (!text) { textInput.focus(); return; }
@@ -1784,9 +1786,10 @@ const app = {
 
             const results = this.parseHouseQuery(text);
             if (results.length) {
-                this.applyParsedResults(results);
+                results.forEach(r => accumulated.set(r.field, r));
+                applyBtn.style.display = '';
                 const list = results.map(r => `<div class="ai-parse-preview-item"><span class="ai-parse-preview-check">✓</span><span class="ai-parse-preview-label">${r.label}:</span><span class="ai-parse-preview-value">${r.display}</span></div>`).join('');
-                addBubble('assistant', `<div class="ai-parse-preview-title">Готово, установил:</div>${list}`);
+                addBubble('assistant', `<div class="ai-parse-preview-title">Распознал:</div>${list}`);
             } else {
                 const intent = this.detectSpecialIntent(text);
                 const msg = (intent && intent.message) ? intent.message : 'Не удалось ничего распознать — попробуйте описать подробнее: площадь, этажность, отопление, тёплый пол.';
@@ -1796,6 +1799,14 @@ const app = {
         };
 
         sendBtn.onclick = sendMessage;
+
+        applyBtn.onclick = () => {
+            const results = Array.from(accumulated.values());
+            if (!results.length) return;
+            this.applyParsedResults(results);
+            this.showAiParseToast(results.length);
+            close();
+        };
 
         // Enter отправляет сообщение, Shift+Enter — обычный перенос строки
         textInput.onkeydown = (e) => {
