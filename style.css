@@ -4768,6 +4768,17 @@ body.dark-mode .calc-dialog-btn-cancel:hover {
     color: var(--text-sec);
 }
 
+.eq-search-manual {
+    font-size: 12px;
+    font-style: italic;
+    color: var(--text-sec);
+    background: var(--surface-light);
+}
+
+.eq-search-manual:hover {
+    color: var(--primary);
+}
+
 .eq-search-fields {
     display: flex;
     flex-direction: column;

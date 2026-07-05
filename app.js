@@ -1331,8 +1331,19 @@ const app = {
                     <span class="eq-search-item-name">${it.name}</span>
                     <span class="eq-search-item-meta">${it.article}${it.brand ? ' · ' + it.brand : ''} · ${Math.round(it.price).toLocaleString('ru-RU')} ₽</span>
                 </div>
-            `).join('');
+            `).join('') + `<div class="eq-search-item eq-search-manual">Ни один вариант не подходит — ввести своё название и цену вручную</div>`;
             Array.from(resultsBox.querySelectorAll('.eq-search-item')).forEach((el, i) => {
+                if (i >= lastResults.length) {
+                    // Последняя строка — «ввести вручную»: оставляем текст как есть, ничего не подставляем
+                    el.onclick = () => {
+                        selectedArticle = null;
+                        closeResults();
+                        revealFields();
+                        priceInput.focus();
+                        priceInput.select();
+                    };
+                    return;
+                }
                 el.onclick = () => {
                     const found = lastResults[i];
                     if (!found) return;
