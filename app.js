@@ -949,20 +949,29 @@ const app = {
     //   - слово из каталога — явное сокращение с точкой в исходном названии ("вых." ~ "выходов").
     // Иначе короткие слова вроде "пол" будут случайно находиться внутри "полотенце" и т.п.
     _stemEq: function (a, b, abbrevSet, n = 5) {
+        const isAbbrev = !!(abbrevSet && abbrevSet.has(a) && b.startsWith(a));
         if (a.length >= n && b.length >= n) {
             const minLen = Math.min(a.length, b.length);
+            const maxLen = Math.max(a.length, b.length);
             const needed = Math.max(4, Math.ceil(minLen * 0.7));
             let common = 0;
             while (common < minLen && a[common] === b[common]) common++;
-            return common >= needed;
+            // Ограничиваем ещё и соотношением длин: без этого короткое слово вроде "метал."
+            // (сокращение) само по себе почти всегда "совпадает" по первым буквам с любым
+            // случайным более длинным словом на ту же букву ("металлопластиковая") —
+            // тут это не окончание, а просто другое слово
+            if (common >= needed && maxLen <= minLen * 2) return true;
+            // Сокращению с точкой в исходном названии ("вых.", "метал.") даём больше слабины
+            // по длине — но только ему, не обычным словам
+            return isAbbrev && b.length <= a.length * 3;
         }
         const shorter = a.length <= b.length ? a : b;
         const longer = a.length <= b.length ? b : a;
-        if (shorter.length >= 4 && longer.startsWith(shorter)) return true;
+        if (shorter.length >= 4 && longer.startsWith(shorter) && longer.length <= shorter.length * 2.5) return true;
         // Ограничиваем длину: сокращение вроде "вых." законно тянется до "выходов" (+4 буквы),
         // но "метал." (сокращение от "металлический") не должно совпадать с "металлопластиковая" —
         // это совсем другое слово, просто начинающееся с тех же букв
-        if (abbrevSet && abbrevSet.has(a) && b.startsWith(a) && b.length <= a.length * 3) return true;
+        if (isAbbrev && b.length <= a.length * 3) return true;
         return a === b;
     },
 
