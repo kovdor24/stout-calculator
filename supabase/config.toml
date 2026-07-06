@@ -1,2 +1,5 @@
 [functions.stout-proxy]
 verify_jwt = false
+
+[functions.mail-status]
+verify_jwt = false

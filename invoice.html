@@ -3253,7 +3253,7 @@
 
                 console.log("[sendStatusEmailNotification] Sending status update to:", managerEmail);
 
-                const response = await fetch('mail_status.php', {
+                const response = await fetch('https://ahanbwugsmcyvrwbmtlx.supabase.co/functions/v1/mail-status', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3440,7 +3440,7 @@
                 const statusText = 'Запрошен счет';
                 const invoiceUrl = window.location.href;
 
-                const response = await fetch('mail_status.php', {
+                const response = await fetch('https://ahanbwugsmcyvrwbmtlx.supabase.co/functions/v1/mail-status', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3468,7 +3468,7 @@
                     if (btnClient) btnClient.textContent = "✓ Запрос отправлен";
                     if (btnFloat) btnFloat.title = "✓ Запрос отправлен";
                 } else {
-                    throw new Error(resData?.message || "Не удалось отправить email через mail_status.php");
+                    throw new Error(resData?.message || "Не удалось отправить email через mail-status");
                 }
             } catch (err) {
                 console.error("[requestInvoice] Error sending request:", err);

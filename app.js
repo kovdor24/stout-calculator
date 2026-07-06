@@ -522,7 +522,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 100, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 3, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null },
 
     lastSavedStateString: "",
 
@@ -862,7 +862,7 @@ const app = {
     },
 
     setBrand: function (val, event) {
-        if (!this.checkAccess('pro', event)) {
+        if (!this.checkAccess('pro-brand', event)) {
             let chk = document.getElementById('chk_cheaper');
             if (chk) chk.checked = (this.state.brandMode === 'rommer');
             return;
@@ -1042,38 +1042,69 @@ const app = {
         if (this._catalogSearchIndex) return this._catalogSearchIndex;
         const idx = [];
         const seen = new Set();
-        const pushItem = (it) => {
-            if (!it || !it.id || !it.name || typeof it.price !== 'number') return;
-            if (seen.has(it.id)) return;
-            seen.add(it.id);
-            const brand = it.brand || 'STOUT';
-            const t = this._tokenizeSearchText(it.name + ' ' + brand + ' ' + this._boilerSearchKeywords(it));
-            idx.push({ id: it.id, name: it.name, price: it.price, brand: brand, article: it.article || it.id, _words: t.words, _numbers: new Set(t.numbers), _abbrev: t.abbrev, _countedNumbers: t.countedNumbers });
-            if (it.rommer && it.rommer.id && it.rommer.name && !seen.has(it.rommer.id)) {
-                seen.add(it.rommer.id);
-                const rBrand = it.rommer.brand || 'ROMMER';
-                const rt = this._tokenizeSearchText(it.rommer.name + ' ' + rBrand + ' ' + this._boilerSearchKeywords(it));
-                idx.push({ id: it.rommer.id, name: it.rommer.name, price: it.rommer.price, brand: rBrand, article: it.rommer.id, _words: rt.words, _numbers: new Set(rt.numbers), _abbrev: rt.abbrev, _countedNumbers: rt.countedNumbers });
-            }
-        };
-        for (const key in catalog) {
-            if (Array.isArray(catalog[key])) catalog[key].forEach(pushItem);
-        }
+
         // Радиаторные линейки хранятся отдельными глобальными const-массивами вне объекта
         // catalog (см. catalog.js) — они не попадают в window, поэтому обращаемся к ним
         // напрямую по имени (как и остальной код app.js уже делает для titanRads/steelRads)
         const extraArrays = [];
-        if (typeof titanRads !== 'undefined') extraArrays.push(titanRads);
-        if (typeof steelRads !== 'undefined') extraArrays.push(steelRads);
-        if (typeof spaceRuRads !== 'undefined') extraArrays.push(spaceRuRads);
-        if (typeof titanSideRads !== 'undefined') extraArrays.push(titanSideRads);
-        if (typeof aluminumRads !== 'undefined') extraArrays.push(aluminumRads);
-        if (typeof rommerProfiAlRads !== 'undefined') extraArrays.push(rommerProfiAlRads);
-        if (typeof rommerOptimaBmRads !== 'undefined') extraArrays.push(rommerOptimaBmRads);
-        if (typeof rommerProfiBmRads !== 'undefined') extraArrays.push(rommerProfiBmRads);
-        if (typeof rommerPlusBmRads !== 'undefined') extraArrays.push(rommerPlusBmRads);
-        if (typeof rommerPlusAlRads !== 'undefined') extraArrays.push(rommerPlusAlRads);
-        extraArrays.forEach(arr => { if (Array.isArray(arr)) arr.forEach(pushItem); });
+        if (typeof titanRads !== 'undefined') extraArrays.push(['titanRads', titanRads]);
+        if (typeof steelRads !== 'undefined') extraArrays.push(['steelRads', steelRads]);
+        if (typeof spaceRuRads !== 'undefined') extraArrays.push(['spaceRuRads', spaceRuRads]);
+        if (typeof titanSideRads !== 'undefined') extraArrays.push(['titanSideRads', titanSideRads]);
+        if (typeof aluminumRads !== 'undefined') extraArrays.push(['aluminumRads', aluminumRads]);
+        if (typeof rommerProfiAlRads !== 'undefined') extraArrays.push(['rommerProfiAlRads', rommerProfiAlRads]);
+        if (typeof rommerOptimaBmRads !== 'undefined') extraArrays.push(['rommerOptimaBmRads', rommerOptimaBmRads]);
+        if (typeof rommerProfiBmRads !== 'undefined') extraArrays.push(['rommerProfiBmRads', rommerProfiBmRads]);
+        if (typeof rommerPlusBmRads !== 'undefined') extraArrays.push(['rommerPlusBmRads', rommerPlusBmRads]);
+        if (typeof rommerPlusAlRads !== 'undefined') extraArrays.push(['rommerPlusAlRads', rommerPlusAlRads]);
+
+        // Для базового (не PRO) тарифа товары ROMMER нужно скрыть из поиска, если у них
+        // есть аналог от STOUT. "Аналог есть", если выполняется любое из:
+        //  (а) позиция зарегистрирована как item.rommer у какой-то STOUT-позиции;
+        //  (б) в её же категории каталога есть хотя бы одна не-ROMMER позиция (значит,
+        //      прямо там же есть STOUT-вариант того же типа товара);
+        //  (в) сама категория заведена как явная ROMMER-версия STOUT-категории —
+        //      это видно по названию ключа ("actuators_rommer" при наличии "actuators",
+        //      "rommer_check_valve_34" при наличии "check_valve_34" и т.п.)
+        // Категории, где ROMMER — единственный поставщик (насосы ГВС рециркуляции,
+        // скважинные насосы, стальные панельные радиаторы и т.п.), под это не попадают
+        // и остаются доступны для поиска всем.
+        const referencedRommerIds = new Set();
+        const categoryHasNonRommer = new Set();
+        const collectCategoryInfo = (key, arr) => {
+            let hasNonRommer = false;
+            arr.forEach(it => {
+                if (it && it.rommer && it.rommer.id) referencedRommerIds.add(it.rommer.id);
+                if (it && it.brand !== 'ROMMER') hasNonRommer = true;
+            });
+            if (hasNonRommer) categoryHasNonRommer.add(key);
+        };
+        for (const key in catalog) { if (Array.isArray(catalog[key])) collectCategoryInfo(key, catalog[key]); }
+        extraArrays.forEach(([name, arr]) => collectCategoryInfo(name, arr));
+
+        const pushItem = (it, categoryKey) => {
+            if (!it || !it.id || !it.name || typeof it.price !== 'number') return;
+            if (seen.has(it.id)) return;
+            seen.add(it.id);
+            const brand = it.brand || 'STOUT';
+            const hideForBase = brand === 'ROMMER' && (
+                referencedRommerIds.has(it.id) ||
+                categoryHasNonRommer.has(categoryKey) ||
+                /rommer/i.test(categoryKey)
+            );
+            const t = this._tokenizeSearchText(it.name + ' ' + brand + ' ' + this._boilerSearchKeywords(it));
+            idx.push({ id: it.id, name: it.name, price: it.price, brand: brand, article: it.article || it.id, _words: t.words, _numbers: new Set(t.numbers), _abbrev: t.abbrev, _countedNumbers: t.countedNumbers, _hideForBase: hideForBase });
+            if (it.rommer && it.rommer.id && it.rommer.name && !seen.has(it.rommer.id)) {
+                seen.add(it.rommer.id);
+                const rBrand = it.rommer.brand || 'ROMMER';
+                const rt = this._tokenizeSearchText(it.rommer.name + ' ' + rBrand + ' ' + this._boilerSearchKeywords(it));
+                idx.push({ id: it.rommer.id, name: it.rommer.name, price: it.rommer.price, brand: rBrand, article: it.rommer.id, _words: rt.words, _numbers: new Set(rt.numbers), _abbrev: rt.abbrev, _countedNumbers: rt.countedNumbers, _hideForBase: true });
+            }
+        };
+        for (const key in catalog) {
+            if (Array.isArray(catalog[key])) catalog[key].forEach(it => pushItem(it, key));
+        }
+        extraArrays.forEach(([name, arr]) => arr.forEach(it => pushItem(it, name)));
         this._catalogSearchIndex = idx;
         return idx;
     },
@@ -1095,7 +1126,9 @@ const app = {
                     seen.add(it.id);
                     const brand = it.brand || 'STOUT';
                     const t = this._tokenizeSearchText(it.name + ' ' + brand);
-                    idx.push({ id: it.id, name: it.name, price: it.price, brand: brand, article: it.id, _words: t.words, _numbers: new Set(t.numbers), _abbrev: t.abbrev, _countedNumbers: t.countedNumbers, extra: true });
+                    // Для этого дозагружаемого прайса нет данных о категории каталога, поэтому
+                    // для базового тарифа просто скрываем всё ROMMER (без проверки на "есть ли аналог")
+                    idx.push({ id: it.id, name: it.name, price: it.price, brand: brand, article: it.id, _words: t.words, _numbers: new Set(t.numbers), _abbrev: t.abbrev, _countedNumbers: t.countedNumbers, extra: true, _hideForBase: brand === 'ROMMER' });
                 });
             })
             .catch(() => { });
@@ -1110,8 +1143,10 @@ const app = {
         const idx = this._buildCatalogSearchIndex();
         const qUpper = query.toUpperCase();
         const { words: qWords, numbers: qNumbers, countedNumbers: qCounted } = this._tokenizeSearchText(this._expandSlang(query));
+        const isPro = this.isPro();
 
         const results = idx.filter(it => {
+            if (it._hideForBase && !isPro) return false;
             if (it.article && it.article.toUpperCase().includes(qUpper)) return true;
             if (!qWords.length && !qNumbers.length) return false;
             const wordMatch = qWords.every(qw => it._words.some(w => this._stemEq(w, qw, it._abbrev)));
@@ -1168,6 +1203,7 @@ const app = {
         const idx = this._buildCatalogSearchIndex();
         const { words: qWords, numbers: qNumbers, countedNumbers: qCounted } = this._tokenizeSearchText(this._expandSlang(query));
         if (!qWords.length) return [];
+        const isPro = this.isPro();
 
         // Если в запросе было число (мощность, размер и т.п.) — им нельзя пренебрегать даже
         // в ослабленном поиске, иначе "24 квт" покажет вперемешку все мощности подряд
@@ -1175,6 +1211,7 @@ const app = {
 
         const scored = [];
         idx.forEach(it => {
+            if (it._hideForBase && !isPro) return;
             let matched = 0;
             qWords.forEach(qw => {
                 if (it._words.some(w => this._stemEq(w, qw, it._abbrev) || this._fuzzyWordMatch(w, qw))) matched++;
@@ -1493,9 +1530,21 @@ const app = {
 
         // Объём бойлера в литрах ("бойлер 200 л", "на 200 литров")
         const tankM = t.match(/(\d{2,4})\s*л(?:итр[а-я]*)?(?![а-я])/i);
-        if (tankM) {
-            const vol = Math.max(30, Math.min(1000, parseInt(tankM[1], 10)));
+        // Если явного "л"/"литров" нет — разрешаем голое число прямо рядом со словом "бойлер"
+        // ("бойлер 200", "роммер бойлер 200") в разумном диапазоне литража
+        const tankBareM = !tankM && t.match(/бойлер[а-я]*\s*(?:на\s*)?(\d{2,4})\b/i);
+        if (tankM || tankBareM) {
+            const vol = Math.max(30, Math.min(1000, parseInt((tankM || tankBareM)[1], 10)));
             results.push({ field: 'tankVol', value: vol, label: 'Объём бойлера', display: `${vol} л` });
+        }
+
+        // Бренд оборудования (переключатель STOUT/ROMMER) — переход на ROMMER доступен только
+        // PRO (как и ручной тумблер «Аналог»); на Базовом тарифе не показываем это в превью,
+        // чтобы не обещать то, что не применится
+        if (/р[оу]м+[еэ]р[а-я]*|\brommer\b/i.test(t)) {
+            if (this.isPro()) results.push({ field: 'brandMode', value: 'rommer', label: 'Бренд', display: 'ROMMER' });
+        } else if (/ст[ао]ут[а-я]*|\bstout\b/i.test(t)) {
+            results.push({ field: 'brandMode', value: 'stout', label: 'Бренд', display: 'STOUT' });
         }
 
         // Скважина/колодец
@@ -1674,6 +1723,16 @@ const app = {
                     break;
                 }
                 case 'tankVol': this.state.tankVol = r.value; break;
+                case 'brandMode': {
+                    // STOUT доступен всегда; переключение на любой другой бренд (ROMMER и
+                    // т.п.) — эксклюзив PRO, как и ручной тумблер «Аналог». На Базовом
+                    // тарифе просто игнорируем распознанный небазовый бренд
+                    if (r.value !== 'stout' && !this.isPro()) break;
+                    this.state.brandMode = r.value;
+                    this.state.sectionAnalog = {};
+                    if (r.value === 'rommer') this.state.pprSystemBrand = 'proaqua';
+                    break;
+                }
                 case 'well': this.state.well = r.value; break;
                 case 'waterEnabled': this.state.water = r.value; break;
                 case 'waterZones': this.state.waterZones = r.value; this.state.water = true; break;
@@ -1779,6 +1838,9 @@ const app = {
 
     // Плавающая кнопка "умного" заполнения параметров дома по свободному тексту/голосу
     openAiParseModal: function () {
+        // Кнопка для гостя скрыта (см. syncUI), но на всякий случай дублируем проверку —
+        // распознанные параметры пишутся в state напрямую, минуя проверки тарифа
+        if (!this.state.tgUser) { this.showAuthModal(); return; }
         if (document.body.classList.contains('menu-open')) {
             try { this.toggleMenu(); } catch (e) { }
         }
@@ -1798,55 +1860,11 @@ const app = {
         titleEl.className = 'calc-dialog-title';
         titleEl.innerText = '✨ Умное заполнение параметров';
         titleRow.appendChild(titleEl);
-
-        // Озвучка ответов ассистента (Web Speech Synthesis) — вкл/выкл запоминается между сеансами
-        const ttsSupported = 'speechSynthesis' in window;
-        let ttsEnabled = ttsSupported && localStorage.getItem('ai_tts_enabled') !== '0';
-        let ruVoice = null;
-        const pickVoice = () => {
-            if (!ttsSupported) return;
-            const voices = window.speechSynthesis.getVoices();
-            ruVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ru')) || null;
-        };
-        if (ttsSupported) {
-            pickVoice();
-            window.speechSynthesis.onvoiceschanged = pickVoice;
-        }
-        const ttsBtn = document.createElement('button');
-        ttsBtn.type = 'button';
-        ttsBtn.className = 'ai-chat-tts-btn';
-        const updateTtsBtn = () => {
-            ttsBtn.innerHTML = ttsEnabled ? '🔊' : '🔇';
-            ttsBtn.title = ttsEnabled ? 'Озвучка включена — нажмите, чтобы выключить' : 'Озвучка выключена — нажмите, чтобы включить';
-        };
-        if (ttsSupported) {
-            updateTtsBtn();
-            ttsBtn.onclick = () => {
-                ttsEnabled = !ttsEnabled;
-                localStorage.setItem('ai_tts_enabled', ttsEnabled ? '1' : '0');
-                updateTtsBtn();
-                if (!ttsEnabled) window.speechSynthesis.cancel();
-            };
-            titleRow.appendChild(ttsBtn);
-        }
         card.appendChild(titleRow);
 
         const chatLog = document.createElement('div');
         chatLog.className = 'ai-chat-log';
         card.appendChild(chatLog);
-
-        const speak = (text) => {
-            if (!ttsSupported || !ttsEnabled) return;
-            try {
-                window.speechSynthesis.cancel(); // не даём репликам накладываться друг на друга
-                const utter = new SpeechSynthesisUtterance(text);
-                utter.lang = 'ru-RU';
-                if (ruVoice) utter.voice = ruVoice;
-                utter.rate = 1.02;
-                utter.pitch = 1.05;
-                window.speechSynthesis.speak(utter);
-            } catch (e) { }
-        };
 
         const addBubble = (role, html) => {
             const b = document.createElement('div');
@@ -1854,7 +1872,6 @@ const app = {
             b.innerHTML = html;
             chatLog.appendChild(b);
             chatLog.scrollTop = chatLog.scrollHeight;
-            if (role === 'assistant') speak(b.textContent);
             return b;
         };
 
@@ -1923,7 +1940,6 @@ const app = {
                 window.visualViewport.removeEventListener('resize', syncViewport);
                 window.visualViewport.removeEventListener('scroll', syncViewport);
             }
-            if (ttsSupported) window.speechSynthesis.cancel();
             setTimeout(() => overlay.remove(), 200);
         };
         overlay.onclick = (e) => { if (e.target === overlay) close(); };
@@ -2428,7 +2444,10 @@ const app = {
             this.showAuthModal();
             return false;
         }
-        if (featureLvl === 'pro' && !isPro) {
+        // Базовый (авторизованный, не PRO) тариф получил полный функционал — 'pro' теперь
+        // требует только авторизации (уже проверена выше). Эксклюзивом PRO остаётся только
+        // переключение бренда на ROMMER ('pro-brand' — см. setBrand/toggleSectionAnalog).
+        if (featureLvl === 'pro-brand' && !isPro) {
             if (event) event.preventDefault();
             this.showModal('pro');
             return false;
@@ -2481,14 +2500,9 @@ const app = {
             }
 
             let trialBtn = document.getElementById('custom_modal_btn_trial');
-            if (trialBtn) {
-                if (this.state.tgUser && this.state.accountType !== 'pro') {
-                    // Show trial button only if demo not yet used
-                    trialBtn.style.display = this.state.demoUsed ? 'none' : 'block';
-                } else {
-                    trialBtn.style.display = 'none';
-                }
-            }
+            // Пробный период на 2 дня временно скрыт (решение — скрыть саму возможность,
+            // не убирая activateTrial14 — чтобы легко вернуть обратно)
+            if (trialBtn) trialBtn.style.display = 'none';
 
             // Show promo code section for logged-in users without distributor binding
             let promoSection = document.getElementById('promo_code_section');
@@ -3438,6 +3452,34 @@ const app = {
             }
             // ====================================================
 
+            // === РЕЗЕРВНАЯ КОПИЯ — ФИКСИРОВАННЫЙ EMAIL ДЛЯ ЛЮБОГО МОНТАЖНИКА ===
+            const RESERVE_MANAGER_EMAIL = 'd.ibatullin@teremopt.ru';
+            {
+                const reserveTemplateParams = {
+                    ...templateParams,
+                    to_email: RESERVE_MANAGER_EMAIL,
+                    email_subject: `[Резерв] Запрос счёта от ${tgUser.first_name || 'Монтажника'} — ${est.project_name || 'Проект'}`,
+                    equipment_list: `[Резервная копия]\nМонтажник: ${tgUser.first_name || ''} ${tgUser.phone || ''} (${tgUser.email || ''})\nОборудование: ${eqSum.toLocaleString('ru-RU')} ₽\nРаботы: ${worksSum.toLocaleString('ru-RU')} ₽\nИТОГО: ${total.toLocaleString('ru-RU')} ₽`
+                };
+                const reserveJob = {
+                    id: "invoice_reserve_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+                    stateData: est.calc_data,
+                    eqSum: eqSum,
+                    worksSum: worksSum,
+                    templateParams: reserveTemplateParams,
+                    serviceId: EMAILJS_SERVICE_ID,
+                    templateId: EMAILJS_TEMPLATE_ID,
+                    emailJsKey: EMAILJS_PUBLIC_KEY,
+                    retries: 0,
+                    status: "pending",
+                    created_at: Date.now() + 2
+                };
+                if (this.queue && typeof this.queue.addJob === 'function') {
+                    this.queue.addJob(reserveJob);
+                }
+            }
+            // ====================================================
+
             if (btnEl) {
                 btnEl.innerHTML = '✓ Счёт заказан';
                 btnEl.style.background = '#059669';
@@ -3641,13 +3683,13 @@ const app = {
 
             // Если все успешно — зеленая точка (соединение работает)
             dot.style.backgroundColor = '#10B981';
-            if (btn) btn.setAttribute('title', 'Соединение с базой активно (VPN работает)');
+            if (btn) { btn.setAttribute('title', 'Соединение с базой активно (VPN работает)'); btn.style.display = ''; }
             // Показываем кнопку «Ссылка для клиента» только при активном VPN
             if (btnShare) btnShare.style.display = '';
         } catch (e) {
-            // В случае ошибки или тайм-аута — красная точка (нужен VPN)
-            dot.style.backgroundColor = '#EF4444';
-            if (btn) btn.setAttribute('title', 'Нет соединения с базой (включите VPN)');
+            // Без связи с сервером иконка сообщений всё равно бесполезна (сообщения не
+            // загрузятся) — вместо красной точки просто скрываем саму кнопку
+            if (btn) btn.style.display = 'none';
             // Скрываем кнопку «Ссылка для клиента» без VPN
             if (btnShare) btnShare.style.display = 'none';
         }
@@ -4999,12 +5041,13 @@ const app = {
                                             <option value="paid" ${proSubtype === 'paid' ? 'selected' : ''}>Оплата</option>
                                         </select>
                                     </div>
-                                    <div id="admin_edit_distributor_wrapper" style="display: ${user.account_type === 'pro' && proSubtype === 'promo' ? 'block' : 'none'};">
-                                        <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Дистрибьютор</label>
+                                    <div id="admin_edit_distributor_wrapper" style="display: block; grid-column: 1 / -1;">
+                                        <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Дистрибьютор / менеджер (для копии запроса счёта — не зависит от тарифа)</label>
                                         <select id="admin_edit_distributor" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                             <option value="">Не выбран</option>
                                             ${(this.adminData.distributors || []).map(d => `<option value="${d.id}" ${user.distributor_id === d.id ? 'selected' : ''}>${d.company_name} (${d.promo_code})</option>`).join('')}
                                         </select>
+                                        <div id="admin_edit_distributor_info" style="margin-top:6px; font-size:11px; color:var(--text-sec); line-height:1.5;"></div>
                                     </div>
                                 </div>
                                 <button class="auth-btn-base btn-email-submit" style="width:100%; height:34px; font-size:12px;" onclick="app.updateAdminUserTariff('${user.id}')">💾 Применить настройки</button>
@@ -5026,17 +5069,24 @@ const app = {
             const tariffSel = document.getElementById('admin_edit_tariff');
             const subSel = document.getElementById('admin_edit_subtype');
             const subWrap = document.getElementById('admin_edit_subtype_wrapper');
-            const distWrap = document.getElementById('admin_edit_distributor_wrapper');
-            if (tariffSel && subSel && subWrap && distWrap) {
+            const distSel = document.getElementById('admin_edit_distributor');
+            const distInfo = document.getElementById('admin_edit_distributor_info');
+            if (tariffSel && subSel && subWrap) {
                 tariffSel.addEventListener('change', function() {
-                    const isProSelected = this.value === 'pro';
-                    subWrap.style.display = isProSelected ? 'block' : 'none';
-                    distWrap.style.display = (isProSelected && subSel.value === 'promo') ? 'block' : 'none';
-                });
-                subSel.addEventListener('change', function() {
-                    distWrap.style.display = this.value === 'promo' ? 'block' : 'none';
+                    subWrap.style.display = this.value === 'pro' ? 'block' : 'none';
                 });
             }
+            // Дистрибьютор/менеджер теперь не зависит от тарифа — просто показываем
+            // ФИО/телефон/email выбранного менеджера рядом со списком
+            const renderDistInfo = () => {
+                if (!distSel || !distInfo) return;
+                const d = (this.adminData.distributors || []).find(x => String(x.id) === String(distSel.value));
+                distInfo.innerHTML = d
+                    ? `👤 ${d.manager_name || '—'}<br>📞 ${d.manager_phone || '—'}<br>✉️ ${d.manager_email || '—'}`
+                    : '';
+            };
+            renderDistInfo();
+            if (distSel) distSel.addEventListener('change', renderDistInfo);
         }, 50);
 
         h += `
@@ -5919,20 +5969,17 @@ const app = {
         if (type === 'pro') {
             if (subtype === 'paid') {
                 updateData.pro_expires_at = updateData.demo_ends_at;
-                updateData.distributor_id = null;
-            } else if (subtype === 'promo') {
-                updateData.pro_expires_at = null;
-                updateData.distributor_id = distributorId || null;
             } else {
-                // trial
+                // trial или promo
                 updateData.pro_expires_at = null;
-                updateData.distributor_id = null;
             }
         } else {
             updateData.pro_expires_at = null;
-            updateData.distributor_id = null;
             updateData.demo_ends_at = null;
         }
+        // Дистрибьютор/менеджер (для копии запроса счёта) не зависит от тарифа —
+        // сохраняем то, что выбрано в списке, независимо от account_type
+        updateData.distributor_id = distributorId || null;
 
         try {
             const { error } = await supabaseClient.from('users').update(updateData).eq('id', userId);
@@ -6232,7 +6279,7 @@ const app = {
         this.render();
     },
     toggleSectionAnalog: function (title, val, event) {
-        if (!this.checkAccess('pro', event)) {
+        if (!this.checkAccess('pro-brand', event)) {
             // Если нет PRO доступа, перерендер сбросит чекбокс обратно к его корректному значению
             this.render();
             return;
@@ -6462,12 +6509,15 @@ const app = {
         }
 
         const isPro = this.isPro();
-        if (!isPro) {
+        // Переключение бренда на ROMMER остаётся эксклюзивом PRO — Базовый (авторизованный,
+        // не PRO) тариф получил остальной функционал целиком, но не доступ к ассортименту ROMMER.
+        // Группировку/артикулы/схему Базовому тарифу открываем.
+        if (featureName === 'cheaper' && !isPro) {
             this.showModal('pro');
             return;
         }
 
-        // Если PRO-подписка активна, вручную переключаем input и вызываем обработчик
+        // Если доступ есть, вручную переключаем input и вызываем обработчик
         if (featureName === 'cheaper') {
             const chk = document.getElementById('chk_cheaper');
             if (chk) {
@@ -11729,24 +11779,23 @@ const app = {
             n_wall: n_wall, n_glz: n_glz, n_roof: n_roof, n_floor: n_floor
         };
     },
-    // Примерная оценка "на сколько % подобран объект" — сравнивает уже посчитанную сумму
-    // оборудования (app.lastEqSum) с оценкой полного комплекта для такой площади.
-    // Коэффициенты получены не на глаз, а прогоном настоящего render() с полностью
-    // укомплектованным объектом (отопление+ГВС+скважина+2 санузла+вентиляция+автоматика)
-    // на нескольких площадях (80/100/150/200/250/300 м²) и линейной регрессией по точкам:
-    // 80м²→952 485₽, 100м²→1 159 345₽, 150м²→1 428 868₽, 200м²→1 744 956₽,
-    // 250м²→2 062 885₽, 300м²→2 428 915₽. Полная стоимость растёт не строго пропорционально
-    // площади — часть оборудования (котёл, скважина, вентиляция) имеет фиксированную стоимость
-    // независимо от площади, поэтому модель "база + за м²", а не просто "за м²".
-    _FILL_PERCENT_BASE: 460000,
-    _FILL_PERCENT_PER_M2: 6500,
+    // Примерная оценка "на сколько % подобран объект" — НЕ по стоимости оборудования,
+    // а по тому, сколько из ОСНОВНЫХ разделов вообще заданы (не важно, сколько там стоит
+    // оборудование). Намеренно НЕ считаем кровлю/пол/остекление/скважину — это необязательные
+    // детальные уточнения (кровля/пол/остекление вообще не используются в быстром режиме расчёта,
+    // скважина не нужна каждому объекту), иначе даже полностью заполненный "Быстрый" режим
+    // никогда не показывал бы 100%.
     getFillPercent: function () {
-        const area = this.state.area || 0;
-        if (area <= 0) return null;
-        const estimatedTotal = this._FILL_PERCENT_BASE + area * this._FILL_PERCENT_PER_M2;
-        if (estimatedTotal <= 0) return null;
-        const pct = Math.round(((this.lastEqSum || 0) / estimatedTotal) * 100);
-        return Math.max(0, Math.min(150, pct));
+        if (!this.state.area || this.state.area <= 0) return null;
+        const sections = [
+            !!(this.state.fuels && this.state.fuels.length),                    // источник тепла
+            !!(this.state.systems && this.state.systems.length),                // тёплый пол / радиаторы
+            !!this.state.hotWater,                                              // ГВС / бойлер
+            !!this.state.water || !!(this.state.waterZones && this.state.waterZones.length), // водоснабжение / санузлы
+            !!this.state.ventilationEnabled,                                    // вентиляция
+        ];
+        const filled = sections.filter(Boolean).length;
+        return Math.round((filled / sections.length) * 100);
     },
     getHouseHeatLoss: function () {
         let pwr = 0;
@@ -13273,9 +13322,10 @@ const app = {
         const modePro = document.getElementById('mode_pro');
         const modeSelectorWrapper = modeFast && modeFast.closest('.mode-selector-tabs');
 
-        const modeIsLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
         const modeIsGuest = isGuest;
-        const modeIsPro = isPro || (modeIsLocal && !isGuest);
+        // Базовый (авторизованный, но не PRO) тариф получил полный функционал —
+        // режим "Подробный" доступен всем, кроме гостей (им нужно сначала войти).
+        const modeIsPro = isPro || !isGuest;
 
         // Управление видимостью блока переключателя (всегда показываем, чтобы гость видел заблокированную вкладку)
         if (modeSelectorWrapper) {
@@ -13447,6 +13497,12 @@ const app = {
         const cloudBtns = document.querySelector('.header-cloud-btns');
         if (cloudBtns) cloudBtns.style.display = isGuest ? 'none' : 'flex';
 
+        // Кнопку "умного" заполнения (ИИ-чат) гостю вообще не показываем — распознанные
+        // параметры пишутся в state напрямую, минуя проверки тарифа, так что для гостя
+        // единственная надёжная защита — не давать открыть диалог вообще
+        const aiFabBtn = document.getElementById('ai_parse_fab_btn');
+        if (aiFabBtn) aiFabBtn.style.display = isGuest ? 'none' : 'flex';
+
         const applyLock = (elId, reqLvl) => {
             let container;
             let el = document.getElementById(elId);
@@ -13462,7 +13518,13 @@ const app = {
             container.classList.remove('locked-guest', 'locked-pro');
             if (reqLvl === 'base' && isGuest) {
                 container.classList.add('locked-guest');
-            } else if (reqLvl === 'pro' && !isPro) {
+            } else if (reqLvl === 'pro' && !isPro && isGuest) {
+                // Базовый (авторизованный, но не PRO) тариф получил полный функционал —
+                // блокировка "pro" теперь актуальна только для гостей (нужен вход).
+                container.classList.add('locked-guest');
+            } else if (reqLvl === 'pro-brand' && !isPro) {
+                // Переключение бренда на ROMMER остаётся эксклюзивом PRO даже для
+                // авторизованного Базового тарифа — иначе он получит доступ к ассортименту ROMMER.
                 if (isGuest) container.classList.add('locked-guest');
                 else container.classList.add('locked-pro');
             }
@@ -13535,7 +13597,7 @@ const app = {
         applyLock('chk_merge', 'pro');
         applyLock('chk_sku', 'pro');
         applyLock('chk_scheme', 'pro');
-        applyLock('chk_cheaper', 'pro');
+        applyLock('chk_cheaper', 'pro-brand');
         applyLock('btn_print_trigger', 'base');
 
         document.body.classList.toggle('work-mode', this.state.viewMode === 'works');
@@ -14060,7 +14122,13 @@ const app = {
     addZone: function () {
         let id = Date.now();
         let dist = this.state.area < 120 ? 6 : 10;
-        this.state.waterZones.push({ id: id, name: "Санузел " + (this.state.waterZones.length + 1), dist: dist, fixtures: { toilet: 0, basin: 0, bath: 0, shower: 0, wash: 0, dish: 0 } });
+        // По умолчанию: первый санузел — унитаз + раковина + душ, второй и последующие
+        // (обычно гостевые) — унитаз + раковина, без душа.
+        let isFirst = this.state.waterZones.length === 0;
+        let fixtures = isFirst
+            ? { toilet: 1, basin: 1, bath: 0, shower: 1, wash: 0, dish: 0 }
+            : { toilet: 1, basin: 1, bath: 0, shower: 0, wash: 0, dish: 0 };
+        this.state.waterZones.push({ id: id, name: "Санузел " + (this.state.waterZones.length + 1), dist: dist, fixtures: fixtures });
         this.syncUI(); this.render();
     },
     removeZone: function (id) { this.state.waterZones = this.state.waterZones.filter(z => z.id !== id); this.syncUI(); this.render(); },
@@ -14824,8 +14892,11 @@ const app = {
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
         let isTrialActive = trialUntil > Date.now();
         let isPro = (this.state.accountType === 'pro' || isTrialActive);
-        // Схлопываем смету (forceMerge = true), если нет PRO или тумблер "Группировать" ВЫКЛЮЧЕН
-        let forceMerge = !isPro || !this.state.groupItems;
+        let isGuestUser = !this.state.tgUser;
+        // Схлопываем смету (forceMerge = true), если тумблер "Группировать" ВЫКЛЮЧЕН,
+        // либо пользователь вообще не авторизован (Базовый тариф группировку уже получил,
+        // группировка остаётся недоступна только гостю)
+        let forceMerge = (!isPro && isGuestUser) || !this.state.groupItems;
         let h1 = this.state.h1 || 2.7, h2 = this.state.h2 || 2.7;
         let avgH = (this.state.floors === 2) ? (h1 + h2) / 2 : h1;
 
@@ -18126,15 +18197,18 @@ const app = {
         if (headerTotals) {
             // Проверяем тариф и авторизацию
             let isPro = this.isPro();
+            // Раздел "Работы" открыт Базовому (авторизованному, не PRO) тарифу — сумма монтажа
+            // в шапке должна показываться и ему, не только PRO
+            let showWorksTotal = isPro || !!this.state.tgUser;
 
             // Строим HTML каркас только 1 раз (или при смене тарифа), чтобы не сбрасывать анимацию
-            if (!headerTotals.innerHTML.includes('anim_eq_sum') || headerTotals.dataset.isPro !== String(isPro)) {
+            if (!headerTotals.innerHTML.includes('anim_eq_sum') || headerTotals.dataset.isPro !== String(showWorksTotal)) {
                 let sumsHtml = `<span style="color:var(--text-sec); font-size:11px; margin-right:4px;">Оборудование:</span> <b id="anim_eq_sum" style="color:var(--primary); font-size:14px;">0 ₽</b>`;
-                if (isPro) {
+                if (showWorksTotal) {
                     sumsHtml += `<span style="margin:0 10px; color:var(--border);">|</span> <span style="color:var(--text-sec); font-size:11px; margin-right:4px;">Монтаж:</span> <b id="anim_works_sum" style="color:#F97316; font-size:14px;">0 ₽</b>`;
                 }
                 headerTotals.innerHTML = `<div class="header-totals-sums-row">${sumsHtml}</div>`;
-                headerTotals.dataset.isPro = String(isPro);
+                headerTotals.dataset.isPro = String(showWorksTotal);
                 headerTotals.dataset.lastEq = 0;
                 headerTotals.dataset.lastWorks = 0;
             }
@@ -18160,7 +18234,7 @@ const app = {
             }
 
             // Запускаем анимацию Монтажа
-            if (isPro) {
+            if (showWorksTotal) {
                 let elWorks = document.getElementById('anim_works_sum');
                 let oldWorks = parseFloat(headerTotals.dataset.lastWorks) || 0;
                 let newWorks = app.lastWorksSum || 0;
@@ -18226,10 +18300,12 @@ const app = {
                 mobileTotals.dataset.lastShowBlurEq = String(currentShowBlur);
             }
 
-            // Проверяем тариф и авторизацию
+            // Проверяем тариф и авторизацию. Раздел "Работы" открыт и Базовому
+            // (авторизованному, не PRO) тарифу — сумма монтажа показывается и ему.
             let isPro = this.isPro();
+            let showWorksTotal = isPro || !!this.state.tgUser;
 
-            if (isPro && mWorkEl) {
+            if (showWorksTotal && mWorkEl) {
                 let oldWorks = parseFloat(mobileTotals.dataset.lastWorks) || 0;
                 let newWorks = app.lastWorksSum || 0;
                 let lastShowBlurWorks = mobileTotals.dataset.lastShowBlurWorks === 'true';

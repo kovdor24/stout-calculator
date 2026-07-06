@@ -5554,9 +5554,10 @@ body.dark-mode .desktop-feedback-btn:hover {
 }
 
 .ai-chat-card {
-    height: 78vh;
-    height: 78dvh;
-    max-height: min(640px, 100%);
+    /* Не фиксированная высота, а потолок — карточка подстраивается под реальную длину
+       переписки (короткий диалог не тянет за собой пустое место), но не растёт бесконечно */
+    max-height: min(78vh, 640px);
+    max-height: min(78dvh, 640px);
 }
 
 .ai-chat-title-row {
@@ -5570,37 +5571,14 @@ body.dark-mode .desktop-feedback-btn:hover {
     margin: 0;
 }
 
-.ai-chat-tts-btn {
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-    background: var(--surface-light);
-    font-size: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.15s, transform 0.15s;
-}
-
-.ai-chat-tts-btn:hover {
-    background: var(--border);
-}
-
-.ai-chat-tts-btn:active {
-    transform: scale(0.92);
-}
-
 .ai-chat-log {
-    flex: 1;
+    flex: 0 1 auto;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 10px;
     padding: 4px 2px;
-    min-height: 120px;
+    min-height: 40px;
 }
 
 .ai-chat-bubble {
@@ -7471,6 +7449,17 @@ body.dark-mode .cw-status-promo {
     padding: 1px 6px;
     white-space: nowrap;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-    transition: left 0.5s ease;
+    transition: left 0.5s ease, top 0.5s ease;
     cursor: default;
+    z-index: 5;
+}
+
+/* На мобильных/планшете в портрете отметка над полосой перекрывала бейдж "Оборудование/Монтаж"
+   (он абсолютно спозиционирован по центру короткой шапки) — переносим отметку под полосу */
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait) {
+    .header-fill-bar-marker {
+        bottom: auto;
+        top: 100%;
+        margin-top: 3px;
+    }
 }
