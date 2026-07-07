@@ -49,11 +49,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.37">
+    <link rel="stylesheet" href="style.css?v=2.38">
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.14" defer></script>
-    <script src="app.js?v=2.57" defer></script>
+    <script src="app.js?v=2.58" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -856,7 +856,7 @@
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                             <polyline points="9 22 9 12 15 12 15 22"></polyline>
                         </svg>
-                        <span style="flex-grow: 1; font-weight: 600; font-size: 14.5px; color: var(--text-main); text-align: left;">Поставщик</span>
+                        <span style="flex-grow: 1; font-weight: 600; font-size: 14.5px; color: var(--text-main); text-align: left;">Ваш менеджер</span>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="color: var(--text-sec); opacity: 0.5;">
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
@@ -1008,7 +1008,7 @@
             </div>
             
             <div id="pro_main_content" class="pro-modal-content">
-                <h2 id="custom_modal_title">Подписка PRO</h2>
+                <h2 id="custom_modal_title">Подписка Профи</h2>
                 
                 <p id="custom_modal_text">Преимущества подписки: подбор всех разделов (котельная, радиаторы, теплый пол, водоснабжение, канализация) монтажные работы, артикулы, подбор аналогов, формирование кп в pdf, excel.</p>
                 
@@ -1065,12 +1065,66 @@
                 </div>
 
                 <div id="auth_form_container">
-                    <input type="email" id="auth_email_input" class="auth-input" placeholder="Введите ваш Email">
+                    <label class="reg-field-label" style="text-align:left;">Email</label>
+                    <input type="email" id="auth_email_input" class="auth-input" placeholder="Введите ваш Email" style="max-width:100%; margin:0 0 12px;">
                     <div id="login_fields">
-                        <input type="password" id="auth_password_input" class="auth-input" placeholder="Введите пароль">
+                        <label class="reg-field-label" style="text-align:left;">Пароль</label>
+                        <input type="password" id="auth_password_input" class="auth-input" placeholder="Введите пароль" style="max-width:100%; margin:0 0 12px;">
                     </div>
-                    <div id="register_fields" style="display: none;">
-                        <input type="password" id="auth_reg_password" class="auth-input" placeholder="Придумайте пароль">
+                    <div id="register_fields" style="display: none; text-align:left;">
+                        <div class="reg-grid-3">
+                            <div>
+                                <label class="reg-field-label">Фамилия</label>
+                                <input type="text" id="reg_last_name" class="auth-input" placeholder="Иванов" style="max-width:100%; margin:0;">
+                            </div>
+                            <div>
+                                <label class="reg-field-label">Имя</label>
+                                <input type="text" id="reg_first_name" class="auth-input" placeholder="Иван" style="max-width:100%; margin:0;">
+                            </div>
+                            <div>
+                                <label class="reg-field-label">Отчество</label>
+                                <input type="text" id="reg_middle_name" class="auth-input" placeholder="Иванович" style="max-width:100%; margin:0;">
+                            </div>
+                        </div>
+
+                        <div class="reg-grid-2">
+                            <div>
+                                <label class="reg-field-label">Телефон</label>
+                                <input type="tel" id="reg_phone" class="auth-input" placeholder="+7 (___) ___-__-__" oninput="app.maskPhone(this)" style="max-width:100%; margin:0;">
+                            </div>
+                            <div>
+                                <label class="reg-field-label">Дата рождения</label>
+                                <input type="date" id="reg_birth_date" class="auth-input" style="max-width:100%; margin:0; color-scheme: light dark;">
+                            </div>
+                        </div>
+
+                        <div class="reg-grid-2">
+                            <div>
+                                <label class="reg-field-label">Регион</label>
+                                <input type="text" id="reg_region" class="auth-input" placeholder="Московская область" style="max-width:100%; margin:0;">
+                            </div>
+                            <div>
+                                <label class="reg-field-label">Населённый пункт</label>
+                                <input type="text" id="reg_city" class="auth-input" placeholder="Москва" style="max-width:100%; margin:0;">
+                            </div>
+                        </div>
+
+                        <label class="reg-field-label">Сфера деятельности</label>
+                        <div class="reg-grid-2 reg-activity-grid">
+                            <label class="reg-activity-chip"><input type="checkbox" id="reg_act_installer" value="Монтажник"><span>Монтажник</span></label>
+                            <label class="reg-activity-chip"><input type="checkbox" id="reg_act_seller" value="Продавец"><span>Продавец</span></label>
+                        </div>
+
+                        <div class="reg-grid-2">
+                            <div>
+                                <label class="reg-field-label">Пароль</label>
+                                <input type="password" id="auth_reg_password" class="auth-input" placeholder="Придумайте пароль" style="max-width:100%; margin:0;">
+                            </div>
+                            <div>
+                                <label class="reg-field-label">Повторите пароль</label>
+                                <input type="password" id="reg_password_confirm" class="auth-input" placeholder="Повторите пароль" style="max-width:100%; margin:0;">
+                            </div>
+                        </div>
                     </div>
                     <div id="auth_error_msg" style="color: #ef4444; font-size: 13px; margin-top: -10px; margin-bottom: 15px; display: none; text-align: left; line-height: 1.4;"></div>
 
@@ -1081,24 +1135,30 @@
                     <div id="auth_forgot_link" style="text-align: center; margin-top: 10px; font-size: 13px;">
                         <a href="#" onclick="app.showForgotPasswordView()" style="color: var(--text-sec); text-decoration: none;">Забыли пароль?</a>
                     </div>
+
+                    <div id="auth_google_hint" style="display: none; text-align: center; margin-top: 10px; font-size: 13px;">
+                        <a href="#" onclick="app.switchAuthTab('login')" style="color: var(--text-sec); text-decoration: none;">или войдите через Google →</a>
+                    </div>
                 </div>
 
-                <div class="auth-divider">
-                    <div class="auth-divider-line"></div>
-                    ИЛИ ВОЙТИ ЧЕРЕЗ
-                    <div class="auth-divider-line"></div>
-                </div>
+                <div id="auth_social_login_wrapper">
+                    <div class="auth-divider">
+                        <div class="auth-divider-line"></div>
+                        ИЛИ ВОЙТИ ЧЕРЕЗ
+                        <div class="auth-divider-line"></div>
+                    </div>
 
-                <div class="social-btn-wrapper">
-                    <button class="auth-btn-base btn-google" onclick="app.loginGoogle()">
-                        <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                        </svg>
-                        Продолжить с Google
-                    </button>
+                    <div class="social-btn-wrapper">
+                        <button class="auth-btn-base btn-google" onclick="app.loginGoogle()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                            </svg>
+                            Продолжить с Google
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1133,14 +1193,14 @@
                 </div>
             </div>
 
-            <div id="auth_terms_wrapper" style="margin-top: 15px; padding: 0 5px; display: flex; flex-direction: column; gap: 8px; max-width: 320px; margin: 15px auto 0 auto;">
-                <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 8px; color: var(--text-sec); text-align: left; line-height: 1.3;">
-                    <input type="checkbox" id="chk_terms" style="width: 15px; height: 15px; cursor: pointer; margin-top: 1px; flex-shrink: 0;">
-                    <span>Я ознакомлен и принимаю условия <a href="oferta.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">Публичной оферты</a></span>
+            <div id="auth_terms_wrapper" style="margin-top: 15px; padding: 0 5px; display: flex; flex-direction: column; gap: 6px; max-width: 100%; margin: 15px auto 0 auto;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 11px; color: var(--text-sec); text-align: left; line-height: 1.2; white-space: nowrap;">
+                    <input type="checkbox" id="chk_terms" style="width: 15px; height: 15px; cursor: pointer; flex-shrink: 0;">
+                    <span>Принимаю условия <a href="oferta.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">Публичной оферты</a></span>
                 </label>
-                <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 8px; color: var(--text-sec); text-align: left; line-height: 1.3;">
-                    <input type="checkbox" id="chk_privacy" required style="width: 15px; height: 15px; cursor: pointer; margin-top: 1px; flex-shrink: 0;">
-                    <span>Я даю согласие на обработку моих персональных данных и принимаю условия <a href="privacy-policy.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">Политики обработки персональных данных</a></span>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 11px; color: var(--text-sec); text-align: left; line-height: 1.2; white-space: nowrap;">
+                    <input type="checkbox" id="chk_privacy" required style="width: 15px; height: 15px; cursor: pointer; flex-shrink: 0;">
+                    <span>Согласен с <a href="privacy-policy.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">Политикой обработки персональных данных</a></span>
                 </label>
             </div>
         </div>
@@ -1151,7 +1211,7 @@
         <div class="auth-modal-content" style="max-width: 400px; text-align: center;">
             <span class="auth-modal-close" onclick="closePaymentModal()">&times;</span>
             <h3 class="auth-modal-title" id="pay_modal_title" style="margin-bottom: 4px;">Оплата подписки</h3>
-            <p style="color: var(--text-sec); font-size: 13px; margin-bottom: 10px;" id="planName">Тариф: PRO 1 месяц</p>
+            <p style="color: var(--text-sec); font-size: 13px; margin-bottom: 10px;" id="planName">Тариф: Профи 1 месяц</p>
             
             <div id="qrcode_container"></div>
             
@@ -1163,7 +1223,7 @@
                 <button class="auth-btn-base btn-email-submit" id="notify_payment_btn" style="width: 100%; height: 42px;">✅ Я оплатил</button>
             </div>
             
-            <p style="font-size: 10px; color: var(--text-sec); margin-top: 8px; line-height: 1.3;">После нажатия «Я оплатил» мы проверим поступление средств и активируем PRO-статус в ближайшее время.</p>
+            <p style="font-size: 10px; color: var(--text-sec); margin-top: 8px; line-height: 1.3;">После нажатия «Я оплатил» мы проверим поступление средств и активируем статус Профи в ближайшее время.</p>
         </div>
     </div>
 
@@ -1206,14 +1266,20 @@
     </div>
 
     <div id="profile_modal_overlay" class="auth-modal-overlay" style="display: none;">
-        <div class="auth-modal-content" style="max-width: 360px; width: 95%; max-height: 95vh; overflow-y: auto; display: block; box-sizing: border-box; transition: max-width 0.3s ease; padding: 16px 20px;">
-            <span class="auth-modal-close" onclick="app.closeProfileModal()" style="top: 12px; right: 16px;">&times;</span>
+        <div class="auth-modal-content" style="max-width: 60vw; width: 95%; max-height: 95vh; overflow-y: auto; display: block; box-sizing: border-box; transition: max-width 0.3s ease; padding: 16px 20px;">
+            <span id="profile_modal_close_btn" class="auth-modal-close" onclick="app.closeProfileModal()" style="top: 12px; right: 16px;">&times;</span>
             <h3 class="auth-modal-title" style="margin-top: 0; margin-bottom: 12px; font-size: 18px;">Мой профиль</h3>
+
+            <!-- Баннер принудительного дозаполнения обязательных полей (Google/Telegram-вход
+                 или старый аккаунт без анкеты) — до сохранения окно нельзя закрыть -->
+            <div id="profile_incomplete_banner" style="display: none; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 12px; color: #EF4444; font-weight: 600; text-align: left; line-height: 1.4;">
+                Пожалуйста, заполните все обязательные поля ниже и нажмите «Сохранить», чтобы продолжить работу.
+            </div>
 
             <!-- PRO Status Banner -->
             <div id="profile_pro_badge_banner" style="display: none; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 6px 12px; margin-bottom: 12px; align-items: center; justify-content: space-between; font-size: 11px;">
                 <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
-                    <span style="font-weight: 700; color: #D97706; text-transform: uppercase; letter-spacing: 0.03em;">Тариф PRO активен</span>
+                    <span style="font-weight: 700; color: #D97706; text-transform: uppercase; letter-spacing: 0.03em;">Тариф Профи активен</span>
                     <span id="profile_pro_expiry_text" style="color: var(--text-sec); font-weight: 600;">до 06.06.2026</span>
                 </div>
                 <button type="button" onclick="app.closeProfileModal(); app.showModal('pro');" style="padding: 4px 8px; font-size: 10px; font-weight: bold; background: #D97706; border: 1px solid #D97706; color: #fff; border-radius: 6px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#B45309'; this.style.borderColor='#B45309';" onmouseout="this.style.background='#D97706'; this.style.borderColor='#D97706';">Продлить</button>
@@ -1226,18 +1292,42 @@
                     <div style="flex: 1 1 260px; min-width: 240px; display: flex; flex-direction: column; justify-content: flex-start; padding: 0;">
                         <h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 13.5px; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 4px;">Основные данные</h4>
                         
-                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Имя и Фамилия</label>
-                        <input type="text" id="profile_name_input" class="auth-input" placeholder="Иван Иванов" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px;">
-                        
+                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 8px;">
+                            <div>
+                                <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Фамилия</label>
+                                <input type="text" id="profile_last_name_input" class="auth-input" placeholder="Иванов" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Имя</label>
+                                <input type="text" id="profile_first_name_input" class="auth-input" placeholder="Иван" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Отчество</label>
+                                <input type="text" id="profile_middle_name_input" class="auth-input" placeholder="Иванович" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px;">
+                            </div>
+                        </div>
+
                         <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Телефон для смет</label>
                         <input type="tel" id="profile_phone_input" class="auth-input" placeholder="+7 (___) ___-__-__" oninput="app.maskPhone(this)" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px;">
-                        
-                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Ваш город (для смет)</label>
-                        <input type="text" id="profile_city_input" class="auth-input" placeholder="Например: Москва" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px;">
-                        
+
                         <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Email для уведомлений</label>
                         <input type="email" id="profile_email_input" class="auth-input" placeholder="example@mail.ru" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px;">
-                        
+
+                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Дата рождения</label>
+                        <input type="date" id="profile_birth_date_input" class="auth-input" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px; color-scheme: light dark;">
+
+                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Регион</label>
+                        <input type="text" id="profile_region_input" class="auth-input" placeholder="Например: Московская область" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px;">
+
+                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Ваш город (для смет)</label>
+                        <input type="text" id="profile_city_input" class="auth-input" placeholder="Например: Москва" style="max-width: 100%; margin-bottom: 8px; height: 34px; font-size: 13px; padding: 6px 10px;">
+
+                        <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Сфера деятельности</label>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom: 8px;">
+                            <label class="reg-activity-chip"><input type="checkbox" id="profile_act_installer" value="Монтажник"><span>Монтажник</span></label>
+                            <label class="reg-activity-chip"><input type="checkbox" id="profile_act_seller" value="Продавец"><span>Продавец</span></label>
+                        </div>
+
                         <!-- Toggle Button for PRO Branding (Only visible for PRO) -->
                         <button type="button" id="toggle_branding_btn" class="auth-btn-base" style="display: none; margin-top: 5px; background: var(--surface-light); border: 1px solid var(--border); color: var(--primary); font-size: 12px; max-width: 100%; height: 36px; border-radius: 8px;" onclick="app.toggleBrandingSection()">⚙️ Настроить логотип и реквизиты</button>
                     </div>
@@ -1246,7 +1336,7 @@
                     <div id="pro_profile_company_section" style="flex: 1 2 320px; min-width: 280px; display: none; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-sizing: border-box;">
                         <h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">
                             <span>Реквизиты компании</span>
-                            <span style="background: var(--primary); color: #fff; font-size: 8px; padding: 1px 5px; border-radius: 10px; text-transform: uppercase; font-weight: 800;">PRO</span>
+                            <span style="background: var(--primary); color: #fff; font-size: 8px; padding: 1px 5px; border-radius: 10px; text-transform: uppercase; font-weight: 800;">ПРОФИ</span>
                         </h4>
                         
                         <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Логотип компании</label>
@@ -1285,8 +1375,7 @@
         </div>
     </div>
     <div id="admin_modal_overlay" class="auth-modal-overlay" style="display: none; z-index: 100000;">
-        <div class="auth-modal-content"
-            style="max-width: 900px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+        <div class="auth-modal-content" style="display: flex; flex-direction: column;">
             <span class="auth-modal-close" onclick="app.closeAdminModal()">&times;</span>
             <h3 class="auth-modal-title">Панель управления</h3>
             <div id="admin_content" style="overflow-y: auto; flex-grow: 1; padding-right: 10px;">

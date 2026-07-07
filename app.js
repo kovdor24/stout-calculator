@@ -856,7 +856,7 @@ const app = {
             } else {
                 compSec.style.display = 'none';
                 if (btn) btn.innerHTML = '⚙️ Настроить логотип и реквизиты';
-                if (modalContent) modalContent.style.maxWidth = '380px';
+                if (modalContent) modalContent.style.maxWidth = '60vw';
             }
         }
     },
@@ -2415,6 +2415,46 @@ const app = {
         return this.state.accountType === 'pro' || isTrialActive || !!isDbPro;
     },
 
+    // Проверка обязательной анкеты (ФИО, телефон, дата рождения, регион, город, сфера
+    // деятельности) — распространяется на ВСЕХ пользователей, включая тех, кто вошёл через
+    // Google/Telegram или зарегистрировался ещё до появления этих полей.
+    isProfileIncomplete: function () {
+        const u = this.state.tgUser;
+        if (!u) return false;
+        return !(u.lastName && u.givenName && u.middleName && u.phone && u.birthDate && u.region && u.city && u.activityTypes && u.activityTypes.length);
+    },
+
+    // История жизненного цикла сметы для админки (вкладка со статусами, как в CRM):
+    // расчитано → сохранено → отправлено → распечатано → запрошен счёт → одобрено/отклонено.
+    // Пишем в фоне, не блокируя основной поток и не показывая пользователю ошибок,
+    // если запись не удалась (это вспомогательная аналитика, не критичная функция).
+    logInvoiceEvent: function (event, extra) {
+        try {
+            if (!this.state.calc_id || typeof supabaseClient === 'undefined') return;
+            const tgUser = this.state.tgUser || {};
+            supabaseClient.from('invoice_events').insert([{
+                calc_id: String(this.state.calc_id),
+                event: event,
+                user_id: tgUser.id ? String(tgUser.id) : null,
+                user_name: tgUser.first_name || tgUser.username || null,
+                user_email: tgUser.email || null,
+                project_name: this.state.projectName || null,
+                meta: extra || null
+            }]).then(({ error }) => { if (error) console.warn('[logInvoiceEvent] Ошибка записи:', error); });
+        } catch (e) {
+            console.warn('[logInvoiceEvent] Исключение:', e);
+        }
+    },
+
+    // Ленивая генерация calc_id при первом реальном расчёте (площадь задана) — это же
+    // момент, который считаем событием "расчитано". Срабатывает ровно один раз на проект,
+    // т.к. дальше calc_id уже существует и условие не выполняется.
+    ensureCalcId: function () {
+        if (this.state.calc_id || !this.state.area || this.state.area <= 0) return;
+        this.state.calc_id = String(Math.floor(100000 + Math.random() * 900000));
+        this.logInvoiceEvent('calculated');
+    },
+
     getProUntilDate: function () {
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
         let isTrialActive = trialUntil > Date.now();
@@ -2489,7 +2529,7 @@ const app = {
                 icon.style.display = 'none';
                 icon.innerHTML = "";
             }
-            if (title) title.innerHTML = "Подписка PRO";
+            if (title) title.innerHTML = "Подписка Профи";
             if (text) text.innerHTML = "Преимущества подписки: подбор всех разделов (котельная, радиаторы, теплый пол, водоснабжение, канализация) монтажные работы, артикулы, подбор аналогов, формирование кп в pdf, excel.";
 
             let cards = document.querySelector('.tariff-cards');
@@ -2801,6 +2841,7 @@ const app = {
 
             this.lastSavedStateString = this.getStateSignature();
             this.markAsSaved();
+            this.logInvoiceEvent('saved');
             console.log("[saveToCloud] Сохранение успешно завершено.");
             if (!silent) app.alert("✅ Смета успешно сохранена!");
             return true;
@@ -2936,7 +2977,7 @@ const app = {
             this.syncUI();
             this.closeModal();
 
-            app.alert(`✅ Промокод принят! Компания-поставщик: ${dist.company_name}. Вам присвоен тариф PRO на ${proMonths} мес. Страница будет перезагружена через 6 секунд.`);
+            app.alert(`✅ Промокод принят! Компания-поставщик: ${dist.company_name}. Вам присвоен тариф Профи на ${proMonths} мес. Страница будет перезагружена через 6 секунд.`);
             setTimeout(() => {
                 window.location.replace(window.location.pathname + window.location.search);
             }, 6000);
@@ -2976,7 +3017,7 @@ const app = {
         if (this.state.distributorId && this.state.distributorInfo) {
             const d = this.state.distributorInfo;
             subview.innerHTML = `
-                <h4 style="margin: 0 0 16px; font-size: 15px; color: var(--text-main);">🏢 Ваш поставщик</h4>
+                <h4 style="margin: 0 0 16px; font-size: 15px; color: var(--text-main);">🤝 Ваш менеджер</h4>
                 <div style="display: grid; gap: 10px; font-size: 14px;">
                     <div style="display: flex; gap: 8px;">
                         <span style="color: var(--text-sec); min-width: 120px;">Компания:</span>
@@ -3000,17 +3041,94 @@ const app = {
                 </div>
             `;
         } else if (this.state.distributorId && !this.state.distributorInfo) {
-            subview.innerHTML = `<div style="color: var(--text-sec); font-size: 13px;">Загрузка данных поставщика...</div>`;
+            subview.innerHTML = `<div style="color: var(--text-sec); font-size: 13px;">Загрузка данных менеджера...</div>`;
             this.loadDistributorInfo().then(() => this.showSupplierSection());
         } else {
-            subview.innerHTML = `
-                <h4 style="margin: 0 0 12px; font-size: 15px; color: var(--text-main);">🏢 Поставщик не привязан</h4>
-                <p style="font-size: 13px; color: var(--text-sec); margin: 0 0 14px;">Введите промокод дистрибьютора при выборе тарифа PRO, чтобы привязать поставщика.</p>
-                <button class="auth-btn-base btn-email-submit" style="width: 100%; height: 38px;" onclick="app.showModal('pro')">Перейти к выбору тарифа</button>
-            `;
+            subview.innerHTML = `<div style="color: var(--text-sec); font-size: 13px;">Загрузка списка менеджеров...</div>`;
+            this.renderDistributorPicker();
         }
 
         subview.style.display = 'block';
+    },
+
+    // Список активных дистрибьюторов, обслуживающих регион пользователя (или все, если для
+    // региона никого не нашлось) — самостоятельный выбор менеджера монтажником без промокода
+    renderDistributorPicker: async function () {
+        const subview = document.getElementById('profile_subview_container');
+        if (!subview) return;
+        const tgUser = this.state.tgUser || {};
+        const userRegion = (tgUser.region || '').trim();
+
+        try {
+            let query = supabaseClient.from('distributors').select('id, company_name, manager_name, manager_email, manager_phone, regions').eq('is_active', true);
+            if (userRegion) query = query.contains('regions', [userRegion]);
+            let { data: dists, error } = await query;
+            if (error) throw error;
+
+            // Для региона пользователя никого не нашлось — показываем всех активных как запасной вариант
+            if ((!dists || dists.length === 0) && userRegion) {
+                const { data: allDists } = await supabaseClient.from('distributors').select('id, company_name, manager_name, manager_email, manager_phone, regions').eq('is_active', true);
+                dists = allDists || [];
+            }
+
+            if (!dists || dists.length === 0) {
+                subview.innerHTML = `
+                    <h4 style="margin: 0 0 12px; font-size: 15px; color: var(--text-main);">🤝 Менеджер не назначен</h4>
+                    <p style="font-size: 13px; color: var(--text-sec); margin: 0 0 14px;">Пока нет доступных поставщиков. Если у вас есть промокод дистрибьютора, введите его при выборе тарифа Профи.</p>
+                    <button class="auth-btn-base btn-email-submit" style="width: 100%; height: 38px;" onclick="app.showModal('pro')">Перейти к выбору тарифа</button>
+                `;
+                return;
+            }
+
+            subview.innerHTML = `
+                <h4 style="margin: 0 0 6px; font-size: 15px; color: var(--text-main);">🤝 Выберите вашего менеджера</h4>
+                <p style="font-size: 12px; color: var(--text-sec); margin: 0 0 14px;">${userRegion ? `Поставщики, работающие в регионе «${userRegion}»` : 'Укажите регион в профиле, чтобы видеть только своих поставщиков'}</p>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    ${dists.map(d => `
+                        <div style="border:1px solid var(--border); border-radius:10px; padding:12px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <div>
+                                <b style="color:var(--text-main); font-size:13px;">${d.company_name}</b><br>
+                                <span style="font-size:11px; color:var(--text-sec);">${d.manager_name || '—'}${d.regions && d.regions.length ? ' · ' + d.regions.join(', ') : ''}</span>
+                            </div>
+                            <button class="auth-btn-base btn-email-submit" style="width:auto; height:32px; padding:0 16px; font-size:12px;" onclick="app.selfAssignDistributor('${d.id}')">Выбрать</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } catch (e) {
+            subview.innerHTML = `<div style="color:#EF4444; font-size:13px;">Ошибка загрузки списка: ${e.message}</div>`;
+        }
+    },
+
+    // Самостоятельная привязка монтажника к дистрибьютору (без промокода и без изменения тарифа) —
+    // только контакт менеджера; смена возможна только через администратора (как и с промокодом)
+    selfAssignDistributor: async function (distId) {
+        if (this.state.distributorId) {
+            app.alert('Вы уже привязаны к менеджеру. Изменение возможно только через администратора.');
+            return;
+        }
+        if (!await app.confirm('Привязаться к этому менеджеру? Дальнейшая смена возможна только через администратора.')) return;
+
+        const tgUser = this.state.tgUser;
+        if (!tgUser || (!tgUser.id && !tgUser.authUserId && !tgUser.email)) { app.alert('Авторизуйтесь, чтобы выбрать менеджера.'); return; }
+
+        try {
+            let query = supabaseClient.from('users').update({ distributor_id: distId });
+            if (tgUser.authUserId) query = query.eq('auth_user_id', tgUser.authUserId);
+            else if (tgUser.id) query = query.eq('id', tgUser.id);
+            else query = query.eq('email', tgUser.email);
+            const { error } = await query;
+            if (error) throw error;
+
+            this.state.distributorId = distId;
+            this.state.distributorInfo = null;
+            this.saveState();
+            await this.loadDistributorInfo();
+            this.showSupplierSection();
+            app.alert('✅ Менеджер назначен!');
+        } catch (e) {
+            app.alert('Ошибка: ' + e.message);
+        }
     },
 
     renderAdminDistributors: function () {
@@ -3028,9 +3146,10 @@ const app = {
                     ? '<span style="background:#D1FAE5; color:#059669; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;">Активен</span>'
                     : '<span style="background:#FEE2E2; color:#EF4444; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;">Выкл</span>';
                 const validUntilText = d.valid_until ? new Date(d.valid_until).toLocaleDateString('ru-RU') : '∞';
+                const regionsText = (d.regions && d.regions.length) ? d.regions.join(', ') : '—';
                 tableRows += `<tr>
                     <td style="color:var(--text-sec);">${i + 1}</td>
-                    <td><b>${d.company_name || '—'}</b></td>
+                    <td><b>${d.company_name || '—'}</b><br><span style="font-size:10px; color:var(--text-sec);">📍 ${regionsText}</span></td>
                     <td style="font-weight:700; color:var(--primary); font-size:13px; letter-spacing:0.05em;">${d.promo_code}</td>
                     <td><div style="font-size:12px;">${d.manager_name || '—'}<br><span style="color:var(--text-sec);">${d.manager_email || ''}</span><br><span style="color:var(--text-sec);">${d.manager_phone || ''}</span></div></td>
                     <td style="text-align:center;"><b style="color:var(--primary);">${d.pro_months || 3}</b><br><span style="font-size:10px; color:var(--text-sec);">до ${validUntilText}</span></td>
@@ -3088,6 +3207,10 @@ const app = {
                                 <option value="0">Выключен</option>
                             </select>
                         </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Регионы обслуживания (через запятую) — по ним монтажник найдёт этого поставщика сам</label>
+                            <input type="text" id="dist_regions" placeholder="Калининградская область, Москва" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                        </div>
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <button class="auth-btn-base btn-email-submit" style="height: 36px; padding: 0 20px; font-size: 13px;" onclick="app.saveDistributor()">💾 Сохранить</button>
@@ -3103,6 +3226,133 @@ const app = {
         `;
     },
 
+    // Вкладка "Статусы смет" — CRM-канбан по жизненному циклу сметы, сгруппированный в 3 смысловых
+    // этапа: Расчёты (расчитано/сохранено) → На согласовании (отправлено/распечатано/одобрено/на
+    // доработке) → В оплату (запрошен счёт). Карточка — это один проект (calc_id), лежит в колонке
+    // своего ПОСЛЕДНЕГО события; при новом событии сама "переезжает", т.к. рендер берёт самую свежую запись.
+    // Метка и цвет конкретного события показываются как бейдж внутри карточки.
+    ADMIN_KANBAN_EVENT_META: {
+        calculated: { label: 'Новый расчёт', color: '#94A3B8' },
+        saved: { label: 'Сохранено', color: '#60A5FA' },
+        sent: { label: 'Отправлено', color: '#818CF8' },
+        printed: { label: 'Распечатано', color: '#A78BFA' },
+        invoice_requested: { label: 'Запрошен счёт', color: '#F59E0B' },
+        confirmed: { label: 'Одобрено', color: '#10B981' },
+        needs_revision: { label: 'На доработке', color: '#EF4444' },
+    },
+    ADMIN_KANBAN_STAGES: [
+        { key: 'draft', label: 'Расчёты', color: '#60A5FA', events: ['calculated', 'saved'] },
+        { key: 'review', label: 'На согласовании', color: '#818CF8', events: ['sent', 'printed', 'confirmed', 'needs_revision'] },
+        { key: 'payment', label: 'В оплату', color: '#F59E0B', events: ['invoice_requested'] },
+    ],
+
+    renderAdminKanban: async function (skipFetch) {
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+
+        const installerFilter = document.getElementById('kanban_installer_filter')?.value || 'all';
+
+        if (!skipFetch || !this._kanbanEvents) {
+            content.innerHTML += `<div id="kanban_root" style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка истории...</div>`;
+            const { data: events, error } = await supabaseClient
+                .from('invoice_events')
+                .select('*')
+                .order('created_at', { ascending: true });
+            if (error) {
+                const root = document.getElementById('kanban_root');
+                if (root) root.innerHTML = `<div style="color:#EF4444;">Ошибка загрузки истории: ${error.message}</div>`;
+                return;
+            }
+            this._kanbanEvents = events || [];
+        } else if (!document.getElementById('kanban_root')) {
+            content.innerHTML += `<div id="kanban_root"></div>`;
+        }
+
+        // Группируем события по calc_id — каждая карточка живёт в колонке своего
+        // последнего по времени события
+        const projects = {};
+        this._kanbanEvents.forEach(e => {
+            if (!projects[e.calc_id]) projects[e.calc_id] = { calc_id: e.calc_id, history: [] };
+            const p = projects[e.calc_id];
+            p.history.push(e);
+            p.current = e.event;
+            p.currentMeta = e.meta || null;
+            p.lastAt = e.created_at;
+            if (e.user_name) p.user_name = e.user_name;
+            if (e.user_email) p.user_email = e.user_email;
+            if (e.project_name) p.project_name = e.project_name;
+        });
+        const list = Object.values(projects);
+
+        const installers = [...new Set(list.map(p => p.user_name).filter(Boolean))].sort();
+        const filtered = installerFilter === 'all' ? list : list.filter(p => p.user_name === installerFilter);
+
+        const STAGES = this.ADMIN_KANBAN_STAGES;
+        const EVENT_META = this.ADMIN_KANBAN_EVENT_META;
+        const stageOf = (event) => STAGES.find(s => s.events.includes(event));
+
+        const filterHtml = `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+                <div style="font-size:13px; color:var(--text-sec);">Проекты: <b style="color:var(--text-main);">${filtered.length}</b></div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <select id="kanban_installer_filter" onchange="app.renderAdminKanban(true)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px; outline: none; cursor: pointer;">
+                        <option value="all">Все монтажники (${list.length})</option>
+                        ${installers.map(name => `<option value="${name.replace(/"/g, '&quot;')}" ${installerFilter === name ? 'selected' : ''}>${name}</option>`).join('')}
+                    </select>
+                    <button class="btn-header-blue" onclick="app.renderAdminKanban()" style="height:32px; padding:0 14px; font-size:12px;">↻ Обновить</button>
+                </div>
+            </div>
+        `;
+
+        const columnsHtml = `
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px; align-items:start;">
+                ${STAGES.map(s => {
+            const cards = filtered.filter(p => stageOf(p.current) === s).sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
+            return `
+                        <div style="border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.12); display:flex; flex-direction:column; max-height:600px; min-width:0;">
+                            <div style="background:${s.color}; color:#fff; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; padding:9px 12px;">
+                                ${s.label}
+                            </div>
+                            <div style="background:var(--surface-light); padding:10px 12px 12px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; flex:1;">
+                                <div style="font-size:24px; font-weight:800; color:var(--text-main); line-height:1;">${cards.length}</div>
+                                ${cards.length ? cards.map(c => {
+                const initial = (c.user_name || '?').trim().charAt(0).toUpperCase();
+                const em = EVENT_META[c.current] || { label: c.current, color: '#94A3B8' };
+                const comment = c.currentMeta && c.currentMeta.comment ? c.currentMeta.comment : '';
+                return `
+                                    <div style="background:var(--surface); border-radius:8px; padding:10px 12px; font-size:12px; box-shadow:0 1px 3px rgba(0,0,0,0.15);">
+                                        <div style="font-weight:700; color:var(--text-main); margin-bottom:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.project_name || 'Без названия'}</div>
+                                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+                                            <div style="width:20px; height:20px; border-radius:50%; background:${this.avatarColorFor(c.user_name || '?')}; color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${initial}</div>
+                                            <div style="color:var(--text-sec); font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.user_name || '— (клиент)'}</div>
+                                        </div>
+                                        <div style="display:inline-block; background:${em.color}; color:#fff; font-size:10px; font-weight:700; border-radius:10px; padding:2px 8px; margin-bottom:8px;">${em.label}</div>
+                                        ${comment ? `<div style="color:var(--text-main); font-size:11px; background:var(--surface-light); border-radius:6px; padding:6px 8px; margin-bottom:8px; white-space:pre-wrap;">${comment.replace(/</g, '&lt;')}</div>` : ''}
+                                        <div style="color:var(--text-sec); font-size:10px; border-top:1px solid var(--border); padding-top:6px;">
+                                            Дата изменения<br>${new Date(c.lastAt).toLocaleString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })}
+                                        </div>
+                                    </div>
+                                `;
+            }).join('') : `<div style="color:var(--text-sec); font-size:11px; padding:16px 0; text-align:center;">Пусто</div>`}
+                            </div>
+                        </div>
+                    `;
+        }).join('')}
+            </div>
+        `;
+
+        const root = document.getElementById('kanban_root');
+        if (root) root.outerHTML = `<div id="kanban_root">${filterHtml}${columnsHtml}</div>`;
+    },
+
+    // Аватар-кружок с инициалом — цвет стабилен для имени (как ФИО-плашки в Битрикс24)
+    avatarColorFor: function (name) {
+        const AVATAR_PALETTE = ['#F87171', '#FB923C', '#FBBF24', '#4ADE80', '#34D399', '#22D3EE', '#60A5FA', '#818CF8', '#A78BFA', '#F472B6'];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+    },
+
     saveDistributor: async function () {
         const id = document.getElementById('dist_edit_id').value;
         const company = document.getElementById('dist_company').value.trim();
@@ -3113,6 +3363,7 @@ const app = {
         const proMonths = parseInt(document.getElementById('dist_pro_months')?.value || '3', 10) || 3;
         const validUntilVal = document.getElementById('dist_valid_until')?.value || '';
         const isActive = document.getElementById('dist_active').value === '1';
+        const regions = (document.getElementById('dist_regions')?.value || '').split(',').map(r => r.trim()).filter(Boolean);
 
         if (!company || !code || !email) {
             app.alert('Обязательные поля: Название компании, Промокод, Email менеджера.');
@@ -3127,7 +3378,8 @@ const app = {
             manager_phone: phone,
             pro_months: proMonths,
             valid_until: validUntilVal ? new Date(validUntilVal).toISOString() : null,
-            is_active: isActive
+            is_active: isActive,
+            regions: regions
         };
 
         try {
@@ -3161,6 +3413,7 @@ const app = {
             document.getElementById('dist_valid_until').value = dist.valid_until.split('T')[0];
         }
         document.getElementById('dist_active').value = dist.is_active ? '1' : '0';
+        if (document.getElementById('dist_regions')) document.getElementById('dist_regions').value = (dist.regions || []).join(', ');
         const titleEl = document.getElementById('dist_form_title');
         if (titleEl) titleEl.textContent = '✏️ Редактировать промокод';
         // Прокручиваем к форме
@@ -3177,6 +3430,7 @@ const app = {
         if (document.getElementById('dist_pro_months')) document.getElementById('dist_pro_months').value = '3';
         if (document.getElementById('dist_valid_until')) document.getElementById('dist_valid_until').value = '';
         document.getElementById('dist_active').value = '1';
+        if (document.getElementById('dist_regions')) document.getElementById('dist_regions').value = '';
         const titleEl = document.getElementById('dist_form_title');
         if (titleEl) titleEl.textContent = '➕ Добавить промокод';
     },
@@ -3386,13 +3640,16 @@ const app = {
             const managerViewUrl = `${viewUrl}&manager=1`;
 
             const templateParams = {
+                // Шаблон EmailJS теперь маршрутизирует по {{to_email}} — явно задаём
+                // адрес админа, чтобы поведение основного письма не изменилось
+                to_email: 'kovdor24@yandex.ru',
                 project_name: est.project_name || "Без названия",
                 calc_id: est.calc_data.calc_id || 'N/A',
                 user_name: tgUser.first_name || tgUser.username || "Монтажник",
                 user_phone: tgUser.phone || "Не указан",
                 user_email: tgUser.email || 'Не указан',
                 user_city: tgUser.city || localStorage.getItem('user_city') || 'Не указан',
-                user_status: (this.state.accountType === 'pro') ? "PRO" : "Базовый",
+                user_status: (this.state.accountType === 'pro') ? "Профи" : "Эксперт",
                 area: est.calc_data.area || 0,
                 region: est.calc_data.region || 100,
                 boiler_type: "—",
@@ -3608,15 +3865,35 @@ const app = {
     },
     closeAuthModal: function () { document.getElementById('auth_modal_overlay').style.display = 'none'; },
 
-    showProfileModal: function () {
+    showProfileModal: function (forced) {
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         if (!tgUser) return;
-        document.getElementById('profile_name_input').value = tgUser.first_name || tgUser.username || '';
+
+        // Принудительное дозаполнение анкеты (Google/Telegram-вход или старый аккаунт без
+        // обязательных полей) — прячем крестик закрытия, пока форма не будет сохранена целиком
+        this._profileForceComplete = !!forced;
+        const closeBtn = document.getElementById('profile_modal_close_btn');
+        if (closeBtn) closeBtn.style.display = forced ? 'none' : '';
+        const incompleteBanner = document.getElementById('profile_incomplete_banner');
+        if (incompleteBanner) incompleteBanner.style.display = forced ? 'block' : 'none';
+        document.getElementById('profile_last_name_input').value = tgUser.lastName || '';
+        // Пока пользователь не разделит старое комбинированное имя на части сам — подставляем
+        // его целиком в поле "Имя", чтобы не оставлять форму пустой для уже существующих аккаунтов
+        document.getElementById('profile_first_name_input').value = tgUser.givenName || tgUser.first_name || tgUser.username || '';
+        document.getElementById('profile_middle_name_input').value = tgUser.middleName || '';
         document.getElementById('profile_phone_input').value = tgUser.phone || '';
+        document.getElementById('profile_birth_date_input').value = tgUser.birthDate || '';
+        this.setBirthDateRange(document.getElementById('profile_birth_date_input'));
+        document.getElementById('profile_region_input').value = tgUser.region || '';
         document.getElementById('profile_city_input').value = tgUser.city || '';
         if (document.getElementById('profile_email_input')) {
             document.getElementById('profile_email_input').value = tgUser.email || '';
         }
+        const profileActivityTypes = tgUser.activityTypes || [];
+        [['profile_act_installer', 'Монтажник'], ['profile_act_seller', 'Продавец']].forEach(([id, val]) => {
+            const chk = document.getElementById(id);
+            if (chk) chk.checked = profileActivityTypes.includes(val);
+        });
 
         // Show/hide and populate PRO company branding settings
         let isPro = this.isPro();
@@ -3660,11 +3937,18 @@ const app = {
         }
 
         let modalContent = document.querySelector('#profile_modal_overlay .auth-modal-content');
-        if (modalContent) modalContent.style.maxWidth = '380px';
+        if (modalContent) modalContent.style.maxWidth = '60vw';
 
         document.getElementById('profile_modal_overlay').style.display = 'flex';
     },
-    closeProfileModal: function () { document.getElementById('profile_modal_overlay').style.display = 'none'; },
+    closeProfileModal: function () {
+        if (this._profileForceComplete && this.isProfileIncomplete()) {
+            app.alert('Пожалуйста, заполните все обязательные поля профиля, чтобы продолжить работу.');
+            return;
+        }
+        this._profileForceComplete = false;
+        document.getElementById('profile_modal_overlay').style.display = 'none';
+    },
 
     checkConnectionStatus: async function () {
         const dot = document.getElementById('vpn_status_dot');
@@ -3784,9 +4068,9 @@ const app = {
                         notifications.push({
                             id: 'tariff_warning_24h',
                             type: 'tariff_alert',
-                            projectName: '🚨 Срочно: Тариф PRO истекает!',
+                            projectName: '🚨 Срочно: Тариф Профи истекает!',
                             status: 'critical',
-                            comment: 'Срок действия вашего PRO тарифа истекает менее чем через 24 часа! Продлите его сейчас, чтобы сохранить доступ ко всем профессиональным возможностям.',
+                            comment: 'Срок действия вашего тарифа Профи истекает менее чем через 24 часа! Продлите его сейчас, чтобы сохранить доступ ко всем профессиональным возможностям.',
                             time: now.toISOString(),
                             isRead: false
                         });
@@ -3799,8 +4083,8 @@ const app = {
                             if (recipientEmail) {
                                 this.sendNotificationEmail(
                                     recipientEmail,
-                                    'Срочно: Тариф PRO истекает на HeatCalc.ru',
-                                    'Срок действия вашего PRO тарифа истекает менее чем через 24 часа! Рекомендуем продлить его прямо сейчас в личном кабинете калькулятора, чтобы сохранить доступ ко всем возможностям.'
+                                    'Срочно: Тариф Профи истекает на HeatCalc.ru',
+                                    'Срок действия вашего тарифа Профи истекает менее чем через 24 часа! Рекомендуем продлить его прямо сейчас в личном кабинете калькулятора, чтобы сохранить доступ ко всем возможностям.'
                                 );
                                 localStorage.setItem(sentKey, 'true');
                             }
@@ -3810,9 +4094,9 @@ const app = {
                         notifications.push({
                             id: 'tariff_warning_5d',
                             type: 'tariff_alert',
-                            projectName: '⚠️ Предупреждение: Тариф PRO заканчивается',
+                            projectName: '⚠️ Предупреждение: Тариф Профи заканчивается',
                             status: 'warning',
-                            comment: `Срок действия вашего PRO тарифа истекает через ${diffDays} дн. Рекомендуем продлить его заранее, чтобы работа не прерывалась.`,
+                            comment: `Срок действия вашего тарифа Профи истекает через ${diffDays} дн. Рекомендуем продлить его заранее, чтобы работа не прерывалась.`,
                             time: now.toISOString(),
                             isRead: false
                         });
@@ -3825,8 +4109,8 @@ const app = {
                             if (recipientEmail) {
                                 this.sendNotificationEmail(
                                     recipientEmail,
-                                    'Предупреждение: Тариф PRO заканчивается на HeatCalc.ru',
-                                    `Срок действия вашего PRO тарифа истекает через ${diffDays} дн. Рекомендуем продлить его заранее в личном кабинете калькулятора, чтобы работа не прерывалась.`
+                                    'Предупреждение: Тариф Профи заканчивается на HeatCalc.ru',
+                                    `Срок действия вашего тарифа Профи истекает через ${diffDays} дн. Рекомендуем продлить его заранее в личном кабинете калькулятора, чтобы работа не прерывалась.`
                                 );
                                 localStorage.setItem(sentKey, 'true');
                             }
@@ -3837,7 +4121,7 @@ const app = {
                     notifications.push({
                         id: 'tariff_active_info',
                         type: 'tariff_info',
-                        projectName: 'Ваш тариф PRO активен',
+                        projectName: 'Ваш тариф Профи активен',
                         status: 'info',
                         comment: `Профессиональный доступ предоставлен до ${endsAt.toLocaleDateString('ru-RU')}. Спасибо за доверие!`,
                         time: new Date(endsAt.getTime() - 1000 * 60 * 60 * 24 * 30).toISOString(),
@@ -4075,7 +4359,7 @@ const app = {
                 h += `
                     <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(59, 130, 246, 0.06);' : 'opacity: 0.85;'}" onclick="app.handleNotificationClick('${n.id}', null)">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-weight: 800; color: ${labelCol}; font-size: 10px; letter-spacing: 0.03em;">ТАРИФ PRO${unreadDot}</span>
+                            <span style="font-weight: 800; color: ${labelCol}; font-size: 10px; letter-spacing: 0.03em;">ТАРИФ ПРОФИ${unreadDot}</span>
                             <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
                         </div>
                         <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">${n.projectName}</div>
@@ -4203,6 +4487,81 @@ const app = {
     },
     closeAdminModal: function () { document.getElementById('admin_modal_overlay').style.display = 'none'; },
 
+    // Общие условия фильтра списка монтажников — переиспользуются и для загрузки страницы
+    // списка, и для массового назначения дистрибьютора всем, кто попадает под фильтр
+    // Единое ФИО-представление пользователя в админке — используется и при сортировке по имени,
+    // и при отрисовке строки таблицы, чтобы не разъезжались друг с другом
+    getAdminUserDisplayName: function (u) {
+        return [u.last_name, u.first_name, u.middle_name].filter(Boolean).join(' ') || u.username || u.email || 'Без имени';
+    },
+
+    // Клик по заголовку столбца таблицы монтажников — переключает сортировку по этому столбцу
+    // (по возрастанию/убыванию), просто подставляя нужное значение в уже существующий select
+    // сортировки и переиспользуя его логику в renderAdminMain()
+    sortAdminColumn: function (key) {
+        const sel = document.getElementById('sort-installers');
+        const current = sel ? sel.value : 'default';
+        const defaultDir = { name: 'asc', ltv: 'desc', tariff: 'asc', login: 'desc' };
+        let next;
+        if (current === key + '_asc') next = key + '_desc';
+        else if (current === key + '_desc') next = key + '_asc';
+        else next = key + '_' + defaultDir[key];
+        if (sel) sel.value = next;
+        this.renderAdminMain();
+    },
+
+    buildAdminUserFilter: function (query) {
+        const tariffFilter = document.getElementById('admin_filter_tariff')?.value || 'all';
+        const expiryFilter = document.getElementById('admin_filter_expiry')?.value || 'all';
+        const regionFilter = document.getElementById('admin_filter_region')?.value?.trim() || '';
+        const activityFilter = document.getElementById('admin_filter_activity')?.value || 'all';
+
+        if (regionFilter) query = query.ilike('region', `%${regionFilter}%`);
+        if (activityFilter !== 'all') query = query.contains('activity_types', [activityFilter]);
+
+        if (tariffFilter === 'base') {
+            query = query.eq('account_type', 'base');
+        } else if (tariffFilter === 'pro') {
+            query = query.eq('account_type', 'pro');
+        } else if (tariffFilter === 'pro_trial') {
+            query = query.eq('account_type', 'pro').is('distributor_id', null).is('pro_expires_at', null);
+        } else if (tariffFilter === 'pro_promo') {
+            query = query.eq('account_type', 'pro').not('distributor_id', 'is', null);
+        } else if (tariffFilter === 'pro_paid') {
+            query = query.eq('account_type', 'pro').not('pro_expires_at', 'is', null);
+        }
+
+        if (expiryFilter === 'active') {
+            query = query.eq('account_type', 'pro').or(`demo_ends_at.is.null,demo_ends_at.gte.${new Date().toISOString()}`);
+        } else if (expiryFilter === 'expired') {
+            query = query.eq('account_type', 'pro').lt('demo_ends_at', new Date().toISOString());
+        }
+        return query;
+    },
+
+    // Массовое назначение дистрибьютора всем пользователям, попадающим под текущие фильтры
+    // списка (например регион = "Калининградская область") — не меняет тариф, только контакт менеджера
+    bulkAssignDistributor: async function () {
+        const sel = document.getElementById('admin_bulk_distributor_select');
+        const distId = sel?.value;
+        if (!distId) { app.alert('Выберите дистрибьютора из списка.'); return; }
+
+        const count = this.adminData.totalUsers || 0;
+        const dist = (this.adminData.distributors || []).find(d => String(d.id) === String(distId));
+        if (!await app.confirm(`Назначить дистрибьютора «${dist ? dist.company_name : distId}» всем пользователям, попадающим под текущие фильтры (${count} чел.)? Тариф при этом не меняется.`)) return;
+
+        try {
+            let query = supabaseClient.from('users').update({ distributor_id: distId });
+            query = this.buildAdminUserFilter(query);
+            const { error } = await query;
+            if (error) throw error;
+            app.alert(`✅ Дистрибьютор назначен ${count} пользователям.`);
+            this.loadAdminData(this._adminOffset);
+        } catch (e) {
+            app.alert('Ошибка: ' + e.message);
+        }
+    },
+
     loadAdminData: async function (offset = 0) {
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         let adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
@@ -4216,30 +4575,10 @@ const app = {
         if (content) content.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 50px;">Загрузка данных...</div>';
 
         try {
-            const tariffFilter = document.getElementById('admin_filter_tariff')?.value || 'all';
-            const expiryFilter = document.getElementById('admin_filter_expiry')?.value || 'all';
-
             // 1. Fetch Users (Paginated)
             let query = supabaseClient.from('users')
-                .select('id, username, email, phone, created_at, last_visited, last_device, account_type, demo_ends_at, city, location, avatar_url, distributor_id, pro_expires_at', { count: 'exact' });
-
-            if (tariffFilter === 'base') {
-                query = query.eq('account_type', 'base');
-            } else if (tariffFilter === 'pro') {
-                query = query.eq('account_type', 'pro');
-            } else if (tariffFilter === 'pro_trial') {
-                query = query.eq('account_type', 'pro').is('distributor_id', null).is('pro_expires_at', null);
-            } else if (tariffFilter === 'pro_promo') {
-                query = query.eq('account_type', 'pro').not('distributor_id', 'is', null);
-            } else if (tariffFilter === 'pro_paid') {
-                query = query.eq('account_type', 'pro').not('pro_expires_at', 'is', null);
-            }
-
-            if (expiryFilter === 'active') {
-                query = query.eq('account_type', 'pro').or(`demo_ends_at.is.null,demo_ends_at.gte.${new Date().toISOString()}`);
-            } else if (expiryFilter === 'expired') {
-                query = query.eq('account_type', 'pro').lt('demo_ends_at', new Date().toISOString());
-            }
+                .select('id, username, email, phone, created_at, last_visited, last_device, account_type, demo_ends_at, city, location, avatar_url, distributor_id, pro_expires_at, last_name, first_name, middle_name, birth_date, region, activity_types', { count: 'exact' });
+            query = this.buildAdminUserFilter(query);
 
             let { data: users, error: errU, count: totalUsers } = await query
                 .order('created_at', { ascending: false })
@@ -4345,6 +4684,7 @@ const app = {
                 <button id="admin_tab_stats" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'stats' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'stats' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'stats' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('stats')">📊 Монтажники и Сметы</button>
                 <button id="admin_tab_messages" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'messages' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'messages' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'messages' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('messages')">💬 Сообщения и Рассылка</button>
                 <button id="admin_tab_distributors" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'distributors' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'distributors' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'distributors' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('distributors')">🏢 Промокоды</button>
+                <button id="admin_tab_kanban" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'kanban' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'kanban' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'kanban' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('kanban')">📋 Статусы смет</button>
             </div>
         `;
 
@@ -4357,6 +4697,12 @@ const app = {
         if (this._adminTab === 'distributors') {
             content.innerHTML = navHtml;
             this.renderAdminDistributors();
+            return;
+        }
+
+        if (this._adminTab === 'kanban') {
+            content.innerHTML = navHtml;
+            this.renderAdminKanban();
             return;
         }
 
@@ -4376,8 +4722,13 @@ const app = {
         const sortType = document.getElementById('sort-installers')?.value || 'login_desc';
         if (sortType !== 'default') {
             users.sort((a, b) => {
-                if (sortType === 'login_desc') return new Date(b.last_visited || 0) - new Date(a.last_visited || 0);
-                if (sortType === 'login_asc') return new Date(a.last_visited || 0) - new Date(b.last_visited || 0);
+                // Сортируем по той же дате, что реально показана в столбце "Вход" — last_visited,
+                // а если его нет, то created_at (см. computed "lastVis" ниже в рендере строки);
+                // раньше при пустом last_visited дата считалась как 01.01.1970, из-за чего такие
+                // строки "прыгали" в начало/конец списка мимо своей реальной видимой даты
+                const loginDate = (u) => new Date(u.last_visited || u.created_at || 0).getTime();
+                if (sortType === 'login_desc') return loginDate(b) - loginDate(a);
+                if (sortType === 'login_asc') return loginDate(a) - loginDate(b);
                 if (sortType === 'ltv_desc') return (b.ltv || 0) - (a.ltv || 0);
                 if (sortType === 'ltv_asc') return (a.ltv || 0) - (b.ltv || 0);
                 if (sortType === 'expiry_asc') {
@@ -4390,12 +4741,19 @@ const app = {
                     const dateB = b.demo_ends_at ? new Date(b.demo_ends_at).getTime() : 0;
                     return dateB - dateA;
                 }
+                if (sortType === 'name_asc') return this.getAdminUserDisplayName(a).localeCompare(this.getAdminUserDisplayName(b), 'ru');
+                if (sortType === 'name_desc') return this.getAdminUserDisplayName(b).localeCompare(this.getAdminUserDisplayName(a), 'ru');
+                if (sortType === 'tariff_asc') return (a.account_type || '').localeCompare(b.account_type || '');
+                if (sortType === 'tariff_desc') return (b.account_type || '').localeCompare(a.account_type || '');
                 return 0;
             });
         }
 
         const tariffFilter = document.getElementById('admin_filter_tariff')?.value || 'all';
         const expiryFilter = document.getElementById('admin_filter_expiry')?.value || 'all';
+        const regionFilter = document.getElementById('admin_filter_region')?.value || '';
+        const activityFilter = document.getElementById('admin_filter_activity')?.value || 'all';
+        const sortArrow = (key) => sortType === key + '_asc' ? ' ▲' : (sortType === key + '_desc' ? ' ▼' : '');
 
         let h = `
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
@@ -4411,16 +4769,22 @@ const app = {
                             <input type="text" id="admin_search_input" placeholder="🔍 Поиск по имени..." style="flex: 1.5; min-width: 150px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 12px; outline: none;" onkeyup="app.filterAdminData(this.value)">
                             <select id="admin_filter_tariff" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer;">
                                 <option value="all" ${tariffFilter === 'all' ? 'selected' : ''}>Все тарифы</option>
-                                <option value="base" ${tariffFilter === 'base' ? 'selected' : ''}>Базовый</option>
-                                <option value="pro" ${tariffFilter === 'pro' ? 'selected' : ''}>PRO (Все)</option>
-                                <option value="pro_trial" ${tariffFilter === 'pro_trial' ? 'selected' : ''}>PRO: пробный</option>
-                                <option value="pro_promo" ${tariffFilter === 'pro_promo' ? 'selected' : ''}>PRO: промокод</option>
-                                <option value="pro_paid" ${tariffFilter === 'pro_paid' ? 'selected' : ''}>PRO: оплата</option>
+                                <option value="base" ${tariffFilter === 'base' ? 'selected' : ''}>Эксперт</option>
+                                <option value="pro" ${tariffFilter === 'pro' ? 'selected' : ''}>Профи (Все)</option>
+                                <option value="pro_trial" ${tariffFilter === 'pro_trial' ? 'selected' : ''}>Профи: пробный</option>
+                                <option value="pro_promo" ${tariffFilter === 'pro_promo' ? 'selected' : ''}>Профи: промокод</option>
+                                <option value="pro_paid" ${tariffFilter === 'pro_paid' ? 'selected' : ''}>Профи: оплата</option>
                             </select>
                             <select id="admin_filter_expiry" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer;">
                                 <option value="all" ${expiryFilter === 'all' ? 'selected' : ''}>Все сроки</option>
                                 <option value="active" ${expiryFilter === 'active' ? 'selected' : ''}>Активные</option>
                                 <option value="expired" ${expiryFilter === 'expired' ? 'selected' : ''}>Истекшие</option>
+                            </select>
+                            <input type="text" id="admin_filter_region" placeholder="Регион..." value="${regionFilter}" onchange="app.loadAdminData(0)" style="width:110px; background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none;">
+                            <select id="admin_filter_activity" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer;">
+                                <option value="all" ${activityFilter === 'all' ? 'selected' : ''}>Вся сфера деят-ти</option>
+                                <option value="Монтажник" ${activityFilter === 'Монтажник' ? 'selected' : ''}>Монтажник</option>
+                                <option value="Продавец" ${activityFilter === 'Продавец' ? 'selected' : ''}>Продавец</option>
                             </select>
                             <select id="sort-installers" onchange="app.renderAdminMain()" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer;">
                                 <option value="default" ${sortType === 'default' ? 'selected' : ''}>Сортировка</option>
@@ -4428,15 +4792,34 @@ const app = {
                                 <option value="login_asc" ${sortType === 'login_asc' ? 'selected' : ''}>Вход: сначала старые</option>
                                 <option value="ltv_desc" ${sortType === 'ltv_desc' ? 'selected' : ''}>LTV: по убыванию</option>
                                 <option value="ltv_asc" ${sortType === 'ltv_asc' ? 'selected' : ''}>LTV: по возрастанию</option>
-                                <option value="expiry_asc" ${sortType === 'expiry_asc' ? 'selected' : ''}>Срок PRO: по возрастанию</option>
-                                <option value="expiry_desc" ${sortType === 'expiry_desc' ? 'selected' : ''}>Срок PRO: по убыванию</option>
+                                <option value="expiry_asc" ${sortType === 'expiry_asc' ? 'selected' : ''}>Срок Профи: по возрастанию</option>
+                                <option value="expiry_desc" ${sortType === 'expiry_desc' ? 'selected' : ''}>Срок Профи: по убыванию</option>
+                                <option value="name_asc" ${sortType === 'name_asc' ? 'selected' : ''}>Имя: А-Я</option>
+                                <option value="name_desc" ${sortType === 'name_desc' ? 'selected' : ''}>Имя: Я-А</option>
+                                <option value="tariff_asc" ${sortType === 'tariff_asc' ? 'selected' : ''}>Тариф: Эксперт→Профи</option>
+                                <option value="tariff_desc" ${sortType === 'tariff_desc' ? 'selected' : ''}>Тариф: Профи→Эксперт</option>
                             </select>
                             <button class="btn-header-blue" style="background: #10B981; color: white; border-color: #10B981; font-weight: bold; padding: 0 15px; height: 34px;" onclick="app.exportAdminToExcel()">📊 Excel</button>
                         </div>
                     </div>
- 
+
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap; background:var(--surface-light); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
+                        <span style="font-size:12px; color:var(--text-sec); white-space:nowrap;">🏢 Массово назначить дистрибьютора отфильтрованным (${totalUsers}):</span>
+                        <select id="admin_bulk_distributor_select" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; height:30px; font-size: 12px; outline: none; cursor: pointer;">
+                            <option value="">Выберите дистрибьютора...</option>
+                            ${(this.adminData.distributors || []).map(d => `<option value="${d.id}">${d.company_name} (${d.promo_code})</option>`).join('')}
+                        </select>
+                        <button class="btn-ctrl" style="height:30px; font-size:12px;" onclick="app.bulkAssignDistributor()">Назначить</button>
+                    </div>
+
                     <table class="inv-table" style="margin-bottom: 30px;">
-                        <thead><tr><th style="width:30px;">#</th><th>Имя / Контакты</th><th>Статистика (LTV)</th><th>Тариф / Устройство</th><th style="text-align:right;">Вход</th></tr></thead>
+                        <thead><tr>
+                            <th style="width:30px;">#</th>
+                            <th style="cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('name')" title="Сортировать по имени">Имя / Контакты${sortArrow('name')}</th>
+                            <th style="cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('ltv')" title="Сортировать по сумме">Статистика (LTV)${sortArrow('ltv')}</th>
+                            <th style="cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('tariff')" title="Сортировать по тарифу">Тариф / Устройство${sortArrow('tariff')}</th>
+                            <th style="text-align:right; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('login')" title="Сортировать по дате входа">Вход${sortArrow('login')}</th>
+                        </tr></thead>
                         <tbody>
                 `;
         users.forEach((u, i) => {
@@ -4450,14 +4833,14 @@ const app = {
 
                 let dateStr = u.demo_ends_at ? new Date(u.demo_ends_at).toLocaleDateString('ru-RU') : 'навсегда';
                 if (isExpired) {
-                    badge = `<span style="color:#EF4444; font-weight:bold;">PRO до ${dateStr}</span> <span style="font-size:10px; color:#EF4444;">(${proType}) (ИСТЁК)</span>`;
+                    badge = `<span style="color:#EF4444; font-weight:bold;">Профи до ${dateStr}</span> <span style="font-size:10px; color:#EF4444;">(${proType}) (ИСТЁК)</span>`;
                 } else {
-                    badge = `<span style="color:#D97706; font-weight:bold;">PRO до ${dateStr}</span> <span style="font-size:10px; color:var(--text-sec);">(${proType})</span>`;
+                    badge = `<span style="color:#D97706; font-weight:bold;">Профи до ${dateStr}</span> <span style="font-size:10px; color:var(--text-sec);">(${proType})</span>`;
                 }
             } else {
-                badge = 'Базовый - без срока';
+                badge = 'Эксперт - без срока';
             }
-            let name = u.username || u.email || 'Без имени';
+            let name = this.getAdminUserDisplayName(u);
             let phone = u.phone || 'Нет телефона';
             let device = u.last_device || 'Неизвестно';
             let lastVis = u.last_visited ? new Date(u.last_visited).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : date;
@@ -4465,13 +4848,17 @@ const app = {
 
             let cityText = u.city || 'Город не указан';
             let ipLoc = u.location || 'Неизвестно';
-            let locHTML = `<div style="font-size:10px;color:var(--text-sec); margin-top:2px;">📍 ${cityText} <span class="admin-ip-location" style="color: #888; font-size: 0.85em; margin-left:5px;">(IP: ${ipLoc})</span></div>`;
+            let locHTML = `<div style="font-size:10px;color:var(--text-sec); margin-top:2px;">📍 ${cityText}${u.region ? ', ' + u.region : ''} <span class="admin-ip-location" style="color: #888; font-size: 0.85em; margin-left:5px;">(IP: ${ipLoc})</span></div>`;
 
-            let searchStr = `${name} ${phone} ${u.email || ''} ${cityText} ${ipLoc}`.toLowerCase();
+            let birthStr = u.birth_date ? new Date(u.birth_date).toLocaleDateString('ru-RU') : '';
+            let activityBadges = (u.activity_types || []).map(a => `<span style="background:var(--primary-light); color:var(--primary); font-size:9px; font-weight:700; padding:1px 6px; border-radius:8px; margin-right:3px;">${a}</span>`).join('');
+            let extraHTML = (birthStr || activityBadges) ? `<div style="font-size:10px; color:var(--text-sec); margin-top:2px;">${birthStr ? '🎂 ' + birthStr + ' ' : ''}${activityBadges}</div>` : '';
+
+            let searchStr = `${name} ${phone} ${u.email || ''} ${cityText} ${ipLoc} ${u.region || ''} ${(u.activity_types || []).join(' ')}`.toLowerCase();
 
             h += `<tr class="active-row admin-list-row" data-search="${searchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminUser('${u.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
                         <td style="color:var(--text-sec);">${i + 1}</td>
-                        <td><div style="display:flex; align-items:center;">${avatarImg} <div><b style="font-size:13px;">${name}</b><br><span style="font-size:11px;color:var(--text-sec);">${phone}</span>${locHTML}</div></div></td>
+                        <td><div style="display:flex; align-items:center;">${avatarImg} <div><b style="font-size:13px;">${name}</b><br><span style="font-size:11px;color:var(--text-sec);">${phone}</span>${locHTML}${extraHTML}</div></div></td>
                         <td><b style="color:var(--primary);">${u.ltv.toLocaleString()} ₽</b><br><span style="font-size:10px;color:var(--text-sec);">Смет: ${u.projectsCount} | Ср.объект: ${u.avgArea} м²</span></td>
                         <td>${badge}<br><span style="font-size:10px;color:var(--text-sec);">${device}</span></td>
                         <td style="text-align:right;">${lastVis}</td>
@@ -4946,7 +5333,7 @@ const app = {
             let phone = (u.phone || '').replace(/;/g, ' ');
             let email = (u.email || '').replace(/;/g, ' ');
             let tg = (u.tg_username || '').replace(/;/g, ' ');
-            let tariff = u.account_type === 'pro' ? 'PRO' : 'Base';
+            let tariff = u.account_type === 'pro' ? 'Профи' : 'Эксперт';
             let reg = new Date(u.created_at).toLocaleDateString();
             let loc = (u.location || '').replace(/;/g, ' ');
             let utm = (u.utm_source || '').replace(/;/g, ' ');
@@ -4984,7 +5371,7 @@ const app = {
                             ${user.avatar_url ? `<img src="${user.avatar_url}" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid var(--primary);">` : `<div style="width:80px; height:80px; border-radius:50%; background:var(--primary-light); display:flex; align-items:center; justify-content:center; font-size:40px; color:var(--primary);">👤</div>`}
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; width: 100%;">
                                 <div class="user-main-contacts">
-                                    <h2 style="margin: 0; color: var(--text-main); font-size: 20px;">${user.username || user.email || 'Без имени'}</h2>
+                                    <h2 style="margin: 0; color: var(--text-main); font-size: 20px;">${[user.last_name, user.first_name, user.middle_name].filter(Boolean).join(' ') || user.username || user.email || 'Без имени'}</h2>
                                     <div style="display: flex; gap: 15px; margin-top: 5px; font-size: 13px; color: var(--text-sec);">
                                         <span>📱 ${user.phone || '—'}</span>
                                         ${(user.account_type === 'pro' && user.demo_ends_at && new Date(user.demo_ends_at) < new Date()) ? '<b style="color:#EF4444;">⚠️ Тариф истёк</b>' : ''}
@@ -5018,6 +5405,17 @@ const app = {
                             </div>
                         </div>
 
+                        <div style="padding-top:20px; border-top:1px dashed var(--border); margin-bottom:20px;">
+                            <h4 style="margin:0 0 12px 0; font-size:14px; color:var(--text-main);">👤 Личные данные</h4>
+                            <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px 20px; font-size:12px;">
+                                <div><span style="color:var(--text-sec);">ФИО:</span> <b style="color:var(--text-main);">${[user.last_name, user.first_name, user.middle_name].filter(Boolean).join(' ') || '—'}</b></div>
+                                <div><span style="color:var(--text-sec);">Дата рождения:</span> <b style="color:var(--text-main);">${user.birth_date ? new Date(user.birth_date).toLocaleDateString('ru-RU') : '—'}</b></div>
+                                <div><span style="color:var(--text-sec);">Регион:</span> <b style="color:var(--text-main);">${user.region || '—'}</b></div>
+                                <div><span style="color:var(--text-sec);">Населённый пункт:</span> <b style="color:var(--text-main);">${user.city || '—'}</b></div>
+                                <div style="grid-column: 1 / -1;"><span style="color:var(--text-sec);">Сфера деятельности:</span> ${(user.activity_types || []).length ? (user.activity_types || []).map(a => `<span style="background:var(--primary-light); color:var(--primary); font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; margin-left:4px;">${a}</span>`).join('') : ' <b style="color:var(--text-main);">—</b>'}</div>
+                            </div>
+                        </div>
+
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; padding-top:20px; border-top:1px dashed var(--border);">
                             <div>
                                 <h4 style="margin:0 0 15px 0; font-size:14px; color:var(--text-main);">⚙️ Управление тарифом</h4>
@@ -5025,16 +5423,16 @@ const app = {
                                     <div>
                                         <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Тип аккаунта</label>
                                         <select id="admin_edit_tariff" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
-                                            <option value="base" ${user.account_type === 'base' ? 'selected' : ''}>Базовый</option>
-                                            <option value="pro" ${user.account_type === 'pro' ? 'selected' : ''}>PRO ⭐️</option>
+                                            <option value="base" ${user.account_type === 'base' ? 'selected' : ''}>Эксперт</option>
+                                            <option value="pro" ${user.account_type === 'pro' ? 'selected' : ''}>Профи ⭐️</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Истекает (для PRO)</label>
+                                        <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Истекает (для Профи)</label>
                                         <input type="date" id="admin_edit_date" value="${proDateInput}" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                     </div>
                                     <div id="admin_edit_subtype_wrapper" style="display: ${user.account_type === 'pro' ? 'block' : 'none'};">
-                                        <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Источник PRO</label>
+                                        <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Источник Профи</label>
                                         <select id="admin_edit_subtype" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                             <option value="trial" ${proSubtype === 'trial' ? 'selected' : ''}>Пробный</option>
                                             <option value="promo" ${proSubtype === 'promo' ? 'selected' : ''}>Промокод</option>
@@ -5444,6 +5842,10 @@ const app = {
         const forgotLink = document.getElementById('auth_forgot_link');
 
         const termsWrapper = document.getElementById('auth_terms_wrapper');
+        const modalOverlay = document.getElementById('auth_modal_overlay');
+        const modalContent = document.querySelector('#auth_modal_overlay .auth-modal-content');
+        const socialWrapper = document.getElementById('auth_social_login_wrapper');
+        const googleHint = document.getElementById('auth_google_hint');
         if (tab === 'login') {
             tabLogin.classList.add('active');
             tabRegister.classList.remove('active');
@@ -5452,6 +5854,10 @@ const app = {
             submitBtn.innerText = 'Войти';
             forgotLink.style.display = 'block';
             if (termsWrapper) termsWrapper.style.display = 'none';
+            if (modalOverlay) modalOverlay.classList.remove('register-mode');
+            if (socialWrapper) socialWrapper.style.display = '';
+            if (googleHint) googleHint.style.display = 'none';
+            if (modalContent) { modalContent.style.maxWidth = '380px'; modalContent.style.maxHeight = ''; modalContent.style.overflowY = ''; }
         } else {
             tabLogin.classList.remove('active');
             tabRegister.classList.add('active');
@@ -5460,6 +5866,17 @@ const app = {
             submitBtn.innerText = 'Зарегистрироваться';
             forgotLink.style.display = 'none';
             if (termsWrapper) termsWrapper.style.display = 'flex';
+            if (modalOverlay) modalOverlay.classList.add('register-mode');
+            // Скрываем вход через Google на вкладке регистрации — экономит место по высоте,
+            // а обязательная анкета всё равно будет запрошена после входа через Google (см. handleAuthSession).
+            // Вместо кнопки — короткая подсказка-ссылка на вкладку "Вход"
+            if (socialWrapper) socialWrapper.style.display = 'none';
+            if (googleHint) googleHint.style.display = 'block';
+            // Расширяем модалку под доп. поля регистрации (ФИО, телефон, дата рождения,
+            // регион, город, сфера деятельности); компактные стили (.register-mode в style.css)
+            // позволяют уместить всё без прокрутки на большинстве экранов
+            if (modalContent) { modalContent.style.maxWidth = '560px'; modalContent.style.maxHeight = '95vh'; modalContent.style.overflowY = 'auto'; }
+            this.setBirthDateRange(document.getElementById('reg_birth_date'));
         }
     },
 
@@ -5571,6 +5988,81 @@ const app = {
             }
             return;
         }
+        const passwordConfirm = document.getElementById('reg_password_confirm').value.trim();
+        if (password !== passwordConfirm) {
+            if (authErrEl) {
+                authErrEl.innerText = 'Пароли не совпадают';
+                authErrEl.style.display = 'block';
+            } else {
+                app.alert('Пароли не совпадают');
+            }
+            if (btn) {
+                btn.disabled = false;
+            }
+            return;
+        }
+
+        const lastName = document.getElementById('reg_last_name').value.trim();
+        const firstName = document.getElementById('reg_first_name').value.trim();
+        const middleName = document.getElementById('reg_middle_name').value.trim();
+        const phone = document.getElementById('reg_phone').value.trim();
+        const birthDate = document.getElementById('reg_birth_date').value;
+        const region = document.getElementById('reg_region').value.trim();
+        const city = document.getElementById('reg_city').value.trim();
+        const activityTypes = ['reg_act_installer', 'reg_act_seller']
+            .map(id => document.getElementById(id))
+            .filter(chk => chk && chk.checked)
+            .map(chk => chk.value);
+
+        if (!lastName || !firstName || !middleName || !phone || !birthDate || !region || !city) {
+            if (authErrEl) {
+                authErrEl.innerText = 'Заполните все поля: ФИО, телефон, дату рождения, регион и населённый пункт';
+                authErrEl.style.display = 'block';
+            } else {
+                app.alert('Заполните все поля: ФИО, телефон, дату рождения, регион и населённый пункт');
+            }
+            if (btn) {
+                btn.disabled = false;
+            }
+            return;
+        }
+        if (phone.length < 18) {
+            if (authErrEl) {
+                authErrEl.innerText = 'Введите корректный номер телефона';
+                authErrEl.style.display = 'block';
+            } else {
+                app.alert('Введите корректный номер телефона');
+            }
+            if (btn) {
+                btn.disabled = false;
+            }
+            return;
+        }
+        const age = this.calcAge(birthDate);
+        if (age < 18 || age > 90) {
+            if (authErrEl) {
+                authErrEl.innerText = 'Возраст должен быть от 18 до 90 лет';
+                authErrEl.style.display = 'block';
+            } else {
+                app.alert('Возраст должен быть от 18 до 90 лет');
+            }
+            if (btn) {
+                btn.disabled = false;
+            }
+            return;
+        }
+        if (activityTypes.length === 0) {
+            if (authErrEl) {
+                authErrEl.innerText = 'Выберите хотя бы одну сферу деятельности';
+                authErrEl.style.display = 'block';
+            } else {
+                app.alert('Выберите хотя бы одну сферу деятельности');
+            }
+            if (btn) {
+                btn.disabled = false;
+            }
+            return;
+        }
 
         if (btn) {
             btn.innerText = 'Проверка...';
@@ -5607,7 +6099,10 @@ const app = {
                     btn.innerText = 'Отправка кода...';
                 }
                 const code = Math.floor(1000 + Math.random() * 9000).toString();
-                this.pendingRegistration = { email, password, code };
+                this.pendingRegistration = {
+                    email, password, code,
+                    lastName, firstName, middleName, phone, birthDate, region, city, activityTypes
+                };
 
                 const serviceId = "service_o11b4ej";
                 const templateId = "template_ysuxfio";
@@ -5676,9 +6171,24 @@ const app = {
         if (authErrEl) authErrEl.style.display = 'none';
 
         try {
+            const pr = this.pendingRegistration;
+            const fullName = [pr.lastName, pr.firstName, pr.middleName].filter(Boolean).join(' ');
             const { error } = await supabaseClient.auth.signUp({
-                email: this.pendingRegistration.email,
-                password: this.pendingRegistration.password
+                email: pr.email,
+                password: pr.password,
+                options: {
+                    data: {
+                        full_name: fullName,
+                        last_name: pr.lastName,
+                        first_name: pr.firstName,
+                        middle_name: pr.middleName,
+                        phone: pr.phone,
+                        birth_date: pr.birthDate,
+                        region: pr.region,
+                        city: pr.city,
+                        activity_types: pr.activityTypes
+                    }
+                }
             });
 
             if (error) throw error;
@@ -5795,6 +6305,17 @@ const app = {
                 ? user.user_metadata.avatar_url
                 : ((user.user_metadata && user.user_metadata.picture) ? user.user_metadata.picture : '');
 
+            // Доп. поля анкеты регистрации (ФИО по частям, дата рождения, регион, сфера деятельности) —
+            // приходят через user_metadata только при регистрации через нашу форму (не через Google/Telegram)
+            let meta = user.user_metadata || {};
+            let regLastName = meta.last_name || '';
+            let regFirstName = meta.first_name || '';
+            let regMiddleName = meta.middle_name || '';
+            let regBirthDate = meta.birth_date || '';
+            let regRegion = meta.region || '';
+            let regCity = meta.city || '';
+            let regActivityTypes = Array.isArray(meta.activity_types) ? meta.activity_types : [];
+
             let city = 'Не определен';
             let clientIp = '0.0.0.0';
             try {
@@ -5827,7 +6348,7 @@ const app = {
             let utm = localStorage.getItem('stout_utm') || '';
 
             this.state.tgUser = this.state.tgUser || {};
-            const existingCity = this.state.tgUser.city || localStorage.getItem('user_city') || '';
+            const existingCity = this.state.tgUser.city || regCity || localStorage.getItem('user_city') || '';
             const existingPhone = this.state.tgUser.phone || phone || '';
 
             this.state.tgUser = {
@@ -5838,6 +6359,12 @@ const app = {
                 email: email,
                 avatar_url: avatar,
                 city: existingCity,
+                lastName: this.state.tgUser.lastName || regLastName,
+                givenName: this.state.tgUser.givenName || regFirstName,
+                middleName: this.state.tgUser.middleName || regMiddleName,
+                birthDate: this.state.tgUser.birthDate || regBirthDate,
+                region: this.state.tgUser.region || regRegion,
+                activityTypes: (this.state.tgUser.activityTypes && this.state.tgUser.activityTypes.length) ? this.state.tgUser.activityTypes : regActivityTypes,
                 isGoogle: user.app_metadata && user.app_metadata.provider === 'google'
             };
             this.saveState();
@@ -5850,6 +6377,15 @@ const app = {
                 email: email
             };
 
+            const regFieldsObj = {
+                last_name: this.state.tgUser.lastName || undefined,
+                first_name: this.state.tgUser.givenName || undefined,
+                middle_name: this.state.tgUser.middleName || undefined,
+                birth_date: this.state.tgUser.birthDate || undefined,
+                region: this.state.tgUser.region || undefined,
+                activity_types: (this.state.tgUser.activityTypes && this.state.tgUser.activityTypes.length) ? this.state.tgUser.activityTypes : undefined
+            };
+
             let upsertObj = {
                 auth_user_id: authUserId,
                 email: email,
@@ -5858,28 +6394,31 @@ const app = {
                 city: existingCity || undefined,
                 utm_source: utm || undefined,
                 registration_ip: clientIp,
+                ...regFieldsObj,
                 ...updatePayload
             };
             Object.keys(upsertObj).forEach(k => { if (upsertObj[k] === undefined) delete upsertObj[k]; });
 
+            const adminSelectCols = 'id, account_type, demo_ends_at, username, phone, city, distributor_id, last_name, first_name, middle_name, birth_date, region, activity_types';
+
             let { data: upsertResult, error: upsertError } = await supabaseClient
                 .from('users')
                 .upsert(upsertObj, { onConflict: 'auth_user_id', ignoreDuplicates: false })
-                .select('id, account_type, demo_ends_at, username, phone, city, distributor_id');
+                .select(adminSelectCols);
 
             if (upsertError) {
                 console.warn('Upsert по auth_user_id не удался, используем fallback:', upsertError.message);
                 let { data: uDataList } = await supabaseClient
                     .from('users')
-                    .select('id, account_type, demo_ends_at, username, phone, city, distributor_id')
+                    .select(adminSelectCols)
                     .eq('email', email)
                     .limit(1);
                 let uData = uDataList ? uDataList[0] : null;
                 if (!uData) {
                     let { data: newUList } = await supabaseClient
                         .from('users')
-                        .insert([{ auth_user_id: authUserId, email: email, username: fullName, phone: existingPhone, city: existingCity || undefined, utm_source: utm, registration_ip: clientIp, ...updatePayload }])
-                        .select('id, account_type, demo_ends_at, username, phone, city, distributor_id');
+                        .insert([{ auth_user_id: authUserId, email: email, username: fullName, phone: existingPhone, city: existingCity || undefined, utm_source: utm, registration_ip: clientIp, ...regFieldsObj, ...updatePayload }])
+                        .select(adminSelectCols);
                     upsertResult = newUList;
                 } else {
                     await supabaseClient.from('users').update({ auth_user_id: authUserId, city: existingCity || uData.city || undefined, ...updatePayload }).eq('id', uData.id);
@@ -5921,6 +6460,12 @@ const app = {
                 if (uRow.phone && uRow.phone !== phone) this.state.tgUser.phone = uRow.phone;
                 if (uRow.username && uRow.username !== fullName) this.state.tgUser.first_name = uRow.username;
                 if (uRow.city) this.state.tgUser.city = uRow.city;
+                if (uRow.last_name) this.state.tgUser.lastName = uRow.last_name;
+                if (uRow.first_name) this.state.tgUser.givenName = uRow.first_name;
+                if (uRow.middle_name) this.state.tgUser.middleName = uRow.middle_name;
+                if (uRow.birth_date) this.state.tgUser.birthDate = uRow.birth_date;
+                if (uRow.region) this.state.tgUser.region = uRow.region;
+                if (uRow.activity_types && uRow.activity_types.length) this.state.tgUser.activityTypes = uRow.activity_types;
 
                 // Загружаем привязку к дистрибьютору
                 if (uRow.distributor_id) {
@@ -5946,6 +6491,12 @@ const app = {
                 setTimeout(() => {
                     window.location.replace(window.location.pathname + window.location.search);
                 }, 6000);
+            } else if (this.isProfileIncomplete()) {
+                // Google/Telegram-вход или старый аккаунт без обязательной анкеты —
+                // не даём продолжить работу, пока профиль не будет дозаполнен целиком.
+                // На самом Google-редиректе (isGoogleCallback) не показываем: страница всё равно
+                // перезагрузится через 6 секунд и окно откроется корректно уже после перезагрузки.
+                this.showProfileModal(true);
             }
         } catch (error) {
             console.error('Ошибка авторизации:', error);
@@ -5992,24 +6543,46 @@ const app = {
         }
     },
     saveProfile: async function () {
-        let name = document.getElementById('profile_name_input').value.trim();
+        let lastName = document.getElementById('profile_last_name_input').value.trim();
+        let firstName = document.getElementById('profile_first_name_input').value.trim();
+        let middleName = document.getElementById('profile_middle_name_input').value.trim();
         let phone = document.getElementById('profile_phone_input').value.trim();
+        let birthDate = document.getElementById('profile_birth_date_input').value;
+        let region = document.getElementById('profile_region_input').value.trim();
         let city = document.getElementById('profile_city_input').value.trim();
         let email = document.getElementById('profile_email_input') ? document.getElementById('profile_email_input').value.trim() : '';
-        if (!name) { app.alert('Имя не может быть пустым.'); return; }
+        const activityTypes = ['profile_act_installer', 'profile_act_seller']
+            .map(id => document.getElementById(id))
+            .filter(chk => chk && chk.checked)
+            .map(chk => chk.value);
+
+        if (!lastName || !firstName || !middleName) { app.alert('Фамилия, имя и отчество не могут быть пустыми.'); return; }
+        if (!phone || phone.length < 18) { app.alert('Введите корректный номер телефона.'); return; }
+        if (!birthDate) { app.alert('Пожалуйста, укажите дату рождения.'); return; }
+        const profileAge = this.calcAge(birthDate);
+        if (profileAge < 18 || profileAge > 90) { app.alert('Возраст должен быть от 18 до 90 лет.'); return; }
+        if (!region) { app.alert('Пожалуйста, укажите регион.'); return; }
         if (!city) { app.alert('Пожалуйста, укажите ваш город. Это необходимо для формирования смет.'); return; }
-        if (phone && phone.length < 18) { app.alert('Введите корректный номер телефона.'); return; }
         if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { app.alert('Пожалуйста, введите корректный email.'); return; }
+        if (activityTypes.length === 0) { app.alert('Выберите хотя бы одну сферу деятельности.'); return; }
 
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         if (!tgUser || (!tgUser.authUserId && !tgUser.email && !tgUser.id)) return;
 
+        const name = [lastName, firstName, middleName].filter(Boolean).join(' ');
+
         // 1. Мгновенно сохраняем в локальное состояние для моментального отклика
         this.state.tgUser = this.state.tgUser || {};
         this.state.tgUser.first_name = name;
+        this.state.tgUser.lastName = lastName;
+        this.state.tgUser.givenName = firstName;
+        this.state.tgUser.middleName = middleName;
         this.state.tgUser.phone = phone;
+        this.state.tgUser.birthDate = birthDate;
+        this.state.tgUser.region = region;
         this.state.tgUser.city = city;
         this.state.tgUser.email = email;
+        this.state.tgUser.activityTypes = activityTypes;
 
         // Save company details for PRO tariff users
         if (this.isPro()) {
@@ -6031,7 +6604,11 @@ const app = {
         // 2. В фоне синхронизируем с Supabase без блокировки UI
         (async () => {
             try {
-                let query = supabaseClient.from('users').update({ username: name, phone: phone, city: city, email: email });
+                let query = supabaseClient.from('users').update({
+                    username: name, phone: phone, city: city, email: email,
+                    last_name: lastName, first_name: firstName, middle_name: middleName,
+                    birth_date: birthDate || null, region: region, activity_types: activityTypes
+                });
                 if (tgUser.authUserId) query = query.eq('auth_user_id', tgUser.authUserId);
                 else if (tgUser.email) query = query.eq('email', tgUser.email);
                 const { error } = await query;
@@ -6046,7 +6623,7 @@ const app = {
     maskPhone: function (input) {
         let val = input.value.replace(/\D/g, '');
         if (!val) { input.value = ''; return; }
-        if (val[0] === '8' || val[0] === '9') val = '7' + (val[0] === '9' ? '9' : val.substring(1));
+        if (val[0] === '8') val = '7' + val.substring(1);
         if (val[0] !== '7') val = '7' + val;
         let res = '+7 ';
         let core = val.substring(1);
@@ -6055,6 +6632,27 @@ const app = {
         if (core.length >= 6) res += '-' + core.substring(6, 8);
         if (core.length >= 8) res += '-' + core.substring(8, 10);
         input.value = res;
+    },
+    // Возраст на сегодня по дате рождения (ISO-строка вида "YYYY-MM-DD") — используется
+    // для проверки диапазона 18-90 лет в регистрации и профиле
+    calcAge: function (birthDateStr) {
+        const birth = new Date(birthDateStr);
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+        return age;
+    },
+    // Ограничивает диапазон дат в native date-picker'ах формы регистрации/профиля
+    // 18-90 годами — чтобы некорректную дату нельзя было выбрать даже из календаря
+    setBirthDateRange: function (input) {
+        if (!input) return;
+        const today = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+        const minDate = new Date(today.getFullYear() - 90, today.getMonth(), today.getDate());
+        input.max = `${maxDate.getFullYear()}-${pad(maxDate.getMonth() + 1)}-${pad(maxDate.getDate())}`;
+        input.min = `${minDate.getFullYear()}-${pad(minDate.getMonth() + 1)}-${pad(minDate.getDate())}`;
     },
     getDeviceName: function () {
         let ua = navigator.userAgent || '';
@@ -7042,7 +7640,7 @@ const app = {
             console.warn('[shareInvoice] Supabase connection failed, falling back to local payload URL:', supabaseErr);
             try {
                 const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
-                const promptMsg = "Ссылка готова\nСоздана ссылка без кнопок согласования.\nВозможно, требуется включить VPN и перейти на тариф PRO";
+                const promptMsg = "Ссылка готова\nСоздана ссылка без кнопок согласования.\nВозможно, требуется включить VPN и перейти на тариф Профи";
 
                 app.copyToClipboard(shareUrl).then(() => {
                     app.prompt(promptMsg, shareUrl);
@@ -7123,6 +7721,7 @@ const app = {
 
         this.updateDocumentTitle();
         window.print();
+        this.logInvoiceEvent('printed');
 
         // Возвращаем тему обратно
         if (wasDark) document.body.classList.add('dark-mode');
@@ -7593,6 +8192,7 @@ const app = {
                 shareId = data.id;
                 this.state.shared_invoice_id = shareId;
                 this.saveState();
+                this.logInvoiceEvent('sent', { shared_invoice_id: shareId });
 
                 viewUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
             } catch (err) {
@@ -7622,13 +8222,16 @@ const app = {
 
             // 4. Собираем итоговый объект данных для EmailJS
             const templateParams = {
+                // Шаблон EmailJS теперь маршрутизирует по {{to_email}} — явно задаём
+                // адрес админа, чтобы поведение основного письма не изменилось
+                to_email: 'kovdor24@yandex.ru',
                 project_name: pName,
                 calc_id: this.state.calc_id,
                 user_name: authorName,
                 user_phone: tgUser.phone || "Не указан",
                 user_email: (this.state.tgUser?.email || this.state.user?.email || 'Не указан'),
                 user_city: (this.state.tgUser?.city || this.state.user?.city || localStorage.getItem('user_city') || 'Не указан'),
-                user_status: (this.state.accountType === 'pro') ? "PRO" : "Базовый",
+                user_status: (this.state.accountType === 'pro') ? "Профи" : "Эксперт",
                 area: this.state.area || 0,
                 region: regionName,
                 boiler_type: boilerName,
@@ -7927,6 +8530,7 @@ const app = {
             this._lastAutoSaveTime = Date.now();
             this._autoSaveBaseEq = currentEq;
             console.log(`[runAutoSave] Auto-saved: "${autoName}" at ${timeStr}`);
+            this.logInvoiceEvent('saved', { total: total });
 
         } catch (e) {
             console.error("[runAutoSave] Ошибка автосохранения:", e);
@@ -7987,7 +8591,9 @@ const app = {
             }
         } else {
             // 2. Иначе проверяем ручные настройки из формы профиля
-            const manualName = document.getElementById('profile_name_input')?.value || "";
+            const manualLastName = document.getElementById('profile_last_name_input')?.value || "";
+            const manualFirstName = document.getElementById('profile_first_name_input')?.value || "";
+            const manualName = [manualLastName, manualFirstName].filter(Boolean).join(' ');
             const manualPhone = document.getElementById('profile_phone_input')?.value || "";
             if (manualName) {
                 nameVal = manualName;
@@ -8011,9 +8617,9 @@ const app = {
                 if (isActuallyPro) {
                     let proUntilDate = this.getProUntilDate();
                     let text = (proUntilDate === 'навсегда') ? 'бессрочно' : `до ${proUntilDate}`;
-                    statusEl.innerHTML = `<span style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; line-height: 1.2;">PRO</span> <span style="font-size: 11.5px; color: var(--text-sec); font-weight: 500;">действует ${text}</span>`;
+                    statusEl.innerHTML = `<span style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; line-height: 1.2;">ПРОФИ</span> <span style="font-size: 11.5px; color: var(--text-sec); font-weight: 500;">действует ${text}</span>`;
                 } else {
-                    statusEl.innerHTML = `<span style="color: var(--text-sec); font-size: 12px; font-weight: 500;">Тариф: Базовый</span>`;
+                    statusEl.innerHTML = `<span style="color: var(--text-sec); font-size: 12px; font-weight: 500;">Тариф: Эксперт</span>`;
                 }
             } else {
                 statusEl.innerHTML = `<span style="color: var(--text-sec); font-size: 12px; font-weight: 500;">Не авторизован</span>`;
@@ -8511,7 +9117,10 @@ const app = {
                 first_name: "Dima Ibatullin",
                 username: "dima_ibatullin",
                 account_type: "pro",
-                demo_ends_at: "2026-06-06T00:00:00.000Z"
+                demo_ends_at: "2026-06-06T00:00:00.000Z",
+                // Email нужен, чтобы на localhost сразу была видна кнопка "Админка"
+                // (она проверяет email по списку adminEmails) — без входа через реальный аккаунт
+                email: "dima24ba@gmail.com"
             };
         }
         // ===================================================
@@ -13459,7 +14068,7 @@ const app = {
                     infoHtml = `<div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 8px;">
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <span style="border-bottom: 1px dashed var(--text-sec);">${uName}</span>
-                            <span style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3); line-height: 1.2;">PRO</span>
+                            <span style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3); line-height: 1.2;">ПРОФИ</span>
                         </div>
                         ${dateHtml}
                     </div>`;
@@ -13467,7 +14076,7 @@ const app = {
                     infoHtml = `<div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 8px;">
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <span style="border-bottom: 1px dashed var(--text-sec);">${uName}</span>
-                            <span style="color: var(--text-sec); font-size: 11px; font-weight: 500;">(Базовый)</span>
+                            <span style="color: var(--text-sec); font-size: 11px; font-weight: 500;">(Эксперт)</span>
                         </div>
                     </div>`;
                 }
@@ -14845,6 +15454,7 @@ const app = {
     },
     // ====================================
     render: function () {
+        this.ensureCalcId();
         if (this.state.disabledSections) {
             const migrations = {
                 "1.1 Монтаж котельной": ["1.1 Монтаж котла и бойлера", "1.2 Монтаж обвязки котельной"],
@@ -18716,11 +19326,11 @@ const app = {
 
         if (type === 'month') {
             url = "https://www.tbank.ru/cf/59ivYDZRKQK";
-            tariffName = "PRO 1 месяц";
+            tariffName = "Профи 1 месяц";
             price = "1 500 ₽";
         } else if (type === 'year') {
             url = "https://tbank.ru/cf/7tE93xi7saP";
-            tariffName = "PRO 1 год";
+            tariffName = "Профи 1 год";
             price = "10 800 ₽";
         }
 
@@ -19076,14 +19686,14 @@ async function notifyPayment() {
     }
 
     if (!emailInput) {
-        app.alert('Пожалуйста, укажите ваш email, чтобы мы могли активировать PRO-статус.');
+        app.alert('Пожалуйста, укажите ваш email, чтобы мы могли активировать статус Профи.');
         return;
     }
 
     // === 1. ОТПРАВКА В TELEGRAM ===
     const tgBotToken = '8601624733:AAH3Mlz6NQJ3MB1pSE2T17hMzPoocbTAGmg';
     const tgChatId = '594437394';
-    const messageText = `🔥 Новая заявка на PRO!\nПользователь: ${emailInput}\nТариф: ${tariffNameText}\nПроверьте поступление в Т-Банке.`;
+    const messageText = `🔥 Новая заявка на Профи!\nПользователь: ${emailInput}\nТариф: ${tariffNameText}\nПроверьте поступление в Т-Банке.`;
     const tgUrl = `https://api.telegram.org/bot${tgBotToken}/sendMessage`;
 
     fetch(tgUrl, {
@@ -19100,10 +19710,10 @@ async function notifyPayment() {
         to_email: 'kovdor24@yandex.ru',
         user_email: emailInput,
         tariff_name: tariffNameText,
-        email_subject: `Новая заявка на PRO статус - HeatCalc.ru`,
-        subject_text: `Новая заявка на PRO статус - HeatCalc.ru`,
-        email_body: `Поступила новая заявка на активацию PRO-статуса.\n\n• Email пользователя: ${emailInput}\n• Выбранный тариф: ${tariffNameText}\n\nПожалуйста, проверьте поступление оплаты в банке.`,
-        message_text: `Поступила новая заявка на активацию PRO-статуса.\n\n• Email пользователя: ${emailInput}\n• Выбранный тариф: ${tariffNameText}\n\nПожалуйста, проверьте поступление оплаты в банке.`
+        email_subject: `Новая заявка на статус Профи - HeatCalc.ru`,
+        subject_text: `Новая заявка на статус Профи - HeatCalc.ru`,
+        email_body: `Поступила новая заявка на активацию статуса Профи.\n\n• Email пользователя: ${emailInput}\n• Выбранный тариф: ${tariffNameText}\n\nПожалуйста, проверьте поступление оплаты в банке.`,
+        message_text: `Поступила новая заявка на активацию статуса Профи.\n\n• Email пользователя: ${emailInput}\n• Выбранный тариф: ${tariffNameText}\n\nПожалуйста, проверьте поступление оплаты в банке.`
     };
 
     if (typeof emailjs !== 'undefined') {
@@ -19117,7 +19727,7 @@ async function notifyPayment() {
     // Закрываем окно оплаты
     closePaymentModal();
 
-    // Закрываем главное окно тарифов (Подписка PRO) через штатный метод и принудительное скрытие
+    // Закрываем главное окно тарифов (Подписка Профи) через штатный метод и принудительное скрытие
     if (typeof app !== 'undefined' && typeof app.closeModal === 'function') {
         app.closeModal();
     }
@@ -19145,7 +19755,7 @@ async function notifyPayment() {
     });
 
     // Отображаем всплывающее уведомление пользователю
-    app.alert('Спасибо! Мы проверяем поступление средств. PRO-статус будет активирован на email: ' + emailInput + ' в ближайшее время.');
+    app.alert('Спасибо! Мы проверяем поступление средств. Статус Профи будет активирован на email: ' + emailInput + ' в ближайшее время.');
 }
 window.notifyPayment = notifyPayment;
 document.addEventListener('DOMContentLoaded', function () { app.init(); });

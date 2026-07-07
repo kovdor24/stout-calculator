@@ -3263,7 +3263,9 @@
                         projectName: projectName,
                         statusText: statusText,
                         comment: comment || '',
-                        invoiceUrl: invoiceUrl
+                        invoiceUrl: invoiceUrl,
+                        calcId: invoiceData?.object_info?.sequence_id || null,
+                        event: status
                     })
                 });
 
@@ -3450,7 +3452,9 @@
                         projectName: projectName,
                         statusText: statusText,
                         comment: comment,
-                        invoiceUrl: invoiceUrl
+                        invoiceUrl: invoiceUrl,
+                        calcId: invoiceData?.object_info?.sequence_id || null,
+                        event: 'invoice_requested'
                     })
                 });
 
