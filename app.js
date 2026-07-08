@@ -17080,6 +17080,14 @@ const app = {
         currentSectionTitle = "3. Приборы отопления";
         if (hasRad && radSecs > 0) {
             let totalRadCount = 0;
+            // Обвязка считается отдельно по факту подключения КАЖДОГО поставленного радиатора
+            // (а не одним общим state.radType на весь дом) — иначе при смешанных заменах
+            // (часть радиаторов боковые, часть нижние через точечный свайп) арматура
+            // считалась бы одним типом на всех, хотя часть радиаторов физически другая.
+            let totalRadCountBottom = 0;
+            let totalRadCountSide = 0;
+            let totalRadCountSectional = 0;
+            let totalRadCountBottomSteel = 0;
             let totalConvCount = 0;
             let totalVartronic = 0;
             let heatLoadTotal = Math.round((hasTp && tpArea > 0) ? pwr * 700 : pwr * 1000);
@@ -17230,6 +17238,34 @@ const app = {
                             let itemPlusAl = pickSect(rommerPlusAlRads, p50_plusAl, 12);
                             let itemPlusAl200 = pickSect(rommerPlusAl200Rads, p50_plusAl200, 14);
 
+                            // === Серии радиаторов из прайс-листа 07.2026 (VEGA BM, ALPHA биметалл, TITAN 350/графит,
+                            // VEGA 500 AL) — те же height-фильтрованные подмассивы, что и в _getSecRadSeries() ===
+                            const vegaBm500Arr = vegaBmRads.filter(x => x.id.includes('-050'));
+                            const vegaBm350Arr = vegaBmRads.filter(x => x.id.includes('-035'));
+                            const vegaBm200Arr = vegaBmRads.filter(x => x.id.includes('-020'));
+                            const alphaBm500Arr = alphaBmRads.filter(x => x.id.includes('-050'));
+                            const alphaBm350Arr = alphaBmRads.filter(x => x.id.includes('-035'));
+                            const titanGraphite500Arr = titanGraphiteRads.filter(x => x.id.includes('-050'));
+                            const titanGraphite350Arr = titanGraphiteRads.filter(x => x.id.includes('-035'));
+                            const p50_vegaBm500 = vegaBm500Arr[0]?.power50 || 119;
+                            const p50_vegaBm350 = vegaBm350Arr[0]?.power50 || 87;
+                            const p50_vegaBm200 = vegaBm200Arr[0]?.power50 || 61;
+                            const p50_alphaBm500 = alphaBm500Arr[0]?.power50 || 107;
+                            const p50_alphaBm350 = alphaBm350Arr[0]?.power50 || 79;
+                            const p50_titanBottom350 = titanBottom350Rads[0]?.power50 || 106;
+                            const p50_titanGraphite500 = titanGraphite500Arr[0]?.power50 || 128;
+                            const p50_titanGraphite350 = titanGraphite350Arr[0]?.power50 || 106;
+                            const p50_vega500Al = vega500AlRads[0]?.power50 || 121;
+                            let itemVegaBm500 = pickSect(vegaBm500Arr, p50_vegaBm500, 12);
+                            let itemVegaBm350 = pickSect(vegaBm350Arr, p50_vegaBm350, 12);
+                            let itemVegaBm200 = pickSect(vegaBm200Arr, p50_vegaBm200, 12);
+                            let itemAlphaBm500 = pickSect(alphaBm500Arr, p50_alphaBm500, 12);
+                            let itemAlphaBm350 = pickSect(alphaBm350Arr, p50_alphaBm350, 12);
+                            let itemTitanBottom350 = pickSect(titanBottom350Rads, p50_titanBottom350, 14);
+                            let itemTitanGraphite500 = pickSect(titanGraphite500Arr, p50_titanGraphite500, 14);
+                            let itemTitanGraphite350 = pickSect(titanGraphite350Arr, p50_titanGraphite350, 14);
+                            let itemVega500Al = pickSect(vega500AlRads, p50_vega500Al, 12);
+
                             // === Панельные: выбираем тип (11/21/22/33) по мощности + диапазону ширины 50–90% ===
                             const panelMinW = w.width * 0.50, panelMaxW = w.width * 0.90;
                             const defaultSteelRads = steelRads.filter(s => app.getRadHeightFromId(s.id) === 500);
@@ -17238,7 +17274,8 @@ const app = {
                                 || defaultSteelRads.find(s => s.power50 >= reqPwr)
                                 || defaultSteelRads[defaultSteelRads.length - 1];
 
-                            let altsList = [itemSpace, itemTitan, itemSpaceRu, itemTitanSide, itemSpaceRu350, itemTitan350, itemTitan200, itemAluminum, itemAlum350, itemPlusAl, itemPlusAl200, bestPanel];
+                            let altsList = [itemSpace, itemTitan, itemSpaceRu, itemTitanSide, itemSpaceRu350, itemTitan350, itemTitan200, itemAluminum, itemAlum350, itemPlusAl, itemPlusAl200, bestPanel,
+                                itemVegaBm500, itemVegaBm350, itemVegaBm200, itemAlphaBm500, itemAlphaBm350, itemTitanBottom350, itemTitanGraphite500, itemTitanGraphite350, itemVega500Al];
                             altsList.forEach(x => { if (x) x.alts = altsList; });
 
                             let activeItem, factPower;
@@ -17256,10 +17293,34 @@ const app = {
                                 activeItem = itemTitanSide; factPower = itemTitanSide.sec * p50_titanSide;
                             } else if (effectiveRadType === 'titan_side350') {
                                 activeItem = itemTitan350; factPower = itemTitan350.sec * p50_titan350;
+                            } else if (effectiveRadType === 'titan_side200') {
+                                activeItem = itemTitan200; factPower = itemTitan200.sec * p50_titan200;
                             } else if (effectiveRadType === 'aluminum') {
                                 activeItem = itemAluminum; factPower = itemAluminum.sec * p50_aluminum;
                             } else if (effectiveRadType === 'aluminum350') {
                                 activeItem = itemAlum350; factPower = itemAlum350.sec * p50_alum350;
+                            } else if (effectiveRadType === 'plus_al') {
+                                activeItem = itemPlusAl; factPower = itemPlusAl.sec * p50_plusAl;
+                            } else if (effectiveRadType === 'plus_al200') {
+                                activeItem = itemPlusAl200; factPower = itemPlusAl200.sec * p50_plusAl200;
+                            } else if (effectiveRadType === 'vega_bm') {
+                                activeItem = itemVegaBm500; factPower = itemVegaBm500.sec * p50_vegaBm500;
+                            } else if (effectiveRadType === 'vega_bm350') {
+                                activeItem = itemVegaBm350; factPower = itemVegaBm350.sec * p50_vegaBm350;
+                            } else if (effectiveRadType === 'vega_bm200') {
+                                activeItem = itemVegaBm200; factPower = itemVegaBm200.sec * p50_vegaBm200;
+                            } else if (effectiveRadType === 'alpha_bm') {
+                                activeItem = itemAlphaBm500; factPower = itemAlphaBm500.sec * p50_alphaBm500;
+                            } else if (effectiveRadType === 'alpha_bm350') {
+                                activeItem = itemAlphaBm350; factPower = itemAlphaBm350.sec * p50_alphaBm350;
+                            } else if (effectiveRadType === 'titan350') {
+                                activeItem = itemTitanBottom350; factPower = itemTitanBottom350.sec * p50_titanBottom350;
+                            } else if (effectiveRadType === 'titan_graphite') {
+                                activeItem = itemTitanGraphite500; factPower = itemTitanGraphite500.sec * p50_titanGraphite500;
+                            } else if (effectiveRadType === 'titan_graphite350') {
+                                activeItem = itemTitanGraphite350; factPower = itemTitanGraphite350.sec * p50_titanGraphite350;
+                            } else if (effectiveRadType === 'vega500_al') {
+                                activeItem = itemVega500Al; factPower = itemVega500Al.sec * p50_vega500Al;
                             } else {
                                 activeItem = itemSpace; factPower = itemSpace.sec * p50_space;
                             }
@@ -17310,7 +17371,7 @@ const app = {
                                             else if (swappedRad.name.includes('Тип 22')) panelType = 'Тип 22';
                                             else if (swappedRad.name.includes('Тип 33')) panelType = 'Тип 33';
 
-                                            const filtered = targetSeries.arr.filter(p => this.getRadHeightFromId(p.id) === panelHeight && p.name && p.name.includes(panelType));
+                                            const filtered = targetSeries.arr.filter(p => this.getRadHeightFromId(p.id) === panelHeight && p.name && p.name.includes(panelType) && !!p.bottom === !!swappedRad.bottom);
                                             if (filtered.length > 0) {
                                                 // Сортируем по длине в мм по возрастанию
                                                 filtered.sort((a, b) => a.sec - b.sec);
@@ -17337,6 +17398,22 @@ const app = {
                                         }
                                     }
                                 }
+                            }
+
+                            // Определяем сторону подключения ИМЕННО этого радиатора (а не общий
+                            // state.radType) — для правильного разнесения обвязки ниже по коду,
+                            // корректно даже при точечной замене на другую серию для одного окна.
+                            {
+                                const _finalSeries = this._getSecRadSeries().find(s => s.arr && s.arr.some(x => x.id === activeItem.id));
+                                // Панели (сталь): Compact — боковое подключение (нет поля bottom
+                                // у конкретной позиции), Ventil — нижнее (bottom:true у позиции,
+                                // catalog.js). Признак смотрим на конкретно выбранной модели
+                                // (activeItem.bottom), а не на серии целиком — серия steelRads
+                                // содержит вперемешку оба типа.
+                                const _isPanel = !!(_finalSeries && _finalSeries.isPanel);
+                                const _isBottom = _finalSeries ? (_isPanel ? !!activeItem.bottom : !!_finalSeries.bottom) : true;
+                                if (_isBottom) { totalRadCountBottom++; if (_isPanel) totalRadCountBottomSteel++; } else totalRadCountSide++;
+                                if (!_isPanel) totalRadCountSectional++;
                             }
 
                             // Каждый радиатор индивидуален: уникальный ключ + запрет слияния в счёте
@@ -17410,6 +17487,21 @@ const app = {
                     effectiveRadType = 'space';
                 }
 
+                // Универсальный подбор количества/секций для ЛЮБОЙ серии, зарегистрированной в
+                // _getSecRadSeries() — раньше здесь был if/else только на 'steel'/'titan', и любой
+                // другой radType (включая все "боковые" серии) тихо откатывался на Space нижнее,
+                // хотя пользователь мог выбрать боковую серию через "применить ко всем" в модалке
+                // замены. Теперь неизвестный/не steel/не titan radType ищется по всем сериям.
+                const pickWholeHouseCandidate = (arr, p50) => {
+                    if (!arr || arr.length === 0) return null;
+                    const totalSec = Math.ceil(heatLoadTotal / p50);
+                    const cnt = Math.max(win, Math.ceil(totalSec / maxSecs));
+                    let secPerRad = Math.max(4, Math.min(maxSecs, Math.ceil(totalSec / cnt)));
+                    if (isRommer) { if (secPerRad % 2 !== 0) secPerRad++; if (secPerRad > 12) secPerRad = 12; }
+                    const item = arr.find(x => x.sec === secPerRad) || arr[arr.length - 1];
+                    return { item, count: cnt, factPower: item.sec * p50 * cnt };
+                };
+
                 if (effectiveRadType === 'steel') {
                     activeItem = bestPanel; totalCount = countSteel; factPowerTotal = activeItem.power50 * totalCount;
                     if (this.state.radType === 'space') {
@@ -17419,10 +17511,32 @@ const app = {
                     }
                 } else if (effectiveRadType === 'titan') {
                     activeItem = itemTitan; totalCount = countTitan; factPowerTotal = activeItem.sec * p50_titan * totalCount;
+                } else if (effectiveRadType !== 'space') {
+                    const matchedSeries = this._getSecRadSeries().find(s => s.type === effectiveRadType && !s.isPanel && s.arr && s.arr.length);
+                    const p50 = matchedSeries ? (isRommer ? (matchedSeries.arr[0]?.rommer?.power50 || matchedSeries.arr[0]?.power50 || 100) : (matchedSeries.arr[0]?.power50 || 100)) : null;
+                    const candidate = matchedSeries ? pickWholeHouseCandidate(matchedSeries.arr, p50) : null;
+                    if (candidate) {
+                        activeItem = candidate.item; totalCount = candidate.count; factPowerTotal = candidate.factPower;
+                    } else {
+                        activeItem = itemSpace; totalCount = countSpace; factPowerTotal = activeItem.sec * p50_space * totalCount;
+                    }
                 } else {
                     activeItem = itemSpace; totalCount = countSpace; factPowerTotal = activeItem.sec * p50_space * totalCount;
                 }
                 totalRadCount = totalCount;
+
+                // Та же поимённая логика бокового/нижнего подключения, что и в detailedRooms —
+                // в режиме "весь дом" один агрегированный радиатор, поэтому весь totalCount
+                // целиком идёт в один из двух счётчиков.
+                {
+                    const _finalSeries = this._getSecRadSeries().find(s => s.arr && s.arr.some(x => x.id === activeItem.id));
+                    // Панели (сталь): Compact — боковое (нет bottom у позиции), Ventil — нижнее
+                    // (bottom:true у позиции) — см. подробный комментарий в detailedRooms-ветке.
+                    const _isPanel = !!(_finalSeries && _finalSeries.isPanel);
+                    const _isBottom = _finalSeries ? (_isPanel ? !!activeItem.bottom : !!_finalSeries.bottom) : true;
+                    if (_isBottom) { totalRadCountBottom += totalCount; if (_isPanel) totalRadCountBottomSteel += totalCount; } else totalRadCountSide += totalCount;
+                    if (!_isPanel) totalRadCountSectional += totalCount;
+                }
 
                 let devInfo = app.getDesc('rad_tooltip', {
                     item: activeItem,
@@ -17443,23 +17557,18 @@ const app = {
                 let activeHead = catalog.heads.find(h => h.type === this.state.headType) || catalog.heads[0]; activeHead.alts = catalog.heads; addToBill(activeHead, totalRadCount, this.getDesc('rad_head'), grp);
                 if (activeHead.type === 'smart') { let radHubs = Math.ceil(totalRadCount / 15); addToBill(catalog.smart_hub, radHubs, `Шлюз Zigbee.`, grp); }
 
-                // Сторона подключения активной серии радиатора определяет тип обвязки:
-                // нижнее (bottom:true в _getSecRadSeries) -> узел нижнего подключения (h_valves),
-                // боковое (bottom:false/отсутствует) -> термостатическая пара (radValves/radValvesDesign),
-                // а не h_valves как было раньше для всех серий подряд (баг).
-                // В режиме "весь дом" (не detailedRooms) сам радиатор сейчас всегда подбирается
-                // из бокового-нейтрального набора (Space/TITAN нижнее/сталь — см. ветку ниже по
-                // render()), поэтому боковую обвязку включаем только там, где for detailedRooms
-                // реально подбирается радиатор нужной серии (по-оконный расчёт), иначе получим
-                // рассинхронизацию "боковая арматура на фактически нижнем радиаторе".
-                const activeRadSeriesMeta = this._getSecRadSeries().find(s => s.type === this.state.radType);
-                const isBottomConnRad = !this.state.detailedRooms ? true : (activeRadSeriesMeta ? !!activeRadSeriesMeta.bottom : true);
-
-                if (isBottomConnRad) {
-                    let activeHValve = catalog.h_valves.find(v => v.type === this.state.connectionType) || catalog.h_valves[0]; activeHValve.alts = catalog.h_valves; addToBill(activeHValve, totalRadCount, this.getDesc('rad_valves'), grp);
-                    if (this.state.radType === 'steel' && !this.state.detailedRooms) { addToBill(catalog.rad_kits[0], totalRadCount * 2, "Ниппель переходной.", grp); }
-                    if (activeHValve.id === 'SVH-0002-000020') { addToBill(catalog.rad_tube_set[0], totalRadCount * 2, "Трубка Г-образная.", grp); addToBill(catalog.rad_tube_set[1], totalRadCount, "Скоба фиксатор.", grp); addToBill(catalog.rad_tube_set[2], totalRadCount * 2, "Гильза 16.", grp); addToBill(catalog.rad_tube_set[3], totalRadCount * 2, "Фитинг компрессионный.", grp); }
-                } else {
+                // Обвязка считается отдельно для нижних и боковых радиаторов по фактическому
+                // счётчику каждой стороны подключения (totalRadCountBottom/totalRadCountSide,
+                // накапливаются по факту выбора КАЖДОГО радиатора выше) — а не одним общим
+                // решением на весь дом, чтобы смешанные замены (часть радиаторов заменена
+                // точечно на другую сторону подключения через свайп) получали правильную
+                // арматуру каждая на свою часть, а не одну арматуру на все радиаторы подряд.
+                if (totalRadCountBottom > 0) {
+                    let activeHValve = catalog.h_valves.find(v => v.type === this.state.connectionType) || catalog.h_valves[0]; activeHValve.alts = catalog.h_valves; addToBill(activeHValve, totalRadCountBottom, this.getDesc('rad_valves'), grp);
+                    if (totalRadCountBottomSteel > 0) { addToBill(catalog.rad_kits[0], totalRadCountBottomSteel * 2, "Ниппель переходной.", grp); }
+                    if (activeHValve.id === 'SVH-0002-000020') { addToBill(catalog.rad_tube_set[0], totalRadCountBottom * 2, "Трубка Г-образная.", grp); addToBill(catalog.rad_tube_set[1], totalRadCountBottom, "Скоба фиксатор.", grp); addToBill(catalog.rad_tube_set[2], totalRadCountBottom * 2, "Гильза 16.", grp); addToBill(catalog.rad_tube_set[3], totalRadCountBottom * 2, "Фитинг компрессионный.", grp); }
+                }
+                if (totalRadCountSide > 0) {
                     const radValveColor = this.state.radValveColor || null;
                     const connType = this.state.connectionType === 'angled' ? 'angled' : 'straight';
                     let thermoValve, lockshieldValve, thermoAlts, lockshieldAlts;
@@ -17475,11 +17584,18 @@ const app = {
                     thermoAlts = [...radValves.filter(v => v.id.startsWith('SVT-')), ...radValvesDesign.filter(v => v.kind === 'valve')];
                     lockshieldAlts = [...radValves.filter(v => v.id.startsWith('SVL-')), ...radValvesDesign.filter(v => v.kind === 'lockshield')];
                     thermoValve.alts = thermoAlts; lockshieldValve.alts = lockshieldAlts;
-                    addToBill(thermoValve, totalRadCount, this.getDesc('rad_valves'), grp);
-                    addToBill(lockshieldValve, totalRadCount, "Запорно-балансировочный клапан.", grp);
+                    addToBill(thermoValve, totalRadCountSide, this.getDesc('rad_valves'), grp);
+                    addToBill(lockshieldValve, totalRadCountSide, "Запорно-балансировочный клапан.", grp);
                 }
                 let radEurocone = (this.state.pipeType === 'insulated_mp' || this.state.pipeType === 'split_mp') ? catalog.parts[3] : catalog.parts[1];
                 addToBill(radEurocone, totalRadCount * 2, "Евроконус 16 (Рад).", grp); addToBill(catalog.parts[2], totalRadCount * 2, "Фиксатор 90°.", grp); addToBill(catalog.protective_sleeves[0], totalRadCount, "Втулка (под).", grp); addToBill(catalog.protective_sleeves[1], totalRadCount, "Втулка (обр).", grp); addToBill(catalog.label_kits[0], 1, "Наклейки.", grp);
+                // Секционные (алюминиевые/биметаллические) радиаторы кронштейны в комплект не включают —
+                // в отличие от стальных панельных, которые продаются с кронштейнами в заводской упаковке.
+                if (totalRadCountSectional > 0) {
+                    let bracketKit = radAccessories.find(x => x.id === 'SKU-0320-000080') || radAccessories[2];
+                    bracketKit.alts = radAccessories.filter(x => x.id.startsWith('SKU-0320-000080'));
+                    addToBill(bracketKit, totalRadCountSectional, "Комплект настенных регулируемых кронштейнов (2 шт.) на радиатор — секционные радиаторы поставляются без кронштейнов.", grp);
+                }
             }
 
             // Обвязка КОНВЕКТОРОВ (строго без биноклей)

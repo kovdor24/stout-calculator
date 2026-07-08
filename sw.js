@@ -1,4 +1,4 @@
-const CACHE_NAME = 'heatcalc-v2.55';
+const CACHE_NAME = 'heatcalc-v2.56';
 const ASSETS = [
   '/',
   '/index.html',
