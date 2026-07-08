@@ -2242,7 +2242,9 @@
         window.alert = customAlert;
         window.confirm = customConfirm;
 
-        let supabaseClient;
+        // Создаём клиент сразу, а не только в ветке загрузки по ?id= без данных — он нужен
+        // и в локальном режиме (#data=), чтобы кнопки согласования могли писать статус.
+        let supabaseClient = supabase.createClient('https://ahanbwugsmcyvrwbmtlx.supabase.co', 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p');
         let invoiceId;
         let invoiceData;
 
@@ -2548,7 +2550,8 @@
                     region: compact.o.g,
                     date: compact.o.d,
                     showSku: compact.o.s === 1,
-                    eqDiscount: discountPercent
+                    eqDiscount: discountPercent,
+                    sequence_id: compact.o.q || ''
                 },
                 manager_info: {
                     name: compact.m.n,
@@ -2668,12 +2671,9 @@
 
             if (dataParam) {
                 try {
-                    // Hide confirm/decline buttons in offline mode
-                    const btnConfirm = document.querySelector('.fab-confirm');
-                    const btnRevise = document.querySelector('.fab-revise');
-                    if (btnConfirm) btnConfirm.style.display = 'none';
-                    if (btnRevise) btnRevise.style.display = 'none';
-
+                    // Кнопки согласования больше не прячем: ссылка несёт свой id (?id=) даже
+                    // в локальном режиме, upsert в updateInvoiceStatus сам создаст запись в
+                    // shared_invoices при первом клике клиента, если монтажник ещё не был онлайн.
                     const decodedData = await decodePayload(dataParam);
                     invoiceData = decodedData;
 
@@ -3140,13 +3140,6 @@
             const getInvoiceContainer = document.getElementById('get_invoice_container');
             const btnGetInvoice = document.getElementById('btn_get_invoice');
 
-            const isOffline = !!getDataParam();
-
-            if (isOffline) {
-                if (confirmBtn) confirmBtn.style.display = 'none';
-                if (reviseBtn) reviseBtn.style.display = 'none';
-            }
-
             if (badgeEl) {
                 if (obj.status === 'confirmed') {
                     badgeEl.textContent = '✓ Смета одобрена';
@@ -3169,9 +3162,9 @@
                     if (btnGetInvoice) btnGetInvoice.style.display = 'none';
                 } else {
                     badgeEl.style.display = 'none';
-                    // Re-show them if status goes back to 'sent' (just in case), but only if not offline
-                    if (confirmBtn) confirmBtn.style.display = isOffline ? 'none' : '';
-                    if (reviseBtn) reviseBtn.style.display = isOffline ? 'none' : '';
+                    // Re-show them if status goes back to 'sent' (just in case)
+                    if (confirmBtn) confirmBtn.style.display = '';
+                    if (reviseBtn) reviseBtn.style.display = '';
                     if (getInvoiceContainer) getInvoiceContainer.style.display = 'none';
                     if (btnGetInvoice) btnGetInvoice.style.display = 'none';
                 }
@@ -3202,10 +3195,19 @@
                     if (btn) btn.disabled = true;
                 }
 
+                // upsert, а не update: если монтажник ещё не был онлайн и запись в
+                // shared_invoices ещё не синхронизировалась в фоне, первый же клик клиента
+                // создаст её сам — со всеми данными, которые уже есть в этой ссылке.
                 const { error } = await supabaseClient
                     .from('shared_invoices')
-                    .update({ object_info: updatedObjectInfo })
-                    .eq('id', invoiceId);
+                    .upsert({
+                        id: invoiceId,
+                        object_info: updatedObjectInfo,
+                        manager_info: invoiceData.manager_info || {},
+                        items: invoiceData.items || {},
+                        totals: invoiceData.totals || {},
+                        user_id: invoiceData.user_id || null
+                    }, { onConflict: 'id' });
 
                 if (error) throw error;
 

@@ -66,7 +66,8 @@ function compactPayload(data) {
             g: data.object_info.region || 'Центр',
             d: data.object_info.date || '',
             s: data.object_info.showSku ? 1 : 0,
-            c: data.object_info.eqDiscount || 0
+            c: data.object_info.eqDiscount || 0,
+            q: data.object_info.sequence_id || ''
         },
         m: {
             n: data.manager_info.name || '',
@@ -1057,6 +1058,22 @@ const app = {
         if (typeof rommerProfiBmRads !== 'undefined') extraArrays.push(['rommerProfiBmRads', rommerProfiBmRads]);
         if (typeof rommerPlusBmRads !== 'undefined') extraArrays.push(['rommerPlusBmRads', rommerPlusBmRads]);
         if (typeof rommerPlusAlRads !== 'undefined') extraArrays.push(['rommerPlusAlRads', rommerPlusAlRads]);
+        // Новые серии радиаторов и арматуры из прайс-листа 07.2026 (см. catalog.js)
+        if (typeof vegaBmRads !== 'undefined') extraArrays.push(['vegaBmRads', vegaBmRads]);
+        if (typeof alphaBmRads !== 'undefined') extraArrays.push(['alphaBmRads', alphaBmRads]);
+        if (typeof titanBottom350Rads !== 'undefined') extraArrays.push(['titanBottom350Rads', titanBottom350Rads]);
+        if (typeof titanGraphiteRads !== 'undefined') extraArrays.push(['titanGraphiteRads', titanGraphiteRads]);
+        if (typeof vega500AlRads !== 'undefined') extraArrays.push(['vega500AlRads', vega500AlRads]);
+        if (typeof oscarRads !== 'undefined') extraArrays.push(['oscarRads', oscarRads]);
+        if (typeof sebinoRads !== 'undefined') extraArrays.push(['sebinoRads', sebinoRads]);
+        if (typeof anteprimaRads !== 'undefined') extraArrays.push(['anteprimaRads', anteprimaRads]);
+        if (typeof tonaleRads !== 'undefined') extraArrays.push(['tonaleRads', tonaleRads]);
+        if (typeof tubeQuadroRads !== 'undefined') extraArrays.push(['tubeQuadroRads', tubeQuadroRads]);
+        if (typeof tubeRoundRads !== 'undefined') extraArrays.push(['tubeRoundRads', tubeRoundRads]);
+        if (typeof radValves !== 'undefined') extraArrays.push(['radValves', radValves]);
+        if (typeof radValvesDesign !== 'undefined') extraArrays.push(['radValvesDesign', radValvesDesign]);
+        if (typeof radManualValves !== 'undefined') extraArrays.push(['radManualValves', radManualValves]);
+        if (typeof radAccessories !== 'undefined') extraArrays.push(['radAccessories', radAccessories]);
 
         // Для базового (не PRO) тарифа товары ROMMER нужно скрыть из поиска, если у них
         // есть аналог от STOUT. "Аналог есть", если выполняется любое из:
@@ -3988,10 +4005,10 @@ const app = {
             let uRow = null;
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
-                let { data } = await supabaseClient.from('users').select('id, email, account_type, demo_ends_at').eq('auth_user_id', session.user.id).maybeSingle();
+                let { data } = await supabaseClient.from('users').select('id, email, account_type, demo_ends_at, distributor_id').eq('auth_user_id', session.user.id).maybeSingle();
                 uRow = data;
             } else if (tgUser.authUserId) {
-                let { data } = await supabaseClient.from('users').select('id, email, account_type, demo_ends_at').eq('auth_user_id', tgUser.authUserId).maybeSingle();
+                let { data } = await supabaseClient.from('users').select('id, email, account_type, demo_ends_at, distributor_id').eq('auth_user_id', tgUser.authUserId).maybeSingle();
                 uRow = data;
             } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 uRow = { id: '0279a53c-452b-474f-8626-08be2c2b32da', email: 'dima24ba@gmail.com', account_type: 'pro', demo_ends_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 4).toISOString() }; // Mock 4 days remaining for dev
@@ -4127,6 +4144,30 @@ const app = {
                         time: new Date(endsAt.getTime() - 1000 * 60 * 60 * 24 * 30).toISOString(),
                         isRead: true
                     });
+                }
+            }
+
+            // 1.5. УВЕДОМЛЕНИЕ О НАЗНАЧЕНИИ МЕНЕДЖЕРА-ДИСТРИБЬЮТОРА — только пуш внутри
+            // калькулятора (без email), появляется один раз при привязке к каждому конкретному
+            // дистрибьютору (id завязан на distributor_id, поэтому при смене менеджера админом
+            // придёт новое непрочитанное уведомление, а не то же самое)
+            if (uRow.distributor_id) {
+                try {
+                    const { data: dist } = await supabaseClient.from('distributors').select('company_name, manager_name').eq('id', uRow.distributor_id).maybeSingle();
+                    if (dist) {
+                        const distNotifId = 'distributor_assigned_' + uRow.distributor_id;
+                        notifications.push({
+                            id: distNotifId,
+                            type: 'distributor_info',
+                            projectName: '🤝 Назначен менеджер',
+                            status: 'info',
+                            comment: `Вам назначен менеджер: ${dist.company_name}${dist.manager_name ? ' (' + dist.manager_name + ')' : ''}. Контакты — в разделе «Мой профиль» → «Ваш менеджер».`,
+                            time: new Date().toISOString(),
+                            isRead: readIds.includes(distNotifId)
+                        });
+                    }
+                } catch (distNotifErr) {
+                    console.warn('Could not load distributor for notification:', distNotifErr);
                 }
             }
 
@@ -4515,9 +4556,15 @@ const app = {
         const expiryFilter = document.getElementById('admin_filter_expiry')?.value || 'all';
         const regionFilter = document.getElementById('admin_filter_region')?.value?.trim() || '';
         const activityFilter = document.getElementById('admin_filter_activity')?.value || 'all';
+        // Убираем запятые/скобки — они ломают синтаксис .or(), это разделители условий
+        const searchFilter = (document.getElementById('admin_search_input')?.value || '').trim().replace(/[,()]/g, '');
 
         if (regionFilter) query = query.ilike('region', `%${regionFilter}%`);
         if (activityFilter !== 'all') query = query.contains('activity_types', [activityFilter]);
+        if (searchFilter) {
+            const cols = ['username', 'email', 'phone', 'city', 'region', 'last_name', 'first_name', 'middle_name'];
+            query = query.or(cols.map(c => `${c}.ilike.%${searchFilter}%`).join(','));
+        }
 
         if (tariffFilter === 'base') {
             query = query.eq('account_type', 'base');
@@ -4572,6 +4619,13 @@ const app = {
         }
         this._adminOffset = offset;
         const content = document.getElementById('admin_content');
+        // Запоминаем значение и фокус поля поиска — оно вот-вот исчезнет из DOM вместе
+        // с "Загрузка данных...", а после перерисовки надо продолжить печатать без разрыва
+        const searchInputBefore = document.getElementById('admin_search_input');
+        if (searchInputBefore) {
+            this._pendingAdminSearch = searchInputBefore.value;
+            this._pendingAdminSearchFocused = document.activeElement === searchInputBefore;
+        }
         if (content) content.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 50px;">Загрузка данных...</div>';
 
         try {
@@ -4766,7 +4820,7 @@ const app = {
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                         <h4 style="margin: 0;">👥 Монтажники</h4>
                         <div style="display: flex; gap: 10px; width: 100%; max-width: 780px; flex-wrap: wrap;">
-                            <input type="text" id="admin_search_input" placeholder="🔍 Поиск по имени..." style="flex: 1.5; min-width: 150px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 12px; outline: none;" onkeyup="app.filterAdminData(this.value)">
+                            <input type="text" id="admin_search_input" placeholder="🔍 Поиск по имени..." style="flex: 1.5; min-width: 150px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 12px; outline: none;" onkeyup="app.debouncedAdminSearch()">
                             <select id="admin_filter_tariff" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer;">
                                 <option value="all" ${tariffFilter === 'all' ? 'selected' : ''}>Все тарифы</option>
                                 <option value="base" ${tariffFilter === 'base' ? 'selected' : ''}>Эксперт</option>
@@ -4898,7 +4952,7 @@ const app = {
                 else adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-sent">Отправлена</span>`;
             }
 
-            h += `<tr class="active-row admin-list-row" data-search="${estSearchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminEstimate('${e.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
+            h += `<tr class="active-row admin-estimate-row" data-search="${estSearchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminEstimate('${e.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
                         <td style="color:var(--text-sec);">${i + 1}</td>
                         <td><b>${projName}</b></td>
                         <td>${author}</td>
@@ -4915,15 +4969,39 @@ const app = {
                     </tr>`;
         });
         h += `</tbody></table>`;
-        const searchQuery = document.getElementById('admin_search_input')?.value || '';
+        const searchQuery = document.getElementById('admin_search_input')?.value || this._pendingAdminSearch || '';
+        const shouldRefocus = !!this._pendingAdminSearchFocused;
         content.innerHTML = navHtml + h;
         if (searchQuery) {
             const input = document.getElementById('admin_search_input');
             if (input) {
                 input.value = searchQuery;
-                this.filterAdminData(searchQuery);
+                if (shouldRefocus) {
+                    input.focus();
+                    input.setSelectionRange(searchQuery.length, searchQuery.length);
+                }
             }
+            this.filterAdminEstimatesTable(searchQuery);
         }
+        this._pendingAdminSearch = null;
+        this._pendingAdminSearchFocused = false;
+    },
+
+    // Поиск по монтажникам теперь идёт на сервер (по всей базе, а не только по текущей
+    // странице списка) — debounce, чтобы не дёргать Supabase на каждое нажатие клавиши.
+    // Таблицу "Последние сметы" (те же 50 строк уже в DOM) фильтруем мгновенно на клиенте
+    debouncedAdminSearch: function () {
+        this.filterAdminEstimatesTable(document.getElementById('admin_search_input')?.value || '');
+        clearTimeout(this._adminSearchTimer);
+        this._adminSearchTimer = setTimeout(() => this.loadAdminData(0), 400);
+    },
+
+    filterAdminEstimatesTable: function (query) {
+        let lowerQuery = query.toLowerCase().trim();
+        document.querySelectorAll('.admin-estimate-row').forEach(row => {
+            let dataSearch = row.getAttribute('data-search') || '';
+            row.style.display = (!lowerQuery || dataSearch.includes(lowerQuery)) ? '' : 'none';
+        });
     },
 
     switchAdminTab: function (tab) {
@@ -5179,15 +5257,6 @@ const app = {
             console.error("Error sending reply:", e);
             app.alert("Не удалось отправить ответ: " + e.message);
         }
-    },
-    filterAdminData: function (query) {
-        let lowerQuery = query.toLowerCase().trim();
-        let rows = document.querySelectorAll('.admin-list-row');
-        rows.forEach(row => {
-            let dataSearch = row.getAttribute('data-search') || '';
-            if (!lowerQuery || dataSearch.includes(lowerQuery)) row.style.display = '';
-            else row.style.display = 'none';
-        });
     },
     renderScheme: function () {
         const s = this.state;
@@ -7416,218 +7485,29 @@ const app = {
             btn.disabled = true;
         }
 
-        const isProUser = this.isPro();
+        // Ставим сохранение в облако (для поиска по номеру КП через "Загрузить код") в фоновую
+        // очередь с повторами безусловно, до любых попыток создать PRO-ссылку с кнопками
+        // согласования — так номер остаётся гарантированно доступен для поиска даже если
+        // именно в этот момент не удастся создать shared_invoices (сеть/сессия/VPN).
+        this.queueCloudSave(JSON.parse(JSON.stringify(this.state)), app.lastEqSum || 0, app.lastWorksSum || 0);
 
-        if (!isProUser) {
-            // ================== БАЗОВЫЙ ТАРИФ ==================
-            try {
-                const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
-
-                app.copyToClipboard(shareUrl).then(() => {
-                    app.prompt("\u2705 \u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0430 \u0438 \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0430! \u041e\u0442\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u0435\u0451 \u043a\u043b\u0438\u0435\u043d\u0442\u0443:", shareUrl);
-                }).catch(err => {
-                    console.error('\u041e\u0448\u0438\u0431\u043a\u0430 \u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f:', err);
-                    app.prompt("\u2705 \u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0430! \u0421\u043a\u043e\u043f\u0438\u0440\u0443\u0439\u0442\u0435 \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u043a\u043b\u0438\u0435\u043d\u0442\u0443:", shareUrl);
-                });
-
-                // Автоматически сохраняем в облако
-                try {
-                    await withTimeout(this.saveToCloud(true), 4000);
-                } catch (saveCloudErr) {
-                    console.error('[shareInvoice] Ошибка фонового сохранения сметы:', saveCloudErr);
-                }
-            } catch (err) {
-                console.error('[shareInvoice] \u041e\u0448\u0438\u0431\u043a\u0430 \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438 \u0441\u0441\u044b\u043b\u043a\u0438:', err);
-                app.alert("\u041f\u0440\u043e\u0438\u0437\u043e\u0448\u043b\u0430 \u043e\u0448\u0438\u0431\u043a\u0430 \u043f\u0440\u0438 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u0438 \u0441\u0441\u044b\u043b\u043a\u0438: " + err.message);
-            } finally {
-                if (btn) {
-                    btn.innerHTML = origHtml;
-                    btn.disabled = false;
-                }
-            }
-            return;
-        }
-
-        // ================== ПРЕМИУМ (PRO) ТАРИФ ==================
-        // Пытаемся записать в Supabase с таймаутом в 10 секунд
+        // Ссылка для клиента формируется одинаково для обоих тарифов (Эксперт и Профи) —
+        // мгновенно и полностью локально, без единого сетевого обращения. id для строки в
+        // shared_invoices генерируется на клиенте заранее (переиспользуем, если он уже был
+        // создан для этого объекта раньше, чтобы ссылка при повторной генерации не менялась).
         try {
-            // -- НАДЕЖНАЯ ПРОВЕРКА СЕССИИ --
-            let user = null;
-            let authError = null;
-            try {
-                const { data: sessionData, error: sessionErr } = await withTimeout(supabaseClient.auth.getSession(), 4000);
-                if (sessionData && sessionData.session) {
-                    user = sessionData.session.user;
-                } else {
-                    const { data: userData, error: userErr } = await withTimeout(supabaseClient.auth.getUser(), 4000);
-                    user = userData ? userData.user : null;
-                    authError = userErr || sessionErr;
-                }
-            } catch (e) {
-                console.warn('[shareInvoice] Ошибка проверки сессии:', e);
-                authError = e;
-            }
-
-            // Резервный вариант: если произошел сетевой сбой / таймаут Supabase, но в стейте сохранен авторизованный пользователь
-            if ((authError || !user) && this.state.tgUser) {
-                console.log('[shareInvoice] Сбой сети или таймаут Supabase. Используем локальную сохраненную сессию.');
-                user = {
-                    id: this.state.tgUser.authUserId || this.state.tgUser.id,
-                    email: this.state.tgUser.email || ''
-                };
-                authError = null; // Сбрасываем ошибку, так как локальная сессия валидна
-            }
-
-            if (authError || !user) {
-                app.alert("Ошибка: Вы не авторизованы. Войдите в систему для создания ссылки.");
-                if (btn) {
-                    btn.innerHTML = origHtml;
-                    btn.disabled = false;
-                }
-                return;
-            }
-            // -- КОНЕЦ ПРОВЕРКИ --
-
-            // Получаем существующий статус сметы для его корректного сохранения/сброса при обновлении
-            let existingObjectInfo = {};
-            if (this.state.shared_invoice_id) {
-                try {
-                    const { data: existingData, error: existingError } = await withTimeout(
-                        supabaseClient
-                            .from('shared_invoices')
-                            .select('object_info')
-                            .eq('id', this.state.shared_invoice_id)
-                            .maybeSingle(),
-                        4000
-                    );
-                    if (!existingError && existingData && existingData.object_info) {
-                        existingObjectInfo = existingData.object_info;
-                    }
-                } catch (e) {
-                    console.error('[shareInvoice] Ошибка при получении существующей сметы:', e);
-                }
-            }
-
-            let newStatus = 'sent';
-            let clientComment = existingObjectInfo.client_comment || null;
-            let statusUpdatedAt = existingObjectInfo.status_updated_at || null;
-
-            if (existingObjectInfo.status && existingObjectInfo.status !== newStatus) {
-                statusUpdatedAt = new Date().toISOString();
-            }
-
-            object_info.status = newStatus;
-            object_info.client_comment = clientComment;
-            object_info.status_updated_at = statusUpdatedAt;
-
-            let dbUserId = null;
-
-            // 1. Сначала всегда запрашиваем свежий и 100% рабочий ID из базы по auth_user_id активного пользователя
-            if (user && user.id) {
-                try {
-                    let { data: uData } = await withTimeout(
-                        supabaseClient
-                            .from('users')
-                            .select('id')
-                            .eq('auth_user_id', user.id)
-                            .maybeSingle(),
-                        4000
-                    );
-                    if (uData) {
-                        dbUserId = uData.id;
-                    }
-                } catch (e) {
-                    console.warn('[shareInvoice] Ошибка поиска по auth_user_id:', e);
-                }
-            }
-
-            // 2. Если по auth_user_id не нашли, пробуем найти по email
-            if (!dbUserId && user && user.email) {
-                try {
-                    let { data: uData } = await withTimeout(
-                        supabaseClient
-                            .from('users')
-                            .select('id')
-                            .eq('email', user.email)
-                            .maybeSingle(),
-                        4000
-                    );
-                    if (uData) {
-                        dbUserId = uData.id;
-                    }
-                } catch (e) {
-                    console.warn('[shareInvoice] Ошибка поиска по email:', e);
-                }
-            }
-
-            // Если актуальный ID найден в базе, сохраняем его в стейт для синхронизации
-            if (dbUserId) {
-                this.state.tgUser = this.state.tgUser || {};
-                this.state.tgUser.id = dbUserId;
-                this.saveState();
-            }
-
-            // Проверяем: если сохранённый ID не является валидным UUID — сбрасываем его
-            if (this.state.shared_invoice_id && !this.isValidUUID(this.state.shared_invoice_id)) {
-                console.warn('[shareInvoice] Сохранённый shared_invoice_id не является UUID, сбрасываем:', this.state.shared_invoice_id);
-                this.state.shared_invoice_id = null;
-                this.saveState();
-            }
-
-            const insertPayload = {
-                object_info: object_info,
-                manager_info: manager_info,
-                items: items,
-                totals: totals,
-                user_id: (user && user.id) || null
-            };
-
-            // Передаём id только если он уже сохранён и является валидным UUID (upsert для обновления)
-            if (this.state.shared_invoice_id) {
-                insertPayload.id = this.state.shared_invoice_id;
-            }
-
-            let { data, error } = await withTimeout(
-                supabaseClient
-                    .from('shared_invoices')
-                    .upsert([insertPayload], { onConflict: 'id' })
-                    .select('id')
-                    .single(),
-                6000
-            );
-
-            if (error) {
-                console.warn('[shareInvoice] Ошибка при сохранении (пробуем RLS/fallback):', error);
-                const fallbackPayload = { ...insertPayload };
-                delete fallbackPayload.id;
-
-                const { data: fallbackData, error: fallbackError } = await withTimeout(
-                    supabaseClient
-                        .from('shared_invoices')
-                        .insert([fallbackPayload])
-                        .select('id')
-                        .single(),
-                    5000
-                );
-
-                if (fallbackError) {
-                    throw fallbackError;
-                }
-                data = fallbackData;
-            }
-
-            const shareId = data.id;
+            const shareId = (this.state.shared_invoice_id && this.isValidUUID(this.state.shared_invoice_id))
+                ? this.state.shared_invoice_id
+                : this.generateCustomInvoiceId();
             this.state.shared_invoice_id = shareId;
             this.saveState();
 
-            try {
-                await withTimeout(this.saveToCloud(true), 4000);
-            } catch (saveCloudErr) {
-                console.error('[shareInvoice] Ошибка фонового сохранения сметы:', saveCloudErr);
-            }
+            object_info.status = object_info.status || 'sent';
+            object_info.client_comment = object_info.client_comment || null;
+            object_info.status_updated_at = object_info.status_updated_at || null;
 
-            const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
-            const shareUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
+            const localUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
+            const shareUrl = localUrl.replace('/invoice.html#', `/invoice.html?id=${shareId}#`);
 
             app.copyToClipboard(shareUrl).then(() => {
                 app.prompt("✅ Ссылка создана и скопирована! Отправьте её клиенту:", shareUrl);
@@ -7636,22 +7516,12 @@ const app = {
                 app.prompt("✅ Ссылка создана! Скопируйте и отправьте клиенту:", shareUrl);
             });
 
-        } catch (supabaseErr) {
-            console.warn('[shareInvoice] Supabase connection failed, falling back to local payload URL:', supabaseErr);
-            try {
-                const shareUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
-                const promptMsg = "Ссылка готова\nСоздана ссылка без кнопок согласования.\nВозможно, требуется включить VPN и перейти на тариф Профи";
-
-                app.copyToClipboard(shareUrl).then(() => {
-                    app.prompt(promptMsg, shareUrl);
-                }).catch(err => {
-                    console.error('Ошибка копирования:', err);
-                    app.prompt(promptMsg, shareUrl);
-                });
-            } catch (fallbackErr) {
-                console.error('[shareInvoice] Ошибка генерации автономной ссылки при откате:', fallbackErr);
-                app.alert("Произошла ошибка при создании ссылки: " + getFriendlyErrorMessage(supabaseErr));
-            }
+            // Синхронизация в облако (для кнопок согласования и видимости в админке) —
+            // фоном, с повторами; ссылка клиенту при этом уже выдана и полностью рабочая.
+            this.queueSharedInvoiceSave(shareId, object_info, manager_info, items, totals, this.state.tgUser);
+        } catch (err) {
+            console.error('[shareInvoice] Ошибка генерации ссылки:', err);
+            app.alert("Произошла ошибка при создании ссылки: " + err.message);
         } finally {
             if (btn) {
                 btn.innerHTML = origHtml;
@@ -7701,6 +7571,11 @@ const app = {
             eq: showEq,
             works: showWorks
         };
+
+        // Гарантируем, что смета попадёт в базу (и станет доступна через "Загрузить код"),
+        // даже если сейчас нет связи с Supabase — задача уйдёт в фоновую очередь с повторами.
+        this.ensureCalcId();
+        this.queueCloudSave(JSON.parse(JSON.stringify(this.state)), app.lastEqSum || 0, app.lastWorksSum || 0);
 
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -7809,6 +7684,89 @@ const app = {
             return false;
         }
     },
+    // Ставит фоновую задачу "только сохранить смету в облаке" (без письма) в общую
+    // очередь с retry — используется при печати и формировании ссылки клиенту, чтобы
+    // номер КП (calc_id/share_id) гарантированно стал доступен через "Загрузить код"
+    // даже если в момент действия не было связи с Supabase (например, не работал VPN).
+    queueCloudSave: function (stateData, eqSum, worksSum) {
+        this.queue.addJob({
+            id: "savejob_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+            type: 'save_only',
+            stateData: stateData,
+            eqSum: eqSum || 0,
+            worksSum: worksSum || 0,
+            retries: 0,
+            status: 'pending',
+            created_at: Date.now()
+        });
+    },
+    // Фоновая запись/обновление "Ссылки для клиента" (shared_invoices) с retry — id для ссылки
+    // генерируется локально заранее (generateCustomInvoiceId), поэтому сама ссылка отдаётся
+    // монтажнику мгновенно и не ждёт эту задачу; задача лишь синхронизирует запись в облако,
+    // чтобы кнопки согласования у клиента и админка видели актуальные данные.
+    queueSharedInvoiceSave: function (shareId, object_info, manager_info, items, totals, tgUser) {
+        this.queue.addJob({
+            id: "sharejob_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+            type: 'shared_invoice_save',
+            shareId: shareId,
+            object_info: object_info,
+            manager_info: manager_info,
+            items: items,
+            totals: totals,
+            tgUser: tgUser || null,
+            retries: 0,
+            status: 'pending',
+            created_at: Date.now()
+        });
+    },
+    // Выполняет фактическую запись в shared_invoices для задачи из очереди. Перед перезаписью
+    // подтягивает уже существующий статус согласования (confirmed/needs_revision/комментарий) —
+    // повторная генерация ссылки монтажником не должна сбрасывать то, что клиент уже отметил.
+    saveSharedInvoiceJobToCloud: async function (job) {
+        try {
+            // shared_invoices.user_id ссылается на auth-идентификатор пользователя (тот же, что
+            // возвращает supabaseClient.auth.getSession()/getUser() — здесь это tgUser.authUserId),
+            // а НЕ на внутренний public.users.id — в отличие от estimates.user_id в saveJobToCloud.
+            // Подстановка public.users.id сюда нарушает foreign key shared_invoices_user_id_fkey.
+            const tgUser = job.tgUser;
+            const dbUserId = (tgUser && tgUser.authUserId) || null;
+
+            let objectInfo = job.object_info;
+            try {
+                const { data: existing } = await supabaseClient.from('shared_invoices').select('object_info').eq('id', job.shareId).maybeSingle();
+                if (existing && existing.object_info) {
+                    objectInfo = {
+                        ...job.object_info,
+                        status: existing.object_info.status || job.object_info.status,
+                        client_comment: existing.object_info.client_comment || null,
+                        status_updated_at: existing.object_info.status_updated_at || null
+                    };
+                }
+            } catch (e) {
+                console.warn('[saveSharedInvoiceJobToCloud] Ошибка чтения существующей записи:', e);
+            }
+
+            const { error } = await supabaseClient
+                .from('shared_invoices')
+                .upsert([{
+                    id: job.shareId,
+                    object_info: objectInfo,
+                    manager_info: job.manager_info,
+                    items: job.items,
+                    totals: job.totals,
+                    user_id: dbUserId
+                }], { onConflict: 'id' });
+
+            if (error) {
+                console.error('[saveSharedInvoiceJobToCloud] Ошибка Supabase:', error);
+                return false;
+            }
+            return true;
+        } catch (error) {
+            console.error('[saveSharedInvoiceJobToCloud] Ошибка в блоке catch:', error);
+            return false;
+        }
+    },
     queue: {
         _isProcessing: false,
         getQueue: function () {
@@ -7833,7 +7791,13 @@ const app = {
 
             try {
                 const q = this.getQueue();
-                const job = q.find(j => j.status === 'pending' || j.status === 'retry');
+                // Задача считается "зависшей", если её пометили processing больше 30 сек назад —
+                // это значит, что вкладка была закрыта/перезагружена посреди запроса (до того как
+                // сработал withTimeout), и без этой проверки она осталась бы в очереди навсегда,
+                // никогда не подпадая под pending/retry.
+                const STALE_MS = 30000;
+                const job = q.find(j => j.status === 'pending' || j.status === 'retry' ||
+                    (j.status === 'processing' && (Date.now() - (j.processingStartedAt || 0)) > STALE_MS));
                 if (!job) {
                     this._isProcessing = false;
                     return;
@@ -7841,34 +7805,59 @@ const app = {
 
                 console.log("[Queue] Обработка задачи:", job.id, "Попытка:", job.retries + 1);
                 job.status = 'processing';
+                job.processingStartedAt = Date.now();
                 this.saveQueue(q);
 
                 let success = false;
                 try {
-                    // 1. Сохранение в Supabase (неблокирующее для отправки писем)
-                    console.log("[Queue] Шаг 1: Сохранение в Supabase для задачи:", job.id);
-                    try {
-                        const isSaved = await app.saveJobToCloud(job.stateData, job.eqSum, job.worksSum);
+                    if (job.type === 'shared_invoice_save') {
+                        // Задача на фоновое сохранение "Ссылки для клиента" (shared_invoices) —
+                        // не трогает estimates/calc_id, отдельный тип сохранения.
+                        console.log("[Queue] Сохранение shared_invoice для задачи:", job.id);
+                        const isSaved = await withTimeout(app.saveSharedInvoiceJobToCloud(job), 10000);
                         if (!isSaved) {
-                            console.warn("[Queue] Не удалось сохранить смету в облаке (продолжаем отправку письма)");
+                            throw new Error("Не удалось сохранить ссылку для клиента в облаке");
                         }
-                    } catch (supabaseErr) {
-                        console.error("[Queue] Исключение при сохранении в Supabase:", supabaseErr);
-                    }
-
-                    // 2. Отправка через EmailJS
-                    console.log("[Queue] Шаг 2: Фоновая отправка письма через EmailJS для задачи:", job.id);
-                    if (typeof emailjs === 'undefined') {
-                        throw new Error("Библиотека EmailJS не обнаружена");
-                    }
-                    emailjs.init(job.emailJsKey);
-                    const result = await emailjs.send(job.serviceId, job.templateId, job.templateParams);
-                    console.log("[Queue] Ответ от EmailJS:", result);
-
-                    if (result.status === 200) {
                         success = true;
                     } else {
-                        throw new Error("EmailJS ошибка: " + result.text);
+                        // 1. Сохранение в Supabase (неблокирующее для отправки писем)
+                        console.log("[Queue] Шаг 1: Сохранение в Supabase для задачи:", job.id);
+                        let isSaved = false;
+                        try {
+                            // Оборачиваем таймаутом: без него зависший (не отклонённый и не
+                            // выполненный) сетевой запрос к Supabase блокирует _isProcessing
+                            // навечно, и вся очередь (включая retry других задач) встаёт намертво.
+                            isSaved = await withTimeout(app.saveJobToCloud(job.stateData, job.eqSum, job.worksSum), 10000);
+                            if (!isSaved) {
+                                console.warn("[Queue] Не удалось сохранить смету в облаке (продолжаем отправку письма)");
+                            }
+                        } catch (supabaseErr) {
+                            console.error("[Queue] Исключение при сохранении в Supabase:", supabaseErr);
+                        }
+
+                        if (job.type === 'save_only') {
+                            // Задача только на сохранение (печать/ссылка клиенту) — письмо не отправляем,
+                            // но при неудаче сохранения повторяем через общий retry-механизм ниже.
+                            if (!isSaved) {
+                                throw new Error("Не удалось сохранить смету в облаке");
+                            }
+                            success = true;
+                        } else {
+                            // 2. Отправка через EmailJS
+                            console.log("[Queue] Шаг 2: Фоновая отправка письма через EmailJS для задачи:", job.id);
+                            if (typeof emailjs === 'undefined') {
+                                throw new Error("Библиотека EmailJS не обнаружена");
+                            }
+                            emailjs.init(job.emailJsKey);
+                            const result = await emailjs.send(job.serviceId, job.templateId, job.templateParams);
+                            console.log("[Queue] Ответ от EmailJS:", result);
+
+                            if (result.status === 200) {
+                                success = true;
+                            } else {
+                                throw new Error("EmailJS ошибка: " + result.text);
+                            }
+                        }
                     }
                 } catch (jobErr) {
                     console.error("[Queue] Ошибка при обработке задачи:", job.id, jobErr);
@@ -8158,7 +8147,10 @@ const app = {
                     manager_info: manager_info,
                     items: items,
                     totals: totals,
-                    user_id: dbUserId
+                    // shared_invoices.user_id ссылается на auth-идентификатор пользователя
+                    // (authUserId), а не на внутренний public.users.id (dbUserId) — подстановка
+                    // dbUserId сюда нарушает foreign key shared_invoices_user_id_fkey.
+                    user_id: authUserId
                 };
 
                 if (shareId) {
@@ -8247,6 +8239,7 @@ const app = {
             // Создаем задачу в фоновой очереди
             const job = {
                 id: "job_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+                type: 'email',
                 stateData: stateClone,
                 eqSum: eqSum,
                 worksSum: worksSum,
@@ -9515,6 +9508,7 @@ const app = {
                     this.state.swapHeight = hVal;
                     this.state.swapMaterialFilter = this._getRadMaterial(matchedSeries);
                     this.state.swapConnectionType = (matchedSeries.bottom || item.bottom || (item.name && (item.name.includes('Ventil') || item.name.includes('нижнее')))) ? 'bottom' : 'side';
+                    this.state.swapColorFilter = this._getColorOf(matchedSeries);
 
                     const heights = [200, 300, 350, 400, 500, 600];
                     const idx = heights.indexOf(hVal);
@@ -11166,6 +11160,17 @@ const app = {
             { arr: rommerPlusAl200Rads, type: 'plus_al200', h: 200 },
             { arr: rommerPlusBm200Rads, type: null, h: 200 },
             { arr: steelRads, type: null, h: 500, isPanel: true },
+            // Новые серии из прайс-листа 07.2026 — комбинированные массивы (несколько высот
+            // в одном catalog.js-массиве) режем по подстроке id на отдельные высоты-серии.
+            { arr: vegaBmRads.filter(x => x.id.includes('-050')), type: 'vega_bm', h: 500 },
+            { arr: vegaBmRads.filter(x => x.id.includes('-035')), type: 'vega_bm350', h: 350 },
+            { arr: vegaBmRads.filter(x => x.id.includes('-020')), type: 'vega_bm200', h: 200 },
+            { arr: alphaBmRads.filter(x => x.id.includes('-050')), type: 'alpha_bm', h: 500 },
+            { arr: alphaBmRads.filter(x => x.id.includes('-035')), type: 'alpha_bm350', h: 350 },
+            { arr: titanBottom350Rads, type: 'titan350', h: 350, bottom: true },
+            { arr: titanGraphiteRads.filter(x => x.id.includes('-050')), type: 'titan_graphite', h: 500, bottom: true, color: 'graphite' },
+            { arr: titanGraphiteRads.filter(x => x.id.includes('-035')), type: 'titan_graphite350', h: 350, bottom: true, color: 'graphite' },
+            { arr: vega500AlRads, type: 'vega500_al', h: 500 },
         ];
     },
     _getRadMaterial: function (s) {
@@ -11178,6 +11183,11 @@ const app = {
         if (id.startsWith('SRB-') || id.startsWith('RBM-')) return 'bimetal';
         return 'all';
     },
+    // Цвет серии радиатора — 'standard' (обычный) для всех серий без явного цвета в метаданных
+    // (см. _getSecRadSeries, поле color появляется только у цветных серий вроде titanGraphiteRads).
+    _getColorOf: function (s) {
+        return s.color || 'standard';
+    },
     _openRadSwapModal: function (item) {
         const modal = document.getElementById('swap_modal_overlay');
         const body = document.getElementById('swap_modal_body');
@@ -11188,12 +11198,14 @@ const app = {
         const currentH = this.state.swapHeight || item.height || this.getRadHeightFromId(origId);
         const currentM = this.state.swapMaterialFilter || 'all';
         const currentC = this.state.swapConnectionType || 'all';
+        const currentColor = this.state.swapColorFilter || 'all';
 
         const allSer = this._getSecRadSeries();
         const availableSeries = allSer.filter(s => {
             if (currentM !== 'all' && this._getRadMaterial(s) !== currentM) return false;
             if (currentC === 'side' && s.bottom) return false;
             if (currentC === 'bottom' && !s.bottom && !s.isPanel) return false;
+            if (currentColor !== 'all' && this._getColorOf(s) !== currentColor) return false;
             return true;
         });
 
@@ -11249,6 +11261,18 @@ const app = {
             return `<button onclick="app.switchSwapRadConnection('${origId}','${c.key}')"
                 class="swap-tab ${on ? 'active' : ''}">${c.label}</button>`;
         }).join('');
+
+        // Вкладки цвета — показываем, только если среди доступных серий (без учёта фильтра
+        // цвета) есть хоть одна цветная (сейчас — графит RAL7024 у TITAN нижнее подключение).
+        const colorLabels = { standard: 'Обычный', graphite: 'Графит' };
+        const colorsPresent = new Set(allSer.map(s => this._getColorOf(s)));
+        const showColorTabs = colorsPresent.size > 1;
+        const colorsHtml = showColorTabs ? ['all', ...colorsPresent].map(key => {
+            const on = key === currentColor;
+            const label = key === 'all' ? 'Все' : (colorLabels[key] || key);
+            return `<button onclick="app.switchSwapRadColor('${origId}','${key}')"
+                class="swap-tab ${on ? 'active' : ''}">${label}</button>`;
+        }).join('') : '';
 
         const leftPct = heights.length > 1 ? (minIdx / (heights.length - 1)) * 100 : 0;
         const widthPct = heights.length > 1 ? ((maxIdx - minIdx) / (heights.length - 1)) * 100 : 100;
@@ -11432,6 +11456,13 @@ const app = {
                             ${panelTypeHtml}
                         </div>
                     </div>` : ''}
+                    ${showColorTabs ? `
+                    <div>
+                        <div style="font-size:10px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Цвет:</div>
+                        <div class="swap-tabs-wrapper">
+                            ${colorsHtml}
+                        </div>
+                    </div>` : ''}
                 </div>
 
                 <div>
@@ -11455,7 +11486,7 @@ const app = {
                 </label>
             </div>
             
-            ${this._renderRadSwapTable(item, minHeight, maxHeight, currentM, currentC)}
+            ${this._renderRadSwapTable(item, minHeight, maxHeight, currentM, currentC, currentColor)}
         `;
         modal.style.display = 'flex';
     },
@@ -11469,11 +11500,13 @@ const app = {
         const allSer = this._getSecRadSeries();
         const currentM = this.state.swapMaterialFilter || 'all';
         const currentC = this.state.swapConnectionType || 'all';
+        const currentColor = this.state.swapColorFilter || 'all';
 
         const seriesForHeights = allSer.filter(s => {
             if (currentM !== 'all' && this._getRadMaterial(s) !== currentM) return false;
             if (currentC === 'side' && s.bottom) return false;
             if (currentC === 'bottom' && !s.bottom && !s.isPanel) return false;
+            if (currentColor !== 'all' && this._getColorOf(s) !== currentColor) return false;
             return true;
         });
         const heightsSet = new Set();
@@ -11645,6 +11678,14 @@ const app = {
         this.state.swapConnectionType = connection;
         this._openRadSwapModal(item);
     },
+    switchSwapRadColor: function (originalId, color) {
+        const item = this._findSwapItem(originalId);
+        if (!item) return;
+        this.state.swapGroupReplace = document.getElementById('replaceGroupCb')?.checked || false;
+        this.state.swapAllReplace = document.getElementById('replaceAllCb')?.checked || false;
+        this.state.swapColorFilter = color;
+        this._openRadSwapModal(item);
+    },
     switchSwapPanelType: function (originalId, panelType) {
         const item = this._findSwapItem(originalId);
         if (!item) return;
@@ -11672,7 +11713,7 @@ const app = {
 
         this._openRadSwapModal(item);
     },
-    _renderRadSwapTable: function (item, minH, maxH, material = 'all', connection = 'all') {
+    _renderRadSwapTable: function (item, minH, maxH, material = 'all', connection = 'all', color = 'all') {
         const origId = item.originalId || item.id;
         const oldSec = item.sec || 1;
         const oldP50 = this.getPowerAtDt50(item);
@@ -11692,6 +11733,9 @@ const app = {
 
         if (material !== 'all') {
             series = series.filter(s => this._getRadMaterial(s) === material);
+        }
+        if (color && color !== 'all') {
+            series = series.filter(s => this._getColorOf(s) === color);
         }
 
         const candidatesList = [];
@@ -15526,6 +15570,7 @@ const app = {
 
         // Заголовок спецификации
         document.getElementById('doc_summary').innerHTML = `
+            <span class="param-item">🔖 № КП: <b>${this.state.calc_id || '—'}</b></span>
             <span class="param-item">🏠 Объект: <b>${this.state.area} м²</b> (${this.state.floors === 2 ? 2 : 1} эт)</span>
             <span class="param-item">👨‍👩‍👧 Проживающих: <b>${this.state.res}</b></span>
             <span class="param-item">🔥 Теплопотери: <b>${pwr} кВт</b> (${this.state.area > 0 ? Math.round((parseFloat(pwr) * 1000) / this.state.area) : 0} Вт/м²)</span>
@@ -17397,9 +17442,42 @@ const app = {
                 let grp = "3.1. Обвязка радиаторов";
                 let activeHead = catalog.heads.find(h => h.type === this.state.headType) || catalog.heads[0]; activeHead.alts = catalog.heads; addToBill(activeHead, totalRadCount, this.getDesc('rad_head'), grp);
                 if (activeHead.type === 'smart') { let radHubs = Math.ceil(totalRadCount / 15); addToBill(catalog.smart_hub, radHubs, `Шлюз Zigbee.`, grp); }
-                let activeHValve = catalog.h_valves.find(v => v.type === this.state.connectionType) || catalog.h_valves[0]; activeHValve.alts = catalog.h_valves; addToBill(activeHValve, totalRadCount, this.getDesc('rad_valves'), grp);
-                if (this.state.radType === 'steel' && !this.state.detailedRooms) { addToBill(catalog.rad_kits[0], totalRadCount * 2, "Ниппель переходной.", grp); }
-                if (activeHValve.id === 'SVH-0002-000020') { addToBill(catalog.rad_tube_set[0], totalRadCount * 2, "Трубка Г-образная.", grp); addToBill(catalog.rad_tube_set[1], totalRadCount, "Скоба фиксатор.", grp); addToBill(catalog.rad_tube_set[2], totalRadCount * 2, "Гильза 16.", grp); addToBill(catalog.rad_tube_set[3], totalRadCount * 2, "Фитинг компрессионный.", grp); }
+
+                // Сторона подключения активной серии радиатора определяет тип обвязки:
+                // нижнее (bottom:true в _getSecRadSeries) -> узел нижнего подключения (h_valves),
+                // боковое (bottom:false/отсутствует) -> термостатическая пара (radValves/radValvesDesign),
+                // а не h_valves как было раньше для всех серий подряд (баг).
+                // В режиме "весь дом" (не detailedRooms) сам радиатор сейчас всегда подбирается
+                // из бокового-нейтрального набора (Space/TITAN нижнее/сталь — см. ветку ниже по
+                // render()), поэтому боковую обвязку включаем только там, где for detailedRooms
+                // реально подбирается радиатор нужной серии (по-оконный расчёт), иначе получим
+                // рассинхронизацию "боковая арматура на фактически нижнем радиаторе".
+                const activeRadSeriesMeta = this._getSecRadSeries().find(s => s.type === this.state.radType);
+                const isBottomConnRad = !this.state.detailedRooms ? true : (activeRadSeriesMeta ? !!activeRadSeriesMeta.bottom : true);
+
+                if (isBottomConnRad) {
+                    let activeHValve = catalog.h_valves.find(v => v.type === this.state.connectionType) || catalog.h_valves[0]; activeHValve.alts = catalog.h_valves; addToBill(activeHValve, totalRadCount, this.getDesc('rad_valves'), grp);
+                    if (this.state.radType === 'steel' && !this.state.detailedRooms) { addToBill(catalog.rad_kits[0], totalRadCount * 2, "Ниппель переходной.", grp); }
+                    if (activeHValve.id === 'SVH-0002-000020') { addToBill(catalog.rad_tube_set[0], totalRadCount * 2, "Трубка Г-образная.", grp); addToBill(catalog.rad_tube_set[1], totalRadCount, "Скоба фиксатор.", grp); addToBill(catalog.rad_tube_set[2], totalRadCount * 2, "Гильза 16.", grp); addToBill(catalog.rad_tube_set[3], totalRadCount * 2, "Фитинг компрессионный.", grp); }
+                } else {
+                    const radValveColor = this.state.radValveColor || null;
+                    const connType = this.state.connectionType === 'angled' ? 'angled' : 'straight';
+                    let thermoValve, lockshieldValve, thermoAlts, lockshieldAlts;
+                    if (radValveColor) {
+                        thermoValve = radValvesDesign.find(v => v.kind === 'valve' && v.color === radValveColor && v.type === connType) || radValvesDesign.find(v => v.kind === 'valve' && v.color === radValveColor);
+                        lockshieldValve = radValvesDesign.find(v => v.kind === 'lockshield' && v.color === radValveColor && v.type === connType) || radValvesDesign.find(v => v.kind === 'lockshield' && v.color === radValveColor);
+                    } else {
+                        thermoValve = radValves.find(v => v.id.startsWith('SVT-') && v.type === connType);
+                        lockshieldValve = radValves.find(v => v.id.startsWith('SVL-') && v.type === connType);
+                    }
+                    if (!thermoValve) thermoValve = radValves.find(v => v.id.startsWith('SVT-') && v.type === 'straight');
+                    if (!lockshieldValve) lockshieldValve = radValves.find(v => v.id.startsWith('SVL-') && v.type === 'straight');
+                    thermoAlts = [...radValves.filter(v => v.id.startsWith('SVT-')), ...radValvesDesign.filter(v => v.kind === 'valve')];
+                    lockshieldAlts = [...radValves.filter(v => v.id.startsWith('SVL-')), ...radValvesDesign.filter(v => v.kind === 'lockshield')];
+                    thermoValve.alts = thermoAlts; lockshieldValve.alts = lockshieldAlts;
+                    addToBill(thermoValve, totalRadCount, this.getDesc('rad_valves'), grp);
+                    addToBill(lockshieldValve, totalRadCount, "Запорно-балансировочный клапан.", grp);
+                }
                 let radEurocone = (this.state.pipeType === 'insulated_mp' || this.state.pipeType === 'split_mp') ? catalog.parts[3] : catalog.parts[1];
                 addToBill(radEurocone, totalRadCount * 2, "Евроконус 16 (Рад).", grp); addToBill(catalog.parts[2], totalRadCount * 2, "Фиксатор 90°.", grp); addToBill(catalog.protective_sleeves[0], totalRadCount, "Втулка (под).", grp); addToBill(catalog.protective_sleeves[1], totalRadCount, "Втулка (обр).", grp); addToBill(catalog.label_kits[0], 1, "Наклейки.", grp);
             }
