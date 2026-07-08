@@ -2502,7 +2502,7 @@
                 let basePrice = catalogItem.price || 0;
                 // Apply discount if any
                 let finalPrice = basePrice;
-                if (discountPercent > 0) {
+                if (discountPercent) {
                     finalPrice = Math.round(basePrice * (1 - discountPercent / 100));
                 }
                 const q = item.q || 0;

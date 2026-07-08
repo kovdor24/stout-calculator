@@ -758,10 +758,24 @@ const app = {
             this.render();
             return;
         }
-        let num = parseInt(val) || 0;
-        if (num < 0) num = 0;
+        let num = Math.abs(parseInt(val) || 0);
         if (num > 20) num = 20;
-        this.state.eqDiscount = num;
+        let sign = (this.state.eqDiscountMode === 'markup') ? -1 : 1;
+        this.state.eqDiscount = num * sign;
+        this.saveState();
+        this.render();
+    },
+
+    // Скидка (eqDiscount > 0) и наценка (eqDiscount < 0) используют одно и то же поле —
+    // знак задаёт направление, ползунок/поле ввода всегда работают с модулем величины.
+    setEqDiscountMode: function (mode) {
+        if (!this.checkAccess('pro', window.event)) {
+            this.render();
+            return;
+        }
+        this.state.eqDiscountMode = mode;
+        let mag = Math.abs(this.state.eqDiscount || 0);
+        this.state.eqDiscount = mag * (mode === 'markup' ? -1 : 1);
         this.saveState();
         this.render();
     },
@@ -15789,7 +15803,7 @@ const app = {
 
                 let originalPrice = Math.round(finalItem.price || 0);
                 let finalPrice = originalPrice;
-                if (isPro && this.state.eqDiscount > 0) {
+                if (isPro && this.state.eqDiscount) {
                     finalPrice = Math.round(originalPrice * (1 - this.state.eqDiscount / 100));
                 }
 
@@ -17529,11 +17543,25 @@ const app = {
                 // в режиме "весь дом" один агрегированный радиатор, поэтому весь totalCount
                 // целиком идёт в один из двух счётчиков.
                 {
-                    const _finalSeries = this._getSecRadSeries().find(s => s.arr && s.arr.some(x => x.id === activeItem.id));
+                    // Ручная замена через свап-модалку (state.swaps[activeItem.id]) применяется
+                    // самим addToBill только на отображение/цену конкретной строки — сюда, к
+                    // разнесению обвязки по стороне подключения, она не доходит, потому что
+                    // классификация здесь считается ДО вызова addToBill. Без этой подстановки
+                    // свап Compact→Ventil (или обратно) в "Быстром" режиме давал верную картинку
+                    // радиатора, но обвязку/ниппель/кронштейны — по старой, дозамененной модели.
+                    let _classifyItem = activeItem;
+                    const _swapId = this.state.swaps && this.state.swaps[activeItem.id];
+                    if (_swapId) {
+                        for (const s of this._getSecRadSeries()) {
+                            const found = s.arr && s.arr.find(x => x.id === _swapId);
+                            if (found) { _classifyItem = found; break; }
+                        }
+                    }
+                    const _finalSeries = this._getSecRadSeries().find(s => s.arr && s.arr.some(x => x.id === _classifyItem.id));
                     // Панели (сталь): Compact — боковое (нет bottom у позиции), Ventil — нижнее
                     // (bottom:true у позиции) — см. подробный комментарий в detailedRooms-ветке.
                     const _isPanel = !!(_finalSeries && _finalSeries.isPanel);
-                    const _isBottom = _finalSeries ? (_isPanel ? !!activeItem.bottom : !!_finalSeries.bottom) : true;
+                    const _isBottom = _finalSeries ? (_isPanel ? !!_classifyItem.bottom : !!_finalSeries.bottom) : true;
                     if (_isBottom) { totalRadCountBottom += totalCount; if (_isPanel) totalRadCountBottomSteel += totalCount; } else totalRadCountSide += totalCount;
                     if (!_isPanel) totalRadCountSectional += totalCount;
                 }
@@ -18988,8 +19016,18 @@ const app = {
             if (isPro && this.state.viewMode === 'equipment') {
                 discountBlock.style.display = 'flex';
                 document.getElementById('rec_price_val').innerHTML = app.formatPriceHtml(app.originalEqSum || 0, true);
-                document.getElementById('eq_discount_slider').value = this.state.eqDiscount || 0;
-                document.getElementById('eq_discount_val').innerText = this.state.eqDiscount || 0;
+                let curDiscount = this.state.eqDiscount || 0;
+                let curMode = curDiscount < 0 ? 'markup' : (this.state.eqDiscountMode || 'discount');
+                document.getElementById('eq_discount_slider').value = Math.abs(curDiscount);
+                document.getElementById('eq_discount_val').innerText = Math.abs(curDiscount);
+                let modeDiscountBtn = document.getElementById('eq_discount_mode_discount');
+                let modeMarkupBtn = document.getElementById('eq_discount_mode_markup');
+                if (modeDiscountBtn && modeMarkupBtn) {
+                    let activeStyle = 'background:var(--primary); color:#fff;';
+                    let inactiveStyle = 'background:transparent; color:var(--text-sec);';
+                    modeDiscountBtn.setAttribute('style', modeDiscountBtn.getAttribute('style').replace(/background:[^;]+;\s*color:[^;]+;/, curMode === 'discount' ? activeStyle : inactiveStyle));
+                    modeMarkupBtn.setAttribute('style', modeMarkupBtn.getAttribute('style').replace(/background:[^;]+;\s*color:[^;]+;/, curMode === 'markup' ? activeStyle : inactiveStyle));
+                }
             } else {
                 discountBlock.style.display = 'none';
             }

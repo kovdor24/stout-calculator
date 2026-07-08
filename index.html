@@ -53,7 +53,7 @@
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.15" defer></script>
-    <script src="app.js?v=2.60" defer></script>
+    <script src="app.js?v=2.61" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -721,7 +721,10 @@
                         <span id="rec_price_val" style="font-weight: 600; color: var(--text-main);">0 ₽</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--text-sec);">
-                        <span>Скидка:</span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <button type="button" id="eq_discount_mode_discount" onclick="app.setEqDiscountMode('discount')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--primary); color: #fff; font-size: 12px; cursor: pointer;">Скидка</button>
+                            <button type="button" id="eq_discount_mode_markup" onclick="app.setEqDiscountMode('markup')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-sec); font-size: 12px; cursor: pointer;">Наценка</button>
+                        </div>
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <input type="range" id="eq_discount_slider" min="0" max="20" step="1" value="0" oninput="app.setEqDiscount(this.value)" style="width: 120px; accent-color: var(--primary); cursor: pointer;">
                             <span id="eq_discount_val" class="editable-val" contenteditable="true" onblur="app.setEqDiscount(this.innerText)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="font-weight: 700; color: var(--primary); min-width: 30px; text-align: right; border-bottom: 1px dashed var(--primary); padding: 0 4px;">0</span>
