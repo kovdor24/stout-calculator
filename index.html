@@ -1118,16 +1118,8 @@
                             <label class="reg-activity-chip"><input type="checkbox" id="reg_act_seller" value="Продавец"><span>Продавец</span></label>
                         </div>
 
-                        <div class="reg-grid-2">
-                            <div>
-                                <label class="reg-field-label">Пароль</label>
-                                <input type="password" id="auth_reg_password" class="auth-input" placeholder="Придумайте пароль" style="max-width:100%; margin:0;">
-                            </div>
-                            <div>
-                                <label class="reg-field-label">Повторите пароль</label>
-                                <input type="password" id="reg_password_confirm" class="auth-input" placeholder="Повторите пароль" style="max-width:100%; margin:0;">
-                            </div>
-                        </div>
+                        <label class="reg-field-label">Пароль</label>
+                        <input type="password" id="auth_reg_password" class="auth-input" placeholder="Придумайте пароль" style="max-width:100%; margin:0 0 7px;">
                     </div>
                     <div id="auth_error_msg" style="color: #ef4444; font-size: 13px; margin-top: -10px; margin-bottom: 15px; display: none; text-align: left; line-height: 1.4;"></div>
 
@@ -1196,14 +1188,14 @@
                 </div>
             </div>
 
-            <div id="auth_terms_wrapper" style="margin-top: 15px; padding: 0 5px; display: flex; flex-direction: column; gap: 6px; max-width: 100%; margin: 15px auto 0 auto;">
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 11px; color: var(--text-sec); text-align: left; line-height: 1.2; white-space: nowrap;">
-                    <input type="checkbox" id="chk_terms" style="width: 15px; height: 15px; cursor: pointer; flex-shrink: 0;">
-                    <span>Принимаю условия <a href="oferta.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">Публичной оферты</a></span>
+            <div id="auth_terms_wrapper" style="padding: 0 5px; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 6px; max-width: 100%; margin: 12px auto 0 auto;">
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 10px; color: var(--text-sec); text-align: left; line-height: 1.2; white-space: nowrap;">
+                    <input type="checkbox" id="chk_terms" style="width: 13px; height: 13px; cursor: pointer; flex-shrink: 0;">
+                    <span>Принимаю <a href="oferta.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">оферту</a></span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 11px; color: var(--text-sec); text-align: left; line-height: 1.2; white-space: nowrap;">
-                    <input type="checkbox" id="chk_privacy" required style="width: 15px; height: 15px; cursor: pointer; flex-shrink: 0;">
-                    <span>Согласен с <a href="privacy-policy.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">Политикой обработки персональных данных</a></span>
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 10px; color: var(--text-sec); text-align: left; line-height: 1.2; white-space: nowrap;">
+                    <input type="checkbox" id="chk_privacy" required style="width: 13px; height: 13px; cursor: pointer; flex-shrink: 0;">
+                    <span>Согласен с <a href="privacy-policy.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">политикой</a></span>
                 </label>
             </div>
         </div>

@@ -2916,9 +2916,20 @@ body.dark-mode .custom-modal-close:hover {
         padding: 6px 0;
         font-size: 13px;
     }
+    /* Анкету регистрации не центрируем по вертикали — на телефонах видимая
+       область меньше 100vh (адресная строка), а если контент чуть не дотягивает
+       до старого max-height:95vh, скролл вообще не включался, и чекбоксы согласия
+       с кнопкой "Зарегистрироваться" уезжали за нижний край экрана без возможности
+       докрутить. Прижимаем к верху и считаем max-height от гарантированно видимой
+       высоты — тогда overflow-y:auto срабатывает всегда. */
     #auth_modal_overlay .auth-modal-content {
-        max-height: 90vh !important;
+        top: 12px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        max-height: calc(100vh - 24px) !important;
+        max-height: calc(100dvh - 24px) !important;
         overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
     }
 }
 
@@ -3409,6 +3420,13 @@ body.dark-mode .header-totals-block {
         background: rgba(28, 28, 32, 0.68);
         border-top-color: rgba(255, 255, 255, 0.08);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 -8px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    /* У .mobile-bottom-nav z-index 10000002 — выше модалки регистрации (2000000), из-за
+       чего нижняя навигация перекрывала чекбоксы согласия и кнопку "Зарегистрироваться"
+       и блокировала по ним тап. Прячем нав-бар, пока открыта модалка. */
+    body.auth-modal-open .mobile-bottom-nav {
+        display: none !important;
     }
     .mob-nav-item {
         flex: 1;

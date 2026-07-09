@@ -15,7 +15,25 @@
 
 const supabaseUrl = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';
 const supabaseKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+// У части пользователей в РФ провайдер блокирует/дросселирует Cloudflare (за которым стоит
+// Supabase), из-за чего запросы к *.supabase.co не доходят из браузера ("Нет связи с сервером"
+// при исправном проекте и коде). На проде эти запросы прогоняются через свой же PHP-прокси
+// (supabase_proxy.php) — до него блокировка не дотягивается, а сервер хостинга сам достучится
+// до Supabase напрямую. На localhost/GitHub Pages прокси-скрипта нет — используем supabase.co как есть.
+function supabaseProxyFetch(input, init) {
+    const host = window.location.hostname;
+    const canProxy = (host === 'heatcalc.ru' || host === 'www.heatcalc.ru');
+    const url = typeof input === 'string' ? input : input.url;
+    if (canProxy && url.startsWith(supabaseUrl)) {
+        return fetch('/supabase_proxy.php?path=' + encodeURIComponent(url.slice(supabaseUrl.length)), init);
+    }
+    return fetch(input, init);
+}
+
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey, {
+    global: { fetch: supabaseProxyFetch }
+});
 
 // === КОНКУРС МОНТАЖНИКОВ STOUT 2026 (01.04.2026 – 30.11.2026) ===
 const CONTEST_CATS_2026 = [
@@ -3878,6 +3896,7 @@ const app = {
 
     showAuthModal: function () {
         document.getElementById('auth_modal_overlay').style.display = 'flex';
+        document.body.classList.add('auth-modal-open');
         if (this.currentAuthTab !== 'register') {
             const tw = document.getElementById('auth_terms_wrapper');
             if (tw) tw.style.display = 'none';
@@ -3894,7 +3913,7 @@ const app = {
             tgWrapper.appendChild(script);
         }
     },
-    closeAuthModal: function () { document.getElementById('auth_modal_overlay').style.display = 'none'; },
+    closeAuthModal: function () { document.getElementById('auth_modal_overlay').style.display = 'none'; document.body.classList.remove('auth-modal-open'); },
 
     showProfileModal: function (forced) {
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
@@ -6071,20 +6090,6 @@ const app = {
             }
             return;
         }
-        const passwordConfirm = document.getElementById('reg_password_confirm').value.trim();
-        if (password !== passwordConfirm) {
-            if (authErrEl) {
-                authErrEl.innerText = 'Пароли не совпадают';
-                authErrEl.style.display = 'block';
-            } else {
-                app.alert('Пароли не совпадают');
-            }
-            if (btn) {
-                btn.disabled = false;
-            }
-            return;
-        }
-
         const lastName = document.getElementById('reg_last_name').value.trim();
         const firstName = document.getElementById('reg_first_name').value.trim();
         const middleName = document.getElementById('reg_middle_name').value.trim();
@@ -6097,7 +6102,7 @@ const app = {
             .filter(chk => chk && chk.checked)
             .map(chk => chk.value);
 
-        if (!lastName || !firstName || !middleName || !phone || !birthDate || !region || !city) {
+        if (!lastName || !firstName || !phone || !birthDate || !region || !city) {
             if (authErrEl) {
                 authErrEl.innerText = 'Заполните все поля: ФИО, телефон, дату рождения, регион и населённый пункт';
                 authErrEl.style.display = 'block';
