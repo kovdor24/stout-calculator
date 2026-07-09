@@ -15,6 +15,16 @@ PRICE_EXTRA_PATH = "price_extra.json"
 SEARCH_URL = 'https://www.teremonline.ru'
 IMAGE_DIR = "img"
 MISSING_LIST_PATH = "articles_without_images.txt"
+INVALID_SKU_LIST_PATH = "articles_invalid_sku.txt"
+
+# Символы, недопустимые в имени файла на Windows (в некоторых артикулах
+# из прайса встречается "*" как маска/плейсхолдер размера — такие id
+# нельзя использовать как имя файла картинки, иначе `git pull` на Windows
+# ломается с "invalid path")
+INVALID_FILENAME_CHARS = set('*?"<>|:')
+
+def has_invalid_filename_chars(item_id):
+    return any(c in INVALID_FILENAME_CHARS for c in item_id)
 
 # --- ВЕЖЛИВОСТЬ К САЙТУ (чтобы не словить бан/капчу при больших объёмах) ---
 DELAY_MIN = 1.5              # мин. пауза между запросами, сек
@@ -102,6 +112,7 @@ def get_unique_skus():
         content = f.read()
     
     items = {} # id -> article
+    invalid_ids = set()
     processed_starts = set()
     for match in re.finditer(r'(["\']?price["\']?\s*:\s*)(\d+(?:\.\d+)?)', content, re.IGNORECASE):
         start_idx, end_idx = get_enclosing_object(content, match.start())
@@ -109,16 +120,19 @@ def get_unique_skus():
         processed_starts.add(start_idx)
         obj_text = content[start_idx:end_idx]
         obj_text = clean_nested_objects(obj_text)
-        
+
         id_val = None
         id_m = re.search(r'["\']?id["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
         if id_m: id_val = id_m.group(1).strip()
-        
+
         art_val = None
         art_m = re.search(r'["\']?article["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
         if art_m: art_val = art_m.group(1).strip()
-        
+
         if id_val:
+            if has_invalid_filename_chars(id_val):
+                invalid_ids.add(id_val)
+                continue
             items[id_val] = art_val or id_val
 
     # Дополнительно берём позиции из price_extra.json — расширенный прайс-лист
@@ -131,12 +145,22 @@ def get_unique_skus():
             added = 0
             for it in extra_items:
                 id_val = (it.get('id') or '').strip()
-                if id_val and id_val not in items:
+                if not id_val:
+                    continue
+                if has_invalid_filename_chars(id_val):
+                    invalid_ids.add(id_val)
+                    continue
+                if id_val not in items:
                     items[id_val] = id_val
                     added += 1
             print(f"Из {PRICE_EXTRA_PATH} добавлено артикулов: {added}")
         except Exception as e:
             print(f"Не удалось прочитать {PRICE_EXTRA_PATH}: {e}")
+
+    if invalid_ids:
+        print(f"Пропущено артикулов с недопустимыми для имени файла символами ({''.join(sorted(INVALID_FILENAME_CHARS))}): {len(invalid_ids)}")
+        with open(INVALID_SKU_LIST_PATH, 'w', encoding='utf-8') as f:
+            f.write("\n".join(sorted(invalid_ids)))
 
     return [{"id": k, "article": v} for k, v in sorted(items.items())]
 
