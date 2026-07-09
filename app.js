@@ -16,24 +16,12 @@
 const supabaseUrl = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';
 const supabaseKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';
 
-// У части пользователей в РФ провайдер блокирует/дросселирует Cloudflare (за которым стоит
-// Supabase), из-за чего запросы к *.supabase.co не доходят из браузера ("Нет связи с сервером"
-// при исправном проекте и коде). На проде эти запросы прогоняются через свой же PHP-прокси
-// (supabase_proxy.php) — до него блокировка не дотягивается, а сервер хостинга сам достучится
-// до Supabase напрямую. На localhost/GitHub Pages прокси-скрипта нет — используем supabase.co как есть.
-function supabaseProxyFetch(input, init) {
-    const host = window.location.hostname;
-    const canProxy = (host === 'heatcalc.ru' || host === 'www.heatcalc.ru');
-    const url = typeof input === 'string' ? input : input.url;
-    if (canProxy && url.startsWith(supabaseUrl)) {
-        return fetch('/supabase_proxy.php?path=' + encodeURIComponent(url.slice(supabaseUrl.length)), init);
-    }
-    return fetch(input, init);
-}
-
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey, {
-    global: { fetch: supabaseProxyFetch }
-});
+// ВРЕМЕННО ОТКЛЮЧЕНО: supabase_proxy.php не работает — сайт раздаётся через GitHub Pages,
+// который не исполняет PHP (см. supabase/functions/stout-proxy/index.ts, где по этой же
+// причине пришлось заменить stout_proxy.php на Edge Function). Из-за этого прокси ломал
+// вход/регистрацию у всех пользователей. Пока не появится хостинг, реально исполняющий
+// серверный код на домене heatcalc.ru, ходим в Supabase напрямую.
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 // === КОНКУРС МОНТАЖНИКОВ STOUT 2026 (01.04.2026 – 30.11.2026) ===
 const CONTEST_CATS_2026 = [
