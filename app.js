@@ -3704,7 +3704,7 @@ const app = {
                 user_phone: tgUser.phone || "Не указан",
                 user_email: tgUser.email || 'Не указан',
                 user_city: tgUser.city || localStorage.getItem('user_city') || 'Не указан',
-                user_status: (this.state.accountType === 'pro') ? "Профи" : "Эксперт",
+                user_status: (this.state.accountType === 'pro') ? "Профи" : "Базовый",
                 area: est.calc_data.area || 0,
                 region: est.calc_data.region || 100,
                 boiler_type: "—",
@@ -5183,7 +5183,7 @@ const app = {
                             <input type="text" id="admin_search_input" placeholder="🔍 Поиск по имени..." style="flex: 1.5; min-width: 150px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 12px; outline: none;" onkeyup="app.debouncedAdminSearch()">
                             <select id="admin_filter_tariff" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer;">
                                 <option value="all" ${tariffFilter === 'all' ? 'selected' : ''}>Все тарифы</option>
-                                <option value="base" ${tariffFilter === 'base' ? 'selected' : ''}>Эксперт</option>
+                                <option value="base" ${tariffFilter === 'base' ? 'selected' : ''}>Базовый</option>
                                 <option value="pro" ${tariffFilter === 'pro' ? 'selected' : ''}>Профи (Все)</option>
                                 <option value="pro_trial" ${tariffFilter === 'pro_trial' ? 'selected' : ''}>Профи: пробный</option>
                                 <option value="pro_promo" ${tariffFilter === 'pro_promo' ? 'selected' : ''}>Профи: промокод</option>
@@ -5210,8 +5210,8 @@ const app = {
                                 <option value="expiry_desc" ${sortType === 'expiry_desc' ? 'selected' : ''}>Срок Профи: по убыванию</option>
                                 <option value="name_asc" ${sortType === 'name_asc' ? 'selected' : ''}>Имя: А-Я</option>
                                 <option value="name_desc" ${sortType === 'name_desc' ? 'selected' : ''}>Имя: Я-А</option>
-                                <option value="tariff_asc" ${sortType === 'tariff_asc' ? 'selected' : ''}>Тариф: Эксперт→Профи</option>
-                                <option value="tariff_desc" ${sortType === 'tariff_desc' ? 'selected' : ''}>Тариф: Профи→Эксперт</option>
+                                <option value="tariff_asc" ${sortType === 'tariff_asc' ? 'selected' : ''}>Тариф: Базовый→Профи</option>
+                                <option value="tariff_desc" ${sortType === 'tariff_desc' ? 'selected' : ''}>Тариф: Профи→Базовый</option>
                             </select>
                             <button class="btn-header-blue" style="background: #10B981; color: white; border-color: #10B981; font-weight: bold; padding: 0 15px; height: 34px;" onclick="app.exportAdminToExcel()">📊 Excel</button>
                         </div>
@@ -5252,7 +5252,7 @@ const app = {
                     badge = `<span style="color:#D97706; font-weight:bold;">Профи до ${dateStr}</span> <span style="font-size:10px; color:var(--text-sec);">(${proType})</span>`;
                 }
             } else {
-                badge = 'Эксперт - без срока';
+                badge = 'Базовый - без срока';
             }
             let name = this.getAdminUserDisplayName(u);
             let phone = u.phone || 'Нет телефона';
@@ -5762,7 +5762,7 @@ const app = {
             let phone = (u.phone || '').replace(/;/g, ' ');
             let email = (u.email || '').replace(/;/g, ' ');
             let tg = (u.tg_username || '').replace(/;/g, ' ');
-            let tariff = u.account_type === 'pro' ? 'Профи' : 'Эксперт';
+            let tariff = u.account_type === 'pro' ? 'Профи' : 'Базовый';
             let reg = new Date(u.created_at).toLocaleDateString();
             let loc = (u.location || '').replace(/;/g, ' ');
             let utm = (u.utm_source || '').replace(/;/g, ' ');
@@ -5852,7 +5852,7 @@ const app = {
                                     <div>
                                         <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Тип аккаунта</label>
                                         <select id="admin_edit_tariff" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
-                                            <option value="base" ${user.account_type === 'base' ? 'selected' : ''}>Эксперт</option>
+                                            <option value="base" ${user.account_type === 'base' ? 'selected' : ''}>Базовый</option>
                                             <option value="pro" ${user.account_type === 'pro' ? 'selected' : ''}>Профи ⭐️</option>
                                         </select>
                                     </div>
@@ -7846,7 +7846,7 @@ const app = {
         // именно в этот момент не удастся создать shared_invoices (сеть/сессия/VPN).
         this.queueCloudSave(JSON.parse(JSON.stringify(this.state)), app.lastEqSum || 0, app.lastWorksSum || 0);
 
-        // Ссылка для клиента формируется одинаково для обоих тарифов (Эксперт и Профи) —
+        // Ссылка для клиента формируется одинаково для обоих тарифов (Базовый и Профи) —
         // мгновенно и полностью локально, без единого сетевого обращения. id для строки в
         // shared_invoices генерируется на клиенте заранее (переиспользуем, если он уже был
         // создан для этого объекта раньше, чтобы ссылка при повторной генерации не менялась).
@@ -8578,7 +8578,7 @@ const app = {
                 user_phone: tgUser.phone || "Не указан",
                 user_email: (this.state.tgUser?.email || this.state.user?.email || 'Не указан'),
                 user_city: (this.state.tgUser?.city || this.state.user?.city || localStorage.getItem('user_city') || 'Не указан'),
-                user_status: (this.state.accountType === 'pro') ? "Профи" : "Эксперт",
+                user_status: (this.state.accountType === 'pro') ? "Профи" : "Базовый",
                 area: this.state.area || 0,
                 region: regionName,
                 boiler_type: boilerName,
@@ -8967,7 +8967,7 @@ const app = {
                     let text = (proUntilDate === 'навсегда') ? 'бессрочно' : `до ${proUntilDate}`;
                     statusEl.innerHTML = `<span style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; line-height: 1.2;">ПРОФИ</span> <span style="font-size: 11.5px; color: var(--text-sec); font-weight: 500;">действует ${text}</span>`;
                 } else {
-                    // Базовый тариф — без срока действия и без ярлыка "Эксперт";
+                    // Базовый тариф — без срока действия и без ярлыка "Базовый";
                     // вместо него показываем сферу деятельности, если она указана
                     let activityBadge = (tgUser.activityTypes && tgUser.activityTypes.length) ? tgUser.activityTypes.join(' / ') : '';
                     statusEl.innerHTML = activityBadge ? `<span style="color: var(--text-sec); font-size: 12px; font-weight: 500;">${activityBadge}</span>` : '';
@@ -14625,7 +14625,7 @@ const app = {
                         ${dateHtml}
                     </div>`;
                 } else {
-                    // Базовый тариф — не показываем "Эксперт" (это дефолт, а не статус),
+                    // Базовый тариф — не показываем "Базовый" (это дефолт, а не статус),
                     // вместо него — сфера деятельности, если пользователь её указал
                     let activityBadge = (tgUser.activityTypes && tgUser.activityTypes.length) ? tgUser.activityTypes.join(' / ') : '';
                     infoHtml = `<div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 8px;">
