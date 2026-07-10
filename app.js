@@ -14656,7 +14656,6 @@ const app = {
 
         // === БЛОКИРОВКИ ===
         document.body.classList.toggle('guest-mode', isGuest);
-        document.body.classList.toggle('base-mode', !isPro && !isGuest);
 
         // Пользователи, зарегистрированные раньше (до появления обязательных полей анкеты),
         // или вошедшие через Google/Telegram без заполненного профиля — не могут пользоваться

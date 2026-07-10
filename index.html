@@ -53,7 +53,7 @@
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.16" defer></script>
-    <script src="app.js?v=2.64" defer></script>
+    <script src="app.js?v=2.65" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -976,30 +976,6 @@
                     filter: blur(5px) !important;
                     user-select: none !important;
                     cursor: pointer !important;
-                }
-
-                /* Base mode styles - dims PRO-only features for base tariff users */
-                body.base-mode #sys_rad,
-                body.base-mode #sys_tp,
-                body.base-mode #scheme_wrapper,
-                body.base-mode #sku_wrapper,
-                body.base-mode #merge_wrapper,
-                body.base-mode #tab_works {
-                    opacity: 0.55 !important;
-                }
-                body.base-mode #sys_rad,
-                body.base-mode #sys_tp,
-                body.base-mode #scheme_wrapper,
-                body.base-mode #sku_wrapper,
-                body.base-mode #merge_wrapper,
-                body.base-mode #tab_works,
-                body.base-mode #sys_rad *,
-                body.base-mode #sys_tp *,
-                body.base-mode #scheme_wrapper *,
-                body.base-mode #sku_wrapper *,
-                body.base-mode #merge_wrapper *,
-                body.base-mode #tab_works * {
-                    cursor: not-allowed !important;
                 }
             </style>
 
