@@ -2670,6 +2670,17 @@ body.dark-mode .custom-modal-close:hover {
     background: #111827;
 }
 
+/* Принудительное дозаполнение анкеты (см. app.js render() -> isProfileIncomplete) —
+   калькулятор под модалкой визуально гасим и делаем некликабельным, чтобы им нельзя
+   было пользоваться, пока обязательные поля профиля не будут сохранены */
+body.profile-incomplete-lock #page_scale_wrapper {
+    pointer-events: none;
+    user-select: none;
+    filter: blur(3px);
+    opacity: 0.5;
+    transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
 /* Unified Auth Modal Styles */
 .auth-modal-overlay {
     position: fixed;
@@ -2913,7 +2924,7 @@ body.dark-mode .custom-modal-close:hover {
         font-size: 11.5px;
     }
     #auth_modal_overlay.register-mode .reg-activity-chip {
-        padding: 6px 0;
+        padding: 7px 0;
         font-size: 13px;
     }
     /* Анкету регистрации не центрируем по вертикали — на телефонах видимая

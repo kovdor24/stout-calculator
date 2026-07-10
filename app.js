@@ -3890,6 +3890,12 @@ const app = {
         this._currentUserRow = null;
         this._cloudEstimates = null;
         this._authHandling = false;
+        // Сбрасываем принудительный режим анкеты и закрываем окно профиля напрямую —
+        // если пользователь вышел из него по ссылке "Выйти" в баннере, closeProfileModal()
+        // не даст закрыть окно, пока formально не сохранена (уже удалённая) анкета.
+        this._profileForceComplete = false;
+        const profileOverlay = document.getElementById('profile_modal_overlay');
+        if (profileOverlay) profileOverlay.style.display = 'none';
         await supabaseClient.auth.signOut();
         delete this.state.tgUser; this.state.accountType = 'base';
         this.saveState(); this.syncUI(); this.render();
@@ -5948,7 +5954,6 @@ const app = {
         const modalOverlay = document.getElementById('auth_modal_overlay');
         const modalContent = document.querySelector('#auth_modal_overlay .auth-modal-content');
         const socialWrapper = document.getElementById('auth_social_login_wrapper');
-        const googleHint = document.getElementById('auth_google_hint');
         if (tab === 'login') {
             tabLogin.classList.add('active');
             tabRegister.classList.remove('active');
@@ -5959,7 +5964,6 @@ const app = {
             if (termsWrapper) termsWrapper.style.display = 'none';
             if (modalOverlay) modalOverlay.classList.remove('register-mode');
             if (socialWrapper) socialWrapper.style.display = '';
-            if (googleHint) googleHint.style.display = 'none';
             if (modalContent) { modalContent.style.maxWidth = '380px'; modalContent.style.maxHeight = ''; modalContent.style.overflowY = ''; }
         } else {
             tabLogin.classList.remove('active');
@@ -5970,13 +5974,10 @@ const app = {
             forgotLink.style.display = 'none';
             if (termsWrapper) termsWrapper.style.display = 'flex';
             if (modalOverlay) modalOverlay.classList.add('register-mode');
-            // Скрываем вход через Google на вкладке регистрации — экономит место по высоте,
-            // а обязательная анкета всё равно будет запрошена после входа через Google (см. handleAuthSession).
-            // Вместо кнопки — короткая подсказка-ссылка на вкладку "Вход"
+            // Вход через Google на вкладке регистрации не показываем — только email/пароль
             if (socialWrapper) socialWrapper.style.display = 'none';
-            if (googleHint) googleHint.style.display = 'block';
             // Расширяем модалку под доп. поля регистрации (ФИО, телефон, дата рождения,
-            // регион, город, сфера деятельности); компактные стили (.register-mode в style.css)
+            // регион, город); компактные стили (.register-mode в style.css)
             // позволяют уместить всё без прокрутки на большинстве экранов
             if (modalContent) { modalContent.style.maxWidth = '560px'; modalContent.style.maxHeight = '95vh'; modalContent.style.overflowY = 'auto'; }
             this.setBirthDateRange(document.getElementById('reg_birth_date'));
@@ -6721,6 +6722,20 @@ const app = {
         if (core.length >= 6) res += '-' + core.substring(6, 8);
         if (core.length >= 8) res += '-' + core.substring(8, 10);
         input.value = res;
+    },
+    // "Фамилия И.О." из раздельных полей анкеты (lastName/givenName/middleName) — используется
+    // в шапке, при печати и в ссылках для клиента вместо полного ФИО. Если фамилия не заполнена
+    // (например, вход через Google/Telegram до заполнения анкеты), возвращает то, что есть.
+    formatShortName: function (tgUser) {
+        if (!tgUser) return '';
+        const last = (tgUser.lastName || '').trim();
+        const first = (tgUser.givenName || '').trim();
+        const middle = (tgUser.middleName || '').trim();
+        if (!last) return tgUser.first_name || tgUser.username || '';
+        let initials = '';
+        if (first) initials += first.charAt(0).toUpperCase() + '.';
+        if (middle) initials += middle.charAt(0).toUpperCase() + '.';
+        return initials ? `${last} ${initials}` : last;
     },
     // Возраст на сегодня по дате рождения (ISO-строка вида "YYYY-MM-DD") — используется
     // для проверки диапазона 18-90 лет в регистрации и профиле
@@ -7479,7 +7494,7 @@ const app = {
         };
 
         let manager_info = {
-            name: tgUser.first_name || tgUser.username || '',
+            name: this.formatShortName(tgUser) || '',
             phone: tgUser.phone || '',
             city: tgUser.city || '',
             email: (this.state.tgUser?.email || this.state.user?.email || localStorage.getItem('user_email') || ''),
@@ -7605,7 +7620,7 @@ const app = {
 
         const printBlock = document.getElementById('print_master_contacts');
         if (tgUser && printBlock) {
-            document.getElementById('print_master_name').innerText = tgUser.first_name || tgUser.username || '';
+            document.getElementById('print_master_name').innerText = this.formatShortName(tgUser) || '';
             document.getElementById('print_master_phone').innerText = tgUser.phone || '';
             printBlock.style.display = 'block';
         }
@@ -8062,7 +8077,7 @@ const app = {
             const worksSum = (this.state.accountType === 'pro') ? (app.lastWorksSum || 0) : 0;
             const total = eqSum + worksSum;
 
-            const authorName = tgUser.first_name || tgUser.username || "Дмитрий";
+            const authorName = this.formatShortName(tgUser) || "Дмитрий";
 
             // ГЕНЕРАЦИЯ / Upsert В ТАБЛИЦУ shared_invoices ДЛЯ СОЗДАНИЯ РАБОЧЕЙ ОНЛАЙН ССЫЛКИ КЛИЕНТА
             let shareId = this.state.shared_invoice_id;
@@ -8632,7 +8647,10 @@ const app = {
                     let text = (proUntilDate === 'навсегда') ? 'бессрочно' : `до ${proUntilDate}`;
                     statusEl.innerHTML = `<span style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; line-height: 1.2;">ПРОФИ</span> <span style="font-size: 11.5px; color: var(--text-sec); font-weight: 500;">действует ${text}</span>`;
                 } else {
-                    statusEl.innerHTML = `<span style="color: var(--text-sec); font-size: 12px; font-weight: 500;">Тариф: Эксперт</span>`;
+                    // Базовый тариф — без срока действия и без ярлыка "Эксперт";
+                    // вместо него показываем сферу деятельности, если она указана
+                    let activityBadge = (tgUser.activityTypes && tgUser.activityTypes.length) ? tgUser.activityTypes.join(' / ') : '';
+                    statusEl.innerHTML = activityBadge ? `<span style="color: var(--text-sec); font-size: 12px; font-weight: 500;">${activityBadge}</span>` : '';
                 }
             } else {
                 statusEl.innerHTML = `<span style="color: var(--text-sec); font-size: 12px; font-weight: 500;">Не авторизован</span>`;
@@ -9129,6 +9147,14 @@ const app = {
                 id: '0279a53c-452b-474f-8626-08be2c2b32da',
                 first_name: "Dima Ibatullin",
                 username: "dima_ibatullin",
+                lastName: "Ibatullin",
+                givenName: "Dima",
+                middleName: "Dev",
+                phone: "+7 (999) 999-99-99",
+                birthDate: "1990-01-01",
+                region: "Московская область",
+                city: "Москва",
+                activityTypes: ["Монтажник"],
                 account_type: "pro",
                 demo_ends_at: "2026-06-06T00:00:00.000Z",
                 // Email нужен, чтобы на localhost сразу была видна кнопка "Админка"
@@ -9524,13 +9550,14 @@ const app = {
             if (matchedSeries) {
                 if (isFirstOpen) {
                     // Предустановка фильтров на основе параметров выбранного прибора под замену
-                    let hVal = item.height || this.getRadHeightFromId(_cid) || matchedSeries.h;
+                    this.state.swapDesignMode = !!matchedSeries.isDesign;
+                    let hVal = matchedSeries.isDesign ? matchedSeries.h : (item.height || this.getRadHeightFromId(_cid) || matchedSeries.h);
                     this.state.swapHeight = hVal;
                     this.state.swapMaterialFilter = this._getRadMaterial(matchedSeries);
-                    this.state.swapConnectionType = (matchedSeries.bottom || item.bottom || (item.name && (item.name.includes('Ventil') || item.name.includes('нижнее')))) ? 'bottom' : 'side';
+                    this.state.swapConnectionType = matchedSeries.universal ? 'all' : ((matchedSeries.bottom || item.bottom || (item.name && (item.name.includes('Ventil') || item.name.includes('нижнее')))) ? 'bottom' : 'side');
                     this.state.swapColorFilter = this._getColorOf(matchedSeries);
 
-                    const heights = [200, 300, 350, 400, 500, 600];
+                    const heights = this._getSwapHeightsAxis();
                     const idx = heights.indexOf(hVal);
                     if (idx !== -1) {
                         this.state.swapHeightMinIndex = idx;
@@ -11191,6 +11218,61 @@ const app = {
             { arr: titanGraphiteRads.filter(x => x.id.includes('-050')), type: 'titan_graphite', h: 500, bottom: true, color: 'graphite' },
             { arr: titanGraphiteRads.filter(x => x.id.includes('-035')), type: 'titan_graphite350', h: 350, bottom: true, color: 'graphite' },
             { arr: vega500AlRads, type: 'vega500_al', h: 500 },
+            // Дизайн-радиаторы (OSCAR/SEBINO/ANTEPRIMA/TONALE/TUBE QUADRO/TUBE ROUND) —
+            // отдельная категория, переключаемая в модалке замены тумблером "Дизайнерские".
+            ...this._buildDesignRadSeries(),
+        ];
+    },
+    // Высоты 1800/2000 мм у панельных дизайн-радиаторов и трубчатых — величина "для
+    // выбора", реальная высота изделия (1784/1830 мм у TUBE) округляется к ближайшей.
+    _designHeightNominal: function (h) {
+        return (h >= 1900) ? 2000 : 1800;
+    },
+    // Группирует дизайн-радиаторный массив по (высота, цвет, тип подключения) — внутри
+    // одной группы позиции монотонны по числу секций, что нужно calculateNewSections/
+    // pickSect. connMode: 'side' — все позиции боковые (OSCAR); 'universal' — подходят и
+    // под боковую, и под нижнюю обвязку (SEBINO/ANTEPRIMA/TONALE); null — тип подключения
+    // берётся из поля connectionType каждой позиции (TUBE QUADRO/TUBE ROUND).
+    _groupDesignRads: function (arr, baseType, connMode) {
+        const groups = {};
+        (arr || []).forEach(x => {
+            const h = this._designHeightNominal(x.height || 1800);
+            const color = x.color || 'standard';
+            let bottom = false, universal = false;
+            if (connMode === 'universal') {
+                universal = true;
+            } else if (connMode === 'side') {
+                bottom = false;
+            } else {
+                bottom = x.connectionType === 'bottom_center' || x.connectionType === 'bottom_right';
+            }
+            const connKey = universal ? 'u' : (bottom ? 'b' : 's');
+            const key = h + '|' + color + '|' + connKey;
+            if (!groups[key]) groups[key] = { arr: [], h, color, bottom, universal };
+            groups[key].arr.push(x);
+        });
+        return Object.keys(groups).map(key => {
+            const g = groups[key];
+            g.arr.sort((a, b) => a.sec - b.sec);
+            return {
+                arr: g.arr,
+                type: baseType + '_' + key.replace(/\|/g, '_'),
+                h: g.h,
+                color: g.color,
+                bottom: g.bottom,
+                universal: g.universal,
+                isDesign: true,
+            };
+        });
+    },
+    _buildDesignRadSeries: function () {
+        return [
+            ...this._groupDesignRads(oscarRads, 'oscar', 'side'),
+            ...this._groupDesignRads(sebinoRads, 'sebino', 'universal'),
+            ...this._groupDesignRads(anteprimaRads, 'anteprima', 'universal'),
+            ...this._groupDesignRads(tonaleRads, 'tonale', 'universal'),
+            ...this._groupDesignRads(tubeQuadroRads, 'tube_quadro', null),
+            ...this._groupDesignRads(tubeRoundRads, 'tube_round', null),
         ];
     },
     _getRadMaterial: function (s) {
@@ -11198,7 +11280,7 @@ const app = {
         if (!s.arr || s.arr.length === 0) return 'all';
         const first = s.arr[0];
         const id = first.id || '';
-        if (id.startsWith('RRS-')) return 'steel';
+        if (id.startsWith('RRS-') || id.startsWith('QV') || id.startsWith('R40-')) return 'steel';
         if (id.startsWith('SRA-') || id.startsWith('RAL-')) return 'aluminum';
         if (id.startsWith('SRB-') || id.startsWith('RBM-')) return 'bimetal';
         return 'all';
@@ -11208,6 +11290,12 @@ const app = {
     _getColorOf: function (s) {
         return s.color || 'standard';
     },
+    // Ось высот слайдера в модалке замены: обычные секционные радиаторы измеряются
+    // межосевым расстоянием 200-600 мм, дизайн-радиаторы (панельные вертикальные и
+    // трубчатые) — фиксированными высотами 1800/2000 мм (см. _designHeightNominal).
+    _getSwapHeightsAxis: function () {
+        return this.state.swapDesignMode ? [1800, 2000] : [200, 300, 350, 400, 500, 600];
+    },
     _openRadSwapModal: function (item) {
         const modal = document.getElementById('swap_modal_overlay');
         const body = document.getElementById('swap_modal_body');
@@ -11215,21 +11303,23 @@ const app = {
         if (!modal || !body) return;
 
         const origId = item.originalId || item.id;
+        const isDesignMode = !!this.state.swapDesignMode;
         const currentH = this.state.swapHeight || item.height || this.getRadHeightFromId(origId);
         const currentM = this.state.swapMaterialFilter || 'all';
         const currentC = this.state.swapConnectionType || 'all';
         const currentColor = this.state.swapColorFilter || 'all';
 
         const allSer = this._getSecRadSeries();
-        const availableSeries = allSer.filter(s => {
+        const modeSer = allSer.filter(s => (!!s.isDesign) === isDesignMode);
+        const availableSeries = modeSer.filter(s => {
             if (currentM !== 'all' && this._getRadMaterial(s) !== currentM) return false;
-            if (currentC === 'side' && s.bottom) return false;
-            if (currentC === 'bottom' && !s.bottom && !s.isPanel) return false;
+            if (currentC === 'side' && s.bottom && !s.universal) return false;
+            if (currentC === 'bottom' && !s.bottom && !s.isPanel && !s.universal) return false;
             if (currentColor !== 'all' && this._getColorOf(s) !== currentColor) return false;
             return true;
         });
 
-        const heights = [200, 300, 350, 400, 500, 600];
+        const heights = this._getSwapHeightsAxis();
 
         let minIdx = this.state.hasOwnProperty('swapHeightMinIndex') ? this.state.swapHeightMinIndex : null;
         let maxIdx = this.state.hasOwnProperty('swapHeightMaxIndex') ? this.state.swapHeightMaxIndex : null;
@@ -11282,10 +11372,20 @@ const app = {
                 class="swap-tab ${on ? 'active' : ''}">${c.label}</button>`;
         }).join('');
 
-        // Вкладки цвета — показываем, только если среди доступных серий (без учёта фильтра
-        // цвета) есть хоть одна цветная (сейчас — графит RAL7024 у TITAN нижнее подключение).
-        const colorLabels = { standard: 'Обычный', graphite: 'Графит' };
-        const colorsPresent = new Set(allSer.map(s => this._getColorOf(s)));
+        // Вкладки цвета — показываем, только если среди доступных серий текущего режима
+        // (без учёта фильтра цвета) есть хоть одна цветная. У обычных радиаторов это графит
+        // RAL7024 (TITAN нижнее подключение); у дизайнерских — белый/чёрный/серый (коды
+        // STOUT 2748/2676, официального RAL-соответствия для них производитель не публикует)
+        // и натуральный (нержавеющий металл TUBE ROUND без покраски).
+        const colorLabels = {
+            standard: 'Обычный',
+            graphite: 'Графит',
+            white: 'Белый (RAL 9010)',
+            black: 'Чёрный (код STOUT 2748)',
+            gray: 'Серый (код STOUT 2676)',
+            natural: 'Натуральный',
+        };
+        const colorsPresent = new Set(modeSer.map(s => this._getColorOf(s)));
         const showColorTabs = colorsPresent.size > 1;
         const colorsHtml = showColorTabs ? ['all', ...colorsPresent].map(key => {
             const on = key === currentColor;
@@ -11454,9 +11554,18 @@ const app = {
             </div>
         `;
 
-        body.innerHTML = `
+        const designToggleHtml = `
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+                <button onclick="app.switchSwapDesignMode('${origId}', false)"
+                    class="swap-tab ${!isDesignMode ? 'active' : ''}" style="flex:1; text-align:center; padding:7px 10px; font-size:13px;">Обычные радиаторы</button>
+                <button onclick="app.switchSwapDesignMode('${origId}', true)"
+                    class="swap-tab ${isDesignMode ? 'active' : ''}" style="flex:1; text-align:center; padding:7px 10px; font-size:13px;">Дизайнерские радиаторы</button>
+            </div>
+        `;
+
+        body.innerHTML = designToggleHtml + `
             <div style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px; margin-bottom:12px; box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.02), 0 4px 6px -4px rgba(15, 23, 42, 0.02);">
-                <div style="display:grid; grid-template-columns: ${currentM === 'steel' ? '1.1fr 1fr 1.3fr' : '1fr 1fr'}; gap:12px;">
+                <div style="display:grid; grid-template-columns: ${(currentM === 'steel' && !isDesignMode) ? '1.1fr 1fr 1.3fr' : '1fr 1fr'}; gap:12px;">
                     <div>
                         <div style="font-size:10px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Тип прибора:</div>
                         <div class="swap-tabs-wrapper">
@@ -11469,7 +11578,7 @@ const app = {
                             ${connectionsHtml}
                         </div>
                     </div>
-                    ${currentM === 'steel' ? `
+                    ${(currentM === 'steel' && !isDesignMode) ? `
                     <div>
                         <div style="font-size:10px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Тип панели:</div>
                         <div class="swap-tabs-wrapper">
@@ -11517,15 +11626,16 @@ const app = {
         this.state.swapGroupReplace = document.getElementById('replaceGroupCb')?.checked || false;
         this.state.swapAllReplace = document.getElementById('replaceAllCb')?.checked || false;
 
-        const allSer = this._getSecRadSeries();
+        const isDesignMode = !!this.state.swapDesignMode;
+        const allSer = this._getSecRadSeries().filter(s => (!!s.isDesign) === isDesignMode);
         const currentM = this.state.swapMaterialFilter || 'all';
         const currentC = this.state.swapConnectionType || 'all';
         const currentColor = this.state.swapColorFilter || 'all';
 
         const seriesForHeights = allSer.filter(s => {
             if (currentM !== 'all' && this._getRadMaterial(s) !== currentM) return false;
-            if (currentC === 'side' && s.bottom) return false;
-            if (currentC === 'bottom' && !s.bottom && !s.isPanel) return false;
+            if (currentC === 'side' && s.bottom && !s.universal) return false;
+            if (currentC === 'bottom' && !s.bottom && !s.isPanel && !s.universal) return false;
             if (currentColor !== 'all' && this._getColorOf(s) !== currentColor) return false;
             return true;
         });
@@ -11575,7 +11685,7 @@ const app = {
             maxVal = temp;
         }
 
-        const heights = [200, 300, 350, 400, 500, 600];
+        const heights = this._getSwapHeightsAxis();
         const minHeight = heights[minVal];
         const maxHeight = heights[maxVal];
 
@@ -11602,7 +11712,7 @@ const app = {
     },
     clickSwapHeightScale: function (originalId, targetIdx) {
         let minIdx = this.state.hasOwnProperty('swapHeightMinIndex') ? this.state.swapHeightMinIndex : 0;
-        let maxIdx = this.state.hasOwnProperty('swapHeightMaxIndex') ? this.state.swapHeightMaxIndex : 5;
+        let maxIdx = this.state.hasOwnProperty('swapHeightMaxIndex') ? this.state.swapHeightMaxIndex : (this._getSwapHeightsAxis().length - 1);
 
         const distMin = Math.abs(targetIdx - minIdx);
         const distMax = Math.abs(targetIdx - maxIdx);
@@ -11635,7 +11745,7 @@ const app = {
         const trackWidth = rect.width - 18;
         const fraction = Math.max(0, Math.min(1, (clickX - 9) / trackWidth));
 
-        const heightsCount = 7;
+        const heightsCount = this._getSwapHeightsAxis().length;
         const targetIdx = Math.round(fraction * (heightsCount - 1));
 
         this.clickSwapHeightScale(originalId, targetIdx);
@@ -11714,6 +11824,24 @@ const app = {
         this.state.swapPanelType = panelType;
         this._openRadSwapModal(item);
     },
+    // Тумблер "Обычные / Дизайнерские" в модалке замены радиатора — переключает пул
+    // серий (см. _getSecRadSeries/_buildDesignRadSeries) и ось высот слайдера
+    // (_getSwapHeightsAxis: 200-600мм ↔ 1800/2000мм). Остальные фильтры сбрасываются,
+    // т.к. у дизайнерских радиаторов другой набор цветов/подключений.
+    switchSwapDesignMode: function (originalId, isDesign) {
+        const item = this._findSwapItem(originalId);
+        if (!item) return;
+        this.state.swapGroupReplace = document.getElementById('replaceGroupCb')?.checked || false;
+        this.state.swapAllReplace = document.getElementById('replaceAllCb')?.checked || false;
+        this.state.swapDesignMode = !!isDesign;
+        this.state.swapMaterialFilter = 'all';
+        this.state.swapConnectionType = 'all';
+        this.state.swapColorFilter = 'all';
+        this.state.swapPanelType = 'all';
+        delete this.state.swapHeightMinIndex;
+        delete this.state.swapHeightMaxIndex;
+        this._openRadSwapModal(item);
+    },
     toggleSwapSort: function (originalId, field) {
         const item = this.currentEquipmentList.find(x => (x.originalId || x.id) === originalId || x.id === originalId);
         if (!item) return;
@@ -11739,16 +11867,21 @@ const app = {
         const oldP50 = this.getPowerAtDt50(item);
         const origPrice = item.price || 0;
         const targetPower = item.isPanel ? oldP50 : (oldSec * oldP50);
-        const allSeries = this._getSecRadSeries();
-        const winWidthM = this.state.swapWindowWidth || null; // м, для фильтра 50–90% ширины окна
+        const isDesignMode = !!this.state.swapDesignMode;
+        const allSeries = this._getSecRadSeries().filter(s => (!!s.isDesign) === isDesignMode);
+        // Фильтр 50–90% ширины окна рассчитан на горизонтальные секционные радиаторы, которые
+        // монтируются под окном во всю его ширину. Дизайн-радиаторы (вертикальные панели/трубы)
+        // так не устанавливаются и почти всегда у́же 50% ширины окна — фильтр их отсеивал бы
+        // целиком, поэтому в режиме "Дизайнерские" он не применяется.
+        const winWidthM = isDesignMode ? null : (this.state.swapWindowWidth || null); // м
         const panelTypeFilter = this.state.swapPanelType || 'all';
 
         let series = allSeries;
         series = series.filter(s => (s.h >= minH && s.h <= maxH) || s.isPanel);
         if (connection === 'side') {
-            series = series.filter(s => !s.bottom);
+            series = series.filter(s => !s.bottom || s.universal);
         } else if (connection === 'bottom') {
-            series = series.filter(s => s.bottom || s.isPanel);
+            series = series.filter(s => s.bottom || s.isPanel || s.universal);
         }
 
         if (material !== 'all') {
@@ -11757,6 +11890,12 @@ const app = {
         if (color && color !== 'all') {
             series = series.filter(s => this._getColorOf(s) === color);
         }
+
+        // Диагностика для пустого результата — чтобы объяснить пользователю, что именно
+        // отсеяло все варианты (мощность / ширина под окно / фильтры), а не молчать.
+        let maxPowerSeen = 0;
+        let anyPassedPower = false;
+        let anyPassedPowerFailedWidth = false;
 
         const candidatesList = [];
         series.forEach(s => {
@@ -11768,10 +11907,12 @@ const app = {
                     if (connection === 'side' && panelItem.bottom) return;
                     if (connection === 'bottom' && !panelItem.bottom) return;
                     if (panelTypeFilter !== 'all' && !(panelItem.name && panelItem.name.includes(`Тип ${panelTypeFilter}`))) return;
+                    maxPowerSeen = Math.max(maxPowerSeen, panelItem.power50 || 0);
                     if (panelItem.power50 < targetPower) return;
+                    anyPassedPower = true;
                     if (winWidthM) {
                         const rW = (panelItem.sec || 0) / 1000; // sec — ширина панели в мм → метры
-                        if (rW < winWidthM * 0.5 || rW > winWidthM * 0.9) return;
+                        if (rW < winWidthM * 0.5 || rW > winWidthM * 0.9) { anyPassedPowerFailedWidth = true; return; }
                     }
                     candidatesList.push({
                         candidate: panelItem,
@@ -11786,25 +11927,30 @@ const app = {
                 });
             } else {
                 const candidate = this.calculateNewSections(1, targetPower, s.arr);
-                if (candidate && (candidate.sec * candidate.power50) >= targetPower) {
-                    if (winWidthM) {
-                        const rW = candidate.sec * 0.08; // 80 мм на секцию → метры
-                        if (rW < winWidthM * 0.5 || rW > winWidthM * 0.9) return;
+                if (candidate) {
+                    const candPow = candidate.sec * candidate.power50;
+                    maxPowerSeen = Math.max(maxPowerSeen, candPow);
+                    if (candPow >= targetPower) {
+                        anyPassedPower = true;
+                        if (winWidthM) {
+                            const rW = candidate.sec * 0.08; // 80 мм на секцию → метры
+                            if (rW < winWidthM * 0.5 || rW > winWidthM * 0.9) { anyPassedPowerFailedWidth = true; return; }
+                        }
+                        const isActive = s.arr.some(x => x.id === item.id || x.id === origId);
+                        let candName = candidate.name || '';
+                        if (minH !== maxH) candName += ` (${s.h} мм)`;
+                        candidatesList.push({
+                            candidate: candidate,
+                            series: s,
+                            isBottom: !!s.bottom,
+                            isActive: isActive,
+                            name: candName + (s.universal ? ' (универсальное)' : (s.bottom ? ' (нижнее)' : ' (боковое)')),
+                            brand: candidate.brand || 'STOUT',
+                            price: candidate.price || 0,
+                            power: candPow,
+                            isPanel: false
+                        });
                     }
-                    const isActive = s.arr.some(x => x.id === item.id || x.id === origId);
-                    let candName = candidate.name || '';
-                    if (minH !== maxH) candName += ` (${s.h} мм)`;
-                    candidatesList.push({
-                        candidate: candidate,
-                        series: s,
-                        isBottom: !!s.bottom,
-                        isActive: isActive,
-                        name: candName + (s.bottom ? ' (нижнее)' : ' (боковое)'),
-                        brand: candidate.brand || 'STOUT',
-                        price: candidate.price || 0,
-                        power: candidate.sec * candidate.power50,
-                        isPanel: false
-                    });
                 }
             }
         });
@@ -11861,7 +12007,19 @@ const app = {
             </tr>`;
         });
 
-        if (!rows) return `<p style="color:var(--text-sec);padding:12px 0;">Нет доступных серий для выбранного диапазона высот</p>`;
+        if (!rows) {
+            let emptyMsg;
+            if (series.length === 0) {
+                emptyMsg = 'Нет серий, подходящих под выбранные фильтры (высота/цвет/подключение/тип прибора) — попробуйте расширить диапазон высот или изменить цвет/подключение.';
+            } else if (!anyPassedPower) {
+                emptyMsg = `В выбранном диапазоне высот и фильтров нет варианта нужной мощности: требуется ≥${targetPower} Вт, максимум доступно ${maxPowerSeen} Вт. Расширьте диапазон высот, смените цвет/подключение — либо мощность для этой позиции нужно распределить на несколько приборов.`;
+            } else if (anyPassedPowerFailedWidth) {
+                emptyMsg = `Мощности хватает, но по ширине под окно (${Math.round(winWidthM * 500)}–${Math.round(winWidthM * 900)} мм) ничего не подошло — попробуйте расширить диапазон высот или тип панели.`;
+            } else {
+                emptyMsg = 'Нет доступных серий для выбранного диапазона высот';
+            }
+            return `<p style="color:var(--text-sec);padding:12px 0;">${emptyMsg}</p>`;
+        }
 
         const priceArrow = sortField === 'price' ? (sortOrder === 'desc' ? ' ▼' : ' ▲') : '';
         const powerArrow = sortField === 'power' ? (sortOrder === 'desc' ? ' ▼' : ' ▲') : '';
@@ -11884,8 +12042,15 @@ const app = {
 
         const applyGroup = document.getElementById('replaceGroupCb')?.checked || false;
         const applyAll = document.getElementById('replaceAllCb')?.checked || false;
+        // В "Быстром" режиме (!detailedRooms) в смете всегда ровно одна агрегированная строка
+        // радиатора на весь дом — там нет разных приборов, которые можно было бы выбирать по
+        // отдельности, поэтому любой выбор в этом режиме — это и есть выбор для всего проекта.
+        // Без этого при переключении в "Подробный" режим (там подбор идёт по каждому окну и
+        // ориентируется на state.radType, а не на конкретный id из "Быстрого") ручной выбор
+        // молча слетал обратно на Space.
+        const applyAsWholeProject = applyAll || !this.state.detailedRooms;
 
-        if (applyAll) {
+        if (applyAsWholeProject) {
             // Apply to ALL radiators in the entire project!
             if (chosenSeries) {
                 if (chosenSeries.isPanel) {
@@ -14118,7 +14283,7 @@ const app = {
             if (tgUser) {
                 let isActuallyPro = this.isPro();
                 let infoHtml = '';
-                let uName = tgUser.first_name || tgUser.username || 'Монтажник';
+                let uName = this.formatShortName(tgUser) || 'Монтажник';
                 let avatarImg = tgUser.avatar_url || tgUser.photo_url;
                 let icon = avatarImg ? `<img src="${avatarImg}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">` : (tgUser.isGoogle ? 'G' : '👤');
 
@@ -14137,10 +14302,13 @@ const app = {
                         ${dateHtml}
                     </div>`;
                 } else {
+                    // Базовый тариф — не показываем "Эксперт" (это дефолт, а не статус),
+                    // вместо него — сфера деятельности, если пользователь её указал
+                    let activityBadge = (tgUser.activityTypes && tgUser.activityTypes.length) ? tgUser.activityTypes.join(' / ') : '';
                     infoHtml = `<div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 8px;">
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <span style="border-bottom: 1px dashed var(--text-sec);">${uName}</span>
-                            <span style="color: var(--text-sec); font-size: 11px; font-weight: 500;">(Эксперт)</span>
+                            ${activityBadge ? `<span style="color: var(--text-sec); font-size: 11px; font-weight: 500;">(${activityBadge})</span>` : ''}
                         </div>
                     </div>`;
                 }
@@ -14166,6 +14334,18 @@ const app = {
         // === БЛОКИРОВКИ ===
         document.body.classList.toggle('guest-mode', isGuest);
         document.body.classList.toggle('base-mode', !isPro && !isGuest);
+
+        // Пользователи, зарегистрированные раньше (до появления обязательных полей анкеты),
+        // или вошедшие через Google/Telegram без заполненного профиля — не могут пользоваться
+        // калькулятором, пока не дозаполнят и не сохранят анкету целиком (см. isProfileIncomplete).
+        // Флаг _profileForceComplete не даём выставлять повторно на каждый render(), иначе форма
+        // сбрасывалась бы прямо во время ввода.
+        const lockTgUser = this.state.tgUser;
+        const profileLocked = !!(lockTgUser && this.isProfileIncomplete());
+        document.body.classList.toggle('profile-incomplete-lock', profileLocked);
+        if (profileLocked && !this._profileForceComplete) {
+            this.showProfileModal(true);
+        }
 
         const cloudBtns = document.querySelector('.header-cloud-btns');
         if (cloudBtns) cloudBtns.style.display = isGuest ? 'none' : 'flex';
@@ -15667,6 +15847,18 @@ const app = {
                     }
                     if (!foundItem && typeof steelRads !== 'undefined') {
                         foundItem = steelRads.find(x => x.id === manualSwapId);
+                    }
+                    if (!foundItem) {
+                        // Многие серии радиаторов (VEGA BM, TITAN 350/графит, дизайн-радиаторы
+                        // OSCAR/SEBINO/ANTEPRIMA/TONALE/TUBE QUADRO/TUBE ROUND и др.) лежат в
+                        // отдельных global-массивах вне catalog{} — см. _getSecRadSeries(). Без
+                        // этого фолбэка ручная замена из модалки на такую серию молча не
+                        // применялась бы (state.swaps выставлялся, но addToBill его не находил).
+                        for (const s of this._getSecRadSeries()) {
+                            if (!s.arr) continue;
+                            const found = s.arr.find(x => x.id === manualSwapId);
+                            if (found) { foundItem = found; break; }
+                        }
                     }
                     if (foundItem) {
                         activeItem = { ...foundItem };
@@ -17341,6 +17533,20 @@ const app = {
                                 activeItem = itemTitanGraphite350; factPower = itemTitanGraphite350.sec * p50_titanGraphite350;
                             } else if (effectiveRadType === 'vega500_al') {
                                 activeItem = itemVega500Al; factPower = itemVega500Al.sec * p50_vega500Al;
+                            } else if (effectiveRadType && effectiveRadType !== 'space') {
+                                // Универсальный подбор для ЛЮБОЙ другой серии, зарегистрированной в
+                                // _getSecRadSeries() (в т.ч. дизайн-радиаторы OSCAR/SEBINO/ANTEPRIMA/
+                                // TONALE/TUBE QUADRO/TUBE ROUND) — раньше неизвестный здесь radType
+                                // тихо откатывался на Space, из-за чего выбор дизайн-радиатора в
+                                // "Быстром" режиме слетал при переключении в "Подробный".
+                                const matchedSeries = this._getSecRadSeries().find(s => s.type === effectiveRadType && !s.isPanel && s.arr && s.arr.length);
+                                if (matchedSeries) {
+                                    const p50g = isRommer ? (matchedSeries.arr[0]?.rommer?.power50 || matchedSeries.arr[0]?.power50 || 100) : (matchedSeries.arr[0]?.power50 || 100);
+                                    activeItem = pickSect(matchedSeries.arr, p50g, matchedSeries.arr[matchedSeries.arr.length - 1].sec);
+                                    factPower = activeItem.sec * p50g;
+                                } else {
+                                    activeItem = itemSpace; factPower = itemSpace.sec * p50_space;
+                                }
                             } else {
                                 activeItem = itemSpace; factPower = itemSpace.sec * p50_space;
                             }
