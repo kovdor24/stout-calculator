@@ -16,12 +16,25 @@
 const supabaseUrl = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';
 const supabaseKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';
 
-// ВРЕМЕННО ОТКЛЮЧЕНО: supabase_proxy.php не работает — сайт раздаётся через GitHub Pages,
-// который не исполняет PHP (см. supabase/functions/stout-proxy/index.ts, где по этой же
-// причине пришлось заменить stout_proxy.php на Edge Function). Из-за этого прокси ломал
-// вход/регистрацию у всех пользователей. Пока не появится хостинг, реально исполняющий
-// серверный код на домене heatcalc.ru, ходим в Supabase напрямую.
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+// У части пользователей в РФ провайдер блокирует/дросселирует Cloudflare (за которым стоит
+// Supabase), из-за чего запросы к *.supabase.co не доходят из браузера ("Нет связи с сервером"
+// при исправном проекте и коде). Раньше прокси лежал прямо на heatcalc.ru (supabase_proxy.php),
+// но GitHub Pages, на котором раздаётся сайт, не исполняет PHP — прокси всегда отдавал
+// исходный код вместо ответа и ломал вход у всех. Теперь прокси вынесен на отдельный
+// поддомен proxy.heatcalc.ru с настоящим PHP-хостингом (Beget), сам сайт остаётся на GitHub Pages.
+function supabaseProxyFetch(input, init) {
+    const host = window.location.hostname;
+    const canProxy = (host === 'heatcalc.ru' || host === 'www.heatcalc.ru');
+    const url = typeof input === 'string' ? input : input.url;
+    if (canProxy && url.startsWith(supabaseUrl)) {
+        return fetch('https://proxy.heatcalc.ru/supabase_proxy.php?path=' + encodeURIComponent(url.slice(supabaseUrl.length)), init);
+    }
+    return fetch(input, init);
+}
+
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey, {
+    global: { fetch: supabaseProxyFetch }
+});
 
 // === КОНКУРС МОНТАЖНИКОВ STOUT 2026 (01.04.2026 – 30.11.2026) ===
 const CONTEST_CATS_2026 = [
