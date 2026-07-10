@@ -2388,6 +2388,7 @@ const app = {
                 desc: selectedArticle ? `Добавлено из каталога (арт. ${selectedArticle})` : "Добавлено самостоятельно в ручном режиме",
                 section: sectionTitle
             });
+            app.addEquipmentToLibrary({ name: name, price: price, brand: " " });
             app.saveState();
             closeModal();
             app.render();
@@ -3060,8 +3061,10 @@ const app = {
         }
     },
 
-    showSupplierSection: function () {
-        const subview = document.getElementById('profile_subview_container');
+    showSupplierSection: function (containerId) {
+        containerId = containerId || this._supplierSectionContainerId || 'profile_subview_container';
+        this._supplierSectionContainerId = containerId;
+        const subview = document.getElementById(containerId);
         if (!subview) return;
 
         if (this.state.distributorId && this.state.distributorInfo) {
@@ -3103,8 +3106,10 @@ const app = {
 
     // Список активных дистрибьюторов, обслуживающих регион пользователя (или все, если для
     // региона никого не нашлось) — самостоятельный выбор менеджера монтажником без промокода
-    renderDistributorPicker: async function () {
-        const subview = document.getElementById('profile_subview_container');
+    renderDistributorPicker: async function (containerId) {
+        containerId = containerId || this._supplierSectionContainerId || 'profile_subview_container';
+        this._supplierSectionContainerId = containerId;
+        const subview = document.getElementById(containerId);
         if (!subview) return;
         const tgUser = this.state.tgUser || {};
         const userRegion = (tgUser.region || '').trim();
@@ -3922,7 +3927,7 @@ const app = {
     },
     closeAuthModal: function () { document.getElementById('auth_modal_overlay').style.display = 'none'; document.body.classList.remove('auth-modal-open'); },
 
-    showProfileModal: function (forced) {
+    showProfileModal: function (forced, initialTab) {
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         if (!tgUser) return;
 
@@ -3997,6 +4002,7 @@ const app = {
         if (modalContent) modalContent.style.maxWidth = '60vw';
 
         document.getElementById('profile_modal_overlay').style.display = 'flex';
+        this.setProfileTab(forced ? 'requisites' : (initialTab || 'requisites'));
     },
     closeProfileModal: function () {
         if (this._profileForceComplete && this.isProfileIncomplete()) {
@@ -4005,6 +4011,320 @@ const app = {
         }
         this._profileForceComplete = false;
         document.getElementById('profile_modal_overlay').style.display = 'none';
+    },
+    // Переключение вкладок личного кабинета («Мой профиль»): Реквизиты / Менеджер /
+    // Прайс-лист монтаж / Своё оборудование. Контент вкладок «Менеджер», «Прайс-лист» и
+    // «Оборудование» строится лениво при первом открытии вкладки.
+    setProfileTab: function (tab) {
+        const tabs = ['requisites', 'manager', 'workprices', 'equipment'];
+        if (!tabs.includes(tab)) tab = 'requisites';
+        this._activeProfileTab = tab;
+
+        const tabsBar = document.getElementById('profile_tabs_bar');
+        if (tabsBar) {
+            tabsBar.querySelectorAll('.mode-tab').forEach(el => {
+                el.classList.toggle('active', el.dataset.tab === tab);
+            });
+        }
+        tabs.forEach(t => {
+            const el = document.getElementById('profile_tab_' + t);
+            if (el) el.style.display = (t === tab) ? '' : 'none';
+        });
+
+        const footerRequisites = document.getElementById('profile_modal_footer_requisites');
+        const footerOther = document.getElementById('profile_modal_footer_other');
+        if (footerRequisites) footerRequisites.style.display = (tab === 'requisites') ? 'flex' : 'none';
+        if (footerOther) footerOther.style.display = (tab === 'requisites') ? 'none' : 'flex';
+
+        if (tab === 'manager') {
+            this.showSupplierSection('profile_tab_manager');
+        } else if (tab === 'workprices') {
+            this.renderWorkPricesTab();
+        } else if (tab === 'equipment') {
+            this.renderEquipmentLibraryTab();
+        }
+    },
+
+    // ═══════════════ Персональные настройки монтажника (личный кабинет) ═══════════════
+    // Хранятся отдельно от app.state (который сохраняется/сбрасывается per-проект), чтобы
+    // переживать app.reset() и новые сметы. Локально — всегда в localStorage; для ПРО ещё
+    // синхронизируются в Supabase (users.installer_settings, JSONB). Если колонка в базе
+    // ещё не создана — облачные запросы просто падают в catch и всё продолжает работать
+    // на localStorage.
+    loadInstallerSettingsLocal: function () {
+        let parsed = null;
+        try { parsed = JSON.parse(localStorage.getItem('stout_installer_settings') || 'null'); } catch (e) { parsed = null; }
+        this.installerSettings = Object.assign({ workPrices: {}, equipmentLibrary: [], swapLog: [] }, parsed || {});
+        if (!this.installerSettings.workPrices || typeof this.installerSettings.workPrices !== 'object') this.installerSettings.workPrices = {};
+        if (!Array.isArray(this.installerSettings.equipmentLibrary)) this.installerSettings.equipmentLibrary = [];
+        if (!Array.isArray(this.installerSettings.swapLog)) this.installerSettings.swapLog = [];
+    },
+    saveInstallerSettingsLocal: function () {
+        localStorage.setItem('stout_installer_settings', JSON.stringify(this.installerSettings));
+    },
+    _resolveInstallerCloudUserId: async function () {
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                const { data } = await supabaseClient.from('users').select('id').eq('auth_user_id', session.user.id).maybeSingle();
+                if (data) return data.id;
+            }
+            const tgUser = this.state.tgUser;
+            if (tgUser && tgUser.authUserId) {
+                const { data } = await supabaseClient.from('users').select('id').eq('auth_user_id', tgUser.authUserId).maybeSingle();
+                if (data) return data.id;
+            }
+        } catch (e) { /* нет сети/сессии — работаем локально */ }
+        return null;
+    },
+    // Подтягивает облачную версию персональных настроек один раз за сессию (лениво, при первом
+    // обращении к вкладкам «Прайс-лист монтаж» / «Своё оборудование»)
+    pullInstallerSettingsFromCloud: async function () {
+        if (this._installerSettingsCloudSynced) return;
+        this._installerSettingsCloudSynced = true;
+        try {
+            const uid = await this._resolveInstallerCloudUserId();
+            if (!uid) return;
+            this._installerCloudUserId = uid;
+            const { data, error } = await supabaseClient.from('users').select('installer_settings').eq('id', uid).maybeSingle();
+            if (error) throw error;
+            const cloud = data && data.installer_settings;
+            if (cloud && typeof cloud === 'object') {
+                this.installerSettings = {
+                    workPrices: Object.assign({}, cloud.workPrices || {}),
+                    equipmentLibrary: Array.isArray(cloud.equipmentLibrary) ? cloud.equipmentLibrary : [],
+                    swapLog: Array.isArray(cloud.swapLog) ? cloud.swapLog : []
+                };
+                this.saveInstallerSettingsLocal();
+                if (this._activeProfileTab === 'workprices') this.renderWorkPricesTab();
+                if (this._activeProfileTab === 'equipment') this.renderEquipmentLibraryTab();
+                this.render();
+            }
+        } catch (e) {
+            console.warn('[pullInstallerSettingsFromCloud] Error:', e);
+        }
+    },
+    // Сохраняет локально сразу и синхронизирует с облаком с задержкой (не блокирует UI)
+    pushInstallerSettingsToCloud: function () {
+        this.saveInstallerSettingsLocal();
+        clearTimeout(this._installerSettingsPushTimer);
+        this._installerSettingsPushTimer = setTimeout(async () => {
+            try {
+                let uid = this._installerCloudUserId;
+                if (!uid) uid = await this._resolveInstallerCloudUserId();
+                if (!uid) return;
+                this._installerCloudUserId = uid;
+                const { error } = await supabaseClient.from('users').update({ installer_settings: this.installerSettings }).eq('id', uid);
+                if (error) throw error;
+            } catch (e) {
+                console.warn('[pushInstallerSettingsToCloud] Не удалось синхронизировать (возможно, в Supabase ещё нет колонки users.installer_settings):', e);
+            }
+        }, 1500);
+    },
+    // Персональная цена монтажника на работу с данным названием, либо базовая цена по умолчанию
+    wp: function (name, basePrice) {
+        if (this.installerSettings && this.installerSettings.workPrices && this.installerSettings.workPrices[name] !== undefined) {
+            return this.installerSettings.workPrices[name];
+        }
+        return basePrice;
+    },
+    setInstallerWorkPrice: function (name, val) {
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        let num = parseInt(String(val).replace(/[^\d]/g, ''));
+        if (!isNaN(num) && num > 0) {
+            this.installerSettings.workPrices[name] = num;
+        } else {
+            delete this.installerSettings.workPrices[name];
+        }
+        this.pushInstallerSettingsToCloud();
+        this.render();
+    },
+    resetInstallerWorkPrice: function (name) {
+        if (!this.installerSettings) return;
+        delete this.installerSettings.workPrices[name];
+        this.pushInstallerSettingsToCloud();
+        this.renderWorkPricesTab();
+        this.render();
+    },
+    resetAllInstallerWorkPrices: async function () {
+        if (!await app.confirm('Сбросить все персональные цены на монтажные работы к значениям по умолчанию?')) return;
+        this.installerSettings.workPrices = {};
+        this.pushInstallerSettingsToCloud();
+        this.renderWorkPricesTab();
+        this.render();
+    },
+    // Ищет позицию каталога по id (включая .rommer-альтернативы и все серии радиаторов) —
+    // нужен для лога замен, чтобы отличить реальную замену оборудования от служебного
+    // выбора опции (тип трубы, цвет и т.п., которые используют синтетические id вроде 'insulated')
+    resolveCatalogItem: function (id) {
+        if (!id) return null;
+        for (const key in catalog) {
+            if (!Array.isArray(catalog[key])) continue;
+            for (const it of catalog[key]) {
+                if (it.id === id) return { id: it.id, name: it.name, price: it.price, brand: it.brand || '' };
+                if (it.rommer && it.rommer.id === id) return { id: it.rommer.id, name: it.rommer.name, price: it.rommer.price, brand: it.rommer.brand || '' };
+            }
+        }
+        const extraRadSeries = [titanRads, spaceRuRads, spaceRu350Rads, titanSideRads, titanSide350Rads, titanSide200Rads, aluminumRads, aluminum350Rads, rommerPlusAlRads, rommerPlusAl200Rads, steelRads];
+        for (const arr of extraRadSeries) {
+            if (!Array.isArray(arr)) continue;
+            const it = arr.find(x => x.id === id);
+            if (it) return { id: it.id, name: it.name, price: it.price, brand: it.brand || '' };
+        }
+        return null;
+    },
+    // Записывает факт замены оборудования в персональную историю монтажника (вкладка «Своё
+    // оборудование»). Логируется только когда обе стороны — реальные позиции каталога, чтобы
+    // не засорять историю служебными переключателями опций (тип трубы, цвет и т.п.)
+    logEquipmentSwap: function (originalId, chosenId) {
+        if (!originalId || !chosenId || originalId === chosenId) return;
+        const from = this.resolveCatalogItem(originalId);
+        const to = this.resolveCatalogItem(chosenId);
+        if (!from || !to || from.id === to.id) return;
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        this.installerSettings.swapLog.unshift({
+            fromId: from.id, fromName: from.name, fromPrice: from.price,
+            toId: to.id, toName: to.name, toPrice: to.price,
+            date: new Date().toISOString()
+        });
+        if (this.installerSettings.swapLog.length > 200) this.installerSettings.swapLog.length = 200;
+        this.pushInstallerSettingsToCloud();
+    },
+    // Добавляет позицию в персональную библиотеку «Своё оборудование» (переживает сброс сметы
+    // и доступна в любом новом проекте). Вызывается при ручном добавлении оборудования в смету.
+    addEquipmentToLibrary: function (entry) {
+        if (!entry || !entry.name) return;
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        const already = this.installerSettings.equipmentLibrary.some(e => e.name === entry.name && e.price === entry.price);
+        if (already) return;
+        this.installerSettings.equipmentLibrary.unshift({
+            id: 'lib_' + Date.now(),
+            name: entry.name,
+            price: entry.price,
+            brand: entry.brand || ' ',
+            addedAt: new Date().toISOString()
+        });
+        if (this.installerSettings.equipmentLibrary.length > 200) this.installerSettings.equipmentLibrary.length = 200;
+        this.pushInstallerSettingsToCloud();
+    },
+    removeFromEquipmentLibrary: async function (libId) {
+        if (!await app.confirm('Удалить позицию из своего оборудования?')) return;
+        this.installerSettings.equipmentLibrary = this.installerSettings.equipmentLibrary.filter(e => e.id !== libId);
+        this.pushInstallerSettingsToCloud();
+        this.renderEquipmentLibraryTab();
+    },
+    // Повторно добавляет позицию из личной библиотеки в текущую смету (раздел «Дополнительные
+    // материалы», как обычное ручное оборудование)
+    addFromEquipmentLibrary: function (libId) {
+        const entry = this.installerSettings.equipmentLibrary.find(e => e.id === libId);
+        if (!entry) return;
+        if (!this.state.userAddedEq) this.state.userAddedEq = [];
+        this.state.userAddedEq.push({
+            id: 'custom_' + Date.now(),
+            name: entry.name,
+            price: entry.price,
+            q: 1,
+            brand: entry.brand || ' ',
+            desc: 'Добавлено из своего оборудования',
+            section: '9. Дополнительные материалы'
+        });
+        this.saveState();
+        this.render();
+        app.alert(`✅ «${entry.name}» добавлено в текущую смету.`);
+    },
+    // Рендерит вкладку «Прайс-лист монтаж» личного кабинета: полный список работ из
+    // WORK_PRICE_CATALOG, сгруппированный по разделам сметы, с редактируемой персональной ценой
+    renderWorkPricesTab: function () {
+        const container = document.getElementById('profile_tab_workprices');
+        if (!container) return;
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        this.pullInstallerSettingsFromCloud();
+
+        const groups = {};
+        WORK_PRICE_CATALOG.forEach(w => {
+            if (!groups[w.group]) groups[w.group] = [];
+            groups[w.group].push(w);
+        });
+
+        let html = `
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                <p style="font-size:12px; color:var(--text-sec); margin:0; max-width:70%;">Ваши цены на монтажные работы. Применяются по умолчанию в каждой новой смете — цену конкретной сметы можно менять отдельно прямо в таблице сметы.</p>
+                <button type="button" class="auth-btn-base" style="margin:0; max-width:160px; height:32px; font-size:11px; background:var(--surface-light); color:var(--text-sec); border:1px solid var(--border);" onclick="app.resetAllInstallerWorkPrices()">Сбросить всё</button>
+            </div>
+        `;
+
+        Object.keys(groups).forEach(groupName => {
+            html += `<h4 style="margin:14px 0 6px; font-size:12.5px; color:var(--primary); border-bottom:1px solid var(--border); padding-bottom:4px;">${groupName}</h4>`;
+            html += `<div style="display:flex; flex-direction:column; gap:6px;">`;
+            groups[groupName].forEach(w => {
+                const custom = this.installerSettings.workPrices[w.name];
+                const isCustom = custom !== undefined;
+                const val = isCustom ? custom : w.price;
+                html += `
+                    <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:var(--surface-light);">
+                        <span style="flex:1; font-size:12.5px; color:var(--text-main);">${w.name} <span style="color:var(--text-sec);">(${w.unit})</span></span>
+                        ${isCustom ? `<span title="Своя цена" style="font-size:10px; color:var(--primary); font-weight:700;">СВОЯ</span>` : ''}
+                        <input type="text" inputmode="numeric" value="${Math.round(val)}" style="width:90px; text-align:right; height:30px; font-size:12.5px; padding:4px 8px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text-main);"
+                            onblur="app.setInstallerWorkPrice('${w.name.replace(/'/g, "\\'")}', this.value)"
+                            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
+                        <span style="font-size:11px; color:var(--text-sec); width:14px;">₽</span>
+                        ${isCustom ? `<span title="Сбросить к цене по умолчанию (${w.price} ₽)" style="cursor:pointer; color:var(--text-sec); font-size:14px; padding:0 4px;" onclick="app.resetInstallerWorkPrice('${w.name.replace(/'/g, "\\'")}')">↺</span>` : `<span style="width:22px;"></span>`}
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        });
+
+        container.innerHTML = html;
+    },
+    // Рендерит вкладку «Своё оборудование»: персональная библиотека ручных позиций (клик =
+    // добавить в текущую смету) + история замен оборудования через кнопку «Аналог»
+    renderEquipmentLibraryTab: function () {
+        const container = document.getElementById('profile_tab_equipment');
+        if (!container) return;
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        this.pullInstallerSettingsFromCloud();
+
+        const lib = this.installerSettings.equipmentLibrary;
+        const swaps = this.installerSettings.swapLog;
+
+        let html = `<h4 style="margin:0 0 8px; font-size:13.5px; color:var(--text-main);">Своё оборудование</h4>`;
+        html += `<p style="font-size:12px; color:var(--text-sec); margin:0 0 10px;">Позиции, которые вы когда-либо добавляли в смету вручную. Клик по позиции — снова добавит её в текущую смету.</p>`;
+
+        if (!lib.length) {
+            html += `<p style="font-size:12px; color:var(--text-sec); padding:10px 0;">Пока пусто — добавьте что-нибудь вручную в смете кнопкой «+ Добавить своё оборудование».</p>`;
+        } else {
+            html += `<div style="display:flex; flex-direction:column; gap:6px; margin-bottom:20px;">`;
+            lib.forEach(e => {
+                html += `
+                    <div style="display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; background:var(--surface-light); cursor:pointer;" onclick="app.addFromEquipmentLibrary('${e.id}')">
+                        <span style="flex:1; font-size:12.5px; color:var(--text-main);">${e.name}</span>
+                        <span style="font-size:12.5px; font-weight:700; color:var(--text-main); white-space:nowrap;">${Math.round(e.price).toLocaleString('ru-RU')} ₽</span>
+                        <span title="Удалить" style="cursor:pointer; color:var(--text-sec); font-size:14px; padding:0 4px;" onclick="event.stopPropagation(); app.removeFromEquipmentLibrary('${e.id}')">✕</span>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+
+        html += `<h4 style="margin:0 0 8px; font-size:13.5px; color:var(--text-main);">История замен</h4>`;
+        if (!swaps.length) {
+            html += `<p style="font-size:12px; color:var(--text-sec); padding:10px 0;">Пока нет замен оборудования через кнопку «Аналог».</p>`;
+        } else {
+            html += `<div style="display:flex; flex-direction:column; gap:6px;">`;
+            swaps.slice(0, 50).forEach(s => {
+                const dateStr = new Date(s.date).toLocaleDateString('ru-RU');
+                html += `
+                    <div style="padding:8px 10px; border-radius:8px; background:var(--surface-light); font-size:12px;">
+                        <div style="color:var(--text-sec); font-size:10.5px; margin-bottom:2px;">${dateStr}</div>
+                        <div style="color:var(--text-main);"><s style="color:var(--text-sec);">${s.fromName}</s> → <b>${s.toName}</b></div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+
+        container.innerHTML = html;
     },
 
     checkConnectionStatus: async function () {
@@ -8934,6 +9254,7 @@ const app = {
         if (localStorage.getItem('stout_save')) {
             try { this.state = { ...this.state, ...JSON.parse(localStorage.getItem('stout_save')) }; } catch (e) { console.error("Ошибка загрузки сохранения", e); }
         }
+        this.loadInstallerSettingsLocal();
         // Инициализируем Rommer аналоги для нечетных секций радиаторов Space и Titan
         catalog.rads.forEach(rad => {
             if (!rad.rommer) {
@@ -12088,6 +12409,7 @@ const app = {
             this.state.swaps[originalId] = chosenId;
         }
 
+        this.logEquipmentSwap(originalId, chosenId);
         this.closeSwapModal();
         this.render();
     },
@@ -12354,6 +12676,7 @@ const app = {
             else this.state.servoType = 'std';
         }
 
+        this.logEquipmentSwap(originalId, chosenId);
         this.closeSwapModal();
         this.render();
     },
@@ -16073,7 +16396,7 @@ const app = {
             if (qty <= 0) return;
             if (this.state.deletedWorks && this.state.deletedWorks.includes(name)) return;
             // Проверяем, есть ли ручная цена
-            let price = (this.state.customWorks && this.state.customWorks[name] !== undefined) ? this.state.customWorks[name] : basePrice;
+            let price = (this.state.customWorks && this.state.customWorks[name] !== undefined) ? this.state.customWorks[name] : this.wp(name, basePrice);
             price = Math.round(price || 0);
 
             let existing = worksBill.find(x => x.name === name && x.group === group);
