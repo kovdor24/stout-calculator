@@ -5252,7 +5252,7 @@ const app = {
                     badge = `<span style="color:#D97706; font-weight:bold;">Профи до ${dateStr}</span> <span style="font-size:10px; color:var(--text-sec);">(${proType})</span>`;
                 }
             } else {
-                badge = 'Базовый - без срока';
+                badge = 'Базовый';
             }
             let name = this.getAdminUserDisplayName(u);
             let phone = u.phone || 'Нет телефона';
