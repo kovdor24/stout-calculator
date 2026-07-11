@@ -1002,6 +1002,7 @@ const workPrices = {
     boiler_tank: 9000,
     pump_group: 6500,
     manifold: 6000,
+    tee_branch: 2500,
     ufh_pipe: 450,
     ufh_insulation: 390,
     rad_point: 6500,
@@ -1048,6 +1049,7 @@ const WORK_PRICE_CATALOG = [
     { name: "Монтаж радиатора отопления", unit: "точка", price: workPrices.rad_point, group: "1.3 Монтаж радиаторного отопления" },
     { name: "Монтаж внутрипольного конвектора", unit: "шт", price: 8500, group: "1.3 Монтаж радиаторного отопления" },
     { name: "Монтаж коллектора радиаторов", unit: "шт", price: workPrices.manifold, group: "1.3 Монтаж радиаторного отопления" },
+    { name: "Монтаж тройниковой разводки радиаторов", unit: "точка", price: workPrices.tee_branch, group: "1.3 Монтаж радиаторного отопления" },
     { name: "Монтаж трубопроводов PEX-a... и подключение радиатора", unit: "шт", price: 6500, group: "1.3 Монтаж радиаторного отопления" },
     { name: "Монтаж механической термоголовки", unit: "шт", price: 350, group: "1.3 Монтаж радиаторного отопления" },
     { name: "Монтаж узла нижнего подключения радиатора", unit: "шт", price: 800, group: "1.3 Монтаж радиаторного отопления" },
@@ -1460,7 +1462,10 @@ const catalog = {
     ],
     metal_plastic_pipes: [
         { id: "SPM-0001-101620", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 16x2.0 (100 м)", len: 100, price: 152, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SPM-0001-201620", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 16x2.0 (200 м)", len: 200, price: 152, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "SPM-0001-201620", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 16x2.0 (200 м)", len: 200, price: 152, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SPM-0001-102020", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 20x2.0 (100 м)", len: 100, price: 257, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SPM-0001-052630", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 26x3.0 (50 м)", len: 50, price: 467, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SPM-0001-053230", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 32x3.0 (50 м)", len: 50, price: 684, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" }
     ],
     stable_pipes: [
         { id: "SPS-0002-001626", name: "Труба стабильная PE-Xa/Al/PE-RT 16.2х2.6 (100 м)", len: 100, price: 301.92, brand: "STOUT", availability: "in_stock", price_date: "2026-06-30", rommer: { id: "RPS-0001-001626", name: "Труба стабильная PE-Xa/Al/PE-RT 16.2х2.6 (100 м)", len: 100, price: 207.00, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" } },
@@ -1487,7 +1492,87 @@ const catalog = {
     rad_pipes_grey: [
         { id: "SPX-0001-001622", name: "Труба PEX-a/EVOH серая 16x2.2 (100м)", len: 100, price: 197, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SPX-0001-241622", name: "Труба PEX-a/EVOH серая 16x2.2 (240м)", len: 240, price: 197, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SPX-0001-501622", name: "Труба PEX-a/EVOH серая 16x2.2 (500м)", len: 500, price: 197, availability: "in_stock", price_date: "2026-06-27" }
+        { id: "SPX-0001-501622", name: "Труба PEX-a/EVOH серая 16x2.2 (500м)", len: 500, price: 197, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SPX-0001-002028", name: "Труба PEX-a/EVOH серая 20x2.8 (100м)", len: 100, price: 295, availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SPX-0001-002535", name: "Труба PEX-a/EVOH серая 25x3.5 (50м)", len: 50, price: 458, availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SPX-0001-003244", name: "Труба PEX-a/EVOH серая 32x4.4 (50м)", len: 50, price: 744, availability: "in_stock", price_date: "2026-07-11" }
+    ],
+    axial_fittings_pex: [
+        // Латунные аксиальные фитинги STOUT для труб PE-Xa (серая) — тройниковая/шлейфовая разводка
+        // Монтажная гильза
+        { id: "SFA-0020-000016", name: "Монтажная гильза 16 (аксиальная)", price: 116, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SFA-0020-000020", name: "Монтажная гильза 20 (аксиальная)", price: 119, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0020-000025", name: "Монтажная гильза 25 (аксиальная)", price: 186, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0020-000032", name: "Монтажная гильза 32 (аксиальная)", price: 385, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        // Муфта соединительная равнопроходная
+        { id: "SFA-0003-000016", name: "Муфта соединительная равнопроходная 16", price: 255, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0003-000020", name: "Муфта соединительная равнопроходная 20", price: 377, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0003-000025", name: "Муфта соединительная равнопроходная 25", price: 601, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0003-000032", name: "Муфта соединительная равнопроходная 32", price: 1112, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        // Муфта соединительная переходная
+        { id: "SFA-0004-002016", name: "Муфта соединительная переходная 20x16", price: 320, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0004-002516", name: "Муфта соединительная переходная 25x16", price: 480, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0004-002520", name: "Муфта соединительная переходная 25x20", price: 509, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0004-003225", name: "Муфта соединительная переходная 32x25", price: 969, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        // Тройник равнопроходный
+        { id: "SFA-0013-000016", name: "Тройник равнопроходный 16", price: 574, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0013-000020", name: "Тройник равнопроходный 20", price: 762, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0013-000025", name: "Тройник равнопроходный 25", price: 1210, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0013-000032", name: "Тройник равнопроходный 32", price: 2172, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        // Тройник переходной (для понижения диаметра магистрали по остаточной мощности)
+        { id: "SFA-0014-162016", name: "Тройник переходной 16x20x16", price: 638, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-201616", name: "Тройник переходной 20x16x16", price: 700, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-201620", name: "Тройник переходной 20x16x20", price: 683, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-202016", name: "Тройник переходной 20x20x16", price: 792, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-202520", name: "Тройник переходной 20x25x20", price: 953, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-251616", name: "Тройник переходной 25x16x16", price: 876, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-251620", name: "Тройник переходной 25x16x20", price: 884, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-251625", name: "Тройник переходной 25x16x25", price: 1207, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-252016", name: "Тройник переходной 25x20x16", price: 1263, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-252020", name: "Тройник переходной 25x20x20", price: 969, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-252025", name: "Тройник переходной 25x20x25", price: 1112, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-252516", name: "Тройник переходной 25x25x16", price: 1287, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-252520", name: "Тройник переходной 25x25x20", price: 1156, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-253225", name: "Тройник переходной 25x32x25", price: 1748, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-322025", name: "Тройник переходной 32x20x25", price: 1828, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-321632", name: "Тройник переходной 32x16x32", price: 1749, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-322032", name: "Тройник переходной 32x20x32", price: 1760, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-322525", name: "Тройник переходной 32x25x25", price: 1907, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0014-322532", name: "Тройник переходной 32x25x32", price: 1932, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        // Тройник-переходник с внутренней резьбой (врезка под запорный/термостатический клапан)
+        { id: "SFA-0028-001612", name: "Тройник-переходник с внутренней резьбой 16xRp1/2\"", price: 675, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0028-002012", name: "Тройник-переходник с внутренней резьбой 20xRp1/2\"", price: 854, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0028-002034", name: "Тройник-переходник с внутренней резьбой 20xRp3/4\"", price: 1004, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0028-002534", name: "Тройник-переходник с внутренней резьбой 25xRp3/4\"", price: 1197, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0028-003210", name: "Тройник-переходник с внутренней резьбой 32xRp1\"", price: 2071, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        // Переходник с наружной резьбой (подключение начала магистрали к коллектору/котлу)
+        { id: "SFA-0001-001612", name: "Переходник с наружной резьбой 16xR1/2\"", price: 307, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SFA-0001-002012", name: "Переходник с наружной резьбой 20xR1/2\"", price: 371, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0001-001634", name: "Переходник с наружной резьбой 16xR3/4\"", price: 429, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0001-002034", name: "Переходник с наружной резьбой 20xR3/4\"", price: 554, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0001-002512", name: "Переходник с наружной резьбой 25xR1/2\"", price: 574, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0001-002534", name: "Переходник с наружной резьбой 25xR3/4\"", price: 614, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0001-002510", name: "Переходник с наружной резьбой 25xR1\"", price: 937, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0001-003234", name: "Переходник с наружной резьбой 32xR3/4\"", price: 1074, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0001-003210", name: "Переходник с наружной резьбой 32xR1\"", price: 1084, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        // Переходник с внутренней резьбой
+        { id: "SFA-0002-001612", name: "Переходник с внутренней резьбой 16xRp1/2\"", price: 375, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0002-001634", name: "Переходник с внутренней резьбой 16xRp3/4\"", price: 568, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0002-002012", name: "Переходник с внутренней резьбой 20xRp1/2\"", price: 407, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0002-002034", name: "Переходник с внутренней резьбой 20xRp3/4\"", price: 614, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0002-002534", name: "Переходник с внутренней резьбой 25xRp3/4\"", price: 693, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0002-003210", name: "Переходник с внутренней резьбой 32xRp1\"", price: 1193, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        // Угольник 90°
+        { id: "SFA-0007-000016", name: "Угольник 90° 16", price: 457, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0007-000020", name: "Угольник 90° 20", price: 619, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0007-000025", name: "Угольник 90° 25", price: 1054, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0007-000032", name: "Угольник 90° 32", price: 2016, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        // Угольник 45°
+        { id: "SFA-0031-000032", name: "Угольник 45° 32", price: 2425, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        // Заглушка (конец магистрали)
+        { id: "SFA-0030-000016", name: "Заглушка 16", price: 182, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0030-000020", name: "Заглушка 20", price: 238, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" },
+        { id: "SFA-0030-000025", name: "Заглушка 25", price: 368, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" }
     ],
     insulation: [
         { id: "RIC-0002-180602", name: "Трубка ПРОТЕКТ ПРО 18/6, 2м (красная)", dn: 18, thick: 6, len: 2, pack: 184, price: 27.59, unit: "м", brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },

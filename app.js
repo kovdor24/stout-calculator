@@ -1158,40 +1158,15 @@ const app = {
         if (typeof radManualValves !== 'undefined') extraArrays.push(['radManualValves', radManualValves]);
         if (typeof radAccessories !== 'undefined') extraArrays.push(['radAccessories', radAccessories]);
 
-        // Для базового (не PRO) тарифа товары ROMMER нужно скрыть из поиска, если у них
-        // есть аналог от STOUT. "Аналог есть", если выполняется любое из:
-        //  (а) позиция зарегистрирована как item.rommer у какой-то STOUT-позиции;
-        //  (б) в её же категории каталога есть хотя бы одна не-ROMMER позиция (значит,
-        //      прямо там же есть STOUT-вариант того же типа товара);
-        //  (в) сама категория заведена как явная ROMMER-версия STOUT-категории —
-        //      это видно по названию ключа ("actuators_rommer" при наличии "actuators",
-        //      "rommer_check_valve_34" при наличии "check_valve_34" и т.п.)
-        // Категории, где ROMMER — единственный поставщик (насосы ГВС рециркуляции,
-        // скважинные насосы, стальные панельные радиаторы и т.п.), под это не попадают
-        // и остаются доступны для поиска всем.
-        const referencedRommerIds = new Set();
-        const categoryHasNonRommer = new Set();
-        const collectCategoryInfo = (key, arr) => {
-            let hasNonRommer = false;
-            arr.forEach(it => {
-                if (it && it.rommer && it.rommer.id) referencedRommerIds.add(it.rommer.id);
-                if (it && it.brand !== 'ROMMER') hasNonRommer = true;
-            });
-            if (hasNonRommer) categoryHasNonRommer.add(key);
-        };
-        for (const key in catalog) { if (Array.isArray(catalog[key])) collectCategoryInfo(key, catalog[key]); }
-        extraArrays.forEach(([name, arr]) => collectCategoryInfo(name, arr));
-
+        // Для базового (не PRO) тарифа товары ROMMER полностью скрыты из поиска —
+        // независимо от того, есть ли у них аналог STOUT в той же категории. PRO-аккаунты
+        // видят все позиции ROMMER без исключений.
         const pushItem = (it, categoryKey) => {
             if (!it || !it.id || !it.name || typeof it.price !== 'number') return;
             if (seen.has(it.id)) return;
             seen.add(it.id);
             const brand = it.brand || 'STOUT';
-            const hideForBase = brand === 'ROMMER' && (
-                referencedRommerIds.has(it.id) ||
-                categoryHasNonRommer.has(categoryKey) ||
-                /rommer/i.test(categoryKey)
-            );
+            const hideForBase = brand === 'ROMMER';
             const t = this._tokenizeSearchText(it.name + ' ' + brand + ' ' + this._boilerSearchKeywords(it));
             idx.push({ id: it.id, name: it.name, price: it.price, brand: brand, article: it.article || it.id, _words: t.words, _numbers: new Set(t.numbers), _abbrev: t.abbrev, _countedNumbers: t.countedNumbers, _hideForBase: hideForBase });
             if (it.rommer && it.rommer.id && it.rommer.name && !seen.has(it.rommer.id)) {
@@ -7905,8 +7880,13 @@ const app = {
             customCompany: (this.isPro() && this.state.customCompany) ? this.state.customCompany : null
         };
 
+        // .alts (список товаров-аналогов для кнопки "Аналог" в смете) взаимно ссылается
+        // на другие позиции того же списка ("e.alts=[p]; p.alts=[e]" и т.п.) — это создаёт
+        // циклическую структуру, которую JSON.stringify не может сериализовать при отправке
+        // в фоновую очередь/Supabase (в отличие от generateLocalShareLink, который использует
+        // compactPayload и не трогает .alts). Убираем поле здесь же, до сериализации.
         let items = {
-            equipment: showEq ? (this.currentEquipmentList || []) : [],
+            equipment: showEq ? (this.currentEquipmentList || []).map(({ alts, ...rest }) => rest) : [],
             works: showWorks ? (this.currentWorksList || []) : []
         };
 
@@ -8515,8 +8495,10 @@ const app = {
                     customCompany: (this.isPro() && this.state.customCompany) ? this.state.customCompany : null
                 };
 
+                // .alts циклически ссылается на другие позиции каталога (см. комментарий в
+                // shareInvoice) — без очистки Supabase-клиент падает на JSON.stringify тела запроса.
                 const items = {
-                    equipment: this.currentEquipmentList || [],
+                    equipment: (this.currentEquipmentList || []).map(({ alts, ...rest }) => rest),
                     works: this.currentWorksList || []
                 };
 
@@ -10327,16 +10309,19 @@ const app = {
             if (b4.rommer || b3.rommer || b2.rommer) {
                 customAlts.push({ id: 'chrome_rommer', name: `Регулировочные блоки полностью укомплектован (${loops} вых.)`, brand: 'ROMMER', price: chromeRommerPrice });
             }
-            
+            customAlts.push({ id: 'tee', name: `Тройниковая разводка (без коллектора, шлейф по трассе)`, brand: 'STOUT', price: 0 });
+
             let activeId = '';
             let currentSwapVal = this.state.swaps && this.state.swaps[stdStout.id];
             if (currentSwapVal) {
                 activeId = currentSwapVal;
+            } else if (this.state.radConnectionScheme === 'tee') {
+                activeId = 'tee';
             } else {
                 let useRommer = (this.state.brandMode === 'rommer');
                 let secAnalog = this.state.sectionAnalog && this.state.sectionAnalog['3. Приборы отопления'];
                 let isRommer = secAnalog !== undefined ? secAnalog : useRommer;
-                
+
                 if (this.state.radManifoldType === 'chrome') {
                     activeId = isRommer ? 'chrome_rommer' : 'chrome';
                 } else {
@@ -12725,11 +12710,16 @@ const app = {
             if (stdStout.rommer) delete this.state.swaps[stdStout.rommer.id];
             
             this.state.swaps[stdId] = chosenId;
-            
-            if (chosenId === 'chrome' || chosenId === 'chrome_rommer') {
-                this.state.radManifoldType = 'chrome';
+
+            if (chosenId === 'tee') {
+                this.state.radConnectionScheme = 'tee';
             } else {
-                this.state.radManifoldType = 'standard';
+                this.state.radConnectionScheme = 'manifold';
+                if (chosenId === 'chrome' || chosenId === 'chrome_rommer') {
+                    this.state.radManifoldType = 'chrome';
+                } else {
+                    this.state.radManifoldType = 'standard';
+                }
             }
         }
         else if (originalId.startsWith('SMB-6851-') || (originalId.startsWith('SMB-6850-') && originalId.endsWith('_water'))) {
@@ -12785,6 +12775,21 @@ const app = {
                         this.state.pipeType = 'split';
                     }
                 }
+            }
+        }
+        else if (originalId.startsWith('tee_pipe_d')) {
+            // Клик по строке трубы тройниковой разводки — единственное место переключения материала
+            // магистрали (без отдельного тумблера в панели). Если выбран вариант другого материала,
+            // применяем его глобально ко всей тройниковой схеме (труба, тройники, переходник узла
+            // подключения пересчитаются на него), и сбрасываем точечные диаметровые оверрайды
+            // остальных "tee_pipe_d*" строк — иначе на новом материале мог бы случайно
+            // унаследоваться диаметр из старого выбора и показать несуществующий типоразмер.
+            let chosenMaterial = chosenId.startsWith('SPM-0001-') ? 'split_mp' : (chosenId.startsWith('SPS-0002-') ? 'stable_16' : 'split');
+            let curMaterial = (this.state.pipeType === 'split_mp' || this.state.pipeType === 'insulated_mp') ? 'split_mp'
+                : (this.state.pipeType === 'stable_16' || this.state.pipeType === 'stable_16_r') ? 'stable_16' : 'split';
+            if (chosenMaterial !== curMaterial) {
+                this.state.pipeType = chosenMaterial;
+                Object.keys(this.state.swaps).forEach(k => { if (k.startsWith('tee_pipe_d')) delete this.state.swaps[k]; });
             }
         }
         else if (originalId.endsWith('_ufh') || originalId.startsWith('SPX-0002-') || originalId.startsWith('SPM-0001-')) {
@@ -14246,6 +14251,22 @@ const app = {
         this.render();
         this.saveState();
     },
+    setRadConnectionScheme: function (scheme) {
+        this.state.radConnectionScheme = (scheme === 'tee') ? 'tee' : 'manifold';
+        // Держим в синхроне с меткой активного варианта в свап-модалке коллектора (там же можно
+        // переключить схему через "Заменить" — оба входа должны показывать один и тот же выбор).
+        let loops = this.state.lastRadLoops || 8;
+        let m = catalog.manifolds_rad.find(x => x.loops === loops) || catalog.manifolds_rad[catalog.manifolds_rad.length - 1];
+        if (!this.state.swaps) this.state.swaps = {};
+        if (this.state.radConnectionScheme === 'tee') {
+            this.state.swaps[m.id] = 'tee';
+        } else {
+            delete this.state.swaps[m.id];
+        }
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
     updZones: function (d) {
         let n = this.state.ufhZones + d; if (n < 0) n = 0; if (n > 16) n = 16; this.state.ufhZones = n;
         this.state.zonesManual = true;
@@ -14293,6 +14314,14 @@ const app = {
         document.getElementById('fuel_el').className = this.state.fuels.includes('el') ? 'tab multi-active' : 'tab'; document.getElementById('fuel_gas').className = this.state.fuels.includes('gas') ? 'tab multi-active' : 'tab';
         const hasTp = this.state.systems.includes('tp'); document.getElementById('sys_rad').className = this.state.systems.includes('rad') ? 'tab multi-active' : 'tab'; document.getElementById('sys_tp').className = hasTp ? 'tab multi-active' : 'tab';
         document.getElementById('blk_tp_sliders').style.display = hasTp ? 'block' : 'none'; document.getElementById('blk_ufh_ctrl').style.display = hasTp ? 'block' : 'none';
+        const hasRad = this.state.systems.includes('rad');
+        const radSchemeBlock = document.getElementById('blk_rad_scheme');
+        if (radSchemeBlock) radSchemeBlock.style.display = (this.state.detailedRooms && hasRad) ? 'block' : 'none';
+        const isTeeScheme = this.state.radConnectionScheme === 'tee';
+        const radSchemeManifoldTab = document.getElementById('rad_scheme_manifold');
+        const radSchemeTeeTab = document.getElementById('rad_scheme_tee');
+        if (radSchemeManifoldTab) radSchemeManifoldTab.className = isTeeScheme ? 'tab' : 'tab active';
+        if (radSchemeTeeTab) radSchemeTeeTab.className = isTeeScheme ? 'tab active' : 'tab';
         if (hasTp) {
             const step1Block = document.getElementById('blk_step_floor1');
             if (step1Block) {
@@ -18420,74 +18449,239 @@ const app = {
             }
 
             let totalDevicesCount = totalRadCount + totalConvCount;
-            let floorArea = this.state.area / (this.state.floors === 2 ? 2 : 1); let avgRun = Math.sqrt(floorArea) + 3; let totalMeters = totalDevicesCount * avgRun * 1.1; let neededPipe = Math.ceil(totalMeters);
+            let floorArea = this.state.area / (this.state.floors === 2 ? 2 : 1);
             this.totalDevicesCount = totalDevicesCount;
-            this.avgRun = avgRun;
-            this.neededPipe = neededPipe;
             let pipeGrp = "3.3. Трубы отопления";
-            if (neededPipe > 0) {
-                if (this.state.pipeType === 'insulated') {
-                    let coils = Math.ceil(neededPipe / 100); let halfCoils = Math.ceil(coils / 2);
-                    let itemRed = { ...catalog.insulated_pipes[0], originalId: catalog.insulated_pipes[0].id + "_rad" }; itemRed.alts = catalog.rad_pipes_grey; addToBill(itemRed, halfCoils, this.getDesc('insulated_pipe_red', halfCoils, neededPipe), pipeGrp);
-                    let itemBlue = { ...catalog.insulated_pipes[1], originalId: catalog.insulated_pipes[1].id + "_rad" }; itemBlue.alts = catalog.rad_pipes_grey; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
-                } else if (this.state.pipeType === 'insulated_mp') {
-                    let coils = Math.ceil(neededPipe / 100); let halfCoils = Math.ceil(coils / 2);
-                    let itemRed = { ...catalog.insulated_pipes_mp_red[0], originalId: catalog.insulated_pipes_mp_red[0].id + "_rad" }; itemRed.alts = catalog.metal_plastic_pipes; addToBill(itemRed, halfCoils, this.getDesc('insulated_pipe_red', halfCoils, neededPipe), pipeGrp);
-                    let itemBlue = { ...catalog.insulated_pipes_mp_blue[0], originalId: catalog.insulated_pipes_mp_blue[0].id + "_rad" }; itemBlue.alts = catalog.metal_plastic_pipes; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
-                } else if (this.state.pipeType === 'split_mp') {
-                    let grayItem = (neededPipe > 200) ? { ...catalog.metal_plastic_pipes[1] } : { ...catalog.metal_plastic_pipes[0] }; grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes_mp_red; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
-                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
-                } else if (this.state.pipeType === 'stable_16') {
-                    let coils = Math.ceil(neededPipe / 100);
-                    let stbItem = { ...catalog.stable_pipes[0], originalId: catalog.stable_pipes[0].id + "_rad" }; stbItem.alts = catalog.insulated_pipes; addToBill(stbItem, coils, this.getDesc('rad_pipe', neededPipe), pipeGrp);
-                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
-                } else if (this.state.pipeType === 'stable_16_r') {
-                    let coils = Math.ceil(neededPipe / 100);
-                    let stbItem = { ...catalog.stable_pipes[0].rommer, originalId: catalog.stable_pipes[0].id + "_rad" }; stbItem.alts = catalog.insulated_pipes; addToBill(stbItem, coils, this.getDesc('rad_pipe', neededPipe), pipeGrp);
-                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
-                } else { // 'split'
-                    let grayItem = (neededPipe > 200) ? { ...catalog.rad_pipes_grey[1] } : { ...catalog.rad_pipes_grey[0] }; grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
-                    let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
-                }
-                addToBill(catalog.water_fittings[8], neededPipe, this.getDesc('double_clip', neededPipe, 'radiators'), pipeGrp);
-            }
 
-            let reqLoops = (this.state.floors === 2 ? Math.ceil(totalDevicesCount / 2) : totalDevicesCount); if (reqLoops > 12) reqLoops = 12; let manifoldsCount = (this.state.floors === 2) ? 2 : 1;
+            let reqLoops = (this.state.floors === 2 ? Math.ceil(totalDevicesCount / 2) : totalDevicesCount); if (reqLoops > 12) reqLoops = 12;
             this.state.lastRadLoops = reqLoops;
-
             let m = catalog.manifolds_rad.find(x => x.loops === reqLoops) || catalog.manifolds_rad[catalog.manifolds_rad.length - 1];
-            let radManifoldMode = 'standard';
-            if (m) {
-                let swapVal = this.state.swaps && this.state.swaps[m.id];
-                if (swapVal === 'chrome' || swapVal === 'chrome_rommer') {
-                    radManifoldMode = 'chrome';
-                }
-            }
 
-            if (radManifoldMode === 'standard') {
-                if (m) {
-                    addToBill(m, manifoldsCount, this.getDesc('manifold', totalDevicesCount, 'rad'), pipeGrp);
+            if (this.state.radConnectionScheme === 'tee' && totalDevicesCount > 0) {
+                // === Тройниковая (шлейфовая) схема: без коллектора — труба идёт магистралью
+                // вдоль трассы, каждый радиатор врезан тройником. Диаметр магистрали ступенчато
+                // сужается по остаточной мощности «после точки врезки»: у котла/стояка несёт всю
+                // мощность дома, на дальнем участке — примерно половину. Метраж — грубая оценка
+                // без реальной трассировки (нет плана дома с координатами комнат).
+                let firstRiser = 3;
+                let trunkOneWay = 0.75 * Math.sqrt(totalDevicesCount * floorArea) + firstRiser;
+                let trunkMeters = Math.ceil(trunkOneWay * 2 * 1.1); // подача + обратка, +10% запас
+                let branchMeters = Math.ceil(totalDevicesCount * 0.9); // короткие отводы от магистрали к каждому прибору
+                this.avgRun = trunkOneWay; this.neededPipe = trunkMeters + branchMeters;
+
+                const pickDiam = (kw) => kw <= 4 ? 16 : kw <= 8 ? 20 : kw <= 16 ? 25 : 32;
+                let heatLoadKw = heatLoadTotal / 1000;
+                let diamNear = pickDiam(heatLoadKw);      // ближний участок (у котла/стояка) — несёт всю мощность дома
+                let diamFar = pickDiam(heatLoadKw / 2);    // дальний участок — примерно половина мощности
+                let metersNear = Math.ceil(trunkMeters / 2);
+                let metersFar = trunkMeters - metersNear;
+
+                let isMp = (this.state.pipeType === 'split_mp' || this.state.pipeType === 'insulated_mp');
+                let isStable = (this.state.pipeType === 'stable_16' || this.state.pipeType === 'stable_16_r');
+                const mpDiamOf = (d) => d === 25 ? 26 : d; // у металлопластика средний шаг 26мм, у серой PEX-a и стабильной — 25мм
+                let dNear = isMp ? mpDiamOf(diamNear) : diamNear;
+                let dFar = isMp ? mpDiamOf(diamFar) : diamFar;
+
+                const GREY_PIPE_IDS = { 16: 'SPX-0001-001622', 20: 'SPX-0001-002028', 25: 'SPX-0001-002535', 32: 'SPX-0001-003244' };
+                const MP_PIPE_IDS = { 16: 'SPM-0001-101620', 20: 'SPM-0001-102020', 26: 'SPM-0001-052630', 32: 'SPM-0001-053230' };
+                // Стабильная труба PE-Xa/Al/PE-RT — по решению пользователя считаем совместимой с теми же
+                // аксиальными фитингами/гильзами STOUT, что и серая PEX-a (SFA-серия), без отдельной линейки
+                // фитингов: OD близки (16.2/20/25/32мм против 16/20/25/32мм у серой), точное заводское
+                // подтверждение совместимости на 20/25/32мм не проверялось.
+                const STABLE_PIPE_IDS = { 16: 'SPS-0002-001626', 20: 'SPS-0002-002029', 25: 'SPS-0002-002537', 32: 'SPS-0002-003247' };
+                const GREY_TEE_TO16 = { 16: 'SFA-0013-000016', 20: 'SFA-0014-201620', 25: 'SFA-0014-251625', 32: 'SFA-0014-321632' };
+                const MP_TEE_TO16 = { 16: 'SFP-0006-161616', 20: 'SFP-0005-201620', 26: 'SFP-0005-261626' }; // тройника 32→16 у металлопластика нет — врезка сразу сужает магистраль до 26мм
+                const GREY_ADAPTER_EXT = { 16: 'SFA-0001-001612', 20: 'SFA-0001-002012', 25: 'SFA-0001-002512', 32: 'SFA-0001-003210' };
+                const MP_ADAPTER_EXT = { 16: 'SFP-0001-001216', 20: 'SFP-0001-001220', 26: 'SFP-0001-003426', 32: 'SFP-0001-000132' };
+
+                const pipePool = isMp ? catalog.metal_plastic_pipes : (isStable ? catalog.stable_pipes : catalog.rad_pipes_grey);
+                const pipeIds = isMp ? MP_PIPE_IDS : (isStable ? STABLE_PIPE_IDS : GREY_PIPE_IDS);
+                // Тройники/переходник для стабильной трубы берём из той же аксиальной линейки, что и для
+                // серой PEX-a (см. комментарий у STABLE_PIPE_IDS) — отдельного набора фитингов под неё нет.
+                const teePool = isMp ? catalog.water_fittings_press_mp : catalog.axial_fittings_pex;
+                const teeIds = isMp ? MP_TEE_TO16 : GREY_TEE_TO16;
+                const adapterPool = teePool;
+                const adapterIds = isMp ? MP_ADAPTER_EXT : GREY_ADAPTER_EXT;
+                // Список замены трубы — единственное место переключения материала магистрали (без
+                // отдельного тумблера в панели слева): один представитель на диаметр по каждому из
+                // трёх материалов (без дублей "тот же диаметр, другая бухта" — цена за метр у них
+                // одинаковая, отдельными строками это только запутывает). Клик по позиции другого
+                // материала обрабатывается в selectSwapAlternative — там же материал каскадно
+                // применяется ко всем остальным строкам (тройники, переходник узла подключения).
+                const pipeDiamAlts = [
+                    ...Object.values(GREY_PIPE_IDS).map(id => catalog.rad_pipes_grey.find(x => x.id === id)),
+                    ...Object.values(MP_PIPE_IDS).map(id => catalog.metal_plastic_pipes.find(x => x.id === id)),
+                    // Без .rommer — иначе список замены сам разворачивает каждую позицию в пару
+                    // STOUT/ROMMER (как для обычных товаров), а тут это лишнее: для тройниковой
+                    // схемы стабильная труба нужна только как маркер материала (STOUT).
+                    ...Object.values(STABLE_PIPE_IDS).map(id => {
+                        let found = catalog.stable_pipes.find(x => x.id === id);
+                        if (!found) return null;
+                        let { rommer, ...withoutRommer } = found;
+                        return withoutRommer;
+                    })
+                ].filter(Boolean);
+
+                const materialName = isMp ? 'металлопластиковая труба (латунные пресс-фитинги)' : (isStable ? 'стабильная труба PE-Xa/Al/PE-RT (аксиальные фитинги, как у серой PEX-a)' : 'серая труба PEX-a (аксиальные фитинги)');
+                const buyPipe = (meters, d, label) => {
+                    if (meters <= 0) return;
+                    let base = pipePool.find(x => x.id === pipeIds[d]);
+                    if (!base) return;
+                    let coils = Math.ceil(meters / base.len);
+                    // Синтетический originalId (не "SPX-0001-…"/"SPM-0001-…") — иначе попадает под старые
+                    // условия переключателя материала ХВС/тёплого пола в openSwapModal/selectSwapAlternative
+                    // (startsWith('SPX-0001-')/'SPM-0001-'), и «Заменить» вместо списка диаметров этой же
+                    // трубы показывал бы не относящийся к делу пикер «PEX / металлопластик» без эффекта на смету.
+                    let boughtItem = { ...base, originalId: 'tee_pipe_d' + d };
+                    boughtItem.alts = pipeDiamAlts; // даёт возможность вручную выбрать другой диаметр этого же материала
+                    let desc = `<span style="font-size:11px;line-height:1.5;">` +
+                        `<b>Зачем:</b> ${label} В тройниковой схеме труба идёт единой магистралью мимо всех радиаторов (а не отдельным лучом на каждый прибор, как в коллекторной) — у котла/стояка несёт расход сразу всех приборов, к концу трассы — расход одного-двух последних.<br>` +
+                        `<b>Формула метража:</b> Длина трассы в одну сторону = 0,75·√(Приборов × Площадь этажа) + 3м (запас на подключение к стояку) — оценка длины обхода N точек по площади без плана дома. ×2 — подача и обратка, +10% запас на подрезку и обходы. Короткие отводы от магистрали до каждого радиатора — 0,9 м/прибор (обе трубы, с запасом).<br>` +
+                        `<b>Формула диаметра:</b> Труба у котла/стояка сайзится на всю мощность дома, дальний участок — на её половину (часть расхода «разбирается» врезками по пути). Пороги: до 4 кВт → 16мм, до 8 кВт → 20мм, до 16 кВт → 25(26 у металлопластика)мм, свыше — 32мм.<br>` +
+                        `<b>Подставленные значения:</b><br>` +
+                        `• Приборов: ${totalDevicesCount} шт., площадь этажа: ${floorArea.toFixed(0)} м².<br>` +
+                        `• Теплопотери дома: ${heatLoadKw.toFixed(1)} кВт.<br>` +
+                        `• Расчётная длина трассы (туда): ${trunkOneWay.toFixed(1)} м → магистраль (подача+обратка+запас): ${trunkMeters} м, отводы к радиаторам: ${branchMeters} м.<br>` +
+                        `• Материал: ${materialName}.<br>` +
+                        `• Этот участок: Ø${d}мм, ${meters} м → ${coils} ${coils === 1 ? 'бухта' : 'бухт(ы)'} по ${base.len} м.` +
+                        `</span>`;
+                    addToBill(boughtItem, coils, desc, pipeGrp);
+                };
+                // Группируем по диаметру, чтобы одинаковый диаметр на разных участках (или совпавший
+                // с диаметром отводов 16мм) не превращался в задвоенную строку сметы одной и той же трубы.
+                let pipeByDiam = {};
+                pipeByDiam[dNear] = (pipeByDiam[dNear] || 0) + metersNear;
+                pipeByDiam[dFar] = (pipeByDiam[dFar] || 0) + metersFar;
+                pipeByDiam[16] = (pipeByDiam[16] || 0) + branchMeters;
+                const labelByDiam = { 16: 'Отводы от магистрали к радиаторам.' };
+                Object.keys(pipeByDiam).forEach(dKey => {
+                    let d = Number(dKey);
+                    buyPipe(pipeByDiam[dKey], d, labelByDiam[d] || 'Магистраль тройниковой разводки.');
+                });
+
+                const teeToBranchId = (d) => {
+                    if (teeIds[d]) return teeIds[d];
+                    let sizes = Object.keys(teeIds).map(Number).sort((a, b) => b - a);
+                    let fallback = sizes.find(s => s <= d) || sizes[sizes.length - 1];
+                    return teeIds[fallback];
+                };
+                const teeAlts = isMp
+                    ? catalog.water_fittings_press_mp.filter(x => x.id.startsWith('SFP-0005') || x.id.startsWith('SFP-0006'))
+                    : catalog.axial_fittings_pex.filter(x => x.id.startsWith('SFA-0013') || x.id.startsWith('SFA-0014'));
+                let teesTotal = Math.max(totalDevicesCount - 1, 0);
+                let teesNear = Math.ceil(teesTotal / 2);
+                let teesFar = teesTotal - teesNear;
+                const addTees = (count, d) => {
+                    if (count <= 0) return;
+                    let base = teePool.find(x => x.id === teeToBranchId(d));
+                    if (!base) return;
+                    let teeItem = { ...base, originalId: base.id + '_teerad' };
+                    teeItem.alts = teeAlts; // даёт возможность вручную выбрать другой типоразмер тройника
+                    let fellBack = !teeIds[d];
+                    let desc = `<span style="font-size:11px;line-height:1.5;">` +
+                        `<b>Зачем:</b> Тройник врезки радиатора в магистраль — вместо отдельной петли до коллектора радиатор подключается прямой врезкой в проходящую мимо трубу (одна сторона — подача, другая — обратка).<br>` +
+                        `<b>Формула количества:</b> Тройников = Приборов − 1 (последний радиатор в цепочке подключается напрямую, без дальнейшего ответвления — на нём трасса заканчивается). Типоразмер тройника берётся по диаметру того участка магистрали, где стоит конкретная врезка (ближе к котлу — шире, дальше — уже).<br>` +
+                        (fellBack ? `<b>Важно:</b> тройника Ø${d}×16×Ø${d} для этого материала в прайсе нет — на этой врезке магистраль сразу сужена до ближайшего доступного типоразмера тройника.<br>` : '') +
+                        `<b>Подставленные значения:</b><br>` +
+                        `• Всего врезок по дому: ${teesTotal} шт. (= ${totalDevicesCount} приборов − 1).<br>` +
+                        `• На этом участке (Ø${d}мм магистрали): ${count} шт.` +
+                        `</span>`;
+                    addToBill(teeItem, count, desc, pipeGrp);
+                };
+                if (teeToBranchId(dNear) === teeToBranchId(dFar)) {
+                    addTees(teesTotal, dNear);
+                } else {
+                    addTees(teesNear, dNear);
+                    addTees(teesFar, dFar);
                 }
+
+                let anchorBase = adapterPool.find(x => x.id === adapterIds[dNear]);
+                if (anchorBase) {
+                    let anchorItem = { ...anchorBase, originalId: m.id };
+                    anchorItem.alts = isMp
+                        ? catalog.water_fittings_press_mp.filter(x => x.id.startsWith('SFP-0001') || x.id.startsWith('SFP-0002'))
+                        : catalog.axial_fittings_pex.filter(x => x.id.startsWith('SFA-0001') || x.id.startsWith('SFA-0002'));
+                    let anchorDesc = `<span style="font-size:11px;line-height:1.5;">` +
+                        `<b>Зачем:</b> Узел подключения магистрали тройниковой разводки к стояку/насосной группе котельной. В этой схеме нет радиаторного коллектора — труба подключается напрямую резьбовым переходником (клик по этой строке — «Заменить» — позволяет вернуться на коллекторную схему).<br>` +
+                        `<b>Формула диаметра:</b> берётся диаметр самого нагруженного (ближнего к котлу) участка магистрали — см. формулу диаметра трубы выше.<br>` +
+                        `<b>Подставленные значения:</b><br>` +
+                        `• Теплопотери дома: ${heatLoadKw.toFixed(1)} кВт → Ø${dNear}мм.` +
+                        `</span>`;
+                    addToBill(anchorItem, 1, anchorDesc, pipeGrp);
+                }
+
+                addToBill(catalog.water_fittings[8], this.neededPipe, this.getDesc('double_clip', this.neededPipe, 'radiators'), pipeGrp);
+
+                addToWorks("Монтаж радиатора отопления", totalRadCount, workPrices.rad_point, "точка", "1.3 Монтаж радиаторного отопления");
+                if (totalConvCount > 0) addToWorks("Монтаж внутрипольного конвектора", totalConvCount, 8500, "шт", "1.3 Монтаж радиаторного отопления");
+                addToWorks("Монтаж тройниковой разводки радиаторов", totalDevicesCount, workPrices.tee_branch, "точка", "1.3 Монтаж радиаторного отопления");
             }
             else {
-                const assemblyMap = { 2: [0, 0, 1], 3: [0, 1, 0], 4: [1, 0, 0], 5: [0, 1, 1], 6: [0, 2, 0], 7: [1, 1, 0], 8: [2, 0, 0], 9: [1, 1, 1], 10: [1, 2, 0], 11: [2, 1, 0], 12: [3, 0, 0] }; let plan = assemblyMap[reqLoops] || [3, 0, 0]; let b4 = catalog.manifolds_chrome_blocks[2]; let b3 = catalog.manifolds_chrome_blocks[1]; let b2 = catalog.manifolds_chrome_blocks[0];
-                let isRommerChrome = m && (this.state.swaps && this.state.swaps[m.id] === 'chrome_rommer');
-                if (isRommerChrome) {
-                    this.state.swaps[b4.id] = b4.rommer.id;
-                    this.state.swaps[b3.id] = b3.rommer.id;
-                    this.state.swaps[b2.id] = b2.rommer.id;
-                } else if (m && this.state.swaps && this.state.swaps[m.id] === 'chrome') {
-                    delete this.state.swaps[b4.id];
-                    delete this.state.swaps[b3.id];
-                    delete this.state.swaps[b2.id];
+                // === Коллекторная схема (по умолчанию) ===
+                let avgRun = Math.sqrt(floorArea) + 3; let totalMeters = totalDevicesCount * avgRun * 1.1; let neededPipe = Math.ceil(totalMeters);
+                this.avgRun = avgRun;
+                this.neededPipe = neededPipe;
+                if (neededPipe > 0) {
+                    if (this.state.pipeType === 'insulated') {
+                        let coils = Math.ceil(neededPipe / 100); let halfCoils = Math.ceil(coils / 2);
+                        let itemRed = { ...catalog.insulated_pipes[0], originalId: catalog.insulated_pipes[0].id + "_rad" }; itemRed.alts = catalog.rad_pipes_grey; addToBill(itemRed, halfCoils, this.getDesc('insulated_pipe_red', halfCoils, neededPipe), pipeGrp);
+                        let itemBlue = { ...catalog.insulated_pipes[1], originalId: catalog.insulated_pipes[1].id + "_rad" }; itemBlue.alts = catalog.rad_pipes_grey; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
+                    } else if (this.state.pipeType === 'insulated_mp') {
+                        let coils = Math.ceil(neededPipe / 100); let halfCoils = Math.ceil(coils / 2);
+                        let itemRed = { ...catalog.insulated_pipes_mp_red[0], originalId: catalog.insulated_pipes_mp_red[0].id + "_rad" }; itemRed.alts = catalog.metal_plastic_pipes; addToBill(itemRed, halfCoils, this.getDesc('insulated_pipe_red', halfCoils, neededPipe), pipeGrp);
+                        let itemBlue = { ...catalog.insulated_pipes_mp_blue[0], originalId: catalog.insulated_pipes_mp_blue[0].id + "_rad" }; itemBlue.alts = catalog.metal_plastic_pipes; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
+                    } else if (this.state.pipeType === 'split_mp') {
+                        let grayItem = (neededPipe > 200) ? { ...catalog.metal_plastic_pipes[1] } : { ...catalog.metal_plastic_pipes[0] }; grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes_mp_red; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
+                        let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
+                    } else if (this.state.pipeType === 'stable_16') {
+                        let coils = Math.ceil(neededPipe / 100);
+                        let stbItem = { ...catalog.stable_pipes[0], originalId: catalog.stable_pipes[0].id + "_rad" }; stbItem.alts = catalog.insulated_pipes; addToBill(stbItem, coils, this.getDesc('rad_pipe', neededPipe), pipeGrp);
+                        let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
+                    } else if (this.state.pipeType === 'stable_16_r') {
+                        let coils = Math.ceil(neededPipe / 100);
+                        let stbItem = { ...catalog.stable_pipes[0].rommer, originalId: catalog.stable_pipes[0].id + "_rad" }; stbItem.alts = catalog.insulated_pipes; addToBill(stbItem, coils, this.getDesc('rad_pipe', neededPipe), pipeGrp);
+                        let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
+                    } else { // 'split'
+                        let grayItem = (neededPipe > 200) ? { ...catalog.rad_pipes_grey[1] } : { ...catalog.rad_pipes_grey[0] }; grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
+                        let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
+                    }
+                    addToBill(catalog.water_fittings[8], neededPipe, this.getDesc('double_clip', neededPipe, 'radiators'), pipeGrp);
                 }
-                let multiplier = manifoldsCount * 2;
-                if (plan[0] > 0) addToBill(b4, plan[0] * multiplier, `Блок 4 вых.`, pipeGrp); if (plan[1] > 0) addToBill(b3, plan[1] * multiplier, `Блок 3 вых.`, pipeGrp); if (plan[2] > 0) addToBill(b2, plan[2] * multiplier, `Блок 2 вых.`, pipeGrp); addToBill(catalog.manifold_brackets, manifoldsCount, "Кронштейны.", pipeGrp);
-            }
 
-            addToWorks("Монтаж радиатора отопления", totalRadCount, workPrices.rad_point, "точка", "1.3 Монтаж радиаторного отопления");
-            if (totalConvCount > 0) addToWorks("Монтаж внутрипольного конвектора", totalConvCount, 8500, "шт", "1.3 Монтаж радиаторного отопления");
-            if (manifoldsCount > 0) addToWorks("Монтаж коллектора радиаторов", manifoldsCount, workPrices.manifold, "шт", "1.3 Монтаж радиаторного отопления");
+                let manifoldsCount = (this.state.floors === 2) ? 2 : 1;
+                let radManifoldMode = 'standard';
+                if (m) {
+                    let swapVal = this.state.swaps && this.state.swaps[m.id];
+                    if (swapVal === 'chrome' || swapVal === 'chrome_rommer') {
+                        radManifoldMode = 'chrome';
+                    }
+                }
+
+                if (radManifoldMode === 'standard') {
+                    if (m) {
+                        addToBill(m, manifoldsCount, this.getDesc('manifold', totalDevicesCount, 'rad'), pipeGrp);
+                    }
+                }
+                else {
+                    const assemblyMap = { 2: [0, 0, 1], 3: [0, 1, 0], 4: [1, 0, 0], 5: [0, 1, 1], 6: [0, 2, 0], 7: [1, 1, 0], 8: [2, 0, 0], 9: [1, 1, 1], 10: [1, 2, 0], 11: [2, 1, 0], 12: [3, 0, 0] }; let plan = assemblyMap[reqLoops] || [3, 0, 0]; let b4 = catalog.manifolds_chrome_blocks[2]; let b3 = catalog.manifolds_chrome_blocks[1]; let b2 = catalog.manifolds_chrome_blocks[0];
+                    let isRommerChrome = m && (this.state.swaps && this.state.swaps[m.id] === 'chrome_rommer');
+                    if (isRommerChrome) {
+                        this.state.swaps[b4.id] = b4.rommer.id;
+                        this.state.swaps[b3.id] = b3.rommer.id;
+                        this.state.swaps[b2.id] = b2.rommer.id;
+                    } else if (m && this.state.swaps && this.state.swaps[m.id] === 'chrome') {
+                        delete this.state.swaps[b4.id];
+                        delete this.state.swaps[b3.id];
+                        delete this.state.swaps[b2.id];
+                    }
+                    let multiplier = manifoldsCount * 2;
+                    if (plan[0] > 0) addToBill(b4, plan[0] * multiplier, `Блок 4 вых.`, pipeGrp); if (plan[1] > 0) addToBill(b3, plan[1] * multiplier, `Блок 3 вых.`, pipeGrp); if (plan[2] > 0) addToBill(b2, plan[2] * multiplier, `Блок 2 вых.`, pipeGrp); addToBill(catalog.manifold_brackets, manifoldsCount, "Кронштейны.", pipeGrp);
+                }
+
+                addToWorks("Монтаж радиатора отопления", totalRadCount, workPrices.rad_point, "точка", "1.3 Монтаж радиаторного отопления");
+                if (totalConvCount > 0) addToWorks("Монтаж внутрипольного конвектора", totalConvCount, 8500, "шт", "1.3 Монтаж радиаторного отопления");
+                if (manifoldsCount > 0) addToWorks("Монтаж коллектора радиаторов", manifoldsCount, workPrices.manifold, "шт", "1.3 Монтаж радиаторного отопления");
+            }
         }
 
         let heatWarnHtml = null;

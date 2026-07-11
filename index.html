@@ -432,6 +432,13 @@
                     <div class="tab" id="sys_tp" onclick="app.toggleSys('tp', event)">♨️ Тёплый пол</div>
                 </div>
             </div>
+            <div class="control-item" id="blk_rad_scheme" style="display:none; margin-bottom: 12px;">
+                <span class="lbl-sub" style="margin-bottom: 6px;">Схема разводки радиаторов</span>
+                <div class="tabs" id="rad_scheme_tabs">
+                    <div class="tab active" id="rad_scheme_manifold" onclick="app.setRadConnectionScheme('manifold')">Коллекторная</div>
+                    <div class="tab" id="rad_scheme_tee" onclick="app.setRadConnectionScheme('tee')">Тройниковая</div>
+                </div>
+            </div>
             <div id="blk_tp_sliders" style="display:none; border-top:1px dashed #E5E7EB; padding-top:15px;">
                 <div class="control-item">
                     <div class="label-row"><span class="lbl">Тёплый пол 1 этаж</span><span class="val"><span
