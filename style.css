@@ -1856,6 +1856,7 @@ body.menu-open .mobile-menu-backdrop {
     }
 
     .swap-cycle-btn,
+    .swap-alt-badge,
     .work-del-btn {
         display: none !important;
     }
@@ -1899,6 +1900,7 @@ body.menu-open .mobile-menu-backdrop {
     .btn-print,
     .sku-control,
     .swap-cycle-btn,
+    .swap-alt-badge,
     .main-view-tabs,
     .footer-btns,
     footer,

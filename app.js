@@ -172,7 +172,11 @@ async function encodePayload(data) {
 
 function getFriendlyErrorMessage(err, defaultMsg = 'Неизвестная ошибка') {
     if (!err) return defaultMsg;
-    const msg = (err.message || String(err)).toLowerCase();
+    // EmailJS отклоняет промис не стандартным Error, а объектом вида {status, text}
+    // — без .message и .name, поэтому обычные проверки ниже его не ловят.
+    const rawText = err.message || err.text || String(err);
+    const msg = rawText.toLowerCase();
+    const hasNoRealMessage = !err.message && !err.text && (msg === '[object object]' || msg === '');
     const isNetwork = msg.includes('failed to fetch') ||
         msg.includes('load failed') ||
         msg.includes('network') ||
@@ -181,9 +185,12 @@ function getFriendlyErrorMessage(err, defaultMsg = 'Неизвестная ош�
         msg.includes('timeout') ||
         msg.includes('превышено время') ||
         (err.name && err.name.includes('TypeError')) ||
+        (typeof err.status === 'number' && err.status === 0) ||
+        hasNoRealMessage ||
         !navigator.onLine;
     if (isNetwork) {
-        return 'Нет связи с сервером. Попробуйте:\n1. Войти через мобильный интернет (не Wi-Fi)\n2. Отключить AdBlock / uBlock в браузере\n3. Включить VPN\n4. Проверить интернет-соединение';
+        const code = (typeof err.status === 'number') ? ` (код ${err.status})` : '';
+        return `Нет связи с сервером${code}. Попробуйте:\n1. Войти через мобильный интернет (не Wi-Fi)\n2. Отключить AdBlock / uBlock в браузере\n3. Включить VPN\n4. Проверить интернет-соединение`;
     }
 
     if (msg.includes('invalid login credentials') || msg.includes('invalid email or password')) {
@@ -195,7 +202,7 @@ function getFriendlyErrorMessage(err, defaultMsg = 'Неизвестная ош�
     if (msg.includes('already registered') || msg.includes('already exists')) {
         return 'Пользователь с таким email уже зарегистрирован. Войдите в систему.';
     }
-    return err.message || defaultMsg;
+    return err.message || err.text || defaultMsg;
 }
 
 async function withTimeout(promise, timeoutMs = 6000, errorMsg = 'Превышено время ожидания ответа от сервера Supabase. Возможно, требуется включить VPN или проверить интернет-соединение.') {
@@ -212,7 +219,50 @@ async function withTimeout(promise, timeoutMs = 6000, errorMsg = 'Превыше
     }
 }
 
-if (typeof emailjs !== 'undefined') emailjs.init("-m4N93pTqMlCfuBpT");
+// Тот же приём, что и с supabaseProxyFetch выше: у части пользователей в РФ блокируется/
+// дросселируется доступ к api.emailjs.com напрямую ("Неизвестная ошибка" при отправке кода
+// подтверждения без VPN). Подменяем emailjs.send на прокси через тот же Beget-хостинг
+// (proxy.heatcalc.ru/emailjs_proxy.php), не трогая места вызова.
+if (typeof emailjs !== 'undefined') {
+    const DEFAULT_EMAILJS_KEY = "-m4N93pTqMlCfuBpT";
+    let _emailjsPublicKey = DEFAULT_EMAILJS_KEY;
+    const _origEmailjsInit = emailjs.init;
+    const _origEmailjsSend = emailjs.send;
+
+    emailjs.init = function (key, origin) {
+        _emailjsPublicKey = key;
+        return _origEmailjsInit(key, origin);
+    };
+
+    emailjs.send = function (serviceId, templateId, templateParams, publicKey) {
+        const host = window.location.hostname;
+        const canProxy = (host === 'heatcalc.ru' || host === 'www.heatcalc.ru');
+        if (!canProxy) {
+            return _origEmailjsSend(serviceId, templateId, templateParams, publicKey);
+        }
+        return fetch('https://proxy.heatcalc.ru/emailjs_proxy.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                service_id: serviceId,
+                template_id: templateId,
+                user_id: publicKey || _emailjsPublicKey,
+                template_params: templateParams
+            })
+        }).then(async (res) => {
+            const text = await res.text();
+            if (!res.ok) {
+                const err = new Error(text || 'EmailJS proxy error');
+                err.status = res.status;
+                err.text = text;
+                throw err;
+            }
+            return { status: res.status, text: text || 'OK' };
+        });
+    };
+
+    emailjs.init(DEFAULT_EMAILJS_KEY);
+}
 
 // Глобальный маппинг замен для кнопки "Аналог"
 const ANALOG_MAP = {
