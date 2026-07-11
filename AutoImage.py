@@ -354,18 +354,6 @@ def process_sku_image(driver, item):
 
 def update_catalog_images():
     print("=== ЗАПУСК ПАРСЕРА КАРТИНОК С ОПТИМИЗАЦИЕЙ ===")
-    
-    # --- ТОТ САМЫЙ "ПЫЛЕСОС" ---
-    print("Шаг 0: Очистка старых бракованных картинок (меньше 5 КБ)...")
-    if os.path.exists(IMAGE_DIR):
-        cleaned = 0
-        for f in os.listdir(IMAGE_DIR):
-            file_path = os.path.join(IMAGE_DIR, f)
-            if os.path.isfile(file_path) and os.path.getsize(file_path) < 5120: 
-                os.remove(file_path)
-                cleaned += 1
-        print(f"Удалено плохих картинок: {cleaned}")
-    # ---------------------------
 
     print("Шаг 1: Извлечение артикулов из catalog.js...")
     items = get_unique_skus()
