@@ -1286,31 +1286,81 @@ const catalog = {
         { id: "SFT-0049-000002", name: "Ниппель", price: 188, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SFT-0049-000001", name: "Переходник под плоское уплотнение", price: 136, availability: "in_stock", price_date: "2026-07-01" }
     ],
+    // Внутрипольные конвекторы STOUT — только СКЛАДСКАЯ ПРОГРАММА (лист "STOUT Конвекторы
+    // внутрипольные", прайс 07.2026): SCQ — высота 75мм/ширина 240мм; SCN — высота 80мм
+    // (ширина 190/240/300мм) и высота 110мм (ширина 240мм). Остальные высоты (110/150/200мм
+    // у SCQ, 150/200мм у SCN) и ширина 380мм — под заказ, в каталог не включены.
+    // power70 — «Теплоотдача, Вт» из прайса (условия 95/85, 20°C, вентилятор 100% —
+    // фактически то же ΔT=70°C, что и у радиаторов); power50 = power70×(50/70)^1.3,
+    // как у всех остальных приборов отопления в каталоге (см. getPowerAtDt50 в app.js).
     convectors_scq: [
-        { id: "SCQ-1100-0724080", name: "Конвектор SCQ (с вентилятором) 800мм", len: 0.8, power70: 1038, price: 53618, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCQ-1100-0724100", name: "Конвектор SCQ (с вентилятором) 1000мм", len: 1, power70: 1491, price: 60403, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCQ-1100-0724125", name: "Конвектор SCQ (с вентилятором) 1250мм", len: 1.25, power70: 2068, price: 68902, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCQ-1100-0724150", name: "Конвектор SCQ (с вентилятором) 1500мм", len: 1.5, power70: 2650, price: 77390, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCQ-1100-0724175", name: "Конвектор SCQ (с вентилятором) 1750мм", len: 1.75, power70: 3234, price: 85878, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCQ-1100-0724200", name: "Конвектор SCQ (с вентилятором) 2000мм", len: 2, power70: 3813, price: 94366, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCQ-1100-0724225", name: "Конвектор SCQ (с вентилятором) 2250мм", len: 2.25, power70: 4385, price: 102854, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCQ-1100-0724250", name: "Конвектор SCQ (с вентилятором) 2500мм", len: 2.5, power70: 4942, price: 111342, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCQ-1100-0724275", name: "Конвектор SCQ (с вентилятором) 2750мм", len: 2.75, power70: 5482, price: 119830, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCQ-1100-0724300", name: "Конвектор SCQ (с вентилятором) 3000мм", len: 3, power70: 5999, price: 154772, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" }
+        { id: "SCQ-1100-0724080", name: "Конвектор SCQ (с вентилятором) 800мм", len: 0.8, height: 75, width: 240, power70: 1038, power50: 670, price: 53618, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCQ-1100-0724100", name: "Конвектор SCQ (с вентилятором) 1000мм", len: 1, height: 75, width: 240, power70: 1491, power50: 963, price: 60403, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCQ-1100-0724125", name: "Конвектор SCQ (с вентилятором) 1250мм", len: 1.25, height: 75, width: 240, power70: 2068, power50: 1335, price: 68902, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCQ-1100-0724150", name: "Конвектор SCQ (с вентилятором) 1500мм", len: 1.5, height: 75, width: 240, power70: 2650, power50: 1711, price: 77390, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCQ-1100-0724175", name: "Конвектор SCQ (с вентилятором) 1750мм", len: 1.75, height: 75, width: 240, power70: 3234, power50: 2088, price: 85878, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCQ-1100-0724200", name: "Конвектор SCQ (с вентилятором) 2000мм", len: 2, height: 75, width: 240, power70: 3813, power50: 2462, price: 94366, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCQ-1100-0724225", name: "Конвектор SCQ (с вентилятором) 2250мм", len: 2.25, height: 75, width: 240, power70: 4385, power50: 2831, price: 102854, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCQ-1100-0724250", name: "Конвектор SCQ (с вентилятором) 2500мм", len: 2.5, height: 75, width: 240, power70: 4942, power50: 3191, price: 111342, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCQ-1100-0724275", name: "Конвектор SCQ (с вентилятором) 2750мм", len: 2.75, height: 75, width: 240, power70: 5482, power50: 3540, price: 119830, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCQ-1100-0724300", name: "Конвектор SCQ (с вентилятором) 3000мм", len: 3, height: 75, width: 240, power70: 5999, power50: 3874, price: 154772, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" }
     ],
     convectors_scn: [
-        { id: "SCN-1100-0824080", name: "Конвектор SCN (без вентилятора) 800мм", len: 0.8, power70: 277, price: 24751, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCN-1100-0824100", name: "Конвектор SCN (без вентилятора) 1000мм", len: 1, power70: 382, price: 29399, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCN-1100-0824120", name: "Конвектор SCN (без вентилятора) 1200мм", len: 1.2, power70: 487, price: 34047, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCN-1100-0824140", name: "Конвектор SCN (без вентилятора) 1400мм", len: 1.4, power70: 591, price: 38696, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCN-1100-0824160", name: "Конвектор SCN (без вентилятора) 1600мм", len: 1.6, power70: 696, price: 43343, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCN-1100-0824180", name: "Конвектор SCN (без вентилятора) 1800мм", len: 1.8, power70: 801, price: 47992, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCN-1100-0824200", name: "Конвектор SCN (без вентилятора) 2000мм", len: 2, power70: 905, price: 52639, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCN-1100-0824220", name: "Конвектор SCN (без вентилятора) 2200мм", len: 2.2, power70: 1010, price: 57288, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCN-1100-0824240", name: "Конвектор SCN (без вентилятора) 2400мм", len: 2.4, power70: 1115, price: 61936, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCN-1100-0824260", name: "Конвектор SCN (без вентилятора) 2600мм", len: 2.6, power70: 1219, price: 66584, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCN-1100-0824280", name: "Конвектор SCN (без вентилятора) 2800мм", len: 2.8, power70: 1324, price: 71232, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SCN-1100-0824300", name: "Конвектор SCN (без вентилятора) 3000мм", len: 3, power70: 1429, price: 75880, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-06-06" }
+        // Высота 80мм, ширина 190мм (SCN-1100-0819***)
+        { id: "SCN-1100-0819080", name: "Конвектор SCN (без вентилятора) 80×190, 800мм", len: 0.8, height: 80, width: 190, power70: 220, power50: 142, price: 21774, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0819100", name: "Конвектор SCN (без вентилятора) 80×190, 1000мм", len: 1, height: 80, width: 190, power70: 313, power50: 202, price: 25623, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0819120", name: "Конвектор SCN (без вентилятора) 80×190, 1200мм", len: 1.2, height: 80, width: 190, power70: 406, power50: 262, price: 29463, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0819140", name: "Конвектор SCN (без вентилятора) 80×190, 1400мм", len: 1.4, height: 80, width: 190, power70: 499, power50: 322, price: 33314, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0819160", name: "Конвектор SCN (без вентилятора) 80×190, 1600мм", len: 1.6, height: 80, width: 190, power70: 591, power50: 382, price: 37164, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0819180", name: "Конвектор SCN (без вентилятора) 80×190, 1800мм", len: 1.8, height: 80, width: 190, power70: 684, power50: 442, price: 41004, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0819200", name: "Конвектор SCN (без вентилятора) 80×190, 2000мм", len: 2, height: 80, width: 190, power70: 777, power50: 502, price: 44854, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0819220", name: "Конвектор SCN (без вентилятора) 80×190, 2200мм", len: 2.2, height: 80, width: 190, power70: 870, power50: 562, price: 48704, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0819240", name: "Конвектор SCN (без вентилятора) 80×190, 2400мм", len: 2.4, height: 80, width: 190, power70: 963, power50: 622, price: 52544, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0819260", name: "Конвектор SCN (без вентилятора) 80×190, 2600мм", len: 2.6, height: 80, width: 190, power70: 1056, power50: 682, price: 56395, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0819280", name: "Конвектор SCN (без вентилятора) 80×190, 2800мм", len: 2.8, height: 80, width: 190, power70: 1149, power50: 742, price: 60244, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0819300", name: "Конвектор SCN (без вентилятора) 80×190, 3000мм", len: 3, height: 80, width: 190, power70: 1242, power50: 802, price: 64088, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        // Высота 80мм, ширина 240мм (SCN-1100-0824***) — базовая складская линейка (по умолчанию в автоподборе)
+        { id: "SCN-1100-0824080", name: "Конвектор SCN (без вентилятора) 800мм", len: 0.8, height: 80, width: 240, power70: 277, power50: 179, price: 24751, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0824100", name: "Конвектор SCN (без вентилятора) 1000мм", len: 1, height: 80, width: 240, power70: 382, power50: 247, price: 29399, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0824120", name: "Конвектор SCN (без вентилятора) 1200мм", len: 1.2, height: 80, width: 240, power70: 487, power50: 314, price: 34047, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0824140", name: "Конвектор SCN (без вентилятора) 1400мм", len: 1.4, height: 80, width: 240, power70: 591, power50: 382, price: 38696, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0824160", name: "Конвектор SCN (без вентилятора) 1600мм", len: 1.6, height: 80, width: 240, power70: 696, power50: 449, price: 43343, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0824180", name: "Конвектор SCN (без вентилятора) 1800мм", len: 1.8, height: 80, width: 240, power70: 801, power50: 517, price: 47992, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0824200", name: "Конвектор SCN (без вентилятора) 2000мм", len: 2, height: 80, width: 240, power70: 905, power50: 584, price: 52639, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0824220", name: "Конвектор SCN (без вентилятора) 2200мм", len: 2.2, height: 80, width: 240, power70: 1010, power50: 652, price: 57288, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0824240", name: "Конвектор SCN (без вентилятора) 2400мм", len: 2.4, height: 80, width: 240, power70: 1115, power50: 720, price: 61936, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0824260", name: "Конвектор SCN (без вентилятора) 2600мм", len: 2.6, height: 80, width: 240, power70: 1219, power50: 787, price: 66584, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0824280", name: "Конвектор SCN (без вентилятора) 2800мм", len: 2.8, height: 80, width: 240, power70: 1324, power50: 855, price: 71232, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0824300", name: "Конвектор SCN (без вентилятора) 3000мм", len: 3, height: 80, width: 240, power70: 1429, power50: 923, price: 75880, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        // Высота 80мм, ширина 300мм (SCN-1100-0830***). ВНИМАНИЕ: цена 2400мм (82526₽) в
+        // прайс-листе 07.2026 нарушает монотонный рост цены с длиной (2200мм=68541₽,
+        // 2600мм=80007₽) — похоже на опечатку у поставщика, перенесена как есть из прайса,
+        // не исправлена вручную. Проверить у поставщика при следующем обновлении цен.
+        { id: "SCN-1100-0830080", name: "Конвектор SCN (без вентилятора) 80×300, 800мм", len: 0.8, height: 80, width: 300, power70: 355, power50: 229, price: 28409, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0830100", name: "Конвектор SCN (без вентилятора) 80×300, 1000мм", len: 1, height: 80, width: 300, power70: 493, power50: 318, price: 34142, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0830120", name: "Конвектор SCN (без вентилятора) 80×300, 1200мм", len: 1.2, height: 80, width: 300, power70: 630, power50: 407, price: 39875, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0830140", name: "Конвектор SCN (без вентилятора) 80×300, 1400мм", len: 1.4, height: 80, width: 300, power70: 768, power50: 496, price: 45608, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0830160", name: "Конвектор SCN (без вентилятора) 80×300, 1600мм", len: 1.6, height: 80, width: 300, power70: 906, power50: 585, price: 51341, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0830180", name: "Конвектор SCN (без вентилятора) 80×300, 1800мм", len: 1.8, height: 80, width: 300, power70: 1043, power50: 673, price: 57074, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0830200", name: "Конвектор SCN (без вентилятора) 80×300, 2000мм", len: 2, height: 80, width: 300, power70: 1181, power50: 763, price: 62808, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0830220", name: "Конвектор SCN (без вентилятора) 80×300, 2200мм", len: 2.2, height: 80, width: 300, power70: 1319, power50: 852, price: 68541, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0830240", name: "Конвектор SCN (без вентилятора) 80×300, 2400мм", len: 2.4, height: 80, width: 300, power70: 1456, power50: 940, price: 82526, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0830260", name: "Конвектор SCN (без вентилятора) 80×300, 2600мм", len: 2.6, height: 80, width: 300, power70: 1594, power50: 1029, price: 80007, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0830280", name: "Конвектор SCN (без вентилятора) 80×300, 2800мм", len: 2.8, height: 80, width: 300, power70: 1732, power50: 1118, price: 85739, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-0830300", name: "Конвектор SCN (без вентилятора) 80×300, 3000мм", len: 3, height: 80, width: 300, power70: 1869, power50: 1207, price: 91473, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        // Высота 110мм, ширина 240мм (SCN-1100-1124***)
+        { id: "SCN-1100-1124080", name: "Конвектор SCN (без вентилятора) 110×240, 800мм", len: 0.8, height: 110, width: 240, power70: 277, power50: 179, price: 25495, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-1124100", name: "Конвектор SCN (без вентилятора) 110×240, 1000мм", len: 1, height: 110, width: 240, power70: 455, power50: 294, price: 30281, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-1124120", name: "Конвектор SCN (без вентилятора) 110×240, 1200мм", len: 1.2, height: 110, width: 240, power70: 587, power50: 379, price: 35068, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-1124140", name: "Конвектор SCN (без вентилятора) 110×240, 1400мм", len: 1.4, height: 110, width: 240, power70: 718, power50: 464, price: 39855, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-1124160", name: "Конвектор SCN (без вентилятора) 110×240, 1600мм", len: 1.6, height: 110, width: 240, power70: 849, power50: 548, price: 44641, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-1124180", name: "Конвектор SCN (без вентилятора) 110×240, 1800мм", len: 1.8, height: 110, width: 240, power70: 981, power50: 633, price: 49427, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-1124200", name: "Конвектор SCN (без вентилятора) 110×240, 2000мм", len: 2, height: 110, width: 240, power70: 1112, power50: 718, price: 54219, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-1124220", name: "Конвектор SCN (без вентилятора) 110×240, 2200мм", len: 2.2, height: 110, width: 240, power70: 1244, power50: 803, price: 59010, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-1124240", name: "Конвектор SCN (без вентилятора) 110×240, 2400мм", len: 2.4, height: 110, width: 240, power70: 1375, power50: 888, price: 63796, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-1124260", name: "Конвектор SCN (без вентилятора) 110×240, 2600мм", len: 2.6, height: 110, width: 240, power70: 1506, power50: 972, price: 68584, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-1124280", name: "Конвектор SCN (без вентилятора) 110×240, 2800мм", len: 2.8, height: 110, width: 240, power70: 1638, power50: 1058, price: 73370, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SCN-1100-1124300", name: "Конвектор SCN (без вентилятора) 110×240, 3000мм", len: 3, height: 110, width: 240, power70: 1769, power50: 1142, price: 78156, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" }
     ],
     conv_valves: [
         { id: "SVT-0001-000015", name: "Клапан термостатический, прямой 1/2\"", price: 1411, brand: "STOUT", unit: "шт", rommer: { id: "RVT-0001-100015", name: "Клапан термостатический прямой 1/2\"", price: 862, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" }, availability: "in_stock", price_date: "2026-06-27" },

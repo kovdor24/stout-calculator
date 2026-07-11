@@ -10131,19 +10131,37 @@ const app = {
             if (this.state.wellAutoDrive && this.state.wellAutoDrive !== 'all') customAlts = customAlts.filter(a => a.driveType === this.state.wellAutoDrive);
         }
         else if (item.originalId && (item.originalId.startsWith('SCQ') || item.originalId.startsWith('SCN'))) {
-            let itemLen = item.len || 1.0;
-            let scqPrice = 48256, scnPrice = 22276;
-            if (catalog.convectors_scq && catalog.convectors_scn) {
-                let closestScq = catalog.convectors_scq.reduce((prev, curr) => Math.abs(curr.len - itemLen) < Math.abs(prev.len - itemLen) ? curr : prev, catalog.convectors_scq[0]);
-                let closestScn = catalog.convectors_scn.reduce((prev, curr) => Math.abs(curr.len - itemLen) < Math.abs(prev.len - itemLen) ? curr : prev, catalog.convectors_scn[0]);
-                scqPrice = closestScq?.price || 48256;
-                scnPrice = closestScn?.price || 22276;
-            }
-
-            customAlts = [
-                { id: 'scn', name: 'Естественная конвекция (без вентилятора)', brand: 'STOUT', price: scnPrice },
-                { id: 'scq', name: 'Принудительная конвекция (с вентилятором)', brand: 'STOUT', price: scqPrice }
+            // Складская программа конвекторов (см. catalog.js, комментарий у convectors_scn/scq):
+            // SCN — высота 80мм (ширина 190/240/300мм) и высота 110мм (ширина 240мм);
+            // SCQ — только высота 75мм, ширина 240мм. Остальные габариты — под заказ,
+            // в вариантах замены не показываем. Каждая строка — реальный id из каталога,
+            // подобранный по длине, ближайшей к текущему прибору. item.len здесь не
+            // сохраняется (currentEquipmentList хранит урезанный набор полей, см. блок
+            // сохранения bill→currentEquipmentList) — берём реальную длину из каталога
+            // по originalId, как getPowerAtDt50 делает для power50.
+            const _convLookupId = item.originalId || item.id;
+            const _convSrc = (catalog.convectors_scq && catalog.convectors_scq.find(x => x.id === _convLookupId))
+                || (catalog.convectors_scn && catalog.convectors_scn.find(x => x.id === _convLookupId));
+            let itemLen = (_convSrc && _convSrc.len) || item.len || 1.0;
+            const _convCombos = [
+                { db: catalog.convectors_scn, height: 80, width: 190, label: 'Естественная (без вент.), 80×190 мм' },
+                { db: catalog.convectors_scn, height: 80, width: 240, label: 'Естественная (без вент.), 80×240 мм' },
+                { db: catalog.convectors_scn, height: 80, width: 300, label: 'Естественная (без вент.), 80×300 мм' },
+                { db: catalog.convectors_scn, height: 110, width: 240, label: 'Естественная (без вент.), 110×240 мм' },
+                { db: catalog.convectors_scq, height: 75, width: 240, label: 'Принудительная (с вент.), 75×240 мм' },
             ];
+            customAlts = _convCombos.map(c => {
+                const arr = (c.db || []).filter(x => x.height === c.height && x.width === c.width);
+                if (!arr.length) return null;
+                const closest = arr.reduce((prev, curr) => Math.abs(curr.len - itemLen) < Math.abs(prev.len - itemLen) ? curr : prev, arr[0]);
+                return {
+                    id: closest.id,
+                    name: `${c.label}, длина ${Math.round(closest.len * 1000)} мм`,
+                    brand: 'STOUT',
+                    price: closest.price,
+                    isActive: closest.id === item.id
+                };
+            }).filter(Boolean);
         }
         else if (item.originalId && (item.originalId.startsWith('SVT') || item.originalId.startsWith('SVL'))) {
             let straightPrice = 1836, angledPrice = 2211;
@@ -11281,6 +11299,19 @@ const app = {
                     </tr>
                 `;
             });
+
+            // Внутрипольный конвектор (SCQ/SCN) — доп. пункт для перехода в полный пикер
+            // радиаторов, сразу отфильтрованный на "Дизайнерские" (см. openConvectorDesignRadPicker).
+            const _convOrigId = item.originalId || item.id;
+            if (_convOrigId && (_convOrigId.startsWith('SCQ') || _convOrigId.startsWith('SCN'))) {
+                html += `
+                    <tr style="cursor: pointer; border-top: 2px solid var(--border);" onclick="app.openConvectorDesignRadPicker('${_convOrigId}')">
+                        <td class="col-idx" style="text-align: center; font-size: 15px;">🎨</td>
+                        <td class="col-img"></td>
+                        <td colspan="4" style="font-size: 13px; font-weight: 700; color: var(--primary); text-align: left;">Заменить на дизайнерский радиатор →</td>
+                    </tr>
+                `;
+            }
         } else {
             let uniqueAlts = [];
             let seenIds = new Set();
@@ -11509,6 +11540,7 @@ const app = {
     getPowerAtDt50: function (item) {
         if (item.power50) return item.power50;
         if (item.passportPower) return Math.round(item.passportPower * Math.pow(50 / 70, 1.3));
+        if (item.power70) return Math.round(item.power70 * Math.pow(50 / 70, 1.3));
 
         const lookupId = item.originalId || item.id;
         let found = null;
@@ -11532,6 +11564,7 @@ const app = {
         if (found) {
             if (found.power50) return found.power50;
             if (found.passportPower) return Math.round(found.passportPower * Math.pow(50 / 70, 1.3));
+            if (found.power70) return Math.round(found.power70 * Math.pow(50 / 70, 1.3));
         }
 
         return 100;
@@ -11733,20 +11766,29 @@ const app = {
         // STOUT 2748/2676, официального RAL-соответствия для них производитель не публикует)
         // и натуральный (нержавеющий металл TUBE ROUND без покраски).
         const colorLabels = {
-            standard: 'Обычный',
+            standard: 'Белый',
             graphite: 'Графит',
             white: 'Белый (RAL 9010)',
-            black: 'Чёрный (код STOUT 2748)',
-            gray: 'Серый (код STOUT 2676)',
+            black: 'Чёрный',
+            gray: 'Серый',
             natural: 'Натуральный',
+        };
+        const colorSwatches = {
+            standard: '#ffffff',
+            graphite: '#4b4d52',
+            white: '#ffffff',
+            black: '#1c1c1c',
+            gray: '#9a9a9a',
+            natural: 'linear-gradient(135deg,#e8e8e8,#a0a0a0)',
         };
         const colorsPresent = new Set(modeSer.map(s => this._getColorOf(s)));
         const showColorTabs = colorsPresent.size > 1;
         const colorsHtml = showColorTabs ? ['all', ...colorsPresent].map(key => {
             const on = key === currentColor;
             const label = key === 'all' ? 'Все' : (colorLabels[key] || key);
+            const swatch = key === 'all' ? '' : `<span style="display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:5px; vertical-align:middle; background:${colorSwatches[key] || '#ccc'}; border:1px solid ${on ? '#fff' : 'var(--border)'}; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);"></span>`;
             return `<button onclick="app.switchSwapRadColor('${origId}','${key}')"
-                class="swap-tab ${on ? 'active' : ''}">${label}</button>`;
+                class="swap-tab ${on ? 'active' : ''}">${swatch}${label}</button>`;
         }).join('') : '';
 
         const leftPct = heights.length > 1 ? (minIdx / (heights.length - 1)) * 100 : 0;
@@ -11941,7 +11983,7 @@ const app = {
                         </div>
                     </div>` : ''}
                     ${showColorTabs ? `
-                    <div>
+                    <div style="grid-column: 1 / -1;">
                         <div style="font-size:10px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Цвет:</div>
                         <div class="swap-tabs-wrapper">
                             ${colorsHtml}
@@ -12196,6 +12238,32 @@ const app = {
         delete this.state.swapHeightMinIndex;
         delete this.state.swapHeightMaxIndex;
         this._openRadSwapModal(item);
+    },
+    // Кнопка «Заменить на дизайнерский радиатор» в модалке внутрипольного конвектора —
+    // открывает тот же пикер радиаторов, что и для секционных, сразу в режиме
+    // "Дизайнерские". Мощность для подбора числа секций берётся из power70 конвектора
+    // (см. getPowerAtDt50), sec трактуется как 1 — конвектор целиком равен "1 секции"
+    // целевой мощности.
+    openConvectorDesignRadPicker: function (originalId) {
+        const convItem = this._findSwapItem(originalId)
+            || (catalog.convectors_scq && catalog.convectors_scq.find(x => x.id === originalId))
+            || (catalog.convectors_scn && catalog.convectors_scn.find(x => x.id === originalId));
+        if (!convItem) return;
+
+        const pseudoItem = { ...convItem, originalId: originalId, sec: 1, isPanel: false };
+
+        this.state.swapGroupReplace = document.getElementById('replaceGroupCb')?.checked || false;
+        this.state.swapAllReplace = document.getElementById('replaceAllCb')?.checked || false;
+        this.state.swapDesignMode = true;
+        this.state.swapMaterialFilter = 'all';
+        this.state.swapConnectionType = 'all';
+        this.state.swapColorFilter = 'all';
+        this.state.swapPanelType = 'all';
+        this.state.swapHeight = 'all';
+        delete this.state.swapHeightMinIndex;
+        delete this.state.swapHeightMaxIndex;
+
+        this._openRadSwapModal(pseudoItem);
     },
     toggleSwapSort: function (originalId, field) {
         const item = this.currentEquipmentList.find(x => (x.originalId || x.id) === originalId || x.id === originalId);
@@ -12685,8 +12753,11 @@ const app = {
             else this.state.wellAutoType = 'base';
         }
         else if (originalId.startsWith('SCQ') || originalId.startsWith('SCN')) {
-            if (chosenId.toLowerCase().startsWith("scq")) this.state.convectorType = 'scq';
-            else this.state.convectorType = 'scn';
+            // chosenId может быть не только 'scq'/'scn' (тумблер вентилятора), но и id
+            // дизайн-радиатора (см. openConvectorDesignRadPicker) — в этом случае
+            // convectorType (глобальный на проект) трогать не нужно.
+            if (chosenId === 'scq') this.state.convectorType = 'scq';
+            else if (chosenId === 'scn') this.state.convectorType = 'scn';
         }
         else if (originalId.startsWith('SVT') || originalId.startsWith('SVL')) {
             if (chosenId.startsWith("SVT") || chosenId === 'straight') this.state.convConnectionType = 'straight';
@@ -16243,6 +16314,25 @@ const app = {
                         activeItem = { ...foundItem };
                         activeItem.originalId = lookupKey;
                         if ((!activeItem.alts || !activeItem.alts.length) && item.alts && item.alts.length) activeItem.alts = item.alts;
+
+                        // Ручная замена конвектора меняет категорию прибора (конвектор → радиатор
+                        // или конвектор → другой конвектор с иной мощностью) — подсказка (i),
+                        // собранная ДО замены под старый прибор (см. цикл окон в render()), после
+                        // подстановки показывала бы характеристики уже не того товара, что в
+                        // смете. Пересобираем техническую часть подсказки (после "|||") под
+                        // activeItem, сохраняя часть про расположение/требуемую мощность как есть.
+                        if (tip && tip.includes('|||') && tip.includes('Внутрипольный конвектор')) {
+                            const locPart = tip.split('|||')[0];
+                            let newDevInfo = null;
+                            if (activeItem.power70) {
+                                const factP70 = Math.round(activeItem.power70 * 0.65);
+                                newDevInfo = this.getDesc('convector', activeItem.power70, factP70);
+                            } else if (activeItem.sec !== undefined && activeItem.power50 !== undefined) {
+                                const totalP50 = activeItem.isPanel ? activeItem.power50 : activeItem.sec * activeItem.power50;
+                                newDevInfo = `<span style="font-size:11px; line-height:1.4;"><span style="font-weight:700; color:#93C5FD; display:block; margin-bottom:4px;">${activeItem.name}</span><b>Секций:</b> ${activeItem.sec}. <b>Мощность секции:</b> ${activeItem.power50} Вт (ΔT=50°C).<br><b style="color:var(--primary);">Суммарная мощность:</b> ~${totalP50} Вт.</span>`;
+                            }
+                            if (newDevInfo) tip = locPart + '|||' + newDevInfo;
+                        }
                     }
                 }
             } else if (useAnalog) {
@@ -17750,7 +17840,12 @@ const app = {
 
                         if (w.isPan) {
                             let reqPower70 = wLoad / 0.65;
-                            let db = this.state.convectorType === 'scn' ? catalog.convectors_scn : catalog.convectors_scq;
+                            let dbAll = this.state.convectorType === 'scn' ? catalog.convectors_scn : catalog.convectors_scq;
+                            // Автоподбор всегда идёт по базовой складской ширине/высоте (240×80 SCN,
+                            // 240×75 SCQ) — остальные складские варианты (190/300мм, 110мм высота)
+                            // доступны только вручную через «Заменить» (см. openSwapModal).
+                            let db = dbAll.filter(x => x.width === 240 && x.height === (this.state.convectorType === 'scn' ? 80 : 75));
+                            if (!db.length) db = dbAll;
                             let item = db.find(x => x.power70 >= reqPower70 && x.len >= w.width * 0.7);
                             if (!item) item = db[db.length - 1];
                             item.alts = [catalog.convectors_scq[0], catalog.convectors_scn[0]];
