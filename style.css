@@ -675,6 +675,50 @@ body.dark-mode .swap-alt-badge {
     border-color: #1e293b;
 }
 
+/* Значок "изменено вручную" (замена товара и/или ручное кол-во) — компактная точка
+   по умолчанию, полная подпись "Изменён ↺" раскрывается по наведению/клику, чтобы
+   не отвлекать в обычном режиме просмотра сметы. */
+.eq-badge {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.eq-badge-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary);
+}
+
+.eq-badge-text {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--primary);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.eq-badge:hover .eq-badge-dot,
+.eq-badge.revealed .eq-badge-dot {
+    display: none;
+}
+
+.eq-badge:hover .eq-badge-text,
+.eq-badge.revealed .eq-badge-text {
+    display: inline-flex;
+}
+
+.eq-badge-reset {
+    cursor: pointer;
+    color: var(--text-sec);
+    font-size: 13px;
+}
+
 .swappable-cursor:hover .prod-thumb {
     border-color: var(--primary);
 }
@@ -5508,8 +5552,16 @@ body.html2pdf-printing .qty-wrap .qty-step,
 body.html2pdf-printing .swap-cycle-btn,
 body.html2pdf-printing .swap-alt-badge,
 body.html2pdf-printing .work-del-btn,
-body.html2pdf-printing .mob-mult {
+body.html2pdf-printing .mob-mult,
+body.html2pdf-printing .eq-badge-dot,
+body.html2pdf-printing .eq-badge-reset {
     display: none !important;
+}
+
+/* В печатной смете значок "Изменён" всегда развёрнут текстом (наведения на бумаге
+   не бывает) — но без кликабельной ↺, которую убрали правилом выше. */
+body.html2pdf-printing .eq-badge-text {
+    display: inline-flex !important;
 }
 
 body.html2pdf-printing .qty-num-input {

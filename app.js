@@ -12527,19 +12527,26 @@ const app = {
     // (сделанную через таблицу замены), выставленную для этого слота и, если это была
     // группа помещений (детальный режим), для всех её instanceKeys
     resetEquipmentSwap: function (originalId, instanceKeys) {
-        if (!this.state.swaps) return;
         let changed = false;
-        if (Array.isArray(instanceKeys)) {
-            instanceKeys.forEach(k => {
-                if (this.state.swaps[k] !== undefined) { delete this.state.swaps[k]; changed = true; }
-            });
+        if (this.state.swaps) {
+            if (Array.isArray(instanceKeys)) {
+                instanceKeys.forEach(k => {
+                    if (this.state.swaps[k] !== undefined) { delete this.state.swaps[k]; changed = true; }
+                });
+            }
+            if (originalId && this.state.swaps[originalId] !== undefined) {
+                delete this.state.swaps[originalId];
+                changed = true;
+            }
+            if (originalId && this.state.swapQtyRatios && this.state.swapQtyRatios[originalId] !== undefined) {
+                delete this.state.swapQtyRatios[originalId];
+            }
         }
-        if (originalId && this.state.swaps[originalId] !== undefined) {
-            delete this.state.swaps[originalId];
+        // Значок "Изменён" объединяет и замену товара, и ручное количество — сброс
+        // должен возвращать к умолчанию оба вида ручных правок разом.
+        if (originalId && this.state.qtyOverrides && this.state.qtyOverrides[originalId] !== undefined) {
+            delete this.state.qtyOverrides[originalId];
             changed = true;
-        }
-        if (originalId && this.state.swapQtyRatios && this.state.swapQtyRatios[originalId] !== undefined) {
-            delete this.state.swapQtyRatios[originalId];
         }
         if (changed) {
             this.saveState();
@@ -16818,14 +16825,25 @@ const app = {
                 let nameClass = "col-name";
                 let nameClick = "";
 
-                // Метка "изменено вручную" — своё оборудование (поиск/ручной ввод) или
-                // замена через таблицу замены — с кнопкой сброса именно этой позиции
+                // Метка "изменено вручную" — своё оборудование (поиск/ручной ввод), замена
+                // через таблицу замены или ручное изменение количества — с кнопкой сброса
+                // именно этой позиции. Компактная точка вместо текста, чтобы не отвлекать —
+                // полная подпись раскрывается по наведению/клику (см. .eq-badge в style.css).
                 let eqBadgeHtml = "";
                 if ((i.id || '').startsWith('custom_')) {
                     eqBadgeHtml = ` <span title="Добавлено вручную" style="font-size:10px; color:var(--primary); font-weight:700;">РУЧНОЕ</span> <span title="Удалить позицию" style="cursor:pointer; color:var(--text-sec); font-size:13px;" onclick="event.stopPropagation(); app.deleteEq('${i.id.replace(/'/g, "\\'")}')">↺</span>`;
-                } else if (this.state.swaps && ((i.instanceKeys && i.instanceKeys.some(k => this.state.swaps[k] !== undefined)) || (i.originalId && this.state.swaps[i.originalId] !== undefined))) {
-                    const ikJson = i.instanceKeys ? JSON.stringify(i.instanceKeys).replace(/'/g, "\\'") : 'null';
-                    eqBadgeHtml = ` <span title="Заменено вручную" style="font-size:10px; color:var(--primary); font-weight:700;">ЗАМЕНА</span> <span title="Вернуть по умолчанию" style="cursor:pointer; color:var(--text-sec); font-size:13px;" onclick="event.stopPropagation(); app.resetEquipmentSwap('${(i.originalId || '').replace(/'/g, "\\'")}', ${ikJson})">↺</span>`;
+                } else {
+                    const _isSwapped = this.state.swaps && ((i.instanceKeys && i.instanceKeys.some(k => this.state.swaps[k] !== undefined)) || (i.originalId && this.state.swaps[i.originalId] !== undefined));
+                    const _isQtyOverridden = this.state.qtyOverrides && this.state.qtyOverrides[lookupId] !== undefined;
+                    if (_isSwapped || _isQtyOverridden) {
+                        // Двойные кавычки JSON.stringify ломают onclick-атрибут (сам в двойных
+                        // кавычках) — заменяем на одинарные, ключи (артикулы) их не содержат.
+                        const ikJson = i.instanceKeys ? JSON.stringify(i.instanceKeys).replace(/"/g, "'") : 'null';
+                        const _origIdEsc = (i.originalId || '').replace(/'/g, "\\'");
+                        eqBadgeHtml = ` <span class="eq-badge" title="Изменено вручную" onclick="event.stopPropagation(); this.classList.toggle('revealed')">
+                            <span class="eq-badge-dot"></span><span class="eq-badge-text">Изменён <span class="eq-badge-reset" title="Вернуть по умолчанию" onclick="event.stopPropagation(); app.resetEquipmentSwap('${_origIdEsc}', ${ikJson})">↺</span></span>
+                        </span>`;
+                    }
                 }
 
                 rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${app.formatPriceHtml(i.price)}</td><td class="col-sum">${app.formatPriceHtml(i.sum)}</td></tr>` + locsRows;
