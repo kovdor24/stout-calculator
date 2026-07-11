@@ -4093,7 +4093,8 @@ const app = {
                 this.installerSettings = {
                     workPrices: Object.assign({}, cloud.workPrices || {}),
                     equipmentLibrary: Array.isArray(cloud.equipmentLibrary) ? cloud.equipmentLibrary : [],
-                    swapLog: Array.isArray(cloud.swapLog) ? cloud.swapLog : []
+                    swapLog: Array.isArray(cloud.swapLog) ? cloud.swapLog : [],
+                    workPricesUpdatedAt: cloud.workPricesUpdatedAt || undefined
                 };
                 this.saveInstallerSettingsLocal();
                 if (this._activeProfileTab === 'workprices') this.renderWorkPricesTab();
@@ -4128,13 +4129,26 @@ const app = {
         }
         return basePrice;
     },
+    // Дата последнего изменения прайс-листа монтажных работ — проставляется при любом
+    // назначении своей цены, снимается, когда персональных цен не остаётся вовсе
+    // (весь прайс-лист вернулся к значениям по умолчанию)
+    _touchWorkPricesTimestamp: function () {
+        this.installerSettings.workPricesUpdatedAt = new Date().toISOString();
+    },
+    _clearWorkPricesTimestampIfEmpty: function () {
+        if (Object.keys(this.installerSettings.workPrices).length === 0) {
+            delete this.installerSettings.workPricesUpdatedAt;
+        }
+    },
     setInstallerWorkPrice: function (name, val) {
         if (!this.installerSettings) this.loadInstallerSettingsLocal();
         let num = parseInt(String(val).replace(/[^\d]/g, ''));
         if (!isNaN(num) && num > 0) {
             this.installerSettings.workPrices[name] = num;
+            this._touchWorkPricesTimestamp();
         } else {
             delete this.installerSettings.workPrices[name];
+            this._clearWorkPricesTimestampIfEmpty();
         }
         this.pushInstallerSettingsToCloud();
         this.render();
@@ -4142,6 +4156,7 @@ const app = {
     resetInstallerWorkPrice: function (name) {
         if (!this.installerSettings) return;
         delete this.installerSettings.workPrices[name];
+        this._clearWorkPricesTimestampIfEmpty();
         this.pushInstallerSettingsToCloud();
         this.renderWorkPricesTab();
         this.render();
@@ -4149,6 +4164,7 @@ const app = {
     resetAllInstallerWorkPrices: async function () {
         if (!await app.confirm('Сбросить все персональные цены на монтажные работы к значениям по умолчанию?')) return;
         this.installerSettings.workPrices = {};
+        delete this.installerSettings.workPricesUpdatedAt;
         this.pushInstallerSettingsToCloud();
         this.renderWorkPricesTab();
         this.render();
@@ -4246,11 +4262,17 @@ const app = {
             groups[w.group].push(w);
         });
 
+        const updatedAt = this.installerSettings.workPricesUpdatedAt;
+        const updatedAtHtml = updatedAt
+            ? `<span style="font-size:10.5px; color:var(--text-sec);">Обновлено: ${new Date(updatedAt).toLocaleDateString('ru-RU')}</span>`
+            : '';
+
         let html = `
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px; flex-wrap:wrap;">
                 <p style="font-size:12px; color:var(--text-sec); margin:0; max-width:70%;">Ваши цены на монтажные работы. Применяются по умолчанию в каждой новой смете — цену конкретной сметы можно менять отдельно прямо в таблице сметы.</p>
                 <button type="button" class="auth-btn-base" style="margin:0; max-width:160px; height:32px; font-size:11px; background:var(--surface-light); color:var(--text-sec); border:1px solid var(--border);" onclick="app.resetAllInstallerWorkPrices()">Сбросить всё</button>
             </div>
+            <div style="margin-bottom:12px;">${updatedAtHtml}</div>
         `;
 
         Object.keys(groups).forEach(groupName => {
@@ -7131,6 +7153,18 @@ const app = {
             // Если поле пустое - удаляем кастомную цену (возврат к базовой)
             delete this.state.customWorks[name];
         }
+        // Цена, изменённая прямо в смете, становится новой персональной ценой монтажника
+        // по умолчанию — сохраняется в личном кабинете (вкладка «Прайс-лист монтаж»),
+        // а не только в рамках текущего проекта.
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        if (!isNaN(num)) {
+            this.installerSettings.workPrices[name] = num;
+            this._touchWorkPricesTimestamp();
+        } else {
+            delete this.installerSettings.workPrices[name];
+            this._clearWorkPricesTimestampIfEmpty();
+        }
+        this.pushInstallerSettingsToCloud();
         this.saveState();
         this.render();
     },
@@ -12421,6 +12455,29 @@ const app = {
     toggleSwapUI: function (id) {
         this.openSwapModal(id);
     },
+    // Возвращает позицию сметы к варианту по умолчанию — снимает ручную замену
+    // (сделанную через таблицу замены), выставленную для этого слота и, если это была
+    // группа помещений (детальный режим), для всех её instanceKeys
+    resetEquipmentSwap: function (originalId, instanceKeys) {
+        if (!this.state.swaps) return;
+        let changed = false;
+        if (Array.isArray(instanceKeys)) {
+            instanceKeys.forEach(k => {
+                if (this.state.swaps[k] !== undefined) { delete this.state.swaps[k]; changed = true; }
+            });
+        }
+        if (originalId && this.state.swaps[originalId] !== undefined) {
+            delete this.state.swaps[originalId];
+            changed = true;
+        }
+        if (originalId && this.state.swapQtyRatios && this.state.swapQtyRatios[originalId] !== undefined) {
+            delete this.state.swapQtyRatios[originalId];
+        }
+        if (changed) {
+            this.saveState();
+            this.render();
+        }
+    },
     selectSwapAlternative: function (originalId, chosenId) {
         if (!this.state.swaps) this.state.swaps = {};
         this.state.swaps[originalId] = chosenId;
@@ -16671,7 +16728,17 @@ const app = {
                 let nameClass = "col-name";
                 let nameClick = "";
 
-                rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${app.formatPriceHtml(i.price)}</td><td class="col-sum">${app.formatPriceHtml(i.sum)}</td></tr>` + locsRows;
+                // Метка "изменено вручную" — своё оборудование (поиск/ручной ввод) или
+                // замена через таблицу замены — с кнопкой сброса именно этой позиции
+                let eqBadgeHtml = "";
+                if ((i.id || '').startsWith('custom_')) {
+                    eqBadgeHtml = ` <span title="Добавлено вручную" style="font-size:10px; color:var(--primary); font-weight:700;">РУЧНОЕ</span> <span title="Удалить позицию" style="cursor:pointer; color:var(--text-sec); font-size:13px;" onclick="event.stopPropagation(); app.deleteEq('${i.id.replace(/'/g, "\\'")}')">↺</span>`;
+                } else if (this.state.swaps && ((i.instanceKeys && i.instanceKeys.some(k => this.state.swaps[k] !== undefined)) || (i.originalId && this.state.swaps[i.originalId] !== undefined))) {
+                    const ikJson = i.instanceKeys ? JSON.stringify(i.instanceKeys).replace(/'/g, "\\'") : 'null';
+                    eqBadgeHtml = ` <span title="Заменено вручную" style="font-size:10px; color:var(--primary); font-weight:700;">ЗАМЕНА</span> <span title="Вернуть по умолчанию" style="cursor:pointer; color:var(--text-sec); font-size:13px;" onclick="event.stopPropagation(); app.resetEquipmentSwap('${(i.originalId || '').replace(/'/g, "\\'")}', ${ikJson})">↺</span>`;
+                }
+
+                rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${app.formatPriceHtml(i.price)}</td><td class="col-sum">${app.formatPriceHtml(i.sum)}</td></tr>` + locsRows;
             });
             let addCustomRow = "";
             if (this.state.viewMode === 'equipment') {
