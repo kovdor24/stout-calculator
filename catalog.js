@@ -2173,10 +2173,14 @@ const catalog = {
         { id: "RSS-1001-200054", name: "Труба нерж. 304, штанга 2м 54х1.5", price: 2389, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-06" }
     ],
     ss_pipe_4m_ru: [
-        { id: "RSS-2001-000018", name: "Труба нерж. 304, штанга 4м (Россия) 18х1", price: 322, brand: "ROMMER", unit: "шт", availability: "in_stock" },
-        { id: "RSS-2001-000022", name: "Труба нерж. 304, штанга 4м (Россия) 22х1.2", price: 474, brand: "ROMMER", unit: "шт", availability: "in_stock" },
-        { id: "RSS-2001-000028", name: "Труба нерж. 304, штанга 4м (Россия) 28х1.2", price: 608, brand: "ROMMER", unit: "шт", availability: "in_stock" },
-        { id: "RSS-2001-000035", name: "Труба нерж. 304, штанга 4м (Россия) 35х1.5", price: 945, brand: "ROMMER", unit: "шт", availability: "in_stock" }
+        { id: "RSS-2001-000018", name: "Труба нерж. 304, штанга 4м (Россия) 18х1", price: 322, brand: "ROMMER", unit: "шт", availability: "in_stock",
+  price_date: '2026-07-12' },
+        { id: "RSS-2001-000022", name: "Труба нерж. 304, штанга 4м (Россия) 22х1.2", price: 475, brand: "ROMMER", unit: "шт", availability: "in_stock",
+  price_date: '2026-07-12' },
+        { id: "RSS-2001-000028", name: "Труба нерж. 304, штанга 4м (Россия) 28х1.2", price: 609, brand: "ROMMER", unit: "шт", availability: "in_stock",
+  price_date: '2026-07-12' },
+        { id: "RSS-2001-000035", name: "Труба нерж. 304, штанга 4м (Россия) 35х1.5", price: 947, brand: "ROMMER", unit: "шт", availability: "in_stock",
+  price_date: '2026-07-12' }
     ],
     ss_elbow90: [
         { id: "RSS-1002-000015", name: "Угольник 90° ВПр-НПр 15", price: 187, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
@@ -2572,7 +2576,8 @@ const catalog = {
         { id: "SNAM02532RCT", article: "SNAM02532RCT", name: "Муфта комбинированная с НР PP-RCT 25x1\"", price: 814, brand: "Wavin", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
         { id: "SHM02025RCT", article: "SHM02025RCT", name: "Муфта комбинированная с НР PP-RCT 20x3/4''", price: 453, brand: "Wavin", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
         { id: "SHM02532RCT", article: "SHM02532RCT", name: "Муфта комбинированная с НР PP-RCT 25х1\"", price: 645, brand: "Wavin", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SHM03240XX", article: "SHM03240XX", name: "Муфта комбинированная с НР PP-RCT 32х1 1/4\"", price: 935, brand: "Wavin", unit: "шт", availability: "in_stock" }
+        { id: "SHM03240XX", article: "SHM03240XX", name: "Муфта комбинированная с НР PP-RCT 32х1 1/4\"", price: 541, brand: "Wavin", unit: "шт", availability: "in_stock",
+  price_date: '2026-07-12' }
     ],
     ppr_ekoplastik_coupling: [
         { id: "SNA020RCTX", article: "SNA020RCTX", name: "Муфта PP-RCT 20", price: 37.4, brand: "Wavin", unit: "шт", availability: "in_stock" },
