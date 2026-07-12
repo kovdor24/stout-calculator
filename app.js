@@ -1754,6 +1754,295 @@ const app = {
         return results;
     },
 
+    // Формирование динамического системного промпта для ИИ-помощника
+    getGeminiSystemInstruction: function () {
+        const s = this.state;
+        const activeSystems = [];
+        if (s.systems && s.systems.includes('tp')) activeSystems.push('Тёплый пол');
+        if (s.systems && s.systems.includes('rad')) activeSystems.push('Радиаторы');
+
+        let catalogSize = 2500;
+        if (window.catalog) {
+            let size = 0;
+            for (let key in window.catalog) {
+                if (Array.isArray(window.catalog[key])) {
+                    size += window.catalog[key].length;
+                }
+            }
+            if (size > 0) catalogSize = size;
+        }
+
+        const invoiceCount = this.currentEquipmentList ? this.currentEquipmentList.length : 0;
+        const invoiceSum = (app.lastEqSum || 0) + (app.lastWorksSum || 0);
+        const pricesDate = "июль 2026 года (актуальный прайс-лист STOUT/ROMMER)";
+        const managerContacts = "Александр, телефон: +7 (999) 123-45-67, email: sales@terem24.ru";
+
+        return `Ты — ИИ-помощник инженера-проектировщика систем отопления Stout & Rommer.
+Твоя задача — помогать пользователю проектировать и оптимизировать систему отопления дома, отвечать на вопросы и управлять калькулятором с помощью специальных команд.
+
+Текущее состояние калькулятора:
+- Площадь дома: ${s.area || 0} м²
+- Этажность: ${s.floors || 1}
+- Высота потолков: ${s.h1 || 2.7} м
+- Системы отопления: ${activeSystems.join(', ') || 'не выбраны'}
+- Теплоноситель: ${s.coolant === 'antifreeze' ? 'Антифриз' : 'Вода'}
+- Выбранный бренд: ${s.brandMode || 'stout'}
+- Количество позиций в счете: ${invoiceCount}
+- Итоговая сумма сметы: ${invoiceSum.toLocaleString('ru-RU')} ₽
+- Общее число артикулов в каталоге: ${catalogSize}
+- Последнее обновление цен: ${pricesDate}
+- Контакты персонального менеджера: ${managerContacts}
+
+Правила ведения диалога:
+1. Общайся вежливо, профессионально и как эксперт в отоплении.
+2. Если пользователь просит оптимизировать смету, предложи заменить дорогие бренды на Rommer, уменьшить автоматику или убрать необязательные опции.
+3. Если пользователь просит распечатать смету, скажи, что отправляешь на печать, и приложи команду "print".
+4. Если пользователь просит ссылку для клиента, скажи, что генерируешь ссылку, и приложи команду "generate_share_link".
+5. Если пользователь просит контакты менеджера, выведи их.
+6. Если пользователь хочет обновить параметры (площадь, этажи, теплоноситель и т.д.), приложи команду "update_parameters" с массивом обновленных полей.
+7. Проводи аудит: если параметры некорректны (например, котел 5 кВт для дома 300 м²), обрати на это внимание.
+
+Выдавай ответ ИСКЛЮЧИТЕЛЬНО в формате JSON следующей структуры:
+{
+  "text": "Твой ответ пользователю на русском языке (поддерживается жирный шрифт через **текст** и курсив через *текст*)...",
+  "commands": [
+    {
+      "action": "update_parameters",
+      "data": [
+        { "field": "area", "value": 150, "label": "Площадь дома", "display": "150 м²" }
+      ]
+    },
+    { "action": "print" },
+    { "action": "optimize_estimate", "data": { "strategy": "budget_rommer" } },
+    { "action": "generate_share_link" }
+  ]
+}
+Если никаких команд выполнять не требуется, поле "commands" должно быть пустым массивом: []`;
+    },
+
+    // Плавающая кнопка "умного" заполнения параметров дома по свободному тексту/голосу
+    openAiParseModal: function () {
+        if (!this.state.tgUser) { this.showAuthModal(); return; }
+        if (document.body.classList.contains('menu-open')) {
+            try { this.toggleMenu(); } catch (e) { }
+        }
+
+        const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const formatAiText = (s) => {
+            let html = escapeHtml(s);
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+            html = html.replace(/\*([^*]+)\*/g, '<i>$1</i>');
+            html = html.replace(/\n/g, '<br>');
+            return html;
+        };
+
+        const overlay = document.createElement('div');
+        overlay.className = 'calc-dialog-overlay';
+
+        const card = document.createElement('div');
+        card.className = 'calc-dialog-card ai-parse-card ai-chat-card';
+
+        const titleRow = document.createElement('div');
+        titleRow.className = 'ai-chat-title-row';
+
+        const titleEl = document.createElement('h3');
+        titleEl.className = 'calc-dialog-title';
+        titleEl.innerText = '✨ Умный ИИ-помощник';
+        titleRow.appendChild(titleEl);
+        card.appendChild(titleRow);
+
+        const chatLog = document.createElement('div');
+        chatLog.className = 'ai-chat-log';
+        card.appendChild(chatLog);
+
+        const addBubble = (role, html) => {
+            const b = document.createElement('div');
+            b.className = 'ai-chat-bubble ai-chat-' + role;
+            b.innerHTML = html;
+            chatLog.appendChild(b);
+            chatLog.scrollTop = chatLog.scrollHeight;
+            return b;
+        };
+
+        addBubble('assistant', 'Привет! Я ваш умный ИИ-помощник Stout & Rommer. Опишите ваш объект, спросите, как оптимизировать смету, или попросите распечатать/создать ссылку для клиента.');
+
+        const inputWrap = document.createElement('div');
+        inputWrap.className = 'eq-name-wrap ai-parse-input-wrap';
+
+        const textInput = document.createElement('textarea');
+        textInput.className = 'calc-dialog-input ai-parse-textarea';
+        textInput.rows = 2;
+        textInput.placeholder = 'Спросите что-нибудь у ИИ или опишите дом...';
+        inputWrap.appendChild(textInput);
+
+        const voiceUI = this._createVoiceMicButton((transcript) => {
+            textInput.value = transcript;
+            textInput.focus();
+        });
+        if (voiceUI) {
+            inputWrap.appendChild(voiceUI.micBtn);
+            inputWrap.appendChild(voiceUI.micStatus);
+        }
+        card.appendChild(inputWrap);
+
+        const btnRow = document.createElement('div');
+        btnRow.className = 'calc-dialog-buttons';
+
+        const applyBtn = document.createElement('button');
+        applyBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
+        applyBtn.innerText = '✅ Применить изменения';
+        applyBtn.style.display = 'none';
+
+        const sendBtn = document.createElement('button');
+        sendBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
+        sendBtn.innerText = 'Отправить';
+
+        btnRow.appendChild(applyBtn);
+        btnRow.appendChild(sendBtn);
+        card.appendChild(btnRow);
+
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('active'));
+        setTimeout(() => textInput.focus(), 50);
+
+        const syncViewport = () => {
+            if (!window.visualViewport) return;
+            overlay.style.height = window.visualViewport.height + 'px';
+            overlay.style.top = window.visualViewport.offsetTop + 'px';
+            card.style.maxHeight = Math.max(240, window.visualViewport.height - 32) + 'px';
+        };
+        if (window.visualViewport) {
+            syncViewport();
+            window.visualViewport.addEventListener('resize', syncViewport);
+            window.visualViewport.addEventListener('scroll', syncViewport);
+        }
+
+        const close = () => {
+            overlay.classList.remove('active');
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', syncViewport);
+                window.visualViewport.removeEventListener('scroll', syncViewport);
+            }
+            setTimeout(() => overlay.remove(), 200);
+        };
+        overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+        const accumulated = new Map();
+
+        const renderAccumulated = (title) => {
+            const results = Array.from(accumulated.values());
+            if (!results.length) return `<div class="ai-parse-preview-title">${title}</div><div class="ai-parse-preview-item">— ничего не изменено —</div>`;
+            const list = results.map(r => `<div class="ai-parse-preview-item"><span class="ai-parse-preview-check">✓</span><span class="ai-parse-preview-label">${r.label}:</span><span class="ai-parse-preview-value">${r.display}</span></div>`).join('');
+            return `<div class="ai-parse-preview-title">${title}</div>${list}`;
+        };
+
+        const messages = [];
+
+        const sendMessage = async () => {
+            const text = textInput.value.trim();
+            if (!text) { textInput.focus(); return; }
+
+            addBubble('user', escapeHtml(text));
+            textInput.value = '';
+
+            messages.push({ role: 'user', parts: [{ text: text }] });
+
+            const typingBubble = addBubble('assistant', '<span class="loading-spinner" style="display:inline-block; width:12px; height:12px; border:2px solid var(--primary); border-top-color:transparent; border-radius:50%; animation:stout-spin 0.8s linear infinite; margin-right:8px; vertical-align:middle;"></span>ИИ думает...');
+
+            try {
+                const sysInst = this.getGeminiSystemInstruction();
+                const response = await fetch('gemini_proxy.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: messages,
+                        systemInstruction: sysInst
+                    })
+                });
+
+                typingBubble.remove();
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    const errMsg = errData.error || `Ошибка сервера (${response.status})`;
+                    addBubble('assistant', `⚠️ Не удалось связаться с ИИ: ${errMsg}`);
+                    return;
+                }
+
+                const data = await response.json();
+                if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                    addBubble('assistant', '⚠️ ИИ вернул пустой или некорректный ответ.');
+                    return;
+                }
+
+                const rawText = data.candidates[0].content.parts[0].text;
+                let parsed = { text: rawText, commands: [] };
+                try {
+                    let cleaned = rawText.trim();
+                    if (cleaned.startsWith('```')) {
+                        cleaned = cleaned.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
+                    }
+                    parsed = JSON.parse(cleaned);
+                } catch (e) {
+                    console.error('Failed to parse JSON from Gemini:', rawText);
+                    parsed = { text: rawText, commands: [] };
+                }
+
+                addBubble('assistant', formatAiText(parsed.text));
+                messages.push({ role: 'model', parts: [{ text: rawText }] });
+
+                if (parsed.commands && parsed.commands.length) {
+                    parsed.commands.forEach(cmd => {
+                        if (cmd.action === 'update_parameters' && cmd.data) {
+                            cmd.data.forEach(r => accumulated.set(r.field, r));
+                            applyBtn.style.display = '';
+                            addBubble('assistant', renderAccumulated('ИИ предлагает изменить следующие параметры:'));
+                        } else if (cmd.action === 'print') {
+                            addBubble('assistant', '<i>Запускаю печать сметы...</i>');
+                            setTimeout(() => window.print(), 1500);
+                        } else if (cmd.action === 'optimize_estimate') {
+                            accumulated.set('brandMode', { field: 'brandMode', value: 'rommer', label: 'Бренд', display: 'Rommer' });
+                            applyBtn.style.display = '';
+                            addBubble('assistant', '<i>Предложена оптимизация сметы под бренд Rommer. Нажмите «Применить изменения» для пересчета.</i>');
+                        } else if (cmd.action === 'generate_share_link') {
+                            addBubble('assistant', '<i>Генерирую коммерческое предложение...</i>');
+                            setTimeout(() => this.executeShareInvoice(true, true), 1500);
+                        } else if (cmd.action === 'add_note' && cmd.data && cmd.data.note) {
+                            this.state.projectName = cmd.data.note;
+                            this.saveState();
+                            this.syncUI();
+                            this.render();
+                            addBubble('assistant', `<i>Название объекта изменено на: "${cmd.data.note}"</i>`);
+                        }
+                    });
+                }
+            } catch (err) {
+                if (typingBubble) typingBubble.remove();
+                console.error(err);
+                addBubble('assistant', '⚠️ Произошла ошибка сети или тайм-аут при обращении к ИИ.');
+            }
+            textInput.focus();
+        };
+
+        sendBtn.onclick = sendMessage;
+
+        applyBtn.onclick = () => {
+            const results = Array.from(accumulated.values());
+            if (!results.length) return;
+            this.applyParsedResults(results);
+            this.showAiParseToast(results.length);
+            close();
+        };
+
+        textInput.onkeydown = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        };
+    },
+
     // Применяет распознанные параметры к state и перерисовывает левую панель + смету
     applyParsedResults: function (results) {
         results.forEach(r => {
@@ -3042,7 +3331,8 @@ const app = {
                 company_name: dist.company_name,
                 manager_name: dist.manager_name,
                 manager_email: dist.manager_email,
-                manager_phone: dist.manager_phone
+                manager_phone: dist.manager_phone,
+                director_email: dist.director_email
             };
             if (this.state.tgUser) {
                 this.state.tgUser.account_type = 'pro';
@@ -3074,7 +3364,7 @@ const app = {
         try {
             const { data: dist } = await supabaseClient
                 .from('distributors')
-                .select('company_name, manager_name, manager_email, manager_phone')
+                .select('company_name, manager_name, manager_email, manager_phone, director_email')
                 .eq('id', this.state.distributorId)
                 .maybeSingle();
             if (dist) {
@@ -3231,7 +3521,7 @@ const app = {
                     <td style="color:var(--text-sec);">${i + 1}</td>
                     <td><b>${d.company_name || '—'}</b><br><span style="font-size:10px; color:var(--text-sec);">📍 ${regionsText}</span></td>
                     <td style="font-weight:700; color:var(--primary); font-size:13px; letter-spacing:0.05em;">${d.promo_code}</td>
-                    <td><div style="font-size:12px;">${d.manager_name || '—'}<br><span style="color:var(--text-sec);">${d.manager_email || ''}</span><br><span style="color:var(--text-sec);">${d.manager_phone || ''}</span></div></td>
+                    <td><div style="font-size:12px;">${d.manager_name || '—'}<br><span style="color:var(--text-sec);">${d.manager_email || ''}</span><br><span style="color:var(--text-sec);">${d.manager_phone || ''}</span>${d.director_email ? `<br><span style="color:var(--text-sec);">👁 ${d.director_email}</span>` : ''}</div></td>
                     <td style="text-align:center;"><b style="color:var(--primary);">${d.pro_months || 3}</b><br><span style="font-size:10px; color:var(--text-sec);">до ${validUntilText}</span></td>
                     <td>${statusBadge}</td>
                     <td style="text-align:right;">
@@ -3290,6 +3580,10 @@ const app = {
                         <div style="grid-column: 1 / -1;">
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Регионы обслуживания (через запятую) — по ним монтажник найдёт этого поставщика сам</label>
                             <input type="text" id="dist_regions" placeholder="Калининградская область, Москва" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Email директора (необяз.) — получит скрытую копию писем менеджеру. Несколько менеджеров одной компании — это несколько промокодов с одинаковыми названием компании и email директора</label>
+                            <input type="email" id="dist_director_email" placeholder="director@teplokom.ru" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                         </div>
                     </div>
                     <div style="display: flex; gap: 10px;">
@@ -3444,6 +3738,7 @@ const app = {
         const validUntilVal = document.getElementById('dist_valid_until')?.value || '';
         const isActive = document.getElementById('dist_active').value === '1';
         const regions = (document.getElementById('dist_regions')?.value || '').split(',').map(r => r.trim()).filter(Boolean);
+        const directorEmail = (document.getElementById('dist_director_email')?.value || '').trim();
 
         if (!company || !code || !email) {
             app.alert('Обязательные поля: Название компании, Промокод, Email менеджера.');
@@ -3456,6 +3751,7 @@ const app = {
             manager_name: manager,
             manager_email: email,
             manager_phone: phone,
+            director_email: directorEmail || null,
             pro_months: proMonths,
             valid_until: validUntilVal ? new Date(validUntilVal).toISOString() : null,
             is_active: isActive,
@@ -3488,6 +3784,7 @@ const app = {
         document.getElementById('dist_manager').value = dist.manager_name || '';
         document.getElementById('dist_email').value = dist.manager_email || '';
         document.getElementById('dist_phone').value = dist.manager_phone || '';
+        if (document.getElementById('dist_director_email')) document.getElementById('dist_director_email').value = dist.director_email || '';
         if (document.getElementById('dist_pro_months')) document.getElementById('dist_pro_months').value = dist.pro_months || 3;
         if (document.getElementById('dist_valid_until') && dist.valid_until) {
             document.getElementById('dist_valid_until').value = dist.valid_until.split('T')[0];
@@ -3507,6 +3804,7 @@ const app = {
         document.getElementById('dist_manager').value = '';
         document.getElementById('dist_email').value = '';
         document.getElementById('dist_phone').value = '';
+        if (document.getElementById('dist_director_email')) document.getElementById('dist_director_email').value = '';
         if (document.getElementById('dist_pro_months')) document.getElementById('dist_pro_months').value = '3';
         if (document.getElementById('dist_valid_until')) document.getElementById('dist_valid_until').value = '';
         document.getElementById('dist_active').value = '1';
@@ -3760,10 +4058,14 @@ const app = {
             if (this.state.distributorInfo && this.state.distributorInfo.manager_email) {
                 const distEmail = this.state.distributorInfo.manager_email;
                 const distCompany = this.state.distributorInfo.company_name || 'Дистрибьютор';
+                const directorEmail = this.state.distributorInfo.director_email || '';
 
                 const distTemplateParams = {
                     ...templateParams,
                     to_email: distEmail,
+                    // Скрытая копия директору дистрибьютора — требует, чтобы в шаблоне
+                    // EmailJS (template_lg1zol9) поле Bcc было настроено на {{bcc_email}}
+                    bcc_email: directorEmail,
                     email_subject: `[Дистрибьютор] Запрос счёта от ${tgUser.first_name || 'Монтажника'} — ${est.project_name || 'Проект'}`,
                     equipment_list: `[Копия для дистрибьютора ${distCompany}]\nМонтажник: ${tgUser.first_name || ''} ${tgUser.phone || ''} (${tgUser.email || ''})\nОборудование: ${eqSum.toLocaleString('ru-RU')} ₽\nРаботы: ${worksSum.toLocaleString('ru-RU')} ₽\nИТОГО: ${total.toLocaleString('ru-RU')} ₽`
                 };
@@ -5016,6 +5318,25 @@ const app = {
         }
     },
 
+    // Точечное назначение/снятие дистрибьютора одному монтажнику прямо из строки таблицы,
+    // без открытия карточки — тариф не меняется, аналогично bulkAssignDistributor
+    setUserDistributorInline: async function (userId, distId, selectEl) {
+        const u = (this.adminData.users || []).find(x => String(x.id) === String(userId));
+        const prevValue = u ? (u.distributor_id || '') : '';
+        selectEl.disabled = true;
+        try {
+            const { error } = await supabaseClient.from('users').update({ distributor_id: distId || null }).eq('id', userId);
+            if (error) throw error;
+            if (u) u.distributor_id = distId || null;
+            selectEl.style.color = distId ? 'var(--text-main)' : '#EF4444';
+        } catch (e) {
+            app.alert('Ошибка назначения дистрибьютора: ' + e.message);
+            selectEl.value = prevValue;
+        } finally {
+            selectEl.disabled = false;
+        }
+    },
+
     loadAdminData: async function (offset = 0) {
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         let adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
@@ -5279,6 +5600,7 @@ const app = {
                             <th style="cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('name')" title="Сортировать по имени">Имя / Контакты${sortArrow('name')}</th>
                             <th style="cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('ltv')" title="Сортировать по сумме">Статистика (LTV)${sortArrow('ltv')}</th>
                             <th style="cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('tariff')" title="Сортировать по тарифу">Тариф / Устройство${sortArrow('tariff')}</th>
+                            <th>Дистрибьютор</th>
                             <th style="text-align:right; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('login')" title="Сортировать по дате входа">Вход${sortArrow('login')}</th>
                         </tr></thead>
                         <tbody>
@@ -5317,11 +5639,15 @@ const app = {
 
             let searchStr = `${name} ${phone} ${u.email || ''} ${cityText} ${ipLoc} ${u.region || ''} ${(u.activity_types || []).join(' ')}`.toLowerCase();
 
+            const distOptions = `<option value="">— Не назначен —</option>` + (this.adminData.distributors || []).map(d => `<option value="${d.id}" ${u.distributor_id === d.id ? 'selected' : ''}>${d.company_name} (${d.promo_code})</option>`).join('');
+            const distCell = `<select onclick="event.stopPropagation();" onchange="app.setUserDistributorInline('${u.id}', this.value, this)" style="width:100%; max-width:150px; background: var(--surface); color: ${u.distributor_id ? 'var(--text-main)' : '#EF4444'}; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; font-size:11px; outline:none; cursor:pointer;">${distOptions}</select>`;
+
             h += `<tr class="active-row admin-list-row" data-search="${searchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminUser('${u.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
                         <td style="color:var(--text-sec);">${i + 1}</td>
                         <td><div style="display:flex; align-items:center;">${avatarImg} <div><b style="font-size:13px;">${name}</b><br><span style="font-size:11px;color:var(--text-sec);">${phone}</span>${locHTML}${extraHTML}</div></div></td>
                         <td><b style="color:var(--primary);">${u.ltv.toLocaleString()} ₽</b><br><span style="font-size:10px;color:var(--text-sec);">Смет: ${u.projectsCount} | Ср.объект: ${u.avgArea} м²</span></td>
                         <td>${badge}<br><span style="font-size:10px;color:var(--text-sec);">${device}</span></td>
+                        <td onclick="event.stopPropagation();">${distCell}</td>
                         <td style="text-align:right;">${lastVis}</td>
                     </tr>`;
         });
@@ -9852,10 +10178,17 @@ const app = {
         });
 
         let cheapest = null;
+        let cheapestNorm = null;
         options.forEach(opt => {
             if (opt.price && opt.price > 0) {
-                if (!cheapest || opt.price < cheapest.price) {
+                // Сравниваем цену за единицу длины (opt.len), а не сырую price: у трубных
+                // позиций price — это цена за целиком купленную бухту (см. asCoilPrice), и она
+                // не сопоставима напрямую с ценой бухты другой длины. У обычных товаров
+                // (без .len) деление на 1 ничего не меняет.
+                let norm = opt.price / (opt.len || 1);
+                if (cheapestNorm === null || norm < cheapestNorm) {
                     cheapest = opt;
+                    cheapestNorm = norm;
                 }
             }
         });
@@ -9901,6 +10234,10 @@ const app = {
                 this.state.gasBoilerCircuits = null;
                 this.state.gasBoilerCond = null;
                 this.state.gasBoilerPower = null;
+            }
+            if (!_lkId.startsWith('tee_pipe_d')) {
+                this.state.teePipeSwapMaterial = null;
+                this.state.teePipeSwapDiam = null;
             }
             this.state.swapSortField = null;
             this.state.swapSortDir = null;
@@ -10420,6 +10757,12 @@ const app = {
         if (!modal || !body) return;
 
         let basePrice = item.price || 0;
+        // item.price трубы тройниковой схемы — это цена уже купленной бухты целиком (см. asCoilPrice
+        // в render()), а alts (pipeDiamAlts) в этой ветке — цены за метр. Приводим basePrice тоже
+        // к цене за метр, иначе % изменения цены в таблице замены сравнивал бы бухту с метром.
+        if (_origId0.startsWith('tee_pipe_d') && item.len) {
+            basePrice = basePrice / item.len;
+        }
 
         const _tankCoilKwMap = {
             'SWH-3110-000100': 24, 'SWH-3110-000150': 24, 'SWH-3110-000200': 24,
@@ -10640,6 +10983,36 @@ const app = {
                         ${_hdrBadges}
                         <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
                             Цена: <span style="font-weight:800;">${_priceStr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (_origId0.startsWith('tee_pipe_d')) {
+            const _tpDiamM = (item.name || '').match(/(\d+)(?:[.,]\d+)?[xх]/i);
+            const _tpDiam = _tpDiamM ? _tpDiamM[1] : '—';
+            const _tpMatName = (item.id || '').startsWith('SPM-0001-') ? 'Металлопластик'
+                : ((item.id || '').startsWith('SPS-0002-') ? 'Стабильная PE-Xa/Al/PE-RT' : 'PEX-a (сшитый полиэтилен)');
+            // item.price здесь — это цена уже купленной бухты целиком (цена за метр × длина бухты,
+            // см. asCoilPrice в render()), а таблица альтернатив ниже показывает цену за метр —
+            // делим обратно на длину, чтобы бейдж в шапке не путал единицы измерения со строками.
+            const _tpPerMeter = item.len ? (item.price || 0) / item.len : (item.price || 0);
+            const _tpPerMeterStr = _tpPerMeter > 0 ? this.formatPriceHtml(_tpPerMeter, true) : '—';
+            // Строки таблицы ниже (alts = pipeDiamAlts) в ценах за метр — basePrice для колонки
+            // "Изм. цена (%)" тоже переводим в цену за метр, иначе сравнение с ценой купленной
+            // бухты целиком (item.price) даёт бессмысленные проценты вида "-99%".
+            basePrice = _tpPerMeter;
+            title.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main); text-transform:none;">Варианты замены</h3>
+                        <span style="font-size:12px; color:var(--text-sec); display:block; margin-top:2px; font-weight:500; text-transform:none;">${item.name || ''}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap;">
+                        <div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">
+                            Выбрано по расчёту: <span style="font-weight:800;">Ø${_tpDiam} мм, ${_tpMatName}</span>
+                        </div>
+                        <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
+                            Цена за метр: <span style="font-weight:800;">${_tpPerMeterStr}</span>
                         </div>
                     </div>
                 </div>
@@ -11170,6 +11543,31 @@ const app = {
                 if (_tcur !== 'all' && a.current !== Number(_tcur)) return false;
                 return true;
             });
+        } else if (_origId0.startsWith('tee_pipe_d')) {
+            const _tpMatOf = (id) => (id || '').startsWith('SPM-0001-') ? 'mp' : ((id || '').startsWith('SPS-0002-') ? 'stable' : 'grey');
+            const _tpDiamOf = (name) => { const m = (name || '').match(/(\d+)(?:[.,]\d+)?[xх]/i); return m ? m[1] : null; };
+            const _tpm = this.state.teePipeSwapMaterial || 'all';
+            const _tpd = this.state.teePipeSwapDiam || 'all';
+            const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
+            const _diamsAvail = [...new Set(alts.filter(a => _tpm === 'all' || _tpMatOf(a.id) === _tpm).map(a => _tpDiamOf(a.name)).filter(Boolean))].sort((a, b) => +a - +b);
+            const _diamBtns = _diamsAvail.map(d => `<span onclick="app.setTeePipeSwapDiam('${d}')" ${_b(_tpd===d)}>${d} мм</span>`).join('');
+            _tankFiltersHtml =
+                `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Труба:</span>` +
+                `<span onclick="app.setTeePipeSwapMaterial('grey')" ${_b(_tpm==='grey')}>Сшитый полиэтилен</span>` +
+                `<span onclick="app.setTeePipeSwapMaterial('mp')" ${_b(_tpm==='mp')}>Металлопластик</span>` +
+                `<span onclick="app.setTeePipeSwapMaterial('stable')" ${_b(_tpm==='stable')}>Стабил</span>` +
+                `<span onclick="app.setTeePipeSwapMaterial('all')" ${_b(_tpm==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Диаметр:</span>` +
+                _diamBtns +
+                `<span onclick="app.setTeePipeSwapDiam('all')" ${_b(_tpd==='all')}>Все</span>` +
+                `</div>` +
+                `</div>`;
+            if (_tpm !== 'all') alts = alts.filter(a => _tpMatOf(a.id) === _tpm);
+            if (_tpd !== 'all') alts = alts.filter(a => _tpDiamOf(a.name) === _tpd);
         } else if (catalog.actuators && (item.id === catalog.actuators.id || (catalog.actuators_rommer && catalog.actuators_rommer.find(x => x.id === item.id)))) {
             if (isFirstOpen) {
                 const _curAc = (catalog.actuators_rommer && catalog.actuators_rommer.find(x => x.id === item.id)) || (item.id === catalog.actuators.id ? catalog.actuators : null);
@@ -11384,7 +11782,8 @@ const app = {
                 let _isThermoItem = catalog.ufh_mech.find(x => x.id === item.id) || catalog.ufh_electro.find(x => x.id === item.id) || catalog.thermostats_stout.find(x => x.id === item.id);
                 let _isActuatorItem = catalog.actuators && (item.id === catalog.actuators.id || (catalog.actuators_rommer && catalog.actuators_rommer.find(x => x.id === item.id)));
                 let _isUfhMixItem = (_origId0 === 'SDG-0120-001000' || _origId0 === 'SDG-0002-002001' || _origId0 === 'SDG-0002-002501' || _origId0 === 'SDG-0003-002001' || _origId0 === 'SDG-0003-002501' || _origId0 === 'SDG-0007-003201');
-                let skipAdd = (_isTankItem || _origId0 === 'gas_boiler_auto' || _isThermoItem || _isActuatorItem || _isUfhMixItem) && baseItem && !alts.some(x => x.id === baseItem.id);
+                let _isTeePipeItem = _origId0.startsWith('tee_pipe_d');
+                let skipAdd = (_isTankItem || _origId0 === 'gas_boiler_auto' || _isThermoItem || _isActuatorItem || _isUfhMixItem || _isTeePipeItem) && baseItem && !alts.some(x => x.id === baseItem.id);
                 if (!skipAdd) altsToProcess.unshift(baseItem);
             }
 
@@ -14079,6 +14478,15 @@ const app = {
         this.state.chimneySwapType = val;
         if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
     },
+    setTeePipeSwapMaterial: function (val) {
+        this.state.teePipeSwapMaterial = val;
+        this.state.teePipeSwapDiam = null;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setTeePipeSwapDiam: function (val) {
+        this.state.teePipeSwapDiam = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
     setWaterManifoldIn: function (val) {
         this.state.waterManifoldIn = val;
         if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
@@ -16623,6 +17031,20 @@ const app = {
                 }
             });
         };
+        // Каталожная цена труб-бухт (pipes, metal_plastic_pipes, rad_pipes_grey, stable_pipes,
+        // insulated_pipes, insulated_pipes_mp_red/blue) хранится ЗА МЕТР (так короче и удобнее
+        // сверять с прайсом поставщика — та же цифра одинакова для бухт 100/200/500 м одного
+        // диаметра). В смете же товар покупается целыми бухтами (qty = кол-во бухт), поэтому
+        // перед addToBill цену нужно домножить на длину бухты (item.len) — иначе сумма в смете
+        // занижается в 50-500 раз. В таблице замены (openSwapModal) цену НЕ трогаем — там нужна
+        // цена за метр как есть.
+        const asCoilPrice = (baseItem) => {
+            const L = baseItem.len || 1;
+            let out = { ...baseItem, price: (baseItem.price || 0) * L };
+            if (Array.isArray(out.rommer)) out.rommer = out.rommer.map(r => ({ ...r, price: (r.price || 0) * L }));
+            else if (out.rommer) out.rommer = { ...out.rommer, price: (out.rommer.price || 0) * L };
+            return out;
+        };
         let worksBill = [];
         const addToWorks = (name, qty, basePrice, unit, group = null) => {
             if (qty <= 0) return;
@@ -18532,8 +18954,8 @@ const app = {
                     // условия переключателя материала ХВС/тёплого пола в openSwapModal/selectSwapAlternative
                     // (startsWith('SPX-0001-')/'SPM-0001-'), и «Заменить» вместо списка диаметров этой же
                     // трубы показывал бы не относящийся к делу пикер «PEX / металлопластик» без эффекта на смету.
-                    let boughtItem = { ...base, originalId: 'tee_pipe_d' + d };
-                    boughtItem.alts = pipeDiamAlts; // даёт возможность вручную выбрать другой диаметр этого же материала
+                    let boughtItem = asCoilPrice({ ...base, originalId: 'tee_pipe_d' + d });
+                    boughtItem.alts = pipeDiamAlts; // даёт возможность вручную выбрать другой диаметр этого же материала (цена в этом списке — за метр, как в каталоге)
                     let desc = `<span style="font-size:11px;line-height:1.5;">` +
                         `<b>Зачем:</b> ${label} В тройниковой схеме труба идёт единой магистралью мимо всех радиаторов (а не отдельным лучом на каждый прибор, как в коллекторной) — у котла/стояка несёт расход сразу всех приборов, к концу трассы — расход одного-двух последних.<br>` +
                         `<b>Формула метража:</b> Длина трассы в одну сторону = 0,75·√(Приборов × Площадь этажа) + 3м (запас на подключение к стояку) — оценка длины обхода N точек по площади без плана дома. ×2 — подача и обратка, +10% запас на подрезку и обходы. Короткие отводы от магистрали до каждого радиатора — 0,9 м/прибор (обе трубы, с запасом).<br>` +
@@ -18624,25 +19046,25 @@ const app = {
                 if (neededPipe > 0) {
                     if (this.state.pipeType === 'insulated') {
                         let coils = Math.ceil(neededPipe / 100); let halfCoils = Math.ceil(coils / 2);
-                        let itemRed = { ...catalog.insulated_pipes[0], originalId: catalog.insulated_pipes[0].id + "_rad" }; itemRed.alts = catalog.rad_pipes_grey; addToBill(itemRed, halfCoils, this.getDesc('insulated_pipe_red', halfCoils, neededPipe), pipeGrp);
-                        let itemBlue = { ...catalog.insulated_pipes[1], originalId: catalog.insulated_pipes[1].id + "_rad" }; itemBlue.alts = catalog.rad_pipes_grey; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
+                        let itemRed = asCoilPrice({ ...catalog.insulated_pipes[0], originalId: catalog.insulated_pipes[0].id + "_rad" }); itemRed.alts = catalog.rad_pipes_grey; addToBill(itemRed, halfCoils, this.getDesc('insulated_pipe_red', halfCoils, neededPipe), pipeGrp);
+                        let itemBlue = asCoilPrice({ ...catalog.insulated_pipes[1], originalId: catalog.insulated_pipes[1].id + "_rad" }); itemBlue.alts = catalog.rad_pipes_grey; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
                     } else if (this.state.pipeType === 'insulated_mp') {
                         let coils = Math.ceil(neededPipe / 100); let halfCoils = Math.ceil(coils / 2);
-                        let itemRed = { ...catalog.insulated_pipes_mp_red[0], originalId: catalog.insulated_pipes_mp_red[0].id + "_rad" }; itemRed.alts = catalog.metal_plastic_pipes; addToBill(itemRed, halfCoils, this.getDesc('insulated_pipe_red', halfCoils, neededPipe), pipeGrp);
-                        let itemBlue = { ...catalog.insulated_pipes_mp_blue[0], originalId: catalog.insulated_pipes_mp_blue[0].id + "_rad" }; itemBlue.alts = catalog.metal_plastic_pipes; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
+                        let itemRed = asCoilPrice({ ...catalog.insulated_pipes_mp_red[0], originalId: catalog.insulated_pipes_mp_red[0].id + "_rad" }); itemRed.alts = catalog.metal_plastic_pipes; addToBill(itemRed, halfCoils, this.getDesc('insulated_pipe_red', halfCoils, neededPipe), pipeGrp);
+                        let itemBlue = asCoilPrice({ ...catalog.insulated_pipes_mp_blue[0], originalId: catalog.insulated_pipes_mp_blue[0].id + "_rad" }); itemBlue.alts = catalog.metal_plastic_pipes; addToBill(itemBlue, halfCoils, this.getDesc('insulated_pipe_blue', halfCoils, neededPipe), pipeGrp);
                     } else if (this.state.pipeType === 'split_mp') {
-                        let grayItem = (neededPipe > 200) ? { ...catalog.metal_plastic_pipes[1] } : { ...catalog.metal_plastic_pipes[0] }; grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes_mp_red; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
+                        let grayItem = asCoilPrice((neededPipe > 200) ? { ...catalog.metal_plastic_pipes[1] } : { ...catalog.metal_plastic_pipes[0] }); grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes_mp_red; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
                         let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
                     } else if (this.state.pipeType === 'stable_16') {
                         let coils = Math.ceil(neededPipe / 100);
-                        let stbItem = { ...catalog.stable_pipes[0], originalId: catalog.stable_pipes[0].id + "_rad" }; stbItem.alts = catalog.insulated_pipes; addToBill(stbItem, coils, this.getDesc('rad_pipe', neededPipe), pipeGrp);
+                        let stbItem = asCoilPrice({ ...catalog.stable_pipes[0], originalId: catalog.stable_pipes[0].id + "_rad" }); stbItem.alts = catalog.insulated_pipes; addToBill(stbItem, coils, this.getDesc('rad_pipe', neededPipe), pipeGrp);
                         let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
                     } else if (this.state.pipeType === 'stable_16_r') {
                         let coils = Math.ceil(neededPipe / 100);
-                        let stbItem = { ...catalog.stable_pipes[0].rommer, originalId: catalog.stable_pipes[0].id + "_rad" }; stbItem.alts = catalog.insulated_pipes; addToBill(stbItem, coils, this.getDesc('rad_pipe', neededPipe), pipeGrp);
+                        let stbItem = asCoilPrice({ ...catalog.stable_pipes[0].rommer, originalId: catalog.stable_pipes[0].id + "_rad" }); stbItem.alts = catalog.insulated_pipes; addToBill(stbItem, coils, this.getDesc('rad_pipe', neededPipe), pipeGrp);
                         let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
                     } else { // 'split'
-                        let grayItem = (neededPipe > 200) ? { ...catalog.rad_pipes_grey[1] } : { ...catalog.rad_pipes_grey[0] }; grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
+                        let grayItem = asCoilPrice((neededPipe > 200) ? { ...catalog.rad_pipes_grey[1] } : { ...catalog.rad_pipes_grey[0] }); grayItem.originalId = grayItem.id + "_rad"; grayItem.alts = catalog.insulated_pipes; addToBill(grayItem, Math.ceil(neededPipe / grayItem.len), this.getDesc('rad_pipe', neededPipe), pipeGrp);
                         let insLen = Math.ceil(neededPipe / 2); if (insLen % 2 !== 0) insLen++; addToBill(catalog.insulation[0], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы подачи (красная) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp); addToBill(catalog.insulation[1], insLen, `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Теплоизоляция трубы обратки (синяя) — защита от теплопотерь и конденсата.<br><b>Формула:</b> общая трасса ÷ 2, округление вверх до чётного числа.<br><b>Расчёт:</b> ${neededPipe} м ÷ 2 = ${insLen} м.</span>`, pipeGrp);
                     }
                     addToBill(catalog.water_fittings[8], neededPipe, this.getDesc('double_clip', neededPipe, 'radiators'), pipeGrp);
@@ -18713,24 +19135,24 @@ const app = {
             if (this.state.ufhPipeMaterial === 'metal_plastic') {
                 let q2 = Math.floor(tpMeters / 200); let q1 = Math.ceil((tpMeters % 200) / 100);
                 if (q2) {
-                    let pipe2 = { ...catalog.metal_plastic_pipes[1], originalId: catalog.metal_plastic_pipes[1].id + "_ufh" };
+                    let pipe2 = asCoilPrice({ ...catalog.metal_plastic_pipes[1], originalId: catalog.metal_plastic_pipes[1].id + "_ufh" });
                     pipe2.alts = [catalog.pipes[0]];
                     addToBill(pipe2, q2, this.getDesc('ufh_pipe', tpMeters), grpPipe);
                 }
                 if (q1) {
-                    let pipe1 = { ...catalog.metal_plastic_pipes[0], originalId: catalog.metal_plastic_pipes[0].id + "_ufh" };
+                    let pipe1 = asCoilPrice({ ...catalog.metal_plastic_pipes[0], originalId: catalog.metal_plastic_pipes[0].id + "_ufh" });
                     pipe1.alts = [catalog.pipes[0]];
                     addToBill(pipe1, q1, this.getDesc('ufh_pipe', tpMeters), grpPipe);
                 }
             } else {
                 let q5 = Math.floor(tpMeters / 500); let q1 = Math.ceil((tpMeters % 500) / 100);
                 if (q5) {
-                    let pipe5 = { ...catalog.pipes[1], originalId: catalog.pipes[1].id + "_ufh" };
+                    let pipe5 = asCoilPrice({ ...catalog.pipes[1], originalId: catalog.pipes[1].id + "_ufh" });
                     pipe5.alts = [catalog.metal_plastic_pipes[0]];
                     addToBill(pipe5, q5, this.getDesc('ufh_pipe', tpMeters), grpPipe);
                 }
                 if (q1) {
-                    let pipe1 = { ...catalog.pipes[0], originalId: catalog.pipes[0].id + "_ufh" };
+                    let pipe1 = asCoilPrice({ ...catalog.pipes[0], originalId: catalog.pipes[0].id + "_ufh" });
                     pipe1.alts = [catalog.metal_plastic_pipes[0]];
                     addToBill(pipe1, q1, this.getDesc('ufh_pipe', tpMeters), grpPipe);
                 }
