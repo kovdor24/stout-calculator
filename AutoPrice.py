@@ -1,4 +1,5 @@
 import re
+import sys
 import time
 import os
 import urllib3
@@ -225,6 +226,7 @@ def update_catalog_prices():
     price_cache = {}
     updated_count = 0
     not_found_streak = 0
+    blocked_by_cdn = False
     for i, item in enumerate(items_to_process):
         sku, old_price, match = item['sku'], item['old_price'], item['match']
         start_idx, end_idx, obj_text = item['start_idx'], item['end_idx'], item['obj_text']
@@ -248,6 +250,7 @@ def update_catalog_prices():
         if isinstance(res, str) and "BLOCKED_BY_CDN" in res:
             print("-> БЛОКИРОВКА CDN (DDoS-Guard)")
             print("\n[!] Остановка: Обнаружена блокировка робота сайтом. Парсинг прерван.")
+            blocked_by_cdn = True
             break
             
         if isinstance(res, str) and res == "NOT_FOUND":
@@ -319,9 +322,21 @@ def update_catalog_prices():
         print(f"\nУспешно обновлено цен: {updated_count}")
     else: print("\nИзменений не требуется.")
 
+    if blocked_by_cdn:
+        remaining = len(items_to_process) - (i + 1)
+        print(f"\n[!] Парсер остановлен блокировкой CDN, не дойдя до конца списка "
+              f"(осталось необработанных: {remaining} из {len(items_to_process)}). "
+              f"Уже собранные обновления (если были) сохранены в {FULL_PATH} и всё равно закоммитятся, "
+              f"но прогон помечается неуспешным, чтобы это не выглядело как «все цены проверены».")
+        return False
+    return True
+
 if __name__ == "__main__":
     try:
-        update_catalog_prices()
+        ok = update_catalog_prices()
+        if not ok:
+            sys.exit(1)
     except Exception as e:
         print(f"\n[!] КРИТИЧЕСКАЯ ОШИБКА: {e}")
         traceback.print_exc()
+        sys.exit(1)
