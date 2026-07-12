@@ -11,6 +11,15 @@ from bs4 import BeautifulSoup
 FULL_PATH = "catalog.js"
 SEARCH_URL = 'https://www.teremonline.ru'
 
+# stdout не в терминал (как в GitHub Actions) по умолчанию блочно буферизуется — строки
+# print() могут не появляться в логе, пока буфер не наполнится или процесс не завершится.
+# Из-за этого зависание и "просто медленно" в логах выглядят одинаково — пусто. Форсируем
+# построчный вывод, чтобы лог показывал прогресс в реальном времени.
+try:
+    sys.stdout.reconfigure(line_buffering=True)
+except Exception:
+    pass
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from selenium import webdriver
