@@ -2634,7 +2634,8 @@ const catalog = {
         { id: "PA13518P", article: "PA13518P", price: 150.65, brand: "ProAqua", availability: "in_stock", name: "Угольник 45° PP-R 63 мм", unit: "шт" },
         { id: "PA13520P", article: "PA13520P", price: 372.46, brand: "ProAqua", availability: "in_stock", name: "Угольник 45° PP-R 75 мм", unit: "шт" },
         { id: "PA13522P", article: "PA13522P", price: 657.45, brand: "ProAqua", availability: "in_stock", name: "Угольник 45° PP-R 90 мм", unit: "шт" },
-        { id: "PA13524", article: "PA13524", price: 739.98, brand: "ProAqua", availability: "in_stock", name: "Угольник 45° PP-R 110 мм", unit: "шт" }
+        { id: "PA13524", article: "PA13524", price: 669, brand: "ProAqua", availability: "in_stock", name: "Угольник 45° PP-R 110 мм", unit: "шт",
+  price_date: '2026-07-12' }
     ],
     ppr_proaqua_tee: [
         { id: "PA14008P", article: "PA14008P", price: 13.73, brand: "ProAqua", availability: "in_stock", name: "Тройник PP-R 20 мм", unit: "шт" },
