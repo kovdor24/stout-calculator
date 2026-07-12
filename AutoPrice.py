@@ -9,7 +9,15 @@ from bs4 import BeautifulSoup
 # --- НАСТРОЙКИ ---
 # Путь к файлу базы данных (Относительный для GitHub Actions)
 FULL_PATH = "catalog.js"
-SEARCH_URL = 'https://www.teremonline.ru' 
+SEARCH_URL = 'https://www.teremonline.ru'
+
+# DDoS-Guard часто отдаёт временную JS-проверку ("checking your browser", несколько
+# секунд на авторедирект), а не постоянный бан по IP. AutoImage.py вообще не считает
+# такую страницу фатальной ошибкой — просто помечает один товар как "не найдено" и идёт
+# дальше, останавливаясь только после нескольких неудач подряд. Раньше этот скрипт
+# обрывал весь прогон на первом же обнаружении признаков блокировки — теперь так же
+# терпим к одиночным случаям, как AutoImage.py.
+MAX_CONSECUTIVE_CDN_BLOCKS = 6
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -146,6 +154,7 @@ def process_sku_v42(driver, sku, old_price):
             driver.execute_script("window.stop();")
 
         close_popups(driver)
+        time.sleep(1.5)  # даём шанс завершиться JS-редиректу DDoS-Guard, если это временный челлендж
 
         title_lower = driver.title.lower()
         page_source_lower = driver.page_source.lower()
@@ -271,6 +280,7 @@ def update_catalog_prices():
     updated_count = 0
     not_found_streak = 0
     blocked_by_cdn = False
+    consecutive_cdn_blocks = 0
     for i, item in enumerate(items_to_process):
         sku, old_price, match = item['sku'], item['old_price'], item['match']
         start_idx, end_idx, obj_text = item['start_idx'], item['end_idx'], item['obj_text']
@@ -292,11 +302,22 @@ def update_catalog_prices():
             time.sleep(random.uniform(1.2, 2.5))
             
         if isinstance(res, str) and "BLOCKED_BY_CDN" in res:
-            print("-> БЛОКИРОВКА CDN (DDoS-Guard)")
-            print("\n[!] Остановка: Обнаружена блокировка робота сайтом. Парсинг прерван.")
-            blocked_by_cdn = True
-            break
-            
+            consecutive_cdn_blocks += 1
+            print(f"-> БЛОКИРОВКА CDN (DDoS-Guard), подряд: {consecutive_cdn_blocks}/{MAX_CONSECUTIVE_CDN_BLOCKS}")
+            if consecutive_cdn_blocks >= MAX_CONSECUTIVE_CDN_BLOCKS:
+                print(f"\n[!] {MAX_CONSECUTIVE_CDN_BLOCKS} блокировок CDN подряд — похоже на настоящий бан, а не разовый "
+                      f"челлендж. Останавливаемся, чтобы не усугублять.")
+                blocked_by_cdn = True
+                break
+            # Одиночная блокировка часто оказывается временной JS-проверкой DDoS-Guard, а не
+            # постоянным баном (см. AutoImage.py — там это вообще не фатальная ошибка). Не рвём
+            # весь прогон на первом же случае — ждём подольше и пробуем следующий товар.
+            import random
+            time.sleep(random.uniform(5, 10))
+            continue
+        else:
+            consecutive_cdn_blocks = 0
+
         if isinstance(res, str) and res == "NOT_FOUND":
             not_found_streak += 1
         elif not (isinstance(res, str) and res.startswith("ERR")):
