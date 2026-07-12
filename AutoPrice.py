@@ -133,21 +133,65 @@ def get_price_card_isolation(driver, sku, old_price):
 def process_sku_v42(driver, sku, old_price):
     try:
         raw_sku = sku.strip()
-        search_url = f"https://www.teremonline.ru/search/?q={raw_sku}"
-        
+
+        # Заходим через главную страницу и вводим артикул в форму поиска — так же, как
+        # это делает AutoImage.py (тот же сайт, тот же GitHub-раннер, но эта схема прохода
+        # не блокируется DDoS-Guard). Прежний вариант с прямым переходом на
+        # .../search/?q=... блокировался на самом первом запросе — похоже, DDoS-Guard
+        # ставит проверочную куку на главной, а прямой заход сразу на страницу поиска
+        # выглядит как типичный паттерн массового скрейпинга каталога.
         try:
-            driver.get(search_url)
+            driver.get(SEARCH_URL)
         except TimeoutException:
             driver.execute_script("window.stop();")
-            
+
         close_popups(driver)
-        
-        # Check for bot protection / CDN block pages
+
         title_lower = driver.title.lower()
         page_source_lower = driver.page_source.lower()
         if "ddos-guard" in title_lower or "cloudflare" in title_lower or "captcha" in page_source_lower or "access denied" in page_source_lower or "blocked" in title_lower:
             return "ERR: BLOCKED_BY_CDN"
-            
+
+        searched = False
+        for attempt in range(3):
+            try:
+                wait = WebDriverWait(driver, 5)
+                try:
+                    inp = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='search'], input[name='q'], input[placeholder*='поиск']")))
+                except Exception:
+                    inp = next((i for i in driver.find_elements(By.TAG_NAME, "input") if i.is_displayed() and i.size['width'] > 50), None)
+                if not inp:
+                    return "ERR_NO_SEARCH_INPUT"
+
+                inp.send_keys(Keys.CONTROL + "a")
+                inp.send_keys(Keys.BACKSPACE)
+                inp.send_keys(raw_sku)
+
+                try:
+                    driver.find_element(By.CSS_SELECTOR, "button[type='submit'], .search-btn").click()
+                except Exception:
+                    inp.send_keys(Keys.RETURN)
+
+                time.sleep(2)
+                searched = True
+                break
+            except StaleElementReferenceException:
+                time.sleep(0.5)
+                continue
+            except Exception as e:
+                if attempt == 2: return f"ERR_SEARCH: {str(e)[:25]}"
+                time.sleep(0.5)
+                continue
+
+        if not searched:
+            return "NOT_FOUND"
+
+        # Повторная проверка блокировки уже на странице результатов поиска
+        title_lower = driver.title.lower()
+        page_source_lower = driver.page_source.lower()
+        if "ddos-guard" in title_lower or "cloudflare" in title_lower or "captcha" in page_source_lower or "access denied" in page_source_lower or "blocked" in title_lower:
+            return "ERR: BLOCKED_BY_CDN"
+
         res = get_price_card_isolation(driver, sku, old_price)
         return res
     except Exception as e: return f"ERR: {str(e)[:20]}"
