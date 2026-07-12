@@ -174,7 +174,16 @@ def git_checkpoint(commit_msg):
             print("[Чекпоинт] Изменений с прошлого чекпоинта нет, коммит пропущен.")
             return
         subprocess.run(["git", "commit", "-m", commit_msg], check=False)
+
         push = subprocess.run(["git", "push"], check=False)
+        if push.returncode != 0:
+            # origin/main мог уйти вперёд (например, кто-то запушил правку кода, пока этот
+            # прогон работает) — подтягиваем свежую историю поверх своего коммита и пробуем
+            # ещё раз, прежде чем сдаваться.
+            print("[Чекпоинт] git push отклонён — подтягиваю origin/main (rebase) и пробую снова...")
+            subprocess.run(["git", "pull", "--rebase"], check=False)
+            push = subprocess.run(["git", "push"], check=False)
+
         if push.returncode == 0:
             print(f"[Чекпоинт] Промежуточный коммит запушен: {commit_msg}")
         else:
