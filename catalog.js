@@ -2743,7 +2743,8 @@ const catalog = {
         { id: "PA12542P", article: "PA12542P", price: 212.16, brand: "ProAqua", availability: "in_stock", name: "Муфта переходная PP-R 75х63", unit: "шт" },
         { id: "PA12544P", article: "PA12544P", price: 260.66, brand: "ProAqua", availability: "in_stock", name: "Муфта переходная PP-R 90х63", unit: "шт" },
         { id: "PA12546P", article: "PA12546P", price: 347.22, brand: "ProAqua", availability: "in_stock", name: "Муфта переходная PP-R 90х75", unit: "шт" },
-        { id: "PA12547P", article: "PA12547P", price: 417.04, brand: "ProAqua", availability: "in_stock", name: "Муфта переходная PP-R 110х75", unit: "шт" },
+        { id: "PA12547P", article: "PA12547P", price: 175, brand: "ProAqua", availability: "in_stock", name: "Муфта переходная PP-R 110х75", unit: "шт",
+  price_date: '2026-07-12' },
         { id: "PA12548P", article: "PA12548P", price: 464.42, brand: "ProAqua", availability: "in_stock", name: "Муфта переходная PP-R 110х90", unit: "шт" }
     ],
     mounting_system: [
@@ -2763,7 +2764,8 @@ const catalog = {
         { id: "SAC-0020-300001", name: "Хомут для труб одновинтовой с гайкой M8 1\" (31–35 мм)", price: 81, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
         { id: "SAC-0020-300114", name: "Хомут для труб одновинтовой с гайкой M8 1 1/4\" (40–45 мм)", price: 93, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
         { id: "SAC-0020-300112", name: "Хомут для труб одновинтовой с гайкой M8 1 1/2\" (48–52 мм)", price: 102, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SAC-0020-300002", name: "Хомут для труб одновинтовой с гайкой M8 2\" (57–60 мм)", price: 82, brand: "STOUT", availability: "in_stock" },
+        { id: "SAC-0020-300002", name: "Хомут для труб одновинтовой с гайкой M8 2\" (57–60 мм)", price: 131, brand: "STOUT", availability: "in_stock",
+  price_date: '2026-07-12' },
         { id: "SAC-0020-200012", name: "Хомут для труб двойной с гайкой 1/2\" (20–24 мм)", price: 175, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
         { id: "SAC-0020-200034", name: "Хомут для труб двойной с гайкой 3/4\" (25–29 мм)", price: 184, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
         { id: "SAC-0020-200038", name: "Хомут для труб двойной с гайкой 3/8\" (14–18 мм)", price: 164, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" },
