@@ -22,10 +22,6 @@ jobs:
       - name: Run parser script
         run: python AutoPrice.py
       - name: Commit and push changes
-        # always() — коммитим и пушим то, что парсер успел собрать, даже если сам скрипт
-        # упал с ошибкой (например, блокировка CDN на середине списка); при этом джоба
-        # в целом всё равно останется помечена как failed из-за упавшего предыдущего шага.
-        if: always()
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
