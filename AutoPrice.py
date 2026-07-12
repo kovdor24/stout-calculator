@@ -11,14 +11,6 @@ from bs4 import BeautifulSoup
 FULL_PATH = "catalog.js"
 SEARCH_URL = 'https://www.teremonline.ru'
 
-# DDoS-Guard часто отдаёт временную JS-проверку ("checking your browser", несколько
-# секунд на авторедирект), а не постоянный бан по IP. AutoImage.py вообще не считает
-# такую страницу фатальной ошибкой — просто помечает один товар как "не найдено" и идёт
-# дальше, останавливаясь только после нескольких неудач подряд. Раньше этот скрипт
-# обрывал весь прогон на первом же обнаружении признаков блокировки — теперь так же
-# терпим к одиночным случаям, как AutoImage.py.
-MAX_CONSECUTIVE_CDN_BLOCKS = 6
-
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from selenium import webdriver
@@ -139,69 +131,51 @@ def get_price_card_isolation(driver, sku, old_price):
     else: return f"ERR_DIFF_{found_items[0]['price']}"
 
 def process_sku_v42(driver, sku, old_price):
+    # Восстановлено дословно до версии, стабильно отработавшей месяцы (апрель-июнь, полные
+    # прогоны по 1-2 часа) — до коммита 359f0be (20.06), который разом добавил прямую ссылку
+    # /search/?q=..., "стелс"-настройки браузера и жёсткий обрыв по первому же признаку
+    # блокировки. Все три правки, сделанные сегодня, по очереди откатывали кусочки этого
+    # коммита; здесь — финальный откат: без явного детекта DDoS-Guard/CAPTCHA, просто до 8
+    # попыток прочитать цену с паузой в 1с — как и было в проверенной версии.
     try:
-        raw_sku = sku.strip()
-
-        # Заходим через главную страницу и вводим артикул в форму поиска — так же, как
-        # это делает AutoImage.py (тот же сайт, тот же GitHub-раннер, но эта схема прохода
-        # не блокируется DDoS-Guard). Прежний вариант с прямым переходом на
-        # .../search/?q=... блокировался на самом первом запросе — похоже, DDoS-Guard
-        # ставит проверочную куку на главной, а прямой заход сразу на страницу поиска
-        # выглядит как типичный паттерн массового скрейпинга каталога.
         try:
             driver.get(SEARCH_URL)
         except TimeoutException:
             driver.execute_script("window.stop();")
-
         close_popups(driver)
-        time.sleep(1.5)  # даём шанс завершиться JS-редиректу DDoS-Guard, если это временный челлендж
-
-        title_lower = driver.title.lower()
-        page_source_lower = driver.page_source.lower()
-        if "ddos-guard" in title_lower or "cloudflare" in title_lower or "captcha" in page_source_lower or "access denied" in page_source_lower or "blocked" in title_lower:
-            return "ERR: BLOCKED_BY_CDN"
-
-        searched = False
+        raw_sku = sku.strip()
         for attempt in range(3):
             try:
                 wait = WebDriverWait(driver, 5)
-                try:
-                    inp = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='search'], input[name='q'], input[placeholder*='поиск']")))
-                except Exception:
+                try: inp = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='search'], input[name='q'], input[placeholder*='поиск']")))
+                except:
                     inp = next((i for i in driver.find_elements(By.TAG_NAME, "input") if i.is_displayed() and i.size['width'] > 50), None)
-                if not inp:
-                    return "ERR_NO_SEARCH_INPUT"
+                if not inp: return "ERR: Поле поиска"
 
                 inp.send_keys(Keys.CONTROL + "a")
                 inp.send_keys(Keys.BACKSPACE)
-                inp.send_keys(raw_sku)
 
+                inp.send_keys(raw_sku)
+                time.sleep(1)
                 try:
                     driver.find_element(By.CSS_SELECTOR, "button[type='submit'], .search-btn").click()
-                except Exception:
+                except:
                     inp.send_keys(Keys.RETURN)
-
-                time.sleep(2)
-                searched = True
                 break
             except StaleElementReferenceException:
                 time.sleep(0.5)
                 continue
             except Exception as e:
-                if attempt == 2: return f"ERR_SEARCH: {str(e)[:25]}"
+                if attempt == 2: return f"ERR: {str(e)[:20]}"
                 time.sleep(0.5)
                 continue
 
-        if not searched:
-            return "NOT_FOUND"
-
-        # Повторная проверка блокировки уже на странице результатов поиска
-        title_lower = driver.title.lower()
-        page_source_lower = driver.page_source.lower()
-        if "ddos-guard" in title_lower or "cloudflare" in title_lower or "captcha" in page_source_lower or "access denied" in page_source_lower or "blocked" in title_lower:
-            return "ERR: BLOCKED_BY_CDN"
-
-        res = get_price_card_isolation(driver, sku, old_price)
+        res = "NOT_FOUND"
+        for _ in range(8):
+            time.sleep(1)
+            res = get_price_card_isolation(driver, sku, old_price)
+            if isinstance(res, dict): return res
+            if isinstance(res, str) and (res.startswith("ERR_DIFF") or res == "NOT_FOUND"): continue
         return res
     except Exception as e: return f"ERR: {str(e)[:20]}"
 
@@ -282,13 +256,11 @@ def update_catalog_prices():
     price_cache = {}
     updated_count = 0
     not_found_streak = 0
-    blocked_by_cdn = False
-    consecutive_cdn_blocks = 0
     for i, item in enumerate(items_to_process):
         sku, old_price, match = item['sku'], item['old_price'], item['match']
         start_idx, end_idx, obj_text = item['start_idx'], item['end_idx'], item['obj_text']
         print(f"[{i+1}/{len(items_to_process)}] {sku}", end=" ")
-        
+
         if not_found_streak >= 4:
             print("[Анти-залипание] Принудительная перезагрузка...", end=" ")
             try: driver.get(SEARCH_URL)
@@ -300,26 +272,6 @@ def update_catalog_prices():
         else:
             res = process_sku_v42(driver, sku, old_price)
             price_cache[sku] = res
-            # Небольшая пауза для имитации поведения человека
-            import random
-            time.sleep(random.uniform(1.2, 2.5))
-            
-        if isinstance(res, str) and "BLOCKED_BY_CDN" in res:
-            consecutive_cdn_blocks += 1
-            print(f"-> БЛОКИРОВКА CDN (DDoS-Guard), подряд: {consecutive_cdn_blocks}/{MAX_CONSECUTIVE_CDN_BLOCKS}")
-            if consecutive_cdn_blocks >= MAX_CONSECUTIVE_CDN_BLOCKS:
-                print(f"\n[!] {MAX_CONSECUTIVE_CDN_BLOCKS} блокировок CDN подряд — похоже на настоящий бан, а не разовый "
-                      f"челлендж. Останавливаемся, чтобы не усугублять.")
-                blocked_by_cdn = True
-                break
-            # Одиночная блокировка часто оказывается временной JS-проверкой DDoS-Guard, а не
-            # постоянным баном (см. AutoImage.py — там это вообще не фатальная ошибка). Не рвём
-            # весь прогон на первом же случае — ждём подольше и пробуем следующий товар.
-            import random
-            time.sleep(random.uniform(5, 10))
-            continue
-        else:
-            consecutive_cdn_blocks = 0
 
         if isinstance(res, str) and res == "NOT_FOUND":
             not_found_streak += 1
@@ -389,14 +341,6 @@ def update_catalog_prices():
         with open(FULL_PATH, 'w', encoding='utf-8') as f: f.write(content)
         print(f"\nУспешно обновлено цен: {updated_count}")
     else: print("\nИзменений не требуется.")
-
-    if blocked_by_cdn:
-        remaining = len(items_to_process) - (i + 1)
-        print(f"\n[!] Парсер остановлен блокировкой CDN, не дойдя до конца списка "
-              f"(осталось необработанных: {remaining} из {len(items_to_process)}). "
-              f"Уже собранные обновления (если были) сохранены в {FULL_PATH} и всё равно закоммитятся, "
-              f"но прогон помечается неуспешным, чтобы это не выглядело как «все цены проверены».")
-        return False
     return True
 
 if __name__ == "__main__":
