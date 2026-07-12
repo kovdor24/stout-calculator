@@ -287,11 +287,13 @@ def update_catalog_prices():
         else:
             id_m = re.search(r'["\']?id["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
             if id_m: sku = id_m.group(1)
-        if not sku: continue 
+        if not sku: continue
         old_price_str = match.group(2)
         old_price = float(old_price_str) if '.' in old_price_str else int(old_price_str)
-        items_to_process.append({'sku': sku, 'old_price': old_price, 'match': match, 'start_idx': start_idx, 'end_idx': end_idx, 'obj_text': obj_text})
-    
+        date_m = re.search(r'["\']?price_date["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
+        price_date = date_m.group(1) if date_m else None
+        items_to_process.append({'sku': sku, 'old_price': old_price, 'match': match, 'start_idx': start_idx, 'end_idx': end_idx, 'obj_text': obj_text, 'price_date': price_date})
+
     valid_items = []
     for item in items_to_process:
         is_nested = False
@@ -302,7 +304,13 @@ def update_catalog_prices():
         if not is_nested:
             valid_items.append(item)
     items_to_process = valid_items
-    
+
+    # Сортируем от самых старых price_date к самым свежим (без даты — считаем самыми
+    # старыми, в начало очереди). Прогон часто не успевает пройти весь каталог за один раз
+    # (см. риск таймаута джобы) — теперь при неполном прогоне в первую очередь освежаются
+    # именно просроченные позиции, а не всегда одни и те же товары в начале catalog.js.
+    items_to_process.sort(key=lambda x: x['price_date'] or '0000-00-00')
+
     print(f"Найдено корневых товаров: {len(items_to_process)}\n")
     replacements = []
     price_cache = {}
