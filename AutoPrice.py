@@ -227,16 +227,19 @@ def update_catalog_prices():
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_experimental_option("excludeSwitches", ["enable-logging"])
-        options.add_argument("--no-proxy-server") 
-        
-        # Скрываем автоматизацию и ставим реальный User-Agent для обхода блокировок DDoS-Guard / Cloudflare
-        options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        
+        options.add_argument("--no-proxy-server")
+
+        # УБРАНО: кастомный User-Agent (Chrome/122 — почти наверняка устарел относительно
+        # реальной версии Chrome, которую тянет chromedriver на раннере) и
+        # --disable-blink-features=AutomationControlled + CDP-патч navigator.webdriver.
+        # AutoImage.py парсит тот же сайт с тех же раннеров БЕЗ этих "стелс"-хаков и
+        # стабильно проходит (сотни картинок за прогон), а AutoPrice.py с ними — блокировался
+        # 100% запросов. Похоже, несовпадение UA с реальным движком браузера и точечный
+        # патч одного-единственного свойства (при том что остальные автоматизационные
+        # признаки никуда не делись) — более явный сигнал для антибота, чем дефолтный
+        # Selenium-профиль без всякой маскировки. Оставляем настройки идентичными рабочему
+        # AutoImage.py.
         driver = webdriver.Chrome(options=options)
-        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-            "source": "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-        })
         driver.set_page_load_timeout(30)
         driver.set_window_size(1920, 1080)
         print("Браузер успешно запущен!\n")
