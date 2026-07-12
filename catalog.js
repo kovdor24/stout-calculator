@@ -2155,13 +2155,13 @@ const catalog = {
         { id: "900003.R", article: "900003.R", name: "Смазка силиконовая", price: 313, brand: "Sinikon", availability: "in_stock", price_date: "2026-06-06" }
     ],
     ss_pipe_4m: [
-        { id: "RSS-1001-000015", name: "Труба нерж. 304, штанга 4м 15х1", price: 329, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1001-000018", name: "Труба нерж. 304, штанга 4м 18х1", price: 449, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1001-000022", name: "Труба нерж. 304, штанга 4м 22х1.2", price: 607, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1001-000028", name: "Труба нерж. 304, штанга 4м 28х1.2", price: 784, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1001-000035", name: "Труба нерж. 304, штанга 4м 35х1.5", price: 1229, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1001-000042", name: "Труба нерж. 304, штанга 4м 42х1.5", price: 1795, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1001-000054", name: "Труба нерж. 304, штанга 4м 54х1.5", price: 2320, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RSS-1001-000015", name: "Труба нерж. 304, штанга 4м 15х1", price: 300, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1001-000018", name: "Труба нерж. 304, штанга 4м 18х1", price: 409, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1001-000022", name: "Труба нерж. 304, штанга 4м 22х1.2", price: 553, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1001-000028", name: "Труба нерж. 304, штанга 4м 28х1.2", price: 715, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1001-000035", name: "Труба нерж. 304, штанга 4м 35х1.5", price: 1119, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1001-000042", name: "Труба нерж. 304, штанга 4м 42х1.5", price: 1636, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1001-000054", name: "Труба нерж. 304, штанга 4м 54х1.5", price: 2113, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" }
     ],
     ss_pipe_2m: [
         { id: "RSS-1001-200015", name: "Труба нерж. 304, штанга 2м 15х1", price: 309, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
@@ -2183,97 +2183,97 @@ const catalog = {
   price_date: '2026-07-12' }
     ],
     ss_elbow90: [
-        { id: "RSS-1002-000015", name: "Угольник 90° ВПр-НПр 15", price: 187, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1002-000018", name: "Угольник 90° ВПр-НПр 18", price: 254, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1002-000022", name: "Угольник 90° ВПр-НПр 22", price: 288, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1002-000028", name: "Угольник 90° ВПр-НПр 28", price: 424, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1002-000035", name: "Угольник 90° ВПр-НПр 35", price: 655, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1002-000042", name: "Угольник 90° ВПр-НПр 42", price: 923, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1002-000054", name: "Угольник 90° ВПр-НПр 54", price: 1344, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RSS-1002-000015", name: "Угольник 90° ВПр-НПр 15", price: 171, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1002-000018", name: "Угольник 90° ВПр-НПр 18", price: 231, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1002-000022", name: "Угольник 90° ВПр-НПр 22", price: 262, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1002-000028", name: "Угольник 90° ВПр-НПр 28", price: 386, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1002-000035", name: "Угольник 90° ВПр-НПр 35", price: 596, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1002-000042", name: "Угольник 90° ВПр-НПр 42", price: 841, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1002-000054", name: "Угольник 90° ВПр-НПр 54", price: 1224, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" }
     ],
     ss_elbow90_ff: [
-        { id: "RSS-1003-000015", name: "Угольник 90° ВПр-ВПр 15", price: 177, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1003-000018", name: "Угольник 90° ВПр-ВПр 18", price: 287, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1003-000022", name: "Угольник 90° ВПр-ВПр 22", price: 340, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1003-000028", name: "Угольник 90° ВПр-ВПр 28", price: 455, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1003-000035", name: "Угольник 90° ВПр-ВПр 35", price: 676, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1003-000042", name: "Угольник 90° ВПр-ВПр 42", price: 789, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1003-000054", name: "Угольник 90° ВПр-ВПр 54", price: 1359, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RSS-1003-000015", name: "Угольник 90° ВПр-ВПр 15", price: 161, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1003-000018", name: "Угольник 90° ВПр-ВПр 18", price: 261, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1003-000022", name: "Угольник 90° ВПр-ВПр 22", price: 310, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1003-000028", name: "Угольник 90° ВПр-ВПр 28", price: 415, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1003-000035", name: "Угольник 90° ВПр-ВПр 35", price: 616, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1003-000042", name: "Угольник 90° ВПр-ВПр 42", price: 719, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1003-000054", name: "Угольник 90° ВПр-ВПр 54", price: 1238, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" }
     ],
     ss_elbow45: [
-        { id: "RSS-1004-000015", name: "Угольник 45° ВПр-НПр 15", price: 174, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1004-000018", name: "Угольник 45° ВПр-НПр 18", price: 230, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1004-000022", name: "Угольник 45° ВПр-НПр 22", price: 258, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1004-000028", name: "Угольник 45° ВПр-НПр 28", price: 342, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1004-000035", name: "Угольник 45° ВПр-НПр 35", price: 570, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1004-000042", name: "Угольник 45° ВПр-НПр 42", price: 724, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1004-000054", name: "Угольник 45° ВПр-НПр 54", price: 897, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RSS-1004-000015", name: "Угольник 45° ВПр-НПр 15", price: 159, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1004-000018", name: "Угольник 45° ВПр-НПр 18", price: 210, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1004-000022", name: "Угольник 45° ВПр-НПр 22", price: 235, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1004-000028", name: "Угольник 45° ВПр-НПр 28", price: 312, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1004-000035", name: "Угольник 45° ВПр-НПр 35", price: 519, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1004-000042", name: "Угольник 45° ВПр-НПр 42", price: 660, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1004-000054", name: "Угольник 45° ВПр-НПр 54", price: 817, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" }
     ],
     ss_elbow45_ff: [
-        { id: "RSS-1005-000015", name: "Угольник 45° ВПр-ВПр 15", price: 177, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1005-000018", name: "Угольник 45° ВПр-ВПр 18", price: 274, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1005-000022", name: "Угольник 45° ВПр-ВПр 22", price: 284, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1005-000028", name: "Угольник 45° ВПр-ВПр 28", price: 382, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1005-000035", name: "Угольник 45° ВПр-ВПр 35", price: 575, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1005-000042", name: "Угольник 45° ВПр-ВПр 42", price: 731, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1005-000054", name: "Угольник 45° ВПр-ВПр 54", price: 1176, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RSS-1005-000015", name: "Угольник 45° ВПр-ВПр 15", price: 161, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1005-000018", name: "Угольник 45° ВПр-ВПр 18", price: 250, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1005-000022", name: "Угольник 45° ВПр-ВПр 22", price: 259, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1005-000028", name: "Угольник 45° ВПр-ВПр 28", price: 348, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1005-000035", name: "Угольник 45° ВПр-ВПр 35", price: 524, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1005-000042", name: "Угольник 45° ВПр-ВПр 42", price: 666, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1005-000054", name: "Угольник 45° ВПр-ВПр 54", price: 1072, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" }
     ],
     ss_bypass_ff: [
-        { id: "RSS-1006-000015", name: "Обвод ВПр-ВПр 15", price: 444, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1006-000018", name: "Обвод ВПр-ВПр 18", price: 591, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1006-000022", name: "Обвод ВПр-ВПр 22", price: 670, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1006-000028", name: "Обвод ВПр-ВПр 28", price: 928, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RSS-1006-000015", name: "Обвод ВПр-ВПр 15", price: 405, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1006-000018", name: "Обвод ВПр-ВПр 18", price: 538, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
+        { id: "RSS-1006-000022", name: "Обвод ВПр-ВПр 22", price: 610, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1006-000028", name: "Обвод ВПр-ВПр 28", price: 846, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" }
     ],
     ss_bypass: [
-        { id: "RSS-1007-000015", name: "Обвод ВПр-НПр 15", price: 439, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1007-000018", name: "Обвод ВПр-НПр 18", price: 615, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1007-000022", name: "Обвод ВПр-НПр 22", price: 669, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RSS-1007-000015", name: "Обвод ВПр-НПр 15", price: 400, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
+        { id: "RSS-1007-000018", name: "Обвод ВПр-НПр 18", price: 560, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1007-000022", name: "Обвод ВПр-НПр 22", price: 610, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" }
     ],
     ss_bend90: [
-        { id: "RSS-1008-001570", name: "Отвод безраструбный 90° 15х70х160", price: 296, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1008-015100", name: "Отвод безраструбный 90° 15х100х600", price: 829, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RSS-1008-001570", name: "Отвод безраструбный 90° 15х70х160", price: 269, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
+        { id: "RSS-1008-015100", name: "Отвод безраструбный 90° 15х100х600", price: 755, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" }
     ],
     ss_elbow_fi: [
-        { id: "RSS-1009-001512", name: "Угольник-переходник ВПр-ВР 15х1/2", price: 464, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1009-001812", name: "Угольник-переходник ВПр-ВР 18х1/2", price: 492, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1009-001834", name: "Угольник-переходник ВПр-ВР 18х3/4", price: 595, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1009-002212", name: "Угольник-переходник ВПр-ВР 22х1/2", price: 616, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1009-002234", name: "Угольник-переходник ВПр-ВР 22х3/4", price: 619, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1009-002834", name: "Угольник-переходник ВПр-ВР 28х3/4", price: 689, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1009-000351", name: "Угольник-переходник ВПр-ВР 35х1", price: 1189, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RSS-1009-001512", name: "Угольник-переходник ВПр-ВР 15х1/2", price: 423, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1009-001812", name: "Угольник-переходник ВПр-ВР 18х1/2", price: 448, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
+        { id: "RSS-1009-001834", name: "Угольник-переходник ВПр-ВР 18х3/4", price: 542, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
+        { id: "RSS-1009-002212", name: "Угольник-переходник ВПр-ВР 22х1/2", price: 561, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
+        { id: "RSS-1009-002234", name: "Угольник-переходник ВПр-ВР 22х3/4", price: 564, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1009-002834", name: "Угольник-переходник ВПр-ВР 28х3/4", price: 627, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1009-000351", name: "Угольник-переходник ВПр-ВР 35х1", price: 1083, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" }
     ],
     ss_elbow_mi: [
-        { id: "RSS-1010-001512", name: "Угольник-переходник ВПр-НР 15х1/2", price: 416, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1010-001812", name: "Угольник-переходник ВПр-НР 18х1/2", price: 538, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1010-001834", name: "Угольник-переходник ВПр-НР 18х3/4", price: 595, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1010-002212", name: "Угольник-переходник ВПр-НР 22х1/2", price: 606, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1010-002234", name: "Угольник-переходник ВПр-НР 22х3/4", price: 637, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1010-002834", name: "Угольник-переходник ВПр-НР 28х3/4", price: 788, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1010-000351", name: "Угольник-переходник ВПр-НР 35х1", price: 1103, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RSS-1010-001512", name: "Угольник-переходник ВПр-НР 15х1/2", price: 379, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1010-001812", name: "Угольник-переходник ВПр-НР 18х1/2", price: 490, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1010-001834", name: "Угольник-переходник ВПр-НР 18х3/4", price: 542, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
+        { id: "RSS-1010-002212", name: "Угольник-переходник ВПр-НР 22х1/2", price: 552, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1010-002234", name: "Угольник-переходник ВПр-НР 22х3/4", price: 581, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1010-002834", name: "Угольник-переходник ВПр-НР 28х3/4", price: 718, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1010-000351", name: "Угольник-переходник ВПр-НР 35х1", price: 1005, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" }
     ],
     ss_wall_elbow: [
-        { id: "RSS-1011-001512", name: "Угольник настенный ВПр-ВР 15х1/2", price: 605, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1011-001812", name: "Угольник настенный ВПр-ВР 18х1/2", price: 747, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1011-002212", name: "Угольник настенный ВПр-ВР 22х1/2", price: 704, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1011-002234", name: "Угольник настенный ВПр-ВР 22х3/4", price: 828, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RSS-1011-001512", name: "Угольник настенный ВПр-ВР 15х1/2", price: 551, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
+        { id: "RSS-1011-001812", name: "Угольник настенный ВПр-ВР 18х1/2", price: 680, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
+        { id: "RSS-1011-002212", name: "Угольник настенный ВПр-ВР 22х1/2", price: 641, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
+        { id: "RSS-1011-002234", name: "Угольник настенный ВПр-ВР 22х3/4", price: 754, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" }
     ],
     ss_wall_elbow_pass: [
-        { id: "RSS-1012-001512", name: "Угольник проходной настенный ВПр-ВР 15х1/2", price: 1325, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RSS-1012-001512", name: "Угольник проходной настенный ВПр-ВР 15х1/2", price: 1208, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" }
     ],
     ss_tee: [
-        { id: "RSS-1013-000015", name: "Тройник равнопроходной ВПр 15", price: 305, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1013-000018", name: "Тройник равнопроходной ВПр 18", price: 410, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1013-000022", name: "Тройник равнопроходной ВПр 22", price: 424, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1013-000028", name: "Тройник равнопроходной ВПр 28", price: 496, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1013-000035", name: "Тройник равнопроходной ВПр 35", price: 806, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1013-000042", name: "Тройник равнопроходной ВПр 42", price: 915, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1013-000054", name: "Тройник равнопроходной ВПр 54", price: 1442, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" }
+        { id: "RSS-1013-000015", name: "Тройник равнопроходной ВПр 15", price: 278, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1013-000018", name: "Тройник равнопроходной ВПр 18", price: 373, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1013-000022", name: "Тройник равнопроходной ВПр 22", price: 386, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1013-000028", name: "Тройник равнопроходной ВПр 28", price: 452, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1013-000035", name: "Тройник равнопроходной ВПр 35", price: 734, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1013-000042", name: "Тройник равнопроходной ВПр 42", price: 834, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1013-000054", name: "Тройник равнопроходной ВПр 54", price: 1314, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" }
     ],
     ss_tee_red: [
-        { id: "RSS-1014-181518", name: "Тройник переходной ВПр 18х15х18", price: 359, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1014-221522", name: "Тройник переходной ВПр 22х15х22", price: 384, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1014-221822", name: "Тройник переходной ВПр 22х18х22", price: 437, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RSS-1014-281528", name: "Тройник переходной ВПр 28х15х28", price: 516, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
+        { id: "RSS-1014-181518", name: "Тройник переходной ВПр 18х15х18", price: 327, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RSS-1014-221522", name: "Тройник переходной ВПр 22х15х22", price: 350, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
+        { id: "RSS-1014-221822", name: "Тройник переходной ВПр 22х18х22", price: 398, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
+        { id: "RSS-1014-281528", name: "Тройник переходной ВПр 28х15х28", price: 470, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
         { id: "RSS-1014-282222", name: "Тройник переходной ВПр 28х22х22", price: 583, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
         { id: "RSS-1014-282228", name: "Тройник переходной ВПр 28х22х28", price: 480, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
         { id: "RSS-1014-282822", name: "Тройник переходной ВПр 28х28х22", price: 643, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
