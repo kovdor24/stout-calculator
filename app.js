@@ -850,8 +850,7 @@ const app = {
     },
 
     updateHeaderCompanyDetails: function () {
-        let isPro = this.isPro();
-        let cc = (isPro && this.state.customCompany) ? this.state.customCompany : null;
+        let cc = this.state.customCompany || null;
 
         let defName = "Общество с ограниченной ответственностью «ТЕРЕМ»";
         let defWeb = "www.teremopt.ru";
@@ -2748,6 +2747,8 @@ const app = {
     // Удаление своего оборудования
     deleteEq: function (id) {
         if (!this.state.userAddedEq) return;
+        const item = this.state.userAddedEq.find(eq => eq.id === id);
+        if (item) this.logEquipmentDeletion(item.name, item.price, item.q || 1);
         this.state.userAddedEq = this.state.userAddedEq.filter(eq => eq.id !== id);
         this.saveState();
         this.render();
@@ -3407,7 +3408,11 @@ const app = {
                 <div style="margin-top: 16px; padding: 12px; background: rgba(37,99,235,0.06); border-radius: 8px; font-size: 12px; color: var(--text-sec);">
                     💡 Счёт на оборудование выставляет компания <strong>${d.company_name}</strong>. При запросе счёта менеджер получит копию на email.
                 </div>
+                <div id="manager_comm_history_container" style="margin-top:20px;"></div>
+                <div id="manager_chat_wrapper" style="margin-top:20px;"></div>
             `;
+            this.renderManagerCommHistory();
+            this.initManagerChatIfAvailable(d.manager_email);
         } else if (this.state.distributorId && !this.state.distributorInfo) {
             subview.innerHTML = `<div style="color: var(--text-sec); font-size: 13px;">Загрузка данных менеджера...</div>`;
             this.loadDistributorInfo().then(() => this.showSupplierSection());
@@ -3417,6 +3422,106 @@ const app = {
         }
 
         subview.style.display = 'block';
+    },
+
+    // История статусов по своим сметам (запрошен счёт, одобрено и т.д.) — те же события
+    // и подписи, что видит админ в канбане «Статусы смет» (ADMIN_KANBAN_EVENT_META),
+    // просто отфильтрованные по email текущего монтажника. Схему менять не нужно —
+    // данные уже пишутся app.logInvoiceEvent при обычной работе со сметой.
+    renderManagerCommHistory: async function () {
+        const container = document.getElementById('manager_comm_history_container');
+        if (!container) return;
+        container.innerHTML = `<div style="color:var(--text-sec); font-size:12px; padding:6px 0;">⌛ Загрузка истории...</div>`;
+
+        const me = await this.resolveCurrentUserForChat();
+        if (!me || !me.email) { container.innerHTML = ''; return; }
+
+        try {
+            const { data: events, error } = await supabaseClient
+                .from('invoice_events')
+                .select('*')
+                .eq('user_email', me.email)
+                .order('created_at', { ascending: false })
+                .limit(50);
+            if (error) throw error;
+
+            if (!events || !events.length) {
+                container.innerHTML = `
+                    <h4 style="margin:0 0 8px; font-size:14px; color:var(--text-main);">📋 История общения</h4>
+                    <p style="font-size:12px; color:var(--text-sec); margin:0;">Пока нет событий по вашим сметам.</p>
+                `;
+                return;
+            }
+
+            const EVENT_META = this.ADMIN_KANBAN_EVENT_META;
+            let h = `<h4 style="margin:0 0 10px; font-size:14px; color:var(--text-main);">📋 История общения</h4><div style="display:flex; flex-direction:column; gap:6px; max-height:260px; overflow-y:auto;">`;
+            events.forEach(e => {
+                const em = EVENT_META[e.event] || { label: e.event, color: '#94A3B8' };
+                const dt = new Date(e.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const comment = e.meta && e.meta.comment ? e.meta.comment : '';
+                h += `
+                    <div style="padding:8px 10px; border-radius:8px; background:var(--surface-light); font-size:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                            <span style="display:inline-block; background:${em.color}; color:#fff; font-size:10px; font-weight:700; border-radius:10px; padding:2px 8px;">${em.label}</span>
+                            <span style="color:var(--text-sec); font-size:10.5px; white-space:nowrap;">${dt}</span>
+                        </div>
+                        ${e.project_name ? `<div style="margin-top:4px; color:var(--text-main); font-weight:600;">${e.project_name}</div>` : ''}
+                        ${e.calc_id ? `<div style="color:var(--text-sec); font-size:10.5px;">№ расчёта: ${e.calc_id}</div>` : ''}
+                        ${comment ? `<div style="color:var(--text-main); font-size:11px; margin-top:4px; white-space:pre-wrap;">${comment.replace(/</g, '&lt;')}</div>` : ''}
+                    </div>
+                `;
+            });
+            h += `</div>`;
+            container.innerHTML = h;
+        } catch (e) {
+            container.innerHTML = `<div style="color:#EF4444; font-size:12px;">Ошибка загрузки истории: ${e.message}</div>`;
+        }
+    },
+
+    // Показывает панель чата с менеджером, только если этот менеджер реально
+    // зарегистрирован в приложении (email совпал с manager_email дистрибьютора).
+    // Если нет — контейнер остаётся пустым, никакого чата не показываем вообще.
+    initManagerChatIfAvailable: async function (managerEmail) {
+        const wrapper = document.getElementById('manager_chat_wrapper');
+        if (!wrapper) return;
+        wrapper.innerHTML = '';
+
+        const managerUser = await this.resolveManagerUserByEmail(managerEmail);
+        if (!managerUser) return;
+
+        const me = await this.resolveCurrentUserForChat();
+        if (!me) return;
+
+        wrapper.innerHTML = `
+            <h4 style="margin:0 0 10px; font-size:14px; color:var(--text-main);">💬 Чат с менеджером</h4>
+            <div id="manager_chat_list" style="display:flex; flex-direction:column; max-height:320px; overflow-y:auto; padding:10px; border:1px solid var(--border); border-radius:10px 10px 0 0; background:var(--bg);"></div>
+            <div id="manager_chat_attach_preview" style="display:none; flex-wrap:wrap; gap:6px; padding:6px 10px; border-left:1px solid var(--border); border-right:1px solid var(--border); background:var(--bg);"></div>
+            <div style="display:flex; gap:6px; padding:8px; border:1px solid var(--border); border-top:none; border-radius:0 0 10px 10px; background:var(--bg);">
+                <label style="cursor:pointer; display:flex; align-items:center; padding:0 6px; color:var(--text-sec);" title="Прикрепить файл">
+                    📎<input type="file" id="manager_chat_attach_input" accept="image/*,.pdf" multiple style="display:none;" onchange="app.pickChatAttachment(event, '_pendingManagerChatAttachments', 'manager_chat_attach_preview')">
+                </label>
+                <input type="text" id="manager_chat_input" placeholder="Написать менеджеру..." style="flex:1; height:34px; font-size:12.5px; padding:0 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault(); app.sendActiveChatMessage();}">
+                <button id="manager_chat_send_btn" class="auth-btn-base btn-email-submit" style="margin:0; width:auto; height:34px; padding:0 14px; font-size:12px;" onclick="app.sendActiveChatMessage()">➤</button>
+            </div>
+        `;
+
+        this._pendingManagerChatAttachments = [];
+
+        this.openChatThread({
+            installerId: me.id,
+            installerAuthId: me.authUserId,
+            managerId: managerUser.id,
+            managerAuthId: managerUser.auth_user_id,
+            viewerUserId: me.id,
+            viewerAuthId: me.authUserId,
+            viewerName: me.name,
+            listElId: 'manager_chat_list',
+            inputElId: 'manager_chat_input',
+            sendBtnId: 'manager_chat_send_btn',
+            attachInputId: 'manager_chat_attach_input',
+            attachPreviewId: 'manager_chat_attach_preview',
+            pendingArrKey: '_pendingManagerChatAttachments'
+        });
     },
 
     // Список активных дистрибьюторов, обслуживающих регион пользователя (или все, если для
@@ -3499,6 +3604,371 @@ const app = {
         } catch (e) {
             app.alert('Ошибка: ' + e.message);
         }
+    },
+
+    // ═══════════════ Чат монтажник ⇄ менеджер ═══════════════
+    // Менеджер — обычный зарегистрированный пользователь (не выдумка/админ): опознаётся
+    // тем, что его email совпадает с distributors.manager_email строки, к которой привязан
+    // монтажник. Если менеджер ещё не зарегистрировался — чат нигде не показывается.
+    // Одна нить = пара (installer_user_id, manager_user_id) в таблице manager_chat_messages.
+    // Переиспользуется на трёх экранах: у монтажника (вкладка «Ваш менеджер»), у менеджера
+    // (вкладка «Мои монтажники») и у админа (карточка пользователя, только на чтение).
+
+    // Текущий залогиненный пользователь в разрезе, нужном для чата: id из таблицы users,
+    // email и auth_user_id (для RLS) — тот же порядок проверки сессии, что в fetchNotifications
+    resolveCurrentUserForChat: async function () {
+        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        if (!tgUser) return null;
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            const authUserId = session ? session.user.id : tgUser.authUserId;
+            if (!authUserId) return null;
+            const { data: uRow } = await supabaseClient.from('users').select('id, email, auth_user_id').eq('auth_user_id', authUserId).maybeSingle();
+            if (!uRow) return null;
+            return { id: uRow.id, email: uRow.email, authUserId: uRow.auth_user_id, name: this.formatShortName(tgUser) || tgUser.first_name || tgUser.username || 'Пользователь' };
+        } catch (e) {
+            console.warn('[resolveCurrentUserForChat] Ошибка:', e);
+            return null;
+        }
+    },
+
+    // Зарегистрированный пользователь с данным email (менеджер дистрибьютора) — или null,
+    // если такой email ещё никто не занял (менеджер не зарегистрировался)
+    resolveManagerUserByEmail: async function (email) {
+        if (!email) return null;
+        try {
+            const { data } = await supabaseClient.from('users').select('id, auth_user_id, email').ilike('email', email.trim()).maybeSingle();
+            return data || null;
+        } catch (e) {
+            console.warn('[resolveManagerUserByEmail] Ошибка:', e);
+            return null;
+        }
+    },
+
+    // Все монтажники, привязанные к дистрибьюторам, у которых manager_email совпадает
+    // с переданным адресом — то есть «мои монтажники» для залогиненного менеджера
+    resolveManagedInstallers: async function (managerEmail) {
+        if (!managerEmail) return [];
+        try {
+            const { data: dists } = await supabaseClient.from('distributors').select('id').ilike('manager_email', managerEmail.trim());
+            const distIds = (dists || []).map(d => d.id);
+            if (!distIds.length) return [];
+            const { data: installers } = await supabaseClient.from('users')
+                .select('id, auth_user_id, username, first_name, last_name, middle_name, email, phone, distributor_id')
+                .in('distributor_id', distIds);
+            return installers || [];
+        } catch (e) {
+            console.warn('[resolveManagedInstallers] Ошибка:', e);
+            return [];
+        }
+    },
+
+    // Рендер «пузырей» переписки — переиспользуется у монтажника, у менеджера и (только на
+    // чтение, viewerUserId=null) у админа. Своё — справа, чужое — слева, по sender_user_id
+    renderChatBubbles: function (messages, viewerUserId, containerEl) {
+        if (!containerEl) return;
+        if (!messages || !messages.length) {
+            containerEl.innerHTML = `<div style="text-align:center; color:var(--text-sec); font-size:12px; padding:24px 10px;">Сообщений пока нет${viewerUserId ? '. Напишите первым!' : '.'}</div>`;
+            return;
+        }
+        let h = '';
+        messages.forEach(m => {
+            const isOwn = !!viewerUserId && m.sender_user_id === viewerUserId;
+            const time = new Date(m.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+            const attachments = Array.isArray(m.attachments) ? m.attachments : [];
+            const attachmentsHtml = attachments.map(a => {
+                if ((a.mime || '').startsWith('image/')) {
+                    return `<a href="${a.dataUrl}" target="_blank" rel="noopener" style="display:block; margin-top:6px;"><img src="${a.dataUrl}" style="max-width:180px; max-height:180px; border-radius:8px; display:block;"></a>`;
+                }
+                return `<a href="${a.dataUrl}" download="${(a.name || 'file').replace(/"/g, '')}" style="display:flex; align-items:center; gap:6px; margin-top:6px; padding:6px 8px; background:rgba(0,0,0,0.06); border-radius:6px; font-size:11px; color:inherit; text-decoration:none;">📎 ${a.name || 'Файл'}${a.size ? ` <span style="opacity:0.65;">(${Math.round(a.size / 1024)} КБ)</span>` : ''}</a>`;
+            }).join('');
+            const readTick = isOwn ? (m.is_read ? '<span style="color:#93C5FD;" title="Прочитано">✓✓</span>' : '<span style="opacity:0.6;" title="Отправлено">✓</span>') : '';
+
+            h += `
+                <div style="display:flex; justify-content:${isOwn ? 'flex-end' : 'flex-start'}; margin-bottom:8px;">
+                    <div style="max-width:80%; background:${isOwn ? 'var(--primary)' : 'var(--surface-light)'}; color:${isOwn ? '#fff' : 'var(--text-main)'}; border-radius:12px; padding:8px 10px; font-size:12.5px; line-height:1.4; border:${isOwn ? 'none' : '1px solid var(--border)'};">
+                        ${!isOwn && m.sender_name ? `<div style="font-size:10px; font-weight:700; opacity:0.65; margin-bottom:2px;">${m.sender_name}</div>` : ''}
+                        ${m.text ? `<div style="white-space:pre-wrap; word-break:break-word;">${m.text.replace(/</g, '&lt;')}</div>` : ''}
+                        ${attachmentsHtml}
+                        <div style="display:flex; justify-content:flex-end; align-items:center; gap:4px; margin-top:4px; font-size:9.5px; opacity:0.8;">
+                            <span>${time}</span>${readTick}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        containerEl.innerHTML = h;
+        containerEl.scrollTop = containerEl.scrollHeight;
+    },
+
+    // Выбор вложений (картинка сжимается на канвасе как в handleFeedbackFile, прочие файлы —
+    // как есть, лимит 3МБ). pendingArrKey — имя массива на app, куда копятся вложения текущего
+    // недописанного сообщения; previewContainerId — куда рисовать превью-чипы
+    pickChatAttachment: function (event, pendingArrKey, previewContainerId) {
+        const files = Array.from(event.target.files || []);
+        event.target.value = '';
+        if (!files.length) return;
+        if (!this[pendingArrKey]) this[pendingArrKey] = [];
+        const arr = this[pendingArrKey];
+        if (arr.length + files.length > 3) {
+            app.alert('Можно приложить не более 3 файлов к одному сообщению.');
+            return;
+        }
+        files.forEach(file => {
+            if (file.size > 3 * 1024 * 1024) {
+                app.alert(`Файл «${file.name}» больше 3МБ — выберите файл меньшего размера.`);
+                return;
+            }
+            const isImage = file.type.startsWith('image/');
+            const reader = new FileReader();
+            if (isImage) {
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width, height = img.height;
+                        const maxDim = 1000;
+                        if (width > maxDim || height > maxDim) {
+                            if (width > height) { height = Math.round(height * maxDim / width); width = maxDim; }
+                            else { width = Math.round(width * maxDim / height); height = maxDim; }
+                        }
+                        canvas.width = width; canvas.height = height;
+                        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                        arr.push({ name: file.name, mime: 'image/jpeg', size: dataUrl.length, dataUrl });
+                        this.renderChatAttachmentPreview(pendingArrKey, previewContainerId);
+                    };
+                    img.src = e.target.result;
+                };
+            } else {
+                reader.onload = (e) => {
+                    arr.push({ name: file.name, mime: file.type || 'application/octet-stream', size: file.size, dataUrl: e.target.result });
+                    this.renderChatAttachmentPreview(pendingArrKey, previewContainerId);
+                };
+            }
+            reader.readAsDataURL(file);
+        });
+    },
+
+    renderChatAttachmentPreview: function (pendingArrKey, previewContainerId) {
+        const arr = this[pendingArrKey] || [];
+        const el = document.getElementById(previewContainerId);
+        if (!el) return;
+        if (!arr.length) { el.innerHTML = ''; el.style.display = 'none'; return; }
+        el.style.display = 'flex';
+        el.innerHTML = arr.map((a, i) => `
+            <div style="display:flex; align-items:center; gap:4px; background:var(--surface-light); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:10.5px; color:var(--text-main);">
+                <span>${(a.mime || '').startsWith('image/') ? '🖼️' : '📎'} ${a.name}</span>
+                <span onclick="app.removeChatAttachment('${pendingArrKey}', ${i}, '${previewContainerId}')" style="cursor:pointer; color:var(--text-sec); padding:0 2px;">✕</span>
+            </div>
+        `).join('');
+    },
+
+    removeChatAttachment: function (pendingArrKey, idx, previewContainerId) {
+        if (!this[pendingArrKey]) return;
+        this[pendingArrKey].splice(idx, 1);
+        this.renderChatAttachmentPreview(pendingArrKey, previewContainerId);
+    },
+
+    // Вставка одного сообщения в нить
+    sendChatMessageRow: async function (installerId, installerAuthId, managerId, managerAuthId, senderUserId, senderName, text, attachments) {
+        const row = {
+            installer_user_id: installerId,
+            installer_auth_user_id: installerAuthId,
+            manager_user_id: managerId,
+            manager_auth_user_id: managerAuthId,
+            sender_user_id: senderUserId,
+            sender_name: senderName || null,
+            text: (text || '').trim() || null,
+            attachments: attachments || []
+        };
+        const { error } = await supabaseClient.from('manager_chat_messages').insert([row]);
+        if (error) throw error;
+    },
+
+    // Открывает конкретную нить: подгружает и рисует сообщения, помечает прочитанным то,
+    // что написал собеседник, подписывается на реалтайм. opts описывает и участников нити,
+    // и id DOM-элементов конкретной панели (общая логика для монтажника/менеджера)
+    openChatThread: async function (opts) {
+        this._activeChatThread = opts;
+        await this.refreshChatThread(opts);
+        this.subscribeChatThreadRealtime(opts);
+    },
+
+    refreshChatThread: async function (opts) {
+        const listEl = document.getElementById(opts.listElId);
+        if (!listEl) return;
+        const { data: messages, error } = await supabaseClient
+            .from('manager_chat_messages')
+            .select('*')
+            .eq('installer_user_id', opts.installerId)
+            .eq('manager_user_id', opts.managerId)
+            .order('created_at', { ascending: true });
+        if (error) {
+            listEl.innerHTML = `<div style="color:#EF4444; font-size:12px; padding:12px;">Ошибка загрузки переписки: ${error.message}</div>`;
+            return;
+        }
+        this.renderChatBubbles(messages, opts.viewerUserId, listEl);
+
+        // Помечаем прочитанным только то, что написал собеседник — «прочитано» означает
+        // реально увиденное, а не факт фоновой подгрузки
+        const unreadIds = (messages || []).filter(m => m.sender_user_id !== opts.viewerUserId && !m.is_read).map(m => m.id);
+        if (unreadIds.length) {
+            supabaseClient.from('manager_chat_messages').update({ is_read: true, read_at: new Date().toISOString() }).in('id', unreadIds)
+                .then(({ error: updErr }) => { if (updErr) console.warn('[chat] Не удалось пометить прочитанным:', updErr); });
+        }
+    },
+
+    subscribeChatThreadRealtime: function (opts) {
+        this.unsubscribeChatThread();
+        this._activeChatThread = opts;
+        if (typeof supabaseClient.channel !== 'function') return;
+        try {
+            const channel = supabaseClient.channel('chat_' + opts.installerId + '_' + opts.managerId)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'manager_chat_messages', filter: `installer_user_id=eq.${opts.installerId}` }, (payload) => {
+                    const row = payload.new || payload.old;
+                    if (!row || row.manager_user_id !== opts.managerId) return;
+                    if (this._activeChatThread === opts) this.refreshChatThread(opts);
+                })
+                .subscribe();
+            this._chatChannel = channel;
+        } catch (e) {
+            console.warn('[subscribeChatThreadRealtime] Realtime недоступен, работаем через обычный опрос:', e);
+        }
+    },
+
+    unsubscribeChatThread: function () {
+        if (this._chatChannel) {
+            try { supabaseClient.removeChannel(this._chatChannel); } catch (e) { /* канал уже мог закрыться сам */ }
+            this._chatChannel = null;
+        }
+        this._activeChatThread = null;
+    },
+
+    // Отправка из открытой сейчас нити (кнопка/Enter в поле ввода)
+    sendActiveChatMessage: async function () {
+        const opts = this._activeChatThread;
+        if (!opts) return;
+        const input = document.getElementById(opts.inputElId);
+        const text = input ? input.value.trim() : '';
+        const attachments = this[opts.pendingArrKey] || [];
+        if (!text && !attachments.length) return;
+
+        const sendBtn = document.getElementById(opts.sendBtnId);
+        if (sendBtn) sendBtn.disabled = true;
+        try {
+            await this.sendChatMessageRow(opts.installerId, opts.installerAuthId, opts.managerId, opts.managerAuthId, opts.viewerUserId, opts.viewerName, text, attachments);
+            if (input) input.value = '';
+            this[opts.pendingArrKey] = [];
+            this.renderChatAttachmentPreview(opts.pendingArrKey, opts.attachPreviewId);
+            await this.refreshChatThread(opts);
+        } catch (e) {
+            app.alert('Не удалось отправить сообщение: ' + e.message);
+        } finally {
+            if (sendBtn) sendBtn.disabled = false;
+        }
+    },
+
+    // Инбокс менеджера — список «своих» монтажников (все монтажники дистрибьюторов, чей
+    // manager_email совпал с моим email) с превью последнего сообщения и счётчиком непрочитанных
+    renderManagerInstallersTab: async function () {
+        const container = document.getElementById('profile_tab_installers');
+        if (!container) return;
+        container.innerHTML = `<div style="color:var(--text-sec); font-size:13px; padding:20px 0; text-align:center;">⌛ Загрузка списка монтажников...</div>`;
+
+        const me = await this.resolveCurrentUserForChat();
+        if (!me) { container.innerHTML = `<div style="color:var(--text-sec); font-size:13px;">Авторизуйтесь, чтобы увидеть список монтажников.</div>`; return; }
+
+        const installers = await this.resolveManagedInstallers(me.email);
+        if (!installers.length) {
+            container.innerHTML = `<div style="color:var(--text-sec); font-size:13px;">У вас пока нет привязанных монтажников.</div>`;
+            return;
+        }
+        this._managedInstallersCache = installers;
+
+        let threads = [];
+        try {
+            const { data } = await supabaseClient.from('manager_chat_messages').select('*').eq('manager_user_id', me.id).order('created_at', { ascending: false });
+            threads = data || [];
+        } catch (e) {
+            console.warn('[renderManagerInstallersTab] Не удалось загрузить переписку:', e);
+        }
+
+        const byInstaller = {};
+        threads.forEach(m => {
+            if (!byInstaller[m.installer_user_id]) byInstaller[m.installer_user_id] = { last: m, unread: 0 };
+            if (m.sender_user_id !== me.id && !m.is_read) byInstaller[m.installer_user_id].unread++;
+        });
+
+        let h = `<h4 style="margin:0 0 12px; font-size:15px; color:var(--text-main);">👥 Мои монтажники</h4><div style="display:flex; flex-direction:column; gap:8px;">`;
+        installers
+            .slice()
+            .sort((a, b) => {
+                const ta = byInstaller[a.id] ? new Date(byInstaller[a.id].last.created_at).getTime() : 0;
+                const tb = byInstaller[b.id] ? new Date(byInstaller[b.id].last.created_at).getTime() : 0;
+                return tb - ta;
+            })
+            .forEach(inst => {
+                const name = this.getAdminUserDisplayName(inst);
+                const thread = byInstaller[inst.id];
+                const preview = thread && thread.last ? (thread.last.text || (thread.last.attachments && thread.last.attachments.length ? '📎 Вложение' : '')) : 'Переписки пока нет';
+                const unreadBadge = thread && thread.unread > 0 ? `<span style="background:#EF4444; color:#fff; font-size:10px; font-weight:700; border-radius:10px; padding:1px 7px; margin-left:6px;">${thread.unread}</span>` : '';
+                h += `
+                    <div onclick="app.openManagerChatWithInstaller('${inst.id}', '${inst.auth_user_id}')" style="cursor:pointer; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--surface-light); display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                        <div style="min-width:0;">
+                            <div style="font-weight:700; color:var(--text-main); font-size:13px;">${name}${unreadBadge}</div>
+                            <div style="color:var(--text-sec); font-size:11.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:260px;">${(preview || '').replace(/</g, '&lt;')}</div>
+                        </div>
+                        <span style="color:var(--text-sec);">›</span>
+                    </div>
+                `;
+            });
+        h += `</div><div id="manager_installer_chat_detail" style="margin-top:16px;"></div>`;
+        container.innerHTML = h;
+    },
+
+    // Открывает чат с конкретным монтажником из списка «Мои монтажники»
+    openManagerChatWithInstaller: async function (installerId, installerAuthId) {
+        const detail = document.getElementById('manager_installer_chat_detail');
+        if (!detail) return;
+
+        const me = await this.resolveCurrentUserForChat();
+        if (!me) return;
+
+        const inst = (this._managedInstallersCache || []).find(i => String(i.id) === String(installerId));
+        const instName = inst ? this.getAdminUserDisplayName(inst) : 'Монтажник';
+
+        detail.innerHTML = `
+            <h4 style="margin:0 0 10px; font-size:14px; color:var(--text-main);">💬 ${instName}</h4>
+            <div id="manager_installer_chat_list" style="display:flex; flex-direction:column; max-height:320px; overflow-y:auto; padding:10px; border:1px solid var(--border); border-radius:10px 10px 0 0; background:var(--bg);"></div>
+            <div id="manager_installer_chat_attach_preview" style="display:none; flex-wrap:wrap; gap:6px; padding:6px 10px; border-left:1px solid var(--border); border-right:1px solid var(--border); background:var(--bg);"></div>
+            <div style="display:flex; gap:6px; padding:8px; border:1px solid var(--border); border-top:none; border-radius:0 0 10px 10px; background:var(--bg);">
+                <label style="cursor:pointer; display:flex; align-items:center; padding:0 6px; color:var(--text-sec);" title="Прикрепить файл">
+                    📎<input type="file" id="manager_installer_chat_attach_input" accept="image/*,.pdf" multiple style="display:none;" onchange="app.pickChatAttachment(event, '_pendingManagerInstallerChatAttachments', 'manager_installer_chat_attach_preview')">
+                </label>
+                <input type="text" id="manager_installer_chat_input" placeholder="Написать монтажнику..." style="flex:1; height:34px; font-size:12.5px; padding:0 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault(); app.sendActiveChatMessage();}">
+                <button id="manager_installer_chat_send_btn" class="auth-btn-base btn-email-submit" style="margin:0; width:auto; height:34px; padding:0 14px; font-size:12px;" onclick="app.sendActiveChatMessage()">➤</button>
+            </div>
+        `;
+        detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        this._pendingManagerInstallerChatAttachments = [];
+
+        this.openChatThread({
+            installerId: installerId,
+            installerAuthId: installerAuthId,
+            managerId: me.id,
+            managerAuthId: me.authUserId,
+            viewerUserId: me.id,
+            viewerAuthId: me.authUserId,
+            viewerName: me.name,
+            listElId: 'manager_installer_chat_list',
+            inputElId: 'manager_installer_chat_input',
+            sendBtnId: 'manager_installer_chat_send_btn',
+            attachInputId: 'manager_installer_chat_attach_input',
+            attachPreviewId: 'manager_installer_chat_attach_preview',
+            pendingArrKey: '_pendingManagerInstallerChatAttachments'
+        });
     },
 
     renderAdminDistributors: function () {
@@ -3637,10 +4107,54 @@ const app = {
                 if (root) root.innerHTML = `<div style="color:#EF4444;">Ошибка загрузки истории: ${error.message}</div>`;
                 return;
             }
-            this._kanbanEvents = events || [];
+
+            // Синхронизация с реальным состоянием: если смета была удалена в разделе
+            // "Монтажники и Сметы", а по её calc_id уже успели записаться события 'saved'
+            // и позже — это осиротевшая история (смета удалена, событие осталось).
+            // Черновики с единственным событием 'calculated' (расчёт так и не сохранили)
+            // не считаем осиротевшими и оставляем — это штатная воронка, а не "зависшая" карточка.
+            let liveCalcIds = null;
+            try {
+                const { data: liveEstimates, error: estErr } = await supabaseClient.from('estimates').select('calc_data');
+                if (!estErr) {
+                    liveCalcIds = new Set();
+                    (liveEstimates || []).forEach(e => { if (e.calc_data && e.calc_data.calc_id) liveCalcIds.add(String(e.calc_data.calc_id)); });
+                }
+            } catch (e) {
+                console.warn('[renderAdminKanban] Не удалось проверить актуальные сметы:', e);
+            }
+
+            let cleanEvents = events || [];
+            if (liveCalcIds) {
+                const byCalc = {};
+                cleanEvents.forEach(e => { (byCalc[e.calc_id] = byCalc[e.calc_id] || []).push(e); });
+                const orphanCalcIds = Object.keys(byCalc).filter(calcId => !liveCalcIds.has(calcId) && byCalc[calcId].some(e => e.event !== 'calculated'));
+                if (orphanCalcIds.length) {
+                    supabaseClient.from('invoice_events').delete().in('calc_id', orphanCalcIds)
+                        .then(({ error: delErr }) => { if (delErr) console.warn('[renderAdminKanban] Ошибка очистки осиротевших событий:', delErr); });
+                    cleanEvents = cleanEvents.filter(e => !orphanCalcIds.includes(String(e.calc_id)));
+                }
+            }
+
+            this._kanbanEvents = cleanEvents;
+
+            // Лёгкая карта email → регион/дистрибьютор, чтобы фильтры канбана работали
+            // даже по пользователям, которых нет на текущей странице вкладки "Монтажники"
+            let userMeta = {};
+            try {
+                const { data: allUsers, error: uErr } = await supabaseClient.from('users').select('email, region, distributor_id');
+                if (!uErr) {
+                    (allUsers || []).forEach(u => { if (u.email) userMeta[u.email.toLowerCase()] = { region: u.region || null, distributor_id: u.distributor_id || null }; });
+                }
+            } catch (e) {
+                console.warn('[renderAdminKanban] Не удалось загрузить регионы/дистрибьюторов пользователей:', e);
+            }
+            this._kanbanUserMeta = userMeta;
         } else if (!document.getElementById('kanban_root')) {
             content.innerHTML += `<div id="kanban_root"></div>`;
         }
+
+        const userMeta = this._kanbanUserMeta || {};
 
         // Группируем события по calc_id — каждая карточка живёт в колонке своего
         // последнего по времени события
@@ -3655,11 +4169,22 @@ const app = {
             if (e.user_name) p.user_name = e.user_name;
             if (e.user_email) p.user_email = e.user_email;
             if (e.project_name) p.project_name = e.project_name;
+            const meta = e.user_email ? userMeta[e.user_email.toLowerCase()] : null;
+            if (meta) {
+                p.region = meta.region;
+                p.distributor_id = meta.distributor_id;
+            }
         });
         const list = Object.values(projects);
 
         const installers = [...new Set(list.map(p => p.user_name).filter(Boolean))].sort();
-        const filtered = installerFilter === 'all' ? list : list.filter(p => p.user_name === installerFilter);
+        const regions = [...new Set(list.map(p => p.region).filter(Boolean))].sort();
+        const regionFilter = document.getElementById('kanban_region_filter')?.value || 'all';
+        const distributorFilter = document.getElementById('kanban_distributor_filter')?.value || 'all';
+
+        let filtered = installerFilter === 'all' ? list : list.filter(p => p.user_name === installerFilter);
+        if (regionFilter !== 'all') filtered = filtered.filter(p => p.region === regionFilter);
+        if (distributorFilter !== 'all') filtered = filtered.filter(p => String(p.distributor_id || '') === String(distributorFilter));
 
         const STAGES = this.ADMIN_KANBAN_STAGES;
         const EVENT_META = this.ADMIN_KANBAN_EVENT_META;
@@ -3668,10 +4193,18 @@ const app = {
         const filterHtml = `
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
                 <div style="font-size:13px; color:var(--text-sec);">Проекты: <b style="color:var(--text-main);">${filtered.length}</b></div>
-                <div style="display:flex; gap:10px; align-items:center;">
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                     <select id="kanban_installer_filter" onchange="app.renderAdminKanban(true)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px; outline: none; cursor: pointer;">
                         <option value="all">Все монтажники (${list.length})</option>
                         ${installers.map(name => `<option value="${name.replace(/"/g, '&quot;')}" ${installerFilter === name ? 'selected' : ''}>${name}</option>`).join('')}
+                    </select>
+                    <select id="kanban_region_filter" onchange="app.renderAdminKanban(true)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px; outline: none; cursor: pointer;">
+                        <option value="all">Все регионы</option>
+                        ${regions.map(r => `<option value="${r.replace(/"/g, '&quot;')}" ${regionFilter === r ? 'selected' : ''}>${r}</option>`).join('')}
+                    </select>
+                    <select id="kanban_distributor_filter" onchange="app.renderAdminKanban(true)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px; outline: none; cursor: pointer;">
+                        <option value="all">Все дистрибьюторы</option>
+                        ${((this.adminData && this.adminData.distributors) || []).map(d => `<option value="${d.id}" ${distributorFilter === String(d.id) ? 'selected' : ''}>${d.company_name}</option>`).join('')}
                     </select>
                     <button class="btn-header-blue" onclick="app.renderAdminKanban()" style="height:32px; padding:0 14px; font-size:12px;">↻ Обновить</button>
                 </div>
@@ -3694,7 +4227,7 @@ const app = {
                 const em = EVENT_META[c.current] || { label: c.current, color: '#94A3B8' };
                 const comment = c.currentMeta && c.currentMeta.comment ? c.currentMeta.comment : '';
                 return `
-                                    <div style="background:var(--surface); border-radius:8px; padding:10px 12px; font-size:12px; box-shadow:0 1px 3px rgba(0,0,0,0.15);">
+                                    <div onclick="app.renderKanbanCardDetail('${c.calc_id}')" style="cursor:pointer; background:var(--surface); border-radius:8px; padding:10px 12px; font-size:12px; box-shadow:0 1px 3px rgba(0,0,0,0.15); transition:0.15s;" onmouseover="this.style.boxShadow='0 3px 8px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.15)'">
                                         <div style="font-weight:700; color:var(--text-main); margin-bottom:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.project_name || 'Без названия'}</div>
                                         <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
                                             <div style="width:20px; height:20px; border-radius:50%; background:${this.avatarColorFor(c.user_name || '?')}; color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${initial}</div>
@@ -3703,7 +4236,7 @@ const app = {
                                         <div style="display:inline-block; background:${em.color}; color:#fff; font-size:10px; font-weight:700; border-radius:10px; padding:2px 8px; margin-bottom:8px;">${em.label}</div>
                                         ${comment ? `<div style="color:var(--text-main); font-size:11px; background:var(--surface-light); border-radius:6px; padding:6px 8px; margin-bottom:8px; white-space:pre-wrap;">${comment.replace(/</g, '&lt;')}</div>` : ''}
                                         <div style="color:var(--text-sec); font-size:10px; border-top:1px solid var(--border); padding-top:6px;">
-                                            Дата изменения<br>${new Date(c.lastAt).toLocaleString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })}
+                                            Дата изменения<br>${new Date(c.lastAt).toLocaleString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                         </div>
                                     </div>
                                 `;
@@ -3717,6 +4250,66 @@ const app = {
 
         const root = document.getElementById('kanban_root');
         if (root) root.outerHTML = `<div id="kanban_root">${filterHtml}${columnsHtml}</div>`;
+    },
+
+    // Карточка расчёта из канбана "Статусы смет" — номер расчёта и полная история
+    // смены статусов (используется тот же кэш событий, что и для самого канбана)
+    renderKanbanCardDetail: function (calcId) {
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+
+        const events = (this._kanbanEvents || [])
+            .filter(e => String(e.calc_id) === String(calcId))
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+        if (!events.length) {
+            app.alert('История по этому расчёту не найдена (возможно, уже удалена).');
+            return;
+        }
+
+        const last = events[events.length - 1];
+        const EVENT_META = this.ADMIN_KANBAN_EVENT_META;
+        const distributorsById = {};
+        ((this.adminData && this.adminData.distributors) || []).forEach(d => { distributorsById[String(d.id)] = d.company_name; });
+        const meta = last.user_email ? (this._kanbanUserMeta || {})[last.user_email.toLowerCase()] : null;
+        const regionLabel = meta && meta.region ? meta.region : '—';
+        const distributorLabel = meta && meta.distributor_id ? (distributorsById[String(meta.distributor_id)] || '—') : '—';
+
+        const historyHtml = events.slice().reverse().map(e => {
+            const em = EVENT_META[e.event] || { label: e.event, color: '#94A3B8' };
+            const dt = new Date(e.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const comment = e.meta && e.meta.comment ? e.meta.comment : '';
+            return `
+                <div style="display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--border);">
+                    <div style="width:10px; height:10px; border-radius:50%; background:${em.color}; margin-top:5px; flex-shrink:0;"></div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <span style="font-weight:700; color:var(--text-main); font-size:13px;">${em.label}</span>
+                            <span style="color:var(--text-sec); font-size:11px; white-space:nowrap;">${dt}</span>
+                        </div>
+                        ${comment ? `<div style="color:var(--text-main); font-size:12px; margin-top:4px; white-space:pre-wrap;">${comment.replace(/</g, '&lt;')}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        content.innerHTML = `
+            <button class="btn-header-blue" style="margin-bottom: 20px; width: fit-content;" onclick="app.renderAdminKanban(true)">← Назад к канбану</button>
+            <div style="background: var(--surface-light); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
+                <h3 style="margin-top:0; color: var(--text-main);">📋 ${last.project_name || 'Без названия'}</h3>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                    <div><b style="color:var(--text-sec);">№ расчёта:</b> <span style="color:var(--text-main); font-weight:600;">${calcId}</span></div>
+                    <div><b style="color:var(--text-sec);">Монтажник:</b> <span style="color:var(--text-main);">${last.user_name || '— (клиент)'}</span></div>
+                    <div><b style="color:var(--text-sec);">Email:</b> <span style="color:var(--text-main);">${last.user_email || '—'}</span></div>
+                    <div><b style="color:var(--text-sec);">Регион:</b> <span style="color:var(--text-main);">${regionLabel}</span></div>
+                    <div><b style="color:var(--text-sec);">Дистрибьютор:</b> <span style="color:var(--text-main);">${distributorLabel}</span></div>
+                </div>
+            </div>
+            <div style="background: var(--surface-light); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+                <h4 style="margin-top:0; margin-bottom:6px; color:var(--text-main); font-size:14px;">🕓 История изменения статуса</h4>
+                ${historyHtml}
+            </div>
+        `;
     },
 
     // Аватар-кружок с инициалом — цвет стабилен для имени (как ФИО-плашки в Битрикс24)
@@ -4143,8 +4736,26 @@ const app = {
         if (!await app.confirm("Вы уверены, что хотите удалить этот объект? Это действие необратимо.")) return;
 
         try {
+            // Ищем calc_id (номер КП) удаляемой сметы, чтобы синхронно почистить
+            // историю событий — иначе карточка "зависает" во вкладке "Статусы смет"
+            const source = [
+                ...((this.adminData && this.adminData.estimates) || []),
+                ...((this.adminData && this.adminData.recentEstimates) || []),
+                ...((this.adminData && this.adminData.userEstimates) || []),
+                ...(this._cloudEstimates || []),
+            ];
+            const found = source.find(e => String(e.id) === String(id));
+            const calcId = found && found.calc_data ? found.calc_data.calc_id : null;
+
             const { error } = await supabaseClient.from('estimates').delete().eq('id', id);
             if (error) throw error;
+
+            if (calcId) {
+                const { error: evError } = await supabaseClient.from('invoice_events').delete().eq('calc_id', String(calcId));
+                if (evError) console.error("Ошибка синхронной очистки invoice_events:", evError);
+                if (this._kanbanEvents) this._kanbanEvents = this._kanbanEvents.filter(e => String(e.calc_id) !== String(calcId));
+                if (this._adminTab === 'kanban') this.renderAdminKanban(true);
+            }
 
             // Optimistic Update
             if (this.adminData) {
@@ -4300,28 +4911,25 @@ const app = {
             }
         }
 
+        // Реквизиты компании и логотип — доступны на любом тарифе (не только ПРО)
         let compSec = document.getElementById('pro_profile_company_section');
         let toggleBtn = document.getElementById('toggle_branding_btn');
         if (compSec) {
             compSec.style.display = 'none'; // Keep hidden by default to keep modal clean and compact
-            if (isPro) {
-                let cc = this.state.customCompany || {};
-                let defName = "Общество с ограниченной ответственностью «ТЕРЕМ»";
-                let defWeb = "www.teremopt.ru";
-                let defAddr = "Россия, 123100, г. Москва\nвн. тер.г. муниципального округа Пресненский, 2-я Звенигородская ул., д. 12, стр. 1, помещ. 16н\nтел.: +7 (495) 775-20-20, факс: +7 (495) 775-20-25";
-                let defBank = "ИНН 7729646148\nР/сч. 40702810638110013275\nМосковский банк Сбербанка России ОАО г. Москва\nК/сч. 30101810400000000225";
+            let cc = this.state.customCompany || {};
+            let defName = "Общество с ограниченной ответственностью «ТЕРЕМ»";
+            let defWeb = "www.teremopt.ru";
+            let defAddr = "Россия, 123100, г. Москва\nвн. тер.г. муниципального округа Пресненский, 2-я Звенигородская ул., д. 12, стр. 1, помещ. 16н\nтел.: +7 (495) 775-20-20, факс: +7 (495) 775-20-25";
+            let defBank = "ИНН 7729646148\nР/сч. 40702810638110013275\nМосковский банк Сбербанка России ОАО г. Москва\nК/сч. 30101810400000000225";
 
-                document.getElementById('profile_company_name').value = (cc.name !== undefined && cc.name !== null && cc.name !== '') ? cc.name : defName;
-                document.getElementById('profile_company_website').value = (cc.website !== undefined && cc.website !== null && cc.website !== '') ? cc.website : defWeb;
-                document.getElementById('profile_company_address').value = (cc.address !== undefined && cc.address !== null && cc.address !== '') ? cc.address : defAddr;
-                document.getElementById('profile_company_bank').value = (cc.bank !== undefined && cc.bank !== null && cc.bank !== '') ? cc.bank : defBank;
-                document.getElementById('profile_logo_preview').src = cc.logo || 'img/logo.jpg';
-                if (toggleBtn) {
-                    toggleBtn.style.display = 'flex';
-                    toggleBtn.innerHTML = '⚙️ Настроить логотип и реквизиты';
-                }
-            } else {
-                if (toggleBtn) toggleBtn.style.display = 'none';
+            document.getElementById('profile_company_name').value = (cc.name !== undefined && cc.name !== null && cc.name !== '') ? cc.name : defName;
+            document.getElementById('profile_company_website').value = (cc.website !== undefined && cc.website !== null && cc.website !== '') ? cc.website : defWeb;
+            document.getElementById('profile_company_address').value = (cc.address !== undefined && cc.address !== null && cc.address !== '') ? cc.address : defAddr;
+            document.getElementById('profile_company_bank').value = (cc.bank !== undefined && cc.bank !== null && cc.bank !== '') ? cc.bank : defBank;
+            document.getElementById('profile_logo_preview').src = cc.logo || 'img/logo.jpg';
+            if (toggleBtn) {
+                toggleBtn.style.display = 'flex';
+                toggleBtn.innerHTML = '⚙️ Настроить логотип и реквизиты';
             }
         }
 
@@ -4329,7 +4937,12 @@ const app = {
         if (modalContent) modalContent.style.maxWidth = '60vw';
 
         document.getElementById('profile_modal_overlay').style.display = 'flex';
+        // Модалка позиционируется фиксированно и может быть выше вьюпорта на низких экранах —
+        // без блокировки прокрутки body под ней появляется лишний внешний скролл всей страницы
+        // поверх собственного overflow-y:auto модалки (два скролла одновременно)
+        document.body.style.overflow = 'hidden';
         this.setProfileTab(forced ? 'requisites' : (initialTab || 'requisites'));
+        this.refreshManagerTabVisibility(tgUser.email);
     },
     closeProfileModal: function () {
         if (this._profileForceComplete && this.isProfileIncomplete()) {
@@ -4338,13 +4951,38 @@ const app = {
         }
         this._profileForceComplete = false;
         document.getElementById('profile_modal_overlay').style.display = 'none';
+        document.body.style.overflow = '';
+        this.unsubscribeChatThread();
+    },
+    // Показывает вкладку «Мои монтажники» только тем, кто зарегистрировался под email,
+    // совпадающим с manager_email хотя бы одного дистрибьютора — то есть реально является
+    // чьим-то менеджером. Остальным вкладка вообще не показывается.
+    refreshManagerTabVisibility: async function (email) {
+        const tabBtn = document.querySelector('#profile_tabs_bar .mode-tab[data-tab="installers"]');
+        if (!tabBtn) return;
+        tabBtn.style.display = 'none';
+        if (!email) return;
+        try {
+            const installers = await this.resolveManagedInstallers(email);
+            if (installers && installers.length) {
+                tabBtn.style.display = '';
+                this._managedInstallersCache = installers;
+            }
+        } catch (e) {
+            console.warn('[refreshManagerTabVisibility] Ошибка проверки роли менеджера:', e);
+        }
     },
     // Переключение вкладок личного кабинета («Мой профиль»): Реквизиты / Менеджер /
     // Прайс-лист монтаж / Своё оборудование. Контент вкладок «Менеджер», «Прайс-лист» и
     // «Оборудование» строится лениво при первом открытии вкладки.
     setProfileTab: function (tab) {
-        const tabs = ['requisites', 'manager', 'workprices', 'equipment'];
+        const tabs = ['requisites', 'manager', 'installers', 'workprices', 'equipment'];
         if (!tabs.includes(tab)) tab = 'requisites';
+        // Уходим со вкладки с открытым чатом — отписываемся от реалтайма, чтобы не копить
+        // висящие подписки и не обновлять невидимую панель
+        if (this._activeProfileTab !== tab && (this._activeProfileTab === 'manager' || this._activeProfileTab === 'installers')) {
+            this.unsubscribeChatThread();
+        }
         this._activeProfileTab = tab;
 
         const tabsBar = document.getElementById('profile_tabs_bar');
@@ -4365,6 +5003,8 @@ const app = {
 
         if (tab === 'manager') {
             this.showSupplierSection('profile_tab_manager');
+        } else if (tab === 'installers') {
+            this.renderManagerInstallersTab();
         } else if (tab === 'workprices') {
             this.renderWorkPricesTab();
         } else if (tab === 'equipment') {
@@ -4381,10 +5021,11 @@ const app = {
     loadInstallerSettingsLocal: function () {
         let parsed = null;
         try { parsed = JSON.parse(localStorage.getItem('stout_installer_settings') || 'null'); } catch (e) { parsed = null; }
-        this.installerSettings = Object.assign({ workPrices: {}, equipmentLibrary: [], swapLog: [] }, parsed || {});
+        this.installerSettings = Object.assign({ workPrices: {}, equipmentLibrary: [], swapLog: [], deletionLog: [] }, parsed || {});
         if (!this.installerSettings.workPrices || typeof this.installerSettings.workPrices !== 'object') this.installerSettings.workPrices = {};
         if (!Array.isArray(this.installerSettings.equipmentLibrary)) this.installerSettings.equipmentLibrary = [];
         if (!Array.isArray(this.installerSettings.swapLog)) this.installerSettings.swapLog = [];
+        if (!Array.isArray(this.installerSettings.deletionLog)) this.installerSettings.deletionLog = [];
     },
     saveInstallerSettingsLocal: function () {
         localStorage.setItem('stout_installer_settings', JSON.stringify(this.installerSettings));
@@ -4421,6 +5062,7 @@ const app = {
                     workPrices: Object.assign({}, cloud.workPrices || {}),
                     equipmentLibrary: Array.isArray(cloud.equipmentLibrary) ? cloud.equipmentLibrary : [],
                     swapLog: Array.isArray(cloud.swapLog) ? cloud.swapLog : [],
+                    deletionLog: Array.isArray(cloud.deletionLog) ? cloud.deletionLog : [],
                     workPricesUpdatedAt: cloud.workPricesUpdatedAt || undefined
                 };
                 this.saveInstallerSettingsLocal();
@@ -4533,6 +5175,21 @@ const app = {
         if (this.installerSettings.swapLog.length > 200) this.installerSettings.swapLog.length = 200;
         this.pushInstallerSettingsToCloud();
     },
+    // Записывает факт удаления позиции из сметы (кнопка «✖ Удалить позицию» у оборудования,
+    // «↺» у ручного оборудования, «Удалить работу») в персональную историю монтажника
+    logEquipmentDeletion: function (name, price, qty, kind) {
+        if (!name) return;
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        this.installerSettings.deletionLog.unshift({
+            name: name,
+            price: price || 0,
+            qty: qty || 1,
+            kind: kind || 'equipment',
+            date: new Date().toISOString()
+        });
+        if (this.installerSettings.deletionLog.length > 200) this.installerSettings.deletionLog.length = 200;
+        this.pushInstallerSettingsToCloud();
+    },
     // Добавляет позицию в персональную библиотеку «Своё оборудование» (переживает сброс сметы
     // и доступна в любом новом проекте). Вызывается при ручном добавлении оборудования в смету.
     addEquipmentToLibrary: function (entry) {
@@ -4636,6 +5293,7 @@ const app = {
 
         const lib = this.installerSettings.equipmentLibrary;
         const swaps = this.installerSettings.swapLog;
+        const deletions = this.installerSettings.deletionLog || [];
 
         let html = `<h4 style="margin:0 0 8px; font-size:13.5px; color:var(--text-main);">Своё оборудование</h4>`;
         html += `<p style="font-size:12px; color:var(--text-sec); margin:0 0 10px;">Позиции, которые вы когда-либо добавляли в смету вручную. Клик по позиции — снова добавит её в текущую смету.</p>`;
@@ -4660,13 +5318,31 @@ const app = {
         if (!swaps.length) {
             html += `<p style="font-size:12px; color:var(--text-sec); padding:10px 0;">Пока нет замен оборудования через кнопку «Аналог».</p>`;
         } else {
-            html += `<div style="display:flex; flex-direction:column; gap:6px;">`;
+            html += `<div style="display:flex; flex-direction:column; gap:6px; margin-bottom:20px;">`;
             swaps.slice(0, 50).forEach(s => {
-                const dateStr = new Date(s.date).toLocaleDateString('ru-RU');
+                const dateStr = new Date(s.date).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 html += `
                     <div style="padding:8px 10px; border-radius:8px; background:var(--surface-light); font-size:12px;">
                         <div style="color:var(--text-sec); font-size:10.5px; margin-bottom:2px;">${dateStr}</div>
                         <div style="color:var(--text-main);"><s style="color:var(--text-sec);">${s.fromName}</s> → <b>${s.toName}</b></div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+
+        html += `<h4 style="margin:0 0 8px; font-size:13.5px; color:var(--text-main);">История удалений</h4>`;
+        if (!deletions.length) {
+            html += `<p style="font-size:12px; color:var(--text-sec); padding:10px 0;">Пока нет удалённых из сметы позиций.</p>`;
+        } else {
+            html += `<div style="display:flex; flex-direction:column; gap:6px;">`;
+            deletions.slice(0, 50).forEach(d => {
+                const dateStr = new Date(d.date).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const kindLabel = d.kind === 'work' ? 'Работа' : 'Оборудование';
+                html += `
+                    <div style="padding:8px 10px; border-radius:8px; background:var(--surface-light); font-size:12px;">
+                        <div style="color:var(--text-sec); font-size:10.5px; margin-bottom:2px;">${dateStr} · ${kindLabel}</div>
+                        <div style="color:var(--text-main);"><s style="color:var(--text-sec);">${d.name}</s>${d.price ? ` <span style="color:var(--text-sec);">(${Math.round(d.price).toLocaleString('ru-RU')} ₽${d.qty > 1 ? ` × ${d.qty}` : ''})</span>` : ''}</div>
                     </div>
                 `;
             });
@@ -4737,6 +5413,7 @@ const app = {
             // Обрабатываем уведомления
             const notifications = [];
             const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
+            const dismissedIds = JSON.parse(localStorage.getItem('stout_dismissed_notifications') || '[]');
 
             // Ищем привязанные shared_invoice_id если есть сметы
             if (estimates && estimates.length > 0) {
@@ -4798,7 +5475,7 @@ const app = {
                             status: 'critical',
                             comment: 'Срок действия вашего тарифа Профи истекает менее чем через 24 часа! Продлите его сейчас, чтобы сохранить доступ ко всем профессиональным возможностям.',
                             time: now.toISOString(),
-                            isRead: false
+                            isRead: readIds.includes('tariff_warning_24h')
                         });
 
                         // Дублирование на Email с учетом приоритета (Email для уведомлений или регистрационный)
@@ -4824,7 +5501,7 @@ const app = {
                             status: 'warning',
                             comment: `Срок действия вашего тарифа Профи истекает через ${diffDays} дн. Рекомендуем продлить его заранее, чтобы работа не прерывалась.`,
                             time: now.toISOString(),
-                            isRead: false
+                            isRead: readIds.includes('tariff_warning_5d')
                         });
 
                         // Дублирование на Email с учетом приоритета (Email для уведомлений или регистрационный)
@@ -4915,12 +5592,75 @@ const app = {
                 console.warn("Could not load messages from Supabase (messages table might not exist yet):", msgErr);
             }
 
+            // 3. ЧАТ С МЕНЕДЖЕРОМ / МОНТАЖНИКАМИ — непрочитанные сообщения. У админов своя
+            // видимость через карточку пользователя, отдельное уведомление им не нужно.
+            if (!isAdmin) {
+                try {
+                    // Как монтажник — считаем непрочитанные от своего (зарегистрированного) менеджера
+                    if (uRow.distributor_id) {
+                        const { data: dist } = await supabaseClient.from('distributors').select('manager_email, company_name').eq('id', uRow.distributor_id).maybeSingle();
+                        if (dist && dist.manager_email) {
+                            const managerUser = await this.resolveManagerUserByEmail(dist.manager_email);
+                            if (managerUser) {
+                                const { count } = await supabaseClient.from('manager_chat_messages')
+                                    .select('id', { count: 'exact', head: true })
+                                    .eq('installer_user_id', uRow.id).eq('manager_user_id', managerUser.id)
+                                    .neq('sender_user_id', uRow.id).eq('is_read', false);
+                                if (count > 0) {
+                                    const notifId = 'manager_chat_unread_installer';
+                                    notifications.push({
+                                        id: notifId,
+                                        type: 'manager_chat',
+                                        projectName: '💬 Новое сообщение от менеджера',
+                                        status: 'info',
+                                        comment: `У вас ${count} непрочитанных сообщений от менеджера${dist.company_name ? ' (' + dist.company_name + ')' : ''}.`,
+                                        time: new Date().toISOString(),
+                                        isRead: readIds.includes(notifId),
+                                        openTab: 'manager'
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    // Как менеджер — суммарно непрочитанные от всех «своих» монтажников
+                    if (uRow.email) {
+                        const managed = await this.resolveManagedInstallers(uRow.email);
+                        if (managed.length) {
+                            const { count } = await supabaseClient.from('manager_chat_messages')
+                                .select('id', { count: 'exact', head: true })
+                                .eq('manager_user_id', uRow.id)
+                                .neq('sender_user_id', uRow.id).eq('is_read', false);
+                            if (count > 0) {
+                                const notifId = 'manager_chat_unread_manager';
+                                notifications.push({
+                                    id: notifId,
+                                    type: 'manager_chat',
+                                    projectName: '💬 Новые сообщения от монтажников',
+                                    status: 'info',
+                                    comment: `У вас ${count} непрочитанных сообщений от монтажников.`,
+                                    time: new Date().toISOString(),
+                                    isRead: readIds.includes(notifId),
+                                    openTab: 'installers'
+                                });
+                            }
+                        }
+                    }
+                } catch (chatNotifErr) {
+                    console.warn('[fetchNotifications] Ошибка проверки непрочитанных сообщений чата:', chatNotifErr);
+                }
+            }
+
+            // Убираем то, что пользователь явно удалил крестиком — до нового повода
+            // (новое сообщение/событие с другим id) больше не показываем
+            const visibleNotifications = notifications.filter(n => !dismissedIds.includes(n.id));
+
             // Сортируем уведомления по дате (новые сверху)
-            notifications.sort((a, b) => new Date(b.time) - new Date(a.time));
-            this._notifications = notifications;
+            visibleNotifications.sort((a, b) => new Date(b.time) - new Date(a.time));
+            this._notifications = visibleNotifications;
 
             // Обновляем бейдж непрочитанных
-            const unreadCount = notifications.filter(n => !n.isRead).length;
+            const unreadCount = visibleNotifications.filter(n => !n.isRead).length;
             const badge = document.getElementById('notification_badge');
             if (badge) {
                 if (unreadCount > 0) {
@@ -5110,7 +5850,10 @@ const app = {
                     <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(59, 130, 246, 0.06);' : 'opacity: 0.85;'}" onclick="app.handleNotificationClick('${n.id}', null)">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-weight: 800; color: ${labelCol}; font-size: 10px; letter-spacing: 0.03em;">ТАРИФ ПРОФИ${unreadDot}</span>
-                            <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                                <span onclick="event.stopPropagation(); app.dismissNotification('${n.id}', event)" title="Удалить уведомление" style="cursor:pointer; color:var(--text-sec); font-size:13px; line-height:1; padding:2px;">✕</span>
+                            </div>
                         </div>
                         <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">${n.projectName}</div>
                         <div style="font-size: 11px; color: var(--text-sec); line-height: 1.4;">${n.comment}</div>
@@ -5118,6 +5861,40 @@ const app = {
                         ? `<button class="auth-btn-base btn-email-submit" style="margin: 6px 0 0 0; width: 100%; height: 30px; font-size: 11px; font-weight: bold; background: #D97706; border-color: #D97706;" onclick="event.stopPropagation(); document.getElementById('notifications_modal_overlay').style.display='none'; app.showModal('pro');">Продлить доступ</button>`
                         : ''
                     }
+                    </div>
+                `;
+            } else if (n.type === 'distributor_info') {
+                const bg = 'rgba(59, 130, 246, 0.03)';
+                const borderCol = '#3B82F6';
+                const labelCol = '#1E40AF';
+
+                h += `
+                    <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(59, 130, 246, 0.06);' : 'opacity: 0.85;'}" onclick="app.handleNotificationClick('${n.id}', null)">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 800; color: ${labelCol}; font-size: 10px; letter-spacing: 0.03em;">${n.projectName}${unreadDot}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                                <span onclick="event.stopPropagation(); app.dismissNotification('${n.id}', event)" title="Удалить уведомление" style="cursor:pointer; color:var(--text-sec); font-size:13px; line-height:1; padding:2px;">✕</span>
+                            </div>
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-main); font-weight: 500; line-height: 1.4;">${n.comment}</div>
+                    </div>
+                `;
+            } else if (n.type === 'manager_chat') {
+                const bg = 'rgba(16, 185, 129, 0.03)';
+                const borderCol = '#10B981';
+                const labelCol = '#065F46';
+
+                h += `
+                    <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(16, 185, 129, 0.08);' : 'opacity: 0.85;'}" onclick="app.handleNotificationClick('${n.id}', null, '${n.openTab}')">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 800; color: ${labelCol}; font-size: 10px; letter-spacing: 0.03em;">${n.projectName}${unreadDot}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                                <span onclick="event.stopPropagation(); app.dismissNotification('${n.id}', event)" title="Удалить уведомление" style="cursor:pointer; color:var(--text-sec); font-size:13px; line-height:1; padding:2px;">✕</span>
+                            </div>
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-main); font-weight: 500; line-height: 1.4;">${n.comment}</div>
                     </div>
                 `;
             } else if (n.type === 'admin_message') {
@@ -5148,7 +5925,10 @@ const app = {
                     <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(59, 130, 246, 0.06);' : 'opacity: 0.85;'}" onclick="app.handleNotificationClick('${n.id}', null)">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-weight: 800; color: ${labelCol}; font-size: 10px; letter-spacing: 0.03em;">${n.projectName}${unreadDot}</span>
-                            <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                                <span onclick="event.stopPropagation(); app.dismissNotification('${n.id}', event)" title="Удалить уведомление" style="cursor:pointer; color:var(--text-sec); font-size:13px; line-height:1; padding:2px;">✕</span>
+                            </div>
                         </div>
                         <div style="font-size: 11.5px; color: var(--text-main); font-weight: 500; line-height: 1.4; white-space: pre-wrap; margin-top: 2px;">${n.comment}</div>
                         
@@ -5172,7 +5952,10 @@ const app = {
                     <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: 0.2s; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(59, 130, 246, 0.06);' : 'opacity: 0.85;'}" onclick="app.handleNotificationClick('${n.id}', '${n.estimateId}')" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.05)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-weight: 800; color: ${labelCol}; font-size: 10px; letter-spacing: 0.03em;">${statusLabel}${unreadDot}</span>
-                            <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                                <span onclick="event.stopPropagation(); app.dismissNotification('${n.id}', event)" title="Удалить уведомление" style="cursor:pointer; color:var(--text-sec); font-size:13px; line-height:1; padding:2px;">✕</span>
+                            </div>
                         </div>
                         <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">Смета «${n.projectName}»</div>
                         ${n.status === 'confirmed'
@@ -5187,7 +5970,7 @@ const app = {
         listEl.innerHTML = h;
     },
 
-    handleNotificationClick: function (notificationId, estimateId) {
+    handleNotificationClick: function (notificationId, estimateId, openTab) {
         // Отмечаем как прочитанное
         const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
         if (!readIds.includes(notificationId)) {
@@ -5202,10 +5985,32 @@ const app = {
             this.closeNotificationsModal();
             // Загружаем смету
             app.loadSingleEstimate(estimateId);
+        } else if (openTab) {
+            // Уведомление о чате — сразу открываем нужную вкладку личного кабинета
+            this.closeNotificationsModal();
+            this.showProfileModal(false, openTab);
         } else {
             // Если это сервисное/админское сообщение, не закрываем модал, просто перерисовываем
             this.openNotificationsModal();
         }
+    },
+
+    // Явное удаление уведомления пользователем (крестик на карточке) — в отличие от
+    // "прочитано" (которое просто гасит бейдж), скрывает карточку из списка совсем,
+    // пока не появится новый повод с другим id (новое сообщение/статус)
+    dismissNotification: function (notificationId, event) {
+        if (event) event.stopPropagation();
+        const dismissedIds = JSON.parse(localStorage.getItem('stout_dismissed_notifications') || '[]');
+        if (!dismissedIds.includes(notificationId)) {
+            dismissedIds.push(notificationId);
+            localStorage.setItem('stout_dismissed_notifications', JSON.stringify(dismissedIds));
+        }
+        const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
+        if (!readIds.includes(notificationId)) {
+            readIds.push(notificationId);
+            localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
+        }
+        this.fetchNotifications().then(() => this.openNotificationsModal());
     },
 
     markAllNotificationsRead: function () {
@@ -5219,6 +6024,24 @@ const app = {
         localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
         this.fetchNotifications();
         this.openNotificationsModal(); // перерисовываем
+    },
+
+    // Полная очистка списка (в отличие от «Прочитать все» — карточки не просто гаснут,
+    // а перестают показываться совсем, как и при удалении по одной)
+    clearAllNotifications: async function () {
+        const notifications = this._notifications || [];
+        if (!notifications.length) return;
+        if (!await app.confirm('Удалить все уведомления из списка?')) return;
+        const dismissedIds = JSON.parse(localStorage.getItem('stout_dismissed_notifications') || '[]');
+        const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
+        notifications.forEach(n => {
+            if (!dismissedIds.includes(n.id)) dismissedIds.push(n.id);
+            if (!readIds.includes(n.id)) readIds.push(n.id);
+        });
+        localStorage.setItem('stout_dismissed_notifications', JSON.stringify(dismissedIds));
+        localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
+        await this.fetchNotifications();
+        this.openNotificationsModal();
     },
 
     closeNotificationsModal: function () {
@@ -6318,7 +7141,88 @@ const app = {
             h += `<tr><td colspan="3" style="text-align:center; padding:30px; color:var(--text-sec);">Пользователь еще не сохранял сметы</td></tr>`;
         }
         h += `</tbody></table>`;
+        h += `<div id="admin_chat_sections" style="margin-top:20px;"></div>`;
         document.getElementById('admin_content').innerHTML = h;
+        this.renderAdminUserChatSections(user);
+    },
+    // Read-only обзор переписки в карточке пользователя админки: если у пользователя есть
+    // назначенный дистрибьютор с зарегистрированным менеджером — нить с этим менеджером;
+    // если сам пользователь — зарегистрированный менеджер для кого-то — все его нити с
+    // монтажниками. Админ здесь только наблюдает: без отправки и без пометки read.
+    renderAdminUserChatSections: async function (user) {
+        const container = document.getElementById('admin_chat_sections');
+        if (!container) return;
+        container.innerHTML = `<div style="color:var(--text-sec); font-size:12px;">⌛ Проверка переписки...</div>`;
+
+        let renderedAny = false;
+
+        if (user.distributor_id) {
+            try {
+                const dist = (this.adminData.distributors || []).find(d => String(d.id) === String(user.distributor_id));
+                const managerEmail = dist ? dist.manager_email : null;
+                const managerUser = await this.resolveManagerUserByEmail(managerEmail);
+                if (managerUser) {
+                    const { data: messages } = await supabaseClient.from('manager_chat_messages')
+                        .select('*').eq('installer_user_id', user.id).eq('manager_user_id', managerUser.id)
+                        .order('created_at', { ascending: true });
+
+                    if (!renderedAny) { container.innerHTML = ''; renderedAny = true; }
+                    const section = document.createElement('div');
+                    section.style.cssText = 'background:var(--surface-light); padding:16px; border-radius:12px; border:1px solid var(--border); margin-bottom:16px;';
+                    section.innerHTML = `
+                        <h4 style="margin:0 0 10px; font-size:14px; color:var(--text-main);">💬 Переписка с менеджером${dist ? ' (' + dist.company_name + ')' : ''}</h4>
+                        <div class="admin-chat-thread" style="display:flex; flex-direction:column; max-height:320px; overflow-y:auto; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg);"></div>
+                    `;
+                    container.appendChild(section);
+                    // Читаем "с точки зрения менеджера" (справа — его сообщения) — так нагляднее,
+                    // чем полностью нейтральный рендер без сторон
+                    this.renderChatBubbles(messages || [], managerUser.id, section.querySelector('.admin-chat-thread'));
+                }
+            } catch (e) {
+                console.warn('[renderAdminUserChatSections] Ошибка загрузки переписки монтажника:', e);
+            }
+        }
+
+        if (user.email) {
+            try {
+                const installers = await this.resolveManagedInstallers(user.email);
+                if (installers.length) {
+                    const { data: allThreads } = await supabaseClient.from('manager_chat_messages')
+                        .select('*').eq('manager_user_id', user.id).order('created_at', { ascending: true });
+                    const byInstaller = {};
+                    (allThreads || []).forEach(m => { (byInstaller[m.installer_user_id] = byInstaller[m.installer_user_id] || []).push(m); });
+
+                    if (!renderedAny) { container.innerHTML = ''; renderedAny = true; }
+                    const section = document.createElement('div');
+                    section.style.cssText = 'background:var(--surface-light); padding:16px; border-radius:12px; border:1px solid var(--border); margin-bottom:16px;';
+                    let inner = `<h4 style="margin:0 0 10px; font-size:14px; color:var(--text-main);">💬 Переписка с монтажниками</h4><div style="display:flex; flex-direction:column; gap:10px;">`;
+                    installers.forEach(inst => {
+                        const name = this.getAdminUserDisplayName(inst);
+                        const count = (byInstaller[inst.id] || []).length;
+                        inner += `
+                            <details style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--bg);">
+                                <summary style="cursor:pointer; font-size:12.5px; font-weight:700; color:var(--text-main);">${name} <span style="color:var(--text-sec); font-weight:400;">(${count} сообщ.)</span></summary>
+                                <div class="admin-chat-thread" style="display:flex; flex-direction:column; max-height:260px; overflow-y:auto; padding:8px 4px 0; margin-top:8px;"></div>
+                            </details>
+                        `;
+                    });
+                    inner += `</div>`;
+                    section.innerHTML = inner;
+                    container.appendChild(section);
+                    section.querySelectorAll('details').forEach((det, idx) => {
+                        const inst = installers[idx];
+                        // Читаем "с точки зрения менеджера" (справа — его сообщения)
+                        this.renderChatBubbles(byInstaller[inst.id] || [], user.id, det.querySelector('.admin-chat-thread'));
+                    });
+                }
+            } catch (e) {
+                console.warn('[renderAdminUserChatSections] Ошибка загрузки переписок менеджера:', e);
+            }
+        }
+
+        if (!renderedAny) {
+            container.innerHTML = `<div style="color:var(--text-sec); font-size:12px;">Переписки нет — либо не назначен зарегистрированный менеджер, либо пользователь не является менеджером ни для кого.</div>`;
+        }
     },
     viewAdminEstimate: async function (estId) {
         try {
@@ -7367,15 +8271,13 @@ const app = {
         this.state.tgUser.email = email;
         this.state.tgUser.activityTypes = activityTypes;
 
-        // Save company details for PRO tariff users
-        if (this.isPro()) {
-            this.state.customCompany = this.state.customCompany || {};
-            this.state.customCompany.name = document.getElementById('profile_company_name').value.trim();
-            this.state.customCompany.website = document.getElementById('profile_company_website').value.trim();
-            this.state.customCompany.address = document.getElementById('profile_company_address').value.trim();
-            this.state.customCompany.bank = document.getElementById('profile_company_bank').value.trim();
-            this.updateHeaderCompanyDetails();
-        }
+        // Реквизиты компании и логотип — доступны на любом тарифе
+        this.state.customCompany = this.state.customCompany || {};
+        this.state.customCompany.name = document.getElementById('profile_company_name').value.trim();
+        this.state.customCompany.website = document.getElementById('profile_company_website').value.trim();
+        this.state.customCompany.address = document.getElementById('profile_company_address').value.trim();
+        this.state.customCompany.bank = document.getElementById('profile_company_bank').value.trim();
+        this.updateHeaderCompanyDetails();
 
         this.saveState();
         localStorage.setItem('user_city', city); // Дублируем для надежности
@@ -7473,6 +8375,8 @@ const app = {
         if (!await app.confirm(`Удалить работу "${name}"?`)) return;
         if (!this.state.deletedWorks) this.state.deletedWorks = [];
         this.state.deletedWorks.push(name);
+        const item = (this.currentWorksList || []).find(w => w.name === name);
+        this.logEquipmentDeletion(name, item ? item.price : 0, item ? item.q : 1, 'work');
         // Если это была ручная работа - удаляем и из массива ручных
         if (this.state.userAddedWorks) {
             this.state.userAddedWorks = this.state.userAddedWorks.filter(w => w.name !== name);
@@ -7620,7 +8524,15 @@ const app = {
                 console.error('Failed to load 3D scripts:', err);
             });
     },
-    toggleOpt: function (id) { this.state.optItems[id] = !this.state.optItems[id]; this.render(); },
+    toggleOpt: function (id) {
+        const willExclude = !this.state.optItems[id];
+        if (willExclude) {
+            const item = (this.currentEquipmentList || []).find(eq => (eq.originalId || eq.id) === id);
+            if (item) this.logEquipmentDeletion(item.name, item.price, item.q || 1);
+        }
+        this.state.optItems[id] = !this.state.optItems[id];
+        this.render();
+    },
     setQty: function (id, value) {
         if (value === '' || value === null || value === undefined) {
             // Поле очистили не введя цифру — отменяем редактирование, возвращаем расчётное количество
@@ -8203,7 +9115,7 @@ const app = {
             phone: tgUser.phone || '',
             city: tgUser.city || '',
             email: (this.state.tgUser?.email || this.state.user?.email || localStorage.getItem('user_email') || ''),
-            customCompany: (this.isPro() && this.state.customCompany) ? this.state.customCompany : null
+            customCompany: this.state.customCompany || null
         };
 
         // .alts (список товаров-аналогов для кнопки "Аналог" в смете) взаимно ссылается
@@ -8818,7 +9730,7 @@ const app = {
                     phone: tgUser.phone || '',
                     city: tgUser.city || '',
                     email: (this.state.tgUser?.email || this.state.user?.email || localStorage.getItem('user_email') || ''),
-                    customCompany: (this.isPro() && this.state.customCompany) ? this.state.customCompany : null
+                    customCompany: this.state.customCompany || null
                 };
 
                 // .alts циклически ссылается на другие позиции каталога (см. комментарий в
