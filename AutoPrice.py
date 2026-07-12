@@ -2,6 +2,7 @@ import re
 import sys
 import time
 import os
+import subprocess
 import urllib3
 import traceback
 from bs4 import BeautifulSoup
@@ -139,6 +140,48 @@ def get_price_card_isolation(driver, sku, old_price):
     if valid_items: return valid_items[0]
     else: return f"ERR_DIFF_{found_items[0]['price']}"
 
+# --- ПРОМЕЖУТОЧНЫЕ ЧЕКПОИНТЫ ---
+# Основной коммит происходит отдельным шагом workflow ПОСЛЕ завершения всего скрипта — а
+# при 2500+ товарах и ~7 сек/товар прогон занимает часы и может не уложиться в дефолтный
+# 6-часовой лимит джобы GitHub Actions. Если джобу оборвёт по таймауту, ни один из уже
+# найденных шагом раньше workflow не выполнится и все собранные обновления пропадут.
+# Поэтому раз в CHECKPOINT_INTERVAL_SEC коммитим и пушим накопленное прямо из Python —
+# независимо от исхода основного шага workflow.
+CHECKPOINT_INTERVAL_SEC = 600  # 10 минут
+
+def write_snapshot(content, replacements):
+    """Применяет накопленные replacements к КОПИИ исходного content и пишет в файл — сам
+    content не трогаем, чтобы start_idx/end_idx ещё не обработанных товаров (посчитанные
+    относительно исходного текста) не разъехались."""
+    if not replacements:
+        return False
+    snapshot = content
+    for s, e, val in sorted(replacements, key=lambda x: x[0], reverse=True):
+        snapshot = snapshot[:s] + val + snapshot[e:]
+    with open(FULL_PATH, 'w', encoding='utf-8') as f:
+        f.write(snapshot)
+    return True
+
+def git_checkpoint(commit_msg):
+    """Коммитит и пушит catalog.js как есть на диске. Не должно ронять основной прогон —
+    это подстраховка на случай обрыва по таймауту, а не критичная часть парсинга."""
+    try:
+        subprocess.run(["git", "config", "--local", "user.email", "action@github.com"], check=False)
+        subprocess.run(["git", "config", "--local", "user.name", "GitHub Action Bot"], check=False)
+        subprocess.run(["git", "add", FULL_PATH], check=False)
+        diff = subprocess.run(["git", "diff", "--staged", "--quiet"])
+        if diff.returncode == 0:
+            print("[Чекпоинт] Изменений с прошлого чекпоинта нет, коммит пропущен.")
+            return
+        subprocess.run(["git", "commit", "-m", commit_msg], check=False)
+        push = subprocess.run(["git", "push"], check=False)
+        if push.returncode == 0:
+            print(f"[Чекпоинт] Промежуточный коммит запушен: {commit_msg}")
+        else:
+            print(f"[Чекпоинт] git push вернул код {push.returncode} — не критично, продолжаем парсинг, попробуем на следующем чекпоинте.")
+    except Exception as e:
+        print(f"[Чекпоинт] Ошибка при промежуточном коммите: {e} — не критично, продолжаем.")
+
 def process_sku_v42(driver, sku, old_price):
     # Восстановлено дословно до версии, стабильно отработавшей месяцы (апрель-июнь, полные
     # прогоны по 1-2 часа) — до коммита 359f0be (20.06), который разом добавил прямую ссылку
@@ -265,6 +308,7 @@ def update_catalog_prices():
     price_cache = {}
     updated_count = 0
     not_found_streak = 0
+    last_checkpoint_ts = time.time()
     for i, item in enumerate(items_to_process):
         sku, old_price, match = item['sku'], item['old_price'], item['match']
         start_idx, end_idx, obj_text = item['start_idx'], item['end_idx'], item['obj_text']
@@ -343,6 +387,12 @@ def update_catalog_prices():
         elif isinstance(res, str) and res.startswith("ERR_DIFF"): 
             print(f"-> Блок 200% ({res.split('_')[-1]} ₽)")
         else: print(f"-> {res}")
+
+        if time.time() - last_checkpoint_ts >= CHECKPOINT_INTERVAL_SEC:
+            print(f"\n[Чекпоинт] Промежуточное сохранение: обработано {i+1}/{len(items_to_process)}, обновлено цен: {updated_count}...")
+            if write_snapshot(content, replacements):
+                git_checkpoint(f"Автообновление цен (промежуточно, {i+1}/{len(items_to_process)} обработано)")
+            last_checkpoint_ts = time.time()
     driver.quit()
     if replacements:
         replacements.sort(key=lambda x: x[0], reverse=True)
