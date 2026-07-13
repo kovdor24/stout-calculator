@@ -6298,7 +6298,7 @@ const app = {
         try {
             // 1. Fetch Users (Paginated)
             let query = supabaseClient.from('users')
-                .select('id, username, email, phone, created_at, last_visited, last_device, account_type, demo_ends_at, city, location, avatar_url, distributor_id, pro_expires_at, last_name, first_name, middle_name, birth_date, region, activity_types', { count: 'exact' });
+                .select('id, username, email, phone, created_at, last_visited, last_device, account_type, demo_ends_at, city, location, avatar_url, distributor_id, pro_expires_at, last_name, first_name, middle_name, birth_date, region, activity_types, is_blocked', { count: 'exact' });
             query = this.buildAdminUserFilter(query);
 
             let { data: users, error: errU, count: totalUsers } = await query
@@ -6541,6 +6541,7 @@ const app = {
                             <th style="cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('tariff')" title="Сортировать по тарифу">Тариф / Устройство${sortArrow('tariff')}</th>
                             <th>Дистрибьютор</th>
                             <th style="text-align:right; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('login')" title="Сортировать по дате входа">Вход${sortArrow('login')}</th>
+                            <th style="text-align:center;">Действия</th>
                         </tr></thead>
                         <tbody>
                 `;
@@ -6561,6 +6562,9 @@ const app = {
                 }
             } else {
                 badge = 'Базовый';
+            }
+            if (u.is_blocked) {
+                badge += `<br><span style="color:#fff; background:#EF4444; font-size:9px; font-weight:800; padding:1px 6px; border-radius:6px;">ЗАБЛОКИРОВАН</span>`;
             }
             let name = this.getAdminUserDisplayName(u);
             let phone = u.phone || 'Нет телефона';
@@ -6588,6 +6592,12 @@ const app = {
                         <td>${badge}<br><span style="font-size:10px;color:var(--text-sec);">${device}</span></td>
                         <td onclick="event.stopPropagation();">${distCell}</td>
                         <td style="text-align:right;">${lastVis}</td>
+                        <td onclick="event.stopPropagation();" style="text-align:center; white-space:nowrap;">
+                            <button class="delete-icon-btn" title="${u.is_blocked ? 'Разблокировать' : 'Заблокировать (доступ закрыт, данные сохранятся)'}" onclick="app.toggleUserBlocked('${u.id}', ${!u.is_blocked})" style="color:${u.is_blocked ? '#10B981' : '#D97706'};">${u.is_blocked ? '🔓' : '🔒'}</button>
+                            <button class="delete-icon-btn" title="Удалить учётку и все данные безвозвратно" onclick="app.deleteUserCompletely('${u.id}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="14" y2="17"></line></svg>
+                            </button>
+                        </td>
                     </tr>`;
         });
 
@@ -7325,6 +7335,19 @@ const app = {
                                     <span style="color:var(--text-sec);">Email:</span> <span style="color:var(--text-main); font-weight:600;">${user.email || '—'}</span>
                                 </div>
                             </div>
+                        </div>
+
+                        <div style="margin-top:20px; padding-top:20px; border-top:1px dashed var(--border);">
+                            <h4 style="margin:0 0 12px 0; font-size:14px; color:#EF4444;">⚠️ Опасная зона</h4>
+                            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                                <button class="auth-btn-base" style="margin:0; width:auto; height:34px; padding:0 16px; font-size:12px; background:var(--surface-light); color:${user.is_blocked ? '#10B981' : '#D97706'}; border:1px solid var(--border);" onclick="app.toggleUserBlocked('${user.id}', ${!user.is_blocked})">
+                                    ${user.is_blocked ? '🔓 Разблокировать доступ' : '🔒 Заблокировать доступ'}
+                                </button>
+                                <button class="auth-btn-base" style="margin:0; width:auto; height:34px; padding:0 16px; font-size:12px; background:var(--surface-light); color:#EF4444; border:1px solid var(--border);" onclick="app.deleteUserCompletely('${user.id}')">
+                                    🗑 Удалить учётку и все данные
+                                </button>
+                            </div>
+                            <p style="font-size:11px; color:var(--text-sec); margin:8px 0 0;">Блокировка закрывает доступ к калькулятору, но сохраняет все данные — можно снять в любой момент. Удаление стирает профиль, все сметы и переписку безвозвратно.</p>
                         </div>
                     </div>
         `;
@@ -8381,7 +8404,7 @@ const app = {
             };
             Object.keys(upsertObj).forEach(k => { if (upsertObj[k] === undefined) delete upsertObj[k]; });
 
-            const adminSelectCols = 'id, account_type, demo_ends_at, username, phone, city, distributor_id, last_name, first_name, middle_name, birth_date, region, activity_types';
+            const adminSelectCols = 'id, account_type, demo_ends_at, username, phone, city, distributor_id, last_name, first_name, middle_name, birth_date, region, activity_types, is_blocked';
 
             let { data: upsertResult, error: upsertError } = await supabaseClient
                 .from('users')
@@ -8412,6 +8435,18 @@ const app = {
             }
 
             let uRow = upsertResult ? upsertResult[0] : null;
+            if (uRow && uRow.is_blocked) {
+                // Заблокированный админом аккаунт: данные не трогаем, но не даём пользоваться
+                // калькулятором — выходим из сессии и возвращаем в неавторизованное состояние.
+                await supabaseClient.auth.signOut();
+                delete this.state.tgUser;
+                this.state.accountType = 'base';
+                this.saveState();
+                this.syncUI();
+                this.render();
+                app.alert('Ваш аккаунт заблокирован администратором. Для уточнения причин свяжитесь с поддержкой.');
+                return;
+            }
             if (uRow) {
                 let accType = uRow.account_type || 'base';
                 let demoEnds = uRow.demo_ends_at;
@@ -8522,6 +8557,59 @@ const app = {
         } catch (e) {
             console.error(e);
             app.alert("Ошибка обновления: " + e.message);
+        }
+    },
+    // Блокировка не трогает данные — только закрывает доступ к калькулятору (см. проверку
+    // is_blocked в handleAuthSession, которая принудительно выходит из сессии). Снимается тем
+    // же переключателем в любой момент.
+    toggleUserBlocked: async function (userId, block) {
+        const action = block ? 'заблокировать' : 'разблокировать';
+        if (!await app.confirm(`Вы уверены, что хотите ${action} доступ этому пользователю? Все его данные и сметы останутся нетронутыми.`)) return;
+        try {
+            const { data, error } = await supabaseClient.from('users').update({ is_blocked: block }).eq('id', userId).select('id');
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                app.alert('Изменение не применилось — похоже, RLS-политика в Supabase не разрешает администратору редактировать поле is_blocked.');
+                return;
+            }
+            app.alert(block ? '🔒 Доступ заблокирован.' : '🔓 Доступ разблокирован.');
+            if (document.getElementById('admin_edit_tariff')) {
+                this.viewAdminUser(userId);
+            } else {
+                this.loadAdminData(this._adminOffset);
+            }
+        } catch (e) {
+            app.alert('Не удалось изменить статус блокировки: ' + e.message);
+        }
+    },
+    // Безвозвратно стирает профиль пользователя и все связанные с ним данные (сметы,
+    // рассылки/переписку с админом, чаты с менеджером дистрибьютора). ВАЖНО: это удаляет
+    // только строки в public.users и связанных таблицах — сам логин/пароль в Supabase Auth
+    // отсюда не удаляется (для этого нужен service_role ключ, которого у клиента нет из
+    // соображений безопасности) — при необходимости полностью закрыть возможность входа
+    // его нужно вручную удалить в Supabase Dashboard → Authentication → Users.
+    deleteUserCompletely: async function (userId) {
+        const user = (this.adminData.users || []).find(u => String(u.id) === String(userId));
+        const name = user ? this.getAdminUserDisplayName(user) : userId;
+        if (!await app.confirm(`Удалить учётку «${name}» и ВСЕ её данные (сметы, переписку, настройки)? Это действие необратимо.`)) return;
+        if (!await app.confirm('Точно удалить? Отменить это будет невозможно — данные восстановить не получится.')) return;
+
+        try {
+            await supabaseClient.from('estimates').delete().eq('user_id', userId);
+            await supabaseClient.from('messages').delete().or(`sender_id.eq.${userId},recipient_id.eq.${userId}`);
+            await supabaseClient.from('manager_chat_messages').delete().or(`installer_user_id.eq.${userId},manager_user_id.eq.${userId},sender_user_id.eq.${userId}`);
+
+            const { data, error } = await supabaseClient.from('users').delete().eq('id', userId).select('id');
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                app.alert('Профиль не удалился — похоже, RLS-политика в Supabase не разрешает администратору удалять чужие учётки.');
+                return;
+            }
+            app.alert('🗑 Учётка и все данные удалены. Обратите внимание: логин/пароль в Supabase Auth это не затрагивает — при необходимости удалите его вручную в Dashboard.');
+            this.renderAdminMain();
+            this.loadAdminData(this._adminOffset);
+        } catch (e) {
+            app.alert('Не удалось удалить учётку: ' + e.message);
         }
     },
     saveProfile: async function () {
