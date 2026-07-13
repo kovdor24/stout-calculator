@@ -1476,7 +1476,7 @@ const app = {
         if (/тепл[а-я]*\s*пол[а-я]*|радиатор[а-я]*|систем[а-я]*\s*отоплени[а-я]*/i.test(t)) { fields.push('systems'); fields.push('ufhEverywhere'); }
         if (/жиль[а-я]*|проживающ[а-я]*/i.test(t)) fields.push('res');
         if (/объ[её]м\s*бойлер[а-я]*|литраж[а-я]*/i.test(t)) fields.push('tankVol');
-        else if (/гвс|горяч[а-я]*\s*вод[а-я]*|бойлер[а-я]*/i.test(t)) { fields.push('hotWater'); fields.push('tankVol'); }
+        else if (/гвс|горяч[а-я]*\s*вод[а-я]*|бойлер[а-я]*|дюплекс[а-я]*|\bduplex\b/i.test(t)) { fields.push('hotWater'); fields.push('tankVol'); fields.push('boilerType'); }
         if (/скважин[а-я]*|колодец|колодц[а-я]*/i.test(t)) fields.push('well');
         if (/водоснабжен[а-я]*/i.test(t)) fields.push('waterEnabled');
         if (/санузел|санузл[а-я]*|туалет[а-я]*|ванная[а-я]*|ванн[а-я]*/i.test(t)) fields.push('waterZones');
@@ -1516,6 +1516,20 @@ const app = {
             return { type: 'profanity', message: null }; // null — используем обычный fallback "не удалось распознать"
         }
         return null;
+    },
+
+    // Распознаёт просьбу оформить/купить/активировать/продлить тариф Профи или узнать его
+    // стоимость — независимо от того, какими словами это выражено ("открой тариф профи",
+    // "купить доступ", "разблокировать функции", "сколько стоит подписка" и т.п.).
+    detectProTariffIntent: function (text) {
+        const t = (' ' + (text || '').toLowerCase() + ' ').replace(/ё/g, 'е');
+        const hasProWord = /проф[а-я]*|премиум[а-я]*|\bpro\b/i.test(t);
+        const hasActionVerb = /актив[а-я]*|куп[а-я]*|оформ[а-я]*|открой|открыт[а-я]*|разблок[а-я]*|подключ[а-я]*|продли[а-я]*|продлен[а-я]*|перейд[а-я]*|переход[а-я]*|апгрейд[а-я]*|оплат[а-я]*/i.test(t);
+        const hasTariffWord = /тариф[а-я]*|подписк[а-я]*|доступ[а-я]*/i.test(t);
+        const isPriceQuestion = /сколько\s*сто[ий][а-я]*|стоимост[а-я]*|цен[а-я]*/i.test(t);
+
+        if (hasTariffWord && (hasProWord || hasActionVerb || isPriceQuestion)) return true;
+        return false;
     },
 
     // Разбор свободного текстового описания объекта в параметры левой панели —
@@ -1640,15 +1654,21 @@ const app = {
             const res = parseInt(resM[1], 10);
             results.push({ field: 'res', value: res, label: 'Жильцов', display: `${res} чел.` });
         }
-        if (/гвс|горяч[а-я]*\s*вод[а-я]*|бойлер[а-я]*/i.test(t)) {
+        if (/гвс|горяч[а-я]*\s*вод[а-я]*|бойлер[а-я]*|дюплекс[а-я]*|\bduplex\b/i.test(t)) {
             results.push({ field: 'hotWater', value: true, label: 'Горячая вода', display: 'нужна' });
+        }
+        // "Дюплекс"/"duplex" — жаргонное/латинское название линейки нержавеющих бойлеров
+        // косвенного нагрева STOUT (см. _SEARCH_SLANG). Само упоминание уже подразумевает
+        // конкретный тип бойлера, а не только факт того, что ГВС вообще нужна
+        if (/дюплекс[а-я]*|\bduplex\b/i.test(t)) {
+            results.push({ field: 'boilerType', value: 'stainless', tankHeat: 'comb', label: 'Тип бойлера', display: 'Нержавеющий (DUPLEX)' });
         }
 
         // Объём бойлера в литрах ("бойлер 200 л", "на 200 литров")
         const tankM = t.match(/(\d{2,4})\s*л(?:итр[а-я]*)?(?![а-я])/i);
-        // Если явного "л"/"литров" нет — разрешаем голое число прямо рядом со словом "бойлер"
-        // ("бойлер 200", "роммер бойлер 200") в разумном диапазоне литража
-        const tankBareM = !tankM && t.match(/бойлер[а-я]*\s*(?:на\s*)?(\d{2,4})\b/i);
+        // Если явного "л"/"литров" нет — разрешаем голое число прямо рядом со словом "бойлер"/"дюплекс"
+        // ("бойлер 200", "дюплекс 200", "роммер бойлер 200") в разумном диапазоне литража
+        const tankBareM = !tankM && t.match(/(?:бойлер[а-я]*|дюплекс[а-я]*|duplex)\s*(?:на\s*)?(\d{2,4})\b/i);
         if (tankM || tankBareM) {
             const vol = Math.max(30, Math.min(1000, parseInt((tankM || tankBareM)[1], 10)));
             results.push({ field: 'tankVol', value: vol, label: 'Объём бойлера', display: `${vol} л` });
@@ -1842,6 +1862,7 @@ const app = {
 5. Если пользователь просит контакты менеджера, выведи их.
 6. Если пользователь хочет обновить параметры (площадь, этажи, теплоноситель и т.д.), приложи команду "update_parameters" с массивом обновленных полей.
 7. Проводи аудит: если параметры некорректны (например, котел 5 кВт для дома 300 м²), обрати на это внимание.
+8. Если пользователь хочет оформить, купить, активировать, продлить или узнать стоимость тарифа Профи, либо просит "открыть тариф", "разблокировать функции", "получить полный доступ", "апгрейд", "премиум" и т.п. — приложи команду "open_pro_pricing". В тексте ответа кратко перечисли, что даёт Профи (все разделы, монтажные работы, артикулы, аналоги, КП в PDF/Excel), и скажи, что открываешь окно тарифов со ссылками на оплату — сами ссылки и цены в ответ не выдумывай, их подставит калькулятор.
 
 Выдавай ответ ИСКЛЮЧИТЕЛЬНО в формате JSON следующей структуры:
 {
@@ -1855,7 +1876,8 @@ const app = {
     },
     { "action": "print" },
     { "action": "optimize_estimate", "data": { "strategy": "budget_rommer" } },
-    { "action": "generate_share_link" }
+    { "action": "generate_share_link" },
+    { "action": "open_pro_pricing" }
   ]
 }
 Если никаких команд выполнять не требуется, поле "commands" должно быть пустым массивом: []`;
@@ -2055,6 +2077,12 @@ const app = {
                             this.syncUI();
                             this.render();
                             addBubble('assistant', `<i>Название объекта изменено на: "${cmd.data.note}"</i>`);
+                        } else if (cmd.action === 'open_pro_pricing') {
+                            const month = this.proPaymentLinks.month;
+                            const year = this.proPaymentLinks.year;
+                            const link = (plan) => `<a href="${plan.url}" target="_blank" rel="noopener">${plan.tariffName} — ${this.formatCurrencyAmount(plan.rub)}</a>`;
+                            addBubble('assistant', `<i>Открываю окно тарифа Профи...</i><br>Оплатить сразу по ссылке:<br>📅 ${link(month)}<br>📆 ${link(year)}`);
+                            setTimeout(() => this.showModal('pro'), 800);
                         }
                     });
                 }
@@ -2128,6 +2156,12 @@ const app = {
                     break;
                 }
                 case 'tankVol': this.state.tankVol = r.value; break;
+                case 'boilerType': {
+                    this.state.boilerType = r.value;
+                    if (r.tankHeat) this.state.tankHeat = r.tankHeat;
+                    if (r.tankMount) this.state.tankMount = r.tankMount;
+                    break;
+                }
                 case 'brandMode': {
                     // STOUT доступен всегда; переключение на любой другой бренд (ROMMER и
                     // т.п.) — эксклюзив PRO, как и ручной тумблер «Аналог». На Базовом
@@ -2509,6 +2543,19 @@ const app = {
                 addBubble('assistant', removedAny
                     ? renderAccumulated('Убрал. Сейчас учтено:')
                     : 'Не нашёл это среди уже распознанного.');
+                textInput.focus();
+                return;
+            }
+
+            // Просьба оформить/купить/активировать тариф Профи или узнать его стоимость —
+            // проверяем раньше обычного разбора параметров, чтобы не пытаться найти в этой
+            // фразе площадь/этажность и т.п.
+            if (this.detectProTariffIntent(text)) {
+                const month = this.proPaymentLinks.month;
+                const year = this.proPaymentLinks.year;
+                const link = (plan) => `<a href="${plan.url}" target="_blank" rel="noopener">${plan.tariffName} — ${this.formatCurrencyAmount(plan.rub)}</a>`;
+                addBubble('assistant', `Открываю окно тарифа Профи — там же можно сразу оплатить.<br>📅 ${link(month)}<br>📆 ${link(year)}`);
+                setTimeout(() => this.showModal('pro'), 600);
                 textInput.focus();
                 return;
             }
@@ -10796,6 +10843,7 @@ const app = {
         window.prompt = (msg, def) => app.prompt(msg, def);
 
         this.captureUTM();
+        this.applyPricingCurrencyDisplay();
         if (localStorage.getItem('stout_save')) {
             try { this.state = { ...this.state, ...JSON.parse(localStorage.getItem('stout_save')) }; } catch (e) { console.error("Ошибка загрузки сохранения", e); }
         }
@@ -22156,6 +22204,89 @@ const app = {
         this._contestToastTimer = setTimeout(() => el.classList.remove('visible'), 3500);
     },
 
+    // Переключение отображения цен подписки Профи между рублями и тенге (KZT).
+    // Оплата фактически всегда проходит в рублях (ссылки Т-Банка), тенге — только для удобства просмотра.
+    setPricingCurrency(cur) {
+        if (cur !== 'RUB' && cur !== 'KZT') return;
+        this.pricingCurrency = cur;
+        try { localStorage.setItem('pricing_currency', cur); } catch (e) { }
+        this.applyPricingCurrencyDisplay();
+    },
+
+    applyPricingCurrencyDisplay() {
+        this.pricingCurrency = this.pricingCurrency || localStorage.getItem('pricing_currency') || 'RUB';
+        const cur = this.pricingCurrency;
+
+        document.querySelectorAll('.currency-toggle-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.currency === cur);
+        });
+
+        const note = document.getElementById('pricing_currency_note');
+        if (note) note.style.display = (cur === 'KZT') ? 'block' : 'none';
+
+        const symbol = cur === 'KZT' ? '₸' : '₽';
+        document.querySelectorAll('.curr-symbol').forEach(el => { el.textContent = symbol; });
+
+        const renderAmounts = (rate) => {
+            document.querySelectorAll('.curr-amount').forEach(el => {
+                const rub = parseFloat(el.dataset.rub);
+                if (!rub) return;
+                const value = cur === 'KZT' ? Math.round(rub * rate / 10) * 10 : rub;
+                el.textContent = value.toLocaleString('ru-RU');
+            });
+        };
+
+        if (cur === 'RUB') {
+            renderAmounts(1);
+            return;
+        }
+        this.getKztRate().then(renderAmounts).catch(() => renderAmounts(this._kztFallbackRate || 5.3));
+    },
+
+    // Курс тенге за 1 рубль. Берётся с ЦБ РФ (обновляется раз в сутки), кэшируется в localStorage.
+    getKztRate() {
+        const CACHE_KEY = 'kzt_rate_cache';
+        const CACHE_TTL = 24 * 60 * 60 * 1000;
+        this._kztFallbackRate = 5.3;
+
+        try {
+            const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+            if (cached && cached.rate && (Date.now() - cached.ts) < CACHE_TTL) {
+                return Promise.resolve(cached.rate);
+            }
+        } catch (e) { }
+
+        return fetch('https://www.cbr-xml-daily.ru/daily_json.js')
+            .then(r => r.json())
+            .then(data => {
+                const kzt = data && data.Valute && data.Valute.KZT;
+                if (!kzt || !kzt.Value || !kzt.Nominal) throw new Error('Нет курса KZT в ответе ЦБ');
+                const rubPerKzt = kzt.Value / kzt.Nominal;
+                const rate = 1 / rubPerKzt;
+                try { localStorage.setItem(CACHE_KEY, JSON.stringify({ rate, ts: Date.now() })); } catch (e) { }
+                return rate;
+            });
+    },
+
+    // Форматирует сумму в рублях в текущей выбранной валюте отображения (для модалки оплаты).
+    formatCurrencyAmount(rub) {
+        const cur = this.pricingCurrency || 'RUB';
+        if (cur === 'RUB') return rub.toLocaleString('ru-RU') + ' ₽';
+        let rate = this._kztFallbackRate || 5.3;
+        try {
+            const cached = JSON.parse(localStorage.getItem('kzt_rate_cache') || 'null');
+            if (cached && cached.rate) rate = cached.rate;
+        } catch (e) { }
+        const value = Math.round(rub * rate / 10) * 10;
+        return value.toLocaleString('ru-RU') + ' ₸';
+    },
+
+    // Единый источник данных о тарифах Профи — используется и модалкой оплаты, и командой ИИ-агента.
+    proPaymentLinks: {
+        month: { url: "https://www.tbank.ru/cf/59ivYDZRKQK", tariffName: "Профи 1 месяц", rub: 5000 },
+        year: { url: "https://tbank.ru/cf/7tE93xi7saP", tariffName: "Профи 1 год", rub: 48000 }
+    },
+
     openPaymentModal(type) {
         const overlay = document.getElementById('payment_modal_overlay');
         const subtitle = document.getElementById('planName');
@@ -22165,19 +22296,11 @@ const app = {
 
         if (!overlay || !qrContainer) return;
 
-        let url = "";
-        let tariffName = "";
-        let price = "";
-
-        if (type === 'month') {
-            url = "https://www.tbank.ru/cf/59ivYDZRKQK";
-            tariffName = "Профи 1 месяц";
-            price = "1 500 ₽";
-        } else if (type === 'year') {
-            url = "https://tbank.ru/cf/7tE93xi7saP";
-            tariffName = "Профи 1 год";
-            price = "10 800 ₽";
-        }
+        const plan = this.proPaymentLinks[type];
+        if (!plan) return;
+        const url = plan.url;
+        const tariffName = plan.tariffName;
+        const price = this.formatCurrencyAmount(plan.rub) + (this.pricingCurrency === 'KZT' ? ' (спишется в рублях)' : '');
 
         subtitle.innerText = `Тариф: ${tariffName} (${price})`;
         if (linkBtn) linkBtn.href = url;

@@ -49,11 +49,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.43">
+    <link rel="stylesheet" href="style.css?v=2.44">
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.17" defer></script>
-    <script src="app.js?v=2.78" defer></script>
+    <script src="app.js?v=2.80" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -998,24 +998,30 @@
                 
                 <p id="custom_modal_text">Преимущества подписки: подбор всех разделов (котельная, радиаторы, теплый пол, водоснабжение, канализация) монтажные работы, артикулы, подбор аналогов, формирование кп в pdf, excel.</p>
                 
+                <div class="currency-toggle" id="pricing_currency_toggle">
+                    <button type="button" class="currency-toggle-btn active" data-currency="RUB" onclick="app.setPricingCurrency('RUB')">₽ RUB</button>
+                    <button type="button" class="currency-toggle-btn" data-currency="KZT" onclick="app.setPricingCurrency('KZT')">₸ KZT</button>
+                </div>
+
                 <div class="tariff-cards">
                     <!-- Monthly -->
                     <div class="tariff-card">
                         <h3>ПОДПИСКА НА МЕСЯЦ</h3>
-                        <div class="price">1 500 ₽</div>
+                        <div class="price"><span class="curr-amount" data-rub="5000">5 000</span> <span class="curr-symbol">₽</span></div>
                         <div class="price-sub">в месяц</div>
                         <button type="button" class="btn-subscribe" onclick="app.openPaymentModal('month')">Оформить подписку</button>
                     </div>
-                    
+
                     <!-- Yearly -->
                     <div class="tariff-card">
-                        <div class="badge">-40%</div>
+                        <div class="badge">-20%</div>
                         <h3>ПОДПИСКА НА ГОД</h3>
-                        <div class="price">900 ₽</div>
-                        <div class="price-sub">в месяц (10 800 ₽ в год)</div>
+                        <div class="price"><span class="curr-amount" data-rub="4000">4 000</span> <span class="curr-symbol">₽</span></div>
+                        <div class="price-sub">в месяц (<span class="curr-amount" data-rub="48000">48 000</span> <span class="curr-symbol">₽</span> в год)</div>
                         <button type="button" class="btn-subscribe" onclick="app.openPaymentModal('year')">Оформить подписку</button>
                     </div>
                 </div>
+                <div id="pricing_currency_note" style="display:none; text-align:center; font-size:11px; color:var(--text-sec); margin-top:-8px; margin-bottom:10px;">Цены в тенге указаны справочно по текущему курсу ЦБ РФ. Оплата списывается в рублях.</div>
                 <!-- Promo Code Section -->
                 <div id="promo_code_section" style="margin: 10px auto 0; max-width: 320px; padding: 6px 10px; background: var(--surface-light); border: 1px solid var(--border); border-radius: 10px; display: none;">
                     <div style="display: flex; gap: 6px; align-items: center;">

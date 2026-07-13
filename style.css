@@ -4120,6 +4120,31 @@ body.dark-mode .header-totals-block {
     justify-content: center;
 }
 
+.currency-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin: 0 auto 14px;
+}
+
+.currency-toggle-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface-light);
+    color: var(--text-sec);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.currency-toggle-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
 .btn-trial-14 {
     display: block;
     margin: 10px auto 0;
