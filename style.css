@@ -1648,6 +1648,16 @@ body.menu-open .mobile-menu-backdrop {
     margin: 0;
 }
 
+.room-num-input {
+    -moz-appearance: textfield;
+}
+
+.room-num-input::-webkit-outer-spin-button,
+.room-num-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 .qty-step {
     opacity: 0;
     pointer-events: none;

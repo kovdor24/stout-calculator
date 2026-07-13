@@ -6571,6 +6571,10 @@ const app = {
         const content = document.getElementById('admin_content');
         if (!content) return;
 
+        // Сохраняем то, что уже введено в поиск (переживает перерисовку списка при отправке/удалении)
+        const textSearchBefore = document.getElementById('admin_msg_search_text')?.value || '';
+        const userSearchBefore = document.getElementById('admin_msg_search_user')?.value || '';
+
         let userOptions = '<option value="all">📢 Отправить ВСЕМ авторизованным</option>';
         dropdownUsers.forEach(u => {
             const name = u.username || u.email || `Пользователь #${u.id.substring(0, 6)}`;
@@ -6594,66 +6598,102 @@ const app = {
                     <button class="auth-btn-base btn-email-submit" style="margin: 5px 0 0 auto; width: 100%; max-width: 180px; height: 34px; font-size: 12px;" onclick="app.sendAdminMessage()">🚀 Отправить</button>
                 </div>
             </div>
-            
-            <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700;">📋 История переписки</h4>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                <h4 style="margin:0; font-size:14px; font-weight:700;">📋 История переписки</h4>
+                <button class="auth-btn-base" style="margin:0; width:auto; height:30px; padding:0 12px; font-size:11px; background:var(--surface-light); color:#EF4444; border:1px solid var(--border);" onclick="app.deleteAllMessages()">🗑 Удалить всё</button>
+            </div>
+            <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+                <input type="text" id="admin_msg_search_text" placeholder="🔍 Поиск по тексту сообщений..." value="${textSearchBefore.replace(/"/g, '&quot;')}" oninput="app.filterAdminMessages()" style="flex:1; min-width:180px; height:32px; padding:0 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 12px; outline: none;">
+                <input type="text" id="admin_msg_search_user" placeholder="🔍 Поиск по пользователю..." value="${userSearchBefore.replace(/"/g, '&quot;')}" oninput="app.filterAdminMessages()" style="flex:1; min-width:180px; height:32px; padding:0 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 12px; outline: none;">
+            </div>
         `;
 
-        // Разделяем на сообщения и ответы
+        // Разделяем на объявления, личные сообщения (сгруппированные по получателю) и ответы
         const parentMsgs = messages.filter(m => m.type !== 'reply');
         const replies = messages.filter(m => m.type === 'reply');
+        const broadcasts = parentMsgs.filter(m => m.type === 'broadcast');
 
-        if (parentMsgs.length === 0) {
+        const findUser = (id) => dropdownUsers.find(u => u.id === id);
+        const userSearchKey = (u, fallbackId) => (u ? [u.username, u.email, u.phone].filter(Boolean).join(' ') : `Пользователь #${(fallbackId || '').substring(0, 6)}`).toLowerCase();
+
+        // Группируем личные сообщения + ответы по конкретному пользователю — так можно искать
+        // "переписку с человеком" целиком, а не отдельные письма россыпью
+        const groups = {}; // userId -> { userId, user, items: [{...msg, __from}] }
+        parentMsgs.filter(m => m.type === 'private').forEach(m => {
+            const uid = m.recipient_id;
+            if (!groups[uid]) groups[uid] = { userId: uid, user: findUser(uid), items: [] };
+            groups[uid].items.push(Object.assign({ __from: 'admin' }, m));
+        });
+        replies.forEach(r => {
+            const uid = r.sender_id;
+            if (!groups[uid]) groups[uid] = { userId: uid, user: findUser(uid), items: [] };
+            groups[uid].items.push(Object.assign({ __from: 'user' }, r));
+        });
+        Object.values(groups).forEach(g => g.items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
+
+        if (parentMsgs.length === 0 && replies.length === 0) {
             innerHtml += `<div style="text-align: center; color: var(--text-sec); padding: 30px; font-size: 13px;">Сообщений пока нет. Отправьте первое сообщение выше!</div>`;
         } else {
-            innerHtml += `<div style="display: flex; flex-direction: column; gap: 12px; max-height: 45vh; overflow-y: auto; padding-right: 5px;">`;
-            parentMsgs.forEach(msg => {
+            innerHtml += `<div id="admin_msg_list" style="display: flex; flex-direction: column; gap: 12px; max-height: 45vh; overflow-y: auto; padding-right: 5px;">`;
+
+            // Объявления для всех — не привязаны к конкретному пользователю, поиск по человеку их скрывает
+            broadcasts.forEach(msg => {
                 const dateStr = new Date(msg.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-
-                // Находим имя получателя
-                let recipientName = 'Все монтажники';
-                if (msg.recipient_id) {
-                    const recUser = dropdownUsers.find(u => u.id === msg.recipient_id);
-                    recipientName = recUser ? (recUser.username || recUser.email) : `Пользователь #${msg.recipient_id.substring(0, 6)}`;
-                }
-
-                const label = msg.type === 'broadcast' ? '📢 Объявление для всех' : `✉️ Личное для ${recipientName}`;
-                const labelCol = msg.type === 'broadcast' ? '#D97706' : '#2563EB';
-
-                // Находим вложенные ответы
-                const msgReplies = replies.filter(r => r.parent_id === msg.id);
-                let repliesHtml = '';
-                if (msgReplies.length > 0) {
-                    repliesHtml += `<div style="margin-top: 10px; padding-left: 12px; border-left: 2.5px solid #10B981; display: flex; flex-direction: column; gap: 8px; background: rgba(16, 185, 129, 0.02); padding-top: 6px; padding-bottom: 6px; border-radius: 4px;">`;
-                    msgReplies.forEach(r => {
-                        const replyUser = dropdownUsers.find(u => u.id === r.sender_id);
-                        const senderName = replyUser ? (replyUser.username || replyUser.email || replyUser.phone) : 'Монтажник';
-                        const replyDate = new Date(r.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-
-                        repliesHtml += `
-                            <div style="font-size: 12px;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                                    <span style="font-weight: 700; color: #047857;">💬 Ответ от ${senderName}:</span>
-                                    <span style="font-size: 9px; color: var(--text-sec);">${replyDate}</span>
-                                </div>
-                                <div style="color: var(--text-main); background: var(--surface); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); word-break: break-word;">${r.text}</div>
-                            </div>
-                        `;
-                    });
-                    repliesHtml += `</div>`;
-                }
-
                 innerHtml += `
-                    <div style="border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--surface); display: flex; flex-direction: column; gap: 6px;">
+                    <div class="admin-msg-group" data-search-user="" data-search-text="${(msg.text || '').toLowerCase().replace(/"/g, '&quot;')}" style="border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--surface); display: flex; flex-direction: column; gap: 6px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding-bottom: 6px;">
-                            <span style="font-size: 11px; font-weight: 800; color: ${labelCol}; text-transform: uppercase; letter-spacing: 0.02em;">${label}</span>
-                            <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                            <span style="font-size: 11px; font-weight: 800; color: #D97706; text-transform: uppercase; letter-spacing: 0.02em;">📢 Объявление для всех</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                                <span onclick="app.deleteAdminMessage('${msg.id}')" title="Удалить" style="cursor:pointer; color:var(--text-sec); font-size:13px;">🗑</span>
+                            </div>
                         </div>
                         <div style="font-size: 13px; color: var(--text-main); white-space: pre-wrap; line-height: 1.4; margin-top: 4px;">${msg.text}</div>
-                        
-                        ${repliesHtml}
                     </div>
                 `;
             });
+
+            // Переписка по пользователям — новые сверху
+            Object.values(groups)
+                .sort((a, b) => {
+                    const ta = a.items.length ? new Date(a.items[a.items.length - 1].created_at).getTime() : 0;
+                    const tb = b.items.length ? new Date(b.items[b.items.length - 1].created_at).getTime() : 0;
+                    return tb - ta;
+                })
+                .forEach(g => {
+                    const displayName = g.user ? (g.user.username || g.user.email || g.user.phone) : `Пользователь #${(g.userId || '').substring(0, 6)}`;
+                    const searchUser = userSearchKey(g.user, g.userId);
+                    const searchText = g.items.map(i => (i.text || '').toLowerCase()).join(' ').replace(/"/g, '&quot;');
+
+                    let itemsHtml = g.items.map(m => {
+                        const dateStr = new Date(m.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                        const isUser = m.__from === 'user';
+                        return `
+                            <div style="font-size: 12px; ${isUser ? 'padding-left:12px; border-left:2.5px solid #10B981;' : ''}">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 2px; align-items:center; gap:8px;">
+                                    <span style="font-weight: 700; color: ${isUser ? '#047857' : '#2563EB'};">${isUser ? '💬 Ответ' : '✉️ Админ'}:</span>
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <span style="font-size: 9px; color: var(--text-sec);">${dateStr}</span>
+                                        <span onclick="app.deleteAdminMessage('${m.id}')" title="Удалить" style="cursor:pointer; color:var(--text-sec); font-size:12px;">🗑</span>
+                                    </div>
+                                </div>
+                                <div style="color: var(--text-main); background: var(--surface); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); word-break: break-word;">${m.text}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    innerHtml += `
+                        <div class="admin-msg-group" data-search-user="${searchUser.replace(/"/g, '&quot;')}" data-search-text="${searchText}" style="border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--surface); display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding-bottom: 6px;">
+                                <span onclick="app.openAdminUserFromMessages('${g.userId}')" title="Открыть карточку монтажника" style="cursor:pointer; font-size: 12px; font-weight: 800; color: var(--primary); text-decoration: underline; text-underline-offset: 2px;">👤 ${displayName}</span>
+                                <button class="auth-btn-base" style="margin:0; width:auto; height:24px; padding:0 8px; font-size:10px; background:var(--surface-light); color:#EF4444; border:1px solid var(--border);" onclick="app.deleteUserMessages('${g.userId}')">🗑 Удалить переписку</button>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">${itemsHtml}</div>
+                        </div>
+                    `;
+                });
+
             innerHtml += `</div>`;
         }
 
@@ -6669,6 +6709,73 @@ const app = {
         const wrapper = document.createElement('div');
         wrapper.innerHTML = innerHtml;
         content.appendChild(wrapper);
+
+        this.filterAdminMessages();
+    },
+
+    // Фильтрует уже отрисованные группы переписки по двум независимым полям поиска —
+    // без перестройки DOM (только display), чтобы не терять фокус в полях ввода
+    filterAdminMessages: function () {
+        const textQuery = (document.getElementById('admin_msg_search_text')?.value || '').trim().toLowerCase();
+        const userQuery = (document.getElementById('admin_msg_search_user')?.value || '').trim().toLowerCase();
+        document.querySelectorAll('.admin-msg-group').forEach(el => {
+            const matchesText = !textQuery || (el.getAttribute('data-search-text') || '').includes(textQuery);
+            const matchesUser = !userQuery || (el.getAttribute('data-search-user') || '').includes(userQuery);
+            el.style.display = (matchesText && matchesUser) ? '' : 'none';
+        });
+    },
+
+    // Открывает карточку монтажника прямо из истории переписки — пользователь может не быть
+    // на текущей загруженной странице списка "Монтажники", поэтому viewAdminUser сам
+    // подгружает данные при необходимости
+    openAdminUserFromMessages: function (userId) {
+        if (!userId || userId === 'null' || userId === 'undefined') {
+            app.alert('У этой записи нет привязанного пользователя (например, письмо от уже удалённого аккаунта).');
+            return;
+        }
+        this.viewAdminUser(userId);
+    },
+
+    // Удаление одного сообщения (объявления, личного письма или ответа)
+    deleteAdminMessage: async function (id) {
+        if (!await app.confirm('Удалить это сообщение?')) return;
+        try {
+            const { error } = await supabaseClient.from('messages').delete().eq('id', id);
+            if (error) throw error;
+            this.adminData.messages = (this.adminData.messages || []).filter(m => String(m.id) !== String(id));
+            this.renderAdminMessages();
+        } catch (e) {
+            app.alert('Не удалось удалить сообщение: ' + e.message);
+        }
+    },
+
+    // Удаляет всю переписку с конкретным пользователем (личные сообщения ему + все его ответы).
+    // Объявления для всех не трогает — они не принадлежат конкретному человеку.
+    deleteUserMessages: async function (userId) {
+        if (!await app.confirm('Удалить всю переписку с этим пользователем? Это необратимо.')) return;
+        try {
+            const { error } = await supabaseClient.from('messages').delete().or(`recipient_id.eq.${userId},sender_id.eq.${userId}`).neq('type', 'broadcast');
+            if (error) throw error;
+            this.adminData.messages = (this.adminData.messages || []).filter(m =>
+                m.type === 'broadcast' || (String(m.recipient_id) !== String(userId) && String(m.sender_id) !== String(userId))
+            );
+            this.renderAdminMessages();
+        } catch (e) {
+            app.alert('Не удалось удалить переписку: ' + e.message);
+        }
+    },
+
+    // Полная очистка истории сообщений (объявления, личные, ответы)
+    deleteAllMessages: async function () {
+        if (!await app.confirm('Удалить ВСЮ историю переписки — все объявления, личные сообщения и ответы? Это необратимо.')) return;
+        try {
+            const { error } = await supabaseClient.from('messages').delete().not('id', 'is', null);
+            if (error) throw error;
+            this.adminData.messages = [];
+            this.renderAdminMessages();
+        } catch (e) {
+            app.alert('Не удалось удалить историю: ' + e.message);
+        }
     },
 
     sendAdminMessage: async function () {
@@ -6973,10 +7080,21 @@ const app = {
         link.click();
         document.body.removeChild(link);
     },
-    viewAdminUser: function (userId) {
+    viewAdminUser: async function (userId) {
         let user = this.adminData.users.find(u => String(u.id) === String(userId));
-        if (!user) return;
         let userEstimates = (this.adminData.userEstimates || []).filter(e => String(e.user_id) === String(userId));
+
+        // Пользователь может быть не на текущей загруженной странице списка (например, найден
+        // через поиск по сообщениям или через переписку менеджера) — подгружаем его карточку
+        // и сметы напрямую
+        if (!user) {
+            const { data: freshUser, error: userErr } = await supabaseClient.from('users').select('*').eq('id', userId).maybeSingle();
+            if (userErr || !freshUser) { app.alert('Пользователь не найден.'); return; }
+            user = freshUser;
+            const { data: freshEst } = await supabaseClient.from('estimates').select('id, user_id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at').eq('user_id', userId);
+            userEstimates = freshEst || [];
+        }
+
         let date = new Date(user.created_at).toLocaleDateString();
         let lastVis = user.last_visited ? new Date(user.last_visited).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Нет данных';
         let proDateInput = user.demo_ends_at ? user.demo_ends_at.split('T')[0] : '';
@@ -7141,9 +7259,63 @@ const app = {
             h += `<tr><td colspan="3" style="text-align:center; padding:30px; color:var(--text-sec);">Пользователь еще не сохранял сметы</td></tr>`;
         }
         h += `</tbody></table>`;
+        h += `<div id="admin_user_extras" style="margin-top:20px;"></div>`;
         h += `<div id="admin_chat_sections" style="margin-top:20px;"></div>`;
         document.getElementById('admin_content').innerHTML = h;
+        this.renderAdminUserExtras(user.id);
         this.renderAdminUserChatSections(user);
+    },
+    // То же, что монтажник видит у себя в личном кабинете на вкладках «Прайс-лист монтаж» и
+    // «Своё оборудование» — только на чтение, для контроля админом. Хранится в
+    // users.installer_settings (jsonb), в общий список пользователей не подгружается
+    // (может быть тяжёлым), поэтому запрашивается отдельно при открытии карточки
+    renderAdminUserExtras: async function (userId) {
+        const container = document.getElementById('admin_user_extras');
+        if (!container) return;
+        container.innerHTML = `<div style="color:var(--text-sec); font-size:12px;">⌛ Загрузка прайс-листа и оборудования...</div>`;
+
+        try {
+            const { data, error } = await supabaseClient.from('users').select('installer_settings').eq('id', userId).maybeSingle();
+            if (error) throw error;
+            const settings = (data && data.installer_settings) || {};
+            const workPrices = (settings.workPrices && typeof settings.workPrices === 'object') ? settings.workPrices : {};
+            const equipmentLibrary = Array.isArray(settings.equipmentLibrary) ? settings.equipmentLibrary : [];
+            const priceNames = Object.keys(workPrices);
+
+            let html = `
+                <div style="background:var(--surface-light); padding:16px; border-radius:12px; border:1px solid var(--border); margin-bottom:16px;">
+                    <h4 style="margin:0 0 10px; font-size:14px; color:var(--text-main);">💰 Свои цены на монтажные работы</h4>
+                    ${!priceNames.length
+                    ? `<p style="font-size:12px; color:var(--text-sec); margin:0;">Пользователь не менял стандартные расценки.</p>`
+                    : `<div style="display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto;">
+                            ${priceNames.map(name => `
+                                <div style="display:flex; justify-content:space-between; gap:10px; padding:6px 8px; background:var(--bg); border-radius:6px; font-size:12px;">
+                                    <span style="color:var(--text-main);">${name}</span>
+                                    <b style="color:var(--primary); white-space:nowrap;">${Math.round(workPrices[name]).toLocaleString('ru-RU')} ₽</b>
+                                </div>
+                            `).join('')}
+                        </div>`
+                }
+                </div>
+                <div style="background:var(--surface-light); padding:16px; border-radius:12px; border:1px solid var(--border);">
+                    <h4 style="margin:0 0 10px; font-size:14px; color:var(--text-main);">🧰 Своё оборудование</h4>
+                    ${!equipmentLibrary.length
+                    ? `<p style="font-size:12px; color:var(--text-sec); margin:0;">Пользователь не добавлял своё оборудование.</p>`
+                    : `<div style="display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto;">
+                            ${equipmentLibrary.map(e => `
+                                <div style="display:flex; justify-content:space-between; gap:10px; padding:6px 8px; background:var(--bg); border-radius:6px; font-size:12px;">
+                                    <span style="color:var(--text-main);">${e.name || 'Без названия'}</span>
+                                    <b style="color:var(--primary); white-space:nowrap;">${Math.round(e.price || 0).toLocaleString('ru-RU')} ₽</b>
+                                </div>
+                            `).join('')}
+                        </div>`
+                }
+                </div>
+            `;
+            container.innerHTML = html;
+        } catch (e) {
+            container.innerHTML = `<div style="color:#EF4444; font-size:12px;">Ошибка загрузки прайс-листа/оборудования: ${e.message}</div>`;
+        }
     },
     // Read-only обзор переписки в карточке пользователя админки: если у пользователя есть
     // назначенный дистрибьютор с зарегистрированным менеджером — нить с этим менеджером;
@@ -14409,7 +14581,9 @@ const app = {
 
         var dT = Tv - Tn;
         var rFloorNum = parseInt(r.floor) || 1;
-        var rHeight = (rFloorNum === 2) ? (s.h2 || 2.7) : (s.h1 || 2.7);
+        var normalHeight = (rFloorNum === 2) ? (s.h2 || 2.7) : (s.h1 || 2.7);
+        var isDoubleHeight = !!(r.doubleHeight && r.customHeight && r.customHeight > normalHeight);
+        var rHeight = isDoubleHeight ? r.customHeight : normalHeight;
         var area = parseFloat(r.area) || 1;
 
         var perim = 4 * Math.sqrt(area);
@@ -14417,7 +14591,13 @@ const app = {
 
         var totalWinArea = 0;
         (r.windows || []).forEach(function (w) {
-            var wH = w.isPan ? 2.5 : 1.5;
+            var wH;
+            if (isDoubleHeight) {
+                wH = w.isPan ? (rHeight - 0.3) : Math.min(1.5 * rHeight / normalHeight, rHeight - 0.9);
+                wH = Math.max(0.5, wH);
+            } else {
+                wH = w.isPan ? 2.5 : 1.5;
+            }
             totalWinArea += parseFloat(w.width || 1) * wH;
         });
 
@@ -14427,7 +14607,7 @@ const app = {
         var Q_glz = R_glz > 0 ? totalWinArea * dT / R_glz * n_glz : 0;
 
         var totalFloors = parseInt(s.floors || 1);
-        var isTopFloor = (rFloorNum === totalFloors);
+        var isTopFloor = (rFloorNum === totalFloors) || (isDoubleHeight && rFloorNum === 1);
         var isBottomFloor = (rFloorNum === 1);
         var Q_roof = (isTopFloor && R_roof > 0) ? area * dT / R_roof * n_roof : 0;
         var Q_floor = (isBottomFloor && R_floor > 0) ? area * dT / R_floor * n_floor : 0;
@@ -14473,7 +14653,8 @@ const app = {
 
             let houseVol = 0;
             this.state.rooms.forEach(r => {
-                let rHeight = (r.floor === 2) ? h2 : h1;
+                let normalHeight = (r.floor === 2) ? h2 : h1;
+                let rHeight = (r.doubleHeight && r.customHeight && r.customHeight > normalHeight) ? r.customHeight : normalHeight;
                 houseVol += parseFloat(r.area || 0) * rHeight;
             });
             let n_eff = 0.35;
@@ -14740,6 +14921,57 @@ const app = {
         }
         this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
     },
+    getRoomHeightBounds: function (r) {
+        let h1 = this.state.h1 || 2.7, h2 = this.state.h2 || 2.7;
+        let normalH = (r.floor === 2) ? h2 : h1;
+        let hMin = Math.round((normalH + 0.3) * 10) / 10;
+        let hMax = (this.state.floors === 2 && r.floor !== 2)
+            ? Math.min(h1 + h2 + 0.3, normalH * 3)
+            : normalH * 3;
+        hMax = Math.round(hMax * 10) / 10;
+        return { normalH: normalH, hMin: hMin, hMax: hMax };
+    },
+    toggleRoomDoubleHeight: function (roomId) {
+        let r = this.state.rooms.find(x => x.id === roomId);
+        if (r) {
+            r.doubleHeight = !r.doubleHeight;
+            if (r.doubleHeight && !r.customHeight) {
+                let b = this.getRoomHeightBounds(r);
+                r.customHeight = Math.min(b.hMax, Math.max(b.hMin, Math.round(b.normalH * 2 * 10) / 10));
+            }
+            this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
+        }
+    },
+    showRoomHeightSlider: function (roomId, event) {
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+        document.querySelectorAll('.room-area-slider-container').forEach(c => c.style.display = 'none');
+        document.querySelectorAll('.win-width-slider-container').forEach(c => c.style.display = 'none');
+        document.querySelectorAll('.room-h-slider-container').forEach(c => c.style.display = 'none');
+        const container = document.getElementById(`room_h_slider_container_${roomId}`);
+        if (container) {
+            container.style.display = 'flex';
+        }
+    },
+    updRoomHeight: function (roomId, val, skipRender) {
+        let r = this.state.rooms.find(x => x.id === roomId);
+        if (r) {
+            let b = this.getRoomHeightBounds(r);
+            let num = parseFloat(val);
+            if (isNaN(num)) num = b.normalH * 2;
+            num = Math.min(b.hMax, Math.max(b.hMin, num));
+            r.customHeight = Math.round(num * 10) / 10;
+            this.syncRoomsToState();
+            if (skipRender) {
+                this.render();
+            } else {
+                this.syncUI();
+                this.render();
+            }
+        }
+    },
     updRoom: function (id, field, val) {
         let r = this.state.rooms.find(x => x.id === id);
         if (r) {
@@ -14781,6 +15013,7 @@ const app = {
         }
         document.querySelectorAll('.room-area-slider-container').forEach(c => c.style.display = 'none');
         document.querySelectorAll('.win-width-slider-container').forEach(c => c.style.display = 'none');
+        document.querySelectorAll('.room-h-slider-container').forEach(c => c.style.display = 'none');
         const container = document.getElementById(`room_area_slider_container_${roomId}`);
         if (container) {
             container.style.display = 'flex';
@@ -14793,6 +15026,7 @@ const app = {
         }
         document.querySelectorAll('.room-area-slider-container').forEach(c => c.style.display = 'none');
         document.querySelectorAll('.win-width-slider-container').forEach(c => c.style.display = 'none');
+        document.querySelectorAll('.room-h-slider-container').forEach(c => c.style.display = 'none');
         const container = document.getElementById(`win_width_slider_container_${winId}`);
         if (container) {
             container.style.display = 'flex';
@@ -15219,7 +15453,7 @@ const app = {
                             <span class="win-lbl-icon" style="display:none; font-size:11px;">🪟</span>
                             
                             <div style="position: relative; display:inline-flex; align-items:center; gap:2px;">
-                                <input type="number" id="win_width_input_${w.id}" style="width:38px; border:1px solid var(--border); border-radius:3px; padding:2px; text-align:center; font-size:11px; background:var(--bg); color:var(--text-main); font-weight:800; cursor:pointer;" value="${w.width}" step="0.1" onfocus="app.showWindowWidthSlider(${r.id}, ${w.id}, event)" onclick="app.showWindowWidthSlider(${r.id}, ${w.id}, event)" onchange="app.updWindowWidthManual(${r.id}, ${w.id}, this.value, false)">
+                                <input type="number" class="room-num-input" id="win_width_input_${w.id}" style="width:38px; border:1px solid var(--border); border-radius:3px; padding:2px; text-align:center; font-size:12px; background:var(--bg); color:var(--primary); font-weight:600; cursor:pointer;" value="${w.width}" step="0.1" onfocus="app.showWindowWidthSlider(${r.id}, ${w.id}, event)" onclick="app.showWindowWidthSlider(${r.id}, ${w.id}, event)" onchange="app.updWindowWidthManual(${r.id}, ${w.id}, this.value, false)">
                                 
                                 <div class="win-width-slider-container" id="win_width_slider_container_${w.id}" style="display: none; position: absolute; z-index: 1000; bottom: 28px; left: 0; align-items: center; flex-direction: column; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 150px;" onclick="event.stopPropagation();">
                                     <div style="display: flex; gap: 4px; width: 100%; justify-content: space-between;">
@@ -15245,6 +15479,22 @@ const app = {
             let floorSel = this.state.floors === 2 ? `<select style="font-size:10px; padding:0 2px 0 0; border:none; border-right:1px solid #D1D5DB; background:transparent; color:var(--text-sec); font-weight:600; margin-right:2px; outline:none; cursor:pointer;" onchange="app.updRoom(${r.id}, 'floor', parseInt(this.value))"><option value="1" ${r.floor === 1 ? 'selected' : ''}>1 Эт</option><option value="2" ${r.floor === 2 ? 'selected' : ''}>2 Эт</option></select>` : '';
             let accentColor = r.floor === 2 ? '#10B981' : 'var(--primary)';
 
+            let hBounds = this.getRoomHeightBounds(r);
+            let customH = Math.min(hBounds.hMax, Math.max(hBounds.hMin, r.customHeight || Math.round(hBounds.normalH * 2 * 10) / 10));
+            let heightRow = r.doubleHeight ? `<div style="display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; margin-top:6px; padding:4px 6px; background:var(--bg); border:1px solid var(--border); border-radius:6px; font-size:11px;">
+                            <span style="color:var(--text-sec); font-weight:600; white-space:nowrap;">🏛️ Высота потолка:</span>
+                            <div style="position:relative; display:inline-flex; align-items:center; gap:2px;">
+                                <input type="number" class="room-num-input" id="room_h_input_${r.id}" style="width:44px; border:1px solid var(--border); border-radius:3px; padding:2px; text-align:center; font-size:12px; background:var(--surface); color:var(--primary); font-weight:600; cursor:pointer;" value="${customH}" step="0.1" onfocus="app.showRoomHeightSlider(${r.id}, event)" onclick="app.showRoomHeightSlider(${r.id}, event)" onchange="app.updRoomHeight(${r.id}, this.value, false)">
+                                <span style="color:var(--text-sec);">м</span>
+                                <div class="room-h-slider-container" id="room_h_slider_container_${r.id}" style="display:none; position:absolute; z-index:1000; top:26px; left:0; align-items:center; padding:6px 12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; gap:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);" onclick="event.stopPropagation();">
+                                    <input type="range" id="room_h_slider_${r.id}" min="${hBounds.hMin}" max="${hBounds.hMax}" step="0.1" value="${customH}" oninput="document.getElementById('room_h_input_${r.id}').value = this.value; app.updRoomHeight(${r.id}, this.value, true)" onchange="app.updRoomHeight(${r.id}, this.value, false)" style="width:140px; accent-color:var(--primary); height:6px; cursor:pointer;">
+                                    <span style="font-size:11px; color:var(--primary); font-weight:700; cursor:pointer; user-select:none; padding:2px 6px; background:var(--primary-light); border-radius:4px;" onclick="document.getElementById('room_h_slider_container_${r.id}').style.display='none'; event.stopPropagation();">OK</span>
+                                </div>
+                            </div>
+                            <span style="color:var(--text-sec); font-size:10px;">(обычно ${hBounds.normalH} м)</span>
+                            <span style="color:#EF4444; cursor:pointer; font-weight:bold; font-size:14px; line-height:1; margin-left:auto; padding:0 2px;" onclick="app.toggleRoomDoubleHeight(${r.id})" title="Выключить второй свет">×</span>
+                        </div>` : '';
+
             let cardBg = this.state.darkMode ? 'var(--surface-light)' : '#fff';
             let cardShadow = this.state.darkMode ? 'none' : '0 1px 2px rgba(0,0,0,0.02)';
 
@@ -15267,7 +15517,7 @@ const app = {
                             <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
                                 <div style="position: relative; display:flex; align-items:center; gap:2px; background:var(--bg); padding:2px 6px; border-radius:6px; border:1px solid var(--border);">
                                     ${floorSel}
-                                    <input type="number" id="room_area_input_${r.id}" style="width:40px; border:none; background:transparent; font-weight:800; font-size:13px; text-align:center; padding:0; outline:none; color:var(--primary); cursor:pointer;" value="${r.area}" onfocus="app.showRoomAreaSlider(${r.id}, event)" onclick="app.showRoomAreaSlider(${r.id}, event)" onchange="app.updRoomArea(${r.id}, this.value, false)">
+                                    <input type="number" class="room-num-input" id="room_area_input_${r.id}" style="width:40px; border:none; background:transparent; font-weight:600; font-size:12px; text-align:center; padding:0; outline:none; color:var(--primary); cursor:pointer;" value="${r.area}" onfocus="app.showRoomAreaSlider(${r.id}, event)" onclick="app.showRoomAreaSlider(${r.id}, event)" onchange="app.updRoomArea(${r.id}, this.value, false)">
                                     <span style="font-size:10px; color:var(--text-sec); font-weight:600; cursor:pointer;" onclick="app.showRoomAreaSlider(${r.id}, event)">м²</span>
                                     
                                     <div class="room-area-slider-container" id="room_area_slider_container_${r.id}" style="display: none; position: absolute; z-index: 1000; bottom: 36px; right: 0; align-items: center; padding: 6px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 2px;">
@@ -15278,14 +15528,15 @@ const app = {
                                 
                                 <button onclick="app.toggleRoomSys(${r.id}, 'rad')" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:${hasRad ? 'var(--primary-light)' : 'var(--bg)'}; border:1px solid ${hasRad ? 'var(--primary)' : 'var(--border)'}; border-radius:6px; cursor:pointer; font-size:16px; filter: ${hasRad ? 'none' : 'grayscale(1) opacity(0.3)'}; transition:0.2s;" title="Радиаторы">🌡️</button>
                                 <button onclick="app.toggleRoomSys(${r.id}, 'tp')" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:${hasTp ? '#ECFDF5' : 'var(--bg)'}; border:1px solid ${hasTp ? '#10B981' : 'var(--border)'}; border-radius:6px; cursor:pointer; font-size:16px; filter: ${hasTp ? 'none' : 'grayscale(1) opacity(0.3)'}; transition:0.2s;" title="Тёплый пол">♨️</button>
-                                
+
                                 <span style="color:#EF4444; cursor:pointer; font-size:18px; line-height:1; opacity:0.6; padding:0 2px;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6" onclick="app.removeRoom(${r.id})">×</span>
                             </div>
                         </div>
-                        
+                        ${heightRow}
                         <div style="display:flex; flex-wrap:wrap; align-items:center; gap:4px; margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
                             ${winsHtml}
                             <button style="background:transparent; border:1px dashed #9CA3AF; color:#6B7280; padding:2px 6px; height:24px; border-radius:4px; font-size:10px; font-weight:600; cursor:pointer; transition:0.2s; white-space:nowrap;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" onclick="app.addWindow(${r.id})">+ Окно</button>
+                            ${!r.doubleHeight ? `<button style="background:transparent; border:1px dashed #9CA3AF; color:#6B7280; padding:2px 6px; height:24px; border-radius:4px; font-size:10px; font-weight:600; cursor:pointer; transition:0.2s; white-space:nowrap;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" onclick="app.toggleRoomDoubleHeight(${r.id})" title="Второй свет — увеличенная высота потолка">🏛️ Второй свет</button>` : ''}
                         </div>
                     </div>`;
 
