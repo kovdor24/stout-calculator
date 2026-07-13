@@ -1010,12 +1010,54 @@ const app = {
         // "конденсатник" — жаргонное существительное для "конденсационный [котёл]";
         // отдельно ловим частую опечатку с пропущенной "н" ("кондесатник")
         [/конденсатник[а-я]*|кондесатник[а-я]*/i, 'конденсационный'],
+        // "грязевик" — жаргон для сетчатого/магнитного фильтра-грязеотделителя
+        [/грязевик[а-я]*/i, 'фильтр'],
+        // "обратник" — жаргон для обратного клапана
+        [/обратник[а-я]*/i, 'обратный клапан'],
+        // "циркулярка"/"циркуляшка" — жаргон для циркуляционного насоса (не путать со
+        // столярным станком — в контексте поиска по этому каталогу такой омоним не встречается)
+        [/циркуляшк[а-я]*|циркулярк[а-я]*/i, 'циркуляционный насос'],
+        // "фумка" — жаргон для ФУМ-ленты (уплотнительная лента для резьбы)
+        [/фумк[а-я]*/i, 'фум'],
+        // Жаргон размера резьбы в дюймах — в каталоге размеры записаны как дробь ("1/2\"", "3/4\"").
+        // Порядок важен: сначала более специфичные "пол-/полу-дюйма" и "три четверти", а уже потом
+        // голое "дюймовый" — иначе оно успеет откусить кусок из "полудюймовый" раньше своей очереди
+        [/полу?[-\s]?дюйм[а-я]*/i, '1/2"'],
+        [/тр[её]хчетверт[а-я]*/i, '3/4"'],
+        [/дюймов[а-я]*/i, '1"'],
         // Частые кириллические варианты/опечатки названий брендов — бренд теперь тоже
         // индексируется для поиска (см. _buildCatalogSearchIndex), но название бренда там
         // хранится латиницей ("stout"/"rommer"), поэтому кириллические варианты запроса
         // нужно явно переводить в них
         [/ст[ао]ут[а-я]*/i, 'stout'],
         [/р[оу]м+[еэ]р[а-я]*/i, 'rommer'],
+        // Кириллические варианты названий линеек/серий оборудования STOUT/ROMMER — в каталоге
+        // они записаны латиницей, поэтому без этого "дюплекс"/"компакт" и т.п. не находят ничего
+        [/дюплекс[а-я]*/i, 'duplex'],
+        [/компакт[а-я]*/i, 'compact'],
+        [/титан[а-я]*/i, 'titan'],
+        // NB: \b не годится рядом с кириллицей — в JS-регэкспах без /u она не входит в \w,
+        // поэтому границу от "оптимальный"/"лунатик" отсекаем через (?!...), а не \b
+        [/профи[а-я]*/i, 'profi'],
+        [/спейс[а-я]*/i, 'space'],
+        [/лун[аы](?!тик)/i, 'luna'],
+        [/комфорт[а-я]*/i, 'comfort'],
+        [/оскар[а-я]*/i, 'oscar'],
+        [/вега[а-я]*/i, 'vega'],
+        // "оптима", но не как начало "оптимальный"
+        [/оптима(?!льн)/i, 'optima'],
+        [/дизайн[а-я]*/i, 'design'],
+        [/раунд[а-я]*/i, 'round'],
+        [/квадро[а-я]*/i, 'quadro'],
+        [/дуо?[-\s]?тек[а-я]*/i, 'duo-tec'],
+        [/тонале[а-я]*/i, 'tonale'],
+        [/себино[а-я]*/i, 'sebino'],
+        [/антеприм[а-я]*/i, 'anteprima'],
+        [/альфа[а-я]*/i, 'alpha'],
+        [/статус[а-я]*/i, 'status'],
+        [/нувол[а-я]*/i, 'nuvola'],
+        [/платинум[а-я]*/i, 'platinum'],
+        [/оптибейз[а-я]*|оптибаз[а-я]*/i, 'optibase'],
         // Бренд-конкурент (не продаём) — ненавязчиво подсказываем эквивалент STOUT: у Henco
         // основной продукт — металлопластиковая труба PE-Xb/Al/PE-Xb, она есть у STOUT/ROMMER
         [/хенк[оа][а-я]*|henco[a-я]*/i, 'металлопластиковая']
@@ -2184,6 +2226,33 @@ const app = {
             }
             this.openAiParseModal();
         });
+
+        this.applyAiFabCollapsedState();
+    },
+
+    // Свёрнутое/развёрнутое состояние ИИ-FAB запоминается ПЕР-монтажнику (ключ по authUserId
+    // из tgUser), а не глобально в браузере — на общем компьютере у каждого установлен свой вид.
+    _aiFabCollapsedKey: function () {
+        const uid = (this.state.tgUser && (this.state.tgUser.authUserId || this.state.tgUser.email)) || 'guest';
+        return 'ai_fab_collapsed_' + uid;
+    },
+    applyAiFabCollapsedState: function () {
+        const btn = document.getElementById('ai_parse_fab_btn');
+        const toggleBtn = document.getElementById('ai_parse_fab_collapse_btn');
+        if (!btn) return;
+        let collapsed = false;
+        try { collapsed = localStorage.getItem(this._aiFabCollapsedKey()) === '1'; } catch (e) { }
+        btn.classList.toggle('collapsed', collapsed);
+        if (toggleBtn) toggleBtn.title = collapsed ? 'Развернуть' : 'Свернуть';
+    },
+    toggleAiFabCollapsed: function () {
+        const btn = document.getElementById('ai_parse_fab_btn');
+        const toggleBtn = document.getElementById('ai_parse_fab_collapse_btn');
+        if (!btn) return;
+        const collapsed = !btn.classList.contains('collapsed');
+        btn.classList.toggle('collapsed', collapsed);
+        if (toggleBtn) toggleBtn.title = collapsed ? 'Развернуть' : 'Свернуть';
+        try { localStorage.setItem(this._aiFabCollapsedKey(), collapsed ? '1' : '0'); } catch (e) { }
     },
 
     showAiParseToast: function (count) {
@@ -16462,6 +16531,7 @@ const app = {
         // единственная надёжная защита — не давать открыть диалог вообще
         const aiFabBtn = document.getElementById('ai_parse_fab_btn');
         if (aiFabBtn) aiFabBtn.style.display = isGuest ? 'none' : 'flex';
+        if (!isGuest) this.applyAiFabCollapsedState();
 
         const applyLock = (elId, reqLvl) => {
             let container;
