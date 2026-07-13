@@ -6885,8 +6885,15 @@ const app = {
     deleteAllMessages: async function () {
         if (!await app.confirm('Удалить ВСЮ историю переписки — все объявления, личные сообщения и ответы? Это необратимо.')) return;
         try {
-            const { error } = await supabaseClient.from('messages').delete().not('id', 'is', null);
+            // .select('id') после delete() — иначе Supabase не считает ошибкой ситуацию,
+            // когда RLS-политика молча пропускает 0 строк (запрос "успешен", но ничего
+            // не удалено), и кнопка выглядела рабочей, а после reload всё возвращалось.
+            const { data, error } = await supabaseClient.from('messages').delete().not('id', 'is', null).select('id');
             if (error) throw error;
+            if (!data || data.length === 0) {
+                app.alert('Ни одна запись не была удалена. Похоже, RLS-политика в Supabase не разрешает администратору удалять чужие сообщения — нужно поправить DELETE-политику для таблицы messages в Supabase Dashboard.');
+                return;
+            }
             this.adminData.messages = [];
             this.renderAdminMessages();
         } catch (e) {
@@ -16336,16 +16343,11 @@ const app = {
         const cTabs = document.querySelectorAll('.cool-tab'); cTabs.forEach(t => { t.classList.remove('active'); if (t.dataset.type === this.state.coolant) t.classList.add('active'); });
         document.getElementById('inp_tp1').max = this.state.area; document.getElementById('inp_tp2').max = this.state.area; document.getElementById('inp_tp1').value = this.state.tp1; document.getElementById('val_tp1').innerText = this.state.tp1; document.getElementById('inp_tp2').value = this.state.tp2; document.getElementById('val_tp2').innerText = this.state.tp2;
         document.getElementById('chk_sku').checked = this.state.showSku;
-        // Логика доступа для переключателя "СХЕМА"
+        // Логика доступа для переключателя "СХЕМА" — доступен всем авторизованным пользователям
         let sw = document.getElementById('scheme_wrapper');
         let chkScheme = document.getElementById('chk_scheme');
         if (sw && chkScheme) {
-            const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-            const adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
-            const tgEmail = this.state.tgUser && this.state.tgUser.email ? this.state.tgUser.email.toLowerCase() : '';
-            const userEmail = this.state.user && this.state.user.email ? this.state.user.email.toLowerCase() : '';
-            const isAdmin = adminEmails.includes(tgEmail) || adminEmails.includes(userEmail);
-            if (isLocal || isAdmin) {
+            if (!isGuest) {
                 sw.style.display = 'flex';
                 chkScheme.checked = this.state.showScheme;
             } else {
