@@ -1387,61 +1387,61 @@ const catalog = {
         { id: "SFA-0035-100016", name: "Защитная втулка синяя (для трубы 16 мм)", price: 62, brand: "STOUT", availability: "in_stock", price_date: "2026-06-27" }
     ],
     label_kits: [
-        { id: "SFA-0037-100000", name: "Комплект маркировочных наклеек \"ОТОПЛЕНИЕ\"", price: 872, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SFA-0037-200000", name: "Комплект маркировочных наклеек \"ТЕПЛЫЙ ПОЛ\"", price: 872, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" }
+        { id: "SFA-0037-100000", name: "Комплект маркировочных наклеек \"ОТОПЛЕНИЕ\"", price: 872, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SFA-0037-200000", name: "Комплект маркировочных наклеек \"ТЕПЛЫЙ ПОЛ\"", price: 872, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" }
     ],
     heads: [
-        { id: "SHT-0001-003015", name: "Головка термостатическая (Газо-жидкостная)", price: 1316, type: "gas", desc: "Стандартное решение. Быстрая реакция.", rommer: { id: "RHT-0001-103015", name: "Головка термостатическая жидкостная", price: 618, brand: "ROMMER", type: "liquid", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SHT-0002-003015", name: "Головка термостатическая (Жидкостная)", price: 1334, type: "liquid", desc: "Классическая надежная модель.", rommer: { id: "RHT-0001-103015", name: "Головка термостатическая жидкостная", price: 618, brand: "ROMMER", type: "liquid", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "STE-2070-703011", name: "Умная термостатическая головка Zigbee", price: 3300, type: "smart", desc: "Управление со смартфона. Требует шлюз.", availability: "in_stock", price_date: "2026-07-12" }
+        { id: "SHT-0001-003015", name: "Головка термостатическая (Газо-жидкостная)", price: 1316, type: "gas", desc: "Стандартное решение. Быстрая реакция.", rommer: { id: "RHT-0001-103015", name: "Головка термостатическая жидкостная", price: 618, brand: "ROMMER", type: "liquid", availability: "in_stock", price_date: "2026-07-13" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SHT-0002-003015", name: "Головка термостатическая (Жидкостная)", price: 1334, type: "liquid", desc: "Классическая надежная модель.", rommer: { id: "RHT-0001-103015", name: "Головка термостатическая жидкостная", price: 618, brand: "ROMMER", type: "liquid", availability: "in_stock", price_date: "2026-07-13" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "STE-2070-703011", name: "Умная термостатическая головка Zigbee", price: 3300, type: "smart", desc: "Управление со смартфона. Требует шлюз.", availability: "in_stock", price_date: "2026-07-13" }
     ],
-    smart_hub: { id: "STE-2071-804010", name: "Беспроводной шлюз Zigbee", price: 4896, availability: "in_stock", price_date: "2026-07-12" },
+    smart_hub: { id: "STE-2071-804010", name: "Беспроводной шлюз Zigbee", price: 4896, availability: "in_stock", price_date: "2026-07-13" },
     ufh_mech: [
-        { id: "STE-2001-130210", name: "Термостат универсальный, белый", price: 2142.00, desc: "Механический термостат (Белый).", ctrlType: "mech", wifi: false, color: "white", current: 3, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STE-2001-130220", name: "Термостат универсальный, черный", price: 2249, desc: "Механический термостат (Черный).", ctrlType: "mech", wifi: false, color: "black", current: 3, availability: "in_stock", price_date: "2026-07-12" }
+        { id: "STE-2001-130210", name: "Термостат универсальный, белый", price: 2142.00, desc: "Механический термостат (Белый).", ctrlType: "mech", wifi: false, color: "white", current: 3, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "STE-2001-130220", name: "Термостат универсальный, черный", price: 2249, desc: "Механический термостат (Черный).", ctrlType: "mech", wifi: false, color: "black", current: 3, availability: "in_stock", price_date: "2026-07-13" }
     ],
     ufh_electro: [
-        { id: "STE-2002-331212", name: "Терморегулятор универсальный, белый", price: 11603, desc: "Электронный термостат с дисплеем (Белый).", ctrlType: "electronic", wifi: true, color: "white", current: 3, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STE-2002-331222", name: "Терморегулятор универсальный, черный", price: 12067, desc: "Электронный термостат с дисплеем (Черный).", ctrlType: "electronic", wifi: true, color: "black", current: 3, availability: "in_stock", price_date: "2026-07-12" }
+        { id: "STE-2002-331212", name: "Терморегулятор универсальный, белый", price: 11603, desc: "Электронный термостат с дисплеем (Белый).", ctrlType: "electronic", wifi: true, color: "white", current: 3, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "STE-2002-331222", name: "Терморегулятор универсальный, черный", price: 12067, desc: "Электронный термостат с дисплеем (Черный).", ctrlType: "electronic", wifi: true, color: "black", current: 3, availability: "in_stock", price_date: "2026-07-13" }
     ],
     thermostats_stout: [
-        { id: "STE-2001-110710", name: "Термостат тёплого пола 16А, белый", price: 2356, brand: "STOUT", unit: "шт", ctrlType: "mech", wifi: false, color: "white", current: 16, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STE-2001-110720", name: "Термостат тёплого пола 16А, чёрный", price: 2468, brand: "STOUT", unit: "шт", ctrlType: "mech", wifi: false, color: "black", current: 16, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STE-2002-311722", name: "Термостат, сенсорный экран, чёрный", price: 12531, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "black", current: 16, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STE-2002-311712", name: "Термостат, сенсорный экран, белый", price: 12067, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "white", current: 16, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STE-3001-130210", name: "STE-3001 Термостат тёплого пола 3А, белый", price: 1010, brand: "STOUT", unit: "шт", ctrlType: "mech", wifi: false, color: "white", current: 3, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STE-3001-110710", name: "STE-3001 Термостат тёплого пола 16А, белый", price: 1112, brand: "STOUT", unit: "шт", ctrlType: "mech", wifi: false, color: "white", current: 16, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STE-3002-331212", name: "Термостат, белый", price: 4998.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "white", current: 3, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STE-3002-311712", name: "Термостат, белый", price: 5202.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "white", current: 16, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STE-3002-331222", name: "Термостат, чёрный", price: 5202.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "black", current: 3, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STE-3002-311722", name: "Термостат, чёрный", price: 5406.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "black", current: 16, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STE-3003-231232", name: "Термостат, с кнопками, серый", price: 5253.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "gray", current: 3, availability: "on_order", price_date: "2026-07-12" },
-        { id: "STE-3003-211732", name: "Термостат, с кнопками, серый", price: 5457.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "gray", current: 16, availability: "in_stock", price_date: "2026-07-12" }
+        { id: "STE-2001-110710", name: "Термостат тёплого пола 16А, белый", price: 2356, brand: "STOUT", unit: "шт", ctrlType: "mech", wifi: false, color: "white", current: 16, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "STE-2001-110720", name: "Термостат тёплого пола 16А, чёрный", price: 2468, brand: "STOUT", unit: "шт", ctrlType: "mech", wifi: false, color: "black", current: 16, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "STE-2002-311722", name: "Термостат, сенсорный экран, чёрный", price: 12531, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "black", current: 16, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "STE-2002-311712", name: "Термостат, сенсорный экран, белый", price: 12067, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "white", current: 16, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "STE-3001-130210", name: "STE-3001 Термостат тёплого пола 3А, белый", price: 1010, brand: "STOUT", unit: "шт", ctrlType: "mech", wifi: false, color: "white", current: 3, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "STE-3001-110710", name: "STE-3001 Термостат тёплого пола 16А, белый", price: 1112, brand: "STOUT", unit: "шт", ctrlType: "mech", wifi: false, color: "white", current: 16, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "STE-3002-331212", name: "Термостат, белый", price: 4998.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "white", current: 3, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "STE-3002-311712", name: "Термостат, белый", price: 5202.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "white", current: 16, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "STE-3002-331222", name: "Термостат, чёрный", price: 5202.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "black", current: 3, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "STE-3002-311722", name: "Термостат, чёрный", price: 5406.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "black", current: 16, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "STE-3003-231232", name: "Термостат, с кнопками, серый", price: 5253.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "gray", current: 3, availability: "on_order", price_date: "2026-07-13" },
+        { id: "STE-3003-211732", name: "Термостат, с кнопками, серый", price: 5457.00, brand: "STOUT", unit: "шт", ctrlType: "electronic", wifi: true, color: "gray", current: 16, availability: "in_stock", price_date: "2026-07-13" }
     ],
-    actuators: { id: "STE-0010-230001", name: "Сервопривод компактный 230В (NC)", price: 2458, type: "nc", voltage: 230, rommer: { id: "RTE-0010-230001", name: "Сервопривод термоэлектрический (NC) 230В", price: 760, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
+    actuators: { id: "STE-0010-230001", name: "Сервопривод компактный 230В (NC)", price: 2458, type: "nc", voltage: 230, rommer: { id: "RTE-0010-230001", name: "Сервопривод термоэлектрический (NC) 230В", price: 760, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" }, availability: "in_stock", price_date: "2026-06-27" },
     actuators_rommer: [
-        { id: "RTE-0010-024001", name: "Сервопривод компактный НЗ, 24В", price: 911, brand: "ROMMER", unit: "шт", type: "nc", voltage: 24, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RTE-0010-024002", name: "Сервопривод компактный НО, 24В", price: 911, brand: "ROMMER", unit: "шт", type: "no", voltage: 24, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RTE-0010-230001", name: "Сервопривод компактный НЗ, 230В", price: 718, brand: "ROMMER", unit: "шт", type: "nc", voltage: 230, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RTE-0010-230002", name: "Сервопривод компактный НО, 230В", price: 718, brand: "ROMMER", unit: "шт", type: "no", voltage: 230, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RTE-0020-024001", name: "Сервопривод с поворотным фиксатором штока НЗ, 24В", price: 1101, brand: "ROMMER", unit: "шт", type: "nc", voltage: 24, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RTE-0020-230001", name: "Сервопривод с поворотным фиксатором штока НЗ, 230В", price: 1057, brand: "ROMMER", unit: "шт", type: "nc", voltage: 230, availability: "in_stock", price_date: "2026-07-12" }
+        { id: "RTE-0010-024001", name: "Сервопривод компактный НЗ, 24В", price: 911, brand: "ROMMER", unit: "шт", type: "nc", voltage: 24, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RTE-0010-024002", name: "Сервопривод компактный НО, 24В", price: 911, brand: "ROMMER", unit: "шт", type: "no", voltage: 24, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RTE-0010-230001", name: "Сервопривод компактный НЗ, 230В", price: 718, brand: "ROMMER", unit: "шт", type: "nc", voltage: 230, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RTE-0010-230002", name: "Сервопривод компактный НО, 230В", price: 718, brand: "ROMMER", unit: "шт", type: "no", voltage: 230, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RTE-0020-024001", name: "Сервопривод с поворотным фиксатором штока НЗ, 24В", price: 1101, brand: "ROMMER", unit: "шт", type: "nc", voltage: 24, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RTE-0020-230001", name: "Сервопривод с поворотным фиксатором штока НЗ, 230В", price: 1057, brand: "ROMMER", unit: "шт", type: "nc", voltage: 230, availability: "in_stock", price_date: "2026-07-13" }
     ],
-    wiring_center: { id: "STE-3050-650522", name: "Проводной контроллер", price: 7446, availability: "in_stock", price_date: "2026-07-12" },
+    wiring_center: { id: "STE-3050-650522", name: "Проводной контроллер", price: 7446, availability: "in_stock", price_date: "2026-07-13" },
     h_valves: [
-        { id: "SVH-0004-000020", name: "Узел нижн. подкл. (Угловой)", price: 1161, type: "angled", desc: "Трубы выходят из стены.", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SVH-0002-000020", name: "Узел нижн. подкл. (Прямой)", price: 1141, type: "straight", desc: "Трубы выходят из пола.", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SVH-0001-000020", name: "Узел нижн. подкл. однотрубный (Прямой)", price: 2028, type: "straight", desc: "Для однотрубной системы.", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SVH-0003-000020", name: "Узел нижн. подкл. однотрубный (Угловой)", price: 1896, type: "angled", desc: "Для однотрубной системы.", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SVH-0005-000020", name: "Узел нижн. подкл. раздельный (Прямой)", price: 767, type: "straight", desc: "Раздельный монтаж.", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SVH-0006-000020", name: "Узел нижн. подкл. раздельный (Угловой)", price: 747, type: "angled", desc: "Раздельный монтаж.", availability: "in_stock", price_date: "2026-07-12" }
+        { id: "SVH-0004-000020", name: "Узел нижн. подкл. (Угловой)", price: 1161, type: "angled", desc: "Трубы выходят из стены.", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SVH-0002-000020", name: "Узел нижн. подкл. (Прямой)", price: 1141, type: "straight", desc: "Трубы выходят из пола.", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SVH-0001-000020", name: "Узел нижн. подкл. однотрубный (Прямой)", price: 2028, type: "straight", desc: "Для однотрубной системы.", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SVH-0003-000020", name: "Узел нижн. подкл. однотрубный (Угловой)", price: 1896, type: "angled", desc: "Для однотрубной системы.", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SVH-0005-000020", name: "Узел нижн. подкл. раздельный (Прямой)", price: 767, type: "straight", desc: "Раздельный монтаж.", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SVH-0006-000020", name: "Узел нижн. подкл. раздельный (Угловой)", price: 747, type: "angled", desc: "Раздельный монтаж.", availability: "in_stock", price_date: "2026-07-13" }
     ],
     manifolds_rad: [
-        { id: "SMS-0922-000002", loops: 2, price: 7643, name: "Коллектор радиаторный 2 вых.", rommer: { id: "RMS-3201-000002", name: "Коллектор радиаторный 1\"x2 вых.", price: 4704, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SMS-0922-000003", loops: 3, price: 9477, name: "Коллектор радиаторный 3 вых.", rommer: { id: "RMS-3201-000003", name: "Коллектор радиаторный 1\"x3 вых.", price: 5132, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SMS-0922-000004", loops: 4, price: 11320, name: "Коллектор радиаторный 4 вых.", rommer: { id: "RMS-3201-000004", name: "Коллектор радиаторный 1\"x4 вых.", price: 6082, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SMS-0922-000005", loops: 5, price: 13418, name: "Коллектор радиаторный 5 вых.", rommer: { id: "RMS-3201-000005", name: "Коллектор радиаторный 1\"x5 вых.", price: 7069, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SMS-0922-000006", loops: 6, price: 15374, name: "Коллектор радиаторный 6 вых.", rommer: { id: "RMS-3201-000006", name: "Коллектор радиаторный 1\"x6 вых.", price: 8348, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-12" },
+        { id: "SMS-0922-000002", loops: 2, price: 7643, name: "Коллектор радиаторный 2 вых.", rommer: { id: "RMS-3201-000002", name: "Коллектор радиаторный 1\"x2 вых.", price: 4704, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SMS-0922-000003", loops: 3, price: 9477, name: "Коллектор радиаторный 3 вых.", rommer: { id: "RMS-3201-000003", name: "Коллектор радиаторный 1\"x3 вых.", price: 5132, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMS-0922-000004", loops: 4, price: 11320, name: "Коллектор радиаторный 4 вых.", rommer: { id: "RMS-3201-000004", name: "Коллектор радиаторный 1\"x4 вых.", price: 6082, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMS-0922-000005", loops: 5, price: 13418, name: "Коллектор радиаторный 5 вых.", rommer: { id: "RMS-3201-000005", name: "Коллектор радиаторный 1\"x5 вых.", price: 7069, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMS-0922-000006", loops: 6, price: 15374, name: "Коллектор радиаторный 6 вых.", rommer: { id: "RMS-3201-000006", name: "Коллектор радиаторный 1\"x6 вых.", price: 8348, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-13" },
         { id: "SMS-0922-000007", loops: 7, price: 17792, name: "Коллектор радиаторный 7 вых.", rommer: { id: "RMS-3201-000007", name: "Коллектор радиаторный 1\"x7 вых.", price: 9092, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-12" },
         { id: "SMS-0922-000008", loops: 8, price: 19985, name: "Коллектор радиаторный 8 вых.", rommer: { id: "RMS-3201-000008", name: "Коллектор радиаторный 1\"x8 вых.", price: 10296, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-12" },
         { id: "SMS-0922-000009", loops: 9, price: 21902, name: "Коллектор радиаторный 9 вых.", rommer: { id: "RMS-3201-000009", name: "Коллектор радиаторный 1\"x9 вых.", price: 11497, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-12" },
