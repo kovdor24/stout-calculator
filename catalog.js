@@ -1468,10 +1468,10 @@ const catalog = {
         { id: "SPM-0001-053230", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 32x3.0 (50 м)", len: 50, price: 684, brand: "STOUT", availability: "in_stock", price_date: "2026-07-11" }
     ],
     stable_pipes: [
-        { id: "SPS-0002-001626", name: "Труба стабильная PE-Xa/Al/PE-RT 16.2х2.6 (100 м)", len: 100, price: 301.92, brand: "STOUT", availability: "in_stock", price_date: "2026-06-30", rommer: { id: "RPS-0001-001626", name: "Труба стабильная PE-Xa/Al/PE-RT 16.2х2.6 (100 м)", len: 100, price: 207.00, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" } },
-        { id: "SPS-0002-002029", name: "Труба стабильная PE-Xa/Al/PE-RT II 20х2.9 (100 м)",   len: 100, price: 429.42, brand: "STOUT", availability: "in_stock", price_date: "2026-06-30", rommer: { id: "RPS-0001-002029", name: "Труба стабильная PE-Xa/Al/PE-RT II 20х2.9 (100 м)",   len: 100, price: 293.00, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" } },
-        { id: "SPS-0002-002537", name: "Труба стабильная PE-Xa/Al/PE-RT II 25х3.7 (50 м)",    len: 50,  price: 604.86, brand: "STOUT", availability: "in_stock", price_date: "2026-06-30", rommer: { id: "RPS-0001-002537", name: "Труба стабильная PE-Xa/Al/PE-RT II 25х3.7 (50 м)",    len: 50,  price: 413.00, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" } },
-        { id: "SPS-0002-003247", name: "Труба стабильная PE-Xa/Al/PE-RT II 32х4.7 (50 м)",    len: 50,  price: 1142.40, brand: "STOUT", availability: "in_stock", price_date: "2026-06-30", rommer: { id: "RPS-0001-003247", name: "Труба стабильная PE-Xa/Al/PE-RT II 32х4.7 (50 м)",    len: 50,  price: 780.00, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" } },
+        { id: "SPS-0002-001626", name: "Труба стабильная PE-Xa/Al/PE-RT 16.2х2.6 (100 м)", len: 100, price: 266, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13", rommer: { id: "RPS-0001-001626", name: "Труба стабильная PE-Xa/Al/PE-RT 16.2х2.6 (100 м)", len: 100, price: 207.00, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" } },
+        { id: "SPS-0002-002029", name: "Труба стабильная PE-Xa/Al/PE-RT II 20х2.9 (100 м)",   len: 100, price: 379, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13", rommer: { id: "RPS-0001-002029", name: "Труба стабильная PE-Xa/Al/PE-RT II 20х2.9 (100 м)",   len: 100, price: 293.00, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" } },
+        { id: "SPS-0002-002537", name: "Труба стабильная PE-Xa/Al/PE-RT II 25х3.7 (50 м)",    len: 50,  price: 534, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13", rommer: { id: "RPS-0001-002537", name: "Труба стабильная PE-Xa/Al/PE-RT II 25х3.7 (50 м)",    len: 50,  price: 413.00, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" } },
+        { id: "SPS-0002-003247", name: "Труба стабильная PE-Xa/Al/PE-RT II 32х4.7 (50 м)",    len: 50,  price: 1008, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13", rommer: { id: "RPS-0001-003247", name: "Труба стабильная PE-Xa/Al/PE-RT II 32х4.7 (50 м)",    len: 50,  price: 780.00, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" } },
     ],
     insulated_pipes_mp_red: [
         { id: "SPI-0001-101620", name: "Труба металлопластиковая в теплоизоляции (красная) 16x2.0 (100 м)", len: 100, price: 199, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" },
@@ -1751,12 +1751,12 @@ const catalog = {
     rommer_check_valve_34: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 530, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
     filter_mag: { id: "SFW-0072-000020", name: "Фильтр-шламоотделитель магнитный 3/4\"", price: 9231, rommer: { id: "RFW-0080-256620", name: "Фильтр-шламоотделитель магнитный 3/4\"", price: 2598, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" }, availability: "in_stock", price_date: "2026-06-27" },
     filter_mag_alts: [
-        { id: "RFW-0081-000820", name: "Сепаратор шлама поворотный ВР 3/4\"",      price: 6695,  brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
-        { id: "RFW-0081-000825", name: "Сепаратор шлама поворотный ВР 1\"",         price: 7207,  brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
-        { id: "RFW-0081-000832", name: "Сепаратор шлама поворотный ВР 1 1/4\"",     price: 8055,  brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
-        { id: "RFW-0081-002920", name: "Сепаратор шлама с щётками поворотный ВР 3/4\"",   price: 7025,  brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
-        { id: "RFW-0081-002925", name: "Сепаратор шлама с щётками поворотный ВР 1\"",     price: 7937,  brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30", qtyRatio: 0.5 },
-        { id: "RFW-0081-002932", name: "Сепаратор шлама с щётками поворотный ВР 1 1/4\"", price: 8731,  brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30", qtyRatio: 0.5 },
+        { id: "RFW-0081-000820", name: "Сепаратор шлама поворотный ВР 3/4\"",      price: 6317,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RFW-0081-000825", name: "Сепаратор шлама поворотный ВР 1\"",         price: 6800,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RFW-0081-000832", name: "Сепаратор шлама поворотный ВР 1 1/4\"",     price: 7600,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RFW-0081-002920", name: "Сепаратор шлама с щётками поворотный ВР 3/4\"",   price: 6628,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RFW-0081-002925", name: "Сепаратор шлама с щётками поворотный ВР 1\"",     price: 7489,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13", qtyRatio: 0.5 },
+        { id: "RFW-0081-002932", name: "Сепаратор шлама с щётками поворотный ВР 1 1/4\"", price: 8237,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13", qtyRatio: 0.5 },
     ],
     nipple_34: { id: "SFT-0003-003434", name: "Ниппель НН 3/4\"", price: 200, availability: "in_stock", price_date: "2026-07-12" },
     coolants: [
@@ -1774,13 +1774,13 @@ const catalog = {
         { id: "RPW-0012-370331", name: "Насос скважинный 3-77, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 124, price: 32334, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
         { id: "RPW-0012-380337", name: "Насос скважинный 3-92, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 148, price: 35369, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
         { id: "RPW-0012-370428", name: "Насос скважинный 4-76, Ду 75 мм, с кабелем", q_max: 5.4, h_max: 115, price: 32602, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RPW-1012-350270",  name: "Насос скважинный RHS 2-70, кабель 50 м",  q_max: 4.5, h_max: 83,  watt: 800,  price: 24888.91, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
-        { id: "RPW-1012-360295",  name: "Насос скважинный RHS 2-95, кабель 60 м",  q_max: 4.5, h_max: 108, watt: 1100, price: 31719.62, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
-        { id: "RPW-1012-3802135", name: "Насос скважинный RHS 2-135, кабель 80 м", q_max: 4.5, h_max: 152, watt: 1500, price: 51164.90, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
-        { id: "RPW-1012-330345",  name: "Насос скважинный RHS 3-45, кабель 30 м",  q_max: 7.9, h_max: 52,  watt: 800,  price: 22010.07, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
-        { id: "RPW-1012-350365",  name: "Насос скважинный RHS 3-65, кабель 50 м",  q_max: 7.9, h_max: 77,  watt: 1100, price: 28291.18, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
-        { id: "RPW-1012-360390",  name: "Насос скважинный RHS 3-90, кабель 60 м",  q_max: 7.9, h_max: 102, watt: 1500, price: 40591.69, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" },
-        { id: "RPW-1012-3703110", name: "Насос скважинный RHS 3-110, кабель 70 м", q_max: 7.9, h_max: 128, watt: 2200, price: 55587.85, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-30" }
+        { id: "RPW-1012-350270",  name: "Насос скважинный RHS 2-70, кабель 50 м",  q_max: 4.5, h_max: 83,  watt: 800,  price: 36475, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RPW-1012-360295",  name: "Насос скважинный RHS 2-95, кабель 60 м",  q_max: 4.5, h_max: 108, watt: 1100, price: 46486, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RPW-1012-3802135", name: "Насос скважинный RHS 2-135, кабель 80 м", q_max: 4.5, h_max: 152, watt: 1500, price: 74983, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RPW-1012-330345",  name: "Насос скважинный RHS 3-45, кабель 30 м",  q_max: 7.9, h_max: 52,  watt: 800,  price: 32256, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RPW-1012-350365",  name: "Насос скважинный RHS 3-65, кабель 50 м",  q_max: 7.9, h_max: 77,  watt: 1100, price: 41461, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RPW-1012-360390",  name: "Насос скважинный RHS 3-90, кабель 60 м",  q_max: 7.9, h_max: 102, watt: 1500, price: 59488, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RPW-1012-3703110", name: "Насос скважинный RHS 3-110, кабель 70 м", q_max: 7.9, h_max: 128, watt: 2200, price: 81465, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" }
     ],
     well_parts: [
         { id: "10011032", name: "Труба ПНД 32х3.0 питьевая (кратно 5м)", price: 112.4, brand: "CYKLON", unit: "м", availability: "in_stock", price_date: "2026-06-06" },
@@ -1795,28 +1795,28 @@ const catalog = {
         { id: "STW-0002-000080", name: "Гидроаккумулятор STOUT 80 л (для водоснабжения)", price: 12642, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
         { id: "STW-0002-000100", name: "Гидроаккумулятор STOUT 100 л (для водоснабжения)", price: 17077, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
         { id: "STW-0002-000150", name: "Гидроаккумулятор STOUT 150 л (для водоснабжения)", price: 21957, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SFH-0001-003232", name: "Фитинг ПНД, Муфта соединительная равнопроходная 32x32", price: 1829.30, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SFH-0002-000321", name: "Фитинг ПНД, Переходник с наружной резьбой 32xR 1\"", price: 1169.30, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SFH-0002-032114", name: "Муфта ПНД 32х1 1/4\" НР (латунь)", price: 1378.30, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SFH-0002-040114", name: "Фитинг ПНД, Переходник с наружной резьбой 40xR 1 1/4\"", price: 1908.50, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SFH-0003-000321", name: "Фитинг ПНД, Переходник с внутренней резьбой 32xRp 1\"", price: 1223.20, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SFH-0003-040114", name: "Фитинг ПНД, Переходник с внутренней резьбой 40xRp 1\"", price: 1989.90, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SFH-0004-323232", name: "Фитинг ПНД, Тройник равнопроходный 32x32x32", price: 3039.30, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SFH-0006-003232", name: "Фитинг ПНД, Угольник 90° 32x32", price: 2339.70, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-01" }
+        { id: "SFH-0001-003232", name: "Фитинг ПНД, Муфта соединительная равнопроходная 32x32", price: 1721, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SFH-0002-000321", name: "Фитинг ПНД, Переходник с наружной резьбой 32xR 1\"", price: 1100, brand: "STOUT", unit: "шт", availability: "on_order", price_date: "2026-07-13" },
+        { id: "SFH-0002-032114", name: "Муфта ПНД 32х1 1/4\" НР (латунь)", price: 1297, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SFH-0002-040114", name: "Фитинг ПНД, Переходник с наружной резьбой 40xR 1 1/4\"", price: 1796, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SFH-0003-000321", name: "Фитинг ПНД, Переходник с внутренней резьбой 32xRp 1\"", price: 1151, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SFH-0003-040114", name: "Фитинг ПНД, Переходник с внутренней резьбой 40xRp 1\"", price: 1872, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SFH-0004-323232", name: "Фитинг ПНД, Тройник равнопроходный 32x32x32", price: 2860, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SFH-0006-003232", name: "Фитинг ПНД, Угольник 90° 32x32", price: 2201, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" }
     ],
     well_auto: [
         { id: "SCS-0001-000070", name: "Блок управления насосом SIRIO UNIVERSAL", price: 38236, brand: "STOUT", unit: "шт", rommer: { id: "RCS-0001-000063", name: "Устройство управления насосом EPC-12 auto", price: 5880, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SCS-0001-000063", name: "Устройство управления насосом BRIO-TOP", price: 16078, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
         { id: "SCS-0001-000064", name: "Устройство управления насосом BRIO", price: 5141, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
         { id: "RCS-0001-000071", name: "Устройство управления насосом EPC-17", price: 0, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "RCS-0001-000052", name: "Блок насосной автоматики EPC-2", price: 2654.44, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "RCS-0001-000064", name: "Устройство управления насосом EPC-4", price: 2284.83, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "RCS-0001-000055", name: "Блок насосной автоматики EPC-5", price: 2721.64, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" }
+        { id: "RCS-0001-000052", name: "Блок насосной автоматики EPC-2", price: 2654, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RCS-0001-000064", name: "Устройство управления насосом EPC-4", price: 2285, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RCS-0001-000055", name: "Блок насосной автоматики EPC-5", price: 2722, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" }
     ],
     well_relays: [
-        { id: "RCS-0001-000005", name: "Реле давления KRS-5, 1/4\"", price: 604.81, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "RCS-0001-000003", name: "Реле сухого хода KRS-6, 1/4\"", price: 655.21, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "RCS-0001-000053", name: "Реле давления для водоснабжения со встроенным манометром KRS-7", price: 1159.22, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" }
+        { id: "RCS-0001-000005", name: "Реле давления KRS-5, 1/4\"", price: 605, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RCS-0001-000003", name: "Реле сухого хода KRS-6, 1/4\"", price: 655, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RCS-0001-000053", name: "Реле давления для водоснабжения со встроенным манометром KRS-7", price: 1159, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" }
     ],
     water_pipes: [
         { id: "SPX-0001-001622", name: "Труба PEX-a 16x2.2 (серая)", price: 175, unit: "м", rommer: { id: "RPX-0001-001622", name: "Труба PEX-a 16x2.2", price: 86, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
@@ -1958,46 +1958,46 @@ const catalog = {
         { id: "SFP-0019-000019", name: "Зажимная втулка 32", price: 444.40, availability: "in_stock", price_date: "2026-07-04" }
     ],
     water_manifolds_cold: [
-        { id: "SMB-6851-343402", name: "Коллектор 3/4\"х3/4\"х2 вых.", loops: 2, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 1876.88, availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6851-343403", name: "Коллектор 3/4\"х3/4\"х3 вых.", loops: 3, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 2616.50, availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6851-343404", name: "Коллектор 3/4\"х3/4\"х4 вых.", loops: 4, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 3525.77, availability: "in_stock", price_date: "2026-07-01" }
+        { id: "SMB-6851-343402", name: "Коллектор 3/4\"х3/4\"х2 вых.", loops: 2, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 1962, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6851-343403", name: "Коллектор 3/4\"х3/4\"х3 вых.", loops: 3, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 2735, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6851-343404", name: "Коллектор 3/4\"х3/4\"х4 вых.", loops: 4, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 3686, availability: "in_stock", price_date: "2026-07-13" }
     ],
     water_manifolds_hot: [
-        { id: "SMB-6851-343402", name: "Коллектор 3/4\"х3/4\"х2 вых.", loops: 2, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 1876.88, availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6851-343403", name: "Коллектор 3/4\"х3/4\"х3 вых.", loops: 3, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 2616.50, availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6851-343404", name: "Коллектор 3/4\"х3/4\"х4 вых.", loops: 4, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 3525.77, availability: "in_stock", price_date: "2026-07-01" }
+        { id: "SMB-6851-343402", name: "Коллектор 3/4\"х3/4\"х2 вых.", loops: 2, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 1962, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6851-343403", name: "Коллектор 3/4\"х3/4\"х3 вых.", loops: 3, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 2735, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6851-343404", name: "Коллектор 3/4\"х3/4\"х4 вых.", loops: 4, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 3686, availability: "in_stock", price_date: "2026-07-13" }
     ],
     water_manifolds_recirc: [
-        { id: "SMB-6851-343402", name: "Коллектор 3/4\"х3/4\"х2 вых.", loops: 2, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 1876.88, availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6851-343403", name: "Коллектор 3/4\"х3/4\"х3 вых.", loops: 3, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 2616.50, availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6851-343404", name: "Коллектор 3/4\"х3/4\"х4 вых.", loops: 4, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 3525.77, availability: "in_stock", price_date: "2026-07-01" }
+        { id: "SMB-6851-343402", name: "Коллектор 3/4\"х3/4\"х2 вых.", loops: 2, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 1962, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6851-343403", name: "Коллектор 3/4\"х3/4\"х3 вых.", loops: 3, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 2735, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6851-343404", name: "Коллектор 3/4\"х3/4\"х4 вых.", loops: 4, inSize: "3/4", outSize: "3/4", connType: "ek", series: "shutoff", price: 3686, availability: "in_stock", price_date: "2026-07-13" }
     ],
     water_manifolds_stout: [
         // Хромированные регулирующие, макс. 120°C / 16 бар
-        { id: "SMB-6850-341202", name: "Коллектор хромированный, регулирующий, 3/4\"х1/2\"х2 вых.", price: 2457.63, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 2, connType: "compression", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6850-341203", name: "Коллектор хромированный, регулирующий, 3/4\"х1/2\"х3 вых.", price: 3541.03, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 3, connType: "compression", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6850-341204", name: "Коллектор хромированный, регулирующий, 3/4\"х1/2\"х4 вых.", price: 4643.28, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 4, connType: "compression", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6850-011202", name: "Коллектор хромированный, регулирующий, 1\"х1/2\"х2 вых.", price: 2820.26, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 2, connType: "compression", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6850-011203", name: "Коллектор хромированный, регулирующий, 1\"х1/2\"х3 вых.", price: 3926.10, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 3, connType: "compression", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6850-011204", name: "Коллектор хромированный, регулирующий, 1\"х1/2\"х4 вых.", price: 5216.85, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 4, connType: "compression", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6849-341202", name: "Коллектор хромированный, регулирующий, 3/4\"х1/2\"х2 вых.", price: 2457.63, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 2, connType: "flat", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6849-341203", name: "Коллектор хромированный, регулирующий, 3/4\"х1/2\"х3 вых.", price: 3541.03, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 3, connType: "flat", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6849-341204", name: "Коллектор хромированный, регулирующий, 3/4\"х1/2\"х4 вых.", price: 4643.28, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 4, connType: "flat", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6849-011202", name: "Коллектор хромированный, регулирующий, 1\"х1/2\"х2 вых.", price: 2820.26, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 2, connType: "flat", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6849-011203", name: "Коллектор хромированный, регулирующий, 1\"х1/2\"х3 вых.", price: 3926.10, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 3, connType: "flat", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6849-011204", name: "Коллектор хромированный, регулирующий, 1\"х1/2\"х4 вых.", price: 5215.95, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 4, connType: "flat", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6850-343402", name: "Коллектор хромированный, регулирующий, 3/4\"х3/4\"х2 вых.", price: 2604.84, brand: "STOUT", inSize: "3/4", outSize: "3/4", loops: 2, connType: "ek", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6850-343403", name: "Коллектор хромированный, регулирующий, 3/4\"х3/4\"х3 вых.", price: 3721.45, brand: "STOUT", inSize: "3/4", outSize: "3/4", loops: 3, connType: "ek", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6850-343404", name: "Коллектор хромированный, регулирующий, 3/4\"х3/4\"х4 вых.", price: 4738.43, brand: "STOUT", inSize: "3/4", outSize: "3/4", loops: 4, connType: "ek", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6850-013402", name: "Коллектор хромированный, регулирующий, 1\"х3/4\"х2 вых.", price: 2853.47, brand: "STOUT", inSize: "1", outSize: "3/4", loops: 2, connType: "ek", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6850-013403", name: "Коллектор хромированный, регулирующий, 1\"х3/4\"х3 вых.", price: 3988.04, brand: "STOUT", inSize: "1", outSize: "3/4", loops: 3, connType: "ek", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6850-013404", name: "Коллектор хромированный, регулирующий, 1\"х3/4\"х4 вых.", price: 5271.60, brand: "STOUT", inSize: "1", outSize: "3/4", loops: 4, connType: "ek", series: "adjustable", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SMB-6850-341202", name: "Коллектор хромированный, регулирующий, 3/4\"х1/2\"х2 вых.", price: 2569, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 2, connType: "compression", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6850-341203", name: "Коллектор хромированный, регулирующий, 3/4\"х1/2\"х3 вых.", price: 3702, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 3, connType: "compression", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6850-341204", name: "Коллектор хромированный, регулирующий, 3/4\"х1/2\"х4 вых.", price: 4854, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 4, connType: "compression", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6850-011202", name: "Коллектор хромированный, регулирующий, 1\"х1/2\"х2 вых.", price: 2948, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 2, connType: "compression", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6850-011203", name: "Коллектор хромированный, регулирующий, 1\"х1/2\"х3 вых.", price: 4105, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 3, connType: "compression", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6850-011204", name: "Коллектор хромированный, регулирующий, 1\"х1/2\"х4 вых.", price: 5454, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 4, connType: "compression", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6849-341202", name: "Коллектор хромированный, регулирующий, 3/4\"х1/2\"х2 вых.", price: 2569, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 2, connType: "flat", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6849-341203", name: "Коллектор хромированный, регулирующий, 3/4\"х1/2\"х3 вых.", price: 3702, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 3, connType: "flat", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6849-341204", name: "Коллектор хромированный, регулирующий, 3/4\"х1/2\"х4 вых.", price: 4854, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 4, connType: "flat", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6849-011202", name: "Коллектор хромированный, регулирующий, 1\"х1/2\"х2 вых.", price: 2948, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 2, connType: "flat", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6849-011203", name: "Коллектор хромированный, регулирующий, 1\"х1/2\"х3 вых.", price: 4105, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 3, connType: "flat", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6849-011204", name: "Коллектор хромированный, регулирующий, 1\"х1/2\"х4 вых.", price: 5453, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 4, connType: "flat", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6850-343402", name: "Коллектор хромированный, регулирующий, 3/4\"х3/4\"х2 вых.", price: 2723, brand: "STOUT", inSize: "3/4", outSize: "3/4", loops: 2, connType: "ek", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6850-343403", name: "Коллектор хромированный, регулирующий, 3/4\"х3/4\"х3 вых.", price: 3891, brand: "STOUT", inSize: "3/4", outSize: "3/4", loops: 3, connType: "ek", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6850-343404", name: "Коллектор хромированный, регулирующий, 3/4\"х3/4\"х4 вых.", price: 4954, brand: "STOUT", inSize: "3/4", outSize: "3/4", loops: 4, connType: "ek", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6850-013402", name: "Коллектор хромированный, регулирующий, 1\"х3/4\"х2 вых.", price: 2983, brand: "STOUT", inSize: "1", outSize: "3/4", loops: 2, connType: "ek", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6850-013403", name: "Коллектор хромированный, регулирующий, 1\"х3/4\"х3 вых.", price: 4169, brand: "STOUT", inSize: "1", outSize: "3/4", loops: 3, connType: "ek", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6850-013404", name: "Коллектор хромированный, регулирующий, 1\"х3/4\"х4 вых.", price: 5511, brand: "STOUT", inSize: "1", outSize: "3/4", loops: 4, connType: "ek", series: "adjustable", availability: "in_stock", price_date: "2026-07-13" },
         // Никелированные распределительные, макс. 120°C / 10 бар
-        { id: "SMB-6851-013402", name: "Коллектор никелированный, 1\"х3/4\"х2 вых.", price: 1954.08, brand: "STOUT", inSize: "1", outSize: "3/4", loops: 2, connType: "ek", series: "shutoff", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6851-013403", name: "Коллектор никелированный, 1\"х3/4\"х3 вых.", price: 2832.83, brand: "STOUT", inSize: "1", outSize: "3/4", loops: 3, connType: "ek", series: "shutoff", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6851-013404", name: "Коллектор никелированный, 1\"х3/4\"х4 вых.", price: 3821.08, brand: "STOUT", inSize: "1", outSize: "3/4", loops: 4, connType: "ek", series: "shutoff", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6851-341202", name: "Коллектор никелированный, 3/4\"х1/2\"х2 вых.", price: 1670.43, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 2, connType: "compression", series: "shutoff", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "SMB-6851-341203", name: "Коллектор никелированный, 3/4\"х1/2\"х3 вых.", price: 2412.75, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 3, connType: "compression", series: "shutoff", availability: "in_stock", price_date: "2026-07-01" },
+        { id: "SMB-6851-013402", name: "Коллектор никелированный, 1\"х3/4\"х2 вых.", price: 2043, brand: "STOUT", inSize: "1", outSize: "3/4", loops: 2, connType: "ek", series: "shutoff", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6851-013403", name: "Коллектор никелированный, 1\"х3/4\"х3 вых.", price: 2962, brand: "STOUT", inSize: "1", outSize: "3/4", loops: 3, connType: "ek", series: "shutoff", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6851-013404", name: "Коллектор никелированный, 1\"х3/4\"х4 вых.", price: 3995, brand: "STOUT", inSize: "1", outSize: "3/4", loops: 4, connType: "ek", series: "shutoff", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6851-341202", name: "Коллектор никелированный, 3/4\"х1/2\"х2 вых.", price: 1746, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 2, connType: "compression", series: "shutoff", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SMB-6851-341203", name: "Коллектор никелированный, 3/4\"х1/2\"х3 вых.", price: 2522, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 3, connType: "compression", series: "shutoff", availability: "in_stock", price_date: "2026-07-13" },
         { id: "SMB-6851-341204", name: "Коллектор никелированный, 3/4\"х1/2\"х4 вых.", price: 3349.84, brand: "STOUT", inSize: "3/4", outSize: "1/2", loops: 4, connType: "compression", series: "shutoff", availability: "in_stock", price_date: "2026-07-01" },
         { id: "SMB-6851-011202", name: "Коллектор никелированный, 1\"х1/2\"х2 вых.", price: 1895.73, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 2, connType: "compression", series: "shutoff", availability: "in_stock", price_date: "2026-07-01" },
         { id: "SMB-6851-011203", name: "Коллектор никелированный, 1\"х1/2\"х3 вых.", price: 2688.31, brand: "STOUT", inSize: "1", outSize: "1/2", loops: 3, connType: "compression", series: "shutoff", availability: "in_stock", price_date: "2026-07-01" },
