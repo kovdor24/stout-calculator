@@ -935,11 +935,13 @@ const app = {
             if (compSec.style.display === 'none') {
                 compSec.style.display = 'block';
                 if (btn) btn.innerHTML = '✕ Скрыть реквизиты';
-                if (modalContent) modalContent.style.maxWidth = '760px';
+                if (modalContent) modalContent.style.maxWidth = '820px';
             } else {
                 compSec.style.display = 'none';
                 if (btn) btn.innerHTML = '⚙️ Настроить логотип и реквизиты';
-                if (modalContent) modalContent.style.maxWidth = '60vw';
+                // Не 60vw — на широких мониторах это в разы шире одной узкой колонки полей
+                // и оставляет пустой "хвост" справа. Подогнано под ширину самой колонки.
+                if (modalContent) modalContent.style.maxWidth = '520px';
             }
         }
     },
@@ -2555,8 +2557,9 @@ const app = {
                 const year = this.proPaymentLinks.year;
                 const link = (plan) => `<a href="${plan.url}" target="_blank" rel="noopener">${plan.tariffName} — ${this.formatCurrencyAmount(plan.rub)}</a>`;
                 addBubble('assistant', `Открываю окно тарифа Профи — там же можно сразу оплатить.<br>📅 ${link(month)}<br>📆 ${link(year)}`);
-                setTimeout(() => this.showModal('pro'), 600);
-                textInput.focus();
+                // Закрываем чат перед открытием тарифов — иначе окно тарифов открывается
+                // "под" ещё не закрытым чатом (у него выше z-index) и его не видно.
+                setTimeout(() => { close(); this.showModal('pro'); }, 600);
                 return;
             }
 
@@ -3570,7 +3573,12 @@ const app = {
             }
 
             const EVENT_META = this.ADMIN_KANBAN_EVENT_META;
-            let h = `<h4 style="margin:0 0 10px; font-size:14px; color:var(--text-main);">📋 История общения</h4><div style="display:flex; flex-direction:column; gap:6px; max-height:260px; overflow-y:auto;">`;
+            let h = `
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px;">
+                    <h4 style="margin:0; font-size:14px; color:var(--text-main);">📋 История общения</h4>
+                    <button type="button" class="auth-btn-base" style="margin:0; width:auto; height:26px; padding:0 10px; font-size:11px; background:var(--surface-light); color:#EF4444; border:1px solid var(--border);" onclick="app.clearOwnInvoiceHistory()">🗑 Очистить историю</button>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px; max-height:260px; overflow-y:auto;">`;
             events.forEach(e => {
                 const em = EVENT_META[e.event] || { label: e.event, color: '#94A3B8' };
                 const dt = new Date(e.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -3591,6 +3599,27 @@ const app = {
             container.innerHTML = h;
         } catch (e) {
             container.innerHTML = `<div style="color:#EF4444; font-size:12px;">Ошибка загрузки истории: ${e.message}</div>`;
+        }
+    },
+    // Стирает собственную историю событий по сметам (invoice_events) — только свою, по email.
+    // .select('id') после delete() нужен, чтобы отличить реальное удаление от ситуации, когда
+    // RLS в Supabase молча пропускает 0 строк, а клиент считает это успехом (см. похожий баг
+    // с "Удалить всё" в сообщениях админки).
+    clearOwnInvoiceHistory: async function () {
+        const me = await this.resolveCurrentUserForChat();
+        if (!me || !me.email) return;
+        if (!await app.confirm('Удалить всю историю событий по вашим сметам ("Новый расчёт", "Сохранено" и т.д.)? Сами сметы это не затронет — удаляется только лента событий.')) return;
+        try {
+            const { data, error } = await supabaseClient.from('invoice_events').delete().eq('user_email', me.email).select('id');
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                app.alert('Ни одна запись не была удалена — похоже, права доступа в Supabase не разрешают это действие.');
+                return;
+            }
+            app.alert(`🗑 Удалено записей: ${data.length}`);
+            this.renderManagerCommHistory();
+        } catch (e) {
+            app.alert('Не удалось очистить историю: ' + e.message);
         }
     },
 
@@ -5049,9 +5078,6 @@ const app = {
             }
         }
 
-        let modalContent = document.querySelector('#profile_modal_overlay .auth-modal-content');
-        if (modalContent) modalContent.style.maxWidth = '60vw';
-
         document.getElementById('profile_modal_overlay').style.display = 'flex';
         // Модалка позиционируется фиксированно и может быть выше вьюпорта на низких экранах —
         // без блокировки прокрутки body под ней появляется лишний внешний скролл всей страницы
@@ -5059,6 +5085,12 @@ const app = {
         document.body.style.overflow = 'hidden';
         this.setProfileTab(forced ? 'requisites' : (initialTab || 'requisites'));
         this.refreshManagerTabVisibility(tgUser.email);
+
+        // На мобильном модалка — bottom sheet почти во весь экран, а плавающая кнопка
+        // ИИ-заполнения — отдельный fixed-элемент с высоким z-index, который иначе
+        // остаётся поверх и перекрывает кнопки формы (реквизиты компании, Сохранить/Отмена).
+        const aiFabBtn = document.getElementById('ai_parse_fab_btn');
+        if (aiFabBtn) aiFabBtn.style.display = 'none';
     },
     closeProfileModal: function () {
         if (this._profileForceComplete && this.isProfileIncomplete()) {
@@ -5069,6 +5101,9 @@ const app = {
         document.getElementById('profile_modal_overlay').style.display = 'none';
         document.body.style.overflow = '';
         this.unsubscribeChatThread();
+
+        const aiFabBtn = document.getElementById('ai_parse_fab_btn');
+        if (aiFabBtn) aiFabBtn.style.display = this.state.tgUser ? 'flex' : 'none';
     },
     // Показывает вкладку «Мои монтажники» только тем, кто зарегистрировался под email,
     // совпадающим с manager_email хотя бы одного дистрибьютора — то есть реально является
@@ -5111,6 +5146,21 @@ const app = {
             const el = document.getElementById('profile_tab_' + t);
             if (el) el.style.display = (t === tab) ? '' : 'none';
         });
+
+        // Ширина модалки: вкладка "Реквизиты" в свёрнутом виде — это одна узкая колонка
+        // полей, ей 60vw создаёт лишнее пустое место на широких экранах — подгоняем под
+        // контент. Остальные вкладки (прайс-лист, оборудование, менеджер) — таблицы/списки,
+        // им по-прежнему нужна широкая модалка.
+        const modalContent = document.querySelector('#profile_modal_overlay .auth-modal-content');
+        if (modalContent) {
+            if (tab === 'requisites') {
+                const compSec = document.getElementById('pro_profile_company_section');
+                const isExpanded = compSec && compSec.style.display !== 'none';
+                modalContent.style.maxWidth = isExpanded ? '820px' : '520px';
+            } else {
+                modalContent.style.maxWidth = '60vw';
+            }
+        }
 
         const footerRequisites = document.getElementById('profile_modal_footer_requisites');
         const footerOther = document.getElementById('profile_modal_footer_other');
@@ -10544,6 +10594,7 @@ const app = {
                 .limit(1);
 
             let saveError = null;
+            let isNewSlot = false;
             if (existing && existing.length > 0 && String(existing[0].user_id) === String(dbUserId)) {
                 const { error } = await supabaseClient
                     .from('estimates')
@@ -10556,6 +10607,7 @@ const app = {
                     .from('estimates')
                     .insert([autoData]);
                 saveError = error;
+                isNewSlot = true;
                 console.log("[runAutoSave] Created new auto-slot.");
             }
 
@@ -10565,7 +10617,10 @@ const app = {
             this._lastAutoSaveTime = Date.now();
             this._autoSaveBaseEq = currentEq;
             console.log(`[runAutoSave] Auto-saved: "${autoName}" at ${timeStr}`);
-            this.logInvoiceEvent('saved', { total: total });
+            // "Сохранено" пишем в историю только при создании нового дневного слота — иначе
+            // при активном редактировании автосохранение (раз в ~15 мин) плодило бы новую
+            // запись в истории на каждое обновление одной и той же сметы за день.
+            if (isNewSlot) this.logInvoiceEvent('saved', { total: total });
 
         } catch (e) {
             console.error("[runAutoSave] Ошибка автосохранения:", e);

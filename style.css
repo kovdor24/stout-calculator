@@ -3821,6 +3821,19 @@ body.dark-mode .header-totals-block {
         color: var(--text-main) !important;
     }
 
+    /* Вкладки личного кабинета (Реквизиты/Менеджер/Прайс-лист/Оборудование) — на узких
+       экранах flex-wrap переносил "Своё оборудование" на отдельную строку по левому краю.
+       Сетка 2×2 с одинаковыми ячейками держит все вкладки выровненными по центру. */
+    #profile_tabs_bar {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 6px !important;
+    }
+
+    #profile_tabs_bar .mode-tab {
+        flex: unset !important;
+    }
+
     /* Finger-friendly touch inputs for mobile filling */
     #profile_modal_overlay .auth-input {
         width: 100% !important;
@@ -3889,11 +3902,14 @@ body.dark-mode .header-totals-block {
         margin-bottom: 20px !important;
     }
 
+    /* Не форсируем display:flex здесь — этот селектор матчится по подстроке "border-top"
+       в инлайн-style и задевает СРАЗУ ОБА футера модалки (footer_requisites и footer_other),
+       у которых он в разметке одинаковый. display управляется через JS (app.setProfileTab) —
+       иначе скрытый footer_other принудительно показывался бы поверх активной вкладки. */
     #profile_modal_overlay div[style*="border-top"] {
         border-top: 1px solid var(--border) !important;
         padding-top: 16px !important;
         margin-top: auto !important;
-        display: flex !important;
         gap: 12px !important;
     }
 
