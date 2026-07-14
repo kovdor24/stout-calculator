@@ -28,5 +28,10 @@ jobs:
             echo "Новых картинок не скачано."
           else
             git commit -m "Автоматическая загрузка отсутствующих картинок"
-            git push
+            for i in {1..5}; do
+              git pull --rebase origin main && git push origin main && exit 0
+              git rebase --abort || true
+              sleep 5
+            done
+            exit 1
           fi

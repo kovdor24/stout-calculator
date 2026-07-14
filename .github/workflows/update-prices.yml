@@ -30,5 +30,10 @@ jobs:
             echo "Цены и статусы не изменились."
           else
             git commit -m "Автообновление цен"
-            git push
+            for i in {1..5}; do
+              git pull --rebase origin main && git push origin main && exit 0
+              git rebase --abort || true
+              sleep 5
+            done
+            exit 1
           fi
