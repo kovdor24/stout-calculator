@@ -24,6 +24,9 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
           git add img/ articles_without_images.txt
+          if [ -f articles_not_found.txt ]; then
+            git add articles_not_found.txt
+          fi
           if git diff --staged --quiet; then
             echo "Новых картинок не скачано."
           else

@@ -17,11 +17,8 @@ IMAGE_DIR = "img"
 MISSING_LIST_PATH = "articles_without_images.txt"
 INVALID_SKU_LIST_PATH = "articles_invalid_sku.txt"
 
-# Символы, недопустимые в имени файла на Windows (в некоторых артикулах
-# из прайса встречается "*" как маска/плейсхолдер размера — такие id
-# нельзя использовать как имя файла картинки, иначе `git pull` на Windows
-# ломается с "invalid path")
-INVALID_FILENAME_CHARS = set('*?"<>|:')
+INVALID_FILENAME_CHARS = set('*?"<>|:\\/')
+NOT_FOUND_LIST_PATH = "articles_not_found.txt"
 
 def has_invalid_filename_chars(item_id):
     return any(c in INVALID_FILENAME_CHARS for c in item_id)
@@ -171,9 +168,24 @@ def get_missing_skus(items):
             if os.path.isfile(os.path.join(IMAGE_DIR, f)):
                 existing_files.add(f.lower())
                 
+    # Load previously verified not-found SKUs to avoid re-checking them
+    not_found_skus = set()
+    if os.path.exists(NOT_FOUND_LIST_PATH):
+        try:
+            with open(NOT_FOUND_LIST_PATH, 'r', encoding='utf-8') as f:
+                for line in f:
+                    val = line.strip()
+                    if val:
+                        not_found_skus.add(val.lower())
+        except Exception as e:
+            print(f"Ошибка чтения {NOT_FOUND_LIST_PATH}: {e}")
+
     missing = []
     for item in items:
         item_id = item["id"]
+        if item_id.lower() in not_found_skus:
+            continue
+            
         # Check case-insensitive for item_id.jpg, png, etc.
         extensions = ['.jpg', '.png', '.jpeg', '.webp']
         found = False
@@ -423,6 +435,11 @@ def update_catalog_images():
             elif res == "NOT_FOUND":
                 not_found += 1
                 consecutive_errors = 0
+                try:
+                    with open(NOT_FOUND_LIST_PATH, 'a', encoding='utf-8') as f:
+                        f.write(item['id'] + '\n')
+                except Exception as e:
+                    print(f"Ошибка записи в {NOT_FOUND_LIST_PATH}: {e}")
             else:
                 failed += 1
                 consecutive_errors += 1
