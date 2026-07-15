@@ -930,18 +930,13 @@ const app = {
     toggleBrandingSection: function () {
         let compSec = document.getElementById('pro_profile_company_section');
         let btn = document.getElementById('toggle_branding_btn');
-        let modalContent = document.querySelector('#profile_modal_overlay .auth-modal-content');
         if (compSec) {
             if (compSec.style.display === 'none') {
                 compSec.style.display = 'block';
                 if (btn) btn.innerHTML = '✕ Скрыть реквизиты';
-                if (modalContent) modalContent.style.maxWidth = '820px';
             } else {
                 compSec.style.display = 'none';
                 if (btn) btn.innerHTML = '⚙️ Настроить логотип и реквизиты';
-                // Не 60vw — на широких мониторах это в разы шире одной узкой колонки полей
-                // и оставляет пустой "хвост" справа. Подогнано под ширину самой колонки.
-                if (modalContent) modalContent.style.maxWidth = '520px';
             }
         }
     },
@@ -1525,12 +1520,18 @@ const app = {
     // "купить доступ", "разблокировать функции", "сколько стоит подписка" и т.п.).
     detectProTariffIntent: function (text) {
         const t = (' ' + (text || '').toLowerCase() + ' ').replace(/ё/g, 'е');
-        const hasProWord = /проф[а-я]*|премиум[а-я]*|\bpro\b/i.test(t);
+        // "профи" — точное слово (не "профиль"/"профнастил"/"профессионал", у них своё
+        // значение в контексте описания дома — кровля, отделка и т.п.)
+        const hasProWord = /(?<![а-я])профи(?![а-я])|(?<![а-я])премиум[а-я]*(?![а-я])|\bpro\b/i.test(t);
         const hasActionVerb = /актив[а-я]*|куп[а-я]*|оформ[а-я]*|открой|открыт[а-я]*|разблок[а-я]*|подключ[а-я]*|продли[а-я]*|продлен[а-я]*|перейд[а-я]*|переход[а-я]*|апгрейд[а-я]*|оплат[а-я]*/i.test(t);
         const hasTariffWord = /тариф[а-я]*|подписк[а-я]*|доступ[а-я]*/i.test(t);
         const isPriceQuestion = /сколько\s*сто[ий][а-я]*|стоимост[а-я]*|цен[а-я]*/i.test(t);
 
-        if (hasTariffWord && (hasProWord || hasActionVerb || isPriceQuestion)) return true;
+        // "профи"/"премиум"/"pro" и "тариф"/"подписка"/"доступ" однозначны в этом чате сами
+        // по себе — не требуем обязательного глагола рядом (раньше голое "подписка" или
+        // "профи" не распознавались).
+        if (hasProWord || hasTariffWord) return true;
+        if (hasActionVerb && isPriceQuestion) return true;
         return false;
     },
 
@@ -3029,27 +3030,13 @@ const app = {
             // не убирая activateTrial14 — чтобы легко вернуть обратно)
             if (trialBtn) trialBtn.style.display = 'none';
 
-            // Show promo code section for logged-in users without distributor binding
+            // Промокод показываем только тем, кто ещё не привязан к дистрибьютору — вводить
+            // им уже нечего. Раньше для уже привязанных вместо поля показывалась строка
+            // "Счета выставляет компания: ...", но в окне тарифов это лишний, отвлекающий
+            // от оформления подписки текст — эта информация и так есть во вкладке "Менеджер".
             let promoSection = document.getElementById('promo_code_section');
             if (promoSection) {
-                if (this.state.tgUser && !this.state.distributorId) {
-                    promoSection.style.display = 'block';
-                } else if (this.state.tgUser && this.state.distributorId) {
-                    // Already bound - show info instead
-                    promoSection.style.display = 'block';
-                    const resultEl = document.getElementById('promo_code_result');
-                    if (resultEl && this.state.distributorInfo) {
-                        resultEl.innerHTML = `✅ Счета выставляет компания: <strong>${this.state.distributorInfo.company_name}</strong>`;
-                        resultEl.style.display = 'block';
-                        resultEl.style.color = 'var(--primary)';
-                        const inputEl = document.getElementById('promo_code_input');
-                        const applyBtn = document.getElementById('promo_code_apply_btn');
-                        if (inputEl) inputEl.style.display = 'none';
-                        if (applyBtn) applyBtn.style.display = 'none';
-                    }
-                } else {
-                    promoSection.style.display = 'none';
-                }
+                promoSection.style.display = (this.state.tgUser && !this.state.distributorId) ? 'block' : 'none';
             }
         }
         if (overlay) overlay.classList.add('active');
@@ -3694,8 +3681,6 @@ const app = {
             if (!dists || dists.length === 0) {
                 subview.innerHTML = `
                     <h4 style="margin: 0 0 12px; font-size: 15px; color: var(--text-main);">🤝 Менеджер не назначен</h4>
-                    <p style="font-size: 13px; color: var(--text-sec); margin: 0 0 14px;">Пока нет доступных поставщиков. Если у вас есть промокод дистрибьютора, введите его при выборе тарифа Профи.</p>
-                    <button class="auth-btn-base btn-email-submit" style="width: 100%; height: 38px;" onclick="app.showModal('pro')">Перейти к выбору тарифа</button>
                 `;
                 return;
             }
@@ -4117,6 +4102,7 @@ const app = {
     },
 
     renderAdminDistributors: function () {
+        const isViewer = this.getAdminRole() === 'viewer';
         const content = document.getElementById('admin_content');
         if (!content) return;
 
@@ -4141,8 +4127,8 @@ const app = {
                     <td>${statusBadge}</td>
                     <td style="text-align:right;">
                         <div style="display:flex; gap:6px; justify-content:flex-end;">
-                            <button class="btn-ctrl" style="height:28px; font-size:11px;" onclick="app.editDistributor('${d.id}')">✏️ Изменить</button>
-                            <button class="btn-ctrl" style="height:28px; font-size:11px; color:#EF4444;" onclick="app.deleteDistributor('${d.id}')">🗑</button>
+                            <button class="btn-ctrl" style="height:28px; font-size:11px;" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} onclick="app.editDistributor('${d.id}')">✏️ Изменить</button>
+                            <button class="btn-ctrl" style="height:28px; font-size:11px; color:#EF4444;" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} onclick="app.deleteDistributor('${d.id}')">🗑</button>
                         </div>
                     </td>
                 </tr>`;
@@ -4151,7 +4137,7 @@ const app = {
 
         content.innerHTML += `
             <div style="margin-bottom: 20px;">
-                <h3 style="margin: 0 0 16px; color: var(--text-main);">🏢 Промокоды дистрибьюторов</h3>
+                <h3 style="margin: 0 0 16px; color: var(--text-main);">🏢 Дистрибьюторы</h3>
 
                 <div style="background: var(--surface-light); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                     <h4 style="margin: 0 0 14px; font-size: 14px; color: var(--text-main);" id="dist_form_title">➕ Добавить промокод</h4>
@@ -4159,50 +4145,50 @@ const app = {
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                         <div>
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Название компании *</label>
-                            <input type="text" id="dist_company" placeholder="ООО Теплоком" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                            <input type="text" id="dist_company" placeholder="ООО Теплоком" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Промокод * (только заглавные буквы)</label>
-                            <input type="text" id="dist_code" placeholder="TEPLOKOM2024" maxlength="20" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; box-sizing: border-box;" oninput="this.value = this.value.toUpperCase()">
+                            <input type="text" id="dist_code" placeholder="TEPLOKOM2024" maxlength="20" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; box-sizing: border-box;" oninput="this.value = this.value.toUpperCase()">
                         </div>
                         <div>
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Имя менеджера</label>
-                            <input type="text" id="dist_manager" placeholder="Иван Петров" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                            <input type="text" id="dist_manager" placeholder="Иван Петров" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Email менеджера *</label>
-                            <input type="email" id="dist_email" placeholder="manager@teplokom.ru" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                            <input type="email" id="dist_email" placeholder="manager@teplokom.ru" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Телефон менеджера</label>
-                            <input type="text" id="dist_phone" placeholder="+7 (999) 999-99-99" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                            <input type="text" id="dist_phone" placeholder="+7 (999) 999-99-99" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Месяцев PRO при активации</label>
-                            <input type="number" id="dist_pro_months" min="1" max="36" value="3" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                            <input type="number" id="dist_pro_months" min="1" max="36" value="3" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Действителен до (необяз.)</label>
-                            <input type="date" id="dist_valid_until" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                            <input type="date" id="dist_valid_until" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Статус</label>
-                            <select id="dist_active" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                            <select id="dist_active" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                                 <option value="1">Активен</option>
                                 <option value="0">Выключен</option>
                             </select>
                         </div>
                         <div style="grid-column: 1 / -1;">
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Регионы обслуживания (через запятую) — по ним монтажник найдёт этого поставщика сам</label>
-                            <input type="text" id="dist_regions" placeholder="Калининградская область, Москва" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                            <input type="text" id="dist_regions" placeholder="Калининградская область, Москва" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                         </div>
                         <div style="grid-column: 1 / -1;">
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Email директора (необяз.) — получит скрытую копию писем менеджеру. Несколько менеджеров одной компании — это несколько промокодов с одинаковыми названием компании и email директора</label>
-                            <input type="email" id="dist_director_email" placeholder="director@teplokom.ru" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                            <input type="email" id="dist_director_email" placeholder="director@teplokom.ru" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                         </div>
                     </div>
                     <div style="display: flex; gap: 10px;">
-                        <button class="auth-btn-base btn-email-submit" style="height: 36px; padding: 0 20px; font-size: 13px;" onclick="app.saveDistributor()">💾 Сохранить</button>
+                        <button class="auth-btn-base btn-email-submit" style="height: 36px; padding: 0 20px; font-size: 13px; ${isViewer ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isViewer ? 'disabled' : ''} onclick="app.saveDistributor()">💾 Сохранить</button>
                         <button class="auth-btn-base" style="height: 36px; padding: 0 16px; font-size: 13px; background: var(--surface-light); color: var(--text-sec);" onclick="app.resetDistributorForm()">✕ Отмена</button>
                     </div>
                 </div>
@@ -4466,6 +4452,10 @@ const app = {
     },
 
     saveDistributor: async function () {
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Добавление и изменение промокодов запрещено.');
+            return;
+        }
         const id = document.getElementById('dist_edit_id').value;
         const company = document.getElementById('dist_company').value.trim();
         const code = document.getElementById('dist_code').value.trim().toUpperCase();
@@ -4552,6 +4542,10 @@ const app = {
     },
 
     deleteDistributor: async function (id) {
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Удаление промокодов запрещено.');
+            return;
+        }
         if (!await app.confirm('Удалить этот промокод? Это действие необратимо.')) return;
         try {
             const { error } = await supabaseClient.from('distributors').delete().eq('id', id);
@@ -4604,7 +4598,7 @@ const app = {
 
             let query = supabaseClient.from('estimates').select('id, project_name, total_sum, created_at, user_id, calc_data').order('created_at', { ascending: false }).limit(50);
 
-            const isAdmin = uRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(uRow.email.toLowerCase());
+            const isAdmin = (uRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(uRow.email.toLowerCase())) || ['admin', 'viewer'].includes(uRow.account_type);
             if (!isAdmin) {
                 // Обычный пользователь видит ТОЛЬКО свои сметы
                 query = query.eq('user_id', uRow.id);
@@ -4649,7 +4643,7 @@ const app = {
             return;
         }
 
-        const isAdmin = this._currentUserRow && this._currentUserRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(this._currentUserRow.email.toLowerCase());
+        const isAdmin = this._currentUserRow && ((this._currentUserRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(this._currentUserRow.email.toLowerCase())) || ['admin', 'viewer'].includes(this._currentUserRow.account_type));
         const currentUserId = this._currentUserRow ? this._currentUserRow.id : null;
 
         let h = `
@@ -4934,7 +4928,8 @@ const app = {
             // Если мы не в режиме разработки, добавляем фильтр по текущему пользователю
             // (даже если RLS настроен, лишняя проверка на фронте не помешает)
             let userEmail = session ? session.user.email : (tgUser ? tgUser.email : null);
-            if (userEmail && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(userEmail.toLowerCase())) {
+            const isUserAdmin = (userEmail && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(userEmail.toLowerCase())) || ['admin', 'viewer'].includes(this.state.accountType) || (this.state.tgUser && ['admin', 'viewer'].includes(this.state.tgUser.account_type));
+            if (isUserAdmin) {
                 // Пропускаем фильтрацию для админа
             } else if (session) {
                 let { data: uData } = await supabaseClient.from('users').select('id').eq('auth_user_id', session.user.id).maybeSingle();
@@ -5147,19 +5142,9 @@ const app = {
             if (el) el.style.display = (t === tab) ? '' : 'none';
         });
 
-        // Ширина модалки: вкладка "Реквизиты" в свёрнутом виде — это одна узкая колонка
-        // полей, ей 60vw создаёт лишнее пустое место на широких экранах — подгоняем под
-        // контент. Остальные вкладки (прайс-лист, оборудование, менеджер) — таблицы/списки,
-        // им по-прежнему нужна широкая модалка.
         const modalContent = document.querySelector('#profile_modal_overlay .auth-modal-content');
         if (modalContent) {
-            if (tab === 'requisites') {
-                const compSec = document.getElementById('pro_profile_company_section');
-                const isExpanded = compSec && compSec.style.display !== 'none';
-                modalContent.style.maxWidth = isExpanded ? '820px' : '520px';
-            } else {
-                modalContent.style.maxWidth = '60vw';
-            }
+            // Размеры и поведение модального окна контролируются через CSS
         }
 
         const footerRequisites = document.getElementById('profile_modal_footer_requisites');
@@ -5569,7 +5554,7 @@ const app = {
 
             // Запрашиваем сметы
             let query = supabaseClient.from('estimates').select('id, project_name, total_sum, created_at, calc_data');
-            const isAdmin = uRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(uRow.email.toLowerCase());
+            const isAdmin = (uRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(uRow.email.toLowerCase())) || ['admin', 'viewer'].includes(uRow.account_type);
             if (!isAdmin) {
                 query = query.eq('user_id', uRow.id);
             }
@@ -6214,12 +6199,39 @@ const app = {
         document.getElementById('notifications_modal_overlay').style.display = 'none';
     },
 
+    getAdminRole: function () {
+        const user = this._currentUserRow || this.state.tgUser || {};
+        const email = user.email ? user.email.toLowerCase() : '';
+        const superAdminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
+        if (email && superAdminEmails.includes(email)) {
+            return 'super_admin';
+        }
+        const accType = user.account_type || this.state.accountType || 'base';
+        if (accType === 'admin') return 'admin';
+        if (accType === 'viewer') return 'viewer';
+        return 'base';
+    },
+
+    hasAdminAccess: function () {
+        const role = this.getAdminRole();
+        return ['super_admin', 'admin', 'viewer'].includes(role);
+    },
+
     showAdminModal: function () {
-        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
-        let adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
-        if (!tgUser || !tgUser.email || !adminEmails.includes(tgUser.email.toLowerCase())) {
+        if (!this.hasAdminAccess()) {
             app.alert("Доступ запрещен.");
             return;
+        }
+        const titleEl = document.querySelector('#admin_modal_overlay .auth-modal-title');
+        if (titleEl) {
+            const role = this.getAdminRole();
+            if (role === 'viewer') {
+                titleEl.innerHTML = 'Панель управления <span style="font-size:12px; color:#EF4444; background:#FEE2E2; padding:3px 8px; border-radius:6px; margin-left:10px; font-weight:700; text-transform:none; letter-spacing:0; vertical-align:middle;">👁 Режим просмотра</span>';
+            } else if (role === 'super_admin') {
+                titleEl.innerHTML = 'Панель управления <span style="font-size:12px; color:#10B981; background:#ECFDF5; padding:3px 8px; border-radius:6px; margin-left:10px; font-weight:700; text-transform:none; letter-spacing:0; vertical-align:middle;">👑 Владелец</span>';
+            } else {
+                titleEl.innerHTML = 'Панель управления <span style="font-size:12px; color:#3B82F6; background:#EFF6FF; padding:3px 8px; border-radius:6px; margin-left:10px; font-weight:700; text-transform:none; letter-spacing:0; vertical-align:middle;">⚙️ Администратор</span>';
+            }
         }
         document.getElementById('admin_modal_overlay').style.display = 'flex';
         this.loadAdminData();
@@ -6246,18 +6258,33 @@ const app = {
         else if (current === key + '_desc') next = key + '_asc';
         else next = key + '_' + defaultDir[key];
         if (sel) sel.value = next;
-        this.renderAdminMain();
+        this.loadAdminData(0);
     },
 
     buildAdminUserFilter: function (query) {
-        const tariffFilter = document.getElementById('admin_filter_tariff')?.value || 'all';
-        const expiryFilter = document.getElementById('admin_filter_expiry')?.value || 'all';
-        const regionFilter = document.getElementById('admin_filter_region')?.value?.trim() || '';
-        const activityFilter = document.getElementById('admin_filter_activity')?.value || 'all';
+        const filters = this._pendingAdminFilters || {
+            tariff: document.getElementById('admin_filter_tariff')?.value || 'all',
+            expiry: document.getElementById('admin_filter_expiry')?.value || 'all',
+            region: document.getElementById('admin_filter_region')?.value || '',
+            activity: document.getElementById('admin_filter_activity')?.value || 'all',
+            search: document.getElementById('admin_search_input')?.value || ''
+        };
+        const tariffFilter = filters.tariff;
+        const expiryFilter = filters.expiry;
+        const regionFilter = (filters.region || '').trim();
+        const activityFilter = filters.activity;
         // Убираем запятые/скобки — они ломают синтаксис .or(), это разделители условий
-        const searchFilter = (document.getElementById('admin_search_input')?.value || '').trim().replace(/[,()]/g, '');
+        const searchFilter = (filters.search || '').trim().replace(/[,()]/g, '');
 
-        if (regionFilter) query = query.ilike('region', `%${regionFilter}%`);
+        if (regionFilter) {
+            if (regionFilter === 'Калининградская область') {
+                query = query.or('region.ilike.%Калининградская область%,region.eq.Калининград');
+            } else if (regionFilter === 'Москва') {
+                query = query.or('region.ilike.%Москва%,region.eq.москва');
+            } else {
+                query = query.ilike('region', `%${regionFilter}%`);
+            }
+        }
         if (activityFilter !== 'all') query = query.contains('activity_types', [activityFilter]);
         if (searchFilter) {
             const cols = ['username', 'email', 'phone', 'city', 'region', 'last_name', 'first_name', 'middle_name'];
@@ -6287,6 +6314,10 @@ const app = {
     // Массовое назначение дистрибьютора всем пользователям, попадающим под текущие фильтры
     // списка (например регион = "Калининградская область") — не меняет тариф, только контакт менеджера
     bulkAssignDistributor: async function () {
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Массовое изменение дистрибьюторов запрещено.');
+            return;
+        }
         const sel = document.getElementById('admin_bulk_distributor_select');
         const distId = sel?.value;
         if (!distId) { app.alert('Выберите дистрибьютора из списка.'); return; }
@@ -6312,6 +6343,11 @@ const app = {
     setUserDistributorInline: async function (userId, distId, selectEl) {
         const u = (this.adminData.users || []).find(x => String(x.id) === String(userId));
         const prevValue = u ? (u.distributor_id || '') : '';
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Изменение дистрибьютора запрещено.');
+            selectEl.value = prevValue;
+            return;
+        }
         selectEl.disabled = true;
         try {
             const { error } = await supabaseClient.from('users').update({ distributor_id: distId || null }).eq('id', userId);
@@ -6327,9 +6363,7 @@ const app = {
     },
 
     loadAdminData: async function (offset = 0) {
-        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
-        let adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
-        if (!tgUser || !tgUser.email || !adminEmails.includes(tgUser.email.toLowerCase())) {
+        if (!this.hasAdminAccess()) {
             const content = document.getElementById('admin_content');
             if (content) content.innerHTML = '<div style="padding:20px; color:#EF4444;">Доступ запрещен.</div>';
             return;
@@ -6343,7 +6377,25 @@ const app = {
             this._pendingAdminSearch = searchInputBefore.value;
             this._pendingAdminSearchFocused = document.activeElement === searchInputBefore;
         }
-        if (content) content.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 50px;">Загрузка данных...</div>';
+        
+        this._pendingAdminFilters = {
+            search: this._pendingAdminSearch || '',
+            tariff: document.getElementById('admin_filter_tariff')?.value || 'all',
+            expiry: document.getElementById('admin_filter_expiry')?.value || 'all',
+            region: document.getElementById('admin_filter_region')?.value || '',
+            activity: document.getElementById('admin_filter_activity')?.value || 'all'
+        };
+
+        const estSearchInputBefore = document.getElementById('admin_est_search_input');
+        if (estSearchInputBefore) {
+            this._pendingAdminEstSearch = estSearchInputBefore.value;
+            this._pendingAdminEstSearchFocused = document.activeElement === estSearchInputBefore;
+        }
+
+        const alreadyHasInputs = !!(searchInputBefore || estSearchInputBefore);
+        if (content && !alreadyHasInputs) {
+            content.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 50px;">Загрузка данных...</div>';
+        }
 
         try {
             // 1. Fetch Users (Paginated)
@@ -6351,17 +6403,82 @@ const app = {
                 .select('id, username, email, phone, created_at, last_visited, last_device, account_type, demo_ends_at, city, location, avatar_url, distributor_id, pro_expires_at, last_name, first_name, middle_name, birth_date, region, activity_types, is_blocked', { count: 'exact' });
             query = this.buildAdminUserFilter(query);
 
-            let { data: users, error: errU, count: totalUsers } = await query
-                .order('created_at', { ascending: false })
-                .range(offset, offset + this._adminPageSize - 1);
+            const sortType = document.getElementById('sort-installers')?.value || 'login_desc';
+            const isLtvSort = sortType.startsWith('ltv_');
 
-            if (errU) throw errU;
+            if (sortType === 'login_desc') {
+                query = query
+                    .order('last_visited', { ascending: false, nullsFirst: false })
+                    .order('created_at', { ascending: false });
+            } else if (sortType === 'login_asc') {
+                query = query
+                    .order('last_visited', { ascending: true, nullsFirst: false })
+                    .order('created_at', { ascending: true });
+            } else if (sortType === 'name_asc') {
+                query = query
+                    .order('last_name', { ascending: true })
+                    .order('first_name', { ascending: true })
+                    .order('middle_name', { ascending: true })
+                    .order('username', { ascending: true });
+            } else if (sortType === 'name_desc') {
+                query = query
+                    .order('last_name', { ascending: false })
+                    .order('first_name', { ascending: false })
+                    .order('middle_name', { ascending: false })
+                    .order('username', { ascending: false });
+            } else if (sortType === 'expiry_asc') {
+                query = query.order('demo_ends_at', { ascending: true, nullsFirst: false });
+            } else if (sortType === 'expiry_desc') {
+                query = query.order('demo_ends_at', { ascending: false, nullsFirst: false });
+            } else if (sortType === 'tariff_asc') {
+                query = query.order('account_type', { ascending: true });
+            } else if (sortType === 'tariff_desc') {
+                query = query.order('account_type', { ascending: false });
+            } else if (!isLtvSort) {
+                query = query.order('created_at', { ascending: false });
+            }
+
+            let users = [];
+            let totalUsers = 0;
+
+            if (isLtvSort) {
+                let { data, error, count } = await query;
+                if (error) throw error;
+                users = data || [];
+                totalUsers = count || users.length;
+            } else {
+                let { data, error, count } = await query.range(offset, offset + this._adminPageSize - 1);
+                if (error) throw error;
+                users = data || [];
+                totalUsers = count || users.length;
+            }
 
             // 2. Fetch Estimates for these specific users to calc LTV in the list
             const userIds = users.map(u => u.id);
-            let { data: userEsts, error: errUE } = await supabaseClient.from('estimates')
-                .select('id, user_id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at, users(username, phone, email)')
-                .in('user_id', userIds);
+            let userEsts = [];
+            if (userIds.length > 0) {
+                let { data: uEsts, error: errUE } = await supabaseClient.from('estimates')
+                    .select('id, user_id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at, users(username, phone, email)')
+                    .in('user_id', userIds);
+                if (errUE) throw errUE;
+                userEsts = uEsts || [];
+            }
+
+            if (isLtvSort) {
+                users.forEach(u => {
+                    const uEsts = userEsts.filter(e => String(e.user_id) === String(u.id));
+                    u.ltv = 0;
+                    uEsts.forEach(e => { u.ltv += (e.total_sum || 0); });
+                });
+
+                if (sortType === 'ltv_desc') {
+                    users.sort((a, b) => (b.ltv || 0) - (a.ltv || 0));
+                } else if (sortType === 'ltv_asc') {
+                    users.sort((a, b) => (a.ltv || 0) - (b.ltv || 0));
+                }
+
+                users = users.slice(offset, offset + this._adminPageSize);
+            }
 
             // 3. Fetch Recent Estimates (Fixed 50)
             let { data: recentEsts, error: errRE } = await supabaseClient.from('estimates')
@@ -6373,7 +6490,7 @@ const app = {
             let { data: sums, error: errS } = await supabaseClient.from('estimates')
                 .select('eq_sum, works_sum, total_sum');
 
-            if (errUE || errRE || errS) throw new Error("Ошибка загрузки связанных данных");
+            if (errRE || errS) throw new Error("Ошибка загрузки связанных данных");
 
             let totalEq = 0, totalWorks = 0;
             sums.forEach(s => { totalEq += (s.eq_sum || 0); totalWorks += (s.works_sum || 0); });
@@ -6399,9 +6516,10 @@ const app = {
             let allUsersDropdown = [];
             try {
                 let { data } = await supabaseClient.from('users')
-                    .select('id, username, email, phone')
+                    .select('id, username, email, phone, region, city')
                     .order('username', { ascending: true });
                 allUsersDropdown = data || [];
+                this.autoCleanupDatabaseUsers(allUsersDropdown);
             } catch (e) { console.warn("Could not load users for dropdown:", e); }
 
             // 7. Fetch all messages (broadcasts, private and replies) for history listing
@@ -6443,6 +6561,7 @@ const app = {
     },
 
     renderAdminMain: function () {
+        const isViewer = this.getAdminRole() === 'viewer';
         const content = document.getElementById('admin_content');
         if (!content) return;
 
@@ -6450,12 +6569,23 @@ const app = {
 
         const { users, userEstimates, recentEstimates, totalUsers, totalEstimates, totalEq, totalWorks } = this.adminData;
 
+        const ADMIN_TAB_DEFS = [
+            { id: 'stats', icon: '👥', label: 'Пользователи' },
+            { id: 'estimates', icon: '📋', label: 'Расчёты' },
+            { id: 'messages', icon: '💬', label: 'Сообщения' },
+            { id: 'distributors', icon: '🏢', label: 'Дистрибьюторы' },
+            { id: 'kanban', icon: '📅', label: 'Планировщик' },
+            { id: 'pricelist', icon: '💵', label: 'Прайс-лист' },
+            { id: 'equipment', icon: '🧰', label: 'Своё оборудование' }
+        ];
+        // На узких экранах (см. .admin-tab-btn / .admin-tab-label в style.css) подписи
+        // скрываются, остаются только иконки-квадраты — тем самым все 7 вкладок помещаются
+        // в одну строку без сжатия текста до нечитаемой "каши"; title — подсказка при наведении
         let navHtml = `
-            <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-shrink: 0; width: 100%; flex-wrap: wrap;">
-                <button id="admin_tab_stats" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'stats' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'stats' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'stats' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('stats')">📊 Монтажники и Сметы</button>
-                <button id="admin_tab_messages" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'messages' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'messages' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'messages' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('messages')">💬 Сообщения и Рассылка</button>
-                <button id="admin_tab_distributors" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'distributors' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'distributors' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'distributors' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('distributors')">🏢 Промокоды</button>
-                <button id="admin_tab_kanban" class="auth-btn-base" style="margin: 0; padding: 0 15px; height: 34px; font-size: 12px; font-weight: bold; background: ${this._adminTab === 'kanban' ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === 'kanban' ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === 'kanban' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('kanban')">📋 Статусы смет</button>
+            <div id="admin_nav_tabs" style="display: flex; gap: 6px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-shrink: 0; width: 100%; flex-wrap: nowrap; overflow-x: auto;">
+                ${ADMIN_TAB_DEFS.map(t => `
+                    <button id="admin_tab_${t.id}" class="auth-btn-base admin-tab-btn" title="${t.label}" style="margin: 0; padding: 0 10px; height: 34px; font-size: 12px; font-weight: bold; flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background:${this._adminTab === t.id ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === t.id ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === t.id ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('${t.id}')">${t.icon}<span class="admin-tab-label"> ${t.label}</span></button>
+                `).join('')}
             </div>
         `;
 
@@ -6474,6 +6604,24 @@ const app = {
         if (this._adminTab === 'kanban') {
             content.innerHTML = navHtml;
             this.renderAdminKanban();
+            return;
+        }
+
+        if (this._adminTab === 'pricelist') {
+            content.innerHTML = navHtml;
+            this.renderAdminPricelist();
+            return;
+        }
+
+        if (this._adminTab === 'equipment') {
+            content.innerHTML = navHtml;
+            this.renderAdminEquipment();
+            return;
+        }
+
+        if (this._adminTab === 'estimates') {
+            content.innerHTML = navHtml;
+            this.renderAdminEstimates();
             return;
         }
 
@@ -6520,10 +6668,17 @@ const app = {
             });
         }
 
-        const tariffFilter = document.getElementById('admin_filter_tariff')?.value || 'all';
-        const expiryFilter = document.getElementById('admin_filter_expiry')?.value || 'all';
-        const regionFilter = document.getElementById('admin_filter_region')?.value || '';
-        const activityFilter = document.getElementById('admin_filter_activity')?.value || 'all';
+        const filters = this._pendingAdminFilters || {
+            tariff: 'all',
+            expiry: 'all',
+            region: '',
+            activity: 'all',
+            search: ''
+        };
+        const tariffFilter = filters.tariff;
+        const expiryFilter = filters.expiry;
+        const regionFilter = filters.region;
+        const activityFilter = filters.activity;
         const sortArrow = (key) => sortType === key + '_asc' ? ' ▲' : (sortType === key + '_desc' ? ' ▼' : '');
 
         let h = `
@@ -6535,10 +6690,10 @@ const app = {
                     </div>
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                        <h4 style="margin: 0;">👥 Монтажники</h4>
-                        <div style="display: flex; gap: 10px; width: 100%; max-width: 780px; flex-wrap: wrap;">
-                            <input type="text" id="admin_search_input" placeholder="🔍 Поиск по имени..." style="flex: 1.5; min-width: 150px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 12px; outline: none;" onkeyup="app.debouncedAdminSearch()">
-                            <select id="admin_filter_tariff" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer;">
+                        <h4 style="margin: 0; white-space: nowrap;">👥 Пользователи</h4>
+                        <div style="display: flex; gap: 8px; width: auto; flex-grow: 1; justify-content: flex-end; flex-wrap: wrap;">
+                            <input type="text" id="admin_search_input" placeholder="🔍 Поиск по имени..." style="width: 180px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 12px; outline: none; height: 34px; box-sizing: border-box;" onkeyup="app.debouncedAdminSearch()">
+                            <select id="admin_filter_tariff" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer; height: 34px; box-sizing: border-box;">
                                 <option value="all" ${tariffFilter === 'all' ? 'selected' : ''}>Все тарифы</option>
                                 <option value="base" ${tariffFilter === 'base' ? 'selected' : ''}>Базовый</option>
                                 <option value="pro" ${tariffFilter === 'pro' ? 'selected' : ''}>Профи (Все)</option>
@@ -6546,18 +6701,27 @@ const app = {
                                 <option value="pro_promo" ${tariffFilter === 'pro_promo' ? 'selected' : ''}>Профи: промокод</option>
                                 <option value="pro_paid" ${tariffFilter === 'pro_paid' ? 'selected' : ''}>Профи: оплата</option>
                             </select>
-                            <select id="admin_filter_expiry" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer;">
+                            <select id="admin_filter_expiry" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer; height: 34px; box-sizing: border-box;">
                                 <option value="all" ${expiryFilter === 'all' ? 'selected' : ''}>Все сроки</option>
                                 <option value="active" ${expiryFilter === 'active' ? 'selected' : ''}>Активные</option>
                                 <option value="expired" ${expiryFilter === 'expired' ? 'selected' : ''}>Истекшие</option>
                             </select>
-                            <input type="text" id="admin_filter_region" placeholder="Регион..." value="${regionFilter}" onchange="app.loadAdminData(0)" style="width:110px; background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none;">
-                            <select id="admin_filter_activity" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer;">
+                            <select id="admin_filter_region" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer; height: 34px; box-sizing: border-box;">
+                                <option value="" ${regionFilter === '' ? 'selected' : ''}>Все регионы</option>
+                                ${[...new Set((this.adminData.allUsersDropdown || []).map(u => {
+                                    try {
+                                        return app.normalizeUserRegionAndCity(u.region, u.city).region;
+                                    } catch(e) {
+                                        return '';
+                                    }
+                                }).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru')).map(r => `<option value="${r}" ${regionFilter === r ? 'selected' : ''}>${r}</option>`).join('')}
+                            </select>
+                            <select id="admin_filter_activity" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer; height: 34px; box-sizing: border-box;">
                                 <option value="all" ${activityFilter === 'all' ? 'selected' : ''}>Вся сфера деят-ти</option>
                                 <option value="Монтажник" ${activityFilter === 'Монтажник' ? 'selected' : ''}>Монтажник</option>
                                 <option value="Продавец" ${activityFilter === 'Продавец' ? 'selected' : ''}>Продавец</option>
                             </select>
-                            <select id="sort-installers" onchange="app.renderAdminMain()" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer;">
+                            <select id="sort-installers" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer; height: 34px; box-sizing: border-box;">
                                 <option value="default" ${sortType === 'default' ? 'selected' : ''}>Сортировка</option>
                                 <option value="login_desc" ${sortType === 'login_desc' ? 'selected' : ''}>Вход: сначала новые</option>
                                 <option value="login_asc" ${sortType === 'login_asc' ? 'selected' : ''}>Вход: сначала старые</option>
@@ -6570,17 +6734,19 @@ const app = {
                                 <option value="tariff_asc" ${sortType === 'tariff_asc' ? 'selected' : ''}>Тариф: Базовый→Профи</option>
                                 <option value="tariff_desc" ${sortType === 'tariff_desc' ? 'selected' : ''}>Тариф: Профи→Базовый</option>
                             </select>
-                            <button class="btn-header-blue" style="background: #10B981; color: white; border-color: #10B981; font-weight: bold; padding: 0 15px; height: 34px;" onclick="app.exportAdminToExcel()">📊 Excel</button>
+                            <button class="btn-header-blue" style="background: #10B981; color: white; border-color: #10B981; font-weight: bold; padding: 0 15px; height: 34px; border-radius: 8px; font-size: 12px; flex-shrink: 0;" onclick="app.exportAdminToExcel()">📊 Excel</button>
                         </div>
                     </div>
 
-                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap; background:var(--surface-light); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
-                        <span style="font-size:12px; color:var(--text-sec); white-space:nowrap;">🏢 Массово назначить дистрибьютора отфильтрованным (${totalUsers}):</span>
-                        <select id="admin_bulk_distributor_select" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; height:30px; font-size: 12px; outline: none; cursor: pointer;">
-                            <option value="">Выберите дистрибьютора...</option>
-                            ${(this.adminData.distributors || []).map(d => `<option value="${d.id}">${d.company_name} (${d.promo_code})</option>`).join('')}
-                        </select>
-                        <button class="btn-ctrl" style="height:30px; font-size:12px;" onclick="app.bulkAssignDistributor()">Назначить</button>
+                    <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px; background:var(--surface-light); border:1px solid var(--border); border-radius:8px; padding:10px 14px;">
+                        <span style="font-size:11px; font-weight:600; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.5px;">🏢 Массово назначить дистрибьютора отфильтрованным (${totalUsers}):</span>
+                        <div style="display:flex; gap:8px; align-items:center; width:100%;">
+                            <select id="admin_bulk_distributor_select" ${isViewer ? 'disabled' : ''} style="flex:1; min-width:0; background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:6px; padding:0 10px; height:32px; font-size:12px; outline:none; cursor:pointer;">
+                                <option value="">Выберите дистрибьютора...</option>
+                                ${(this.adminData.distributors || []).map(d => `<option value="${d.id}">${d.company_name} (${d.promo_code})</option>`).join('')}
+                            </select>
+                            <button ${isViewer ? 'disabled' : ''} onclick="app.bulkAssignDistributor()" style="flex-shrink:0; height:32px; padding:0 16px; font-size:12px; font-weight:600; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer; white-space:nowrap; ${isViewer ? 'opacity:0.5;cursor:not-allowed;' : ''} transition:opacity 0.2s;" onmouseover="if(!${isViewer})this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Назначить</button>
+                        </div>
                     </div>
 
                     <table class="inv-table" style="margin-bottom: 30px;">
@@ -6633,7 +6799,7 @@ const app = {
             let searchStr = `${name} ${phone} ${u.email || ''} ${cityText} ${ipLoc} ${u.region || ''} ${(u.activity_types || []).join(' ')}`.toLowerCase();
 
             const distOptions = `<option value="">— Не назначен —</option>` + (this.adminData.distributors || []).map(d => `<option value="${d.id}" ${u.distributor_id === d.id ? 'selected' : ''}>${d.company_name} (${d.promo_code})</option>`).join('');
-            const distCell = `<select onclick="event.stopPropagation();" onchange="app.setUserDistributorInline('${u.id}', this.value, this)" style="width:100%; max-width:150px; background: var(--surface); color: ${u.distributor_id ? 'var(--text-main)' : '#EF4444'}; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; font-size:11px; outline:none; cursor:pointer;">${distOptions}</select>`;
+            const distCell = `<select onclick="event.stopPropagation();" onchange="app.setUserDistributorInline('${u.id}', this.value, this)" ${isViewer ? 'disabled style="opacity:0.75; cursor:not-allowed;"' : ''} style="width:100%; max-width:150px; background: var(--surface); color: ${u.distributor_id ? 'var(--text-main)' : '#EF4444'}; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; font-size:11px; outline:none; cursor:pointer;">${distOptions}</select>`;
 
             h += `<tr class="active-row admin-list-row" data-search="${searchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminUser('${u.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
                         <td style="color:var(--text-sec);">${i + 1}</td>
@@ -6643,8 +6809,8 @@ const app = {
                         <td onclick="event.stopPropagation();">${distCell}</td>
                         <td style="text-align:right;">${lastVis}</td>
                         <td onclick="event.stopPropagation();" style="text-align:center; white-space:nowrap;">
-                            <button class="delete-icon-btn" title="${u.is_blocked ? 'Разблокировать' : 'Заблокировать (доступ закрыт, данные сохранятся)'}" onclick="app.toggleUserBlocked('${u.id}', ${!u.is_blocked})" style="color:${u.is_blocked ? '#10B981' : '#D97706'};">${u.is_blocked ? '🔓' : '🔒'}</button>
-                            <button class="delete-icon-btn" title="Удалить учётку и все данные безвозвратно" onclick="app.deleteUserCompletely('${u.id}')">
+                            <button class="delete-icon-btn" title="${u.is_blocked ? 'Разблокировать' : 'Заблокировать (доступ закрыт, данные сохранятся)'}" onclick="app.toggleUserBlocked('${u.id}', ${!u.is_blocked})" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} style="color:${u.is_blocked ? '#10B981' : '#D97706'};">${u.is_blocked ? '🔓' : '🔒'}</button>
+                            <button class="delete-icon-btn" title="Удалить учётку и все данные безвозвратно" onclick="app.deleteUserCompletely('${u.id}')" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="14" y2="17"></line></svg>
                             </button>
                         </td>
@@ -6663,44 +6829,6 @@ const app = {
               </div>
         `;
 
-        h += `<h4 style="margin: 0 0 10px 0;">📋 Последние сметы</h4><table class="inv-table"><thead><tr><th style="width:30px;">#</th><th>Объект</th><th>Монтажник</th><th>Сумма</th><th>Статус</th><th style="text-align:right;">Дата / Опции</th></tr></thead><tbody>`;
-
-        const sharedStatusesAdmin = this.adminData.sharedStatusesAdmin || {};
-
-        recentEstimates.forEach((e, i) => {
-            let date = new Date(e.created_at).toLocaleDateString();
-            let sum = e.total_sum ? e.total_sum.toLocaleString() + ' ₽' : '0 ₽';
-            let author = e.users ? (e.users.username || 'Без имени') : 'Неизвестен';
-            let projName = e.project_name || e.name || 'Без названия';
-            let estSearchStr = `${projName} ${author} ${sum}`.toLowerCase();
-
-            // Определяем статус сметы
-            const sharedInvoiceId = e.calc_data?.shared_invoice_id;
-            let adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-saved">Сохранена</span>`;
-            if (sharedInvoiceId) {
-                const st = sharedStatusesAdmin[sharedInvoiceId];
-                if (st === 'confirmed') adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-confirmed">✓ Одобрена</span>`;
-                else if (st === 'needs_revision') adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-revision">✍ На доработке</span>`;
-                else adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-sent">Отправлена</span>`;
-            }
-
-            h += `<tr class="active-row admin-estimate-row" data-search="${estSearchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminEstimate('${e.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
-                        <td style="color:var(--text-sec);">${i + 1}</td>
-                        <td><b>${projName}</b></td>
-                        <td>${author}</td>
-                        <td style="font-weight:bold; color:var(--primary);">${sum}</td>
-                        <td>${adminStatusBadge}</td>
-                        <td style="text-align:right;">
-                            <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px;">
-                                <span style="color:var(--text-sec); font-size:12px;">${date}</span>
-                                <button class="delete-icon-btn" onclick="event.stopPropagation(); app.deleteEstimate('${e.id}', event)" title="Удалить смету">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>`;
-        });
-        h += `</tbody></table>`;
         const searchQuery = document.getElementById('admin_search_input')?.value || this._pendingAdminSearch || '';
         const shouldRefocus = !!this._pendingAdminSearchFocused;
         content.innerHTML = navHtml + h;
@@ -6721,11 +6849,18 @@ const app = {
 
     // Поиск по монтажникам теперь идёт на сервер (по всей базе, а не только по текущей
     // странице списка) — debounce, чтобы не дёргать Supabase на каждое нажатие клавиши.
-    // Таблицу "Последние сметы" (те же 50 строк уже в DOM) фильтруем мгновенно на клиенте
     debouncedAdminSearch: function () {
-        this.filterAdminEstimatesTable(document.getElementById('admin_search_input')?.value || '');
+        this.filterAdminUsersTable(document.getElementById('admin_search_input')?.value || '');
         clearTimeout(this._adminSearchTimer);
         this._adminSearchTimer = setTimeout(() => this.loadAdminData(0), 400);
+    },
+
+    filterAdminUsersTable: function (query) {
+        let lowerQuery = query.toLowerCase().trim();
+        document.querySelectorAll('.admin-list-row').forEach(row => {
+            let dataSearch = row.getAttribute('data-search') || '';
+            row.style.display = (!lowerQuery || dataSearch.includes(lowerQuery)) ? '' : 'none';
+        });
     },
 
     filterAdminEstimatesTable: function (query) {
@@ -6736,12 +6871,336 @@ const app = {
         });
     },
 
+    sortAdminEstimates: function (col) {
+        if (!this._estSort) this._estSort = { col: 'date', dir: 'desc' };
+        if (this._estSort.col === col) {
+            this._estSort.dir = this._estSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+            this._estSort.col = col;
+            this._estSort.dir = (col === 'sum' || col === 'date') ? 'desc' : 'asc';
+        }
+        this.renderAdminEstimates();
+    },
+
+    normalizeUserRegionAndCity: function (region, city) {
+        let cleanReg = (region || '').trim();
+        let cleanCity = (city || '').trim();
+
+        // 1. Clean City
+        if (cleanCity) {
+            cleanCity = cleanCity.split(',')[0].trim();
+            cleanCity = cleanCity
+                .split(/([\s\-])/)
+                .map(part => {
+                    if (part === ' ' || part === '-') return part;
+                    if (part.toLowerCase() === 'на') return 'на';
+                    return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+                })
+                .join('');
+        }
+
+        // 2. Clean Region
+        if (cleanReg) {
+            cleanReg = cleanReg.replace(/^(россия|украина|беларусь|белоруссия|казахстан)[,\s]*/i, '');
+            cleanReg = cleanReg.replace(/[,\s]*(россия|украина|беларусь|белоруссия|казахстан)$/i, '');
+            let lowerReg = cleanReg.toLowerCase().replace(/\s+/g, ' ');
+
+            const fedDistricts = ['урфо', 'цфо', 'сзфо', 'пфо', 'юфо', 'скфо', 'сфо', 'двфо', 'федеральный округ', 'уральский', 'сибирский', 'приволжский', 'центральный', 'дальневосточный', 'северо-кавказский', 'северо-западный', 'южный'];
+            let isFed = fedDistricts.some(fd => lowerReg.includes(fd));
+            if (isFed) {
+                throw new Error('Пожалуйста, введите конкретный субъект (область, край, республика), а не федеральный округ (например, Свердловская область вместо УРФО).');
+            }
+
+            if (lowerReg === 'калининград') cleanReg = 'Калининградская область';
+            else if (lowerReg === 'москва') cleanReg = 'Москва';
+            else if (lowerReg === 'санкт-петербург' || lowerReg === 'спб' || lowerReg === 'питер') cleanReg = 'Санкт-Петербург';
+            else if (lowerReg === 'севастополь') cleanReg = 'Севастополь';
+            else if (lowerReg === 'киев') cleanReg = 'Киев';
+            else if (lowerReg === 'минск') cleanReg = 'Минск';
+            else if (lowerReg === 'астана' || lowerReg === 'нур-султан') cleanReg = 'Астана';
+            else if (lowerReg === 'алматы' || lowerReg === 'алма-ата') cleanReg = 'Алматы';
+            else if (lowerReg === 'шымкент') cleanReg = 'Шымкент';
+            else {
+                cleanReg = cleanReg
+                    .replace(/\bобл\.?/gi, 'область')
+                    .replace(/\bресп\.?/gi, 'Республика')
+                    .replace(/\bкр\.?/gi, 'край')
+                    .replace(/\bао\b/gi, 'автономный округ');
+                
+                cleanReg = cleanReg
+                    .split(/([\s\-])/)
+                    .map(part => {
+                        if (part === ' ' || part === '-') return part;
+                        let l = part.toLowerCase();
+                        if (['область', 'край', 'автономный', 'округ', 'окрки', 'округа', 'и'].includes(l)) return l;
+                        return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+                    })
+                    .join('');
+            }
+
+            const VALID_REGIONS = [
+                "Москва", "Санкт-Петербург", "Севастополь", "Киев", "Минск", "Астана", "Алматы", "Шымкент",
+                "Амурская область", "Архангельская область", "Астраханская область", "Белгородская область", 
+                "Брянская область", "Челябинская область", "Иркутская область", "Ивановская область", 
+                "Калининградская область", "Калужская область", "Кемеровская область", "Кировская область", 
+                "Костромская область", "Курганская область", "Курская область", "Ленинградская область", 
+                "Липецкая область", "Магаданская область", "Московская область", "Мурманская область", 
+                "Нижегородская область", "Новгородская область", "Новосибирская область", "Омская область", 
+                "Оренбургская область", "Орловская область", "Пензенская область", "Псковская область", 
+                "Ростовская область", "Рязанская область", "Сахалинская область", "Самарская область", 
+                "Саратовская область", "Смоленская область", "Свердловская область", "Тамбовская область", 
+                "Томская область", "Тульская область", "Тверская область", "Тюменская область", 
+                "Ульяновская область", "Владимирская область", "Волгоградская область", "Вологодская область", 
+                "Воронежская область", "Ярославская область", "Еврейская автономная область",
+                "Республика Адыгея", "Республика Алтай", "Республика Башкортостан", "Республика Бурятия", 
+                "Республика Дагестан", "Республика Ингушетия", "Кабардино-Балкарская Республика", 
+                "Калмыкия", "Карачаево-Черкесская Республика", "Республика Карелия", "Республика Коми", 
+                "Республика Крым", "Республика Марий Эл", "Республика Мордовия", "Республика Саха (Якутия)", 
+                "Республика Северная Осетия - Алания", "Республика Татарстан", "Республика Тыва", 
+                "Удмуртская Республика", "Республика Хакасия", "Чеченская Республика", "Чувашская Республика",
+                "Алтайский край", "Камчатский край", "Хабаровский край", "Краснодарский край", 
+                "Красноярский край", "Пермский край", "Приморский край", "Ставропольский край", "Забайкальский край",
+                "Ненецкий автономный округ", "Ханты-Мансийский автономный округ - Югра", 
+                "Чукотский автономный округ", "Ямало-Ненецкий автономный округ",
+                "Брестская область", "Гомельская область", "Гродненская область", "Могилевская область", 
+                "Минская область", "Витебская область",
+                "Абайская область", "Акмолинская область", "Актюбинская область", "Алматинская область", 
+                "Атырауская область", "Восточно-Казахстанская область", "Жамбылская область", 
+                "Жетысуская область", "Карагандинская область", "Костанайская область", "Кызылординская область", 
+                "Мангистауская область", "Северо-Казахстанская область", "Павлодарская область", 
+                "Туркестанская область", "Улытауская область", "Западно-Казахстанская область",
+                "Черкасская область", "Черниговская область", "Черновицкая область", "Днепропетровская область", 
+                "Донецкая область", "Ивано-Франковская область", "Харьковская область", "Херсонская область", 
+                "Хмельницкая область", "Киевская область", "Кировоградская область", "Луганская область", 
+                "Львовская область", "Николаевская область", "Одесская область", "Полтавская область", 
+                "Ровненская область", "Сумская область", "Тернопольская область", "Винницкая область", 
+                "Волынская область", "Закарпатская область", "Запорожская область", "Житомирская область"
+            ];
+
+            let lowerClean = cleanReg.toLowerCase();
+            let matched = VALID_REGIONS.find(r => r.toLowerCase() === lowerClean);
+            if (!matched) {
+                matched = VALID_REGIONS.find(r => r.toLowerCase().startsWith(lowerClean) || lowerClean.startsWith(r.toLowerCase()));
+            }
+            if (!matched) {
+                let cleanWords = lowerClean.replace(/(область|край|республика|автономный округ)/g, '').trim();
+                if (cleanWords.length >= 4) {
+                    matched = VALID_REGIONS.find(r => r.toLowerCase().includes(cleanWords));
+                }
+            }
+
+            if (matched) {
+                cleanReg = matched;
+            } else {
+                throw new Error(`Неизвестный регион "${cleanReg}". Пожалуйста, укажите область, край или республику РФ, Беларуси, Казахстана или Украины (без указания страны).`);
+            }
+        }
+
+        // 3. Fix crossed fields
+        if (cleanCity && (cleanCity.toLowerCase().includes('область') || cleanCity.toLowerCase().includes('край') || cleanCity.toLowerCase().includes('республика'))) {
+            if (!cleanReg) cleanReg = cleanCity;
+            if (cleanCity.toLowerCase().includes('калининград')) cleanCity = 'Калининград';
+            else if (cleanCity.toLowerCase().includes('московск')) cleanCity = 'Москва';
+            else if (cleanCity.toLowerCase().includes('ленинград')) cleanCity = 'Санкт-Петербург';
+            else cleanCity = '';
+        }
+
+        return { region: cleanReg, city: cleanCity };
+    },
+
+    autoCleanupDatabaseUsers: async function (users) {
+        if (this._isCleaningDatabase) return;
+        this._isCleaningDatabase = true;
+        try {
+            for (let u of users) {
+                try {
+                    const norm = this.normalizeUserRegionAndCity(u.region, u.city);
+                    if (norm.region !== (u.region || '') || norm.city !== (u.city || '')) {
+                        console.log(`Auto-cleaning user ${u.username} (${u.id}):`, { from: { region: u.region, city: u.city }, to: norm });
+                        await supabaseClient.from('users').update({
+                            region: norm.region || null,
+                            city: norm.city || null
+                        }).eq('id', u.id);
+                    }
+                } catch (err) {
+                    // Skip invalid regions during database correction to avoid loops on invalid entries
+                    console.warn(`Could not auto-correct database user ${u.username}:`, err.message);
+                }
+            }
+        } catch (e) {
+            console.warn("Error during database auto-cleanup:", e);
+        } finally {
+            this._isCleaningDatabase = false;
+        }
+    },
+
     switchAdminTab: function (tab) {
         this._adminTab = tab;
         this.renderAdminMain();
     },
 
+    adminMessageUser: function (userId, userName) {
+        this._adminTab = 'messages';
+        this.renderAdminMain();
+        // После рендера — выбираем пользователя в дропдауне и фильтруем по имени
+        setTimeout(() => {
+            const userSel = document.getElementById('admin_msg_recipient');
+            if (userSel) {
+                userSel.value = userId;
+            }
+            const searchInp = document.getElementById('admin_msg_search_user');
+            if (searchInp) {
+                searchInp.value = userName;
+                if (typeof app.filterAdminMessages === 'function') app.filterAdminMessages();
+            }
+        }, 150);
+    },
+
+    adminViewUserEstimates: function (userName) {
+        this._adminTab = 'estimates';
+        this._pendingEstSearch = userName;
+        this.renderAdminMain();
+        setTimeout(() => {
+            const inp = document.getElementById('admin_est_search_input');
+            if (inp) {
+                inp.value = userName;
+                if (typeof app.filterAdminEstimatesTable === 'function') app.filterAdminEstimatesTable(userName);
+            }
+        }, 150);
+    },
+
+    renderAdminEstimates: function () {
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+
+        const recentEstimates = this.adminData.recentEstimates || [];
+        const sharedStatusesAdmin = this.adminData.sharedStatusesAdmin || {};
+
+        let searchInputBefore = document.getElementById('admin_est_search_input')?.value || '';
+
+        // --- Сортировка ---
+        const estSort = this._estSort || { col: 'date', dir: 'desc' };
+        const estSortArrow = (col) => {
+            if (estSort.col !== col) return ' <span style="color:var(--text-sec);opacity:0.35;">↕</span>';
+            return estSort.dir === 'asc'
+                ? ' <span style="color:var(--primary);">▲</span>'
+                : ' <span style="color:var(--primary);">▼</span>';
+        };
+        const getStatus = (e) => {
+            const sid = e.calc_data?.shared_invoice_id;
+            if (!sid) return 'saved';
+            return sharedStatusesAdmin[sid] || 'sent';
+        };
+        const statusOrder = { confirmed: 0, sent: 1, needs_revision: 2, saved: 3 };
+        const sortedEstimates = [...recentEstimates].sort((a, b) => {
+            let va, vb;
+            if (estSort.col === 'object') {
+                va = (a.project_name || a.name || '').toLowerCase();
+                vb = (b.project_name || b.name || '').toLowerCase();
+            } else if (estSort.col === 'installer') {
+                va = (a.users?.username || '').toLowerCase();
+                vb = (b.users?.username || '').toLowerCase();
+            } else if (estSort.col === 'sum') {
+                const calcSum = (e) => parseFloat(e.total_sum) || ((parseFloat(e.eq_sum) || 0) + (parseFloat(e.works_sum) || 0));
+                va = calcSum(a);
+                vb = calcSum(b);
+            } else if (estSort.col === 'status') {
+                va = statusOrder[getStatus(a)] ?? 3;
+                vb = statusOrder[getStatus(b)] ?? 3;
+            } else {
+                va = new Date(a.created_at).getTime();
+                vb = new Date(b.created_at).getTime();
+            }
+            if (va < vb) return estSort.dir === 'asc' ? -1 : 1;
+            if (va > vb) return estSort.dir === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        const thStyle = 'cursor:pointer; user-select:none; white-space:nowrap;';
+
+        let h = `
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                    <h3 style="margin: 0; color: var(--text-main);">📋 Все расчёты (сметы)</h3>
+                    <input type="text" id="admin_est_search_input" placeholder="🔍 Поиск по названию или монтажнику..." value="${searchInputBefore.replace(/"/g, '&quot;')}" style="width: 100%; max-width: 400px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 13px; outline: none;" onkeyup="app.filterAdminEstimatesTable(this.value)">
+                </div>
+
+                <table class="inv-table">
+                    <thead>
+                        <tr>
+                            <th style="width:30px;">#</th>
+                            <th style="${thStyle}" onclick="app.sortAdminEstimates('object')" title="Сортировать по объекту">Объект${estSortArrow('object')}</th>
+                            <th style="${thStyle}" onclick="app.sortAdminEstimates('installer')" title="Сортировать по монтажнику">Монтажник${estSortArrow('installer')}</th>
+                            <th style="${thStyle}" onclick="app.sortAdminEstimates('sum')" title="Сортировать по сумме">Сумма${estSortArrow('sum')}</th>
+                            <th style="${thStyle}" onclick="app.sortAdminEstimates('status')" title="Сортировать по статусу">Статус${estSortArrow('status')}</th>
+                            <th style="text-align:right; ${thStyle}" onclick="app.sortAdminEstimates('date')" title="Сортировать по дате">Дата / Опции${estSortArrow('date')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        if (sortedEstimates.length === 0) {
+            h += '<tr><td colspan="6" style="text-align:center; padding: 30px; color: var(--text-sec);">Смет пока нет.</td></tr>';
+        } else {
+            sortedEstimates.forEach((e, i) => {
+                let date = new Date(e.created_at).toLocaleDateString();
+                const rawSum = parseFloat(e.total_sum) || ((parseFloat(e.eq_sum) || 0) + (parseFloat(e.works_sum) || 0));
+                let sum = rawSum ? rawSum.toLocaleString('ru-RU') + ' ₽' : '0 ₽';
+                let author = e.users ? (e.users.username || 'Без имени') : 'Неизвестен';
+                let projName = e.project_name || e.name || 'Без названия';
+                let estSearchStr = `${projName} ${author} ${sum}`.toLowerCase();
+
+                const sharedInvoiceId = e.calc_data?.shared_invoice_id;
+                let adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-saved">Сохранена</span>`;
+                if (sharedInvoiceId) {
+                    const st = sharedStatusesAdmin[sharedInvoiceId];
+                    if (st === 'confirmed') adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-confirmed">✓ Одобрена</span>`;
+                    else if (st === 'needs_revision') adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-revision">✍ На доработке</span>`;
+                    else adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-sent">Отправлена</span>`;
+                }
+
+                h += `<tr class="active-row admin-estimate-row" data-search="${estSearchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminEstimate('${e.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
+                            <td style="color:var(--text-sec);">${i + 1}</td>
+                            <td><b>${projName}</b></td>
+                            <td>${author}</td>
+                            <td style="font-weight:bold; color:var(--primary);">${sum}</td>
+                            <td>${adminStatusBadge}</td>
+                            <td style="text-align:right;">
+                                <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px;">
+                                    <span style="color:var(--text-sec); font-size:12px;">${date}</span>
+                                    <button class="delete-icon-btn" onclick="event.stopPropagation(); app.deleteEstimate('${e.id}', event)" title="Удалить смету">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
+            });
+        }
+
+        h += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        // Если контейнер уже существует — заменяем только его содержимое (сортировка без дублирования).
+        // Если нет — добавляем впервые.
+        let estContainer = document.getElementById('admin-estimates-body');
+        if (estContainer) {
+            estContainer.innerHTML = h;
+        } else {
+            const wrap = document.createElement('div');
+            wrap.id = 'admin-estimates-body';
+            wrap.innerHTML = h;
+            content.appendChild(wrap);
+        }
+        if (searchInputBefore) {
+            this.filterAdminEstimatesTable(searchInputBefore);
+        }
+    },
+
     renderAdminMessages: function () {
+        const isViewer = this.getAdminRole() === 'viewer';
         const dropdownUsers = this.adminData.allUsersDropdown || [];
         const messages = this.adminData.messages || [];
         const content = document.getElementById('admin_content');
@@ -6763,21 +7222,21 @@ const app = {
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <div>
                         <label style="font-size: 11px; font-weight: 700; color: var(--text-sec); display: block; margin-bottom: 4px;">Получатель:</label>
-                        <select id="admin_msg_recipient" style="width: 100%; height: 36px; padding: 0 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 13px; outline: none; cursor: pointer;">
+                        <select id="admin_msg_recipient" ${isViewer ? 'disabled' : ''} style="width: 100%; height: 36px; padding: 0 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 13px; outline: none; cursor: pointer;">
                             ${userOptions}
                         </select>
                     </div>
                     <div>
                         <label style="font-size: 11px; font-weight: 700; color: var(--text-sec); display: block; margin-bottom: 4px;">Текст сообщения:</label>
-                        <textarea id="admin_msg_text" placeholder="Введите текст объявления или личного сообщения..." style="width: 100%; min-height: 80px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 13px; outline: none; resize: vertical; font-family: inherit;"></textarea>
+                        <textarea id="admin_msg_text" placeholder="Введите текст объявления или личного сообщения..." ${isViewer ? 'disabled' : ''} style="width: 100%; min-height: 80px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 13px; outline: none; resize: vertical; font-family: inherit;"></textarea>
                     </div>
-                    <button class="auth-btn-base btn-email-submit" style="margin: 5px 0 0 auto; width: 100%; max-width: 180px; height: 34px; font-size: 12px;" onclick="app.sendAdminMessage()">🚀 Отправить</button>
+                    <button class="auth-btn-base btn-email-submit" style="margin: 5px 0 0 auto; width: 100%; max-width: 180px; height: 34px; font-size: 12px; ${isViewer ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isViewer ? 'disabled' : ''} onclick="app.sendAdminMessage()">🚀 Отправить</button>
                 </div>
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
                 <h4 style="margin:0; font-size:14px; font-weight:700;">📋 История переписки</h4>
-                <button class="auth-btn-base" style="margin:0; width:auto; height:30px; padding:0 12px; font-size:11px; background:var(--surface-light); color:#EF4444; border:1px solid var(--border);" onclick="app.deleteAllMessages()">🗑 Удалить всё</button>
+                <button class="auth-btn-base" style="margin:0; width:auto; height:30px; padding:0 12px; font-size:11px; background:var(--surface-light); color:#EF4444; border:1px solid var(--border); ${isViewer ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isViewer ? 'disabled' : ''} onclick="app.deleteAllMessages()">🗑 Удалить всё</button>
             </div>
             <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
                 <input type="text" id="admin_msg_search_text" placeholder="🔍 Поиск по тексту сообщений..." value="${textSearchBefore.replace(/"/g, '&quot;')}" oninput="app.filterAdminMessages()" style="flex:1; min-width:180px; height:32px; padding:0 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 12px; outline: none;">
@@ -6822,7 +7281,7 @@ const app = {
                             <span style="font-size: 11px; font-weight: 800; color: #D97706; text-transform: uppercase; letter-spacing: 0.02em;">📢 Объявление для всех</span>
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
-                                <span onclick="app.deleteAdminMessage('${msg.id}')" title="Удалить" style="cursor:pointer; color:var(--text-sec); font-size:13px;">🗑</span>
+                                ${isViewer ? '' : `<span onclick="app.deleteAdminMessage('${msg.id}')" title="Удалить" style="cursor:pointer; color:var(--text-sec); font-size:13px;">🗑</span>`}
                             </div>
                         </div>
                         <div style="font-size: 13px; color: var(--text-main); white-space: pre-wrap; line-height: 1.4; margin-top: 4px;">${msg.text}</div>
@@ -6851,7 +7310,7 @@ const app = {
                                     <span style="font-weight: 700; color: ${isUser ? '#047857' : '#2563EB'};">${isUser ? '💬 Ответ' : '✉️ Админ'}:</span>
                                     <div style="display:flex; align-items:center; gap:6px;">
                                         <span style="font-size: 9px; color: var(--text-sec);">${dateStr}</span>
-                                        <span onclick="app.deleteAdminMessage('${m.id}')" title="Удалить" style="cursor:pointer; color:var(--text-sec); font-size:12px;">🗑</span>
+                                        ${isViewer ? '' : `<span onclick="app.deleteAdminMessage('${m.id}')" title="Удалить" style="cursor:pointer; color:var(--text-sec); font-size:12px;">🗑</span>`}
                                     </div>
                                 </div>
                                 <div style="color: var(--text-main); background: var(--surface); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); word-break: break-word;">${m.text}</div>
@@ -6863,7 +7322,7 @@ const app = {
                         <div class="admin-msg-group" data-search-user="${searchUser.replace(/"/g, '&quot;')}" data-search-text="${searchText}" style="border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--surface); display: flex; flex-direction: column; gap: 8px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding-bottom: 6px;">
                                 <span onclick="app.openAdminUserFromMessages('${g.userId}')" title="Открыть карточку монтажника" style="cursor:pointer; font-size: 12px; font-weight: 800; color: var(--primary); text-decoration: underline; text-underline-offset: 2px;">👤 ${displayName}</span>
-                                <button class="auth-btn-base" style="margin:0; width:auto; height:24px; padding:0 8px; font-size:10px; background:var(--surface-light); color:#EF4444; border:1px solid var(--border);" onclick="app.deleteUserMessages('${g.userId}')">🗑 Удалить переписку</button>
+                                <button class="auth-btn-base" style="margin:0; width:auto; height:24px; padding:0 8px; font-size:10px; background:var(--surface-light); color:#EF4444; border:1px solid var(--border); ${isViewer ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isViewer ? 'disabled' : ''} onclick="app.deleteUserMessages('${g.userId}')">🗑 Удалить переписку</button>
                             </div>
                             <div style="display: flex; flex-direction: column; gap: 8px;">${itemsHtml}</div>
                         </div>
@@ -6914,6 +7373,10 @@ const app = {
 
     // Удаление одного сообщения (объявления, личного письма или ответа)
     deleteAdminMessage: async function (id) {
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Удаление сообщений запрещено.');
+            return;
+        }
         if (!await app.confirm('Удалить это сообщение?')) return;
         try {
             const { error } = await supabaseClient.from('messages').delete().eq('id', id);
@@ -6928,6 +7391,10 @@ const app = {
     // Удаляет всю переписку с конкретным пользователем (личные сообщения ему + все его ответы).
     // Объявления для всех не трогает — они не принадлежат конкретному человеку.
     deleteUserMessages: async function (userId) {
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Удаление сообщений запрещено.');
+            return;
+        }
         if (!await app.confirm('Удалить всю переписку с этим пользователем? Это необратимо.')) return;
         try {
             const { error } = await supabaseClient.from('messages').delete().or(`recipient_id.eq.${userId},sender_id.eq.${userId}`).neq('type', 'broadcast');
@@ -6943,6 +7410,10 @@ const app = {
 
     // Полная очистка истории сообщений (объявления, личные, ответы)
     deleteAllMessages: async function () {
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Удаление сообщений запрещено.');
+            return;
+        }
         if (!await app.confirm('Удалить ВСЮ историю переписки — все объявления, личные сообщения и ответы? Это необратимо.')) return;
         try {
             // .select('id') после delete() — иначе Supabase не считает ошибкой ситуацию,
@@ -6962,6 +7433,10 @@ const app = {
     },
 
     sendAdminMessage: async function () {
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Отправка сообщений запрещена.');
+            return;
+        }
         const text = document.getElementById('admin_msg_text')?.value;
         const recipientVal = document.getElementById('admin_msg_recipient')?.value;
         if (!text || !text.trim()) {
@@ -7264,6 +7739,7 @@ const app = {
         document.body.removeChild(link);
     },
     viewAdminUser: async function (userId) {
+        const isViewer = this.getAdminRole() === 'viewer';
         let user = this.adminData.users.find(u => String(u.id) === String(userId));
         let userEstimates = (this.adminData.userEstimates || []).filter(e => String(e.user_id) === String(userId));
 
@@ -7351,6 +7827,8 @@ const app = {
                                         <select id="admin_edit_tariff" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                             <option value="base" ${user.account_type === 'base' ? 'selected' : ''}>Базовый</option>
                                             <option value="pro" ${user.account_type === 'pro' ? 'selected' : ''}>Профи ⭐️</option>
+                                            ${this.getAdminRole() === 'super_admin' || user.account_type === 'admin' ? `<option value="admin" ${user.account_type === 'admin' ? 'selected' : ''}>Администратор ⚙️</option>` : ''}
+                                            ${this.getAdminRole() === 'super_admin' || user.account_type === 'viewer' ? `<option value="viewer" ${user.account_type === 'viewer' ? 'selected' : ''}>Наблюдатель 👁</option>` : ''}
                                         </select>
                                     </div>
                                     <div>
@@ -7367,14 +7845,14 @@ const app = {
                                     </div>
                                     <div id="admin_edit_distributor_wrapper" style="display: block; grid-column: 1 / -1;">
                                         <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Дистрибьютор / менеджер (для копии запроса счёта — не зависит от тарифа)</label>
-                                        <select id="admin_edit_distributor" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
+                                        <select id="admin_edit_distributor" ${isViewer ? 'disabled' : ''} style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                             <option value="">Не выбран</option>
                                             ${(this.adminData.distributors || []).map(d => `<option value="${d.id}" ${user.distributor_id === d.id ? 'selected' : ''}>${d.company_name} (${d.promo_code})</option>`).join('')}
                                         </select>
                                         <div id="admin_edit_distributor_info" style="margin-top:6px; font-size:11px; color:var(--text-sec); line-height:1.5;"></div>
                                     </div>
                                 </div>
-                                <button class="auth-btn-base btn-email-submit" style="width:100%; height:34px; font-size:12px;" onclick="app.updateAdminUserTariff('${user.id}')">💾 Применить настройки</button>
+                                <button class="auth-btn-base btn-email-submit" style="width:100%; height:34px; font-size:12px; ${isViewer ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isViewer ? 'disabled' : ''} onclick="app.updateAdminUserTariff('${user.id}')">💾 Применить настройки</button>
                             </div>
                             <div style="font-size:12px;">
                                 <h4 style="margin:0 0 15px 0; font-size:14px; color:var(--text-main);">📂 Техническая инфо</h4>
@@ -7390,10 +7868,10 @@ const app = {
                         <div style="margin-top:20px; padding-top:20px; border-top:1px dashed var(--border);">
                             <h4 style="margin:0 0 12px 0; font-size:14px; color:#EF4444;">⚠️ Опасная зона</h4>
                             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                                <button class="auth-btn-base" style="margin:0; width:auto; height:34px; padding:0 16px; font-size:12px; background:var(--surface-light); color:${user.is_blocked ? '#10B981' : '#D97706'}; border:1px solid var(--border);" onclick="app.toggleUserBlocked('${user.id}', ${!user.is_blocked})">
+                                <button class="auth-btn-base" style="margin:0; width:auto; height:34px; padding:0 16px; font-size:12px; background:var(--surface-light); color:${user.is_blocked ? '#10B981' : '#D97706'}; border:1px solid var(--border); ${isViewer ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isViewer ? 'disabled' : ''} onclick="app.toggleUserBlocked('${user.id}', ${!user.is_blocked})">
                                     ${user.is_blocked ? '🔓 Разблокировать доступ' : '🔒 Заблокировать доступ'}
                                 </button>
-                                <button class="auth-btn-base" style="margin:0; width:auto; height:34px; padding:0 16px; font-size:12px; background:var(--surface-light); color:#EF4444; border:1px solid var(--border);" onclick="app.deleteUserCompletely('${user.id}')">
+                                <button class="auth-btn-base" style="margin:0; width:auto; height:34px; padding:0 16px; font-size:12px; background:var(--surface-light); color:#EF4444; border:1px solid var(--border); ${isViewer ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isViewer ? 'disabled' : ''} onclick="app.deleteUserCompletely('${user.id}')">
                                     🗑 Удалить учётку и все данные
                                 </button>
                             </div>
@@ -7513,6 +7991,349 @@ const app = {
             container.innerHTML = `<div style="color:#EF4444; font-size:12px;">Ошибка загрузки прайс-листа/оборудования: ${e.message}</div>`;
         }
     },
+
+    // Общий загрузчик installer_settings ВСЕХ пользователей одним запросом — используется
+    // вкладками админки «Прайс-лист» и «Своё оборудование» (в отличие от renderAdminUserExtras,
+    // который тянет данные точечно под одну карточку). Кэшируется на время сессии модалки,
+    // обновляется по кнопке «Обновить»
+    loadAdminInstallerExtrasData: async function (force) {
+        if (this._adminInstallerExtras && !force) return this._adminInstallerExtras;
+        const { data, error } = await supabaseClient.from('users')
+            .select('id, username, first_name, last_name, middle_name, email, region, account_type, installer_settings');
+        if (error) throw error;
+        const rows = (data || []).map(u => {
+            const s = u.installer_settings || {};
+            return {
+                id: u.id,
+                name: this.getAdminUserDisplayName(u),
+                region: (u.region || '').trim(),
+                accountType: u.account_type || '',
+                workPrices: (s.workPrices && typeof s.workPrices === 'object') ? s.workPrices : {},
+                equipmentLibrary: Array.isArray(s.equipmentLibrary) ? s.equipmentLibrary : [],
+                swapLog: Array.isArray(s.swapLog) ? s.swapLog : [],
+                deletionLog: Array.isArray(s.deletionLog) ? s.deletionLog : []
+            };
+        });
+        this._adminInstallerExtras = { rows };
+        return this._adminInstallerExtras;
+    },
+
+    // Сохраняет фокус/значение/позицию курсора активного поля фильтра перед перерисовкой блока
+    // и восстанавливает их после — сами фильтры (поиск/цена/регион) перерисовывают весь блок
+    // синхронно без похода на сервер, так что потери фокуса не заметно
+    _snapshotAdminFilterFocus: function (root) {
+        const el = document.activeElement;
+        if (!el || !root || !root.contains(el)) return null;
+        return { id: el.id, value: el.value, selStart: (el.selectionStart != null) ? el.selectionStart : null };
+    },
+    _restoreAdminFilterFocus: function (snap) {
+        if (!snap || !snap.id) return;
+        const el = document.getElementById(snap.id);
+        if (!el) return;
+        el.focus();
+        if (snap.selStart != null && el.setSelectionRange) {
+            try { el.setSelectionRange(snap.selStart, snap.selStart); } catch (e) { /* noop */ }
+        }
+    },
+
+    // Вкладка админки «Прайс-лист»: изменённые монтажниками цены на монтажные работы + свои
+    // добавленные позиции работ, которых нет в WORK_PRICE_CATALOG. % отклонения считается от
+    // базовой цены каталога; для своих позиций базы нет — они помечаются отдельным бейджем
+    renderAdminPricelist: async function () {
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+        if (!document.getElementById('admin_pricelist_root')) {
+            content.innerHTML += `<div id="admin_pricelist_root" style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка данных...</div>`;
+        }
+        let extras;
+        try {
+            extras = await this.loadAdminInstallerExtrasData();
+        } catch (e) {
+            const root = document.getElementById('admin_pricelist_root');
+            if (root) root.innerHTML = `<div style="color:#EF4444;">Ошибка загрузки: ${e.message}</div>`;
+            return;
+        }
+
+        const baseByName = {};
+        WORK_PRICE_CATALOG.forEach(w => { baseByName[w.name] = w.price; });
+
+        const rows = [];
+        extras.rows.forEach(u => {
+            Object.keys(u.workPrices).forEach(name => {
+                const price = u.workPrices[name];
+                const base = baseByName[name];
+                const isCustom = base === undefined;
+                const diffPct = (!isCustom && base) ? Math.round((price - base) / base * 100) : null;
+                rows.push({ userId: u.id, userName: u.name, region: u.region, name, price, base: isCustom ? null : base, diffPct, isCustom });
+            });
+        });
+
+        this._adminPricelistRows = rows;
+        this.renderAdminPricelistBody();
+    },
+
+    switchAdminPricelistGroup: function (mode) {
+        this._pricelistGroup = mode;
+        this.renderAdminPricelistBody();
+    },
+
+    renderAdminPricelistBody: function () {
+        const content = document.getElementById('admin_content');
+        let root = document.getElementById('admin_pricelist_root');
+        if (!root) {
+            root = document.createElement('div');
+            root.id = 'admin_pricelist_root';
+            content.appendChild(root);
+        }
+        const focusSnap = this._snapshotAdminFilterFocus(root);
+
+        const rows = this._adminPricelistRows || [];
+        const regions = [...new Set(rows.map(r => r.region).filter(Boolean))].sort();
+
+        const search = (document.getElementById('admin_pl_search')?.value || '').trim().toLowerCase();
+        const minPriceRaw = document.getElementById('admin_pl_min')?.value;
+        const maxPriceRaw = document.getElementById('admin_pl_max')?.value;
+        const minPrice = minPriceRaw ? parseFloat(minPriceRaw) : null;
+        const maxPrice = maxPriceRaw ? parseFloat(maxPriceRaw) : null;
+        const regionFilter = document.getElementById('admin_pl_region')?.value || 'all';
+        const group = this._pricelistGroup || 'installer';
+
+        const filtered = rows.filter(r => {
+            if (search && !r.name.toLowerCase().includes(search)) return false;
+            if (minPrice !== null && !isNaN(minPrice) && r.price < minPrice) return false;
+            if (maxPrice !== null && !isNaN(maxPrice) && r.price > maxPrice) return false;
+            if (regionFilter !== 'all' && r.region !== regionFilter) return false;
+            return true;
+        });
+
+        const fmt = n => Math.round(n).toLocaleString('ru-RU');
+        const customBadge = `<span style="font-size:10px; font-weight:700; color:var(--primary); background:var(--primary-light); padding:2px 6px; border-radius:5px; white-space:nowrap;">СВОЯ ПОЗИЦИЯ</span>`;
+        const diffColor = (pct) => pct < 0 ? '#10B981' : (pct > 0 ? '#EF4444' : 'var(--text-sec)');
+        const diffText = (pct) => `${pct > 0 ? '+' : ''}${pct}%`;
+
+        let bodyHtml;
+        if (!filtered.length) {
+            bodyHtml = `<div style="text-align:center; color:var(--text-sec); padding:40px 0;">Нет изменений цен по заданным фильтрам.</div>`;
+        } else if (group === 'installer') {
+            const byInstaller = {};
+            filtered.forEach(r => {
+                (byInstaller[r.userId] = byInstaller[r.userId] || { name: r.userName, region: r.region, items: [] }).items.push(r);
+            });
+            bodyHtml = Object.values(byInstaller).sort((a, b) => b.items.length - a.items.length).map(g => `
+                <div style="background:var(--surface-light); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:10px; flex-wrap:wrap;">
+                        <b style="font-size:13px;">${g.name}</b>
+                        <span style="font-size:11px; color:var(--text-sec);">${g.region ? '📍 ' + g.region + ' · ' : ''}${g.items.length} позиций</span>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        ${g.items.map(r => `
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 8px; background:var(--bg); border-radius:6px; font-size:12px; flex-wrap:wrap;">
+                                <span style="flex:1; min-width:160px;">${r.name}</span>
+                                ${r.isCustom ? '' : `<span style="color:var(--text-sec); text-decoration:line-through; white-space:nowrap;">${fmt(r.base)} ₽</span>`}
+                                <b style="white-space:nowrap;">${fmt(r.price)} ₽</b>
+                                ${r.isCustom ? customBadge : (r.diffPct !== null ? `<b style="color:${diffColor(r.diffPct)}; white-space:nowrap;">${diffText(r.diffPct)}</b>` : '')}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            const byName = {};
+            filtered.forEach(r => {
+                if (!byName[r.name]) byName[r.name] = { name: r.name, base: r.base, isCustom: r.isCustom, entries: [] };
+                byName[r.name].entries.push(r);
+            });
+            bodyHtml = Object.values(byName).sort((a, b) => b.entries.length - a.entries.length).map(g => {
+                const avgPrice = g.entries.reduce((s, r) => s + r.price, 0) / g.entries.length;
+                const avgDiff = (!g.isCustom && g.base) ? Math.round((avgPrice - g.base) / g.base * 100) : null;
+                return `
+                <div style="background:var(--surface-light); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:10px; flex-wrap:wrap;">
+                        <b style="font-size:13px; flex:1;">${g.name}${g.isCustom ? ' ' + customBadge : ''}</b>
+                        <span style="font-size:12px; color:var(--primary); font-weight:800; white-space:nowrap;">${g.entries.length} монтажник(ов)</span>
+                    </div>
+                    <div style="font-size:11.5px; color:var(--text-sec); margin-bottom:8px;">
+                        Средняя цена: <b style="color:var(--text-main);">${fmt(avgPrice)} ₽</b>${g.base ? ` · база: ${fmt(g.base)} ₽` : ''}${avgDiff !== null ? ` · среднее отклонение: <b style="color:${diffColor(avgDiff)};">${diffText(avgDiff)}</b>` : ''}
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        ${g.entries.map(r => `
+                            <div style="display:flex; justify-content:space-between; gap:10px; font-size:11.5px; color:var(--text-sec); padding:4px 8px; background:var(--bg); border-radius:6px; flex-wrap:wrap;">
+                                <span>${r.userName}${r.region ? ' · ' + r.region : ''}</span>
+                                <span style="white-space:nowrap;">${fmt(r.price)} ₽${r.diffPct !== null ? ` (${diffText(r.diffPct)})` : ''}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `; }).join('');
+        }
+
+        root.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                <div style="font-size:13px; color:var(--text-sec);">Позиций: <b style="color:var(--text-main);">${filtered.length}</b> из ${rows.length}</div>
+                <div class="admin-toolbar-row" style="display:flex; gap:8px; width:auto; flex-grow:1; justify-content:flex-end; flex-wrap:wrap;">
+                    <input type="text" id="admin_pl_search" class="admin-tb-search" placeholder="🔍 Поиск по названию..." value="${(document.getElementById('admin_pl_search')?.value || '').replace(/"/g, '&quot;')}" style="width:200px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); font-size:12px; outline:none; height:34px; box-sizing:border-box;" oninput="app.renderAdminPricelistBody()">
+                    <input type="number" id="admin_pl_min" class="admin-tb-min" placeholder="Цена от" value="${minPriceRaw || ''}" style="width:90px; padding:8px 8px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); font-size:12px; outline:none; height:34px; box-sizing:border-box;" oninput="app.renderAdminPricelistBody()">
+                    <input type="number" id="admin_pl_max" class="admin-tb-max" placeholder="Цена до" value="${maxPriceRaw || ''}" style="width:90px; padding:8px 8px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); font-size:12px; outline:none; height:34px; box-sizing:border-box;" oninput="app.renderAdminPricelistBody()">
+                    <select id="admin_pl_region" class="admin-tb-region" onchange="app.renderAdminPricelistBody()" style="background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:8px; padding:0 10px; font-size:12px; outline:none; cursor:pointer; height:34px; box-sizing:border-box;">
+                        <option value="all">Все регионы</option>
+                        ${regions.map(r => `<option value="${r.replace(/"/g, '&quot;')}" ${regionFilter === r ? 'selected' : ''}>${r}</option>`).join('')}
+                    </select>
+                    <button class="auth-btn-base admin-tb-group" style="margin:0; width:auto; height:34px; font-size:11px; white-space:nowrap; background:${group === 'installer' ? 'var(--primary)' : 'var(--surface-light)'}; color:${group === 'installer' ? 'white' : 'var(--text-sec)'}; border:1px solid ${group === 'installer' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminPricelistGroup('installer')">По монтажнику</button>
+                    <button class="auth-btn-base admin-tb-group" style="margin:0; width:auto; height:34px; font-size:11px; white-space:nowrap; background:${group === 'frequency' ? 'var(--primary)' : 'var(--surface-light)'}; color:${group === 'frequency' ? 'white' : 'var(--text-sec)'}; border:1px solid ${group === 'frequency' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminPricelistGroup('frequency')">Частые изменения</button>
+                    <button class="btn-header-blue admin-tb-refresh" style="height:34px; padding:0 14px; font-size:12px; white-space:nowrap;" onclick="app.loadAdminInstallerExtrasData(true).then(()=>app.renderAdminPricelist())">↻ Обновить</button>
+                </div>
+            </div>
+            <div>${bodyHtml}</div>
+        `;
+
+        this._restoreAdminFilterFocus(focusSnap);
+    },
+
+    // Вкладка админки «Своё оборудование»: позиции, добавленные монтажниками вручную
+    // (equipmentLibrary), удалённые из смет (deletionLog, kind='equipment') и замены через
+    // кнопку «Аналог» (swapLog) — три независимых потока данных, общие фильтры
+    renderAdminEquipment: async function () {
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+        if (!document.getElementById('admin_equipment_root')) {
+            content.innerHTML += `<div id="admin_equipment_root" style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка данных...</div>`;
+        }
+        let extras;
+        try {
+            extras = await this.loadAdminInstallerExtrasData();
+        } catch (e) {
+            const root = document.getElementById('admin_equipment_root');
+            if (root) root.innerHTML = `<div style="color:#EF4444;">Ошибка загрузки: ${e.message}</div>`;
+            return;
+        }
+
+        const added = [], removed = [], swaps = [];
+        extras.rows.forEach(u => {
+            u.equipmentLibrary.forEach(e => added.push({ userId: u.id, userName: u.name, region: u.region, name: e.name || 'Без названия', price: e.price || 0, date: e.addedAt }));
+            u.deletionLog.forEach(d => {
+                if ((d.kind || 'equipment') !== 'equipment') return;
+                removed.push({ userId: u.id, userName: u.name, region: u.region, name: d.name, price: d.price || 0, qty: d.qty || 1, date: d.date });
+            });
+            u.swapLog.forEach(s => swaps.push({ userId: u.id, userName: u.name, region: u.region, fromName: s.fromName, fromPrice: s.fromPrice || 0, toName: s.toName, toPrice: s.toPrice || 0, date: s.date }));
+        });
+
+        this._adminEquipmentData = { added, removed, swaps };
+        this.renderAdminEquipmentBody();
+    },
+
+    switchAdminEquipmentGroup: function (mode) {
+        this._equipmentGroup = mode;
+        this.renderAdminEquipmentBody();
+    },
+
+    renderAdminEquipmentBody: function () {
+        const content = document.getElementById('admin_content');
+        let root = document.getElementById('admin_equipment_root');
+        if (!root) {
+            root = document.createElement('div');
+            root.id = 'admin_equipment_root';
+            content.appendChild(root);
+        }
+        const focusSnap = this._snapshotAdminFilterFocus(root);
+
+        const data = this._adminEquipmentData || { added: [], removed: [], swaps: [] };
+        const allRegions = [...new Set([...data.added, ...data.removed, ...data.swaps].map(r => r.region).filter(Boolean))].sort();
+
+        const search = (document.getElementById('admin_eq_search')?.value || '').trim().toLowerCase();
+        const minPriceRaw = document.getElementById('admin_eq_min')?.value;
+        const maxPriceRaw = document.getElementById('admin_eq_max')?.value;
+        const minPrice = minPriceRaw ? parseFloat(minPriceRaw) : null;
+        const maxPrice = maxPriceRaw ? parseFloat(maxPriceRaw) : null;
+        const regionFilter = document.getElementById('admin_eq_region')?.value || 'all';
+        const group = this._equipmentGroup || 'installer';
+
+        const inPriceRange = (p) => (minPrice === null || isNaN(minPrice) || p >= minPrice) && (maxPrice === null || isNaN(maxPrice) || p <= maxPrice);
+        const passRegion = (r) => regionFilter === 'all' || r.region === regionFilter;
+
+        const fAdded = data.added.filter(r => (!search || r.name.toLowerCase().includes(search)) && inPriceRange(r.price) && passRegion(r));
+        const fRemoved = data.removed.filter(r => (!search || r.name.toLowerCase().includes(search)) && inPriceRange(r.price) && passRegion(r));
+        const fSwaps = data.swaps.filter(r => (!search || r.fromName.toLowerCase().includes(search) || r.toName.toLowerCase().includes(search)) && (inPriceRange(r.fromPrice) || inPriceRange(r.toPrice)) && passRegion(r));
+
+        const fmt = n => Math.round(n).toLocaleString('ru-RU');
+        const fmtDate = (d) => d ? new Date(d).toLocaleDateString('ru-RU') : '—';
+        const total = fAdded.length + fRemoved.length + fSwaps.length;
+
+        let bodyHtml;
+        if (!total) {
+            bodyHtml = `<div style="text-align:center; color:var(--text-sec); padding:40px 0;">Нет данных по заданным фильтрам.</div>`;
+        } else if (group === 'installer') {
+            const byInstaller = {};
+            const touch = (r) => (byInstaller[r.userId] = byInstaller[r.userId] || { name: r.userName, region: r.region, added: [], removed: [], swaps: [] });
+            fAdded.forEach(r => touch(r).added.push(r));
+            fRemoved.forEach(r => touch(r).removed.push(r));
+            fSwaps.forEach(r => touch(r).swaps.push(r));
+            bodyHtml = Object.values(byInstaller)
+                .sort((a, b) => (b.added.length + b.removed.length + b.swaps.length) - (a.added.length + a.removed.length + a.swaps.length))
+                .map(g => `
+                    <div style="background:var(--surface-light); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap;">
+                            <b style="font-size:13px;">${g.name}</b>
+                            <span style="font-size:11px; color:var(--text-sec);">${g.region ? '📍 ' + g.region : ''}</span>
+                        </div>
+                        ${g.added.length ? `<div style="margin-bottom:8px;"><div style="font-size:11px; color:#10B981; font-weight:700; margin-bottom:4px;">+ Добавлено (${g.added.length})</div>${g.added.map(r => `<div style="display:flex; justify-content:space-between; gap:10px; padding:5px 8px; background:var(--bg); border-radius:6px; font-size:12px; margin-bottom:4px;"><span>${r.name}</span><b style="white-space:nowrap;">${fmt(r.price)} ₽</b></div>`).join('')}</div>` : ''}
+                        ${g.removed.length ? `<div style="margin-bottom:8px;"><div style="font-size:11px; color:#EF4444; font-weight:700; margin-bottom:4px;">− Удалено (${g.removed.length})</div>${g.removed.map(r => `<div style="display:flex; justify-content:space-between; gap:10px; padding:5px 8px; background:var(--bg); border-radius:6px; font-size:12px; margin-bottom:4px;"><span>${r.name}${r.qty > 1 ? ' × ' + r.qty : ''}</span><span style="white-space:nowrap; color:var(--text-sec);">${fmt(r.price)} ₽ · ${fmtDate(r.date)}</span></div>`).join('')}</div>` : ''}
+                        ${g.swaps.length ? `<div><div style="font-size:11px; color:var(--primary); font-weight:700; margin-bottom:4px;">⇄ Замены (${g.swaps.length})</div>${g.swaps.map(r => `<div style="padding:5px 8px; background:var(--bg); border-radius:6px; font-size:12px; margin-bottom:4px;"><s style="color:var(--text-sec);">${r.fromName}</s> → <b>${r.toName}</b> <span style="color:var(--text-sec); font-size:10.5px;">(${fmtDate(r.date)})</span></div>`).join('')}</div>` : ''}
+                    </div>
+                `).join('');
+        } else {
+            const aggBy = (list, keyFn, labelFn) => {
+                const m = {};
+                list.forEach(r => {
+                    const key = keyFn(r);
+                    if (!m[key]) m[key] = { key, label: labelFn(r), count: 0, installers: new Set() };
+                    m[key].count++;
+                    m[key].installers.add(r.userName);
+                });
+                return Object.values(m).sort((a, b) => b.count - a.count);
+            };
+            const aggAdded = aggBy(fAdded, r => r.name, r => r.name);
+            const aggRemoved = aggBy(fRemoved, r => r.name, r => r.name);
+            const aggSwaps = aggBy(fSwaps, r => r.fromName + '→' + r.toName, r => `<s style="color:var(--text-sec);">${r.fromName}</s> → <b>${r.toName}</b>`);
+
+            const renderAggBlock = (title, color, list) => !list.length ? '' : `
+                <h4 style="margin:14px 0 8px; font-size:13px; color:${color};">${title}</h4>
+                <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;">
+                    ${list.map(g => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 10px; background:var(--surface-light); border:1px solid var(--border); border-radius:8px; font-size:12.5px; flex-wrap:wrap;">
+                            <span style="flex:1;">${g.label}</span>
+                            <span style="font-size:11px; color:var(--text-sec); white-space:nowrap;">${g.installers.size} монтажник(ов) · ${g.count} раз</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            bodyHtml = renderAggBlock('⇄ Наиболее частые замены', 'var(--primary)', aggSwaps)
+                + renderAggBlock('+ Часто добавляемое оборудование', '#10B981', aggAdded)
+                + renderAggBlock('− Часто удаляемое оборудование', '#EF4444', aggRemoved);
+            if (!bodyHtml) bodyHtml = `<div style="text-align:center; color:var(--text-sec); padding:40px 0;">Нет данных по заданным фильтрам.</div>`;
+        }
+
+        root.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                <div style="font-size:13px; color:var(--text-sec);">Добавлено: <b style="color:#10B981;">${fAdded.length}</b> · Удалено: <b style="color:#EF4444;">${fRemoved.length}</b> · Замен: <b style="color:var(--primary);">${fSwaps.length}</b></div>
+                <div class="admin-toolbar-row" style="display:flex; gap:8px; width:auto; flex-grow:1; justify-content:flex-end; flex-wrap:wrap;">
+                    <input type="text" id="admin_eq_search" class="admin-tb-search" placeholder="🔍 Поиск по названию..." value="${(document.getElementById('admin_eq_search')?.value || '').replace(/"/g, '&quot;')}" style="width:200px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); font-size:12px; outline:none; height:34px; box-sizing:border-box;" oninput="app.renderAdminEquipmentBody()">
+                    <input type="number" id="admin_eq_min" class="admin-tb-min" placeholder="Цена от" value="${minPriceRaw || ''}" style="width:90px; padding:8px 8px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); font-size:12px; outline:none; height:34px; box-sizing:border-box;" oninput="app.renderAdminEquipmentBody()">
+                    <input type="number" id="admin_eq_max" class="admin-tb-max" placeholder="Цена до" value="${maxPriceRaw || ''}" style="width:90px; padding:8px 8px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); font-size:12px; outline:none; height:34px; box-sizing:border-box;" oninput="app.renderAdminEquipmentBody()">
+                    <select id="admin_eq_region" class="admin-tb-region" onchange="app.renderAdminEquipmentBody()" style="background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:8px; padding:0 10px; font-size:12px; outline:none; cursor:pointer; height:34px; box-sizing:border-box;">
+                        <option value="all">Все регионы</option>
+                        ${allRegions.map(r => `<option value="${r.replace(/"/g, '&quot;')}" ${regionFilter === r ? 'selected' : ''}>${r}</option>`).join('')}
+                    </select>
+                    <button class="auth-btn-base admin-tb-group" style="margin:0; width:auto; height:34px; font-size:11px; white-space:nowrap; background:${group === 'installer' ? 'var(--primary)' : 'var(--surface-light)'}; color:${group === 'installer' ? 'white' : 'var(--text-sec)'}; border:1px solid ${group === 'installer' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminEquipmentGroup('installer')">По монтажнику</button>
+                    <button class="auth-btn-base admin-tb-group" style="margin:0; width:auto; height:34px; font-size:11px; white-space:nowrap; background:${group === 'frequency' ? 'var(--primary)' : 'var(--surface-light)'}; color:${group === 'frequency' ? 'white' : 'var(--text-sec)'}; border:1px solid ${group === 'frequency' ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminEquipmentGroup('frequency')">Наиболее частые</button>
+                    <button class="btn-header-blue admin-tb-refresh" style="height:34px; padding:0 14px; font-size:12px; white-space:nowrap;" onclick="app.loadAdminInstallerExtrasData(true).then(()=>app.renderAdminEquipment())">↻ Обновить</button>
+                </div>
+            </div>
+            <div>${bodyHtml}</div>
+        `;
+
+        this._restoreAdminFilterFocus(focusSnap);
+    },
+
     // Read-only обзор переписки в карточке пользователя админки: если у пользователя есть
     // назначенный дистрибьютор с зарегистрированным менеджером — нить с этим менеджером;
     // если сам пользователь — зарегистрированный менеджер для кого-то — все его нити с
@@ -8523,6 +9344,7 @@ const app = {
                     this.state.groupItems = true; // По умолчанию группировка включена для PRO
                 }
                 this.state.tgUser.id = uRow.id;
+                this.state.tgUser.account_type = uRow.account_type || 'base';
                 this.state.tgUser.demo_ends_at = uRow.demo_ends_at;
                 if (uRow.phone && uRow.phone !== phone) this.state.tgUser.phone = uRow.phone;
                 if (uRow.username && uRow.username !== fullName) this.state.tgUser.first_name = uRow.username;
@@ -8572,6 +9394,17 @@ const app = {
         }
     },
     updateAdminUserTariff: async function (userId) {
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Изменение тарифов запрещено.');
+            return;
+        }
+        const currentRole = this.getAdminRole();
+        const targetUser = (this.adminData.users || []).find(u => String(u.id) === String(userId));
+        const targetType = targetUser ? targetUser.account_type : 'base';
+        if (['admin', 'viewer'].includes(targetType) && currentRole !== 'super_admin') {
+            app.alert('Изменение тарифа/роли этого пользователя разрешено только Владельцу.');
+            return;
+        }
         let type = document.getElementById('admin_edit_tariff').value;
         let dateVal = document.getElementById('admin_edit_date').value;
         let subtype = document.getElementById('admin_edit_subtype')?.value || 'trial';
@@ -8613,6 +9446,17 @@ const app = {
     // is_blocked в handleAuthSession, которая принудительно выходит из сессии). Снимается тем
     // же переключателем в любой момент.
     toggleUserBlocked: async function (userId, block) {
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Изменение статуса блокировки запрещено.');
+            return;
+        }
+        const currentRole = this.getAdminRole();
+        const targetUser = (this.adminData.users || []).find(u => String(u.id) === String(userId));
+        const targetType = targetUser ? targetUser.account_type : 'base';
+        if (['admin', 'viewer'].includes(targetType) && currentRole !== 'super_admin') {
+            app.alert('Блокировка администраторов/наблюдателей разрешена только Владельцу.');
+            return;
+        }
         const action = block ? 'заблокировать' : 'разблокировать';
         if (!await app.confirm(`Вы уверены, что хотите ${action} доступ этому пользователю? Все его данные и сметы останутся нетронутыми.`)) return;
         try {
@@ -8639,7 +9483,18 @@ const app = {
     // соображений безопасности) — при необходимости полностью закрыть возможность входа
     // его нужно вручную удалить в Supabase Dashboard → Authentication → Users.
     deleteUserCompletely: async function (userId) {
-        const user = (this.adminData.users || []).find(u => String(u.id) === String(userId));
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Удаление учетных записей запрещено.');
+            return;
+        }
+        const currentRole = this.getAdminRole();
+        const targetUser = (this.adminData.users || []).find(u => String(u.id) === String(userId));
+        const targetType = targetUser ? targetUser.account_type : 'base';
+        if (['admin', 'viewer'].includes(targetType) && currentRole !== 'super_admin') {
+            app.alert('Удаление администраторов/наблюдателей разрешено только Владельцу.');
+            return;
+        }
+        const user = targetUser;
         const name = user ? this.getAdminUserDisplayName(user) : userId;
         if (!await app.confirm(`Удалить учётку «${name}» и ВСЕ её данные (сметы, переписку, настройки)? Это действие необратимо.`)) return;
         if (!await app.confirm('Точно удалить? Отменить это будет невозможно — данные восстановить не получится.')) return;
@@ -8671,6 +9526,19 @@ const app = {
         let region = document.getElementById('profile_region_input').value.trim();
         let city = document.getElementById('profile_city_input').value.trim();
         let email = document.getElementById('profile_email_input') ? document.getElementById('profile_email_input').value.trim() : '';
+
+        let normalized;
+        try {
+            normalized = this.normalizeUserRegionAndCity(region, city);
+        } catch (err) {
+            app.alert(err.message);
+            return;
+        }
+        region = normalized.region;
+        city = normalized.city;
+
+        document.getElementById('profile_region_input').value = region;
+        document.getElementById('profile_city_input').value = city;
         const activityTypes = ['profile_act_installer', 'profile_act_seller']
             .map(id => document.getElementById(id))
             .filter(chk => chk && chk.checked)
@@ -16684,9 +17552,8 @@ const app = {
                 }
 
                 // ПРОВЕРКА НА АДМИНА
-                let adminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
-                let adminBtn = (tgUser.email && adminEmails.includes(tgUser.email.toLowerCase()))
-                    ? `<div style="font-size: 12px; font-weight: 700; color: #10B981; cursor: pointer; border: 1px solid #10B981; padding: 4px 10px; border-radius: 8px; background: #ECFDF5; margin-right: 10px;" onclick="app.showAdminModal()" title="Панель владельца">Админка</div>`
+                let adminBtn = app.hasAdminAccess()
+                    ? `<div style="font-size: 12px; font-weight: 700; color: #10B981; cursor: pointer; border: 1px solid #10B981; padding: 4px 10px; border-radius: 8px; background: #ECFDF5; margin-right: 10px;" onclick="app.showAdminModal()" title="Панель администратора">Админка</div>`
                     : ``;
 
                 authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);">${adminBtn}<div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;

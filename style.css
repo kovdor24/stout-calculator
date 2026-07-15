@@ -2840,6 +2840,57 @@ body.profile-incomplete-lock #page_scale_wrapper {
     right: 24px !important;
 }
 
+/* Админка на планшете/телефоне: панель фильтров (поиск/цена/регион/группировка/обновить)
+   на десктопе — одна строка с авто-сжатием и скроллом про запас; на узких экранах скролл
+   для формы с полями ввода — плохой UX (элементы прячутся за краем), поэтому здесь она
+   превращается в аккуратную сетку 2 колонки на всю ширину без горизонтальной прокрутки */
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait) {
+    #admin_modal_overlay .auth-modal-content {
+        padding: 14px 12px !important;
+    }
+    .admin-toolbar-row {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 6px !important;
+        overflow-x: visible !important;
+        width: 100% !important;
+    }
+    .admin-toolbar-row .admin-tb-search,
+    .admin-toolbar-row .admin-tb-region,
+    .admin-toolbar-row .admin-tb-refresh {
+        grid-column: 1 / -1 !important;
+    }
+    .admin-toolbar-row .admin-tb-search,
+    .admin-toolbar-row .admin-tb-min,
+    .admin-toolbar-row .admin-tb-max,
+    .admin-toolbar-row .admin-tb-region,
+    .admin-toolbar-row .admin-tb-group,
+    .admin-toolbar-row .admin-tb-refresh {
+        width: 100% !important;
+        flex: none !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+    }
+}
+
+/* На телефоне (не планшет) даже равномерное сжатие 7 вкладок админки в одну строку даёт
+   нечитаемые ~40px кнопки — прячем текстовые подписи, оставляя квадратные кнопки-иконки;
+   полное название вкладки остаётся в title (подсказка по долгому тапу/наведению) */
+@media screen and (max-width: 600px) {
+    #admin_nav_tabs {
+        gap: 4px !important;
+    }
+    .admin-tab-label {
+        display: none;
+    }
+    .admin-tab-btn {
+        flex: 0 0 44px !important;
+        min-width: 44px !important;
+        padding: 0 !important;
+        font-size: 17px !important;
+    }
+}
+
 /* Unified Input & Button Height/Radius */
 .auth-input,
 .auth-btn-base {
@@ -3832,6 +3883,7 @@ body.dark-mode .header-totals-block {
 
     #profile_tabs_bar .mode-tab {
         flex: unset !important;
+        white-space: normal !important;
     }
 
     /* Finger-friendly touch inputs for mobile filling */
@@ -6555,6 +6607,14 @@ body.html2pdf-printing #blk_wall_layers {
     user-select: none;
 }
 
+/* Вкладки личного кабинета (Реквизиты/Менеджер/Прайс-лист монтаж/Своё оборудование) —
+   на desktop/tablet-ландшафт держим названия в одну строку (ширина модалки в app.js
+   подобрана под это); на mobile-портрете (см. отдельное правило в мобильном @media)
+   перенос обратно разрешён — там вкладки в сетке 2×2 и ужимать их до одной строки некуда. */
+#profile_tabs_bar .mode-tab {
+    white-space: nowrap;
+}
+
 .mode-tab:hover {
     color: var(--text-main);
 }
@@ -7789,4 +7849,45 @@ body.dark-mode .cw-status-promo {
         top: 100%;
         margin-top: 3px;
     }
+}
+
+/* --- СТИЛИ ДЛЯ ЛИЧНОГО КАБИНЕТА (ОДИНАКОВАЯ ШИРИНА И ВЫСОТА НА ПК И ПЛАНШЕТАХ) --- */
+@media screen and (min-width: 1025px), screen and (min-width: 769px) and (orientation: landscape) {
+    #profile_modal_overlay .auth-modal-content {
+        width: 60vw !important;
+        max-width: 60vw !important;
+        height: 78vh !important;
+        max-height: 78vh !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-sizing: border-box !important;
+        padding: 20px 24px !important;
+    }
+}
+
+/* На планшетах в портрете и средних экранах (ширина от 769px до 1024px) */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+    #profile_modal_overlay .auth-modal-content {
+        width: 80vw !important;
+        max-width: 80vw !important;
+        height: 78vh !important;
+        max-height: 78vh !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-sizing: border-box !important;
+        padding: 20px 24px !important;
+    }
+}
+
+/* Общие стили для прокрутки вкладок личного кабинета */
+#profile_tab_requisites,
+#profile_tab_manager,
+#profile_tab_installers,
+#profile_tab_workprices,
+#profile_tab_equipment {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    min-height: 0 !important;
+    margin-bottom: 12px !important;
+    padding-right: 6px !important;
 }
