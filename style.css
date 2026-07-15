@@ -2859,6 +2859,75 @@ body.profile-incomplete-lock #page_scale_wrapper {
     box-shadow: none !important;
     padding: 20px 24px !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+
+/* Стили для кнопок действий в админке */
+.admin-action-btn {
+    height: 26px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background 0.15s;
+    outline: none;
+    line-height: 1;
+    padding: 0 8px;
+    white-space: nowrap;
+}
+.admin-action-btn.btn-msg {
+    border: 1px solid rgba(37, 99, 235, 0.2);
+    background: #EFF6FF;
+    color: #2563EB;
+}
+.admin-action-btn.btn-msg:hover {
+    background: #DBEAFE;
+}
+.admin-action-btn.btn-obj {
+    border: 1px solid rgba(71, 85, 105, 0.2);
+    background: #F8FAFC;
+    color: #475569;
+}
+.admin-action-btn.btn-obj:hover {
+    background: #E2E8F0;
+}
+.admin-action-btn.btn-block-active {
+    border: 1px solid rgba(217, 119, 6, 0.2);
+    background: #FFF7ED;
+    color: #D97706;
+}
+.admin-action-btn.btn-block-active:hover {
+    background: #FFEDD5;
+}
+.admin-action-btn.btn-block-blocked {
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    background: #ECFDF5;
+    color: #10B981;
+}
+.admin-action-btn.btn-block-blocked:hover {
+    background: #D1FAE5;
+}
+.admin-action-btn.btn-del {
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: #FEF2F2;
+    color: #EF4444;
+}
+.admin-action-btn.btn-del:hover {
+    background: #FEE2E2;
+}
+
+@media screen and (max-width: 1350px) {
+    .admin-action-btn {
+        width: 28px !important;
+        padding: 0 !important;
+    }
+    .admin-action-btn .btn-text {
+        display: none !important;
+    }
 }
 
 #admin_modal_overlay .auth-modal-title {

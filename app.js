@@ -2908,9 +2908,26 @@ const app = {
     isPro: function () {
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
         let isTrialActive = trialUntil > Date.now();
-        let isDbPro = (this.state.tgUser && ['pro', 'admin'].includes(this.state.tgUser.account_type)) ||
-            (this.state.user && ['pro', 'admin'].includes(this.state.user.account_type));
-        return this.state.accountType === 'pro' || isTrialActive || !!isDbPro;
+        const u = this.state.tgUser || this.state.user;
+        if (!u) {
+            return this.state.accountType === 'pro' || isTrialActive;
+        }
+        const accType = u.account_type || this.state.accountType || 'base';
+        const demoEnds = u.demo_ends_at;
+
+        if (accType === 'pro') {
+            if (demoEnds && new Date(demoEnds) < new Date()) {
+                return isTrialActive;
+            }
+            return true;
+        }
+        if (['admin', 'viewer'].includes(accType)) {
+            if (demoEnds && new Date(demoEnds) >= new Date()) {
+                return true;
+            }
+            return isTrialActive;
+        }
+        return isTrialActive;
     },
 
     // Проверка обязательной анкеты (ФИО, телефон, дата рождения, регион, город, сфера
@@ -6313,6 +6330,10 @@ const app = {
             query = query.eq('account_type', 'pro').not('distributor_id', 'is', null);
         } else if (tariffFilter === 'pro_paid') {
             query = query.eq('account_type', 'pro').not('pro_expires_at', 'is', null);
+        } else if (tariffFilter === 'viewer') {
+            query = query.eq('account_type', 'viewer');
+        } else if (tariffFilter === 'admin') {
+            query = query.eq('account_type', 'admin');
         }
 
         if (expiryFilter === 'active') {
@@ -6712,6 +6733,8 @@ const app = {
                                 <option value="pro_trial" ${tariffFilter === 'pro_trial' ? 'selected' : ''}>Профи: пробный</option>
                                 <option value="pro_promo" ${tariffFilter === 'pro_promo' ? 'selected' : ''}>Профи: промокод</option>
                                 <option value="pro_paid" ${tariffFilter === 'pro_paid' ? 'selected' : ''}>Профи: оплата</option>
+                                <option value="viewer" ${tariffFilter === 'viewer' ? 'selected' : ''}>Наблюдатель</option>
+                                <option value="admin" ${tariffFilter === 'admin' ? 'selected' : ''}>Администратор</option>
                             </select>
                             <select id="admin_filter_expiry" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer; height: 34px; box-sizing: border-box;">
                                 <option value="all" ${expiryFilter === 'all' ? 'selected' : ''}>Все сроки</option>
@@ -6761,33 +6784,50 @@ const app = {
                         </div>
                     </div>
 
-                    <table class="inv-table" style="margin-bottom: 30px;">
+                    <table class="inv-table" style="margin-bottom: 30px; table-layout: auto; width: 100%;">
                         <thead><tr>
                             <th style="width:30px;">#</th>
                             <th style="cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('name')" title="Сортировать по имени">Имя / Контакты${sortArrow('name')}</th>
                             <th style="cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('ltv')" title="Сортировать по сумме">Статистика (LTV)${sortArrow('ltv')}</th>
                             <th style="cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('tariff')" title="Сортировать по тарифу">Тариф / Устройство${sortArrow('tariff')}</th>
                             <th>Дистрибьютор</th>
-                            <th style="text-align:right; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('login')" title="Сортировать по дате входа">Вход${sortArrow('login')}</th>
-                            <th style="text-align:center;">Действия</th>
+                            <th style="text-align:right; cursor:pointer; user-select:none; width: 90px; min-width: 90px;" onclick="app.sortAdminColumn('login')" title="Сортировать по дате входа">Вход${sortArrow('login')}</th>
+                            <th style="text-align:center; width: 140px; min-width: 140px;">Действия</th>
                         </tr></thead>
                         <tbody>
                 `;
         users.forEach((u, i) => {
             let date = new Date(u.created_at).toLocaleDateString();
-            let isExpired = u.account_type === 'pro' && u.demo_ends_at && (new Date(u.demo_ends_at) < new Date());
+            let isExpired = u.demo_ends_at && (new Date(u.demo_ends_at) < new Date());
             let badge = '';
-            if (u.account_type === 'pro') {
+
+            let hasProTariff = (u.account_type === 'pro') || 
+                               (['admin', 'viewer'].includes(u.account_type) && u.demo_ends_at);
+
+            let tariffLabel = 'Базовый';
+            if (hasProTariff) {
                 let proType = 'пробный';
                 if (u.distributor_id) proType = 'промокод';
                 else if (u.pro_expires_at) proType = 'оплата';
 
                 let dateStr = u.demo_ends_at ? new Date(u.demo_ends_at).toLocaleDateString('ru-RU') : 'навсегда';
-                if (isExpired) {
-                    badge = `<span style="color:#EF4444; font-weight:bold;">Профи до ${dateStr}</span> <span style="font-size:10px; color:#EF4444;">(${proType}) (ИСТЁК)</span>`;
-                } else {
-                    badge = `<span style="color:#D97706; font-weight:bold;">Профи до ${dateStr}</span> <span style="font-size:10px; color:var(--text-sec);">(${proType})</span>`;
+                if (u.demo_ends_at && new Date(u.demo_ends_at).getFullYear() === 2099) {
+                    dateStr = 'навсегда';
                 }
+
+                if (isExpired) {
+                    tariffLabel = `<span style="color:#EF4444; font-weight:bold;">Профи до ${dateStr}</span> <span style="font-size:10px; color:#EF4444;">(${proType}) (ИСТЁК)</span>`;
+                } else {
+                    tariffLabel = `<span style="color:#D97706; font-weight:bold;">Профи до ${dateStr}</span> <span style="font-size:10px; color:var(--text-sec);">(${proType})</span>`;
+                }
+            }
+
+            if (u.account_type === 'viewer') {
+                badge = `<span style="color:#8B5CF6; font-weight:bold;">Наблюдатель 👁</span><br><span style="font-size:10px; color:var(--text-sec);">Тариф: ${tariffLabel}</span>`;
+            } else if (u.account_type === 'admin') {
+                badge = `<span style="color:#10B981; font-weight:bold;">Администратор ⚙️</span><br><span style="font-size:10px; color:var(--text-sec);">Тариф: ${tariffLabel}</span>`;
+            } else if (u.account_type === 'pro') {
+                badge = tariffLabel;
             } else {
                 badge = 'Базовый';
             }
@@ -6795,6 +6835,7 @@ const app = {
                 badge += `<br><span style="color:#fff; background:#EF4444; font-size:9px; font-weight:800; padding:1px 6px; border-radius:6px;">ЗАБЛОКИРОВАН</span>`;
             }
             let name = this.getAdminUserDisplayName(u);
+            let nameEscaped = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
             let phone = u.phone || 'Нет телефона';
             let device = u.last_device || 'Неизвестно';
             let lastVis = u.last_visited ? new Date(u.last_visited).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : date;
@@ -6821,10 +6862,12 @@ const app = {
                         <td onclick="event.stopPropagation();">${distCell}</td>
                         <td style="text-align:right;">${lastVis}</td>
                         <td onclick="event.stopPropagation();" style="text-align:center; white-space:nowrap;">
-                            <button class="delete-icon-btn" title="${u.is_blocked ? 'Разблокировать' : 'Заблокировать (доступ закрыт, данные сохранятся)'}" onclick="app.toggleUserBlocked('${u.id}', ${!u.is_blocked})" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} style="color:${u.is_blocked ? '#10B981' : '#D97706'};">${u.is_blocked ? '🔓' : '🔒'}</button>
-                            <button class="delete-icon-btn" title="Удалить учётку и все данные безвозвратно" onclick="app.deleteUserCompletely('${u.id}')" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="14" y2="17"></line></svg>
-                            </button>
+                            <div style="display:flex; gap:5px; justify-content:center; align-items:center;">
+                                <button class="admin-action-btn btn-msg" onclick="app.adminMessageUser('${u.id}', '${nameEscaped}')" title="Написать пользователю"><span class="btn-icon">💬</span><span class="btn-text"> Написать</span></button>
+                                <button class="admin-action-btn btn-obj" onclick="app.adminViewUserEstimates('${nameEscaped}')" title="Открыть его объекты"><span class="btn-icon">📁</span><span class="btn-text"> Объекты</span></button>
+                                <button class="admin-action-btn ${u.is_blocked ? 'btn-block-blocked' : 'btn-block-active'}" onclick="app.toggleUserBlocked('${u.id}', ${!u.is_blocked})" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} title="${u.is_blocked ? 'Разблокировать пользователя' : 'Заблокировать пользователя'}"><span class="btn-icon">${u.is_blocked ? '🔓' : '🔒'}</span><span class="btn-text"> ${u.is_blocked ? 'Разблок' : 'Блок'}</span></button>
+                                <button class="admin-action-btn btn-del" onclick="app.deleteUserCompletely('${u.id}')" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} title="Удалить учётку безвозвратно"><span class="btn-icon">🗑</span><span class="btn-text"> Удалить</span></button>
+                            </div>
                         </td>
                     </tr>`;
         });
@@ -7741,7 +7784,14 @@ const app = {
             let phone = (u.phone || '').replace(/;/g, ' ');
             let email = (u.email || '').replace(/;/g, ' ');
             let tg = (u.tg_username || '').replace(/;/g, ' ');
-            let tariff = u.account_type === 'pro' ? 'Профи' : 'Базовый';
+            let tariff = 'Базовый';
+            if (u.account_type === 'pro') {
+                tariff = 'Профи';
+            } else if (['admin', 'viewer'].includes(u.account_type)) {
+                let roleName = u.account_type === 'admin' ? 'Администратор' : 'Наблюдатель';
+                let tariffName = (u.demo_ends_at && new Date(u.demo_ends_at) > new Date()) ? 'Профи' : 'Базовый';
+                tariff = `${roleName} (${tariffName})`;
+            }
             let reg = new Date(u.created_at).toLocaleDateString();
             let loc = (u.location || '').replace(/;/g, ' ');
             let utm = (u.utm_source || '').replace(/;/g, ' ');
@@ -7841,19 +7891,26 @@ const app = {
                                 <h4 style="margin:0 0 15px 0; font-size:14px; color:var(--text-main);">⚙️ Управление тарифом</h4>
                                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
                                     <div>
-                                        <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Тип аккаунта</label>
-                                        <select id="admin_edit_tariff" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
+                                        <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Тип аккаунта / Роль</label>
+                                        <select id="admin_edit_tariff" onchange="app.onAdminEditTariffChange()" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                             <option value="base" ${user.account_type === 'base' ? 'selected' : ''}>Базовый</option>
                                             <option value="pro" ${user.account_type === 'pro' ? 'selected' : ''}>Профи ⭐️</option>
                                             ${this.getAdminRole() === 'super_admin' || user.account_type === 'admin' ? `<option value="admin" ${user.account_type === 'admin' ? 'selected' : ''}>Администратор ⚙️</option>` : ''}
                                             ${this.getAdminRole() === 'super_admin' || user.account_type === 'viewer' ? `<option value="viewer" ${user.account_type === 'viewer' ? 'selected' : ''}>Наблюдатель 👁</option>` : ''}
                                         </select>
                                     </div>
-                                    <div>
+                                    <div id="admin_edit_role_tariff_wrapper" style="display: ${['admin', 'viewer'].includes(user.account_type) ? 'block' : 'none'};">
+                                        <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Тариф для роли</label>
+                                        <select id="admin_edit_role_tariff" onchange="app.onAdminEditTariffChange()" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
+                                            <option value="base" ${!(user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'selected' : ''}>Базовый</option>
+                                            <option value="pro" ${(user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'selected' : ''}>Профи ⭐️</option>
+                                        </select>
+                                    </div>
+                                    <div id="admin_edit_date_wrapper" style="display: ${user.account_type === 'pro' || (['admin', 'viewer'].includes(user.account_type) && user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'block' : 'none'};">
                                         <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Истекает (для Профи)</label>
                                         <input type="date" id="admin_edit_date" value="${proDateInput}" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                     </div>
-                                    <div id="admin_edit_subtype_wrapper" style="display: ${user.account_type === 'pro' ? 'block' : 'none'};">
+                                    <div id="admin_edit_subtype_wrapper" style="display: ${user.account_type === 'pro' || (['admin', 'viewer'].includes(user.account_type) && user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'block' : 'none'};">
                                         <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Источник Профи</label>
                                         <select id="admin_edit_subtype" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                             <option value="trial" ${proSubtype === 'trial' ? 'selected' : ''}>Пробный</option>
@@ -9521,19 +9578,26 @@ const app = {
         let dateVal = document.getElementById('admin_edit_date').value;
         let subtype = document.getElementById('admin_edit_subtype')?.value || 'trial';
         let distributorId = document.getElementById('admin_edit_distributor')?.value || null;
+        let roleTariffVal = document.getElementById('admin_edit_role_tariff')?.value || 'base';
 
         let updateData = { account_type: type };
-        if (dateVal) {
-            updateData.demo_ends_at = new Date(dateVal).toISOString();
-        } else {
-            updateData.demo_ends_at = null;
-        }
 
-        if (type === 'pro') {
+        let isProTariff = (type === 'pro') || (['admin', 'viewer'].includes(type) && roleTariffVal === 'pro');
+
+        if (isProTariff) {
+            if (dateVal) {
+                updateData.demo_ends_at = new Date(dateVal).toISOString();
+            } else {
+                if (type === 'pro') {
+                    updateData.demo_ends_at = null;
+                } else {
+                    updateData.demo_ends_at = new Date('2099-12-31T00:00:00.000Z').toISOString();
+                }
+            }
+
             if (subtype === 'paid') {
                 updateData.pro_expires_at = updateData.demo_ends_at;
             } else {
-                // trial или promo
                 updateData.pro_expires_at = null;
             }
         } else {
@@ -9552,6 +9616,36 @@ const app = {
         } catch (e) {
             console.error(e);
             app.alert("Ошибка обновления: " + e.message);
+        }
+    },
+    onAdminEditTariffChange: function () {
+        const typeSelect = document.getElementById('admin_edit_tariff');
+        const roleTariffSelect = document.getElementById('admin_edit_role_tariff');
+        const dateWrapper = document.getElementById('admin_edit_date_wrapper');
+        const subtypeWrapper = document.getElementById('admin_edit_subtype_wrapper');
+        const roleTariffWrapper = document.getElementById('admin_edit_role_tariff_wrapper');
+
+        if (!typeSelect) return;
+
+        const val = typeSelect.value;
+        if (val === 'pro') {
+            if (roleTariffWrapper) roleTariffWrapper.style.display = 'none';
+            if (dateWrapper) dateWrapper.style.display = 'block';
+            if (subtypeWrapper) subtypeWrapper.style.display = 'block';
+        } else if (val === 'base') {
+            if (roleTariffWrapper) roleTariffWrapper.style.display = 'none';
+            if (dateWrapper) dateWrapper.style.display = 'none';
+            if (subtypeWrapper) subtypeWrapper.style.display = 'none';
+        } else if (['admin', 'viewer'].includes(val)) {
+            if (roleTariffWrapper) roleTariffWrapper.style.display = 'block';
+            const roleTariffVal = roleTariffSelect ? roleTariffSelect.value : 'base';
+            if (roleTariffVal === 'pro') {
+                if (dateWrapper) dateWrapper.style.display = 'block';
+                if (subtypeWrapper) subtypeWrapper.style.display = 'block';
+            } else {
+                if (dateWrapper) dateWrapper.style.display = 'none';
+                if (subtypeWrapper) subtypeWrapper.style.display = 'none';
+            }
         }
     },
     // Блокировка не трогает данные — только закрывает доступ к калькулятору (см. проверку
@@ -24020,7 +24114,7 @@ function prepareForPrint() {
         // --- ШАГ 2: ЛИСТ МОНТАЖНЫХ РАБОТ (Если есть PRO или активный триал) ---
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
         let isTrialActive = trialUntil > Date.now();
-        let isPro = (app.state.accountType === 'pro' || isTrialActive || (app.state.tgUser && ['pro', 'admin'].includes(app.state.tgUser.account_type)));
+        let isPro = app.isPro();
 
         if (showWorks && isPro) {
             app.state.viewMode = 'works';
