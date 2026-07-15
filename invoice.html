@@ -104,6 +104,13 @@
             margin-bottom: 25px;
         }
 
+        /* Клон шапки в начале раздела работ (см. renderInvoice) — виден только при печати/PDF,
+           чтобы страница, с которой физически начинается печатный раздел работ, не оставалась
+           без фирменной шапки. */
+        .doc-header-repeat {
+            display: none;
+        }
+
         .header-top {
             display: flex;
             justify-content: space-between;
@@ -1410,9 +1417,120 @@
                 align-self: auto !important;
             }
 
+            /* Тот же сброс мобильной grid-раскладки в обычную таблицу, что и выше для
+               #equipment_tbody — без него #works_tbody печатается со сбитой вёрсткой
+               (строки "Кол-во: X услуга" / "× цена" вместо нормальной таблицы), так как
+               мобильные grid-правила выше не ограничены @media screen. */
+            #works_container thead {
+                display: table-header-group !important;
+            }
+
+            #works_tbody tr:not(.group-row):not(.subtotal-row) {
+                display: table-row !important;
+                grid-template-columns: none !important;
+                grid-template-rows: none !important;
+                grid-template-areas: none !important;
+                gap: 0 !important;
+                background: transparent !important;
+                border: none !important;
+                padding: 0 !important;
+                margin-bottom: 0 !important;
+                box-shadow: none !important;
+            }
+
+            #works_tbody td {
+                display: table-cell !important;
+                padding: 8px 12px !important;
+                border-bottom: 1px solid #F3F4F6 !important;
+                color: var(--text-main) !important;
+                background: transparent !important;
+                text-align: left !important;
+                vertical-align: middle !important;
+            }
+
+            #works_tbody td.col-idx {
+                display: table-cell !important;
+                width: 35px !important;
+                text-align: center !important;
+                color: #9CA3AF !important;
+            }
+
+            #works_tbody td.col-name {
+                display: table-cell !important;
+                font-weight: 600 !important;
+                font-size: 12px !important;
+                line-height: inherit !important;
+                align-self: auto !important;
+                max-width: none !important;
+                width: auto !important;
+            }
+
+            #works_tbody td.col-unit {
+                display: table-cell !important;
+                width: 50px !important;
+                text-align: center !important;
+                color: var(--text-sec) !important;
+            }
+
+            #works_tbody td.col-qty {
+                display: table-cell !important;
+                width: 60px !important;
+                text-align: center !important;
+                font-weight: 700 !important;
+                align-self: auto !important;
+                font-size: 12px !important;
+                color: var(--text-main) !important;
+            }
+
+            #works_tbody td.col-qty::before {
+                content: "" !important;
+            }
+
+            #works_tbody td.col-price {
+                display: table-cell !important;
+                width: 90px !important;
+                text-align: right !important;
+                font-size: 12px !important;
+                color: var(--text-main) !important;
+                white-space: nowrap !important;
+                align-self: auto !important;
+            }
+
+            #works_tbody td.col-price::before {
+                content: "" !important;
+            }
+
+            #works_tbody td.col-sum {
+                display: table-cell !important;
+                width: 100px !important;
+                text-align: right !important;
+                font-weight: 800 !important;
+                font-size: 12px !important;
+                white-space: nowrap !important;
+                align-self: auto !important;
+            }
+
             #works_container {
                 page-break-before: always !important;
                 break-before: page !important;
+            }
+
+            .doc-header-repeat {
+                display: block !important;
+            }
+
+            /* Тот же непроскопленный на screen мобильный @media (max-width: 768px) блок выше
+               (ширина печатной страницы A4 с полями укладывается в 768px) переключает подписи
+               итоговых сумм на короткие мобильные варианты (.show-mobile) и прячет обычные
+               (.hide-mobile) — а следом идёт безусловное правило ".show-mobile { display:none }"
+               вне media-запросов, которое по порядку следования побеждает и мобильный вариант.
+               В итоге на печати не видно вообще никакой подписи. Возвращаем обычные подписи. */
+            .hide-mobile {
+                display: inline !important;
+            }
+
+            .show-mobile {
+                display: none !important;
             }
         }
 
@@ -1647,9 +1765,102 @@
             align-self: auto !important;
         }
 
+        /* Тот же недостающий сброс, что и в @media print выше — без него офлайн-PDF
+           (html2pdf) печатает работы со сбитой мобильной grid-вёрсткой. */
+        body.html2pdf-printing #works_container thead {
+            display: table-header-group !important;
+        }
+
+        body.html2pdf-printing #works_tbody tr:not(.group-row):not(.subtotal-row) {
+            display: table-row !important;
+            grid-template-columns: none !important;
+            grid-template-rows: none !important;
+            grid-template-areas: none !important;
+            gap: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            margin-bottom: 0 !important;
+            box-shadow: none !important;
+        }
+
+        body.html2pdf-printing #works_tbody td.col-idx {
+            display: table-cell !important;
+            width: 35px !important;
+            text-align: center !important;
+            color: #9CA3AF !important;
+        }
+
+        body.html2pdf-printing #works_tbody td.col-name {
+            display: table-cell !important;
+            font-weight: 600 !important;
+            font-size: 12px !important;
+            line-height: inherit !important;
+            align-self: auto !important;
+            max-width: none !important;
+            width: auto !important;
+        }
+
+        body.html2pdf-printing #works_tbody td.col-unit {
+            display: table-cell !important;
+            width: 50px !important;
+            text-align: center !important;
+            color: var(--text-sec) !important;
+        }
+
+        body.html2pdf-printing #works_tbody td.col-qty {
+            display: table-cell !important;
+            width: 60px !important;
+            text-align: center !important;
+            font-weight: 700 !important;
+            align-self: auto !important;
+            font-size: 12px !important;
+            color: var(--text-main) !important;
+        }
+
+        body.html2pdf-printing #works_tbody td.col-qty::before {
+            content: "" !important;
+        }
+
+        body.html2pdf-printing #works_tbody td.col-price {
+            display: table-cell !important;
+            width: 90px !important;
+            text-align: right !important;
+            font-size: 12px !important;
+            color: var(--text-main) !important;
+            white-space: nowrap !important;
+            align-self: auto !important;
+        }
+
+        body.html2pdf-printing #works_tbody td.col-price::before {
+            content: "" !important;
+        }
+
+        body.html2pdf-printing #works_tbody td.col-sum {
+            display: table-cell !important;
+            width: 100px !important;
+            text-align: right !important;
+            font-weight: 800 !important;
+            font-size: 12px !important;
+            white-space: nowrap !important;
+            align-self: auto !important;
+        }
+
         body.html2pdf-printing #works_container {
             page-break-before: always !important;
             break-before: page !important;
+        }
+
+        body.html2pdf-printing .doc-header-repeat {
+            display: block !important;
+        }
+
+        body.html2pdf-printing .hide-mobile {
+            display: inline !important;
+        }
+
+        body.html2pdf-printing .show-mobile {
+            display: none !important;
         }
 
         /* === PREMIUM CUSTOM DIALOGS === */
@@ -2644,6 +2855,14 @@
             return new URLSearchParams(hash).get('data');
         }
 
+        // Автопечать по ?print=1 — используется кнопкой "Распечатать объект" в админке
+        // (renderAdminEstimates → printAdminEstimateInvoice в app.js), чтобы открыть системный
+        // диалог печати сразу после загрузки, без ручного клика по кнопке печати на странице.
+        function maybeAutoPrint(urlParams) {
+            if (urlParams.get('print') !== '1') return;
+            setTimeout(() => window.print(), 700);
+        }
+
         async function decodePayload(str) {
             if (str.startsWith('c_')) {
                 const raw = decodeURIComponent(str.substring(2));
@@ -2704,6 +2923,7 @@
                         preloader.style.opacity = '0';
                         preloader.style.visibility = 'hidden';
                     }, 300);
+                    maybeAutoPrint(urlParams);
                     return;
                 } catch (decodeErr) {
                     console.error('[LoadSharedInvoice] Local payload decode error:', decodeErr);
@@ -2768,6 +2988,7 @@
                     preloader.style.opacity = '0';
                     preloader.style.visibility = 'hidden';
                 }, 300);
+                maybeAutoPrint(urlParams);
 
             } catch (err) {
                 console.error('[LoadSharedInvoice] Error:', err);
@@ -3039,7 +3260,24 @@
 
             // 4b. Render Works
             if (worksList.length > 0) {
-                document.getElementById('works_container').style.display = 'block';
+                const worksContainer = document.getElementById('works_container');
+                worksContainer.style.display = 'block';
+
+                // При печати раздел работ всегда начинается с новой страницы (page-break-before
+                // в CSS), поэтому она остаётся без фирменной шапки — как на калькуляторе, где
+                // печать формируется отдельными "листами" (лист оборудования / лист работ) и
+                // шапка есть на каждом. Здесь так же клонируем уже заполненную шапку в начало
+                // раздела работ; видна она только при печати/PDF (.doc-header-repeat в CSS).
+                if (!worksContainer.querySelector('.doc-header-repeat')) {
+                    const docHeader = document.querySelector('header.doc-header');
+                    if (docHeader) {
+                        const headerClone = docHeader.cloneNode(true);
+                        headerClone.classList.add('doc-header-repeat');
+                        headerClone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+                        worksContainer.insertBefore(headerClone, worksContainer.firstChild);
+                    }
+                }
+
                 const tbody = document.getElementById('works_tbody');
                 tbody.innerHTML = '';
 

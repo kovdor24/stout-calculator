@@ -668,6 +668,18 @@ const app = {
         return window.innerWidth <= 768 || (window.innerWidth <= 1024 && window.matchMedia('(orientation: portrait)').matches);
     },
 
+    // Отдельная от isMobileLayout() проверка — та завязана на ширину/ориентацию (для переноса
+    // кнопок в мобильное меню), а печать должна остаться в PDF-режиме и на планшете в альбомной
+    // ориентации (например iPad), где isMobileLayout() уже даёт false. iPadOS с версии 13
+    // выдаёт десктопный User-Agent (без "iPad"), поэтому его ловим отдельно через сочетание
+    // platform=MacIntel + поддержку тача — стандартный приём определения iPad "под Mac".
+    isMobileOrTablet: function () {
+        if (this.isMobileLayout()) return true;
+        const uaMatch = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const iPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+        return uaMatch || iPadOS;
+    },
+
     toggleMenu: function () {
         const isMobile = this.isMobileLayout();
         if (!isMobile) return;
@@ -7168,6 +7180,12 @@ const app = {
                             <td style="text-align:right;">
                                 <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px;">
                                     <span style="color:var(--text-sec); font-size:12px;">${date}</span>
+                                    <button class="row-icon-btn" onclick="event.stopPropagation(); app.viewAdminEstimateInvoice('${e.id}')" title="Посмотреть объект (как видит клиент, с контактами монтажника)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    </button>
+                                    <button class="row-icon-btn" onclick="event.stopPropagation(); app.printAdminEstimateInvoice('${e.id}')" title="Распечатать объект (как видит клиент, с контактами монтажника)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                                    </button>
                                     <button class="delete-icon-btn" onclick="event.stopPropagation(); app.deleteEstimate('${e.id}', event)" title="Удалить смету">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                                     </button>
@@ -8725,6 +8743,100 @@ const app = {
                     }, 2000);
                 }
             }
+        }
+    },
+    // Открывает смету из админки ("Расчёты") ровно так, как её видел бы клиент монтажника:
+    // с контактными данными ИМЕННО этого монтажника (в отличие от "Загрузить код", который
+    // намеренно стирает tgUser, чтобы не подставлять чужой профиль в текущий сеанс).
+    // Открывается в отдельной вкладке (index.html?admin_estimate_preview=...), которая сама
+    // подставит сохранённое состояние и сразу перейдёт на invoice.html — see loadAdminEstimatePreview.
+    viewAdminEstimateInvoice: function (estId) {
+        window.open('index.html?admin_estimate_preview=' + encodeURIComponent(estId), '_blank');
+    },
+    printAdminEstimateInvoice: function (estId) {
+        window.open('index.html?admin_estimate_preview=' + encodeURIComponent(estId) + '&print=1', '_blank');
+    },
+    // Вызывается из init() новой вкладки, открытой viewAdminEstimateInvoice/printAdminEstimateInvoice.
+    // Подменяет состояние калькулятора на сохранённый расчёт монтажника (сохраняя его tgUser),
+    // пересчитывает смету через обычный render() и уводит на итоговую invoice.html#data= —
+    // тот же самый механизм, что и обычная "Ссылка для клиента" (generateLocalShareLink),
+    // только с контактами исходного монтажника вместо текущего пользователя.
+    loadAdminEstimatePreview: async function (estId, autoPrint) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('estimates')
+                .select('calc_data')
+                .eq('id', estId)
+                .single();
+
+            if (error || !data || !data.calc_data) {
+                throw new Error(error ? error.message : 'Смета не найдена');
+            }
+
+            let st = data.calc_data;
+            if (typeof st === 'string') {
+                st = JSON.parse(st);
+            }
+
+            // Блокируем saveState() на время подмены — иначе чужой расчёт мог бы затереть
+            // реальный проект администратора в localStorage/облаке.
+            this._suppressSaveState = true;
+            this.state = { ...this.state, ...st };
+            this.syncUI();
+            this.render();
+
+            const tgUser = this.state.tgUser || {};
+            let pwr = this.getHouseHeatLoss();
+            let regionName = "";
+            if (this.state.selectedCity) {
+                regionName = this.state.selectedCity.name;
+            } else {
+                regionName = "Сибирь";
+                if (this.state.region === 150) regionName = "Сибирь";
+                if (this.state.region === 130) regionName = "Сибирь";
+                if (this.state.region === 120) regionName = "Урал";
+                if (this.state.region === 100) regionName = "Центр";
+                if (this.state.region === 60) regionName = "Юг";
+            }
+
+            let object_info = {
+                projectName: this.state.projectName || "Новый объект",
+                area: this.state.area,
+                floors: this.state.floors,
+                res: this.state.res,
+                mat: this.state.mat,
+                power: pwr,
+                region: regionName,
+                date: new Date().toLocaleDateString('ru-RU'),
+                showSku: !!this.state.showSku,
+                sequence_id: this.state.calc_id,
+                eqDiscount: this.state.eqDiscount || 0
+            };
+
+            let manager_info = {
+                name: this.formatShortName(tgUser) || '',
+                phone: tgUser.phone || '',
+                city: tgUser.city || '',
+                email: (tgUser.email || this.state.user?.email || ''),
+                customCompany: this.state.customCompany || null
+            };
+
+            let items = {
+                equipment: (this.currentEquipmentList || []).map(({ alts, ...rest }) => rest),
+                works: this.currentWorksList || []
+            };
+
+            let totals = {
+                equipment: app.lastEqSum || 0,
+                works: app.lastWorksSum || 0,
+                grandTotal: (app.lastEqSum || 0) + (app.lastWorksSum || 0)
+            };
+
+            const url = await this.generateLocalShareLink(object_info, manager_info, items, totals);
+            window.location.replace(autoPrint ? url.replace('/invoice.html#', '/invoice.html?print=1#') : url);
+        } catch (err) {
+            console.error('[loadAdminEstimatePreview] Ошибка:', err);
+            document.body.innerHTML = '<div style="text-align:center; padding:80px 20px; font-family:Arial, sans-serif; color:#374151;"><h2>⚠️ Не удалось загрузить смету</h2><p>' + (err.message || 'Неизвестная ошибка') + '</p></div>';
         }
     },
     switchAuthTab: function (tab) {
@@ -10437,10 +10549,20 @@ const app = {
 
         const btn = document.getElementById('btn_share_trigger');
         let origHtml = "Ссылка для клиента";
+        let shareStatusInterval = null;
         if (btn) {
             origHtml = btn.innerHTML;
-            btn.innerHTML = `<span class="loading-spinner" style="display:inline-block; width:14px; height:14px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:stout-spin 0.8s linear infinite; margin-right:8px; vertical-align:middle;"></span>Генерация...`;
+            const spinnerHtml = `<span class="loading-spinner" style="display:inline-block; width:14px; height:14px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:stout-spin 0.8s linear infinite; margin-right:8px; vertical-align:middle;"></span>`;
+            // Быстрое сохранение может занять до 10с — сменяющиеся статусы дают понять,
+            // что процесс идёт, а не завис.
+            const shareStatusMessages = ["Проверяем артикулы...", "Подготавливаем оформление...", "Формируем ссылку..."];
+            let shareStatusIdx = 0;
+            btn.innerHTML = spinnerHtml + shareStatusMessages[0];
             btn.disabled = true;
+            shareStatusInterval = setInterval(() => {
+                shareStatusIdx = (shareStatusIdx + 1) % shareStatusMessages.length;
+                btn.innerHTML = spinnerHtml + shareStatusMessages[shareStatusIdx];
+            }, 3000);
         }
 
         // Ставим сохранение в облако (для поиска по номеру КП через "Загрузить код") в фоновую
@@ -10503,6 +10625,7 @@ const app = {
             console.error('[shareInvoice] Ошибка генерации ссылки:', err);
             app.alert("Произошла ошибка при создании ссылки: " + err.message);
         } finally {
+            if (shareStatusInterval) clearInterval(shareStatusInterval);
             if (btn) {
                 btn.innerHTML = origHtml;
                 btn.disabled = false;
@@ -10546,6 +10669,31 @@ const app = {
 
         this.openShareOptionsModal('print');
     },
+    // html2canvas (используется html2pdf на мобильных, см. executeDownload) рендерит DOM как
+    // есть на экране — браузер применяет @media print только к настоящей печати, а не к canvas-
+    // захвату. Забираем уже загруженные правила @media print из подключённых стилей через CSSOM
+    // и повторно объявляем их как @media screen — тогда PDF получает ровно ту же вёрстку, что и
+    // печать/веб-версия, без дублирования CSS в отдельный файл/блок.
+    buildPrintCssAsScreenOverride: function () {
+        let cssText = '';
+        for (const sheet of document.styleSheets) {
+            let rules;
+            try {
+                rules = sheet.cssRules;
+            } catch (e) {
+                continue; // сторонняя (CORS) таблица стилей недоступна для чтения — пропускаем
+            }
+            if (!rules) continue;
+            for (const rule of rules) {
+                if (rule.type === CSSRule.MEDIA_RULE && /print/i.test(rule.media.mediaText)) {
+                    let inner = '';
+                    for (const r of rule.cssRules) inner += r.cssText + '\n';
+                    cssText += `@media screen { ${inner} }\n`;
+                }
+            }
+        }
+        return cssText;
+    },
     executeDownload: async function (showEq, showWorks) {
         this.printOptions = {
             eq: showEq,
@@ -10575,6 +10723,58 @@ const app = {
         if (wasDark) document.body.classList.remove('dark-mode');
 
         this.updateDocumentTitle();
+
+        if (this.isMobileOrTablet()) {
+            // На мобильных/планшетах вместо системного диалога печати (выглядит как неудобный
+            // "виртуальный принтер") скачиваем PDF напрямую через html2pdf — библиотека уже
+            // подключена в index.html. Используем ту же подготовку документа (prepareForPrint),
+            // что и обычная печать, только без настоящего window.print(), поэтому
+            // 'beforeprint'/'afterprint' вызываем вручную через одноимённые функции.
+            const overlay = document.createElement('div');
+            overlay.className = 'calc-dialog-overlay';
+            overlay.innerHTML = `<div class="calc-dialog-card" style="text-align:center;">
+                <span class="loading-spinner" style="display:inline-block; width:28px; height:28px; border:3px solid var(--primary); border-top-color:transparent; border-radius:50%; animation:stout-spin 0.8s linear infinite; margin-bottom:14px;"></span>
+                <p class="calc-dialog-message" style="margin:0;">Формируем PDF...</p>
+            </div>`;
+            document.body.appendChild(overlay);
+            setTimeout(() => overlay.classList.add('active'), 10);
+
+            prepareForPrint();
+            const printCssStyle = document.createElement('style');
+            printCssStyle.textContent = this.buildPrintCssAsScreenOverride();
+            document.head.appendChild(printCssStyle);
+
+            try {
+                // Даём браузеру такт на применение инжектированных стилей перед захватом.
+                // requestAnimationFrame здесь не годится: в свёрнутой/неактивной вкладке он
+                // может не сработать вовсе и захват зависнет — setTimeout срабатывает всегда.
+                await new Promise(resolve => setTimeout(resolve, 50));
+
+                const printBin = document.getElementById('print_bin');
+                const safeName = (this.state.projectName || 'Смета').replace(/[\\\/:\*\?"<>\|]/g, '');
+                const opt = {
+                    margin: 10,
+                    filename: `${safeName}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, logging: false },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: ['css', 'legacy'] }
+                };
+                await html2pdf().set(opt).from(printBin).save();
+                this.logInvoiceEvent('printed');
+            } catch (err) {
+                console.error('[executeDownload] Ошибка формирования PDF:', err);
+                app.alert('Не удалось сформировать PDF: ' + err.message);
+            } finally {
+                printCssStyle.remove();
+                cleanupAfterPrint();
+                overlay.classList.remove('active');
+                setTimeout(() => overlay.remove(), 200);
+                if (wasDark) document.body.classList.add('dark-mode');
+            }
+            return;
+        }
+
         window.print();
         this.logInvoiceEvent('printed');
 
@@ -11375,6 +11575,10 @@ const app = {
     },
     // =============================
     saveState: function () {
+        // В режиме предпросмотра сметы из админки (см. loadAdminEstimatePreview) состояние
+        // временно подменяется данными чужого расчёта — сохранять его в localStorage/облако
+        // нельзя, иначе это затрёт реальный проект администратора.
+        if (this._suppressSaveState) return;
         localStorage.setItem('stout_save', JSON.stringify(this.state));
         app.triggerAutoSave();
     },
@@ -12118,6 +12322,15 @@ const app = {
         }
         // ===================================================
         this.updateHeaderCompanyDetails(); this.syncUI(); this.render();
+
+        // Предпросмотр/печать конкретной сметы из админки (см. renderAdminEstimates и
+        // loadAdminEstimatePreview) — открывается в отдельной вкладке по ?admin_estimate_preview=,
+        // подменяет состояние на сохранённый расчёт монтажника и сразу уводит на invoice.html
+        // с ЕГО контактными данными, не трогая локальный проект администратора.
+        const previewEstId = new URLSearchParams(window.location.search).get('admin_estimate_preview');
+        if (previewEstId) {
+            this.loadAdminEstimatePreview(previewEstId, new URLSearchParams(window.location.search).get('print') === '1');
+        }
 
         // Запуск проверки соединения и опроса уведомлений
         this.checkConnectionStatus();
@@ -17734,16 +17947,18 @@ const app = {
         this.renderZonesUI();
         this.updateInfo();
 
-        // Динамическое переименование кнопки Печать -> Скачать PDF на мобильных устройствах
+        // Кнопка «Печать» на мобильных/планшетах скачивает PDF напрямую, минуя системный
+        // диалог печати (см. executeDownload/isMobileOrTablet) — на этих устройствах он
+        // выглядит как неудобный "виртуальный принтер". На десктопе — обычная печать браузера.
         const btnPrint = document.getElementById('btn_print_trigger');
         const btnShare = document.getElementById('btn_share_trigger');
         if (btnPrint) {
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+            const isMobile = this.isMobileOrTablet();
+            btnPrint.style.display = '';
             if (isMobile) {
-                btnPrint.style.display = 'none';
+                btnPrint.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Скачать PDF`;
                 if (isGuest && btnShare) btnShare.style.display = 'none';
             } else {
-                btnPrint.style.display = '';
                 btnPrint.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>Печать`;
                 // Видимость кнопки «Ссылка для клиента» управляется через checkConnectionStatus (VPN)
             }
@@ -19662,7 +19877,8 @@ const app = {
                     }
                 }
 
-                rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${app.formatPriceHtml(i.price)}</td><td class="col-sum">${app.formatPriceHtml(i.sum)}</td></tr>` + locsRows;
+                let rowClass = isOpt ? ' class="row-opt-out"' : '';
+                rows += `<tr ${rowStyle}${rowClass} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${app.formatPriceHtml(i.price)}</td><td class="col-sum">${app.formatPriceHtml(i.sum)}</td></tr>` + locsRows;
             });
             let addCustomRow = "";
             if (this.state.viewMode === 'equipment') {
@@ -23762,8 +23978,11 @@ async function notifyPayment() {
 window.notifyPayment = notifyPayment;
 document.addEventListener('DOMContentLoaded', function () { app.init(); });
 
-// Автоматическая генерация мульти-страничного документа перед печатью
-window.addEventListener('beforeprint', function () {
+// Автоматическая генерация мульти-страничного документа перед печатью. Вынесена в отдельную
+// именованную функцию (а не анонимный обработчик), чтобы её можно было вызвать напрямую из
+// executeDownload() на мобильных/планшетах — там PDF скачивается через html2pdf() без
+// настоящего window.print(), поэтому событие 'beforeprint' само по себе не сработает.
+function prepareForPrint() {
     document.body.classList.remove('dark-mode');
 
     // 1. Создаем или очищаем скрытый контейнер, который увидит только принтер
@@ -23877,10 +24096,13 @@ window.addEventListener('beforeprint', function () {
         app.state.viewMode = originalMode;
         app.render();
     }
-});
+}
+window.addEventListener('beforeprint', prepareForPrint);
 
-// Возврат к нормальной жизни после закрытия окна печати
-window.addEventListener('afterprint', function () {
+// Возврат к нормальной жизни после закрытия окна печати. Так же вынесена в именованную
+// функцию — вызывается напрямую из executeDownload() после html2pdf() на мобильных/планшетах,
+// где событие 'afterprint' не наступает (не было настоящего window.print()).
+function cleanupAfterPrint() {
     if (app && app.state && app.state.darkMode) {
         document.body.classList.add('dark-mode');
     }
@@ -23894,7 +24116,8 @@ window.addEventListener('afterprint', function () {
     // Очищаем корзину печати
     let printBin = document.getElementById('print_bin');
     if (printBin) printBin.innerHTML = '';
-});
+}
+window.addEventListener('afterprint', cleanupAfterPrint);
 
 // Датчик прокрутки для сужения шапки
 window.addEventListener('scroll', function () {

@@ -1825,6 +1825,12 @@ body.menu-open .mobile-menu-backdrop {
         display: none !important;
     }
 
+    /* Удалённые (снятые "✖") позиции монтажник видит зачёркнутыми в живой смете, чтобы можно
+       было восстановить — но клиенту в печати/PDF их видеть незачем. */
+    .inv-table tr.row-opt-out {
+        display: none !important;
+    }
+
     .inv-table td,
     .inv-table th {
         display: table-cell !important;
@@ -2347,6 +2353,31 @@ body.dark-mode .btn-ctrl:hover {
 }
 
 .delete-icon-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.row-icon-btn {
+    background: transparent;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    color: var(--text-sec);
+    opacity: 0.5;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.row-icon-btn:hover {
+    opacity: 1;
+    color: var(--primary);
+    background: var(--primary-light);
+}
+
+.row-icon-btn svg {
     width: 18px;
     height: 18px;
 }
@@ -4083,6 +4114,10 @@ body.dark-mode .header-totals-block {
         display: none !important;
     }
 
+    .inv-table tr.row-opt-out {
+        display: none !important;
+    }
+
     /* Сбрасываем ячейки обратно в табличный вид, но НЕ трогаем те, что скрыты явно через hidden-col или inline style */
     .inv-table td:not(.hidden-col),
     .inv-table th:not(.hidden-col) {
@@ -5608,6 +5643,10 @@ body.html2pdf-printing .inv-table tr {
 
 body.html2pdf-printing .inv-table tr[style*="display:none" i],
 body.html2pdf-printing .inv-table tr[style*="display: none" i] {
+    display: none !important;
+}
+
+body.html2pdf-printing .inv-table tr.row-opt-out {
     display: none !important;
 }
 
