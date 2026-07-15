@@ -2242,9 +2242,27 @@
         window.alert = customAlert;
         window.confirm = customConfirm;
 
+        // У части пользователей в РФ провайдер блокирует/дросселирует Cloudflare (за которым
+        // стоит Supabase) — запросы к *.supabase.co из браузера не доходят без VPN. В app.js
+        // для этого есть проксирование через proxy.heatcalc.ru/supabase_proxy.php (тот же приём,
+        // что и для входа/регистрации); здесь он нужен не меньше — иначе клиент по короткой
+        // ссылке (?id=) или при отправке статуса согласования будет упираться в ту же блокировку.
+        function supabaseProxyFetch(input, init) {
+            const host = window.location.hostname;
+            const canProxy = (host === 'heatcalc.ru' || host === 'www.heatcalc.ru');
+            const url = typeof input === 'string' ? input : input.url;
+            const base = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';
+            if (canProxy && url.startsWith(base)) {
+                return fetch('https://proxy.heatcalc.ru/supabase_proxy.php?path=' + encodeURIComponent(url.slice(base.length)), init);
+            }
+            return fetch(input, init);
+        }
+
         // Создаём клиент сразу, а не только в ветке загрузки по ?id= без данных — он нужен
         // и в локальном режиме (#data=), чтобы кнопки согласования могли писать статус.
-        let supabaseClient = supabase.createClient('https://ahanbwugsmcyvrwbmtlx.supabase.co', 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p');
+        let supabaseClient = supabase.createClient('https://ahanbwugsmcyvrwbmtlx.supabase.co', 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p', {
+            global: { fetch: supabaseProxyFetch }
+        });
         let invoiceId;
         let invoiceData;
 
@@ -2689,10 +2707,16 @@
                     return;
                 } catch (decodeErr) {
                     console.error('[LoadSharedInvoice] Local payload decode error:', decodeErr);
-                    preloader.style.opacity = '0';
-                    preloader.style.visibility = 'hidden';
-                    errorScreen.style.display = 'block';
-                    return;
+                    // Длинная ссылка с #data= могла обрезаться/испортиться при пересылке
+                    // (мессенджеры режут очень длинные URL). Если в ссылке есть ?id=, не
+                    // сдаёмся сразу — пробуем достать смету из shared_invoices по нему.
+                    const isUUIDFallback = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+                    if (!isUUIDFallback) {
+                        preloader.style.opacity = '0';
+                        preloader.style.visibility = 'hidden';
+                        errorScreen.style.display = 'block';
+                        return;
+                    }
                 }
             }
 
@@ -2718,13 +2742,10 @@
             }
 
             // === UUID — загружаем из Supabase (PRO-тариф) ===
-            // Reusing Supabase project credentials
-            const supabaseUrl = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';
-            const supabaseKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';
-
+            // supabaseClient уже создан выше (с проксированием через Beget) — повторное
+            // создание здесь было избыточным и теряло проксирование, из-за чего загрузка по
+            // ?id= могла упираться в блокировку Supabase у части пользователей в РФ.
             try {
-                supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-
                 // Fetch invoice record from shared_invoices
                 const { data, error } = await supabaseClient
                     .from('shared_invoices')

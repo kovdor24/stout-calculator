@@ -10449,10 +10449,9 @@ const app = {
         // именно в этот момент не удастся создать shared_invoices (сеть/сессия/VPN).
         this.queueCloudSave(JSON.parse(JSON.stringify(this.state)), app.lastEqSum || 0, app.lastWorksSum || 0);
 
-        // Ссылка для клиента формируется одинаково для обоих тарифов (Базовый и Профи) —
-        // мгновенно и полностью локально, без единого сетевого обращения. id для строки в
-        // shared_invoices генерируется на клиенте заранее (переиспользуем, если он уже был
-        // создан для этого объекта раньше, чтобы ссылка при повторной генерации не менялась).
+        // id для строки в shared_invoices генерируется на клиенте заранее (переиспользуем,
+        // если он уже был создан для этого объекта раньше, чтобы ссылка при повторной
+        // генерации не менялась).
         try {
             const shareId = (this.state.shared_invoice_id && this.isValidUUID(this.state.shared_invoice_id))
                 ? this.state.shared_invoice_id
@@ -10464,8 +10463,35 @@ const app = {
             object_info.client_comment = object_info.client_comment || null;
             object_info.status_updated_at = object_info.status_updated_at || null;
 
-            const localUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
-            const shareUrl = localUrl.replace('/invoice.html#', `/invoice.html?id=${shareId}#`);
+            const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
+
+            // Сначала пробуем синхронно сохранить смету в shared_invoices — тогда ссылка
+            // получится короткой (?id=...) и надёжно откроется в любом мессенджере: длинные
+            // ссылки с данными во фрагменте (#data=, несколько тысяч символов) Telegram и
+            // другие мессенджеры иногда обрезают или не распознают как ссылку. Ждём не
+            // больше 4с: если сеть недоступна (например, у монтажника заблокирован Supabase
+            // без VPN), не задерживаем его и отдаём офлайн-ссылку с данными во фрагменте —
+            // как раньше.
+            let shareUrl = null;
+            try {
+                const isSaved = await withTimeout(
+                    this.saveSharedInvoiceJobToCloud({ shareId, object_info, manager_info, items, totals, tgUser: this.state.tgUser }),
+                    4000
+                );
+                if (isSaved) {
+                    shareUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
+                }
+            } catch (fastSaveErr) {
+                console.warn('[executeShareInvoice] Быстрое сохранение в облако не удалось, используем офлайн-ссылку:', fastSaveErr);
+            }
+
+            if (!shareUrl) {
+                const localUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
+                shareUrl = localUrl.replace('/invoice.html#', `/invoice.html?id=${shareId}#`);
+                // Сеть недоступна прямо сейчас — ставим сохранение в очередь с повторами,
+                // чтобы ссылка стала доступна и по короткому ?id= при следующем открытии.
+                this.queueSharedInvoiceSave(shareId, object_info, manager_info, items, totals, this.state.tgUser);
+            }
 
             app.copyToClipboard(shareUrl).then(() => {
                 app.prompt("✅ Ссылка создана и скопирована! Отправьте её клиенту:", shareUrl);
@@ -10473,10 +10499,6 @@ const app = {
                 console.error('Ошибка копирования:', err);
                 app.prompt("✅ Ссылка создана! Скопируйте и отправьте клиенту:", shareUrl);
             });
-
-            // Синхронизация в облако (для кнопок согласования и видимости в админке) —
-            // фоном, с повторами; ссылка клиенту при этом уже выдана и полностью рабочая.
-            this.queueSharedInvoiceSave(shareId, object_info, manager_info, items, totals, this.state.tgUser);
         } catch (err) {
             console.error('[shareInvoice] Ошибка генерации ссылки:', err);
             app.alert("Произошла ошибка при создании ссылки: " + err.message);
