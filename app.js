@@ -3656,17 +3656,11 @@ const app = {
         wrapper.innerHTML = `
             <h4 style="margin:0 0 10px; font-size:14px; color:var(--text-main);">💬 Чат с менеджером</h4>
             <div id="manager_chat_list" style="display:flex; flex-direction:column; max-height:320px; overflow-y:auto; padding:10px; border:1px solid var(--border); border-radius:10px 10px 0 0; background:var(--bg);"></div>
-            <div id="manager_chat_attach_preview" style="display:none; flex-wrap:wrap; gap:6px; padding:6px 10px; border-left:1px solid var(--border); border-right:1px solid var(--border); background:var(--bg);"></div>
             <div style="display:flex; gap:6px; padding:8px; border:1px solid var(--border); border-top:none; border-radius:0 0 10px 10px; background:var(--bg);">
-                <label style="cursor:pointer; display:flex; align-items:center; padding:0 6px; color:var(--text-sec);" title="Прикрепить файл">
-                    📎<input type="file" id="manager_chat_attach_input" accept="image/*,.pdf" multiple style="display:none;" onchange="app.pickChatAttachment(event, '_pendingManagerChatAttachments', 'manager_chat_attach_preview')">
-                </label>
                 <input type="text" id="manager_chat_input" placeholder="Написать менеджеру..." style="flex:1; height:34px; font-size:12.5px; padding:0 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault(); app.sendActiveChatMessage();}">
                 <button id="manager_chat_send_btn" class="auth-btn-base btn-email-submit" style="margin:0; width:auto; height:34px; padding:0 14px; font-size:12px;" onclick="app.sendActiveChatMessage()">➤</button>
             </div>
         `;
-
-        this._pendingManagerChatAttachments = [];
 
         this.openChatThread({
             installerId: me.id,
@@ -3678,10 +3672,7 @@ const app = {
             viewerName: me.name,
             listElId: 'manager_chat_list',
             inputElId: 'manager_chat_input',
-            sendBtnId: 'manager_chat_send_btn',
-            attachInputId: 'manager_chat_attach_input',
-            attachPreviewId: 'manager_chat_attach_preview',
-            pendingArrKey: '_pendingManagerChatAttachments'
+            sendBtnId: 'manager_chat_send_btn'
         });
     },
 
@@ -3860,77 +3851,8 @@ const app = {
         containerEl.scrollTop = containerEl.scrollHeight;
     },
 
-    // Выбор вложений (картинка сжимается на канвасе как в handleFeedbackFile, прочие файлы —
-    // как есть, лимит 3МБ). pendingArrKey — имя массива на app, куда копятся вложения текущего
-    // недописанного сообщения; previewContainerId — куда рисовать превью-чипы
-    pickChatAttachment: function (event, pendingArrKey, previewContainerId) {
-        const files = Array.from(event.target.files || []);
-        event.target.value = '';
-        if (!files.length) return;
-        if (!this[pendingArrKey]) this[pendingArrKey] = [];
-        const arr = this[pendingArrKey];
-        if (arr.length + files.length > 3) {
-            app.alert('Можно приложить не более 3 файлов к одному сообщению.');
-            return;
-        }
-        files.forEach(file => {
-            if (file.size > 3 * 1024 * 1024) {
-                app.alert(`Файл «${file.name}» больше 3МБ — выберите файл меньшего размера.`);
-                return;
-            }
-            const isImage = file.type.startsWith('image/');
-            const reader = new FileReader();
-            if (isImage) {
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width, height = img.height;
-                        const maxDim = 1000;
-                        if (width > maxDim || height > maxDim) {
-                            if (width > height) { height = Math.round(height * maxDim / width); width = maxDim; }
-                            else { width = Math.round(width * maxDim / height); height = maxDim; }
-                        }
-                        canvas.width = width; canvas.height = height;
-                        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                        arr.push({ name: file.name, mime: 'image/jpeg', size: dataUrl.length, dataUrl });
-                        this.renderChatAttachmentPreview(pendingArrKey, previewContainerId);
-                    };
-                    img.src = e.target.result;
-                };
-            } else {
-                reader.onload = (e) => {
-                    arr.push({ name: file.name, mime: file.type || 'application/octet-stream', size: file.size, dataUrl: e.target.result });
-                    this.renderChatAttachmentPreview(pendingArrKey, previewContainerId);
-                };
-            }
-            reader.readAsDataURL(file);
-        });
-    },
-
-    renderChatAttachmentPreview: function (pendingArrKey, previewContainerId) {
-        const arr = this[pendingArrKey] || [];
-        const el = document.getElementById(previewContainerId);
-        if (!el) return;
-        if (!arr.length) { el.innerHTML = ''; el.style.display = 'none'; return; }
-        el.style.display = 'flex';
-        el.innerHTML = arr.map((a, i) => `
-            <div style="display:flex; align-items:center; gap:4px; background:var(--surface-light); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:10.5px; color:var(--text-main);">
-                <span>${(a.mime || '').startsWith('image/') ? '🖼️' : '📎'} ${a.name}</span>
-                <span onclick="app.removeChatAttachment('${pendingArrKey}', ${i}, '${previewContainerId}')" style="cursor:pointer; color:var(--text-sec); padding:0 2px;">✕</span>
-            </div>
-        `).join('');
-    },
-
-    removeChatAttachment: function (pendingArrKey, idx, previewContainerId) {
-        if (!this[pendingArrKey]) return;
-        this[pendingArrKey].splice(idx, 1);
-        this.renderChatAttachmentPreview(pendingArrKey, previewContainerId);
-    },
-
     // Вставка одного сообщения в нить
-    sendChatMessageRow: async function (installerId, installerAuthId, managerId, managerAuthId, senderUserId, senderName, text, attachments) {
+    sendChatMessageRow: async function (installerId, installerAuthId, managerId, managerAuthId, senderUserId, senderName, text) {
         const row = {
             installer_user_id: installerId,
             installer_auth_user_id: installerAuthId,
@@ -3938,8 +3860,7 @@ const app = {
             manager_auth_user_id: managerAuthId,
             sender_user_id: senderUserId,
             sender_name: senderName || null,
-            text: (text || '').trim() || null,
-            attachments: attachments || []
+            text: (text || '').trim() || null
         };
         const { error } = await supabaseClient.from('manager_chat_messages').insert([row]);
         if (error) throw error;
@@ -4010,16 +3931,13 @@ const app = {
         if (!opts) return;
         const input = document.getElementById(opts.inputElId);
         const text = input ? input.value.trim() : '';
-        const attachments = this[opts.pendingArrKey] || [];
-        if (!text && !attachments.length) return;
+        if (!text) return;
 
         const sendBtn = document.getElementById(opts.sendBtnId);
         if (sendBtn) sendBtn.disabled = true;
         try {
-            await this.sendChatMessageRow(opts.installerId, opts.installerAuthId, opts.managerId, opts.managerAuthId, opts.viewerUserId, opts.viewerName, text, attachments);
+            await this.sendChatMessageRow(opts.installerId, opts.installerAuthId, opts.managerId, opts.managerAuthId, opts.viewerUserId, opts.viewerName, text);
             if (input) input.value = '';
-            this[opts.pendingArrKey] = [];
-            this.renderChatAttachmentPreview(opts.pendingArrKey, opts.attachPreviewId);
             await this.refreshChatThread(opts);
         } catch (e) {
             app.alert('Не удалось отправить сообщение: ' + e.message);
@@ -4100,18 +4018,12 @@ const app = {
         detail.innerHTML = `
             <h4 style="margin:0 0 10px; font-size:14px; color:var(--text-main);">💬 ${instName}</h4>
             <div id="manager_installer_chat_list" style="display:flex; flex-direction:column; max-height:320px; overflow-y:auto; padding:10px; border:1px solid var(--border); border-radius:10px 10px 0 0; background:var(--bg);"></div>
-            <div id="manager_installer_chat_attach_preview" style="display:none; flex-wrap:wrap; gap:6px; padding:6px 10px; border-left:1px solid var(--border); border-right:1px solid var(--border); background:var(--bg);"></div>
             <div style="display:flex; gap:6px; padding:8px; border:1px solid var(--border); border-top:none; border-radius:0 0 10px 10px; background:var(--bg);">
-                <label style="cursor:pointer; display:flex; align-items:center; padding:0 6px; color:var(--text-sec);" title="Прикрепить файл">
-                    📎<input type="file" id="manager_installer_chat_attach_input" accept="image/*,.pdf" multiple style="display:none;" onchange="app.pickChatAttachment(event, '_pendingManagerInstallerChatAttachments', 'manager_installer_chat_attach_preview')">
-                </label>
                 <input type="text" id="manager_installer_chat_input" placeholder="Написать монтажнику..." style="flex:1; height:34px; font-size:12.5px; padding:0 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault(); app.sendActiveChatMessage();}">
                 <button id="manager_installer_chat_send_btn" class="auth-btn-base btn-email-submit" style="margin:0; width:auto; height:34px; padding:0 14px; font-size:12px;" onclick="app.sendActiveChatMessage()">➤</button>
             </div>
         `;
         detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-        this._pendingManagerInstallerChatAttachments = [];
 
         this.openChatThread({
             installerId: installerId,
@@ -4123,10 +4035,7 @@ const app = {
             viewerName: me.name,
             listElId: 'manager_installer_chat_list',
             inputElId: 'manager_installer_chat_input',
-            sendBtnId: 'manager_installer_chat_send_btn',
-            attachInputId: 'manager_installer_chat_attach_input',
-            attachPreviewId: 'manager_installer_chat_attach_preview',
-            pendingArrKey: '_pendingManagerInstallerChatAttachments'
+            sendBtnId: 'manager_installer_chat_send_btn'
         });
     },
 
