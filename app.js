@@ -4275,10 +4275,12 @@ const app = {
             // не считаем осиротевшими и оставляем — это штатная воронка, а не "зависшая" карточка.
             let liveCalcIds = null;
             try {
-                const { data: liveEstimates, error: estErr } = await supabaseClient.from('estimates').select('calc_data');
+                // Тянем только сам calc_id из JSON (не весь calc_data — это КБ на строку и
+                // главный источник egress-трафика Supabase на Free-плане при каждом открытии вкладки)
+                const { data: liveEstimates, error: estErr } = await supabaseClient.from('estimates').select('calc_id:calc_data->>calc_id');
                 if (!estErr) {
                     liveCalcIds = new Set();
-                    (liveEstimates || []).forEach(e => { if (e.calc_data && e.calc_data.calc_id) liveCalcIds.add(String(e.calc_data.calc_id)); });
+                    (liveEstimates || []).forEach(e => { if (e.calc_id) liveCalcIds.add(String(e.calc_id)); });
                 }
             } catch (e) {
                 console.warn('[renderAdminKanban] Не удалось проверить актуальные сметы:', e);
@@ -4608,7 +4610,10 @@ const app = {
                 return;
             }
 
-            let query = supabaseClient.from('estimates').select('id, project_name, total_sum, created_at, user_id, calc_data').order('created_at', { ascending: false }).limit(50);
+            // Список "Мои сметы" не читает калькулятор целиком (для этого есть отдельный
+            // loadSingleEstimate по клику) — тянем только shared_invoice_id/calc_id точечно
+            // через JSON-путь, а не весь calc_data (десятки КБ на смету).
+            let query = supabaseClient.from('estimates').select('id, project_name, total_sum, created_at, user_id, calc_id:calc_data->>calc_id, shared_invoice_id:calc_data->>shared_invoice_id').order('created_at', { ascending: false }).limit(50);
 
             const isAdmin = (uRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(uRow.email.toLowerCase())) || ['admin', 'viewer'].includes(uRow.account_type);
             if (!isAdmin) {
@@ -4619,7 +4624,7 @@ const app = {
             const { data, error } = await query;
             if (error) throw error;
 
-            const estimates = data || [];
+            const estimates = (data || []).map(e => ({ ...e, calc_data: { calc_id: e.calc_id, shared_invoice_id: e.shared_invoice_id } }));
             const sharedIds = estimates.map(e => e.calc_data?.shared_invoice_id).filter(Boolean);
 
             let sharedStatuses = {};
@@ -5564,8 +5569,9 @@ const app = {
 
             if (!uRow) return;
 
-            // Запрашиваем сметы
-            let query = supabaseClient.from('estimates').select('id, project_name, total_sum, created_at, calc_data');
+            // Запрашиваем сметы — только shared_invoice_id точечно из calc_data (не весь блоб,
+            // это опрос статусов, вызывается часто для каждого пользователя)
+            let query = supabaseClient.from('estimates').select('id, project_name, total_sum, created_at, shared_invoice_id:calc_data->>shared_invoice_id');
             const isAdmin = (uRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(uRow.email.toLowerCase())) || ['admin', 'viewer'].includes(uRow.account_type);
             if (!isAdmin) {
                 query = query.eq('user_id', uRow.id);
@@ -5583,7 +5589,7 @@ const app = {
                 const sharedMap = {};
                 const sharedIds = [];
                 estimates.forEach(e => {
-                    const sid = e.calc_data?.shared_invoice_id;
+                    const sid = e.shared_invoice_id;
                     if (sid) {
                         sharedIds.push(sid);
                         sharedMap[sid] = e;
@@ -6473,11 +6479,15 @@ const app = {
             const userIds = users.map(u => u.id);
             let userEsts = [];
             if (userIds.length > 0) {
+                // Для списков нужны только area/shared_invoice_id/calc_id из calc_data, а не весь
+                // JSON-блоб состояния калькулятора (десятки КБ на смету) — тянем их точечно через
+                // JSON-путь PostgREST и восстанавливаем прежнюю форму e.calc_data.xxx на клиенте,
+                // чтобы не переписывать весь код рендера ниже.
                 let { data: uEsts, error: errUE } = await supabaseClient.from('estimates')
-                    .select('id, user_id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at, users(username, phone, email)')
+                    .select('id, user_id, project_name, eq_sum, works_sum, total_sum, created_at, users(username, phone, email), calc_id:calc_data->>calc_id, shared_invoice_id:calc_data->>shared_invoice_id, area:calc_data->>area')
                     .in('user_id', userIds);
                 if (errUE) throw errUE;
-                userEsts = uEsts || [];
+                userEsts = (uEsts || []).map(e => ({ ...e, calc_data: { calc_id: e.calc_id, shared_invoice_id: e.shared_invoice_id, area: e.area } }));
             }
 
             if (isLtvSort) {
@@ -6496,11 +6506,13 @@ const app = {
                 users = users.slice(offset, offset + this._adminPageSize);
             }
 
-            // 3. Fetch Recent Estimates (Fixed 50)
+            // 3. Fetch Recent Estimates (Fixed 50) — те же точечные JSON-поля, что и выше, вместо
+            // полного calc_data (см. комментарий у запроса userEsts)
             let { data: recentEsts, error: errRE } = await supabaseClient.from('estimates')
-                .select('id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at, users(username, phone, email)')
+                .select('id, project_name, eq_sum, works_sum, total_sum, created_at, users(username, phone, email), calc_id:calc_data->>calc_id, shared_invoice_id:calc_data->>shared_invoice_id, area:calc_data->>area')
                 .order('created_at', { ascending: false })
                 .limit(50);
+            recentEsts = (recentEsts || []).map(e => ({ ...e, calc_data: { calc_id: e.calc_id, shared_invoice_id: e.shared_invoice_id, area: e.area } }));
 
             // 4. Fetch Global Totals (Only sums for dashboard cards)
             let { data: sums, error: errS } = await supabaseClient.from('estimates')
@@ -7801,8 +7813,8 @@ const app = {
             const { data: freshUser, error: userErr } = await supabaseClient.from('users').select('*').eq('id', userId).maybeSingle();
             if (userErr || !freshUser) { app.alert('Пользователь не найден.'); return; }
             user = freshUser;
-            const { data: freshEst } = await supabaseClient.from('estimates').select('id, user_id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at').eq('user_id', userId);
-            userEstimates = freshEst || [];
+            const { data: freshEst } = await supabaseClient.from('estimates').select('id, user_id, project_name, eq_sum, works_sum, total_sum, created_at, area:calc_data->>area').eq('user_id', userId);
+            userEstimates = (freshEst || []).map(e => ({ ...e, calc_data: { area: e.area } }));
         }
 
         let date = new Date(user.created_at).toLocaleDateString();
@@ -8473,23 +8485,21 @@ const app = {
     },
     viewAdminEstimate: async function (estId) {
         try {
-            let est = (this.adminData.userEstimates || []).find(e => String(e.id) === String(estId)) || (this.adminData.recentEstimates || []).find(e => String(e.id) === String(estId));
+            // Кэш списков (adminData.userEstimates/recentEstimates) хранит только лёгкие
+            // area/shared_invoice_id/calc_id из calc_data (см. loadAdminData) — полную спецификацию
+            // сметы для этой карточки всегда подгружаем свежим запросом на один конкретный id.
+            let est = null;
+            const { data, error } = await supabaseClient
+                .from('estimates')
+                .select('id, user_id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at, users(username, phone, email)')
+                .eq('id', estId)
+                .maybeSingle();
 
-            // Если смета не найдена в локальном кэше (например, из-за пагинации), пробуем загрузить напрямую с сервера
-            if (!est) {
-                console.log(`Estimate ${estId} not found in memory. Fetching from Supabase...`);
-                const { data, error } = await supabaseClient
-                    .from('estimates')
-                    .select('id, user_id, project_name, eq_sum, works_sum, total_sum, calc_data, created_at, users(username, phone, email)')
-                    .eq('id', estId)
-                    .maybeSingle();
-
-                if (error) {
-                    console.error("Supabase direct fetch error:", error);
-                }
-                if (data) {
-                    est = data;
-                }
+            if (error) {
+                console.error("Supabase direct fetch error:", error);
+            }
+            if (data) {
+                est = data;
             }
 
             if (!est) {
@@ -12144,17 +12154,18 @@ const app = {
             }
             if (!uRow) return;
 
-            // Получаем сметы пользователя у которых есть shared_invoice_id
+            // Получаем сметы пользователя у которых есть shared_invoice_id — точечно из calc_data,
+            // не весь блоб (этот polling дёргается регулярно у каждого пользователя)
             const { data: estimates } = await supabaseClient
                 .from('estimates')
-                .select('id, project_name, calc_data')
+                .select('id, project_name, shared_invoice_id:calc_data->>shared_invoice_id')
                 .eq('user_id', uRow.id)
                 .order('created_at', { ascending: false })
                 .limit(20);
 
             if (!estimates || estimates.length === 0) return;
 
-            const sharedIds = estimates.map(e => e.calc_data?.shared_invoice_id).filter(Boolean);
+            const sharedIds = estimates.map(e => e.shared_invoice_id).filter(Boolean);
             if (sharedIds.length === 0) return;
 
             // Получаем текущие статусы из shared_invoices
@@ -12183,7 +12194,7 @@ const app = {
 
                 if (prevStatus !== undefined && prevStatus !== currentStatus) {
                     // Статус изменился — показываем уведомление
-                    const estInfo = estimates.find(e => e.calc_data?.shared_invoice_id === item.id);
+                    const estInfo = estimates.find(e => e.shared_invoice_id === item.id);
                     const projectName = estInfo?.project_name || 'Объект';
                     const statusInfo = statusLabels[currentStatus] || { label: currentStatus, icon: '🔔' };
 
