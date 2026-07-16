@@ -807,6 +807,16 @@
             display: none;
         }
 
+        /* Базовое (десктопное) состояние — скрыто, короткие мобильные подписи включает
+           .show-mobile{display:inline!important} внутри @media(max-width:768px) ниже. Это
+           правило обязано идти РАНЬШЕ media-блока: при равной specificity и !important с обеих
+           сторон побеждает то, что позже по тексту стиля — если бы это правило шло после
+           media-блока (как было раньше), оно перебивало бы мобильный вариант всегда, и подписи
+           сумм ("Итого:", "Монтаж:", "Итого по смете:") не показывались бы на телефоне вовсе. */
+        .show-mobile {
+            display: none !important;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .mob-unit-label {
@@ -818,6 +828,10 @@
 
             .container {
                 padding: 20px 15px;
+                /* Снизу — запас под плавающий столбик круглых кнопок (.fab-container,
+                   position:fixed, bottom:30px), иначе он перекрывает итоговую карточку
+                   сметы, когда страница прокручена до конца. */
+                padding-bottom: 220px;
                 border-radius: 10px;
             }
 
@@ -829,7 +843,7 @@
 
             .header-logo {
                 margin: 0 auto;
-                width: 80px;
+                width: 40px;
             }
 
             .object-grid {
@@ -857,6 +871,22 @@
             .summary-card {
                 max-width: 100%;
                 padding: 15px;
+            }
+
+            .sum-item {
+                font-size: 15px;
+            }
+
+            .sum-item.grand-total {
+                font-size: 20px;
+            }
+
+            .subtotal-row td {
+                font-size: 12px;
+            }
+
+            .group-row td {
+                font-size: 11px;
             }
 
             /* Pyaterochka / Perekrestok Flat UI for equipment proposal rows */
@@ -935,7 +965,7 @@
             #equipment_tbody td.col-name {
                 grid-area: name !important;
                 font-weight: 600 !important;
-                font-size: 13px !important;
+                font-size: 14px !important;
                 line-height: 1.3 !important;
                 align-self: start !important;
                 max-width: none !important;
@@ -967,6 +997,7 @@
                 font-size: 12px !important;
                 font-weight: 500 !important;
                 color: var(--text-sec) !important;
+                white-space: nowrap !important;
             }
 
             /* Unit Price styling (bottom-right, grey) */
@@ -976,15 +1007,16 @@
                 justify-content: flex-end !important;
                 align-items: center !important;
                 align-self: end !important;
-                font-size: 11px !important;
+                font-size: 12px !important;
                 color: var(--text-sec) !important;
                 text-align: right !important;
                 white-space: nowrap !important;
             }
 
-            #equipment_tbody td.col-qty::after {
-                content: " шт" !important;
-            }
+            /* Единицу измерения уже выводит .mob-unit-label в самой разметке (с реальным
+               i.unit, а не хардкодом "шт") — этот ::after раньше добавлял вторую "шт" после
+               иконки подсказки, из-за чего в ячейке количества дублировался текст и "auto"
+               grid-колонка раздувалась, вызывая горизонтальную прокрутку страницы. */
 
             #equipment_tbody td.col-price::before {
                 content: "× " !important;
@@ -1010,7 +1042,7 @@
                 grid-template-rows: auto auto !important;
                 grid-template-areas:
                     "name name sum"
-                    "qty price price" !important;
+                    "spacer qty price" !important;
                 gap: 4px 12px !important;
                 background: transparent !important;
                 border: none !important;
@@ -1031,7 +1063,7 @@
             #works_tbody td.col-name {
                 grid-area: name !important;
                 font-weight: 600 !important;
-                font-size: 13px !important;
+                font-size: 14px !important;
                 line-height: 1.3 !important;
                 align-self: start !important;
                 text-align: left !important;
@@ -1042,17 +1074,18 @@
             #works_tbody td.col-qty {
                 grid-area: qty !important;
                 display: flex !important;
-                justify-content: flex-start !important;
+                justify-content: flex-end !important;
                 align-items: center !important;
                 align-self: end !important;
                 font-size: 12px !important;
                 font-weight: 500 !important;
                 color: var(--text-sec) !important;
+                white-space: nowrap !important;
             }
 
-            #works_tbody td.col-qty::before {
-                content: "Кол-во: " !important;
-            }
+            /* Раньше здесь стоял ::before{content:"Кол-во: "} — на узкой "1fr"-колонке грид-ячейки
+               этот префикс регулярно переносился по дефису ("Кол-\nво:"). Убрали для консистентности
+               с оборудованием (там количество тоже показывается без подписи, просто "1 шт"). */
 
             #works_tbody td.col-price {
                 grid-area: price !important;
@@ -1060,7 +1093,7 @@
                 justify-content: flex-end !important;
                 align-items: center !important;
                 align-self: end !important;
-                font-size: 11px !important;
+                font-size: 12px !important;
                 color: var(--text-sec) !important;
                 text-align: right !important;
                 white-space: nowrap !important;
@@ -1098,10 +1131,6 @@
             .sum-val {
                 white-space: nowrap !important;
             }
-        }
-
-        .show-mobile {
-            display: none !important;
         }
 
         @page {
@@ -2034,6 +2063,25 @@
             border-color: #1F2937 transparent transparent transparent;
         }
 
+        /* На узких экранах строка с иконкой часто у самого верха видимой области (первая
+           позиция раздела) — открытие вверх (bottom:135%, как на десктопе) не помещается и
+           подсказка обрезается краем экрана. На мобильном разворачиваем вниз и сужаем ширину,
+           чтобы подсказка всегда была видна целиком, а не только по горизонтали центру строки. */
+        @media (max-width: 768px) {
+            .tooltip-content {
+                bottom: auto;
+                top: 135%;
+                min-width: 220px;
+                max-width: min(300px, calc(100vw - 32px));
+            }
+
+            .tooltip-content::after {
+                top: auto;
+                bottom: 100%;
+                border-color: transparent transparent #1F2937 transparent;
+            }
+        }
+
         /* Prevent showing tooltips when printing */
         @media print {
             .no-print, .tooltip-wrapper, .info-icon, .tooltip-content {
@@ -2855,12 +2903,22 @@
             return new URLSearchParams(hash).get('data');
         }
 
+        // Мобильные браузеры (особенно во встроенных вебвью типа Telegram) часто не умеют
+        // нормально в window.print(): открывается пустой лист, который долго и не всегда
+        // успешно рендерится, а вёрстка съезжает на мобильную. Вместо системной печати на
+        // таких устройствах сразу скачиваем PDF через html2pdf (см. downloadPDFOffline) —
+        // тот же документ, что и на ПК, без диалога печати.
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        }
+
         // Автопечать по ?print=1 — используется кнопкой "Распечатать объект" в админке
         // (renderAdminEstimates → printAdminEstimateInvoice в app.js), чтобы открыть системный
-        // диалог печати сразу после загрузки, без ручного клика по кнопке печати на странице.
+        // диалог печати (или скачать PDF на мобильных) сразу после загрузки, без ручного клика
+        // по кнопке печати на странице.
         function maybeAutoPrint(urlParams) {
             if (urlParams.get('print') !== '1') return;
-            setTimeout(() => window.print(), 700);
+            setTimeout(() => isMobileDevice() ? downloadPDFOffline() : window.print(), 700);
         }
 
         async function decodePayload(str) {
@@ -2888,13 +2946,6 @@
             } else {
                 if (toggleCheckbox) toggleCheckbox.checked = true;
                 document.body.classList.remove('hide-images');
-            }
-
-            // Скрываем кнопку печати на мобильных устройствах
-            const printBtn = document.querySelector('.fab-print');
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-            if (printBtn && isMobile) {
-                printBtn.style.display = 'none';
             }
 
             const urlParams = new URLSearchParams(window.location.search);
@@ -3570,7 +3621,11 @@
                     margin: 10,
                     filename: `${document.title || 'Смета'}.pdf`,
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, logging: false },
+                    // windowWidth форсирует html2canvas рендерить в виртуальном окне шириной с десктоп
+                    // (.container принудительно 800px через .html2pdf-printing) — без этого на телефоне
+                    // canvas обрезается по ширине реального узкого экрана, и правая часть таблиц/сумм
+                    // просто пропадает из PDF.
+                    html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 900 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                     pagebreak: { mode: ['css', 'legacy'] }
                 };
@@ -3590,7 +3645,11 @@
         }
 
         function handlePrintAction() {
-            window.print();
+            if (isMobileDevice()) {
+                downloadPDFOffline();
+            } else {
+                window.print();
+            }
         }
 
         function openRevisionModal() {
