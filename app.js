@@ -11236,8 +11236,12 @@ const app = {
             const EMAILJS_TEMPLATE_ID = "template_lg1zol9";
             const EMAILJS_PUBLIC_KEY = "-m4N93pTqMlCfuBpT";
 
-            // 1. Формируем простую и наглядную таблицу оборудования (Название - Артикул - Количество)
-            let equipmentText = "Название - Артикул - Количество\n";
+            // 1. Формируем простую и наглядную таблицу оборудования (Название - Артикул - Количество).
+            // Название объекта и номер КП выводим прямо в начало тела письма — шаблон EmailJS
+            // подставляет {{project_name}}/{{calc_id}} не везде, а этот текст ({{equipment_list}})
+            // гарантированно виден в письме (проверено на реальных письмах).
+            let equipmentText = `Объект: ${pName}\nНомер КП: ${this.state.calc_id}\n\n`;
+            equipmentText += "Название - Артикул - Количество\n";
             equipmentText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
             (this.currentSpec || []).forEach((item, idx) => {
                 const sku = item.id || item.code || "—";
@@ -11459,6 +11463,7 @@ const app = {
                 // Шаблон EmailJS теперь маршрутизирует по {{to_email}} — явно задаём
                 // адрес админа, чтобы поведение основного письма не изменилось
                 to_email: 'kovdor24@yandex.ru',
+                email_subject: `Запрос счёта: ${pName} (КП №${this.state.calc_id})`,
                 project_name: pName,
                 calc_id: this.state.calc_id,
                 user_name: authorName,
