@@ -9243,9 +9243,24 @@ const app = {
         }
         this.backToAuthMain();
     },
-    showEmailSuccessModal: function () {
+    showEmailSuccessModal: function (details) {
         const modal = document.getElementById('email_success_modal_overlay');
         if (modal) {
+            const detailsEl = document.getElementById('email_success_details');
+            if (detailsEl) {
+                if (details) {
+                    const esc = (s) => String(s || '').replace(/</g, '&lt;');
+                    detailsEl.innerHTML = `
+                        <div><b>Объект:</b> ${esc(details.projectName) || '—'}</div>
+                        <div><b>№ КП:</b> ${esc(details.calcId) || '—'}</div>
+                        <div><b>Заявка направлена:</b> ${esc(details.managerName) || '—'}</div>
+                    `;
+                    detailsEl.style.display = 'block';
+                } else {
+                    detailsEl.innerHTML = '';
+                    detailsEl.style.display = 'none';
+                }
+            }
             modal.style.display = 'flex';
         }
     },
@@ -11487,6 +11502,46 @@ const app = {
             // Ставим задачу в очередь
             this.queue.addJob(job);
 
+            // === ДУБЛИРОВАНИЕ НА EMAIL МЕНЕДЖЕРА ДИСТРИБЬЮТОРА (и скрытая копия директору) ===
+            // Раньше письмо при нажатии "Получить счёт" уходило ТОЛЬКО на kovdor24@yandex.ru —
+            // закреплённый за монтажником менеджер дистрибьютора и его директор о заявке не
+            // узнавали вообще. Дублируем тем же способом, что уже работает в
+            // sendEstimateInvoiceToManager (см. app.js ~4715).
+            if (this.state.distributorInfo && this.state.distributorInfo.manager_email) {
+                const distEmail = this.state.distributorInfo.manager_email;
+                const distCompany = this.state.distributorInfo.company_name || 'Дистрибьютор';
+                const directorEmail = this.state.distributorInfo.director_email || '';
+
+                const distTemplateParams = {
+                    ...templateParams,
+                    to_email: distEmail,
+                    // Скрытая копия директору дистрибьютора — требует, чтобы в шаблоне
+                    // EmailJS (template_lg1zol9) поле Bcc было настроено на {{bcc_email}}
+                    bcc_email: directorEmail,
+                    email_subject: `[Дистрибьютор] Запрос счёта от ${authorName} — ${pName}`,
+                    equipment_list: `[Копия для дистрибьютора ${distCompany}]\n${equipmentText}`
+                };
+
+                const distJob = {
+                    id: "job_dist_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+                    type: 'email',
+                    stateData: stateClone,
+                    eqSum: eqSum,
+                    worksSum: worksSum,
+                    templateParams: distTemplateParams,
+                    serviceId: EMAILJS_SERVICE_ID,
+                    templateId: EMAILJS_TEMPLATE_ID,
+                    emailJsKey: EMAILJS_PUBLIC_KEY,
+                    retries: 0,
+                    status: "pending",
+                    created_at: Date.now() + 1
+                };
+
+                this.queue.addJob(distJob);
+                console.log(`[sendEmail] Дублирование заявки менеджеру дистрибьютора: ${distEmail}${directorEmail ? ' (копия директору: ' + directorEmail + ')' : ''}`);
+            }
+            // ====================================================
+
             // Оптимистично помечаем как сохраненную на клиенте
             this.lastSavedStateString = this.getStateSignature();
             this.markAsSaved();
@@ -11511,8 +11566,14 @@ const app = {
                 localStorage.setItem('requested_invoices', JSON.stringify(requestedInvoices));
             }
 
-            // Сразу показываем модалку успеха!
-            this.showEmailSuccessModal();
+            // Сразу показываем модалку успеха! Показываем, кому реально ушла заявка: если у
+            // монтажника назначен менеджер дистрибьютора — его имя (см. дублирование письма
+            // менеджеру дистрибьютора в sendEstimateInvoiceToManager), иначе — общий менеджер HeatCalc,
+            // на чей адрес письмо и уходит по умолчанию (see EMAILJS to_email выше).
+            const managerName = (this.state.distributorInfo && this.state.distributorInfo.manager_name)
+                ? `${this.state.distributorInfo.manager_name} (${this.state.distributorInfo.company_name || 'Дистрибьютор'})`
+                : 'Менеджер HeatCalc';
+            this.showEmailSuccessModal({ projectName: pName, calcId: this.state.calc_id, managerName });
 
         } catch (error) {
             console.error("[sendEmail] Ошибка при подготовке к отправке:", error);
