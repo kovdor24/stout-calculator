@@ -7636,14 +7636,20 @@ const app = {
                     /* === ЖЕСТКИЕ ПРАВИЛА ДЛЯ ИДЕАЛЬНОЙ ПЕЧАТИ === */
             /* Правила для вывода на отдельный альбомный лист */
             @media print {
-                @page scheme-page { 
-                    size: A4 landscape; 
-                    margin: 10mm; 
+                @page scheme-page {
+                    size: A4 landscape;
+                    margin: 10mm;
+                }
+                /* Разрыв страницы перед схемой нужен, только если перед ней уже что-то
+                   напечатано (класс .print-page-break навешивает prepareForPrint в app.js) —
+                   иначе, если схема оказывается первым/единственным разделом печати, разрыв
+                   форсировал пустую первую страницу. */
+                #dynamic_scheme.print-page-break {
+                    page-break-before: always !important;
+                    break-before: page !important;
                 }
                 #dynamic_scheme {
                     page: scheme-page !important;
-                    page-break-before: always !important;
-                    break-before: page !important;
                     page-break-after: avoid !important;
                     break-after: avoid !important;
                     height: 170mm !important; /* Оптимизировано, чтобы не вызывать пустой лист */
@@ -10413,8 +10419,25 @@ const app = {
         // Reset check states
         const chkEq = document.getElementById('share_opt_eq');
         const chkWorks = document.getElementById('share_opt_works');
+        const chkHeatLoss = document.getElementById('share_opt_heatloss');
+        const chkScheme = document.getElementById('share_opt_scheme');
         if (chkEq) chkEq.checked = true;
         if (chkWorks) chkWorks.checked = true;
+        if (chkHeatLoss) chkHeatLoss.checked = true;
+        if (chkScheme) chkScheme.checked = true;
+
+        // "Расчёт теплопотерь" и "Схема" имеет смысл предлагать только при печати/PDF,
+        // и только если для них реально есть готовые данные (иначе печатать нечего).
+        // Доступно на любом тарифе (Базовый и Профи): теплопотери — когда включён режим
+        // "Подробный" и внутри него включён расчёт по комнатам; схема — когда включён
+        // показ схемы в интерфейсе.
+        const cardHeatLoss = document.getElementById('card_opt_heatloss');
+        const cardScheme = document.getElementById('card_opt_scheme');
+        const isPrint = actionType === 'print';
+        const heatLossReady = isPrint && !!this.state.detailedRooms && !!this.state.showDetailedRoomsPanel;
+        const schemeReady = isPrint && !!this.state.showScheme;
+        if (cardHeatLoss) cardHeatLoss.style.display = heatLossReady ? 'flex' : 'none';
+        if (cardScheme) cardScheme.style.display = schemeReady ? 'flex' : 'none';
 
         if (actionType === 'share') {
             if (titleEl) titleEl.innerText = "Создание ссылки для клиента";
@@ -10463,12 +10486,23 @@ const app = {
     updateShareOptionsUI: function () {
         const chkEq = document.getElementById('share_opt_eq');
         const chkWorks = document.getElementById('share_opt_works');
+        const chkHeatLoss = document.getElementById('share_opt_heatloss');
+        const chkScheme = document.getElementById('share_opt_scheme');
         const cardEq = document.getElementById('card_opt_eq');
         const cardWorks = document.getElementById('card_opt_works');
+        const cardHeatLoss = document.getElementById('card_opt_heatloss');
+        const cardScheme = document.getElementById('card_opt_scheme');
         const btn = document.getElementById('btn_confirm_share_options');
 
         const showEq = chkEq ? chkEq.checked : false;
         const showWorks = chkWorks ? chkWorks.checked : false;
+        // Доп. разделы считаем выбранными, только если их карточка вообще показана в этом
+        // окне — скрытый чекбокс остаётся checked=true "про запас" и не должен маскировать
+        // ситуацию "ничего не выбрано" в проверке ниже.
+        const heatLossVisible = !!(cardHeatLoss && cardHeatLoss.style.display !== 'none');
+        const schemeVisible = !!(cardScheme && cardScheme.style.display !== 'none');
+        const showHeatLoss = heatLossVisible && chkHeatLoss ? chkHeatLoss.checked : false;
+        const showScheme = schemeVisible && chkScheme ? chkScheme.checked : false;
 
         if (cardEq) {
             if (showEq) cardEq.classList.add('selected');
@@ -10478,20 +10512,36 @@ const app = {
             if (showWorks) cardWorks.classList.add('selected');
             else cardWorks.classList.remove('selected');
         }
+        if (cardHeatLoss) {
+            if (showHeatLoss) cardHeatLoss.classList.add('selected');
+            else cardHeatLoss.classList.remove('selected');
+        }
+        if (cardScheme) {
+            if (showScheme) cardScheme.classList.add('selected');
+            else cardScheme.classList.remove('selected');
+        }
 
         // Disable button if nothing is checked
         if (btn) {
-            btn.disabled = (!showEq && !showWorks);
+            btn.disabled = (!showEq && !showWorks && !showHeatLoss && !showScheme);
         }
     },
 
     confirmShareOptions: function () {
         const chkEq = document.getElementById('share_opt_eq');
         const chkWorks = document.getElementById('share_opt_works');
+        const chkHeatLoss = document.getElementById('share_opt_heatloss');
+        const chkScheme = document.getElementById('share_opt_scheme');
+        const cardHeatLoss = document.getElementById('card_opt_heatloss');
+        const cardScheme = document.getElementById('card_opt_scheme');
         const showEq = chkEq ? chkEq.checked : false;
         const showWorks = chkWorks ? chkWorks.checked : false;
+        const heatLossVisible = !!(cardHeatLoss && cardHeatLoss.style.display !== 'none');
+        const schemeVisible = !!(cardScheme && cardScheme.style.display !== 'none');
+        const showHeatLoss = heatLossVisible && chkHeatLoss ? chkHeatLoss.checked : false;
+        const showScheme = schemeVisible && chkScheme ? chkScheme.checked : false;
 
-        if (!showEq && !showWorks) {
+        if (!showEq && !showWorks && !showHeatLoss && !showScheme) {
             app.alert("Пожалуйста, выберите хотя бы один раздел сметы.");
             return;
         }
@@ -10501,7 +10551,7 @@ const app = {
         if (this.shareActionType === 'share') {
             this.executeShareInvoice(showEq, showWorks);
         } else {
-            this.executeDownload(showEq, showWorks);
+            this.executeDownload(showEq, showWorks, showHeatLoss, showScheme);
         }
     },
 
@@ -10754,10 +10804,12 @@ const app = {
         }
         return cssText;
     },
-    executeDownload: async function (showEq, showWorks) {
+    executeDownload: async function (showEq, showWorks, showHeatLoss, showScheme) {
         this.printOptions = {
             eq: showEq,
-            works: showWorks
+            works: showWorks,
+            heatLoss: !!showHeatLoss,
+            scheme: !!showScheme
         };
 
         // Гарантируем, что смета попадёт в базу (и станет доступна через "Загрузить код"),
@@ -24107,6 +24159,8 @@ function prepareForPrint() {
     // Retrieve selected options from app.printOptions (default to true if undefined)
     const showEq = app.printOptions ? app.printOptions.eq : true;
     const showWorks = app.printOptions ? app.printOptions.works : true;
+    const showHeatLossOpt = app.printOptions ? app.printOptions.heatLoss : true;
+    const showSchemeOpt = app.printOptions ? app.printOptions.scheme : true;
 
     // Запоминаем текущее состояние
     let originalMode = app.state.viewMode;
@@ -24127,12 +24181,11 @@ function prepareForPrint() {
             printBin.appendChild(eqClone);
         }
 
-        // --- ШАГ 2: ЛИСТ МОНТАЖНЫХ РАБОТ (Если есть PRO или активный триал) ---
-        let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
-        let isTrialActive = trialUntil > Date.now();
-        let isPro = app.isPro();
+        // --- ШАГ 2: ЛИСТ МОНТАЖНЫХ РАБОТ (Доступно авторизованным пользователям на любом
+        // тарифе — Базовый и Профи, только гость не имеет доступа к разделу работ) ---
+        let isGuest = !app.state.tgUser;
 
-        if (showWorks && isPro) {
+        if (showWorks && !isGuest) {
             app.state.viewMode = 'works';
             app.render();
             let worksClone = printArea.cloneNode(true);
@@ -24171,29 +24224,38 @@ function prepareForPrint() {
             printBin.appendChild(worksClone);
         }
 
-        // --- ШАГ 3 & 4: СХЕМА и ТАБЛИЦА ТЕПЛОПОТЕРЬ (Только если включена схема, PRO и выбраны ОБА раздела) ---
-        if (showEq && showWorks && isPro) {
-            // --- ШАГ 3: СХЕМА (На отдельном листе) ---
-            if (app.state.showScheme) {
-                app.state.viewMode = 'equipment'; // Схема генерится только на этой вкладке
-                app.render();
-                let currentScheme = document.getElementById('dynamic_scheme');
-                if (currentScheme) {
-                    let schemeClone = currentScheme.cloneNode(true);
-                    printBin.appendChild(schemeClone);
+        // --- ШАГ 3: СХЕМА (На отдельном листе, независимо от раздела ОБОРУДОВАНИЕ/РАБОТЫ —
+        // управляется отдельным чекбоксом в окне печати) ---
+        if (showSchemeOpt && app.state.showScheme) {
+            app.state.viewMode = 'equipment'; // Схема генерится только на этой вкладке
+            app.render();
+            let currentScheme = document.getElementById('dynamic_scheme');
+            if (currentScheme) {
+                let schemeClone = currentScheme.cloneNode(true);
+                // Разрыв страницы нужен, только если перед схемой уже что-то напечатано
+                // (иначе, если схема — первый выбранный раздел, получаем пустую первую страницу).
+                if (printBin.children.length > 0) {
+                    schemeClone.classList.add('print-page-break');
                 }
+                printBin.appendChild(schemeClone);
             }
+        }
 
-            // --- ШАГ 4: ТАБЛИЦА ТЕПЛОПОТЕРЬ (Если подробный режим и есть PRO) ---
-            if (app.state.detailedRooms && app.state.showDetailedRoomsPanel) {
-                let heatLossHtml = app.renderHeatLossTable();
-                if (heatLossHtml) {
-                    let hlContainer = document.createElement('div');
-                    hlContainer.id = 'heat_loss_table_page';
-                    hlContainer.innerHTML = heatLossHtml;
-                    hlContainer.classList.add('print-page-break'); // Разрыв страницы перед таблицей
-                    printBin.appendChild(hlContainer);
+        // --- ШАГ 4: ТАБЛИЦА ТЕПЛОПОТЕРЬ (Подробный режим + готовый расчёт по комнатам,
+        // управляется отдельным чекбоксом в окне печати) ---
+        if (showHeatLossOpt && app.state.detailedRooms && app.state.showDetailedRoomsPanel) {
+            let heatLossHtml = app.renderHeatLossTable();
+            if (heatLossHtml) {
+                let hlContainer = document.createElement('div');
+                hlContainer.id = 'heat_loss_table_page';
+                hlContainer.innerHTML = heatLossHtml;
+                // Разрыв страницы нужен, только если перед таблицей уже что-то напечатано
+                // (иначе, если теплопотери — единственный выбранный раздел, получаем пустую
+                // первую страницу перед таблицей).
+                if (printBin.children.length > 0) {
+                    hlContainer.classList.add('print-page-break');
                 }
+                printBin.appendChild(hlContainer);
             }
         }
 

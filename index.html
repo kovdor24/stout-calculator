@@ -49,11 +49,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.48">
+    <link rel="stylesheet" href="style.css?v=2.49">
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.17" defer></script>
-    <script src="app.js?v=2.98" defer></script>
+    <script src="app.js?v=2.99" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -1240,7 +1240,25 @@
                     <span style="font-size: 11px; color: var(--text-sec); font-weight: 500; line-height: 1.2;">Смета на монтаж и пусконаладочные работы</span>
                 </div>
             </div>
-            
+
+            <!-- Показываются только при печати/PDF, когда сделан расчёт по комнатам
+                 (режим "Подробный") и таблица теплопотерь/схема готовы — см. app.openShareOptionsModal -->
+            <div class="share-option-card" id="card_opt_heatloss" style="display: none;" onclick="app.toggleShareOption('heatloss')">
+                <input type="checkbox" id="share_opt_heatloss" checked onclick="event.stopPropagation(); app.updateShareOptionsUI();" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; margin: 0;">
+                <div style="display: flex; flex-direction: column; text-align: left; gap: 2px;">
+                    <span style="font-size: 13.5px; font-weight: 700; color: var(--text-main); line-height: 1.2;">Расчёт теплопотерь</span>
+                    <span style="font-size: 11px; color: var(--text-sec); font-weight: 500; line-height: 1.2;">Таблица теплопотерь по помещениям</span>
+                </div>
+            </div>
+
+            <div class="share-option-card" id="card_opt_scheme" style="display: none;" onclick="app.toggleShareOption('scheme')">
+                <input type="checkbox" id="share_opt_scheme" checked onclick="event.stopPropagation(); app.updateShareOptionsUI();" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; margin: 0;">
+                <div style="display: flex; flex-direction: column; text-align: left; gap: 2px;">
+                    <span style="font-size: 13.5px; font-weight: 700; color: var(--text-main); line-height: 1.2;">Схема</span>
+                    <span style="font-size: 11px; color: var(--text-sec); font-weight: 500; line-height: 1.2;">Гидравлическая схема системы отопления</span>
+                </div>
+            </div>
+
             <button id="btn_confirm_share_options" class="auth-btn-base btn-email-submit" style="width: 100%; height: 44px; margin-top: 20px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px;" onclick="app.confirmShareOptions()">
                 <span id="btn_confirm_share_options_text">Создать ссылку</span>
             </button>

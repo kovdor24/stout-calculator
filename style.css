@@ -7221,10 +7221,16 @@ body.dark-mode #printed_dynamic_scheme img {
         size: A4 landscape;
         margin: 8mm 10mm;
     }
-    #heat_loss_table_page {
-        page: heat-loss-page !important;
+    /* Разрыв страницы перед таблицей нужен только если её печатают не первым разделом —
+       JS (prepareForPrint) навешивает класс .print-page-break именно в этом случае. Без
+       этого условия правило форсировало разрыв всегда и давало пустую первую страницу,
+       когда "Расчёт теплопотерь" выбран без "Оборудования"/"Монтажных работ" перед ним. */
+    #heat_loss_table_page.print-page-break {
         page-break-before: always !important;
         break-before: page !important;
+    }
+    #heat_loss_table_page {
+        page: heat-loss-page !important;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
         font-size: 8px;
         color: #111;
@@ -7354,6 +7360,16 @@ body.dark-mode .sec-analog-badge.active .sec-analog-label {
 }
 
 /* --- СТИЛИ ДЛЯ ВЫБОРА РАЗДЕЛОВ ПЕЧАТИ / ШАРИНГА --- */
+/* До 4 карточек (Оборудование/Работы/Теплопотери/Схема) могут не поместиться по высоте
+   на маленьких экранах (телефон, планшет в альбомной ориентации) — включаем внутренний
+   скролл окна вместо обрезания контента снизу. */
+#share_options_modal_overlay .auth-modal-content {
+    max-height: calc(100vh - 40px);
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .share-option-card {
     display: flex;
     align-items: center;
