@@ -10,8 +10,6 @@ const EMAILJS_SERVICE_ID = "service_o11b4ej";
 const EMAILJS_TEMPLATE_ID = "template_lg1zol9";
 const EMAILJS_PUBLIC_KEY = "-m4N93pTqMlCfuBpT";
 const ADMIN_EMAIL = "kovdor24@yandex.ru";
-const SUPABASE_URL = "https://ahanbwugsmcyvrwbmtlx.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,22 +36,9 @@ Deno.serve(async (req) => {
     const statusText = data.statusText || "Изменён";
     const comment = data.comment || "";
     const invoiceUrl = data.invoiceUrl || "";
-    const calcId = data.calcId || null;
-    const eventName = data.event || null; // 'invoice_requested' | 'confirmed' | 'needs_revision'
-
-    // История для админки (вкладка со статусами) — пишем событие со стороны клиента,
-    // не блокируя отправку письма, если запись не удалась
-    if (calcId && eventName) {
-      fetch(`${SUPABASE_URL}/rest/v1/invoice_events`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_ANON_KEY,
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify([{ calc_id: String(calcId), event: eventName, project_name: projectName, meta: { comment } }]),
-      }).catch((e) => console.error("invoice_events insert failed:", e));
-    }
+    // История статусов (invoice_events) теперь пишется напрямую из браузера клиента
+    // (invoice.html, logInvoiceEventDirect) до вызова этой функции — синхронно, с
+    // видимой ошибкой, а не фоном отсюда без проверки результата.
 
     let message = `Объект: ${projectName}\nСтатус: ${statusText}\n`;
     if (comment) message += `\nКомментарий клиента:\n${comment}\n`;

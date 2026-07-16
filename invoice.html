@@ -803,6 +803,12 @@
             border: 1px solid #FCA5A5;
         }
 
+        .status-requested {
+            background-color: #FEF3C7;
+            color: #92400E;
+            border: 1px solid #FCD34D;
+        }
+
         .mob-unit-label {
             display: none;
         }
@@ -3470,6 +3476,12 @@
                     if (reviseBtn) reviseBtn.style.display = 'none';
                     if (getInvoiceContainer) getInvoiceContainer.style.display = 'none';
                     if (btnGetInvoice) btnGetInvoice.style.display = 'none';
+                } else if (obj.status === 'invoice_requested') {
+                    badgeEl.textContent = '📄 Счёт запрошен';
+                    badgeEl.className = 'status-badge status-requested';
+                    badgeEl.style.display = 'inline-flex';
+                    if (getInvoiceContainer) getInvoiceContainer.style.display = 'none';
+                    if (btnGetInvoice) btnGetInvoice.disabled = true;
                 } else {
                     badgeEl.style.display = 'none';
                     // Re-show them if status goes back to 'sent' (just in case)
@@ -3478,6 +3490,26 @@
                     if (getInvoiceContainer) getInvoiceContainer.style.display = 'none';
                     if (btnGetInvoice) btnGetInvoice.style.display = 'none';
                 }
+            }
+        }
+
+        // Пишет событие в историю статусов (invoice_events) напрямую из браузера клиента,
+        // как это уже делает app.logInvoiceEvent() со стороны монтажника — синхронно и с
+        // видимой ошибкой в консоли, вместо fire-and-forget записи внутри edge-функции mail-status,
+        // которая молча теряла событие при сбое.
+        async function logInvoiceEventDirect(event, comment) {
+            const calcId = invoiceData?.object_info?.sequence_id;
+            if (!calcId || !supabaseClient) return;
+            try {
+                const { error } = await supabaseClient.from('invoice_events').insert([{
+                    calc_id: String(calcId),
+                    event: event,
+                    project_name: invoiceData?.object_info?.projectName || 'Без названия',
+                    meta: { comment: comment || '' }
+                }]);
+                if (error) console.error('[logInvoiceEventDirect] Ошибка записи:', error);
+            } catch (e) {
+                console.error('[logInvoiceEventDirect] Исключение:', e);
             }
         }
 
@@ -3526,6 +3558,9 @@
 
                 // Re-render status badge
                 renderStatusBadge(updatedObjectInfo);
+
+                // Пишем событие в историю статусов (для канбана/карточки объекта в админке)
+                logInvoiceEventDirect(status, comment);
 
                 // Send email notification to manager
                 sendStatusEmailNotification(status, comment);
@@ -3761,6 +3796,34 @@
                 const projectName = obj.projectName || 'Новый объект';
                 const statusText = 'Запрошен счет';
                 const invoiceUrl = window.location.href;
+
+                // Фиксируем статус на самой смете (та же карточка, что читает admin.viewAdminEstimate)
+                // и пишем событие в историю — раньше это событие писалось только внутри mail-status
+                // фоном, без await и без обработки ошибки, и иногда терялось молча.
+                try {
+                    const updatedObjectInfo = { ...(invoiceData.object_info || {}) };
+                    updatedObjectInfo.status = 'invoice_requested';
+                    updatedObjectInfo.status_updated_at = new Date().toISOString();
+                    const { error: statusErr } = await supabaseClient
+                        .from('shared_invoices')
+                        .upsert({
+                            id: invoiceId,
+                            object_info: updatedObjectInfo,
+                            manager_info: invoiceData.manager_info || {},
+                            items: invoiceData.items || {},
+                            totals: invoiceData.totals || {},
+                            user_id: invoiceData.user_id || null
+                        }, { onConflict: 'id' });
+                    if (statusErr) {
+                        console.error('[requestInvoice] Не удалось обновить статус сметы:', statusErr);
+                    } else {
+                        invoiceData.object_info = updatedObjectInfo;
+                        renderStatusBadge(updatedObjectInfo);
+                    }
+                } catch (statusEx) {
+                    console.error('[requestInvoice] Исключение при обновлении статуса:', statusEx);
+                }
+                await logInvoiceEventDirect('invoice_requested', comment);
 
                 const response = await fetch('https://ahanbwugsmcyvrwbmtlx.supabase.co/functions/v1/mail-status', {
                     method: 'POST',

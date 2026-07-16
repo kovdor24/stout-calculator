@@ -4428,30 +4428,13 @@ const app = {
         }
 
         const last = events[events.length - 1];
-        const EVENT_META = this.ADMIN_KANBAN_EVENT_META;
         const distributorsById = {};
         ((this.adminData && this.adminData.distributors) || []).forEach(d => { distributorsById[String(d.id)] = d.company_name; });
         const meta = last.user_email ? (this._kanbanUserMeta || {})[last.user_email.toLowerCase()] : null;
         const regionLabel = meta && meta.region ? meta.region : '—';
         const distributorLabel = meta && meta.distributor_id ? (distributorsById[String(meta.distributor_id)] || '—') : '—';
 
-        const historyHtml = events.slice().reverse().map(e => {
-            const em = EVENT_META[e.event] || { label: e.event, color: '#94A3B8' };
-            const dt = new Date(e.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            const comment = e.meta && e.meta.comment ? e.meta.comment : '';
-            return `
-                <div style="display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--border);">
-                    <div style="width:10px; height:10px; border-radius:50%; background:${em.color}; margin-top:5px; flex-shrink:0;"></div>
-                    <div style="flex:1; min-width:0;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-                            <span style="font-weight:700; color:var(--text-main); font-size:13px;">${em.label}</span>
-                            <span style="color:var(--text-sec); font-size:11px; white-space:nowrap;">${dt}</span>
-                        </div>
-                        ${comment ? `<div style="color:var(--text-main); font-size:12px; margin-top:4px; white-space:pre-wrap;">${comment.replace(/</g, '&lt;')}</div>` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
+        const historyHtml = this.renderInvoiceHistoryHtml(events);
 
         content.innerHTML = `
             <button class="btn-header-blue" style="margin-bottom: 20px; width: fit-content;" onclick="app.renderAdminKanban(true)">← Назад к канбану</button>
@@ -8607,6 +8590,53 @@ const app = {
 
             const sharedInvoiceId = st?.shared_invoice_id;
             const statusContainer = document.getElementById('admin_shared_status_container');
+            const openInvoiceLinkHTML = sharedInvoiceId
+                ? `<div style="margin-top: 12px; display: flex; gap: 10px;">
+                        <a href="invoice.html?id=${sharedInvoiceId}" target="_blank" class="btn-header-blue" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: 28px; padding: 0 12px; background: transparent; border: 1px solid var(--primary); color: var(--primary);">🔗 Открыть КП клиента</a>
+                   </div>`
+                : '';
+
+            // Полная хронология статусов (invoice_events) — тот же источник, что и у канбана
+            // "Статусы смет". Показываем её вместо одного устаревшего поля object_info.status,
+            // т.к. события вроде "Запрошен счёт" пишутся ТОЛЬКО сюда и раньше были не видны
+            // на этой карточке (см. renderKanbanCardDetail).
+            if (st?.calc_id) {
+                try {
+                    const { data: events, error: evError } = await supabaseClient
+                        .from('invoice_events')
+                        .select('*')
+                        .eq('calc_id', String(st.calc_id))
+                        .order('created_at', { ascending: true });
+
+                    if (evError) throw evError;
+
+                    if (events && events.length) {
+                        const last = events[events.length - 1];
+                        const EVENT_META = this.ADMIN_KANBAN_EVENT_META;
+                        const em = EVENT_META[last.event] || { label: last.event, color: '#94A3B8' };
+                        const dt = new Date(last.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                        if (statusContainer) {
+                            statusContainer.innerHTML = `
+                                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <b style="color: var(--text-sec);">Текущий статус:</b>
+                                        <span style="display:inline-block; background:${em.color}; color:#fff; font-size:11px; font-weight:700; border-radius:10px; padding:3px 10px;">${em.label}</span>
+                                    </div>
+                                    <div style="font-size: 11.5px; color: var(--text-sec);"><b>Дата изменения:</b> ${dt}</div>
+                                </div>
+                                ${openInvoiceLinkHTML}
+                                <div style="margin-top: 14px;">
+                                    <h4 style="margin: 0 0 6px; color: var(--text-main); font-size: 13px;">🕓 История изменения статуса</h4>
+                                    ${this.renderInvoiceHistoryHtml(events)}
+                                </div>
+                            `;
+                        }
+                        return;
+                    }
+                } catch (histErr) {
+                    console.error("Error loading invoice_events history:", histErr);
+                }
+            }
 
             if (!sharedInvoiceId) {
                 if (statusContainer) {
@@ -8621,6 +8651,8 @@ const app = {
                 return;
             }
 
+            // Фолбэк для старых смет, созданных до появления invoice_events — используем
+            // единственное известное на тот момент поле object_info.status
             try {
                 const { data: sharedInvoice, error: sharedError } = await supabaseClient
                     .from('shared_invoices')
