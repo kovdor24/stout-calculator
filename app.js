@@ -4152,11 +4152,13 @@ const app = {
         invoice_requested: { label: 'Запрошен счёт', color: '#F59E0B' },
         confirmed: { label: 'Одобрено', color: '#10B981' },
         needs_revision: { label: 'На доработке', color: '#EF4444' },
+        invoice_issued: { label: 'Счёт выставлен', color: '#10B981' },
+        rejected: { label: 'Отклонен', color: '#EF4444' },
     },
     ADMIN_KANBAN_STAGES: [
         { key: 'draft', label: 'Расчёты', color: '#60A5FA', events: ['calculated', 'saved'] },
         { key: 'review', label: 'На согласовании', color: '#818CF8', events: ['sent', 'printed', 'confirmed', 'needs_revision'] },
-        { key: 'payment', label: 'В оплату', color: '#F59E0B', events: ['invoice_requested'] },
+        { key: 'payment', label: 'В оплату', color: '#F59E0B', events: ['invoice_requested', 'invoice_issued', 'rejected'] },
     ],
 
     renderAdminKanban: async function (skipFetch) {
@@ -4167,10 +4169,17 @@ const app = {
 
         if (!skipFetch || !this._kanbanEvents) {
             content.innerHTML += `<div id="kanban_root" style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка истории...</div>`;
-            const { data: events, error } = await supabaseClient
-                .from('invoice_events')
-                .select('*')
-                .order('created_at', { ascending: true });
+            let events = null;
+            let error = null;
+            try {
+                const res = await supabaseClient
+                    .from('invoice_events')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+                events = res.data;
+                error = res.error;
+            } catch (ex) { error = ex; }
+
             if (error) {
                 const root = document.getElementById('kanban_root');
                 if (root) root.innerHTML = `<div style="color:#EF4444;">Ошибка загрузки истории: ${error.message}</div>`;
@@ -4183,13 +4192,56 @@ const app = {
             // Черновики с единственным событием 'calculated' (расчёт так и не сохранили)
             // не считаем осиротевшими и оставляем — это штатная воронка, а не "зависшая" карточка.
             let liveCalcIds = null;
+            let liveCalcMap = {};
             try {
-                // Тянем только сам calc_id из JSON (не весь calc_data — это КБ на строку и
-                // главный источник egress-трафика Supabase на Free-плане при каждом открытии вкладки)
-                const { data: liveEstimates, error: estErr } = await supabaseClient.from('estimates').select('calc_id:calc_data->>calc_id');
+                // Тянем calc_id и суммы из estimates для подсчета итогов по колонкам
+                const { data: liveEstimates, error: estErr } = await supabaseClient.from('estimates')
+                    .select('id, project_name, created_at, user_id, total_sum, eq_sum, works_sum, calc_id:calc_data->>calc_id, users(username, email)');
                 if (!estErr) {
                     liveCalcIds = new Set();
-                    (liveEstimates || []).forEach(e => { if (e.calc_id) liveCalcIds.add(String(e.calc_id)); });
+                    (liveEstimates || []).forEach(e => {
+                        if (e.calc_id) {
+                            liveCalcIds.add(String(e.calc_id));
+                            const sum = parseFloat(e.total_sum) || ((parseFloat(e.eq_sum) || 0) + (parseFloat(e.works_sum) || 0)) || 0;
+                            liveCalcMap[String(e.calc_id)] = sum;
+                        }
+                    });
+
+                    // Автоматическое самолечение: если в estimates есть смета, у которой нет истории в invoice_events,
+                    // генерируем для нее стартовое событие 'saved', чтобы она отобразилась в канбане.
+                    const eventCalcIds = new Set((events || []).map(ev => String(ev.calc_id)));
+                    const missingEvents = [];
+                    (liveEstimates || []).forEach(est => {
+                        const cId = est.calc_id ? String(est.calc_id) : null;
+                        if (cId && !eventCalcIds.has(cId)) {
+                            missingEvents.push({
+                                calc_id: cId,
+                                event: 'saved',
+                                user_id: est.user_id ? String(est.user_id) : null,
+                                user_name: est.users?.username || 'Пользователь',
+                                user_email: est.users?.email || null,
+                                project_name: est.project_name || 'Без названия',
+                                created_at: est.created_at
+                            });
+                        }
+                    });
+
+                    if (missingEvents.length > 0) {
+                        try {
+                            const { error: insErr } = await supabaseClient.from('invoice_events').insert(missingEvents);
+                            if (!insErr) {
+                                const { data: reloadedEvents, error: reErr } = await supabaseClient
+                                    .from('invoice_events')
+                                    .select('*')
+                                    .order('created_at', { ascending: true });
+                                if (!reErr) {
+                                    events = reloadedEvents || [];
+                                }
+                            }
+                        } catch (insEx) {
+                            console.warn('[renderAdminKanban] Ошибка авто-генерации событий для старых смет:', insEx);
+                        }
+                    }
                 }
             } catch (e) {
                 console.warn('[renderAdminKanban] Не удалось проверить актуальные сметы:', e);
@@ -4199,7 +4251,7 @@ const app = {
             if (liveCalcIds) {
                 const byCalc = {};
                 cleanEvents.forEach(e => { (byCalc[e.calc_id] = byCalc[e.calc_id] || []).push(e); });
-                const orphanCalcIds = Object.keys(byCalc).filter(calcId => !liveCalcIds.has(calcId) && byCalc[calcId].some(e => e.event !== 'calculated'));
+                const orphanCalcIds = Object.keys(byCalc).filter(calcId => !liveCalcIds.has(calcId));
                 if (orphanCalcIds.length) {
                     supabaseClient.from('invoice_events').delete().in('calc_id', orphanCalcIds)
                         .then(({ error: delErr }) => { if (delErr) console.warn('[renderAdminKanban] Ошибка очистки осиротевших событий:', delErr); });
@@ -4221,11 +4273,13 @@ const app = {
                 console.warn('[renderAdminKanban] Не удалось загрузить регионы/дистрибьюторов пользователей:', e);
             }
             this._kanbanUserMeta = userMeta;
+            this._kanbanCalcSumMap = liveCalcMap;
         } else if (!document.getElementById('kanban_root')) {
             content.innerHTML += `<div id="kanban_root"></div>`;
         }
 
         const userMeta = this._kanbanUserMeta || {};
+        const liveCalcMap = this._kanbanCalcSumMap || {};
 
         // Группируем события по calc_id — каждая карточка живёт в колонке своего
         // последнего по времени события
@@ -4245,6 +4299,7 @@ const app = {
                 p.region = meta.region;
                 p.distributor_id = meta.distributor_id;
             }
+            p.totalSum = liveCalcMap[String(e.calc_id)] || 0;
         });
         const list = Object.values(projects);
 
@@ -4283,16 +4338,23 @@ const app = {
         `;
 
         const columnsHtml = `
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px; align-items:start;">
+            <div style="display:flex; gap:14px; align-items:start; overflow-x:auto; padding-bottom:12px; width:100%;">
                 ${STAGES.map(s => {
             const cards = filtered.filter(p => stageOf(p.current) === s).sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
+            const totalSum = cards.reduce((acc, c) => acc + (c.totalSum || 0), 0);
             return `
-                        <div style="border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.12); display:flex; flex-direction:column; max-height:600px; min-width:0;">
-                            <div style="background:${s.color}; color:#fff; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; padding:9px 12px;">
-                                ${s.label}
+                        <div style="border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.12); display:flex; flex-direction:column; max-height:600px; min-width:260px; flex:1 1 0%;">
+                            <div style="background:${s.color}; color:#fff; padding:10px 12px; display:flex; flex-direction:column; gap:4px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.3px;">
+                                    <span>${s.label}</span>
+                                    <span style="background:rgba(255,255,255,0.25); padding:2px 8px; border-radius:12px; font-size:11px; font-weight:800;">${cards.length} шт.</span>
+                                </div>
+                                <div style="font-size:13px; font-weight:800; color:rgba(255,255,255,0.95); display:flex; align-items:center; justify-content:space-between; margin-top:2px;">
+                                    <span style="font-size:10px; text-transform:uppercase; opacity:0.8; font-weight:600;">Сумма:</span>
+                                    <span>${totalSum.toLocaleString('ru-RU')} ₽</span>
+                                </div>
                             </div>
                             <div style="background:var(--surface-light); padding:10px 12px 12px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; flex:1;">
-                                <div style="font-size:24px; font-weight:800; color:var(--text-main); line-height:1;">${cards.length}</div>
                                 ${cards.length ? cards.map(c => {
                 const initial = (c.user_name || '?').trim().charAt(0).toUpperCase();
                 const em = EVENT_META[c.current] || { label: c.current, color: '#94A3B8' };
@@ -4304,6 +4366,7 @@ const app = {
                                             <div style="width:20px; height:20px; border-radius:50%; background:${this.avatarColorFor(c.user_name || '?')}; color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${initial}</div>
                                             <div style="color:var(--text-sec); font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.user_name || '— (клиент)'}</div>
                                         </div>
+                                        <div style="font-weight:700; color:var(--primary); margin-bottom:8px; font-size:13px;">${(c.totalSum || 0).toLocaleString('ru-RU')} ₽</div>
                                         <div style="display:inline-block; background:${em.color}; color:#fff; font-size:10px; font-weight:700; border-radius:10px; padding:2px 8px; margin-bottom:8px;">${em.label}</div>
                                         ${comment ? `<div style="color:var(--text-main); font-size:11px; background:var(--surface-light); border-radius:6px; padding:6px 8px; margin-bottom:8px; white-space:pre-wrap;">${comment.replace(/</g, '&lt;')}</div>` : ''}
                                         <div style="color:var(--text-sec); font-size:10px; border-top:1px solid var(--border); padding-top:6px;">
@@ -4325,7 +4388,7 @@ const app = {
 
     // Карточка расчёта из канбана "Статусы смет" — номер расчёта и полная история
     // смены статусов (используется тот же кэш событий, что и для самого канбана)
-    renderKanbanCardDetail: function (calcId) {
+    renderKanbanCardDetail: async function (calcId) {
         const content = document.getElementById('admin_content');
         if (!content) return;
 
@@ -4345,13 +4408,43 @@ const app = {
         const regionLabel = meta && meta.region ? meta.region : '—';
         const distributorLabel = meta && meta.distributor_id ? (distributorsById[String(meta.distributor_id)] || '—') : '—';
 
+        // Проверка прав для смены статуса (супер-админ или закрепленный менеджер)
+        const me = await this.resolveCurrentUserForChat();
+        const myEmail = me && me.email ? me.email.toLowerCase() : '';
+        const role = this.getAdminRole();
+        const isSuperAdmin = ['super_admin', 'admin'].includes(role);
+        const dist = meta && meta.distributor_id ? ((this.adminData && this.adminData.distributors) || []).find(d => String(d.id) === String(meta.distributor_id)) : null;
+        const isAssignedManager = dist && (String(dist.manager_email).toLowerCase() === myEmail || String(dist.director_email).toLowerCase() === myEmail);
+        const canManage = isSuperAdmin || isAssignedManager;
+
+        let actionsHtml = '';
+        if (last.event === 'invoice_requested') {
+            if (canManage) {
+                actionsHtml = `
+                    <div style="background: var(--surface-light); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; text-align: left;">
+                        <h4 style="margin-top:0; margin-bottom:12px; color:var(--text-main); font-size:14px;">🛠 Действия менеджера</h4>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                            <button class="auth-btn-base btn-header-blue" style="margin:0; background:#10B981; color:#fff; border:none; height:34px; padding:0 16px; width:auto;" onclick="app.setInvoiceStatus('${calcId}', 'invoice_issued')">✓ Счёт выставлен</button>
+                            <button class="auth-btn-base" style="margin:0; background:#EF4444; color:#fff; border:none; height:34px; padding:0 16px; width:auto;" onclick="app.setInvoiceStatus('${calcId}', 'rejected')">✕ Отклонить запрос</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                actionsHtml = `
+                    <div style="background: var(--surface-light); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; text-align: left; font-size: 13px; color: var(--text-sec);">
+                        🔒 Менять статус (выставить счёт / отклонить) может только менеджер, закрепленный за данным монтажником (${distributorLabel}).
+                    </div>
+                `;
+            }
+        }
+
         const historyHtml = this.renderInvoiceHistoryHtml(events);
 
         content.innerHTML = `
             <button class="btn-header-blue" style="margin-bottom: 20px; width: fit-content;" onclick="app.renderAdminKanban(true)">← Назад к канбану</button>
             <div style="background: var(--surface-light); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
                 <h3 style="margin-top:0; color: var(--text-main);">📋 ${last.project_name || 'Без названия'}</h3>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:13px;">
                     <div><b style="color:var(--text-sec);">№ расчёта:</b> <span style="color:var(--text-main); font-weight:600;">${calcId}</span></div>
                     <div><b style="color:var(--text-sec);">Монтажник:</b> <span style="color:var(--text-main);">${last.user_name || '— (клиент)'}</span></div>
                     <div><b style="color:var(--text-sec);">Email:</b> <span style="color:var(--text-main);">${last.user_email || '—'}</span></div>
@@ -4359,11 +4452,111 @@ const app = {
                     <div><b style="color:var(--text-sec);">Дистрибьютор:</b> <span style="color:var(--text-main);">${distributorLabel}</span></div>
                 </div>
             </div>
+            ${actionsHtml}
             <div style="background: var(--surface-light); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
                 <h4 style="margin-top:0; margin-bottom:6px; color:var(--text-main); font-size:14px;">🕓 История изменения статуса</h4>
                 ${historyHtml}
             </div>
         `;
+    },
+
+    setInvoiceStatus: async function (calcId, status) {
+        try {
+            let myEmail = '';
+            let myName = 'Менеджер';
+            let myId = null;
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session && session.user) {
+                    myEmail = (session.user.email || '').toLowerCase();
+                    const { data: uRow } = await supabaseClient.from('users').select('id, username').eq('auth_user_id', session.user.id).maybeSingle();
+                    if (uRow) {
+                        myId = uRow.id;
+                        myName = uRow.username || myEmail || 'Менеджер';
+                    }
+                }
+            } catch (e) {
+                console.warn('[setInvoiceStatus] Error getting session:', e);
+            }
+            if (!myEmail && this.state.tgUser && this.state.tgUser.email) {
+                myEmail = this.state.tgUser.email.toLowerCase();
+                myName = [this.state.tgUser.first_name, this.state.tgUser.last_name].filter(Boolean).join(' ') || this.state.tgUser.username || myEmail;
+                myId = this.state.tgUser.id || null;
+            }
+
+            if (!myEmail) {
+                app.alert("Ошибка: вы должны быть авторизованы.");
+                return;
+            }
+
+            const events = (this._kanbanEvents || []).filter(e => String(e.calc_id) === String(calcId));
+            if (!events.length) {
+                app.alert("Ошибка: сметный расчет не найден.");
+                return;
+            }
+            const last = events[events.length - 1];
+
+            let commentText = "";
+            if (status === 'invoice_issued') {
+                if (!await app.confirm("Вы уверены, что хотите перевести смету в статус 'Счёт выставлен'?", "Подтверждение")) return;
+                const promptVal = await app.prompt("Введите комментарий к статусу (необязательно, например номер счета):", "", "Счёт выставлен");
+                if (promptVal === null) return; // cancel clicked
+                commentText = promptVal.trim();
+            } else if (status === 'rejected') {
+                const promptVal = await app.prompt("Укажите причину отклонения запроса (обязательно):", "", "Отклонить запрос");
+                if (promptVal === null) return; // cancel clicked
+                if (!promptVal.trim()) {
+                    app.alert("Ошибка: причина отклонения обязательна для заполнения!");
+                    return;
+                }
+                commentText = promptVal.trim();
+            }
+
+            // Записываем событие в БД
+            const { error } = await supabaseClient.from('invoice_events').insert([{
+                calc_id: String(calcId),
+                event: status,
+                user_id: myId ? String(myId) : null,
+                user_name: myName,
+                user_email: myEmail,
+                project_name: last.project_name || null,
+                meta: commentText ? { comment: commentText } : null
+            }]);
+
+            if (error) throw error;
+
+            app.alert(status === 'invoice_issued' ? "✅ Статус изменен: Счёт выставлен" : "❌ Статус изменен: Отклонен");
+
+            // Перезагружаем данные канбана и карточки
+            this._kanbanEvents = null; // сбросить кэш, чтобы загрузить свежие данные
+            await this.renderAdminKanban();
+            await this.renderKanbanCardDetail(calcId);
+
+        } catch (e) {
+            console.error('[setInvoiceStatus] Ошибка:', e);
+            app.alert("Ошибка при изменении статуса: " + e.message);
+        }
+    },
+
+    renderInvoiceHistoryHtml: function (events) {
+        const EVENT_META = this.ADMIN_KANBAN_EVENT_META;
+        return events.slice().reverse().map(e => {
+            const em = EVENT_META[e.event] || { label: e.event, color: '#94A3B8' };
+            const dt = new Date(e.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const comment = e.meta && e.meta.comment ? e.meta.comment : '';
+            return `
+                <div style="display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--border);">
+                    <div style="width:10px; height:10px; border-radius:50%; background:${em.color}; margin-top:5px; flex-shrink:0;"></div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <span style="font-weight:700; color:var(--text-main); font-size:13px;">${em.label}</span>
+                            <span style="color:var(--text-sec); font-size:11px; white-space:nowrap;">${dt}</span>
+                        </div>
+                        ${comment ? `<div style="color:var(--text-main); font-size:12px; margin-top:4px; white-space:pre-wrap;">${comment.replace(/</g, '&lt;')}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
     },
 
     // Аватар-кружок с инициалом — цвет стабилен для имени (как ФИО-плашки в Битрикс24)
@@ -5089,6 +5282,11 @@ const app = {
         }
     },
 
+    // Геймификация (начисление XP / разблокировка значков за действия монтажника,
+    // региональный рейтинг, значки, лента активности) вынесена в общий модуль
+    // gamification.js (глобальная переменная GRM, подключается в index.html перед
+    // app.js) — переиспользуется и на отдельной странице /rating/.
+
     // ═══════════════ Персональные настройки монтажника (личный кабинет) ═══════════════
     // Хранятся отдельно от app.state (который сохраняется/сбрасывается per-проект), чтобы
     // переживать app.reset() и новые сметы. Локально — всегда в localStorage; для ПРО ещё
@@ -5192,6 +5390,7 @@ const app = {
         if (!isNaN(num) && num > 0) {
             this.installerSettings.workPrices[name] = num;
             this._touchWorkPricesTimestamp();
+            GRM.unlockManual('fine_balance');  // значок «Тонкая балансировка»
         } else {
             delete this.installerSettings.workPrices[name];
             this._clearWorkPricesTimestampIfEmpty();
@@ -5251,6 +5450,7 @@ const app = {
         });
         if (this.installerSettings.swapLog.length > 200) this.installerSettings.swapLog.length = 200;
         this.pushInstallerSettingsToCloud();
+        GRM.unlockManual('own_fittings');  // значок «Своя арматура» (замена позиции)
     },
     // Записывает факт удаления позиции из сметы (кнопка «✖ Удалить позицию» у оборудования,
     // «↺» у ручного оборудования, «Удалить работу») в персональную историю монтажника
@@ -5266,6 +5466,7 @@ const app = {
         });
         if (this.installerSettings.deletionLog.length > 200) this.installerSettings.deletionLog.length = 200;
         this.pushInstallerSettingsToCloud();
+        GRM.unlockManual('loop_optimizer');  // значок «Оптимизатор контура» (удаление позиции)
     },
     // Добавляет позицию в персональную библиотеку «Своё оборудование» (переживает сброс сметы
     // и доступна в любом новом проекте). Вызывается при ручном добавлении оборудования в смету.
@@ -6449,6 +6650,21 @@ const app = {
                 }
             } catch (e) { console.error('Admin status fetch error:', e); }
 
+            // 5b. Fetch latest status from invoice_events for actual status badges
+            let latestInvoiceEvents = {};
+            try {
+                const { data: evList } = await supabaseClient.from('invoice_events')
+                    .select('calc_id, event')
+                    .order('created_at', { ascending: true });
+                if (evList) {
+                    evList.forEach(e => {
+                        if (e.calc_id) latestInvoiceEvents[String(e.calc_id)] = e.event;
+                    });
+                }
+            } catch (e) {
+                console.warn('Could not load invoice events status mapping:', e);
+            }
+
             // 6. Fetch Lightweight list of all users for the message composer dropdown selection
             let allUsersDropdown = [];
             try {
@@ -6486,6 +6702,7 @@ const app = {
                 totalEq,
                 totalWorks,
                 sharedStatusesAdmin,
+                latestInvoiceEvents,
                 allUsersDropdown,
                 messages: allMessages,
                 distributors: distributors
@@ -7046,11 +7263,24 @@ const app = {
                 : ' <span style="color:var(--primary);">▼</span>';
         };
         const getStatus = (e) => {
+            const calcId = e.calc_data?.calc_id;
+            if (calcId && this.adminData.latestInvoiceEvents && this.adminData.latestInvoiceEvents[String(calcId)]) {
+                return this.adminData.latestInvoiceEvents[String(calcId)];
+            }
             const sid = e.calc_data?.shared_invoice_id;
             if (!sid) return 'saved';
             return sharedStatusesAdmin[sid] || 'sent';
         };
-        const statusOrder = { confirmed: 0, sent: 1, needs_revision: 2, saved: 3 };
+        const statusOrder = { 
+            confirmed: 0, 
+            invoice_requested: 1,
+            invoice_issued: 2,
+            sent: 3, 
+            needs_revision: 4, 
+            rejected: 5,
+            saved: 6,
+            calculated: 7
+        };
         const sortedEstimates = [...recentEstimates].sort((a, b) => {
             let va, vb;
             if (estSort.col === 'object') {
@@ -7109,9 +7339,24 @@ const app = {
                 let projName = e.project_name || e.name || 'Без названия';
                 let estSearchStr = `${projName} ${author} ${sum}`.toLowerCase();
 
+                const calcId = e.calc_data?.calc_id;
                 const sharedInvoiceId = e.calc_data?.shared_invoice_id;
+                
+                let eventStatus = null;
+                if (calcId && this.adminData.latestInvoiceEvents && this.adminData.latestInvoiceEvents[String(calcId)]) {
+                    eventStatus = this.adminData.latestInvoiceEvents[String(calcId)];
+                }
+
                 let adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-saved">Сохранена</span>`;
-                if (sharedInvoiceId) {
+                if (eventStatus) {
+                    const em = this.ADMIN_KANBAN_EVENT_META[eventStatus] || { label: eventStatus, color: '#94A3B8' };
+                    let hex = em.color.replace('#', '');
+                    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+                    const r = parseInt(hex.substring(0, 2), 16) || 107;
+                    const g = parseInt(hex.substring(2, 4), 16) || 114;
+                    const b = parseInt(hex.substring(4, 6), 16) || 128;
+                    adminStatusBadge = `<span class="status-badge-cabinet" style="background-color: rgba(${r}, ${g}, ${b}, 0.08); color: rgb(${r}, ${g}, ${b}); border: 1px solid rgba(${r}, ${g}, ${b}, 0.15); font-weight: 600; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; display: inline-block;">${em.label}</span>`;
+                } else if (sharedInvoiceId) {
                     const st = sharedStatusesAdmin[sharedInvoiceId];
                     if (st === 'confirmed') adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-confirmed">✓ Одобрена</span>`;
                     else if (st === 'needs_revision') adminStatusBadge = `<span class="status-badge-cabinet status-cabinet-revision">✍ На доработке</span>`;
@@ -10725,6 +10970,8 @@ const app = {
                 this.queueSharedInvoiceSave(shareId, object_info, manager_info, items, totals, this.state.tgUser);
             }
 
+            GRM.trackAction('share', shareId);  // геймификация: +10 XP + значки ссылок (шаринг ссылки клиенту)
+
             app.copyToClipboard(shareUrl).then(() => {
                 app.prompt("✅ Ссылка создана и скопирована! Отправьте её клиенту:", shareUrl);
             }).catch(err => {
@@ -10874,6 +11121,7 @@ const app = {
                 };
                 await html2pdf().set(opt).from(printBin).save();
                 this.logInvoiceEvent('printed');
+                GRM.trackAction('pdf', this.state.calc_id);  // геймификация: +5 XP + значки PDF
             } catch (err) {
                 console.error('[executeDownload] Ошибка формирования PDF:', err);
                 app.alert('Не удалось сформировать PDF: ' + err.message);
@@ -10889,6 +11137,7 @@ const app = {
 
         window.print();
         this.logInvoiceEvent('printed');
+        GRM.trackAction('pdf', this.state.calc_id);  // геймификация: +5 XP + значки PDF
 
         // Возвращаем тему обратно
         if (wasDark) document.body.classList.add('dark-mode');
@@ -11481,6 +11730,7 @@ const app = {
                 this.state.shared_invoice_id = shareId;
                 this.saveState();
                 this.logInvoiceEvent('sent', { shared_invoice_id: shareId });
+                GRM.trackAction('invoice', shareId);  // геймификация: +15 XP + значки счетов (запрос счёта у дистрибьютора)
 
                 viewUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
             } catch (err) {
@@ -11990,6 +12240,12 @@ const app = {
         const logoutItem = document.getElementById('profile_logout_item');
         if (logoutItem) {
             logoutItem.style.display = tgUser ? 'flex' : 'none';
+        }
+
+        // Динамическое скрытие/показ кнопки админки
+        const adminItem = document.getElementById('profile_admin_item');
+        if (adminItem) {
+            adminItem.style.display = this.hasAdminAccess() ? 'flex' : 'none';
         }
 
         if (avatarSrc) {
@@ -17395,6 +17651,18 @@ const app = {
     syncUI: function () {
         const isGuest = !this.state.tgUser;
         const isPro = this.isPro();
+
+        // Кубок рейтинга (шапка) — пилот доступен монтажникам Калининградской области;
+        // админы и наблюдатели видят его вне зависимости от своего региона (для контроля/теста).
+        const trophyBtn = document.querySelector('.btn-trophy');
+        if (trophyBtn) {
+            const region = this.state.tgUser && this.state.tgUser.region;
+            const eligible = !isGuest && (
+                (typeof GRM !== 'undefined' && GRM.isEligibleRegion(region)) || this.hasAdminAccess()
+            );
+            trophyBtn.style.display = eligible ? 'flex' : 'none';
+        }
+
         if (isGuest) {
             this.state.detailedRooms = false;
             this.state.showDetailedRoomsPanel = false;

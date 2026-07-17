@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Рейтинг и достижения — HeatCalc.ru</title>
+    <link rel="icon" type="image/png" href="../img/logo_HC.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Общие переменные темы + стили .grm-* / .btn-ctrl переиспользуются с главной страницы -->
+    <link rel="stylesheet" href="../style.css?v=1.0">
+
+    <script src="../supabase-js.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        .rt-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 20px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+        .rt-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 800;
+            font-size: 15px;
+        }
+        .rt-logo img { height: 26px; width: auto; border-radius: 6px; }
+        .rt-header-controls { display: flex; align-items: center; gap: 8px; }
+        .rt-back {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-sec);
+            text-decoration: none;
+            padding: 0 10px;
+        }
+        .rt-back:hover { color: var(--primary); }
+
+        .rt-shell {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 22px 16px 60px;
+        }
+        .rt-page-title {
+            font-size: 22px;
+            font-weight: 900;
+            margin: 4px 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @media (max-width: 560px) {
+            .rt-header { padding: 12px 14px; }
+            .rt-shell { padding: 16px 12px 50px; }
+            .rt-page-title { font-size: 19px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="rt-header">
+        <a href="../" class="rt-logo">
+            <img src="../img/logo_HC.png" alt="HeatCalc.ru">
+            <span>HeatCalc.ru</span>
+        </a>
+        <div class="rt-header-controls">
+            <a href="../" class="rt-back">← К калькулятору</a>
+            <button class="btn-ctrl" id="rt_dark_toggle" title="Переключить тему">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="rt-shell">
+        <div class="rt-page-title">🏆 Рейтинг и достижения</div>
+        <div id="grm_root"><div class="grm-empty">Загрузка…</div></div>
+    </div>
+
+    <script src="../gamification.js"></script>
+    <script>
+        // Те же ключи, что и в app.js (calc-калькулятор) — единый Supabase-проект.
+        const supabaseUrl = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';
+        const supabaseKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey, {
+            auth: { persistSession: true, autoRefreshToken: true }
+        });
+
+        // Тёмная тема — общий флаг с калькулятором (localStorage['stout_save'].darkMode),
+        // чтобы переключение темы на одной странице отражалось и на другой.
+        function readDarkModePref() {
+            try {
+                const cached = JSON.parse(localStorage.getItem('stout_save') || 'null');
+                return !!(cached && cached.darkMode);
+            } catch (e) { return false; }
+        }
+        function applyDarkMode(on) {
+            document.body.classList.toggle('dark-mode', on);
+        }
+        function toggleDarkMode() {
+            const next = !document.body.classList.contains('dark-mode');
+            applyDarkMode(next);
+            try {
+                const cached = JSON.parse(localStorage.getItem('stout_save') || 'null') || {};
+                cached.darkMode = next;
+                localStorage.setItem('stout_save', JSON.stringify(cached));
+            } catch (e) { /* localStorage недоступен */ }
+        }
+        applyDarkMode(readDarkModePref());
+        document.getElementById('rt_dark_toggle').addEventListener('click', toggleDarkMode);
+
+        // Гость, кликнувший 🔥 (например сессия истекла между загрузкой и кликом) — просто
+        // отправляем на главную, где есть полноценный вход через Google/Telegram/email.
+        GRM.onNeedAuth(() => { window.location.href = '../'; });
+        // Живое обновление страницы при разблокировке значка прямо отсюда (на будущее —
+        // сейчас действия начисления XP происходят только на странице калькулятора).
+        GRM.onUnlock(() => { GRM.renderFullInto(document.getElementById('grm_root'), { loginUrl: '../' }); });
+
+        GRM.renderFullInto(document.getElementById('grm_root'), { loginUrl: '../' });
+    </script>
+</body>
+
+</html>

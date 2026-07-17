@@ -8015,3 +8015,285 @@ body.dark-mode .cw-status-promo {
     margin-bottom: 12px !important;
     padding-right: 6px !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ГЕЙМИФИКАЦИЯ · РЕЙТИНГ · ДОСТИЖЕНИЯ (вкладка «Рейтинг и достижения»)
+   ═══════════════════════════════════════════════════════════════════════ */
+.grm-empty {
+    padding: 26px 16px;
+    text-align: center;
+    color: var(--text-sec);
+    font-size: 14px;
+    line-height: 1.5;
+}
+.grm-empty-sm { padding: 14px; font-size: 13px; }
+
+.grm-section { margin-bottom: 22px; }
+.grm-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+.grm-section-head h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+/* ── Карточка профиля ── */
+.grm-profile-card {
+    background: linear-gradient(135deg, #4f46e5 0%, #2563eb 55%, #0ea5e9 100%);
+    border-radius: 18px;
+    padding: 18px;
+    color: #fff;
+    margin-bottom: 22px;
+    box-shadow: 0 12px 30px -12px rgba(37, 99, 235, 0.6);
+}
+.grm-profile-top { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.grm-avatar {
+    width: 52px; height: 52px; flex: 0 0 52px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 800; color: #fff;
+}
+.grm-profile-name { min-width: 0; }
+.grm-name { font-size: 17px; font-weight: 800; line-height: 1.2; }
+.grm-sub { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+.grm-titles { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 5px; }
+.grm-title-chip {
+    font-size: 11px; font-weight: 700;
+    background: rgba(255, 215, 0, 0.22);
+    border: 1px solid rgba(255, 215, 0, 0.55);
+    color: #fffbe6;
+    padding: 2px 8px; border-radius: 999px;
+}
+.grm-xp-row { display: flex; gap: 12px; }
+.grm-xp-box {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 12px;
+    padding: 10px 12px;
+    text-align: center;
+}
+.grm-xp-month { background: rgba(255, 255, 255, 0.24); }
+.grm-xp-val { font-size: 24px; font-weight: 900; line-height: 1; }
+.grm-xp-lbl { font-size: 11px; opacity: 0.9; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+
+/* ── Рейтинг (Duolingo-style) ── */
+.grm-countdown {
+    font-size: 12px; color: var(--text-sec);
+    background: var(--surface-light);
+    border: 1px solid var(--border);
+    padding: 5px 10px; border-radius: 999px;
+    display: inline-block;
+    margin-bottom: 12px;
+}
+.grm-countdown b { color: var(--primary); }
+
+/* ── Переключатель «Месячный рейтинг / Общий рейтинг» ── */
+.grm-lb-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.grm-lb-tab {
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-light);
+    color: var(--text-sec);
+    cursor: pointer;
+    transition: 0.15s ease;
+}
+.grm-lb-tab:hover { color: var(--text-main); border-color: var(--primary); }
+.grm-lb-tab.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+.grm-lb {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+.grm-lb-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+}
+.grm-lb-row:last-child { border-bottom: none; }
+.grm-lb-rank {
+    flex: 0 0 30px; text-align: center;
+    font-weight: 800; font-size: 15px; color: var(--text-sec);
+}
+.grm-lb-name { flex: 1; min-width: 0; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.grm-lb-xp { font-weight: 800; color: var(--primary); font-size: 13px; }
+.grm-you {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    background: var(--primary); color: #fff;
+    padding: 1px 6px; border-radius: 999px; margin-left: 4px;
+}
+.grm-lb-top1 { background: linear-gradient(90deg, rgba(250, 204, 21, 0.18), transparent); }
+.grm-lb-top2 { background: linear-gradient(90deg, rgba(148, 163, 184, 0.18), transparent); }
+.grm-lb-top3 { background: linear-gradient(90deg, rgba(205, 127, 50, 0.16), transparent); }
+.grm-lb-me { box-shadow: inset 3px 0 0 var(--primary); }
+.grm-lb-me .grm-lb-name { color: var(--primary); }
+
+/* ── Призовые номинации ── */
+.grm-prize-note {
+    font-size: 13px; font-weight: 700;
+    color: #b45309;
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.16), rgba(249, 115, 22, 0.12));
+    border: 1px solid rgba(249, 115, 22, 0.35);
+    border-radius: 12px;
+    padding: 10px 14px; margin-bottom: 14px; text-align: center;
+}
+body.dark-mode .grm-prize-note { color: #fbbf24; }
+.grm-prize-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.grm-prize-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+}
+.grm-prize-head { font-size: 14px; font-weight: 800; color: var(--text-main); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.grm-prize-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; }
+.grm-prize-rank { flex: 0 0 22px; text-align: center; }
+.grm-prize-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
+.grm-prize-score { font-weight: 800; color: var(--primary); }
+.grm-prize-my {
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px dashed var(--border);
+    font-size: 12px; color: var(--text-sec);
+}
+.grm-prize-my b { color: var(--primary); font-size: 14px; }
+.grm-prize-my-out { color: var(--text-sec); font-style: italic; }
+
+/* ── Сетка достижений (Apple Fitness style медали) ── */
+.grm-badge-count { font-size: 13px; font-weight: 800; color: var(--primary); }
+.grm-badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 14px; }
+.grm-badge {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 10px 12px;
+    text-align: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.grm-badge:hover { transform: translateY(-2px); box-shadow: 0 10px 22px -12px rgba(0, 0, 0, 0.4); }
+.grm-badge-medal { width: 76px; height: 76px; margin: 0 auto 8px; }
+.grm-medal-svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.28)); }
+.grm-badge-off .grm-medal-svg { filter: grayscale(1) opacity(0.32); }
+.grm-badge-off { opacity: 0.92; }
+.grm-badge-on { border-color: rgba(37, 99, 235, 0.35); box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.12); }
+.grm-badge-title { font-size: 12.5px; font-weight: 800; color: var(--text-main); line-height: 1.2; }
+.grm-badge-off .grm-badge-title { color: var(--text-sec); }
+.grm-badge-hint { font-size: 10.5px; color: var(--text-sec); margin-top: 3px; line-height: 1.25; min-height: 26px; }
+.grm-badge-progress {
+    height: 6px; border-radius: 999px;
+    background: var(--border);
+    overflow: hidden; margin-top: 6px;
+}
+.grm-badge-progress-bar {
+    height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    transition: width 0.4s ease;
+}
+.grm-badge-progress-txt { font-size: 10px; color: var(--text-sec); margin-top: 3px; font-weight: 700; }
+
+/* ── Лента активности ── */
+.grm-feed {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+.grm-feed-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+}
+.grm-feed-row:last-child { border-bottom: none; }
+.grm-feed-dot { flex: 0 0 24px; text-align: center; font-size: 17px; }
+.grm-feed-text { flex: 1; min-width: 0; color: var(--text-main); line-height: 1.3; }
+.grm-fire {
+    flex: 0 0 auto;
+    border: 1px solid var(--border);
+    background: var(--surface-light);
+    color: var(--text-sec);
+    border-radius: 999px;
+    padding: 4px 10px; font-size: 12px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; gap: 4px;
+    transition: transform 0.1s ease, background 0.15s ease;
+}
+.grm-fire:hover { transform: scale(1.06); }
+.grm-fire:active { transform: scale(0.94); }
+.grm-fire-on {
+    background: rgba(249, 115, 22, 0.16);
+    border-color: rgba(249, 115, 22, 0.5);
+    color: #ea580c;
+}
+
+/* ── Тост о новом достижении ── */
+.grm-toast {
+    position: fixed;
+    left: 50%; bottom: 26px;
+    transform: translateX(-50%) translateY(24px);
+    background: #111827; color: #fff;
+    padding: 12px 20px; border-radius: 999px;
+    font-size: 14px; font-weight: 700;
+    box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.6);
+    z-index: 100000;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    max-width: 90vw; text-align: center;
+}
+.grm-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── «Гостевое» состояние страницы /rating для незалогиненных пользователей ── */
+.grm-guest {
+    text-align: center;
+    padding: 50px 20px;
+    max-width: 420px;
+    margin: 0 auto;
+}
+.grm-guest-icon { font-size: 46px; margin-bottom: 10px; }
+.grm-guest-title { font-size: 20px; font-weight: 800; color: var(--text-main); margin-bottom: 8px; }
+.grm-guest-text { font-size: 14px; color: var(--text-sec); line-height: 1.5; margin-bottom: 20px; }
+.grm-guest-btn {
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 11px 22px;
+    border-radius: 999px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.grm-guest-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 18px -8px rgba(37, 99, 235, 0.6); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   КУБОК — иконка перехода на страницу рейтинга (в шапке, рядом с
+   переключателем темы). Обычная line-иконка в стиле остальных кнопок ряда
+   (currentColor, стиль/размер наследуются от .btn-ctrl / .btn-ctrl svg).
+   ═══════════════════════════════════════════════════════════════════════ */
+.btn-trophy {
+    /* По умолчанию скрыт — показывается через JS (app.syncUI) только авторизованным
+       монтажникам Калининградской области (пилотный регион рейтинга). */
+    display: none;
+    text-decoration: none;
+}
