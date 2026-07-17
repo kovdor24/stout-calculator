@@ -1,4 +1,4 @@
-const CACHE_NAME = 'heatcalc-v3.3';
+const CACHE_NAME = 'heatcalc-v4.5';
 const ASSETS = [
   '/',
   '/index.html',
@@ -42,6 +42,27 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   // Пропускаем не-GET запросы и сторонние API (например, Supabase)
   if (e.request.method !== 'GET' || !e.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  // Навигация (открытие/переход на HTML-страницу, включая /rating/) — network-first.
+  // Иначе правка внутри самого HTML не может «доехать» до браузера: старая закэшированная
+  // версия страницы продолжает отдаваться из кэша бесконечно, а код фикса, который должен
+  // был бы её пересобрать, лежит именно в новой версии этого же файла — замкнутый круг.
+  // Обычный F5/Ctrl+Shift+R его не пробивает, потому что SW перехватывает запрос раньше
+  // HTTP-кэша браузера. Кэш всё ещё используется как офлайн-фолбэк, если сети нет.
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, responseToCache));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(e.request))
+    );
     return;
   }
 

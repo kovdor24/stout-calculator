@@ -6,11 +6,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Рейтинг и достижения — HeatCalc.ru</title>
     <link rel="icon" type="image/png" href="../img/logo_HC.png">
+    <script>
+        // На localhost/127.0.0.1 сбрасываем Service Worker и Cache Storage, зарегистрированные
+        // с главной страницы (index.html) — иначе /rating/ получает их старые версии картинок
+        // значков, даже если файлы на диске уже обновлены (тот же домен = тот же SW-scope).
+        if ('serviceWorker' in navigator) {
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            if (isLocal) {
+                let cleared = false;
+                navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                    if (registrations.length > 0) {
+                        for (let registration of registrations) {
+                            registration.unregister();
+                        }
+                        cleared = true;
+                    }
+                });
+                if (window.caches) {
+                    caches.keys().then(function (names) {
+                        if (names.length > 0) {
+                            for (let name of names) {
+                                caches.delete(name);
+                            }
+                            cleared = true;
+                        }
+                    }).then(function () {
+                        if (cleared) {
+                            console.log('Local Service Worker and Cache Storage cleared. Reloading page...');
+                            window.location.reload();
+                        }
+                    });
+                }
+            }
+        }
+    </script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Общие переменные темы + стили .grm-* / .btn-ctrl переиспользуются с главной страницы -->
-    <link rel="stylesheet" href="../style.css?v=1.0">
+    <link rel="stylesheet" href="../style.css?v=2.54">
 
     <script src="../supabase-js.js"></script>
 
@@ -104,7 +138,7 @@
         <div id="grm_root"><div class="grm-empty">Загрузка…</div></div>
     </div>
 
-    <script src="../gamification.js?v=1.4"></script>
+    <script src="../gamification.js?v=2.0"></script>
     <script>
         // Те же ключи, что и в app.js (calc-калькулятор) — единый Supabase-проект.
         const supabaseUrl = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';

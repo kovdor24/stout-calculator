@@ -5390,7 +5390,6 @@ const app = {
         if (!isNaN(num) && num > 0) {
             this.installerSettings.workPrices[name] = num;
             this._touchWorkPricesTimestamp();
-            GRM.unlockManual('fine_balance');  // значок «Тонкая балансировка»
         } else {
             delete this.installerSettings.workPrices[name];
             this._clearWorkPricesTimestampIfEmpty();
@@ -5450,7 +5449,6 @@ const app = {
         });
         if (this.installerSettings.swapLog.length > 200) this.installerSettings.swapLog.length = 200;
         this.pushInstallerSettingsToCloud();
-        GRM.unlockManual('own_fittings');  // значок «Своя арматура» (замена позиции)
     },
     // Записывает факт удаления позиции из сметы (кнопка «✖ Удалить позицию» у оборудования,
     // «↺» у ручного оборудования, «Удалить работу») в персональную историю монтажника
@@ -5466,7 +5464,6 @@ const app = {
         });
         if (this.installerSettings.deletionLog.length > 200) this.installerSettings.deletionLog.length = 200;
         this.pushInstallerSettingsToCloud();
-        GRM.unlockManual('loop_optimizer');  // значок «Оптимизатор контура» (удаление позиции)
     },
     // Добавляет позицию в персональную библиотеку «Своё оборудование» (переживает сброс сметы
     // и доступна в любом новом проекте). Вызывается при ручном добавлении оборудования в смету.

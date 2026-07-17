@@ -53,15 +53,7 @@ const GRM = (function () {
         { id: 'general_partner',  title: 'Генеральный подрядчик',cat: 'Счета',        metric: 'invoice', need: 30, hint: '30 запросов счёта' },
         { id: 'first_pdf',        title: 'Первый чертёж',        cat: 'PDF',          metric: 'pdf',     need: 1,  hint: 'Сгенерировать первый PDF' },
         { id: 'project_bureau',   title: 'Проектное бюро',       cat: 'PDF',          metric: 'pdf',     need: 10, hint: '10 сгенерированных PDF' },
-        { id: 'chief_engineer',   title: 'Главный инженер',      cat: 'PDF',          metric: 'pdf',     need: 50, hint: '50 сгенерированных PDF' },
-        { id: 'pressure_test',    title: 'Опрессовка пройдена', cat: 'Серии',        metric: 'streak',  need: 3,  hint: '3 дня активности подряд' },
-        { id: 'hold_degree',      title: 'Держим давление',      cat: 'Серии',        metric: 'streak',  need: 30, hint: 'Активность каждую неделю в течение месяца' },
-        { id: 'ups_mode',         title: 'Режим: Бесперебойник', cat: 'Серии',        metric: 'streak',  need: 90, hint: '3 месяца непрерывной серии без пропусков' },
-        { id: 'fine_balance',     title: 'Тонкая балансировка',  cat: 'Настройки',    metric: 'manual',  need: 1,  hint: 'Ручное изменение цены позиции' },
-        { id: 'own_fittings',     title: 'Своя арматура',        cat: 'Настройки',    metric: 'manual',  need: 1,  hint: 'Поиск и замена позиции на свою' },
-        { id: 'loop_optimizer',   title: 'Оптимизатор контура',  cat: 'Настройки',    metric: 'manual',  need: 1,  hint: 'Удаление позиции из пресета' },
-        { id: 'first_contact',    title: 'Первый контакт',       cat: 'Ссылки',       metric: 'share',   need: 1,  hint: 'Первая ссылка, отправленная клиенту' },
-        { id: 'sales_master',     title: 'Мастер продаж',        cat: 'Ссылки',       metric: 'share',   need: 20, hint: '20 ссылок, отправленных клиентам' }
+        { id: 'chief_engineer',   title: 'Главный инженер',      cat: 'PDF',          metric: 'pdf',     need: 50, hint: '50 сгенерированных PDF' }
     ];
 
     let _cachedUser = null;      // { id, region, xp_points_current_month, xp_points_total, first_name, last_name, email }
@@ -84,7 +76,7 @@ const GRM = (function () {
             pdf: c.pdf || 0,
             share: c.share || 0,
             invoice: c.invoice || 0,
-            manual: c.manual || {},        // { fine_balance:1, own_fittings:1, loop_optimizer:1 }
+            manual: c.manual || {},
             days: Array.isArray(c.days) ? c.days : [],  // строки-даты активности 'YYYY-MM-DD'
             streak: c.streak || 0
         };
@@ -383,7 +375,7 @@ const GRM = (function () {
     }
 
     // ─── Сетка достижений (Apple Fitness style медали) ──────────────────────
-    function renderBadgesGrid(myBadges, counts) {
+    function renderBadgesGrid(myBadges, counts, adminPreview) {
         const owned = new Set(myBadges || []);
         const progressFor = (b) => {
             if (b.metric === 'manual') return (counts.manual && counts.manual[b.id]) ? 1 : 0;
@@ -399,7 +391,7 @@ const GRM = (function () {
                    <div class="grm-badge-progress-txt">${have} / ${b.need}</div>`
                 : '';
             return `<div class="grm-badge${unlocked ? ' grm-badge-on' : ' grm-badge-off'}" title="${esc(b.hint)}">
-                <div class="grm-badge-medal">${badgeSvg(b.id, unlocked)}</div>
+                <div class="grm-badge-medal">${badgeMedal(b.id, unlocked)}</div>
                 <div class="grm-badge-title">${esc(b.title)}</div>
                 <div class="grm-badge-hint">${esc(b.hint)}</div>
                 ${progressBar}
@@ -408,7 +400,7 @@ const GRM = (function () {
         return `
         <div class="grm-section">
             <div class="grm-section-head"><h3>🏅 Достижения</h3><div class="grm-badge-count">${owned.size} / ${BADGES.length}</div></div>
-            <div class="grm-badge-grid">${cells}</div>
+            <div class="grm-badge-grid${adminPreview ? ' grm-admin-preview' : ''}">${cells}</div>
         </div>`;
     }
 
@@ -457,6 +449,28 @@ const GRM = (function () {
         } catch (e) {
             console.warn('[GRM.react] Ошибка:', e);
         }
+    }
+
+    // ─── Растровые медали (заказная арт-графика) ────────────────────────────
+    // Часть значков имеет готовые PNG-иконки (img/badges/<id>.png, прозрачный
+    // фон, без подписи — подпись рисует .grm-badge-title рядом). Для значков
+    // без картинки рендер падает обратно на встроенную SVG-медаль (badgeSvg).
+    const BADGE_ART_IDS = new Set([
+        'first_payment', 'reliable_installer', 'amber_master', 'baltic_owner',
+        'system_launch', 'stable_contractor', 'general_partner', 'first_pdf',
+        'project_bureau', 'chief_engineer'
+    ]);
+    const IMG_BASE = location.pathname.includes('/rating/') ? '../img/badges/' : 'img/badges/';
+    // Версия арт-файлов значков. Без неё картинки кэшируются SW/браузером по голому имени
+    // файла и могут годами не обновляться, даже когда сам файл на диске уже другой —
+    // бампать при каждой замене/переобработке PNG в img/badges/.
+    const BADGE_IMG_VER = 5;
+
+    function badgeMedal(id, unlocked) {
+        if (BADGE_ART_IDS.has(id)) {
+            return `<img class="grm-medal-svg" src="${IMG_BASE}${id}.png?v=${BADGE_IMG_VER}" alt="">`;
+        }
+        return badgeSvg(id, unlocked);
     }
 
     // ─── SVG-медали (Apple Fitness style) ───────────────────────────────────
@@ -515,54 +529,6 @@ const GRM = (function () {
                      <circle cx="50" cy="70" r="6" fill="none" stroke="#1d4ed8" stroke-width="2.5"/>
                      <line x1="50" y1="65" x2="50" y2="76" stroke="#1d4ed8" stroke-width="2.5"/>
                      <line x1="44" y1="73" x2="56" y2="73" stroke="#1d4ed8" stroke-width="2.5"/>`);
-            // ── Серии ──
-            case 'pressure_test': // Манометр, стрелка в зелёной зоне. Сталь, зелёный.
-                return M('#9aa7b4', '#5b6673', '#22c55e',
-                    `<circle cx="50" cy="50" r="24" fill="#0f172a"/>
-                     <circle cx="50" cy="50" r="24" fill="none" stroke="#e2e8f0" stroke-width="2"/>
-                     <path d="M30 50 A20 20 0 0 1 70 50" fill="none" stroke="#22c55e" stroke-width="5" stroke-linecap="round"/>
-                     <line x1="50" y1="50" x2="64" y2="40" stroke="#f8fafc" stroke-width="3" stroke-linecap="round"/>
-                     <circle cx="50" cy="50" r="4" fill="#e2e8f0"/>`);
-            case 'hold_degree': // Циркуляционный насос. Красный, чёрный, сталь.
-                return M('#cbd5e1', '#475569', '#ef4444',
-                    `<rect x="30" y="40" width="26" height="26" rx="4" fill="#1f2937"/>
-                     <circle cx="43" cy="53" r="15" fill="#ef4444"/>
-                     <circle cx="43" cy="53" r="6" fill="#111827"/>
-                     <rect x="54" y="30" width="14" height="14" rx="3" fill="#cbd5e1"/>
-                     <rect x="56" y="60" width="16" height="9" rx="2" fill="#334155"/>`);
-            case 'ups_mode': // ИБП с золотой короной. Матовый чёрный, золото.
-                return M('#4b5563', '#111827', '#fbbf24',
-                    `<rect x="34" y="42" width="32" height="26" rx="3" fill="#0b0f19" stroke="#374151" stroke-width="1.5"/>
-                     <rect x="40" y="50" width="4" height="12" fill="#fbbf24"/>
-                     <rect x="48" y="50" width="4" height="12" fill="#fbbf24"/>
-                     <rect x="56" y="50" width="4" height="12" fill="#fbbf24"/>
-                     <path d="M36 40 L42 32 L50 38 L58 32 L64 40 Z" fill="#f59e0b" stroke="#fde68a" stroke-width="1"/>
-                     <circle cx="50" cy="34" r="2" fill="#fde68a"/>`);
-            // ── Настройки и оптимизация ──
-            case 'fine_balance': // Латунный балансировочный клапан. Латунь, бронза, синий.
-                return M('#e3b448', '#8a5a1e', '#1d4ed8',
-                    `<rect x="34" y="46" width="32" height="12" rx="3" fill="#b8791f"/>
-                     <rect x="30" y="48" width="6" height="8" fill="#8a5a1e"/>
-                     <rect x="64" y="48" width="6" height="8" fill="#8a5a1e"/>
-                     <rect x="46" y="30" width="8" height="18" fill="#c9971f"/>
-                     <circle cx="50" cy="30" r="9" fill="#1d4ed8"/>
-                     <circle cx="50" cy="30" r="9" fill="none" stroke="#e3b448" stroke-width="2"/>
-                     <line x1="50" y1="24" x2="50" y2="36" stroke="#dbeafe" stroke-width="2"/>`);
-            case 'own_fittings': // Сложный латунный тройник/фитинг. Латунь, сталь.
-                return M('#e3b448', '#7c5214', '#e5e7eb',
-                    `<rect x="28" y="46" width="44" height="12" rx="3" fill="#c9971f"/>
-                     <rect x="44" y="30" width="12" height="20" rx="2" fill="#b8791f"/>
-                     <rect x="24" y="44" width="8" height="16" rx="2" fill="#e2e8f0"/>
-                     <rect x="68" y="44" width="8" height="16" rx="2" fill="#e2e8f0"/>
-                     <rect x="42" y="26" width="16" height="7" rx="2" fill="#e2e8f0"/>
-                     <circle cx="50" cy="52" r="4" fill="#7c5214"/>`);
-            case 'loop_optimizer': // Y-образный фильтр (грязевик). Бронза, серебро.
-                return M('#cd7f32', '#5c3a17', '#c0c0c0',
-                    `<rect x="30" y="46" width="40" height="11" rx="3" fill="#cd7f32"/>
-                     <rect x="26" y="44" width="7" height="15" rx="2" fill="#c0c0c0"/>
-                     <rect x="67" y="44" width="7" height="15" rx="2" fill="#c0c0c0"/>
-                     <path d="M52 56 L60 72 L68 66 Z" fill="#a86a2a" stroke="#7a4a1c" stroke-width="1.5"/>
-                     <rect x="58" y="70" width="10" height="5" rx="2" fill="#c0c0c0"/>`);
             // ── Бизнес: PDF ──
             case 'first_pdf': // Свёрнутый чертёж с синей лентой. Синий, белый.
                 return M('#dbeafe', '#60a5fa', '#2563eb',
@@ -603,19 +569,6 @@ const GRM = (function () {
                      <path d="M42 50 q4 -8 8 0 q4 8 8 0" fill="none" stroke="#fde68a" stroke-width="2"/>
                      <rect x="38" y="64" width="24" height="4" fill="#facc15"/>
                      <rect x="44" y="26" width="12" height="8" rx="2" fill="#3f3f46"/>`);
-            // ── Бизнес: ссылки ──
-            case 'first_contact': // Крепкое рукопожатие над схемой трубопровода. Телесный, синий.
-                return M('#fcd9b6', '#c98d5a', '#2563eb',
-                    `<path d="M28 60 h44" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
-                     <path d="M40 60 v-6 h20 v6" fill="none" stroke="#93c5fd" stroke-width="2"/>
-                     <path d="M32 44 l12 4 6 -2 6 2 12 -4" fill="none" stroke="#e8a87c" stroke-width="7" stroke-linecap="round"/>
-                     <path d="M44 48 l6 -2 6 2" fill="none" stroke="#d98b57" stroke-width="7" stroke-linecap="round"/>`);
-            case 'sales_master': // Wi-Fi, излучающий тепловые волны. Золото, яркий синий.
-                return M('#fcd34d', '#b45309', '#38bdf8',
-                    `<circle cx="50" cy="60" r="5" fill="#f59e0b"/>
-                     <path d="M36 50 a20 20 0 0 1 28 0" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
-                     <path d="M30 42 a30 30 0 0 1 40 0" fill="none" stroke="#facc15" stroke-width="4" stroke-linecap="round"/>
-                     <path d="M24 34 a40 40 0 0 1 52 0" fill="none" stroke="#fde68a" stroke-width="3" stroke-linecap="round" opacity="0.8"/>`);
             // ── Престиж ──
             case 'leader_of_month': // Золотой гаечный ключ — приз лидеру месяца. Золото.
                 return M('#fde68a', '#b45309', '#fbbf24',
@@ -700,7 +653,7 @@ const GRM = (function () {
             renderProfileCard(user, monthXp, totalXp, leaderTitles) +
             renderLeaderboard(leaderboard, leaderboardQuarter, region) +
             renderPrizePanel(prizes) +
-            renderBadgesGrid(myBadges, counts) +
+            renderBadgesGrid(myBadges, counts, privileged) +
             renderFeed(feed);
     }
 
