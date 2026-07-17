@@ -39,21 +39,29 @@ const GRM = (function () {
     }
 
     // Каталог значков (slug'и совпадают с achievements.id в БД и с SVG ниже).
+    // Значки с metric:'payment' разблокируются только сервером (в триггере
+    // оплаты) — монтажник не онлайн в момент, когда клиент подтверждает счёт,
+    // поэтому обычный клиентский путь (GRM.trackAction) для них не применяется,
+    // они нужны здесь только для отображения в сетке и прогресс-бара.
     const BADGES = [
+        { id: 'first_payment',    title: 'Первая оплата',        cat: 'Оплата',       metric: 'payment', need: 1,  hint: '1 смета получила статус «оплачено»' },
+        { id: 'reliable_installer', title: 'Надёжный монтажник', cat: 'Оплата',       metric: 'payment', need: 5,  hint: '5 оплаченных смет' },
+        { id: 'amber_master',     title: 'Янтарный мастер',      cat: 'Оплата',       metric: 'payment', need: 15, hint: '15 оплаченных смет' },
+        { id: 'baltic_owner',     title: 'Хозяин Балтики',       cat: 'Оплата',       metric: 'payment', need: 30, hint: '30 оплаченных смет за квартал' },
+        { id: 'system_launch',    title: 'Запуск системы',       cat: 'Счета',        metric: 'invoice', need: 1,  hint: 'Первый запрос счёта' },
+        { id: 'stable_contractor',title: 'Стабильный подрядчик', cat: 'Счета',        metric: 'invoice', need: 10, hint: '10 запросов счёта' },
+        { id: 'general_partner',  title: 'Генеральный подрядчик',cat: 'Счета',        metric: 'invoice', need: 30, hint: '30 запросов счёта' },
+        { id: 'first_pdf',        title: 'Первый чертёж',        cat: 'PDF',          metric: 'pdf',     need: 1,  hint: 'Сгенерировать первый PDF' },
+        { id: 'project_bureau',   title: 'Проектное бюро',       cat: 'PDF',          metric: 'pdf',     need: 10, hint: '10 сгенерированных PDF' },
+        { id: 'chief_engineer',   title: 'Главный инженер',      cat: 'PDF',          metric: 'pdf',     need: 50, hint: '50 сгенерированных PDF' },
         { id: 'pressure_test',    title: 'Опрессовка пройдена', cat: 'Стрики',       metric: 'streak',  need: 3,  hint: '3 дня активности подряд' },
-        { id: 'hold_degree',      title: 'Держим градус',        cat: 'Стрики',       metric: 'streak',  need: 30, hint: 'Активность каждую неделю в течение месяца' },
+        { id: 'hold_degree',      title: 'Держим давление',      cat: 'Стрики',       metric: 'streak',  need: 30, hint: 'Активность каждую неделю в течение месяца' },
         { id: 'ups_mode',         title: 'Режим: Бесперебойник', cat: 'Стрики',       metric: 'streak',  need: 90, hint: '3 месяца идеального стрика' },
         { id: 'fine_balance',     title: 'Тонкая балансировка',  cat: 'Настройки',    metric: 'manual',  need: 1,  hint: 'Ручное изменение цены позиции' },
         { id: 'own_fittings',     title: 'Своя арматура',        cat: 'Настройки',    metric: 'manual',  need: 1,  hint: 'Поиск и замена позиции на свою' },
         { id: 'loop_optimizer',   title: 'Оптимизатор контура',  cat: 'Настройки',    metric: 'manual',  need: 1,  hint: 'Удаление позиции из пресета' },
-        { id: 'first_pdf',        title: 'Первый чертёж',        cat: 'PDF',          metric: 'pdf',     need: 1,  hint: 'Сгенерировать первый PDF' },
-        { id: 'project_bureau',   title: 'Проектное бюро',       cat: 'PDF',          metric: 'pdf',     need: 10, hint: '10 сгенерированных PDF' },
-        { id: 'chief_engineer',   title: 'Главный инженер',      cat: 'PDF',          metric: 'pdf',     need: 50, hint: '50 сгенерированных PDF' },
-        { id: 'system_launch',    title: 'Запуск системы',       cat: 'Счета',        metric: 'invoice', need: 1,  hint: 'Первый запрос счёта' },
-        { id: 'stable_contractor',title: 'Стабильный подрядчик', cat: 'Счета',        metric: 'invoice', need: 10, hint: '10 запросов счёта' },
-        { id: 'general_partner',  title: 'Генеральный партнёр',  cat: 'Счета',        metric: 'invoice', need: 50, hint: '50 запросов счёта' },
         { id: 'first_contact',    title: 'Первый контакт',       cat: 'Ссылки',       metric: 'share',   need: 1,  hint: 'Первая расшаренная ссылка' },
-        { id: 'sales_master',     title: 'Мастер продаж',        cat: 'Ссылки',       metric: 'share',   need: 50, hint: '50 расшаренных ссылок' }
+        { id: 'sales_master',     title: 'Мастер продаж',        cat: 'Ссылки',       metric: 'share',   need: 20, hint: '20 расшаренных ссылок' }
     ];
 
     let _cachedUser = null;      // { id, region, xp_points_current_month, xp_points_total, first_name, last_name, email }
@@ -486,6 +494,27 @@ const GRM = (function () {
     function badgeSvg(id, unlocked) {
         const M = (a, b, g, inner) => medal(id, a, b, g, inner, unlocked);
         switch (id) {
+            // ── Оплата (высший приоритет номинаций) ──
+            case 'first_payment': // Монета/рубль — первая закрытая сделка. Золото, зелёный.
+                return M('#fde68a', '#b45309', '#22c55e',
+                    `<circle cx="50" cy="50" r="20" fill="#fbbf24" stroke="#92400e" stroke-width="2"/>
+                     <text x="50" y="59" font-size="22" font-weight="700" text-anchor="middle" fill="#78350f">₽</text>`);
+            case 'reliable_installer': // Рукопожатие с галочкой оплаты. Синий, зелёный.
+                return M('#93c5fd', '#1d4ed8', '#22c55e',
+                    `<path d="M28 58 h44" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
+                     <path d="M32 44 l12 4 6 -2 6 2 12 -4" fill="none" stroke="#e8a87c" stroke-width="7" stroke-linecap="round"/>
+                     <path d="M58 40 l5 6 l10 -12" fill="none" stroke="#16a34a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`);
+            case 'amber_master': // Янтарный самородок в оправе — региональный символ. Янтарь, золото.
+                return M('#fde68a', '#92400e', '#f59e0b',
+                    `<path d="M50 28 L66 42 L60 68 L40 68 L34 42 Z" fill="#f59e0b" stroke="#92400e" stroke-width="2" stroke-linejoin="round"/>
+                     <path d="M50 28 L58 42 L54 68 L46 68 L42 42 Z" fill="#fcd34d" opacity="0.65"/>`);
+            case 'baltic_owner': // Золотая корона с якорем — вершина номинации за оплату. Золото, синий.
+                return M('#fde68a', '#78350f', '#fbbf24',
+                    `<path d="M30 56 L36 34 L48 48 L50 32 L52 48 L64 34 L70 56 Z" fill="#f59e0b" stroke="#92400e" stroke-width="1.5" stroke-linejoin="round"/>
+                     <rect x="30" y="56" width="40" height="7" rx="2" fill="#f59e0b" stroke="#92400e" stroke-width="1"/>
+                     <circle cx="50" cy="70" r="6" fill="none" stroke="#1d4ed8" stroke-width="2.5"/>
+                     <line x1="50" y1="65" x2="50" y2="76" stroke="#1d4ed8" stroke-width="2.5"/>
+                     <line x1="44" y1="73" x2="56" y2="73" stroke="#1d4ed8" stroke-width="2.5"/>`);
             // ── Стрики ──
             case 'pressure_test': // Манометр, стрелка в зелёной зоне. Сталь, зелёный.
                 return M('#9aa7b4', '#5b6673', '#22c55e',
@@ -637,15 +666,17 @@ const GRM = (function () {
         const safe = (p) => p.then(r => r).catch(() => ({ data: null, error: true }));
         let leaderboard = [], leaderboardQuarter = [], prizes = { invoices: [], feedback: [], content: [] }, feed = [], myBadges = [], leaderTitles = [];
 
+        let paidCount = 0;
         try {
-            const [lb, lbq, pi, pf, pc, ua, af] = await Promise.all([
+            const [lb, lbq, pi, pf, pc, ua, af, pd] = await Promise.all([
                 region ? safe(supabaseClient.rpc('grm_leaderboard', { p_region: region, p_limit: 20 })) : Promise.resolve({ data: [] }),
                 region ? safe(supabaseClient.rpc('grm_leaderboard_quarterly', { p_region: region, p_limit: 20 })) : Promise.resolve({ data: [] }),
                 region ? safe(supabaseClient.rpc('grm_prize_invoices', { p_region: region })) : Promise.resolve({ data: [] }),
                 region ? safe(supabaseClient.rpc('grm_prize_feedback', { p_region: region })) : Promise.resolve({ data: [] }),
                 region ? safe(supabaseClient.rpc('grm_prize_content', { p_region: region })) : Promise.resolve({ data: [] }),
                 safe(supabaseClient.from('user_achievements').select('achievement_id, label, period, unlocked_at').eq('user_id', user.id)),
-                region ? safe(supabaseClient.from('activity_feed').select('*').eq('region', region).order('created_at', { ascending: false }).limit(25)) : Promise.resolve({ data: [] })
+                region ? safe(supabaseClient.from('activity_feed').select('*').eq('region', region).order('created_at', { ascending: false }).limit(25)) : Promise.resolve({ data: [] }),
+                safe(supabaseClient.from('estimates').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'completed'))
             ]);
             leaderboard = lb.data || [];
             leaderboardQuarter = lbq.data || [];
@@ -654,12 +685,14 @@ const GRM = (function () {
             const ub = ua.data || [];
             myBadges = ub.map(r => r.achievement_id);
             leaderTitles = ub.filter(r => r.achievement_id === 'leader_of_month' && r.label).map(r => r.label);
+            paidCount = pd.count || 0;
             _myReactions = await loadMyReactions(user, feed);
         } catch (e) {
             console.warn('[GRM.renderFullInto] Ошибка загрузки:', e);
         }
 
         const counts = loadCounts();
+        counts.payment = paidCount;
         const monthXp = user.xp_points_current_month || 0;
         const totalXp = user.xp_points_total || 0;
 
