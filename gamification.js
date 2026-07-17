@@ -148,7 +148,7 @@ const GRM = (function () {
                 if (error) { console.warn('[GRM.unlock] RPC error:', error.message); return; }
                 if (data === true) {
                     const b = BADGES.find(x => x.id === badgeId);
-                    toast('🏅 Новое достижение: «' + (b ? b.title : badgeId) + '» +50 XP');
+                    toast('🏅 Новое достижение: «' + (b ? b.title : badgeId) + '» +50 очков');
                     if (typeof _onUnlockCb === 'function') _onUnlockCb(badgeId);
                 }
             });
@@ -274,17 +274,21 @@ const GRM = (function () {
     }
 
     // ─── Duolingo-style региональный рейтинг: месячный / общий (квартальный) ──
+    // Пользователей с 0 очков в список не выводим — RPC отдаёт вообще всех
+    // зарегистрированных региона (даже тех, кто ещё ничего не сделал), а честный
+    // рейтинг должен показывать только тех, кто реально что-то заработал в периоде.
     function buildLbRows(rows, region, emptyText) {
         const medal = ['🥇', '🥈', '🥉'];
-        return (rows && rows.length)
-            ? rows.map(r => {
+        const earned = (rows || []).filter(r => Number(r.xp_points) > 0);
+        return earned.length
+            ? earned.map(r => {
                 const rank = Number(r.rank);
                 const top = rank <= 3 ? ` grm-lb-top grm-lb-top${rank}` : '';
                 const me = r.is_me ? ' grm-lb-me' : '';
                 return `<div class="grm-lb-row${top}${me}">
                     <div class="grm-lb-rank">${rank <= 3 ? medal[rank - 1] : rank}</div>
                     <div class="grm-lb-name">${esc(r.user_name)}${r.is_me ? ' <span class="grm-you">вы</span>' : ''}</div>
-                    <div class="grm-lb-xp">${r.xp_points} XP</div>
+                    <div class="grm-lb-xp">${r.xp_points} очк.</div>
                 </div>`;
             }).join('')
             : `<div class="grm-empty">${region ? emptyText : 'Укажите регион в профиле, чтобы попасть в рейтинг.'}</div>`;
@@ -610,7 +614,7 @@ const GRM = (function () {
             rootEl.innerHTML = `<div class="grm-guest">
                 <div class="grm-guest-icon">🏆</div>
                 <div class="grm-guest-title">Рейтинг и достижения</div>
-                <div class="grm-guest-text">Войдите в аккаунт на главной странице калькулятора, чтобы участвовать в региональном рейтинге, получать значки и XP за свою работу.</div>
+                <div class="grm-guest-text">Войдите в аккаунт на главной странице калькулятора, чтобы участвовать в региональном рейтинге, получать значки и очки за свою работу.</div>
                 <a class="grm-guest-btn" href="${esc(opts.loginUrl || '../')}">Войти на главной →</a>
             </div>`;
             return;
