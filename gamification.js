@@ -54,9 +54,9 @@ const GRM = (function () {
         { id: 'first_pdf',        title: 'Первый чертёж',        cat: 'PDF',          metric: 'pdf',     need: 1,  hint: 'Сгенерировать первый PDF' },
         { id: 'project_bureau',   title: 'Проектное бюро',       cat: 'PDF',          metric: 'pdf',     need: 10, hint: '10 сгенерированных PDF' },
         { id: 'chief_engineer',   title: 'Главный инженер',      cat: 'PDF',          metric: 'pdf',     need: 50, hint: '50 сгенерированных PDF' },
-        { id: 'pressure_test',    title: 'Опрессовка пройдена', cat: 'Стрики',       metric: 'streak',  need: 3,  hint: '3 дня активности подряд' },
-        { id: 'hold_degree',      title: 'Держим давление',      cat: 'Стрики',       metric: 'streak',  need: 30, hint: 'Активность каждую неделю в течение месяца' },
-        { id: 'ups_mode',         title: 'Режим: Бесперебойник', cat: 'Стрики',       metric: 'streak',  need: 90, hint: '3 месяца идеального стрика' },
+        { id: 'pressure_test',    title: 'Опрессовка пройдена', cat: 'Серии',        metric: 'streak',  need: 3,  hint: '3 дня активности подряд' },
+        { id: 'hold_degree',      title: 'Держим давление',      cat: 'Серии',        metric: 'streak',  need: 30, hint: 'Активность каждую неделю в течение месяца' },
+        { id: 'ups_mode',         title: 'Режим: Бесперебойник', cat: 'Серии',        metric: 'streak',  need: 90, hint: '3 месяца непрерывной серии без пропусков' },
         { id: 'fine_balance',     title: 'Тонкая балансировка',  cat: 'Настройки',    metric: 'manual',  need: 1,  hint: 'Ручное изменение цены позиции' },
         { id: 'own_fittings',     title: 'Своя арматура',        cat: 'Настройки',    metric: 'manual',  need: 1,  hint: 'Поиск и замена позиции на свою' },
         { id: 'loop_optimizer',   title: 'Оптимизатор контура',  cat: 'Настройки',    metric: 'manual',  need: 1,  hint: 'Удаление позиции из пресета' },
@@ -93,7 +93,7 @@ const GRM = (function () {
         try { localStorage.setItem('grm_counts', JSON.stringify(c)); } catch (e) { /* quota */ }
     }
 
-    // Отметить сегодняшний день активным и пересчитать текущий стрик (подряд идущих дней).
+    // Отметить сегодняшний день активным и пересчитать текущую серию (подряд идущих дней).
     function touchStreak(c) {
         const today = new Date().toISOString().slice(0, 10);
         if (c.days[c.days.length - 1] === today) return c.streak;
@@ -515,7 +515,7 @@ const GRM = (function () {
                      <circle cx="50" cy="70" r="6" fill="none" stroke="#1d4ed8" stroke-width="2.5"/>
                      <line x1="50" y1="65" x2="50" y2="76" stroke="#1d4ed8" stroke-width="2.5"/>
                      <line x1="44" y1="73" x2="56" y2="73" stroke="#1d4ed8" stroke-width="2.5"/>`);
-            // ── Стрики ──
+            // ── Серии ──
             case 'pressure_test': // Манометр, стрелка в зелёной зоне. Сталь, зелёный.
                 return M('#9aa7b4', '#5b6673', '#22c55e',
                     `<circle cx="50" cy="50" r="24" fill="#0f172a"/>
