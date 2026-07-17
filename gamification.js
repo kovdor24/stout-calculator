@@ -60,8 +60,8 @@ const GRM = (function () {
         { id: 'fine_balance',     title: 'Тонкая балансировка',  cat: 'Настройки',    metric: 'manual',  need: 1,  hint: 'Ручное изменение цены позиции' },
         { id: 'own_fittings',     title: 'Своя арматура',        cat: 'Настройки',    metric: 'manual',  need: 1,  hint: 'Поиск и замена позиции на свою' },
         { id: 'loop_optimizer',   title: 'Оптимизатор контура',  cat: 'Настройки',    metric: 'manual',  need: 1,  hint: 'Удаление позиции из пресета' },
-        { id: 'first_contact',    title: 'Первый контакт',       cat: 'Ссылки',       metric: 'share',   need: 1,  hint: 'Первая расшаренная ссылка' },
-        { id: 'sales_master',     title: 'Мастер продаж',        cat: 'Ссылки',       metric: 'share',   need: 20, hint: '20 расшаренных ссылок' }
+        { id: 'first_contact',    title: 'Первый контакт',       cat: 'Ссылки',       metric: 'share',   need: 1,  hint: 'Первая ссылка, отправленная клиенту' },
+        { id: 'sales_master',     title: 'Мастер продаж',        cat: 'Ссылки',       metric: 'share',   need: 20, hint: '20 ссылок, отправленных клиентам' }
     ];
 
     let _cachedUser = null;      // { id, region, xp_points_current_month, xp_points_total, first_name, last_name, email }
