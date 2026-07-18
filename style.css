@@ -14,6 +14,23 @@
     --warn-bg: #FEF2F2;
     --warn-text: #991B1B;
     --warn-border: #FCA5A5;
+    /* Единый словарь анимаций: длительности и кривые вместо разрозненных чисел по всему файлу */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-snap: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --dur-fast: 150ms;
+    --dur-base: 250ms;
+    --dur-slow: 400ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 
 body.dark-mode {
@@ -912,6 +929,11 @@ body.dark-mode .swap-alt-badge {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
 }
 
+.btn-base:active {
+    transform: scale(0.97);
+    transition: transform 160ms var(--ease-out);
+}
+
 /* Р¦РІРµС‚Р° РєРЅРѕРїРѕРє РІ СЃРІРµС‚Р»РѕР№ С‚РµРјРµ */
 .btn-tg {
     background-color: #229ED9;
@@ -1120,6 +1142,11 @@ body.dark-mode .editable-val:focus {
 .btn-base:hover {
     transform: translateY(-3px);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+}
+
+.btn-base:active {
+    transform: scale(0.97);
+    transition: transform 160ms var(--ease-out);
 }
 
 /* Р¦РІРµС‚Р° РєРЅРѕРїРѕРє РІ СЃРІРµС‚Р»РѕР№ С‚РµРјРµ */
@@ -2215,6 +2242,10 @@ body.dark-mode .btn-add-zone:hover {
     color: #ffffff;
 }
 
+.expand-locs-btn:active {
+    transform: scale(0.9);
+}
+
 /* Скрытие интерактивной кнопки при печати */
 @media print {
     .expand-locs-btn {
@@ -2305,6 +2336,10 @@ body.html2pdf-printing .expand-locs-btn {
     border-color: var(--primary);
     color: var(--primary);
     background: var(--primary-light);
+}
+
+.btn-ctrl:active {
+    transform: scale(0.94);
 }
 
 .btn-ctrl svg {
@@ -3473,7 +3508,7 @@ body.dark-mode .header-totals-block {
     /* РљСЂР°СЃРЅС‹Р№ С†РІРµС‚ */
     color: #EF4444 !important;
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.5) !important;
-    animation: pulse-red 2s infinite;
+    animation: pulse-red 1.8s ease-in-out 3;
     /* Р›РµРіРєР°СЏ РїСѓР»СЊСЃР°С†РёСЏ */
 }
 
@@ -5487,7 +5522,7 @@ body.dark-mode input[type="number"].eq-qty-input {
     box-shadow:
         0 8px 32px rgba(0, 0, 0, 0.08),
         0 2px 8px rgba(0, 0, 0, 0.04);
-    animation: calcToastSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: calcToastSlideIn 0.45s var(--ease-snap) forwards;
     display: flex;
     align-items: flex-start;
     gap: 12px;
@@ -5503,7 +5538,7 @@ body.dark-mode input[type="number"].eq-qty-input {
 }
 
 .calc-toast-notification.toast-removing {
-    animation: calcToastSlideOut 0.35s cubic-bezier(0.4, 0, 1, 1) forwards;
+    animation: calcToastSlideOut 0.35s var(--ease-snap) forwards;
 }
 
 .calc-toast-icon {
@@ -6533,6 +6568,10 @@ body.dark-mode .city-search-input:focus {
     background: var(--bg-hover) !important;
 }
 
+.city-suggestion-item:active {
+    background: var(--border) !important;
+}
+
 .city-suggestion-item:not(:last-child) {
     border-bottom: 1px solid var(--border);
 }
@@ -6778,6 +6817,10 @@ body.dark-mode .mode-tab.active {
     background: var(--bg) !important;
 }
 
+.custom-dropdown-option:active {
+    background: var(--border) !important;
+}
+
 .custom-dropdown-option.active {
     background: var(--primary-light) !important;
     color: var(--primary) !important;
@@ -6962,6 +7005,10 @@ body.dark-mode .mode-tab.active {
 
 .custom-dropdown-option:hover {
     background: var(--bg) !important;
+}
+
+.custom-dropdown-option:active {
+    background: var(--border) !important;
 }
 
 .custom-dropdown-option.active {
@@ -8263,7 +8310,7 @@ body.dark-mode .grm-prize-note { color: #fbbf24; }
     box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.6);
     z-index: 100000;
     opacity: 0; pointer-events: none;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.4s var(--ease-bounce);
     max-width: 90vw; text-align: center;
 }
 .grm-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }

@@ -757,8 +757,8 @@ const app = {
             if (!startTimestamp) startTimestamp = timestamp;
             // Вычисляем прогресс от 0 до 1
             const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            // Супер-вязкое замедление к концу анимации (степень 8)
-            const easeOut = 1 - Math.pow(1 - progress, 8);
+            // Плавное кубическое замедление к концу анимации
+            const easeOut = 1 - Math.pow(1 - progress, 3);
             const currentVal = Math.floor(start + easeOut * (end - start));
 
             const valueStr = currentVal.toLocaleString('ru-RU');
@@ -4154,10 +4154,12 @@ const app = {
         needs_revision: { label: 'На доработке', color: '#EF4444' },
         invoice_issued: { label: 'Счёт выставлен', color: '#10B981' },
         rejected: { label: 'Отклонен', color: '#EF4444' },
+        invoice_reminder_sent: { label: 'Напоминание: выставить счёт?', color: '#F59E0B' },
+        invoice_reminder_declined: { label: 'Монтажник отказался от счёта', color: '#94A3B8' },
     },
     ADMIN_KANBAN_STAGES: [
         { key: 'draft', label: 'Расчёты', color: '#60A5FA', events: ['calculated', 'saved'] },
-        { key: 'review', label: 'На согласовании', color: '#818CF8', events: ['sent', 'printed', 'confirmed', 'needs_revision'] },
+        { key: 'review', label: 'На согласовании', color: '#818CF8', events: ['sent', 'printed', 'confirmed', 'needs_revision', 'invoice_reminder_sent', 'invoice_reminder_declined'] },
         { key: 'payment', label: 'В оплату', color: '#F59E0B', events: ['invoice_requested', 'invoice_issued', 'rejected'] },
     ],
 
@@ -4840,8 +4842,13 @@ const app = {
                 btnEl.innerHTML = '⌛ Отправка...';
             }
 
-            // Ищем смету в кеше
-            const est = (this._cloudEstimates || []).find(e => String(e.id) === String(estimateId));
+            // Ищем смету в кеше; если кэш ещё не загружен (например, запрос пришёл из
+            // карточки уведомления, а не из открытого списка смет) — подтягиваем точечно из БД
+            let est = (this._cloudEstimates || []).find(e => String(e.id) === String(estimateId));
+            if (!est) {
+                const { data: estRow } = await supabaseClient.from('estimates').select('id, project_name, calc_data, eq_sum, works_sum').eq('id', estimateId).maybeSingle();
+                est = estRow;
+            }
             if (!est || !est.calc_data) {
                 await app.alert('Данные сметы не найдены. Попробуйте обновить список.');
                 if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '📄 Получить счёт'; }
@@ -4969,6 +4976,21 @@ const app = {
                 }
             }
             // ====================================================
+
+            // Фиксируем запрос счёта в истории статусов (та же таблица, что и для
+            // клиентского запроса из invoice.html) — чтобы канбан/напоминания видели,
+            // что счёт уже запрошен, и не дублировали действие
+            const calcIdForEvent = est.calc_data.calc_id;
+            if (calcIdForEvent) {
+                supabaseClient.from('invoice_events').insert([{
+                    calc_id: String(calcIdForEvent),
+                    event: 'invoice_requested',
+                    user_id: tgUser.id ? String(tgUser.id) : null,
+                    user_name: tgUser.first_name || tgUser.username || null,
+                    user_email: tgUser.email || null,
+                    project_name: est.project_name || null
+                }]).then(({ error }) => { if (error) console.warn('[sendEstimateInvoiceToManager] Ошибка записи invoice_events:', error); });
+            }
 
             if (btnEl) {
                 btnEl.innerHTML = '✓ Счёт заказан';
@@ -5678,7 +5700,7 @@ const app = {
 
             // Запрашиваем сметы — только shared_invoice_id точечно из calc_data (не весь блоб,
             // это опрос статусов, вызывается часто для каждого пользователя)
-            let query = supabaseClient.from('estimates').select('id, project_name, total_sum, created_at, shared_invoice_id:calc_data->>shared_invoice_id');
+            let query = supabaseClient.from('estimates').select('id, project_name, total_sum, created_at, shared_invoice_id:calc_data->>shared_invoice_id, calc_id:calc_data->>calc_id');
             const isAdmin = (uRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(uRow.email.toLowerCase())) || ['admin', 'viewer'].includes(uRow.account_type);
             if (!isAdmin) {
                 query = query.eq('user_id', uRow.id);
@@ -5830,6 +5852,84 @@ const app = {
                     }
                 } catch (distNotifErr) {
                     console.warn('Could not load distributor for notification:', distNotifErr);
+                }
+            }
+
+            // 1.6. НАПОМИНАНИЕ «СМЕТА ОДОБРЕНА — ВЫСТАВИТЬ СЧЁТ?» — если клиент одобрил смету
+            // (событие 'confirmed' в invoice_events), а монтажник за 48ч так и не запросил
+            // счёт (событие 'invoice_requested'), шлём разовое напоминание с кнопками
+            // «Выставить счёт» / «Отказаться». Если через ещё 48ч реакции нет — повторяем
+            // один раз (максимум 2 напоминания на смету), дальше молчим.
+            if (!isAdmin && estimates && estimates.length > 0) {
+                try {
+                    const calcIds = [...new Set(estimates.map(e => e.calc_id).filter(Boolean).map(String))];
+                    if (calcIds.length > 0) {
+                        const { data: reminderEvents } = await supabaseClient
+                            .from('invoice_events')
+                            .select('calc_id, event, created_at')
+                            .in('calc_id', calcIds)
+                            .order('created_at', { ascending: true });
+
+                        if (reminderEvents && reminderEvents.length > 0) {
+                            const byCalc = {};
+                            reminderEvents.forEach(ev => { (byCalc[String(ev.calc_id)] = byCalc[String(ev.calc_id)] || []).push(ev); });
+
+                            const REMINDER_DELAY_MS = 48 * 60 * 60 * 1000;
+                            const MAX_REMINDERS = 2;
+                            const now = Date.now();
+                            const STOP_EVENTS = ['invoice_requested', 'invoice_issued', 'rejected', 'needs_revision', 'invoice_reminder_declined'];
+
+                            for (const calcId of Object.keys(byCalc)) {
+                                let confirmedAt = null;
+                                let stop = false;
+                                let remindersSince = [];
+                                byCalc[calcId].forEach(ev => {
+                                    if (ev.event === 'confirmed') {
+                                        confirmedAt = new Date(ev.created_at).getTime();
+                                        stop = false;
+                                        remindersSince = [];
+                                    } else if (confirmedAt && STOP_EVENTS.includes(ev.event)) {
+                                        stop = true;
+                                    } else if (confirmedAt && ev.event === 'invoice_reminder_sent') {
+                                        remindersSince.push(ev.created_at);
+                                    }
+                                });
+
+                                if (!confirmedAt || stop || remindersSince.length >= MAX_REMINDERS) continue;
+
+                                const lastMark = remindersSince.length ? new Date(remindersSince[remindersSince.length - 1]).getTime() : confirmedAt;
+                                if (now - lastMark < REMINDER_DELAY_MS) continue;
+
+                                const attempt = remindersSince.length + 1;
+                                const notifId = `invoice_reminder_${calcId}_${attempt}`;
+                                const localGuardKey = `sent_invoice_reminder_${calcId}_${attempt}`;
+                                if (dismissedIds.includes(notifId) || localStorage.getItem(localGuardKey)) continue;
+
+                                localStorage.setItem(localGuardKey, '1');
+                                const est = estimates.find(e => e.calc_id === calcId);
+
+                                supabaseClient.from('invoice_events').insert([{
+                                    calc_id: calcId,
+                                    event: 'invoice_reminder_sent',
+                                    project_name: est ? est.project_name : null,
+                                    meta: { comment: `Автоматическое напоминание монтажнику №${attempt}` }
+                                }]).then(({ error }) => { if (error) console.warn('[fetchNotifications] Ошибка записи invoice_reminder_sent:', error); });
+
+                                notifications.push({
+                                    id: notifId,
+                                    type: 'invoice_reminder',
+                                    calcId: calcId,
+                                    estimateId: est ? est.id : null,
+                                    projectName: est ? est.project_name : 'Объект',
+                                    attempt: attempt,
+                                    time: new Date().toISOString(),
+                                    isRead: false
+                                });
+                            }
+                        }
+                    }
+                } catch (reminderErr) {
+                    console.warn('[fetchNotifications] Ошибка проверки напоминаний по счетам:', reminderErr);
                 }
             }
 
@@ -6217,6 +6317,29 @@ const app = {
                         </div>
                     </div>
                 `;
+            } else if (n.type === 'invoice_reminder') {
+                const bg = 'rgba(245, 158, 11, 0.05)';
+                const borderCol = '#F59E0B';
+                const labelCol = '#92400E';
+                const titleLabel = n.attempt >= 2 ? 'ПОВТОРНОЕ НАПОМИНАНИЕ' : 'СЧЁТ НЕ ВЫСТАВЛЕН';
+
+                h += `
+                    <div class="notification-card" style="background: ${bg}; border-left: 4.5px solid ${borderCol}; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border); border-left-color: ${borderCol}; position: relative; ${isUnread ? 'box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);' : 'opacity: 0.85;'}">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 800; color: ${labelCol}; font-size: 10px; letter-spacing: 0.03em;">${titleLabel}${unreadDot}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                                <span onclick="event.stopPropagation(); app.dismissNotification('${n.id}', event)" title="Удалить уведомление" style="cursor:pointer; color:var(--text-sec); font-size:13px; line-height:1; padding:2px;">✕</span>
+                            </div>
+                        </div>
+                        <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">Смета «${n.projectName}»</div>
+                        <div style="font-size: 12px; color: ${labelCol}; margin: 2px 0 4px;">Смета одобрена заказчиком. Выставить счёт?</div>
+                        <div style="display:flex; align-items:center; gap:10px; margin-top: 2px;">
+                            <button class="auth-btn-base btn-email-submit" style="margin: 0; width: auto; padding: 0 14px; height: 30px; font-size: 11.5px; font-weight: bold; background: #10B981; border-color: #10B981;" onclick="app.respondInvoiceReminder('${n.id}', '${n.calcId}', ${n.estimateId ? `'${n.estimateId}'` : 'null'}, 'accept', this)">📄 Выставить счёт</button>
+                            <span style="font-size: 11px; color: var(--text-sec); cursor: pointer; text-decoration: underline;" onclick="app.respondInvoiceReminder('${n.id}', '${n.calcId}', ${n.estimateId ? `'${n.estimateId}'` : 'null'}, 'decline', this)">Отказаться</span>
+                        </div>
+                    </div>
+                `;
             } else {
                 // Стандартное уведомление по смете
                 const bg = n.status === 'confirmed' ? 'rgba(16, 185, 129, 0.04)' : 'rgba(239, 68, 68, 0.04)';
@@ -6287,6 +6410,51 @@ const app = {
             localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
         }
         this.fetchNotifications().then(() => this.openNotificationsModal());
+    },
+
+    // Реакция монтажника на напоминание "Смета одобрена — выставить счёт?":
+    // 'accept' — запускает тот же запрос счёта у менеджера, что и кнопка "📄 Получить счёт"
+    // в облачном списке смет (фиксирует событие invoice_requested и останавливает напоминания);
+    // 'decline' — пишет отказ в историю статусов (invoice_reminder_declined), тоже останавливает.
+    respondInvoiceReminder: async function (notifId, calcId, estimateId, action, btnEl) {
+        try {
+            if (btnEl) btnEl.style.pointerEvents = 'none';
+            if (action === 'accept') {
+                if (estimateId) {
+                    await this.sendEstimateInvoiceToManager(estimateId, null);
+                } else {
+                    const { error } = await supabaseClient.from('invoice_events').insert([{
+                        calc_id: String(calcId),
+                        event: 'invoice_requested',
+                        meta: { comment: 'Запрошено монтажником из напоминания' }
+                    }]);
+                    if (error) console.warn('[respondInvoiceReminder] Ошибка записи запроса:', error);
+                }
+            } else {
+                const { error } = await supabaseClient.from('invoice_events').insert([{
+                    calc_id: String(calcId),
+                    event: 'invoice_reminder_declined'
+                }]);
+                if (error) console.warn('[respondInvoiceReminder] Ошибка записи отказа:', error);
+            }
+
+            const dismissedIds = JSON.parse(localStorage.getItem('stout_dismissed_notifications') || '[]');
+            if (!dismissedIds.includes(notifId)) {
+                dismissedIds.push(notifId);
+                localStorage.setItem('stout_dismissed_notifications', JSON.stringify(dismissedIds));
+            }
+            const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
+            if (!readIds.includes(notifId)) {
+                readIds.push(notifId);
+                localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
+            }
+
+            await this.fetchNotifications();
+            this.openNotificationsModal();
+        } catch (e) {
+            console.error('[respondInvoiceReminder] Error:', e);
+            app.alert('Ошибка: ' + e.message);
+        }
     },
 
     markAllNotificationsRead: function () {
@@ -23400,7 +23568,7 @@ const app = {
             let newEq = app.lastEqSum || 0;
             let lastShowBlurEq = headerTotals.dataset.lastShowBlurEq === 'true';
             if ((oldEq !== newEq) && elEq) {
-                app.animateNumber(elEq, oldEq, newEq, 2400);
+                app.animateNumber(elEq, oldEq, newEq, 800);
                 headerTotals.dataset.lastEq = newEq;
                 headerTotals.dataset.lastShowBlurEq = String(currentShowBlur);
             } else if ((lastShowBlurEq !== currentShowBlur) && elEq) {
@@ -23420,7 +23588,7 @@ const app = {
                 let newWorks = app.lastWorksSum || 0;
                 let lastShowBlurWorks = headerTotals.dataset.lastShowBlurWorks === 'true';
                 if ((oldWorks !== newWorks) && elWorks) {
-                    app.animateNumber(elWorks, oldWorks, newWorks, 2400);
+                    app.animateNumber(elWorks, oldWorks, newWorks, 800);
                     headerTotals.dataset.lastWorks = newWorks;
                     headerTotals.dataset.lastShowBlurWorks = String(currentShowBlur);
                 } else if ((lastShowBlurWorks !== currentShowBlur) && elWorks) {
@@ -23467,7 +23635,7 @@ const app = {
             let newEq = app.lastEqSum || 0;
             let lastShowBlurEq = mobileTotals.dataset.lastShowBlurEq === 'true';
             if (oldEq !== newEq) {
-                app.animateNumber(mEqEl, oldEq, newEq, 2400);
+                app.animateNumber(mEqEl, oldEq, newEq, 800);
                 mobileTotals.dataset.lastEq = newEq;
                 mobileTotals.dataset.lastShowBlurEq = String(currentShowBlur);
             } else if (lastShowBlurEq !== currentShowBlur) {
@@ -23490,7 +23658,7 @@ const app = {
                 let newWorks = app.lastWorksSum || 0;
                 let lastShowBlurWorks = mobileTotals.dataset.lastShowBlurWorks === 'true';
                 if (oldWorks !== newWorks) {
-                    app.animateNumber(mWorkEl, oldWorks, newWorks, 2400);
+                    app.animateNumber(mWorkEl, oldWorks, newWorks, 800);
                     mobileTotals.dataset.lastWorks = newWorks;
                     mobileTotals.dataset.lastShowBlurWorks = String(currentShowBlur);
                 } else if (lastShowBlurWorks !== currentShowBlur) {
