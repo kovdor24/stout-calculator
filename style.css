@@ -8349,3 +8349,279 @@ body.dark-mode .grm-prize-note { color: #fbbf24; }
     display: none;
     text-decoration: none;
 }
+
+/* ============================================================
+   Позиции, добавленные распознаванием смет (вкладка «3. Распознавание»)
+   ============================================================ */
+
+/* Подсветка постоянная, без анимации появления: render() перестраивает
+   таблицу при любом изменении настроек, и мигание повторялось бы каждый раз. */
+.inv-table tr.row-recognized td {
+    background: rgba(56, 189, 248, 0.07);
+}
+
+.inv-table tr.row-recognized td:first-child {
+    box-shadow: inset 3px 0 0 var(--primary, #0284c7);
+}
+
+body.dark-mode .inv-table tr.row-recognized td {
+    background: rgba(56, 189, 248, 0.12);
+}
+
+/* В печать и в счёт подсветка не идёт — это рабочая пометка для монтажника,
+   клиенту в документе она не нужна. */
+@media print {
+    .inv-table tr.row-recognized td {
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+}
+
+/* ============================================================
+   Мастер распознавания смет (recognize.js) — бета, только админ
+   ============================================================ */
+
+/* Распознавание живёт вкладкой рядом с «1. Оборудование» и «2. Монтажные
+   работы», а не модальным окном: так оно занимает всю ширину сметы и
+   таблице проверки не нужна горизонтальная прокрутка. */
+.rec-panel {
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Окно поиска по каталогу остаётся модальным — оно короткое.
+   У .calc-dialog-card стоит max-width: 440px, для списка позиций мало. */
+.rec-search-ov .rec-search-card {
+    width: 94vw;
+    max-width: 760px;
+}
+
+.rec-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.rec-title { font-size: 17px; font-weight: 800; }
+
+.rec-beta {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    background: var(--primary, #0284c7);
+    color: #fff;
+    border-radius: 5px;
+    padding: 2px 6px;
+    vertical-align: middle;
+}
+
+/* Шаги подсвечиваются накопительно: пройденные остаются активными,
+   чтобы был виден путь, а не только текущая точка. */
+.rec-steps { display: flex; gap: 14px; margin-top: 7px; font-size: 12.5px; }
+.rec-step { color: var(--text-sec, #94a3b8); }
+.rec-step.on { color: var(--primary, #0284c7); font-weight: 700; }
+
+
+.rec-body { padding: 16px 18px 18px; overflow-y: auto; }
+
+.rec-drop {
+    border: 2px dashed var(--border, #cbd5e1);
+    border-radius: 14px;
+    padding: 42px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color var(--dur-fast, 150ms) var(--ease-out, ease),
+                background var(--dur-fast, 150ms) var(--ease-out, ease);
+}
+.rec-drop.over, .rec-drop:hover {
+    border-color: var(--primary, #0284c7);
+    background: var(--primary-light, rgba(2,132,199,.06));
+}
+.rec-drop-ico { font-size: 34px; margin-bottom: 8px; }
+.rec-drop-t { font-weight: 700; font-size: 15px; }
+.rec-drop-s { color: var(--text-sec, #94a3b8); font-size: 12.5px; margin-top: 5px; }
+
+.rec-prev { display: none; max-width: 100%; max-height: 260px; border-radius: 10px; margin-top: 12px; }
+.rec-actions { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+.rec-status { color: var(--text-sec, #94a3b8); font-size: 12.5px; }
+
+.rec-err {
+    margin-top: 12px; padding: 11px 13px; border-radius: 10px;
+    background: rgba(220, 38, 38, .08); border: 1px solid rgba(220, 38, 38, .3);
+    white-space: pre-wrap; font-size: 12.5px;
+}
+
+.rec-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.rec-btn-g {
+    background: var(--surface-light, #f1f5f9); color: var(--text-main, #0f172a);
+    border: 1px solid var(--border, #e2e8f0); border-radius: 8px;
+    padding: 6px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.rec-btn-g:disabled { opacity: .45; cursor: default; }
+
+/* Таблица широкая, поэтому прокручивается сама, а не растягивает окно. */
+.rec-tablewrap { overflow-x: auto; max-height: 62dvh; overflow-y: auto; }
+.rec-table { border-collapse: collapse; width: 100%; font-size: 12.5px; table-layout: fixed; }
+.rec-table th, .rec-table td {
+    border: 1px solid var(--border, #e2e8f0); padding: 5px 7px;
+    text-align: left; vertical-align: top;
+}
+.rec-table th { background: var(--surface-light, #f1f5f9); position: sticky; top: 0; z-index: 1; }
+.rec-table tr.rec-low td { background: rgba(245, 158, 11, .12); }
+.rec-table tr.rec-nomatch td { background: rgba(245, 158, 11, .2); }
+.rec-table tr.rec-skip td { color: var(--text-sec, #94a3b8); text-decoration: line-through; }
+
+.rec-raw { color: var(--text-sec, #94a3b8); font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; overflow-wrap: anywhere; }
+.rec-art { color: var(--text-sec, #94a3b8); font-size: 11px; }
+
+.rec-f {
+    width: 100%; background: var(--bg, #fff); color: var(--text-main, #0f172a);
+    border: 1px solid var(--border, #e2e8f0); border-radius: 5px;
+    padding: 3px 5px; font-size: 12px;
+}
+.rec-f:focus { outline: none; border-color: var(--primary, #0284c7); }
+.rec-f-s { width: 100%; }
+
+/* Тип резьбы — самая частая ошибка распознавания, поэтому переключается
+   кнопкой, а не правкой текста. */
+.rec-tgroup { display: flex; gap: 2px; margin-top: 3px; }
+.rec-tbtn {
+    background: var(--surface-light, #e2e8f0); color: var(--text-sec, #64748b);
+    border: 0; border-radius: 4px; padding: 2px 5px;
+    font-size: 10.5px; font-weight: 700; cursor: pointer;
+}
+.rec-tbtn.on { background: #f59e0b; color: #fff; }
+
+.rec-acts { white-space: nowrap; }
+.rec-acts button {
+    background: transparent; border: 0; cursor: pointer;
+    font-size: 13px; padding: 2px 4px; opacity: .7;
+}
+.rec-acts button:hover { opacity: 1; }
+
+.rec-foot {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-top: 14px; padding-top: 12px;
+    border-top: 1px solid var(--border, #e2e8f0);
+}
+.rec-total { margin-right: auto; font-size: 14px; }
+.rec-total b { font-size: 18px; color: var(--primary, #0284c7); }
+
+.rec-search-card { max-height: 82dvh; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+
+/* Индикатор хода распознавания: без него длинная пауза выглядит зависанием. */
+.rec-progress { margin-top: 14px; }
+.rec-pbar {
+    height: 6px; border-radius: 99px; overflow: hidden;
+    background: var(--surface-light, #e2e8f0);
+}
+.rec-pfill {
+    height: 100%; width: 0%; border-radius: 99px;
+    background: var(--primary, #0284c7);
+    transition: width var(--dur-slow, 400ms) var(--ease-out, ease);
+}
+.rec-pstages { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+.rec-pstage {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: var(--text-sec, #94a3b8);
+}
+.rec-pstage .dot {
+    width: 14px; height: 14px; flex: 0 0 14px; border-radius: 50%;
+    border: 2px solid var(--border, #cbd5e1);
+}
+.rec-pstage.done { color: var(--text-main, #0f172a); }
+.rec-pstage.done .dot { background: var(--primary, #0284c7); border-color: var(--primary, #0284c7); }
+.rec-pstage.now { color: var(--primary, #0284c7); font-weight: 700; }
+.rec-pstage.now .dot {
+    border-color: var(--primary, #0284c7);
+    border-right-color: transparent;
+    animation: rec-spin .8s linear infinite;
+}
+@keyframes rec-spin { to { transform: rotate(360deg); } }
+.rec-elapsed { margin-top: 8px; font-size: 12px; color: var(--text-sec, #94a3b8); }
+.rec-res { overflow-y: auto; flex: 1; min-height: 180px; }
+.rec-hit {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 7px 9px; border-radius: 6px; cursor: pointer; font-size: 12.5px;
+}
+.rec-hit:hover { background: var(--surface-light, #f1f5f9); }
+
+@media (max-width: 700px) {
+    .rec-body { padding: 12px; }
+    .rec-table { font-size: 11.5px; }
+    .rec-steps { gap: 9px; font-size: 11.5px; }
+}
+
+/* Раздел, который калькулятор лишь предположил — отличаем от подтверждённого. */
+.rec-f.rec-guess { border-color: #f59e0b; }
+
+/* Блок рекомендаций «возможно, не хватает» под таблицей проверки */
+.rec-suggblock {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--border, #e2e8f0);
+    border-left: 3px solid var(--primary, #0284c7);
+    border-radius: 10px;
+    background: var(--surface-light, #f8fafc);
+}
+
+.rec-sugg-h { font-weight: 700; font-size: 13.5px; margin-bottom: 8px; }
+
+.rec-sugg {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-top: 1px solid var(--border, #e2e8f0);
+}
+.rec-sugg:first-of-type { border-top: 0; }
+.rec-sugg-main { flex: 1; min-width: 0; font-size: 12.5px; }
+.rec-sugg-main .rec-art { margin-left: 6px; }
+
+/* Прикидка от точного расчёта должна отличаться на глаз: длина штанги
+   известна из каталога, а шаг крепления зависит от трассы. */
+.rec-sugg-guess {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #b45309;
+    background: rgba(245, 158, 11, .18);
+    border-radius: 5px;
+    padding: 2px 6px;
+    white-space: nowrap;
+}
+
+/* Превью текста, извлечённого из Excel/Word/PDF/HTML — видно, что прочиталось */
+.rec-textprev {
+    margin-top: 12px;
+    max-height: 220px;
+    overflow: auto;
+    padding: 10px 12px;
+    background: var(--surface-light, #f8fafc);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 8px;
+    font: 11.5px/1.5 ui-monospace, Consolas, monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text-main, #334155);
+}
+
+/* Миниатюры загруженных листов при многостраничной смете */
+.rec-imgs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.rec-thumb { position: relative; }
+.rec-thumb img {
+    height: 110px; border-radius: 8px; border: 1px solid var(--border, #e2e8f0);
+    display: block;
+}
+.rec-thumb span {
+    position: absolute; top: 4px; left: 4px;
+    background: var(--primary, #0284c7); color: #fff;
+    font-size: 11px; font-weight: 700; border-radius: 5px; padding: 1px 6px;
+}

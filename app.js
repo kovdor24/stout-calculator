@@ -2030,7 +2030,10 @@ const app = {
 
             try {
                 const sysInst = this.getGeminiSystemInstruction();
-                const response = await fetch('gemini_proxy.php', {
+                // Абсолютный URL обязателен: сам сайт живёт на GitHub Pages, где PHP не выполняется —
+                // относительный путь возвращал бы исходник скрипта вместо ответа. Все прокси лежат
+                // на отдельном хостинге proxy.heatcalc.ru (так же, как supabase_proxy и emailjs_proxy).
+                const response = await fetch('https://proxy.heatcalc.ru/gemini_proxy.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2874,6 +2877,105 @@ const app = {
             overlay.classList.add('active');
             nameInput.focus();
         }, 10);
+    },
+
+    /**
+     * Перенос распознанной сметы (вкладка «3. Распознавание») в текущую.
+     *
+     * Позиции ложатся в state.userAddedEq и userAddedWorks — тот же механизм,
+     * что у кнопки «+ Добавить», поэтому дальше они живут как обычное своё
+     * оборудование: правятся, удаляются, попадают в печать и в счёт.
+     *
+     * Что найдено в каталоге — идёт с артикулом и ценой. Что не найдено —
+     * идёт своей позицией с ценой 0, а не выбрасывается: монтажник впишет
+     * цену руками, а мы получим статистику, каких позиций не хватает.
+     *
+     * mode: 'add'  — добавить к текущей смете
+     *       'new'  — очистить своё оборудование и положить только распознанное
+     *
+     * Возвращает { eq, works, noPrice } — сводку для отчёта пользователю.
+     */
+    applyRecognized: function (rows, mode) {
+        if (!Array.isArray(rows) || !rows.length) return { eq: 0, works: 0, noPrice: 0 };
+
+        if (!this.state.userAddedEq) this.state.userAddedEq = [];
+        if (!this.state.userAddedWorks) this.state.userAddedWorks = [];
+
+        // Снимок для отмены — распознавание может подставить десятки строк,
+        // и откатывать их по одной было бы издевательством.
+        this._recognizeUndo = {
+            userAddedEq: JSON.parse(JSON.stringify(this.state.userAddedEq)),
+            userAddedWorks: JSON.parse(JSON.stringify(this.state.userAddedWorks)),
+        };
+
+        if (mode === 'new') {
+            this.state.userAddedEq = [];
+            this.state.userAddedWorks = [];
+        }
+
+        const stamp = Date.now();
+        let eqCount = 0, workCount = 0, noPrice = 0, skippedNoQty = 0;
+
+        rows.forEach((r, i) => {
+            const qty = (Number(r.qty) || 0) + (Number(r.qtyExtra) || 0);
+            // На бумаге количество указано не всегда («Клипсы 25», «Опора 25»).
+            // Молча выбрасывать такую строку нельзя — о ней сообщаем в сводке,
+            // чтобы монтажник вернулся и проставил число сам.
+            if (qty <= 0) { skippedNoQty++; return; }
+
+            // Подобранная позиция приходит в _m (так её кладёт RecognizeUI).
+            // Поле match поддерживаем как запасное — им пользуется тестовый стенд.
+            const m = r._m || r.match;
+            const matched = m && m.item;
+            const price = matched ? Number(m.item.price) || 0 : 0;
+            if (!price) noPrice++;
+
+            if (r.kind === 'work') {
+                this.state.userAddedWorks.push({
+                    name: matched ? m.item.name : (r.raw || 'Работа из распознавания'),
+                    q: qty,
+                    price: price,
+                    unit: r.unit || 'шт',
+                    group: '5. Дополнительные работы',
+                    recognized: stamp,
+                });
+                workCount++;
+                return;
+            }
+
+            this.state.userAddedEq.push({
+                // Свой префикс, чтобы распознанное не столкнулось по id с
+                // артикулом каталога, если ту же позицию добавят вручную.
+                id: 'rec_' + stamp + '_' + i,
+                name: matched ? m.item.name : (r.raw || 'Позиция из распознавания'),
+                price: price,
+                q: qty,
+                brand: matched ? (m.item.brand || 'STOUT') : ' ',
+                desc: r.raw ? ('Распознано: ' + r.raw) : 'Добавлено распознаванием',
+                // Раздел выбирается на экране проверки: часть позиций
+                // определяется однозначно, остальные монтажник расставляет сам.
+                section: r.section || '9. Дополнительные материалы',
+                recognized: stamp,
+                article: matched ? (m.item.article || m.item.id) : null,
+            });
+            eqCount++;
+        });
+
+        this.saveState();
+        this.render();
+
+        return { eq: eqCount, works: workCount, noPrice: noPrice, skippedNoQty: skippedNoQty };
+    },
+
+    /** Откат последнего применения распознавания одним действием. */
+    undoRecognized: function () {
+        if (!this._recognizeUndo) return false;
+        this.state.userAddedEq = this._recognizeUndo.userAddedEq;
+        this.state.userAddedWorks = this._recognizeUndo.userAddedWorks;
+        this._recognizeUndo = null;
+        this.saveState();
+        this.render();
+        return true;
     },
 
     // Удаление своего оборудования
@@ -10319,12 +10421,16 @@ const app = {
         let tEq = document.getElementById('tab_equipment');
         let tWk = document.getElementById('tab_works');
         let t3d = document.getElementById('tab_3d');
+        let tRec = document.getElementById('tab_recognize');
         if (tEq && tWk) {
             tEq.classList.toggle('active', mode === 'equipment');
             tWk.classList.toggle('active', mode === 'works');
         }
         if (t3d) {
             t3d.classList.toggle('active', mode === '3d');
+        }
+        if (tRec) {
+            tRec.classList.toggle('active', mode === 'recognize');
         }
         document.body.classList.toggle('work-mode', mode === 'works');
 
@@ -10333,6 +10439,26 @@ const app = {
         let discountBlock = document.getElementById('discount_block');
         let footerBtns = document.querySelector('.footer-btns');
         let panel3d = document.getElementById('panel_3d');
+        let panelRec = document.getElementById('panel_recognize');
+
+        // Распознавание — такой же вид, как 3D-котельная: таблица сметы
+        // прячется, вместо неё показывается своя панель.
+        if (mode === 'recognize') {
+            if (tableResponsive) tableResponsive.style.display = 'none';
+            if (docFooter) docFooter.style.display = 'none';
+            if (discountBlock) discountBlock.style.display = 'none';
+            if (footerBtns) footerBtns.style.display = 'none';
+            if (panel3d) panel3d.style.display = 'none';
+            if (panelRec) {
+                panelRec.style.display = 'block';
+                if (typeof RecognizeUI !== 'undefined') RecognizeUI.mountInline(panelRec);
+            }
+            // Полный render() здесь не нужен — таблица сметы скрыта. Но виджет
+            // конкурса живёт вне таблицы и сам не спрячется, его чистим явно.
+            this.renderContestWidget();
+            return;
+        }
+        if (panelRec) panelRec.style.display = 'none';
 
         if (mode === '3d') {
             if (tableResponsive) tableResponsive.style.display = 'none';
@@ -17817,6 +17943,11 @@ const app = {
         const isGuest = !this.state.tgUser;
         const isPro = this.isPro();
 
+        // Кнопка распознавания смет — бета, показывается только админам.
+        // Файл может быть не загружен (например, на старом кэше), поэтому
+        // проверяем наличие объекта, а не полагаемся на порядок скриптов.
+        if (typeof RecognizeUI !== 'undefined') RecognizeUI.syncButton();
+
         // Кубок рейтинга (шапка) — пилот доступен монтажникам Калининградской области;
         // админы и наблюдатели видят его вне зависимости от своего региона (для контроля/теста).
         const trophyBtn = document.querySelector('.btn-trophy');
@@ -20189,7 +20320,15 @@ const app = {
 
         let h = "", sum = 0, globalIdx = 1, showSku = document.getElementById('chk_sku').checked;
 
+        // Разделы, для которых flushBill уже вызывался. Нужно, чтобы после
+        // основной отрисовки дофлашить разделы со своими/распознанными
+        // позициями, которые сами по себе не сработали (например, при пустом
+        // объекте разделы водоснабжения не флашатся, и позиции туда назначенные
+        // терялись — «Создать новую смету» показывала пусто).
+        const _flushedSections = new Set();
+
         const flushBill = (title, warn) => {
+            _flushedSections.add(title);
             currentSectionTitle = title;
 
             // Своё оборудование, добавленное именно в этот раздел ("+ Добавить" в конце раздела).
@@ -20200,7 +20339,11 @@ const app = {
                     let sec = eq.section || '9. Дополнительные материалы';
                     if (sec === '9. Своё оборудование') sec = '9. Дополнительные материалы';
                     if (sec === title) {
-                        addToBill({ id: eq.id, name: eq.name, price: eq.price, brand: eq.brand || ' ' }, eq.q, eq.desc || '');
+                        addToBill({
+                            id: eq.id, name: eq.name, price: eq.price, brand: eq.brand || ' ',
+                            // Метка распознавания и артикул должны дожить до строки таблицы.
+                            recognized: eq.recognized, article: eq.article,
+                        }, eq.q, eq.desc || '');
                     }
                 });
             }
@@ -20286,7 +20429,8 @@ const app = {
                     sec: i.sec,
                     isPanel: i.isPanel,
                     power50: i.power50,
-                    instanceKeys: i.instanceKeys
+                    instanceKeys: i.instanceKeys,
+                    recognized: i.recognized
                 });
             });
 
@@ -20472,7 +20616,12 @@ const app = {
                     }
                 }
 
-                let rowClass = isOpt ? ' class="row-opt-out"' : '';
+                // Позиции, пришедшие из распознавания, подсвечиваются, чтобы
+                // монтажник видел, что калькулятор добавил не сам.
+                const recClass = i.recognized ? ' row-recognized' : '';
+                let rowClass = (isOpt || recClass)
+                    ? ` class="${isOpt ? 'row-opt-out' : ''}${recClass}"`
+                    : '';
                 rows += `<tr ${rowStyle}${rowClass} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${app.formatPriceHtml(i.price)}</td><td class="col-sum">${app.formatPriceHtml(i.sum)}</td></tr>` + locsRows;
             });
             let addCustomRow = "";
@@ -20669,7 +20818,11 @@ const app = {
             ? this.state.sectionAnalog["2. Обвязка котельной"]
             : (this.state.brandMode === 'rommer');
         let selBoilers = [], boilerCnt = 0;
-        ['gas', 'el'].forEach(ft => {
+        // Без заданной площади (площадь 0) объект не настроен — котёл не подбираем.
+        // Иначе для 0 м² выбирался минимальный котёл 5 кВт и вся его обвязка,
+        // и они всплывали в «Создать новую смету» из распознавания, где нужны
+        // только распознанные позиции.
+        (this.state.area > 0 ? ['gas', 'el'] : []).forEach(ft => {
             if (this.state.fuels.includes(ft)) {
                 let needed = parseFloat(pwr);
                 let db = (ft === 'gas') ? catalog.boilers_gas : (this.state.boilerSeries === 'status' ? catalog.boilers_status : catalog.boilers_plus);
@@ -23493,9 +23646,30 @@ const app = {
 
         flushWorks();
 
+        // Дофлашиваем разделы со своими/распознанными позициями, которые не
+        // отработали при обычной отрисовке (их раздел не флашился — типично для
+        // пустого объекта). Иначе позиции есть в state, но не видны в таблице.
+        if (this.state.userAddedEq && this.state.userAddedEq.length) {
+            const pending = new Set();
+            this.state.userAddedEq.forEach(eq => {
+                let sec = eq.section || '9. Дополнительные материалы';
+                if (sec === '9. Своё оборудование') sec = '9. Дополнительные материалы';
+                if (!_flushedSections.has(sec)) pending.add(sec);
+            });
+            pending.forEach(sec => flushBill(sec));
+        }
+
+        // Сколько своих позиций реально ушло в смету — по нему решаем, показывать
+        // ли заглушку пустого объекта.
+        const hasUserRows = (this.state.userAddedEq && this.state.userAddedEq.length) ||
+            (this.state.userAddedWorks && this.state.userAddedWorks.length);
+
         // Объект ещё не настроен (площадь 0 — сразу после сброса) — вместо частично
-        // посчитанной сметы показываем подсказку и не выводим никакого оборудования
-        if (this.state.area <= 0) {
+        // посчитанной сметы показываем подсказку. Но если в смете есть свои или
+        // распознанные позиции, их нужно показать даже без параметров объекта:
+        // «Создать новую смету» из распознавания — это как раз голая смета из
+        // одних распознанных позиций.
+        if (this.state.area <= 0 && !hasUserRows) {
             h = `<tr class="empty-state-row"><td colspan="9">
                 <div class="empty-state-hint">
                     <span class="empty-state-icon">🏠</span>
@@ -23726,6 +23900,11 @@ const app = {
     renderContestWidget() {
         const el = document.getElementById('contest_widget');
         if (!el) return;
+
+        // Виджет считает баллы по оборудованию и уместен только на его вкладке.
+        // На монтажных работах, распознавании и 3D он не к месту — заодно
+        // не дёргаем рейтинг с profi-stout.pro, когда его никто не увидит.
+        if (this.state.viewMode !== 'equipment') { el.innerHTML = ''; return; }
 
         if (this.state.brandMode !== 'stout') { el.innerHTML = ''; return; }
 

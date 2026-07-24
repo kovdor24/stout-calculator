@@ -49,12 +49,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.55">
+    <link rel="stylesheet" href="style.css?v=2.61">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.17" defer></script>
+    <script src="catalog.js?v=2.18" defer></script>
     <script src="gamification.js?v=2.0" defer></script>
-    <script src="app.js?v=3.3" defer></script>
+    <script src="app.js?v=3.9" defer></script>
+    <!-- Распознавание смет: подбор по каталогу и интерфейс мастера.
+         Порядок важен — recognize.js обращается к RecognizeMatch. -->
+    <script src="recognize_match.js?v=1.5" defer></script>
+    <!-- Извлечение текста из Excel, Word, PDF, HTML. Подключается до
+         recognize.js, который его использует. -->
+    <script src="recognize_files.js?v=1.0" defer></script>
+    <script src="recognize.js?v=2.2" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -711,11 +718,17 @@
                             onclick="app.setViewMode('equipment')">1. Оборудование</div>
                         <div id="tab_works" class="tab" style="font-size: 14px; font-weight: 700;"
                             onclick="app.setViewMode('works')">2. Монтажные работы</div>
+                        <!-- Распознавание рукописных смет. Скрыта по умолчанию,
+                             показывается только админам из RecognizeUI.syncButton(). -->
+                        <div id="tab_recognize" class="tab" style="font-size: 14px; font-weight: 700; display: none;"
+                            onclick="app.setViewMode('recognize')">3. Распознать смету <span class="rec-beta">beta</span></div>
                         <div id="tab_3d" class="tab" style="font-size: 14px; font-weight: 700; display: none;"
-                            onclick="app.setViewMode('3d')">3. 3D Котельная</div>
+                            onclick="app.setViewMode('3d')">4. 3D Котельная</div>
                     </div>
                 </div>
             </div>
+            <!-- Панель распознавания: заполняется из RecognizeUI.mountInline() -->
+            <div id="panel_recognize" style="display:none; margin-top: 15px;" class="no-print"></div>
             <div id="panel_3d" style="display:none; height: 600px; background: #0f172a; border-radius: 12px; margin-top: 15px; position: relative; overflow: hidden; border: 1px solid #334155; box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);" class="no-print"></div>
             <div class="table-responsive">
                 <table class="inv-table">

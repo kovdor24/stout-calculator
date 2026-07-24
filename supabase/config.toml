@@ -3,3 +3,8 @@ verify_jwt = false
 
 [functions.mail-status]
 verify_jwt = false
+
+# Вызывается сервером Beget, а не браузером с сессией пользователя, поэтому JWT не проверяем.
+# Доступ закрыт общим секретом RELAY_TOKEN внутри самой функции.
+[functions.gemini-relay]
+verify_jwt = false
