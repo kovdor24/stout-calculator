@@ -6,10 +6,13 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HeatCalc.ru — Инженерный расчет отопления по ГОСТ и СП</title>
+    <title>HeatCalc.ru — Инженерный калькулятор отопления, водоснабжения и сметный сервис по ГОСТ/СП</title>
+    <meta name="description" content="Профессиональный веб-сервис для монтажников и инженеров. Автоматический расчет теплопотерь, гидравлики, подбор оборудования STOUT, ROMMER, Haier и мгновенная генерация брендированных КП и смет в PDF.">
     
     <!-- Google Fonts: Inter & Outfit -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -25,14 +28,18 @@
                         brand: {
                             50: '#eff6ff',
                             100: '#dbeafe',
+                            400: '#60a5fa',
                             500: '#3b82f6',
                             600: '#2563eb',
                             700: '#1d4ed8',
-                            950: '#172554',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#0f172a',
                         },
                         slate: {
-                            850: '#1e293b',
-                            950: '#0f172a',
+                            850: '#151e2e',
+                            900: '#0f172a',
+                            950: '#090d16',
                         }
                     }
                 }
@@ -47,735 +54,800 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
     <style>
+        [v-cloak] { display: none !important; }
+
         .dashboard-glow {
-            box-shadow: 0 0 50px -12px rgba(59, 130, 246, 0.12);
+            box-shadow: 0 0 60px -15px rgba(59, 130, 246, 0.18);
+        }
+        .hero-glow {
+            box-shadow: 0 0 100px -20px rgba(37, 99, 235, 0.25);
         }
         .bento-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .bento-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 12px 30px -10px rgba(37, 99, 235, 0.15);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .gradient-brand-text {
+            background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans selection:bg-brand-600 selection:text-white">
+<body class="bg-slate-950 text-slate-100 font-sans selection:bg-brand-600 selection:text-white antialiased">
 
-    <div id="app" v-cloak>
+    <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+        
         <!-- NAV BAR -->
-        <header class="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-900">
+        <header class="sticky top-0 z-50 bg-slate-950/85 backdrop-blur-md border-b border-slate-900/80">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                <a href="https://heatcalc.ru/" class="flex items-center gap-3">
-                    <div class="w-9 h-9 bg-brand-600 rounded-lg flex items-center justify-center text-white font-outfit font-extrabold text-lg shadow-lg shadow-brand-500/20">
+                <!-- Logo -->
+                <a href="start24.html" class="flex items-center gap-3 group">
+                    <div class="w-9 h-9 bg-gradient-to-tr from-brand-700 to-brand-500 rounded-xl flex items-center justify-center text-white font-outfit font-black text-lg shadow-lg shadow-brand-600/30 group-hover:scale-105 transition-transform">
                         H
                     </div>
                     <div class="flex flex-col">
-                        <span class="font-outfit font-bold text-base tracking-tight leading-none text-white">HeatCalc<span class="text-brand-500">.ru</span></span>
-                        <span class="text-[9px] text-slate-500 font-semibold tracking-wider uppercase mt-0.5">B2B Инженерия</span>
+                        <span class="font-outfit font-black text-lg tracking-tight leading-none text-white">HeatCalc<span class="text-brand-500">.ru</span></span>
+                        <span class="text-[9px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">B2B Инженерия & Сметы</span>
                     </div>
                 </a>
                 
-                <nav class="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-400">
+                <!-- Nav Links -->
+                <nav class="hidden lg:flex items-center gap-7 text-xs font-semibold text-slate-300">
+                    <a href="#what-is-it" class="hover:text-white transition-colors">Что это?</a>
+                    <a href="#hero-calc" class="hover:text-white transition-colors flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-ping"></span>
+                        Демо-расчет
+                    </a>
                     <a href="#features" class="hover:text-white transition-colors">Возможности</a>
-                    <a href="#whats-inside" class="hover:text-white transition-colors">Инженерные модули</a>
+                    <a href="#whats-inside" class="hover:text-white transition-colors">6 Модулей СП</a>
                     <a href="#pricing" class="hover:text-white transition-colors">Тарифы</a>
-                    <a href="#faq" class="hover:text-white transition-colors">Вопросы</a>
+                    <a href="#faq" class="hover:text-white transition-colors">FAQ</a>
                 </nav>
 
+                <!-- Actions -->
                 <div class="flex items-center gap-3">
-                    <a href="https://heatcalc.ru/" class="text-xs font-bold text-slate-300 hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/50">
-                        Личный кабинет
+                    <a href="index.html" class="text-xs font-bold text-slate-200 hover:text-white transition-all px-4 py-2 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-900 flex items-center gap-1.5 shadow-sm">
+                        <i data-lucide="log-in" class="w-3.5 h-3.5 text-brand-400"></i>
+                        <span>Вход в калькулятор</span>
+                    </a>
+                    <a href="index.html" class="hidden sm:inline-flex text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 transition-all px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 hover:shadow-brand-600/35 hover:scale-[1.02] items-center gap-1.5">
+                        <span>Начать расчет</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                     </a>
                 </div>
             </div>
         </header>
 
-        <!-- HERO SECTION -->
-        <section class="relative overflow-hidden pt-12 pb-16 md:pt-20 md:pb-28 border-b border-slate-900">
-            <!-- Background grids -->
-            <div class="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-20 pointer-events-none"></div>
-            <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-brand-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <main class="flex-grow">
+            <!-- HERO SECTION WITH LIVE DEMO CALCULATOR WIDGET -->
+            <section class="relative overflow-hidden pt-10 pb-16 md:pt-16 md:pb-24 border-b border-slate-900/80">
+                <!-- Background ambient glows -->
+                <div class="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-25 pointer-events-none"></div>
+                <div class="absolute top-12 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-brand-600/15 rounded-full blur-[140px] pointer-events-none"></div>
+                <div class="absolute top-1/3 right-10 w-[300px] h-[300px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     
-                    <!-- Left: Copy & Auth Form -->
-                    <div class="lg:col-span-6 flex flex-col">
-                        <div class="inline-flex items-center gap-2 px-3 py-1 bg-brand-500/10 text-brand-400 rounded-full text-[10px] font-bold uppercase tracking-wider mb-6 w-max border border-brand-500/20">
-                            <span class="w-1.5 h-1.5 bg-brand-500 rounded-full animate-pulse"></span>
-                            Обновлено под СП 60.13330.2020
-                        </div>
-                        
-                        <h1 class="text-3xl sm:text-4xl md:text-5xl font-outfit font-black tracking-tight text-white leading-[1.1] mb-6">
-                            Инженерный расчет отопления по ГОСТ и СП за 5 минут.
-                        </h1>
-                        <p class="text-base text-slate-400 mb-8 font-medium leading-relaxed">
-                            Повышайте чек на монтаж с безупречными сметами, к которым нет вопросов у заказчиков. Автоматический расчет теплопотерь, гидравлики, контроль наличия и мгновенная генерация брендированного КП.
-                        </p>
-
-                        <!-- Supabase Register Form Box -->
-                        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 md:p-7 backdrop-blur-sm max-w-md w-full shadow-2xl">
-                            <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                <i data-lucide="user-plus" class="w-4 h-4 text-brand-500"></i>
-                                Быстрая регистрация
-                            </h3>
-                            
-                            <form @submit.prevent="handleRegister" class="space-y-4">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1.5">Email</label>
-                                    <div class="relative">
-                                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                                            <i data-lucide="mail" class="w-4 h-4"></i>
-                                        </span>
-                                        <input type="email" required v-model="form.email" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 transition-colors" placeholder="work@engineer.ru">
-                                    </div>
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1.5">Пароль</label>
-                                    <div class="relative">
-                                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                                            <i data-lucide="lock" class="w-4 h-4"></i>
-                                        </span>
-                                        <input type="password" required v-model="form.password" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 transition-colors" placeholder="••••••••">
-                                    </div>
-                                </div>
-
-                                <button type="submit" :disabled="formStatus === 'loading'" class="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-slate-800 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-lg shadow-brand-500/10 hover:shadow-brand-500/20 transition-all flex items-center justify-center gap-2">
-                                    <span v-if="formStatus === 'loading'" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                                    <span v-else>Начать бесплатный расчет</span>
-                                    <i v-if="formStatus !== 'loading'" data-lucide="arrow-right" class="w-4 h-4"></i>
-                                </button>
-                            </form>
-
-                            <p class="text-[10px] text-slate-500 mt-3.5 text-center font-medium">
-                                Без привязки карты. Сразу доступен тариф «Базовый».
-                            </p>
+                    <!-- Top Announcement Badge -->
+                    <div class="flex justify-center mb-6">
+                        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-slate-900/90 border border-brand-500/30 rounded-full text-xs font-semibold text-slate-300 shadow-xl backdrop-blur-md">
+                            <span class="flex h-2 w-2 relative">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
+                            </span>
+                            <span class="text-brand-400 font-bold">HeatCalc v3.9:</span>
+                            <span>Обновлены официальные РРЦ STOUT & ROMMER 2026</span>
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
                         </div>
                     </div>
 
-                    <!-- Right: Interactive Dashboard Preview (High-fidelity matching actual data) -->
-                    <div class="lg:col-span-6">
-                        <div class="relative rounded-2xl border border-slate-800 bg-slate-900/40 p-4 md:p-6 backdrop-blur-sm dashboard-glow">
-                            <!-- Window Control Bar -->
-                            <div class="flex items-center justify-between border-b border-slate-800/80 pb-4 mb-4">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
-                                    <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-                                    <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
-                                    <span class="text-xs text-slate-500 font-semibold ml-2 font-mono">heatcalc.ru/invoice.html</span>
+                    <!-- Main Hero Header -->
+                    <div class="text-center max-w-4xl mx-auto mb-12">
+                        <h1 class="text-3xl sm:text-5xl md:text-6xl font-outfit font-black tracking-tight text-white leading-[1.1] mb-6">
+                            Инженерный расчет отопления по ГОСТ и СП <span class="gradient-brand-text">за 5 минут</span>
+                        </h1>
+                        <p class="text-base sm:text-lg text-slate-300 font-medium leading-relaxed max-w-3xl mx-auto">
+                            Профессиональный онлайн-сервис для частных монтажников и инженерных бригад. Рассчитывает теплопотери, гидравлику, подбирает оборудование STOUT/ROMMER/Haier, проверяет остатки на складах и генерирует <strong class="text-white">брендированную смету в PDF</strong>.
+                        </p>
+                    </div>
+
+                    <!-- INTERACTIVE LIVE DEMO CALCULATOR (HERO WIDGET WITH REAL CATALOG PRICES) -->
+                    <div id="hero-calc" class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl shadow-2xl hero-glow max-w-5xl mx-auto mb-16 relative">
+                        <div class="flex flex-col md:flex-row items-center justify-between pb-6 mb-6 border-b border-slate-800/80 gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-brand-600/20 text-brand-400 rounded-xl flex items-center justify-center border border-brand-500/30">
+                                    <i data-lucide="calculator" class="w-5 h-5"></i>
                                 </div>
-                                <a href="https://heatcalc.ru/invoice.html?data=c_eJztXVtvVEe2%2Fiul%2FZJG07tdVfvafjrgMQOaAB5sIEcn8%2BBhHIREQoYEDdIIyXYPhHNMYjBwQgjGXM7l4by0jQ2N7W5L8wtW%2FYX5JUdrVdW%2BtPuyu90QIlkTjbdwe%2FurVWt961Krlv%2FmXHXG%2F%2BZ85Yw7sAbP4TE8hUfwnMFzuAcv4H9hAV7CPafszDrjIuBl5wtnXJSda864V3a%2BpOevnXFHBBXulJ1L%2BJr%2FgS1oqkU175SdPzvjjgwrPKhILkOn7HzjjPOb9JPmlz6GDahDk9kHaMGGo1%2F6m4iVqtXqEVatVl36zyk7F%2FGHnkJLLcA2%2FoRTduaccefPl7%2Bclf6fZv%2Fl0pezl69ULl790rlZdi7jr5lzxv%2FN%2FLIn0FKL6j7sMHgNdXiLv0wtwbsygxZs0i%2Ffhhahr6l5aOL3WEnEDLZhRS0e0QtwfjfJ%2FxD%2BYZJPnD3nlJ0%2FOePOidnLc9ecsnPdGXfUHbXolJ2%2FWOEEIa8KWrJ5%2BhYFVmEZNL9hsEEIWtCEOrxW87CFi1OLsAU76q5zs7xvBep72IEt2EZJQ0N9B1skkga8Y9MzR2fOTXcAPj15zPUEFy7nnIvYgJ%2BeOXNupgv4KJK%2BJPDm6SDg70ML3iFqNc%2Fos3vQwk8YQZ%2F5%2BtvLx2a%2FmWOSc9ixkC%2BccKUQHCFLzgtADqUQWt7m6SCQH6ol2IWWuoUfZ6QdddhWC9CAegZ6yMcEgSPIE0fdkAvuSsHjoBjkamwQ4wMClhUGz2AdNtQyvIVtqNMvtwBJVd%2BlMF%2BoRajDOjRgBxrwllbSUvNseobJIME1PYNSpN2XxXBVeaBx0cPguJ6jlan%2FgC3YpW9tMbWAX2CzwqAOu6gK0MDXQFO%2FbAVWmTfmf%2B5Y0McRtK9V1vN7gpba3qqRpiZR9YfB%2FETNEyOpO1BX80gR%2BH1E9nwMVuF5OY%2Fv%2FDGE5hM%2B2VuoGp%2FgVU4ApYj5MAD%2FC7dZ3UXDd9Ud2CFBtujzm%2FgT0LA%2FyWAX1Rua9E9aVfPCveByHski4BM%2B4JYOhgL%2FBFqwC3uWu5jnqltMm1cFf3CHaAHVoc6OX780%2B00C9ViivJyLAlCFrIpQa4J%2BGhzsKjRgD%2FasMFc76ib3XNTMQropuZaez4cUXiIe9FjrqKnJxsKemlc1eAMNaHba6%2FMTLudCFN9r4ftGfvQwUlYKeSdWCgsRfDWINFvqh0NWOmSlQ1Y6ZKUBrF8tqDvQoLg5%2BZBGu47hHYNN2FHLDB7ACrxgIk6j0RlUTREUD6A9z2y3fhjO8LeMajahAVsJOsJKGRBBO4qS9ChQjmVQSBVDq4nhcNDarIbi%2BU00F%2FUDJiRk4cto7si065rB6CWvodWO%2F%2Bz5aYLuoh4kmnD2zKlTk2e7LcDztOLqh8EXcK8D14vPnZRVWQl%2BJPiYHjRQM9bTHAbqRzq5gz40YOnWqIXknhyhP0jRrxRHr52F4dvemmPQB772wB6vDqU5nQRPtJATMZen/yHLXWbzHW7o8D7cJzI%2Be%2F6OjJxZzFrgd%2BniKelvsNX5iUsBvBocagTL%2Fp6QEreIwbZxCzWmGA77YVkjFSxyZgiepCQi6CIKfqeVmf6OiTJqQWMD0lVmzl9yG26N8CmCxEIE3UF4kO4NgLTycENsPWCB74GTQ%2Bj1tXV1L5WbFnjv9HQ2uggHACxiAIj5mjYMkFRl9wiHUncoVrOu%2BcTadhbyD3L2PCCfjh0zx%2BTe8Y8bRMrbTZv%2FHr24hyrYraGK7qNxU4r3rPHXO5J7vKAc17tLV5utDYW0qhtLGze4FUYrJFnQhafV0sdVC5F%2BAALmGRhuBZch5qneiFSGcJOC7N1tUwujcrOLrHGJi0eP9rEbycGeCLJiL2UfnuvxUaZ%2BDDUSl7BW9wERkr8BpqVjLpUWAlewWuz0ha8S6niROE0M5F6aCk5FEMhfQQbxGq6Ul9TC0yEN2RFJl5ignQUWTeUsnc0ozF5sYYUhcNpAaa%2BWBO2elpNouvHjyKWquajsAgWIQ0fBf5QWH6Euvp3nViTysEGHmbAjjE2cmAL5nslQ1WYs6sarKslJkLkg90juQV4gSv7L8BscBDas46Rw6eye1MtDwZdfCDo%2B%2Bh2l9zvNnk1Mhz1Hfo0dUsffmzTJ7dgm33uwDN4Cc9gDX6GR7AKj%2BFRJp2ndUS0jkL1sTjStEZfB1%2FHSy1RTIXIrhhsELPRp1tUyMNTm2Xi3wYr5ZUqEf%2FUSRtD9jVD44pRx7Tu66f3Dz1VqDbY%2FgeF%2FVD9AOvaBbooTfWDDniIa41TNPBOHTdSlTH3%2BsALY10cs6FZOKxW71idJnajOCHjlk2cJjga65K6VUmwTru8KnXkK4oorvR5qI%2BVzdOBNYCzUsA5y7DC1Gc61w1wfwvVFkO7v%2BYJQfkVTExasKmW9f4wOlncgx2TGaDUeqESnVGJ%2FqhsBm6Ldh73h0S1f2vhJayxqtlHVhJMfU8l%2FDdHcnsqIl3o6BNm6T0N4sjsqX4aAugq0UuLKKblqgUqHizsyxRUzcQwJbKmt0Sz5gfTVPy3v3O50OFBMTqVQRj7ZgX0dJAVMBmMhdwVXhIiTJkCqAxCrv%2B5SGKQZgbh0HvfVLepMkQf%2FjuJEzPZ15m9RhG5JKgiRS3p%2BzqQ8uNYDgWrS2zHO8Z2fWSl2c%2BLtKjCKIyHgjSS4M6ASYI7GQ%2B3bb9cdFfNRUh8ODP4ZaK7kUA%2FUHT3Eh5RbPd%2F8BODNXgGP%2B8P7%2BTQ4d2AK3mKqszUgq4Gr6stored4sLsQYPb3ZmIN4QrBY94n1jDZS7Vqk7u4KofzSi8oh0ZW2iOvv5F23uxSJW47KcBJj8MKK52eSLRiZpJ43ZVeX8qqGsoKYmOSQg4nz5dJ0o%2BVoNeoz2rZxko1yqc38CPIIam3KjMT8i2lwd3MJGqBdD1PSNFb4L5Nprl2rn7oi%2BHgryUlwk3z8aQHbt4GCEllGCF6POBuGPCgUHgc2eO6KDmuO3CYQpXMG%2F6%2BePOYG8aBcPHUkxcpD3thbM7mQsvHAWFD17NI24n1sC0s6pl%2BMc2usA5vbL2vP1DZE2gRIYpqaCpV9HBQoN0qKAnv0ndyS8medRWvr4S58krq9Q4C%2FkfqHdhRNU1bHbGaWnfpxFT%2BwEj6A5wdGGKgrwcFnSYAU5OfubOJvLGSSU57uS0VEN3FC7tGuFq6ae09CPgIkHbOlqnOPlZlJXjRnjJPHv9shouYV%2BX0uamz0wbx5Fdz1y5d%2FeLK3I3OsD0TUkvfPzjo95NAG6SRIdgRGN6K%2BQga31vYUov6xDm8IcYk6itFQ3t0KdqiftTltnhHklr08Q1B7gTR92RwcOQPdHcPNnEx6utp6sTQBHIiZKX2xtj98Ik0%2BoZrge1H0vGaPwL02setmzBT54X66A7f8Y7RC9%2Bqu%2Fp8vJOS5%2BPNIvL3DGOHIzDK9hyEXOSGViTcB1bl%2F6izkvBdbPneHyaL4nI3XO3zEYj9PdW1MlYZvT%2Bv7fX02l6RwkHkaRPUD78ar%2B3lvLYQvnfotUfmtT0v57WDKBqBavR12k86lejzjvv3%2FRy3QW4ct0jSpY%2BPIQxSU2vxxK%2FFccuc4xaRNwLX8QEdt8w5bilGYIEDO%2B6Oip6vcnXZA%2BO8wxHEph%2FEd8us7xajCFWfkOSb%2BCtQ0li0YN39TAs2WAmrMzmfcyrTV9gnz9ULCG1DhpQjkPxqUoZ7h3U6LMStwDN4CM%2FgBazCPbgP%2F9n9uNouh43UrG3Ga2%2BkRgFYyLgbTYauTLA%2FxWoG8VVTTFeEI%2BAYl5gv5BpNFTLhDfbGelit1m%2BbzMYoG8z1gUu%2BopIwwpLm1U2DL666WHL%2BW7jQ6jxlRptdHXLKPFrS4yo2Hu6yIhfXicEYz5dV4vqO3oL7QkWIbX3p0uiagmX%2BsknTN1iYkx%2B8olZ6fmZaxXhhZXTFR4kxajzRz%2BdmZzoek%2FU3hIVA630AfVO%2FoCFdV28q1uXmqzVXnbcy9T66mXmM%2FLtCHfi2KdMcDfZkbkrX8zMXWS%2FvdAt%2FI6lpnn9MADcNZLelm49tNtj1YT6l9WtDvcZ9DmLKKQz0jSjStuMWhQa1W0bdCc4WxDF96sanpYlhdDQq1pDO%2FqX67PXLl%2Ftxg4GSzwglvwlj6xY2D570g1YxWTjBebY2BaLCuLpfv9oVe9cx%2BtHsngLaWj7FMJoIGCvUMnp4DJzwWgFVsdSVExy8qx5oUm6IFMInc9tVjyYab6ABrX3IWvUGd2Ao%2BMv08SgW7Op%2FZH6xRvGUtWSQYrFBi8IhEw90em5r7%2B9%2FlU3KUZVc4vLPA2tcL00re%2BtImOF3ATgfLANzVwk63F%2Bolk3IduKF2uuLcK0MopMxw49DGIFvfrBvTH%2Fn%2FM%2F%2FXP%2Bp1zT%2BiguOA3l87r0z5tYvpjz5X7%2B0LToFmIcQYFherHjBqNcaT%2Bpe36fkNxm9kYqwWBCyWPR%2BRpi6ehghBSFqgzcVBl4PBCWp2bCBfavoHrbexdlxJNo8%2FTJU9gIxN0A718U6mIPjT6Hv1Kb707iKwmJe91JvFDbTGBIPBiQxD8aqxrYBQvOowFccJBY2IAm9lEmAB%2BNbusCM1YRj12%2BxI5duY4DTqytR4GIrc86d%2Frk1LlTU90Ct8g3SVtkj0QKA8CiCY2JgU14k4VhUMAKrLkYJD2l%2F78P9w0kuAdPYIVSZRwI9BO87HoD217Afs9hZVGd9vI67YfhYFRdhJHi7owUF7vpZWbr6IePhi9lji8F54OBGyFhyhxhCj6gvx0hB3g5DgjlYD7kFTGkrq6iUKjm10UyotBxh5aMb%2FpCqnIwV2IZW9Wy13qwxEp17B1KStrvie6ayp%2B6q25jENMhSw%2Bi4tgjYUaI%2BfKXTo1lLjWO%2BGAcdhggHAYIh8HvoW4f6vahbh%2Fq9qFufwy63d5v00VMcoD9EuYmTXKRsPB%2B2btPdmZrbmSGdEOvzOChqrEoIGGV6ag%2FOcfC6rkdQjB1QQ%2FT8AIupe3v7z2EIPTMrBrzhMgjfdoJW%2BrOAOec9ylS3qYQmSx2IzOFInPXDEPj6ZNnT55h506fPD95dvrop1boE9PpuLCoyP57sT3MMk%2FDwy8yZAMPRTeJgvDofFvVYDd3n0H6DO%2FX6as6eN6Y3ry4kK5MFjqI8k3yqx%2BGXxfRuFqg00zMUZp0wPimomcwkFWWYF3V1C1qt5BB9uZlFITJnJDe9RcRBdyerQQ2QxgO8TOdDRqi3%2B5sF8LzXBHIMc8ONoi9MJDFSkWxjK3OHEjjex53oJFSIRuFTPP90hnEu3pGxyYtcrfMRL7gnj0TKdTt6cnYrIgeDqQspqUP1mAVHjJPqltehePZPx7M3TWDgJeTe%2B2YB7dYkKqMQOgp7Il%2F%2Ff2nZ053HSlgBhAFgTiQyjxVNfV30t8MbiPVLK0HHko0OcSANVI0XNn3sN21Y8tcgRIH4pcfjQLvshId7u%2FiwcsRlrnKp2%2FiMt8Nsk7Rq3Lp9dFr39zXs" target="_blank" class="text-[10px] text-brand-500 hover:text-brand-400 font-bold flex items-center gap-1 bg-brand-500/10 px-2 py-1 rounded border border-brand-500/20 hover:scale-[1.02] transition-all">
-                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                                    Открыть вживую
+                                <div>
+                                    <h3 class="font-outfit font-bold text-white text-base">Интерактивный экспресс-расчет по каталогу</h3>
+                                    <p class="text-xs text-slate-400 font-medium">Попробуйте изменить параметры — сметная стоимость пересчитается по ценам STOUT/ROMMER</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
+                                Живой алгоритм СП 60.13330
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                            <!-- Left Controls -->
+                            <div class="lg:col-span-6 space-y-5">
+                                <!-- Area Slider -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <label class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                                            <i data-lucide="home" class="w-3.5 h-3.5 text-brand-400"></i> Площадь дома:
+                                        </label>
+                                        <span class="text-base font-black text-brand-400 font-mono bg-brand-500/10 px-2.5 py-0.5 rounded-lg border border-brand-500/20">
+                                            {{ heroCalc.area }} м²
+                                        </span>
+                                    </div>
+                                    <input type="range" min="50" max="350" step="10" v-model.number="heroCalc.area" class="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-brand-500">
+                                    <div class="flex justify-between text-[10px] text-slate-500 font-semibold mt-1">
+                                        <span>50 м²</span>
+                                        <span>150 м²</span>
+                                        <span>250 м²</span>
+                                        <span>350 м²</span>
+                                    </div>
+                                </div>
+
+                                <!-- Region Select -->
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-brand-400"></i> Климатический регион:
+                                    </label>
+                                    <div class="grid grid-cols-4 gap-2">
+                                        <button v-for="reg in regions" :key="reg.id" @click="heroCalc.region = reg.id" :class="heroCalc.region === reg.id ? 'bg-brand-600 text-white border-brand-500' : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'" class="py-2 px-1 text-center rounded-xl text-xs font-bold border transition-all">
+                                            {{ reg.name }}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Boiler & Floor Toggles -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Тип котла:</label>
+                                        <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 font-bold text-xs">
+                                            <button @click="heroCalc.fuel = 'gas'" :class="heroCalc.fuel === 'gas' ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-white'" class="flex-1 py-1.5 rounded-lg transition-colors text-center">
+                                                🔥 Газ (Haier)
+                                            </button>
+                                            <button @click="heroCalc.fuel = 'el'" :class="heroCalc.fuel === 'el' ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-white'" class="flex-1 py-1.5 rounded-lg transition-colors text-center">
+                                                ⚡ Электро (STATUS)
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Тёплый пол PEX-a:</label>
+                                        <button @click="heroCalc.hasFloor = !heroCalc.hasFloor" :class="heroCalc.hasFloor ? 'bg-emerald-600/20 border-emerald-500/40 text-emerald-400' : 'bg-slate-950 border-slate-800 text-slate-400'" class="w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2">
+                                            <i data-lucide="thermometer" class="w-4 h-4"></i>
+                                            <span>{{ heroCalc.hasFloor ? 'Включен (100%)' : 'Отключен' }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Live Output Results -->
+                            <div class="lg:col-span-6 bg-slate-950 border border-slate-800 rounded-2xl p-5 md:p-6 relative overflow-hidden">
+                                <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-500/10 rounded-full blur-xl pointer-events-none"></div>
+                                
+                                <div class="text-xs font-extrabold text-brand-400 uppercase tracking-widest mb-4 flex items-center justify-between">
+                                    <span>Спецификация по каталогу</span>
+                                    <span class="text-[9px] text-slate-500 font-mono">152 ₽/м PEX-a · STOUT</span>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3 mb-5">
+                                    <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-850">
+                                        <span class="text-[10px] text-slate-400 font-bold block uppercase">Теплопотери дома</span>
+                                        <span class="text-lg font-black text-white font-mono">{{ heroCalcResults.heatLoss }} кВт</span>
+                                    </div>
+                                    <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-850">
+                                        <span class="text-[10px] text-slate-400 font-bold block uppercase">Реком. котел</span>
+                                        <span class="text-lg font-black text-brand-400 font-mono">{{ heroCalcResults.boilerPower }} кВт ({{ heroCalcResults.boilerPrice }} ₽)</span>
+                                    </div>
+                                    <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-850">
+                                        <span class="text-[10px] text-slate-400 font-bold block uppercase">Труба PEX-a Red</span>
+                                        <span class="text-lg font-black text-white font-mono">{{ heroCalcResults.pipeLength }} м</span>
+                                    </div>
+                                    <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-850">
+                                        <span class="text-[10px] text-slate-400 font-bold block uppercase">Петлей ТП (до 80м)</span>
+                                        <span class="text-lg font-black text-white font-mono">{{ heroCalcResults.loopsCount }} контуров</span>
+                                    </div>
+                                </div>
+
+                                <!-- Cost Summary -->
+                                <div class="bg-gradient-to-r from-brand-950/60 to-slate-900 p-4 rounded-xl border border-brand-500/20 flex items-center justify-between mb-5">
+                                    <div>
+                                        <span class="text-[10px] text-slate-400 font-bold uppercase block">Смета (Оборудование + Монтаж):</span>
+                                        <span class="text-xl sm:text-2xl font-black text-white font-mono">{{ heroCalcResults.totalEstimate }} ₽</span>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-[9px] text-emerald-400 font-bold block">Остатки: На складе</span>
+                                        <span class="text-[10px] text-slate-400 font-mono">РРЦ 2026 OK</span>
+                                    </div>
+                                </div>
+
+                                <!-- Action button to main app -->
+                                <a href="index.html" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs sm:text-sm py-3 px-4 rounded-xl shadow-lg shadow-brand-600/30 hover:shadow-brand-600/50 transition-all flex items-center justify-center gap-2 group">
+                                    <span>Перейти к полному расчету в калькуляторе</span>
+                                    <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
                                 </a>
                             </div>
-
-                            <!-- PDF Main Canvas -->
-                            <div class="bg-white text-slate-900 rounded-xl p-4 shadow-inner text-[10px]">
-                                <!-- KP Title -->
-                                <div class="text-center border-b border-slate-200 pb-2.5 mb-3">
-                                    <h2 class="font-extrabold text-[12px] text-brand-700 tracking-tight leading-none">КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ № 0001</h2>
-                                    <span class="text-[8px] text-slate-400 mt-1 block">heatcalc.ru — Профессиональный расчет</span>
-                                </div>
-
-                                <!-- Metadata Bar -->
-                                <div class="grid grid-cols-4 gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5 mb-4 text-center font-medium">
-                                    <div class="border-r border-slate-200/80 pr-1">
-                                        <div class="text-[7px] text-slate-400 uppercase font-bold">Объект</div>
-                                        <div class="text-[9px] text-slate-800 font-bold leading-tight">Пример</div>
-                                    </div>
-                                    <div class="border-r border-slate-200/80 px-1">
-                                        <div class="text-[7px] text-slate-400 uppercase font-bold">Площадь</div>
-                                        <div class="text-[9px] text-slate-800 font-bold leading-tight">150 м²</div>
-                                    </div>
-                                    <div class="border-r border-slate-200/80 px-1">
-                                        <div class="text-[7px] text-slate-400 uppercase font-bold">Теплопотери</div>
-                                        <div class="text-[9px] text-slate-800 font-bold leading-tight text-brand-600">15.0 кВт</div>
-                                    </div>
-                                    <div class="pl-1">
-                                        <div class="text-[7px] text-slate-400 uppercase font-bold">Стены</div>
-                                        <div class="text-[9px] text-slate-800 font-bold leading-tight">Газобетон</div>
-                                    </div>
-                                </div>
-
-                                <!-- Nested Tab Buttons Inside the Mockup -->
-                                <div class="flex border-b border-slate-200 mb-3 font-semibold">
-                                    <button @click="previewMode = 'equipment'" :class="previewMode === 'equipment' ? 'border-b-2 border-brand-600 text-brand-700 bg-slate-50' : 'text-slate-400 hover:text-slate-700'" class="flex-1 py-1.5 text-center focus:outline-none transition-colors text-[9px] font-bold">
-                                        1. Оборудование (Stout / Haier)
-                                    </button>
-                                    <button @click="previewMode = 'works'" :class="previewMode === 'works' ? 'border-b-2 border-brand-600 text-brand-700 bg-slate-50' : 'text-slate-400 hover:text-slate-700'" class="flex-1 py-1.5 text-center focus:outline-none transition-colors text-[9px] font-bold">
-                                        2. Монтажные работы
-                                    </button>
-                                </div>
-
-                                <!-- Equipment Table View -->
-                                <div v-if="previewMode === 'equipment'" class="space-y-2.5 animate-fade-in">
-                                    <div class="text-[8px] font-bold text-slate-400 uppercase border-b border-slate-100 pb-1 flex justify-between">
-                                        <span>1. Котёл + Водонагреватель</span>
-                                        <span class="text-slate-500">Итого: 195 444 ₽</span>
-                                    </div>
-                                    <div class="space-y-1.5">
-                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-150">
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-1.5 h-1.5 bg-brand-500 rounded-full flex-shrink-0"></span>
-                                                <span class="font-bold text-slate-800">Котёл газовый, одноконтурный (18 кВт)</span>
-                                            </div>
-                                            <div class="flex items-center gap-3 font-mono">
-                                                <span class="text-[8px] text-slate-400">Haier · 1 шт</span>
-                                                <span class="font-bold text-slate-800">56 091 ₽</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-150">
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-1.5 h-1.5 bg-brand-500 rounded-full flex-shrink-0"></span>
-                                                <span class="font-bold text-slate-800">Котёл электрический STATUS (18 кВт)</span>
-                                            </div>
-                                            <div class="flex items-center gap-3 font-mono">
-                                                <span class="text-[8px] text-slate-400">STOUT · 1 шт</span>
-                                                <span class="font-bold text-slate-800">77 242 ₽</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-150">
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-1.5 h-1.5 bg-brand-500 rounded-full flex-shrink-0"></span>
-                                                <span class="font-bold text-slate-800">Бойлер напольный OptiBase 200л</span>
-                                            </div>
-                                            <div class="flex items-center gap-3 font-mono">
-                                                <span class="text-[8px] text-slate-400">STOUT · 1 шт</span>
-                                                <span class="font-bold text-slate-800">62 111 ₽</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="text-[8px] font-bold text-slate-400 uppercase border-b border-slate-100 pt-1 pb-1 flex justify-between">
-                                        <span>2. Обвязка котельной</span>
-                                        <span class="text-slate-500">Итого: 14 397 ₽</span>
-                                    </div>
-                                    <div class="grid grid-cols-3 gap-1.5 font-mono text-[8px] text-slate-500">
-                                        <div class="bg-slate-50 p-1.5 rounded border border-slate-150">
-                                            <div class="font-bold text-slate-800 text-[9px] mb-0.5">Дымоход</div>
-                                            <div>STOUT · 1 шт · 6 298 ₽</div>
-                                        </div>
-                                        <div class="bg-slate-50 p-1.5 rounded border border-slate-150">
-                                            <div class="font-bold text-slate-800 text-[9px] mb-0.5">Стабилизатор</div>
-                                            <div>STOUT · 1 шт · 6 905 ₽</div>
-                                        </div>
-                                        <div class="bg-slate-50 p-1.5 rounded border border-slate-150">
-                                            <div class="font-bold text-slate-800 text-[9px] mb-0.5">Американка 3/4"</div>
-                                            <div>STOUT · 2 шт · 1 194 ₽</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Works Table View -->
-                                <div v-if="previewMode === 'works'" class="space-y-2.5 animate-fade-in">
-                                    <div class="text-[8px] font-bold text-slate-400 uppercase border-b border-slate-100 pb-1">
-                                        Список монтажных услуг
-                                    </div>
-                                    <div class="space-y-1.5">
-                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-150">
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-1.5 h-1.5 bg-yellow-500 rounded-full flex-shrink-0"></span>
-                                                <span class="font-bold text-slate-800">Монтаж радиаторов отопления</span>
-                                            </div>
-                                            <div class="flex items-center gap-3 font-mono">
-                                                <span class="text-[8px] text-slate-400">10 шт</span>
-                                                <span class="font-bold text-slate-800 font-mono">65 000 ₽</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-150">
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-1.5 h-1.5 bg-yellow-500 rounded-full flex-shrink-0"></span>
-                                                <span class="font-bold text-slate-800">Монтаж коллектора радиаторов</span>
-                                            </div>
-                                            <div class="flex items-center gap-3 font-mono">
-                                                <span class="text-[8px] text-slate-400">1 шт</span>
-                                                <span class="font-bold text-slate-800 font-mono">6 000 ₽</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-150">
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-1.5 h-1.5 bg-yellow-500 rounded-full flex-shrink-0"></span>
-                                                <span class="font-bold text-slate-800">Монтаж скважинного насоса (обвязка)</span>
-                                            </div>
-                                            <div class="flex items-center gap-3 font-mono">
-                                                <span class="text-[8px] text-slate-400">1 услуга</span>
-                                                <span class="font-bold text-slate-800 font-mono">15 000 ₽</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- KP Summary Bar -->
-                                <div class="mt-4 pt-3 border-t border-slate-200 flex justify-between items-center">
-                                    <div class="flex gap-4 text-slate-500 font-semibold text-[8px] uppercase tracking-wider">
-                                        <div>Оборудование: <span class="font-bold text-slate-800 font-mono text-[9px]">98 931 ₽</span></div>
-                                        <div>Монтаж: <span class="font-bold text-slate-800 font-mono text-[9px]">56 000 ₽</span></div>
-                                    </div>
-                                    <div class="text-right font-outfit">
-                                        <span class="text-[8px] text-slate-400 font-bold uppercase block leading-none">Итого к оплате:</span>
-                                        <span class="text-[14px] font-black text-brand-600 font-mono">98 931 ₽</span>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
-                </div>
-            </div>
-        </section>
-
-        <!-- PROBLEMS & SOLUTIONS -->
-        <section id="features" class="py-16 md:py-24 border-b border-slate-900">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center max-w-3xl mx-auto mb-16">
-                    <span class="text-[10px] font-extrabold text-brand-500 uppercase tracking-widest block mb-3">Проблематика B2B</span>
-                    <h2 class="font-outfit font-black text-2xl sm:text-3xl text-white mb-4">Всё еще собираете сметы «на коленке» и теряете заказчиков?</h2>
-                    <p class="text-slate-400 text-sm font-medium">Рутина отнимает драгоценное время и приводит к кассовым разрывам из-за банальных просчетов.</p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-                    <div class="bento-card bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6">
-                        <div class="w-9 h-9 bg-red-500/10 text-red-500 rounded-lg flex items-center justify-center mb-5"><i data-lucide="clock" class="w-5 h-5"></i></div>
-                        <h4 class="font-bold text-white text-base mb-2">Долго</h4>
-                        <p class="text-xs text-slate-400 leading-relaxed font-medium">Тратите часы на ручной расчет гидравлики, подбор фитингов и проверку совместимости диаметров.</p>
-                    </div>
-                    <div class="bento-card bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6">
-                        <div class="w-9 h-9 bg-red-500/10 text-red-500 rounded-lg flex items-center justify-center mb-5"><i data-lucide="alert-triangle" class="w-5 h-5"></i></div>
-                        <h4 class="font-bold text-white text-base mb-2">Опасно</h4>
-                        <p class="text-xs text-slate-400 leading-relaxed font-medium">Ошиблись с сопротивлением труб или забыли мелочевку — переделываете за свой счет или краснеете перед клиентом.</p>
-                    </div>
-                    <div class="bento-card bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6">
-                        <div class="w-9 h-9 bg-red-500/10 text-red-500 rounded-lg flex items-center justify-center mb-5"><i data-lucide="shield-alert" class="w-5 h-5"></i></div>
-                        <h4 class="font-bold text-white text-base mb-2">Сложно обосновать цену</h4>
-                        <p class="text-xs text-slate-400 leading-relaxed font-medium">Клиент идет проверять цены из сметы, находит серые сайты и начинает сомневаться в вашей честности.</p>
-                    </div>
-                </div>
-
-                <!-- Screencast Box / Solution -->
-                <div class="bg-gradient-to-r from-slate-900 to-brand-950/40 border border-brand-500/10 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-8">
-                    <div class="max-w-xl">
-                        <h3 class="font-outfit font-black text-xl md:text-2xl text-white mb-3">Оставьте рутину алгоритмам. Проектируйте как инженер, продавайте как профи.</h3>
-                        <p class="text-xs text-slate-400 font-medium leading-relaxed">
-                            Калькулятор автоматически заложит верные диаметры сшитого полиэтилена, сформирует спецификацию Stout/Rommer и выдаст готовую смету в течение нескольких минут.
-                        </p>
-                    </div>
-                    <div class="w-full md:w-80 h-44 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-center text-slate-500 relative overflow-hidden group">
-                        <div class="absolute inset-0 bg-brand-500/5 group-hover:bg-brand-500/10 transition-colors"></div>
-                        <div class="relative z-10 flex flex-col items-center gap-2">
-                            <div class="w-12 h-12 bg-brand-600 text-white rounded-full flex items-center justify-center shadow-lg"><i data-lucide="play" class="w-5 h-5"></i></div>
-                            <span class="text-[10px] font-bold text-slate-400">Демо-скринкаст (15 секунд)</span>
+                    <!-- Quick Registration Box -->
+                    <div class="max-w-xl mx-auto bg-slate-900/70 border border-slate-800 rounded-2xl p-5 sm:p-6 backdrop-blur-md shadow-xl text-center">
+                        <div class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                            <i data-lucide="zap" class="w-4 h-4 text-brand-400"></i>
+                            <span>Быстрая регистрация без банковской карты</span>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 5 SELLING POINTS -->
-        <section class="py-16 md:py-24 border-b border-slate-900">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center max-w-3xl mx-auto mb-16">
-                    <span class="text-[10px] font-extrabold text-brand-500 uppercase tracking-widest block mb-3">Преимущества</span>
-                    <h2 class="font-outfit font-black text-2xl sm:text-3xl text-white mb-4">5 причин закрывать сделки через HeatCalc.ru</h2>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
-                    <div class="bg-slate-900/30 border border-slate-900 rounded-2xl p-5 flex flex-col justify-between">
-                        <div class="w-8 h-8 bg-brand-500/10 text-brand-400 rounded-lg flex items-center justify-center mb-4"><i data-lucide="coins" class="w-4 h-4"></i></div>
-                        <div>
-                            <h4 class="font-bold text-xs text-white uppercase tracking-wider mb-2">Честные цены</h4>
-                            <p class="text-[11px] text-slate-400 leading-relaxed font-semibold">В систему заложены официальные рекомендованные розничные цены (РРЦ).</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-900/30 border border-slate-900 rounded-2xl p-5 flex flex-col justify-between">
-                        <div class="w-8 h-8 bg-brand-500/10 text-brand-400 rounded-lg flex items-center justify-center mb-4"><i data-lucide="warehouse" class="w-4 h-4"></i></div>
-                        <div>
-                            <h4 class="font-bold text-xs text-white uppercase tracking-wider mb-2">Наличие</h4>
-                            <p class="text-[11px] text-slate-400 leading-relaxed font-semibold">При расчете вы сразу видите, доступно ли оборудование на центральных складах.</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-900/30 border border-slate-900 rounded-2xl p-5 flex flex-col justify-between">
-                        <div class="w-8 h-8 bg-brand-500/10 text-brand-400 rounded-lg flex items-center justify-center mb-4"><i data-lucide="sliders" class="w-4 h-4"></i></div>
-                        <div>
-                            <h4 class="font-bold text-xs text-white uppercase tracking-wider mb-2">Скидки</h4>
-                            <p class="text-[11px] text-slate-400 leading-relaxed font-semibold">Впишите нужный процент скидки прямо в смете — система мгновенно пересчитает сумму.</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-900/30 border border-slate-900 rounded-2xl p-5 flex flex-col justify-between">
-                        <div class="w-8 h-8 bg-brand-500/10 text-brand-400 rounded-lg flex items-center justify-center mb-4"><i data-lucide="file-text" class="w-4 h-4"></i></div>
-                        <div>
-                            <h4 class="font-bold text-xs text-white uppercase tracking-wider mb-2">Бренд КП</h4>
-                            <p class="text-[11px] text-slate-400 leading-relaxed font-semibold">Загрузите свой логотип, укажите реквизиты, и сервис сгенерирует КП в PDF.</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-900/30 border border-slate-900 rounded-2xl p-5 flex flex-col justify-between">
-                        <div class="w-8 h-8 bg-brand-500/10 text-brand-400 rounded-lg flex items-center justify-center mb-4"><i data-lucide="check-square" class="w-4 h-4"></i></div>
-                        <div>
-                            <h4 class="font-bold text-xs text-white uppercase tracking-wider mb-2">100% Защита</h4>
-                            <p class="text-[11px] text-slate-400 leading-relaxed font-semibold">Программа не даст ошибиться и заложить насос, который не вытянет скважину.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- WHAT'S INSIDE (TABS) -->
-        <section id="whats-inside" class="py-16 md:py-24 border-b border-slate-900">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center max-w-3xl mx-auto mb-14">
-                    <span class="text-[10px] font-extrabold text-brand-500 uppercase tracking-widest block mb-3">Функционал</span>
-                    <h2 class="font-outfit font-black text-2xl sm:text-3xl text-white mb-4">Инженерная начинка HeatCalc</h2>
-                    <p class="text-slate-400 text-sm font-medium">Все модули соответствуют нормам СНиП, СП и ГОСТ.</p>
-                </div>
-
-                <!-- Tabs navigation -->
-                <div class="flex flex-wrap items-center justify-center gap-2 mb-10">
-                    <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id" :class="currentTab === tab.id ? 'bg-brand-600 text-white' : 'bg-slate-900 text-slate-400 hover:bg-slate-850 hover:text-white border border-slate-800'" class="px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2">
-                        <i :data-lucide="tab.icon" class="w-4 h-4"></i>
-                        <span>{{ tab.title }}</span>
-                    </button>
-                </div>
-
-                <!-- Tabs Content Card -->
-                <div class="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 md:p-8 min-h-[250px] flex flex-col md:flex-row items-center justify-between gap-10">
-                    <div class="max-w-xl" v-if="activeTabData">
-                        <div class="inline-flex items-center gap-2 px-3 py-1 bg-brand-500/10 text-brand-400 rounded-full text-[10px] font-extrabold uppercase tracking-wider mb-4 border border-brand-500/20">
-                            {{ activeTabData.sp }}
-                        </div>
-                        <h3 class="font-outfit font-black text-xl md:text-2xl text-white mb-4">{{ activeTabData.title }}</h3>
-                        <p class="text-slate-400 text-sm font-medium leading-relaxed mb-6">{{ activeTabData.desc }}</p>
+                        <p class="text-xs text-slate-400 mb-4 font-medium">Создайте аккаунт инженера и получите доступ к сохранению смет</p>
                         
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div v-for="item in activeTabData.bullets" :key="item" class="flex items-center gap-2 text-xs font-semibold text-slate-300">
-                                <i data-lucide="check" class="w-4 h-4 text-green-500 flex-shrink-0"></i>
-                                <span>{{ item }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right visual mock representation of current module -->
-                    <div class="w-full md:w-[400px] bg-slate-950 border border-slate-900 rounded-2xl p-6 font-mono text-[11px] text-slate-400 flex-shrink-0" v-if="activeTabData">
-                        <div class="flex items-center justify-between border-b border-slate-900 pb-3 mb-4">
-                            <span class="text-brand-400 font-bold uppercase tracking-wider text-[9px]">Калькулятор модуля</span>
-                            <span class="text-[9px] text-slate-650">v1.4</span>
-                        </div>
-                        <div class="space-y-3">
-                            <div v-for="(val, key) in activeTabData.mockData" :key="key" class="flex justify-between">
-                                <span class="text-slate-500">{{ key }}:</span>
-                                <span class="font-bold text-slate-200">{{ val }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        </section>
-
-        <!-- DEMONSTRATION OF RESULT / ДЕМОНСТРАЦИЯ РЕЗУЛЬТАТА -->
-        <section id="demo-result" class="py-16 md:py-24 border-b border-slate-900 relative">
-            <div class="absolute top-1/3 right-1/4 w-[400px] h-[200px] bg-brand-600/5 rounded-full blur-[100px] pointer-events-none"></div>
-            
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-                    
-                    <!-- Left: Interactive Gallery/Carousel -->
-                    <div class="lg:col-span-6 flex flex-col gap-4">
-                        <div class="relative w-full aspect-[16/10] bg-slate-950 border border-slate-900 rounded-3xl overflow-hidden group shadow-2xl">
-                            <!-- Main Display Slot (Fallback to stylish dashboard cards if images are missing) -->
-                            <div class="w-full h-full relative flex items-center justify-center">
-                                <img :src="gallery[activeGalleryIndex].src" :alt="gallery[activeGalleryIndex].title" class="w-full h-full object-cover opacity-90 transition-all duration-300">
-                                
-                                <!-- Decorative dark gradient overlay -->
-                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
-                                
-                                <!-- Floating description badge -->
-                                <div class="absolute bottom-6 left-6 right-6 bg-slate-900/90 border border-slate-800 rounded-xl p-4 backdrop-blur-sm">
-                                    <span class="text-[9px] text-brand-400 font-bold uppercase tracking-wider block mb-1">Скриншот интерфейса</span>
-                                    <h4 class="text-xs font-bold text-white">{{ gallery[activeGalleryIndex].title }}</h4>
-                                </div>
-
-                                <!-- Left/Right Navigation Arrows -->
-                                <button @click="prevSlide" class="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-slate-900/80 hover:bg-brand-600 text-white rounded-full flex items-center justify-center border border-slate-850 hover:border-brand-500 transition-all opacity-0 group-hover:opacity-100 focus:outline-none">
-                                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
-                                </button>
-                                <button @click="nextSlide" class="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-slate-900/80 hover:bg-brand-600 text-white rounded-full flex items-center justify-center border border-slate-850 hover:border-brand-500 transition-all opacity-0 group-hover:opacity-100 focus:outline-none">
-                                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Thumbnails Row -->
-                        <div class="grid grid-cols-3 gap-3">
-                            <button v-for="(item, index) in gallery" :key="index" @click="activeGalleryIndex = index" :class="activeGalleryIndex === index ? 'border-brand-500 bg-brand-500/5' : 'border-slate-900 bg-slate-900/20 hover:border-slate-800'" class="border rounded-2xl p-2 text-left flex flex-col gap-1.5 focus:outline-none transition-all">
-                                <div class="aspect-[16/10] w-full rounded-lg overflow-hidden bg-slate-950 relative">
-                                    <img :src="item.src" :alt="item.title" class="w-full h-full object-cover opacity-60">
-                                </div>
-                                <span class="text-[9px] font-bold text-slate-400 truncate w-full block px-0.5">{{ item.label }}</span>
+                        <form @submit.prevent="handleRegister" class="flex flex-col sm:flex-row gap-3">
+                            <input type="email" required v-model="form.email" placeholder="Ваш Email (work@engineer.ru)" class="flex-grow bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 transition-colors">
+                            <button type="submit" :disabled="formStatus === 'loading'" class="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-lg shadow-brand-600/20 transition-all flex items-center justify-center gap-2 whitespace-nowrap">
+                                <span v-if="formStatus === 'loading'" class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                <span v-else>Зарегистрироваться</span>
                             </button>
-                        </div>
+                        </form>
+                        <span class="text-[10px] text-slate-500 mt-2 block font-medium">Тариф «Базовый» с бессрочным бесплатным доступом.</span>
                     </div>
 
-                    <!-- Right: Context Copy & Live Link CTA -->
-                    <div class="lg:col-span-6 flex flex-col">
-                        <div class="inline-flex items-center gap-2 px-3 py-1 bg-brand-500/10 text-brand-400 rounded-full text-[10px] font-bold uppercase tracking-wider mb-6 w-max border border-brand-500/20">
-                            <i data-lucide="award" class="w-3.5 h-3.5"></i>
-                            Пример готового коммерческого предложения
-                        </div>
+                </div>
+            </section>
 
-                        <h2 class="font-outfit font-black text-2xl sm:text-3xl text-white leading-tight mb-4">
-                            Оцените масштаб. Вот что вы отдаете клиенту через 5 минут.
+            <!-- WHAT IS HEATCALC (EXPLAINER SECTION) -->
+            <section id="what-is-it" class="py-16 md:py-24 border-b border-slate-900/80 relative">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-3xl mx-auto mb-16">
+                        <span class="text-[10px] font-extrabold text-brand-400 uppercase tracking-widest block mb-3">О платформе</span>
+                        <h2 class="font-outfit font-black text-2xl sm:text-4xl text-white mb-4">
+                            Что такое HeatCalc.ru и почему вы перестанете терять время?
                         </h2>
-                        
-                        <p class="text-xs sm:text-sm text-slate-400 font-medium leading-relaxed mb-6">
-                            Никаких примерных цифр. Вы генерируете полноценное коммерческое предложение на 10 страницах, где учтено всё: от коаксиального дымохода и длины труб теплого пола до дюбель-крюков и точной стоимости ваших монтажных работ.
+                        <p class="text-slate-400 text-sm font-medium leading-relaxed">
+                            Раньше инженерный расчет занимал 4-6 часов в Excel, а сметы составлялись вручную. HeatCalc автоматизирует весь цикл от теплофизики здания до брендированного КП для заказчика.
                         </p>
-
-                        <!-- Highlights List -->
-                        <ul class="space-y-3.5 mb-8">
-                            <li class="flex items-start gap-3 text-xs font-semibold text-slate-200">
-                                <span class="w-5 h-5 bg-brand-500/10 text-brand-400 rounded-md border border-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <i data-lucide="check" class="w-3.5 h-3.5 text-brand-500"></i>
-                                </span>
-                                <div>
-                                    <span class="text-slate-100">Объект: Дом 150 м²</span>
-                                    <span class="text-slate-400 block text-[10px] font-medium mt-0.5">Центральный регион, теплопотери 15.0 кВт (Газобетон).</span>
-                                </div>
-                            </li>
-                            <li class="flex items-start gap-3 text-xs font-semibold text-slate-200">
-                                <span class="w-5 h-5 bg-brand-500/10 text-brand-400 rounded-md border border-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <i data-lucide="check" class="w-3.5 h-3.5 text-brand-500"></i>
-                                </span>
-                                <div>
-                                    <span class="text-slate-100">6 разделов инженерии</span>
-                                    <span class="text-slate-400 block text-[10px] font-medium mt-0.5">Котельная, радиаторы, теплый пол, водоснабжение, скважина, канализация.</span>
-                                </div>
-                            </li>
-                            <li class="flex items-start gap-3 text-xs font-semibold text-slate-200">
-                                <span class="w-5 h-5 bg-brand-500/10 text-brand-400 rounded-md border border-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <i data-lucide="check" class="w-3.5 h-3.5 text-brand-500"></i>
-                                </span>
-                                <div>
-                                    <span class="text-slate-100">Спецификация по брендам</span>
-                                    <span class="text-slate-400 block text-[10px] font-medium mt-0.5">Полная детализация оригинального оборудования STOUT, ROMMER, Haier с актуальными РРЦ.</span>
-                                </div>
-                            </li>
-                            <li class="flex items-start gap-3 text-xs font-semibold text-slate-200">
-                                <span class="w-5 h-5 bg-brand-500/10 text-brand-400 rounded-md border border-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <i data-lucide="check" class="w-3.5 h-3.5 text-brand-500"></i>
-                                </span>
-                                <div>
-                                    <span class="text-slate-100">Монтаж и пусконаладка</span>
-                                    <span class="text-slate-400 block text-[10px] font-medium mt-0.5">Отдельный лист с полной детализацией и прозрачной стоимостью ваших работ.</span>
-                                </div>
-                            </li>
-                        </ul>
-
-                        <!-- CTA Live Estimate Link Button -->
-                        <a href="https://heatcalc.ru/invoice.html?data=c_eJztXVtvVEe2%2Fiul%2FZJG07tdVfvafjrgMQOaAB5sIEcn8%2BBhHIREQoYEDdIIyXYPhHNMYjBwQgjGXM7l4by0jQ2N7W5L8wtW%2FYX5JUdrVdW%2BtPuyu90QIlkTjbdwe%2FurVWt961Krlv%2FmXHXG%2F%2BZ85Yw7sAbP4TE8hUfwnMFzuAcv4H9hAV7CPafszDrjIuBl5wtnXJSda864V3a%2BpOevnXFHBBXulJ1L%2BJr%2FgS1oqkU175SdPzvjjgwrPKhILkOn7HzjjPOb9JPmlz6GDahDk9kHaMGGo1%2F6m4iVqtXqEVatVl36zyk7F%2FGHnkJLLcA2%2FoRTduaccefPl7%2Bclf6fZv%2Fl0pezl69ULl790rlZdi7jr5lzxv%2FN%2FLIn0FKL6j7sMHgNdXiLv0wtwbsygxZs0i%2Ffhhahr6l5aOL3WEnEDLZhRS0e0QtwfjfJ%2FxD%2BYZJPnD3nlJ0%2FOePOidnLc9ecsnPdGXfUHbXolJ2%2FWOEEIa8KWrJ5%2BhYFVmEZNL9hsEEIWtCEOrxW87CFi1OLsAU76q5zs7xvBep72IEt2EZJQ0N9B1skkga8Y9MzR2fOTXcAPj15zPUEFy7nnIvYgJ%2BeOXNupgv4KJK%2BJPDm6SDg70ML3iFqNc%2Fos3vQwk8YQZ%2F5%2BtvLx2a%2FmWOSc9ixkC%2BccKUQHCFLzgtADqUQWt7m6SCQH6ol2IWWuoUfZ6QdddhWC9CAegZ6yMcEgSPIE0fdkAvuSsHjoBjkamwQ4wMClhUGz2AdNtQyvIVtqNMvtwBJVd%2BlMF%2BoRajDOjRgBxrwllbSUvNseobJIME1PYNSpN2XxXBVeaBx0cPguJ6jlan%2FgC3YpW9tMbWAX2CzwqAOu6gK0MDXQFO%2FbAVWmTfmf%2B5Y0McRtK9V1vN7gpba3qqRpiZR9YfB%2FETNEyOpO1BX80gR%2BH1E9nwMVuF5OY%2Fv%2FDGE5hM%2B2VuoGp%2FgVU4ApYj5MAD%2FC7dZ3UXDd9Ud2CFBtujzm%2FgT0LA%2FyWAX1Rua9E9aVfPCveByHski4BM%2B4JYOhgL%2FBFqwC3uWu5jnqltMm1cFf3CHaAHVoc6OX780%2B00C9ViivJyLAlCFrIpQa4J%2BGhzsKjRgD%2FasMFc76ib3XNTMQropuZaez4cUXiIe9FjrqKnJxsKemlc1eAMNaHba6%2FMTLudCFN9r4ftGfvQwUlYKeSdWCgsRfDWINFvqh0NWOmSlQ1Y6ZKUBrF8tqDvQoLg5%2BZBGu47hHYNN2FHLDB7ACrxgIk6j0RlUTREUD6A9z2y3fhjO8LeMajahAVsJOsJKGRBBO4qS9ChQjmVQSBVDq4nhcNDarIbi%2BU00F%2FUDJiRk4cto7si065rB6CWvodWO%2F%2Bz5aYLuoh4kmnD2zKlTk2e7LcDztOLqh8EXcK8D14vPnZRVWQl%2BJPiYHjRQM9bTHAbqRzq5gz40YOnWqIXknhyhP0jRrxRHr52F4dvemmPQB772wB6vDqU5nQRPtJATMZen/yHLXWbzHW7o8D7cJzI%2Be%2F6OjJxZzFrgd%2BniKelvsNX5iUsBvBocagTL%2Fp6QEreIwbZxCzWmGA77YVkjFSxyZgiepCQi6CIKfqeVmf6OiTJqQWMD0lVmzl9yG26N8CmCxEIE3UF4kO4NgLTycENsPWCB74GTQ%2Bj1tXV1L5WbFnjv9HQ2uggHACxiAIj5mjYMkFRl9wiHUncoVrOu%2BcTadhbyD3L2PCCfjh0zx%2BTe8Y8bRMrbTZv%2FHr24hyrYraGK7qNxU4r3rPHXO5J7vKAc17tLV5utDYW0qhtLGze4FUYrJFnQhafV0sdVC5F%2BAALmGRhuBZch5qneiFSGcJOC7N1tUwujcrOLrHGJi0eP9rEbycGeCLJiL2UfnuvxUaZ%2BDDUSl7BW9wERkr8BpqVjLpUWAlewWuz0ha8S6niROE0M5F6aCMD5f" target="_blank" class="w-full sm:w-max inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/10 hover:shadow-brand-500/20 hover:scale-[1.02] transition-all text-xs">
-                            <i data-lucide="eye" class="w-4 h-4"></i>
-                            Посмотреть живой пример расчета
-                        </a>
-                        <span class="text-[9px] text-slate-500 mt-2 font-medium">
-                            * Открывается в новой вкладке, чтобы клиент мог покрутить реальный счет
-                        </span>
                     </div>
 
-                </div>
-            </div>
-        </section>
-
-        <!-- STEPS -->
-        <section class="py-16 md:py-24 border-b border-slate-900">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center max-w-3xl mx-auto mb-16">
-                    <span class="text-[10px] font-extrabold text-brand-500 uppercase tracking-widest block mb-3">Старт работы</span>
-                    <h2 class="font-outfit font-black text-2xl sm:text-3xl text-white mb-4">Простой старт за 3 шага</h2>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="flex gap-4">
-                        <div class="w-10 h-10 bg-brand-600/10 text-brand-500 font-outfit font-black text-base rounded-xl border border-brand-500/20 flex items-center justify-center flex-shrink-0">1</div>
-                        <div>
-                            <h4 class="font-bold text-white text-sm mb-2">Быстрая регистрация</h4>
-                            <p class="text-xs text-slate-450 leading-relaxed font-semibold">Укажите только ваш Email и пароль. Подтверждение карты не требуется.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <!-- Step 1 -->
+                        <div class="bg-slate-900/40 border border-slate-850 rounded-2xl p-7 flex flex-col justify-between hover:border-slate-700 transition-colors">
+                            <div>
+                                <div class="w-12 h-12 bg-brand-500/10 text-brand-400 rounded-xl flex items-center justify-center font-outfit font-black text-xl mb-6 border border-brand-500/20">
+                                    01
+                                </div>
+                                <h3 class="font-outfit font-bold text-white text-lg mb-3">Точные расчеты по ГОСТ и СП</h3>
+                                <p class="text-xs text-slate-400 leading-relaxed font-medium">
+                                    Алгоритм учитывает климатологию регионов, пирог стен, коэффициент одновременности ГВС, скорость воды в трубах и шаг укладки теплого пола. Никаких «100 Вт на метр» наугад.
+                                </p>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-slate-850/80 flex items-center gap-2 text-[11px] font-semibold text-brand-400">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                <span>СП 60.13330 & СП 50.13330</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex gap-4">
-                        <div class="w-10 h-10 bg-brand-600/10 text-brand-500 font-outfit font-black text-base rounded-xl border border-brand-500/20 flex items-center justify-center flex-shrink-0">2</div>
-                        <div>
-                            <h4 class="font-bold text-white text-sm mb-2">Бесплатный тест</h4>
-                            <p class="text-xs text-slate-450 leading-relaxed font-semibold">Начните работу на бессрочном тарифе «Базовый» без каких-либо ограничений.</p>
+
+                        <!-- Step 2 -->
+                        <div class="bg-slate-900/40 border border-slate-850 rounded-2xl p-7 flex flex-col justify-between hover:border-slate-700 transition-colors">
+                            <div>
+                                <div class="w-12 h-12 bg-brand-500/10 text-brand-400 rounded-xl flex items-center justify-center font-outfit font-black text-xl mb-6 border border-brand-500/20">
+                                    02
+                                </div>
+                                <h3 class="font-outfit font-bold text-white text-lg mb-3">Спецификации STOUT & ROMMER</h3>
+                                <p class="text-xs text-slate-400 leading-relaxed font-medium">
+                                    Автоматический подбор котлов, радиаторов (с контролем перекрытия проемов), расширительных баков, запорной арматуры, насосов и фасонных частей с живыми РРЦ.
+                                </p>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-slate-850/80 flex items-center gap-2 text-[11px] font-semibold text-brand-400">
+                                <i data-lucide="box" class="w-4 h-4"></i>
+                                <span>100% Совместимость артикулов</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex gap-4">
-                        <div class="w-10 h-10 bg-brand-600/10 text-brand-500 font-outfit font-black text-base rounded-xl border border-brand-500/20 flex items-center justify-center flex-shrink-0">3</div>
-                        <div>
-                            <h4 class="font-bold text-white text-sm mb-2">Генерация КП в PDF</h4>
-                            <p class="text-xs text-slate-450 leading-relaxed font-semibold">Сохраните готовую спецификацию и смету в PDF для презентации заказчику.</p>
+
+                        <!-- Step 3 -->
+                        <div class="bg-slate-900/40 border border-slate-850 rounded-2xl p-7 flex flex-col justify-between hover:border-slate-700 transition-colors">
+                            <div>
+                                <div class="w-12 h-12 bg-brand-500/10 text-brand-400 rounded-xl flex items-center justify-center font-outfit font-black text-xl mb-6 border border-brand-500/20">
+                                    03
+                                </div>
+                                <h3 class="font-outfit font-bold text-white text-lg mb-3">Брендированное КП в PDF</h3>
+                                <p class="text-xs text-slate-400 leading-relaxed font-medium">
+                                    Загрузите свой логотип и контакты. Выдавайте клиенту солидный 10-страничный документ с прозрачным разделением оборудования и стоимости монтажа.
+                                </p>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-slate-850/80 flex items-center gap-2 text-[11px] font-semibold text-brand-400">
+                                <i data-lucide="file-text" class="w-4 h-4"></i>
+                                <span>Генерация в PDF & QR-ссылка</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- PRICING -->
-        <section id="pricing" class="py-16 md:py-24 border-b border-slate-900 relative">
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 w-[500px] h-[250px] bg-brand-600/5 rounded-full blur-[100px] pointer-events-none"></div>
-            
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div class="text-center max-w-3xl mx-auto mb-12">
-                    <span class="text-[10px] font-extrabold text-brand-500 uppercase tracking-widest block mb-3">Стоимость</span>
-                    <h2 class="font-outfit font-black text-2xl sm:text-3xl text-white mb-4">Прозрачные тарифы без скрытых платежей</h2>
-                    
-                    <!-- Billing Toggle -->
-                    <div class="flex items-center justify-center gap-3 mt-6">
-                        <span class="text-xs font-semibold" :class="pricingAnnual ? 'text-slate-500' : 'text-white'">Ежемесячно</span>
-                        <button @click="pricingAnnual = !pricingAnnual" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-slate-800 transition-colors duration-200 ease-in-out focus:outline-none">
-                            <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" :class="pricingAnnual ? 'translate-x-5' : 'translate-x-0'"></span>
+            <!-- BENTO GRID FEATURES (6 ADVANCED TOOLS) -->
+            <section id="features" class="py-16 md:py-24 border-b border-slate-900/80">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-3xl mx-auto mb-16">
+                        <span class="text-[10px] font-extrabold text-brand-400 uppercase tracking-widest block mb-3">Флагманский функционал</span>
+                        <h2 class="font-outfit font-black text-2xl sm:text-4xl text-white mb-4">
+                            Всё необходимое инженеру-монтажнику в одном месте
+                        </h2>
+                        <p class="text-slate-400 text-sm font-medium">Мощный арсенал инструментов для быстрых продаж и качественного монтажа</p>
+                    </div>
+
+                    <!-- Bento Grid Layout -->
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        
+                        <!-- Bento 1: AI OCR Recognition (Large 7 cols) -->
+                        <div class="md:col-span-7 bento-card bg-slate-900/50 border border-slate-850 rounded-3xl p-7 flex flex-col justify-between relative overflow-hidden group">
+                            <div class="absolute -right-12 -top-12 w-48 h-48 bg-brand-600/10 rounded-full blur-2xl"></div>
+                            
+                            <div>
+                                <div class="inline-flex items-center gap-2 px-3 py-1 bg-brand-500/10 text-brand-400 rounded-full text-[10px] font-bold uppercase tracking-wider mb-4 border border-brand-500/20">
+                                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-brand-400"></i>
+                                    AI-Модуль
+                                </div>
+                                <h3 class="font-outfit font-black text-xl sm:text-2xl text-white mb-3">
+                                    AI OCR Распознавание сторонних смет с фото и PDF
+                                </h3>
+                                <p class="text-xs text-slate-400 font-medium leading-relaxed mb-6 max-w-xl">
+                                    Загрузите фотографию рукописной сметы или PDF конкурента. Искусственный интеллект автоматически распознает позицию за позицией и подберет точные аналоги оборудования STOUT и ROMMER из каталога.
+                                </p>
+                            </div>
+
+                            <!-- Mock OCR interface preview -->
+                            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 font-mono text-[11px]">
+                                <div class="flex items-center justify-between text-slate-500 border-b border-slate-850 pb-2 mb-3 text-[10px]">
+                                    <span>Входной файл: smeta_konkurenta.pdf</span>
+                                    <span class="text-emerald-400 font-bold">Распознано: 100%</span>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-center bg-slate-900/80 p-2 rounded border border-slate-850">
+                                        <span class="text-slate-300">Котёл 24 кВт настенный</span>
+                                        <span class="text-brand-400 font-bold">→ STOUT STATUS 24 кВт (78 540 ₽)</span>
+                                    </div>
+                                    <div class="flex justify-between items-center bg-slate-900/80 p-2 rounded border border-slate-850">
+                                        <span class="text-slate-300">Труба PEX-A 16х2.0 (200м)</span>
+                                        <span class="text-brand-400 font-bold">→ STOUT PEX-A Red (152 ₽/м)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bento 2: 3D Boiler Room Visualizer (5 cols) -->
+                        <div class="md:col-span-5 bento-card bg-slate-900/50 border border-slate-850 rounded-3xl p-7 flex flex-col justify-between relative overflow-hidden">
+                            <div>
+                                <div class="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/10 text-purple-400 rounded-full text-[10px] font-bold uppercase tracking-wider mb-4 border border-purple-500/20">
+                                    <i data-lucide="box" class="w-3.5 h-3.5"></i>
+                                    3D-Инженерия
+                                </div>
+                                <h3 class="font-outfit font-black text-xl text-white mb-3">
+                                    3D-Визуализатор обвязки котельной
+                                </h3>
+                                <p class="text-xs text-slate-400 font-medium leading-relaxed mb-6">
+                                    Интерактивная трехмерная схема размещения гидравлического разделителя, коллекторов и насосных групп. Наглядная презентация для заказчика.
+                                </p>
+                            </div>
+
+                            <div class="bg-slate-950 border border-slate-800 rounded-2xl h-36 flex items-center justify-center relative overflow-hidden group">
+                                <div class="absolute inset-0 bg-gradient-to-tr from-purple-900/20 to-transparent"></div>
+                                <div class="text-center relative z-10">
+                                    <div class="w-10 h-10 bg-purple-600/30 text-purple-300 rounded-xl flex items-center justify-center mx-auto mb-2 border border-purple-500/30">
+                                        <i data-lucide="layers" class="w-5 h-5"></i>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">3D Boiler Room Renderer Active</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bento 3: Wall Sandwiches СП 50.13330 (4 cols) -->
+                        <div class="md:col-span-4 bento-card bg-slate-900/50 border border-slate-850 rounded-3xl p-7 flex flex-col justify-between">
+                            <div>
+                                <div class="w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center mb-5 border border-emerald-500/20">
+                                    <i data-lucide="layers" class="w-5 h-5"></i>
+                                </div>
+                                <h3 class="font-outfit font-bold text-white text-lg mb-2">Конструктор пирога стены</h3>
+                                <p class="text-xs text-slate-400 leading-relaxed font-medium mb-4">
+                                    Задайте слои стены (газобетон, минвата, кирпич). Программа автоматически вычислит сопротивление $R_0$ и поправочный коэффициент по СП 50.13330.
+                                </p>
+                            </div>
+                            <span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg w-max border border-emerald-500/20">Точный расчет $R_0$</span>
+                        </div>
+
+                        <!-- Bento 4: RRP & Live Warehouse Check (4 cols) -->
+                        <div class="md:col-span-4 bento-card bg-slate-900/50 border border-slate-850 rounded-3xl p-7 flex flex-col justify-between">
+                            <div>
+                                <div class="w-10 h-10 bg-brand-500/10 text-brand-400 rounded-xl flex items-center justify-center mb-5 border border-brand-500/20">
+                                    <i data-lucide="warehouse" class="w-5 h-5"></i>
+                                </div>
+                                <h3 class="font-outfit font-bold text-white text-lg mb-2">Проверка остатков и РРЦ</h3>
+                                <p class="text-xs text-slate-400 leading-relaxed font-medium mb-4">
+                                    Официальные рекомендованные розничные цены брендов. Автоматический контроль наличия позиций на центральных складах Москвы и регионов.
+                                </p>
+                            </div>
+                            <span class="text-[10px] font-bold text-brand-400 bg-brand-500/10 px-2.5 py-1 rounded-lg w-max border border-brand-500/20">Актуальный прайс 2026</span>
+                        </div>
+
+                        <!-- Bento 5: Installer Rating & Badges (4 cols) -->
+                        <div class="md:col-span-4 bento-card bg-slate-900/50 border border-slate-850 rounded-3xl p-7 flex flex-col justify-between">
+                            <div>
+                                <div class="w-10 h-10 bg-amber-500/10 text-amber-400 rounded-xl flex items-center justify-center mb-5 border border-amber-500/20">
+                                    <i data-lucide="trophy" class="w-5 h-5"></i>
+                                </div>
+                                <h3 class="font-outfit font-bold text-white text-lg mb-2">Рейтинг & Сертификаты</h3>
+                                <p class="text-xs text-slate-400 leading-relaxed font-medium mb-4">
+                                    Геймификация опыта для инженеров. Накапливайте XP за рассчитанные объекты, повышайте уровень и выгружайте именной сертификат эксперта.
+                                </p>
+                            </div>
+                            <span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg w-max border border-amber-500/20">Сертификат HeatCalc Pro</span>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6 ENGINEERING MODULES IN DETAIL (TABS) -->
+            <section id="whats-inside" class="py-16 md:py-24 border-b border-slate-900/80 bg-slate-950">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-3xl mx-auto mb-14">
+                        <span class="text-[10px] font-extrabold text-brand-400 uppercase tracking-widest block mb-3">Нормативная база</span>
+                        <h2 class="font-outfit font-black text-2xl sm:text-4xl text-white mb-4">
+                            6 Инженерных модулей по стандартам СНиП и СП
+                        </h2>
+                        <p class="text-slate-400 text-sm font-medium">Каждый раздел укомплектован формулами расчетов и фильтром оборудования</p>
+                    </div>
+
+                    <!-- Tabs Header -->
+                    <div class="flex flex-wrap items-center justify-center gap-2.5 mb-10">
+                        <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id" :class="currentTab === tab.id ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30' : 'bg-slate-900 text-slate-400 hover:bg-slate-850 hover:text-white border border-slate-800'" class="px-4 py-3 rounded-2xl font-bold text-xs transition-all flex items-center gap-2">
+                            <i :data-lucide="tab.icon" class="w-4 h-4"></i>
+                            <span>{{ tab.title }}</span>
                         </button>
-                        <span class="text-xs font-semibold flex items-center gap-1.5" :class="pricingAnnual ? 'text-white' : 'text-slate-500'">
-                            Ежегодно
-                            <span class="bg-green-500/10 text-green-400 text-[9px] font-bold px-1.5 py-0.5 rounded border border-green-500/20">Выгода 40%</span>
-                        </span>
+                    </div>
+
+                    <!-- Active Tab Content Box -->
+                    <div class="bg-slate-900/40 border border-slate-850 rounded-3xl p-6 sm:p-9 min-h-[300px] flex flex-col lg:flex-row items-center justify-between gap-10">
+                        <div class="max-w-2xl" v-if="activeTabData">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 bg-brand-500/10 text-brand-400 rounded-full text-[10px] font-extrabold uppercase tracking-wider mb-4 border border-brand-500/20">
+                                {{ activeTabData.sp }}
+                            </div>
+                            <h3 class="font-outfit font-black text-xl sm:text-2xl text-white mb-4">{{ activeTabData.title }}</h3>
+                            <p class="text-slate-300 text-xs sm:text-sm font-medium leading-relaxed mb-6">{{ activeTabData.desc }}</p>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                                <div v-for="item in activeTabData.bullets" :key="item" class="flex items-center gap-2.5 text-xs font-semibold text-slate-200">
+                                    <div class="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-500/20">
+                                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                    </div>
+                                    <span>{{ item }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Live Code / Data Card -->
+                        <div class="w-full lg:w-[380px] bg-slate-950 border border-slate-850 rounded-2xl p-5 font-mono text-[11px] text-slate-400 flex-shrink-0" v-if="activeTabData">
+                            <div class="flex items-center justify-between border-b border-slate-850 pb-3 mb-4">
+                                <span class="text-brand-400 font-bold uppercase tracking-wider text-[10px]">Параметры модуля</span>
+                                <span class="text-[9px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">ГОСТ OK</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div v-for="(val, key) in activeTabData.mockData" :key="key" class="flex justify-between items-center">
+                                    <span class="text-slate-500 text-[10px]">{{ key }}:</span>
+                                    <span class="font-bold text-slate-200 font-mono">{{ val }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            </section>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                    <!-- Base Tariff -->
-                    <div class="bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-3xl p-8 flex flex-col justify-between transition-colors">
-                        <div>
-                            <div class="flex justify-between items-center mb-6">
-                                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Базовый</span>
-                                <span class="bg-slate-850 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded">Всегда бесплатно</span>
+            <!-- DEMONSTRATION OF RESULT / LIVE KP PREVIEW WITH REAL CATALOG PRICES -->
+            <section id="demo-result" class="py-16 md:py-24 border-b border-slate-900/80 relative">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                        
+                        <!-- Left Mockup Interactive Preview -->
+                        <div class="lg:col-span-6">
+                            <div class="relative rounded-3xl border border-slate-800 bg-slate-900/60 p-5 md:p-6 backdrop-blur-xl dashboard-glow">
+                                <!-- Top Bar -->
+                                <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                        <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                                        <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                                        <span class="text-xs text-slate-500 font-mono ml-2">heatcalc.ru/invoice.html</span>
+                                    </div>
+                                    <span class="text-[10px] font-bold text-brand-400 bg-brand-500/10 px-2 py-1 rounded border border-brand-500/20">КП № 0001</span>
+                                </div>
+
+                                <!-- KP Content -->
+                                <div class="bg-white text-slate-900 rounded-2xl p-5 text-[11px] shadow-inner">
+                                    <div class="flex justify-between items-center border-b border-slate-200 pb-3 mb-3">
+                                        <div>
+                                            <h4 class="font-black text-xs text-brand-800 tracking-tight uppercase">Коммерческое Предложение</h4>
+                                            <span class="text-[9px] text-slate-400">ООО «Инженерные Системы» · Тел: +7 (495) 775-20-20</span>
+                                        </div>
+                                        <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-black">H</div>
+                                    </div>
+
+                                    <!-- Tabs inside mockup -->
+                                    <div class="flex border-b border-slate-200 mb-3 font-semibold">
+                                        <button @click="previewMode = 'equipment'" :class="previewMode === 'equipment' ? 'border-b-2 border-brand-600 text-brand-700 bg-slate-50' : 'text-slate-400'" class="flex-1 py-1.5 text-center text-[10px] font-bold">
+                                            1. Оборудование (STOUT / Haier)
+                                        </button>
+                                        <button @click="previewMode = 'works'" :class="previewMode === 'works' ? 'border-b-2 border-brand-600 text-brand-700 bg-slate-50' : 'text-slate-400'" class="flex-1 py-1.5 text-center text-[10px] font-bold">
+                                            2. Монтажные работы
+                                        </button>
+                                    </div>
+
+                                    <!-- Equipment List with REAL CATALOG PRICES -->
+                                    <div v-if="previewMode === 'equipment'" class="space-y-2">
+                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-200">
+                                            <span class="font-bold text-slate-800 text-[10px]">Котёл электрический STATUS (18 кВт) STOUT</span>
+                                            <span class="font-bold text-brand-700 font-mono">77 242 ₽</span>
+                                        </div>
+                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-200">
+                                            <span class="font-bold text-slate-800 text-[10px]">Котёл газовый одноконтурный (18 кВт) Haier</span>
+                                            <span class="font-bold text-brand-700 font-mono">62 324 ₽</span>
+                                        </div>
+                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-200">
+                                            <span class="font-bold text-slate-800 text-[10px]">Бойлер напольный OptiBase 200л STOUT</span>
+                                            <span class="font-bold text-brand-700 font-mono">62 111 ₽</span>
+                                        </div>
+                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-200">
+                                            <span class="font-bold text-slate-800 text-[10px]">Труба PEX-a Red 16x2.0 (400м) STOUT</span>
+                                            <span class="font-bold text-brand-700 font-mono">60 800 ₽</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Works List -->
+                                    <div v-if="previewMode === 'works'" class="space-y-2">
+                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-200">
+                                            <span class="font-bold text-slate-800 text-[10px]">Монтаж и обвязка котельной под ключ</span>
+                                            <span class="font-bold text-slate-800 font-mono">45 000 ₽</span>
+                                        </div>
+                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-200">
+                                            <span class="font-bold text-slate-800 text-[10px]">Укладка теплого пола (150 м²)</span>
+                                            <span class="font-bold text-slate-800 font-mono">60 000 ₽</span>
+                                        </div>
+                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-200">
+                                            <span class="font-bold text-slate-800 text-[10px]">Монтаж радиаторов (10 приборов)</span>
+                                            <span class="font-bold text-slate-800 font-mono">65 000 ₽</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Summary -->
+                                    <div class="mt-4 pt-3 border-t border-slate-200 flex justify-between items-center">
+                                        <span class="text-[9px] text-slate-400 font-bold uppercase">Итого по объекту:</span>
+                                        <span class="text-base font-black text-brand-700 font-mono">432 477 ₽</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mb-6 font-outfit">
-                                <span class="text-5xl font-black text-white">0</span>
-                                <span class="text-lg font-bold text-slate-500 ml-1">₽</span>
+                        </div>
+
+                        <!-- Right Description & Button -->
+                        <div class="lg:col-span-6 flex flex-col">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 bg-brand-500/10 text-brand-400 rounded-full text-[10px] font-bold uppercase tracking-wider mb-6 w-max border border-brand-500/20">
+                                <i data-lucide="award" class="w-3.5 h-3.5"></i>
+                                Готовое сметное решение
                             </div>
-                            <p class="text-xs text-slate-400 font-semibold mb-6 border-b border-slate-850 pb-6 leading-relaxed">
-                                Идеально подходит для ознакомления и простых расчетов.
+
+                            <h2 class="font-outfit font-black text-2xl sm:text-4xl text-white leading-tight mb-4">
+                                Смета, которая закрывает сделки без вопросов от клиентов
+                            </h2>
+                            
+                            <p class="text-xs sm:text-sm text-slate-400 font-medium leading-relaxed mb-6">
+                                Клиент видит полностью прозрачный расчет: каждую гильзовую коллекторную тройниковую позицию, метраж труб и точный перечень монтажных работ.
                             </p>
-                            <ul class="space-y-4 text-xs font-semibold text-slate-300">
-                                <li class="flex items-center gap-3">
-                                    <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
-                                    <span>Полный расчет раздела «Котельная»</span>
+
+                            <ul class="space-y-3 mb-8">
+                                <li class="flex items-center gap-3 text-xs font-semibold text-slate-200">
+                                    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
+                                    <span>Печать в формате PDF и ссылка для клиента по QR-коду</span>
                                 </li>
-                                <li class="flex items-center gap-3">
-                                    <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
-                                    <span>Подбор диаметров и гидравлики</span>
+                                <li class="flex items-center gap-3 text-xs font-semibold text-slate-200">
+                                    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
+                                    <span>Гибкая настройка скидки в реальном времени</span>
                                 </li>
-                                <li class="flex items-center gap-3">
-                                    <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
-                                    <span>Проверка РРЦ</span>
+                                <li class="flex items-center gap-3 text-xs font-semibold text-slate-200">
+                                    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
+                                    <span>Подключение реквизитов ИП/ООО и вашего логотипа</span>
                                 </li>
                             </ul>
-                        </div>
-                        <div class="mt-8 pt-6 border-t border-slate-850">
-                            <a href="#app" class="w-full inline-flex items-center justify-center py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl border border-slate-800 hover:border-slate-700 transition-colors">
-                                Создать аккаунт
+
+                            <a href="https://heatcalc.ru/invoice.html?data=c_eJztXVtvVEe2%2Fiul%2FZJG07tdVfvafjrgMQOaAB5sIEcn8%2BBhHIREQoYEDdIIyXYPhHNMYjBwQgjGXM7l4by0jQ2N7W5L8wtW%2FYX5JUdrVdW%2BtPuyu90QIlkTjbdwe%2FurVWt961Krlv%2FmXHXG%2F%2BZ85Yw7sAbP4TE8hUfwnMFzuAcv4H9hAV7CPafszDrjIuBl5wtnXJSda864V3a%2BpOevnXFHBBXulJ1L%2BJr%gS1oqkU175SdPzvjjgwrPKhILkOn7HzjjPOb9JPmlz6GDahDk9kHaMGGo1%2F6m4iVqtXqEVatVl36zyk7F%2FGHnkJLLcA2%2FoRTduaccefPl7%2Bclf6fZv%2Fl0pezl69ULl790rlZdi7jr5lzxv%FN%2FLIn0FKL6j7sMHgNdXiLv0wtwbsygxZs0i%2Ffhhahr6l5aOL3WEnEDLZhRS0e0QtwfjfJ%2FxD%2BYZJPnD3nlJ0%2FOePOidnLc9ecsnPdGXfUHbXolJ2%2FWOEEIa8KWrJ5%2BhYFVmEZNL9hsEEIWtCEOrxW87CFi1OLsAU76q5zs7xvBep72IEt2EZJQ0N9B1skkga8Y9MzR2fOTXcAPj15zPUEFy7nnIvYgJ%2BeOXNupgv4KJK%2BJPDm6SDg70ML3iFqNc%2Fos3vQwk8YQZ%2F5%2BtvLx2a%2FmWOSc9ixkC%2BccKUQHCFLzgtADqUQWt7m6SCQH6ol2IWWuoUfZ6QdddhWC9CAegZ6yMcEgSPIE0fdkAvuSsHjoBjkamwQ4wMClhUGz2AdNtQyvIVtqNMvtwBJVd%2BlMF%2BoRajDOjRgBxrwllbSUvNseobJIME1PYNSpN2XxXBVeaBx0cPguJ6jlan%FgC3YpW9tMbWAX2CzwqAOu6gK0MDXQFO%2FbAVWmTfmf%2B5Y0McRtK9V1vN7gpba3qqRpiZR9YfB%2FETNEyOpO1BX80gR%2BH1E9nwMVuF5OY%2Fv%2FDGE5hM%2B2VuoGp%FgVU4ApYj5MAD%2FC7dZ3UXDd9Ud2CFBtujzm%2FgT0LA%2FyWAX1Rua9E9aVfPCveByHski4BM%2B4JYOhgL%2FBFqwC3uWu5jnqltMm1cFf3CHaAHVoc6OX780%2B00C9ViivJyLAlCFrIpQa4J%2BGhzsKjRgD%2FasMFc76ib3XNTMQropuZaez4cUXiIe9FjrqKnJxsKemlc1eAMNaHba6%2FMTLudCFN9r4ftGfvQwUlYKeSdWCgsRfDWINFvqh0NWOmSlQ1Y6ZKUBrF8tqDvQoLg5%2BZBGu47hHYNN2FHLDB7ACrxgIk6j0RlUTREUD6A9z2y3fhjO8LeMajahAVsJOsJKGRBBO4qS9ChQjmVQSBVDq4nhcNDarIbi%2BU00F%2FUDJiRk4cto7si065rB6CWvodWO%2F%2Bz5aYLuoh4kmnD2zKlTk2e7LcDztOLqh8EXcK8D14vPnZRVWQl%2BJPiYHjRQM9bTHAbqRzq5gz40YOnWqIXknhyhP0jRrxRHr52F4dvemmPQB772wB6vDqU5nQRPtJATMZen%2FyHLXWbzHW7o8D7cJzI%2Be%2F6OjJxZzFrgd%2BniKelvsNX5iUsBvBocagTL%2Fp6QEreIwbZxCzWmGA77YVkjFSxyZgiepCQi6CIKfqeVmf6OiTJqQWMD0lVmzl9yG26N8CmCxEIE3UF4kO4NgLTycENsPWCB74GTQ%2Bj1tXV1L5WbFnjv9HQ2uggHACxiAIj5mjYMkFRl9wiHUncoVrOu%2BcTadhbyD3L2PCCfjh0zx%2BTe8Y8bRMrbTZv%2FHr24hyrYraGK7qNxU4r3rPHXO5J7vKAc17tLV5utDYW0qhtLGze4FUYrJFnQhafV0sdVC5F%2BAALmGRhuBZch5qneiFSGcJOC7N1tUwujcrOLrHGJi0eP9rEbycGeCLJiL2UfnuvxUaZ%2BDDUSl7BW9wERkr8BpqVjLpUWAlewWuz0ha8S6niROE0M5F6aCMD5f" target="_blank" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg shadow-brand-600/20 transition-all text-xs w-max">
+                                <i data-lucide="external-link" class="w-4 h-4"></i>
+                                <span>Открыть живой пример счета</span>
                             </a>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- PRICING TARIFFS (EXACT 2 TARIFFS FROM THE ORIGINAL MODEL) -->
+            <section id="pricing" class="py-16 md:py-24 border-b border-slate-900/80 bg-slate-950 relative">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-3xl mx-auto mb-12">
+                        <span class="text-[10px] font-extrabold text-brand-400 uppercase tracking-widest block mb-3">Тарифная сетка</span>
+                        <h2 class="font-outfit font-black text-2xl sm:text-4xl text-white mb-4">Прозрачные тарифы без скрытых платежей</h2>
+                        <p class="text-slate-400 text-sm font-medium">Без автосписаний. Оплата подписки производится вручную только при необходимости.</p>
+                        
+                        <!-- Billing Toggle -->
+                        <div class="flex items-center justify-center gap-3 mt-8">
+                            <span class="text-xs font-bold" :class="pricingAnnual ? 'text-slate-400' : 'text-white font-extrabold'">Ежемесячно</span>
+                            <button @click="pricingAnnual = !pricingAnnual" class="relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-slate-800 bg-slate-900 transition-colors duration-200 ease-in-out focus:outline-none">
+                                <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-brand-500 shadow-md ring-0 transition duration-200 ease-in-out my-0.5" :class="pricingAnnual ? 'translate-x-5' : 'translate-x-0.5'"></span>
+                            </button>
+                            <span class="text-xs font-bold flex items-center gap-1.5" :class="pricingAnnual ? 'text-white font-extrabold' : 'text-slate-400'">
+                                Ежегодно
+                                <span class="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">Выгода 40%</span>
+                            </span>
                         </div>
                     </div>
 
-                    <!-- PRO Tariff -->
-                    <div class="bg-gradient-to-b from-slate-900 to-brand-950/30 border border-brand-500/20 rounded-3xl p-8 flex flex-col justify-between relative overflow-hidden">
-                        <div class="absolute -right-16 -top-16 w-36 h-36 bg-brand-500/10 rounded-full blur-2xl"></div>
-                        <div>
-                            <div class="flex justify-between items-center mb-6">
-                                <span class="text-xs font-bold text-brand-400 uppercase tracking-widest">Профи Тариф</span>
-                                <span class="bg-brand-600 text-white text-[9px] font-bold px-2.5 py-0.5 rounded uppercase tracking-wider">Максимум</span>
-                            </div>
-                            <div class="mb-6 font-outfit">
-                                <span class="text-5xl font-black text-white">{{ pricingAnnual ? '990' : '1 490' }}</span>
-                                <span class="text-lg font-bold text-slate-400 ml-1">₽ / мес</span>
-                                <div class="text-[10px] text-slate-500 font-bold uppercase mt-1.5" v-if="pricingAnnual">
-                                    11 900 ₽ списывается в год
+                    <!-- 2 Tariffs Grid (Original exact plans: Базовый & Профи) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
+                        
+                        <!-- Tariff 1: Base (Free) -->
+                        <div class="bg-slate-900/40 border border-slate-850 rounded-3xl p-8 flex flex-col justify-between hover:border-slate-700 transition-colors">
+                            <div>
+                                <div class="flex justify-between items-center mb-6">
+                                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Базовый</span>
+                                    <span class="bg-slate-800 text-slate-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full">Всегда бесплатно</span>
                                 </div>
+                                <div class="mb-6 font-outfit">
+                                    <span class="text-5xl font-black text-white">0</span>
+                                    <span class="text-lg font-bold text-slate-500 ml-1">₽</span>
+                                </div>
+                                <p class="text-xs text-slate-400 font-medium mb-6 border-b border-slate-850 pb-6 leading-relaxed">
+                                    Идеально подходит для ознакомления и простых расчетов котельной и радиаторов.
+                                </p>
+                                <ul class="space-y-4 text-xs font-semibold text-slate-300">
+                                    <li class="flex items-center gap-3">
+                                        <i data-lucide="check" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
+                                        <span>Полный расчет раздела «Котельная»</span>
+                                    </li>
+                                    <li class="flex items-center gap-3">
+                                        <i data-lucide="check" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
+                                        <span>Подбор диаметров и гидравлики</span>
+                                    </li>
+                                    <li class="flex items-center gap-3">
+                                        <i data-lucide="check" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
+                                        <span>Проверка РРЦ цен оборудования STOUT</span>
+                                    </li>
+                                </ul>
                             </div>
-                            <p class="text-xs text-slate-400 font-semibold mb-6 border-b border-slate-850 pb-6 leading-relaxed">
-                                Для профессиональных монтажников и монтажных бригад.
-                            </p>
-                            <ul class="space-y-4 text-xs font-semibold text-slate-200">
-                                <li class="flex items-center gap-3">
-                                    <i data-lucide="check" class="w-4 h-4 text-brand-400"></i>
-                                    <span>Доступ ко всем 6 разделам (включая водоснабжение и ГВС)</span>
-                                </li>
-                                <li class="flex items-center gap-3">
-                                    <i data-lucide="check" class="w-4 h-4 text-brand-400"></i>
-                                    <span>Управление скидками в реальном времени</span>
-                                </li>
-                                <li class="flex items-center gap-3">
-                                    <i data-lucide="check" class="w-4 h-4 text-brand-400"></i>
-                                    <span>Проверка остатков на складах бренда</span>
-                                </li>
-                                <li class="flex items-center gap-3">
-                                    <i data-lucide="check" class="w-4 h-4 text-brand-400"></i>
-                                    <span>Загрузка собственного логотипа для КП</span>
-                                </li>
-                            </ul>
+                            <div class="mt-8 pt-6 border-t border-slate-850">
+                                <a href="index.html" class="w-full inline-flex items-center justify-center py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl border border-slate-800 transition-colors">
+                                    Создать аккаунт бесплатно
+                                </a>
+                            </div>
                         </div>
-                        <div class="mt-8 pt-6 border-t border-slate-850">
-                            <a href="#app" class="w-full inline-flex items-center justify-center py-3 px-4 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-brand-500/10 hover:shadow-brand-500/20 transition-all">
-                                Активировать Профи
-                            </a>
+
+                        <!-- Tariff 2: Pro (Max Features) -->
+                        <div class="bg-gradient-to-b from-slate-900 to-brand-950/50 border border-brand-500/40 rounded-3xl p-8 flex flex-col justify-between relative overflow-hidden shadow-2xl">
+                            <div class="absolute -right-16 -top-16 w-36 h-36 bg-brand-500/15 rounded-full blur-2xl"></div>
+                            <div>
+                                <div class="flex justify-between items-center mb-6">
+                                    <span class="text-xs font-bold text-brand-400 uppercase tracking-widest">Профи Тариф</span>
+                                    <span class="bg-brand-600 text-white text-[9px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-sm">Максимум</span>
+                                </div>
+                                <div class="mb-2 font-outfit flex items-baseline">
+                                    <span class="text-5xl font-black text-white font-mono">{{ pricingAnnual ? '990' : '1 490' }}</span>
+                                    <span class="text-lg font-bold text-slate-400 ml-1.5">₽ / мес</span>
+                                </div>
+                                <div class="text-[10px] text-slate-400 font-medium mb-6">
+                                    {{ pricingAnnual ? '11 900 ₽ списывается в год (экономьте 6 000 ₽)' : 'При оплате каждый месяц: 1 490 ₽/мес' }}
+                                </div>
+                                <p class="text-xs text-slate-300 font-medium mb-6 border-b border-slate-800 pb-6 leading-relaxed">
+                                    Для профессиональных монтажников и инженерных бригад.
+                                </p>
+                                <ul class="space-y-4 text-xs font-semibold text-slate-200">
+                                    <li class="flex items-center gap-3">
+                                        <i data-lucide="check" class="w-4 h-4 text-brand-400 flex-shrink-0"></i>
+                                        <span>Доступ ко всем 6 разделам (включая водоснабжение, ГВС и канализацию)</span>
+                                    </li>
+                                    <li class="flex items-center gap-3">
+                                        <i data-lucide="check" class="w-4 h-4 text-brand-400 flex-shrink-0"></i>
+                                        <span>AI OCR Распознавание сторонних смет с фото и PDF</span>
+                                    </li>
+                                    <li class="flex items-center gap-3">
+                                        <i data-lucide="check" class="w-4 h-4 text-brand-400 flex-shrink-0"></i>
+                                        <span>Загрузка собственного логотипа и реквизитов для КП в PDF</span>
+                                    </li>
+                                    <li class="flex items-center gap-3">
+                                        <i data-lucide="check" class="w-4 h-4 text-brand-400 flex-shrink-0"></i>
+                                        <span>Проверка остатков на складах бренда в реальном времени</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="mt-8 pt-6 border-t border-slate-800">
+                                <a href="index.html" class="w-full inline-flex items-center justify-center py-3.5 px-4 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-brand-600/30 transition-all">
+                                    Активировать Профи
+                                </a>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- FAQ ACCORDION -->
+            <section id="faq" class="py-16 md:py-24 border-b border-slate-900/80">
+                <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center mb-16">
+                        <span class="text-[10px] font-extrabold text-brand-400 uppercase tracking-widest block mb-3">FAQ</span>
+                        <h2 class="font-outfit font-black text-2xl sm:text-4xl text-white mb-4">Ответы на частые вопросы</h2>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div v-for="(item, idx) in faq" :key="idx" class="border border-slate-850 bg-slate-900/30 rounded-2xl overflow-hidden transition-all">
+                            <button @click="toggleFaq(idx)" class="w-full flex items-center justify-between p-5 text-left font-bold text-xs sm:text-sm text-slate-200 hover:text-white transition-colors focus:outline-none">
+                                <span>{{ item.q }}</span>
+                                <i data-lucide="chevron-down" :class="faqOpenIndex === idx ? 'rotate-180 text-brand-400' : 'text-slate-500'" class="w-4 h-4 transition-transform flex-shrink-0"></i>
+                            </button>
+                            <div v-show="faqOpenIndex === idx" class="p-5 pt-0 text-xs sm:text-sm text-slate-400 leading-relaxed font-medium border-t border-slate-850/50 bg-slate-950/40">
+                                {{ item.a }}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <!-- FAQ -->
-        <section id="faq" class="py-16 md:py-24 border-b border-slate-900">
-            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center mb-16">
-                    <span class="text-[10px] font-extrabold text-brand-500 uppercase tracking-widest block mb-3">FAQ</span>
-                    <h2 class="font-outfit font-black text-2xl sm:text-3xl text-white mb-4">Часто задаваемые вопросы</h2>
-                </div>
-
-                <div class="space-y-4">
-                    <div v-for="(item, idx) in faq" :key="idx" class="border border-slate-900 bg-slate-900/20 rounded-2xl overflow-hidden transition-all duration-300">
-                        <button @click="toggleFaq(idx)" class="w-full flex items-center justify-between p-5 text-left font-bold text-xs sm:text-sm text-slate-200 hover:text-white transition-colors focus:outline-none">
-                            <span>{{ item.q }}</span>
-                            <i data-lucide="chevron-down" :class="faqOpenIndex === idx ? 'rotate-180 text-brand-500' : 'text-slate-500'" class="w-4 h-4 transition-transform flex-shrink-0"></i>
-                        </button>
-                        <div v-show="faqOpenIndex === idx" class="p-5 pt-0 text-xs sm:text-sm text-slate-400 leading-relaxed font-medium border-t border-slate-900/50 bg-slate-950/20">
-                            {{ item.a }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+            </section>
+        </main>
 
         <!-- FOOTER -->
         <footer class="bg-slate-950 border-t border-slate-900 py-12 text-slate-500 text-xs">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-outfit font-extrabold text-base">H</div>
+                    <div class="w-8 h-8 bg-brand-600 rounded-xl flex items-center justify-center text-white font-outfit font-black text-base">H</div>
                     <div class="flex flex-col text-left">
                         <span class="font-outfit font-bold text-sm text-white">HeatCalc<span class="text-brand-500">.ru</span></span>
-                        <span class="text-[8px] text-slate-650 uppercase tracking-widest leading-none">Профессиональное ПО</span>
+                        <span class="text-[8px] text-slate-500 uppercase tracking-widest leading-none">B2B Программное обеспечение</span>
                     </div>
                 </div>
 
                 <div class="flex flex-wrap gap-6 text-slate-400 font-semibold justify-center">
                     <a href="oferta.html" target="_blank" class="hover:text-white transition-colors">Пользовательское соглашение</a>
                     <a href="privacy-policy.html" target="_blank" class="hover:text-white transition-colors">Политика конфиденциальности</a>
-                    <a href="https://t.me/heatcalc" class="hover:text-white transition-colors flex items-center gap-1.5"><i data-lucide="send" class="w-3.5 h-3.5 text-brand-500"></i> Поддержка в Telegram</a>
+                    <a href="https://t.me/heatcalc" target="_blank" class="hover:text-white transition-colors flex items-center gap-1.5">
+                        <i data-lucide="send" class="w-3.5 h-3.5 text-brand-400"></i> Поддержка в Telegram
+                    </a>
                 </div>
 
-                <div class="text-[10px] text-slate-600">
+                <div class="text-[10px] text-slate-600 font-mono">
                     &copy; 2026 HeatCalc.ru. Все права защищены.
                 </div>
             </div>
         </footer>
     </div>
 
-    <!-- Vue Setup & Logic -->
+    <!-- Vue Setup & Interactive Logic -->
     <script>
         const { createApp, ref, computed, onMounted, nextTick } = Vue;
 
@@ -783,28 +855,64 @@
             setup() {
                 // Supabase Register Form State
                 const form = ref({
-                    email: '',
-                    password: ''
+                    email: ''
                 });
-                const formStatus = ref('idle'); // idle, loading, success, error
+                const formStatus = ref('idle');
 
                 const handleRegister = async () => {
                     formStatus.value = 'loading';
-                    // Имитация Supabase Auth интеграции
                     setTimeout(() => {
                         formStatus.value = 'success';
-                        alert(`Успешная тестовая регистрация для: ${form.value.email}. Форма готова к подключению Supabase Auth API!`);
-                        form.value.email = '';
-                        form.value.password = '';
-                        formStatus.value = 'idle';
-                    }, 1200);
+                        window.location.href = 'index.html';
+                    }, 800);
                 };
+
+                // Hero Interactive Express Calculator State (Uses REAL STOUT & ROMMER Catalog Prices)
+                const heroCalc = ref({
+                    area: 150,
+                    region: 100, // 130=Сибирь, 120=Урал, 100=Центр, 60=Юг
+                    fuel: 'gas',
+                    hasFloor: true
+                });
+
+                const regions = [
+                    { id: 130, name: 'Сибирь' },
+                    { id: 120, name: 'Урал' },
+                    { id: 100, name: 'Центр' },
+                    { id: 60, name: 'Юг' }
+                ];
+
+                const heroCalcResults = computed(() => {
+                    const baseWPerM2 = heroCalc.value.region;
+                    const heatLossKw = Math.round((heroCalc.value.area * baseWPerM2) / 1000 * 10) / 10;
+                    const boilerKw = Math.ceil(heatLossKw * 1.15); // +15% reserve
+                    
+                    // Exact catalog prices from catalog.js
+                    const boilerPrice = heroCalc.value.fuel === 'gas' ? 62324 : 77242; // Haier 18kW vs STOUT STATUS 18kW
+                    
+                    const floorArea = heroCalc.value.hasFloor ? heroCalc.value.area : 0;
+                    const pipeMeters = Math.round((floorArea / 0.15) * 1.1); // step 150mm + 10% reserve (152 rub/m STOUT PEX-a)
+                    const pipePrice = pipeMeters * 152;
+                    const loops = Math.ceil(pipeMeters / 75) || 0;
+
+                    const eqPrice = Math.round(boilerPrice + pipePrice + heroCalc.value.area * 450);
+                    const workPrice = Math.round(heroCalc.value.area * 600 + loops * 3500);
+
+                    return {
+                        heatLoss: heatLossKw.toFixed(1),
+                        boilerPower: boilerKw,
+                        boilerPrice: boilerPrice.toLocaleString('ru-RU'),
+                        pipeLength: pipeMeters,
+                        loopsCount: loops,
+                        totalEstimate: (eqPrice + workPrice).toLocaleString('ru-RU')
+                    };
+                });
 
                 // Pricing Annual toggle
                 const pricingAnnual = ref(false);
 
-                // FAQ Index
-                const faqOpenIndex = ref(null);
+                // FAQ Accordion Index
+                const faqOpenIndex = ref(0);
                 const toggleFaq = (idx) => {
                     faqOpenIndex.value = faqOpenIndex.value === idx ? null : idx;
                 };
@@ -815,112 +923,112 @@
                     { id: 'boiler', title: 'Котельная', icon: 'flame' },
                     { id: 'rad', title: 'Радиаторы', icon: 'grid' },
                     { id: 'floor', title: 'Тёплый пол', icon: 'thermometer' },
-                    { id: 'water', title: 'Водоснабжение', icon: 'droplet' },
-                    { id: 'well', title: 'Обвязка скважины', icon: 'settings' },
+                    { id: 'water', title: 'Водоснабжение/ГВС', icon: 'droplet' },
+                    { id: 'well', title: 'Скважинный узел', icon: 'settings' },
                     { id: 'sewer', title: 'Канализация', icon: 'layers' }
                 ]);
 
                 const tabContent = {
                     boiler: {
-                        title: 'Мощность с учетом запаса, каскады, объем расширительных баков',
+                        title: 'Мощность источника, каскадные схемы, баки Stout',
                         sp: 'СП 50.13330, СП 131.13330, СП 41-104-2000',
-                        desc: 'Модуль рассчитывает требуемую тепловую мощность котлов на основе теплопотерь дома и климатических параметров вашего региона. Автоматически комплектует насосные группы, гидрострелки, распределительные коллекторы и системы защиты.',
+                        desc: 'Модуль вычисляет требуемую мощность котлов с учетом запаса по СНиП. Комплектует насосные группы STOUT, гидрострелки, коллекторы и экспанзоматы.',
                         bullets: [
-                            'Каскадный подбор оборудования',
-                            'Расчет запаса мощности по СНиП',
-                            'Объем мембранных баков Stout',
-                            'РРЦ цены Stout/Rommer'
+                            'Каскадный подбор котлов',
+                            'Расчет объёма баков Stout',
+                            'Насосные группы с гидравликой',
+                            'Защитные клапаны и стабилизаторы'
                         ],
                         mockData: {
-                            'Мощность источника': '24.0 кВт',
-                            'Объем экспанзомата': '25 л',
-                            'Кол-во насосных групп': '2 шт',
-                            'Диаметр подключения': 'G 1"'
+                            'Котёл STATUS 18 кВт': '77 242 ₽ (STOUT)',
+                            'Котёл Haier 18 кВт': '62 324 ₽ (Haier)',
+                            'Объем мембранного бака': '25 л (STOUT)',
+                            'Кол-во насосных групп': '2 шт'
                         }
                     },
                     rad: {
-                        title: 'Контроль длины прибора, тепловой поток, подбор секций',
-                        sp: 'ГОСТ 31311-2005, СП 60.13330',
-                        desc: 'Калькулятор сопоставляет теплопотери помещения с габаритами окон. Программа автоматически рассчитывает нужный тепловой поток радиатора, подбирает количество секций или габариты панельного прибора и комплектует его термоголовками.',
+                        title: 'Контроль 50-90% ширины окна, чётный подбор Rommer',
+                        sp: 'ГОСТ 31311-2005, СП 60.13330.2020',
+                        desc: 'Автоматический подбор радиаторов по оконным проемам. Соблюдает норму СП: длина прибора от 50% до 90% ширины окна. Для Rommer подбираются чётные секции.',
                         bullets: [
-                            'Контроль длины (не менее 70% проема)',
-                            'Компенсация теплопотерь по комнатам',
-                            'Автоматический подбор термостатики',
-                            'Комплектация узлами Stout'
+                            'Перекрытие окна (50-90%)',
+                            'Только чётные секции Rommer',
+                            'Стальные панели Compact/Ventil',
+                            'Автоматика термоголовок'
                         ],
                         mockData: {
                             'Тепловой поток': '1 480 Вт',
                             'Тип радиатора': 'Stout 22-500-1000',
                             'Ширина проема': '1 400 мм',
-                            'Соответствие проему': '71% (Норма)'
+                            'Перекрытие проема': '71% (ГОСТ)'
                         }
                     },
                     floor: {
-                        title: 'Длина трубы контуров, контроль перегрева стяжки, балансировка',
+                        title: 'Физическая формула длины L=(S/h)*1.1, шаги укладки',
                         sp: 'СП 60.13330, СП 41-102-98',
-                        desc: 'Модуль вычисляет шаг укладки трубы, исходя из тепловых потребностей. Программа рассчитывает длину каждой петли сшитого полиэтилена и предотвращает превышение предельной длины контура.',
+                        desc: 'Расчет длины трубы PEX-a отдельно по каждому этажу с выбором шага 100/150/200 мм. Автоматическая разбивка на контуры до 80м и подбор коллекторов.',
                         bullets: [
-                            'Ограничение длины петли до 85 м',
-                            'Контроль перегрева стяжки (до 75 Вт/м²)',
-                            'Подбор коллектора с расходомерами',
-                            'Сервоприводы и автоматика Stout'
+                            'Точная формула L=(S/h)*1.1',
+                            'Труба STOUT PEX-a 16x2.0 (152 ₽/м)',
+                            'Труба ROMMER PEX-a (80 ₽/м)',
+                            'Коллектор с расходомерами'
                         ],
                         mockData: {
                             'Шаг укладки трубы': '150 мм',
-                            'Макс. длина петли': '82.4 м',
+                            'Макс. длина петли': '78.4 м',
                             'Тепловой поток пола': '64 Вт/м²',
                             'Выходов коллектора': '6 контуров'
                         }
                     },
                     water: {
-                        title: 'Лучевая схема, объем бойлера косвенного нагрева',
+                        title: 'Бойлер ГВС по точкам водоразбора (СП 30.13330.2020)',
                         sp: 'СП 30.13330.2020 (Внутренний водопровод)',
-                        desc: 'Калькулятор рассчитывает пиковый расход воды, исходя из установленных сантехприборов. Подбирает оптимальный диаметр труб для лучевой разводки Stout PEX-a и рассчитывает рекомендуемый объем бойлера ГВС.',
+                        desc: 'Калькулятор вычисляет пиковый расход воды с коэффициентом одновременности k_одн. Рассчитывает объем БКН, рециркуляцию ГВС и полотенцесушители.',
                         bullets: [
-                            'Двойной контроль объема БКН',
-                            'Лучевая разводка Stout PEX-a',
-                            'Расчет коллекторного узла ХВС/ГВС',
-                            'Подбор рециркуляционного насоса'
+                            'Коэффициент одновременности',
+                            'OptiBase 200л (62 111 ₽ STOUT)',
+                            'Rommer GT 200л (67 462 ₽)',
+                            'Рециркуляция ГВС (насос)'
                         ],
                         mockData: {
-                            'Реком. объем БКН': '150 л',
-                            'Пиковый расход воды': '0.48 л/с',
-                            'Кол-во точек водоразбора': '7 шт',
+                            'Реком. объем БКН': '200 л',
+                            'Пиковый расход': '0.48 л/с',
+                            'Точек водоразбора': '7 приборов',
                             'Диаметр ввода ХВС': '25 мм'
                         }
                     },
                     well: {
-                        title: 'Пиковый расход скважины, запас напора насоса',
+                        title: 'Напор скважинного насоса по глубине и длине трассы',
                         sp: 'СП 31.13330.2021',
-                        desc: 'Модуль подбирает оптимальный скважинный насос по параметрам глубины скважины, статического/динамического уровня воды и удаленности от дома. Рассчитывает емкость гидроаккумулятора для сглаживания циклов пуска.',
+                        desc: 'Модуль вычисляет требуемый напор скважинного насоса с учетом потерь на трение, объема гидроаккумулятора, фильтрации Big Blue и незамерзающих кранов.',
                         bullets: [
-                            'Минимальный запас напора 20м',
-                            'Защита насоса от частого включения',
-                            'Подбор оголовка и троса Stout',
-                            'Фильтрация на входе (Big Blue)'
+                            'Запас напора от 20м',
+                            'Гидроаккумулятор (сглаживание пусков)',
+                            'Фильтрация Big Blue',
+                            'Оголовки и тросы Stout'
                         ],
                         mockData: {
                             'Требуемый напор': '54.5 м',
                             'Мощность насоса': '1.1 кВт',
-                            'Реком. объем ГА': '80 л',
-                            'Статический уровень': '28 м'
+                            'Объем гидроаккумулятора': '80 л',
+                            'Глубина насоса': '40 м'
                         }
                     },
                     sewer: {
-                        title: 'Диаметры и уклоны для самотечного движения стоков',
+                        title: 'Уклоны D50 (3%) и D110 (2%), фасонка и хомуты',
                         sp: 'СП 30.13330.2020',
-                        desc: 'Расчет уклонов канализационных выпусков от сантехприборов. Автоматически комплектует трубы нужного диаметра (50/110 мм), фасонные части (отводы, тройники, ревизии) и обратные клапаны.',
+                        desc: 'Расчет самотечных уклонов канализационных магистралей. Комплектует отводы 45°/87°, ревизии, шаг хомутов и формулу расчета шпилек-шурупов.',
                         bullets: [
-                            'Самотечное движение стоков',
-                            'Углы отводов Stout (45° / 87°)',
-                            'Расчет фанового стояка',
-                            'Противопожарные муфты'
+                            'Нормативные уклоны (2% и 3%)',
+                            'Фасонные детали Stout',
+                            'Шаг крепления хомутов',
+                            'Шпильки-шурупы с дюбелями'
                         ],
                         mockData: {
                             'Уклон трубы D110': '2.0% (0.02)',
                             'Уклон трубы D50': '3.0% (0.03)',
                             'Общая длина труб': '24 м',
-                            'Количество отводов': '14 шт'
+                            'Количество хомутов': '18 шт'
                         }
                     }
                 };
@@ -930,54 +1038,47 @@
                 const faq = ref([
                     {
                         q: 'Откуда берутся цены?',
-                        a: 'В систему загружены официальные рекомендованные розничные цены (РРЦ) брендов Stout и Rommer. Они обновляются автоматически в реальном времени, поэтому ваши сметы всегда содержат актуальные и точные данные.'
+                        a: 'В систему загружены официальные рекомендованные розничные цены (РРЦ) брендов STOUT и ROMMER 2026 года. Они обновляются автоматически в реальном времени, поэтому сметы содержат точные данные.'
                     },
                     {
-                        q: 'Можно добавить свои услуги?',
-                        a: 'Да, в калькуляторе есть отдельный полноценный блок для добавления монтажных работ, расходных материалов и транспортных расходов. Вы можете гибко настраивать стоимость своих услуг для клиента.'
+                        q: 'Как работает AI OCR распознавание сторонних смет?',
+                        a: 'Вы можете сфотографировать рукописную смету или загрузить PDF-файл от конкурента. Искусственный интеллект сканирует текст, распознает артикулы и подбирает точные аналоги в каталогах STOUT и ROMMER.'
                     },
                     {
-                        q: 'Как списывается оплата?',
-                        a: 'У нас нет автоматических рекуррентных списаний. Тариф «Базовый» полностью бесплатный и бессрочный. Платный тариф «Профи» оплачивается вами вручную только тогда, когда вам это необходимо.'
+                        q: 'Можно ли добавить свои монтажные работы и свой логотип?',
+                        a: 'Да! В тарифе «Профи» вы можете загрузить логотип компании, указать реквизиты ИП/ООО, настроить прайс-лист на монтажные работы и гибко изменять скидки прямо в смете.'
+                    },
+                    {
+                        q: 'Как списывается оплата за тариф Профи?',
+                        a: 'У нас нет автоматических рекуррентных списаний. Тариф «Базовый» полностью бесплатный и бессрочный. Платный тариф «Профи» оплачивается вами вручную только тогда, когда вам это необходимо (1 490 ₽/мес или 990 ₽/мес при оплате за год — 11 900 ₽).'
                     }
                 ]);
 
-                onMounted(() => {
-                    // Initialize Lucide icons on Vue mount
-                    nextTick(() => {
-                        lucide.createIcons();
-                    });
-                });
-
-                // Re-init icons on tab changes
-                Vue.watch(currentTab, () => {
-                    nextTick(() => {
-                        lucide.createIcons();
-                    });
-                });
-
                 const previewMode = ref('equipment');
 
-                // Gallery/Carousel State for Results Demo
-                const activeGalleryIndex = ref(0);
-                const gallery = ref([
-                    { src: 'interface_1.jpg', label: 'Параметры и котельная', title: 'Параметры объекта и подбор оборудования для котельной' },
-                    { src: 'interface_2.jpg', label: 'Монтажные работы', title: 'Детализация и настройка стоимости монтажных услуг' },
-                    { src: 'pdf_cover.jpg', label: 'Готовое КП PDF', title: 'Брендированное коммерческое предложение с логотипом в формате PDF' }
-                ]);
+                onMounted(() => {
+                    nextTick(() => {
+                        if (window.lucide) {
+                            lucide.createIcons();
+                        }
+                    });
+                });
 
-                const prevSlide = () => {
-                    activeGalleryIndex.value = activeGalleryIndex.value === 0 ? gallery.value.length - 1 : activeGalleryIndex.value - 1;
-                };
-
-                const nextSlide = () => {
-                    activeGalleryIndex.value = activeGalleryIndex.value === gallery.value.length - 1 ? 0 : activeGalleryIndex.value + 1;
-                };
+                Vue.watch(currentTab, () => {
+                    nextTick(() => {
+                        if (window.lucide) {
+                            lucide.createIcons();
+                        }
+                    });
+                });
 
                 return {
                     form,
                     formStatus,
                     handleRegister,
+                    heroCalc,
+                    regions,
+                    heroCalcResults,
                     pricingAnnual,
                     faqOpenIndex,
                     toggleFaq,
@@ -985,11 +1086,7 @@
                     tabs,
                     activeTabData,
                     faq,
-                    previewMode,
-                    activeGalleryIndex,
-                    gallery,
-                    prevSlide,
-                    nextSlide
+                    previewMode
                 };
             }
         }).mount('#app');

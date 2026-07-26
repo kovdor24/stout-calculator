@@ -4072,6 +4072,15 @@ body.dark-mode .header-totals-block {
         flex: 1 1 auto !important;
     }
 
+    /* Поля личного кабинета (телефон/email, дата рождения/регион, город/сфера
+       деятельности) шли парами в 2 колонки — на узких экранах длинные значения
+       (телефон, email) обрезались краем инпута. На мобильном складываем в один
+       столбец, полной ширины. */
+    #profile_modal_overlay .profile-2col-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
+    }
+
     #toggle_branding_btn {
         height: 44px !important;
         font-size: 13.5px !important;
@@ -4080,6 +4089,25 @@ body.dark-mode .header-totals-block {
         margin-top: 10px !important;
         margin-bottom: 15px !important;
         width: 100% !important;
+    }
+
+    /* Модалка "Замена оборудования" — на десктопе задан inline zoom:0.8 и ширина под
+       широкий грид вариантов (max-width:950px). На мобильном это давало нечитаемо
+       мелкий текст в узком контейнере. Сбрасываем zoom и ширину под экран. */
+    #swap_modal_overlay .auth-modal-content {
+        zoom: 1 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 85vh !important;
+        padding: 20px 16px !important;
+        border-radius: 16px !important;
+    }
+
+    /* Строка бейджей (типоразмер/мощность/цена) в шапке модалки замены — при
+       flex-shrink:0 она не сжималась и вылезала за край на узких экранах.
+       Форсируем перенос на отдельную строку на всю ширину. */
+    #swap_modal_overlay #swap_modal_title > div > div:last-child {
+        flex: 1 1 100% !important;
     }
 
     #pro_profile_company_section {

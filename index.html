@@ -49,12 +49,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.62">
+    <link rel="stylesheet" href="style.css?v=2.63">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.20" defer></script>
+    <script src="catalog.js?v=2.21" defer></script>
     <script src="gamification.js?v=2.0" defer></script>
-    <script src="app.js?v=3.11" defer></script>
+    <script src="app.js?v=3.16" defer></script>
     <!-- Распознавание смет: подбор по каталогу и интерфейс мастера.
          Порядок важен — recognize.js обращается к RecognizeMatch. -->
     <script src="recognize_match.js?v=1.5" defer></script>
@@ -179,7 +179,7 @@
     </header>
     <div class="container">
         <div class="panel input-panel">
-            <h3 style="margin-top: 0;">Параметры дома</h3>
+            <h3 style="margin-top: 0; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal;">Режим расчёта</h3>
             <div class="control-item" style="margin-bottom: 15px;">
                 <div class="mode-selector-tabs">
                     <div class="mode-tab active" id="mode_fast" onclick="app.toggleDetailedRooms(false, event)">Быстрый</div>
@@ -270,6 +270,16 @@
             </div>
 
 
+            <div class="control-item toggle-item" id="blk_fast_obj_params_toggle_wrap"
+                style="display:none; border-top: none; padding-top: 0; margin-top: 16px; border-bottom: 1px dashed var(--border); padding-bottom: 16px; margin-bottom: 16px;">
+                <div class="label-row" style="margin-bottom: 0;">
+                    <span class="lbl">Параметры объекта</span>
+                    <label class="switch"><input type="checkbox" id="chk_fast_obj_params"
+                            onchange="app.toggleFastObjectParams(this.checked, event)"><span
+                            class="slider"></span></label>
+                </div>
+            </div>
+            <div id="blk_fast_obj_params_content" style="display:none;">
             <div class="control-item"><span class="lbl-sub">Регион строительства</span>
                 <div class="tabs" id="reg_tabs">
                     <div class="tab active" onclick="app.setRegion(130)">Сибирь</div>
@@ -431,8 +441,9 @@
                     </div>
                 </div>
             </div>
+            </div>
 
-            <h4>Тип котла</h4>
+            <h4 style="margin-bottom: 6px; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal; color: var(--text-main);">Тип котла</h4>
             <div class="control-item">
                 <div class="tabs">
                     <div class="tab multi-active" id="fuel_el" onclick="app.toggleFuel('el')">⚡ Электро</div>
@@ -440,7 +451,7 @@
                 </div>
             </div>
 
-            <div class="control-item"><span class="lbl-sub">Теплоноситель</span>
+            <div class="control-item" id="blk_coolant_wrap"><span class="lbl-sub">Теплоноситель</span>
                 <div class="tabs" id="blk_coolant">
                     <div class="tab cool-tab active" data-type="water" onclick="app.setCoolant('water', event)">💧 Вода</div>
                     <div class="tab cool-tab" data-type="eco30" onclick="app.setCoolant('eco30', event)">❄️ -30°C</div>
@@ -448,6 +459,7 @@
                 </div>
             </div>
 
+            <h4 style="margin-bottom: 6px; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal; color: var(--text-main);">Тип отопления</h4>
             <div class="control-item">
                 <div class="tabs">
                     <div class="tab multi-active" id="sys_rad" onclick="app.toggleSys('rad', event)">🌡️ Радиаторы</div>
@@ -457,8 +469,8 @@
             <div class="control-item" id="blk_rad_scheme" style="display:none; margin-bottom: 12px;">
                 <span class="lbl-sub" style="margin-bottom: 6px;">Схема разводки радиаторов</span>
                 <div class="tabs" id="rad_scheme_tabs">
-                    <div class="tab active" id="rad_scheme_manifold" onclick="app.setRadConnectionScheme('manifold')">Коллекторная</div>
                     <div class="tab" id="rad_scheme_tee" onclick="app.setRadConnectionScheme('tee')">Тройниковая</div>
+                    <div class="tab active" id="rad_scheme_manifold" onclick="app.setRadConnectionScheme('manifold')">Коллекторная</div>
                 </div>
             </div>
             <div id="blk_tp_sliders" style="display:none; border-top:1px dashed #E5E7EB; padding-top:15px;">
@@ -549,13 +561,13 @@
                                 class="step-btn" onclick="app.updRes(1)">+</button>
                         </div>
                     </div>
-                    <div
+                    <div id="blk_recirc_wrap"
                         style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #E5E7EB; padding-top:8px;">
                         <span class="lbl" style="font-size:12px;">Рециркуляция ГВС</span><label class="switch"
                             style="transform:scale(0.8); transform-origin:right;"><input type="checkbox" id="chk_recirc"
                                 onchange="app.toggleRecirc(this.checked, event)"><span class="slider"></span></label>
                     </div>
-                    <div style="border-top:1px solid #E5E7EB; padding-top:8px;">
+                    <div id="blk_towel_wrap" style="border-top:1px solid #E5E7EB; padding-top:8px;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span class="lbl" style="font-size:12px;">Полотенцесушитель</span><label class="switch"
                                 style="transform:scale(0.8); transform-origin:right;"><input type="checkbox"
@@ -582,6 +594,16 @@
                             </div>
                         </div>
                     </div>
+                    <div id="blk_tank_pump_wrap" style="border-top:1px solid #E5E7EB; padding-top:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="lbl" style="font-size:12px;"
+                                title="По умолчанию бойлер греется через переключающий 3-х ходовой клапан Fugas (на время нагрева бойлера отопление отключается). Насосная группа греет бойлер параллельно с отоплением, не отключая его.">Загрузка
+                                бойлера насосной группой</span><label class="switch"
+                                style="transform:scale(0.8); transform-origin:right;"><input type="checkbox"
+                                    id="chk_tank_pump" onchange="app.toggleTankLoadScheme(this.checked, event)"><span
+                                    class="slider"></span></label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -598,6 +620,15 @@
                         onmouseover="this.style.background='var(--primary)'; this.style.color='#fff';"
                         onmouseout="this.style.background='var(--primary-light)'; this.style.color='var(--primary)';">+
                         Добавить санузел / Кухню</button>
+                    <div class="control-item" id="blk_sewer_type"
+                        style="display:none; margin-bottom:0; border-top:1px solid #E5E7EB; padding-top:8px;">
+                        <span class="lbl-sub" style="margin-bottom: 6px;"
+                            title="Бесшумная — трубы STOUT PP (по умолчанию). Обычная Economy — бюджетные трубы Sinikon ПП.">Канализация</span>
+                        <div class="tabs" id="sewer_type_tabs">
+                            <div class="tab" id="sewer_tab_economy" onclick="app.setSewerType('economy', event)">Обычная</div>
+                            <div class="tab active" id="sewer_tab_std" onclick="app.setSewerType('std', event)">Бесшумная</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -957,7 +988,7 @@
                     </div>
 
                     <!-- Delivery & Payment Item -->
-                    <div id="profile_delivery_item" class="profile-menu-item" onclick="app.showDeliveryPaymentInfo()" style="display: flex; align-items: center; gap: 14px; padding: 16px 18px; cursor: pointer; transition: background 0.2s;">
+                    <div id="profile_delivery_item" class="profile-menu-item" onclick="app.showDeliveryPaymentInfo()" style="display: none; align-items: center; gap: 14px; padding: 16px 18px; cursor: pointer; transition: background 0.2s;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="color: var(--text-sec); flex-shrink: 0;">
                             <rect x="1" y="3" width="15" height="13"></rect>
                             <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
@@ -1388,7 +1419,7 @@
                             </div>
                         </div>
 
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0 8px;">
+                        <div class="profile-2col-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 0 8px;">
                             <div>
                                 <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 2px; display: block;">Телефон для смет</label>
                                 <input type="tel" id="profile_phone_input" class="auth-input" placeholder="+7 (___) ___-__-__" oninput="app.maskPhone(this)" style="max-width: 100%; margin-bottom: 6px; height: 32px; font-size: 13px; padding: 6px 10px;">
@@ -1399,7 +1430,7 @@
                             </div>
                         </div>
 
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0 8px;">
+                        <div class="profile-2col-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 0 8px;">
                             <div>
                                 <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 2px; display: block;">Дата рождения</label>
                                 <input type="date" id="profile_birth_date_input" class="auth-input" style="max-width: 100%; margin-bottom: 6px; height: 32px; font-size: 13px; padding: 6px 10px; color-scheme: light dark;">
@@ -1410,7 +1441,7 @@
                             </div>
                         </div>
 
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0 8px;">
+                        <div class="profile-2col-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 0 8px;">
                             <div>
                                 <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 2px; display: block;">Ваш город (для смет)</label>
                                 <input type="text" id="profile_city_input" class="auth-input" placeholder="Например: Москва" style="max-width: 100%; margin-bottom: 6px; height: 32px; font-size: 13px; padding: 6px 10px;">
