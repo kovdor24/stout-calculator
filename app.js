@@ -13652,8 +13652,8 @@ const app = {
         if (item.originalId === 'SAC-0022-283020_boiler') {
             customAlts = [
                 { id: 'SAC-0022-283020', name: 'Одинарная монтажная рама (C-профиль)', brand: 'STOUT', price: catalog.mounting_system.find(x => x.id === 'SAC-0022-283020')?.price || 0 },
-                { id: 'SAC-0022-283020_double', name: 'Двойная монтажная рама (C-профиль)', brand: 'STOUT', price: (catalog.mounting_system.find(x => x.id === 'SAC-0022-283020')?.price || 0) * 2 },
-                { id: 'SAC-0020-200012_single', name: 'Настенный монтаж (одиночные хомуты)', brand: 'STOUT', price: catalog.mounting_system.find(x => x.id === 'SAC-0020-300012')?.price || 0 },
+                { id: 'SAC-0022-283020_double', name: 'Двойная монтажная рама (C-профиль)', brand: 'STOUT', price: (catalog.mounting_system.find(x => x.id === 'SAC-0022-283020')?.price || 0) * 2, imgId: 'SAC-0022-283020' },
+                { id: 'SAC-0020-200012_single', name: 'Настенный монтаж (одиночные хомуты)', brand: 'STOUT', price: catalog.mounting_system.find(x => x.id === 'SAC-0020-300012')?.price || 0, imgId: 'SAC-0020-300012' },
                 { id: 'SAC-0020-200012', name: 'Настенный монтаж (двойные хомуты)', brand: 'STOUT', price: catalog.mounting_system.find(x => x.id === 'SAC-0020-200012')?.price || 0 }
             ];
         }
@@ -13702,13 +13702,15 @@ const app = {
 
             const _stb16 = catalog.stable_pipes && catalog.stable_pipes[0];
             const _stb16r = _stb16 && _stb16.rommer;
+            const _insImgId = isRommer ? (insulatedItem?.rommer?.[0]?.id) : insulatedItem?.id;
+            const _splitImgId = isRommer ? null : splitItem?.id;
             customAlts = [
-                { id: 'insulated', name: 'Труба PEX-a в теплоизоляции', brand: b_ins, price: p_ins },
-                { id: 'split', name: 'Труба PEX-a без изоляции', brand: b_split, price: p_split },
-                { id: 'insulated_mp', name: 'Труба металлопластиковая в теплоизоляции', brand: b_ins_mp, price: p_ins_mp },
-                { id: 'split_mp', name: 'Труба металлопластиковая без изоляции', brand: b_split_mp, price: p_split_mp },
-                ...(_stb16 ? [{ id: 'stable_16', name: _stb16.name, brand: 'STOUT', price: _stb16.price }] : []),
-                ...(_stb16r ? [{ id: 'stable_16_r', name: _stb16r.name, brand: 'ROMMER', price: _stb16r.price }] : [])
+                { id: 'insulated', name: 'Труба PEX-a в теплоизоляции', brand: b_ins, price: p_ins, imgId: _insImgId },
+                { id: 'split', name: 'Труба PEX-a без изоляции', brand: b_split, price: p_split, imgId: _splitImgId },
+                { id: 'insulated_mp', name: 'Труба металлопластиковая в теплоизоляции', brand: b_ins_mp, price: p_ins_mp, imgId: insulatedMpItem?.id },
+                { id: 'split_mp', name: 'Труба металлопластиковая без изоляции', brand: b_split_mp, price: p_split_mp, imgId: splitMpItem?.id },
+                ...(_stb16 ? [{ id: 'stable_16', name: _stb16.name, brand: 'STOUT', price: _stb16.price, imgId: _stb16.id }] : []),
+                ...(_stb16r ? [{ id: 'stable_16_r', name: _stb16r.name, brand: 'ROMMER', price: _stb16r.price, imgId: _stb16r.id }] : [])
             ];
         }
         else if (item.originalId && (item.originalId.endsWith('_ufh') || item.originalId.startsWith('SPX-0002-') || item.originalId.startsWith('SPM-0001-'))) {
@@ -13727,8 +13729,8 @@ const app = {
             p_mp = mpItem?.price || 15151;
 
             customAlts = [
-                { id: 'pex', name: 'Труба PEX-a (полиэтилен)', brand: b_pex, price: p_pex },
-                { id: 'metal_plastic', name: 'Труба металлопластиковая', brand: b_mp, price: p_mp }
+                { id: 'pex', name: 'Труба PEX-a (полиэтилен)', brand: b_pex, price: p_pex, imgId: isRommer ? pexItem?.rommer?.id : pexItem?.id },
+                { id: 'metal_plastic', name: 'Труба металлопластиковая', brand: b_mp, price: p_mp, imgId: mpItem?.id }
             ];
         }
         else if (item.originalId && (item.originalId.endsWith('_water') || (item.originalId.startsWith('SPX-0001-') && !item.originalId.endsWith('_rad'))) && !item.originalId.startsWith('SMB-') && !item.originalId.startsWith('RMS-')) {
@@ -13747,16 +13749,16 @@ const app = {
             p_mp = mpItem?.price || 151.51;
 
             customAlts = [
-                { id: 'pex', name: 'Труба PEX-a (полиэтилен)', brand: b_pex, price: p_pex },
-                { id: 'metal_plastic', name: 'Труба металлопластиковая', brand: b_mp, price: p_mp }
+                { id: 'pex', name: 'Труба PEX-a (полиэтилен)', brand: b_pex, price: p_pex, imgId: isRommer ? pexItem?.rommer?.id : pexItem?.id },
+                { id: 'metal_plastic', name: 'Труба металлопластиковая', brand: b_mp, price: p_mp, imgId: mpItem?.id }
             ];
         }
         else if (item.originalId && (item.originalId.startsWith('SMF-0001') || item.originalId === '418318')) {
             let p_mat = catalog.mats ? catalog.mats[0]?.price || 991 : 991;
             let p_xps = catalog.xps_kit ? catalog.xps_kit[0]?.price || 299 : 299;
             customAlts = [
-                { id: 'mat', name: 'Маты с бобышками STOUT', brand: 'STOUT', price: p_mat },
-                { id: 'xps', name: 'Пенополистирол XPS + скобы', brand: 'Technonicol', price: p_xps }
+                { id: 'mat', name: 'Маты с бобышками STOUT', brand: 'STOUT', price: p_mat, imgId: catalog.mats?.[0]?.id },
+                { id: 'xps', name: 'Пенополистирол XPS + скобы', brand: 'Technonicol', price: p_xps, imgId: catalog.xps_kit?.[0]?.id }
             ];
         }
         else if (item.originalId && item.originalId.startsWith('SCS-0001')) {
@@ -13767,10 +13769,12 @@ const app = {
             let sirioPrice = sirioItem?.price || 38236;
             let sirioBrand = 'STOUT';
             let sirioName = 'Частотный регулятор Sirio';
+            let sirioImgId = sirioItem?.id;
             if (isRommer && sirioItem?.rommer) {
                 sirioPrice = sirioItem.rommer.price || 5880;
                 sirioBrand = 'ROMMER';
                 sirioName = 'Электронное реле давления (EPC-12 auto)';
+                sirioImgId = sirioItem.rommer.id;
             }
 
             let topPrice = topItem?.price || 16078;
@@ -13782,19 +13786,19 @@ const app = {
             let epc5Item = catalog.well_auto ? catalog.well_auto.find(x => x.id === 'RCS-0001-000055') : null;
 
             customAlts = [
-                { id: 'sirio', name: sirioName, brand: sirioBrand, price: sirioPrice, ctrlType: 'electronic', driveType: 'frequency' },
-                { id: 'top', name: topItem?.name || 'Устройство управления насосом BRIO-TOP', brand: 'STOUT', price: topPrice, ctrlType: 'electronic', driveType: 'relay' },
-                { id: 'base', name: baseItem?.name || 'Устройство управления насосом BRIO', brand: 'STOUT', price: basePriceVal, ctrlType: 'mechanical', driveType: 'relay' }
+                { id: 'sirio', name: sirioName, brand: sirioBrand, price: sirioPrice, ctrlType: 'electronic', driveType: 'frequency', imgId: sirioImgId },
+                { id: 'top', name: topItem?.name || 'Устройство управления насосом BRIO-TOP', brand: 'STOUT', price: topPrice, ctrlType: 'electronic', driveType: 'relay', imgId: topItem?.id },
+                { id: 'base', name: baseItem?.name || 'Устройство управления насосом BRIO', brand: 'STOUT', price: basePriceVal, ctrlType: 'mechanical', driveType: 'relay', imgId: baseItem?.id }
             ];
-            if (epc12Item) customAlts.push({ id: 'epc12auto', name: epc12Item.name, brand: 'ROMMER', price: epc12Item.price, ctrlType: 'electronic', driveType: 'relay' });
-            if (epc2Item) customAlts.push({ id: 'epc2', name: epc2Item.name, brand: 'ROMMER', price: epc2Item.price, ctrlType: 'mechanical', driveType: 'relay' });
-            if (epc4Item) customAlts.push({ id: 'epc4', name: epc4Item.name, brand: 'ROMMER', price: epc4Item.price, ctrlType: 'mechanical', driveType: 'relay' });
-            if (epc5Item) customAlts.push({ id: 'epc5', name: epc5Item.name, brand: 'ROMMER', price: epc5Item.price, ctrlType: 'mechanical', driveType: 'relay' });
+            if (epc12Item) customAlts.push({ id: 'epc12auto', name: epc12Item.name, brand: 'ROMMER', price: epc12Item.price, ctrlType: 'electronic', driveType: 'relay', imgId: epc12Item.id });
+            if (epc2Item) customAlts.push({ id: 'epc2', name: epc2Item.name, brand: 'ROMMER', price: epc2Item.price, ctrlType: 'mechanical', driveType: 'relay', imgId: epc2Item.id });
+            if (epc4Item) customAlts.push({ id: 'epc4', name: epc4Item.name, brand: 'ROMMER', price: epc4Item.price, ctrlType: 'mechanical', driveType: 'relay', imgId: epc4Item.id });
+            if (epc5Item) customAlts.push({ id: 'epc5', name: epc5Item.name, brand: 'ROMMER', price: epc5Item.price, ctrlType: 'mechanical', driveType: 'relay', imgId: epc5Item.id });
 
             let krs5Item = catalog.well_relays ? catalog.well_relays.find(x => x.id === 'RCS-0001-000005') : null;
             let krs6Item = catalog.well_relays ? catalog.well_relays.find(x => x.id === 'RCS-0001-000003') : null;
             if (krs5Item && krs6Item) {
-                customAlts.push({ id: 'relay_krs5', name: `${krs5Item.name} + ${krs6Item.name}`, brand: 'ROMMER', price: krs5Item.price + krs6Item.price, ctrlType: 'mechanical', driveType: 'relay' });
+                customAlts.push({ id: 'relay_krs5', name: `${krs5Item.name} + ${krs6Item.name}`, brand: 'ROMMER', price: krs5Item.price + krs6Item.price, ctrlType: 'mechanical', driveType: 'relay', imgId: krs5Item.id });
             }
 
             if (this.state.wellAutoCtrl && this.state.wellAutoCtrl !== 'all') customAlts = customAlts.filter(a => a.ctrlType === this.state.wellAutoCtrl);
@@ -13835,6 +13839,7 @@ const app = {
         }
         else if (item.originalId && (item.originalId.startsWith('SVT') || item.originalId.startsWith('SVL'))) {
             let straightPrice = 1836, angledPrice = 2211;
+            let straightImgId, angledImgId;
             if (catalog.conv_valves) {
                 let svt_str = catalog.conv_valves.find(x => x.id === 'SVT-0001-000015');
                 let svl_str = catalog.conv_valves.find(x => x.id === 'SVL-1176-000015');
@@ -13843,22 +13848,27 @@ const app = {
                 if (isRommer) {
                     straightPrice = (svt_str?.rommer?.price || svt_str?.price || 0) + (svl_str?.rommer?.price || svl_str?.price || 0);
                     angledPrice = (svt_ang?.rommer?.price || svt_ang?.price || 0) + (svl_ang?.rommer?.price || svl_ang?.price || 0);
+                    straightImgId = svt_str?.rommer?.id || svt_str?.id;
+                    angledImgId = svt_ang?.rommer?.id || svt_ang?.id;
                 } else {
                     straightPrice = (svt_str?.price || 0) + (svl_str?.price || 0);
                     angledPrice = (svt_ang?.price || 0) + (svl_ang?.price || 0);
+                    straightImgId = svt_str?.id;
+                    angledImgId = svt_ang?.id;
                 }
             }
 
             customAlts = [
-                { id: 'straight', name: 'Прямое подключение конвектора', brand: isRommer ? 'ROMMER' : 'STOUT', price: straightPrice },
-                { id: 'angled', name: 'Угловое подключение конвектора', brand: isRommer ? 'ROMMER' : 'STOUT', price: angledPrice }
+                { id: 'straight', name: 'Прямое подключение конвектора', brand: isRommer ? 'ROMMER' : 'STOUT', price: straightPrice, imgId: straightImgId },
+                { id: 'angled', name: 'Угловое подключение конвектора', brand: isRommer ? 'ROMMER' : 'STOUT', price: angledPrice, imgId: angledImgId }
             ];
         }
         else if (item.originalId && (item.originalId.startsWith('SCA-') || item.originalId.startsWith('RCA-'))) {
             let p0 = isRommer ? (catalog.chimneys[0].rommer?.price || catalog.chimneys[0].price) : catalog.chimneys[0].price;
             let name0 = isRommer ? (catalog.chimneys[0].rommer?.name || catalog.chimneys[0].name) : catalog.chimneys[0].name;
+            let imgId0 = isRommer ? (catalog.chimneys[0].rommer?.id || catalog.chimneys[0].id) : catalog.chimneys[0].id;
             customAlts = [
-                { id: 'standard', name: name0, brand: isRommer ? 'ROMMER' : 'STOUT', price: p0 },
+                { id: 'standard', name: name0, brand: isRommer ? 'ROMMER' : 'STOUT', price: p0, imgId: imgId0 },
                 ...catalog.chimneys.slice(1).map(c => ({ id: c.id, name: c.name, brand: c.brand || 'ROMMER', price: c.price }))
             ];
         }
@@ -13889,8 +13899,8 @@ const app = {
             }
 
             customAlts = [
-                { id: 'std', name: stdName, brand: stdBrand, price: stdPrice },
-                { id: 'comfort', name: stoutSewer?.comfort?.name || 'Канализация Комфорт (бесшумная)', brand: comfortBrand, price: comfortPrice }
+                { id: 'std', name: stdName, brand: stdBrand, price: stdPrice, imgId: isRommer ? stoutSewer?.rommer?.id : stoutSewer?.id },
+                { id: 'comfort', name: stoutSewer?.comfort?.name || 'Канализация Комфорт (бесшумная)', brand: comfortBrand, price: comfortPrice, imgId: stoutSewer?.comfort?.id }
             ];
             // #13: третий вариант — ОБЫЧНАЯ (не бесшумная) ПП-канализация. В режиме STOUT обе
             // опции выше бесшумные, поэтому обычную добавляем отдельной строкой из поля .rommer.
@@ -13899,7 +13909,8 @@ const app = {
                     id: 'economy',
                     name: stoutSewer.rommer.name || 'Канализация обычная (ПП)',
                     brand: stoutSewer.rommer.brand || 'Sinikon',
-                    price: stoutSewer.rommer.price || 0
+                    price: stoutSewer.rommer.price || 0,
+                    imgId: stoutSewer.rommer.id
                 });
             }
         }
@@ -13907,8 +13918,8 @@ const app = {
             let p0 = catalog.hydro_dn25?.find(x => x.id === 'RDG-0015-004002')?.price || catalog.hydro_arrow?.rommer?.price || 6596;
             let p1 = catalog.hydro_dn25?.find(x => x.id === 'RDG-1015-004003')?.price || 16722;
             customAlts = [
-                { id: 'standard', name: 'Гидравлический разделитель (Стандарт)', brand: 'ROMMER', price: p0 },
-                { id: 'pro', name: 'Гидравлический разделитель (Pro с накидными гайками)', brand: 'ROMMER', price: p1 }
+                { id: 'standard', name: 'Гидравлический разделитель (Стандарт)', brand: 'ROMMER', price: p0, imgId: 'RDG-0015-004002' },
+                { id: 'pro', name: 'Гидравлический разделитель (Pro с накидными гайками)', brand: 'ROMMER', price: p1, imgId: 'RDG-1015-004003' }
             ];
         }
         else if (_origId0.startsWith('SMS-0922') || (_origId0.startsWith('SMB-6850') && !_origId0.endsWith('_water')) || _origId0.startsWith('RMS-3201') || _origId0.startsWith('RMS-1210') || _origId0.startsWith('RMS-1001')) {
@@ -13953,9 +13964,9 @@ const app = {
             if (stdStout.rommer) {
                 customAlts.push({ id: stdStout.rommer.id, name: `Коллектор радиаторный (Стандарт, ${loops} вых.)`, brand: 'ROMMER', price: stdRommerPrice });
             }
-            customAlts.push({ id: 'chrome', name: `Регулировочные блоки (комплект на ${loops} вых.)`, brand: 'STOUT', price: chromeStoutPrice });
+            customAlts.push({ id: 'chrome', name: `Регулировочные блоки (комплект на ${loops} вых.)`, brand: 'STOUT', price: chromeStoutPrice, imgId: b4.id });
             if (b4.rommer || b3.rommer || b2.rommer) {
-                customAlts.push({ id: 'chrome_rommer', name: `Регулировочные блоки полностью укомплектован (${loops} вых.)`, brand: 'ROMMER', price: chromeRommerPrice });
+                customAlts.push({ id: 'chrome_rommer', name: `Регулировочные блоки полностью укомплектован (${loops} вых.)`, brand: 'ROMMER', price: chromeRommerPrice, imgId: b4.rommer?.id });
             }
             customAlts.push({ id: 'tee', name: `Тройниковая разводка (без коллектора, шлейф по трассе)`, brand: 'STOUT', price: 0 });
 
@@ -15028,7 +15039,7 @@ const app = {
                 let activeClass = isActive ? "active-row" : "";
                 let activeStyle = isActive ? "background-color: var(--primary-light);" : "";
                 let badgeHtml = isActive ? `<span style="font-size: 10px; background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px;">Выбран</span>` : "";
-                let imgHtml = getImg(alt);
+                let imgHtml = getImg(alt.imgId ? { ...alt, id: alt.imgId } : alt);
                 let diffHtml = getPriceDiffHtml(alt.price, isActive);
                 let priceText = alt.price > 0 ? this.formatPriceHtml(alt.price, true) : "-";
 

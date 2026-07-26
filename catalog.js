@@ -975,25 +975,6 @@ const getImg = (item) => {
         return `<div style="width:24px; height:24px; background:transparent; display:inline-flex; margin-right:8px; flex-shrink:0;"></div>`;
     }
 
-    // ЛОГИКА БУКВ: Rommer -> R, всё остальное (включая STOUT) -> S
-    let txt = item.brand === 'ROMMER' ? 'R' : 'S';
-    let bg = 'F3F4F6';
-    if (item.type === 'el') { txt = '⚡'; bg = 'FEF3C7'; } else if (item.type === 'gas') { txt = '🔥'; bg = 'FEE2E2'; }
-    else if (item.name.includes('Радиатор')) { txt = '🌡️'; bg = 'E0F2FE'; }
-    else if (item.name.includes('Труба')) { txt = '➰'; bg = 'DCFCE7'; }
-    else if (item.name.includes('Коллектор')) { txt = '🎛️'; bg = 'F3E8FF'; }
-    else if (item.name.includes('смесительный')) { txt = '🔄'; bg = 'F3E8FF'; }
-    else if (item.name.includes('Бойлер')) { txt = '💧'; bg = 'DBEAFE'; }
-    else if (item.name.includes('Warme')) { txt = '🧪'; bg = 'D1FAE5'; }
-    else if (item.name.includes('Бак')) { txt = '🔴'; bg = 'FEE2E2'; }
-    else if (item.name.includes('Стабилизатор')) { txt = '🔌'; bg = 'FEF3C7'; }
-    else if (item.name.includes('Мат')) { txt = '🔲'; bg = 'F3E8FF'; }
-    else if (item.name.includes('Zigbee') || item.name.includes('Головка') || item.name.includes('Узел') || item.name.includes('Термостат') || item.name.includes('контроллер')) { txt = '🔧'; bg = 'DBEAFE'; }
-    else if (item.name.includes('Инсталляция')) { txt = '🚽'; bg = 'F3E8FF'; }
-    else if (item.name.includes('олотенцесушитель')) { txt = '♨️'; bg = 'FEE2E2'; }
-    if (item.id.startsWith('SPI-0001-') || item.id.startsWith('SPI-0002-') || item.id.startsWith('SPM-0001-') || item.id.startsWith('SPM-0002-') || item.id.startsWith('SHQ-')) {
-        return `<img src="https://placehold.co/100x100/${bg}/555?text=${txt}&font=roboto" class="prod-thumb" loading="lazy" decoding="async">`;
-    }
     let imgSrc = `img/${item.id}.jpg`;
     return `<img src="${imgSrc}" class="prod-thumb" loading="lazy" decoding="async" onerror="this.onerror=null;this.style.visibility='hidden';">`;
 };
