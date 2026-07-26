@@ -247,6 +247,12 @@ body {
     overflow-y: auto;
 }
 
+.input-panel.fast-mode {
+    /* Быстрый режим: контента немного, показываем всю панель целиком без внутренней прокрутки */
+    max-height: none;
+    overflow-y: visible;
+}
+
 .output-panel {
     flex: 1;
     min-width: 0;

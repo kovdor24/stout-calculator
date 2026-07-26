@@ -18653,6 +18653,9 @@ const app = {
         const modePro = document.getElementById('mode_pro');
         const modeSelectorWrapper = modeFast && modeFast.closest('.mode-selector-tabs');
 
+        const inputPanelEl = document.querySelector('.input-panel');
+        if (inputPanelEl) inputPanelEl.classList.toggle('fast-mode', !this.state.detailedRooms);
+
         const modeIsGuest = isGuest;
         // Базовый (авторизованный, но не PRO) тариф получил полный функционал —
         // режим "Подробный" доступен всем, кроме гостей (им нужно сначала войти).
