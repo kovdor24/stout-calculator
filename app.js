@@ -2211,8 +2211,14 @@ const app = {
         try {
             const saved = JSON.parse(localStorage.getItem('ai_fab_pos') || 'null');
             if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
-                btn.style.left = saved.left + 'px';
-                btn.style.top = saved.top + 'px';
+                // Координаты запоминаются в момент перетаскивания на конкретном экране — если потом
+                // окно/экран стали меньше (ресайз, другой монитор, смена ориентации), старая позиция
+                // может оказаться за пределами видимой области, и кнопка выглядит как "пропавшая".
+                // Поэтому при восстановлении всегда подрезаем её обратно в текущий viewport.
+                const maxLeft = Math.max(4, window.innerWidth - btn.offsetWidth - 4);
+                const maxTop = Math.max(4, window.innerHeight - btn.offsetHeight - 4);
+                btn.style.left = Math.max(4, Math.min(maxLeft, saved.left)) + 'px';
+                btn.style.top = Math.max(4, Math.min(maxTop, saved.top)) + 'px';
                 btn.style.right = 'auto';
                 btn.style.bottom = 'auto';
             }
