@@ -5655,12 +5655,34 @@ body.dark-mode .btn-get-invoice {
     background: linear-gradient(135deg, #047857, #10B981);
 }
 
+/* #16: скрытие технических предупреждений о нехватке мощности в смете для клиента
+   (чекбокс в окне печати; класс навешивает prepareForPrint) */
+body.hide-warns-print .warn-box {
+    display: none !important;
+}
+
 /* === COMPACT IMAGES HIDING MODE === */
 body.hide-images-mode .col-img {
     display: none !important;
 }
 body.hide-images-mode .inv-table td {
     padding: 6px 12px !important;
+}
+/* Инлайн-кнопка «Аналог» у названия: скрыта, когда картинки показаны (замена доступна через фото),
+   и появляется в компактном режиме без картинок, где столбец с фото скрыт. */
+.swap-inline-btn {
+    display: none;
+}
+body.hide-images-mode .swap-inline-btn {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    margin-left: 6px;
+    color: var(--primary);
+    cursor: pointer;
+}
+body.hide-images-mode .swap-inline-btn:hover {
+    opacity: 0.7;
 }
 
 /* === OFFLINE PDF GENERATION CSS OVERRIDES FOR CALCULATOR === */

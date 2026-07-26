@@ -52,7 +52,7 @@ const CONTEST_CATS_2026 = [
     { key: 'flex_conn',      label: 'Гибкая подводка',     pts: 3,  emoji: '🔗', test: (id, name) => name.includes('гибк') },
     { key: 'valve',          label: 'Арматура',            pts: 2,  emoji: '🔧', test: (id)       => id.startsWith('SVT-') || id.startsWith('SVL-') || id.startsWith('SFB-') || id.startsWith('SBV-') },
     { key: 'pipes_fittings', label: 'Трубы и фитинги',     pts: 1,  emoji: '➿', test: (id, name, item) => (name.includes('труб') && (item.q || 1) >= 20) || name.includes('фитинг') || id.startsWith('SFP-') || id.startsWith('SFA-') || id.startsWith('SFC-') || id.startsWith('SFH-') || id.startsWith('SPX-') },
-    { key: 'mats',           label: 'Маты',                pts: 1,  emoji: '🧱', test: (id, name) => name.includes('мат') || id.startsWith('SPM-') },
+    { key: 'mats',           label: 'Маты',                pts: 1,  emoji: '🧱', test: (id, name) => (name.includes('мат') && !name.includes('матов')) || id.startsWith('SPM-') },
 ];
 
 
@@ -592,7 +592,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null },
 
     lastSavedStateString: "",
 
@@ -8144,7 +8144,22 @@ const app = {
                     body.dark-mode #dynamic_scheme img {
                         filter: invert(1) hue-rotate(180deg); mix-blend-mode: screen; opacity: 0.85;
                     }
-                    
+                    /* #14: панель с подобранным оборудованием поверх схемы. Слои-картинки
+                       показывают только наличие узлов, подписи — конкретные модели и количества. */
+                    #dynamic_scheme .scheme-labels {
+                        position: absolute; left: 10px; bottom: 10px; z-index: 5;
+                        max-width: 46%; box-sizing: border-box;
+                        background: rgba(255,255,255,0.92); border: 1px solid #E2E8F0;
+                        border-radius: 8px; padding: 10px 12px;
+                        font-size: 11px; line-height: 1.35; color: #0F172A;
+                        box-shadow: 0 2px 8px rgba(15,23,42,0.06);
+                    }
+                    body.dark-mode #dynamic_scheme .scheme-labels {
+                        background: rgba(15,23,42,0.92); border-color: #334155; color: #E2E8F0;
+                    }
+                    body.dark-mode #dynamic_scheme .scheme-labels span { color: #E2E8F0 !important; }
+                    body.dark-mode #dynamic_scheme .scheme-labels div { color: #E2E8F0 !important; }
+
                     /* === ЖЕСТКИЕ ПРАВИЛА ДЛЯ ИДЕАЛЬНОЙ ПЕЧАТИ === */
             /* Правила для вывода на отдельный альбомный лист */
             @media print {
@@ -8175,6 +8190,16 @@ const app = {
                     object-fit: contain !important;
                     object-position: center center !important;
                 }
+                /* #14: подписи печатаем вместе со схемой — без прозрачности и теней */
+                #dynamic_scheme .scheme-labels {
+                    background: #fff !important;
+                    border: 1px solid #94A3B8 !important;
+                    box-shadow: none !important;
+                    color: #000 !important;
+                    font-size: 9pt !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
             }
                 </style>
                 <div id="dynamic_scheme">`;
@@ -8185,8 +8210,71 @@ const app = {
             html += `<img src="${basePath}${layer}" alt="${layer}" style="object-position: ${position};" onerror="this.style.display='none'">`;
         });
 
+        html += this._renderSchemeLabels(spec);
         html += `</div>`;
         return html;
+    },
+    // #14: подписи к схеме котельной. Сами слои-картинки показывают только НАЛИЧИЕ узлов
+    // (котёл, бойлер, стрелка, контуры), но не отражают, какое именно оборудование подобрано —
+    // из-за этого схема выглядела одинаковой для разных смет. Панель ниже собирается из
+    // фактической спецификации: модели, мощности, объёмы и количества.
+    _renderSchemeLabels: function (spec) {
+        spec = spec || [];
+        const s = this.state;
+        const rows = [];
+        const find = (re, excl) => spec.filter(i => re.test(i.name || '') && (!excl || !excl.test(i.name || '')));
+        const qtySuffix = (arr) => {
+            const n = arr.reduce((a, x) => a + (x.q || 0), 0);
+            return n > 1 ? ` × ${n}` : '';
+        };
+        const push = (label, value) => { if (value) rows.push([label, value]); };
+
+        // Котлы — модель и мощность прямо из наименования позиции
+        const boilers = find(/котёл|котел/i);
+        if (boilers.length) push('Котёл', boilers.map(b => b.name + ((b.q || 1) > 1 ? ` × ${b.q}` : '')).join('<br>'));
+
+        // Бойлер ГВС (объём указан в наименовании)
+        const dhw = find(/бойлер|водонагреватель/i);
+        if (dhw.length) push('Бойлер ГВС', dhw[0].name);
+
+        // Расширительные баки: отопления и ГВС. Исключаем обвязку/крепёж бака (комплект
+        // подключения, кронштейн, хомут) — это не сам бак и в подписи не нужно.
+        const _tankExcl = /комплект|подключени|кронштейн|хомут|крепл|шпильк/i;
+        const expDhw = spec.filter(i => /бак/i.test(i.name || '') && /гвс/i.test(i.name || '') && !_tankExcl.test(i.name || ''));
+        const expHeat = spec.filter(i => /бак/i.test(i.name || '') && !/гвс/i.test(i.name || '') && !_tankExcl.test(i.name || ''));
+        if (expHeat.length) push('Расш. бак отопления', expHeat[0].name);
+        if (expDhw.length) push('Расш. бак ГВС', expDhw[0].name);
+
+        // Гидравлика: стрелка / коллектор котельной
+        const hydro = find(/гидрострелк|гидравлическ(ая|ий) (стрелка|разделитель)|коллектор-гидрострелка|распр\. коллектор/i);
+        if (hydro.length) push('Гидравлика', hydro[0].name);
+
+        // Насосные группы — главное, чего схема не показывала: сколько и каких
+        const grpDirect = find(/группа насосная.*прямая|насосная группа.*прямая/i);
+        const grpMix = find(/группа насосная|насосная группа/i).filter(i => !/прямая/i.test(i.name));
+        if (grpDirect.length) push('Группы на радиаторы', grpDirect[0].name.replace(/\s*\(для.*/, '') + qtySuffix(grpDirect));
+        if (grpMix.length) push('Группы на тёплый пол', grpMix[0].name.replace(/\s*\(для.*/, '') + qtySuffix(grpMix));
+
+        // Контуры тёплого пола
+        const ufhMans = find(/коллектор ТП/i);
+        if (ufhMans.length) push('Коллекторы ТП', ufhMans.map(m => m.name + ((m.q || 1) > 1 ? ` × ${m.q}` : '')).join('<br>'));
+
+        // Полотенцесушитель (#5) — на слоях схемы его нет, но в котельной он влияет на обвязку ГВС
+        const tw = this.getTowelWarmer ? this.getTowelWarmer() : null;
+        const twCount = this.getTowelWarmerCount ? this.getTowelWarmerCount() : 0;
+        if (tw && twCount > 0) push('Полотенцесушитель', (tw.type === 'water' ? 'Водяной' : 'Электрический') + ` × ${twCount}`);
+
+        if (s.recirc) push('Рециркуляция ГВС', 'Есть');
+
+        if (!rows.length) return '';
+        const body = rows.map(r =>
+            `<div style="display:flex; gap:6px; align-items:baseline; margin-bottom:3px;">` +
+            `<span style="flex:0 0 auto; color:#64748B; font-weight:600;">${r[0]}:</span>` +
+            `<span style="flex:1 1 auto; color:#0F172A; font-weight:500;">${r[1]}</span>` +
+            `</div>`).join('');
+        return `<div class="scheme-labels">` +
+            `<div style="font-weight:800; margin-bottom:6px; color:#0F172A;">Подобранное оборудование</div>` +
+            body + `</div>`;
     },
     exportAdminToExcel: function () {
         let users = this.adminData.users;
@@ -9348,7 +9436,7 @@ const app = {
             };
 
             let items = {
-                equipment: (this.currentEquipmentList || []).map(({ alts, ...rest }) => rest),
+                equipment: this.buildSharedEquipment(),
                 works: this.currentWorksList || []
             };
 
@@ -10919,6 +11007,45 @@ const app = {
         document.title = `КП ${safeName} - ${areaVal} м2${sectionsText}`;
         console.log("[updateDocumentTitle] Updated title to:", document.title);
     },
+    // Готовит список оборудования для клиентской ссылки/счёта с учётом свёрнутых подразделов
+    // (collapsedGroups). Каждый свёрнутый подраздел заменяется ОДНОЙ итоговой строкой-комплектом
+    // (его подытог, без детализации и описаний позиций) — ровно как монтажник свернул его на
+    // экране. Это (1) убирает из клиентской ссылки скрытую детализацию и (2) резко уменьшает её
+    // размер (десятки позиций с описаниями → одна строка). Если ничего не свёрнуто или группировка
+    // выключена — поведение прежнее (полный список). См. баг #17.
+    buildSharedEquipment: function () {
+        const list = this.currentEquipmentList || [];
+        const collapsed = this.state.collapsedGroups || [];
+        // Свёртка активна только в режиме группировки (как и на экране: !forceMerge).
+        if (!this.state.groupItems || !collapsed.length) {
+            return list.map(({ alts, ...rest }) => rest);
+        }
+        const out = [];
+        const acc = {}; // group -> ссылка на строку-комплект в out
+        list.forEach(i => {
+            const g = i.group;
+            const isOpt = this.state.optItems[i.originalId || i.id];
+            if (g && collapsed.includes(g)) {
+                if (isOpt) return; // исключённые позиции в подытог свёрнутого раздела не входят
+                if (!acc[g]) {
+                    const cleanName = g.replace(/^\d+(?:\.\d+)*\.?\s*/, '').trim() || g;
+                    acc[g] = {
+                        id: 'custom_collapsed_' + g.replace(/[^a-z0-9]/gi, '_'),
+                        name: 'Комплект материалов: ' + cleanName,
+                        brand: '', unit: 'компл.', q: 1, price: 0, sum: 0,
+                        sectionTitle: i.sectionTitle, group: g
+                    };
+                    out.push(acc[g]);
+                }
+                acc[g].price += (i.sum || 0);
+                acc[g].sum += (i.sum || 0);
+            } else {
+                const { alts, ...rest } = i;
+                out.push(rest);
+            }
+        });
+        return out;
+    },
     generateLocalShareLink: async function (object_info, manager_info, items, totals) {
         const payload = {
             object_info: object_info,
@@ -11183,7 +11310,7 @@ const app = {
         // в фоновую очередь/Supabase (в отличие от generateLocalShareLink, который использует
         // compactPayload и не трогает .alts). Убираем поле здесь же, до сериализации.
         let items = {
-            equipment: showEq ? (this.currentEquipmentList || []).map(({ alts, ...rest }) => rest) : [],
+            equipment: showEq ? this.buildSharedEquipment() : [],
             works: showWorks ? (this.currentWorksList || []) : []
         };
 
@@ -12257,7 +12384,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType
@@ -12265,6 +12392,11 @@ const app = {
 
         this.saveState();
         this.syncUI();
+        // Явно перерисовываем список помещений: syncUI вызывает renderRoomsUI только в подробном
+        // режиме (detailedRooms=true), а после сброса он выключен — без этого старые карточки
+        // помещений остаются висеть в DOM (rooms_list_1/2 не очищаются). state.rooms уже пуст,
+        // поэтому renderRoomsUI просто очистит списки. См. баг #1.
+        this.renderRoomsUI();
         this.render();
         this.resetAutosaveBaseline();
     },
@@ -13239,8 +13371,12 @@ const app = {
         }
 
         else if (originalId.startsWith('SKB-') || /^5[0-9]{5}[RK]?$/.test(originalId)) {
-            // Sinikon sewer items: cycle std ↔ comfort
-            this.state.sewerType = (this.state.sewerType === 'std') ? 'comfort' : 'std';
+            // Канализация: цикл бесшумная → Comfort → обычная ПП → бесшумная (#13).
+            // В режиме ROMMER обычная ПП и есть базовый вариант ('std'), поэтому цикл там двойной.
+            const _sewerHasEconomy = (this.state.brandMode !== 'rommer');
+            if (this.state.sewerType === 'std') this.state.sewerType = 'comfort';
+            else if (this.state.sewerType === 'comfort') this.state.sewerType = _sewerHasEconomy ? 'economy' : 'std';
+            else this.state.sewerType = 'std';
         }
         else if (originalId === 'RDG-0015-004002' || originalId === 'RDG-1015-004003') { this.state.hydroArrowType = (this.state.hydroArrowType === 'pro') ? 'standard' : 'pro'; }
         else if (originalId === 'SDG-0120-001000' || originalId === 'SDG-0002-002001' || originalId === 'SDG-0002-002501' || originalId === 'SDG-0003-002001' || originalId === 'SDG-0003-002501' || originalId === 'SDG-0007-003201') {
@@ -13359,6 +13495,8 @@ const app = {
         return cheapest || item;
     },
     openSwapModal: function (lookupId) {
+        // Полотенцесушители (SHQ-) заменяются собственным пикером с фильтрами по высоте/ширине/цвету (#5).
+        if (lookupId && String(lookupId).startsWith('SHQ-')) { this.openTowelWarmerPicker(); return; }
         let isFirstOpen = (this._lastSwapLookupId !== lookupId) || !document.getElementById('swap_modal_overlay') || document.getElementById('swap_modal_overlay').style.display === 'none';
         this._lastSwapLookupId = lookupId;
 
@@ -13754,6 +13892,16 @@ const app = {
                 { id: 'std', name: stdName, brand: stdBrand, price: stdPrice },
                 { id: 'comfort', name: stoutSewer?.comfort?.name || 'Канализация Комфорт (бесшумная)', brand: comfortBrand, price: comfortPrice }
             ];
+            // #13: третий вариант — ОБЫЧНАЯ (не бесшумная) ПП-канализация. В режиме STOUT обе
+            // опции выше бесшумные, поэтому обычную добавляем отдельной строкой из поля .rommer.
+            if (!isRommer && stoutSewer?.rommer) {
+                customAlts.push({
+                    id: 'economy',
+                    name: stoutSewer.rommer.name || 'Канализация обычная (ПП)',
+                    brand: stoutSewer.rommer.brand || 'Sinikon',
+                    price: stoutSewer.rommer.price || 0
+                });
+            }
         }
         else if (item.originalId === 'RDG-0015-004002' || item.originalId === 'RDG-1015-004003') {
             let p0 = catalog.hydro_dn25?.find(x => x.id === 'RDG-0015-004002')?.price || catalog.hydro_arrow?.rommer?.price || 6596;
@@ -15275,6 +15423,27 @@ const app = {
     _getColorOf: function (s) {
         return s.color || 'standard';
     },
+    // Цвет монтажного набора подключения (radAccessories SKU-0211/0221/0231) под цвет радиатора.
+    // Наборы бывают только в трёх цветах: белый RAL9016 / графит / чёрный 9011. Серые и
+    // «натуральные» дизайн-радиаторы (OSCAR/SEBINO/TUBE) подключаются графитовым набором
+    // (решение согласовано), обычные/белые — белым.
+    _radKitColorFor: function (item) {
+        const c = item && item.color;
+        if (c === 'graphite' || c === 'gray' || c === 'natural') return 'graphite';
+        if (c === 'black') return 'black';
+        return 'white';
+    },
+    // Возвращает позицию монтажного набора нужного цвета/диаметра из radAccessories,
+    // с alts = все 6 наборов (3 цвета × 2 диаметра) для кнопки «Аналог».
+    _radMountKit: function (kitColor, size) {
+        size = size || '1/2';
+        const all = radAccessories.filter(x => x.size && /^SKU-02[123]1-/.test(x.id));
+        const kit = all.find(x => x.color === kitColor && x.size === size)
+            || all.find(x => x.color === kitColor)
+            || all[0];
+        if (kit) kit.alts = all;
+        return kit;
+    },
     // Ось высот слайдера в модалке замены: обычные секционные радиаторы измеряются
     // межосевым расстоянием 200-600 мм, дизайн-радиаторы (панельные вертикальные и
     // трубчатые) — фиксированными высотами 1800/2000 мм (см. _designHeightNominal).
@@ -16397,6 +16566,7 @@ const app = {
         }
         else if (originalId.startsWith('SKB-') || /^5[0-9]{5}[RK]?$/.test(originalId)) {
             if (chosenId === 'comfort') this.state.sewerType = 'comfort';
+            else if (chosenId === 'economy') this.state.sewerType = 'economy'; // обычная ПП, не бесшумная (#13)
             else this.state.sewerType = 'std';
         }
         else if (originalId === 'RDG-0015-004002' || originalId === 'RDG-1015-004003') {
@@ -16459,7 +16629,9 @@ const app = {
                     else tTp1 += (parseFloat(r.area) || 0);
                 }
             });
-            this.state.area = tA > 0 ? tA : 50;
+            // Округляем сумму площадей комнат до 0.1 м² — иначе сложение дробных площадей
+            // даёт «хвост» вроде 198.00000000000003, который потом виден в подробном расчёте.
+            this.state.area = tA > 0 ? Math.round(tA * 10) / 10 : 50;
             this.state.win = tW > 0 ? tW : 1;
             this.state.tp1 = tTp1;
             this.state.tp2 = tTp2;
@@ -16992,11 +17164,9 @@ const app = {
     removeWindow: function (roomId, winId) {
         let r = this.state.rooms.find(x => x.id === roomId);
         if (r) {
+            // Разрешаем убрать даже последнее окно: у помещения без внешних окон (внутренний
+            // санузел, гардеробная и т.п.) радиаторов по окнам не будет — только тёплый пол.
             r.windows = r.windows.filter(w => w.id !== winId);
-            if (r.windows.length === 0) {
-                const wWidth = this.getDefaultWindowWidth(r.area);
-                r.windows.push({ id: Date.now(), width: wWidth, isPan: false });
-            }
         }
         this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
     },
@@ -17022,6 +17192,7 @@ const app = {
         }
     },
     showRoomHeightSlider: function (roomId, event) {
+        if (this._restoringRoomFocus) return; // не открывать ползунок при программном восстановлении фокуса (#4)
         if (event) {
             event.stopPropagation();
             event.preventDefault();
@@ -17086,6 +17257,7 @@ const app = {
         }
     },
     showRoomAreaSlider: function (roomId, event) {
+        if (this._restoringRoomFocus) return; // не открывать ползунок при программном восстановлении фокуса (#4)
         if (event) {
             event.stopPropagation();
             event.preventDefault();
@@ -17099,6 +17271,7 @@ const app = {
         }
     },
     showWindowWidthSlider: function (roomId, winId, event) {
+        if (this._restoringRoomFocus) return; // не открывать ползунок при программном восстановлении фокуса (#4)
         if (event) {
             event.stopPropagation();
             event.preventDefault();
@@ -17511,10 +17684,53 @@ const app = {
         generatedRooms.sort((a, b) => b.area - a.area);
         this.state.rooms = generatedRooms;
     },
+    // Кликабельная подпись помещения в предупреждении о нехватке мощности (#9) — ведёт к карточке.
+    _warnRoomLabel: function (roomId, text) {
+        return `<b style="cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px;" title="Перейти к помещению" onclick="event.stopPropagation(); app.jumpToRoom(${roomId})">${text}</b>`;
+    },
+    // Переход к помещению из предупреждения о нехватке мощности (#9): раскрывает панель
+    // подробного расчёта, прокручивает к нужной карточке и подсвечивает её.
+    jumpToRoom: function (roomId) {
+        if (!this.state.detailedRooms) return;
+        if (!this.state.showDetailedRoomsPanel) {
+            this.state.showDetailedRoomsPanel = true;
+            const chk = document.getElementById('chk_detailed_rooms_toggle');
+            if (chk) chk.checked = true;
+            this.syncUI();
+            this.renderRoomsUI();
+        }
+        // На мобильной раскладке параметры объекта лежат на отдельной вкладке — переключаем.
+        if (this.isMobileLayout && this.isMobileLayout() && this.state.mobTab !== 'inputs') {
+            this.state.mobTab = 'inputs';
+            this.syncMobileUI();
+        }
+        const card = document.getElementById('room_card_' + roomId);
+        if (!card) return;
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Кратковременная подсветка, чтобы глазом найти нужную карточку среди прочих.
+        const prevShadow = card.style.boxShadow;
+        const prevTransition = card.style.transition;
+        card.style.transition = 'box-shadow 0.25s ease';
+        card.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.55)';
+        setTimeout(() => { card.style.boxShadow = prevShadow; card.style.transition = prevTransition; }, 1800);
+    },
     renderRoomsUI: function () {
         const c1 = document.getElementById('rooms_list_1');
         const c2 = document.getElementById('rooms_list_2');
-        if (!c1) return; c1.innerHTML = "";
+        if (!c1) return;
+        // #4: список помещений пересобирается целиком (innerHTML) при каждой правке. В части
+        // окружений это сбрасывало прокрутку панели «наверх» и рвало ввод (закрывалась клавиатура
+        // на телефоне, терялся фокус). Запоминаем прокрутку и фокус ДО пересборки и возвращаем ПОСЛЕ.
+        const _inputPanel = document.querySelector('.input-panel');
+        const _savedPanelTop = _inputPanel ? _inputPanel.scrollTop : 0;
+        const _savedWinY = window.scrollY, _savedWinX = window.scrollX;
+        const _ae = document.activeElement;
+        let _focusId = null, _selStart = null, _selEnd = null;
+        if (_ae && _ae.id && _ae.closest && (_ae.closest('#rooms_list_1') || _ae.closest('#rooms_list_2'))) {
+            _focusId = _ae.id;
+            if (_ae.tagName === 'INPUT') { try { _selStart = _ae.selectionStart; _selEnd = _ae.selectionEnd; } catch (e) { } }
+        }
+        c1.innerHTML = "";
         if (c2) c2.innerHTML = "";
 
         if (!this.state.rooms) return;
@@ -17586,9 +17802,9 @@ const app = {
                 roomIndex = countFloor1;
             }
 
-            let html = `<div class="zone-card" style="padding:8px; margin-bottom:0; border:1px solid var(--border); border-left:4px solid ${accentColor}; border-radius:6px; background:${cardBg}; box-shadow: ${cardShadow};">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:nowrap; gap:4px;">
-                            <div style="display:flex; align-items:center; flex:1; min-width:0;">
+            let html = `<div class="zone-card" id="room_card_${r.id}" style="padding:8px; margin-bottom:0; border:1px solid var(--border); border-left:4px solid ${accentColor}; border-radius:6px; background:${cardBg}; box-shadow: ${cardShadow};">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+                            <div style="display:flex; align-items:center; flex:1; min-width:120px;">
                                 <span style="font-weight:700; color:var(--text-sec); font-size:12px; margin-right:4px; user-select:none;">${roomIndex}.</span>
                                 <span contenteditable="true" style="font-weight:700; color:var(--text-main); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; outline:none; padding-right:2px;" onblur="app.updRoom(${r.id}, 'name', this.innerText)">${r.name}</span>
                             </div>
@@ -17625,6 +17841,19 @@ const app = {
                 c1.insertAdjacentHTML('beforeend', html);
             }
         });
+        // #4: возвращаем прокрутку и фокус после пересборки списка (см. захват в начале функции).
+        if (_inputPanel) _inputPanel.scrollTop = _savedPanelTop;
+        if (window.scrollY !== _savedWinY || window.scrollX !== _savedWinX) window.scrollTo(_savedWinX, _savedWinY);
+        if (_focusId) {
+            const _el = document.getElementById(_focusId);
+            if (_el) {
+                // _restoringRoomFocus не даёт onfocus заново открыть всплывающий ползунок.
+                this._restoringRoomFocus = true;
+                try { _el.focus({ preventScroll: true }); } catch (e) { try { _el.focus(); } catch (e2) { } }
+                this._restoringRoomFocus = false;
+                if (_selStart !== null && _el.setSelectionRange) { try { _el.setSelectionRange(_selStart, _selEnd); } catch (e) { } }
+            }
+        }
     },
     setUfhCtrl: function (type) {
         this.state.ufhCtrl = type;
@@ -18017,7 +18246,7 @@ const app = {
                 }
             });
         }
-        document.getElementById('chk_hw').checked = this.state.hotWater; document.getElementById('blk_res').style.display = this.state.hotWater ? 'flex' : 'none'; document.getElementById('val_res').innerText = this.state.res; document.getElementById('val_zones').innerText = this.state.ufhZones;
+        document.getElementById('chk_hw').checked = this.state.hotWater; document.getElementById('blk_res').style.display = this.state.hotWater ? 'flex' : 'none'; document.getElementById('val_res').innerText = this.state.res; document.getElementById('val_zones').innerText = this.state.ufhZones; this.syncTowelWarmerUI();
         const ufhTabs = document.querySelectorAll('.ufh-tab'); ufhTabs.forEach(t => { t.className = 'tab ufh-tab'; if (t.dataset.type === this.state.ufhCtrl) t.classList.add('multi-active'); });
         const regTabs = document.getElementById('reg_tabs').children; for (let t of regTabs) t.classList.remove('active');
         if (!this.state.selectedCity) {
@@ -19130,6 +19359,203 @@ const app = {
         this.render();
         this.saveState();
     },
+    // ===== Полотенцесушитель (#5) =====
+    getTowelWarmer: function () {
+        if (!this.state.towelWarmer) this.state.towelWarmer = { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' };
+        return this.state.towelWarmer;
+    },
+    // Эффективное количество: если не задано вручную — по числу санузлов.
+    getTowelWarmerCount: function () {
+        const tw = this.getTowelWarmer();
+        if (!tw.enabled) return 0;
+        if (tw.count !== null && tw.count !== undefined) return Math.max(0, parseInt(tw.count) || 0);
+        return (this.state.waterZones || []).length;
+    },
+    getTowelWarmerModel: function () {
+        const tw = this.getTowelWarmer();
+        return towelWarmersElectric.find(x => x.id === tw.modelId) || towelWarmersElectric[0];
+    },
+    // Доминирующий цвет радиаторов в смете: один общий → он; несколько разных → 'mixed'; нет → null.
+    _dominantRadiatorColor: function (list) {
+        const arr = list || this.currentEquipmentList || [];
+        const rads = arr.filter(i => /^(SRB-|SRA-|RAL-|RBM-|QV|R40-)/.test(i.id || ''));
+        if (!rads.length) return null;
+        const colors = new Set(rads.map(r => r.color || 'standard'));
+        return colors.size === 1 ? Array.from(colors)[0] : 'mixed';
+    },
+    // Цвет полотенцесушителя под цвет радиатора: чёрный/графит — совпадают; иначе (белый/серый/
+    // натуральный/разные/нет радиаторов) — металлик/хром (polished). См. #5.
+    _towelColorFromRadiator: function (list) {
+        const rc = this._dominantRadiatorColor(list);
+        if (rc === 'black') return 'black';
+        if (rc === 'graphite') return 'graphite';
+        return 'polished';
+    },
+    _towelDefaultModelId: function (color) {
+        const pool = towelWarmersElectric.filter(x => x.color === color);
+        const pref = pool.find(x => x.size === '80×50' && x.series === 'JAZZ' && x.shape === 'round')
+            || pool.find(x => x.size === '80×50') || pool[0];
+        return (pref || towelWarmersElectric[0]).id;
+    },
+    toggleTowelWarmer: function (chk) {
+        const tw = this.getTowelWarmer();
+        tw.enabled = chk;
+        if (chk && (tw.count === null || tw.count === undefined)) {
+            const z = (this.state.waterZones || []).length;
+            tw.count = z > 0 ? z : 1; // стартовое = число санузлов (можно поменять вручную)
+        }
+        if (chk && tw.autoColor !== false) {
+            // Цвет по умолчанию — под цвет радиатора (при разных цветах — хром).
+            tw.modelId = this._towelDefaultModelId(this._towelColorFromRadiator());
+        }
+        this.syncUI(); this.render(); this.saveState();
+    },
+    setTowelWarmerType: function (type) {
+        const tw = this.getTowelWarmer();
+        tw.type = (type === 'water') ? 'water' : 'electric';
+        this.syncUI(); this.render(); this.saveState();
+    },
+    updTowelWarmerCount: function (delta) {
+        const tw = this.getTowelWarmer();
+        let cur = (tw.count !== null && tw.count !== undefined) ? parseInt(tw.count) : this.getTowelWarmerCount();
+        cur = (parseInt(cur) || 0) + delta;
+        if (cur < 0) cur = 0; if (cur > 20) cur = 20;
+        tw.count = cur;
+        this.syncUI(); this.render(); this.saveState();
+    },
+    setTowelWarmerCount: function (val) {
+        const tw = this.getTowelWarmer();
+        let n = parseInt(val);
+        if (isNaN(n) || n < 0) n = 0; if (n > 20) n = 20;
+        tw.count = n;
+        this.syncUI(); this.render(); this.saveState();
+    },
+    syncTowelWarmerUI: function () {
+        const tw = this.getTowelWarmer();
+        const chk = document.getElementById('chk_towel');
+        if (chk) chk.checked = !!tw.enabled;
+        const opts = document.getElementById('blk_towel_opts');
+        if (opts) opts.style.display = tw.enabled ? 'flex' : 'none';
+        document.querySelectorAll('.towel-type-tab').forEach(t => t.classList.toggle('active', t.getAttribute('data-ttype') === (tw.type || 'electric')));
+        const cnt = document.getElementById('val_towel_count');
+        if (cnt) cnt.innerText = this.getTowelWarmerCount();
+    },
+    openTowelWarmerPicker: function () {
+        const modal = document.getElementById('swap_modal_overlay');
+        if (!modal) return;
+        this._lastSwapLookupId = null; // чтобы обычная замена радиаторов не считала это тем же элементом
+        this.renderTowelWarmerPicker();
+        modal.style.display = 'flex';
+    },
+    setTowelWarmerFilter: function (kind, val) {
+        const tw = this.getTowelWarmer();
+        tw[kind] = val; // 'fHeight' | 'fWidth' | 'color'
+        this.renderTowelWarmerPicker();
+    },
+    selectTowelWarmer: function (id) {
+        const tw = this.getTowelWarmer();
+        tw.modelId = id;
+        tw.autoColor = false; // пользователь выбрал модель вручную — больше не подстраиваем цвет автоматически
+        this.closeSwapModal();
+        this.syncUI(); this.render(); this.saveState();
+    },
+    _parseTowelSize: function (s) { const p = String(s || '').split(/[×xх*]/); return { h: (p[0] || '').trim(), w: (p[1] || '').trim() }; },
+    _towelColorSwatch: function (color) {
+        const map = { polished: 'linear-gradient(135deg,#ededed,#b6b6b6)', black: '#1a1a1a', gunmetal: '#4a4f54', graphite: '#383e42', gold: 'linear-gradient(135deg,#e6c463,#b8892f)' };
+        return `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${map[color] || '#ccc'};border:1px solid rgba(0,0,0,0.15);margin-right:5px;vertical-align:middle;"></span>`;
+    },
+    // Окно замены полотенцесушителя в стиле окна замены радиаторов (фильтры-табы + таблица с фото). #5
+    renderTowelWarmerPicker: function () {
+        const title = document.getElementById('swap_modal_title');
+        const body = document.getElementById('swap_modal_body');
+        if (!title || !body) return;
+        const tw = this.getTowelWarmer();
+        const colorLabels = { all: 'Все', polished: 'Полир./хром', black: 'Чёрный мат.', gunmetal: 'Оруж. сталь', graphite: 'Графит', gold: 'Золотой хром' };
+        const ps = this._parseTowelSize.bind(this);
+        const heights = ['all', ...Array.from(new Set(towelWarmersElectric.map(x => ps(x.size).h)))];
+        const widths = ['all', ...Array.from(new Set(towelWarmersElectric.map(x => ps(x.size).w)))];
+        const colors = ['all', ...Array.from(new Set(towelWarmersElectric.map(x => x.color)))];
+        const fh = tw.fHeight || 'all', fw = tw.fWidth || 'all', fc = tw.color || 'all';
+        const selModel = this.getTowelWarmerModel();
+        const selPrice = selModel ? selModel.price : 0;
+
+        title.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:12px; gap:16px;">
+                <div>
+                    <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main);">Варианты замены</h3>
+                    <span style="font-size:12px; color:var(--text-sec); display:block; margin-top:2px; font-weight:500;">${selModel ? selModel.name : 'Полотенцесушитель'}</span>
+                </div>
+                <div style="display:flex; gap:8px; flex-shrink:0;">
+                    <div style="background:#ECFDF5; color:#047857; padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.08);">
+                        Цена: <span style="font-weight:800;">${selPrice ? this.formatPriceHtml(selPrice, true) : '—'}</span>
+                    </div>
+                </div>
+            </div>`;
+
+        const chipBtn = (active, label, onclick) => `<button onclick="${onclick}" class="swap-tab ${active ? 'active' : ''}">${label}</button>`;
+        const chipRow = (items, cur, kind, fmt) => items.map(v => chipBtn(cur === v, fmt(v), `app.setTowelWarmerFilter('${kind}','${v}')`)).join('');
+        const heightChips = chipRow(heights, fh, 'fHeight', v => v === 'all' ? 'Все' : v + ' см');
+        const widthChips = chipRow(widths, fw, 'fWidth', v => v === 'all' ? 'Все' : v + ' см');
+        const colorChips = colors.map(v => chipBtn(fc === v, (v === 'all' ? '' : this._towelColorSwatch(v)) + (colorLabels[v] || v), `app.setTowelWarmerFilter('color','${v}')`)).join('');
+
+        const list = towelWarmersElectric.filter(x => {
+            const s = ps(x.size);
+            return (fh === 'all' || s.h === fh) && (fw === 'all' || s.w === fw) && (fc === 'all' || x.color === fc);
+        });
+
+        let rows = '', idx = 0;
+        list.forEach(x => {
+            idx++;
+            const isActive = x.id === tw.modelId;
+            const activeSt = isActive ? 'background:var(--primary-light);' : '';
+            const badge = isActive ? `<span style="font-size:10px;background:var(--primary);color:#fff;padding:2px 6px;border-radius:4px;font-weight:bold;margin-left:6px;">Выбран</span>` : '';
+            let diffHtml = `<span style="color:var(--text-sec);">—</span>`;
+            if (selPrice > 0 && x.price > 0) {
+                const pct = Math.round(((x.price - selPrice) / selPrice) * 100);
+                const col = pct > 0 ? '#ef4444' : pct < 0 ? '#22c55e' : 'var(--text-sec)';
+                diffHtml = `<span style="color:${col};font-weight:bold;">${pct > 0 ? '+' : ''}${pct}%</span>`;
+            }
+            rows += `<tr style="cursor:pointer;${activeSt}" onclick="app.selectTowelWarmer('${x.id}')">
+                <td style="text-align:center;font-size:13px;padding:7px 4px;">${idx}</td>
+                <td style="text-align:center;padding:4px;">${getImg(x)}</td>
+                <td style="font-size:13px;font-weight:600;padding:7px 6px;">${x.name}<span style="font-size:11px;color:var(--text-sec);font-weight:500;"> · ${x.size} см</span>${badge}</td>
+                <td style="text-align:center;font-size:12px;padding:7px 4px;">${x.brand || 'STOUT'}</td>
+                <td style="text-align:right;font-size:13px;padding:7px 4px;">${diffHtml}</td>
+                <td style="text-align:right;font-weight:700;font-size:13px;padding:7px 4px;white-space:nowrap;">${this.formatPriceHtml(x.price, true)}</td>
+            </tr>`;
+        });
+
+        body.innerHTML = `
+            <style>
+                #swap_modal_body .swap-tab { border:1px solid var(--primary); outline:none; padding:3px 10px; cursor:pointer; font-size:12px; font-weight:500; color:var(--primary); background:transparent; border-radius:5px; margin:2px; transition:all 0.15s ease; }
+                #swap_modal_body .swap-tab:hover { background:var(--primary); color:#fff; }
+                #swap_modal_body .swap-tab.active { font-weight:700; background:var(--primary); color:#fff; }
+                #swap_modal_body .swap-tabs-wrapper { display:flex; flex-wrap:wrap; width:100%; background:transparent; border:none; padding:0; box-sizing:border-box; align-items:center; }
+            </style>
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px; margin-bottom:12px; box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.02), 0 4px 6px -4px rgba(15, 23, 42, 0.02);">
+                <div>
+                    <div style="font-size:10px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Высота:</div>
+                    <div class="swap-tabs-wrapper">${heightChips}</div>
+                </div>
+                <div>
+                    <div style="font-size:10px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Ширина:</div>
+                    <div class="swap-tabs-wrapper">${widthChips}</div>
+                </div>
+                <div>
+                    <div style="font-size:10px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Цвет:</div>
+                    <div class="swap-tabs-wrapper">${colorChips}</div>
+                </div>
+            </div>
+            ${rows ? `<table class="inv-table" style="width:100%;border-collapse:collapse;">
+                <thead><tr>
+                    <th style="width:32px;text-align:center;">#</th>
+                    <th style="width:60px;text-align:center;">Фото</th>
+                    <th style="text-align:left;">Серия / Модель</th>
+                    <th style="width:70px;text-align:center;">Бренд</th>
+                    <th style="width:80px;text-align:right;">Δ цена</th>
+                    <th style="width:100px;text-align:right;">Цена</th>
+                </tr></thead><tbody>${rows}</tbody></table>` : '<p style="color:var(--text-sec);padding:12px 0;">Нет моделей под этот фильтр</p>'}`;
+    },
     toggleWaterInput: function (chk, event) {
         if (!this.checkAccess('pro', event)) {
             if (document.getElementById('chk_water_input')) document.getElementById('chk_water_input').checked = this.state.waterInput;
@@ -19203,7 +19629,7 @@ const app = {
         const container = document.getElementById('zones_list');
         if (!container) return;
         container.innerHTML = "";
-        const labels = { toilet: "🚽 Унитаз", basin: "🚰 Раковина", bath: "🛁 Ванна", shower: "🚿 Душ", wash: "🧺 Стиралка", dish: "🍽️ ПММ" };
+        const labels = { toilet: "🚽 Унитаз", basin: "🚰 Раковина", bidet: "🚻 Биде", bath: "🛁 Ванна", shower: "🚿 Душ", wash: "🧺 Стиралка", dish: "🍽️ ПММ" };
         this.state.waterZones.forEach((z, idx) => {
             let itemsHtml = "";
             for (let [key, name] of Object.entries(labels)) {
@@ -19332,13 +19758,26 @@ const app = {
             let formula = "";
             let why = "Равномерное распределение, балансировка петель.";
             if (val2 === 'cw') {
-                formula = `<b>Тип:</b> ХВС (Холодная вода).<br><b>Формула:</b> Сумма всех водоразеток.<br><b>Итого точек:</b> ${val1}.`;
+                formula = `<b>Тип:</b> ХВС (Холодная вода), лучевая разводка.<br><b>Формула:</b> 1 выход на каждую водорозетку.<br><b>Итого точек:</b> ${val1}.`;
             } else if (val2 === 'hw_std') {
-                formula = `<b>Тип:</b> ГВС (Тупиковая).<br><b>Формула:</b> Сумма приборов с горячей водой.<br><b>Итого точек:</b> ${val1}.`;
+                // Без рециркуляции: к каждому смесителю идёт своя линия от коллектора (лучевая),
+                // подводка оканчивается тупиковой водорозеткой.
+                formula = `<b>Тип:</b> ГВС без рециркуляции — лучевая разводка (тупиковые подводки).<br>` +
+                    `<b>Формула:</b> 1 выход на каждый смеситель — своя линия от коллектора до прибора.<br>` +
+                    `<b>Итого точек:</b> ${val1}.`;
             } else if (val2 === 'hw_recirc') {
-                formula = `<b>Тип:</b> ГВС (Лучевая).<br><b>Формула:</b> 1 выход на 1 зону (санузел/кухню).<br><b>Итого петель:</b> ${val1}.`;
+                // С рециркуляцией: на зону идёт одна петля, приборы врезаются в неё ПРОТОЧНЫМИ
+                // угольниками (см. позицию «Угольник проточный»), поэтому выходов на коллекторе
+                // меньше, чем смесителей — по одному на петлю, а не на прибор.
+                formula = `<b>Тип:</b> ГВС с рециркуляцией — кольцевая схема (петля на зону).<br>` +
+                    `<b>Формула:</b> 1 выход на 1 зону (санузел/кухню), а НЕ на каждый смеситель: приборы врезаются в петлю проточными угольниками.<br>` +
+                    `<b>Итого петель:</b> ${val1}.<br>` +
+                    `<i>Поэтому при включении рециркуляции выходов на коллекторе ГВС меньше, чем смесителей.</i>`;
             } else if (val2 === 'recirc') {
-                formula = `<b>Тип:</b> Рециркуляция.<br><b>Формула:</b> Равно числу петель ГВС.<br><b>Итого линий:</b> ${val1}.`;
+                formula = `<b>Тип:</b> Обратная линия рециркуляции ГВС.<br>` +
+                    `<b>Формула:</b> 1 линия на каждую петлю ГВС — петля возвращается с дальней точки в коллектор рециркуляции.<br>` +
+                    `<b>Итого линий:</b> ${val1}.<br>` +
+                    `<i>Число линий совпадает с числом выходов коллектора ГВС: сколько петель ушло — столько и вернулось.</i>`;
             } else if (val2 === 'rad') {
                 formula = `<b>Тип:</b> Радиаторное отопление.<br><b>Формула:</b> 1 пара выходов на 1 радиатор.<br><b>Радиаторов:</b> ${val1} шт.`;
             } else if (val2 === 'ufh') {
@@ -19428,6 +19867,20 @@ const app = {
                         `где Q = ${inputVal} кВт, c = 1.163 Вт·ч/(кг·°C), ΔT = 10°C (радиаторы).<br>` +
                         `<b>Расчётный расход:</b> G = ${inputVal} / (1.163 × 10) = ${flow.toFixed(2)} м³/ч.<br>` +
                         `${checkResult}`;
+
+                    // #7: почему групп именно столько — проверка «хватит ли одной на все этажи».
+                    const _capKw = parseFloat(this._radGroupCapacityKw) || 0;
+                    const _loadKw = parseFloat(this._radGroupLoadKw) || 0;
+                    if (_capKw > 0 && _loadKw > 0) {
+                        const _fits = (_loadKw <= _capKw);
+                        calc += `<br><b>Количество групп:</b> нагрузка радиаторного контура ${_loadKw.toFixed(1)} кВт, ` +
+                            `паспортная производительность группы ${_capKw} кВт → ` +
+                            (_fits
+                                ? `<b style="color:#10B981;">одной группы достаточно на все этажи</b> (радиаторы запитываются от общей группы, поэтажная балансировка — вентилями на стояках).`
+                                : `<b style="color:#F59E0B;">требуется ${Math.ceil(_loadKw / _capKw)} шт.</b> — одна группа не покрывает нагрузку.`);
+                    } else if (qty > 1) {
+                        calc += `<br><b>Количество групп:</b> ${qty} шт. — по одной на каждый этаж с радиаторами.`;
+                    }
 
                     if (isDn32) {
                         capacity = `<b>Паспортные характеристики (${item.id}):</b><br>` +
@@ -19666,7 +20119,7 @@ const app = {
                         if (z && z.fixtures) {
                             b += (z.fixtures.bath || 0);
                             s += (z.fixtures.shower || 0);
-                            bs += (z.fixtures.basin || 0);
+                            bs += (z.fixtures.basin || 0) + (z.fixtures.bidet || 0);
                         }
                     });
                     let k_sim = 1.0;
@@ -19941,6 +20394,7 @@ const app = {
         this.currentEquipmentList = [];
         this.currentWorksList = [];
         app.tempWarns = []; // Массив для сбора предупреждений о дефиците мощности
+        this._ufhTransitMeters = 0; // метраж транзита до коллектора ТП 2-го этажа (#18)
         this.currentSpec = []; // Список оборудования для генерации схемы
         this.swapWindowWidthMap = {}; // originalId → min ширина окна (м) для фильтра замен
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
@@ -20157,8 +20611,13 @@ const app = {
             } else {
                 this.calcBaseTotal += (item.price || 0) * qty;
                 let finalItem = { ...activeItem };
-                if (this.state.sewerType === 'comfort' && finalItem.comfort) {
-                    let src = finalItem.comfort;
+                // Канализация: 'comfort' — малошумная Sinikon Comfort, 'economy' — ОБЫЧНАЯ ПП
+                // (поле .rommer у позиций sewer_silent), по умолчанию — бесшумная STOUT. См. #13.
+                let _sewerSrc = null;
+                if (this.state.sewerType === 'comfort' && finalItem.comfort) _sewerSrc = finalItem.comfort;
+                else if (this.state.sewerType === 'economy' && finalItem.rommer) _sewerSrc = finalItem.rommer;
+                if (_sewerSrc) {
+                    let src = _sewerSrc;
                     finalItem.id = src.id;
                     finalItem.name = src.name;
                     finalItem.price = src.price;
@@ -20429,6 +20888,7 @@ const app = {
                     sec: i.sec,
                     isPanel: i.isPanel,
                     power50: i.power50,
+                    color: i.color, // нужен для подбора цвета полотенцесушителя под цвет радиатора (#5)
                     instanceKeys: i.instanceKeys,
                     recognized: i.recognized
                 });
@@ -20622,7 +21082,11 @@ const app = {
                 let rowClass = (isOpt || recClass)
                     ? ` class="${isOpt ? 'row-opt-out' : ''}${recClass}"`
                     : '';
-                rows += `<tr ${rowStyle}${rowClass} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${app.formatPriceHtml(i.price)}</td><td class="col-sum">${app.formatPriceHtml(i.sum)}</td></tr>` + locsRows;
+                // Инлайн-кнопка «Аналог» рядом с названием — видна только в режиме «без картинок»
+                // (body.hide-images-mode), где столбец с фото и его кнопкой замены скрыт. Так замену
+                // можно открыть, не включая отображение картинок. См. .swap-inline-btn в style.css.
+                let swapInlineHtml = hasAlts ? `<span class="swap-inline-btn" onclick="event.stopPropagation();app.openSwapModal('${lookupId}')" title="Заменить на аналог"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg></span>` : '';
+                rows += `<tr ${rowStyle}${rowClass} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}${swapInlineHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${app.formatPriceHtml(i.price)}</td><td class="col-sum">${app.formatPriceHtml(i.sum)}</td></tr>` + locsRows;
             });
             let addCustomRow = "";
             if (this.state.viewMode === 'equipment') {
@@ -20878,7 +21342,7 @@ const app = {
                     if (z && z.fixtures) {
                         b += (z.fixtures.bath || 0);
                         s += (z.fixtures.shower || 0);
-                        bs += (z.fixtures.basin || 0);
+                        bs += (z.fixtures.basin || 0) + (z.fixtures.bidet || 0);
                     }
                 });
                 let raw_vol = (b * 120) + (s * 50) + (bs * 10);
@@ -21111,7 +21575,18 @@ const app = {
             // Встроенного насоса настенного котла хватает на радиаторы мощностью до 20 кВт (площадь до 150 м2)
             // Если требуется коллектор (из-за других насосных групп, т.е. tQ > 0), то на радиаторы также ставится группа.
             if (this.state.area > 150 || this.state.floors === 2 || pwr > 20 || tQ > 0) {
-                rQ = (this.state.floors === 2) ? 2 : 1;
+                // #7: на двухэтажном доме группа ставится на КАЖДЫЙ ЭТАЖ С РАДИАТОРАМИ, а не просто
+                // «две, раз дом двухэтажный». В подробном режиме мы точно знаем, где радиаторы: если
+                // они, например, только на 2-м этаже (1-й — чистый тёплый пол), нужна одна группа.
+                // В быстром режиме поэтажной раскладки нет — остаётся прежняя оценка по этажности.
+                let radFloorCount = (this.state.floors === 2) ? 2 : 1;
+                if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
+                    const _rf = new Set(this.state.rooms
+                        .filter(r => (!r.sys || r.sys.includes('rad')))
+                        .map(r => r.floor || 1));
+                    if (_rf.size > 0) radFloorCount = Math.min(_rf.size, (this.state.floors === 2) ? 2 : 1);
+                }
+                rQ = Math.max(1, radFloorCount);
             }
         }
 
@@ -21194,6 +21669,33 @@ const app = {
         let radNeedsDn25 = (brand === 'rommer') || (this.state.manualDnOverride ? (this.state.manualDnOverride !== 'dn20') : ((pwr > 10) || useAnalogSec2));
         let dn25 = radNeedsDn25 || (this.state.ufhMixType === 'dn25' || this.state.ufhMixType === 'dn25_servo');
         let pmp = null;
+
+        // #7: проверка «хватит ли ОДНОЙ насосной группы на радиаторы всех этажей».
+        // Выше rQ выставлен по числу этажей с радиаторами (по одной группе на этаж). Здесь, когда
+        // уже известен типоразмер (DN20/DN25), пересчитываем по фактической мощности радиаторного
+        // контура: если вся радиаторная нагрузка проходит по одной группе — ставим одну.
+        // Паспортная производительность группы указана в её наименовании ("для радиаторов 24 кВт").
+        this._radGroupCapacityKw = 0;
+        this._radGroupLoadKw = 0;
+        if (rQ > 0) {
+            const _grpsForCap = dn25 ? catalog.groups_dn25 : catalog.groups_dn20;
+            const _directGrp = _grpsForCap && _grpsForCap[0];
+            const _capMatch = _directGrp && /для\s+радиаторов\s+(\d+(?:[.,]\d+)?)\s*кВт/i.exec(_directGrp.name || '');
+            const _capKw = _capMatch ? parseFloat(_capMatch[1].replace(',', '.')) : 0;
+            // Радиаторная доля теплопотерь: при наличии тёплого пола на радиаторы приходится ~70%
+            // (та же пропорция, что и в расчёте приборов отопления ниже — heatLoadTotal).
+            const _pwrKw = parseFloat(pwr) || 0; // getHouseHeatLoss() возвращает строку с кВт
+            const _radLoadKw = (hasTp && tpArea > 0) ? _pwrKw * 0.7 : _pwrKw;
+            if (_capKw > 0) {
+                this._radGroupCapacityKw = _capKw;
+                this._radGroupLoadKw = _radLoadKw;
+                const _needByPower = Math.max(1, Math.ceil(_radLoadKw / _capKw));
+                // Одной группы хватает на радиаторы всех этажей — оставляем одну.
+                // Не хватает по мощности — ставим столько, сколько нужно по нагрузке.
+                if (_needByPower < rQ) rQ = _needByPower;
+                else if (_needByPower > rQ) rQ = _needByPower;
+            }
+        }
 
         if (needCollector) {
             // Несущий каркас (рама) или хомуты коллектора котельной на базе C-образного профиля и консолей STOUT
@@ -21576,6 +22078,12 @@ const app = {
             let totalRadCountBottom = 0;
             let totalRadCountSide = 0;
             let totalRadCountSectional = 0;
+            // Кол-во секционных/дизайн-радиаторов БОКОВОГО подключения по цвету монтажного
+            // набора — для подбора набора подключения (SKU-0211/0221/0231, 1/2") в цвет прибора
+            // (см. раздел 3.1 ниже). Нижнее подключение сюда не входит: там присоединительный
+            // узел SVH (3/4") уже выполняет роль набора, отдельный набор не нужен. SEBINO тоже
+            // исключён (набор у него в комплекте, флаг kitIncluded).
+            let radKitColorCounts = { white: 0, graphite: 0, black: 0 };
             let totalRadCountBottomSteel = 0;
             let totalConvCount = 0;
             let totalVartronic = 0;
@@ -21627,7 +22135,7 @@ const app = {
                                 let deficitTotal = Math.round(roomLossTotal - qUfhMax);
                                 app.tempWarns = app.tempWarns || [];
                                 if (!app.tempWarns.some(x => x.includes(`«${r.name}» недостаточно`))) {
-                                    app.tempWarns.push(`• <b>${r.name} (Только ТП):</b> тёплого пола недостаточно для компенсации теплопотерь! Предельный тепловой поток по СП 60.13330.2020: ${Math.round(qUfhMax)} Вт. Нехватка мощности: <b>${deficitTotal} Вт</b>. Рекомендуется добавить радиатор или улучшить утепление стен.`);
+                                    app.tempWarns.push(`• ${app._warnRoomLabel(r.id, r.name + ' (Только ТП):')} тёплого пола недостаточно для компенсации теплопотерь! Предельный тепловой поток по СП 60.13330.2020: ${Math.round(qUfhMax)} Вт. Нехватка мощности: <b>${deficitTotal} Вт</b>. Рекомендуется добавить радиатор или улучшить утепление стен.`);
                                 }
                             }
                         } else {
@@ -21651,7 +22159,7 @@ const app = {
                             let factPower = Math.round(item.power70 * 0.65);
 
                             if (factPower < Math.round(wLoad)) {
-                                app.tempWarns.push(`• <b>${r.name} (Окно ${wIdx + 1}):</b> дефицит конвектора ~${Math.round(wLoad) - factPower} Вт. Переключите на вентиляторную модель (SCQ).`);
+                                app.tempWarns.push(`• ${app._warnRoomLabel(r.id, r.name + ' (Окно ' + (wIdx + 1) + '):')} дефицит конвектора ~${Math.round(wLoad) - factPower} Вт. Переключите на вентиляторную модель (SCQ).`);
                             }
 
                             let margin = Math.round(((factPower - wLoad) / wLoad) * 100);
@@ -21921,14 +22429,14 @@ const app = {
                                 const _isPanel = !!(_finalSeries && _finalSeries.isPanel);
                                 const _isBottom = _finalSeries ? (_isPanel ? !!activeItem.bottom : !!_finalSeries.bottom) : true;
                                 if (_isBottom) { totalRadCountBottom++; if (_isPanel) totalRadCountBottomSteel++; } else totalRadCountSide++;
-                                if (!_isPanel) totalRadCountSectional++;
+                                if (!_isPanel) { totalRadCountSectional++; if (!activeItem.kitIncluded && !_isBottom) radKitColorCounts[this._radKitColorFor(activeItem)]++; }
                             }
 
                             // Каждый радиатор индивидуален: уникальный ключ + запрет слияния в счёте
                             activeItem = { ...activeItem, originalId: instanceKey, noMerge: true };
 
                             if (factPower < reqPwr) {
-                                app.tempWarns.push(`• <b>${r.name} (Окно ${wIdx + 1}):</b> дефицит мощности радиатора ~${reqPwr - factPower} Вт.`);
+                                app.tempWarns.push(`• ${app._warnRoomLabel(r.id, r.name + ' (Окно ' + (wIdx + 1) + '):')} дефицит мощности радиатора ~${reqPwr - factPower} Вт.`);
                             }
 
                             let devInfo = app.getDesc('rad_tooltip', {
@@ -21953,7 +22461,7 @@ const app = {
                     });
                     // === Проверка покрытия теплопотерь помещения ===
                     if ((roomHasRad) && roomFactPowerSum > 0 && Math.round(roomDemandSum) > roomFactPowerSum) {
-                        app.tempWarns.push(`• <b>${r.name}:</b> суммарная мощность приборов (${roomFactPowerSum} Вт) меньше теплопотерь помещения (${Math.round(roomDemandSum)} Вт). Дефицит: ~${Math.round(roomDemandSum) - roomFactPowerSum} Вт.`);
+                        app.tempWarns.push(`• ${app._warnRoomLabel(r.id, r.name + ':')} суммарная мощность приборов (${roomFactPowerSum} Вт) меньше теплопотерь помещения (${Math.round(roomDemandSum)} Вт). Дефицит: ~${Math.round(roomDemandSum) - roomFactPowerSum} Вт.`);
                     }
                     if (roomSCQCount > 0) { totalVartronic += Math.ceil(roomSCQCount / 12); }
                 });
@@ -22057,7 +22565,7 @@ const app = {
                     const _isPanel = !!(_finalSeries && _finalSeries.isPanel);
                     const _isBottom = _finalSeries ? (_isPanel ? !!_classifyItem.bottom : !!_finalSeries.bottom) : true;
                     if (_isBottom) { totalRadCountBottom += totalCount; if (_isPanel) totalRadCountBottomSteel += totalCount; } else totalRadCountSide += totalCount;
-                    if (!_isPanel) totalRadCountSectional += totalCount;
+                    if (!_isPanel) { totalRadCountSectional += totalCount; if (!_classifyItem.kitIncluded && !_isBottom) radKitColorCounts[this._radKitColorFor(_classifyItem)] += totalCount; }
                 }
 
                 let devInfo = app.getDesc('rad_tooltip', {
@@ -22091,7 +22599,19 @@ const app = {
                     if (activeHValve.id === 'SVH-0002-000020') { addToBill(catalog.rad_tube_set[0], totalRadCountBottom * 2, "Трубка Г-образная.", grp); addToBill(catalog.rad_tube_set[1], totalRadCountBottom, "Скоба фиксатор.", grp); addToBill(catalog.rad_tube_set[2], totalRadCountBottom * 2, "Гильза 16.", grp); addToBill(catalog.rad_tube_set[3], totalRadCountBottom * 2, "Фитинг компрессионный.", grp); }
                 }
                 if (totalRadCountSide > 0) {
-                    const radValveColor = this.state.radValveColor || null;
+                    // #11: под ДИЗАЙН-радиаторы (isDesignRad) по умолчанию подбираем дизайнерскую
+                    // арматуру STOUT Design в цвет прибора: белый→белый, чёрный→чёрный, остальные
+                    // (графит/серый/натуральный) → хром. Ручной выбор цвета (radValveColor) главнее.
+                    let _autoDesignColor = null;
+                    if (!this.state.radValveColor) {
+                        const _designRads = bill.filter(x => x.isDesignRad);
+                        if (_designRads.length > 0) {
+                            const _cols = new Set(_designRads.map(x => x.color || 'standard'));
+                            const _c = (_cols.size === 1) ? Array.from(_cols)[0] : 'mixed';
+                            _autoDesignColor = (_c === 'white') ? 'white' : (_c === 'black') ? 'black' : 'chrome';
+                        }
+                    }
+                    const radValveColor = this.state.radValveColor || _autoDesignColor;
                     const connType = this.state.connectionType === 'angled' ? 'angled' : 'straight';
                     let thermoValve, lockshieldValve, thermoAlts, lockshieldAlts;
                     if (radValveColor) {
@@ -22103,8 +22623,15 @@ const app = {
                     }
                     if (!thermoValve) thermoValve = radValves.find(v => v.id.startsWith('SVT-') && v.type === 'straight');
                     if (!lockshieldValve) lockshieldValve = radValves.find(v => v.id.startsWith('SVL-') && v.type === 'straight');
-                    thermoAlts = [...radValves.filter(v => v.id.startsWith('SVT-')), ...radValvesDesign.filter(v => v.kind === 'valve')];
-                    lockshieldAlts = [...radValves.filter(v => v.id.startsWith('SVL-')), ...radValvesDesign.filter(v => v.kind === 'lockshield')];
+                    // #11: в список замены добавляем и краны ПОД ЕВРОКОНУС (radManualValves, артикулы
+                    // ...-100015 / SVL-11х6-000015 с хвостовиком 3/4"ЕК) — их не было вовсе, хотя для
+                    // подключения трубы через евроконус нужен именно такой клапан.
+                    const _euroThermo = (typeof radManualValves !== 'undefined')
+                        ? radManualValves.filter(v => v.id.startsWith('SVT-') && v.id.includes('-100015')) : [];
+                    const _euroLock = (typeof radManualValves !== 'undefined')
+                        ? radManualValves.filter(v => v.id === 'SVL-1196-000015' || v.id === 'SVL-1166-000015') : [];
+                    thermoAlts = [...radValves.filter(v => v.id.startsWith('SVT-')), ..._euroThermo, ...radValvesDesign.filter(v => v.kind === 'valve')];
+                    lockshieldAlts = [...radValves.filter(v => v.id.startsWith('SVL-')), ..._euroLock, ...radValvesDesign.filter(v => v.kind === 'lockshield')];
                     thermoValve.alts = thermoAlts; lockshieldValve.alts = lockshieldAlts;
                     addToBill(thermoValve, totalRadCountSide, this.getDesc('rad_valves'), grp);
                     addToBill(lockshieldValve, totalRadCountSide, "Запорно-балансировочный клапан.", grp);
@@ -22118,6 +22645,17 @@ const app = {
                     bracketKit.alts = radAccessories.filter(x => x.id.startsWith('SKU-0320-000080'));
                     addToBill(bracketKit, totalRadCountSectional, "Комплект настенных регулируемых кронштейнов (2 шт.) на радиатор — секционные радиаторы поставляются без кронштейнов.", grp);
                 }
+                // Монтажный набор для подключения радиатора — по одному на каждый секционный/
+                // дизайн-радиатор БОКОВОГО подключения, в цвет прибора (белый RAL9016 / графит /
+                // чёрный 9011), 1/2". Нижнее подключение сюда не попадает (там узел SVH, см. выше);
+                // 3/4" и другие цвета доступны вручную через кнопку «Аналог».
+                ['white', 'graphite', 'black'].forEach(kitColor => {
+                    const kitCnt = radKitColorCounts[kitColor];
+                    if (kitCnt > 0) {
+                        const mountKit = this._radMountKit(kitColor, '1/2');
+                        if (mountKit) addToBill(mountKit, kitCnt, "Монтажный набор для подключения радиатора (в цвет прибора).", grp);
+                    }
+                });
             }
 
             // Обвязка КОНВЕКТОРОВ (строго без биноклей)
@@ -22396,6 +22934,42 @@ const app = {
 
             heatWarnHtml = `⚠️ <b>ВНИМАНИЕ: Нехватка мощности отопления!</b><br>` + app.tempWarns.join('<br>') + `<br><span style="font-weight: 500; display:block; margin-top:6px;">${advice}</span>`;
         }
+        // === 3.4. Полотенцесушители (#5) ===
+        {
+            const twCount = this.getTowelWarmerCount();
+            if (twCount > 0) {
+                currentSectionTitle = "3. Приборы отопления";
+                const tw = this.getTowelWarmer();
+                const grpTW = "3.4. Полотенцесушители";
+                if (tw.type === 'water') {
+                    // Водяной — подводка ГВС: труба + запорные краны + разъёмные соединения.
+                    // Сам прибор в смету не добавляем (по согласованию).
+                    let twPipe;
+                    if (this.state.waterPipeMaterial === 'metal_plastic') {
+                        twPipe = { ...catalog.water_pipes_mp[0], originalId: catalog.water_pipes_mp[0].id + "_towel" };
+                        twPipe.alts = [catalog.water_pipes[0]];
+                    } else {
+                        twPipe = { ...catalog.water_pipes[0], originalId: catalog.water_pipes[0].id + "_towel" };
+                        twPipe.alts = [catalog.water_pipes_mp[0]];
+                    }
+                    addToBill(twPipe, twCount * 4, "Труба ГВС на подводку полотенцесушителя (подача + обратка, ~4 м на прибор).", grpTW);
+                    addToBill(withRommerAlt(catalog.ball_valve_34), twCount * 2, "Запорный кран на подключении полотенцесушителя (подача/обратка).", grpTW);
+                    addToBill(catalog.american_34, twCount * 2, "Разъёмное соединение (американка) для полотенцесушителя.", grpTW);
+                    addToWorks("Монтаж водяного полотенцесушителя с обвязкой", twCount, 4500, "шт", "1.3 Монтаж радиаторного отопления");
+                } else {
+                    // Электрический — прибор из каталога STOUT; подбор пикером по высоте/ширине/цвету.
+                    // Пока модель не выбрана вручную (autoColor) — цвет следует за цветом радиаторов
+                    // текущей сметы (bill); при разных цветах радиаторов ставится хром. См. #5.
+                    if (tw.autoColor !== false) {
+                        tw.modelId = this._towelDefaultModelId(this._towelColorFromRadiator(bill));
+                    }
+                    let model = towelWarmersElectric.find(x => x.id === tw.modelId) || towelWarmersElectric[0];
+                    let modelCopy = { ...model, alts: towelWarmersElectric };
+                    addToBill(modelCopy, twCount, "Электрический полотенцесушитель STOUT. Модель/цвет меняются в настройках («Выбрать →») или кнопкой замены.", grpTW);
+                    addToWorks("Монтаж электрического полотенцесушителя (навеска и подключение)", twCount, 3000, "шт", "1.3 Монтаж радиаторного отопления");
+                }
+            }
+        }
         // Сортируем только приборы отопления (радиаторы, конвекторы): сначала крупные, потом мелкие.
         // Элементы обвязки (3.1., 3.2.) и труб (3.3.) остаются на своих позициях.
         const isHeater = x => !x.group || !/^\d+\.\d+/.test(x.group);
@@ -22434,6 +23008,39 @@ const app = {
                     let pipe1 = asCoilPrice({ ...catalog.pipes[0], originalId: catalog.pipes[0].id + "_ufh" });
                     pipe1.alts = [catalog.metal_plastic_pipes[0]];
                     addToBill(pipe1, q1, this.getDesc('ufh_pipe', tpMeters), grpPipe);
+                }
+            }
+            // #18: ТРАНЗИТНАЯ ТРАССА до коллектора тёплого пола 2-го этажа.
+            // Петли ТП (выше) считаются только по площади обогрева и не включают подводку от
+            // котельной к самому коллектору. У коллектора 1-го этажа он рядом с котельной, а вот
+            // на 2-й этаж трассу надо поднять — раньше эти метры не попадали в смету вовсе.
+            if (this.state.floors === 2 && this.state.tp2 > 0) {
+                const _h1 = parseFloat(this.state.h1) || 2.7;
+                const _horiz = Math.sqrt(Math.max(1, this.state.tp2)); // средний горизонтальный ход до коллектора
+                const _oneWay = _h1 + 1 + _horiz;                      // подъём + обвязка + горизонталь
+                const _transitM = Math.ceil(_oneWay * 2 * 1.1);        // подача+обратка, +10% запас
+                this._ufhTransitMeters = _transitM;                    // для монтажных работ (см. блок 1.4)
+                const _isMpUfh = (this.state.ufhPipeMaterial === 'metal_plastic');
+                // Транзит несёт нагрузку всего этажа, поэтому диаметр больше петлевого 16-го.
+                const _trBase = _isMpUfh
+                    ? (catalog.metal_plastic_pipes || []).find(x => x.id === 'SPM-0001-052630')
+                    : (catalog.rad_pipes_grey || []).find(x => x.id === 'SPX-0001-002535');
+                if (_trBase && _transitM > 0) {
+                    const _trCoils = Math.ceil(_transitM / (_trBase.len || 50));
+                    const _trItem = asCoilPrice({ ..._trBase, originalId: 'ufh_transit_f2' });
+                    _trItem.alts = [
+                        (catalog.rad_pipes_grey || []).find(x => x.id === 'SPX-0001-002028'),
+                        (catalog.rad_pipes_grey || []).find(x => x.id === 'SPX-0001-003244'),
+                        (catalog.metal_plastic_pipes || []).find(x => x.id === 'SPM-0001-102020'),
+                        (catalog.metal_plastic_pipes || []).find(x => x.id === 'SPM-0001-053230')
+                    ].filter(Boolean);
+                    addToBill(_trItem, _trCoils,
+                        `<span style="font-size:11px;line-height:1.5;">` +
+                        `<b>Зачем:</b> Транзитная трасса от котельной (насосной группы) до коллектора тёплого пола 2-го этажа. Петли ТП считаются отдельно — по площади обогрева, без этой подводки.<br>` +
+                        `<b>Формула:</b> (высота 1-го этажа + 1 м на обвязку + √площади ТП 2-го этажа) × 2 (подача и обратка) × 1,1 (запас).<br>` +
+                        `<b>Подставленные значения:</b> (${_h1} + 1 + ${_horiz.toFixed(1)}) × 2 × 1,1 ≈ <b>${_transitM} м</b> → ${_trCoils} бухт(ы) по ${_trBase.len || 50} м.<br>` +
+                        `<b>Диаметр:</b> больше петлевого 16 мм — трасса несёт нагрузку всего этажа.` +
+                        `</span>`, grpPipe);
                 }
             }
             let loops = 0, mans = 0, mansNoFitting = 0;
@@ -22525,19 +23132,36 @@ const app = {
                 waterPipe.alts = [catalog.water_pipes_mp[0]];
             }
             let waterEurocone = (this.state.waterPipeMaterial === 'metal_plastic') ? catalog.parts[3] : catalog.water_parts[0];
+            // #10: металлопластик монтируется на ПРЕСС-фитинги (SFP-), а не на аксиальные (SFA-).
+            // Водорозетка для пресса — угольник-переходник с внутренней резьбой 1/2"×16.
+            const _isMpWater = (this.state.waterPipeMaterial === 'metal_plastic');
+            const _waterSocket = () => {
+                if (!_isMpWater) return catalog.water_fittings[0];
+                const press = (catalog.water_fittings_press_mp || []).find(x => x.id === 'SFP-0010-001216');
+                if (!press) return catalog.water_fittings[0];
+                const copy = { ...press, originalId: 'water_socket_mp' };
+                copy.alts = [catalog.water_fittings[0]];
+                return copy;
+            };
 
             this.state.waterZones.forEach(z => {
                 let f = z.fixtures;
                 totalToilets += f.toilet;
                 let cw_only = f.toilet + f.wash + f.dish;
-                let mix = f.basin + f.shower + (f.bath || 0);
+                let mix = f.basin + f.shower + (f.bath || 0) + (f.bidet || 0); // биде — как раковина (ХВС+ГВС)
                 let zoneCold = cw_only + mix;
                 let zoneHot = mix;
                 totalColdPoints += zoneCold;
                 totalPipeCold += (z.dist * zoneCold * 1.1);
                 if (recirc) {
-                    totalHotPoints++;
-                    if (zoneHot > 0) totalPipeHot += ((z.dist * 2) + (zoneHot * 2));
+                    // #12: петля ГВС (и, соответственно, обратная линия рециркуляции) нужна только
+                    // зоне, где есть приборы с горячей водой. Раньше петля считалась на КАЖДУЮ зону,
+                    // и гостевой туалет с одним унитазом добавлял лишний выход и на коллектор ГВС,
+                    // и на коллектор рециркуляции.
+                    if (zoneHot > 0) {
+                        totalHotPoints++;
+                        totalPipeHot += ((z.dist * 2) + (zoneHot * 2));
+                    }
                 } else {
                     totalHotPoints += zoneHot;
                     if (zoneHot > 0) totalPipeHot += (z.dist * zoneHot * 1.1);
@@ -22602,10 +23226,15 @@ const app = {
                 }
                 let socketsCold = totalColdPoints - totalToilets;
                 if (socketsCold > 0) {
-                    addToBill(catalog.water_fittings[0], socketsCold, this.getDesc('socket', 'Тупиковая (ХВС)', socketsCold), grpCold);
-                    addToBill(catalog.water_parts[7], socketsCold, this.getDesc('sleeve', '1 шт на розетку'), grpCold);
+                    // #10: у металлопластика соединения ПРЕСС, а не аксиальные — водорозетка берётся
+                    // из линейки латунных пресс-фитингов (SFP-), а аксиальная монтажная гильза и
+                    // пластиковый фиксатор поворота (это оснастка PEX-a) в смету не идут вовсе.
+                    addToBill(_waterSocket(), socketsCold, this.getDesc('socket', _isMpWater ? 'Пресс, угольник с ВР (ХВС)' : 'Тупиковая (ХВС)', socketsCold), grpCold);
+                    if (!_isMpWater) {
+                        addToBill(catalog.water_parts[7], socketsCold, this.getDesc('sleeve', '1 шт на розетку'), grpCold);
+                    }
                     addToBill(catalog.water_fittings[4], socketsCold, "Пробка синяя (опрессовка)", grpCold);
-                    addToBill(catalog.water_fittings[6], socketsCold, "Фиксатор 90°", grpCold);
+                    if (!_isMpWater) addToBill(catalog.water_fittings[6], socketsCold, "Фиксатор 90°", grpCold);
                 }
                 if (totalToilets > 0) addToBill(catalog.water_fittings[8], totalToilets, this.getDesc('double_clip', totalToilets, 'toilet'), grpCold);
             }
@@ -22667,16 +23296,20 @@ const app = {
                     }
                 }
                 let totalMixers = 0;
-                this.state.waterZones.forEach(z => totalMixers += (z.fixtures.basin + z.fixtures.shower + (z.fixtures.bath || 0)));
+                this.state.waterZones.forEach(z => totalMixers += (z.fixtures.basin + z.fixtures.shower + (z.fixtures.bath || 0) + (z.fixtures.bidet || 0)));
                 if (totalMixers > 0) {
-                    let socketItem = recirc ? catalog.water_fittings[1] : catalog.water_fittings[0];
-                    let sName = recirc ? "Угольник проточный (Бронза)" : "Водорозетка тупиковая";
+                    // #10: проточный угольник рециркуляции — только аксиальный (бронза), поэтому при
+                    // металлопластике на пресс переводится лишь тупиковая водорозетка.
+                    let socketItem = recirc ? catalog.water_fittings[1] : _waterSocket();
+                    let sName = recirc ? "Угольник проточный (Бронза)" : (_isMpWater ? "Пресс, угольник с ВР" : "Водорозетка тупиковая");
                     let sCount = recirc ? 2 : 1;
                     addToBill(socketItem, totalMixers, this.getDesc('socket', sName, totalMixers), grpHot);
-                    addToBill(catalog.water_parts[7], totalMixers * sCount, this.getDesc('sleeve', `${sCount} шт на розетку`), grpHot);
+                    if (!_isMpWater || recirc) {
+                        addToBill(catalog.water_parts[7], totalMixers * sCount, this.getDesc('sleeve', `${sCount} шт на розетку`), grpHot);
+                    }
                     addToBill(catalog.water_fittings[5], totalMixers, "Пробка красная (опрессовка)", grpHot);
                     let fixCount = recirc ? totalMixers * 2 : totalMixers;
-                    addToBill(catalog.water_fittings[6], fixCount, "Фиксатор 90°", grpHot);
+                    if (!_isMpWater || recirc) addToBill(catalog.water_fittings[6], fixCount, "Фиксатор 90°", grpHot);
                 }
             }
 
@@ -22762,7 +23395,7 @@ const app = {
                     tToilet += (z.fixtures.toilet || 0);
                     tWash += (z.fixtures.wash || 0);
                     tDish += (z.fixtures.dish || 0);
-                    tBasin += (z.fixtures.basin || 0);
+                    tBasin += (z.fixtures.basin || 0) + (z.fixtures.bidet || 0); // биде — двойная водорозетка 100мм, как раковина
                     tBath += (z.fixtures.bath || 0);
                     tShower += (z.fixtures.shower || 0);
                 }
@@ -22848,7 +23481,7 @@ const app = {
                 // ==========================================
                 let totalFixtures = 0;
                 this.state.waterZones.forEach(z => {
-                    totalFixtures += z.fixtures.toilet + z.fixtures.basin + z.fixtures.shower + z.fixtures.wash + z.fixtures.dish + (z.fixtures.bath || 0);
+                    totalFixtures += z.fixtures.toilet + z.fixtures.basin + z.fixtures.shower + z.fixtures.wash + z.fixtures.dish + (z.fixtures.bath || 0) + (z.fixtures.bidet || 0);
                 });
 
                 let sewerGroup = "3.1 Внутренняя канализация";
@@ -22946,7 +23579,7 @@ const app = {
             let q = 0;
             if (this.state.waterZones && this.state.waterZones.length > 0) {
                 this.state.waterZones.forEach(z => {
-                    q += (z.fixtures.toilet * 0.1) + (z.fixtures.basin * 0.15) + (z.fixtures.shower * 0.3) + ((z.fixtures.bath || 0) * 0.4) + (z.fixtures.wash * 0.2) + (z.fixtures.dish * 0.2);
+                    q += (z.fixtures.toilet * 0.1) + (z.fixtures.basin * 0.15) + (z.fixtures.shower * 0.3) + ((z.fixtures.bath || 0) * 0.4) + (z.fixtures.wash * 0.2) + (z.fixtures.dish * 0.2) + ((z.fixtures.bidet || 0) * 0.15);
                 });
             }
             if (q > 4.5) q = 4.5 + (q - 4.5) * 0.5;
@@ -23097,12 +23730,13 @@ const app = {
                     let f = z.fixtures;
                     let toiletsCount = parseInt(f.toilet) || 0;
                     let basinCount = parseInt(f.basin) || 0;
+                    let bidetCount = parseInt(f.bidet) || 0; // биде — как раковина
                     let showerCount = parseInt(f.shower) || 0;
                     let bathCount = parseInt(f.bath) || 0;
                     let washCount = parseInt(f.wash) || 0;
                     let dishCount = parseInt(f.dish) || 0;
 
-                    totalSewerPoints += toiletsCount + basinCount + showerCount + bathCount + washCount + dishCount;
+                    totalSewerPoints += toiletsCount + basinCount + bidetCount + showerCount + bathCount + washCount + dishCount;
 
                     // 1. Для инсталляции (D110)
                     if (toiletsCount > 0) {
@@ -23161,6 +23795,7 @@ const app = {
                     // 4. Для остальных приборов (раковина, стиральная, посудомоечная машина) отдельно на каждый тип
                     let otherFixtures = [
                         { key: 'basin', nameRu: 'Раковина' },
+                        { key: 'bidet', nameRu: 'Биде' }, // биде — слив как у раковины (D50, 1.0м, отводы 45×2/87×1)
                         { key: 'wash', nameRu: 'Стиральная машина' },
                         { key: 'dish', nameRu: 'Посудомоечная машина' }
                     ];
@@ -23235,6 +23870,7 @@ const app = {
                         totalPipe58 += (parseInt(f.bath) || 0) * 1.5;
                         totalPipe58 += (parseInt(f.shower) || 0) * 1.5;
                         totalPipe58 += (parseInt(f.basin) || 0) * 1.0;
+                        totalPipe58 += (parseInt(f.bidet) || 0) * 1.0;
                         totalPipe58 += (parseInt(f.wash) || 0) * 1.0;
                         totalPipe58 += (parseInt(f.dish) || 0) * 1.0;
                     });
@@ -23308,7 +23944,7 @@ const app = {
                 this.state.waterZones.forEach(z => {
                     let f = z.fixtures;
                     let toiletsCount = parseInt(f.toilet) || 0;
-                    let otherCount = (parseInt(f.wash) || 0) + (parseInt(f.dish) || 0) + (parseInt(f.basin) || 0) + (parseInt(f.shower) || 0) + (parseInt(f.bath) || 0);
+                    let otherCount = (parseInt(f.wash) || 0) + (parseInt(f.dish) || 0) + (parseInt(f.basin) || 0) + (parseInt(f.bidet) || 0) + (parseInt(f.shower) || 0) + (parseInt(f.bath) || 0);
 
                     totalSewerPoints += toiletsCount + otherCount;
 
@@ -23324,17 +23960,27 @@ const app = {
 
                     if (otherCount > 0) {
                         let basins = parseInt(f.basin) || 0;
+                        let bidets = parseInt(f.bidet) || 0; // биде — слив как у раковины
                         let showers = parseInt(f.shower) || 0;
                         let baths = parseInt(f.bath) || 0;
                         let washes = parseInt(f.wash) || 0;
                         let dishes = parseInt(f.dish) || 0;
 
-                        let pipe58Len = (basins + washes + dishes) * 1.0 + (showers + baths) * 1.5;
-                        let q2 = Math.floor(pipe58Len / 2);
-                        let q1 = Math.ceil(pipe58Len % 2);
+                        // Трубу D58 режем по каждому отводу к прибору отдельно и округляем ВВЕРХ
+                        // на каждый отвод — ровно так же, как в режиме группировки по потребителям
+                        // (ветка выше). Иначе агрегатное округление длины на всю зону давало другое
+                        // число труб, и ИТОГО сметы «плавало» при переключении тумблера «Группировать».
+                        let pipe58Len = (basins + bidets + washes + dishes) * 1.0 + (showers + baths) * 1.5;
+                        let q2 = 0, q1 = 0;
+                        [[baths, 1.5], [showers, 1.5], [basins, 1.0], [bidets, 1.0], [washes, 1.0], [dishes, 1.0]].forEach(fx => {
+                            let cnt = fx[0]; if (cnt <= 0) return;
+                            let len = cnt * fx[1];
+                            q2 += Math.floor(len / 2);
+                            q1 += Math.ceil(len % 2);
+                        });
 
-                        let bend45Qty = (basins + showers + baths) * 2 + (washes + dishes) * 1;
-                        let bend87Qty = (basins + showers + baths) * 1;
+                        let bend45Qty = (basins + bidets + showers + baths) * 2 + (washes + dishes) * 1;
+                        let bend87Qty = (basins + bidets + showers + baths) * 1;
 
                         let pipe58_2 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058200");
                         let pipe58_1 = catalog.sewer_silent.find(x => x.id === "SKB-0001-058100");
@@ -23387,6 +24033,7 @@ const app = {
                         totalPipe58 += (parseInt(f.bath) || 0) * 1.5;
                         totalPipe58 += (parseInt(f.shower) || 0) * 1.5;
                         totalPipe58 += (parseInt(f.basin) || 0) * 1.0;
+                        totalPipe58 += (parseInt(f.bidet) || 0) * 1.0;
                         totalPipe58 += (parseInt(f.wash) || 0) * 1.0;
                         totalPipe58 += (parseInt(f.dish) || 0) * 1.0;
                     });
@@ -23579,6 +24226,11 @@ const app = {
         if (this.state.systems.includes('tp') && typeof tpArea !== 'undefined' && tpArea > 0) {
             addToWorks("Монтаж труб водяного тёплого пола", tpArea, 750, "м²", tpGroup);
             addToWorks("Монтаж утеплителя для укладки ТП", tpArea, 350, "м²", tpGroup);
+            // #18: укладка петель считается по м² обогрева и не покрывает подводку к коллектору
+            // 2-го этажа — прокладка транзита оплачивается отдельно, по метражу трассы.
+            if (this._ufhTransitMeters > 0) {
+                addToWorks("Прокладка транзитной трассы до коллектора ТП 2-го этажа", this._ufhTransitMeters, 450, "м.п.", tpGroup);
+            }
 
             if (typeof mans !== 'undefined' && mans > 0) {
                 addToWorks("Установка и подключение коллектора теплого пола", mans, 6500, "пара", tpGroup);
@@ -24871,6 +25523,12 @@ function prepareForPrint() {
             }
         }
 
+        // --- #16: ПРЕДУПРЕЖДЕНИЯ О НЕХВАТКЕ МОЩНОСТИ ---
+        // Это технические замечания для монтажника (дефицит приборов по помещениям). В смету
+        // для клиента они не идут никогда — на экране расчёта видны, на печати/в PDF скрыты.
+        // Класс снимается в cleanupAfterPrint.
+        document.body.classList.add('hide-warns-print');
+
         // --- ШАГ 5: ПРЯЧЕМ ОРИГИНАЛ ОТ ПРИНТЕРА ---
         printArea.classList.add('hide-original-for-print');
         let liveScheme = document.getElementById('dynamic_scheme');
@@ -24896,6 +25554,8 @@ function cleanupAfterPrint() {
     let liveScheme = document.getElementById('dynamic_scheme');
     if (printArea) printArea.classList.remove('hide-original-for-print');
     if (liveScheme) liveScheme.classList.remove('hide-original-for-print');
+    // #16: возвращаем предупреждения о нехватке мощности в интерфейс после печати
+    document.body.classList.remove('hide-warns-print');
 
     // Очищаем корзину печати
     let printBin = document.getElementById('print_bin');

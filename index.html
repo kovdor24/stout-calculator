@@ -49,12 +49,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.61">
+    <link rel="stylesheet" href="style.css?v=2.62">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.18" defer></script>
+    <script src="catalog.js?v=2.19" defer></script>
     <script src="gamification.js?v=2.0" defer></script>
-    <script src="app.js?v=3.9" defer></script>
+    <script src="app.js?v=3.10" defer></script>
     <!-- Распознавание смет: подбор по каталогу и интерфейс мастера.
          Порядок важен — recognize.js обращается к RecognizeMatch. -->
     <script src="recognize_match.js?v=1.5" defer></script>
@@ -554,6 +554,33 @@
                         <span class="lbl" style="font-size:12px;">Рециркуляция ГВС</span><label class="switch"
                             style="transform:scale(0.8); transform-origin:right;"><input type="checkbox" id="chk_recirc"
                                 onchange="app.toggleRecirc(this.checked, event)"><span class="slider"></span></label>
+                    </div>
+                    <div style="border-top:1px solid #E5E7EB; padding-top:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="lbl" style="font-size:12px;">Полотенцесушитель</span><label class="switch"
+                                style="transform:scale(0.8); transform-origin:right;"><input type="checkbox"
+                                    id="chk_towel" onchange="app.toggleTowelWarmer(this.checked)"><span
+                                    class="slider"></span></label>
+                        </div>
+                        <div id="blk_towel_opts"
+                            style="display:none; flex-direction:column; gap:8px; margin-top:8px;">
+                            <div class="tabs" style="font-size:11px;">
+                                <div class="tab towel-type-tab active" data-ttype="electric"
+                                    onclick="app.setTowelWarmerType('electric')">Электрический</div>
+                                <div class="tab towel-type-tab" data-ttype="water"
+                                    onclick="app.setTowelWarmerType('water')">Водяной</div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span class="lbl" style="font-size:12px;">Количество:</span>
+                                <div class="stepper" style="width:100px;"><button class="step-btn"
+                                        onclick="app.updTowelWarmerCount(-1)">−</button>
+                                    <div class="step-val editable-val" id="val_towel_count" contenteditable="true"
+                                        onblur="app.setTowelWarmerCount(this.innerText)"
+                                        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">1</div>
+                                    <button class="step-btn" onclick="app.updTowelWarmerCount(1)">+</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

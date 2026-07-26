@@ -990,7 +990,8 @@ const getImg = (item) => {
     else if (item.name.includes('Мат')) { txt = '🔲'; bg = 'F3E8FF'; }
     else if (item.name.includes('Zigbee') || item.name.includes('Головка') || item.name.includes('Узел') || item.name.includes('Термостат') || item.name.includes('контроллер')) { txt = '🔧'; bg = 'DBEAFE'; }
     else if (item.name.includes('Инсталляция')) { txt = '🚽'; bg = 'F3E8FF'; }
-    if (item.id.startsWith('SPI-0001-') || item.id.startsWith('SPI-0002-') || item.id.startsWith('SPM-0001-') || item.id.startsWith('SPM-0002-')) {
+    else if (item.name.includes('олотенцесушитель')) { txt = '♨️'; bg = 'FEE2E2'; }
+    if (item.id.startsWith('SPI-0001-') || item.id.startsWith('SPI-0002-') || item.id.startsWith('SPM-0001-') || item.id.startsWith('SPM-0002-') || item.id.startsWith('SHQ-')) {
         return `<img src="https://placehold.co/100x100/${bg}/555?text=${txt}&font=roboto" class="prod-thumb" loading="lazy" decoding="async">`;
     }
     let imgSrc = `img/${item.id}.jpg`;
@@ -1048,6 +1049,8 @@ const WORK_PRICE_CATALOG = [
     // 1.3 Монтаж радиаторного отопления
     { name: "Монтаж радиатора отопления", unit: "точка", price: workPrices.rad_point, group: "1.3 Монтаж радиаторного отопления" },
     { name: "Монтаж внутрипольного конвектора", unit: "шт", price: 8500, group: "1.3 Монтаж радиаторного отопления" },
+    { name: "Монтаж водяного полотенцесушителя с обвязкой", unit: "шт", price: 4500, group: "1.3 Монтаж радиаторного отопления" },
+    { name: "Монтаж электрического полотенцесушителя (навеска и подключение)", unit: "шт", price: 3000, group: "1.3 Монтаж радиаторного отопления" },
     { name: "Монтаж коллектора радиаторов", unit: "шт", price: workPrices.manifold, group: "1.3 Монтаж радиаторного отопления" },
     { name: "Монтаж тройниковой разводки радиаторов", unit: "точка", price: workPrices.tee_branch, group: "1.3 Монтаж радиаторного отопления" },
     { name: "Монтаж трубопроводов PEX-a... и подключение радиатора", unit: "шт", price: 6500, group: "1.3 Монтаж радиаторного отопления" },
@@ -1061,6 +1064,7 @@ const WORK_PRICE_CATALOG = [
     // 1.4 Монтаж водяного тёплого пола
     { name: "Монтаж труб водяного тёплого пола", unit: "м²", price: 750, group: "1.4 Монтаж водяного теплого пола" },
     { name: "Монтаж утеплителя для укладки ТП", unit: "м²", price: 350, group: "1.4 Монтаж водяного теплого пола" },
+    { name: "Прокладка транзитной трассы до коллектора ТП 2-го этажа", unit: "м.п.", price: 450, group: "1.4 Монтаж водяного теплого пола" },
     { name: "Установка и подключение коллектора теплого пола", unit: "пара", price: 6500, group: "1.4 Монтаж водяного теплого пола" },
     { name: "Опрессовка систем водяного тёплого пола", unit: "компл", price: 5000, group: "1.4 Монтаж водяного теплого пола" },
 
@@ -4138,6 +4142,9 @@ const sebinoRads = [
     { id: "SRA-1120-20000804", name: "Радиатор STOUT SEBINO 2000мм 2676 серый 4 секций", sec: 4, price: 71482, power50: 256, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
     { id: "SRA-1120-20000806", name: "Радиатор STOUT SEBINO 2000мм 2676 серый 6 секций", sec: 6, price: 103989, power50: 256, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" }
 ];
+// SEBINO поставляется с монтажным набором подключения в комплекте — отдельный набор
+// (SKU-0211/0221/0231) в смету не добавляем (см. app.js, раздел 3.1, флаг kitIncluded).
+sebinoRads.forEach(x => { x.kitIncluded = true; });
 
 // STOUT ANTEPRIMA (Италия), дизайн-радиатор, универсальное подключение. SRA-3120-*. Прайс 07.2026.
 const anteprimaRads = [
@@ -4295,10 +4302,54 @@ const radKitsExtra = [
 const radAccessories = [
     { id: "SKU-0111-000112", name: "Универсальный монтажный комплект для подключения радиатора 1/2\" RAL9016", price: 1509, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
     { id: "SKU-0111-000134", name: "Универсальный монтажный комплект для подключения радиатора 3/4\" RAL9016", price: 1709, brand: "STOUT", availability: "on_order", price_date: "2026-07-13" },
+    // Монтажные наборы для подключения радиатора STOUT в цвет прибора (белый RAL9016 / графит / чёрный 9011),
+    // 1/2" и 3/4". Цены РРЦ. Подбираются автоматически по цвету секционного/дизайн-радиатора (см. app.js, раздел 3.1).
+    { id: "SKU-0211-000112", name: "Монтажный набор для подключения радиатора 1/2\" RAL9016", price: 630, color: "white", size: "1/2", brand: "STOUT", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SKU-0211-000134", name: "Монтажный набор для подключения радиатора 3/4\" RAL9016", price: 720, color: "white", size: "3/4", brand: "STOUT", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SKU-0221-000112", name: "Монтажный набор для подключения радиатора 1/2\" (Графит)", price: 720, color: "graphite", size: "1/2", brand: "STOUT", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SKU-0221-000134", name: "Монтажный набор для подключения радиатора 3/4\" (Графит)", price: 810, color: "graphite", size: "3/4", brand: "STOUT", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SKU-0231-000112", name: "Монтажный набор для подключения радиатора 1/2\" (Чёрный 9011)", price: 720, color: "black", size: "1/2", brand: "STOUT", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SKU-0231-000134", name: "Монтажный набор для подключения радиатора 3/4\" (Чёрный 9011)", price: 810, color: "black", size: "3/4", brand: "STOUT", availability: "in_stock", price_date: "2026-07-24" },
     { id: "SKU-0320-000080", name: "Комплект настенных регулируемых кронштейнов для радиаторов (2 шт.) RAL9016", price: 326, color: "white", brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
     { id: "SKU-0320-000080-7024", name: "Комплект настенных регулируемых кронштейнов (2 шт.) Графит RAL7024", price: 541, color: "graphite", brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
     { id: "SKU-0320-000080-9005", name: "Комплект настенных регулируемых кронштейнов (2 шт.) черный RAL9005", price: 541, color: "black", brand: "STOUT", availability: "in_stock", price_date: "2026-07-01" },
     { id: "SKU-0310-000001", name: "Ниппель межсекционный 1\" (ALPHA, VEGA)", price: 4080, brand: "STOUT", availability: "in_stock", price_date: "2026-07-01" },
     { id: "SKU-0310-000002", name: "Прокладка межсекционная (ALPHA, VEGA)", price: 3376, brand: "STOUT", availability: "in_stock", price_date: "2026-07-01" },
     { id: "SKU-0111-130401", name: "Комплект из 4-х прокладок O-Ring 1\" для универсального монтажного комплекта (SPACE, OSCAR)", price: 9065, brand: "STOUT", availability: "on_order", price_date: "2026-07-13" }
+];
+
+// STOUT Полотенцесушители ЭЛЕКТРИЧЕСКИЕ. Лист «STOUT Полотенцесушители», прайс 07.2026.
+// Подбор — «пикер» (фильтры по цвету/серии + «Аналог»), по умолчанию 1 шт. на санузел.
+// Цены округлены до рубля из колонки «Цена с НДС». Поля: series (серия), color (цвет для фильтра),
+// shape (round/quadro), size (В×Ш, см). Цвета: polished (Полированный), black (Чёрный матовый),
+// gunmetal (Оружейная сталь), graphite (Графит), gold (Золотой хром 585).
+const towelWarmersElectric = [
+    { id: "SHQ-J1RR-008050", name: "Полотенцесушитель эл. JAZZ round 80×50, Полированный", price: 19931, series: "JAZZ", shape: "round", size: "80×50", color: "polished", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-J2RR-008050", name: "Полотенцесушитель эл. JAZZ round 80×50, Чёрный матовый", price: 18434, series: "JAZZ", shape: "round", size: "80×50", color: "black", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-J1RR-F08050", name: "Полотенцесушитель эл. JAZZ round 80×50, Полированный (с полкой)", price: 22380, series: "JAZZ", shape: "round", size: "80×50", color: "polished", shelf: true, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-J2RR-F08050", name: "Полотенцесушитель эл. JAZZ round 80×50, Чёрный матовый (с полкой)", price: 19258, series: "JAZZ", shape: "round", size: "80×50", color: "black", shelf: true, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-R1R0-012008", name: "Полотенцесушитель эл. ROCK round 120×08, Полированный (2 опоры)", price: 15695, series: "ROCK", shape: "round", size: "120×08", color: "polished", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-R2R0-012008", name: "Полотенцесушитель эл. ROCK round 120×08, Чёрный матовый (2 опоры)", price: 14356, series: "ROCK", shape: "round", size: "120×08", color: "black", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-R2R0-012012", name: "Полотенцесушитель эл. ROCK round 120×12, Чёрный матовый (3 опоры)", price: 17871, series: "ROCK", shape: "round", size: "120×12", color: "black", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-R1Q0-012008", name: "Полотенцесушитель эл. ROCK quadro 120×08, Полированный (2 опоры)", price: 18775, series: "ROCK", shape: "quadro", size: "120×08", color: "polished", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-R2Q0-012008", name: "Полотенцесушитель эл. ROCK quadro 120×08, Чёрный матовый (2 опоры)", price: 15673, series: "ROCK", shape: "quadro", size: "120×08", color: "black", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-R2Q0-012012", name: "Полотенцесушитель эл. ROCK quadro 120×12, Чёрный матовый (2 опоры)", price: 19949, series: "ROCK", shape: "quadro", size: "120×12", color: "black", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-J1QQ-008050", name: "Полотенцесушитель эл. JAZZ quadro 80×50, Полированный", price: 23987, series: "JAZZ", shape: "quadro", size: "80×50", color: "polished", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-J2QQ-008050", name: "Полотенцесушитель эл. JAZZ quadro 80×50, Чёрный матовый", price: 19123, series: "JAZZ", shape: "quadro", size: "80×50", color: "black", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-J1QQ-F08050", name: "Полотенцесушитель эл. JAZZ quadro 80×50, Полированный (с полкой)", price: 25274, series: "JAZZ", shape: "quadro", size: "80×50", color: "polished", shelf: true, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-J2QQ-F08050", name: "Полотенцесушитель эл. JAZZ quadro 80×50, Чёрный матовый (с полкой)", price: 19926, series: "JAZZ", shape: "quadro", size: "80×50", color: "black", shelf: true, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-F1QQ-008050", name: "Полотенцесушитель эл. FORTE quadro 80×50, Полированный", price: 27232, series: "FORTE", shape: "quadro", size: "80×50", color: "polished", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-F2QQ-008050", name: "Полотенцесушитель эл. FORTE quadro 80×50, Чёрный матовый", price: 20042, series: "FORTE", shape: "quadro", size: "80×50", color: "black", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-P2QR-008050", name: "Полотенцесушитель эл. PIANO quadro 80×50, Чёрный матовый", price: 19811, series: "PIANO", shape: "quadro", size: "80×50", color: "black", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-P1QR-008050", name: "Полотенцесушитель эл. PIANO quadro 80×50, Полированный", price: 23679, series: "PIANO", shape: "quadro", size: "80×50", color: "polished", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-S3QQ-008050", name: "Полотенцесушитель эл. SOUL quadro 80×50, Оружейная сталь", price: 44627, series: "SOUL", shape: "quadro", size: "80×50", color: "gunmetal", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-T2QQ-008050", name: "Полотенцесушитель эл. TECHNO quadro 80×50, Чёрный матовый", price: 20590, series: "TECHNO", shape: "quadro", size: "80×50", color: "black", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-G4QQ-008050", name: "Полотенцесушитель эл. GRUNGE quadro 80×50, Графит", price: 24911, series: "GRUNGE", shape: "quadro", size: "80×50", color: "graphite", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-N4QQ-007050", name: "Полотенцесушитель эл. NEOSOUL quadro 70×50, Графит", price: 23497, series: "NEOSOUL", shape: "quadro", size: "70×50", color: "graphite", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-N2QQ-007050", name: "Полотенцесушитель эл. NEOSOUL quadro 70×50, Чёрный матовый", price: 21862, series: "NEOSOUL", shape: "quadro", size: "70×50", color: "black", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-N2QQ-010050", name: "Полотенцесушитель эл. NEOSOUL quadro 100×50, Чёрный матовый", price: 23126, series: "NEOSOUL", shape: "quadro", size: "100×50", color: "black", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-N4QQ-010050", name: "Полотенцесушитель эл. NEOSOUL quadro 100×50, Графит", price: 24463, series: "NEOSOUL", shape: "quadro", size: "100×50", color: "graphite", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-J8RR-008050", name: "Полотенцесушитель эл. JAZZ round 80×50, Золотой хром", price: 21481, series: "JAZZ", shape: "round", size: "80×50", color: "gold", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-J8RR-F08050", name: "Полотенцесушитель эл. JAZZ round 80×50, Золотой хром (с полкой)", price: 24939, series: "JAZZ", shape: "round", size: "80×50", color: "gold", shelf: true, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
+    { id: "SHQ-R8R0-012008", name: "Полотенцесушитель эл. ROCK round 120×08, Золотой хром (2 опоры)", price: 19416, series: "ROCK", shape: "round", size: "120×08", color: "gold", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" }
 ];
