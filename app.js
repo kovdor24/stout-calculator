@@ -5517,13 +5517,11 @@ const app = {
         return code;
     },
 
-    // Для посетителей из РФ кнопки Google в окне входа нет вовсе — вместо неё
-    // пояснение, что делать тем, кто регистрировался через Google.
+    // Для посетителей из РФ кнопки Google в окне входа нет вовсе.
     // Иностранным пользователям окно показывается без изменений.
     applyRuLoginRestrictions: async function () {
-        const note = document.getElementById('auth_ru_law_note');
         const googleBtn = document.getElementById('auth_google_btn');
-        if (!note && !googleBtn) return;
+        if (!googleBtn) return;
 
         // Служебный доступ для администратора: heatcalc.ru/?google_login=1 возвращает
         // кнопку Google и в РФ. Флаг сохраняем — после редиректа Google параметра
@@ -5536,8 +5534,7 @@ const app = {
         const forced = localStorage.getItem('force_google_login') === '1';
 
         const hideGoogle = ((await this.detectVisitorCountry()) === 'RU') && !forced;
-        if (googleBtn) googleBtn.style.display = hideGoogle ? 'none' : '';
-        if (note) note.style.display = hideGoogle ? 'block' : 'none';
+        googleBtn.style.display = hideGoogle ? 'none' : '';
     },
 
     // Новый посетитель из РФ вошёл через Google — отменяем регистрацию.
@@ -5807,7 +5804,10 @@ const app = {
             const el = document.getElementById(id);
             if (el) el.checked = false;
         });
-        this.saveState(); this.syncUI(); this.render();
+        // Расчёт вышедшего пользователя не должен оставаться на экране — начинаем
+        // с нуля, как у нового посетителя. reset() сам вызывает saveState/syncUI/render
+        // и сбрасывает базовую точку автосохранения.
+        await this.reset(true);
         if (typeof this.updateProfileTabDetails === 'function') this.updateProfileTabDetails();
     },
 
@@ -13643,8 +13643,9 @@ const app = {
         }
     },
     // === НОВАЯ ФУНКЦИЯ СБРОСА ===
-    reset: async function () {
-        if (!await app.confirm("Сбросить все настройки и начать расчет заново?")) return;
+    // silent = true — сброс без вопроса, используется при выходе из аккаунта
+    reset: async function (silent) {
+        if (!silent && !await app.confirm("Сбросить все настройки и начать расчет заново?")) return;
 
         // Запоминаем важные данные перед сбросом
         const currentDarkMode = this.state.darkMode;

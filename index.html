@@ -49,12 +49,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.66">
+    <link rel="stylesheet" href="style.css?v=2.67">
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.22" defer></script>
     <script src="gamification.js?v=2.0" defer></script>
-    <script src="app.js?v=3.21" defer></script>
+    <script src="app.js?v=3.22" defer></script>
     <!-- Распознавание смет: подбор по каталогу и интерфейс мастера.
          Порядок важен — recognize.js обращается к RecognizeMatch. -->
     <script src="recognize_match.js?v=1.6" defer></script>
@@ -1221,13 +1221,13 @@
                             </label>
                         </div>
                     </div>
-                    <div id="auth_error_msg" style="color: #ef4444; font-size: 13px; margin-top: -10px; margin-bottom: 15px; display: none; text-align: left; line-height: 1.4;"></div>
+                    <div id="auth_error_msg" style="color: #ef4444; font-size: 13px; margin: 0 0 12px; display: none; text-align: left; line-height: 1.4;"></div>
 
                     <button class="auth-btn-base btn-email-submit" id="auth_submit_btn" onclick="app.handleAuthSubmit()">
                         Войти
                     </button>
 
-                    <div id="auth_forgot_link" style="text-align: center; margin-top: 10px; font-size: 13px;">
+                    <div id="auth_forgot_link" style="text-align: center; margin-top: 12px; font-size: 13px;">
                         <a href="#" onclick="app.showForgotPasswordView()" style="color: var(--text-sec); text-decoration: none;">Забыли пароль?</a>
                     </div>
 
@@ -1255,16 +1255,6 @@
                             <span class="yandex-logo-badge">Я</span>
                             Продолжить с Яндекс ID
                         </button>
-                    </div>
-
-                    <!-- Показывается только посетителям из РФ, вместо кнопки Google
-                         (app.applyRuLoginRestrictions) -->
-                    <div id="auth_ru_law_note" class="auth-ru-law-note" style="display: none;">
-                        Вход через Google для пользователей из России отключён — этого требует
-                        законодательство РФ об авторизации пользователей.<br>
-                        Регистрировались через Google? Войдите через Яндекс ID с той же почтой —
-                        попадёте в свой аккаунт со всеми сметами. Или задайте пароль по ссылке
-                        «Забыли пароль?».
                     </div>
                 </div>
             </div>

@@ -3071,6 +3071,20 @@ body.profile-incomplete-lock #page_scale_wrapper {
     margin-bottom: 12px;
 }
 
+/* Вкладка "Вход": поля, кнопка и ссылки — одной ширины (как кнопка) и с одним
+   вертикальным шагом 12px. В режиме регистрации колонку не сужаем — там сетка
+   полей занимает всю ширину окна. */
+#auth_modal_overlay:not(.register-mode) #auth_form_container {
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto;
+}
+
+#auth_modal_overlay:not(.register-mode) #auth_form_container .auth-input,
+#auth_modal_overlay:not(.register-mode) #auth_form_container .auth-btn-base {
+    max-width: 100%;
+}
+
 .auth-input:focus {
     border-color: #3B82F6;
     outline: none;
@@ -3211,11 +3225,19 @@ body.profile-incomplete-lock #page_scale_wrapper {
     background: #2563EB;
 }
 
+/* Баннер про cookie задан с максимальным z-index (cookie-consent.js) и на телефонах
+   перекрывает низ окна входа/регистрации — кнопка под ним не нажимается. Пока окно
+   открыто, баннер скрываем; класс auth-modal-open снимается при закрытии, и баннер
+   возвращается. */
+body.auth-modal-open .hc-cookie-banner {
+    display: none !important;
+}
+
 /* Divider */
 .auth-divider {
     display: flex;
     align-items: center;
-    margin: 25px auto;
+    margin: 20px auto;
     max-width: 280px;
     color: var(--text-sec);
     font-size: 11px;
@@ -3284,20 +3306,6 @@ body.dark-mode .btn-google:hover {
     justify-content: center;
 }
 
-/* Пояснение про ограничение входа через Google в РФ */
-.auth-ru-law-note {
-    max-width: 280px;
-    margin: 10px auto 0;
-    padding: 8px 10px;
-    border-radius: 8px;
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.35);
-    color: var(--text-sec);
-    font-size: 11.5px;
-    line-height: 1.4;
-    text-align: left;
-}
-
 /* Контейнер для социальных кнопок (Google, Яндекс) — в столбик */
 .social-btn-wrapper {
     width: 100%;
@@ -3305,7 +3313,7 @@ body.dark-mode .btn-google:hover {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     margin: 0 auto;
 }
 
