@@ -5594,6 +5594,11 @@ const app = {
         // (та же вкладка), но не остаётся включённым навсегда, как было бы
         // в localStorage. Сбрасывается закрытием вкладки или ?google_login=0.
         try {
+            // Прежняя версия хранила флаг в localStorage, то есть он оставался включённым
+            // навсегда: у всех, кто хоть раз открыл ?google_login=1, кнопка Google
+            // продолжала показываться и в РФ. Убираем этот ключ при первом же запуске.
+            localStorage.removeItem('force_google_login');
+
             const flag = new URLSearchParams(window.location.search).get('google_login');
             if (flag === '1') sessionStorage.setItem('force_google_login', '1');
             if (flag === '0') sessionStorage.removeItem('force_google_login');
