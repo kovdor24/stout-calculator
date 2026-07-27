@@ -1099,6 +1099,36 @@ const catalog = {
         { id: "RBV-0007-2410220", name: "Кран шаровой 3/4\" НР/НР", price: 549, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
         { id: "SVC-0012-000020", name: "Обратный клапан 3/4\" (Для рециркуляции)", price: 1128, availability: "in_stock", price_date: "2026-07-13" }
     ],
+    // Латунные шаровые краны STOUT с ROMMER-аналогами — ходовой ряд 1/2…2".
+    // В смете их пишут по условному проходу («кран 15») или по исполнению
+    // («кран с американкой 3/4», «кран шар 3/4 ВВ»), поэтому в каталоге лежат
+    // все исполнения одного размера: по ним же собирается таблица замены.
+    // 3/4" и 1" ВР/ВР (Бабочка) не дублируются — они есть в dhw_fittings.
+    // Прайс 07.2026.
+    ball_valves: [
+        // ВР/ВР — «ВВ» в рукописной смете
+        { id: "SVB-0012-000015", name: "Кран шаровой 1/2\" ВР/ВР (Бабочка)", price: 661.98, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19", rommer: { id: "RBV-0003-0110215", name: "Кран шаровой ВР/ВР бабочка 1/2\"", price: 281.55, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0001-000032", name: "Кран шаровой 1 1/4\" ВР/ВР (Рычаг)", price: 2811.73, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19", rommer: { id: "RBV-0003-0110232", name: "Кран шаровой ВР/ВР бабочка 1 1/4\"", price: 1362.31, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0001-000040", name: "Кран шаровой 1 1/2\" ВР/ВР (Рычаг)", price: 4177.21, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19" },
+        { id: "SVB-0001-000050", name: "Кран шаровой 2\" ВР/ВР (Рычаг)", price: 6588.38, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19" },
+
+        // ВР/НР — «ВН»
+        { id: "SVB-0014-000015", name: "Кран шаровой 1/2\" ВР/НР (Бабочка)", price: 724.81, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19", rommer: { id: "RBV-0004-0210215", name: "Кран шаровой ВР/НР бабочка 1/2\"", price: 295.53, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0014-000020", name: "Кран шаровой 3/4\" ВР/НР (Бабочка)", price: 1077.12, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19", rommer: { id: "RBV-0004-0210220", name: "Кран шаровой ВР/НР бабочка 3/4\"", price: 472.77, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0014-000025", name: "Кран шаровой 1\" ВР/НР (Бабочка)", price: 1660.56, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19", rommer: { id: "RBV-0004-0210225", name: "Кран шаровой ВР/НР бабочка 1\"", price: 934.97, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+
+        // НР/НР
+        { id: "SVB-0006-000015", name: "Кран шаровой 1/2\" НР/НР (Бабочка)", price: 949.21, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19", rommer: { id: "RBV-0007-0410215", name: "Кран шаровой НР/НР бабочка 1/2\"", price: 311.51, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0006-000025", name: "Кран шаровой 1\" НР/НР (Бабочка)", price: 1712.17, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19", rommer: { id: "RBV-0007-0410225", name: "Кран шаровой НР/НР бабочка 1\"", price: 984.12, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+
+        // С американкой — прямой и угловой
+        { id: "SVB-0007-000015", name: "Кран шаровой с американкой 1/2\" ВР/НР (Бабочка)", price: 1081.61, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19", rommer: { id: "RBV-0005-0510215", name: "Кран шаровой с американкой ВР/НР 1/2\"", price: 397.37, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0007-000020", name: "Кран шаровой с американкой 3/4\" ВР/НР (Бабочка)", price: 1637, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19", rommer: { id: "RBV-0005-0510220", name: "Кран шаровой с американкой ВР/НР 3/4\"", price: 640.13, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0007-000025", name: "Кран шаровой с американкой 1\" ВР/НР (Бабочка)", price: 2548.06, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19", rommer: { id: "RBV-0005-0510225", name: "Кран шаровой с американкой ВР/НР 1\"", price: 1371.43, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0008-000015", name: "Кран шаровой с американкой угловой 1/2\" ВР/НР", price: 1384.55, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19", rommer: { id: "RBV-0006-0610215", name: "Кран шаровой угловой с американкой ВР/НР 1/2\"", price: 423.33, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0008-000020", name: "Кран шаровой с американкой угловой 3/4\" ВР/НР", price: 2125.07, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19", rommer: { id: "RBV-0006-0610220", name: "Кран шаровой угловой с американкой ВР/НР 3/4\"", price: 709.16, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0008-000025", name: "Кран шаровой с американкой угловой 1\" ВР/НР", price: 3322.24, brand: "STOUT", availability: "in_stock", price_date: "2026-07-19", rommer: { id: "RBV-0006-0610225", name: "Кран шаровой угловой с американкой ВР/НР 1\"", price: 1611.32, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } }
+    ],
     boilers_gas: [
         { id: "GE0Q6QE0CRU", name: "Котёл газовый, одноконтурный (18 кВт)", article: "GE0Q6QE0CRU", price: 62324, power: 18, circuits: 1, type: "gas", brand: "Haier", availability: "in_stock", price_date: "2026-06-06" },
         { id: "GE0Q6RE0CRU", name: "Котёл газовый, одноконтурный (24 кВт)", article: "GE0Q6RE0CRU", price: 63464, power: 24, circuits: 1, type: "gas", brand: "Haier", availability: "in_stock", price_date: "2026-06-06" },
@@ -2597,7 +2627,26 @@ const catalog = {
         { id: "PA39014", article: "PA39014", price: 555.84, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R DUO SDR 6 40 мм", unit: "шт" },
         { id: "PA39016", article: "PA39016", price: 848.64, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R DUO SDR 6 50 мм", unit: "шт" },
         { id: "PA39018", article: "PA39018", price: 1312, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R DUO SDR 6 63 мм", unit: "шт" },
-        { id: "PA39020", article: "PA39020", price: 2146.28, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R DUO SDR 6 75 мм", unit: "шт" }
+        { id: "PA39020", article: "PA39020", price: 2146.28, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R DUO SDR 6 75 мм", unit: "шт" },
+
+        // Армирование стекловолокном (RUBIS) — та самая «труба стекло» из
+        // рукописных смет. DUO выше армирована фольгой, это другая труба.
+        // Цены — прайс 07.2026, за штангу 4 м.
+        { id: "PA35008P", article: "PA35008P", price: 101.14, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 7,4 PN 20 20x2,8", unit: "шт", price_date: "2026-07-19" },
+        { id: "PA35010P", article: "PA35010P", price: 148.84, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 7,4 PN 20 25x3,5", unit: "шт", price_date: "2026-07-19" },
+        { id: "PA35012P", article: "PA35012P", price: 243.07, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 7,4 PN 20 32x4,4", unit: "шт", price_date: "2026-07-19" },
+        { id: "PA35014P", article: "PA35014P", price: 377.08, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 7,4 PN 20 40x5,5", unit: "шт", price_date: "2026-07-19" },
+        { id: "PA35016P", article: "PA35016P", price: 622.14, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 7,4 PN 20 50x6,9", unit: "шт", price_date: "2026-07-19" },
+        { id: "PA35018P", article: "PA35018P", price: 982.14, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 7,4 PN 20 63x8,6", unit: "шт", price_date: "2026-07-19" },
+        { id: "PA35020P", article: "PA35020P", price: 1335.73, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 7,4 PN 20 75x10,3", unit: "шт", price_date: "2026-07-19" },
+
+        { id: "PA37008P", article: "PA37008P", price: 110.46, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 6 PN 25 20x3,4", unit: "шт", price_date: "2026-07-19" },
+        { id: "PA37010P", article: "PA37010P", price: 167.74, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 6 PN 25 25x4,2", unit: "шт", price_date: "2026-07-19" },
+        { id: "PA37012P", article: "PA37012P", price: 281.1, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 6 PN 25 32x5,4", unit: "шт", price_date: "2026-07-19" },
+        { id: "PA37014P", article: "PA37014P", price: 450.89, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 6 PN 25 40x6,7", unit: "шт", price_date: "2026-07-19" },
+        { id: "PA37016P", article: "PA37016P", price: 695.61, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 6 PN 25 50x8,3", unit: "шт", price_date: "2026-07-19" },
+        { id: "PA37018P", article: "PA37018P", price: 1104.76, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 6 PN 25 63x10,5", unit: "шт", price_date: "2026-07-19" },
+        { id: "PA37020P", article: "PA37020P", price: 1583.76, brand: "ProAqua", availability: "in_stock", name: "Труба PP-R RUBIS стекловолокно SDR 6 PN 25 75x12,5", unit: "шт", price_date: "2026-07-19" }
     ],
     ppr_proaqua_elbow90: [
         { id: "PA13008P", article: "PA13008P", price: 10.08, brand: "ProAqua", availability: "in_stock", name: "Угольник 90° PP-R 20 мм", unit: "шт" },
@@ -2821,6 +2870,29 @@ const catalog = {
         { id: "PA18914", article: "PA18914", price: 14.47, brand: "ProAqua", availability: "in_stock", name: "Опора с защелкой PP-R 40", unit: "шт", price_date: "2026-07-01" },
         { id: "PA18916", article: "PA18916", price: 18.19, brand: "ProAqua", availability: "in_stock", name: "Опора с защелкой PP-R 50", unit: "шт", price_date: "2026-07-01" },
         { id: "PA18918", article: "PA18918", price: 34.32, brand: "ProAqua", availability: "in_stock", name: "Опора с защелкой PP-R 63", unit: "шт", price_date: "2026-07-01" }
+    ],
+
+    // Полипропиленовая запорная арматура (прайс Pro Aqua PPR, 07.2026).
+    // В рукописных сметах это «кран ппр»: приваривается в трубу, отдельной
+    // латунной арматурой не заменяется.
+    ppr_proaqua_valve: [
+        { id: "PA40008", article: "PA40008", price: 373.54, brand: "ProAqua", availability: "in_stock", name: "Шаровой кран полнопроходной Ultra PP-R 20", unit: "шт", price_date: "2026-07-01" },
+        { id: "PA40010", article: "PA40010", price: 511.9, brand: "ProAqua", availability: "in_stock", name: "Шаровой кран полнопроходной Ultra PP-R 25", unit: "шт", price_date: "2026-07-01" },
+        { id: "PA40012", article: "PA40012", price: 966.07, brand: "ProAqua", availability: "in_stock", name: "Шаровой кран полнопроходной Ultra PP-R 32", unit: "шт", price_date: "2026-07-01" },
+        { id: "PA40014", article: "PA40014", price: 1254.68, brand: "ProAqua", availability: "in_stock", name: "Шаровой кран полнопроходной Ultra PP-R 40", unit: "шт", price_date: "2026-07-01" },
+        { id: "PA40016", article: "PA40016", price: 2228.27, brand: "ProAqua", availability: "in_stock", name: "Шаровой кран полнопроходной Ultra PP-R 50", unit: "шт", price_date: "2026-07-01" },
+        { id: "PA40018", article: "PA40018", price: 3405.67, brand: "ProAqua", availability: "in_stock", name: "Шаровой кран полнопроходной Ultra PP-R 63", unit: "шт", price_date: "2026-07-01" },
+        { id: "PA40020", article: "PA40020", price: 4118.77, brand: "ProAqua", availability: "in_stock", name: "Шаровой кран полнопроходной Ultra PP-R 75", unit: "шт", price_date: "2026-07-01" }
+    ],
+    // Радиаторные краны с накидной гайкой — те самые «краны с американкой».
+    // Прямой и угловой разнесены, потому что в смете их различают («уг»).
+    ppr_proaqua_valve_rad: [
+        { id: "PA41008", article: "PA41008", price: 609.6, brand: "ProAqua", availability: "in_stock", name: "Шаровой кран для радиатора прямой PP-R 20х1/2", unit: "шт", price_date: "2026-07-01" },
+        { id: "PA41010", article: "PA41010", price: 898.37, brand: "ProAqua", availability: "in_stock", name: "Шаровой кран для радиатора прямой PP-R 25х3/4", unit: "шт", price_date: "2026-07-01" }
+    ],
+    ppr_proaqua_valve_rad_angle: [
+        { id: "PA42108", article: "PA42108", price: 595.27, brand: "ProAqua", availability: "in_stock", name: "Шаровой кран для радиатора угловой PP-R 20х1/2", unit: "шт", price_date: "2026-07-01" },
+        { id: "PA42110", article: "PA42110", price: 884.84, brand: "ProAqua", availability: "in_stock", name: "Шаровой кран для радиатора угловой PP-R 25х3/4", unit: "шт", price_date: "2026-07-01" }
     ],
 
     mounting_system: [

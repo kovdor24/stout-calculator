@@ -2949,6 +2949,20 @@ const app = {
                 return;
             }
 
+            const article = matched ? (m.item.article || m.item.id) : null;
+            const section = r.section || '9. Дополнительные материалы';
+
+            // Один и тот же артикул в одном разделе — одна строка сметы.
+            // На бумаге монтажник пишет краны трижды (кухня, санузел, бойлер),
+            // но в смете для клиента три одинаковые строки выглядят ошибкой.
+            const same = article && this.state.userAddedEq.find(eq =>
+                eq.recognized === stamp && eq.article === article && eq.section === section);
+            if (same) {
+                same.q += qty;
+                if (r.raw && same.desc && !same.desc.includes(r.raw)) same.desc += '; ' + r.raw;
+                return;
+            }
+
             this.state.userAddedEq.push({
                 // Свой префикс, чтобы распознанное не столкнулось по id с
                 // артикулом каталога, если ту же позицию добавят вручную.
@@ -2960,9 +2974,9 @@ const app = {
                 desc: r.raw ? ('Распознано: ' + r.raw) : 'Добавлено распознаванием',
                 // Раздел выбирается на экране проверки: часть позиций
                 // определяется однозначно, остальные монтажник расставляет сам.
-                section: r.section || '9. Дополнительные материалы',
+                section: section,
                 recognized: stamp,
-                article: matched ? (m.item.article || m.item.id) : null,
+                article: article,
             });
             eqCount++;
         });
@@ -2985,6 +2999,40 @@ const app = {
     },
 
     // Удаление своего оборудования
+    /**
+     * Поиск позиции каталога по артикулу.
+     *
+     * Нужен распознаванию: в смете распознанная строка живёт под своим
+     * служебным id ('rec_…'), а всё, что делает её «такой же, как из
+     * калькулятора» — список аналогов для таблицы замены, ROMMER-версия,
+     * единица измерения — лежит на объекте каталога. Серии радиаторов
+     * объявлены отдельными массивами вне catalog{}, поэтому просматриваются
+     * дополнительно (см. _getSecRadSeries).
+     */
+    findCatalogItemById: function (id) {
+        if (!id) return null;
+        for (const key in catalog) {
+            const v = catalog[key];
+            if (Array.isArray(v)) {
+                const found = v.find(x => x && (x.id === id || x.article === id));
+                if (found) return found;
+            } else if (v && (v.id === id || v.article === id)) {
+                return v;
+            }
+        }
+        if (typeof this._getSecRadSeries === 'function') {
+            for (const s of this._getSecRadSeries()) {
+                const found = s.arr && s.arr.find(x => x && x.id === id);
+                if (found) return found;
+            }
+        }
+        if (typeof steelRads !== 'undefined') {
+            const found = steelRads.find(x => x && x.id === id);
+            if (found) return found;
+        }
+        return null;
+    },
+
     deleteEq: function (id) {
         if (!this.state.userAddedEq) return;
         const item = this.state.userAddedEq.find(eq => eq.id === id);
@@ -3524,10 +3572,15 @@ const app = {
                 return;
             }
 
-            // Вычисляем дату окончания PRO из поля pro_months (по умолчанию 3)
-            const proMonths = dist.pro_months || 3;
-            const proMs = proMonths * 30 * 24 * 60 * 60 * 1000;
-            const proEndDate = new Date(Date.now() + proMs).toISOString();
+            // Месяцы PRO задаёт дистрибьютор. Ноль — обычный случай: промокод
+            // только привязывает монтажника к поставщику, тариф при этом не
+            // меняется. Поэтому именно ?? 0, а не || 3: ноль здесь осмысленное
+            // значение, и подменять его тремя месяцами нельзя.
+            const proMonths = Number(dist.pro_months) || 0;
+            const grantsPro = proMonths > 0;
+            const proEndDate = grantsPro
+                ? new Date(Date.now() + proMonths * 30 * 24 * 60 * 60 * 1000).toISOString()
+                : null;
 
             // Найдём ID пользователя в БД
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -3558,18 +3611,23 @@ const app = {
                 return;
             }
 
-            // Обновляем запись пользователя
-            const { error: updErr } = await supabaseClient.from('users').update({
-                account_type: 'pro',
-                demo_ends_at: proEndDate,
-                distributor_id: dist.id
-            }).eq('id', uRow.id);
+            // Обновляем запись пользователя. Тариф трогаем только если
+            // дистрибьютор действительно даёт месяцы PRO — иначе промокод
+            // просто закрепляет монтажника за поставщиком.
+            const userPatch = { distributor_id: dist.id };
+            if (grantsPro) {
+                userPatch.account_type = 'pro';
+                userPatch.demo_ends_at = proEndDate;
+            }
+            const { error: updErr } = await supabaseClient.from('users').update(userPatch).eq('id', uRow.id);
 
             if (updErr) throw updErr;
 
             // Обновляем локальное состояние
-            this.state.accountType = 'pro';
-            this.state.groupItems = true; // По умолчанию группировка включена для PRO
+            if (grantsPro) {
+                this.state.accountType = 'pro';
+                this.state.groupItems = true; // По умолчанию группировка включена для PRO
+            }
             this.state.distributorId = dist.id;
             this.state.distributorInfo = {
                 company_name: dist.company_name,
@@ -3579,7 +3637,7 @@ const app = {
                 director_email: dist.director_email
             };
             if (this.state.tgUser) {
-                this.state.tgUser.account_type = 'pro';
+                if (grantsPro) this.state.tgUser.account_type = 'pro';
                 if (!this.state.tgUser.id) this.state.tgUser.id = uRow.id;
             }
 
@@ -3587,7 +3645,9 @@ const app = {
             this.syncUI();
             this.closeModal();
 
-            app.alert(`✅ Промокод принят! Компания-поставщик: ${dist.company_name}. Вам присвоен тариф Профи на ${proMonths} мес. Страница будет перезагружена через 6 секунд.`);
+            app.alert(`✅ Промокод принят! Компания-поставщик: ${dist.company_name}.` +
+                (grantsPro ? ` Вам присвоен тариф Профи на ${proMonths} мес.` : '') +
+                ' Страница будет перезагружена через 6 секунд.');
             setTimeout(() => {
                 window.location.replace(window.location.pathname + window.location.search);
             }, 6000);
@@ -4169,7 +4229,10 @@ const app = {
                     <td><b>${d.company_name || '—'}</b><br><span style="font-size:10px; color:var(--text-sec);">📍 ${regionsText}</span></td>
                     <td style="font-weight:700; color:var(--primary); font-size:13px; letter-spacing:0.05em;">${d.promo_code}</td>
                     <td><div style="font-size:12px;">${d.manager_name || '—'}<br><span style="color:var(--text-sec);">${d.manager_email || ''}</span><br><span style="color:var(--text-sec);">${d.manager_phone || ''}</span>${d.director_email ? `<br><span style="color:var(--text-sec);">👁 ${d.director_email}</span>` : ''}</div></td>
-                    <td style="text-align:center;"><b style="color:var(--primary);">${d.pro_months || 3}</b><br><span style="font-size:10px; color:var(--text-sec);">до ${validUntilText}</span></td>
+                    <td style="text-align:center;">${Number(d.pro_months) > 0
+                        ? `<b style="color:var(--primary);">${d.pro_months}</b>`
+                        : '<span style="color:var(--text-sec);" title="Промокод только привязывает монтажника к дистрибьютору, тариф не выдаётся">без PRO</span>'
+                    }<br><span style="font-size:10px; color:var(--text-sec);">до ${validUntilText}</span></td>
                     <td>${statusBadge}</td>
                     <td style="text-align:right;">
                         <div style="display:flex; gap:6px; justify-content:flex-end;">
@@ -4210,8 +4273,8 @@ const app = {
                             <input type="text" id="dist_phone" placeholder="+7 (999) 999-99-99" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                         </div>
                         <div>
-                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Месяцев PRO при активации</label>
-                            <input type="number" id="dist_pro_months" min="1" max="36" value="3" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;" title="0 — промокод только привязывает монтажника к дистрибьютору, тариф не меняется">Месяцев PRO при активации</label>
+                            <input type="number" id="dist_pro_months" min="0" max="36" value="0" ${isViewer ? 'disabled' : ''} placeholder="0 — без PRO" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Действителен до (необяз.)</label>
@@ -4688,7 +4751,10 @@ const app = {
         const manager = document.getElementById('dist_manager').value.trim();
         const email = document.getElementById('dist_email').value.trim();
         const phone = document.getElementById('dist_phone').value.trim();
-        const proMonths = parseInt(document.getElementById('dist_pro_months')?.value || '3', 10) || 3;
+        // Ноль — допустимое значение (промокод без выдачи PRO), поэтому
+        // «|| 3» здесь недопустимо: оно молча превращало бы ноль в три месяца.
+        const proMonthsRaw = parseInt(document.getElementById('dist_pro_months')?.value ?? '', 10);
+        const proMonths = Number.isFinite(proMonthsRaw) ? Math.max(0, proMonthsRaw) : 0;
         const validUntilVal = document.getElementById('dist_valid_until')?.value || '';
         const isActive = document.getElementById('dist_active').value === '1';
         const regions = (document.getElementById('dist_regions')?.value || '').split(',').map(r => r.trim()).filter(Boolean);
@@ -4739,7 +4805,7 @@ const app = {
         document.getElementById('dist_email').value = dist.manager_email || '';
         document.getElementById('dist_phone').value = dist.manager_phone || '';
         if (document.getElementById('dist_director_email')) document.getElementById('dist_director_email').value = dist.director_email || '';
-        if (document.getElementById('dist_pro_months')) document.getElementById('dist_pro_months').value = dist.pro_months || 3;
+        if (document.getElementById('dist_pro_months')) document.getElementById('dist_pro_months').value = Number(dist.pro_months) || 0;
         if (document.getElementById('dist_valid_until') && dist.valid_until) {
             document.getElementById('dist_valid_until').value = dist.valid_until.split('T')[0];
         }
@@ -4759,7 +4825,7 @@ const app = {
         document.getElementById('dist_email').value = '';
         document.getElementById('dist_phone').value = '';
         if (document.getElementById('dist_director_email')) document.getElementById('dist_director_email').value = '';
-        if (document.getElementById('dist_pro_months')) document.getElementById('dist_pro_months').value = '3';
+        if (document.getElementById('dist_pro_months')) document.getElementById('dist_pro_months').value = '0';
         if (document.getElementById('dist_valid_until')) document.getElementById('dist_valid_until').value = '';
         document.getElementById('dist_active').value = '1';
         if (document.getElementById('dist_regions')) document.getElementById('dist_regions').value = '';
@@ -6997,6 +7063,10 @@ const app = {
                 messages: allMessages,
                 distributors: distributors
             };
+            // Кто допущен к распознаванию — нужно столбцу в таблице пользователей.
+            // Ошибка чтения не должна ломать админку: столбец просто покажет
+            // «выключено», а список подтянется при следующем открытии.
+            await this.loadRecognitionAccess();
             this.renderAdminMain();
         } catch (error) {
             console.error("Admin Load Error:", error);
@@ -7020,7 +7090,8 @@ const app = {
             { id: 'distributors', icon: '🏢', label: 'Дистрибьюторы' },
             { id: 'kanban', icon: '📅', label: 'Планировщик' },
             { id: 'pricelist', icon: '💵', label: 'Прайс-лист' },
-            { id: 'equipment', icon: '🧰', label: 'Своё оборудование' }
+            { id: 'equipment', icon: '🧰', label: 'Своё оборудование' },
+            { id: 'recognition', icon: '🔍', label: 'Распознавание' }
         ];
         // На узких экранах (см. .admin-tab-btn / .admin-tab-label в style.css) подписи
         // скрываются, остаются только иконки-квадраты — тем самым все 7 вкладок помещаются
@@ -7060,6 +7131,12 @@ const app = {
         if (this._adminTab === 'equipment') {
             content.innerHTML = navHtml;
             this.renderAdminEquipment();
+            return;
+        }
+
+        if (this._adminTab === 'recognition') {
+            content.innerHTML = navHtml;
+            this.renderAdminRecognition();
             return;
         }
 
@@ -7193,17 +7270,31 @@ const app = {
                             </select>
                             <button ${isViewer ? 'disabled' : ''} onclick="app.bulkAssignDistributor()" style="flex-shrink:0; height:32px; padding:0 16px; font-size:12px; font-weight:600; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer; white-space:nowrap; ${isViewer ? 'opacity:0.5;cursor:not-allowed;' : ''} transition:opacity 0.2s;" onmouseover="if(!${isViewer})this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Назначить</button>
                         </div>
+                        <!-- Распознавание целому региону: регион берётся из фильтра
+                             над таблицей — того же, по которому отобран список. -->
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px;">
+                            <span style="font-size:11px; font-weight:600; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.5px;">🔍 Распознавание смет региону${regionFilter ? ` «${regionFilter}»` : ''}:</span>
+                            <button ${isViewer || !regionFilter ? 'disabled' : ''} onclick="app.toggleRegionRecognition(true)"
+                                    title="${regionFilter ? 'Открыть распознавание всем монтажникам региона' : 'Сначала выберите регион в фильтре'}"
+                                    style="height:28px; padding:0 12px; font-size:11.5px; font-weight:600; background:${(this._recognitionAccess && this._recognitionAccess.regions && this._recognitionAccess.regions[regionFilter]) ? '#10B981' : 'var(--surface)'}; color:${(this._recognitionAccess && this._recognitionAccess.regions && this._recognitionAccess.regions[regionFilter]) ? '#fff' : 'var(--text-main)'}; border:1px solid var(--border); border-radius:6px; cursor:${isViewer || !regionFilter ? 'not-allowed' : 'pointer'}; ${isViewer || !regionFilter ? 'opacity:0.5;' : ''}">Включить</button>
+                            <button ${isViewer || !regionFilter ? 'disabled' : ''} onclick="app.toggleRegionRecognition(false)"
+                                    style="height:28px; padding:0 12px; font-size:11.5px; font-weight:600; background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:6px; cursor:${isViewer || !regionFilter ? 'not-allowed' : 'pointer'}; ${isViewer || !regionFilter ? 'opacity:0.5;' : ''}">Выключить</button>
+                        </div>
                     </div>
 
-                    <table class="inv-table" style="margin-bottom: 30px; table-layout: auto; width: 100%;">
+                    <!-- Ширины заданы явно и таблица фиксированной раскладки:
+                         при авторазметке колонки прыгали от строки к строке,
+                         а длинные названия дистрибьюторов рвали выравнивание. -->
+                    <table class="inv-table" style="margin-bottom: 30px; table-layout: fixed; width: 100%;">
                         <thead><tr>
-                            <th style="width:30px;">#</th>
-                            <th style="cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('name')" title="Сортировать по имени">Имя / Контакты${sortArrow('name')}</th>
-                            <th style="cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('ltv')" title="Сортировать по сумме">Статистика (LTV)${sortArrow('ltv')}</th>
-                            <th style="cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('tariff')" title="Сортировать по тарифу">Тариф / Устройство${sortArrow('tariff')}</th>
-                            <th>Дистрибьютор</th>
-                            <th style="text-align:right; cursor:pointer; user-select:none; width: 90px; min-width: 90px;" onclick="app.sortAdminColumn('login')" title="Сортировать по дате входа">Вход${sortArrow('login')}</th>
-                            <th style="text-align:center; width: 140px; min-width: 140px;">Действия</th>
+                            <th style="width:34px;">#</th>
+                            <th style="width:300px; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('name')" title="Сортировать по имени">Имя / Контакты${sortArrow('name')}</th>
+                            <th style="width:130px; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('ltv')" title="Сортировать по сумме">Статистика (LTV)${sortArrow('ltv')}</th>
+                            <th style="width:140px; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('tariff')" title="Сортировать по тарифу">Тариф / Устройство${sortArrow('tariff')}</th>
+                            <th style="width:230px;">Дистрибьютор</th>
+                            <th style="width:110px; text-align:center;" title="Доступ монтажника к распознаванию смет">Распознавание</th>
+                            <th style="text-align:right; cursor:pointer; user-select:none; width: 80px;" onclick="app.sortAdminColumn('login')" title="Сортировать по дате входа">Вход${sortArrow('login')}</th>
+                            <th style="text-align:center; width: 190px;">Действия</th>
                         </tr></thead>
                         <tbody>
                 `;
@@ -7263,7 +7354,17 @@ const app = {
             let searchStr = `${name} ${phone} ${u.email || ''} ${cityText} ${ipLoc} ${u.region || ''} ${(u.activity_types || []).join(' ')}`.toLowerCase();
 
             const distOptions = `<option value="">— Не назначен —</option>` + (this.adminData.distributors || []).map(d => `<option value="${d.id}" ${u.distributor_id === d.id ? 'selected' : ''}>${d.company_name} (${d.promo_code})</option>`).join('');
-            const distCell = `<select onclick="event.stopPropagation();" onchange="app.setUserDistributorInline('${u.id}', this.value, this)" ${isViewer ? 'disabled style="opacity:0.75; cursor:not-allowed;"' : ''} style="width:100%; max-width:150px; background: var(--surface); color: ${u.distributor_id ? 'var(--text-main)' : '#EF4444'}; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; font-size:11px; outline:none; cursor:pointer;">${distOptions}</select>`;
+            // Ширину не ограничиваем: у дистрибьюторов длинные названия,
+            // и при max-width они обрезались до неразличимых огрызков.
+            // Названия дистрибьюторов длинные, а колонка не резиновая: сужаем
+            // шрифт и отступы, а полное название показываем подсказкой.
+            const distName = (this.adminData.distributors || []).find(d => d.id === u.distributor_id);
+            const distTitle = distName ? `${distName.company_name} (${distName.promo_code})` : 'Дистрибьютор не назначен';
+            const distCell = `<select onclick="event.stopPropagation();" onchange="app.setUserDistributorInline('${u.id}', this.value, this)" title="${distTitle}" ${isViewer ? 'disabled style="opacity:0.75; cursor:not-allowed;"' : ''} style="width:100%; max-width:100%; box-sizing:border-box; background: var(--surface); color: ${u.distributor_id ? 'var(--text-main)' : '#EF4444'}; border: 1px solid var(--border); border-radius: 6px; padding: 3px 4px; font-size:10.5px; outline:none; cursor:pointer;">${distOptions}</select>`;
+
+            // Доступ к распознаванию: лично у монтажника, через его регион,
+            // либо по должности (администраторам открыто всегда).
+            const recCell = this.recognitionAccessCell(u, isViewer);
 
             h += `<tr class="active-row admin-list-row" data-search="${searchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminUser('${u.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
                         <td style="color:var(--text-sec);">${i + 1}</td>
@@ -7271,6 +7372,7 @@ const app = {
                         <td><b style="color:var(--primary);">${u.ltv.toLocaleString()} ₽</b><br><span style="font-size:10px;color:var(--text-sec);">Смет: ${u.projectsCount} | Ср.объект: ${u.avgArea} м²</span></td>
                         <td>${badge}<br><span style="font-size:10px;color:var(--text-sec);">${device}</span></td>
                         <td onclick="event.stopPropagation();">${distCell}</td>
+                        <td onclick="event.stopPropagation();" style="text-align:center;">${recCell}</td>
                         <td style="text-align:right;">${lastVis}</td>
                         <td onclick="event.stopPropagation();" style="text-align:center; white-space:nowrap;">
                             <div style="display:flex; gap:5px; justify-content:center; align-items:center;">
@@ -8805,6 +8907,612 @@ const app = {
     // Вкладка админки «Своё оборудование»: позиции, добавленные монтажниками вручную
     // (equipmentLibrary), удалённые из смет (deletionLog, kind='equipment') и замены через
     // кнопку «Аналог» (swapLog) — три независимых потока данных, общие фильтры
+    /**
+     * Вкладка «Распознавание» — что монтажники прогоняли через распознавание смет.
+     *
+     * Архив лежит не в Supabase, а на Beget (recognize_archive.php): там
+     * оригиналы фотографий, а egress Supabase — узкое место. Доступ на
+     * чтение сервер проверяет по той же сессии Supabase, что и обычный вход
+     * в приложение (см. getAdminRole) — отдельного пароля для архива нет.
+     */
+    RECOGNIZE_ARCHIVE: 'https://proxy.heatcalc.ru/recognize_archive.php',
+
+    /**
+     * Токен текущей сессии Supabase — по нему сервер архива проверяет роль.
+     *
+     * Три источника подряд, потому что каждый по отдельности подводит:
+     * getSession() возвращает пусто, если токен пора обновить; refreshSession()
+     * чинит это, но требует сети; а если и она недоступна, токен всё ещё лежит
+     * в localStorage, куда его положила библиотека при входе.
+     */
+    recognitionToken: async function () {
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session && session.access_token) return session.access_token;
+        } catch (e) {
+            console.warn('[архив] getSession не сработал:', e.message);
+        }
+
+        try {
+            const { data: { session } } = await supabaseClient.auth.refreshSession();
+            if (session && session.access_token) return session.access_token;
+        } catch (e) {
+            console.warn('[архив] refreshSession не сработал:', e.message);
+        }
+
+        // Библиотека хранит сессию в localStorage, но имя ключа и вложенность
+        // зависят от её версии («sb-<проект>-auth-token» или «supabase.auth.token»,
+        // токен то в корне, то в currentSession). Поэтому не угадываем формат,
+        // а ищем access_token в любом ключе, похожем на supabase-хранилище.
+        this._recognitionStorageKeys = [];
+        try {
+            const findToken = (node, depth) => {
+                if (!node || typeof node !== 'object' || depth > 4) return null;
+                if (typeof node.access_token === 'string' && node.access_token) return node.access_token;
+                for (const v of Object.values(node)) {
+                    const found = findToken(v, depth + 1);
+                    if (found) return found;
+                }
+                return null;
+            };
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i) || '';
+                if (!/^(sb-|supabase)/i.test(key)) continue;
+                this._recognitionStorageKeys.push(key);
+                let raw;
+                try { raw = JSON.parse(localStorage.getItem(key)); } catch (e) { continue; }
+                const token = findToken(raw, 0);
+                if (token) return token;
+            }
+        } catch (e) {
+            console.warn('[архив] токен не читается из localStorage:', e.message);
+        }
+
+        return null;
+    },
+
+    /** Заголовок с токеном текущей сессии — сервер проверит по нему роль. */
+    recognitionAuthHeaders: async function () {
+        const token = await this.recognitionToken();
+        return token ? { Authorization: 'Bearer ' + token } : null;
+    },
+
+    /**
+     * Открытие файла из архива.
+     *
+     * Обычная ссылка <a href> не может отправить заголовок Authorization —
+     * браузер просто откроет URL без него, и сервер ответит 403. Поэтому
+     * файл забирается через fetch с заголовком, а открывается уже как blob.
+     */
+    openRecognitionFile: async function (rel) {
+        const headers = await this.recognitionAuthHeaders();
+        if (!headers) { app.alert('Сессия истекла — обновите страницу и войдите заново.'); return; }
+        try {
+            const r = await fetch(`${this.RECOGNIZE_ARCHIVE}?get=${encodeURIComponent(rel)}`, { headers });
+            if (!r.ok) throw new Error(r.status === 403 ? 'доступ только для администраторов' : 'HTTP ' + r.status);
+            const blob = await r.blob();
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            // Не отзываем сразу: новой вкладке нужно время загрузить blob.
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (e) {
+            app.alert('Не удалось открыть файл: ' + e.message);
+        }
+    },
+
+    renderAdminRecognition: async function () {
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+        content.innerHTML += `<div id="admin_recognition_root" style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка архива распознаваний…</div>`;
+
+        const headers = await this.recognitionAuthHeaders();
+        if (!headers) {
+            const root = document.getElementById('admin_recognition_root');
+            // Сессии Supabase нет вовсе — так бывает после входа через Telegram
+            // или когда браузер почистил хранилище. Обновление страницы тут не
+            // поможет, нужен именно вход по email или через Google.
+            const found = (this._recognitionStorageKeys || []);
+            if (root) root.innerHTML = `<div style="color:#EF4444; padding:20px;">
+                Архив читается по вашей учётной записи, а токен сессии в браузере не найден.<br>
+                Попробуйте выйти и войти заново по email или через Google.
+                <div style="margin-top:10px; color:var(--text-sec); font-size:12px;">
+                    Для диагностики: ключи хранилища — ${found.length ? found.join(', ') : 'не найдены'}.
+                </div></div>`;
+            return;
+        }
+
+        let rows = [];
+        try {
+            const r = await fetch(`${this.RECOGNIZE_ARCHIVE}?list=1&days=180&limit=300`, { headers });
+            const data = await r.json();
+            if (!data.ok) throw new Error(data.error || (r.status === 403 ? 'доступ только для администраторов' : 'архив не ответил'));
+            rows = data.rows || [];
+        } catch (e) {
+            const root = document.getElementById('admin_recognition_root');
+            if (root) root.innerHTML = `<div style="color:#EF4444; padding:20px;">Не удалось прочитать архив: ${e.message}</div>`;
+            return;
+        }
+
+        // Размер архива приходит отдельно: список ограничен по датам, а место
+        // на диске занимают все файлы, включая те, что в список не попали.
+        this._adminRecognitionStats = null;
+        try {
+            const r = await fetch(`${this.RECOGNIZE_ARCHIVE}?stats=1`, { headers });
+            const data = await r.json();
+            if (data.ok) this._adminRecognitionStats = data;
+        } catch (e) {
+            console.warn('[архив] размер не посчитан:', e.message);
+        }
+
+        // Персональные лимиты: у кого не задан — действует общий.
+        this._adminRecognitionLimits = { default: 50, limits: {} };
+        try {
+            const r = await fetch(this.RECOGNIZE_ARCHIVE, {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+                body: JSON.stringify({ action: 'limits' }),
+            });
+            const data = await r.json();
+            if (data.ok) this._adminRecognitionLimits = { default: data.default, limits: data.limits || {} };
+        } catch (e) {
+            console.warn('[архив] лимиты не получены:', e.message);
+        }
+
+        this._adminRecognitionRows = rows;
+        this.renderAdminRecognitionBody();
+    },
+
+    /**
+     * Изменение месячного лимита распознаваний конкретному монтажнику.
+     *
+     * Общий лимит задан на сервере (LIMIT_DEFAULT), здесь — персональные
+     * исключения: кому-то больше, кому-то ноль. Пустое поле возвращает
+     * человека к общему значению.
+     */
+    setRecognitionLimit: async function (user) {
+        const cur = (this._adminRecognitionLimits && this._adminRecognitionLimits.limits[user]);
+        const def = (this._adminRecognitionLimits && this._adminRecognitionLimits.default) || 50;
+        const answer = await this.prompt(
+            `Лимит распознаваний в месяц для «${user}».\nПусто — вернуть общий (${def}).`,
+            cur === undefined ? '' : String(cur));
+        if (answer === null) return;
+
+        const value = String(answer).trim();
+        if (value !== '' && !/^\d+$/.test(value)) { app.alert('Нужно целое число или пустое поле.'); return; }
+
+        const headers = await this.recognitionAuthHeaders();
+        if (!headers) { app.alert('Сессия истекла — обновите страницу.'); return; }
+        try {
+            const r = await fetch(this.RECOGNIZE_ARCHIVE, {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+                body: JSON.stringify({ action: 'setLimit', user, limit: value === '' ? null : Number(value) }),
+            });
+            const data = await r.json();
+            if (!data.ok) throw new Error(data.error || 'сервер отказал');
+            this.renderAdminRecognition();
+        } catch (e) {
+            app.alert('Не удалось изменить лимит: ' + e.message);
+        }
+    },
+
+    /** Свернуть/развернуть список распознаваний монтажника. */
+    toggleRecognitionUser: function (key) {
+        this._recognitionOpen = this._recognitionOpen || {};
+        this._recognitionOpen[key] = !this._recognitionOpen[key];
+        this.renderAdminRecognitionBody();
+    },
+
+    /** Отметить одну запись. Идентификатор записи — путь к её разбору. */
+    toggleRecognitionPick: function (id) {
+        this._recognitionPicked = this._recognitionPicked || {};
+        if (this._recognitionPicked[id]) delete this._recognitionPicked[id];
+        else this._recognitionPicked[id] = true;
+        this.renderAdminRecognitionBody();
+    },
+
+    /** Отметить или снять все распознавания монтажника разом. */
+    toggleRecognitionPickUser: function (key) {
+        this._recognitionPicked = this._recognitionPicked || {};
+        const rows = (this._adminRecognitionRows || []).filter(r => (r.user || 'без имени') === key);
+        const allPicked = rows.length && rows.every(r => this._recognitionPicked[r.json]);
+        rows.forEach(r => {
+            if (allPicked) delete this._recognitionPicked[r.json];
+            else this._recognitionPicked[r.json] = true;
+        });
+        this.renderAdminRecognitionBody();
+    },
+
+    /**
+     * Удаление отмеченных распознаваний.
+     *
+     * scope='originals' убирает только загруженные файлы — запись остаётся
+     * в таблице вместе с разбором и счётчиками. scope='all' стирает записи
+     * целиком, и они пропадают из истории вместе с расходом лимита.
+     */
+    deleteRecognitionPicked: async function (scope) {
+        const ids = Object.keys(this._recognitionPicked || {});
+        if (!ids.length) return;
+
+        const what = scope === 'all'
+            ? `записи целиком (${ids.length} шт) — они исчезнут из истории`
+            : `загруженные файлы у ${ids.length} записей — разборы останутся`;
+        if (!await this.confirm(`Удалить ${what}? Действие необратимо.`)) return;
+
+        const headers = await this.recognitionAuthHeaders();
+        if (!headers) { app.alert('Сессия истекла — обновите страницу.'); return; }
+
+        try {
+            const r = await fetch(this.RECOGNIZE_ARCHIVE, {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+                body: JSON.stringify({ action: 'purge', scope, ids }),
+            });
+            const data = await r.json();
+            if (!data.ok) throw new Error(data.error || 'сервер отказал');
+            this._recognitionPicked = {};
+            const mb = (data.freedBytes / 1048576).toFixed(1);
+            app.alert(`Удалено файлов: ${data.removed}. Освобождено: ${mb} МБ.`);
+            this.renderAdminRecognition();
+        } catch (e) {
+            app.alert('Не удалось удалить: ' + e.message);
+        }
+    },
+
+    /**
+     * Очистка архива.
+     *
+     * scope='originals' — удаляются только оригиналы фотографий и PDF: это
+     * они занимают диск. Разборы остаются, поэтому записи в таблице никуда
+     * не пропадают и по ним по-прежнему видно, что и как распозналось.
+     */
+    purgeRecognitionFiles: async function (scope, olderThanDays) {
+        const what = scope === 'all'
+            ? 'записи целиком (вместе с разборами)'
+            : 'загруженные файлы (разборы останутся)';
+        const when = olderThanDays ? `старше ${olderThanDays} дней` : 'за всё время';
+        if (!await this.confirm(`Удалить ${what} ${when}? Действие необратимо.`)) return;
+
+        const headers = await this.recognitionAuthHeaders();
+        if (!headers) { app.alert('Сессия истекла — обновите страницу.'); return; }
+
+        try {
+            const r = await fetch(this.RECOGNIZE_ARCHIVE, {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+                body: JSON.stringify({ action: 'purge', scope, olderThanDays: olderThanDays || 0 }),
+            });
+            const data = await r.json();
+            if (!data.ok) throw new Error(data.error || 'сервер отказал');
+            const mb = (data.freedBytes / 1048576).toFixed(1);
+            app.alert(`Удалено файлов: ${data.removed}. Освобождено: ${mb} МБ.`);
+            this.renderAdminRecognition();
+        } catch (e) {
+            app.alert('Не удалось очистить архив: ' + e.message);
+        }
+    },
+
+    renderAdminRecognitionBody: function () {
+        const root = document.getElementById('admin_recognition_root');
+        if (!root) return;
+
+        const rows = this._adminRecognitionRows || [];
+        const esc = s => String(s ?? '').replace(/[&<>"]/g,
+            c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+        // Расчёт ищем по номеру: его калькулятор кладёт в архив вместе с разбором.
+        const estimates = (this.adminData && this.adminData.recentEstimates) || [];
+        const byCalcId = {};
+        estimates.forEach(e => {
+            const cid = e.calc_id || (e.calc_data && e.calc_data.calc_id);
+            if (cid) byCalcId[String(cid)] = e;
+        });
+
+        const thStyle = 'padding:10px 8px; text-align:left; font-size:11px; text-transform:uppercase; color:var(--text-sec); border-bottom:1px solid var(--border);';
+        const tdStyle = 'padding:9px 8px; border-bottom:1px solid var(--border); font-size:12.5px; vertical-align:top;';
+        const num = (v) => (v === null || v === undefined) ? '—' : v;
+        const mb = (bytes) => bytes ? (bytes / 1048576).toFixed(1) + ' МБ' : '0 МБ';
+
+        // Группировка по монтажнику: в таблице сначала одна строка на человека,
+        // список его распознаваний раскрывается по клику. Так видно, кто
+        // пользуется инструментом, а не бесконечная лента загрузок.
+        const open = this._recognitionOpen || {};
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+
+        const groups = new Map();
+        rows.forEach(r => {
+            const key = r.user || 'без имени';
+            if (!groups.has(key)) groups.set(key, { key, rows: [], month: 0, last: null, bytes: 0 });
+            const g = groups.get(key);
+            g.rows.push(r);
+            g.bytes += (r.bytes || 0);
+            const when = r.savedAt ? new Date(r.savedAt) : null;
+            if (when && !isNaN(when)) {
+                if (when >= monthStart) g.month++;
+                if (!g.last || when > g.last) g.last = when;
+            }
+        });
+        const sorted = [...groups.values()].sort((a, b) => (b.last || 0) - (a.last || 0));
+
+        const limitsCfg = this._adminRecognitionLimits || { default: 50, limits: {} };
+        const picked = this._recognitionPicked || {};
+        const fmtDate = (d) => d && !isNaN(d)
+            ? d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+            : '—';
+
+        const body = sorted.map((g, gi) => {
+            const isOpen = !!open[g.key];
+            // Персональный лимит перекрывает общий; у админов лимита нет вовсе.
+            const personal = limitsCfg.limits[g.key];
+            const limit = personal === undefined ? limitsCfg.default : personal;
+            const left = Math.max(0, limit - g.month);
+            const leftColor = left === 0 ? '#EF4444' : (left <= 5 ? '#F59E0B' : 'var(--text-sec)');
+            const keyEsc = esc(g.key).replace(/'/g, "\\'");
+
+            const pickedAll = g.rows.length && g.rows.every(r => picked[r.json]);
+            const head = `<tr style="cursor:pointer; background:var(--surface-light);"
+                    onclick="app.toggleRecognitionUser('${keyEsc}')">
+                <td style="${tdStyle}">
+                    <input type="checkbox" ${pickedAll ? 'checked' : ''} title="Отметить все распознавания монтажника"
+                           onclick="event.stopPropagation(); app.toggleRecognitionPickUser('${keyEsc}')">
+                </td>
+                <td style="${tdStyle} color:var(--text-sec);">${gi + 1}</td>
+                <td style="${tdStyle}"><b>${isOpen ? '▾' : '▸'} ${esc(g.key)}</b></td>
+                <td style="${tdStyle} white-space:nowrap;">распознаваний: <b>${g.rows.length}</b>
+                    <button class="row-icon-btn" title="Изменить месячный лимит распознаваний"
+                            style="display:inline-flex; vertical-align:middle; padding:2px 4px;"
+                            onclick="event.stopPropagation(); app.setRecognitionLimit('${keyEsc}')">✏️</button></td>
+                <td style="${tdStyle} white-space:nowrap;">${g.bytes ? mb(g.bytes) : '—'}</td>
+                <td style="${tdStyle} text-align:center;" colspan="3">
+                    за месяц: <b>${g.month}</b> из ${limit}${personal !== undefined ? ' (свой)' : ''} ·
+                    <span style="color:${leftColor};">осталось ${left}</span></td>
+                <td style="${tdStyle} white-space:nowrap;">${fmtDate(g.last)}</td>
+                <td style="${tdStyle}"></td>
+            </tr>`;
+
+            if (!isOpen) return head;
+
+            const items = g.rows.map((r, i) => {
+                const when = r.savedAt ? new Date(r.savedAt) : null;
+
+                // Оригинал сметы и её разбор. Открываем через fetch с токеном
+                // сессии (см. openRecognitionFile), поэтому это кнопки-ссылки,
+                // а не обычные href: заголовок авторизации в href не положишь.
+                const link = (rel, text, color) =>
+                    `<a href="#" onclick="event.preventDefault(); app.openRecognitionFile('${esc(rel)}')" style="color:${color};">${esc(text)}</a>`;
+                const originals = (r.files || []).map(f => link(f, f.split('/').pop(), 'var(--primary)'));
+                if (r.json) originals.push(link(r.json, 'разбор', 'var(--text-sec)'));
+
+                const est = r.calcId ? byCalcId[String(r.calcId)] : null;
+                const openBtn = est
+                    ? `<button class="row-icon-btn" onclick="app.viewAdminEstimate('${est.id}')" title="Открыть расчёт">📂 Открыть</button>`
+                    : `<span style="color:var(--text-sec);" title="${r.calcId ? 'Расчёт № ' + esc(r.calcId) + ' не найден среди сохранённых' : 'Номер расчёта не сохранён'}">—</span>`;
+
+                return `<tr${picked[r.json] ? ' style="background:var(--primary-light);"' : ''}>
+                    <td style="${tdStyle}">
+                        <input type="checkbox" ${picked[r.json] ? 'checked' : ''}
+                               onclick="app.toggleRecognitionPick('${esc(r.json)}')">
+                    </td>
+                    <td style="${tdStyle} color:var(--text-sec);">${gi + 1}.${i + 1}</td>
+                    <td style="${tdStyle}">${r.projectName ? esc(r.projectName) : '<span style="color:var(--text-sec);">без названия</span>'}</td>
+                    <td style="${tdStyle}">${originals.join('<br>') || '—'}
+                        ${r.fileName ? `<div style="color:var(--text-sec); font-size:11px;">${esc(r.fileName)}</div>` : ''}</td>
+                    <td style="${tdStyle} white-space:nowrap;">${r.bytes ? mb(r.bytes) : '—'}</td>
+                    <td style="${tdStyle} text-align:center;">${num(r.recognized)}</td>
+                    <td style="${tdStyle} text-align:center;">${num(r.applied)}${
+                        r.mode === 'new' ? '<div style="color:var(--text-sec); font-size:11px;">новая смета</div>' : ''}</td>
+                    <td style="${tdStyle} text-align:center;">${num(r.replaced)}</td>
+                    <td style="${tdStyle} white-space:nowrap;">${fmtDate(when)}</td>
+                    <td style="${tdStyle} text-align:right;">${openBtn}</td>
+                </tr>`;
+            }).join('');
+
+            return head + items;
+        }).join('');
+
+        // Панель диска. Размер архива считается по файлам, диск хостинга —
+        // общий раздел сервера Beget, поэтому подписаны они по-разному.
+        const st = this._adminRecognitionStats;
+        const diskHtml = st ? `
+            <div style="display:flex; gap:18px; flex-wrap:wrap; align-items:center; padding:10px 12px; margin-bottom:14px;
+                        background:var(--surface-light); border:1px solid var(--border); border-radius:10px; font-size:12.5px;">
+                <span>Архив занимает <b>${mb(st.originalsBytes + st.jsonBytes)}</b></span>
+                <span style="color:var(--text-sec);">файлы смет: ${st.originals} шт, ${mb(st.originalsBytes)}</span>
+                <span style="color:var(--text-sec);">разборы: ${st.jsons} шт, ${mb(st.jsonBytes)}</span>
+                ${st.diskFree ? `<span style="color:var(--text-sec);">свободно на диске: ${(st.diskFree / 1073741824).toFixed(1)} ГБ</span>` : ''}
+                <span style="margin-left:auto; display:flex; gap:8px;">
+                    <button class="auth-btn-base" style="height:30px; padding:0 12px; font-size:12px;"
+                            title="Удалить фотографии и PDF старше 90 дней. Разборы останутся, записи из таблицы не исчезнут"
+                            onclick="app.purgeRecognitionFiles('originals', 90)">Очистить файлы старше 90 дней</button>
+                    <button class="auth-btn-base" style="height:30px; padding:0 12px; font-size:12px;"
+                            title="Удалить все загруженные файлы. Разборы и статистика останутся"
+                            onclick="app.purgeRecognitionFiles('originals', 0)">Очистить все файлы</button>
+                </span>
+            </div>` : '';
+
+        // Панель действий появляется только когда есть что удалять — пустая
+        // строка кнопок над таблицей ничего не поясняет и лишь занимает место.
+        const pickedCount = Object.keys(picked).length;
+        const pickedHtml = pickedCount ? `
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:9px 12px; margin-bottom:12px;
+                        background:var(--primary-light); border:1px solid var(--primary); border-radius:10px; font-size:12.5px;">
+                <b>Выбрано: ${pickedCount}</b>
+                <button class="auth-btn-base" style="height:30px; padding:0 12px; font-size:12px;"
+                        title="Освободить диск: фотографии и PDF удаляются, записи с разбором и счётчиками остаются в истории"
+                        onclick="app.deleteRecognitionPicked('originals')">Удалить только файлы</button>
+                <button class="delete-icon-btn" style="height:30px; padding:0 12px; font-size:12px;"
+                        title="Удалить и файлы, и сами записи: они пропадут из истории вместе с израсходованным лимитом"
+                        onclick="app.deleteRecognitionPicked('all')">Удалить файлы и записи</button>
+                <button class="auth-btn-base" style="height:30px; padding:0 12px; font-size:12px; margin-left:auto;"
+                        onclick="app.clearRecognitionPicks()">Снять выделение</button>
+            </div>` : '';
+
+        root.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                <h3 style="margin:0; color:var(--text-main);">🔍 Распознавание смет</h3>
+                <span style="color:var(--text-sec); font-size:12.5px;">монтажников: ${sorted.length} · записей: ${rows.length}</span>
+                <button class="auth-btn-base" style="margin-left:auto; height:30px; padding:0 12px; font-size:12px;"
+                        onclick="app.renderAdminRecognition()">Обновить</button>
+            </div>
+            ${diskHtml}
+            ${pickedHtml}
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead><tr>
+                        <th style="${thStyle} width:34px;"></th>
+                        <th style="${thStyle}">#</th>
+                        <th style="${thStyle}">Монтажник / объект</th>
+                        <th style="${thStyle}">Загруженные файлы</th>
+                        <th style="${thStyle}">Размер</th>
+                        <th style="${thStyle} text-align:center;">Распознано</th>
+                        <th style="${thStyle} text-align:center;">Добавлено</th>
+                        <th style="${thStyle} text-align:center;">Заменено</th>
+                        <th style="${thStyle}">Дата</th>
+                        <th style="${thStyle} text-align:right;">Расчёт</th>
+                    </tr></thead>
+                    <tbody>${body || `<tr><td colspan="10" style="text-align:center; padding:30px; color:var(--text-sec);">Распознаваний пока нет.</td></tr>`}</tbody>
+                </table>
+            </div>`;
+    },
+
+    /** Снять все отметки, не трогая ничего в архиве. */
+    clearRecognitionPicks: function () {
+        this._recognitionPicked = {};
+        this.renderAdminRecognitionBody();
+    },
+
+    /**
+     * Списки доступа к распознаванию (кто и какие регионы включены).
+     *
+     * Читаются один раз на открытие админки: таблица пользователей рисуется
+     * синхронно, ждать сеть на каждой строке нельзя.
+     */
+    loadRecognitionAccess: async function () {
+        try {
+            const r = await fetch(`${this.RECOGNIZE_ARCHIVE}?access=1`);
+            const data = await r.json();
+            if (data && data.ok) this._recognitionAccess = { users: data.users || {}, regions: data.regions || {} };
+        } catch (e) {
+            console.warn('[доступ] списки не получены:', e.message);
+        }
+        return this._recognitionAccess || { users: {}, regions: {} };
+    },
+
+    /** Логин, под которым распознавания монтажника попадают в архив. */
+    recognitionUserKey: function (u) {
+        return (u.email || u.username || '').trim();
+    },
+
+    /**
+     * Ячейка столбца «Распознавание» в таблице пользователей.
+     *
+     * Обычный переключатель, а не кнопка: он реагирует на клик мгновенно,
+     * своей анимацией, не дожидаясь ответа сервера и перерисовки таблицы.
+     */
+    recognitionAccessCell: function (u, isViewer) {
+        const acc = this._recognitionAccess || { users: {}, regions: {} };
+        const key = this.recognitionUserKey(u);
+        const region = u.region || '';
+
+        // Администраторам инструмент доступен по должности, включать нечего.
+        if (['admin', 'viewer'].includes(u.account_type)) {
+            return `<span style="font-size:10px; color:var(--text-sec);" title="Администраторам распознавание доступно всегда">по роли</span>`;
+        }
+        if (!key) {
+            return `<span style="font-size:10px; color:var(--text-sec);" title="Нет email или логина — доступ включать не по чему">—</span>`;
+        }
+
+        const byUser = Object.keys(acc.users).some(x => String(x).toLowerCase() === key.toLowerCase());
+        const byRegion = !!(region && acc.regions[region]);
+        const on = byUser || byRegion;
+
+        const label = byRegion && !byUser ? 'по региону' : (on ? 'включено' : 'выключено');
+        const title = byRegion && !byUser
+            ? `Открыто всему региону «${region}». Переключатель включит доступ лично`
+            : 'Доступ монтажника к распознаванию смет';
+        const keyEsc = key.replace(/'/g, "\\'");
+        const cellId = 'rec_acc_' + String(u.id).replace(/[^a-zA-Z0-9_-]/g, '');
+
+        return `<div style="display:flex; flex-direction:column; align-items:center; gap:3px;" title="${title}">
+            <label class="switch">
+                <input type="checkbox" ${on ? 'checked' : ''} ${isViewer ? 'disabled' : ''}
+                       onchange="app.toggleRecognitionAccess('${keyEsc}', this.checked, this, '${cellId}')">
+                <span class="slider"></span>
+            </label>
+            <span id="${cellId}" style="font-size:9.5px; color:${on ? '#10B981' : 'var(--text-sec)'};">${label}</span>
+        </div>`;
+    },
+
+    /**
+     * Включение и выключение распознавания конкретному монтажнику.
+     *
+     * Переключатель уже перешёл в новое положение — здесь только сохранение.
+     * Таблицу не перерисовываем: перерисовка сбрасывала бы анимацию и на
+     * секунду возвращала переключатель в прежнее состояние, из-за чего
+     * казалось, что нажатие не сработало. Если сервер откажет — вернём сами.
+     */
+    toggleRecognitionAccess: async function (key, enabled, input, cellId) {
+        const labelEl = cellId ? document.getElementById(cellId) : null;
+        const setLabel = (text, color) => {
+            if (!labelEl) return;
+            labelEl.textContent = text;
+            labelEl.style.color = color;
+        };
+        setLabel(enabled ? 'включено' : 'выключено', enabled ? '#10B981' : 'var(--text-sec)');
+
+        const headers = await this.recognitionAuthHeaders();
+        if (!headers) {
+            if (input) input.checked = !enabled;
+            setLabel(!enabled ? 'включено' : 'выключено', !enabled ? '#10B981' : 'var(--text-sec)');
+            app.alert('Сессия истекла — обновите страницу.');
+            return;
+        }
+        try {
+            const r = await fetch(this.RECOGNIZE_ARCHIVE, {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+                body: JSON.stringify({ action: 'setAccess', kind: 'user', name: key, enabled }),
+            });
+            const data = await r.json();
+            if (!data.ok) throw new Error(data.error || 'сервер отказал');
+            this._recognitionAccess = { users: data.users || {}, regions: data.regions || {} };
+        } catch (e) {
+            if (input) input.checked = !enabled;
+            setLabel(!enabled ? 'включено' : 'выключено', !enabled ? '#10B981' : 'var(--text-sec)');
+            app.alert('Не удалось изменить доступ: ' + e.message);
+        }
+    },
+
+    /**
+     * Включение распознавания целому региону.
+     *
+     * Регион берётся из фильтра над таблицей: он же и определяет, кого видно,
+     * поэтому «включить региону» читается однозначно.
+     */
+    toggleRegionRecognition: async function (enabled) {
+        const region = (document.getElementById('admin_filter_region') || {}).value || '';
+        if (!region) { app.alert('Сначала выберите регион в фильтре над таблицей.'); return; }
+        if (!await this.confirm(`${enabled ? 'Включить' : 'Выключить'} распознавание для региона «${region}»?`)) return;
+
+        const headers = await this.recognitionAuthHeaders();
+        if (!headers) { app.alert('Сессия истекла — обновите страницу.'); return; }
+        try {
+            const r = await fetch(this.RECOGNIZE_ARCHIVE, {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+                body: JSON.stringify({ action: 'setAccess', kind: 'region', name: region, enabled }),
+            });
+            const data = await r.json();
+            if (!data.ok) throw new Error(data.error || 'сервер отказал');
+            this._recognitionAccess = { users: data.users || {}, regions: data.regions || {} };
+            this.loadAdminData(this._adminOffset || 0);
+        } catch (e) {
+            app.alert('Не удалось изменить доступ региона: ' + e.message);
+        }
+    },
+
     renderAdminEquipment: async function () {
         const content = document.getElementById('admin_content');
         if (!content) return;
@@ -13117,6 +13825,33 @@ const app = {
             linkPprAlts(catalog.ppr_ekoplastik_adapter_mi, catalog.ppr_proaqua_adapter_mi, extFiMi);
             linkPprAlts(catalog.ppr_ekoplastik_coupling, catalog.ppr_proaqua_coupling, ext1);
             linkPprAlts(catalog.ppr_ekoplastik_coupling_red, catalog.ppr_proaqua_coupling_red, extRed);
+        }
+
+        // Шаровые краны: альтернативы — все исполнения того же размера.
+        // Монтажник пишет «кран 3/4» и уже на экране решает, какой именно:
+        // ВР/ВР, ВР/НР, НР/НР, с американкой или угловой с американкой.
+        // ROMMER-версия у каждого своя (поле .rommer), её подставляет «Аналог».
+        {
+            const valvePools = [catalog.ball_valves, catalog.dhw_fittings, catalog.water_parts]
+                .filter(Boolean);
+            const valveThread = (name) => {
+                const m = String(name || '').match(/(\d\s+\d\/\d|\d\/\d|\d)\s*(?:''|"|”)/);
+                return m ? m[1].replace(/\s+/g, ' ') : null;
+            };
+            const byThread = {};
+            for (const pool of valvePools) {
+                for (const it of pool) {
+                    if (!it || !/кран шаровой/i.test(it.name || '')) continue;
+                    const th = valveThread(it.name);
+                    if (!th) continue;
+                    (byThread[th] = byThread[th] || []).push(it);
+                }
+            }
+            for (const th in byThread) {
+                const group = byThread[th];
+                if (group.length < 2) continue;
+                group.forEach(it => { it.alts = group; });
+            }
         }
 
         if (catalog.manifolds_rad && catalog.manifolds_chrome_blocks) {
@@ -20913,10 +21648,23 @@ const app = {
                     let sec = eq.section || '9. Дополнительные материалы';
                     if (sec === '9. Своё оборудование') sec = '9. Дополнительные материалы';
                     if (sec === title) {
+                        // Распознанная позиция с артикулом — это та же позиция
+                        // каталога, поэтому забираем с неё аналоги и ROMMER-версию:
+                        // без них у строки не появлялась кнопка замены, хотя для
+                        // такой же позиции, подобранной калькулятором, она есть.
+                        const base = eq.article ? this.findCatalogItemById(eq.article) : null;
                         addToBill({
                             id: eq.id, name: eq.name, price: eq.price, brand: eq.brand || ' ',
                             // Метка распознавания и артикул должны дожить до строки таблицы.
                             recognized: eq.recognized, article: eq.article,
+                            // Своё оборудование живёт под служебным id ('rec_…', 'user_…'),
+                            // а картинка лежит под артикулом каталога. Поэтому для фото
+                            // передаём артикул отдельно — иначе у распознанных позиций
+                            // с известным артикулом фото не показывалось.
+                            imgId: eq.article || undefined,
+                            alts: base ? base.alts : undefined,
+                            rommer: base ? base.rommer : undefined,
+                            unit: base ? base.unit : undefined,
                         }, eq.q, eq.desc || '');
                     }
                 });
@@ -20982,6 +21730,31 @@ const app = {
                 });
             }
 
+            // Порядок строк: подразделы идут подряд, а внутри каждого — от дорогих
+            // позиций к дешёвым. Так смета читается сверху вниз по значимости:
+            // сначала оборудование, определяющее сумму, потом мелочёвка.
+            // Сортируем ДО currentEquipmentList, чтобы тот же порядок ушёл в КП и печать.
+            const _byPriceDesc = (a, b) => (b.price || 0) - (a.price || 0) || (b.sum || 0) - (a.sum || 0);
+            if (!forceMerge) {
+                bill.sort((a, b) => {
+                    let gA = a.group || "";
+                    let gB = b.group || "";
+                    // Позиция без подраздела принадлежит самому разделу, поэтому идёт
+                    // ПЕРЕД подразделами. Раньше такие строки уходили в конец и
+                    // оказывались под последним заголовком подраздела: распознанные
+                    // радиаторы визуально попадали в «3.3. Трубы отопления», хотя
+                    // раздел у них — «3. Приборы отопления». Заодно это возвращает
+                    // задуманный порядок самого калькулятора: приборы отопления
+                    // сортируются по мощности и кладутся в начало раздела.
+                    if (!gA && gB) return -1;
+                    if (gA && !gB) return 1;
+                    const byGroup = gA.localeCompare(gB, 'ru');
+                    return byGroup !== 0 ? byGroup : _byPriceDesc(a, b);
+                });
+            } else {
+                bill.sort(_byPriceDesc);
+            }
+
             // Сохраняем элементы для коммерческого предложения клиенту
             bill.forEach(i => {
                 this.currentEquipmentList.push({
@@ -21010,16 +21783,6 @@ const app = {
             });
 
             // Сортируем bill по группе, чтобы одинаковые группы шли подряд и не дублировались заголовки
-            if (!forceMerge) {
-                bill.sort((a, b) => {
-                    let gA = a.group || "";
-                    let gB = b.group || "";
-                    if (!gA && gB) return 1;  // Пустые группы в конец
-                    if (gA && !gB) return -1; // Непустые группы в начало
-                    return gA.localeCompare(gB, 'ru');
-                });
-            }
-
             // Считаем сумму оборудования всегда
             let localSecTotal = 0;
             bill.forEach(i => { let lookupId = i.originalId || i.id; if (!this.state.optItems[lookupId]) localSecTotal += i.sum; });
@@ -21158,7 +21921,9 @@ const app = {
                 let qtyOpen = !!(this._qtyOpenIds && this._qtyOpenIds[lookupId]);
                 let qtyEditable = `<span class="qty-step" onclick="event.stopPropagation(); app.stepQty('${lookupId}', -1, ${i.q})">−</span><input type="number" class="qty-num-input" min="0" value="${i.q}" onclick="event.stopPropagation(); app.revealQty('${lookupId}')" onchange="event.stopPropagation(); app.setQty('${lookupId}', this.value)" onkeydown="if(event.key==='Enter') this.blur();"><span class="qty-step" onclick="event.stopPropagation(); app.stepQty('${lookupId}', 1, ${i.q})">+</span>`;
                 let qHtml = `<div class="qty-wrap${qtyOpen ? ' qty-open' : ''}">${qtyEditable}${tipHtml} <span class="opt-btn" onclick="event.stopPropagation(); app.toggleOpt('${lookupId}')" title="${!isOpt ? 'Удалить позицию' : 'Добавить позицию'}">${!isOpt ? '<span style="color:#EF4444; font-weight:bold; font-size:14px; line-height:1;">✖</span>' : '➕'}</span></div>`;
-                let imgContent = getImg(i);
+                // imgId — артикул каталога у позиций со служебным id (распознанное,
+                // своё оборудование). Файл фото лежит именно под артикулом.
+                let imgContent = getImg(i.imgId ? { ...i, id: i.imgId } : i);
                 // Канализация: у позиций подраздела (i.group вида "8.N. ...") нет своего .alts —
                 // альтернатива есть только через .rommer/ANALOG_MAP (Sinikon Economy). Замена по
                 // клику на такую позицию меняет не саму позицию, а весь её подраздел разом (см.

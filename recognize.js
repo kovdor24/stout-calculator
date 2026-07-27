@@ -14,6 +14,8 @@ const RecognizeUI = {
 
     PROXY: 'https://proxy.heatcalc.ru/gemini_proxy.php',
 
+    ADD_HINT: 'Добавить ещё файлы для распознавания: фото, PDF, Excel, Word или HTML',
+
     // Отдельного списка админов здесь нет намеренно: он уже есть в
     // app.getAdminRole(), который смотрит и в _currentUserRow, и в
     // state.tgUser. Дубль приводил к тому, что «Админка» была видна,
@@ -25,6 +27,11 @@ const RecognizeUI = {
     _catIndex: null,
     _busy: false,
 
+    // Кому открыто распознавание: списки приходят с сервера один раз при
+    // запуске (loadAccess) и лежат здесь, потому что isAllowed() вызывается
+    // на каждой отрисовке и ждать сеть не может.
+    _access: null,
+
     isAllowed() {
         if (typeof app === 'undefined') return false;
         // Отладочный ключ: ?recognize=1 показывает кнопку без проверки роли.
@@ -33,7 +40,32 @@ const RecognizeUI = {
         try {
             if (new URLSearchParams(location.search).get('recognize') === '1') return true;
         } catch (e) { /* location недоступен — не мешаем работе */ }
-        return typeof app.hasAdminAccess === 'function' && app.hasAdminAccess();
+
+        if (typeof app.hasAdminAccess === 'function' && app.hasAdminAccess()) return true;
+
+        // Монтажнику инструмент открывает администратор — поимённо либо
+        // сразу всему региону.
+        const acc = this._access;
+        if (!acc) return false;
+        const row = app._currentUserRow || {};
+        const login = (row.email || row.username || '').toLowerCase();
+        const region = row.region || '';
+        if (login && Object.keys(acc.users || {}).some(u => String(u).toLowerCase() === login)) return true;
+        return !!(region && acc.regions && acc.regions[region]);
+    },
+
+    /** Загрузка списков доступа. Молча пропускаем сбой: без списков — как раньше. */
+    async loadAccess() {
+        try {
+            const r = await fetch('https://proxy.heatcalc.ru/recognize_archive.php?access=1');
+            const data = await r.json();
+            if (data && data.ok) {
+                this._access = { users: data.users || {}, regions: data.regions || {} };
+                this.syncButton();
+            }
+        } catch (e) {
+            console.warn('Списки доступа к распознаванию не получены:', e.message);
+        }
     },
 
     /** Показ вкладки. Вызывается из app.syncUI() при каждой отрисовке. */
@@ -164,22 +196,28 @@ const RecognizeUI = {
             <div class="rec-drop-t">Перетащите смету сюда</div>
             <div class="rec-drop-s">фото, PDF, Excel, Word или HTML · или нажмите для выбора · или вставьте скриншот через Ctrl+V</div>
           </div>
-          <img id="rec_prev" class="rec-prev" alt="">
+          <div class="rec-prev-row" id="rec_prev_wrap">
+            <div class="rec-prev-wrap">
+              <img id="rec_prev" class="rec-prev" alt="">
+              <button class="rec-prev-del" title="Убрать файл"
+                      onclick="RecognizeUI.clearFile()">✕</button>
+            </div>
+            <button class="rec-add-tile" title="${this.ADD_HINT}"
+                    onclick="RecognizeUI.pickMore()">+</button>
+          </div>
           <div class="rec-actions">
-            <button class="calc-dialog-btn calc-dialog-btn-confirm" id="rec_go" disabled>Распознать</button>
+            <button class="calc-dialog-btn calc-dialog-btn-confirm" id="rec_go"
+                    style="display:none" disabled>Распознать</button>
             <span class="rec-status" id="rec_status">Фото и сканы, а также PDF, Excel, Word, HTML</span>
+            <span class="rec-status" id="rec_quota" style="margin-left:auto"></span>
           </div>`;
 
-        const drop = document.getElementById('rec_drop');
-        const inp = document.createElement('input');
-        inp.type = 'file';
-        inp.accept = (typeof RecognizeFiles !== 'undefined') ? RecognizeFiles.ACCEPT : 'image/*';
-        inp.multiple = true;   // многостраничная смета — несколько фото сразу
-        inp.style.display = 'none';
-        document.body.appendChild(inp);
+        // Остаток на месяц подтягиваем сразу: лучше увидеть его до того,
+        // как монтажник сфотографировал и загрузил смету.
+        this.showQuota();
 
-        drop.onclick = () => inp.click();
-        inp.onchange = e => { if (e.target.files.length) this.handleFiles([...e.target.files]); inp.remove(); };
+        const drop = document.getElementById('rec_drop');
+        drop.onclick = () => this.pickFiles(files => this.handleFiles(files));
         drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
         drop.ondragleave = () => drop.classList.remove('over');
         drop.ondrop = e => {
@@ -189,6 +227,131 @@ const RecognizeUI = {
             if (files.length) this.handleFiles(files);
         };
         document.getElementById('rec_go').onclick = () => this.run();
+    },
+
+    /** Диалог выбора файлов. Поле одноразовое: создали, спросили, убрали. */
+    pickFiles(onPicked) {
+        const inp = document.createElement('input');
+        inp.type = 'file';
+        inp.accept = (typeof RecognizeFiles !== 'undefined') ? RecognizeFiles.ACCEPT : 'image/*';
+        inp.multiple = true;   // многостраничная смета — несколько фото сразу
+        inp.style.display = 'none';
+        document.body.appendChild(inp);
+        inp.onchange = e => {
+            const files = [...e.target.files];
+            inp.remove();
+            if (files.length) onPicked(files);
+        };
+        inp.click();
+    },
+
+    /** Докладываем листы к уже загруженным, не начиная заново. */
+    pickMore() {
+        this.pickFiles(files => this.addSheets(files));
+    },
+
+    /**
+     * Добавление листов к уже загруженным.
+     *
+     * Один загруженный лист при этом переезжает в общий список: разницы между
+     * «первым» и «дослатым» листом нет, все они страницы одной сметы.
+     */
+    async addSheets(files) {
+        const start = this._imgs && this._imgs.length ? this._imgs.slice() : (this._img ? [this._img] : []);
+        const added = [];
+        let skipped = 0;
+
+        this.setGoReady(false);
+
+        for (const f of files) {
+            const kind = RecognizeFiles ? RecognizeFiles.kindOf(f) : 'image';
+            this.setStatus(`Готовлю лист ${start.length + added.length + 1}…`);
+
+            if (kind === 'image') {
+                const b = await this.prepareToBase64(f);
+                if (b) added.push(b); else skipped++;
+                continue;
+            }
+
+            // Документ дослать листом можно только картинками: текст и фото
+            // в одном запросе не соединить, а сканы страниц — те же листы.
+            try {
+                const r = await RecognizeFiles.extract(f, (m) => this.setStatus(m));
+                if (r.images && r.images.length) added.push(...r.images);
+                else skipped++;
+            } catch (e) {
+                skipped++;
+            }
+        }
+
+        if (!added.length) {
+            this.setGoReady(!!(start.length));
+            this.setStatus(skipped
+                ? 'Дослать листом можно фото или скан. Файл с текстом распознаётся отдельно — уберите загруженное и выберите его.'
+                : 'Ничего не добавлено.');
+            return;
+        }
+
+        this._imgs = start.concat(added);
+        this._img = null;
+        this._text = '';
+        this._fileKind = 'image';
+        this._fileName = `${this._imgs.length} листов`;
+
+        const tp = document.getElementById('rec_textprev');
+        if (tp) tp.style.display = 'none';
+        this.showImagesPreview();
+        this.setGoReady(true);
+
+        const dups = this.duplicates().size;
+        this.setStatus(`${this._imgs.length} листов готовы — можно распознавать все вместе` +
+            (skipped ? ` · не удалось добавить: ${skipped}` : '') +
+            (dups ? ` · повторов: ${dups}` : ''));
+    },
+
+    /** Удаление листа из набора по крестику на миниатюре. */
+    removeSheet(i) {
+        if (!this._imgs) return;
+        this._imgs.splice(i, 1);
+        if (!this._imgs.length) { this.clearFile(); return; }
+        this._fileName = `${this._imgs.length} листов`;
+        this.showImagesPreview();
+        this.setStatus(`${this._imgs.length} ${this._imgs.length === 1 ? 'лист готов' : 'листов готовы'} — можно распознавать`);
+    },
+
+    /** Сброс загруженного: вернуться к пустой зоне и выбрать другой файл. */
+    clearFile() {
+        this._img = null;
+        this._imgs = null;
+        this._file = null;
+        this._text = '';
+        this._fileName = '';
+        this._fileKind = null;
+
+        const wrap = document.getElementById('rec_prev_wrap');
+        if (wrap) wrap.style.display = 'none';
+        const box = document.getElementById('rec_imgs');
+        if (box) box.style.display = 'none';
+        const dup = document.getElementById('rec_dup');
+        if (dup) dup.remove();
+        const tp = document.getElementById('rec_textprev');
+        if (tp) tp.style.display = 'none';
+        const err = document.querySelector('#rec_body .rec-err');
+        if (err) err.remove();
+        this.setGoReady(false);
+        this.setStatus('Фото и сканы, а также PDF, Excel, Word, HTML');
+    },
+
+    /**
+     * Кнопка «Распознать» показывается только когда есть что распознавать:
+     * пустая неактивная кнопка на чистом экране лишь предлагает нажать на то,
+     * что нажать нельзя.
+     */
+    setGoReady(ready) {
+        const go = document.getElementById('rec_go');
+        if (!go) return;
+        go.style.display = ready ? '' : 'none';
+        go.disabled = !ready;
     },
 
     /**
@@ -223,8 +386,7 @@ const RecognizeUI = {
             this._files = images;
             this._fileKind = 'image';
             this._fileName = `${images.length} листов`;
-            const go = document.getElementById('rec_go');
-            if (go) go.disabled = true;
+            this.setGoReady(false);
             const tp = document.getElementById('rec_textprev');
             if (tp) tp.style.display = 'none';
             for (let i = 0; i < images.length; i++) {
@@ -232,7 +394,7 @@ const RecognizeUI = {
                 this._imgs.push(await this.prepareToBase64(images[i]));
             }
             this.showImagesPreview();
-            if (go) go.disabled = false;
+            this.setGoReady(true);
             this.setStatus(`${images.length} листов готовы — можно распознавать все вместе`);
             return;
         }
@@ -259,8 +421,8 @@ const RecognizeUI = {
 
     /** Ряд миниатюр загруженных листов. */
     showImagesPreview() {
-        const prev = document.getElementById('rec_prev');
-        if (prev) prev.style.display = 'none';
+        const wrap = document.getElementById('rec_prev_wrap');
+        if (wrap) wrap.style.display = 'none';
         let box = document.getElementById('rec_imgs');
         if (!box) {
             box = document.createElement('div');
@@ -270,10 +432,73 @@ const RecognizeUI = {
             const actions = host && host.querySelector('.rec-actions');
             if (actions) host.insertBefore(box, actions); else if (host) host.appendChild(box);
         }
-        box.innerHTML = (this._imgs || []).map((b, i) =>
-            `<div class="rec-thumb"><img src="data:image/jpeg;base64,${b}" alt="лист ${i + 1}"><span>${i + 1}</span></div>`
-        ).join('');
+        const dups = this.duplicates();
+        box.innerHTML = (this._imgs || []).map((b, i) => {
+            const first = dups.get(i);
+            return `<div class="rec-thumb${first === undefined ? '' : ' dup'}"${
+                first === undefined ? '' : ` title="Тот же лист, что и №${first + 1}"`}>
+               <img src="data:image/jpeg;base64,${b}" alt="лист ${i + 1}"><span>${i + 1}</span>
+               ${first === undefined ? '' : '<em class="rec-dup-tag">дубль</em>'}
+               <button class="rec-thumb-del" title="Убрать лист"
+                       onclick="RecognizeUI.removeSheet(${i})">✕</button></div>`;
+        }).join('') +
+            `<button class="rec-add-tile" title="${this.ADD_HINT}"
+                     onclick="RecognizeUI.pickMore()">+</button>`;
         box.style.display = 'flex';
+        this.showDupNote(dups, box);
+    },
+
+    /**
+     * Поиск повторно загруженных листов.
+     *
+     * Сравниваем подготовленные картинки: один и тот же файл после ужатия
+     * даёт байт в байт одинаковый base64, а разные снимки одной бумаги —
+     * нет. Так дубль ловится независимо от имени файла.
+     *
+     * Возвращает Map: индекс повтора -> индекс первого такого же листа.
+     */
+    duplicates() {
+        const seen = new Map();
+        const dups = new Map();
+        (this._imgs || []).forEach((b, i) => {
+            if (!b) return;
+            // Ключ короткий, чтобы не гонять мегабайтные строки в хэш,
+            // а полное сравнение делается только при совпадении ключа.
+            const key = b.length + ':' + b.slice(0, 48) + b.slice(-48);
+            const first = seen.get(key);
+            if (first !== undefined && this._imgs[first] === b) dups.set(i, first);
+            else if (first === undefined) seen.set(key, i);
+        });
+        return dups;
+    },
+
+    /** Предупреждение о дублях с кнопкой «убрать повторы». */
+    showDupNote(dups, box) {
+        let note = document.getElementById('rec_dup');
+        if (!dups.size) { if (note) note.remove(); return; }
+
+        if (!note) {
+            note = document.createElement('div');
+            note.id = 'rec_dup';
+            note.className = 'rec-dupnote';
+            box.parentNode.insertBefore(note, box.nextSibling);
+        }
+        const list = [...dups.entries()]
+            .map(([i, first]) => `лист ${i + 1} = лист ${first + 1}`).join(', ');
+        note.innerHTML = `<span>Похоже, один и тот же файл загружен дважды: ${list}.
+            Дубли подсвечены — распознавать их повторно не нужно.</span>
+          <button class="rec-btn-g" onclick="RecognizeUI.removeDuplicates()">Убрать повторы (${dups.size})</button>`;
+    },
+
+    /** Удаление повторов: остаётся первый экземпляр каждого листа. */
+    removeDuplicates() {
+        const dups = this.duplicates();
+        if (!dups.size) return;
+        this._imgs = this._imgs.filter((_, i) => !dups.has(i));
+        this._fileName = `${this._imgs.length} листов`;
+        this.showImagesPreview();
+        this.setStatus(`Повторы убраны · ${this._imgs.length} ${
+            this._imgs.length === 1 ? 'лист' : 'листов'} — можно распознавать`);
     },
 
     async handleFile(file) {
@@ -284,6 +509,10 @@ const RecognizeUI = {
         this._file = file;              // держим оригинал для архива
         const oldImgs = document.getElementById('rec_imgs');
         if (oldImgs) oldImgs.style.display = 'none';
+        const oldDup = document.getElementById('rec_dup');
+        if (oldDup) oldDup.remove();
+        const oldPrev = document.getElementById('rec_prev_wrap');
+        if (oldPrev) oldPrev.style.display = 'none';
 
         if (typeof RecognizeFiles === 'undefined') { this.prepare(file); return; }
 
@@ -295,8 +524,7 @@ const RecognizeUI = {
         }
         if (kind === 'image') { this.prepare(file); return; }
 
-        const go = document.getElementById('rec_go');
-        if (go) go.disabled = true;
+        this.setGoReady(false);
 
         try {
             const r = await RecognizeFiles.extract(file, (m) => this.setStatus(m));
@@ -305,7 +533,9 @@ const RecognizeUI = {
                 // Скан в PDF: текстового слоя нет, работаем с картинкой.
                 this._img = r.images[0];
                 const prev = document.getElementById('rec_prev');
-                if (prev) { prev.src = 'data:image/jpeg;base64,' + this._img; prev.style.display = 'block'; }
+                const wrap = document.getElementById('rec_prev_wrap');
+                if (prev) prev.src = 'data:image/jpeg;base64,' + this._img;
+                if (wrap) wrap.style.display = 'flex';
                 this.setStatus(r.images.length > 1
                     ? `PDF без текста: возьму первую страницу из ${r.images.length}`
                     : 'PDF без текста — распознаю как изображение');
@@ -318,7 +548,7 @@ const RecognizeUI = {
                 this.setStatus('В файле не нашлось ни текста, ни страниц для распознавания.');
                 return;
             }
-            if (go) go.disabled = false;
+            this.setGoReady(true);
         } catch (e) {
             this.setStatus('');
             const body = document.getElementById('rec_body');
@@ -358,8 +588,8 @@ const RecognizeUI = {
 
     /** Короткий показ извлечённого текста — видно, что прочиталось. */
     showTextPreview(text) {
-        const prev = document.getElementById('rec_prev');
-        if (prev) prev.style.display = 'none';
+        const wrap = document.getElementById('rec_prev_wrap');
+        if (wrap) wrap.style.display = 'none';
         let box = document.getElementById('rec_textprev');
         if (!box) {
             box = document.createElement('pre');
@@ -388,12 +618,13 @@ const RecognizeUI = {
             this._img = url.split(',')[1];
 
             const prev = document.getElementById('rec_prev');
-            if (prev) { prev.src = url; prev.style.display = 'block'; }
+            const wrap = document.getElementById('rec_prev_wrap');
+            if (prev) prev.src = url;
+            if (wrap) wrap.style.display = 'flex';
             // Убираем текстовое превью, если до этого грузили файл с текстом.
             const tp = document.getElementById('rec_textprev');
             if (tp) tp.style.display = 'none';
-            const go = document.getElementById('rec_go');
-            if (go) go.disabled = false;
+            this.setGoReady(true);
             this.setStatus(`${c.width}×${c.height}, ~${Math.round(this._img.length / 1365)} КБ — можно распознавать`);
         };
         img.src = URL.createObjectURL(file);
@@ -476,11 +707,66 @@ const RecognizeUI = {
     // Запрос к распознаванию
     // ------------------------------------------------------------------
 
+    /** Логин, под которым распознавания попадают в архив и считается лимит. */
+    userKey() {
+        return (app._currentUserRow && (app._currentUserRow.email || app._currentUserRow.username))
+            || (app.state.tgUser && app.state.tgUser.username) || 'admin';
+    },
+
+    /**
+     * Остаток распознаваний на месяц.
+     *
+     * Запросы к языковой модели не бесплатны, поэтому у каждого монтажника
+     * свой месячный лимит (меняется в админке). Администраторов не ограничиваем:
+     * им инструмент нужен как раз для проверки и отладки распознавания.
+     *
+     * Если сервер лимитов недоступен, распознавание не блокируем — падать
+     * из-за необязательной проверки нельзя.
+     */
+    async checkQuota() {
+        if (typeof app.hasAdminAccess === 'function' && app.hasAdminAccess()) return null;
+        try {
+            const url = 'https://proxy.heatcalc.ru/recognize_archive.php?quota=1&user=' +
+                encodeURIComponent(this.userKey());
+            const r = await fetch(url);
+            const data = await r.json();
+            return data && data.ok ? data : null;
+        } catch (e) {
+            console.warn('Лимит распознаваний не проверен:', e.message);
+            return null;
+        }
+    },
+
+    /** Подпись «осталось N из M» на экране загрузки. */
+    async showQuota() {
+        const el = document.getElementById('rec_quota');
+        if (!el) return;
+        const q = await this.checkQuota();
+        if (!q) return;   // админ либо сервер лимитов промолчал
+        el.textContent = `Распознаваний в этом месяце: ${q.used} из ${q.limit}, осталось ${q.left}`;
+        if (q.left <= 3) el.style.color = q.left === 0 ? '#EF4444' : '#F59E0B';
+    },
+
     async run() {
         // Работаем либо с картинкой (фото, скан), либо с текстом (Excel, Word,
         // PDF с текстовым слоем, HTML). Что именно — определил handleFile.
         const hasImgs = this._img || (this._imgs && this._imgs.length);
         if ((!hasImgs && !this._text) || this._busy) return;
+
+        const quota = await this.checkQuota();
+        if (quota && quota.left <= 0) {
+            this.setStatus('');
+            const body = document.getElementById('rec_body');
+            if (body) {
+                const err = document.createElement('div');
+                err.className = 'rec-err';
+                err.textContent = `Распознавания на этот месяц закончились: использовано ${quota.used} из ${quota.limit}. ` +
+                    'Лимит обновится первого числа. Если нужно больше — напишите администратору.';
+                body.appendChild(err);
+            }
+            return;
+        }
+
         this._busy = true;
         const go = document.getElementById('rec_go');
         if (go) go.disabled = true;
@@ -503,7 +789,7 @@ const RecognizeUI = {
             } else {
                 parts = [
                     { text: 'Разбери эту смету по правилам. Верни только JSON.' },
-                    { inline_data: { mime_type: 'image/jpeg', data: this._img } },
+                    { inline_data: { mime_type: 'image/jpeg', data: this._img || this._imgs[0] } },
                 ];
             }
 
@@ -537,14 +823,7 @@ const RecognizeUI = {
             const text = cand?.content?.parts?.[0]?.text;
             if (!text) throw new Error('Модель вернула пустой ответ');
 
-            let parsed;
-            try {
-                parsed = JSON.parse(text);
-            } catch (e) {
-                throw new Error(cand.finishReason === 'MAX_TOKENS'
-                    ? 'Ответ обрезан по длине — попробуйте снять смету двумя фото по половине'
-                    : 'Модель вернула не-JSON: ' + e.message);
-            }
+            const parsed = this.parseModelJson(text, cand.finishReason);
 
             this.progressTo(2);
             this.startReview(parsed);
@@ -561,6 +840,134 @@ const RecognizeUI = {
         }
         this._busy = false;
         if (go) go.disabled = false;
+    },
+
+    /**
+     * Разбор ответа модели.
+     *
+     * Строгий JSON.parse здесь ломался на ровном месте: модель пишет дюймы
+     * как есть — «Кран 1/2" - 2шт», — и незакрытая кавычка внутри строки
+     * рушит весь ответ целиком. Терять из-за одной строки распознавание всей
+     * сметы нельзя, поэтому разбор идёт тремя заходами: как есть, с починкой
+     * кавычек, и по одной позиции — последнее спасает и обрезанный по длине
+     * ответ, от которого раньше не оставалось ничего.
+     */
+    parseModelJson(text, finishReason) {
+        this._parseWarning = '';   // предупреждение относится только к этому разбору
+
+        // Модель иногда заворачивает ответ в markdown-блок.
+        let src = String(text || '').trim()
+            .replace(/^```(?:json)?\s*/i, '')
+            .replace(/```\s*$/, '');
+        const first = src.indexOf('{');
+        const last = src.lastIndexOf('}');
+        if (first > 0 && last > first) src = src.slice(first, last + 1);
+
+        try {
+            return JSON.parse(src);
+        } catch (e) { /* пробуем починить */ }
+
+        const repaired = this.repairJson(src);
+        try {
+            const ok = JSON.parse(repaired);
+            console.warn('Ответ модели починен перед разбором.');
+            return ok;
+        } catch (e) { /* собираем по позициям */ }
+
+        const items = this.salvageItems(repaired);
+        if (items.length) {
+            this._parseWarning = finishReason === 'MAX_TOKENS'
+                ? `Ответ обрезан по длине — разобрано ${items.length} позиций, конец сметы мог не попасть.`
+                : `Ответ пришёл с ошибкой формата — разобрано ${items.length} позиций, часть строк могла потеряться.`;
+            return { items, skipped: [] };
+        }
+
+        throw new Error(finishReason === 'MAX_TOKENS'
+            ? 'Ответ обрезан по длине — попробуйте снять смету двумя фото по половине'
+            : 'Модель вернула не-JSON и восстановить его не удалось');
+    },
+
+    /**
+     * Починка ответа модели до валидного JSON.
+     *
+     * Модель ломает формат четырьмя способами, и все четыре встретились на
+     * реальных сметах:
+     *   «"raw": "Кран 1/2" - 2шт»  — дюймы обрывают строку;
+     *   «"thread": 3/4»            — дробь без кавычек, парсер видит число 3
+     *                                 и спотыкается о «/» (та самая ошибка
+     *                                 «Expected ',' or '}' after property value»);
+     *   «"threadType": ВР»         — слово без кавычек;
+     *   запятая перед «}» и сырой перенос строки внутри значения.
+     *
+     * Идём по символам, помня, внутри строки мы или снаружи: только так
+     * можно отличить дюймы в тексте от настоящей закрывающей кавычки.
+     */
+    repairJson(src) {
+        let out = '', i = 0, inStr = false, esc = false;
+        const n = src.length;
+
+        // Запятая перед закрывающей скобкой — частый хвост у сгенерированного
+        // JSON, для парсера это ошибка.
+        const dropTrailingComma = () => {
+            let j = out.length - 1;
+            while (j >= 0 && /\s/.test(out[j])) j--;
+            if (j >= 0 && out[j] === ',') out = out.slice(0, j) + out.slice(j + 1);
+        };
+
+        while (i < n) {
+            const ch = src[i];
+
+            if (inStr) {
+                if (esc) { out += ch; esc = false; i++; continue; }
+                if (ch === '\\') { out += ch; esc = true; i++; continue; }
+                if (ch === '\n') { out += '\\n'; i++; continue; }
+                if (ch === '\r') { i++; continue; }
+                if (ch === '\t') { out += '\\t'; i++; continue; }
+                if (ch === '"') {
+                    // Закрывающая кавычка — только если дальше разделитель JSON.
+                    if (/^\s*([,:}\]]|$)/.test(src.slice(i + 1))) { inStr = false; out += ch; }
+                    else out += '\\"';
+                    i++; continue;
+                }
+                out += ch; i++; continue;
+            }
+
+            if (ch === '"') { inStr = true; out += ch; i++; continue; }
+            if (ch === '}' || ch === ']') { dropTrailingComma(); out += ch; i++; continue; }
+            if (ch !== ':') { out += ch; i++; continue; }
+
+            // Значение после двоеточия: строку, объект и массив пропускаем,
+            // остальное читаем целиком и при необходимости берём в кавычки.
+            out += ch; i++;
+            while (i < n && /\s/.test(src[i])) { out += src[i]; i++; }
+            const c = src[i];
+            if (c === undefined || c === '"' || c === '{' || c === '[') continue;
+
+            let j = i;
+            while (j < n && !/[,}\]\n]/.test(src[j])) j++;
+            const token = src.slice(i, j).trim();
+            if (!token) continue;
+
+            const isLiteral = /^(true|false|null)$/i.test(token);
+            const isNumber = /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(token);
+            out += (isLiteral || isNumber) ? token : JSON.stringify(token);
+            i = j;
+        }
+        return out;
+    },
+
+    /** Сбор уцелевших позиций по одной — когда весь объект уже не собрать. */
+    salvageItems(src) {
+        const items = [];
+        const re = /\{[^{}]*\}/g;
+        let m;
+        while ((m = re.exec(src))) {
+            try {
+                const o = JSON.parse(m[0]);
+                if (o && (o.raw || o.type)) items.push(o);
+            } catch (e) { /* эту позицию не спасти */ }
+        }
+        return items;
     },
 
     /**
@@ -618,21 +1025,56 @@ const RecognizeUI = {
         }
 
         this._rows = items.map(i => ({ ...i, _sel: false, _locked: false }));
+        this.inheritRepeats();
+
+        // Тип показываем в том виде, в каком его понял подбор. Модель нет-нет
+        // да и напишет его латиницей («kran_ppr»), и в таблице это выглядело
+        // как незнакомый калькулятору тип, хотя дело только в раскладке.
+        if (typeof RecognizeMatch !== 'undefined' && RecognizeMatch.typeOf) {
+            this._rows.forEach(r => {
+                const t = RecognizeMatch.typeOf(r);
+                if (t && t !== (r.type || '').toLowerCase()) r.type = t;
+            });
+        }
+
+        // Система трубопровода определяется по смете целиком и дальше служит
+        // подсказкой для каждой строки: «водорозетка 16» или «муфта 25» сами
+        // о системе молчат, и без этого в аксиальной смете подбирался
+        // пресс-фитинг, а в полипропиленовой — нержавейка.
+        const profileOfSystem = () =>
+            (typeof RecognizeMatch !== 'undefined' && RecognizeMatch.systemProfile)
+                ? RecognizeMatch.systemProfile(this._rows) : null;
+
+        // Подбор в два прохода. Первый нужен, чтобы у строк появились названия
+        // из каталога: рукописное «Комби 25х3/4» о системе молчит, а
+        // «Муфта комбинированная ВР PP-R 25х3/4» — нет. По ним профиль сметы
+        // становится точным, и второй проход уже подбирает фитинги под ту
+        // трубу, которая в смете действительно есть.
+        this._sys = profileOfSystem();
+        this._rows.forEach(r => this.rematch(r));
+        this._sys = profileOfSystem();
         this._rows.forEach(r => this.rematch(r));
 
         this.progressTo(3);
-        // Раздел сметы предполагаем по типу позиции. Где признак неоднозначен,
-        // guessSection честно возвращает sure=false — такие строки помечаем,
-        // чтобы монтажник обратил на них внимание и поправил.
+        // Раздел определяем по смете целиком, а не по одной строке: муфта
+        // 25х3/4 одинаково уместна и в водоснабжении, и в обвязке радиаторов,
+        // а вот список из радиаторов, насоса и полипропилена уже говорит, что
+        // это отопление. Где признак всё же неоднозначен, guessSection честно
+        // возвращает sure=false, и строка помечается «раздел под вопросом».
+        this._profile = (typeof RecognizeMatch !== 'undefined' && RecognizeMatch.profileOf)
+            ? RecognizeMatch.profileOf(this._rows) : null;
         this._rows.forEach(r => {
             if (typeof RecognizeMatch === 'undefined') return;
-            const g = RecognizeMatch.guessSection(r);
+            const g = RecognizeMatch.guessSection(r, this._profile);
             r.section = g.section;
             r._sectionSure = g.sure;
         });
 
         this._undo = [];
+        // Рекомендации считаются по метражу («труба 50 м — 12 стыков»),
+        // поэтому пересчёт метров в штанги идёт строго после них.
         this.refreshSuggestions();
+        this.packPipes();
         this.progressStop();
         this.step(2);
         this.renderReview();
@@ -647,8 +1089,12 @@ const RecognizeUI = {
             this._sugg = [];
             return;
         }
-        this._sugg = RecognizeMatch.suggest(this._rows).map(s => {
-            s.match = RecognizeMatch.matchItem(s.row);
+        this._sugg = RecognizeMatch.suggest(this._rows, this._sys).map(s => {
+            // Часть рекомендаций называет артикул прямо (насос к группе, узел
+            // подключения радиатора) — подбирать его заново незачем.
+            s.match = s.row._item
+                ? { item: s.row._item, score: 1, alternatives: [] }
+                : RecognizeMatch.matchItem(s.row, this._sys);
             return s;
         });
     },
@@ -658,7 +1104,7 @@ const RecognizeUI = {
         const s = (this._sugg || [])[i];
         if (!s) return;
         this.snap();
-        const g = RecognizeMatch.guessSection(s.row);
+        const g = RecognizeMatch.guessSection(s.row, this._profile);
         this._rows.push({
             ...s.row,
             raw: 'Рекомендация: ' + s.reason,
@@ -675,10 +1121,100 @@ const RecognizeUI = {
         this.renderReview();
     },
 
+    /**
+     * Замена системы трубопровода целиком.
+     *
+     * Меняется не только труба: диаметры пересчитываются ПО ПРОХОДУ (ППР 32
+     * это нержавейка 28, а не 32), у гнущихся труб часть углов не нужна вовсе,
+     * а число стыковых муфт зависит от того, штангами труба идёт или бухтой.
+     * Всё это уже умеет RecognizeMatch.convert — здесь только применение
+     * к строкам проверки и откат по кнопке «Отменить».
+     */
+    convertSystem(toSys) {
+        if (!toSys || !this._rows.length || typeof RecognizeMatch === 'undefined') return;
+
+        const from = (this._sys && this._sys.main) || RecognizeMatch.detectSystem(this._rows);
+        if (from === toSys) return;
+
+        this.snap();
+        const converted = RecognizeMatch.convert(this._rows, from, toSys);
+
+        // convert() возвращает подбор в поле match — интерфейс проверки читает _m.
+        this._rows = converted.map(r => {
+            const row = { ...r, _m: r.match || null, _sel: false, _locked: false };
+            delete row.match;
+            if (r._note) row.note = [r.note, r._note].filter(Boolean).join('; ');
+            return row;
+        });
+
+        this._sys = RecognizeMatch.systemProfile(this._rows);
+        this._rows.forEach(r => {
+            const g = RecognizeMatch.guessSection(r, this._profile);
+            r.section = g.section;
+            r._sectionSure = g.sure;
+        });
+        this.refreshSuggestions();
+        this.renderReview();
+    },
+
+    /**
+     * Строка без наименования — повтор предыдущей позиции.
+     *
+     * Одинаковые фитинги в рукописной смете пишут списком: наименование стоит
+     * один раз, а ниже идут только размеры — «ф32 х 20 - 2шт», «— 25х20».
+     * Сама по себе такая строка не опознаётся: в ней нет предмета. Берём его
+     * у строки выше — ровно это монтажник и имел в виду, ставя кавычки.
+     */
+    inheritRepeats() {
+        // Строка начинается с размера: кавычки, прочерки и номер позиции
+        // перед ним ничего не меняют.
+        const bare = /^["'«»\-–—\s№\d.)]*(?:[фfdØø]\s*)?\d{2,3}\s*(?:[хx]|$|\s|-)/i;
+        // Тип берём тот же, что увидит подбор: он умеет вывести его из текста
+        // («Комби 25х3/4» — комбинированная муфта), а поле type может быть пустым.
+        const typeOf = r => (typeof RecognizeMatch !== 'undefined' && RecognizeMatch.typeOf)
+            ? RecognizeMatch.typeOf(r) : (r.type || '').toLowerCase();
+        let prev = null;
+
+        this._rows.forEach(r => {
+            const t = typeOf(r);
+            if (t && t !== 'прочее') { prev = { row: r, type: t }; return; }
+            if (!prev || !bare.test(String(r.raw || ''))) return;
+            r.type = prev.type;
+            if (!r.threadType) r.threadType = prev.row.threadType;
+            r._inherited = prev.row.raw || '';
+        });
+    },
+
+    /**
+     * Метры трубы — в штанги.
+     *
+     * Полипропилен и нержавейку в каталоге продают штангами, и цена стоит за
+     * штангу. В смете трубу пишут метрами, поэтому «50 м» без пересчёта
+     * умножалось на цену четырёхметровой штанги — труба дорожала вчетверо.
+     * Остаток округляем вверх: половину штанги не купить.
+     *
+     * Делается один раз, при первом показе проверки: дальше монтажник правит
+     * уже штуки, и повторно пересчитывать их нельзя.
+     */
+    packPipes() {
+        this._rows.forEach(r => {
+            const m = r._m;
+            if (!m || !m.pack || r._packed || r.unit !== 'м') return;
+            const meters = (Number(r.qty) || 0) + (Number(r.qtyExtra) || 0);
+            if (!meters) return;
+
+            r._meters = meters;
+            r._packed = m.pack;
+            r.qty = Math.ceil(meters / m.pack);
+            r.qtyExtra = 0;
+            r.unit = 'шт';
+        });
+    },
+
     rematch(row) {
         if (row._locked) return;   // ручной выбор автоподбор не перебивает
         row._m = (typeof RecognizeMatch !== 'undefined' && typeof catalog !== 'undefined')
-            ? RecognizeMatch.matchItem(row) : null;
+            ? RecognizeMatch.matchItem(row, this._sys) : null;
     },
 
     snap() {
@@ -741,8 +1277,11 @@ const RecognizeUI = {
         const rows = this._rows.map((r, n) => {
             const m = r._m;
             const qty = (r.qty || 0) + (r.qtyExtra || 0);
-            const cls = !m ? 'rec-nomatch'
-                : ((r.confidence ?? 1) < 0.7 || (m.score ?? 1) < 1 ? 'rec-low' : '');
+            // Жёлтым помечаем только то, что подобрать не удалось. Неполное
+            // совпадение видно в самой ячейке подбора («совпадение 90%»), и
+            // красить из-за него всю строку — значит топить настоящую проблему
+            // в жёлтом фоне половины таблицы.
+            const cls = m ? '' : 'rec-nomatch';
 
             const tbtns = THREADS.map(t =>
                 `<button class="rec-tbtn ${r.threadType === t ? 'on' : ''}"
@@ -753,13 +1292,15 @@ const RecognizeUI = {
                    <div class="rec-art">${esc(m.item.article || m.item.id)}${
                     r._locked ? ' · выбрано вручную'
                         : (m.score < 1 ? ` · совпадение ${Math.round(m.score * 100)}%` : '')}${
-                    m.needsApproval ? ' · <b>требует согласования</b>' : ''}</div>`
+                    m.needsApproval ? ' · <b>требует согласования</b>' : ''}</div>${
+                    m.substituted ? `<div class="rec-art">${esc(m.substituted)}</div>` : ''}`
                 : `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой 0</span>`;
 
             return `<tr class="${cls}">
               <td><input type="checkbox" ${r._sel ? 'checked' : ''}
                          onchange="RecognizeUI.sel(${n},this.checked)"></td>
-              <td class="rec-raw">${esc(r.raw)}</td>
+              <td class="rec-raw">${esc(r.raw)}
+                  ${r._inherited ? `<div class="rec-art">наименование от строки выше: ${esc(r._inherited)}</div>` : ''}</td>
               <td><input class="rec-f" value="${esc(cell(r.type))}"
                          onchange="RecognizeUI.set(${n},'type',this.value)"></td>
               <td><input class="rec-f rec-f-s" value="${esc(cell(r.d))}"
@@ -769,7 +1310,8 @@ const RecognizeUI = {
                   <div class="rec-tgroup">${tbtns}</div></td>
               <td><input class="rec-f rec-f-s" value="${esc(cell(r.qty))}"
                          onchange="RecognizeUI.set(${n},'qty',this.value)">
-                  ${r.qtyExtra ? `<span class="rec-art">+${r.qtyExtra}</span>` : ''}</td>
+                  ${r.qtyExtra ? `<span class="rec-art">+${r.qtyExtra}</span>` : ''}
+                  ${r._packed ? `<div class="rec-art">${r._meters} м → штанги по ${r._packed} м</div>` : ''}</td>
               <td>${match}</td>
               <td>${m ? m.item.price + ' ₽' : '—'}</td>
               <td><b>${m ? Math.round(m.item.price * qty) + ' ₽' : '—'}</b></td>
@@ -799,6 +1341,8 @@ const RecognizeUI = {
         const selN = this._rows.filter(r => r._sel).length;
 
         document.getElementById('rec_body').innerHTML = `
+          ${this._parseWarning ? `<div class="rec-err">${esc(this._parseWarning)}
+             Проверьте, все ли строки сметы на месте.</div>` : ''}
           <div class="rec-toolbar">
             <button class="rec-btn-g" onclick="RecognizeUI.undo()" ${this._undo.length ? '' : 'disabled'}>↶ Отменить</button>
             <button class="rec-btn-g" onclick="RecognizeUI.delSel()" ${selN ? '' : 'disabled'}>Удалить выбранные${selN ? ' (' + selN + ')' : ''}</button>
@@ -808,6 +1352,7 @@ const RecognizeUI = {
               ${(RecognizeMatch.SECTIONS || []).map(s =>
                 `<option value="${esc(s)}">${esc(s)}</option>`).join('')}
             </select>
+            ${this.renderSystemSelect()}
             <span class="rec-status">Подобрано ${found.length} из ${this._rows.length}${
               noQty ? ` · без количества ${noQty}` : ''}</span>
           </div>
@@ -832,6 +1377,31 @@ const RecognizeUI = {
             <button class="calc-dialog-btn calc-dialog-btn-cancel" onclick="RecognizeUI.apply('new')">Создать новую смету</button>
             <button class="calc-dialog-btn calc-dialog-btn-confirm" onclick="RecognizeUI.apply('add')">Добавить в текущую смету</button>
           </div>`;
+    },
+
+    /**
+     * Выбор системы трубопровода для всей сметы.
+     *
+     * Показывается, только когда в смете есть что переводить — трубы или
+     * фитинги трубной системы. Латунная арматура, приборы и канализация
+     * от выбора не зависят и остаются как есть.
+     */
+    renderSystemSelect() {
+        if (typeof RecognizeMatch === 'undefined' || !RecognizeMatch.SYSTEMS) return '';
+        const cur = (this._sys && this._sys.main) || null;
+        if (!cur) return '';
+
+        const labels = {
+            ppr: 'Полипропилен',
+            ss: 'Нержавейка',
+            mp: 'Металлопластик (пресс)',
+            pex: 'Сшитый полиэтилен (аксиал)',
+        };
+        const opts = Object.keys(labels).map(s =>
+            `<option value="${s}" ${s === cur ? 'selected' : ''}>${labels[s]}</option>`).join('');
+
+        return `<select class="rec-btn-g" title="Заменить систему целиком: диаметры пересчитаются по проходу, фитинги подберутся заново"
+                        onchange="RecognizeUI.convertSystem(this.value)">${opts}</select>`;
     },
 
     /**
@@ -1011,11 +1581,21 @@ const RecognizeUI = {
     async archive(mode) {
         try {
             const payload = {
-                user: (app._currentUserRow && (app._currentUserRow.email || app._currentUserRow.username))
-                    || (app.state.tgUser && app.state.tgUser.username) || 'admin',
+                user: this.userKey(),
                 source: this._fileKind || (this._img ? 'image' : 'text'),
                 fileName: this._fileName || '',
                 mode: mode,
+                // По этим полям админка строит вкладку «Распознавание»: кто,
+                // сколько строк распознано, сколько ушло в смету, сколько
+                // монтажник переподобрал руками, и к какому расчёту это всё.
+                counts: {
+                    recognized: this._rows.length,
+                    applied: this._rows.filter(r => ((Number(r.qty) || 0) + (Number(r.qtyExtra) || 0)) > 0).length,
+                    replaced: this._rows.filter(r => r._locked).length,
+                    noMatch: this._rows.filter(r => !r._m).length,
+                },
+                calcId: app.state.calc_id || null,
+                projectName: app.state.projectName || '',
                 result: this._rows.map(r => ({
                     raw: r.raw, type: r.type, d: r.d, thread: r.thread,
                     threadType: r.threadType, qty: r.qty, qtyExtra: r.qtyExtra,
@@ -1024,10 +1604,11 @@ const RecognizeUI = {
                 })),
             };
 
-            if (this._img) {
+            const shot = this._img || (this._imgs && this._imgs[0]);
+            if (shot) {
                 payload.file = true;
                 payload.fileExt = 'jpg';
-                payload.fileData = this._img;
+                payload.fileData = shot;
             } else if (this._file && this._file.size <= 25 * 1024 * 1024) {
                 payload.file = true;
                 payload.fileExt = (this._fileName.split('.').pop() || 'bin').toLowerCase();
@@ -1061,6 +1642,10 @@ const RECOGNIZE_PROMPT = `Ты разбираешь рукописные сме�
 
 Верни СТРОГО JSON по схеме. Никакого текста вне JSON.
 
+ДЮЙМЫ ПИШИ БЕЗ СИМВОЛА КАВЫЧКИ: 3/4, 1/2, 1, 1 1/4 — никогда 3/4" и не 3/4».
+Кавычка внутри строки JSON рвёт весь ответ, и смета не разбирается целиком.
+Это касается и "raw", и "note": «Кран 1/2 - 2шт», а не «Кран 1/2" - 2шт».
+
 СХЕМА:
 {
   "items": [{
@@ -1075,6 +1660,9 @@ const RECOGNIZE_PROMPT = `Ты разбираешь рукописные сме�
     "qty": число или null,
     "qtyExtra": число,
     "unit": "шт"|"м",
+    "sections": число секций радиатора или null,
+    "radKind": "бимет"|"алюм"|"сталь"|null,
+    "height": 200|350|500|высота прибора в мм или null,
     "confidence": 0.0-1.0,
     "note": "пояснение, если что-то неясно"
   }],
@@ -1117,6 +1705,9 @@ const RECOGNIZE_PROMPT = `Ты разбираешь рукописные сме�
 
 9. НЕ ВЫДУМЫВАЙ. Количество не указано -> qty=null. Не разобрал строку ->
    confidence ниже 0.5 и пояснение в note.
+   Но "прочее" ставь только когда предмет действительно неясен: если строка
+   начинается со слова из словаря типов («Труба…», «Муфта…», «Кран…»,
+   «Радиатор…», «Насос…»), тип бери по нему, даже если остальное непонятно.
 
 10. kind="work" только если строка описывает действие (монтаж, установка,
     опрессовка, пусконаладка, штробление). Предмет — всегда "equipment".
@@ -1133,8 +1724,59 @@ const RECOGNIZE_PROMPT = `Ты разбираешь рукописные сме�
     Канализация меряется штуками труб, а не метрами: «Труба 110 - 2 м - 6 шт»
     означает qty=6 (труб по 2 метра), а не 12 метров — длину пиши в note.
 
-СЛОВАРЬ ТИПОВ:
-ниппель, муфта_комбинированная, американка, угол_ppr, угол_пресс, тройник,
+12. РАДИАТОРЫ. Секционный радиатор пиши type="радиатор", число секций в
+    "sections", а в "qty" — сколько таких приборов.
+    «Радиатор 8сек - 1шт»        -> type="радиатор", sections=8, qty=1
+    «Рад. биметалл 10 секц. 2шт» -> type="радиатор", sections=10, radKind="бимет", qty=2
+    «Алюм. радиатор 6 секций»    -> type="радиатор", sections=6, radKind="алюм"
+    «Панельный 22-500-1000»      -> type="радиатор", radKind="сталь", height=500,
+                                    dims=[22,500,1000], sections=null
+    radKind ставь ТОЛЬКО если материал прямо назван или очевиден из модели
+    (Space, TITAN, Optima Bm — бимет; Profi, Plus, «алюминий» — алюм;
+    Compact, Ventil, «панельный», «тип 11/21/22/33» — сталь). Не назван —
+    radKind=null, модель подберёт калькулятор.
+    Секции («сек», «секц», «сек.») — это НЕ количество приборов и не диаметр.
+
+13. НАСОСЫ. Циркуляционный насос пиши type="насос", а типоразмер оставляй
+    в "raw" как написано и повторяй в "note".
+    «Насос циркул (с амер) 25-60 - 1» -> type="насос", d=25, qty=1,
+                                          note="25-60, с американками"
+    «Насос 25/60-180»                 -> type="насос", d=25
+    Пометки «с амер», «с американками», «с гайками» — это комплектация насоса,
+    отдельной позицией их не делай, пиши в note.
+    Скважинный, дренажный, повысительный насос — тоже type="насос", но слово
+    («скважинный», «дренажный») обязательно сохрани в raw.
+
+14. КРАНЫ ППР. «Кран ппр с амер 1/2 х 20», «Кран ппр 32» — это полипропиленовая
+    арматура, а не латунная: type="кран_ppr", d — диаметр трубы (20, 25, 32),
+    thread — резьба, если названа.
+    «с амер», «с американкой» у такого крана — это накидная гайка радиаторного
+    крана, отдельной позицией её не делай.
+    «уг», «угл», «угловой» -> angle=90; без пометки кран прямой.
+    «Кран ппр с амер 1/2 - 20 - 2шт уг» -> type="кран_ppr", d=20, thread="1/2",
+                                           angle=90, qty=2
+
+15. ДИАМЕТР БЕЗ РЕЗЬБЫ У АРМАТУРЫ — ЭТО DN. «Кран 15», «Кран 32» без слова
+    «ппр» и без дюймов — латунный кран по условному проходу: d=15, thread=null.
+    Переводить в дюймы не нужно, это сделает калькулятор.
+
+16. «ф» ПЕРЕД ЧИСЛОМ — ДИАМЕТР: «муфта ф40» -> type="муфта", d=40;
+    «Труба ф32 - 50м стекло» -> type="труба_ppr_ст", d=32, qty=50, unit="м";
+    «муфта соед ф32» -> type="муфта", d=32 (соединительная — обычная муфта);
+    «муфта комб ф40 х 1 (н)» -> type="муфта_комбинированная", d=40,
+    thread="1", threadType="НР" ((н) — наружная, (в) — внутренняя).
+
+17. СИСТЕМА РАЗВОДКИ. «Пресс» у монтажника — металлопластик (диаметры 16, 20,
+    26, 32): «Пресс муфта 16», «Пресс угол 20х1/2 вр», «Пресс тройник 20х16х20».
+    «Аксиал», «надвижная», «PEX», «сшитый» — сшитый полиэтилен (16, 20, 25, 32).
+    «Гильза» (аксиал) и «зажимная втулка» (пресс) -> type="гильза", d — диаметр.
+    Систему, названную в строке, сохраняй в raw: по ней калькулятор понимает,
+    какими фитингами собрана смета, и не подставит нержавейку туда, где
+    нержавеющей трубы нет.
+
+СЛОВАРЬ ТИПОВ (значение поля "type" пиши КИРИЛЛИЦЕЙ, ровно как здесь —
+"kran_ppr" вместо "кран_ppr" калькулятор не понимает):
+радиатор, насос, гильза, ниппель, муфта_комбинированная, американка, угол_ppr, угол_пресс, тройник,
 тройник_ppr, тройник_пресс, кран_шаровой, кран_американка, кран_накидной,
 кран_ppr, пресс_муфта, пнд_муфта, разъёмное_соединение, переход, футорка,
 фильтр, хомут, водорозетка, водорозетка_проходная, планка_водорозетка,
@@ -1155,4 +1797,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tick = () => { try { RecognizeUI.syncButton(); } catch (e) { } };
     tick();
     [300, 1000, 2500, 5000].forEach(ms => setTimeout(tick, ms));
+    // Списки доступа нужны только монтажникам, поэтому грузятся один раз
+    // и не блокируют запуск калькулятора.
+    RecognizeUI.loadAccess();
 });
