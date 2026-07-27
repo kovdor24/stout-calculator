@@ -8,3 +8,13 @@ verify_jwt = false
 # Доступ закрыт общим секретом RELAY_TOKEN внутри самой функции.
 [functions.gemini-relay]
 verify_jwt = false
+
+# Вызывает ещё не авторизованный посетитель (вход через Яндекс ID), сессии у него
+# по определению нет. Защита — проверка redirect_uri по белому списку внутри функции.
+[functions.yandex-auth]
+verify_jwt = false
+
+# Токен пользователя проверяется внутри функции обращением к /auth/v1/user —
+# встроенная проверка JWT не подходит, ключ проекта publishable, а не legacy-JWT.
+[functions.revoke-google-signup]
+verify_jwt = false

@@ -5287,6 +5287,501 @@ const app = {
         }
     },
 
+    // Публичный идентификатор приложения из oauth.yandex.ru (не секрет).
+    // Client secret лежит в секретах Edge Functions, в браузер не попадает.
+    YANDEX_CLIENT_ID: 'e8247e2e9ae84d34bf56b4215e817cfc',
+
+    // Адрес, зарегистрированный в Яндексе как Redirect URI. Строго корень сайта:
+    // Яндекс сверяет его посимвольно, а window.location.pathname может быть
+    // и '/index.html', и '/' в зависимости от того, как открыли страницу.
+    getYandexRedirectUri: function () {
+        return window.location.origin + '/';
+    },
+
+    loginYandex: function (linkMode) {
+        try {
+            // state защищает от подмены: код авторизации примем только если вернулись
+            // из той же вкладки, из которой уходили
+            const state = (window.crypto && crypto.randomUUID)
+                ? crypto.randomUUID()
+                : String(Date.now()) + String(Math.random()).slice(2);
+            sessionStorage.setItem('yandex_oauth_state', state);
+            // Режим привязки: пользователь уже вошёл (через Google) и переводит
+            // существующий аккаунт на Яндекс ID, а не логинится заново
+            if (linkMode) {
+                sessionStorage.setItem('yandex_link_mode', '1');
+            } else {
+                sessionStorage.removeItem('yandex_link_mode');
+            }
+
+            const url = 'https://oauth.yandex.ru/authorize?response_type=code'
+                + '&client_id=' + encodeURIComponent(this.YANDEX_CLIENT_ID)
+                + '&redirect_uri=' + encodeURIComponent(this.getYandexRedirectUri())
+                + '&state=' + encodeURIComponent(state)
+                // Без force_confirm Яндекс молча логинит в уже активный в браузере
+                // аккаунт, не давая выбрать другой (как prompt=select_account у Google)
+                + '&force_confirm=yes';
+            window.location.href = url;
+        } catch (err) {
+            console.error("Ошибка входа через Яндекс:", err);
+            app.alert("Ошибка при входе через Яндекс: " + getFriendlyErrorMessage(err));
+        }
+    },
+
+    // Возврат с Яндекса: в адресе есть ?code=... Меняем код на сессию через
+    // Edge Function yandex-auth и уходим по выданной ссылке входа.
+    handleYandexCallback: async function () {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const yaError = params.get('error');
+        const state = params.get('state');
+        if (!code && !yaError) return;
+
+        // Свой флоу опознаём по state в sessionStorage — чтобы не перехватить
+        // ?code=, принадлежащий чему-то другому (например, PKCE-редиректу Supabase)
+        const savedState = sessionStorage.getItem('yandex_oauth_state');
+        if (!savedState) return;
+        sessionStorage.removeItem('yandex_oauth_state');
+
+        // Чистим адрес от служебных параметров, остальные (ссылка на смету и пр.) храним
+        params.delete('code');
+        params.delete('state');
+        params.delete('error');
+        params.delete('error_description');
+        const cleanQuery = params.toString();
+        history.replaceState(null, document.title,
+            window.location.pathname + (cleanQuery ? '?' + cleanQuery : ''));
+
+        if (yaError) {
+            // Пользователь нажал "Отказать" — молча остаёмся гостем
+            if (yaError !== 'access_denied') {
+                app.alert("Яндекс отказал в авторизации: " + yaError);
+            }
+            return;
+        }
+
+        if (state !== savedState) {
+            app.alert("Не удалось подтвердить вход через Яндекс. Попробуйте ещё раз.");
+            return;
+        }
+
+        // Привязка Яндекса к уже открытому аккаунту — отдельный сценарий, без входа
+        if (sessionStorage.getItem('yandex_link_mode') === '1') {
+            sessionStorage.removeItem('yandex_link_mode');
+            await this.finishYandexLink(code);
+            return;
+        }
+
+        // Держим прелоадер до перехода по ссылке входа, чтобы не мигать калькулятором
+        this._yandexExchanging = true;
+
+        try {
+            const resp = await fetch(supabaseUrl + '/functions/v1/yandex-auth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseKey,
+                    'Authorization': 'Bearer ' + supabaseKey
+                },
+                body: JSON.stringify({ code: code, redirect_uri: this.getYandexRedirectUri() })
+            });
+            const data = await resp.json().catch(() => null);
+            if (!resp.ok || !data || !data.action_link) {
+                throw new Error((data && data.error) ? data.error : ('HTTP ' + resp.status));
+            }
+            window.location.replace(data.action_link);
+        } catch (err) {
+            this._yandexExchanging = false;
+            const preloader = document.getElementById('stout_preloader');
+            if (preloader) preloader.remove();
+            console.error("Ошибка входа через Яндекс:", err);
+            app.alert("Не удалось войти через Яндекс: " + err.message);
+        }
+    },
+
+    // Завершение привязки Яндекс ID к текущему аккаунту (перевод входа с Google).
+    // Аккаунт не дублируется: функция yandex-auth меняет email у существующей
+    // записи, поэтому сметы, тариф и настройки остаются те же.
+    finishYandexLink: async function (code) {
+        this._yandexExchanging = true;
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                throw new Error("Сессия истекла. Войдите заново и повторите привязку.");
+            }
+            const resp = await fetch(supabaseUrl + '/functions/v1/yandex-auth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseKey,
+                    // В режиме привязки нужен токен самого пользователя, а не публичный ключ
+                    'Authorization': 'Bearer ' + session.access_token
+                },
+                body: JSON.stringify({
+                    code: code,
+                    redirect_uri: this.getYandexRedirectUri(),
+                    mode: 'link'
+                })
+            });
+            const data = await resp.json().catch(() => null);
+            if (!resp.ok || !data || data.status !== 'linked') {
+                throw new Error((data && data.error) ? data.error : ('HTTP ' + resp.status));
+            }
+
+            this._yandexExchanging = false;
+            const preloader = document.getElementById('stout_preloader');
+            if (preloader) preloader.remove();
+
+            let msg = "Готово! Теперь входите в этот аккаунт через Яндекс ID" +
+                (data.email ? " (" + data.email + ")" : "") + ".\n\n" +
+                "Все ваши сметы, настройки и тариф сохранены — это тот же аккаунт.";
+            if (data.merged) {
+                msg += "\n\nПустой аккаунт, созданный ранее на эту почту, удалён, чтобы не было путаницы.";
+            }
+            await app.alert(msg, "Вход через Яндекс подключён");
+            window.location.replace(window.location.pathname);
+        } catch (err) {
+            this._yandexExchanging = false;
+            const preloader = document.getElementById('stout_preloader');
+            if (preloader) preloader.remove();
+            console.error("Ошибка привязки Яндекс ID:", err);
+            app.alert("Не удалось подключить вход через Яндекс.\n\n" + err.message, "Привязка не выполнена");
+        }
+    },
+
+    // === Ограничения входа через Google для пользователей из РФ ===
+    // С 2026 года авторизация российских пользователей на сайтах через иностранные
+    // сервисы (в т.ч. форму входа Google) недопустима. Поэтому: новым посетителям
+    // из РФ вход через Google закрыт, ранее зарегистрированным предлагается перейти
+    // на e-mail или Яндекс ID. Для иностранных пользователей всё остаётся как было.
+
+    isAdminEmail: function (email) {
+        if (!email) return false;
+        return ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com']
+            .includes(String(email).toLowerCase().trim());
+    },
+
+    // Грубая проверка по настройкам браузера — нужна, когда determine по IP не отвечает
+    looksRussianByLocale: function () {
+        try {
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+            if (/^(Europe\/(Moscow|Kaliningrad|Samara|Saratov|Volgograd|Kirov|Astrakhan|Ulyanovsk)|Asia\/(Yekaterinburg|Omsk|Novosibirsk|Barnaul|Tomsk|Novokuznetsk|Krasnoyarsk|Irkutsk|Chita|Yakutsk|Khandyga|Vladivostok|Ust-Nera|Magadan|Sakhalin|Srednekolymsk|Kamchatka|Anadyr))$/.test(tz)) {
+                return true;
+            }
+            const langs = [navigator.language].concat(navigator.languages || []);
+            return langs.some(l => l && String(l).toLowerCase() === 'ru-ru');
+        } catch (e) {
+            return false;
+        }
+    },
+
+    // Код страны посетителя. Результат кэшируем на сутки, чтобы не дёргать
+    // геосервисы на каждой загрузке (у них лимиты на бесплатном тарифе).
+    detectVisitorCountry: async function () {
+        try {
+            const cached = localStorage.getItem('visitor_country');
+            const cachedAt = parseInt(localStorage.getItem('visitor_country_at') || '0', 10);
+            if (cached && (Date.now() - cachedAt) < 24 * 60 * 60 * 1000) {
+                return cached;
+            }
+        } catch (e) { }
+
+        let code = '';
+        try {
+            const res = await fetch('https://ipapi.co/json/');
+            if (res.ok) {
+                const geo = await res.json();
+                code = (geo && geo.country_code) ? String(geo.country_code).toUpperCase() : '';
+            }
+        } catch (e) { }
+        if (!code) {
+            try {
+                const res = await fetch('https://ipinfo.io/json');
+                if (res.ok) {
+                    const geo = await res.json();
+                    code = (geo && geo.country) ? String(geo.country).toUpperCase() : '';
+                }
+            } catch (e) { }
+        }
+        // Оба сервиса недоступны (блокировки, оффлайн) — ориентируемся на браузер
+        if (!code) {
+            code = this.looksRussianByLocale() ? 'RU' : '';
+        }
+
+        if (code) {
+            try {
+                localStorage.setItem('visitor_country', code);
+                localStorage.setItem('visitor_country_at', String(Date.now()));
+            } catch (e) { }
+        }
+        return code;
+    },
+
+    // Для посетителей из РФ кнопки Google в окне входа нет вовсе — вместо неё
+    // пояснение, что делать тем, кто регистрировался через Google.
+    // Иностранным пользователям окно показывается без изменений.
+    applyRuLoginRestrictions: async function () {
+        const note = document.getElementById('auth_ru_law_note');
+        const googleBtn = document.getElementById('auth_google_btn');
+        if (!note && !googleBtn) return;
+
+        // Служебный доступ для администратора: heatcalc.ru/?google_login=1 возвращает
+        // кнопку Google и в РФ. Флаг сохраняем — после редиректа Google параметра
+        // в адресе уже не будет. Сбрасывается ?google_login=0.
+        try {
+            const flag = new URLSearchParams(window.location.search).get('google_login');
+            if (flag === '1') localStorage.setItem('force_google_login', '1');
+            if (flag === '0') localStorage.removeItem('force_google_login');
+        } catch (e) { }
+        const forced = localStorage.getItem('force_google_login') === '1';
+
+        const hideGoogle = ((await this.detectVisitorCountry()) === 'RU') && !forced;
+        if (googleBtn) googleBtn.style.display = hideGoogle ? 'none' : '';
+        if (note) note.style.display = hideGoogle ? 'block' : 'none';
+    },
+
+    // Новый посетитель из РФ вошёл через Google — отменяем регистрацию.
+    // Supabase к этому моменту уже успел создать запись в auth.users, её нужно
+    // удалить, иначе email окажется занят и человек не сможет зарегистрироваться
+    // ни по почте, ни через Яндекс.
+    rejectGoogleSignupRU: async function (session) {
+        try {
+            await fetch(supabaseUrl + '/functions/v1/revoke-google-signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseKey,
+                    'Authorization': 'Bearer ' + session.access_token
+                },
+                body: JSON.stringify({})
+            });
+        } catch (e) {
+            console.warn("Не удалось удалить незавершённую регистрацию через Google:", e);
+        }
+
+        try { await supabaseClient.auth.signOut(); } catch (e) { }
+        delete this.state.tgUser;
+        this.state.accountType = 'base';
+        this._authHandling = false;
+        this.saveState();
+        this.syncUI();
+        this.render();
+
+        // Адрес мог остаться с #access_token после редиректа Google
+        if (window.location.hash) {
+            history.replaceState(null, document.title, window.location.pathname + window.location.search);
+        }
+
+        this.showRuGoogleBlockedModal();
+    },
+
+    // Аккаунт уже переведён на e-mail/Яндекс, но человек снова жмёт Google.
+    // Аккаунт живой — ничего не удаляем, просто не пускаем этим способом.
+    refuseGoogleForMigratedRU: async function () {
+        try { await supabaseClient.auth.signOut(); } catch (e) { }
+        delete this.state.tgUser;
+        this.state.accountType = 'base';
+        this._authHandling = false;
+        this.saveState();
+        this.syncUI();
+        this.render();
+        if (window.location.hash) {
+            history.replaceState(null, document.title, window.location.pathname + window.location.search);
+        }
+        app.alert(
+            'Вы уже перевели этот аккаунт на другой способ входа. Войдите по e-mail и паролю ' +
+            'или через Яндекс ID — это тот же аккаунт со всеми вашими сметами.',
+            'Вход через Google отключён'
+        );
+    },
+
+    showRuGoogleBlockedModal: function () {
+        const overlay = document.createElement('div');
+        overlay.className = 'calc-dialog-overlay';
+
+        const card = document.createElement('div');
+        card.className = 'calc-dialog-card';
+        card.style.maxWidth = '440px';
+
+        const title = document.createElement('h3');
+        title.className = 'calc-dialog-title';
+        title.innerText = 'Регистрация через Google недоступна';
+        card.appendChild(title);
+
+        const msg = document.createElement('div');
+        msg.className = 'calc-dialog-message';
+        msg.style.textAlign = 'left';
+        msg.innerHTML =
+            '<p style="margin: 0 0 10px;">По требованиям российского законодательства авторизация ' +
+            'пользователей из России через форму входа Google больше не допускается.</p>' +
+            '<p style="margin: 0 0 10px;">Зарегистрируйтесь одним из разрешённых способов — ' +
+            'все возможности калькулятора при этом сохраняются:</p>' +
+            '<ul style="margin: 0 0 4px 18px; padding: 0;">' +
+            '<li style="margin-bottom: 4px;"><b>Яндекс ID</b> — в один клик, как и Google</li>' +
+            '<li><b>E-mail и пароль</b> — обычная регистрация</li>' +
+            '</ul>';
+        card.appendChild(msg);
+
+        const btns = document.createElement('div');
+        btns.className = 'calc-dialog-buttons';
+
+        const close = () => {
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 200);
+        };
+
+        const emailBtn = document.createElement('button');
+        emailBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
+        emailBtn.innerText = 'Регистрация по e-mail';
+        emailBtn.onclick = () => {
+            close();
+            this.showAuthModal();
+            this.switchAuthTab('register');
+        };
+
+        const yaBtn = document.createElement('button');
+        yaBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
+        yaBtn.innerText = 'Войти через Яндекс ID';
+        yaBtn.onclick = () => {
+            close();
+            this.loginYandex();
+        };
+
+        btns.appendChild(emailBtn);
+        btns.appendChild(yaBtn);
+        card.appendChild(btns);
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        setTimeout(() => overlay.classList.add('active'), 10);
+    },
+
+    // Предложение перейти на другой способ входа — для тех, кто уже
+    // зарегистрирован через Google и находится в РФ
+    showRuLoginMigrationModal: function () {
+        if (document.getElementById('ru_login_migration_card')) return;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'calc-dialog-overlay';
+
+        const card = document.createElement('div');
+        card.className = 'calc-dialog-card';
+        card.id = 'ru_login_migration_card';
+        card.style.maxWidth = '460px';
+
+        const title = document.createElement('h3');
+        title.className = 'calc-dialog-title';
+        title.innerText = 'Смените способ входа';
+        card.appendChild(title);
+
+        const msg = document.createElement('div');
+        msg.className = 'calc-dialog-message';
+        msg.style.textAlign = 'left';
+        msg.innerHTML =
+            '<p style="margin: 0 0 10px;">Ваш аккаунт создан через Google. По требованиям ' +
+            'российского законодательства авторизация пользователей из России через форму входа ' +
+            'Google больше не допускается — кнопка Google убрана, и войти этим способом ' +
+            'в следующий раз не получится.</p>' +
+            '<p style="margin: 0 0 12px;">Выберите замену — <b>аккаунт останется тот же</b>: ' +
+            'все сметы, настройки и тариф сохранятся.</p>';
+        card.appendChild(msg);
+
+        // Вариант 1 — Яндекс ID
+        const yaBtn = document.createElement('button');
+        yaBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
+        yaBtn.style.width = '100%';
+        yaBtn.style.marginBottom = '14px';
+        yaBtn.innerText = 'Перейти на вход через Яндекс ID';
+        yaBtn.onclick = () => {
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 200);
+            this.loginYandex(true);
+        };
+        card.appendChild(yaBtn);
+
+        // Вариант 2 — пароль для входа по e-mail
+        const pwdWrap = document.createElement('div');
+        pwdWrap.style.borderTop = '1px solid var(--border)';
+        pwdWrap.style.paddingTop = '12px';
+        pwdWrap.innerHTML =
+            '<div style="font-size: 13px; color: var(--text-sec); margin-bottom: 8px;">' +
+            'Или задайте пароль, чтобы входить по e-mail' +
+            (this.state.tgUser && this.state.tgUser.email ? ' (' + this.state.tgUser.email + ')' : '') +
+            ':</div>';
+
+        const pwdInput = document.createElement('input');
+        pwdInput.type = 'password';
+        pwdInput.className = 'auth-input';
+        pwdInput.placeholder = 'Новый пароль, минимум 6 символов';
+        pwdInput.autocomplete = 'new-password';
+        pwdWrap.appendChild(pwdInput);
+
+        const pwdBtn = document.createElement('button');
+        pwdBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
+        pwdBtn.style.width = '100%';
+        pwdBtn.innerText = 'Сохранить пароль';
+        pwdBtn.onclick = async () => {
+            const value = pwdInput.value.trim();
+            if (value.length < 6) {
+                app.alert('Пароль должен быть не короче 6 символов.');
+                return;
+            }
+            pwdBtn.disabled = true;
+            pwdBtn.innerText = 'Сохраняем...';
+            const ok = await this.setPasswordForRuMigration(value);
+            if (ok) {
+                overlay.classList.remove('active');
+                setTimeout(() => overlay.remove(), 200);
+            } else {
+                pwdBtn.disabled = false;
+                pwdBtn.innerText = 'Сохранить пароль';
+            }
+        };
+        pwdWrap.appendChild(pwdBtn);
+        card.appendChild(pwdWrap);
+
+        const later = document.createElement('div');
+        later.style.textAlign = 'center';
+        later.style.marginTop = '14px';
+        const laterLink = document.createElement('a');
+        laterLink.href = '#';
+        laterLink.style.cssText = 'color: var(--text-sec); text-decoration: none; font-size: 13px;';
+        laterLink.innerText = 'Напомнить позже';
+        laterLink.onclick = (e) => {
+            e.preventDefault();
+            sessionStorage.setItem('ru_login_migration_postponed', '1');
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 200);
+        };
+        later.appendChild(laterLink);
+        card.appendChild(later);
+
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        setTimeout(() => overlay.classList.add('active'), 10);
+    },
+
+    // Пароль ставится текущему аккаунту — это добавление способа входа,
+    // а не новый аккаунт, поэтому объединять ничего не нужно
+    setPasswordForRuMigration: async function (password) {
+        try {
+            const { error } = await supabaseClient.auth.updateUser({
+                password: password,
+                data: { ru_login_migrated: true }
+            });
+            if (error) throw error;
+            await app.alert(
+                'Пароль сохранён. Теперь вы можете входить по e-mail и паролю — ' +
+                'аккаунт и все сметы остались те же.',
+                'Готово'
+            );
+            return true;
+        } catch (err) {
+            console.error("Не удалось задать пароль:", err);
+            app.alert('Не удалось сохранить пароль: ' + getFriendlyErrorMessage(err));
+            return false;
+        }
+    },
+
     logout: async function () {
         this._currentUserRow = null;
         this._cloudEstimates = null;
@@ -5319,6 +5814,9 @@ const app = {
     showAuthModal: function () {
         document.getElementById('auth_modal_overlay').style.display = 'flex';
         document.body.classList.add('auth-modal-open');
+        // Посетителям из РФ показываем, что через Google можно только войти
+        // в ранее созданный аккаунт
+        this.applyRuLoginRestrictions();
         if (this.currentAuthTab !== 'register') {
             const tw = document.getElementById('auth_terms_wrapper');
             if (tw) tw.style.display = 'none';
@@ -10669,6 +11167,37 @@ const app = {
             let regCity = meta.city || '';
             let regActivityTypes = Array.isArray(meta.activity_types) ? meta.activity_types : [];
 
+            // Ограничение авторизации через Google для пользователей из РФ.
+            // Проверяем до upsert в users: после него "новый" аккаунт стал бы
+            // неотличим от давно существующего.
+            const isGoogleAccount = (user.app_metadata && user.app_metadata.provider === 'google') ||
+                (Array.isArray(user.identities) && user.identities.some(i => i && i.provider === 'google'));
+            this._needRuLoginMigration = false;
+            if (isGoogleAccount && !this.isAdminEmail(email)) {
+                const country = await this.detectVisitorCountry();
+                if (country === 'RU') {
+                    const { data: existingRows } = await supabaseClient
+                        .from('users')
+                        .select('id')
+                        .eq('email', email)
+                        .limit(1);
+                    const isExistingAccount = !!(existingRows && existingRows.length);
+
+                    if (!isExistingAccount) {
+                        // Новая регистрация через Google из РФ — не пропускаем
+                        await this.rejectGoogleSignupRU(session);
+                        return;
+                    }
+                    if (meta.ru_login_migrated) {
+                        // Человек уже перевёл аккаунт на e-mail/Яндекс — Google закрыт
+                        await this.refuseGoogleForMigratedRU();
+                        return;
+                    }
+                    // Старый аккаунт: пускаем, но предложим сменить способ входа
+                    this._needRuLoginMigration = true;
+                }
+            }
+
             let city = 'Не определен';
             let clientIp = '0.0.0.0';
             try {
@@ -10863,6 +11392,10 @@ const app = {
                 // На самом Google-редиректе (isGoogleCallback) не показываем: страница всё равно
                 // перезагрузится через 6 секунд и окно откроется корректно уже после перезагрузки.
                 this.showProfileModal(true);
+            } else if (this._needRuLoginMigration && !sessionStorage.getItem('ru_login_migration_postponed')) {
+                // Аккаунт на Google + пользователь в РФ: предлагаем перейти
+                // на e-mail или Яндекс ID (не чаще одного раза за сеанс)
+                setTimeout(() => this.showRuLoginMigrationModal(), 1200);
             }
         } catch (error) {
             console.error('Ошибка авторизации:', error);
@@ -13663,6 +14196,10 @@ const app = {
         window.confirm = (msg) => app.confirm(msg);
         window.prompt = (msg, def) => app.prompt(msg, def);
 
+        // Возврат с Яндекс ID проверяем до всего остального: если это он, страница
+        // всё равно сейчас уйдёт на ссылку входа
+        this.handleYandexCallback();
+
         this.captureUTM();
         this.applyPricingCurrencyDisplay();
         if (localStorage.getItem('stout_save')) {
@@ -14008,6 +14545,8 @@ const app = {
 
         // Скрываем прелоадер после полной инициализации
         setTimeout(() => {
+            // Идёт обмен кода Яндекса на сессию — сейчас будет редирект, прелоадер оставляем
+            if (this._yandexExchanging) return;
             let preloader = document.getElementById('stout_preloader');
             if (preloader) {
                 preloader.style.opacity = '0';
