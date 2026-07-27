@@ -7285,7 +7285,7 @@ const app = {
                     <!-- Ширины заданы явно и таблица фиксированной раскладки:
                          при авторазметке колонки прыгали от строки к строке,
                          а длинные названия дистрибьюторов рвали выравнивание. -->
-                    <table class="inv-table" style="margin-bottom: 30px; table-layout: fixed; width: 100%;">
+                    <table class="inv-table" style="margin-bottom: 30px; table-layout: fixed; width: 100%; min-width: 1150px;">
                         <thead><tr>
                             <th style="width:34px;">#</th>
                             <th style="width:300px; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('name')" title="Сортировать по имени">Имя / Контакты${sortArrow('name')}</th>
