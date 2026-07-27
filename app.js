@@ -5424,6 +5424,18 @@ const app = {
                 })
             });
             const data = await resp.json().catch(() => null);
+
+            // 409 — на почте из Яндекс ID уже есть другой аккаунт со сметами.
+            // Привязка невозможна, но тупика быть не должно: предлагаем просто
+            // войти в тот аккаунт.
+            if (resp.status === 409 && data && data.error) {
+                this._yandexExchanging = false;
+                const pre = document.getElementById('stout_preloader');
+                if (pre) pre.remove();
+                this.showYandexConflictDialog(data.error);
+                return;
+            }
+
             if (!resp.ok || !data || data.status !== 'linked') {
                 throw new Error((data && data.error) ? data.error : ('HTTP ' + resp.status));
             }
@@ -5447,6 +5459,58 @@ const app = {
             console.error("Ошибка привязки Яндекс ID:", err);
             app.alert("Не удалось подключить вход через Яндекс.\n\n" + err.message, "Привязка не выполнена");
         }
+    },
+
+    // Яндекс ID указывает на другой существующий аккаунт со сметами: сливать
+    // автоматически нельзя, но и оставлять человека в тупике незачем — даём
+    // войти в тот аккаунт. Текущий при этом остаётся нетронутым.
+    showYandexConflictDialog: function (serverMessage) {
+        const overlay = document.createElement('div');
+        overlay.className = 'calc-dialog-overlay';
+
+        const card = document.createElement('div');
+        card.className = 'calc-dialog-card';
+
+        const title = document.createElement('h3');
+        title.className = 'calc-dialog-title';
+        title.innerText = 'Этот Яндекс ID занят другим аккаунтом';
+        card.appendChild(title);
+
+        const msg = document.createElement('p');
+        msg.className = 'calc-dialog-message';
+        msg.innerText = serverMessage +
+            "\n\nПривязка отменена, оба аккаунта целы. Можно сразу войти в тот аккаунт через Яндекс ID — " +
+            "текущий останется на месте.";
+        card.appendChild(msg);
+
+        const btns = document.createElement('div');
+        btns.className = 'calc-dialog-buttons';
+
+        const close = () => {
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 200);
+        };
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'calc-dialog-btn calc-dialog-btn-cancel';
+        cancelBtn.innerText = 'Остаться здесь';
+        cancelBtn.onclick = close;
+
+        const switchBtn = document.createElement('button');
+        switchBtn.className = 'calc-dialog-btn calc-dialog-btn-confirm';
+        switchBtn.innerText = 'Войти через Яндекс ID';
+        switchBtn.onclick = async () => {
+            close();
+            await this.logout();
+            this.loginYandex();
+        };
+
+        btns.appendChild(cancelBtn);
+        btns.appendChild(switchBtn);
+        card.appendChild(btns);
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        setTimeout(() => overlay.classList.add('active'), 10);
     },
 
     // === Ограничения входа через Google для пользователей из РФ ===
@@ -5478,9 +5542,11 @@ const app = {
     // Код страны посетителя. Результат кэшируем на сутки, чтобы не дёргать
     // геосервисы на каждой загрузке (у них лимиты на бесплатном тарифе).
     detectVisitorCountry: async function () {
+        // Ключ с версией: старое значение, записанное прежней логикой (когда пустой
+        // результат считался "не РФ"), не должно влиять ещё сутки после обновления
         try {
-            const cached = localStorage.getItem('visitor_country');
-            const cachedAt = parseInt(localStorage.getItem('visitor_country_at') || '0', 10);
+            const cached = localStorage.getItem('visitor_country_v2');
+            const cachedAt = parseInt(localStorage.getItem('visitor_country_v2_at') || '0', 10);
             if (cached && (Date.now() - cachedAt) < 24 * 60 * 60 * 1000) {
                 return cached;
             }
@@ -5510,8 +5576,8 @@ const app = {
 
         if (code) {
             try {
-                localStorage.setItem('visitor_country', code);
-                localStorage.setItem('visitor_country_at', String(Date.now()));
+                localStorage.setItem('visitor_country_v2', code);
+                localStorage.setItem('visitor_country_v2_at', String(Date.now()));
             } catch (e) { }
         }
         return code;
@@ -5524,17 +5590,24 @@ const app = {
         if (!googleBtn) return;
 
         // Служебный доступ для администратора: heatcalc.ru/?google_login=1 возвращает
-        // кнопку Google и в РФ. Флаг сохраняем — после редиректа Google параметра
-        // в адресе уже не будет. Сбрасывается ?google_login=0.
+        // кнопку Google и в РФ. Флаг в sessionStorage: он переживает редирект Google
+        // (та же вкладка), но не остаётся включённым навсегда, как было бы
+        // в localStorage. Сбрасывается закрытием вкладки или ?google_login=0.
         try {
             const flag = new URLSearchParams(window.location.search).get('google_login');
-            if (flag === '1') localStorage.setItem('force_google_login', '1');
-            if (flag === '0') localStorage.removeItem('force_google_login');
+            if (flag === '1') sessionStorage.setItem('force_google_login', '1');
+            if (flag === '0') sessionStorage.removeItem('force_google_login');
         } catch (e) { }
-        const forced = localStorage.getItem('force_google_login') === '1';
+        if (sessionStorage.getItem('force_google_login') === '1') {
+            googleBtn.style.display = '';
+            return;
+        }
 
-        const hideGoogle = ((await this.detectVisitorCountry()) === 'RU') && !forced;
-        googleBtn.style.display = hideGoogle ? 'none' : '';
+        // Кнопка скрыта в разметке и появляется только если страна точно определена
+        // и это не РФ. Пока идёт определение или если геосервисы недоступны, кнопки
+        // нет: показать её пользователю из РФ хуже, чем не показать иностранцу.
+        const country = await this.detectVisitorCountry();
+        googleBtn.style.display = (country && country !== 'RU') ? '' : 'none';
     },
 
     // Новый посетитель из РФ вошёл через Google — отменяем регистрацию.
