@@ -742,6 +742,8 @@ const RecognizeUI = {
     },
 
     progressTo(n) {
+        // Индикатор мог не запускаться — тогда и обновлять нечего.
+        if (!Array.isArray(this.STAGES)) return;
         this.STAGES.forEach((_, i) => {
             const el = document.getElementById('rec_st' + i);
             if (!el) return;
@@ -800,7 +802,7 @@ const RecognizeUI = {
         if (!el) return;
         const q = await this.checkQuota();
         if (!q) return;   // админ либо сервер лимитов промолчал
-        el.textContent = `Распознаваний в этом месяце: ${q.used} из ${q.limit}, осталось ${q.left}`;
+        el.textContent = `Запросов к распознаванию в этом месяце: ${q.used} из ${q.limit}, осталось ${q.left}`;
         if (q.left <= 3) el.style.color = q.left === 0 ? '#EF4444' : '#F59E0B';
     },
 
@@ -817,7 +819,7 @@ const RecognizeUI = {
             if (body) {
                 const err = document.createElement('div');
                 err.className = 'rec-err';
-                err.textContent = `Распознавания на этот месяц закончились: использовано ${quota.used} из ${quota.limit}. ` +
+                err.textContent = `Лимит запросов к распознаванию на этот месяц исчерпан: ${quota.used} из ${quota.limit}. ` +
                     'Лимит обновится первого числа. Если нужно больше — напишите администратору.';
                 body.appendChild(err);
             }
@@ -832,6 +834,8 @@ const RecognizeUI = {
         // уже заполнены сведением листов и затирать их нельзя.
         this._sysFromModel = null;
         this._mergeInfo = '';
+        this._apiCalls = 0;
+        this._fromCache = 0;
         this.progressStart(!!this._text);
 
         try {
@@ -906,44 +910,85 @@ const RecognizeUI = {
      * («high demand»), автоматически берём запасную. Все три в белом списке
      * прокси, менять сервер не нужно.
      */
+    /** Пауза. Ожидание дешевле лишнего запроса. */
+    wait(ms) {
+        return new Promise((r) => setTimeout(r, ms));
+    },
+
+    /**
+     * Один запрос к распознаванию: ожидание вместо перебора.
+     *
+     * Ответы 429 и 503 у Google почти всегда значат «слишком часто», а не
+     * «эта модель сломалась». Прежний код на такой ответ сразу брал следующую
+     * модель — и один лист превращался в три запроса, которые упирались в тот
+     * же лимит частоты и жгли его дальше. Теперь ждём и повторяем ТОЙ ЖЕ
+     * моделью; если Google подсказал, сколько ждать, слушаем его. На другую
+     * модель переходим, только когда ожидание не помогло.
+     */
+    RETRY_WAITS: [4000, 12000, 25000],
+
     async askModel(parts, systemPrompt) {
         const MODELS = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3-flash-preview'];
+
         for (let mi = 0; mi < MODELS.length; mi++) {
-            const resp = await this.fetchRetry({
-                mode: 'recognize',
-                model: MODELS[mi],
-                systemInstruction: systemPrompt || RECOGNIZE_PROMPT,
-                messages: [{ role: 'user', parts }],
-            });
-            const parsed = JSON.parse(resp);
-            if (!parsed.error) return parsed;
+            for (let attempt = 0; ; attempt++) {
+                // Считаем ЗАПРОСЫ, а не запуски: по ним живёт лимит у Google и
+                // по ним же считается расход монтажника. Неудачная попытка тоже
+                // тратит квоту, поэтому увеличиваем счётчик до ответа.
+                this._apiCalls = (this._apiCalls || 0) + 1;
+                const resp = await this.fetchRetry({
+                    mode: 'recognize',
+                    model: MODELS[mi],
+                    systemInstruction: systemPrompt || RECOGNIZE_PROMPT,
+                    messages: [{ role: 'user', parts }],
+                });
+                const parsed = JSON.parse(resp);
+                if (!parsed.error) return parsed;
 
-            const msg = typeof parsed.error === 'string' ? parsed.error : parsed.error.message || '';
+                const msg = typeof parsed.error === 'string'
+                    ? parsed.error : parsed.error.message || '';
 
-            /**
-             * Исчерпанная квота — не сбой распознавания и не перегрузка.
-             *
-             * Лимит стоит на ключе целиком, поэтому перебирать модели и
-             * повторять запрос бессмысленно: сгорит остаток квоты, а результат
-             * не изменится. Помечаем ошибку особым признаком, чтобы разбор
-             * остальных листов остановился сразу, а не выел лимит до конца.
-             */
-            if (/exceeded your current quota|quota|rate.?limit|resource has been exhausted/i.test(msg)) {
-                const err = new Error('Лимит запросов к распознаванию исчерпан. ' +
-                    'Он восстановится автоматически — обычно в течение суток.');
-                err.quota = true;
-                throw err;
+                /**
+                 * Суточный лимит стоит НА МОДЕЛЬ, а не на ключ.
+                 *
+                 * У бесплатного тарифа это 20 запросов в сутки на каждую
+                 * модель. Поэтому исчерпанная квота — повод сразу взять
+                 * следующую модель, а не ждать: ожидание тут не поможет,
+                 * счётчик обнулится только на следующие сутки. Модели
+                 * кончились все — значит на сегодня действительно всё.
+                 */
+                if (/plan and billing|exceeded your current quota/i.test(msg)) {
+                    if (mi < MODELS.length - 1) break;   // к следующей модели
+                    const err = new Error('Суточный лимит запросов исчерпан по всем моделям. ' +
+                        'Он обнулится в начале следующих суток. ' +
+                        'Уже прочитанные листы сохранены — их не придётся читать заново.');
+                    err.quota = true;
+                    throw err;
+                }
+
+                const busy = /high demand|overload|unavailable|503|429|too many requests|resource has been exhausted/i
+                    .test(msg);
+                if (!busy) throw new Error(msg);
+
+                if (attempt < this.RETRY_WAITS.length) {
+                    // Google обычно называет паузу сам — «retryDelay: 27s».
+                    const hint = (msg.match(/retry\w*delay["'\s:]+(\d+)/i) || [])[1];
+                    const ms = hint ? Math.min(+hint * 1000 + 1000, 40000)
+                        : this.RETRY_WAITS[attempt];
+                    await this.wait(ms);
+                    continue;   // повторяем ТОЙ ЖЕ моделью
+                }
+
+                // Ожидание не помогло: пробуем следующую модель, а на последней
+                // сдаёмся. Смена модели — внутренняя кухня, монтажнику про неё
+                // знать незачем.
+                if (mi === MODELS.length - 1) {
+                    throw new Error('Распознавание сейчас перегружено. ' +
+                        'Подождите пару минут и попробуйте снова — ' +
+                        'уже прочитанные листы сохранены.');
+                }
+                break;
             }
-
-            // Перегрузка модели — пробуем следующую. Прочие ошибки
-            // (неверный запрос, ключ) повторять другой моделью бессмысленно.
-            const overloaded = /high demand|overload|unavailable|503|429/i.test(msg);
-            if (!overloaded || mi === MODELS.length - 1) {
-                throw new Error(msg + (overloaded
-                    ? '\n\nВсе модели сейчас перегружены — попробуйте через минуту.' : ''));
-            }
-            // Смена модели — внутренняя кухня прокси: монтажнику про неё знать
-            // незачем, повлиять он не может, а тревоги добавляет.
         }
         throw new Error('Модель не ответила');
     },
@@ -966,23 +1011,36 @@ const RecognizeUI = {
         this._sheetsDone = 0;
         this._itemsSoFar = 0;
         this._failedSheets = [];
+        this._fromCache = 0;
         let quotaHit = false;
 
         for (let i = 0; i < imgs.length; i++) {
-            this.setStatus(`Читаю лист ${i + 1} из ${imgs.length}…`);
             try {
-                const data = await this.askModel([
-                    { text: `Разбери эту смету по правилам. Это лист ${i + 1} из ${imgs.length}. ` +
-                            'Верни только JSON.' },
-                    { inline_data: { mime_type: 'image/jpeg', data: imgs[i] } },
-                ]);
-                const cand = data?.candidates?.[0];
-                const text = cand?.content?.parts?.[0]?.text;
-                if (!text) throw new Error('пустой ответ');
+                // Этот лист уже разбирали — берём готовое и не тратим запрос.
+                let parsed = this.cachedSheet(imgs[i]);
+                if (parsed) {
+                    this._fromCache++;
+                    this.setStatus(`Лист ${i + 1} из ${imgs.length} — из памяти`);
+                } else {
+                    this.setStatus(`Читаю лист ${i + 1} из ${imgs.length}…`);
+                    const data = await this.askModel([
+                        { text: `Разбери эту смету по правилам. Это лист ${i + 1} из ${imgs.length}. ` +
+                                'Верни только JSON.' },
+                        { inline_data: { mime_type: 'image/jpeg', data: imgs[i] } },
+                    ]);
+                    const cand = data?.candidates?.[0];
+                    const text = cand?.content?.parts?.[0]?.text;
+                    if (!text) throw new Error('пустой ответ');
 
-                const parsed = this.parseModelJson(text, cand.finishReason);
-                if (this._parseWarning) warnings.push(`лист ${i + 1}: ${this._parseWarning}`);
-                for (const it of (parsed.items || [])) items.push(it);
+                    parsed = this.parseModelJson(text, cand.finishReason);
+                    if (this._parseWarning) warnings.push(`лист ${i + 1}: ${this._parseWarning}`);
+                    // Запоминаем только чистый разбор: спасённый из битого
+                    // ответа неполон, и подсовывать его потом молча нельзя.
+                    if (!this._parseWarning) this.rememberSheet(imgs[i], parsed);
+                }
+
+                // Помечаем, с какого листа строка: по этому видно стыки страниц.
+                for (const it of (parsed.items || [])) items.push({ ...it, _sheet: i });
                 for (const s of (parsed.skipped || [])) skipped.push(s);
 
                 // Лист готов — отмечаем его галочкой и обновляем счётчики,
@@ -1084,6 +1142,85 @@ const RecognizeUI = {
         this.startReview({ items: rows.concat(added), skipped: this._skipped || [] });
     },
 
+    // ------------------------------------------------------------------
+    // Память по листам
+    //
+    // Один и тот же счёт распознают по многу раз: проверяют подбор, правят
+    // каталог, пробуют снова. Каждый прогон стоил запросов к модели, хотя
+    // картинки не менялись ни на байт. Разобранный лист складываем под ключ
+    // от самой картинки — повторный прогон того же файла не стоит ничего.
+    //
+    // Хранится в localStorage: разбор листа это несколько килобайт, а лимит
+    // хранилища около пяти мегабайт. Держим последние SHEET_CACHE_MAX листов,
+    // вытесняя самые давние.
+    // ------------------------------------------------------------------
+
+    SHEET_CACHE_KEY: 'rec_sheets_v1',
+    SHEET_CACHE_MAX: 40,
+
+    /**
+     * Ключ листа — от содержимого картинки.
+     *
+     * Тот же приём, что и в поиске дублей при загрузке: длина плюс края
+     * строки. Гонять мегабайтный base64 через хэш незачем, а совпадение
+     * длины и обоих краёв у разных снимков не встречается.
+     */
+    sheetKey(b64) {
+        if (!b64) return '';
+        return b64.length + ':' + b64.slice(0, 64) + b64.slice(-64);
+    },
+
+    readSheetCache() {
+        try {
+            const raw = localStorage.getItem(this.SHEET_CACHE_KEY);
+            const data = raw ? JSON.parse(raw) : null;
+            return (data && typeof data === 'object') ? data : {};
+        } catch (e) { return {}; }
+    },
+
+    /** Разбор листа из памяти. Промпт изменился — старые записи не годятся. */
+    cachedSheet(b64) {
+        const key = this.sheetKey(b64);
+        if (!key) return null;
+        const rec = this.readSheetCache()[key];
+        if (!rec || rec.v !== this.promptVersion()) return null;
+        return { items: rec.items || [], skipped: rec.skipped || [] };
+    },
+
+    rememberSheet(b64, parsed) {
+        const key = this.sheetKey(b64);
+        if (!key || !parsed || !Array.isArray(parsed.items)) return;
+        try {
+            const all = this.readSheetCache();
+            all[key] = {
+                v: this.promptVersion(),
+                at: Date.now(),
+                items: parsed.items,
+                skipped: parsed.skipped || [],
+            };
+            // Вытесняем самые давние, чтобы не упереться в предел хранилища.
+            const keys = Object.keys(all).sort((a, b) => (all[b].at || 0) - (all[a].at || 0));
+            for (const k of keys.slice(this.SHEET_CACHE_MAX)) delete all[k];
+            localStorage.setItem(this.SHEET_CACHE_KEY, JSON.stringify(all));
+        } catch (e) {
+            // Переполнилось хранилище — память необязательна, работаем без неё.
+            try { localStorage.removeItem(this.SHEET_CACHE_KEY); } catch (e2) { /* и так сойдёт */ }
+        }
+    },
+
+    /**
+     * Отпечаток правил разбора. Меняется вместе с промптом — иначе после
+     * правки правил в смету поедут разборы, сделанные по старым.
+     */
+    promptVersion() {
+        if (this._promptV) return this._promptV;
+        const s = String(typeof RECOGNIZE_PROMPT !== 'undefined' ? RECOGNIZE_PROMPT : '');
+        let h = 0;
+        for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+        this._promptV = String(h);
+        return this._promptV;
+    },
+
     /**
      * Отметка листа прямо на миниатюре: готов или не прочитался.
      *
@@ -1115,8 +1252,67 @@ const RecognizeUI = {
      *
      * Проход необязательный: не получилось — работаем с тем, что разобрано.
      */
+    /**
+     * Сведение листов своими силами, без запроса к модели.
+     *
+     * Из пяти вещей, которые ищет сводящий проход, четыре видно и так.
+     * Систему калькулятор считает сам. Повтор шапки узнаётся по словам:
+     * «наименование», «кол-во», «итого» — и по отсутствию количества и цены.
+     * Дубль на стыке — это когда последняя строка листа слово в слово
+     * повторена первой строкой следующего. Единый тип уже приводит
+     * normalizeType. Модель нужна только для переноса строки, и то не всегда.
+     *
+     * Возвращает { plan, suspect }: план правок и признак того, что стык
+     * выглядит оборванным и без модели его не разобрать.
+     */
+    HEADER_RE: /^(наименование|товар|№|n[оo]?\s*п\/п|итого|всего|продолжение|стр\.?\s*\d|лист\s*\d)/i,
+
+    mergeLocal(items) {
+        const plan = { merge: [], retype: [], drop: [] };
+        let suspect = false;
+        const norm = (s) => String(s || '').toLowerCase().replace(/[^а-яёa-z0-9]/g, '');
+        const qtyOf = (r) => (Number(r.qty) || 0) + (Number(r.qtyExtra) || 0);
+
+        // Идём по строкам, помня последнюю ОСТАВЛЕННУЮ: между строками стыка
+        // почти всегда стоит повторённая шапка, и сравнивать надо через неё.
+        let prev = null;
+
+        for (let i = 0; i < items.length; i++) {
+            const r = items[i];
+            const raw = String(r.raw || '').trim();
+
+            // Шапка таблицы и служебные строки: ни количества, ни предмета.
+            if (!qtyOf(r) && this.HEADER_RE.test(raw)) { plan.drop.push(i); continue; }
+
+            if (prev && prev.row._sheet !== r._sheet) {
+                // Стык страниц. Строка, напечатанная дважды, — это «продолжение».
+                if (norm(prev.row.raw) && norm(prev.row.raw) === norm(raw)) {
+                    plan.drop.push(i);
+                    continue;
+                }
+                // Верхняя строка оборвана (количества нет), нижняя начинается
+                // со строчной буквы — похоже на перенос, а его без модели
+                // не разобрать.
+                if (!qtyOf(prev.row) && /^[а-яё]/.test(raw)) suspect = true;
+            }
+            prev = { row: r, i };
+        }
+        return { plan, suspect };
+    },
+
     async mergeSheets(items, sheets) {
         if (items.length < 2) return { items };
+
+        // Сначала своими силами: шапки и дубли на стыке видно без модели.
+        const local = this.mergeLocal(items);
+        if (local.plan.drop.length) {
+            const res = this.applyMergePlan(items, local.plan);
+            items = res.items;
+        }
+        // Переносы строк — единственное, чего локальные правила не разбирают.
+        // Нет подозрительных стыков — запрос не нужен вовсе.
+        if (!local.suspect) return { items };
+
         this.setStatus('Свожу листы вместе…');
 
         const list = items.map((it, i) =>
@@ -1652,8 +1848,29 @@ const RecognizeUI = {
             ? RecognizeMatch.matchItem(row, this._sys) : null;
     },
 
+    /**
+     * Снимок строк для «Отменить».
+     *
+     * Позиции каталога ссылаются друг на друга: у товара есть поле alts со
+     * списком альтернатив, а те ссылаются обратно. Обычный JSON.stringify на
+     * такой структуре падает с «circular structure», и вместе с ним падало
+     * всё, что делает снимок: удаление строк, перенос в раздел, переключатель
+     * аналогов, сама отмена. Поэтому связи между товарами в снимок не идут —
+     * для отката нужны сами строки, а не каталог целиком.
+     */
+    SNAP_SKIP: ['alts', 'alternatives', 'rommer', 'comfort', '_item'],
+
     snap() {
-        this._undo.push(JSON.stringify(this._rows));
+        const seen = new WeakSet();
+        const json = JSON.stringify(this._rows, (key, value) => {
+            if (this.SNAP_SKIP.includes(key)) return undefined;
+            if (value && typeof value === 'object') {
+                if (seen.has(value)) return undefined;   // страховка от прочих циклов
+                seen.add(value);
+            }
+            return value;
+        });
+        this._undo.push(json);
         if (this._undo.length > 40) this._undo.shift();
     },
 
@@ -2023,7 +2240,7 @@ const RecognizeUI = {
 
         return `<details class="rec-miss">
             <summary>Почему не подобрано: ${a.total} ${
-              a.total % 10 === 1 && a.total % 100 !== 11 ? 'строка' : 'строк'}</summary>
+              this.plural(a.total, 'строка', 'строки', 'строк')}</summary>
             ${blocks.join('')}
           </details>`;
     },
@@ -2220,6 +2437,12 @@ const RecognizeUI = {
                 },
                 calcId: app.state.calc_id || null,
                 projectName: app.state.projectName || '',
+                // Сколько запросов к модели стоила эта смета. Лимит монтажника
+                // считается именно по ним: с полистным разбором один запуск
+                // стоит нескольких запросов, и «50 распознаваний в месяц»
+                // без этого числа ничего не означало.
+                calls: this._apiCalls || 0,
+                fromCache: this._fromCache || 0,
                 result: this._rows.map(r => ({
                     raw: r.raw, type: r.type, d: r.d, thread: r.thread,
                     threadType: r.threadType, qty: r.qty, qtyExtra: r.qtyExtra,

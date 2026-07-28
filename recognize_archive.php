@@ -139,7 +139,17 @@ function writeLimits($data) {
     @file_put_contents(limitsPath(), json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
 }
 
-/** Сколько распознаваний у пользователя с начала текущего месяца. */
+/**
+ * Сколько ЗАПРОСОВ к модели израсходовал пользователь с начала месяца.
+ *
+ * Раньше считались запуски: один разбор сметы — одна единица лимита. С
+ * полистным разбором это перестало отражать расход: смета на три листа стоит
+ * трёх-четырёх запросов, и лимит «50 в месяц» мог означать и 50 запросов, и
+ * 200 — как повезёт с числом страниц. Считаем то, что реально тратится.
+ *
+ * Записи, сделанные до этой правки, поля calls не имеют — они засчитываются
+ * как один запрос, ровно как и считались тогда.
+ */
 function usedThisMonth($archiveDir, $user) {
     $used = 0;
     $prefix = date('Y-m');   // папки названы датой, месяц — это префикс
@@ -148,7 +158,9 @@ function usedThisMonth($archiveDir, $user) {
         foreach (scandir("$archiveDir/$day") ?: [] as $f) {
             if (substr($f, -5) !== '.json') continue;
             $meta = json_decode(@file_get_contents("$archiveDir/$day/$f"), true);
-            if (is_array($meta) && ($meta['user'] ?? null) === $user) $used++;
+            if (!is_array($meta) || ($meta['user'] ?? null) !== $user) continue;
+            $calls = isset($meta['calls']) ? (int)$meta['calls'] : 1;
+            $used += max(1, $calls);
         }
     }
     return $used;
