@@ -512,9 +512,21 @@ const RecognizeMatch = (function () {
       return item.angle === 45 ? 'elbow45' : 'elbow90';
     }
     if (t.startsWith('тройник')) {
-      if (hasDims) return 'tee_red';
+      /**
+       * Резьба сильнее набора размеров.
+       *
+       * «Тройник 28х1/2 ВР х28» модель отдаёт с dims=[28,28]: чисел в строке
+       * несколько, и она честно их перечисляет. Но это НЕ переходной тройник,
+       * а резьбовой — боковой выход у него с резьбой, а не другого диаметра.
+       * Пока размеры проверялись первыми, подбор уходил в переходные тройники,
+       * где резьбовых нет вовсе, и строка оставалась без артикула.
+       */
       if (item.thread && item.threadType === 'НР') return 'tee_mi';
       if (item.thread && item.threadType === 'ВР') return 'tee_fi';
+      // Резьба названа, а исполнение — нет: если при этом перечислены размеры,
+      // значит боковой выход резьбовой. Латунный «Тройник 1 ВВВ» размеров не
+      // перечисляет и сюда не попадает — он разбирается как обычный тройник.
+      if (hasDims) return item.thread ? 'tee_fi' : 'tee_red';
       return 'tee';
     }
     if (t === 'клипса') return 'clip';
@@ -1067,7 +1079,10 @@ const RecognizeMatch = (function () {
     const out = { ...rec };
 
     if (!out.thread) {
-      const th = raw.match(/(?:^|[\s(х-])(\d\s+\d\s*\/\s*\d|\d\s*\/\s*\d)(?![\d])/);
+      // Разделителем перед резьбой бывает и звёздочка: «28*1/2 ВР*28» —
+      // так пишут в счетах 1С. Без неё дробь не выделялась, тройник считался
+      // переходным и не находился вовсе.
+      const th = raw.match(/(?:^|[\s(х×x*-])(\d\s+\d\s*\/\s*\d|\d\s*\/\s*\d)(?![\d])/);
       if (th) out.thread = th[1].replace(/\s*\/\s*/, '/').replace(/\s+/, ' ');
     }
 
@@ -1216,6 +1231,11 @@ const RecognizeMatch = (function () {
     // Бак к трубопроводу тоже не относится: его выбирают объём и назначение.
     if (isTank(rec)) return matchTank(rec);
     if (isCorrugated(rec)) return matchCorrugated(rec);
+    // Консоль выбирают по вылету, а не по трубной системе.
+    if (isConsole(rec)) {
+      const c = matchConsole(rec);
+      if (c) return c;
+    }
 
     // Система берётся от самой позиции; подсказка снаружи — лишь запасной
     // вариант для случаев, когда по типу определить не удалось.
@@ -1251,7 +1271,11 @@ const RecognizeMatch = (function () {
     }
     if (!pool.length) return null;
 
-    const wantChain = Array.isArray(rec.dims) && rec.dims.length > 1 ? rec.dims : null;
+    // Когда названа резьба, набор размеров сравнивать нельзя: у «Тройника
+    // 28х1/2 ВР х28» dims=[28,28], а в каталоге он подписан «28х1/2» — цепочка
+    // размеров не совпадёт ни с чем и обнулит оценку верной позиции.
+    const wantChain = !rec.thread && Array.isArray(rec.dims) && rec.dims.length > 1
+      ? rec.dims : null;
     const scored = [];
 
     for (const it of pool) {
@@ -1740,6 +1764,66 @@ const RecognizeMatch = (function () {
       brandRank: brandRank(best.item),
       needsApproval: true,
       alternatives: pool.filter((it) => it !== best.item).slice(0, 3),
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Монтажная консоль (кронштейн под трубу)
+  //
+  // Консоль выбирают по вылету: 300, 400, 500 мм — это то, на сколько она
+  // выносит трубу от стены. Сечение профиля («30х30х2») вторично, у каждого
+  // производителя оно своё. Подбор по названию этого не понимал: в строке
+  // «Кронштейн оцинк. Walraven 400 мм 30*30*2» четыре числа, и длина тонула
+  // среди них — 300-я находилась случайно, а 400 и 500 не находились вовсе.
+  // ---------------------------------------------------------------------------
+
+  const CONSOLE_NOT = /коллект|бак|радиатор|полотенц|котл|насос/i;
+
+  function isConsole(rec) {
+    const raw = String(rec.raw || '');
+    if (!/кронштейн|консоль/i.test(raw)) return false;
+    return !CONSOLE_NOT.test(raw);
+  }
+
+  /** Вылет консоли: самое крупное число из ряда длин. */
+  function consoleLength(raw) {
+    const nums = (String(raw || '').match(/(\d{3,4})\s*мм/gi) || [])
+      .map((s) => parseInt(s, 10))
+      .filter((n) => n >= 100 && n <= 1000);
+    return nums.length ? Math.max(...nums) : null;
+  }
+
+  function matchConsole(rec) {
+    const want = consoleLength(rec.raw);
+    if (!want) return null;
+
+    const idx = buildNameIndex();
+    const rank = brandPreference(rec);
+    let best = null;
+
+    for (const row of idx.rows) {
+      const n = String(row.it.name || '');
+      if (!/консоль|кронштейн/i.test(n)) continue;
+      if (CONSOLE_NOT.test(n)) continue;
+      // Длина — последнее число в названии: «1,75х28х30х400мм», «WM2 … 400мм».
+      const nums = (n.match(/(\d{2,4})\s*мм/gi) || []).map((s) => parseInt(s, 10));
+      const len = nums.length ? nums[nums.length - 1] : null;
+      if (len !== want) continue;
+
+      const r = rank(row.it) + (row.fromPrice ? 0.5 : 0);
+      if (!best || r < best.rank || (r === best.rank && row.it.price < best.it.price)) {
+        best = { it: row.it, rank: r };
+      }
+    }
+    if (!best) return null;
+
+    return {
+      item: best.it,
+      score: 0.85,
+      substituted: `консоль подобрана по вылету ${want} мм — сверьте сечение профиля`,
+      brandRank: brandRank(best.it),
+      needsApproval: true,
+      alternatives: [],
     };
   }
 
