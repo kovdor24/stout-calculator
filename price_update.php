@@ -240,6 +240,17 @@ foreach ($sheets as $s) {
     $reName  = '/наименование|описание|модель|товар/ui';
     $rePrice = '/цена|ррц|стоимость/ui';
 
+    /**
+     * Канонический артикул STOUT/ROMMER: SWH-1110-000300, RCA-6010-751000,
+     * RCN1-1000-1020080, SVTDK-0002-000015C.
+     *
+     * Форма строгая, поэтому по ней колонку артикула видно наверняка — в
+     * отличие от признака «короткое значение без пробелов», под который
+     * одинаково подходит и порядковый номер строки прайса. Проверено по
+     * всему прайсу: 380 попаданий, ни одного в листах других брендов.
+     */
+    $reCanon = '/\b([SR][A-Z]{1,4}\d?-\d{3,4}[A-Z]{0,2}-\d{4,8}[A-Z]?)\b/u';
+
     $hi = -1;
     foreach ($rows as $i => $r) {
         $hasArt = $hasName = $hasPrice = false;
@@ -279,6 +290,7 @@ foreach ($sheets as $s) {
      * шапке, сверяем с товарными строками и при необходимости ищем настоящую.
      */
     $probe = [];
+    $canon = [];
     $seenRows = 0;
     for ($i = $hi + 1; $i < count($rows) && $seenRows < 40; $i++) {
         if (!is_numeric($rows[$i][$cPrice] ?? null)) continue;
@@ -289,6 +301,7 @@ foreach ($sheets as $s) {
             if ($t === '' || $col === $cPrice || $col === $cName) continue;
             if (mb_strlen($t) > 30 || preg_match('/\s/u', $t)) continue;
             $probe[$col] = ($probe[$col] ?? 0) + 1;
+            if (preg_match($reCanon, $t)) $canon[$col] = ($canon[$col] ?? 0) + 1;
         }
     }
     $artFilled = $cArt ? ($probe[$cArt] ?? 0) : 0;
@@ -296,6 +309,26 @@ foreach ($sheets as $s) {
         arsort($probe);
         $bestCol = key($probe);
         if ($bestCol !== null && ($probe[$bestCol] ?? 0) * 2 >= $seenRows) $cArt = $bestCol;
+    }
+
+    /**
+     * Колонка с настоящими артикулами перебивает и шапку, и частотную догадку.
+     *
+     * Признак «короткое значение без пробелов» слеп к смыслу: в листе «STOUT
+     * Конвекторы внутрипольные» ему одинаково нравится и колонка артикулов, и
+     * колонка нумерации строк (6810, 6811, 6812…), а выигрывает та, что
+     * заполнена плотнее. В индекс уходил номер строки, и по нему потом не
+     * находилось ни фото, ни сама позиция, а в смету клиенту печатался
+     * «артикул 6810». Там, где артикул канонической формы в листе есть,
+     * сомнений быть не может — берём эту колонку.
+     */
+    if ($seenRows > 0 && $canon) {
+        arsort($canon);
+        $canonCol = key($canon);
+        $curCanon = ($cArt !== null) ? ($canon[$cArt] ?? 0) : 0;
+        if ($canon[$canonCol] * 2 >= $seenRows && $curCanon < $canon[$canonCol]) {
+            $cArt = $canonCol;
+        }
     }
 
     $section = '';
@@ -348,6 +381,23 @@ foreach ($sheets as $s) {
         if ($name === '') $name = $section !== '' ? $section : $art;
         $name = trim(preg_replace('/\s+/u', ' ', $name));
         if (mb_strlen($name) < 3) continue;
+
+        /**
+         * Артикул, спрятанный в названии.
+         *
+         * В листах «ROMMER Дымоходы», «STOUT бойлеры комб и кос», «Rommer
+         * Трубопроводная арматура» колонка артикула заполнена порядковым
+         * номером («27647»), а настоящий код стоит в начале наименования:
+         * «RCA-6010-751000 ROMMER Комплект дымохода традиц. …». По номеру
+         * строки не найти ни картинку, ни позицию при распознавании счёта —
+         * поэтому код забираем из названия, а из названия убираем: там он
+         * только мешает поиску по словам.
+         */
+        if (!preg_match($reCanon, $art) && preg_match($reCanon, $name, $am)) {
+            $art = $am[1];
+            $stripped = trim(preg_replace('/\s{2,}/u', ' ', str_replace($am[1], '', $name)));
+            if (mb_strlen($stripped) >= 3) $name = $stripped;
+        }
 
         $p = round((float)$price, 2);
         if ($p <= 0) continue;
