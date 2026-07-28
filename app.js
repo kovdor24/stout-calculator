@@ -5376,7 +5376,10 @@ const app = {
         this._yandexExchanging = true;
 
         try {
-            const resp = await fetch(supabaseUrl + '/functions/v1/yandex-auth', {
+            // supabaseProxyFetch, а не обычный fetch: у части провайдеров в РФ
+            // *.supabase.co не открывается напрямую, и запрос уходит через
+            // proxy.heatcalc.ru — так же, как все остальные обращения к базе
+            const resp = await supabaseProxyFetch(supabaseUrl + '/functions/v1/yandex-auth', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -5389,6 +5392,37 @@ const app = {
             if (!resp.ok || !data || !data.action_link) {
                 throw new Error((data && data.error) ? data.error : ('HTTP ' + resp.status));
             }
+
+            // Ссылка входа ведёт на supabase.co, а переход страницы через прокси не
+            // пропустишь — у пользователей из РФ без VPN он упирался в блокировку
+            // (ERR_CONNECTION_ABORTED). Поэтому не переходим по ссылке, а забираем из
+            // неё одноразовый токен и подтверждаем его обычным запросом к API: он
+            // идёт через тот же прокси и блокировка ему не мешает.
+            let tokenHash = null, linkType = 'magiclink';
+            try {
+                const link = new URL(data.action_link);
+                tokenHash = link.searchParams.get('token');
+                linkType = link.searchParams.get('type') || 'magiclink';
+            } catch (e) { }
+
+            if (tokenHash) {
+                let { error } = await supabaseClient.auth.verifyOtp({ token_hash: tokenHash, type: linkType });
+                if (error && linkType !== 'email') {
+                    // Разные версии Supabase ждут разное имя типа для одноразовой ссылки
+                    const retry = await supabaseClient.auth.verifyOtp({ token_hash: tokenHash, type: 'email' });
+                    error = retry.error;
+                }
+                if (!error) {
+                    // Сессия уже в localStorage. Перезагружаем страницу: обработчик
+                    // авторизации подхватит её штатно, как при обычном входе.
+                    // search сохраняем — в нём может быть ссылка на смету.
+                    window.location.replace(window.location.pathname + window.location.search);
+                    return;
+                }
+                console.warn("verifyOtp не сработал, пробуем переход по ссылке:", error);
+            }
+
+            // Запасной путь: прямой переход (сработает там, где supabase.co доступен)
             window.location.replace(data.action_link);
         } catch (err) {
             this._yandexExchanging = false;
@@ -5409,7 +5443,7 @@ const app = {
             if (!session) {
                 throw new Error("Сессия истекла. Войдите заново и повторите привязку.");
             }
-            const resp = await fetch(supabaseUrl + '/functions/v1/yandex-auth', {
+            const resp = await supabaseProxyFetch(supabaseUrl + '/functions/v1/yandex-auth', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -5451,7 +5485,7 @@ const app = {
                 msg += "\n\nПустой аккаунт, созданный ранее на эту почту, удалён, чтобы не было путаницы.";
             }
             await app.alert(msg, "Вход через Яндекс подключён");
-            window.location.replace(window.location.pathname);
+            window.location.replace(window.location.pathname + window.location.search);
         } catch (err) {
             this._yandexExchanging = false;
             const preloader = document.getElementById('stout_preloader');
@@ -5621,7 +5655,7 @@ const app = {
     // ни по почте, ни через Яндекс.
     rejectGoogleSignupRU: async function (session) {
         try {
-            await fetch(supabaseUrl + '/functions/v1/revoke-google-signup', {
+            await supabaseProxyFetch(supabaseUrl + '/functions/v1/revoke-google-signup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
