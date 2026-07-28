@@ -251,6 +251,26 @@ foreach ($sheets as $s) {
      */
     $reCanon = '/\b([SR][A-Z]{1,4}\d?-\d{3,4}[A-Z]{0,2}-\d{4,8}[A-Z]?)\b/u';
 
+    /**
+     * Тот же артикул, но написанный ЧЕРЕЗ ПРОБЕЛЫ: «SMS 0907 000002».
+     *
+     * Так заполнен весь лист «STOUT Коллекторы» и часть «STOUT Шаровые краны».
+     * Проверка колонки ниже отбрасывает значения с пробелами как «не код» — и
+     * колонка, честно подписанная в шапке «Артикул», оказывалась по её меркам
+     * пустой, после чего подменялась колонкой нумерации. Отсюда в индексе
+     * брались артикул «1» и наименование «8207».
+     */
+    $reCanonSp = '/\b([SR][A-Z]{1,4}\d?[ -]\d{3,4}[A-Z]{0,2}[ -]\d{4,8}[A-Z]?)\b/u';
+    /** Приводим к каноническому виду: пробелы между частями — те же дефисы. */
+    $canonize = static function ($v) use ($reCanon, $reCanonSp) {
+        $v = trim((string)$v);
+        if ($v === '' || preg_match($reCanon, $v)) return $v;
+        if (preg_match($reCanonSp, $v, $m)) {
+            return str_replace($v, preg_replace('/\s+/u', '-', $m[1]), $v);
+        }
+        return $v;
+    };
+
     $hi = -1;
     foreach ($rows as $i => $r) {
         $hasArt = $hasName = $hasPrice = false;
@@ -298,10 +318,12 @@ foreach ($sheets as $s) {
         foreach ($rows[$i] as $col => $v) {
             $t = trim((string)$v);
             // Код товара: короткий, без пробелов, не цена и не название.
+            // Исключение — артикул, записанный через пробелы: он код и есть.
             if ($t === '' || $col === $cPrice || $col === $cName) continue;
-            if (mb_strlen($t) > 30 || preg_match('/\s/u', $t)) continue;
+            $spacedArt = preg_match($reCanonSp, $t) && !preg_match($reCanon, $t);
+            if (!$spacedArt && (mb_strlen($t) > 30 || preg_match('/\s/u', $t))) continue;
             $probe[$col] = ($probe[$col] ?? 0) + 1;
-            if (preg_match($reCanon, $t)) $canon[$col] = ($canon[$col] ?? 0) + 1;
+            if ($spacedArt || preg_match($reCanon, $t)) $canon[$col] = ($canon[$col] ?? 0) + 1;
         }
     }
     $artFilled = $cArt ? ($probe[$cArt] ?? 0) : 0;
@@ -332,11 +354,12 @@ foreach ($sheets as $s) {
     }
 
     $section = '';
+    $lastName = '';   // последнее осмысленное наименование листа — для строк-продолжений
     $n = count($rows);
     for ($i = $hi + 1; $i < $n; $i++) {
         $r = $rows[$i];
         $price = $r[$cPrice] ?? null;
-        $art = trim((string)($r[$cArt] ?? ''));
+        $art = $canonize($r[$cArt] ?? '');
 
         if (!is_numeric($price)) {
             // Заголовок раздела: короткая строка без двоеточий и техописаний.
@@ -380,6 +403,29 @@ foreach ($sheets as $s) {
         }
         if ($name === '') $name = $section !== '' ? $section : $art;
         $name = trim(preg_replace('/\s+/u', ' ', $name));
+
+        /**
+         * Название из одних цифр — это продолжение объединённой ячейки.
+         *
+         * Наименование в таких листах написано один раз на весь блок, а в
+         * строках ниже остаётся только размер или вовсе посторонний номер:
+         * «8207», «100», «5321 415». Пятнадцать процентов прайса выглядели
+         * именно так, и найти подобную позицию по названию было нечем — а
+         * распознавание счёта ищет прежде всего по словам.
+         *
+         * Берём последнее осмысленное название этого листа и оставляем цифры
+         * как уточнение: они и есть отличие строки от соседних, без них
+         * позиции блока стали бы неразличимы.
+         */
+        if (preg_match('/^[\d.,\s]+$/u', $name)) {
+            // Последний запасной вариант — имя листа: в «Rommer Конвекторы
+            // внутрипольные» и «STOUT Радиаторы отопления» осмысленного
+            // наименования нет ни в одной строке вообще, только числа.
+            $base = $lastName !== '' ? $lastName : ($section !== '' ? $section : $s['name']);
+            if ($base !== '') $name = trim($base . ' ' . $name);
+        } elseif (mb_strlen($name) > 3) {
+            $lastName = $name;
+        }
         if (mb_strlen($name) < 3) continue;
 
         /**
