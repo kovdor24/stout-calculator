@@ -919,10 +919,25 @@ const RecognizeUI = {
             if (!parsed.error) return parsed;
 
             const msg = typeof parsed.error === 'string' ? parsed.error : parsed.error.message || '';
+
+            /**
+             * Исчерпанная квота — не сбой распознавания и не перегрузка.
+             *
+             * Лимит стоит на ключе целиком, поэтому перебирать модели и
+             * повторять запрос бессмысленно: сгорит остаток квоты, а результат
+             * не изменится. Помечаем ошибку особым признаком, чтобы разбор
+             * остальных листов остановился сразу, а не выел лимит до конца.
+             */
+            if (/exceeded your current quota|quota|rate.?limit|resource has been exhausted/i.test(msg)) {
+                const err = new Error('Лимит запросов к распознаванию исчерпан. ' +
+                    'Он восстановится автоматически — обычно в течение суток.');
+                err.quota = true;
+                throw err;
+            }
+
             // Перегрузка модели — пробуем следующую. Прочие ошибки
             // (неверный запрос, ключ) повторять другой моделью бессмысленно.
-            const overloaded = /high demand|overload|unavailable|503|429|resource has been exhausted/i
-                .test(msg);
+            const overloaded = /high demand|overload|unavailable|503|429/i.test(msg);
             if (!overloaded || mi === MODELS.length - 1) {
                 throw new Error(msg + (overloaded
                     ? '\n\nВсе модели сейчас перегружены — попробуйте через минуту.' : ''));
@@ -950,6 +965,8 @@ const RecognizeUI = {
         this._sheetsTotal = imgs.length;
         this._sheetsDone = 0;
         this._itemsSoFar = 0;
+        this._failedSheets = [];
+        let quotaHit = false;
 
         for (let i = 0; i < imgs.length; i++) {
             this.setStatus(`Читаю лист ${i + 1} из ${imgs.length}…`);
@@ -975,8 +992,22 @@ const RecognizeUI = {
                 this.markSheet(i, 'done');
             } catch (e) {
                 failed.push(i + 1);
-                warnings.push(`лист ${i + 1} не прочитан: ${e.message.split('\n')[0]}`);
+                this._failedSheets.push(i);
                 this.markSheet(i, 'fail');
+
+                // Квота кончилась — остальные листы читать нечем. Прекращаем
+                // сразу: каждый следующий запрос всё равно вернёт ту же ошибку,
+                // а лимит тратится и на неудачные попытки.
+                if (e.quota) {
+                    quotaHit = true;
+                    for (let k = i + 1; k < imgs.length; k++) {
+                        this._failedSheets.push(k);
+                        this.markSheet(k, 'fail');
+                    }
+                    warnings.push(e.message);
+                    break;
+                }
+                warnings.push(`лист ${i + 1} не прочитан: ${e.message.split('\n')[0]}`);
             }
         }
 
@@ -985,12 +1016,72 @@ const RecognizeUI = {
         }
 
         // Сводящий проход: листы разобраны порознь, связи между ними — нет.
-        const merged = await this.mergeSheets(items, imgs.length);
+        // При исчерпанной квоте его не делаем: это ещё один запрос, а лимита
+        // уже нет — и сводить пока нечего, часть листов не прочитана.
+        const merged = quotaHit ? { items } : await this.mergeSheets(items, imgs.length);
         if (merged.warning) warnings.push(merged.warning);
 
         this._parseWarning = warnings.join(' · ');
         this.setStatus('');
         return { items: merged.items, skipped };
+    },
+
+    /**
+     * Дочитывание листов, которые не прочитались.
+     *
+     * Когда лимит запросов кончился на середине, гонять всю смету заново
+     * нельзя: прочитанные листы стоили квоты, и тратить её на них второй раз
+     * незачем. Читаем только упавшие, дописываем позиции к уже разобранным и
+     * пересобираем проверку. Разобранное при неудаче не теряется.
+     */
+    async retryFailedSheets() {
+        const left = (this._failedSheets || []).slice();
+        if (!left.length || this._busy) return;
+
+        this._busy = true;
+        const rows = this._rows.slice();
+        const added = [];
+        const stillFailed = [];
+        let warning = '';
+
+        this.setStatus('');
+        this.progressStart(false);
+        this.progressTo(1);
+
+        for (const i of left) {
+            this.setStatus(`Дочитываю лист ${i + 1}…`);
+            try {
+                const data = await this.askModel([
+                    { text: `Разбери эту смету по правилам. Это лист ${i + 1} из ${
+                        this._sheetsTotal}. Верни только JSON.` },
+                    { inline_data: { mime_type: 'image/jpeg', data: this._imgs[i] } },
+                ]);
+                const cand = data?.candidates?.[0];
+                const text = cand?.content?.parts?.[0]?.text;
+                if (!text) throw new Error('пустой ответ');
+                const parsed = this.parseModelJson(text, cand.finishReason);
+                for (const it of (parsed.items || [])) added.push(it);
+                this.markSheet(i, 'done');
+            } catch (e) {
+                stillFailed.push(i);
+                this.markSheet(i, 'fail');
+                if (e.quota) {
+                    warning = e.message;
+                    for (const k of left) if (k > i && !stillFailed.includes(k)) stillFailed.push(k);
+                    break;
+                }
+                warning = `лист ${i + 1} не прочитан: ${e.message.split('\n')[0]}`;
+            }
+        }
+
+        this._failedSheets = stillFailed;
+        this._parseWarning = warning;
+        this.progressStop();
+        this._busy = false;
+
+        if (!added.length) { this.renderReview(); return; }
+        // Новые позиции проходят тот же путь, что и при первом разборе.
+        this.startReview({ items: rows.concat(added), skipped: this._skipped || [] });
     },
 
     /**
@@ -1701,6 +1792,7 @@ const RecognizeUI = {
               ${(RecognizeMatch.SECTIONS || []).map(s =>
                 `<option value="${esc(s)}">${esc(s)}</option>`).join('')}
             </select>
+            ${this.renderRetryButton()}
             ${this.renderSystemSelect()}
             <span class="rec-status">Подобрано ${found.length} из ${this._rows.length} (${
               this._rows.length ? Math.round(found.length / this._rows.length * 100) : 0}%)${
@@ -1756,6 +1848,20 @@ const RecognizeUI = {
 
         return `<select class="rec-btn-g" title="Заменить систему целиком: диаметры пересчитаются по проходу, фитинги подберутся заново"
                         onchange="RecognizeUI.convertSystem(this.value)">${opts}</select>`;
+    },
+
+    /**
+     * Кнопка дочитывания. Появляется только когда есть непрочитанные листы —
+     * в обычной работе её не видно.
+     */
+    renderRetryButton() {
+        const left = this._failedSheets || [];
+        if (!left.length) return '';
+        const nums = left.map(i => i + 1).join(', ');
+        return `<button class="rec-btn-g rec-retry" ${this._busy ? 'disabled' : ''}
+                        title="Прочитать только те листы, которые не удались — уже разобранное сохранится"
+                        onclick="RecognizeUI.retryFailedSheets()">↻ Дочитать ${
+            left.length > 1 ? 'листы' : 'лист'} ${nums}</button>`;
     },
 
     /**
