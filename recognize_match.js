@@ -2980,6 +2980,22 @@ const RecognizeMatch = (function () {
   ];
 
   /**
+   * Подраздел «Big Blue» внутри узла ввода ХВС.
+   *
+   * В смете калькулятора колба, картридж и обвязка к ним стоят отдельной
+   * группой (grp63 в app.render), поэтому раздела мало — нужен ещё подраздел.
+   */
+  const BIG_BLUE = {
+    section: '6. Узел ввода ХВС',
+    group: '6.3. Система фильтрации Big Blue',
+  };
+
+  /** Значение таблицы разделов: строка — только раздел, объект — с подразделом. */
+  const asSection = (v) => (typeof v === 'string'
+    ? { section: v, group: null }
+    : { section: v.section, group: v.group || null });
+
+  /**
    * Раздел по категории каталога.
    *
    * Если позиция подобрана, её раздел уже известен: калькулятор кладёт эту
@@ -3079,7 +3095,7 @@ const RecognizeMatch = (function () {
 
     // 6. Узел ввода ХВС
     water_input_node: '6. Узел ввода ХВС',
-    filter_big_blue: '6. Узел ввода ХВС',
+    filter_big_blue: BIG_BLUE,
 
     // 7.1. Обвязка скважинного насоса
     well_pumps: '7.1. Обвязка скважинного насоса',
@@ -3092,6 +3108,58 @@ const RecognizeMatch = (function () {
   };
 
   /**
+   * Раздел для отдельных артикулов, о которых категория каталога молчит.
+   *
+   * extra_items — общая полка для позиций из счетов поставщиков: контроллер
+   * котла, колба фильтра и теплоизоляция лежат там вперемешку, и раздел у
+   * каждой свой. По категории его не вывести, только по артикулу.
+   */
+  const ID_SECTIONS = {
+    // Контроллер котла и отопительных контуров — котельная.
+    'SMH-3001-104212': '2. Обвязка котельной',
+    // Корпус картриджного фильтра Джилекс — та же колба Big Blue, но чужая.
+    // Артикул с приставкой JLX-, потому что «9059» в прайсе занят коллектором
+    // MEIBES (см. комментарий в catalog.js).
+    'JLX-9059': BIG_BLUE,
+  };
+
+  /**
+   * Раздел по названию — для позиций, которых в каталоге нет вовсе.
+   *
+   * Такие строки подбираются по прайсу, а у прайса раздела сметы нет: его
+   * листы («STOUT ГБМ», «Chudej», «Ectocontrol») группируют товар по
+   * поставщику, а не по месту в системе. Поэтому смотрим на само название.
+   *
+   *   [ что ищем, раздел, чего при этом быть не должно ]
+   */
+  const NAME_SECTIONS = [
+    // Шламоотделитель и грязевик стоят на обратке перед котлом.
+    [/шламоотделител|шламоуловител|грязевик/, '2. Обвязка котельной'],
+    // Погодозависимая автоматика и блоки управления котлом.
+    [/thermatic|ectocontrol|эктоконтрол|контроллер удал[её]нного управления/,
+      '2. Обвязка котельной'],
+    // Поворотный сервопривод сидит на смесительном клапане в котельной.
+    // Термоэлектрический — на коллекторе тёплого пола, его сюда не берём.
+    [/сервопривод/, '2. Обвязка котельной',
+      /электротермическ|термоэлектрическ|компактн|нормально (за|от)крыт/],
+    // Колба фильтра: и штатная Big Blue, и Джилекс — один и тот же узел.
+    [/big ?blue|корпус для картриджного фильтра/, BIG_BLUE],
+    // Трап — приёмник канализации в полу, ни в каком другом разделе не бывает.
+    [/(^|[^а-яё])трап/, '8. Канализация'],
+  ];
+
+  /** Раздел по названию подобранной позиции (и по самой строке сметы). */
+  function sectionByName(text) {
+    if (!text) return null;
+    for (const [re, sec, except] of NAME_SECTIONS) {
+      if (!re.test(text)) continue;
+      if (except && except.test(text)) continue;
+      return sec;
+    }
+    return null;
+  }
+
+  /**
    * Индекс «артикул → раздел», собирается один раз по первому обращению.
    *
    * Один и тот же артикул лежит сразу в нескольких категориях: кран 3/4"
@@ -3100,12 +3168,20 @@ const RecognizeMatch = (function () {
    * гасится (null): пусть лучше сработают правила по составу сметы.
    */
   let catSectionIndex = null;
+  /**
+   * Артикулы нержавейки (категории ss_*, ряд RSS-…).
+   *
+   * Раздела у них нет и быть не может: одной и той же нержавейкой ведут и
+   * обвязку котельной, и подводку к радиаторам, и водоснабжение. Раньше
+   * префикс ss_ читался как «сантехника», и вся нержавейка уезжала в
+   * «8. Канализация» — хотя канализация целиком лежит в одном sewer_silent.
+   * Теперь список нужен для правила, которое решает по составу сметы.
+   */
+  let ssIds = null;
   function buildCatSectionIndex() {
     catSectionIndex = Object.create(null);
+    ssIds = new Set();
     if (typeof catalog === 'undefined') return;
-    // Канализация STOUT/Sinikon разложена по десяткам массивов ss_* — они все
-    // об одном разделе, перечислять их поимённо смысла нет.
-    const sectionOf = (key) => CATALOG_SECTIONS[key] || (/^ss_/.test(key) ? '8. Канализация' : null);
 
     // Смотрим ВЕСЬ каталог, а не только категории из таблицы. Ниппель 3/4"
     // лежит и в узле ввода, и в уличном кране, и в колбе Big Blue — по нему
@@ -3115,13 +3191,15 @@ const RecognizeMatch = (function () {
     for (const key in catalog) {
       const v = catalog[key];
       if (!v || typeof v !== 'object') continue;
-      const section = sectionOf(key);
+      const section = CATALOG_SECTIONS[key] || null;
+      const stainless = /^ss_/.test(key);
       const arr = Array.isArray(v) ? v : [v];
       for (const it of arr) {
         if (!it || typeof it !== 'object') continue;
         const ids = [it.id, it.article, it.rommer && it.rommer.id, it.comfort && it.comfort.id];
         for (const id of ids) {
           if (!id) continue;
+          if (stainless) ssIds.add(id);
           if (!(id in seen)) seen[id] = section;
           else if (seen[id] !== section) seen[id] = null;
         }
@@ -3133,7 +3211,27 @@ const RecognizeMatch = (function () {
   function sectionByCatalog(item) {
     if (!item) return null;
     if (!catSectionIndex) buildCatSectionIndex();
-    return catSectionIndex[item.id] || catSectionIndex[item.article] || null;
+    return ID_SECTIONS[item.id] || ID_SECTIONS[item.article] ||
+      catSectionIndex[item.id] || catSectionIndex[item.article] || null;
+  }
+
+  /**
+   * Нержавейка ли это.
+   *
+   * Сначала по артикулу — он не врёт. Если позиция подобрана по прайсу или не
+   * подобрана вовсе, смотрим на текст: «нерж», «ВПр» (пресс-раструб под
+   * нержавеющую трубу). Гофрированная нержавеющая труба — газовая подводка,
+   * другое изделие, и к трубопроводной системе отношения не имеет.
+   */
+  function isStainless(item) {
+    const it = item && item._m && item._m.item;
+    if (it) {
+      if (!ssIds) buildCatSectionIndex();
+      if (ssIds.has(it.id) || ssIds.has(it.article)) return true;
+    }
+    const text = `${(it && it.name) || ''} ${item && item.raw || ''}`.toLowerCase();
+    if (/гофрирован/.test(text)) return false;
+    return /нерж|впр/.test(text);
   }
 
   /**
@@ -3163,6 +3261,15 @@ const RecognizeMatch = (function () {
   const PROFILE_HEAT = word('радиатор|конвектор|термоголов|термостатическ|котёл|котел|котла|' +
     'гидрострелк|расширительн|отоплен');
   const PROFILE_UFH = word('тёплый пол|теплый пол|тёплого пола|теплого пола|бобышк|такер|демпферн');
+  /**
+   * Признак КОТЕЛЬНОЙ, а не отопления вообще.
+   *
+   * Радиаторы отоплением смету делают, а котельной — нет: бывает смета на одну
+   * разводку по приборам, и раздел «Обвязка котельной» в ней пустой. Поэтому
+   * ищем сам источник тепла и его обвязку.
+   */
+  const PROFILE_BOILER = word('котёл|котел|котла|гидрострелк|гидравлическ|дымоход|стабилизатор|' +
+    'расширительн|насосн групп|группа насосн|теплообменник|шламоотделител|коллектор распределительн');
 
   function profileOf(rows) {
     const list = Array.isArray(rows) ? rows : [];
@@ -3171,6 +3278,8 @@ const RecognizeMatch = (function () {
       list.some(r => isRadiator(r) || (isPump(r) && !/скважин|погружн|дренаж/i.test(r.raw || '')));
     return {
       heating: heat,
+      boiler: PROFILE_BOILER.test(text) ||
+        list.some(r => isPump(r) && !/скважин|погружн|дренаж|циркуляционн насос гвс/i.test(r.raw || '')),
       water: PROFILE_WATER.test(text),
       ufh: PROFILE_UFH.test(text),
       sewer: word('канализ|ревизи|сифон').test(text),
@@ -3184,7 +3293,8 @@ const RecognizeMatch = (function () {
    * по-старому, то есть осторожно: всё неоднозначное уходит в водоснабжение
    * или в «Дополнительные материалы» и помечается как догадка.
    *
-   * Возвращает { section, sure } — sure=false означает «это лишь догадка».
+   * Возвращает { section, group, sure } — sure=false означает «это лишь
+   * догадка», group — подраздел внутри раздела (или null).
    */
   /**
    * Раздел для позиции.
@@ -3199,11 +3309,11 @@ const RecognizeMatch = (function () {
     // такой строке делать нечего — она не «дополнительный материал», а дыра,
     // которую монтажнику надо закрыть руками. Собираем их отдельно.
     if (!item || !item._m || !item._m.item) {
-      return { section: '10. Нераспознанные материалы', sure: true };
+      return { section: '10. Нераспознанные материалы', group: null, sure: true };
     }
     const res = guessSectionRule(item, profile);
-    if (res.sure) return res;
-    return { section: '9. Дополнительные материалы', sure: false };
+    if (res.sure) return { group: null, ...res };
+    return { section: '9. Дополнительные материалы', group: null, sure: false };
   }
 
   function guessSectionRule(item, profile) {
@@ -3219,7 +3329,12 @@ const RecognizeMatch = (function () {
     // и тот же при любой смете. Это самое надёжное свидетельство: рукописная
     // строка о разделе молчит, а артикул — нет.
     const byCat = sectionByCatalog(item._m && item._m.item);
-    if (byCat) return { section: byCat, sure: true };
+    if (byCat) return { ...asSection(byCat), sure: true };
+
+    // В каталоге позиции нет — она подобрана по прайсу, а прайс о разделе
+    // сметы не знает. Тогда о назначении говорит само название.
+    const byName = sectionByName(matched) || sectionByName(raw);
+    if (byName) return { ...asSection(byName), sure: true };
 
     // Радиатор бывает только прибором отопления — сомневаться тут не в чем.
     if (isRadiator(item)) return { section: '3. Приборы отопления', sure: true };
@@ -3268,6 +3383,31 @@ const RecognizeMatch = (function () {
         : { section: '5.4. Общие материалы', sure: true };
     }
 
+    // Нержавейка раздела сама по себе не задаёт: одним и тем же прессом ведут
+    // и обвязку котельной, и подводку к радиаторам, и водоснабжение. Вывод
+    // делаем из сметы целиком, а внутри неё — из диаметра.
+    //
+    // Ряд нержавейки: 15, 18, 22, 28, 35, 42, 54. Крупная половина (28 и выше)
+    // — это магистраль и обвязка котла: к смесителю или к радиатору такую
+    // трубу не тянут. Мелкая (15-22) — разводка по приборам, и куда именно,
+    // видно по составу сметы.
+    if (isStainless(item)) {
+      // Позиция без диаметра (уплотнительное кольцо, ключ) идёт за основной
+      // трассой, то есть считается крупной.
+      const big = !d || d >= 28;
+      // Котельная должна быть в смете: в разводке по одним радиаторам крупный
+      // диаметр — это магистраль к приборам, а не обвязка котла.
+      if (big && p.boiler) return { section: '2. Обвязка котельной', sure: true };
+      if (big && p.heating) return { section: '3. Приборы отопления', sure: true };
+      if (big) return { section: '5.1. Внутреннее водоснабжение', sure: !!p.water };
+      // Водоразбора в смете нет — мелкий диаметр идёт к приборам отопления.
+      if (!p.water) return { section: '3. Приборы отопления', sure: !!p.heating };
+      // Есть и приборы, и точки водоразбора: 18-я нержавейка одинаково уместна
+      // и там, и там. Догадку не навязываем — такая строка уходит в
+      // «Дополнительные материалы» с пометкой «раздел под вопросом».
+      return { section: '5.1. Внутреннее водоснабжение', sure: !p.heating };
+    }
+
     // Отопительная смета: трубы, фитинги и арматура в ней — обвязка приборов.
     if (heatOnly) return { section: '3. Приборы отопления', sure: true };
 
@@ -3286,7 +3426,7 @@ const RecognizeMatch = (function () {
     // такие фитинги падали в «Дополнительные материалы» просто потому, что в
     // рукописной строке не было слова «ппр».
     if (/ppr|ппр/.test(t) || /ppr|ппр|стекло/.test(raw) ||
-        /pp-r|ppr|pe-x|pex|металлопласт|нерж/.test(matched)) {
+        /pp-r|ppr|pe-x|pex|металлопласт/.test(matched)) {
       return { section: '5.1. Внутреннее водоснабжение', sure: false };
     }
 

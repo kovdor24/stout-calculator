@@ -1348,6 +1348,10 @@ const RecognizeUI = {
             if (!a || !b || drop.has(pair[1])) continue;
             a.raw = `${a.raw || ''} ${b.raw || ''}`.replace(/\s+/g, ' ').trim();
             if (!a.qty && b.qty) a.qty = b.qty;
+            // Цена из документа приходит той половиной строки, где уцелела
+            // колонка: при переносе на следующий лист это чаще нижняя.
+            if (!a.price && b.price) a.price = b.price;
+            if (!a.sum && b.sum) a.sum = b.sum;
             if (!a.type || a.type === 'прочее') a.type = b.type;
             drop.add(pair[1]);
             changed++;
@@ -1629,6 +1633,7 @@ const RecognizeUI = {
             if (typeof RecognizeMatch === 'undefined') return;
             const g = RecognizeMatch.guessSection(r, this._profile);
             r.section = g.section;
+            r.sectionGroup = g.group || null;
             r._sectionSure = g.sure;
         });
         // Рекомендации считаются по метражу («труба 50 м — 12 стыков»),
@@ -1675,6 +1680,7 @@ const RecognizeUI = {
             confidence: 1,
             note: s.note,
             section: g.section,
+            sectionGroup: g.group || null,
             _sectionSure: g.sure,
             _sel: false,
             _locked: false,
@@ -1714,6 +1720,7 @@ const RecognizeUI = {
         this._rows.forEach(r => {
             const g = RecognizeMatch.guessSection(r, this._profile);
             r.section = g.section;
+            r.sectionGroup = g.group || null;
             r._sectionSure = g.sure;
         });
         this.refreshSuggestions();
@@ -1886,6 +1893,9 @@ const RecognizeUI = {
         const r = this._rows[i];
         r[field] = (val === '') ? null
             : (['qty', 'qtyExtra', 'd'].includes(field) ? Number(val) : val);
+        // Раздел выбран руками — подраздел, угаданный автоматом, отменяется:
+        // «6.3. Big Blue» внутри, скажем, «9. Дополнительные» — мусор.
+        if (field === 'section') r.sectionGroup = null;
         r._locked = false;
         this.rematch(r);
         this.renderReview();
@@ -1917,6 +1927,7 @@ const RecognizeUI = {
         this._rows.forEach(r => {
             if (!r._sel) return;
             r.section = section;
+            r.sectionGroup = null;   // раздел назначен вручную — подраздела нет
             r._sectionSure = true;   // выбор человека сомнений не вызывает
         });
         this.renderReview();
@@ -2024,6 +2035,7 @@ const RecognizeUI = {
               this._mergeInfo ? ' · ' + this._mergeInfo : ''}${
               noQty ? ` · без количества ${noQty}` : ''}</span>
             ${this.renderAnalogButton()}
+            ${this.renderCompareButton()}
           </div>
           <div class="rec-tablewrap">
             <table class="rec-table">
@@ -2047,6 +2059,179 @@ const RecognizeUI = {
             <button class="calc-dialog-btn calc-dialog-btn-cancel" onclick="RecognizeUI.apply('new')">Создать новую смету</button>
             <button class="calc-dialog-btn calc-dialog-btn-confirm" onclick="RecognizeUI.apply('add')">Добавить в текущую смету</button>
           </div>`;
+    },
+
+    // ------------------------------------------------------------------
+    // Сравнение с нашими ценами
+    // ------------------------------------------------------------------
+
+    /**
+     * Сравнение чужой сметы с нашей.
+     *
+     * Главный сценарий вкладки — монтажнику принесли чужое КП. Разобрать его
+     * мало: нужен ответ, во сколько тот же объём выйдет на STOUT/ROMMER.
+     * Всё для этого уже есть — количество, подобранная позиция каталога и
+     * её цена; не хватало только цен самого документа, поэтому их теперь
+     * забирает разбор (см. правило 18 в RECOGNIZE_PROMPT).
+     *
+     * Считаем только по строкам, где известны ОБЕ цены. Складывать чужую
+     * сумму с нашей там, где позиция не подобрана, — значит показать
+     * экономию, которой нет.
+     */
+    docQty(r) {
+        return (Number(r.qty) || 0) + (Number(r.qtyExtra) || 0);
+    },
+
+    /** Цена за единицу из документа: как её дала модель, либо сумма ÷ количество. */
+    docPrice(r) {
+        const p = Number(r.price);
+        if (p > 0) return p;
+        const s = Number(r.sum);
+        const q = this.docQty(r);
+        if (s > 0 && q > 0) return s / q;
+        return 0;
+    },
+
+    /** Есть ли в разобранном документе цены вообще (в рукописном списке их нет). */
+    hasDocPrices() {
+        return (this._rows || []).some(r => this.docPrice(r) > 0);
+    },
+
+    renderCompareButton() {
+        if (!this.hasDocPrices()) return '';
+        return `<button class="rec-btn-g" onclick="RecognizeUI.renderCompare()"
+                        title="Во сколько тот же объём выйдет на STOUT / ROMMER">⚖ Сравнить цены</button>`;
+    },
+
+    renderCompare() {
+        const esc = s => String(s ?? '').replace(/[&<>"]/g,
+            c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const money = n => Math.round(n || 0).toLocaleString('ru-RU') + ' ₽';
+
+        let docTotal = 0, ourTotal = 0, cmpN = 0, matched = 0, priced = 0;
+
+        const rows = this._rows.map((r, n) => {
+            const m = r._m;
+            const qty = this.docQty(r);
+            const dp = this.docPrice(r);
+            const op = m ? (Number(m.item.price) || 0) : 0;
+            const dSum = dp * qty;
+            const oSum = op * qty;
+            if (m) matched++;
+            if (dp > 0) priced++;
+
+            // В итоги идут только строки, где есть обе цены и количество.
+            const comparable = dp > 0 && op > 0 && qty > 0;
+            if (comparable) { docTotal += dSum; ourTotal += oSum; cmpN++; }
+
+            let diff = '<span class="rec-cmp-eq">—</span>';
+            if (comparable) {
+                const pct = Math.round(((op - dp) / dp) * 100);
+                diff = pct > 0 ? `<span class="rec-cmp-up">+${pct}%</span>`
+                    : pct < 0 ? `<span class="rec-cmp-down">${pct}%</span>`
+                        : `<span class="rec-cmp-eq">0%</span>`;
+            }
+
+            // Точка уверенности подбора — тот же score, что и в таблице проверки.
+            const score = m ? (r._locked ? 1 : (m.score || 0)) : 0;
+            const dotCls = score >= 0.9 ? 'high' : score >= 0.7 ? 'mid' : score > 0 ? 'low' : 'none';
+            const ours = m
+                ? `<span class="rec-cmp-dot ${dotCls}"></span>${esc(m.item.name)}
+                   <div class="rec-art">${esc(m.item.article || m.item.id)}${
+                    r._locked ? ' · выбрано вручную' : (m.score < 1 ? ` · совпадение ${Math.round(m.score * 100)}%` : '')}</div>`
+                : `<span class="rec-art">аналог не подобран</span>`;
+
+            return `<tr>
+              <td>${n + 1}</td>
+              <td class="rec-raw">${esc(r.raw)}</td>
+              <td>${qty || '—'} ${esc(r.unit || 'шт')}</td>
+              <td>${dp > 0 ? money(dp) : '—'}</td>
+              <td><b>${dp > 0 ? money(dSum) : '—'}</b></td>
+              <td>${ours}</td>
+              <td>${m ? money(op) : '—'}</td>
+              <td><b>${m ? money(oSum) : '—'}</b></td>
+              <td>${diff}</td></tr>`;
+        }).join('');
+
+        const delta = ourTotal - docTotal;
+        const pct = docTotal > 0 ? Math.round((delta / docTotal) * 100) : 0;
+        // Сравнили не всю смету — в подписи к итогам это должно быть видно
+        // сразу, а не только в примечании под ними: цифра со звёздочкой,
+        // прочитанная как итог целиком, — готовый спор с клиентом.
+        const partial = cmpN < this._rows.length ? ' · сравнимые позиции' : '';
+        const deltaBlock = !cmpN ? '' : delta < 0
+            ? `<div class="rec-cmp-item"><div class="rec-cmp-val down">${money(-delta)} (${-pct}%)</div>
+               <div class="rec-cmp-lbl">Экономия на STOUT / ROMMER</div></div>`
+            : delta > 0
+                ? `<div class="rec-cmp-item"><div class="rec-cmp-val up">+${money(delta)} (+${pct}%)</div>
+                   <div class="rec-cmp-lbl">У нас дороже</div></div>`
+                : `<div class="rec-cmp-item"><div class="rec-cmp-val">0 ₽</div>
+                   <div class="rec-cmp-lbl">Разницы нет</div></div>`;
+
+        document.getElementById('rec_body').innerHTML = `
+          <div class="rec-toolbar">
+            <button class="rec-btn-g" onclick="RecognizeUI.renderReview()">← К таблице проверки</button>
+            <button class="rec-btn-g" onclick="RecognizeUI.copyCompare()">📋 Скопировать</button>
+            <span class="rec-status">Сравнимых позиций: ${cmpN} из ${this._rows.length}${
+              matched < this._rows.length ? ` · без аналога ${this._rows.length - matched}` : ''}${
+              priced < this._rows.length ? ` · без цены в документе ${this._rows.length - priced}` : ''}</span>
+          </div>
+          <div class="rec-cmp-sum">
+            <div class="rec-cmp-item">
+              <div class="rec-cmp-val">${money(docTotal)}</div>
+              <div class="rec-cmp-lbl">Итого по документу${partial}</div>
+            </div>
+            <div class="rec-cmp-item">
+              <div class="rec-cmp-val">${money(ourTotal)}</div>
+              <div class="rec-cmp-lbl">Итого у нас${partial}</div>
+            </div>
+            ${deltaBlock}
+          </div>
+          ${cmpN < this._rows.length ? `<div class="rec-art" style="padding:0 0 10px;">
+            Суммы посчитаны только по строкам, где известны обе цены — иначе сравнение
+            показывало бы экономию там, где позиция просто не подобрана.</div>` : ''}
+          <div class="rec-tablewrap">
+            <table class="rec-table rec-cmp-table">
+              <colgroup><col style="width:34px"><col style="width:200px"><col style="width:74px">
+                <col style="width:84px"><col style="width:92px">
+                <col><col style="width:84px"><col style="width:92px"><col style="width:70px"></colgroup>
+              <thead><tr>
+                <th>#</th><th>Позиция из документа</th><th>Кол.</th>
+                <th>Их цена</th><th>Их сумма</th>
+                <th>Наш аналог</th><th>Наша цена</th><th>Наша сумма</th><th>Разница</th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+          <div class="rec-foot">
+            <div class="rec-total">Разница: <b>${cmpN ? (delta < 0 ? '−' : delta > 0 ? '+' : '') + money(Math.abs(delta)) : '—'}</b></div>
+            <button class="calc-dialog-btn calc-dialog-btn-cancel" onclick="RecognizeUI.apply('new')">Создать новую смету</button>
+            <button class="calc-dialog-btn calc-dialog-btn-confirm" onclick="RecognizeUI.apply('add')">Добавить в текущую смету</button>
+          </div>`;
+    },
+
+    /** Таблица сравнения в буфер обмена — вставить в письмо или мессенджер клиенту. */
+    copyCompare() {
+        const lines = [...document.querySelectorAll('.rec-cmp-table tr')].map(tr =>
+            [...tr.querySelectorAll('th,td')].map(td =>
+                td.innerText.replace(/\s+/g, ' ').trim()).join('\t'));
+        const text = lines.join('\n');
+        const done = () => app.alert('Таблица сравнения скопирована.');
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(done).catch(() => this._copyFallback(text, done));
+        } else {
+            this._copyFallback(text, done);
+        }
+    },
+
+    _copyFallback(text, done) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (e) { /* браузер не дал — не беда */ }
+        document.body.removeChild(ta);
+        done();
     },
 
     /**
@@ -2559,6 +2744,8 @@ const RECOGNIZE_PROMPT = `Ты разбираешь рукописные сме�
     "qty": число или null,
     "qtyExtra": число,
     "unit": "шт"|"м",
+    "price": цена за единицу ИЗ ДОКУМЕНТА или null,
+    "sum": сумма по строке ИЗ ДОКУМЕНТА или null,
     "sections": число секций радиатора или null,
     "radKind": "бимет"|"алюм"|"сталь"|null,
     "height": 200|350|500|высота прибора в мм или null,
@@ -2672,6 +2859,16 @@ const RECOGNIZE_PROMPT = `Ты разбираешь рукописные сме�
     Систему, названную в строке, сохраняй в raw: по ней калькулятор понимает,
     какими фитингами собрана смета, и не подставит нержавейку туда, где
     нержавеющей трубы нет.
+
+18. ЦЕНЫ ИЗ ДОКУМЕНТА. Если в смете есть колонки цены и суммы — перенеси их
+    как есть: "price" — цена за единицу, "sum" — сумма по строке. Число пиши
+    без пробелов, знака рубля и слова «руб»: «1 234,56 ₽» -> 1234.56.
+    Это цены ЧУЖОЙ сметы. На подбор позиции они не влияют — нужны только
+    затем, чтобы сравнить их с нашими. НЕ СЧИТАЙ цену сам: ни делением суммы
+    на количество, ни по памяти о ценах на рынке.
+    В документе цен нет (рукописный список, фото без колонок) — не пиши эти
+    два поля вовсе: пустые "price": null в каждой строке только раздувают
+    ответ, а длинную смету он и так еле вмещает.
 
 СЛОВАРЬ ТИПОВ (значение поля "type" пиши КИРИЛЛИЦЕЙ, ровно как здесь —
 "kran_ppr" вместо "кран_ppr" калькулятор не понимает):

@@ -2980,6 +2980,9 @@ const app = {
                 // Раздел выбирается на экране проверки: часть позиций
                 // определяется однозначно, остальные монтажник расставляет сам.
                 section: section,
+                // Подраздел внутри раздела («6.3. Система фильтрации Big Blue»).
+                // Есть не у всех: у большинства позиций раздела достаточно.
+                group: r.sectionGroup || null,
                 recognized: stamp,
                 article: article,
             });
@@ -3001,6 +3004,253 @@ const app = {
         this.saveState();
         this.render();
         return true;
+    },
+
+    /**
+     * Замена распознанной позиции на другую.
+     *
+     * Обычная таблица замены (openSwapModal) работает по списку .alts, а его
+     * калькулятор проставляет только тому, что подбирает сам. У распознанной
+     * строки такого списка чаще всего нет: она пришла из прайса (ProAqua,
+     * Sinikon) или вообще без артикула — и заменить её было нечем.
+     *
+     * Поэтому источников замены два. Сверху — готовые аналоги каталога
+     * (ROMMER-версия, ANALOG_MAP, .alts), если по артикулу нашлась позиция
+     * каталога: это тот же STOUT/ROMMER, что и в обычной таблице замены, а у
+     * канализации — ещё и Comfort/Economy. Ниже — поиск по каталогу и прайсу:
+     * им монтажник меняет полипропиленовый кран на латунный STOUT или ROMMER,
+     * чего никакая таблица аналогов не предложит — это разные системы, и
+     * связи между ними в данных нет.
+     */
+    openRecReplaceModal: function (eqId) {
+        const eq = (this.state.userAddedEq || []).find(x => x.id === eqId);
+        if (!eq) return;
+
+        const esc = s => String(s ?? '').replace(/[&<>"]/g,
+            c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const money = n => Math.round(n || 0).toLocaleString('ru-RU');
+
+        // Аналоги позиции каталога, если распознанная строка на неё ссылается.
+        const base = eq.article ? this.findCatalogItemById(eq.article) : null;
+        const analogs = [];
+        const seen = new Set([eq.article, base && base.id].filter(Boolean));
+        const pushAnalog = (it) => {
+            if (!it || !it.name || typeof it.price !== 'number') return;
+            const key = it.article || it.id;
+            if (!key || seen.has(key)) return;
+            seen.add(key);
+            analogs.push(it);
+        };
+        if (base) {
+            (base.alts || []).forEach(pushAnalog);
+            // ROMMER-версия бывает и массивом (позиция собирается из нескольких
+            // товаров) — тогда в замену идёт первый, как и в openSwapModal.
+            if (Array.isArray(base.rommer)) pushAnalog(base.rommer[0]);
+            else if (base.rommer) pushAnalog(base.rommer);
+            if (base.comfort) pushAnalog(base.comfort);
+            const mapped = ANALOG_MAP[base.id];
+            if (mapped) {
+                const ids = Array.isArray(mapped) ? mapped : [mapped];
+                ids.forEach(id => pushAnalog(this.findCatalogItemById(id)));
+            }
+        }
+
+        // Запрос по умолчанию — первые два «словесных» слова названия. Поиск
+        // требует совпадения всех слов сразу, и целое название («Шаровой кран
+        // полнопроходной Ultra PP-R 32») не нашло бы ничего, кроме себя самого.
+        const guess = String(eq.name || '')
+            .split(/[\s,]+/)
+            .filter(w => /^[А-Яа-яЁё]{3,}$/.test(w))
+            .slice(0, 2)
+            .join(' ');
+
+        const overlay = document.createElement('div');
+        overlay.className = 'calc-dialog-overlay rec-search-ov active';
+        overlay.innerHTML = `
+          <div class="calc-dialog-card rec-search-card">
+            <div class="rec-title" style="font-size:15px">Заменить позицию
+              <span class="rec-art" style="display:block;font-weight:400;margin-top:4px;">${esc(eq.name)} · ${money(eq.price)} ₽</span></div>
+            <div id="rec_rep_alts"></div>
+            <input class="calc-dialog-input" id="rec_rep_q" value="${esc(guess)}"
+                   placeholder="Название или артикул замены">
+            <div id="rec_rep_res" class="rec-res"></div>
+            <div class="rec-foot" style="border:0;padding-top:6px">
+              <button class="calc-dialog-btn calc-dialog-btn-cancel" id="rec_rep_cx">Отмена</button>
+            </div>
+          </div>`;
+        document.body.appendChild(overlay);
+
+        const q = overlay.querySelector('#rec_rep_q');
+        const res = overlay.querySelector('#rec_rep_res');
+        const altsBox = overlay.querySelector('#rec_rep_alts');
+        const close = () => overlay.remove();
+        overlay.querySelector('#rec_rep_cx').onclick = close;
+        overlay.onclick = e => { if (e.target === overlay) close(); };
+
+        const hitHtml = (it, note) => `<div class="rec-hit">
+            <span>${esc(it.name)}${note ? ` <span class="rec-art">· ${esc(note)}</span>` : ''}</span>
+            <b>${money(it.price)} ₽</b></div>`;
+
+        if (analogs.length) {
+            altsBox.innerHTML = `<div class="rec-art" style="padding:2px 0 4px;">Аналоги этой позиции</div>` +
+                analogs.map(it => hitHtml(it, it.brand || 'STOUT')).join('');
+            altsBox.querySelectorAll('.rec-hit').forEach((el, n) => {
+                el.onclick = () => { this.applyRecReplace(eqId, analogs[n]); close(); };
+            });
+        }
+
+        let list = [];
+        const run = () => {
+            const query = q.value.trim();
+            list = this.searchCatalog(query);
+            let loose = false;
+            if (!list.length) { list = this.searchCatalogLoose(query); loose = true; }
+            list = list.filter(it => (it.article || it.id) !== eq.article);
+            res.innerHTML = list.length
+                ? (loose ? `<div class="rec-art" style="padding:2px 0 4px;">Точного совпадения нет — возможно, подойдёт похожее</div>` : '') +
+                  list.map(it => hitHtml(it, `${it.article || it.id} · ${it.brand || 'STOUT'}`)).join('')
+                : '<div class="rec-art" style="padding:10px">Ничего не найдено</div>';
+            res.querySelectorAll('.rec-hit').forEach((el, n) => {
+                el.onclick = () => { this.applyRecReplace(eqId, list[n]); close(); };
+            });
+        };
+        q.oninput = run;
+        run();
+        // Прайс-лист сверх каталога догружается в фоне — когда придёт,
+        // переспрашиваем поиск, чтобы позиции из него тоже попали в список.
+        this._ensurePriceExtraLoaded().then(() => { if (document.body.contains(q)) run(); });
+        setTimeout(() => { q.focus(); q.select(); }, 30);
+    },
+
+    /**
+     * Выделение распознанных строк для переноса в другой раздел.
+     *
+     * Раздел назначается на экране проверки, но там он виден в отрыве от
+     * сметы: ошибка обнаруживается уже после переноса, когда десяток фитингов
+     * лежит не в «Внутреннем водоснабжении», а в «Дополнительных материалах».
+     * Возвращать их по одному нечем — раздела у строки в смете не видно
+     * вовсе. Поэтому: галочка у каждой распознанной строки и общий перенос
+     * выделенного одним действием.
+     *
+     * Выделение живёт в памяти, а не в state: это рабочий выбор на минуту,
+     * ему нечего делать ни в сохранённом проекте, ни в ссылке-шаринге.
+     */
+    toggleRecSel: function (id, on) {
+        if (!this._recSel) this._recSel = {};
+        if (on) this._recSel[id] = true; else delete this._recSel[id];
+        this.updateRecSelBar();
+    },
+
+    /** Выделить все распознанные позиции сметы разом. */
+    selectAllRec: function () {
+        this._recSel = {};
+        (this.state.userAddedEq || []).forEach(eq => {
+            if (eq.recognized) this._recSel[eq.id] = true;
+        });
+        this.render();
+    },
+
+    /** Снять выделение целиком. */
+    clearRecSel: function () {
+        this._recSel = {};
+        this.render();
+    },
+
+    /** Список разделов сметы для выпадающего списка переноса. */
+    _recSections: function () {
+        if (typeof RecognizeMatch !== 'undefined' && Array.isArray(RecognizeMatch.SECTIONS)) {
+            return RecognizeMatch.SECTIONS;
+        }
+        return ['9. Дополнительные материалы', '10. Нераспознанные материалы'];
+    },
+
+    /**
+     * Панель действий над выделенным. Живёт в body отдельно от таблицы:
+     * render() перестраивает смету целиком, а панель должна пережить это
+     * без мигания и без потери выбранного в списке раздела.
+     */
+    updateRecSelBar: function () {
+        const ids = Object.keys(this._recSel || {});
+        // Позиция могла быть удалена или откачена — такое выделение снимаем сами.
+        const alive = ids.filter(id => (this.state.userAddedEq || []).some(eq => eq.id === id));
+        if (alive.length !== ids.length) {
+            this._recSel = {};
+            alive.forEach(id => { this._recSel[id] = true; });
+        }
+
+        let bar = document.getElementById('rec_sel_bar');
+        const show = alive.length > 0 && this.state.viewMode === 'equipment';
+        if (!show) { if (bar) bar.remove(); return; }
+
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'rec_sel_bar';
+            bar.className = 'rec-sel-bar no-print';
+            bar.innerHTML = `
+                <span class="rec-sel-count"></span>
+                <select class="rec-sel-section">
+                    ${this._recSections().map(s => `<option value="${s}">${s}</option>`).join('')}
+                </select>
+                <button class="rec-sel-move">Перенести</button>
+                <button class="rec-sel-all">Выделить все</button>
+                <button class="rec-sel-clear" title="Снять выделение">✖</button>`;
+            document.body.appendChild(bar);
+            bar.querySelector('.rec-sel-move').onclick = () => {
+                this.moveRecSelected(bar.querySelector('.rec-sel-section').value);
+            };
+            bar.querySelector('.rec-sel-all').onclick = () => this.selectAllRec();
+            bar.querySelector('.rec-sel-clear').onclick = () => this.clearRecSel();
+        }
+        bar.querySelector('.rec-sel-count').textContent = `Выделено: ${alive.length}`;
+    },
+
+    /** Перенос выделенных распознанных позиций в выбранный раздел. */
+    moveRecSelected: function (section) {
+        const ids = Object.keys(this._recSel || {});
+        if (!ids.length || !section) return;
+        let moved = 0;
+        (this.state.userAddedEq || []).forEach(eq => {
+            if (!this._recSel[eq.id] || eq.section === section) return;
+            eq.section = section;
+            // Подраздел («6.3. Система фильтрации Big Blue») принадлежит прежнему
+            // разделу — в новом он повесил бы строку под чужой заголовок.
+            eq.group = null;
+            moved++;
+        });
+        this._recSel = {};
+        this.saveState();
+        this.render();
+        if (!moved) return;
+        // Строки после переноса уезжают в другой раздел, часто за пределы экрана —
+        // без подтверждения кажется, что кнопка не сработала.
+        let toast = document.getElementById('rec_move_toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'rec_move_toast';
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = `<span class="ct-icon">📦</span><div><div class="ct-title">Перенесено позиций: ${moved}</div><div class="ct-sub">${section}</div></div>`;
+        toast.className = 'contest-toast visible no-print';
+        clearTimeout(this._recMoveToastTimer);
+        this._recMoveToastTimer = setTimeout(() => toast.classList.remove('visible'), 3000);
+    },
+
+    /** Подстановка выбранной замены в распознанную строку сметы. */
+    applyRecReplace: function (eqId, item) {
+        const eq = (this.state.userAddedEq || []).find(x => x.id === eqId);
+        if (!eq || !item) return;
+        // История замен монтажника ведётся по позициям каталога: у строки без
+        // артикула сопоставлять нечего, и logEquipmentSwap такую пару пропустит сам.
+        this.logEquipmentSwap(eq.article, item.article || item.id);
+        eq.name = item.name;
+        eq.price = Math.round(item.price || 0);
+        eq.brand = item.brand || 'STOUT';
+        eq.article = item.article || item.id || null;
+        // Цена подставлена из каталога — ручной ввод цены этой строке больше
+        // не нужен (см. editPrice в flushBill).
+        eq.desc = (eq.desc ? eq.desc + '; ' : '') + 'Заменено вручную';
+        this.saveState();
+        this.render();
     },
 
     // Удаление своего оборудования
@@ -22367,7 +22617,7 @@ const app = {
                             alts: base ? base.alts : undefined,
                             rommer: base ? base.rommer : undefined,
                             unit: base ? base.unit : undefined,
-                        }, eq.q, eq.desc || '');
+                        }, eq.q, eq.desc || '', eq.group || null);
                     }
                 });
             }
@@ -22432,11 +22682,14 @@ const app = {
                 });
             }
 
-            // Порядок строк: подразделы идут подряд, а внутри каждого — от дорогих
-            // позиций к дешёвым. Так смета читается сверху вниз по значимости:
-            // сначала оборудование, определяющее сумму, потом мелочёвка.
+            // Порядок строк: подразделы идут подряд, а внутри каждого — от больших
+            // сумм к малым. Так смета читается сверху вниз по значимости: сначала
+            // то, что определяет стоимость раздела, потом мелочёвка. Сортируем
+            // именно по сумме строки, а не по цене за штуку: сорок клипс по 30 ₽
+            // весят в смете больше одного крана за 900 ₽, и в конце списка им не
+            // место. Цена — только вторичный признак, для строк с равной суммой.
             // Сортируем ДО currentEquipmentList, чтобы тот же порядок ушёл в КП и печать.
-            const _byPriceDesc = (a, b) => (b.price || 0) - (a.price || 0) || (b.sum || 0) - (a.sum || 0);
+            const _bySumDesc = (a, b) => (b.sum || 0) - (a.sum || 0) || (b.price || 0) - (a.price || 0);
             if (!forceMerge) {
                 bill.sort((a, b) => {
                     let gA = a.group || "";
@@ -22451,10 +22704,10 @@ const app = {
                     if (!gA && gB) return -1;
                     if (gA && !gB) return 1;
                     const byGroup = gA.localeCompare(gB, 'ru');
-                    return byGroup !== 0 ? byGroup : _byPriceDesc(a, b);
+                    return byGroup !== 0 ? byGroup : _bySumDesc(a, b);
                 });
             } else {
-                bill.sort(_byPriceDesc);
+                bill.sort(_bySumDesc);
             }
 
             // Сохраняем элементы для коммерческого предложения клиенту
@@ -22635,12 +22888,19 @@ const app = {
                 let isSewerSubItem = !!(i.group && i.group.startsWith('8.'));
                 let sewerHasAlt = isSewerSubItem && !!(i.rommer || ANALOG_MAP[i.id] || ANALOG_MAP[lookupId]);
                 let hasAlts = (i.alts && i.alts.length > 0) || sewerHasAlt;
+                // Распознанная позиция без списка аналогов (пришла из прайса или
+                // вовсе без артикула) заменяется через свой поиск по каталогу и
+                // прайсу — см. openRecReplaceModal. Кнопка та же самая: монтажнику
+                // незачем знать, откуда у строки берётся замена.
+                let recCanReplace = !hasAlts && !!i.recognized;
                 let imgCellHtml = "";
-                if (hasAlts) {
+                if (hasAlts || recCanReplace) {
                     let wrapClass = "img-wrap";
                     let svgIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>`;
                     const badgeSvg = `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>`;
-                    let clickAction = `app.openSwapModal('${lookupId}')`;
+                    let clickAction = recCanReplace
+                        ? `app.openRecReplaceModal('${lookupId}')`
+                        : `app.openSwapModal('${lookupId}')`;
                     let tipText = 'Нажмите, чтобы заменить';
                     imgCellHtml = `<td class="col-img swappable-cursor"><div class="${wrapClass}" onclick="${clickAction}" title="${tipText}"><div class="swap-alt-badge">${badgeSvg}</div><div class="swap-cycle-btn" onclick="event.stopPropagation(); ${clickAction}">${svgIcon}</div>${imgContent}</div></td>`;
                 } else { imgCellHtml = `<td class="col-img">${imgContent}</td>`; }
@@ -22678,7 +22938,7 @@ const app = {
                 // Инлайн-кнопка «Аналог» рядом с названием — видна только в режиме «без картинок»
                 // (body.hide-images-mode), где столбец с фото и его кнопкой замены скрыт. Так замену
                 // можно открыть, не включая отображение картинок. См. .swap-inline-btn в style.css.
-                let swapInlineHtml = hasAlts ? `<span class="swap-inline-btn" onclick="event.stopPropagation();app.openSwapModal('${lookupId}')" title="Заменить на аналог"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg></span>` : '';
+                let swapInlineHtml = (hasAlts || recCanReplace) ? `<span class="swap-inline-btn" onclick="event.stopPropagation();app.${recCanReplace ? 'openRecReplaceModal' : 'openSwapModal'}('${lookupId}')" title="Заменить на аналог"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg></span>` : '';
                 // Цена и стоимость нераспознанной позиции правятся прямо в смете —
                 // так же, как количество. Артикула у такой строки нет, взять цену
                 // неоткуда, и без ручного ввода она осталась бы нулевой.
@@ -22693,7 +22953,13 @@ const app = {
                 let sumCell = i.editPrice
                     ? `<td class="col-sum"><input type="number" class="price-num-input" min="0" step="1" value="${Math.round(_editBase * i.q)}" placeholder="стоимость" onclick="event.stopPropagation()" onchange="event.stopPropagation(); app.setRecSum('${_priceEsc}', this.value)" onkeydown="if(event.key==='Enter') this.blur();"></td>`
                     : `<td class="col-sum">${app.formatPriceHtml(i.sum)}</td>`;
-                rows += `<tr ${rowStyle}${rowClass} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}${swapInlineHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td>${priceCell}${sumCell}</tr>` + locsRows;
+                // Галочка выделения — только у распознанных строк: переносить между
+                // разделами имеет смысл лишь их (позиции калькулятора раздел получают
+                // из самой логики расчёта). См. toggleRecSel/moveRecSelected.
+                const recSelHtml = i.recognized
+                    ? `<input type="checkbox" class="rec-sel-chk no-print"${(this._recSel && this._recSel[lookupId]) ? ' checked' : ''} onclick="event.stopPropagation(); app.toggleRecSel('${lookupId}', this.checked)" title="Выделить для переноса в другой раздел">`
+                    : '';
+                rows += `<tr ${rowStyle}${rowClass} onclick="this.classList.toggle('active-row')"><td class="col-idx">${recSelHtml}${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}${swapInlineHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td>${priceCell}${sumCell}</tr>` + locsRows;
             });
             let addCustomRow = "";
             if (this.state.viewMode === 'equipment') {
@@ -25997,6 +26263,10 @@ const app = {
         document.getElementById('tbody').innerHTML = h;
         document.getElementById('total_sum').innerHTML = app.formatPriceHtml(sum, true);
         this.renderContestWidget();
+        // Панель переноса выделенных распознанных строк: таблица только что
+        // перестроена, число выделенных могло измениться (перенос, удаление,
+        // откат распознавания), да и вкладка могла смениться на «Работы».
+        this.updateRecSelBar();
 
         // Toggle and update discount block for PRO users
         let discountBlock = document.getElementById('discount_block');
