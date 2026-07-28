@@ -319,6 +319,18 @@ const RecognizeUI = {
         this.setStatus(`${this._imgs.length} ${this._imgs.length === 1 ? 'лист готов' : 'листов готовы'} — можно распознавать`);
     },
 
+    /**
+     * Зона «Перетащите смету сюда» нужна, только пока грузить нечего.
+     * С уже загруженным файлом она ничего не добавляет, зато отодвигает
+     * миниатюры и кнопку «Распознать» вниз за край экрана.
+     */
+    syncDrop() {
+        const drop = document.getElementById('rec_drop');
+        if (!drop) return;
+        const has = !!this._img || !!(this._imgs && this._imgs.length) || !!this._text;
+        drop.style.display = has ? 'none' : '';
+    },
+
     /** Сброс загруженного: вернуться к пустой зоне и выбрать другой файл. */
     clearFile() {
         this._img = null;
@@ -340,6 +352,7 @@ const RecognizeUI = {
         if (err) err.remove();
         this.setGoReady(false);
         this.setStatus('Фото и сканы, а также PDF, Excel, Word, HTML');
+        this.syncDrop();
     },
 
     /**
@@ -446,6 +459,7 @@ const RecognizeUI = {
                      onclick="RecognizeUI.pickMore()">+</button>`;
         box.style.display = 'flex';
         this.showDupNote(dups, box);
+        this.syncDrop();
     },
 
     /**
@@ -536,6 +550,7 @@ const RecognizeUI = {
                 const wrap = document.getElementById('rec_prev_wrap');
                 if (prev) prev.src = 'data:image/jpeg;base64,' + this._img;
                 if (wrap) wrap.style.display = 'flex';
+                this.syncDrop();
                 this.setStatus(r.images.length > 1
                     ? `PDF без текста: возьму первую страницу из ${r.images.length}`
                     : 'PDF без текста — распознаю как изображение');
@@ -600,6 +615,7 @@ const RecognizeUI = {
             if (actions) host.insertBefore(box, actions); else if (host) host.appendChild(box);
         }
         box.style.display = 'block';   // мог быть скрыт после загрузки картинки
+        this.syncDrop();
         const lines = text.split('\n');
         box.textContent = lines.slice(0, 40).join('\n') +
             (lines.length > 40 ? `\n… и ещё ${lines.length - 40} строк` : '');
@@ -621,6 +637,7 @@ const RecognizeUI = {
             const wrap = document.getElementById('rec_prev_wrap');
             if (prev) prev.src = url;
             if (wrap) wrap.style.display = 'flex';
+            this.syncDrop();
             // Убираем текстовое превью, если до этого грузили файл с текстом.
             const tp = document.getElementById('rec_textprev');
             if (tp) tp.style.display = 'none';
@@ -1860,6 +1877,60 @@ const RecognizeUI = {
         if (row._locked) return;   // ручной выбор автоподбор не перебивает
         row._m = (typeof RecognizeMatch !== 'undefined' && typeof catalog !== 'undefined')
             ? RecognizeMatch.matchItem(row, this._sys) : null;
+        this.priceGuard(row);
+    },
+
+    /**
+     * Во сколько раз цены должны разойтись, чтобы считать это не «дорого»,
+     * а «подобрано не то».
+     *
+     * Настоящая разница прайса с закупкой конкурента укладывается в разы, но
+     * не в порядки: сорок процентов, вдвое, изредка втрое. Пятикратная — это
+     * уже другой предмет.
+     */
+    PRICE_GUARD_RATIO: 5,
+
+    /**
+     * Предохранитель по цене документа.
+     *
+     * Чужая цена — единственная в смете подсказка о том, ЧТО за предмет имелся
+     * в виду, и подбор её не использует: он ищет по словам названия. Из-за
+     * этого «Сервопривод Rommer H, 3, 230 В» за 682 ₽ уходил в трёхточечный
+     * привод смесительного клапана за 32 929 ₽ — совпало слово «3», которое в
+     * исходнике было частью обозначения модели. Шестнадцать таких строк дали
+     * полмиллиона и сдвинули итог сравнения на 76 процентных пунктов.
+     *
+     * Поэтому: разошлись в PRICE_GUARD_RATIO раз — сначала пробуем запасные
+     * варианты подбора, вдруг верный там. Не нашлось — подбор оставляем как
+     * есть (выбрасывать его нельзя, вдруг цена в документе — опечатка), но
+     * помечаем строку: в таблице проверки она подсветится, а в сравнение цен
+     * не пойдёт.
+     *
+     * Работает только там, где в документе есть цены. На рукописной смете
+     * сверять не с чем, и предохранитель молчит.
+     */
+    priceGuard(row) {
+        delete row._priceAlarm;
+        delete row._priceFixed;
+        const m = row._m;
+        if (!m || !m.item || row._locked) return;
+
+        const dp = this.docPrice(row);
+        const op = Number(m.item.price) || 0;
+        if (!dp || !op) return;
+
+        const off = p => p > dp * this.PRICE_GUARD_RATIO || p * this.PRICE_GUARD_RATIO < dp;
+        if (!off(op)) return;
+
+        const alt = (m.alternatives || []).find(a => a && Number(a.price) && !off(Number(a.price)));
+        if (alt) {
+            row._m = { ...m, item: alt };
+            row._priceFixed = true;
+            return;
+        }
+        // Во сколько раз мимо — это и показываем монтажнику: «дороже в 48 раз»
+        // говорит о промахе внятнее, чем «+4732%».
+        row._priceAlarm = op > dp ? Math.round(op / dp) : -Math.round(dp / op);
     },
 
     /**
@@ -1951,11 +2022,17 @@ const RecognizeUI = {
         const rows = this._rows.map((r, n) => {
             const m = r._m;
             const qty = (r.qty || 0) + (r.qtyExtra || 0);
+            // Цена из документа для строки без аналога: она уедет в смету
+            // вместо нуля, значит и в таблице проверки должна быть видна.
+            const docP = (!m && this.docPricesOn()) ? this.docPrice(r) : 0;
             // Жёлтым помечаем только то, что подобрать не удалось. Неполное
             // совпадение видно в самой ячейке подбора («совпадение 90%»), и
             // красить из-за него всю строку — значит топить настоящую проблему
             // в жёлтом фоне половины таблицы.
-            const cls = m ? '' : 'rec-nomatch';
+            // Строка с несходящейся ценой красится наравне с неподобранной:
+            // молча оставленный чужой артикул за тридцать тысяч дороже
+            // обходится, чем пустая строка, которую видно.
+            const cls = m ? (r._priceAlarm ? 'rec-pricebad' : '') : 'rec-nomatch';
 
             const tbtns = THREADS.map(t =>
                 `<button class="rec-tbtn ${r.threadType === t ? 'on' : ''}"
@@ -1966,9 +2043,15 @@ const RecognizeUI = {
                    <div class="rec-art">${esc(m.item.article || m.item.id)}${
                     r._locked ? ' · выбрано вручную'
                         : (m.score < 1 ? ` · совпадение ${Math.round(m.score * 100)}%` : '')}${
-                    m.needsApproval ? ' · <b>требует согласования</b>' : ''}</div>${
-                    m.substituted ? `<div class="rec-art">${esc(m.substituted)}</div>` : ''}`
-                : `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой 0</span>`;
+                    m.needsApproval ? ' · <b>требует согласования</b>' : ''}${
+                    r._priceFixed ? ' · <b>уточнено по цене</b>' : ''}</div>${
+                    m.substituted ? `<div class="rec-art">${esc(m.substituted)}</div>` : ''}${
+                    r._priceAlarm ? `<div class="rec-pricebad-note">Цена не сходится: ${
+                        r._priceAlarm > 0 ? `у нас дороже в ${r._priceAlarm} раз` : `у нас дешевле в ${-r._priceAlarm} раз`
+                    } — скорее всего подобрано другое изделие, проверьте 🔍</div>` : ''}`
+                : (docP
+                    ? `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой из документа</span>`
+                    : `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой 0</span>`);
 
             return `<tr class="${cls}">
               <td><input type="checkbox" ${r._sel ? 'checked' : ''}
@@ -1987,8 +2070,9 @@ const RecognizeUI = {
                   ${r.qtyExtra ? `<span class="rec-art">+${r.qtyExtra}</span>` : ''}
                   ${r._packed ? `<div class="rec-art">${r._meters} м → штанги по ${r._packed} м</div>` : ''}</td>
               <td>${match}</td>
-              <td>${m ? m.item.price + ' ₽' : '—'}</td>
-              <td><b>${m ? Math.round(m.item.price * qty) + ' ₽' : '—'}</b></td>
+              <td>${m ? m.item.price + ' ₽' : (docP ? `<span class="rec-art">${Math.round(docP)} ₽</span>` : '—')}</td>
+              <td><b>${m ? Math.round(m.item.price * qty) + ' ₽'
+                : (docP ? `<span class="rec-art">${Math.round(docP * qty)} ₽</span>` : '—')}</b></td>
               <td>
                 <select class="rec-f${r._sectionSure === false ? ' rec-guess' : ''}"
                         onchange="RecognizeUI.set(${n},'section',this.value)">
@@ -2009,8 +2093,13 @@ const RecognizeUI = {
              <td colspan="8">${esc(s.reason || 'вычеркнуто')}</td></tr>`).join('');
 
         const found = this._rows.filter(r => r._m);
-        const sum = found.reduce((s, r) =>
-            s + r._m.item.price * ((r.qty || 0) + (r.qtyExtra || 0)), 0);
+        // В итог идут и цены из документа: именно с ними строки уедут в смету,
+        // и сумма под таблицей должна совпадать с тем, что монтажник увидит.
+        const sum = this._rows.reduce((s, r) => {
+            const q = (r.qty || 0) + (r.qtyExtra || 0);
+            if (r._m) return s + r._m.item.price * q;
+            return s + (this.docPricesOn() ? this.docPrice(r) * q : 0);
+        }, 0);
         const noQty = this._rows.filter(r => !((r.qty || 0) + (r.qtyExtra || 0))).length;
         const selN = this._rows.filter(r => r._sel).length;
 
@@ -2035,6 +2124,7 @@ const RecognizeUI = {
               this._mergeInfo ? ' · ' + this._mergeInfo : ''}${
               noQty ? ` · без количества ${noQty}` : ''}</span>
             ${this.renderAnalogButton()}
+            ${this.renderDocPriceButton()}
             ${this.renderCompareButton()}
           </div>
           <div class="rec-tablewrap">
@@ -2103,68 +2193,193 @@ const RecognizeUI = {
                         title="Во сколько тот же объём выйдет на STOUT / ROMMER">⚖ Сравнить цены</button>`;
     },
 
+    /**
+     * Цены из документа для ненайденных позиций.
+     *
+     * Расходников — монтажной пены, отрезных кругов, газа для пистолета,
+     * штоков к хомутам — в каталоге STOUT/ROMMER нет и не будет, поэтому в
+     * смету они уезжали с нулём и монтажник вбивал цену руками. Между тем в
+     * счёте она написана: своя, за этот месяц и этот регион. Подставляем её,
+     * но только туда, где нашей цены нет.
+     *
+     * Переключатель показывается, лишь когда в документе вообще есть цены,
+     * и по умолчанию включён: цифра из счёта всяко полезнее нуля.
+     */
+    docPricesOn() {
+        return this._useDocPrices !== false;
+    },
+
+    renderDocPriceButton() {
+        if (!this.hasDocPrices()) return '';
+        const n = this._rows.filter(r => !r._m && this.docPrice(r) > 0).length;
+        if (!n) return '';
+        return `<label class="rec-switch${this.docPricesOn() ? ' on' : ''}"
+                       title="Позициям, которых нет в каталоге, поставить цену из самого документа">
+            <input type="checkbox" ${this.docPricesOn() ? 'checked' : ''}
+                   onchange="RecognizeUI.toggleDocPrices(this.checked)">
+            <span class="rec-switch-track"><span class="rec-switch-knob"></span></span>
+            <span class="rec-switch-text">Цены из документа
+              <em>${n} поз. без аналога</em></span>
+          </label>`;
+    },
+
+    toggleDocPrices(on) {
+        this._useDocPrices = !!on;
+        this.renderReview();
+    },
+
     renderCompare() {
         const esc = s => String(s ?? '').replace(/[&<>"]/g,
             c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const money = n => Math.round(n || 0).toLocaleString('ru-RU') + ' ₽';
 
-        let docTotal = 0, ourTotal = 0, cmpN = 0, matched = 0, priced = 0;
+        // Бренд выбирается только для расчёта. Что уедет в смету, по-прежнему
+        // решает тумблер «Аналог ROMMER» на экране проверки: сравнение — это
+        // прикидка «а что если», и молча переписывать отобранное она не должна.
+        const brand = this._cmpBrand === 'rommer' ? 'rommer' : 'stout';
+
+        let docTotal = 0, stoutTotal = 0, rommerTotal = 0;
+        let cmpN = 0, matched = 0, priced = 0, alarmed = 0;
 
         const rows = this._rows.map((r, n) => {
             const m = r._m;
             const qty = this.docQty(r);
             const dp = this.docPrice(r);
             const op = m ? (Number(m.item.price) || 0) : 0;
+            // Цена той же позиции на ROMMER. Аналога нет (или он дороже) —
+            // остаётся исходная: смета «на ROMMER» всё равно наполовину STOUT.
+            const ra = (m && typeof RecognizeMatch !== 'undefined' && RecognizeMatch.rommerAlt)
+                ? RecognizeMatch.rommerAlt(m.item) : null;
+            const rp = ra ? (Number(ra.item.price) || op) : op;
+            const bp = brand === 'rommer' ? rp : op;
             const dSum = dp * qty;
-            const oSum = op * qty;
+            const bSum = bp * qty;
             if (m) matched++;
             if (dp > 0) priced++;
+            if (r._priceAlarm) alarmed++;
 
-            // В итоги идут только строки, где есть обе цены и количество.
-            const comparable = dp > 0 && op > 0 && qty > 0;
-            if (comparable) { docTotal += dSum; ourTotal += oSum; cmpN++; }
+            // В итоги идут только строки, где есть обе цены и количество —
+            // и где цены сошлись по порядку величины. Строка с промахом
+            // подбора (см. priceGuard) утянула бы итог на сотни процентов.
+            const comparable = dp > 0 && op > 0 && qty > 0 && !r._priceAlarm;
+            if (comparable) {
+                docTotal += dSum;
+                stoutTotal += op * qty;
+                rommerTotal += rp * qty;
+                cmpN++;
+            }
 
             let diff = '<span class="rec-cmp-eq">—</span>';
             if (comparable) {
-                const pct = Math.round(((op - dp) / dp) * 100);
+                const pct = Math.round(((bp - dp) / dp) * 100);
                 diff = pct > 0 ? `<span class="rec-cmp-up">+${pct}%</span>`
                     : pct < 0 ? `<span class="rec-cmp-down">${pct}%</span>`
                         : `<span class="rec-cmp-eq">0%</span>`;
+            } else if (r._priceAlarm) {
+                diff = `<span class="rec-cmp-up" title="Не участвует в итогах">✕</span>`;
             }
 
             // Точка уверенности подбора — тот же score, что и в таблице проверки.
             const score = m ? (r._locked ? 1 : (m.score || 0)) : 0;
             const dotCls = score >= 0.9 ? 'high' : score >= 0.7 ? 'mid' : score > 0 ? 'low' : 'none';
             const ours = m
-                ? `<span class="rec-cmp-dot ${dotCls}"></span>${esc(m.item.name)}
+                ? `<span class="rec-cmp-dot ${dotCls}"></span>${esc(m.item.name)}${
+                    brand === 'rommer' && ra ? ` <span class="rec-art">→ ${esc(ra.item.name)}</span>` : ''}
                    <div class="rec-art">${esc(m.item.article || m.item.id)}${
-                    r._locked ? ' · выбрано вручную' : (m.score < 1 ? ` · совпадение ${Math.round(m.score * 100)}%` : '')}</div>`
+                    r._locked ? ' · выбрано вручную' : (m.score < 1 ? ` · совпадение ${Math.round(m.score * 100)}%` : '')}</div>${
+                    r._priceAlarm ? `<div class="rec-pricebad-note">Цена не сходится ${
+                        r._priceAlarm > 0 ? `в ${r._priceAlarm} раз` : `в ${-r._priceAlarm} раз`
+                    } — подобрано другое изделие, в сравнение не идёт</div>` : ''}`
                 : `<span class="rec-art">аналог не подобран</span>`;
 
-            return `<tr>
+            return `<tr${r._priceAlarm ? ' class="rec-pricebad"' : ''}>
               <td>${n + 1}</td>
               <td class="rec-raw">${esc(r.raw)}</td>
               <td>${qty || '—'} ${esc(r.unit || 'шт')}</td>
               <td>${dp > 0 ? money(dp) : '—'}</td>
               <td><b>${dp > 0 ? money(dSum) : '—'}</b></td>
               <td>${ours}</td>
-              <td>${m ? money(op) : '—'}</td>
-              <td><b>${m ? money(oSum) : '—'}</b></td>
+              <td>${m ? money(bp) : '—'}</td>
+              <td><b>${m ? money(bSum) : '—'}</b></td>
               <td>${diff}</td></tr>`;
         }).join('');
 
+        const ourTotal = brand === 'rommer' ? rommerTotal : stoutTotal;
         const delta = ourTotal - docTotal;
         const pct = docTotal > 0 ? Math.round((delta / docTotal) * 100) : 0;
         // Сравнили не всю смету — в подписи к итогам это должно быть видно
         // сразу, а не только в примечании под ними: цифра со звёздочкой,
         // прочитанная как итог целиком, — готовый спор с клиентом.
         const partial = cmpN < this._rows.length ? ' · сравнимые позиции' : '';
+
+        /**
+         * Скидка, при которой наша смета сравняется с чужой.
+         *
+         * Это и есть рабочий ответ монтажнику: не «мы дороже на 146%», а
+         * «дай 59% — и мы вровень». Проценты считаются от НАШЕЙ суммы,
+         * поэтому «дороже на 146%» и «скидка 59%» — одно и то же число,
+         * пересчитанное в ту сторону, в какую его дают на переговорах.
+         */
+        const needDiscount = (total) => (!cmpN || !total || total <= docTotal)
+            ? 0 : Math.round((1 - docTotal / total) * 100);
+
+        const discountLine = (total) => {
+            if (!cmpN || !total) return '';
+            if (total <= docTotal) {
+                const cheaper = docTotal > 0 ? Math.round((1 - total / docTotal) * 100) : 0;
+                return `<div class="rec-cmp-note down">дешевле на ${cheaper}% без скидки</div>`;
+            }
+            return `<div class="rec-cmp-note">нужна скидка ${needDiscount(total)}%</div>`;
+        };
+
+        const brandTile = (key, label, total) => `
+            <div class="rec-cmp-item${brand === key ? ' on' : ''}" onclick="RecognizeUI.cmpBrand('${key}')"
+                 title="Пересчитать сравнение на ${label}">
+              <div class="rec-cmp-val">${money(total)}</div>
+              <div class="rec-cmp-lbl">Итого у нас · ${label}${partial}</div>
+              <div class="rec-cmp-sub">цены прайса, без скидки</div>
+              ${discountLine(total)}
+            </div>`;
+
+        /**
+         * Скидка, с которой смета уедет в калькулятор.
+         *
+         * Наши суммы здесь — прайс: у монтажника своя скидка от дистрибьютора,
+         * и без неё сравнение всегда выходит «мы дороже». Переключатель ставит
+         * ту скидку, при которой сметы сравниваются, — дальше её можно править
+         * ползунком скидки в самой смете.
+         *
+         * Скидка в калькуляторе одна на всю смету, не на распознанные строки:
+         * при «Создать новую смету» это ровно то, что нужно, а при «Добавить
+         * в текущую» она заденет и то, что уже было посчитано. Поэтому пишем
+         * об этом прямо у переключателя.
+         */
+        const discPct = needDiscount(brand === 'rommer' ? rommerTotal : stoutTotal);
+        this._cmpDiscount = discPct ? { brand, pct: discPct } : null;
+        if (!discPct) this._cmpApplyDiscount = false;
+
+        // Бренд сравнения и бренд переноса развязаны намеренно, но если они
+        // разошлись, скидка посчитана не для той сметы, которая уедет.
+        const moveBrand = this._analogOn ? 'rommer' : 'stout';
+        const brandMismatch = discPct && this._cmpApplyDiscount && moveBrand !== brand;
+
+        const discountStrip = !discPct ? '' : `
+          <label class="rec-cmp-apply">
+            <input type="checkbox" ${this._cmpApplyDiscount ? 'checked' : ''}
+                   onchange="RecognizeUI.cmpApplyDiscount(this.checked)">
+            <span>Применить скидку <b>${discPct}%</b> при переносе в смету</span>
+            <span class="rec-art">скидка ставится на всю смету целиком, менять её потом можно ползунком в разделе «Оборудование»</span>
+            ${brandMismatch ? `<span class="rec-cmp-warn">Сравнение считается на ${
+              brand === 'rommer' ? 'ROMMER' : 'STOUT'}, а в смету уедет ${
+              moveBrand === 'rommer' ? 'ROMMER' : 'STOUT'} — переключите тумблер «Аналог ROMMER» на экране проверки, иначе суммы не сойдутся</span>` : ''}
+          </label>`;
+
         const deltaBlock = !cmpN ? '' : delta < 0
             ? `<div class="rec-cmp-item"><div class="rec-cmp-val down">${money(-delta)} (${-pct}%)</div>
-               <div class="rec-cmp-lbl">Экономия на STOUT / ROMMER</div></div>`
+               <div class="rec-cmp-lbl">У нас дешевле · ${brand === 'rommer' ? 'ROMMER' : 'STOUT'}</div></div>`
             : delta > 0
                 ? `<div class="rec-cmp-item"><div class="rec-cmp-val up">+${money(delta)} (+${pct}%)</div>
-                   <div class="rec-cmp-lbl">У нас дороже</div></div>`
+                   <div class="rec-cmp-lbl">У нас дороже · ${brand === 'rommer' ? 'ROMMER' : 'STOUT'}</div></div>`
                 : `<div class="rec-cmp-item"><div class="rec-cmp-val">0 ₽</div>
                    <div class="rec-cmp-lbl">Разницы нет</div></div>`;
 
@@ -2172,24 +2387,31 @@ const RecognizeUI = {
           <div class="rec-toolbar">
             <button class="rec-btn-g" onclick="RecognizeUI.renderReview()">← К таблице проверки</button>
             <button class="rec-btn-g" onclick="RecognizeUI.copyCompare()">📋 Скопировать</button>
+            <span class="rec-cmp-switch">
+              <button class="rec-btn-g${brand === 'stout' ? ' on' : ''}" onclick="RecognizeUI.cmpBrand('stout')">STOUT</button>
+              <button class="rec-btn-g${brand === 'rommer' ? ' on' : ''}" onclick="RecognizeUI.cmpBrand('rommer')">ROMMER</button>
+            </span>
             <span class="rec-status">Сравнимых позиций: ${cmpN} из ${this._rows.length}${
               matched < this._rows.length ? ` · без аналога ${this._rows.length - matched}` : ''}${
-              priced < this._rows.length ? ` · без цены в документе ${this._rows.length - priced}` : ''}</span>
+              priced < this._rows.length ? ` · без цены в документе ${this._rows.length - priced}` : ''}${
+              alarmed ? ` · цена не сходится ${alarmed}` : ''}</span>
           </div>
           <div class="rec-cmp-sum">
             <div class="rec-cmp-item">
               <div class="rec-cmp-val">${money(docTotal)}</div>
               <div class="rec-cmp-lbl">Итого по документу${partial}</div>
             </div>
-            <div class="rec-cmp-item">
-              <div class="rec-cmp-val">${money(ourTotal)}</div>
-              <div class="rec-cmp-lbl">Итого у нас${partial}</div>
-            </div>
+            ${brandTile('stout', 'STOUT', stoutTotal)}
+            ${brandTile('rommer', 'ROMMER', rommerTotal)}
             ${deltaBlock}
           </div>
+          ${discountStrip}
           ${cmpN < this._rows.length ? `<div class="rec-art" style="padding:0 0 10px;">
-            Суммы посчитаны только по строкам, где известны обе цены — иначе сравнение
-            показывало бы экономию там, где позиция просто не подобрана.</div>` : ''}
+            Суммы посчитаны только по строкам, где известны обе цены и подбор не вызывает
+            сомнений — иначе сравнение показывало бы экономию там, где позиция просто не
+            подобрана${alarmed ? ', а один промах подбора двигал бы итог на сотни процентов' : ''}.
+            Выбор бренда меняет только расчёт: в смету позиции уедут так, как отмечено
+            на экране проверки.</div>` : ''}
           <div class="rec-tablewrap">
             <table class="rec-table rec-cmp-table">
               <colgroup><col style="width:34px"><col style="width:200px"><col style="width:74px">
@@ -2208,6 +2430,18 @@ const RecognizeUI = {
             <button class="calc-dialog-btn calc-dialog-btn-cancel" onclick="RecognizeUI.apply('new')">Создать новую смету</button>
             <button class="calc-dialog-btn calc-dialog-btn-confirm" onclick="RecognizeUI.apply('add')">Добавить в текущую смету</button>
           </div>`;
+    },
+
+    /** Бренд, на который считается сравнение. Смету не трогает — только расчёт. */
+    cmpBrand(brand) {
+        this._cmpBrand = brand;
+        this.renderCompare();
+    },
+
+    /** Переносить ли смету со скидкой, при которой она сравнялась с чужой. */
+    cmpApplyDiscount(on) {
+        this._cmpApplyDiscount = !!on;
+        this.renderCompare();
     },
 
     /** Таблица сравнения в буфер обмена — вставить в письмо или мессенджер клиенту. */
@@ -2578,7 +2812,19 @@ const RecognizeUI = {
         // поэтому она проглатывается внутри archive().
         this.archive(mode);
 
-        const r = app.applyRecognized(this._rows, mode);
+        // Скидка, отмеченная на экране сравнения. Ставим ДО applyRecognized:
+        // он вызывает render(), а скидка применяется именно там, в addToBill.
+        let discountNote = '';
+        if (this._cmpApplyDiscount && this._cmpDiscount) {
+            const pct = this._cmpDiscount.pct;
+            app.state.eqDiscountMode = 'discount';
+            app.state.eqDiscount = pct;
+            discountNote = `\n\nПрименена скидка ${pct}% — та, при которой смета сравнялась с чужой. ` +
+                `Изменить её можно ползунком скидки в разделе «Оборудование».`;
+            this._cmpApplyDiscount = false;
+        }
+
+        const r = app.applyRecognized(this._rows, mode, { docPrices: this.docPricesOn() });
 
         // Сбрасываем состояние: вкладка должна открыться чистой в следующий раз.
         this._img = null;
@@ -2594,11 +2840,13 @@ const RecognizeUI = {
 
         const parts = [`Добавлено позиций: ${r.eq}`];
         if (r.works) parts.push(`работ: ${r.works}`);
+        if (r.docPriced) parts.push(`с ценой из документа: ${r.docPriced}`);
         if (r.noPrice) parts.push(`из них без цены: ${r.noPrice}`);
         if (r.skippedNoQty) parts.push(`пропущено без количества: ${r.skippedNoQty}`);
 
         app.alert(parts.join('\n') +
-            '\n\nДобавленные строки подсвечены в смете. Отменить целиком — кнопка «Отменить распознавание» под сметой.');
+            '\n\nДобавленные строки подсвечены в смете. Отменить целиком — кнопка «Отменить распознавание» под сметой.' +
+            discountNote);
     },
 
     /**

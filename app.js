@@ -2294,6 +2294,16 @@ const app = {
         const uid = (this.state.tgUser && (this.state.tgUser.authUserId || this.state.tgUser.email)) || 'guest';
         return 'ai_fab_collapsed_' + uid;
     },
+    // Единое место, откуда решается, показывать ли плавающую кнопку ИИ-заполнения:
+    // гостю её не даём вовсе (см. render), а на вкладке распознавания сметы она не
+    // при делах — там параметры объекта не заполняют.
+    syncAiFabVisibility: function () {
+        const btn = document.getElementById('ai_parse_fab_btn');
+        if (!btn) return;
+        const hide = !this.state.tgUser || this.state.viewMode === 'recognize';
+        btn.style.display = hide ? 'none' : 'flex';
+        if (!hide) this.applyAiFabCollapsedState();
+    },
     applyAiFabCollapsedState: function () {
         const btn = document.getElementById('ai_parse_fab_btn');
         const toggleBtn = document.getElementById('ai_parse_fab_collapse_btn');
@@ -2893,16 +2903,34 @@ const app = {
      * оборудование: правятся, удаляются, попадают в печать и в счёт.
      *
      * Что найдено в каталоге — идёт с артикулом и ценой. Что не найдено —
-     * идёт своей позицией с ценой 0, а не выбрасывается: монтажник впишет
-     * цену руками, а мы получим статистику, каких позиций не хватает.
+     * идёт своей позицией, а не выбрасывается: монтажник поправит цену руками,
+     * а мы получим статистику, каких позиций не хватает.
+     *
+     * Цена ненайденного берётся из самого документа, если она там была
+     * (opts.docPrices). Расходников вроде монтажной пены, отрезных кругов и
+     * газа для пистолета в каталоге STOUT/ROMMER нет и не будет, а в счёте
+     * поставщика их цена написана — своя, за этот месяц и этот регион.
+     * Вбивать её заново руками незачем. Строка при этом остаётся с полем
+     * ввода цены, а в подсказке ⓘ написано, откуда цифра взялась.
      *
      * mode: 'add'  — добавить к текущей смете
      *       'new'  — очистить своё оборудование и положить только распознанное
      *
      * Возвращает { eq, works, noPrice } — сводку для отчёта пользователю.
      */
-    applyRecognized: function (rows, mode) {
+    applyRecognized: function (rows, mode, opts) {
         if (!Array.isArray(rows) || !rows.length) return { eq: 0, works: 0, noPrice: 0 };
+        const useDocPrices = !!(opts && opts.docPrices);
+
+        // Цена за единицу, как она написана в документе: либо прямо ценой,
+        // либо суммой строки, поделённой на количество.
+        const docUnitPrice = (r) => {
+            const p = Number(r.price);
+            if (p > 0) return p;
+            const s = Number(r.sum);
+            const q = (Number(r.qty) || 0) + (Number(r.qtyExtra) || 0);
+            return (s > 0 && q > 0) ? s / q : 0;
+        };
 
         if (!this.state.userAddedEq) this.state.userAddedEq = [];
         if (!this.state.userAddedWorks) this.state.userAddedWorks = [];
@@ -2920,7 +2948,7 @@ const app = {
         }
 
         const stamp = Date.now();
-        let eqCount = 0, workCount = 0, noPrice = 0, skippedNoQty = 0;
+        let eqCount = 0, workCount = 0, noPrice = 0, skippedNoQty = 0, docPriced = 0;
 
         rows.forEach((r, i) => {
             const qty = (Number(r.qty) || 0) + (Number(r.qtyExtra) || 0);
@@ -2933,7 +2961,15 @@ const app = {
             // Поле match поддерживаем как запасное — им пользуется тестовый стенд.
             const m = r._m || r.match;
             const matched = m && m.item;
-            const price = matched ? Number(m.item.price) || 0 : 0;
+            let price = matched ? Number(m.item.price) || 0 : 0;
+            // Цена из документа — только там, где своей нет. Подобранную позицию
+            // каталога она не перебивает: у нас цена выверенная, а в чужом счёте
+            // она чужая, со своей скидкой и своей наценкой.
+            let fromDoc = 0;
+            if (!price && useDocPrices) {
+                fromDoc = Math.round(docUnitPrice(r));
+                if (fromDoc > 0) { price = fromDoc; docPriced++; }
+            }
             if (!price) noPrice++;
 
             if (r.kind === 'work') {
@@ -2951,7 +2987,8 @@ const app = {
 
             const article = matched ? (m.item.article || m.item.id) : null;
             // Позиция без артикула — это дыра в смете, а не «дополнительный
-            // материал»: цены у неё нет, и монтажнику надо её закрыть руками.
+            // материал»: нашей цены у неё нет (цена из документа её не
+            // заменяет — она чужая), и монтажнику надо строку закрыть руками.
             // Такие строки собираем в отдельный раздел, чтобы они не терялись
             // среди подобранных.
             const section = r.section ||
@@ -2976,7 +3013,10 @@ const app = {
                 price: price,
                 q: qty,
                 brand: matched ? (m.item.brand || 'STOUT') : ' ',
-                desc: r.raw ? ('Распознано: ' + r.raw) : 'Добавлено распознаванием',
+                // Откуда взялась цена — видно в подсказке ⓘ у строки сметы.
+                // Цифра из чужого счёта не должна выглядеть как наша прайсовая.
+                desc: (r.raw ? ('Распознано: ' + r.raw) : 'Добавлено распознаванием') +
+                    (fromDoc > 0 ? `; цена из документа: ${fromDoc.toLocaleString('ru-RU')} ₽ за ${r.unit || 'шт'}` : ''),
                 // Раздел выбирается на экране проверки: часть позиций
                 // определяется однозначно, остальные монтажник расставляет сам.
                 section: section,
@@ -2992,7 +3032,7 @@ const app = {
         this.saveState();
         this.render();
 
-        return { eq: eqCount, works: workCount, noPrice: noPrice, skippedNoQty: skippedNoQty };
+        return { eq: eqCount, works: workCount, noPrice: noPrice, skippedNoQty: skippedNoQty, docPriced: docPriced };
     },
 
     /** Откат последнего применения распознавания одним действием. */
@@ -3137,8 +3177,27 @@ const app = {
      */
     toggleRecSel: function (id, on) {
         if (!this._recSel) this._recSel = {};
-        if (on) this._recSel[id] = true; else delete this._recSel[id];
+        // Без второго аргумента — переключаем: так приходит клик по самой строке.
+        // С аргументом — ставим как есть: так приходит клик по галочке.
+        const next = (on === undefined) ? !this._recSel[id] : !!on;
+        if (next) this._recSel[id] = true; else delete this._recSel[id];
+        // Галочки появляются и исчезают вместе с выделением, поэтому таблицу
+        // нужно перерисовать: одним лишь обновлением панели тут не обойтись.
+        const wasMode = document.body.classList.contains('rec-sel-mode');
         this.updateRecSelBar();
+        if (wasMode !== document.body.classList.contains('rec-sel-mode')) this.render();
+        else this.syncRecSelChecks();
+    },
+
+    /** Отметки в галочках после клика по строке — без перерисовки всей сметы. */
+    syncRecSelChecks: function () {
+        document.querySelectorAll('.rec-sel-chk').forEach(el => {
+            const tr = el.closest('tr');
+            if (!tr) return;
+            const onclick = el.getAttribute('onclick') || '';
+            const m = onclick.match(/toggleRecSel\('([^']+)'/);
+            if (m) el.checked = !!(this._recSel && this._recSel[m[1]]);
+        });
     },
 
     /** Выделить все распознанные позиции сметы разом. */
@@ -3180,6 +3239,10 @@ const app = {
 
         let bar = document.getElementById('rec_sel_bar');
         const show = alive.length > 0 && this.state.viewMode === 'equipment';
+        // Режим выделения: по нему в style.css показываются сами галочки и
+        // расширяется колонка номеров, чтобы номер и галочка встали рядом,
+        // а не друг под другом.
+        document.body.classList.toggle('rec-sel-mode', show);
         if (!show) { if (bar) bar.remove(); return; }
 
         if (!bar) {
@@ -6294,8 +6357,7 @@ const app = {
         document.body.style.overflow = '';
         this.unsubscribeChatThread();
 
-        const aiFabBtn = document.getElementById('ai_parse_fab_btn');
-        if (aiFabBtn) aiFabBtn.style.display = this.state.tgUser ? 'flex' : 'none';
+        this.syncAiFabVisibility();
     },
     // Показывает вкладку «Мои монтажники» только тем, кто зарегистрировался под email,
     // совпадающим с manager_email хотя бы одного дистрибьютора — то есть реально является
@@ -12166,6 +12228,10 @@ const app = {
         let footerBtns = document.querySelector('.footer-btns');
         let panel3d = document.getElementById('panel_3d');
         let panelRec = document.getElementById('panel_recognize');
+
+        // Кнопка ИИ-заполнения описывает объект словами для расчёта — на вкладке
+        // распознавания сметы ей делать нечего, а место она занимает.
+        this.syncAiFabVisibility();
 
         // Распознавание — такой же вид, как 3D-котельная: таблица сметы
         // прячется, вместо неё показывается своя панель.
@@ -20533,9 +20599,7 @@ const app = {
         // Кнопку "умного" заполнения (ИИ-чат) гостю вообще не показываем — распознанные
         // параметры пишутся в state напрямую, минуя проверки тарифа, так что для гостя
         // единственная надёжная защита — не давать открыть диалог вообще
-        const aiFabBtn = document.getElementById('ai_parse_fab_btn');
-        if (aiFabBtn) aiFabBtn.style.display = isGuest ? 'none' : 'flex';
-        if (!isGuest) this.applyAiFabCollapsedState();
+        this.syncAiFabVisibility();
 
         const applyLock = (elId, reqLvl) => {
             let container;
@@ -22474,7 +22538,10 @@ const app = {
 
                 let originalPrice = Math.round(finalItem.price || 0);
                 let finalPrice = originalPrice;
-                if (isPro && this.state.eqDiscount) {
+                // Скидка считается всем тарифам. PRO от Базового по ней сейчас
+                // ничем не отличается, а тихо не применённая скидка выглядела
+                // как поломка: ползунок стоит, цифры прежние.
+                if (this.state.eqDiscount) {
                     finalPrice = Math.round(originalPrice * (1 - this.state.eqDiscount / 100));
                 }
 
@@ -22896,13 +22963,16 @@ const app = {
                 let imgCellHtml = "";
                 if (hasAlts || recCanReplace) {
                     let wrapClass = "img-wrap";
-                    let svgIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>`;
                     const badgeSvg = `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>`;
                     let clickAction = recCanReplace
                         ? `app.openRecReplaceModal('${lookupId}')`
                         : `app.openSwapModal('${lookupId}')`;
                     let tipText = 'Нажмите, чтобы заменить';
-                    imgCellHtml = `<td class="col-img swappable-cursor"><div class="${wrapClass}" onclick="${clickAction}" title="${tipText}"><div class="swap-alt-badge">${badgeSvg}</div><div class="swap-cycle-btn" onclick="event.stopPropagation(); ${clickAction}">${svgIcon}</div>${imgContent}</div></td>`;
+                    // Значок замены один — синий кружок в углу картинки. Раньше рядом
+                    // с ним по наведению выезжала вторая, крупная стрелка слева от
+                    // фото: два значка одного и того же действия, из которых левый
+                    // ещё и налезал на номер позиции.
+                    imgCellHtml = `<td class="col-img swappable-cursor"><div class="${wrapClass}" onclick="${clickAction}" title="${tipText}"><div class="swap-alt-badge">${badgeSvg}</div>${imgContent}</div></td>`;
                 } else { imgCellHtml = `<td class="col-img">${imgContent}</td>`; }
 
                 let nameClass = "col-name";
@@ -22956,10 +23026,21 @@ const app = {
                 // Галочка выделения — только у распознанных строк: переносить между
                 // разделами имеет смысл лишь их (позиции калькулятора раздел получают
                 // из самой логики расчёта). См. toggleRecSel/moveRecSelected.
+                //
+                // Показывается она не всегда, а только когда выделение начато —
+                // то есть по клику на любую распознанную строку (body.rec-sel-mode
+                // в style.css). В обычном состоянии колонка номеров остаётся такой
+                // же, как была: галочка у каждой второй строки превращала бы смету
+                // в анкету.
                 const recSelHtml = i.recognized
                     ? `<input type="checkbox" class="rec-sel-chk no-print"${(this._recSel && this._recSel[lookupId]) ? ' checked' : ''} onclick="event.stopPropagation(); app.toggleRecSel('${lookupId}', this.checked)" title="Выделить для переноса в другой раздел">`
                     : '';
-                rows += `<tr ${rowStyle}${rowClass} onclick="this.classList.toggle('active-row')"><td class="col-idx">${recSelHtml}${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}${swapInlineHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td>${priceCell}${sumCell}</tr>` + locsRows;
+                // Клик по распознанной строке начинает выделение — это и есть способ
+                // вызвать галочки. У остальных строк клик работает как раньше.
+                const rowClick = i.recognized
+                    ? `app.toggleRecSel('${lookupId}')`
+                    : `this.classList.toggle('active-row')`;
+                rows += `<tr ${rowStyle}${rowClass} onclick="${rowClick}"><td class="col-idx">${recSelHtml}${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}${swapInlineHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td>${priceCell}${sumCell}</tr>` + locsRows;
             });
             let addCustomRow = "";
             if (this.state.viewMode === 'equipment') {
@@ -26268,10 +26349,13 @@ const app = {
         // откат распознавания), да и вкладка могла смениться на «Работы».
         this.updateRecSelBar();
 
-        // Toggle and update discount block for PRO users
+        // Блок скидки виден и Базовому тарифу — сама скидка больше не PRO-функция
+        // (см. addToBill). Ползунок без действия был бы обманом, действие без
+        // ползунка — необъяснимой цифрой. Гостю по-прежнему не показываем: у него
+        // и цены-то размыты, скидка от них ничего не значит.
         let discountBlock = document.getElementById('discount_block');
         if (discountBlock) {
-            if (isPro && this.state.viewMode === 'equipment') {
+            if (this.state.tgUser && this.state.viewMode === 'equipment') {
                 discountBlock.style.display = 'flex';
                 document.getElementById('rec_price_val').innerHTML = app.formatPriceHtml(app.originalEqSum || 0, true);
                 let curDiscount = this.state.eqDiscount || 0;

@@ -636,37 +636,11 @@ input:checked+.slider:before {
     transition: all 0.2s;
 }
 
-.swap-cycle-btn {
-    display: none;
-    position: absolute;
-    left: -26px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: #2563EB;
-    color: #fff;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
-    border: 2px solid #fff;
-    cursor: pointer;
-    z-index: 10;
-    transition: all 0.2s;
-}
-
-.swap-cycle-btn:hover {
-    background: #1d4ed8;
-    transform: translateY(-50%) scale(1.15);
-}
-
-.show-swap-ui .swap-cycle-btn,
-.swappable-cursor:hover .swap-cycle-btn,
-.inv-table tr.active-row .swap-cycle-btn {
-    display: flex;
-    animation: popIn 0.2s forwards;
-}
+/* Крупная стрелка слева от фото убрана: она дублировала синий значок в углу
+   картинки, выезжала по наведению за пределы своей ячейки и налезала на номер
+   позиции. Действие одно — значок тоже один. Правила для .swap-cycle-btn в
+   печатных блоках ниже оставлены намеренно: они лишь прячут класс, которого
+   больше нет, и ничему не мешают. */
 
 .swappable-cursor {
     cursor: pointer;
@@ -8512,20 +8486,37 @@ body.dark-mode .inv-table tr.row-recognized td {
 }
 
 /* Галочка выделения распознанной строки — слева от её номера. Мелкая и
-   бледная: это служебный элемент, номер позиции остаётся главным. */
+   бледная: это служебный элемент, номер позиции остаётся главным.
+   В обычном состоянии её нет вовсе: выделение начинается кликом по строке,
+   и только тогда галочки появляются у всех распознанных сразу. */
 .rec-sel-chk {
+    display: none;
     width: 13px;
     height: 13px;
-    margin-right: 5px;
+    margin: 0 3px 0 0;
     vertical-align: middle;
     accent-color: var(--primary, #0284c7);
     cursor: pointer;
     opacity: 0.65;
 }
 
+body.rec-sel-mode .rec-sel-chk {
+    display: inline-block;
+}
+
 .rec-sel-chk:checked,
 .rec-sel-chk:hover {
     opacity: 1;
+}
+
+/* Колонка номеров на время выделения расширяется — иначе галочка и номер не
+   помещаются в тридцать точек и встают друг под другом. Двигаются при этом
+   все строки разом и ровно на один раз, а не каждая по-своему: смета
+   остаётся читаемой, а по выходе из режима ширина возвращается. */
+body.rec-sel-mode .inv-table .col-idx {
+    width: 52px;
+    min-width: 52px;
+    white-space: nowrap;
 }
 
 /* Панель переноса выделенного. Висит над сметой у нижнего края: выделяют
@@ -8666,7 +8657,9 @@ body.dark-mode .inv-table tr.row-recognized td {
 
 /* Превью и плитка «+» стоят в одном ряду: догрузить лист — то же действие,
    что и загрузить первый, и место ему рядом с уже загруженным. */
-.rec-prev-row { display: none; align-items: flex-start; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+/* Плитка «+» выравнивается по середине картинки: у вертикального фото
+   прижатый к верху квадратик выглядит потерянным углом, а не кнопкой. */
+.rec-prev-row { display: none; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 
 /* Обёртка по размеру картинки, иначе крестик уезжает к краю блока,
    а не к краю того, что удаляют. */
@@ -8934,6 +8927,80 @@ body.dark-mode .inv-table tr.row-recognized td {
 .rec-cmp-dot.low { background: #f97316; }
 
 .rec-cmp-table td { vertical-align: top; }
+
+/* Плитка бренда кликабельна: по ней же и переключается расчёт. Выбранная
+   подчёркнута сверху — так видно, к какому бренду относится колонка
+   «Разница», не читая подписей. */
+.rec-cmp-item[onclick] { cursor: pointer; }
+
+.rec-cmp-item.on {
+    background: var(--surface-light, #f1f5f9);
+    box-shadow: inset 0 3px 0 var(--primary, #0284c7);
+}
+
+.rec-cmp-note {
+    margin-top: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary, #0284c7);
+}
+
+.rec-cmp-note.down { color: #16a34a; }
+
+/* Приписка под суммой: наши цены — прайс. Без неё «мы дороже на 33%» читается
+   как приговор, хотя у монтажника своя скидка от дистрибьютора. */
+.rec-cmp-sub {
+    margin-top: 3px;
+    font-size: 11px;
+    color: var(--text-muted, #94a3b8);
+}
+
+/* Переключатель «перенести со скидкой» — под итогами, а не в панели кнопок:
+   он относится к цифрам над ним, и читать его надо вместе с ними. */
+.rec-cmp-apply {
+    display: block;
+    margin: 0 0 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 10px;
+    background: var(--surface, #fff);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.rec-cmp-apply input { margin-right: 8px; vertical-align: middle; }
+.rec-cmp-apply .rec-art { display: block; margin: 3px 0 0 24px; }
+
+.rec-cmp-warn {
+    display: block;
+    margin: 6px 0 0 24px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #f59e0b;
+    line-height: 1.35;
+}
+
+.rec-cmp-switch { display: inline-flex; gap: 4px; }
+.rec-cmp-switch .rec-btn-g.on {
+    background: var(--primary, #0284c7);
+    border-color: var(--primary, #0284c7);
+    color: #fff;
+}
+
+/* Строка, где цена подобранного расходится с ценой документа в разы.
+   Красим отдельно от «не подобрано»: там пусто, а здесь артикул есть и
+   выглядит убедительно — тем и опасен. */
+.rec-table tr.rec-pricebad td {
+    background: rgba(239, 68, 68, 0.10);
+}
+
+.rec-pricebad-note {
+    margin-top: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #ef4444;
+    line-height: 1.35;
+}
 
 /* Блок рекомендаций «возможно, не хватает» под таблицей проверки */
 .rec-suggblock {
