@@ -2950,7 +2950,12 @@ const app = {
             }
 
             const article = matched ? (m.item.article || m.item.id) : null;
-            const section = r.section || '9. Дополнительные материалы';
+            // Позиция без артикула — это дыра в смете, а не «дополнительный
+            // материал»: цены у неё нет, и монтажнику надо её закрыть руками.
+            // Такие строки собираем в отдельный раздел, чтобы они не терялись
+            // среди подобранных.
+            const section = r.section ||
+                (matched ? '9. Дополнительные материалы' : '10. Нераспознанные материалы');
 
             // Один и тот же артикул в одном разделе — одна строка сметы.
             // На бумаге монтажник пишет краны трижды (кухня, санузел, бойлер),
@@ -12042,6 +12047,39 @@ const app = {
         this.saveState();
         this.render();
     },
+    /**
+     * Ручная цена нераспознанной позиции.
+     *
+     * Строка, которой не нашлось ни в каталоге, ни в прайсе, приходит из
+     * распознавания с ценой 0 — взять её неоткуда. Монтажник вписывает цену
+     * прямо в смете, как количество; хранится она на самой позиции
+     * (state.userAddedEq), поэтому переживает перерасчёт и сохранение.
+     */
+    setRecPrice: function (id, value) {
+        const eq = (this.state.userAddedEq || []).find(x => x.id === id);
+        if (!eq) return;
+        let n = Math.round(parseFloat(String(value).replace(',', '.')));
+        if (isNaN(n) || n < 0) n = 0;
+        eq.price = n;
+        this.saveState();
+        this.render();
+    },
+
+    /** То же самое, но введена стоимость строки целиком — цену получаем делением. */
+    setRecSum: function (id, value) {
+        const eq = (this.state.userAddedEq || []).find(x => x.id === id);
+        if (!eq) return;
+        let s = parseFloat(String(value).replace(',', '.'));
+        if (isNaN(s) || s < 0) s = 0;
+        // Количество в строке могло быть переопределено вручную (qtyOverrides) —
+        // делим на то число, которое монтажник видит в таблице.
+        const ov = this.state.qtyOverrides && this.state.qtyOverrides[id];
+        const q = Number(ov !== undefined ? ov : eq.q) || 1;
+        eq.price = Math.round(s / q);
+        this.saveState();
+        this.render();
+    },
+
     stepQty: function (id, delta, currentQty) {
         this.revealQty(id);
         let base = (this.state.qtyOverrides && this.state.qtyOverrides[id] !== undefined) ? this.state.qtyOverrides[id] : currentQty;
@@ -22244,12 +22282,12 @@ const app = {
                             finalItem.instanceKeys = [finalItem.originalId || finalItem.id];
                             finalTip = parts[0] + '<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">' + parts[1];
                         }
-                        bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
+                        bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), basePrice: originalPrice, displaySku: finalItem.displaySku || finalItem.article || finalItem.id, qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
                     }
                 } else {
                     let finalTip = tip;
                     if (tip && tip.includes('|||')) finalTip = tip.split('|||').join('<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">');
-                    bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), displaySku: finalItem.article || finalItem.id, qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
+                    bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), basePrice: originalPrice, displaySku: finalItem.displaySku || finalItem.article || finalItem.id, qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
                 }
             });
         };
@@ -22314,11 +22352,18 @@ const app = {
                             id: eq.id, name: eq.name, price: eq.price, brand: eq.brand || ' ',
                             // Метка распознавания и артикул должны дожить до строки таблицы.
                             recognized: eq.recognized, article: eq.article,
+                            // Позиция не найдена ни в каталоге, ни в прайсе — артикула у неё
+                            // нет. Служебный id ('rec_1785260223271_15') в колонке «Артикул» —
+                            // мусор для монтажника и для клиента, поэтому пишем «нет».
+                            displaySku: eq.article || (eq.recognized ? 'нет' : undefined),
+                            // Нераспознанная позиция приходит с нулевой ценой: её монтажник
+                            // проставляет руками прямо в смете (см. setRecPrice/setRecSum).
+                            editPrice: !!(eq.recognized && !eq.article),
                             // Своё оборудование живёт под служебным id ('rec_…', 'user_…'),
-                            // а картинка лежит под артикулом каталога. Поэтому для фото
-                            // передаём артикул отдельно — иначе у распознанных позиций
-                            // с известным артикулом фото не показывалось.
-                            imgId: eq.article || undefined,
+                            // а файл фото лежит под id позиции каталога. Артикул для этого не
+                            // годится: у части товаров он отличается от id («500089.K» против
+                            // «500089K»), и фото по нему не находилось.
+                            imgId: (base && base.id) || eq.article || undefined,
                             alts: base ? base.alts : undefined,
                             rommer: base ? base.rommer : undefined,
                             unit: base ? base.unit : undefined,
@@ -22634,7 +22679,21 @@ const app = {
                 // (body.hide-images-mode), где столбец с фото и его кнопкой замены скрыт. Так замену
                 // можно открыть, не включая отображение картинок. См. .swap-inline-btn в style.css.
                 let swapInlineHtml = hasAlts ? `<span class="swap-inline-btn" onclick="event.stopPropagation();app.openSwapModal('${lookupId}')" title="Заменить на аналог"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg></span>` : '';
-                rows += `<tr ${rowStyle}${rowClass} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}${swapInlineHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td><td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${app.formatPriceHtml(i.price)}</td><td class="col-sum">${app.formatPriceHtml(i.sum)}</td></tr>` + locsRows;
+                // Цена и стоимость нераспознанной позиции правятся прямо в смете —
+                // так же, как количество. Артикула у такой строки нет, взять цену
+                // неоткуда, и без ручного ввода она осталась бы нулевой.
+                // В полях показываем цену ДО скидки: именно она хранится в позиции,
+                // и именно её вернёт ввод обратно. Иначе скидка накладывалась бы
+                // повторно при каждой правке.
+                const _priceEsc = (i.id || '').replace(/'/g, "\\'");
+                const _editBase = (i.basePrice !== undefined ? i.basePrice : i.price) || 0;
+                let priceCell = i.editPrice
+                    ? `<td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span><input type="number" class="price-num-input" min="0" step="1" value="${_editBase}" placeholder="цена" onclick="event.stopPropagation()" onchange="event.stopPropagation(); app.setRecPrice('${_priceEsc}', this.value)" onkeydown="if(event.key==='Enter') this.blur();"></td>`
+                    : `<td class="col-price"><span class="mob-mult" style="display:none;">${i.q}</span>${app.formatPriceHtml(i.price)}</td>`;
+                let sumCell = i.editPrice
+                    ? `<td class="col-sum"><input type="number" class="price-num-input" min="0" step="1" value="${Math.round(_editBase * i.q)}" placeholder="стоимость" onclick="event.stopPropagation()" onchange="event.stopPropagation(); app.setRecSum('${_priceEsc}', this.value)" onkeydown="if(event.key==='Enter') this.blur();"></td>`
+                    : `<td class="col-sum">${app.formatPriceHtml(i.sum)}</td>`;
+                rows += `<tr ${rowStyle}${rowClass} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}${swapInlineHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td>${priceCell}${sumCell}</tr>` + locsRows;
             });
             let addCustomRow = "";
             if (this.state.viewMode === 'equipment') {
@@ -25902,7 +25961,10 @@ const app = {
                 if (sec === '9. Своё оборудование') sec = '9. Дополнительные материалы';
                 if (!_flushedSections.has(sec)) pending.add(sec);
             });
-            pending.forEach(sec => flushBill(sec));
+            // По номеру в заголовке, иначе порядок дофлашенных разделов зависел бы
+            // от того, в каком порядке распознавание положило позиции в state.
+            const secNum = s => { const m = String(s).match(/^\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : 99; };
+            [...pending].sort((a, b) => secNum(a) - secNum(b)).forEach(sec => flushBill(sec));
         }
 
         // Сколько своих позиций реально ушло в смету — по нему решаем, показывать

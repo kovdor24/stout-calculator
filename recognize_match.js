@@ -2976,7 +2976,165 @@ const RecognizeMatch = (function () {
     '7.1. Обвязка скважинного насоса',
     '8. Канализация',
     '9. Дополнительные материалы',
+    '10. Нераспознанные материалы',
   ];
+
+  /**
+   * Раздел по категории каталога.
+   *
+   * Если позиция подобрана, её раздел уже известен: калькулятор кладёт эту
+   * категорию всегда в одно и то же место. Бойлер идёт к котлу, блок
+   * управления скважинным насосом — в обвязку скважины, дымоход и стабилизатор
+   * — в котельную. Раньше всё это оседало в «Дополнительных материалах» просто
+   * потому, что рукописная строка о разделе молчит.
+   *
+   * В таблице только ОДНОЗНАЧНЫЕ категории. Трубы, фитинги, полипропилен и
+   * крепёж встречаются сразу в нескольких разделах — их сюда не вносим, для
+   * них ниже работают правила по составу сметы.
+   */
+  const CATALOG_SECTIONS = {
+    // 1. Котёл + водонагреватель
+    boilers_gas: '1. Котёл + водонагреватель',
+    boilers_baxi: '1. Котёл + водонагреватель',
+    boilers_plus: '1. Котёл + водонагреватель',
+    boilers_status: '1. Котёл + водонагреватель',
+    tanks_optibase: '1. Котёл + водонагреватель',
+    tanks_standard: '1. Котёл + водонагреватель',
+    tanks_stainless: '1. Котёл + водонагреватель',
+    tanks_floor_comb: '1. Котёл + водонагреватель',
+    tanks_wall_cos: '1. Котёл + водонагреватель',
+    tanks_wall_comb: '1. Котёл + водонагреватель',
+
+    // 2. Обвязка котельной
+    chimneys: '2. Обвязка котельной',
+    stabs: '2. Обвязка котельной',
+    valves: '2. Обвязка котельной',
+    exp_heating: '2. Обвязка котельной',
+    exp_dhw: '2. Обвязка котельной',
+    tank_mount: '2. Обвязка котельной',
+    tank_kit: '2. Обвязка котельной',
+    groups_dn20: '2. Обвязка котельной',
+    groups_dn25: '2. Обвязка котельной',
+    groups_dn32: '2. Обвязка котельной',
+    heat_exchanger_groups: '2. Обвязка котельной',
+    hydro_separators: '2. Обвязка котельной',
+    hydro_arrow: '2. Обвязка котельной',
+    collectors_dn20: '2. Обвязка котельной',
+    collectors_dn25: '2. Обвязка котельной',
+    collectors_dn32: '2. Обвязка котельной',
+    hydro_dn20: '2. Обвязка котельной',
+    hydro_dn25: '2. Обвязка котельной',
+    hydro_modular_dn20: '2. Обвязка котельной',
+    pumps_dn20: '2. Обвязка котельной',
+    pumps_dn25: '2. Обвязка котельной',
+    rommer_pumps: '2. Обвязка котельной',
+    pumps_mix: '2. Обвязка котельной',
+    mixing_units: '2. Обвязка котельной',
+    servo_rotary_sensor: '2. Обвязка котельной',
+    servo_rotary_std: '2. Обвязка котельной',
+    dhw_pump: '2. Обвязка котельной',
+    coolants: '2. Обвязка котельной',
+
+    // 3. Приборы отопления
+    rads: '3. Приборы отопления',
+    rad_kits: '3. Приборы отопления',
+    convectors_scq: '3. Приборы отопления',
+    convectors_scn: '3. Приборы отопления',
+    conv_valves: '3. Приборы отопления',
+    conv_parts: '3. Приборы отопления',
+    rad_tube_set: '3. Приборы отопления',
+    heads: '3. Приборы отопления',
+    h_valves: '3. Приборы отопления',
+    manifolds_rad: '3. Приборы отопления',
+    manifolds_chrome_blocks: '3. Приборы отопления',
+    manifold_brackets: '3. Приборы отопления',
+    rad_pipes_grey: '3. Приборы отопления',
+
+    // 4. Водяной тёплый пол
+    mats: '4. Водяной тёплый пол',
+    xps_kit: '4. Водяной тёплый пол',
+    ufh_mat: '4. Водяной тёплый пол',
+    manifolds: '4. Водяной тёплый пол',
+    manifolds_full_kit: '4. Водяной тёплый пол',
+    manifolds_shutoff: '4. Водяной тёплый пол',
+    manifolds_shutoff_auto: '4. Водяной тёплый пол',
+    ufh_mech: '4. Водяной тёплый пол',
+    ufh_electro: '4. Водяной тёплый пол',
+    thermostats_stout: '4. Водяной тёплый пол',
+    actuators: '4. Водяной тёплый пол',
+    actuators_rommer: '4. Водяной тёплый пол',
+    wiring_center: '4. Водяной тёплый пол',
+
+    // 5.1. Внутреннее водоснабжение
+    water_pipes: '5.1. Внутреннее водоснабжение',
+    water_pipes_mp: '5.1. Внутреннее водоснабжение',
+    water_manifolds_cold: '5.1. Внутреннее водоснабжение',
+    water_manifolds_stout: '5.1. Внутреннее водоснабжение',
+    water_manifolds_rommer: '5.1. Внутреннее водоснабжение',
+    outdoor_faucets: '5.1. Внутреннее водоснабжение',
+
+    // 5.2. Внутреннее ГВС / 5.3. Рециркуляция
+    water_manifolds_hot: '5.2. Внутреннее ГВС',
+    water_manifolds_recirc: '5.3. Рециркуляция',
+
+    // 6. Узел ввода ХВС
+    water_input_node: '6. Узел ввода ХВС',
+    filter_big_blue: '6. Узел ввода ХВС',
+
+    // 7.1. Обвязка скважинного насоса
+    well_pumps: '7.1. Обвязка скважинного насоса',
+    well_parts: '7.1. Обвязка скважинного насоса',
+    well_auto: '7.1. Обвязка скважинного насоса',
+    well_relays: '7.1. Обвязка скважинного насоса',
+
+    // 8. Канализация
+    sewer_silent: '8. Канализация',
+  };
+
+  /**
+   * Индекс «артикул → раздел», собирается один раз по первому обращению.
+   *
+   * Один и тот же артикул лежит сразу в нескольких категориях: кран 3/4"
+   * встречается и в узле ввода, и в уличном кране, евроконус — и в тёплом
+   * полу, и в водоснабжении. Такой артикул раздела не задаёт, и в индексе он
+   * гасится (null): пусть лучше сработают правила по составу сметы.
+   */
+  let catSectionIndex = null;
+  function buildCatSectionIndex() {
+    catSectionIndex = Object.create(null);
+    if (typeof catalog === 'undefined') return;
+    // Канализация STOUT/Sinikon разложена по десяткам массивов ss_* — они все
+    // об одном разделе, перечислять их поимённо смысла нет.
+    const sectionOf = (key) => CATALOG_SECTIONS[key] || (/^ss_/.test(key) ? '8. Канализация' : null);
+
+    // Смотрим ВЕСЬ каталог, а не только категории из таблицы. Ниппель 3/4"
+    // лежит и в узле ввода, и в уличном кране, и в колбе Big Blue — по нему
+    // раздел не определить, и такой артикул гасится (null). Раздел остаётся
+    // только у тех, кто встречается ровно в одном месте.
+    const seen = Object.create(null);
+    for (const key in catalog) {
+      const v = catalog[key];
+      if (!v || typeof v !== 'object') continue;
+      const section = sectionOf(key);
+      const arr = Array.isArray(v) ? v : [v];
+      for (const it of arr) {
+        if (!it || typeof it !== 'object') continue;
+        const ids = [it.id, it.article, it.rommer && it.rommer.id, it.comfort && it.comfort.id];
+        for (const id of ids) {
+          if (!id) continue;
+          if (!(id in seen)) seen[id] = section;
+          else if (seen[id] !== section) seen[id] = null;
+        }
+      }
+    }
+    for (const id in seen) if (seen[id]) catSectionIndex[id] = seen[id];
+  }
+
+  function sectionByCatalog(item) {
+    if (!item) return null;
+    if (!catSectionIndex) buildCatSectionIndex();
+    return catSectionIndex[item.id] || catSectionIndex[item.article] || null;
+  }
 
   /**
    * Профиль сметы: какие системы в ней вообще есть.
@@ -3037,6 +3195,12 @@ const RecognizeMatch = (function () {
    * водоснабжении или отоплении чужая строка теряется.
    */
   function guessSection(item, profile) {
+    // Позиция не подобрана: ни артикула, ни цены у неё нет. В разделах сметы
+    // такой строке делать нечего — она не «дополнительный материал», а дыра,
+    // которую монтажнику надо закрыть руками. Собираем их отдельно.
+    if (!item || !item._m || !item._m.item) {
+      return { section: '10. Нераспознанные материалы', sure: true };
+    }
     const res = guessSectionRule(item, profile);
     if (res.sure) return res;
     return { section: '9. Дополнительные материалы', sure: false };
@@ -3050,6 +3214,12 @@ const RecognizeMatch = (function () {
     // Смета только про отопление: приборы есть, водоразбора нет.
     const heatOnly = !!p.heating && !p.water;
     const matched = (item._m && item._m.item && item._m.item.name || '').toLowerCase();
+
+    // Подобранная позиция лежит в каталоге в категории, у которой раздел один
+    // и тот же при любой смете. Это самое надёжное свидетельство: рукописная
+    // строка о разделе молчит, а артикул — нет.
+    const byCat = sectionByCatalog(item._m && item._m.item);
+    if (byCat) return { section: byCat, sure: true };
 
     // Радиатор бывает только прибором отопления — сомневаться тут не в чем.
     if (isRadiator(item)) return { section: '3. Приборы отопления', sure: true };

@@ -1612,12 +1612,6 @@ const RecognizeUI = {
         // возвращает sure=false, и строка помечается «раздел под вопросом».
         this._profile = (typeof RecognizeMatch !== 'undefined' && RecognizeMatch.profileOf)
             ? RecognizeMatch.profileOf(this._rows) : null;
-        this._rows.forEach(r => {
-            if (typeof RecognizeMatch === 'undefined') return;
-            const g = RecognizeMatch.guessSection(r, this._profile);
-            r.section = g.section;
-            r._sectionSure = g.sure;
-        });
 
         this._undo = [];
         this._analogOn = false;      // новое распознавание — режим аналогов сброшен
@@ -1627,6 +1621,16 @@ const RecognizeUI = {
         // придётся добивать её руками. Прежде чем показывать такой результат,
         // прогоняем неподобранные строки ещё раз, с ослабленными правилами.
         this.deepPass();
+
+        // Раздел считаем ПОСЛЕ углублённого прохода: он опирается на найденный
+        // артикул, а строка, подобранная только там, до этого момента ничем не
+        // отличалась от нераспознанной и уезжала не в свой раздел.
+        this._rows.forEach(r => {
+            if (typeof RecognizeMatch === 'undefined') return;
+            const g = RecognizeMatch.guessSection(r, this._profile);
+            r.section = g.section;
+            r._sectionSure = g.sure;
+        });
         // Рекомендации считаются по метражу («труба 50 м — 12 стыков»),
         // поэтому пересчёт метров в штанги идёт строго после них.
         this.refreshSuggestions();
@@ -1660,7 +1664,10 @@ const RecognizeUI = {
         const s = (this._sugg || [])[i];
         if (!s) return;
         this.snap();
-        const g = RecognizeMatch.guessSection(s.row, this._profile);
+        // Раздел считается по подобранному артикулу, а у строки рекомендации он
+        // лежит отдельно (s.match) — без него рекомендация уехала бы в
+        // «Нераспознанные».
+        const g = RecognizeMatch.guessSection({ ...s.row, _m: s.match || null }, this._profile);
         this._rows.push({
             ...s.row,
             raw: 'Рекомендация: ' + s.reason,
