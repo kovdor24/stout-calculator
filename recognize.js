@@ -676,14 +676,69 @@ const RecognizeUI = {
         host.appendChild(box);
 
         this._t0 = Date.now();
-        this._timer = setInterval(() => {
-            const el = document.getElementById('rec_elapsed');
-            if (!el) return;
-            const s = Math.round((Date.now() - this._t0) / 1000);
-            el.textContent = s + ' с' + (s > 45 ? ' — дольше обычного, но запрос ещё идёт' : '');
-        }, 1000);
+        this._tipAt = 0;
+        this._timer = setInterval(() => this.tickProgress(), 1000);
+        this.tickProgress();
 
         this.progressTo(0);
+    },
+
+    /**
+     * Что показывать, пока идёт разбор.
+     *
+     * Ожидание в полторы минуты нечем занять, и пустой счётчик секунд его
+     * только удлиняет. Показываем, что происходит на самом деле, и чего это
+     * стоило бы вручную — цифры настоящие: столько позиций в прайсе, столько
+     * строк уже прочитано. Технические подробности («модель занята, беру
+     * запасную», «дольше обычного») монтажнику не адресованы: он на них
+     * повлиять не может, а тревогу они добавляют.
+     */
+    TIPS: [
+        () => 'Разбираю почерк — это самая долгая часть',
+        function () {
+            const n = (this._priceItems || []).length;
+            return n ? `Сверяю с прайсом: ${n.toLocaleString('ru-RU')} позиций` : 'Сверяю с каталогом';
+        },
+        () => 'Ищу артикулы в прайсе — руками это самое долгое',
+        function () {
+            return this._sheetsDone
+                ? `Прочитано листов: ${this._sheetsDone} из ${this._sheetsTotal}`
+                : 'Читаю таблицу: наименования, количество, размеры';
+        },
+        () => 'Различаю ВР и НР, диаметр и резьбу — их легко перепутать',
+        function () {
+            const n = this._itemsSoFar || 0;
+            return n ? `Уже разобрано позиций: ${n}` : 'Определяю систему: полипропилен, пресс или аксиал';
+        },
+        () => 'Подбираю замены там, где они выгоднее',
+        () => 'Раскладываю позиции по разделам сметы',
+        () => 'Проставляю цены из свежего прайса',
+    ],
+
+    tickProgress() {
+        const el = document.getElementById('rec_elapsed');
+        if (!el) return;
+        const sec = Math.round((Date.now() - this._t0) / 1000);
+
+        // Подсказку меняем раз в пять секунд: чаще — мельтешит, реже — успевает
+        // надоесть.
+        const idx = Math.floor(sec / 5) % this.TIPS.length;
+        if (idx !== this._tipAt || !el.dataset.ready) {
+            this._tipAt = idx;
+            el.dataset.ready = '1';
+            let tip;
+            try { tip = this.TIPS[idx].call(this); } catch (e) { tip = ''; }
+            const done = this._itemsSoFar || 0;
+            // Ручной ввод строки в смету — поиск в прайсе, артикул, цена,
+            // количество. Сорок секунд на позицию: оценка по нижней границе.
+            const saved = done ? Math.round(done * 40 / 60) : 0;
+            el.innerHTML = `<span class="rec-tip">${tip}</span>` +
+                `<span class="rec-tip-sec">${sec} с</span>` +
+                (saved >= 2 ? `<span class="rec-tip-save">вручную было бы ~${saved} мин</span>` : '');
+        } else {
+            const s = el.querySelector('.rec-tip-sec');
+            if (s) s.textContent = sec + ' с';
+        }
     },
 
     progressTo(n) {
@@ -698,6 +753,8 @@ const RecognizeUI = {
     },
 
     progressStop() {
+        // Длительность запоминаем до сброса — она идёт в строку итога.
+        if (this._t0) this._elapsed = Date.now() - this._t0;
         if (this._timer) { clearInterval(this._timer); this._timer = null; }
         const box = document.getElementById('rec_progress');
         if (box) box.remove();
@@ -771,21 +828,42 @@ const RecognizeUI = {
         const go = document.getElementById('rec_go');
         if (go) go.disabled = true;
         this.setStatus('');
+        // Итоги прошлого разбора сбрасываем здесь, а не в startReview: там они
+        // уже заполнены сведением листов и затирать их нельзя.
+        this._sysFromModel = null;
+        this._mergeInfo = '';
         this.progressStart(!!this._text);
 
         try {
             this.progressTo(1);
 
+            /**
+             * Несколько листов разбираются ПО ОДНОМУ, отдельными запросами.
+             *
+             * Раньше все листы уходили в один запрос — так модель видела смету
+             * целиком и лучше понимала сквозную нумерацию. Но на счёте
+             * поставщика в сто с лишним позиций она перестала укладываться в
+             * отведённое время, и распознавание обрывалось целиком: «слишком
+             * долго, попробуйте смету попроще». Полистно каждый запрос втрое
+             * короче, виден прогресс, а сбой на одном листе не отменяет
+             * остальные. Сквозной контекст при этом теряется мало: систему
+             * трубопровода калькулятор всё равно определяет по объединённому
+             * списку, а не по одному листу.
+             */
+            if (!this._text && this._imgs && this._imgs.length > 1) {
+                const res = await this.runBySheets();
+                this.progressTo(2);
+                this.startReview(res);
+                this._busy = false;
+                if (go) go.disabled = false;
+                return;
+            }
+
             // Из текстового файла картинку не шлём: текст в запросе точнее и
             // дешевле, модель не тратит зрение на то, что уже прочитано.
-            // Несколько листов идут в один запрос — модель видит смету целиком.
             let parts;
             if (this._text) {
                 parts = [{ text: 'Разбери эту смету по правилам. Это текст, извлечённый из файла:\n\n' + this._text }];
-            } else if (this._imgs && this._imgs.length > 1) {
-                parts = [{ text: `Разбери эту смету по правилам. Это ${this._imgs.length} листов ОДНОЙ сметы — ` +
-                    `нумерация и система сквозные, разбирай их вместе как единый список. Верни только JSON.` }];
-                for (const b of this._imgs) parts.push({ inline_data: { mime_type: 'image/jpeg', data: b } });
             } else {
                 parts = [
                     { text: 'Разбери эту смету по правилам. Верни только JSON.' },
@@ -796,28 +874,7 @@ const RecognizeUI = {
             // Модели пробуются по очереди: если основная перегружена на
             // стороне Google («high demand»), автоматически берём запасную.
             // Все три в белом списке прокси, менять сервер не нужно.
-            const MODELS = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3-flash-preview'];
-            let data = null, lastErr = null;
-            for (let mi = 0; mi < MODELS.length; mi++) {
-                const resp = await this.fetchRetry({
-                    mode: 'recognize',
-                    model: MODELS[mi],
-                    systemInstruction: RECOGNIZE_PROMPT,
-                    messages: [{ role: 'user', parts }]
-                });
-                const parsed = JSON.parse(resp);
-                if (!parsed.error) { data = parsed; break; }
-
-                const msg = typeof parsed.error === 'string' ? parsed.error : parsed.error.message || '';
-                lastErr = msg;
-                // Перегрузка модели — пробуем следующую. Прочие ошибки
-                // (неверный запрос, ключ) повторять другой моделью бессмысленно.
-                const overloaded = /high demand|overload|unavailable|503|429|resource has been exhausted/i.test(msg);
-                if (!overloaded || mi === MODELS.length - 1) {
-                    throw new Error(msg + (overloaded ? '\n\nВсе модели сейчас перегружены — попробуйте через минуту.' : ''));
-                }
-                this.setStatus(`Модель занята, пробую запасную (${mi + 2} из ${MODELS.length})…`);
-            }
+            const data = await this.askModel(parts);
 
             const cand = data?.candidates?.[0];
             const text = cand?.content?.parts?.[0]?.text;
@@ -840,6 +897,197 @@ const RecognizeUI = {
         }
         this._busy = false;
         if (go) go.disabled = false;
+    },
+
+    /**
+     * Один запрос к распознаванию с перебором моделей.
+     *
+     * Модели пробуются по очереди: если основная перегружена на стороне Google
+     * («high demand»), автоматически берём запасную. Все три в белом списке
+     * прокси, менять сервер не нужно.
+     */
+    async askModel(parts, systemPrompt) {
+        const MODELS = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3-flash-preview'];
+        for (let mi = 0; mi < MODELS.length; mi++) {
+            const resp = await this.fetchRetry({
+                mode: 'recognize',
+                model: MODELS[mi],
+                systemInstruction: systemPrompt || RECOGNIZE_PROMPT,
+                messages: [{ role: 'user', parts }],
+            });
+            const parsed = JSON.parse(resp);
+            if (!parsed.error) return parsed;
+
+            const msg = typeof parsed.error === 'string' ? parsed.error : parsed.error.message || '';
+            // Перегрузка модели — пробуем следующую. Прочие ошибки
+            // (неверный запрос, ключ) повторять другой моделью бессмысленно.
+            const overloaded = /high demand|overload|unavailable|503|429|resource has been exhausted/i
+                .test(msg);
+            if (!overloaded || mi === MODELS.length - 1) {
+                throw new Error(msg + (overloaded
+                    ? '\n\nВсе модели сейчас перегружены — попробуйте через минуту.' : ''));
+            }
+            // Смена модели — внутренняя кухня прокси: монтажнику про неё знать
+            // незачем, повлиять он не может, а тревоги добавляет.
+        }
+        throw new Error('Модель не ответила');
+    },
+
+    /**
+     * Полистный разбор многостраничной сметы.
+     *
+     * Каждый лист — свой запрос. Если один лист не прочитался, остальные не
+     * теряются: его номер попадает в предупреждение, а работа продолжается.
+     * Полный отказ — только когда не прочитался ни один лист.
+     */
+    async runBySheets() {
+        const imgs = this._imgs;
+        const items = [];
+        const skipped = [];
+        const failed = [];
+        const warnings = [];
+
+        this._sheetsTotal = imgs.length;
+        this._sheetsDone = 0;
+        this._itemsSoFar = 0;
+
+        for (let i = 0; i < imgs.length; i++) {
+            this.setStatus(`Читаю лист ${i + 1} из ${imgs.length}…`);
+            try {
+                const data = await this.askModel([
+                    { text: `Разбери эту смету по правилам. Это лист ${i + 1} из ${imgs.length}. ` +
+                            'Верни только JSON.' },
+                    { inline_data: { mime_type: 'image/jpeg', data: imgs[i] } },
+                ]);
+                const cand = data?.candidates?.[0];
+                const text = cand?.content?.parts?.[0]?.text;
+                if (!text) throw new Error('пустой ответ');
+
+                const parsed = this.parseModelJson(text, cand.finishReason);
+                if (this._parseWarning) warnings.push(`лист ${i + 1}: ${this._parseWarning}`);
+                for (const it of (parsed.items || [])) items.push(it);
+                for (const s of (parsed.skipped || [])) skipped.push(s);
+
+                // Лист готов — отмечаем его галочкой и обновляем счётчики,
+                // из которых складываются подсказки в строке ожидания.
+                this._sheetsDone++;
+                this._itemsSoFar = items.length;
+                this.markSheet(i, 'done');
+            } catch (e) {
+                failed.push(i + 1);
+                warnings.push(`лист ${i + 1} не прочитан: ${e.message.split('\n')[0]}`);
+                this.markSheet(i, 'fail');
+            }
+        }
+
+        if (!items.length && failed.length) {
+            throw new Error('Не удалось прочитать ни один лист.\n' + warnings.join('\n'));
+        }
+
+        // Сводящий проход: листы разобраны порознь, связи между ними — нет.
+        const merged = await this.mergeSheets(items, imgs.length);
+        if (merged.warning) warnings.push(merged.warning);
+
+        this._parseWarning = warnings.join(' · ');
+        this.setStatus('');
+        return { items: merged.items, skipped };
+    },
+
+    /**
+     * Отметка листа прямо на миниатюре: готов или не прочитался.
+     *
+     * На трёх листах разбор идёт больше минуты, и без отметки непонятно, что
+     * вообще происходит и сколько осталось. Галочка на самой картинке отвечает
+     * на это без слов.
+     */
+    markSheet(i, state) {
+        const box = document.getElementById('rec_imgs');
+        if (!box) return;
+        const thumb = box.querySelectorAll('.rec-thumb')[i];
+        if (thumb) thumb.classList.add(state === 'fail' ? 'sheet-fail' : 'sheet-done');
+    },
+
+    /**
+     * Сведение листов воедино.
+     *
+     * Полистный разбор надёжен, но каждый лист модель видит в отрыве от
+     * остальных, и теряется ровно то, ради чего листы раньше слали вместе:
+     * строка, начатая на одном листе и продолженная на другом; шапка таблицы,
+     * повторённая на каждой странице; один и тот же фитинг, названный на
+     * разных листах по-разному; система трубопровода, которую видно только по
+     * смете целиком.
+     *
+     * Поэтому делаем второй проход — уже без картинок, по одному тексту. Он
+     * дешёвый и быстрый, а главное: модель возвращает НЕ весь список заново, а
+     * только правки к нему. Полный список на сто с лишним позиций она снова не
+     * успела бы отдать, да и переписывать уже прочитанное незачем.
+     *
+     * Проход необязательный: не получилось — работаем с тем, что разобрано.
+     */
+    async mergeSheets(items, sheets) {
+        if (items.length < 2) return { items };
+        this.setStatus('Свожу листы вместе…');
+
+        const list = items.map((it, i) =>
+            `${i}. ${String(it.raw || '').slice(0, 90)}` +
+            (it.type && it.type !== 'прочее' ? ` [${it.type}]` : '')).join('\n');
+
+        try {
+            const data = await this.askModel(
+                [{ text: `Листов: ${sheets}. Строки:\n${list}` }], MERGE_PROMPT);
+            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) return { items };
+
+            const plan = this.parseModelJson(text, data.candidates[0].finishReason);
+            return this.applyMergePlan(items, plan);
+        } catch (e) {
+            // Сведение — уточнение, а не условие работы: молча продолжаем.
+            console.warn('Сведение листов не выполнено:', e.message);
+            return { items, warning: 'листы не сведены — проверьте строки на стыках страниц' };
+        }
+    },
+
+    /** Применение правок сведения к разобранным строкам. */
+    applyMergePlan(items, plan) {
+        if (!plan || typeof plan !== 'object') return { items };
+        const out = items.map(r => ({ ...r }));
+        const drop = new Set();
+        let changed = 0;
+
+        // Продолжение строки с предыдущего листа: текст дописывается к началу,
+        // количество берём то, которое вообще названо.
+        for (const pair of (plan.merge || [])) {
+            const a = out[pair[0]], b = out[pair[1]];
+            if (!a || !b || drop.has(pair[1])) continue;
+            a.raw = `${a.raw || ''} ${b.raw || ''}`.replace(/\s+/g, ' ').trim();
+            if (!a.qty && b.qty) a.qty = b.qty;
+            if (!a.type || a.type === 'прочее') a.type = b.type;
+            drop.add(pair[1]);
+            changed++;
+        }
+
+        // Один и тот же предмет, названный на разных листах по-разному.
+        for (const t of (plan.retype || [])) {
+            const r = out[t && t.i];
+            if (!r || !t.type) continue;
+            r.type = t.type;
+            changed++;
+        }
+
+        // Повторы шапок и строки, продублированные на стыке страниц.
+        for (const i of (plan.drop || [])) {
+            if (out[i]) { drop.add(i); changed++; }
+        }
+
+        const kept = out.filter((_, i) => !drop.has(i));
+        this._mergeInfo = changed
+            ? `сведение листов: правок ${changed}` + (drop.size ? `, убрано строк ${drop.size}` : '')
+            : '';
+        // Система, увиденная по смете целиком, — подсказка для подбора.
+        if (plan.system && ['ppr', 'ss', 'mp', 'pex'].includes(plan.system)) {
+            this._sysFromModel = plan.system;
+        }
+        return { items: kept };
     },
 
     /**
@@ -983,7 +1231,10 @@ const RecognizeUI = {
         let last;
         for (let i = 1; i <= attempts; i++) {
             const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 100000);
+            // Свой таймаут держим чуть БОЛЬШЕ серверного (у прокси на режим
+            // recognize стоит 120 с): иначе браузер сдавался первым и вместо
+            // внятной ошибки от сервера монтажник видел «слишком долго».
+            const timer = setTimeout(() => ctrl.abort(), 125000);
             try {
                 const r = await fetch(this.PROXY, {
                     method: 'POST',
@@ -1041,9 +1292,20 @@ const RecognizeUI = {
         // подсказкой для каждой строки: «водорозетка 16» или «муфта 25» сами
         // о системе молчат, и без этого в аксиальной смете подбирался
         // пресс-фитинг, а в полипропиленовой — нержавейка.
-        const profileOfSystem = () =>
-            (typeof RecognizeMatch !== 'undefined' && RecognizeMatch.systemProfile)
-                ? RecognizeMatch.systemProfile(this._rows) : null;
+        const profileOfSystem = () => {
+            if (typeof RecognizeMatch === 'undefined' || !RecognizeMatch.systemProfile) return null;
+            const p = RecognizeMatch.systemProfile(this._rows);
+            /**
+             * Систему, увиденную моделью по смете ЦЕЛИКОМ, берём тогда, когда
+             * по самим строкам её определить не удалось. Именно этот вывод
+             * терялся при полистном разборе: труба может стоять на первом
+             * листе, а фитинги под неё — на третьем, и по отдельному листу
+             * система не читается. Собственный подсчёт по строкам точнее и
+             * поэтому имеет приоритет.
+             */
+            if (p && !p.main && this._sysFromModel) p.main = this._sysFromModel;
+            return p;
+        };
 
         // Подбор в два прохода. Первый нужен, чтобы у строк появились названия
         // из каталога: рукописное «Комби 25х3/4» о системе молчит, а
@@ -1429,6 +1691,7 @@ const RecognizeUI = {
         document.getElementById('rec_body').innerHTML = `
           ${this._parseWarning ? `<div class="rec-err">${esc(this._parseWarning)}
              Проверьте, все ли строки сметы на месте.</div>` : ''}
+          ${this.renderSavedTime(found.length)}
           <div class="rec-toolbar">
             <button class="rec-btn-g" onclick="RecognizeUI.undo()" ${this._undo.length ? '' : 'disabled'}>↶ Отменить</button>
             <button class="rec-btn-g" onclick="RecognizeUI.delSel()" ${selN ? '' : 'disabled'}>Удалить выбранные${selN ? ' (' + selN + ')' : ''}</button>
@@ -1442,6 +1705,7 @@ const RecognizeUI = {
             <span class="rec-status">Подобрано ${found.length} из ${this._rows.length} (${
               this._rows.length ? Math.round(found.length / this._rows.length * 100) : 0}%)${
               this._deep ? ` · из них углублённым поиском ${this._deep}` : ''}${
+              this._mergeInfo ? ' · ' + this._mergeInfo : ''}${
               noQty ? ` · без количества ${noQty}` : ''}</span>
             ${this.renderAnalogButton()}
           </div>
@@ -1578,6 +1842,37 @@ const RecognizeUI = {
             this._analogSaved = saved;
         }
         this.renderReview();
+    },
+
+    /**
+     * Строка итога: что сделано и сколько это стоило бы руками.
+     *
+     * Оценка честная и по нижней границе: сорок секунд на позицию — это найти
+     * её в прайсе, перенести артикул, цену и количество. Считаем только по
+     * подобранным строкам: то, что ушло без артикула, монтажник всё равно
+     * заполняет сам, и приписывать эту экономию себе нечестно.
+     */
+    renderSavedTime(found) {
+        if (!found) return '';
+        const min = Math.round(found * 40 / 60);
+        if (min < 3) return '';
+        const time = min >= 60
+            ? `${Math.floor(min / 60)} ч ${min % 60 ? (min % 60) + ' мин' : ''}`.trim()
+            : `${min} мин`;
+        const secs = Math.round((this._elapsed || 0) / 1000);
+        return `<div class="rec-saved">
+            <b>${found}</b> ${this.plural(found, 'позиция', 'позиции', 'позиций')} перенесено в смету
+            ${secs ? `за ${secs} с` : ''} — вручную это заняло бы около <b>${time}</b>
+          </div>`;
+    },
+
+    /** Русское склонение после числа. */
+    plural(n, one, few, many) {
+        const a = Math.abs(n) % 100, b = a % 10;
+        if (a > 10 && a < 20) return many;
+        if (b > 1 && b < 5) return few;
+        if (b === 1) return one;
+        return many;
     },
 
     /**
@@ -1857,6 +2152,51 @@ const RecognizeUI = {
         });
     },
 };
+
+/**
+ * Промпт сведения листов.
+ *
+ * Второй проход по уже разобранным строкам. Модель не переписывает список —
+ * она возвращает только правки: что склеить, что переименовать, что выбросить.
+ * Полный список на сто с лишним позиций она снова не успела бы отдать, а
+ * переписывать прочитанное незачем: разбор картинок точнее пересказа.
+ */
+const MERGE_PROMPT = `Ты сводишь воедино смету, разобранную по листам ПОРОЗНЬ.
+Каждый лист читался отдельно, поэтому связи между листами потеряны. Найди их.
+
+Верни СТРОГО JSON без пояснений:
+{
+  "merge":  [[i, j], ...],          // строка j — продолжение строки i (перенос со страницы)
+  "retype": [{"i": 5, "type": "муфта_комбинированная"}, ...],
+  "drop":   [i, ...],               // повтор шапки таблицы или дубль строки на стыке
+  "system": "ppr" | "ss" | "mp" | "pex" | null
+}
+
+ЧТО ИСКАТЬ:
+
+1. ПЕРЕНОС СТРОКИ. Конец листа обрывается на полуслове, начало следующего его
+   продолжает: «Труба PP-R 32 мм, 4 м, армир» + «ованная стекловолокном, 12 шт».
+   Это одна позиция: merge=[[i, j]], где i — верхняя строка.
+
+2. ПОВТОР ШАПКИ. «Наименование | Кол-во | Цена», «Итого», «Продолжение таблицы»,
+   номер страницы — это не товар: такие строки в drop.
+
+3. ДУБЛЬ НА СТЫКЕ. Последняя строка листа повторена первой строкой следующего
+   (так печатают «продолжение»). Оставь верхнюю, нижнюю — в drop.
+   Одинаковые позиции, идущие подряд в РАЗНЫХ местах листа, дублями НЕ считай:
+   монтажник мог заказать их дважды.
+
+4. ЕДИНЫЙ ТИП. Один и тот же предмет на разных листах назван по-разному
+   («комби 25х3/4» и «муфта комбинированная 25х3/4»). Приведи к одному типу
+   через retype. Тип бери из словаря типов распознавания.
+
+5. СИСТЕМА. По смете целиком видно, чем она собрана: ppr — полипропилен,
+   ss — нержавейка, mp — металлопластик (пресс), pex — сшитый полиэтилен
+   (аксиал). Решает ТРУБА: фитинг без своей трубы систему не задаёт. Если
+   труб нет или систем несколько вперемешку — system=null.
+
+Если править нечего, верни пустые массивы. Ничего не выдумывай: строк, которых
+нет в списке, быть не должно, индексы — только из присланных.`;
 
 // Промпт распознавания. Правила выведены из разбора реальных рукописных смет,
 // каждое закрывает конкретную ошибку модели — подробности в комментариях ниже.

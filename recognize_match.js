@@ -801,8 +801,63 @@ const RecognizeMatch = (function () {
    * угла, «Редукция»/«Переход эксц.» вместо перехода. Угол у канализации
    * стандартно 87°, а на бумаге пишут «90°» — сопоставляем.
    */
+  /**
+   * Диаметры бесшумной серии.
+   *
+   * У бесшумной канализации STOUT наружный диаметр другой: там, где обычная
+   * труба 50 мм, бесшумная — 58 мм (у ROMMER тот же артикул подписан как
+   * D 050). Монтажник пишет привычные 50, подбор искал «D 050», не находил
+   * ничего и уходил в прайс — где брал ОБЫЧНУЮ трубу за 93 ₽ вместо
+   * бесшумной за 857 ₽. Разные изделия и разные деньги.
+   */
+  const SEWER_SILENT_D = { 50: 58, 40: 40, 110: 110, 160: 160 };
+
+  /**
+   * Длина трубы из строки: «50*1000мм», «110х2000 мм».
+   *
+   * Без неё все фановые трубы одного диаметра сваливались в одну позицию:
+   * и метровая, и двухметровая подбирались к первой попавшейся.
+   */
+  function sewerLength(raw) {
+    const s = String(raw || '');
+    const mm = s.match(/[*х×x]\s*(\d{3,4})\s*мм/i);
+    if (mm) return +mm[1];
+    // Длину пишут и метрами: «Труба 110 - 2 м - 6 шт» — это шесть труб по
+    // два метра. Канализационную трубу режут на 0,5–3 м, поэтому больше трёх
+    // здесь уже не длина изделия, а метраж трассы.
+    const m = s.match(/(?:^|[\s\-–])([0-3])(?:[.,]5)?\s*м(?![мa-zа-яё])/i);
+    if (!m) return null;
+    const val = parseFloat(m[0].replace(/[^\d.,]/g, '').replace(',', '.'));
+    return val > 0 ? Math.round(val * 1000) : null;
+  }
+
+  /**
+   * Полный список бесшумной канализации.
+   *
+   * В catalog.js её лежит четыре позиции — те, что нужны расчёту калькулятора.
+   * В прайсе серия полная: сорок с лишним артикулов, включая тройник 58x58,
+   * трубы на 250, 500, 1500 и 3000 мм. Подбор искал только по каталогу, не
+   * находил половину серии и уходил в прайс — где брал ОБЫЧНУЮ канализацию
+   * вместо бесшумной. Поэтому пул собираем из обоих источников; каталог идёт
+   * первым, у его позиций проставлены бюджетные аналоги.
+   */
+  let sewerCache = null;
+  function sewerPool() {
+    if (sewerCache) return sewerCache;
+    sewerCache = ((typeof catalog !== 'undefined' && catalog.sewer_silent) || []).slice();
+    const seen = new Set(sewerCache.map((it) => String(it.id || '').toUpperCase()));
+    for (const r of (priceIndex || [])) {
+      if (!/бесшум/i.test(r.s || '')) continue;
+      const id = String(r.a || '').toUpperCase();
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      sewerCache.push({ id: r.a, article: r.a, name: r.n, price: r.p, brand: 'STOUT' });
+    }
+    return sewerCache;
+  }
+
   function matchSewer(rec) {
-    const pool = catalog.sewer_silent || [];
+    const pool = sewerPool();
     if (!pool.length) return null;
 
     const t = (rec.type || '').toLowerCase();
@@ -818,6 +873,7 @@ const RecognizeMatch = (function () {
 
     // 90° на бумаге = 87° в канализации.
     const wantAngle = rec.angle === 90 ? 87 : rec.angle;
+    const wantLen = /труба/.test(t) ? sewerLength(rec.raw) : null;
 
     let best = null;
     for (const it of pool) {
@@ -827,27 +883,52 @@ const RecognizeMatch = (function () {
       let score = 0, max = 0;
 
       // Диаметр обязателен и ищется как отдельное число: «D 110», «D 050».
+      // Принимаем и диаметр бесшумной серии: 50 в строке — это D 058.
       if (rec.d) {
         max += 2;
         const dm = n.match(/D\s*0*(\d{2,3})/i);
-        if (dm && +dm[1] === rec.d) score += 2;
+        const want = [rec.d, SEWER_SILENT_D[rec.d]].filter(Boolean);
+        if (dm && want.includes(+dm[1])) score += 2;
       }
       if (wantAngle) {
         max += 1;
         if (n.includes(wantAngle + '°') || n.includes(wantAngle + ' ')) score += 1;
       }
+      /**
+       * Длина трубы. Точное совпадение — то, что заказано; иначе даём тем
+       * больше, чем ближе. Полуметровой трубы в бесшумной серии нет, и
+       * подобрать метровую разумнее, чем двухметровую, — но видно, что это
+       * замена: оценка не дотянет до единицы.
+       */
+      let gotLen = null;
+      if (wantLen) {
+        max += 1;
+        const lm = n.match(/L\s*0*(\d{3,4})/i);
+        if (lm) {
+          gotLen = +lm[1];
+          score += gotLen === wantLen
+            ? 1
+            : Math.max(0, 1 - Math.abs(gotLen - wantLen) / Math.max(gotLen, wantLen));
+        }
+      }
       if (max === 0) continue;
 
       const rel = score / max;
-      if (!best || rel > best.rel) best = { rel, item: it };
+      if (!best || rel > best.rel) best = { rel, item: it, len: gotLen };
     }
 
     if (!best || best.rel < 0.75) return null;
+    // Длину, которой в серии нет, подменяем ближайшей — но об этом надо
+    // сказать: две трубы по 500 мм это не одна метровая.
+    const lenNote = (wantLen && best.len && best.len !== wantLen)
+      ? `в серии нет длины ${wantLen} мм — подобрана ${best.len} мм, пересчитайте количество`
+      : null;
     return {
       item: best.item,
-      score: best.rel,
+      score: lenNote ? Math.min(best.rel, 0.8) : best.rel,
+      substituted: lenNote,
       brandRank: brandRank(best.item),
-      needsApproval: brandRank(best.item) >= 3,
+      needsApproval: brandRank(best.item) >= 3 || !!lenNote,
       alternatives: [],
     };
   }
@@ -1881,7 +1962,8 @@ const RecognizeMatch = (function () {
   function setPriceIndex(items) {
     priceIndex = Array.isArray(items) ? items : null;
     priceTokens = null;
-    nameIndex = null;   // прайс входит в индекс названий — он пересобирается
+    nameIndex = null;
+    sewerCache = null;   // бесшумная серия собирается из прайса   // прайс входит в индекс названий — он пересобирается
   }
   function hasPriceIndex() { return !!(priceIndex && priceIndex.length); }
 
@@ -2714,8 +2796,61 @@ const RecognizeMatch = (function () {
    * Аналог ROMMER для подобранной позиции: { item, save, percent } либо null.
    * Возвращается только выгодная замена — дороже ставить незачем.
    */
+  /**
+   * Бюджетный аналог для бесшумной канализации.
+   *
+   * Бесшумная серия — это полипропилен с минеральным наполнителем, она втрое
+   * дороже обычной ПП. Когда монтажник переключает смету на аналоги, для
+   * канализации это значит «то же самое, но в бюджетной серии»: труба той же
+   * длины, отвод того же угла, тройник тех же диаметров. Поле rommer у части
+   * позиций каталога это уже задаёт, но у пришедших из прайса его нет —
+   * поэтому ищем по типоразмеру.
+   *
+   * Диаметры считаем по бесшумному ряду: D 058 бесшумной = D 050 обычной.
+   */
+  const SEWER_BUDGET_SHEETS = /sinikon|политэк/i;
+
+  function sewerBudgetAlt(item) {
+    const name = String(item && item.name || '');
+    // Только бесшумная серия: у обычной удешевлять нечего.
+    if (!/^SKB-/i.test(String(item.id || '')) && !/бесшумн/i.test(name)) return null;
+
+    const form = (name.match(/^(труба|отвод|тройник|муфта|заглушка|переход|ревизия|крестовина)/i) || [])[1];
+    if (!form) return null;
+    const ds = (name.match(/D\s*0*(\d{2,3})/gi) || [])
+      .map((x) => +x.replace(/\D/g, ''))
+      .map((d) => (d === 58 ? 50 : d));
+    if (!ds.length) return null;
+    const len = (name.match(/L\s*0*(\d{3,4})/i) || [])[1];
+    const angle = (name.match(/(\d{2})\s*°/) || [])[1];
+
+    let best = null;
+    for (const r of (priceIndex || [])) {
+      if (!SEWER_BUDGET_SHEETS.test(r.s || '')) continue;
+      const n = String(r.n || '');
+      if (!new RegExp('^' + form, 'i').test(n)) continue;
+
+      const nds = (n.match(/D\s*0*(\d{2,3})/gi) || []).map((x) => +x.replace(/\D/g, ''));
+      if (nds.length !== ds.length || !ds.every((d, i) => d === nds[i])) continue;
+      if (len && (n.match(/L\s*0*(\d{3,4})/i) || [])[1] !== len) continue;
+      if (angle && !n.includes(angle + '°') && !n.includes(angle + ' ')) continue;
+
+      if (!best || r.p < best.p) best = r;
+    }
+    if (!best || !(best.p < item.price)) return null;
+    return {
+      item: { id: best.a, article: best.a, name: best.n, price: best.p, brand: 'Sinikon' },
+      save: item.price - best.p,
+      percent: Math.round((1 - best.p / item.price) * 100),
+    };
+  }
+
   function rommerAlt(item) {
-    if (!item || item.brand === 'ROMMER') return null;
+    if (!item) return null;
+    // Канализация удешевляется переходом на обычную серию, а не сменой бренда.
+    const sewer = sewerBudgetAlt(item);
+    if (sewer) return sewer;
+    if (item.brand === 'ROMMER') return null;
     const base = typeof item.price === 'number' ? item.price : null;
     // Позиция могла прийти из прайса — там поля rommer нет, ищем в каталоге.
     const src = (item.rommer ? item : findById(item.id)) || item;

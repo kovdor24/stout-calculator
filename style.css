@@ -8621,6 +8621,33 @@ body.dark-mode .inv-table tr.row-recognized td {
 .rec-switch-text b { color: #16a34a; }
 .rec-switch-text em { font-style: normal; opacity: .6; font-weight: 500; }
 
+/* Строка ожидания: слева — что происходит сейчас, справа — секунды и то,
+   сколько это стоило бы вручную. */
+.rec-elapsed { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.rec-tip { font-weight: 600; }
+.rec-tip-sec { opacity: .5; font-variant-numeric: tabular-nums; }
+.rec-tip-save { margin-left: auto; color: #16a34a; font-weight: 600; }
+
+/* Готовый лист виден сразу — галочкой на самой миниатюре. */
+.rec-thumb.sheet-done::after,
+.rec-thumb.sheet-fail::after {
+    content: '✓'; position: absolute; top: 4px; right: 4px; z-index: 2;
+    width: 20px; height: 20px; border-radius: 50%; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; background: #16a34a;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+}
+.rec-thumb.sheet-fail::after { content: '!'; background: #ef4444; }
+.rec-thumb.sheet-done img { opacity: .55; }
+
+/* Итог: сколько перенесено и сколько времени сэкономлено. */
+.rec-saved {
+    margin: 10px 0; padding: 10px 14px; border-radius: 10px;
+    background: rgba(22, 163, 74, .10); border: 1px solid rgba(22, 163, 74, .35);
+    font-size: 13px;
+}
+.rec-saved b { color: #16a34a; }
+
 /* Разбор неподобранных строк: свёрнут по умолчанию — это справка, а не то,
    что нужно видеть каждый раз. */
 .rec-miss { margin: 10px 0; border: 1px solid var(--border, #e2e8f0); border-radius: 10px; }

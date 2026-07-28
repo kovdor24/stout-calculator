@@ -16426,7 +16426,7 @@ const app = {
                 else if (alt.id === 'proaqua' || alt.id === 'wavin') {
                     isActive = (alt.id === this.state.pprSystemBrand);
                 }
-                else if (alt.id === 'std' || alt.id === 'comfort') {
+                else if (alt.id === 'std' || alt.id === 'comfort' || alt.id === 'economy') {
                     isActive = (alt.id === this.state.sewerType);
                 }
                 else if (alt.id === 'standard' || alt.id === 'pro') {
@@ -21972,7 +21972,7 @@ const app = {
             let forceAnalog = false;
             let forceStout = false;
 
-            let isCustomToggle = ['standard', 'basic', 'pro', 'std', 'comfort', 'insulated', 'split', 'insulated_mp', 'split_mp', 'pex', 'metal_plastic', 'mat', 'xps', 'sirio', 'top', 'base', 'epc12auto', 'epc2', 'epc4', 'epc5', 'relay_krs5', 'scq', 'scn', 'straight', 'angled', 'proaqua', 'wavin', 'double', 'single', 'hidden', 'sensor'].includes(manualSwapId);
+            let isCustomToggle = ['standard', 'basic', 'pro', 'std', 'comfort', 'economy', 'insulated', 'split', 'insulated_mp', 'split_mp', 'pex', 'metal_plastic', 'mat', 'xps', 'sirio', 'top', 'base', 'epc12auto', 'epc2', 'epc4', 'epc5', 'relay_krs5', 'scq', 'scn', 'straight', 'angled', 'proaqua', 'wavin', 'double', 'single', 'hidden', 'sensor'].includes(manualSwapId);
 
             if (manualSwapId && !isCustomToggle) {
                 let analog = item.rommer;
@@ -22581,28 +22581,22 @@ const app = {
                 // imgId — артикул каталога у позиций со служебным id (распознанное,
                 // своё оборудование). Файл фото лежит именно под артикулом.
                 let imgContent = getImg(i.imgId ? { ...i, id: i.imgId } : i);
-                // Канализация: у позиций подраздела (i.group вида "8.N. ...") нет своего .alts —
-                // альтернатива есть только через .rommer/ANALOG_MAP (Sinikon Economy). Замена по
-                // клику на такую позицию меняет не саму позицию, а весь её подраздел разом (см.
-                // toggleSectionAnalog) — так же, как переключатель "АНАЛОГ" в заголовке раздела.
-                let isSewerSubItem = !!(i.group && /^\d+\.\d+/.test(i.group) && i.group.startsWith('8.'));
-                let sewerHasAlt = isSewerSubItem && !!(i.rommer || ANALOG_MAP[i.id]);
+                // Канализация: у позиций раздела нет своего .alts — альтернатива есть только через
+                // .rommer/ANALOG_MAP (Sinikon Comfort/Economy). Кнопка открывает обычную таблицу
+                // замены (openSwapModal), где для труб и фитингов SKB- собирается свой список
+                // «Стандарт / Комфорт / Обычная ПП». Раздел определяем по префиксу группы, чтобы
+                // кнопка была и при выключенной группировке (группа — просто "8. Канализация"),
+                // и при включённой (подразделы "8.N. Канализация: [...]").
+                let isSewerSubItem = !!(i.group && i.group.startsWith('8.'));
+                let sewerHasAlt = isSewerSubItem && !!(i.rommer || ANALOG_MAP[i.id] || ANALOG_MAP[lookupId]);
                 let hasAlts = (i.alts && i.alts.length > 0) || sewerHasAlt;
                 let imgCellHtml = "";
                 if (hasAlts) {
                     let wrapClass = "img-wrap";
                     let svgIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>`;
                     const badgeSvg = `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>`;
-                    let clickAction, tipText;
-                    if (sewerHasAlt) {
-                        let _gOv = (this.state.sectionAnalog || {})[i.group];
-                        let _gActive = _gOv !== undefined ? _gOv : _globalAnalog;
-                        clickAction = `app.toggleSectionAnalog('${i.group.replace(/'/g, "\\'")}', ${!_gActive})`;
-                        tipText = _gActive ? 'Сейчас: Обычная Economy — нажмите, чтобы вернуть Бесшумную STOUT для всего подраздела' : 'Сейчас: Бесшумная STOUT — нажмите для Обычной Economy для всего подраздела';
-                    } else {
-                        clickAction = `app.openSwapModal('${lookupId}')`;
-                        tipText = 'Нажмите, чтобы заменить';
-                    }
+                    let clickAction = `app.openSwapModal('${lookupId}')`;
+                    let tipText = 'Нажмите, чтобы заменить';
                     imgCellHtml = `<td class="col-img swappable-cursor"><div class="${wrapClass}" onclick="${clickAction}" title="${tipText}"><div class="swap-alt-badge">${badgeSvg}</div><div class="swap-cycle-btn" onclick="event.stopPropagation(); ${clickAction}">${svgIcon}</div>${imgContent}</div></td>`;
                 } else { imgCellHtml = `<td class="col-img">${imgContent}</td>`; }
 
