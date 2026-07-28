@@ -12,6 +12,7 @@ from PIL import Image, ImageChops
 # --- CONFIG ---
 CATALOG_PATH = "catalog.js"
 PRICE_EXTRA_PATH = "price_extra.json"
+PRICE_INDEX_PATH = "price_index.json"
 SEARCH_URL = 'https://www.teremonline.ru'
 IMAGE_DIR = "img"
 MISSING_LIST_PATH = "articles_without_images.txt"
@@ -37,6 +38,20 @@ MAX_CONSECUTIVE_ERRORS = 6    # подряд ошибок/ERR_* — стоп-к�
 # и все скачанные за этот прогон картинки будут потеряны. Поэтому обрабатываем ограниченными
 # порциями за один запуск; остальное подтянется следующим ручным запуском workflow.
 MAX_ITEMS_PER_RUN = 800
+
+# --- ПРОБНЫЙ ПРОГОН (python AutoImage.py --pilot [N]) ---
+# Полный прайс — это ещё ~8 400 артикулов, то есть больше десятка запусков workflow
+# по полтора часа. Гнать их вслепую незачем: картинки ищутся поиском по teremonline.ru,
+# и найдётся только то, что магазин продаёт. Целые листы прайса (TIEMME, RAUTITAN, WATTS,
+# Ostendorf, ITAP, Sanha, Thermaflex, Walraven) ни разу не пробовались вовсе — они лежат
+# только в price_index.json, который скрипт до сих пор не читал.
+#
+# Пилот берёт по нескольку артикулов из каждого листа и печатает попадание в разрезе
+# листов: за пять минут видно, по каким брендам полный прогон имеет смысл, а по каким
+# это будут часы впустую. В пилоте НЕ пишем в articles_not_found.txt — маленькая выборка
+# не повод навсегда занести артикул в список пропускаемых.
+PILOT_PER_SHEET = 3
+PILOT_TOTAL = 50
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -109,6 +124,7 @@ def get_unique_skus():
         content = f.read()
     
     items = {} # id -> article
+    sheets = {} # id -> лист прайса, из которого пришёл артикул (для отчёта пилота)
     invalid_ids = set()
     processed_starts = set()
     for match in re.finditer(r'(["\']?price["\']?\s*:\s*)(\d+(?:\.\d+)?)', content, re.IGNORECASE):
@@ -150,16 +166,41 @@ def get_unique_skus():
                 if id_val not in items:
                     items[id_val] = id_val
                     added += 1
+                sheets.setdefault(id_val, it.get('category') or PRICE_EXTRA_PATH)
             print(f"Из {PRICE_EXTRA_PATH} добавлено артикулов: {added}")
         except Exception as e:
             print(f"Не удалось прочитать {PRICE_EXTRA_PATH}: {e}")
+
+    # И весь прайс целиком (price_index.json) — тот же индекс, по которому
+    # распознавание счетов подбирает позиции. Раньше он сюда не попадал, поэтому
+    # у всего, что нашлось в прайсе, а не в каталоге, в смете не было фото.
+    # Имя файла — сам артикул ("a"): именно под ним фото ищет смета.
+    if os.path.exists(PRICE_INDEX_PATH):
+        try:
+            with open(PRICE_INDEX_PATH, 'r', encoding='utf-8') as f:
+                index_items = (json.load(f) or {}).get('items') or []
+            added = 0
+            for it in index_items:
+                id_val = str(it.get('a') or '').strip()
+                if not id_val:
+                    continue
+                if has_invalid_filename_chars(id_val):
+                    invalid_ids.add(id_val)
+                    continue
+                if id_val not in items:
+                    items[id_val] = id_val
+                    added += 1
+                sheets.setdefault(id_val, it.get('s') or PRICE_INDEX_PATH)
+            print(f"Из {PRICE_INDEX_PATH} добавлено артикулов: {added}")
+        except Exception as e:
+            print(f"Не удалось прочитать {PRICE_INDEX_PATH}: {e}")
 
     if invalid_ids:
         print(f"Пропущено артикулов с недопустимыми для имени файла символами ({''.join(sorted(INVALID_FILENAME_CHARS))}): {len(invalid_ids)}")
         with open(INVALID_SKU_LIST_PATH, 'w', encoding='utf-8') as f:
             f.write("\n".join(sorted(invalid_ids)))
 
-    return [{"id": k, "article": v} for k, v in sorted(items.items())]
+    return [{"id": k, "article": v, "sheet": sheets.get(k, CATALOG_PATH)} for k, v in sorted(items.items())]
 
 def get_missing_skus(items):
     existing_files = set()
@@ -364,8 +405,33 @@ def process_sku_image(driver, item):
     except Exception as e:
         return f"ERR: {str(e)[:25]}"
 
-def update_catalog_images():
+def pick_pilot(missing_items, total):
+    """
+    Выборка для пробного прогона: по PILOT_PER_SHEET артикулов из каждого листа.
+
+    Листы перебираются от самых «дырявых» — там, где картинок не хватает больше
+    всего, и цена ошибки в решении «гнать полный прогон или нет» тоже выше.
+    Внутри листа берём подряд с начала: артикулы отсортированы, и это даёт
+    воспроизводимую выборку — повторный пилот проверит те же позиции.
+    """
+    by_sheet = {}
+    for item in missing_items:
+        by_sheet.setdefault(item.get("sheet") or "—", []).append(item)
+
+    order = sorted(by_sheet.items(), key=lambda kv: -len(kv[1]))
+    picked = []
+    for sheet, rows in order:
+        if len(picked) >= total:
+            break
+        picked.extend(rows[:PILOT_PER_SHEET])
+    return picked[:total]
+
+
+def update_catalog_images(pilot=0):
     print("=== ЗАПУСК ПАРСЕРА КАРТИНОК С ОПТИМИЗАЦИЕЙ ===")
+    if pilot:
+        print(f"[ПИЛОТ] Пробный прогон: до {pilot} артикулов, по {PILOT_PER_SHEET} из листа. "
+              f"articles_not_found.txt не трогаем.")
 
     print("Шаг 1: Извлечение артикулов из catalog.js...")
     items = get_unique_skus()
@@ -379,13 +445,20 @@ def update_catalog_images():
     with open(MISSING_LIST_PATH, 'w', encoding='utf-8') as f:
         f.write("\n".join([item["id"] for item in missing_items]))
     print(f"Список артикулов сохранен в {MISSING_LIST_PATH}")
-    
+
     if not missing_items:
         print("Все картинки уже скачаны. Завершение работы.")
         return
 
+    if pilot:
+        missing_items = pick_pilot(missing_items, pilot)
+        print(f"[ПИЛОТ] В выборке {len(missing_items)} артикулов "
+              f"из {len({i.get('sheet') for i in missing_items})} листов прайса.")
+        if not missing_items:
+            return
+
     total_missing = len(missing_items)
-    if total_missing > MAX_ITEMS_PER_RUN:
+    if not pilot and total_missing > MAX_ITEMS_PER_RUN:
         print(f"Всего не хватает {total_missing} картинок, но за один прогон обрабатываем не более "
               f"{MAX_ITEMS_PER_RUN} (лимит времени джобы на GitHub Actions). Остальные "
               f"{total_missing - MAX_ITEMS_PER_RUN} подтянутся при следующих запусках workflow.")
@@ -422,6 +495,7 @@ def update_catalog_images():
     not_found = 0
     failed = 0
     consecutive_errors = 0
+    per_sheet = {}   # лист прайса -> [скачано, не найдено, ошибок]
 
     try:
         for idx, item in enumerate(missing_items):
@@ -429,19 +503,26 @@ def update_catalog_images():
             res = process_sku_image(driver, item)
             print(res)
 
+            stat = per_sheet.setdefault(item.get("sheet") or "—", [0, 0, 0])
             if res == "DOWNLOADED":
                 downloaded += 1
+                stat[0] += 1
                 consecutive_errors = 0
             elif res == "NOT_FOUND":
                 not_found += 1
+                stat[1] += 1
                 consecutive_errors = 0
-                try:
-                    with open(NOT_FOUND_LIST_PATH, 'a', encoding='utf-8') as f:
-                        f.write(item['id'] + '\n')
-                except Exception as e:
-                    print(f"Ошибка записи в {NOT_FOUND_LIST_PATH}: {e}")
+                # В пилоте список пропускаемых не пополняем: пары промахов мало,
+                # чтобы навсегда вычеркнуть артикул из полного прогона.
+                if not pilot:
+                    try:
+                        with open(NOT_FOUND_LIST_PATH, 'a', encoding='utf-8') as f:
+                            f.write(item['id'] + '\n')
+                    except Exception as e:
+                        print(f"Ошибка записи в {NOT_FOUND_LIST_PATH}: {e}")
             else:
                 failed += 1
+                stat[2] += 1
                 consecutive_errors += 1
 
             # Стоп-кран: подряд идущие ошибки чаще всего значат, что сайт начал блокировать
@@ -475,9 +556,31 @@ def update_catalog_images():
         print(f"Не найдено: {not_found}")
         print(f"С ошибками: {failed}")
 
+        if per_sheet:
+            print("\n=== ПОПАДАНИЕ ПО ЛИСТАМ ПРАЙСА ===")
+            print(f"{'скач':>5} {'нет':>5} {'ошиб':>5}  лист")
+            for sheet, (ok, nf, err) in sorted(per_sheet.items(), key=lambda kv: -kv[1][0]):
+                print(f"{ok:>5} {nf:>5} {err:>5}  {sheet}")
+            if pilot:
+                print("\nЛисты, где скачалось 0 — полный прогон по ним теряет часы впустую: "
+                      "этих брендов на сайте просто нет. Листы с попаданием стоит гнать целиком.")
+
 if __name__ == "__main__":
+    import sys
+    # python AutoImage.py            — обычный прогон (до MAX_ITEMS_PER_RUN артикулов)
+    # python AutoImage.py --pilot    — пробный прогон на PILOT_TOTAL артикулов
+    # python AutoImage.py --pilot 80 — то же, но своим размером выборки
+    pilot_n = 0
+    if '--pilot' in sys.argv:
+        pilot_n = PILOT_TOTAL
+        pos = sys.argv.index('--pilot')
+        if pos + 1 < len(sys.argv):
+            try:
+                pilot_n = int(sys.argv[pos + 1])
+            except ValueError:
+                pass
     try:
-        update_catalog_images()
+        update_catalog_images(pilot=pilot_n)
     except Exception as e:
         print(f"\n[!] КРИТИЧЕСКАЯ ОШИБКА: {e}")
         traceback.print_exc()

@@ -2,6 +2,11 @@ name: Download Missing Product Images
 
 on:
   workflow_dispatch:
+    inputs:
+      pilot:
+        description: 'Пробный прогон: сколько артикулов взять (0 — обычный полный прогон)'
+        required: false
+        default: '0'
 
 jobs:
   scrape-images:
@@ -18,7 +23,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install selenium beautifulsoup4 pillow
       - name: Run parser script
-        run: python AutoImage.py
+        # Значение поля кладём в переменную окружения, а не подставляем в строку
+        # команды: подстановка ${{ }} прямо в run — это выполнение чужого текста
+        # оболочкой.
+        env:
+          PILOT: ${{ github.event.inputs.pilot }}
+        run: |
+          if [ -n "$PILOT" ] && [ "$PILOT" != "0" ]; then
+            python AutoImage.py --pilot "$PILOT"
+          else
+            python AutoImage.py
+          fi
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
