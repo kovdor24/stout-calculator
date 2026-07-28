@@ -49,19 +49,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.67">
+    <link rel="stylesheet" href="style.css?v=2.69">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.22" defer></script>
+    <script src="catalog.js?v=2.24" defer></script>
     <script src="gamification.js?v=2.0" defer></script>
     <script src="app.js?v=3.26" defer></script>
     <!-- Распознавание смет: подбор по каталогу и интерфейс мастера.
          Порядок важен — recognize.js обращается к RecognizeMatch. -->
-    <script src="recognize_match.js?v=1.9" defer></script>
+    <script src="recognize_match.js?v=2.6" defer></script>
     <!-- Извлечение текста из Excel, Word, PDF, HTML. Подключается до
          recognize.js, который его использует. -->
     <script src="recognize_files.js?v=1.0" defer></script>
-    <script src="recognize.js?v=2.3" defer></script>
+    <script src="recognize.js?v=2.6" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -1393,8 +1393,7 @@
             <!-- Баннер принудительного дозаполнения обязательных полей (Google/Telegram-вход
                  или старый аккаунт без анкеты) — до сохранения окно нельзя закрыть -->
             <div id="profile_incomplete_banner" style="display: none; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 12px; color: #EF4444; font-weight: 600; text-align: left; line-height: 1.4;">
-                Это окно появилось, потому что при регистрации вы не указали ФИО и телефон — эти данные нужны для оформления коммерческих предложений клиентам и связи с вами. Заполните обязательные поля ниже и нажмите «Сохранить» — это нужно сделать один раз, дальше окно не появится.
-                <a href="#" onclick="event.preventDefault(); app.logout();" style="display: inline-block; margin-top: 4px; color: #EF4444; text-decoration: underline; font-weight: 600;">Выйти из аккаунта</a>
+                Осталось указать ФИО и телефон — они нужны для оформления коммерческих предложений.
             </div>
 
             <!-- PRO Status Banner -->

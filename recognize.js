@@ -1071,6 +1071,13 @@ const RecognizeUI = {
         });
 
         this._undo = [];
+        this._analogOn = false;      // новое распознавание — режим аналогов сброшен
+        this._analogSaved = 0;
+        this._deep = 0;
+        // Ниже девяноста процентов смета получается дырявой, и монтажнику
+        // придётся добивать её руками. Прежде чем показывать такой результат,
+        // прогоняем неподобранные строки ещё раз, с ослабленными правилами.
+        this.deepPass();
         // Рекомендации считаются по метражу («труба 50 м — 12 стыков»),
         // поэтому пересчёт метров в штанги идёт строго после них.
         this.refreshSuggestions();
@@ -1199,16 +1206,91 @@ const RecognizeUI = {
     packPipes() {
         this._rows.forEach(r => {
             const m = r._m;
-            if (!m || !m.pack || r._packed || r.unit !== 'м') return;
-            const meters = (Number(r.qty) || 0) + (Number(r.qtyExtra) || 0);
-            if (!meters) return;
+            if (!m || r._packed) return;
+            const qty = (Number(r.qty) || 0) + (Number(r.qtyExtra) || 0);
+            if (!qty) return;
 
-            r._meters = meters;
-            r._packed = m.pack;
-            r.qty = Math.ceil(meters / m.pack);
-            r.qtyExtra = 0;
-            r.unit = 'шт';
+            if (m.pack && r.unit === 'м') {
+                r._meters = qty;
+                r._packed = m.pack;
+                r.qty = Math.ceil(qty / m.pack);
+                r.qtyExtra = 0;
+                r.unit = 'шт';
+                return;
+            }
+
+            /**
+             * Штуки — в упаковки.
+             *
+             * Мелочёвку поставщик отгружает штуками, а каталог продаёт
+             * упаковками: «Скобы якорные (Кассета 25 шт)» стоят 109 ₽ за
+             * кассету, и шесть тысяч скоб из счёта давали 654 000 ₽ вместо
+             * 26 000 ₽. Пересчитываем, только когда количество заведомо
+             * штучное — втрое больше упаковки: «2 шт» при упаковке 100 это
+             * две упаковки, а не две штуки.
+             */
+            const per = (typeof RecognizeMatch !== 'undefined' && RecognizeMatch.packSize)
+                ? RecognizeMatch.packSize(m.item && m.item.name) : null;
+            if (per && qty >= per * 3) {
+                r._pieces = qty;
+                r._packed = per;
+                r.qty = Math.ceil(qty / per);
+                r.qtyExtra = 0;
+                r.unit = 'шт';
+            }
         });
+    },
+
+    /**
+     * Углублённый проход по неподобранным строкам.
+     *
+     * Запускается сам, когда обычный подбор взял меньше 90 % строк. Правила
+     * ослаблены: предмет может стоять не в начале названия каталога, хватает
+     * одного совпавшего слова, порог ниже. Такие находки идут с оценкой не
+     * выше 60 % и отдельной пометкой — это подсказка, а не подбор, и сверить
+     * их обязательно. Ничего не портит: строки, у которых артикул уже есть,
+     * не трогаются.
+     */
+    deepPass() {
+        if (typeof RecognizeMatch === 'undefined' || !RecognizeMatch.matchByName) return;
+        const total = this._rows.length;
+        if (!total) return;
+        const found = this._rows.filter(r => r._m).length;
+        if (found / total >= 0.9) return;
+
+        let added = 0;
+        for (const r of this._rows) {
+            if (r._m || r._locked) continue;
+            const m = RecognizeMatch.matchByName(r, { deep: true });
+            if (!m) continue;
+            r._m = m;
+            r._deep = true;
+            added++;
+        }
+        this._deep = added;
+    },
+
+    /**
+     * Разбор строк, оставшихся без артикула.
+     *
+     * «Нет в каталоге» ничего не объясняет: непонятно, дописывать позицию в
+     * каталог или это расходник, которого у поставщика нет вовсе. Считаем
+     * причины и показываем сводку — по ней видно, где предел прайса, а где
+     * недоработка подбора.
+     */
+    missAnalysis() {
+        if (typeof RecognizeMatch === 'undefined' || !RecognizeMatch.explainMiss) return null;
+        const miss = this._rows.filter(r => !r._m && r.kind !== 'work');
+        if (!miss.length) return null;
+
+        const groups = { notInBase: [], weak: [], noWords: [], noType: [] };
+        for (const r of miss) {
+            let e;
+            try { e = RecognizeMatch.explainMiss(r); } catch (err) { e = null; }
+            const key = (e && groups[e.reason]) ? e.reason : 'noType';
+            groups[key].push({ row: r, info: e });
+        }
+        return { total: miss.length, groups };
     },
 
     rematch(row) {
@@ -1265,6 +1347,10 @@ const RecognizeUI = {
     undo() {
         if (!this._undo.length) return;
         this._rows = JSON.parse(this._undo.pop());
+        // Режим аналогов восстанавливаем по самим строкам, иначе после отката
+        // кнопка осталась бы «включённой» при исходных позициях в таблице.
+        this._analogOn = this._rows.some(r => r._analogBase);
+        if (!this._analogOn) this._analogSaved = 0;
         this.renderReview();
     },
 
@@ -1353,8 +1439,11 @@ const RecognizeUI = {
                 `<option value="${esc(s)}">${esc(s)}</option>`).join('')}
             </select>
             ${this.renderSystemSelect()}
-            <span class="rec-status">Подобрано ${found.length} из ${this._rows.length}${
+            <span class="rec-status">Подобрано ${found.length} из ${this._rows.length} (${
+              this._rows.length ? Math.round(found.length / this._rows.length * 100) : 0}%)${
+              this._deep ? ` · из них углублённым поиском ${this._deep}` : ''}${
               noQty ? ` · без количества ${noQty}` : ''}</span>
+            ${this.renderAnalogButton()}
           </div>
           <div class="rec-tablewrap">
             <table class="rec-table">
@@ -1371,6 +1460,7 @@ const RecognizeUI = {
               <tbody>${rows}${skipRows}</tbody>
             </table>
           </div>
+          ${this.renderMissAnalysis()}
           ${this.renderSuggestions()}
           <div class="rec-foot">
             <div class="rec-total">Итого: <b>${Math.round(sum).toLocaleString('ru-RU')} ₽</b></div>
@@ -1402,6 +1492,139 @@ const RecognizeUI = {
 
         return `<select class="rec-btn-g" title="Заменить систему целиком: диаметры пересчитаются по проходу, фитинги подберутся заново"
                         onchange="RecognizeUI.convertSystem(this.value)">${opts}</select>`;
+    },
+
+    /**
+     * Переключатель «Аналог ROMMER».
+     *
+     * Решение «собираем на ROMMER» принимают на смету целиком, а не по одной
+     * строке, поэтому это один переключатель на всю таблицу. Считаем заранее,
+     * сколько позиций имеют более дешёвый аналог и сколько это денег, — без
+     * суммы кнопка ничего не говорит и нажимать её незачем.
+     */
+    analogStats() {
+        if (typeof RecognizeMatch === 'undefined' || !RecognizeMatch.rommerAlt) return null;
+        let n = 0, save = 0, base = 0;
+        for (const r of this._rows) {
+            const m = r._m;
+            if (!m || !m.item) continue;
+            // При включённом режиме считаем от исходной позиции, а не от аналога.
+            const src = (r._analogBase && r._analogBase.item) || m.item;
+            const alt = RecognizeMatch.rommerAlt(src);
+            if (!alt) continue;
+            const qty = (Number(r.qty) || 0) + (Number(r.qtyExtra) || 0);
+            n++;
+            save += alt.save * qty;
+            base += (src.price || 0) * qty;
+        }
+        return n ? { n, save, base } : null;
+    },
+
+    renderAnalogButton() {
+        const st = this.analogStats();
+        if (!st && !this._analogOn) return '';
+
+        // Процент считаем от суммы тех позиций, у которых аналог есть, — иначе
+        // цифра размывается стоимостью всего остального и ничего не значит.
+        const save = this._analogOn ? (this._analogSaved || 0) : (st ? st.save : 0);
+        const base = this._analogOn ? (this._analogBase0 || 0) : (st ? st.base : 0);
+        const pct = base > 0 ? Math.round(save / base * 100) : 0;
+        const n = this._analogOn ? (this._analogCount || 0) : st.n;
+
+        return `<label class="rec-switch${this._analogOn ? ' on' : ''}"
+                       title="Заменить позиции на аналоги ROMMER там, где они дешевле">
+            <input type="checkbox" ${this._analogOn ? 'checked' : ''}
+                   onchange="RecognizeUI.toggleAnalog()">
+            <span class="rec-switch-track"><span class="rec-switch-knob"></span></span>
+            <span class="rec-switch-text">Аналог ROMMER
+              <b>−${pct}%</b> · ${Math.round(save).toLocaleString('ru-RU')} ₽
+              <em>${n} поз.</em></span>
+          </label>`;
+    },
+
+    /** Переключение всей сметы на аналоги ROMMER и обратно. */
+    toggleAnalog() {
+        this.snap();
+        if (this._analogOn) {
+            for (const r of this._rows) {
+                if (!r._analogBase) continue;
+                r._m = r._analogBase;
+                delete r._analogBase;
+            }
+            this._analogOn = false;
+            this._analogSaved = 0;
+            this._analogBase0 = 0;
+            this._analogCount = 0;
+        } else {
+            const st = this.analogStats();
+            this._analogBase0 = st ? st.base : 0;
+            this._analogCount = st ? st.n : 0;
+            let saved = 0;
+            for (const r of this._rows) {
+                const m = r._m;
+                if (!m || !m.item || r._locked) continue;
+                const alt = RecognizeMatch.rommerAlt(m.item);
+                if (!alt) continue;
+                r._analogBase = m;
+                saved += alt.save * ((Number(r.qty) || 0) + (Number(r.qtyExtra) || 0));
+                r._m = {
+                    ...m,
+                    item: alt.item,
+                    substituted: `аналог ROMMER вместо «${m.item.name}» — дешевле на ${alt.percent}%`,
+                    needsApproval: true,
+                };
+            }
+            this._analogOn = true;
+            this._analogSaved = saved;
+        }
+        this.renderReview();
+    },
+
+    /**
+     * Разбор неподобранных строк.
+     *
+     * Показывается только когда такие строки есть. Смысл блока — отделить
+     * предел прайса от недоработки подбора: «этого нет у поставщика» и
+     * «похожее есть, но совпадение слабое» требуют разных действий.
+     */
+    renderMissAnalysis() {
+        const a = this.missAnalysis();
+        if (!a) return '';
+        const esc = s => String(s ?? '').replace(/[&<>"]/g,
+            c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+        const line = (g) => g.map(({ row, info }) => {
+            const near = info && info.item
+                ? `<span class="rec-art">ближайшее: ${esc(info.item.name.slice(0, 60))} · ${
+                    Math.round((info.rel || 0) * 100)}%</span>`
+                : '';
+            return `<li>${esc(row.raw || '')}${near ? '<br>' + near : ''}</li>`;
+        }).join('');
+
+        const blocks = [];
+        if (a.groups.notInBase.length) {
+            blocks.push(`<div class="rec-miss-b"><b>Нет у поставщика (${a.groups.notInBase.length})</b>
+              <div class="rec-art">этих предметов нет ни в каталоге, ни в прайсе — расходники и чужой крепёж</div>
+              <ul>${line(a.groups.notInBase)}</ul></div>`);
+        }
+        if (a.groups.weak.length) {
+            blocks.push(`<div class="rec-miss-b"><b>Совпадение слишком слабое (${a.groups.weak.length})</b>
+              <div class="rec-art">похожее в базе есть, но подставлять его наугад нельзя — выберите вручную через 🔍</div>
+              <ul>${line(a.groups.weak)}</ul></div>`);
+        }
+        const rest = a.groups.noWords.concat(a.groups.noType);
+        if (rest.length) {
+            blocks.push(`<div class="rec-miss-b"><b>Строка не разобрана (${rest.length})</b>
+              <div class="rec-art">не удалось выделить ни предмет, ни размеры</div>
+              <ul>${line(rest)}</ul></div>`);
+        }
+        if (!blocks.length) return '';
+
+        return `<details class="rec-miss">
+            <summary>Почему не подобрано: ${a.total} ${
+              a.total % 10 === 1 && a.total % 100 !== 11 ? 'строка' : 'строк'}</summary>
+            ${blocks.join('')}
+          </details>`;
     },
 
     /**

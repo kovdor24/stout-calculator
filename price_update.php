@@ -30,7 +30,7 @@ $LIST_URL   = 'https://www.teremopt.ru/products/pricelist/';
 $FILE_MASK  = '/Prays_list_\d{2}\.\d{4}\.xlsx/i';   // общий прайс, не ПромАрматура
 $OUT_FILE   = __DIR__ . '/price_index.json';
 $LOG_FILE   = __DIR__ . '/price_update.log';
-$UPDATE_KEY = 'CHANGE_ME';   // ключ для ручного запуска через браузер (задать на сервере)
+$UPDATE_KEY = 'terem2026';   // ключ для ручного запуска через браузер (задать на сервере)
 // ====================
 
 $isCli = (php_sapi_name() === 'cli');
@@ -119,12 +119,26 @@ preg_match('/Prays_list_(\d{2}\.\d{4})/i', $link, $vm);
 $version = $vm[1] ?? date('m.Y');
 logmsg("найден прайс версии $version");
 
-// Уже собранный индекс той же версии пересобирать незачем.
+/**
+ * Уже собранный индекс той же версии пересобирать незачем.
+ *
+ * Исключение — принудительный запуск: price_update.php?key=…&force=1.
+ * Без него правку разбора нельзя проверить до выхода нового прайса, а
+ * узнать о поломке через месяц, когда индекс уже перезаписан, — плохой
+ * способ. Индекс при этом не затирается вслепую: старый файл сохраняется
+ * рядом как price_index.prev.json, чтобы можно было вернуться.
+ */
+$force = !$isCli && ($_GET['force'] ?? '') === '1';
 if (file_exists($OUT_FILE)) {
     $cur = json_decode(@file_get_contents($OUT_FILE), true);
-    if (($cur['version'] ?? '') === $version) {
+    if (($cur['version'] ?? '') === $version && !$force) {
         logmsg("индекс версии $version уже собран, выходим");
         exit(0);
+    }
+    if ($force) {
+        @copy($OUT_FILE, __DIR__ . '/price_index.prev.json');
+        logmsg('принудительная пересборка; прежний индекс (' .
+            count($cur['items'] ?? []) . ' поз.) сохранён в price_index.prev.json');
     }
 }
 
@@ -210,12 +224,32 @@ foreach ($sheets as $s) {
     $rows = parseSheet($xmlStr, $shared, $s['name']);
     unset($xmlStr);
 
-    // Заголовок таблицы ищем по слову «Артикул».
+    /**
+     * Заголовок таблицы.
+     *
+     * Раньше искали строго слово «Артикул» — и теряли 25 листов, где колонка
+     * называется «Код» или «Арт.», а также листы, где артикула нет вовсе.
+     * Шапкой считаем строку, в которой есть либо колонка артикула, либо пара
+     * «наименование + цена»: без этой пары товар всё равно не собрать, а с
+     * ней лист годится, даже если кода в нём нет.
+     */
+    // Границу слова через \b здесь не поставить: для PCRE кириллица не «слово»,
+    // и «/^артикул\b/u» не срабатывает даже на строке «Артикул». Проверяем
+    // явно, что дальше не идёт продолжение слова.
+    $reArt   = '/^\s*(артикул|код|арт\.?|номенклатура)(?![а-яё])/ui';
+    $reName  = '/наименование|описание|модель|товар/ui';
+    $rePrice = '/цена|ррц|стоимость/ui';
+
     $hi = -1;
     foreach ($rows as $i => $r) {
+        $hasArt = $hasName = $hasPrice = false;
         foreach ($r as $v) {
-            if (preg_match('/^артикул/ui', trim((string)$v))) { $hi = $i; break 2; }
+            $t = trim((string)$v);
+            if (preg_match($reArt, $t)) $hasArt = true;
+            if (preg_match($reName, $t)) $hasName = true;
+            if (preg_match($rePrice, $t) && !preg_match('/скид/ui', $t)) $hasPrice = true;
         }
+        if ($hasArt || ($hasName && $hasPrice)) { $hi = $i; break; }
     }
     if ($hi < 0) { $skipped++; continue; }
 
@@ -223,15 +257,46 @@ foreach ($sheets as $s) {
     $cArt = $cPrice = $cName = $cSize = null;
     foreach ($hdr as $col => $v) {
         $t = trim((string)$v);
-        if ($cArt === null && preg_match('/^артикул/ui', $t)) $cArt = $col;
-        if ($cName === null && preg_match('/наименование|описание|модель/ui', $t)) $cName = $col;
+        if ($cArt === null && preg_match($reArt, $t)) $cArt = $col;
+        if ($cName === null && preg_match($reName, $t)) $cName = $col;
         if ($cSize === null && preg_match('/размер|типоразмер/ui', $t)) $cSize = $col;
-        if (preg_match('/цена/ui', $t) && !preg_match('/скид/ui', $t)) {
+        if (preg_match($rePrice, $t) && !preg_match('/скид/ui', $t)) {
             // «Цена с НДС, РУБ» приоритетнее, чем в евро.
             if ($cPrice === null || preg_match('/руб/ui', $t)) $cPrice = $col;
         }
     }
-    if (!$cArt || !$cPrice) continue;
+    // Без цены лист бесполезен. Без артикула — нет: искать умеем и по названию.
+    if (!$cPrice) continue;
+
+    /**
+     * Проверка колонки артикула ПО ДАННЫМ.
+     *
+     * В половине листов первая колонка — «Изображение»/«Внешний вид», и шапка
+     * подписана со сдвигом: «Артикул» стоит над колонкой B, а сами коды лежат
+     * в A. Генератор читал пустую B, отбрасывал каждую строку и молча терял
+     * весь лист — так пропали «STOUT Крепежная система», «Walraven»,
+     * «Управляющая автоматика» и ещё 54 листа. Поэтому колонку, названную в
+     * шапке, сверяем с товарными строками и при необходимости ищем настоящую.
+     */
+    $probe = [];
+    $seenRows = 0;
+    for ($i = $hi + 1; $i < count($rows) && $seenRows < 40; $i++) {
+        if (!is_numeric($rows[$i][$cPrice] ?? null)) continue;
+        $seenRows++;
+        foreach ($rows[$i] as $col => $v) {
+            $t = trim((string)$v);
+            // Код товара: короткий, без пробелов, не цена и не название.
+            if ($t === '' || $col === $cPrice || $col === $cName) continue;
+            if (mb_strlen($t) > 30 || preg_match('/\s/u', $t)) continue;
+            $probe[$col] = ($probe[$col] ?? 0) + 1;
+        }
+    }
+    $artFilled = $cArt ? ($probe[$cArt] ?? 0) : 0;
+    if ($seenRows > 0 && $artFilled * 2 < $seenRows) {
+        arsort($probe);
+        $bestCol = key($probe);
+        if ($bestCol !== null && ($probe[$bestCol] ?? 0) * 2 >= $seenRows) $cArt = $bestCol;
+    }
 
     $section = '';
     $n = count($rows);
@@ -251,12 +316,34 @@ foreach ($sheets as $s) {
             }
             continue;
         }
-        if ($art === '') continue;
-
+        // Позиция без артикула — всё равно позиция: подбор умеет искать по
+        // названию, и «Лён сантехнический коса 200 г» полезен в смете даже
+        // без кода. Раньше такие строки выбрасывались целиком.
         $name = $cName ? trim((string)($r[$cName] ?? '')) : '';
         if ($name === '') {
             $size = $cSize ? trim((string)($r[$cSize] ?? '')) : '';
             $name = trim($section . ' ' . $size);
+        }
+        /**
+         * Если названия нет или в нём оказался сам артикул — собираем его из
+         * соседних колонок строки.
+         *
+         * Так устроен лист «Энергофлекс»: колонки идут «18 | 18/4-11 | синий |
+         * EFXT0180411SUPRS | цена», и колонки «наименование» там нет вовсе.
+         * В индекс попадал артикул вместо названия, и найти такую позицию по
+         * названию было нечем — при том что в смете её пишут словами.
+         */
+        if ($name === '' || $name === $art) {
+            $parts = [];
+            foreach ($r as $col => $v) {
+                if ($col === $cPrice || $col === $cArt) continue;
+                $t = trim(preg_replace('/\s+/u', ' ', (string)$v));
+                if ($t === '' || $t === $art || is_numeric($t)) continue;
+                if (mb_strlen($t) > 60) continue;
+                $parts[] = $t;
+            }
+            $built = trim($section . ' ' . implode(' ', array_slice($parts, 0, 4)));
+            if (mb_strlen($built) >= 3) $name = $built;
         }
         if ($name === '') $name = $section !== '' ? $section : $art;
         $name = trim(preg_replace('/\s+/u', ' ', $name));
@@ -275,10 +362,12 @@ $zip->close();
 logmsg('листов без заголовка: ' . $skipped);
 
 // Дубли по паре «артикул + цена» — один и тот же товар в разных таблицах.
+// У позиций без артикула ключом служит название: иначе все они схлопнулись бы
+// в одну строку с пустым кодом.
 $seen = [];
 $uniq = [];
 foreach ($items as $it) {
-    $k = $it['a'] . '|' . $it['p'];
+    $k = ($it['a'] !== '' ? $it['a'] : $it['n']) . '|' . $it['p'];
     if (isset($seen[$k])) continue;
     $seen[$k] = 1;
     $uniq[] = $it;
@@ -286,6 +375,20 @@ foreach ($items as $it) {
 
 if (count($uniq) < 1000) {
     fail('позиций получилось подозрительно мало (' . count($uniq) . ') — прежний индекс не трогаем');
+}
+
+/**
+ * Сборка не должна молча обеднить индекс.
+ *
+ * Ровно так он и потерял треть прайса: разбор ломался на половине листов, а
+ * скрипт бодро рапортовал «готово». Порог в тысячу позиций такое не ловит —
+ * нужно сравнение с тем, что уже работает. Четверть потери считаем аварией:
+ * поставщик мог убрать линейку, но не четверть ассортимента разом.
+ */
+$prevCount = isset($cur['items']) ? count($cur['items']) : 0;
+if ($prevCount > 0 && count($uniq) < $prevCount * 0.75) {
+    fail('позиций стало заметно меньше: ' . count($uniq) . ' против ' . $prevCount .
+         ' — похоже на сбой разбора, прежний индекс не трогаем');
 }
 
 $json = json_encode(

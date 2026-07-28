@@ -11704,7 +11704,9 @@ const app = {
             .map(chk => chk.value);
 
         if (!lastName || !firstName || !middleName) { app.alert('Фамилия, имя и отчество не могут быть пустыми.'); return; }
-        if (!phone || phone.length < 18) { app.alert('Введите корректный номер телефона.'); return; }
+        // Считаем цифры, а не длину строки: номер из базы (вход через Яндекс/Google/Telegram)
+        // приходит без маски — «+79530044333» короче 18 символов, но он корректный
+        if (!phone || phone.replace(/\D/g, '').length !== 11) { app.alert('Введите корректный номер телефона.'); return; }
         if (!birthDate) { app.alert('Пожалуйста, укажите дату рождения.'); return; }
         const profileAge = this.calcAge(birthDate);
         if (profileAge < 18 || profileAge > 90) { app.alert('Возраст должен быть от 18 до 90 лет.'); return; }
@@ -18119,8 +18121,11 @@ const app = {
                 this.state.rooms.forEach(r => currentRoomsArea += (parseFloat(r.area) || 0));
             }
 
-            // Если комнат нет ИЛИ площадь сменилась -> создаем рекомендуемое количество комнат
-            if (!this.state.rooms || this.state.rooms.length === 0 || Math.abs(currentRoomsArea - this.state.area) > 1) {
+            // Если комнат нет ИЛИ площадь сменилась -> создаем рекомендуемое количество комнат.
+            // При нулевой площади (сразу после сброса) комнаты не генерируем — иначе шаблон
+            // подставил бы 150 м² и площадь объекта изменилась бы сама собой
+            const areaForRooms = parseFloat(this.state.area) || 0;
+            if (areaForRooms > 0 && (!this.state.rooms || this.state.rooms.length === 0 || Math.abs(currentRoomsArea - areaForRooms) > 1)) {
                 this.generateRoomsForDetailedCalculation();
             }
         } else {
