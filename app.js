@@ -14869,6 +14869,11 @@ const app = {
         // поэтому renderRoomsUI просто очистит списки. См. баг #1.
         this.renderRoomsUI();
         this.render();
+        // Распознавание держит своё состояние на RecognizeUI, а не в app.state,
+        // поэтому сброс расчёта его не касался: монтажник жал «Сбросить всё»,
+        // возвращался во вкладку распознавания и видел там прежнюю смету с
+        // прежним файлом. Без вопроса — он уже подтверждён строкой выше.
+        if (typeof RecognizeUI !== 'undefined' && RecognizeUI.resetAll) RecognizeUI.resetAll(true);
         this.resetAutosaveBaseline();
     },
 

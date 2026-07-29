@@ -1470,7 +1470,10 @@ const RecognizeMatch = (function () {
     // подхватываем по тексту, но только если это точно сам прибор.
     if (t && t !== 'прочее') return false;
     const raw = String(rec.raw || '');
-    return /(^|[\s(№.])рад(иатор|\.)/i.test(raw) && !RAD_NOT.test(raw);
+    // KERMI делает только приборы отопления, поэтому одной марки достаточно:
+    // «Kermi FKO 22 500/1000» — радиатор, хотя слова «радиатор» в строке нет.
+    const rad = /(^|[\s(№.])рад(иатор|\.)/i.test(raw) || /\bkermi\b|керми/i.test(raw);
+    return rad && !RAD_NOT.test(raw);
   }
 
   /** Число секций: из разбора либо из текста строки. */
@@ -1489,8 +1492,23 @@ const RecognizeMatch = (function () {
     if (/сталь|панельн/.test(k)) return 'сталь';
 
     const s = String(rec.raw || '').toLowerCase();
-    if (/панельн|стальн|тип\s*(11|21|22|33)|compact|ventil/.test(s)) return 'сталь';
-    if (/алюмин|\bал\b|\bal\b|profi|plus\b|vega/.test(s)) return 'алюм';
+    /**
+     * KERMI больше не возят, и заменяются они стальными панельными ROMMER.
+     *
+     * Марку узнаём и латиницей, и кириллицей: приборы у KERMI только стальные
+     * панельные, поэтому одного имени достаточно, чтобы выбрать нужный ряд.
+     * Без этого «Радиатор Керми 11 500/600» не подбирался вовсе — материал не
+     * назывался ни одним знакомым словом, и строка уходила в биметалл.
+     */
+    if (/панельн|стальн|тип\s*(11|21|22|33)|compact|ventil|kermi|керми/.test(s)) return 'сталь';
+    /**
+     * «profi» ищем целым словом.
+     *
+     * Подстрокой оно сидит в «Profil-K» — так называется стальная панельная
+     * серия KERMI, — и весь ряд уезжал в алюминий: «Kermi Profil-K FK O
+     * 22/500/700» подбирался к сменной мембране бака за 29 520 ₽.
+     */
+    if (/алюмин|\bал\b|\bal\b|\bprofi\b|plus\b|vega/.test(s)) return 'алюм';
     if (/бимет|\bбм\b|\bbm\b|space|спейс|титан|titan|optima/.test(s)) return 'бимет';
     return null;
   }
@@ -1601,6 +1619,12 @@ const RecognizeMatch = (function () {
     const len = nums.find((n) => n >= 400 && n <= 3000 && n !== height) || null;
     if (!type && !len) return null;   // ничего, кроме слова «панельный», не известно
 
+    /**
+     * Нижнее подключение. У KERMI оно зашито в код модели, а словом «нижнее»
+     * его часто не дублируют: FKO и PKO — боковое, FTV, FKV, PTV, PLV — нижнее.
+     */
+    const wantBottom = /низ|нижн|ventil/i.test(raw) || /\b[fp][ktl]v\b/i.test(raw);
+
     let best = null;
     for (const p of pools) {
       for (const it of p.items) {
@@ -1612,7 +1636,7 @@ const RecognizeMatch = (function () {
         if (len) { max += 2; if (it.sec === len) score += 2; }
         // Нижнее подключение (Ventil) пишут отдельно, иначе боковое Compact.
         max += 1;
-        if (/низ|нижн|ventil/i.test(raw) === !!it.bottom) score += 1;
+        if (wantBottom === !!it.bottom) score += 1;
 
         if (!max) continue;
         const rel = score / max;

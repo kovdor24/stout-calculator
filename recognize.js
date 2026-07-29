@@ -336,13 +336,7 @@ const RecognizeUI = {
 
     /** Сброс загруженного: вернуться к пустой зоне и выбрать другой файл. */
     clearFile() {
-        this._img = null;
-        this._imgs = null;
-        this._file = null;
-        this._text = '';
-        this._docs = [];
-        this._fileName = '';
-        this._fileKind = null;
+        this.clearFileState();
 
         const wrap = document.getElementById('rec_prev_wrap');
         if (wrap) wrap.style.display = 'none';
@@ -357,6 +351,69 @@ const RecognizeUI = {
         this.setGoReady(false);
         this.setStatus('Фото и сканы, а также PDF, Excel, Word, HTML');
         this.syncDrop();
+    },
+
+    /**
+     * Полный сброс распознавания: вернуться к пустой загрузке.
+     *
+     * clearFile() убирает только загруженный файл, а разобранные строки живут
+     * дальше. Само же состояние разбора лежит на RecognizeUI, а НЕ в app.state,
+     * поэтому «Сбросить всё» в шапке его не касалось вовсе: монтажник сбрасывал
+     * объект, возвращался во вкладку распознавания и видел там прежнюю смету
+     * с прежним файлом. Отсюда и вопрос «почему сброс не реагирует».
+     *
+     * Прайс-индекс не трогаем: он весит около мегабайта, качается один раз за
+     * сессию и к конкретному разбору отношения не имеет.
+     *
+     * silent — сброс без вопроса. Так его зовёт app.reset(): там монтажник уже
+     * подтвердил, что начинает расчёт заново, и второй вопрос подряд лишний.
+     */
+    async resetAll(silent) {
+        // На середине разбора сбрасывать нечего и опасно: ответ модели придёт
+        // в уже очищенное состояние.
+        if (this._busy) return;
+        const hasWork = !!(this._rows && this._rows.length) || !!this._img ||
+            !!(this._imgs && this._imgs.length) || !!this._text;
+        if (!hasWork) return;
+        if (!silent && !await app.confirm(
+            'Сбросить распознавание? Разобранные строки и загруженный файл будут очищены.')) return;
+
+        this.clearFileState();
+
+        this._rows = [];
+        this._skipped = [];
+        this._profile = null;
+        this._sys = null;
+        this._sysFromModel = null;
+        this._undo = [];
+        this._tab = 'eq';
+        this._ourWorks = null;
+        this._analogOn = false;
+        this._analogSaved = 0;
+        this._deep = 0;
+        this._mergeInfo = '';
+        this._parseWarning = '';
+        this._failedSheets = [];
+        this._apiCalls = 0;
+        this._fromCache = 0;
+        this._cmpDiscount = null;
+        this._cmpApplyDiscount = false;
+
+        // Перерисовываем, только если монтажник сейчас на этой вкладке: при
+        // сбросе объекта из шапки он смотрит на смету, и дёргать чужой экран
+        // незачем — вкладка соберётся заново, когда её откроют.
+        if (app.state.viewMode === 'recognize') this.renderUpload();
+    },
+
+    /** Поля загруженного файла — без обращения к разметке экрана загрузки. */
+    clearFileState() {
+        this._img = null;
+        this._imgs = null;
+        this._file = null;
+        this._text = '';
+        this._docs = [];
+        this._fileName = '';
+        this._fileKind = null;
     },
 
     /**
@@ -2947,13 +3004,20 @@ const RecognizeUI = {
             ? `<button class="rec-btn-g" title="Отменить последнее изменение"
                        onclick="RecognizeUI.undo()">↶ Отменить</button>` : '';
 
+        // «Сбросить» стоит рядом с «Отменить», но делает другое: «Отменить»
+        // откатывает одну правку, а это очищает разбор целиком и возвращает
+        // к загрузке. Раньше выйти из разобранной сметы можно было только
+        // применив её или перезагрузив страницу.
+        const reset = `<button class="rec-btn-g" title="Очистить разбор и загрузить другую смету"
+                       onclick="RecognizeUI.resetAll()">✕ Сбросить распознавание</button>`;
+
         return `<div class="rec-panel">
             <div class="rec-panel-row">
               ${this.renderSystemSelect()}
               ${this.renderAnalogButton()}
               ${this.renderDocPriceButton()}
               <span class="rec-tb-right">
-                ${this.renderRetryButton()}${undo}${this.renderCompareButton()}
+                ${this.renderRetryButton()}${undo}${this.renderCompareButton()}${reset}
               </span>
             </div>
             <div class="rec-panel-stat">${stat}</div>
