@@ -75,6 +75,29 @@ def get_enclosing_object(text, match_start):
                 break
     return start_idx, end_idx
 
+# Наличие, как его пишет teremonline: <span class="sar-stock green|yellow|blue">.
+#
+# «Ожидается» — третий статус, о котором парсер не знал: товар в пути, сегодня
+# его не забрать. Для калькулятора состояний всего два, и «в пути» — это не
+# «в наличии», поэтому кладём его к заказным. Пока этот статус не читался,
+# карточка возвращала наличие None: цена обновлялась, availability оставалось
+# старым, а price_date — свежей, и калькулятор ещё 31 день показывал товар
+# «в наличии» по данным, которых никто не подтверждал.
+STATUS_WORDS = [
+    ('в наличии', 'in_stock'),
+    ('под заказ', 'on_order'),
+    ('ожидается', 'on_order'),
+]
+STATUS_RE = re.compile('|'.join(w for w, _ in STATUS_WORDS), re.IGNORECASE)
+
+def read_status(text):
+    m = STATUS_RE.search(text or '')
+    if not m: return None
+    found = m.group(0).lower()
+    for word, code in STATUS_WORDS:
+        if word == found: return code
+    return None
+
 def get_price_card_isolation(driver, sku, old_price):
     if "404" in driver.title or "Страница не найдена" in driver.page_source: 
         return "NOT_FOUND"
@@ -132,11 +155,7 @@ def get_price_card_isolation(driver, sku, old_price):
     
     fallback_status = None
     if soup.body:
-        fallback_match = re.search(r'(В наличии|Под заказ)', soup.body.get_text(" ", strip=True), re.IGNORECASE)
-        if fallback_match:
-            status_str = fallback_match.group(1).lower()
-            if 'в наличии' in status_str: fallback_status = 'in_stock'
-            elif 'под заказ' in status_str: fallback_status = 'on_order'
+        fallback_status = read_status(soup.body.get_text(" ", strip=True))
 
     for text_node in candidates:
         card = text_node.find_parent()
@@ -146,12 +165,7 @@ def get_price_card_isolation(driver, sku, old_price):
             if not card: break
             
             if not status_in_card:
-                card_text = card.get_text(" ", strip=True)
-                status_match = re.search(r'(В наличии|Под заказ)', card_text, re.IGNORECASE)
-                if status_match:
-                    status_str = status_match.group(1).lower()
-                    if 'в наличии' in status_str: status_in_card = 'in_stock'
-                    elif 'под заказ' in status_str: status_in_card = 'on_order'
+                status_in_card = read_status(card.get_text(" ", strip=True))
             
             if not price_in_card:
                 price_el = card.find(class_=re.compile(r'price__value|product-price|club-price|catalog-item__price', re.I))
@@ -386,6 +400,10 @@ def update_catalog_prices():
     price_cache = {}
     updated_count = 0
     not_found_streak = 0
+    # Сколько раз цена прочиталась, а наличие — нет. Если это число вдруг
+    # окажется большим, значит на сайте поменялась разметка статуса, и весь
+    # каталог поехал в «Под заказ» — по логу это будет видно сразу.
+    unknown_status_count = 0
     last_checkpoint_ts = time.time()
     for i, item in enumerate(items_to_process):
         sku, old_price, match = item['sku'], item['old_price'], item['match']
@@ -412,13 +430,25 @@ def update_catalog_prices():
         if isinstance(res, dict):
             new_price = res['price']
             new_status = res['status']
-            
+
+            # Цену прочитали, а наличие — нет.
+            #
+            # Раньше в этом случае обновлялась только price_date, а availability
+            # оставалось прежним. Калькулятор считает наличие свежим по дате
+            # (правило 31 дня в app.js), и позиция ещё месяц показывалась
+            # «В наличии» по данным, которых никто не подтверждал. Считаем такое
+            # наличие заказным — то же правило осторожности, только применённое
+            # честно: не знаем, значит не обещаем.
+            if not new_status:
+                new_status = 'on_order'
+                unknown_status_count += 1
+
             if new_price != old_price: print(f"-> {new_price} ₽", end="")
             else: print("-> OK", end="")
-            
-            if new_status == 'in_stock': print(" (В наличии)")
-            elif new_status == 'on_order': print(" (Под заказ)")
-            else: print("")
+
+            if not res['status']: print(" (наличие не прочитано -> Под заказ)")
+            elif new_status == 'in_stock': print(" (В наличии)")
+            else: print(" (Под заказ)")
             
             new_obj_text = obj_text
             if new_price != old_price:
@@ -477,6 +507,8 @@ def update_catalog_prices():
         for s, e, val in replacements: content = content[:s] + val + content[e:]
         with open(FULL_PATH, 'w', encoding='utf-8') as f: f.write(content)
         print(f"\nУспешно обновлено цен: {updated_count}")
+        if unknown_status_count:
+            print(f"Наличие не прочитано (записано «Под заказ»): {unknown_status_count}")
     else: print("\nИзменений не требуется.")
     return True
 
