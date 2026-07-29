@@ -610,6 +610,7 @@ const app = {
         // Удаляем чисто визуальные параметры, чтобы они не вызывали кнопку "Сохранить"
         delete s.viewMode;
         delete s.darkMode;
+        delete s.themeMode;
         delete s.collapsedGroups;
         delete s.revealedToggles;
         delete s.showSwapFor;
@@ -5822,7 +5823,7 @@ const app = {
             if (error) throw error;
 
             let loadedState = data.calc_data;
-            delete loadedState.tgUser; delete loadedState.accountType; delete loadedState.demoUsed; delete loadedState.darkMode;
+            delete loadedState.tgUser; delete loadedState.accountType; delete loadedState.demoUsed; delete loadedState.darkMode; delete loadedState.themeMode;
             this.state = { ...this.state, ...loadedState };
             this.saveState(); this.syncUI(); this.render();
 
@@ -11228,7 +11229,7 @@ const app = {
                 for (let key in st) {
                     let val = st[key];
                     if (val === null || val === undefined || val === false || val === 0 || val === "" || key === 'viewMode' || key === 'showSwapFor' || key === 'collapsedGroups') continue;
-                    if (key === 'tgUser' || key === 'accountType' || key === 'demoUsed' || key === 'darkMode') continue;
+                    if (key === 'tgUser' || key === 'accountType' || key === 'demoUsed' || key === 'darkMode' || key === 'themeMode') continue;
                     if (Array.isArray(val) && val.length === 0) continue;
                     if (typeof val === 'object' && Object.keys(val).length === 0) continue;
                     exportState[key] = val;
@@ -11471,7 +11472,7 @@ const app = {
         for (let key in st) {
             let val = st[key];
             if (val === null || val === undefined || val === false || val === 0 || val === "" || key === 'viewMode' || key === 'showSwapFor' || key === 'collapsedGroups') continue;
-            if (key === 'tgUser' || key === 'accountType' || key === 'demoUsed' || key === 'darkMode') continue;
+            if (key === 'tgUser' || key === 'accountType' || key === 'demoUsed' || key === 'darkMode' || key === 'themeMode') continue;
             if (Array.isArray(val) && val.length === 0) continue;
             if (typeof val === 'object' && Object.keys(val).length === 0) continue;
             exportState[key] = val;
@@ -12952,6 +12953,183 @@ const app = {
     },
     toggleDark: function (chk, event) {
         this.state.darkMode = chk; document.body.classList.toggle('dark-mode', chk); this.saveState();
+    },
+
+    // ═══════════════ Тема оформления ═══════════════
+    // Три режима: 'light', 'dark' и 'auto'. Авто переключает тему по закату и восходу
+    // там, где человек находится. Координаты берём из ipapi.co — того же сервиса, который
+    // приложение и так опрашивает при регистрации: города в CITIES_DB координат не имеют,
+    // а просить разрешение на геолокацию ради оформления — перебор. Координат нет
+    // (сервис недоступен, режет блокировщик) — авто-режим работает по расписанию.
+    THEME_ORDER: ['light', 'dark', 'auto'],
+    THEME_DARK_FROM: 20,   // часы, в которые считаем «темно», когда координат нет
+    THEME_DARK_TO: 7,
+    THEME_GEO_KEY: 'stout_geo',
+    THEME_GEO_DAYS: 30,
+
+    // Режим темы. Старое состояние знало только булев darkMode — переводим его в явный
+    // режим, чтобы у тех, кто уже сидит на тёмной, ничего не поменялось само собой.
+    themeMode: function () {
+        const m = this.state.themeMode;
+        if (this.THEME_ORDER.includes(m)) return m;
+        return this.state.darkMode ? 'dark' : 'light';
+    },
+
+    // Восход и закат по «уравнению восхода» (NOAA). Возвращает { sunrise, sunset },
+    // а за полярным кругом, где солнце за сутки горизонт не пересекает, —
+    // { polar: 'night' } или { polar: 'day' }.
+    sunTimes: function (date, lat, lon) {
+        const rad = Math.PI / 180;
+        const jUnix = date.getTime() / 86400000 + 2440587.5;                // юлианская дата
+        const n = Math.round(jUnix - 2451545 - 0.0009 + lon / 360);
+        const jStar = n + 0.0009 - lon / 360;                               // средний солнечный полдень
+        const M = (357.5291 + 0.98560028 * jStar) % 360;                    // средняя аномалия Солнца
+        const C = 1.9148 * Math.sin(M * rad) + 0.02 * Math.sin(2 * M * rad) + 0.0003 * Math.sin(3 * M * rad);
+        const lambda = (M + C + 180 + 102.9372) % 360;                      // эклиптическая долгота
+        const jTransit = 2451545 + jStar + 0.0053 * Math.sin(M * rad) - 0.0069 * Math.sin(2 * lambda * rad);
+        const delta = Math.asin(Math.sin(lambda * rad) * Math.sin(23.44 * rad));   // склонение Солнца
+        // -0.833° — верхний край диска плюс рефракция: общепринятое определение заката
+        const cosOmega = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * Math.sin(delta))
+            / (Math.cos(lat * rad) * Math.cos(delta));
+        if (cosOmega > 1) return { polar: 'night' };    // солнце так и не встало
+        if (cosOmega < -1) return { polar: 'day' };     // солнце так и не село
+        const omega = Math.acos(cosOmega) / rad;
+        const toDate = j => new Date((j - 2440587.5) * 86400000);
+        return { sunrise: toDate(jTransit - omega / 360), sunset: toDate(jTransit + omega / 360) };
+    },
+
+    themeGeo: function () {
+        try {
+            const geo = JSON.parse(localStorage.getItem(this.THEME_GEO_KEY) || 'null');
+            if (!geo || typeof geo.lat !== 'number' || typeof geo.lon !== 'number') return null;
+            if (Date.now() - (geo.ts || 0) > this.THEME_GEO_DAYS * 86400000) return null;
+            return geo;
+        } catch (e) { return null; }
+    },
+
+    // Координаты нужны только авто-теме, поэтому и спрашиваем их только в этом режиме
+    // и только когда кэш протух. Не ответили — не беда, тема пойдёт по расписанию.
+    fetchThemeGeo: async function () {
+        if (this._themeGeoFetching) return;
+        this._themeGeoFetching = true;
+        try {
+            const res = await fetch('https://ipapi.co/json/');
+            const d = await res.json();
+            if (d && typeof d.latitude === 'number' && typeof d.longitude === 'number') {
+                localStorage.setItem(this.THEME_GEO_KEY, JSON.stringify({
+                    lat: d.latitude, lon: d.longitude, city: d.city || '', ts: Date.now()
+                }));
+                this.applyTheme();
+            }
+        } catch (e) {
+            console.warn('[theme] координаты недоступны, авто-тема пойдёт по расписанию');
+        } finally {
+            this._themeGeoFetching = false;
+        }
+    },
+
+    // Темно ли сейчас за окном
+    isDarkOutside: function () {
+        const now = new Date();
+        const geo = this.themeGeo();
+        if (geo) {
+            const t = this.sunTimes(now, geo.lat, geo.lon);
+            if (t.polar) return t.polar === 'night';
+            return now < t.sunrise || now >= t.sunset;
+        }
+        const h = now.getHours();
+        return h >= this.THEME_DARK_FROM || h < this.THEME_DARK_TO;
+    },
+
+    // Единственное место, где тема попадает на страницу. darkMode продолжаем вести как
+    // раньше — на него завязаны печать, PDF и часть инлайн-стилей.
+    applyTheme: function () {
+        const mode = this.themeMode();
+        const dark = mode === 'auto' ? this.isDarkOutside() : (mode === 'dark');
+        const changed = this.state.darkMode !== dark;
+        this.state.darkMode = dark;
+        document.body.classList.toggle('dark-mode', dark);
+        this.updateThemeButton(mode);
+        // Сохраняем только когда тема реально сменилась: в авто-режиме проверка идёт
+        // раз в минуту, и писать состояние каждый раз незачем.
+        if (changed) this.saveState();
+    },
+
+    themeModeInfo: function (mode) {
+        if (mode === 'dark') {
+            return {
+                icon: '🌙', label: 'Тёмная', next: 'авто',
+                sub: 'Тёмная всегда, независимо от времени суток',
+                svg: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>'
+            };
+        }
+        if (mode === 'auto') {
+            const geo = this.themeGeo();
+            const pad = h => String(h).padStart(2, '0') + ':00';
+            let sub = `Тёмная с ${pad(this.THEME_DARK_FROM)} до ${pad(this.THEME_DARK_TO)}`;
+            if (geo) {
+                const t = this.sunTimes(new Date(), geo.lat, geo.lon);
+                const hm = d => d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                sub = t.polar
+                    ? (t.polar === 'night' ? 'Полярная ночь — тёмная круглые сутки' : 'Полярный день — светлая круглые сутки')
+                    : `Тёмная с ${hm(t.sunset)} до ${hm(t.sunrise)}${geo.city ? ' · ' + geo.city : ''}`;
+            }
+            return {
+                icon: '🌗', label: 'Авто', next: 'светлая', sub: sub,
+                svg: '<circle cx="12" cy="12" r="9"></circle><path d="M12 3v18a9 9 0 0 0 0-18z" fill="currentColor" stroke="none"></path>'
+            };
+        }
+        return {
+            icon: '☀️', label: 'Светлая', next: 'тёмная',
+            sub: 'Светлая всегда, независимо от времени суток',
+            svg: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>'
+        };
+    },
+
+    // Иконка показывает текущий режим, подсказка — что будет по нажатию
+    updateThemeButton: function (mode) {
+        const btn = document.getElementById('btn_theme');
+        if (!btn) return;
+        const info = this.themeModeInfo(mode);
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${info.svg}</svg>`;
+        btn.title = `Тема: ${info.label.toLowerCase()} — ${info.sub}. Нажмите, чтобы включить: ${info.next}`;
+    },
+
+    cycleThemeMode: function () {
+        const next = this.THEME_ORDER[(this.THEME_ORDER.indexOf(this.themeMode()) + 1) % this.THEME_ORDER.length];
+        this.state.themeMode = next;
+        // Координаты тянем только когда действительно понадобились — при включении авто
+        if (next === 'auto' && !this.themeGeo()) this.fetchThemeGeo();
+        this.applyTheme();
+        this.saveState();
+        this.showThemeToast(next);
+    },
+
+    showThemeToast: function (mode) {
+        let el = document.getElementById('theme_toast');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'theme_toast';
+            document.body.appendChild(el);
+        }
+        const info = this.themeModeInfo(mode);
+        el.innerHTML = `<span class="ct-icon">${info.icon}</span><div><div class="ct-title">Тема: ${info.label.toLowerCase()}</div><div class="ct-sub">${info.sub}</div></div>`;
+        el.className = 'contest-toast visible no-print';
+        clearTimeout(this._themeToastTimer);
+        this._themeToastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+    },
+
+    // Раз в минуту достаточно: закат — событие не мгновенное, а страница живёт часами,
+    // и лишний частый таймер ей ни к чему. Отдельно проверяем при возврате на вкладку —
+    // в фоне браузер таймеры притормаживает, и к утру тема может отстать.
+    startThemeWatcher: function () {
+        if (this._themeTimer) return;
+        this._themeTimer = setInterval(() => {
+            if (this.themeMode() === 'auto') this.applyTheme();
+        }, 60000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && this.themeMode() === 'auto') this.applyTheme();
+        });
     },
     // Новая функция для переключения автоматики
     toggleUfhAuto: function (chk, event) {
@@ -14613,6 +14791,7 @@ const app = {
                     delete savedState.accountType;
                     delete savedState.demoUsed;
                     delete savedState.darkMode;
+                    delete savedState.themeMode;
 
                     this.state = { ...this.state, ...savedState };
                     this.syncUI();
@@ -14642,6 +14821,7 @@ const app = {
                 delete savedState.accountType;
                 delete savedState.demoUsed;
                 delete savedState.darkMode;
+                delete savedState.themeMode;
 
                 this.state = { ...this.state, ...savedState };
                 this.syncUI();
@@ -14659,6 +14839,7 @@ const app = {
 
         // Запоминаем важные данные перед сбросом
         const currentDarkMode = this.state.darkMode;
+        const currentThemeMode = this.state.themeMode;
         const currentTgUser = this.state.tgUser;
         const currentAccType = this.state.accountType;
         // Привязка к дистрибьютору — это про учётку, а не про расчёт: сброс сметы
@@ -14674,6 +14855,7 @@ const app = {
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType,
+            themeMode: currentThemeMode,
             distributorId: currentDistId,
             distributorInfo: currentDistInfo,
             priceSource: currentPriceSource
@@ -15235,6 +15417,12 @@ const app = {
             try { this.state = { ...this.state, ...JSON.parse(localStorage.getItem('stout_save')) }; } catch (e) { console.error("Ошибка загрузки сохранения", e); }
         }
         this.loadInstallerSettingsLocal();
+        // Тему ставим до первой отрисовки, иначе в авто-режиме страница успеет мигнуть
+        // светлой. Координаты, если их ещё нет, догружаются в фоне — до их появления
+        // авто-режим работает по расписанию.
+        this.applyTheme();
+        if (this.themeMode() === 'auto' && !this.themeGeo()) this.fetchThemeGeo();
+        this.startThemeWatcher();
         // Цены дистрибьютора накладываем сразу из сохранённого состояния, не дожидаясь
         // ответа Supabase: иначе смета сначала отрисуется по ценам Терема и через
         // секунду прыгнет на другие. Придёт ответ — loadDistributorInfo перерисует,

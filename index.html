@@ -57,7 +57,7 @@
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.0" defer></script>
     <script src="gamification.js?v=2.0" defer></script>
-    <script src="app.js?v=3.35" defer></script>
+    <script src="app.js?v=3.36" defer></script>
     <!-- Распознавание смет: подбор по каталогу и интерфейс мастера.
          Порядок важен — recognize.js обращается к RecognizeMatch. -->
     <script src="recognize_match.js?v=3.7" defer></script>
@@ -155,7 +155,9 @@
                         <path d="M3 3v5h5"></path>
                     </svg>
                 </button>
-                <button class="btn-ctrl" onclick="app.toggleDark(!app.state.darkMode, event)"
+                <!-- Иконку и подсказку проставляет app.updateThemeButton по текущему режиму
+                     (светлая / тёмная / авто по закату); здесь — только вид до загрузки. -->
+                <button class="btn-ctrl" id="btn_theme" onclick="app.cycleThemeMode()"
                     title="Переключить тему">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
