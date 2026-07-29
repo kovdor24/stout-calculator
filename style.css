@@ -8876,11 +8876,41 @@ body.rec-sel-mode .inv-table .col-idx {
     margin-left: auto; display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
 .rec-tb-right:empty { display: none; }
+
+/* Панель разбора. Одна рамка вместо двух разнородных строк: слева — чем
+   считаем (система труб, бренд, источник цен), справа — действия над всем
+   разбором, под ними — что уже подобрано. */
+.rec-panel {
+    border: 1px solid var(--border, #e2e8f0); border-radius: 10px;
+    background: var(--surface, #fff);
+    padding: 10px 12px; margin-bottom: 12px;
+}
+.rec-panel-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rec-panel-stat {
+    margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border, #e2e8f0);
+    color: var(--text-sec, #94a3b8); font-size: 12.5px;
+}
+
+/* Действия над выделенными строками. Панель появляется только при выделении,
+   поэтому выделена цветом — это временный режим, а не постоянная часть шапки. */
+.rec-selbar {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    border: 1px solid var(--primary, #0284c7); border-radius: 10px;
+    background: rgba(2, 132, 199, .07);
+    padding: 8px 12px; margin-bottom: 12px;
+}
+.rec-selbar-n { font-size: 12.5px; font-weight: 700; color: var(--primary, #0284c7); }
+
+/* Кнопки, выпадающие списки и переключатели панели — одной высоты и с
+   одинаковыми углами: раньше они различались формой и не выстраивались в
+   строку. */
 .rec-btn-g {
     background: var(--surface-light, #f1f5f9); color: var(--text-main, #0f172a);
     border: 1px solid var(--border, #e2e8f0); border-radius: 8px;
-    padding: 6px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    padding: 0 12px; height: 32px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
 }
+select.rec-btn-g { padding-right: 8px; }
 .rec-btn-g:disabled { opacity: .45; cursor: default; }
 /* «Сравнить цены» — ради неё чужое КП сюда и загружают, поэтому она
    отличается от соседних служебных кнопок. */
@@ -8893,7 +8923,7 @@ body.rec-sel-mode .inv-table .col-idx {
    что написано в счёте, и об этом нельзя догадываться по ценам. */
 .rec-switch {
     display: inline-flex; align-items: center; gap: 8px;
-    padding: 5px 12px 5px 8px; border-radius: 999px; cursor: pointer;
+    padding: 0 12px 0 8px; height: 32px; border-radius: 8px; cursor: pointer;
     border: 1px solid var(--border, #e2e8f0);
     background: var(--surface-light, #f1f5f9);
     font-size: 12.5px; font-weight: 600; white-space: nowrap;

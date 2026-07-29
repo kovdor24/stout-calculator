@@ -2576,6 +2576,17 @@ const RecognizeUI = {
 
     del(i) { this.snap(); this._rows.splice(i, 1); this.refreshSuggestions(); this.renderReview(); },
     sel(i, v) { this._rows[i]._sel = v; this.renderReview(); },
+    /**
+     * Галочка в шапке таблицы.
+     *
+     * Отрисовка идёт заново после каждого изменения, и раньше чекбокс шапки
+     * всегда приходил пустым — снять им выделение было нельзя, только по одной
+     * строке. Поэтому состояние берётся из строк: отмечен, когда выделены все.
+     */
+    allSelected() {
+        return this._rows.length > 0 && this._rows.every(r => r._sel);
+    },
+
     selAll(v) { this._rows.forEach(r => r._sel = v); this.renderReview(); },
     delSel() {
         if (!this._rows.some(r => r._sel)) return;
@@ -2721,31 +2732,8 @@ const RecognizeUI = {
           ${this.renderSavedTime(found.length)}
           ${this.renderTabs(eqTotal, works)}
           ${this.renderTotalsStrip()}
-          <div class="rec-toolbar">
-            <button class="rec-btn-g" onclick="RecognizeUI.undo()" ${this._undo.length ? '' : 'disabled'}>↶ Отменить</button>
-            <button class="rec-btn-g" onclick="RecognizeUI.delSel()" ${selN ? '' : 'disabled'}>Удалить выбранные${selN ? ' (' + selN + ')' : ''}</button>
-            <select class="rec-btn-g" ${selN ? '' : 'disabled'}
-                    onchange="RecognizeUI.moveSel(this.value); this.selectedIndex=0;">
-              <option value="">Выбранные — в раздел…</option>
-              ${(RecognizeMatch.SECTIONS || []).map(s =>
-                `<option value="${esc(s)}">${esc(s)}</option>`).join('')}
-            </select>
-            ${this.renderRetryButton()}
-            <span class="rec-tb-right">${this.renderCompareButton()}</span>
-          </div>
-          <div class="rec-toolbar rec-toolbar-modes">
-            ${this.renderSystemSelect()}
-            <span class="rec-status">Подобрано ${found.length} из ${eqTotal} (${
-              eqTotal ? Math.round(found.length / eqTotal * 100) : 0}%)${
-              works.length ? ` · монтажных работ ${works.length}` : ''}${
-              this._deep ? ` · из них углублённым поиском ${this._deep}` : ''}${
-              this._mergeInfo ? ' · ' + this._mergeInfo : ''}${
-              noQty ? ` · без количества ${noQty}` : ''}</span>
-            <span class="rec-tb-right">
-              ${this.renderAnalogButton()}
-              ${this.renderDocPriceButton()}
-            </span>
-          </div>
+          ${this.renderControls(found.length, eqTotal, works, noQty)}
+          ${this.renderSelectionBar(selN)}
           <div class="rec-tablewrap">
             <table class="rec-table">
               <colgroup><col style="width:30px"><col style="width:170px"><col style="width:140px">
@@ -2753,7 +2741,9 @@ const RecognizeUI = {
                 <col><col style="width:72px"><col style="width:82px">
                 <col style="width:190px"><col style="width:66px"></colgroup>
               <thead><tr>
-                <th><input type="checkbox" onchange="RecognizeUI.selAll(this.checked)"></th>
+                <th><input type="checkbox" ${this.allSelected() ? 'checked' : ''}
+                           title="Выделить все строки / снять выделение"
+                           onchange="RecognizeUI.selAll(this.checked)"></th>
                 <th>Как написано</th><th>Тип</th><th>D</th><th>Резьба</th><th>Кол.</th>
                 <th>Подобрано в каталоге</th><th>Цена</th><th>Сумма</th>
                 <th>Раздел сметы</th><th></th>
@@ -2785,7 +2775,10 @@ const RecognizeUI = {
      */
     compareTotals() {
         const brand = this._cmpBrand === 'rommer' ? 'rommer' : 'stout';
-        const t = { eqTheir: 0, eqOur: 0, eqOut: 0, wTheir: 0, wOur: 0, wOut: 0 };
+        // eqDoc — сколько внутри итога стоят позиции, у которых нашей цены нет и
+        // взята цена документа. Нужен подписью в шапке: без неё непонятно, что
+        // часть суммы «у нас» — вовсе не наша.
+        const t = { eqTheir: 0, eqOur: 0, eqOut: 0, eqDoc: 0, wTheir: 0, wOur: 0, wOut: 0 };
 
         const works = this._rows.filter(r => this.looksLikeWork(r));
         if (works.length) this.prepareWorks(works);
@@ -2815,6 +2808,18 @@ const RecognizeUI = {
             const bp = brand === 'rommer' ? (ra ? (this.ourUnitPriceOf(ra.item, r) || op) : op) : op;
             if (dp > 0 && op > 0 && qty > 0 && !r._priceAlarm) {
                 t.eqTheir += dp * qty; t.eqOur += bp * qty;
+            } else if (!m && dp > 0 && qty > 0 && this.docPricesOn()) {
+                /**
+                 * Позиция без аналога в каталоге при включённом тумблере уезжает
+                 * в смету с ценой из документа — значит в «у нас» она входит той
+                 * же цифрой, а не выпадает во «вне сравнения». Иначе тумблер
+                 * менял состав сметы, но не двигал ни одного числа в шапке, и по
+                 * ней нельзя было понять, что он вообще делает.
+                 *
+                 * На разницу это не влияет: одна и та же сумма ложится на обе
+                 * стороны — мы на таких позициях не дороже и не дешевле.
+                 */
+                t.eqTheir += dp * qty; t.eqOur += dp * qty; t.eqDoc += dp * qty;
             } else {
                 t.eqOut += dp * qty;
             }
@@ -2849,8 +2854,65 @@ const RecognizeUI = {
             </div>
             <div class="rec-grand-sub">
               оборудование ${part(t.eqTheir, t.eqOur)} · работы ${part(t.wTheir, t.wOur)}${
+            t.eqDoc > 0 ? ` · из них по ценам документа ${money(t.eqDoc)}` : ''}${
             t.out > 0 ? ` · вне сравнения ${money(t.out)}` : ''}
             </div>
+          </div>`;
+    },
+
+    /**
+     * Панель разбора: чем считаем и что уже подобрано.
+     *
+     * Над таблицей стояли две разнородные строки: в первой служебные кнопки
+     * вперемешку с действиями над выделением, во второй — режимы; кнопки при
+     * пустом выделении оставались на виду серыми и занимали место. Теперь
+     * настройки разбора собраны в одну панель, а действия над выделением живут
+     * отдельно и появляются, только когда есть что с ними делать.
+     */
+    renderControls(foundN, eqTotal, works, noQty) {
+        const stat = `Подобрано ${foundN} из ${eqTotal} (${
+            eqTotal ? Math.round(foundN / eqTotal * 100) : 0}%)`
+            + (works.length ? ` · монтажных работ ${works.length}` : '')
+            + (this._deep ? ` · из них углублённым поиском ${this._deep}` : '')
+            + (this._mergeInfo ? ' · ' + this._mergeInfo : '')
+            + (noQty ? ` · без количества ${noQty}` : '');
+
+        // «Отменить» показываем, только когда есть что отменять: пустая серая
+        // кнопка на экране ничего не сообщает.
+        const undo = this._undo.length
+            ? `<button class="rec-btn-g" title="Отменить последнее изменение"
+                       onclick="RecognizeUI.undo()">↶ Отменить</button>` : '';
+
+        return `<div class="rec-panel">
+            <div class="rec-panel-row">
+              ${this.renderSystemSelect()}
+              ${this.renderAnalogButton()}
+              ${this.renderDocPriceButton()}
+              <span class="rec-tb-right">
+                ${this.renderRetryButton()}${undo}${this.renderCompareButton()}
+              </span>
+            </div>
+            <div class="rec-panel-stat">${stat}</div>
+          </div>`;
+    },
+
+    /** Действия над выделенными строками. Нет выделения — нет и панели. */
+    renderSelectionBar(selN) {
+        if (!selN) return '';
+        const esc = s => String(s ?? '').replace(/[&<>"]/g,
+            c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        return `<div class="rec-selbar">
+            <span class="rec-selbar-n">Выбрано ${selN}</span>
+            <button class="rec-btn-g" onclick="RecognizeUI.delSel()">Удалить</button>
+            <select class="rec-btn-g"
+                    onchange="RecognizeUI.moveSel(this.value); this.selectedIndex=0;">
+              <option value="">Перенести в раздел…</option>
+              ${(typeof RecognizeMatch !== 'undefined' ? (RecognizeMatch.SECTIONS || []) : []).map(s =>
+                `<option value="${esc(s)}">${esc(s)}</option>`).join('')}
+            </select>
+            <span class="rec-tb-right">
+              <button class="rec-btn-g" onclick="RecognizeUI.selAll(false)">Снять выделение</button>
+            </span>
           </div>`;
     },
 
