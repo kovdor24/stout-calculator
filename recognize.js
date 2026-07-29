@@ -2023,7 +2023,29 @@ const RecognizeUI = {
             if (m.pack && r.unit === 'м') {
                 r._meters = qty;
                 r._packed = m.pack;
+                r._packNote = `${qty} м → штанги по ${m.pack} м`;
                 r.qty = Math.ceil(qty / m.pack);
+                r.qtyExtra = 0;
+                r.unit = 'шт';
+                return;
+            }
+
+            /**
+             * Квадратные метры — в рулоны.
+             *
+             * «Подложка для теплого пола 3 мм / 25 м × 1.2 м (30 м²)» стоит в
+             * каталоге 2 668 ₽ за РУЛОН, а в смете её пишут площадью: «150 м2».
+             * Сто пятьдесят умножалось на цену рулона — 400 185 ₽ вместо
+             * 13 340 ₽ за пять рулонов. Ошибка в тридцать раз, и попадает она
+             * прямо в печатную смету клиенту.
+             */
+            const area = (typeof RecognizeMatch !== 'undefined' && RecognizeMatch.packArea)
+                ? RecognizeMatch.packArea(m.item && m.item.name) : null;
+            if (area && /^(м2|м²|кв\.?\s*м)$/i.test(String(r.unit || '').trim())) {
+                r._area = qty;
+                r._packed = area;
+                r._packNote = `${qty} м² → рулоны по ${area} м²`;
+                r.qty = Math.ceil(qty / area);
                 r.qtyExtra = 0;
                 r.unit = 'шт';
                 return;
@@ -2041,9 +2063,22 @@ const RecognizeUI = {
              */
             const per = (typeof RecognizeMatch !== 'undefined' && RecognizeMatch.packSize)
                 ? RecognizeMatch.packSize(m.item && m.item.name) : null;
-            if (per && qty >= per * 3) {
+
+            /**
+             * …но только там, где в смете написаны ШТУКИ.
+             *
+             * «Скоба якорная, кассета для трекера … (30шт в кассете) — 100
+             * компл.» считает уже кассеты, и делить их на 25 нельзя: в смету
+             * попадали четыре кассеты вместо ста. Единица измерения строки —
+             * единственное, что отличает «шесть тысяч скоб» от «ста кассет»,
+             * и раньше она не смотрелась вовсе.
+             */
+            const countsPacks = /компл|кассет|упак|набор|пач|рулон|бухт|^уп\.?$/i
+                .test(String(r.unit || '').trim());
+            if (per && !countsPacks && qty >= per * 3) {
                 r._pieces = qty;
                 r._packed = per;
+                r._packNote = `${qty} шт → упаковки по ${per} шт`;
                 r.qty = Math.ceil(qty / per);
                 r.qtyExtra = 0;
                 r.unit = 'шт';
@@ -2708,7 +2743,7 @@ const RecognizeUI = {
               <td><input class="rec-f rec-f-s" value="${esc(cell(r.qty))}"
                          onchange="RecognizeUI.set(${n},'qty',this.value)">
                   ${r.qtyExtra ? `<span class="rec-art">+${r.qtyExtra}</span>` : ''}
-                  ${r._packed ? `<div class="rec-art">${r._meters} м → штанги по ${r._packed} м</div>` : ''}</td>
+                  ${r._packNote ? `<div class="rec-art">${esc(r._packNote)}</div>` : ''}</td>
               <td>${match}</td>
               <td>${m ? Math.round(this.ourUnitPrice(r) * 100) / 100 + ' ₽' : (docP ? `<span class="rec-art">${Math.round(docP)} ₽</span>` : '—')}</td>
               <td><b>${m ? Math.round(this.ourUnitPrice(r) * qty) + ' ₽'

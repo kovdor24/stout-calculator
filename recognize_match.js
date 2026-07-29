@@ -3148,6 +3148,28 @@ const RecognizeMatch = (function () {
   }
 
   /**
+   * Сколько квадратных метров в рулоне, если это написано в названии.
+   *
+   * «Подложка для теплого пола 3 мм / 25 м × 1.2 м (30 м²)» стоит в каталоге
+   * 2 668 ₽ ЗА РУЛОН — тот же артикул в прайсе идёт по 88,93 ₽ за квадратный
+   * метр, и 88,93 × 30 как раз даёт цену рулона. В смете подложку пишут
+   * площадью: «150 м2». Без пересчёта сто пятьдесят умножалось на цену рулона
+   * и давало 400 185 ₽ вместо 13 340 ₽ за пять рулонов — ошибка в тридцать раз,
+   * и уходит она клиенту в печатную смету.
+   *
+   * Берём последнее число с «м²» в названии: у подложки оно и есть площадь
+   * рулона, а стоящие перед ним 3 мм и 25 м — толщина и длина.
+   */
+  function packArea(name) {
+    let n = 0;
+    for (const m of String(name || '')
+      .matchAll(/(\d{1,4}(?:[.,]\d+)?)\s*(?:м²|м2|кв\.?\s*м)(?![а-яa-z0-9])/gi)) {
+      n = parseFloat(m[1].replace(',', '.'));
+    }
+    return n > 1 ? n : null;
+  }
+
+  /**
    * Аналог ROMMER для подобранной позиции: { item, save, percent } либо null.
    * Возвращается только выгодная замена — дороже ставить незачем.
    */
@@ -4065,7 +4087,7 @@ const RecognizeMatch = (function () {
     // Тип, выведенный из текста строки: нужен интерфейсу проверки, чтобы
     // строка-повтор наследовала предмет от той, что действительно назвала его.
     typeOf: (rec) => (normalizeType(rec).type || '').toLowerCase(),
-    matchPrice, matchByName, explainMiss, rommerAlt, packSize, setPriceIndex, hasPriceIndex, convert, total,
+    matchPrice, matchByName, explainMiss, rommerAlt, packSize, packArea, setPriceIndex, hasPriceIndex, convert, total,
     equivalentD, boreTable, parsePipeGeometry, setPprBrand,
   };
 })();
