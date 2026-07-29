@@ -2474,13 +2474,16 @@ const RecognizeUI = {
         if (!m || !m.item || row._locked) return;
 
         const dp = this.docPrice(row);
-        const op = Number(m.item.price) || 0;
+        // Цену берём в единицах документа: бухта в каталоге стоит за метр, и без
+        // пересчёта верный подбор выглядел расхождением в десятки раз.
+        const op = this.ourUnitPriceOf(m.item, row);
         if (!dp || !op) return;
 
         const off = p => p > dp * this.PRICE_GUARD_RATIO || p * this.PRICE_GUARD_RATIO < dp;
         if (!off(op)) return;
 
-        const alt = (m.alternatives || []).find(a => a && Number(a.price) && !off(Number(a.price)));
+        const alt = (m.alternatives || []).find(a =>
+            a && Number(a.price) && !off(this.ourUnitPriceOf(a, row)));
         if (alt) {
             row._m = { ...m, item: alt };
             row._priceFixed = true;
@@ -2509,7 +2512,7 @@ const RecognizeUI = {
                     target: dp,
                 },
             });
-            if (again && again.item && again.item !== m.item && !off(Number(again.item.price) || 0)) {
+            if (again && again.item && again.item !== m.item && !off(this.ourUnitPriceOf(again.item, row))) {
                 row._m = again;
                 row._priceFixed = true;
                 return;
@@ -2667,8 +2670,8 @@ const RecognizeUI = {
                   ${r.qtyExtra ? `<span class="rec-art">+${r.qtyExtra}</span>` : ''}
                   ${r._packed ? `<div class="rec-art">${r._meters} м → штанги по ${r._packed} м</div>` : ''}</td>
               <td>${match}</td>
-              <td>${m ? m.item.price + ' ₽' : (docP ? `<span class="rec-art">${Math.round(docP)} ₽</span>` : '—')}</td>
-              <td><b>${m ? Math.round(m.item.price * qty) + ' ₽'
+              <td>${m ? Math.round(this.ourUnitPrice(r) * 100) / 100 + ' ₽' : (docP ? `<span class="rec-art">${Math.round(docP)} ₽</span>` : '—')}</td>
+              <td><b>${m ? Math.round(this.ourUnitPrice(r) * qty) + ' ₽'
                 : (docP ? `<span class="rec-art">${Math.round(docP * qty)} ₽</span>` : '—')}</b></td>
               <td>
                 <select class="rec-f${r._sectionSure === false ? ' rec-guess' : ''}"
@@ -2698,7 +2701,7 @@ const RecognizeUI = {
         // и сумма под таблицей должна совпадать с тем, что монтажник увидит.
         const sum = this._rows.reduce((s, r) => {
             const q = (r.qty || 0) + (r.qtyExtra || 0);
-            if (r._m) return s + r._m.item.price * q;
+            if (r._m) return s + this.ourUnitPrice(r) * q;
             return s + (this.docPricesOn() ? this.docPrice(r) * q : 0);
         }, 0);
         const noQty = this._rows.filter(r => !((r.qty || 0) + (r.qtyExtra || 0))).length;
@@ -2806,10 +2809,10 @@ const RecognizeUI = {
             }
 
             const m = r._m;
-            const op = m ? (Number(m.item.price) || 0) : 0;
+            const op = m ? this.ourUnitPriceOf(m.item, r) : 0;
             const ra = (m && typeof RecognizeMatch !== 'undefined' && RecognizeMatch.rommerAlt)
                 ? RecognizeMatch.rommerAlt(m.item) : null;
-            const bp = brand === 'rommer' ? (ra ? (Number(ra.item.price) || op) : op) : op;
+            const bp = brand === 'rommer' ? (ra ? (this.ourUnitPriceOf(ra.item, r) || op) : op) : op;
             if (dp > 0 && op > 0 && qty > 0 && !r._priceAlarm) {
                 t.eqTheir += dp * qty; t.eqOur += bp * qty;
             } else {
@@ -3302,6 +3305,48 @@ const RecognizeUI = {
         return 0;
     },
 
+    /**
+     * Наша цена в тех же единицах, в каких строка написана в документе.
+     *
+     * Бухты и мотки в каталоге хранятся ЦЕНОЙ ЗА МЕТР (unit: "м") — так короче
+     * сверять с прайсом поставщика: цифра одна для бухт 30/50/100 м одного
+     * диаметра, а сама длина стоит в названии («…, синяя, бухта 30 м»). В
+     * чужом счёте та же гофра идёт одной строкой: «бухта 30 м, 1 шт, 1457 ₽».
+     *
+     * Сравнивать 1457 ₽ за бухту с 51.64 ₽ за метр нельзя: предохранитель
+     * priceGuard видел расхождение в 28 раз, объявлял верно подобранную
+     * позицию промахом и выбрасывал её из сравнения. Поэтому, когда документ
+     * считает бухтами, а каталог — метрами, домножаем нашу цену на длину бухты.
+     *
+     * Когда в документе метраж («Гофра 18 мм синяя, 150 м»), пересчёт не нужен:
+     * там единицы уже сходятся.
+     */
+    COIL_LEN_RE: /бухт[аеиы]?\s*(\d+(?:[.,]\d+)?)\s*м(?![а-яё²])/i,
+
+    /** Длина бухты из названия позиции каталога; 0 — позиция не метражная. */
+    coilLen(item) {
+        if (!item || String(item.unit || '').trim().toLowerCase() !== 'м') return 0;
+        const m = this.COIL_LEN_RE.exec(String(item.name || ''));
+        const L = m ? parseFloat(m[1].replace(',', '.')) : 0;
+        return L > 0 ? L : 0;
+    },
+
+    /** Считает ли строка документа метрами (а не штуками и бухтами). */
+    docInMetres(row) {
+        return /^(м|м\.?п\.?|мп|метр\S*|m)$/i.test(String((row && row.unit) || '').trim());
+    },
+
+    ourUnitPriceOf(item, row) {
+        const p = Number(item && item.price) || 0;
+        if (!p) return 0;
+        const L = this.coilLen(item);
+        return (L && !this.docInMetres(row)) ? p * L : p;
+    },
+
+    ourUnitPrice(row) {
+        return this.ourUnitPriceOf(row && row._m && row._m.item, row);
+    },
+
     /** Есть ли в разобранном документе цены вообще (в рукописном списке их нет). */
     hasDocPrices() {
         return (this._rows || []).some(r => this.docPrice(r) > 0);
@@ -3371,12 +3416,12 @@ const RecognizeUI = {
             const m = isWork ? null : r._m;
             const qty = this.docQty(r);
             const dp = this.docPrice(r);
-            const op = m ? (Number(m.item.price) || 0) : 0;
+            const op = m ? this.ourUnitPriceOf(m.item, r) : 0;
             // Цена той же позиции на ROMMER. Аналога нет (или он дороже) —
             // остаётся исходная: смета «на ROMMER» всё равно наполовину STOUT.
             const ra = (m && typeof RecognizeMatch !== 'undefined' && RecognizeMatch.rommerAlt)
                 ? RecognizeMatch.rommerAlt(m.item) : null;
-            const rp = ra ? (Number(ra.item.price) || op) : op;
+            const rp = ra ? (this.ourUnitPriceOf(ra.item, r) || op) : op;
             const bp = brand === 'rommer' ? rp : op;
             const dSum = dp * qty;
             const bSum = bp * qty;
