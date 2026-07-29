@@ -9119,6 +9119,25 @@ select.rec-btn-g { padding-right: 8px; }
     text-transform: uppercase;
     color: var(--text-muted, #94a3b8);
 }
+/* Вторая строка подписи — обычным регистром: в ней объяснение («по этим 9
+   работам»), а не заголовок, и капсом оно читается тяжело. */
+.rec-cmp-lbl span {
+    display: block; margin-top: 2px;
+    text-transform: none; letter-spacing: 0; font-weight: 500; opacity: .85;
+}
+
+/* Как считается сравнение. Разбор арифметики словами: три плитки сами по себе
+   не объясняют, почему «вне сравнения» не входит в процент. */
+.rec-cmp-note {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--border, #e2e8f0);
+    background: var(--surface-light, #f8fafc);
+    border-radius: 0 8px 8px 0;
+    font-size: 12.5px; line-height: 1.55;
+    color: var(--text-sec, #64748b);
+}
+.rec-cmp-note b { color: var(--text-main, #0f172a); font-weight: 700; }
 
 /* Наша цена ниже чужой — зелёным, выше — красным. Знак важнее цифры:
    по таблице скользят взглядом, ища, где мы проигрываем. */

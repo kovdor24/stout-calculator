@@ -853,7 +853,15 @@ const RecognizeUI = {
             const n = this._itemsSoFar || 0;
             return n ? `Уже разобрано позиций: ${n}` : 'Определяю систему: полипропилен, пресс или аксиал';
         },
+        // Каждая строка описывает работу, которая действительно идёт: пересчёт
+        // упаковок делает packPipes, сведение артикулов — applyRecognized,
+        // сверку цены с документом — priceGuard. Придумывать занятость, которой
+        // нет, нельзя: монтажник сверяет подсказки с результатом.
+        () => 'Сравниваю проходы и резьбы с каталогом',
+        () => 'Пересчитываю метры в бухты, штанги и упаковки',
         () => 'Подбираю замены там, где они выгоднее',
+        () => 'Свожу одинаковые артикулы в одну строку',
+        () => 'Проверяю, где цена разошлась с документом',
         () => 'Раскладываю позиции по разделам сметы',
         () => 'Проставляю цены из свежего прайса',
     ],
@@ -1025,7 +1033,7 @@ const RecognizeUI = {
 
             const cand = data?.candidates?.[0];
             const text = cand?.content?.parts?.[0]?.text;
-            if (!text) throw new Error('Модель вернула пустой ответ');
+            if (!text) throw new Error('Разбор вернулся пустым — в документе не нашлось строк сметы.');
 
             const parsed = this.parseModelJson(text, cand.finishReason);
 
@@ -1089,9 +1097,19 @@ const RecognizeUI = {
         [/Не удалось связаться с ретранслятором:.*/gi, 'Сервис распознавания недоступен.'],
         [/TimeoutError:\s*Signal timed out\.?/gi, 'превышено время ожидания'],
         [/Модель "[^"]*" не в белом списке[^.]*\.?/gi, 'Сервис распознавания настроен неверно.'],
-        [/\bgemini[\w.\-]*/gi, 'сервис распознавания'],
-        [/\bGoogle\b/g, 'сервис распознавания'],
     ],
+
+    /**
+     * Слова, которых в сообщении для монтажника быть не должно.
+     *
+     * Подставлять вместо них «сервис распознавания» по одному слову нельзя:
+     * выходит «сервис распознавания вернула пустой ответ». Если после
+     * фразовых правил такое слово всё ещё в тексте — значит формулировка нам
+     * незнакома, и честнее отдать общий текст целиком.
+     *
+     * Границу слова задаём просмотром вперёд: \b в JS кириллицу не видит.
+     */
+    ERR_VENDOR_RE: /модел[ьия](?![а-яё])|gemini|google/i,
 
     /** Общий ответ там, где показывать нечего: подробности всё равно в консоли. */
     ERR_GENERIC: 'Сервис распознавания не смог обработать лист. Попробуйте ещё раз.',
@@ -1104,8 +1122,9 @@ const RecognizeUI = {
             .replace(/[ \t]{2,}/g, ' ').trim();
         // Уцелевшая латиница — это остаток чужого стека вроде «is not found for
         // API version v1beta». Монтажнику он не поможет, а выглядит как сбой
-        // калькулятора; отдаём общий текст.
-        if (/[A-Za-z]{3,}/.test(s)) return this.ERR_GENERIC;
+        // калькулятора; отдаём общий текст. Так же поступаем с названиями
+        // поставщика и словом «модель».
+        if (/[A-Za-z]{3,}/.test(s) || this.ERR_VENDOR_RE.test(s)) return this.ERR_GENERIC;
         return s || this.ERR_GENERIC;
     },
 
@@ -1198,7 +1217,7 @@ const RecognizeUI = {
                 break;
             }
         }
-        throw new Error('Модель не ответила');
+        throw new Error('Сервис распознавания не ответил. Попробуйте ещё раз.');
     },
 
     /**
@@ -1633,7 +1652,7 @@ const RecognizeUI = {
 
         throw new Error(finishReason === 'MAX_TOKENS'
             ? 'Ответ обрезан по длине — попробуйте снять смету двумя фото по половине'
-            : 'Модель вернула не-JSON и восстановить его не удалось');
+            : 'Ответ пришёл в неожиданном виде и восстановить его не удалось.');
     },
 
     /**
@@ -1761,7 +1780,17 @@ const RecognizeUI = {
                         'или снимите её фотографией.');
                 }
                 if (i < attempts) {
-                    this.setStatus(`Сервер не ответил (попытка ${i} из ${attempts}), повторяю…`);
+                    /**
+                     * О повторе монтажнику не сообщаем.
+                     *
+                     * «Сервер не ответил (попытка 1 из 3)» пугало на ровном
+                     * месте: обрыв на стороне хостинга — обычное дело, повтор
+                     * почти всегда проходит, а повлиять на это всё равно
+                     * нельзя. Экран при этом не замирает: полоса хода работы и
+                     * подсказки идут по своему таймеру. Если не выйдет и с
+                     * третьей попытки — будет обычная понятная ошибка ниже.
+                     */
+                    console.warn(`Распознавание, повтор ${i} из ${attempts}:`, e.message);
                     await new Promise(r => setTimeout(r, 3000));
                 }
             }
@@ -3137,7 +3166,7 @@ const RecognizeUI = {
         this.prepareWorks(works);
 
         let theirCmp = 0, ourCmp = 0, theirAll = 0, ourAll = 0;
-        let matched = 0, rolled = 0, flagged = 0;
+        let matched = 0, rolled = 0, flagged = 0, cmpN = 0;
 
         const groups = {};
         for (const w of this.ourWorks()) (groups[w.group] = groups[w.group] || []).push(w);
@@ -3185,7 +3214,7 @@ const RecognizeUI = {
             ourAll += ok ? oSum : dSum;
             if (w) matched++;
             if (w && !ok) flagged++;
-            if (ok) { theirCmp += dSumAll; ourCmp += oSum; }
+            if (ok) { theirCmp += dSumAll; ourCmp += oSum; cmpN++; }
 
             let diff = '<span class="rec-cmp-eq">—</span>';
             if (ok && dSumAll > 0 && qty > 0) {
@@ -3269,30 +3298,36 @@ const RecognizeUI = {
           ${!works.length ? '' : `<div class="rec-cmp-sum">
             <div class="rec-cmp-item">
               <div class="rec-cmp-val">${money(theirCmp)}</div>
-              <div class="rec-cmp-lbl">Работы по документу · сопоставимые</div>
+              <div class="rec-cmp-lbl">По документу<br><span>${cmpN} ${
+                this.plural(cmpN, 'работа', 'работы', 'работ')}, которые можно сравнить</span></div>
             </div>
             <div class="rec-cmp-item">
               <div class="rec-cmp-val">${money(ourCmp)}</div>
-              <div class="rec-cmp-lbl">Те же работы по нашему прайсу</div>
+              <div class="rec-cmp-lbl">Те же ${cmpN} ${
+                this.plural(cmpN, 'работа', 'работы', 'работ')}<br><span>по нашему прайсу</span></div>
             </div>
-            ${outN > 0 ? `<div class="rec-cmp-item">
-              <div class="rec-cmp-val">${money(theirAll - theirCmp)}</div>
-              <div class="rec-cmp-lbl">Вне сравнения · ${outN} ${
-                outN === 1 ? 'работа' : 'работ'}</div>
-            </div>` : ''}
             ${delta === 0 ? `<div class="rec-cmp-item"><div class="rec-cmp-val">0 ₽</div>
-                 <div class="rec-cmp-lbl">Разницы нет</div></div>`
+                 <div class="rec-cmp-lbl">Разницы нет<br><span>по этим ${cmpN} ${
+                    this.plural(cmpN, 'работе', 'работам', 'работам')}</span></div></div>`
                 : `<div class="rec-cmp-item">
                  <div class="rec-cmp-val ${delta > 0 ? 'up' : 'down'}">${
                     delta > 0 ? '+' : '−'}${money(Math.abs(delta))} (${delta > 0 ? '+' : ''}${pct}%)</div>
-                 <div class="rec-cmp-lbl">${delta > 0 ? 'У нас дороже' : 'У нас дешевле'}</div></div>`}
+                 <div class="rec-cmp-lbl">${delta > 0 ? 'У нас дороже' : 'У нас дешевле'}<br><span>только по этим ${
+                    cmpN} ${this.plural(cmpN, 'работе', 'работам', 'работам')}</span></div></div>`}
           </div>`}
 
-          ${outN > 0 ? `<div class="rec-art" style="padding:0 0 10px;">
-            В сравнение идут только строки, которым нашлась наша расценка. Укрупнённые
-            формулировки вроде «монтаж котельной под ключ» на одну нашу работу не ложатся:
-            у нас та же работа разложена на котёл, обвязку, опрессовку и пусконаладку —
-            и сравнивать их построчно значит сравнивать разное.</div>` : ''}
+          ${!works.length ? '' : `<div class="rec-cmp-note">
+            <b>Как это считается.</b> Всего работ в документе ${works.length - rolled} на
+            ${money(theirAll)}. Из них ${cmpN} ${this.plural(cmpN, 'работа', 'работы', 'работ')}
+            на ${money(theirCmp)} ${this.plural(cmpN, 'сопоставлена', 'сопоставлены', 'сопоставлены')}
+            с нашим прайсом — только они и участвуют в проценте.${outN > 0 ? `
+            Остальные ${outN} ${this.plural(outN, 'работа', 'работы', 'работ')} на
+            ${money(theirAll - theirCmp)} <b>в сравнение не идут</b>: нашей расценки для них нет
+            либо единицы не сходятся. В смету они уедут своей строкой с ценой из документа.` : ''}
+            ${outN > 0 ? `<br>Укрупнённые формулировки вроде «монтаж котельной под ключ» на одну
+            нашу работу не ложатся: у нас та же работа разложена на котёл, обвязку, опрессовку и
+            пусконаладку — сравнивать их построчно значит сравнивать разное.` : ''}
+          </div>`}
 
           ${miss.length ? `<div class="rec-missing">
             <div class="rec-missing-hd">${works.length
@@ -3355,6 +3390,14 @@ const RecognizeUI = {
      */
     docQty(r) {
         return (Number(r.qty) || 0) + (Number(r.qtyExtra) || 0);
+    },
+
+    /** Русское склонение по числу: 1 работа, 3 работы, 5 работ. */
+    plural(n, one, few, many) {
+        const d = Math.abs(n) % 10, h = Math.abs(n) % 100;
+        if (d === 1 && h !== 11) return one;
+        if (d >= 2 && d <= 4 && (h < 10 || h >= 20)) return few;
+        return many;
     },
 
     /** Цена за единицу из документа: как её дала модель, либо сумма ÷ количество. */
