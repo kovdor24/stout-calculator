@@ -1361,7 +1361,7 @@ body.menu-open .mobile-menu-backdrop {
     .doc-summary {
         display: flex !important;
         flex-direction: row !important;
-        justify-content: space-between !important;
+        justify-content: flex-start !important;
         align-items: center !important;
         padding: 8px 12px !important;
         font-size: 9px !important;
@@ -1369,7 +1369,11 @@ body.menu-open .mobile-menu-backdrop {
         border-radius: 8px !important;
         border: 1px solid var(--border) !important;
         box-shadow: none !important;
-        flex-wrap: nowrap !important;
+        /* На узком экране строка параметров не влезает (около 630px против 350px),
+           а родительский .panel обрезает лишнее по overflow-x — без переноса
+           теплопотери, регион и дата становились недоступны */
+        flex-wrap: wrap !important;
+        gap: 6px 12px !important;
     }
 
     .doc-summary .param-item { display: flex; flex-direction: row; align-items: center; gap: 4px; line-height: 1; white-space: nowrap !important; }
