@@ -3338,17 +3338,17 @@ const steelRads = [
     { id: "RRS-2010-214170", name: "Стальной панельный Compact (Тип 21)", height: 400, sec: 1700, isPanel: true, price: 11271, brand: "ROMMER", power50: 1665, passportPower: 2579, availability: "on_order", price_date: "2026-07-12" },
     { id: "RRS-2020-214170", name: "Стальной панельный Ventil (Тип 21)", height: 400, sec: 1700, isPanel: true, bottom: true, price: 19685, brand: "ROMMER", power50: 1665, passportPower: 2579, availability: "in_stock", price_date: "2026-07-12" },
     { id: "RRS-2010-214180", name: "Стальной панельный Compact (Тип 21)", height: 400, sec: 1800, isPanel: true, price: 11271, brand: "ROMMER", power50: 1762, passportPower: 2729, availability: "on_order", price_date: "2026-07-12" },
-    { id: "RRS-2020-214180", name: "Стальной панельный Ventil (Тип 21)", height: 400, sec: 1800, isPanel: true, bottom: true, price: 17519, brand: "ROMMER", power50: 1762, passportPower: 2729, availability: "in_stock", price_date: "2026-07-12" },
+    { id: "RRS-2020-214180", name: "Стальной панельный Ventil (Тип 21)", height: 400, sec: 1800, isPanel: true, bottom: true, price: 17519, brand: "ROMMER", power50: 1762, passportPower: 2729, availability: "in_stock", price_date: "2026-07-29" },
     { id: "RRS-2010-214190", name: "Стальной панельный Compact (Тип 21)", height: 400, sec: 1900, isPanel: true, price: 11271, brand: "ROMMER", power50: 1861, passportPower: 2881, availability: "on_order", price_date: "2026-07-12" },
     { id: "RRS-2020-214190", name: "Стальной панельный Ventil (Тип 21)", height: 400, sec: 1900, isPanel: true, bottom: true, price: 19685, brand: "ROMMER", power50: 1861, passportPower: 2881, availability: "in_stock", price_date: "2026-07-12" },
     { id: "RRS-2010-214200", name: "Стальной панельный Compact (Тип 21)", height: 400, sec: 2000, isPanel: true, price: 19685, brand: "ROMMER", power50: 1958, passportPower: 3033, availability: "in_stock", price_date: "2026-07-12" },
-    { id: "RRS-2020-214200", name: "Стальной панельный Ventil (Тип 21)", height: 400, sec: 2000, isPanel: true, bottom: true, price: 19685, brand: "ROMMER", power50: 1958, passportPower: 3033, availability: "in_stock", price_date: "2026-07-12" },
+    { id: "RRS-2020-214200", name: "Стальной панельный Ventil (Тип 21)", height: 400, sec: 2000, isPanel: true, bottom: true, price: 19685, brand: "ROMMER", power50: 1958, passportPower: 3033, availability: "in_stock", price_date: "2026-07-29" },
     { id: "RRS-2010-214210", name: "Стальной панельный Compact (Тип 21)", height: 400, sec: 2100, isPanel: true, price: 11271, brand: "ROMMER", power50: 2058, passportPower: 3187, availability: "on_order", price_date: "2026-07-12" },
     { id: "RRS-2020-214210", name: "Стальной панельный Ventil (Тип 21)", height: 400, sec: 2100, isPanel: true, bottom: true, price: 19685, brand: "ROMMER", power50: 2058, passportPower: 3187, availability: "in_stock", price_date: "2026-07-12" },
     { id: "RRS-2010-214220", name: "Стальной панельный Compact (Тип 21)", height: 400, sec: 2200, isPanel: true, price: 11271, brand: "ROMMER", power50: 2156, passportPower: 3339, availability: "on_order", price_date: "2026-07-12" },
     { id: "RRS-2020-214220", name: "Стальной панельный Ventil (Тип 21)", height: 400, sec: 2200, isPanel: true, bottom: true, price: 19685, brand: "ROMMER", power50: 2156, passportPower: 3339, availability: "in_stock", price_date: "2026-07-12" },
     { id: "RRS-2010-214230", name: "Стальной панельный Compact (Тип 21)", height: 400, sec: 2300, isPanel: true, price: 11271, brand: "ROMMER", power50: 2252, passportPower: 3487, availability: "on_order", price_date: "2026-07-12" },
-    { id: "RRS-2020-214230", name: "Стальной панельный Ventil (Тип 21)", height: 400, sec: 2300, isPanel: true, bottom: true, price: 22038, brand: "ROMMER", power50: 2252, passportPower: 3487, availability: "in_stock", price_date: "2026-07-12" },
+    { id: "RRS-2020-214230", name: "Стальной панельный Ventil (Тип 21)", height: 400, sec: 2300, isPanel: true, bottom: true, price: 22038, brand: "ROMMER", power50: 2252, passportPower: 3487, availability: "in_stock", price_date: "2026-07-29" },
     { id: "RRS-2010-214240", name: "Стальной панельный Compact (Тип 21)", height: 400, sec: 2400, isPanel: true, price: 11271, brand: "ROMMER", power50: 2350, passportPower: 3639, availability: "on_order", price_date: "2026-07-12" },
     { id: "RRS-2020-214240", name: "Стальной панельный Ventil (Тип 21)", height: 400, sec: 2400, isPanel: true, bottom: true, price: 19685, brand: "ROMMER", power50: 2350, passportPower: 3639, availability: "in_stock", price_date: "2026-07-12" },
     { id: "RRS-2010-214250", name: "Стальной панельный Compact (Тип 21)", height: 400, sec: 2500, isPanel: true, price: 11271, brand: "ROMMER", power50: 2448, passportPower: 3791, availability: "on_order", price_date: "2026-07-12" },
@@ -4442,29 +4442,4 @@ const towelWarmersElectric = [
     { id: "SHQ-J8RR-008050", name: "Полотенцесушитель эл. JAZZ round 80×50, Золотой хром", price: 21481, series: "JAZZ", shape: "round", size: "80×50", color: "gold", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
     { id: "SHQ-J8RR-F08050", name: "Полотенцесушитель эл. JAZZ round 80×50, Золотой хром (с полкой)", price: 24939, series: "JAZZ", shape: "round", size: "80×50", color: "gold", shelf: true, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
     { id: "SHQ-R8R0-012008", name: "Полотенцесушитель эл. ROCK round 120×08, Золотой хром (2 опоры)", price: 19416, series: "ROCK", shape: "round", size: "120×08", color: "gold", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" }
-];
-
-/**
- * Корни каталога для обхода всех позиций разом.
- *
- * Товары лежат не только в `catalog`: серии радиаторов, клапаны и аксессуары —
- * это отдельные массивы верхнего уровня. Список нужен там, где надо пройти
- * ВСЕ позиции без исключения — сейчас это наложение цен дистрибьютора
- * (app.applyDistributorPrices). Обход рекурсивный, так что вложенные
- * .rommer / .comfort / .alts подхватываются сами.
- *
- * Добавили новый массив товаров выше — допишите его сюда, иначе цены
- * дистрибьютора мимо него пройдут.
- */
-const CATALOG_PRICE_ROOTS = [
-    catalog,
-    titanRads, steelRads, spaceRuRads, spaceRu350Rads,
-    titanSideRads, titanSide350Rads, titanSide200Rads,
-    aluminumRads, aluminum350Rads,
-    rommerProfiAlRads, rommerOptimaBmRads, rommerProfiBmRads,
-    rommerPlusBmRads, rommerPlusAlRads, rommerPlusAl200Rads, rommerPlusBm200Rads,
-    vegaBmRads, alphaBmRads, titanBottom350Rads, titanGraphiteRads, vega500AlRads,
-    oscarRads, sebinoRads, anteprimaRads, tonaleRads, tubeQuadroRads, tubeRoundRads,
-    radValves, radValvesDesign, radManualValves, hValvesExtra, radKitsExtra,
-    radAccessories, towelWarmersElectric
 ];
