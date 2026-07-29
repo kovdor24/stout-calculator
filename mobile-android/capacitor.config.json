@@ -1,0 +1,12 @@
+{
+  "appId": "ru.heatcalc.app",
+  "appName": "HeatCalc",
+  "webDir": "www",
+  "server": {
+    "url": "https://heatcalc.ru",
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

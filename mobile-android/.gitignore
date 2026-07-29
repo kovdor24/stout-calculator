@@ -1,0 +1,11 @@
+node_modules/
+android/app/build/
+android/.gradle/
+android/build/
+android/local.properties
+store-assets/*.zip
+store-assets/googleplay-package/signing.keystore
+store-assets/googleplay-package/signing-key-info.txt
+# Собранные пакеты — по 2 МБ на каждую пересборку, в истории git не нужны
+store-assets/googleplay-package/*.aab
+store-assets/googleplay-package/*.apk

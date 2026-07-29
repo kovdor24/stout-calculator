@@ -247,7 +247,9 @@ const RecognizeUI = {
 
     /** Докладываем листы к уже загруженным, не начиная заново. */
     pickMore() {
-        this.pickFiles(files => this.addSheets(files));
+        this.pickFiles(files => (this._docs && this._docs.length)
+            ? this.addDocs(files)
+            : this.addSheets(files));
     },
 
     /**
@@ -295,11 +297,12 @@ const RecognizeUI = {
         this._imgs = start.concat(added);
         this._img = null;
         this._text = '';
+        this._docs = [];
         this._fileKind = 'image';
         this._fileName = `${this._imgs.length} листов`;
 
-        const tp = document.getElementById('rec_textprev');
-        if (tp) tp.style.display = 'none';
+        const dl = document.getElementById('rec_docs');
+        if (dl) dl.style.display = 'none';
         this.showImagesPreview();
         this.setGoReady(true);
 
@@ -337,6 +340,7 @@ const RecognizeUI = {
         this._imgs = null;
         this._file = null;
         this._text = '';
+        this._docs = [];
         this._fileName = '';
         this._fileKind = null;
 
@@ -346,8 +350,8 @@ const RecognizeUI = {
         if (box) box.style.display = 'none';
         const dup = document.getElementById('rec_dup');
         if (dup) dup.remove();
-        const tp = document.getElementById('rec_textprev');
-        if (tp) tp.style.display = 'none';
+        const dl = document.getElementById('rec_docs');
+        if (dl) dl.style.display = 'none';
         const err = document.querySelector('#rec_body .rec-err');
         if (err) err.remove();
         this.setGoReady(false);
@@ -394,14 +398,15 @@ const RecognizeUI = {
         const images = files.filter(f => RecognizeFiles && RecognizeFiles.kindOf(f) === 'image');
         if (images.length > 1) {
             this._text = '';
+            this._docs = [];
             this._img = null;
             this._imgs = [];
             this._files = images;
             this._fileKind = 'image';
             this._fileName = `${images.length} листов`;
             this.setGoReady(false);
-            const tp = document.getElementById('rec_textprev');
-            if (tp) tp.style.display = 'none';
+            const dl = document.getElementById('rec_docs');
+            if (dl) dl.style.display = 'none';
             for (let i = 0; i < images.length; i++) {
                 this.setStatus(`Готовлю лист ${i + 1} из ${images.length}…`);
                 this._imgs.push(await this.prepareToBase64(images[i]));
@@ -411,7 +416,16 @@ const RecognizeUI = {
             this.setStatus(`${images.length} листов готовы — можно распознавать все вместе`);
             return;
         }
-        return this.handleFile(files[0]);
+
+        await this.handleFile(files[0]);
+
+        // Несколько файлов с текстом сразу: смету часто выгружают двумя-тремя
+        // файлами. Первый уже разобран выше, остальные докладываем тем же
+        // способом, что и по кнопке «+».
+        const rest = files.slice(1);
+        if (!rest.length) return;
+        if (this._docs && this._docs.length) return this.addDocs(rest);
+        if (this._img) return this.addSheets(rest);
     },
 
     /** Ужать картинку до base64 без показа — для пакетной загрузки. */
@@ -519,10 +533,13 @@ const RecognizeUI = {
         this._img = null;
         this._imgs = null;
         this._text = '';
+        this._docs = [];
         this._fileName = file.name || '';
         this._file = file;              // держим оригинал для архива
         const oldImgs = document.getElementById('rec_imgs');
         if (oldImgs) oldImgs.style.display = 'none';
+        const oldDocs = document.getElementById('rec_docs');
+        if (oldDocs) oldDocs.style.display = 'none';
         const oldDup = document.getElementById('rec_dup');
         if (oldDup) oldDup.remove();
         const oldPrev = document.getElementById('rec_prev_wrap');
@@ -555,10 +572,10 @@ const RecognizeUI = {
                     ? `PDF без текста: возьму первую страницу из ${r.images.length}`
                     : 'PDF без текста — распознаю как изображение');
             } else if (r.text) {
-                this._text = this.trimText(r.text);
-                const lines = this._text.split('\n').length;
-                this.setStatus(`${file.name}: извлечено ${lines} строк текста, можно разбирать`);
-                this.showTextPreview(this._text);
+                this._docs = [{ name: file.name || 'файл', kind, file, text: this.trimText(r.text) }];
+                this.syncDocs();
+                this.showDocsPreview();
+                this.setStatus(this.docsStatus());
             } else {
                 this.setStatus('В файле не нашлось ни текста, ни страниц для распознавания.');
                 return;
@@ -601,24 +618,133 @@ const RecognizeUI = {
         return text;
     },
 
-    /** Короткий показ извлечённого текста — видно, что прочиталось. */
-    showTextPreview(text) {
+    // ------------------------------------------------------------------
+    // Файлы с готовым текстом: PDF, Excel, Word, HTML
+    //
+    // Показываем не сам извлечённый текст, а плитку файла — такую же, как
+    // миниатюра фото. Простыня моноширинного текста ничего не даёт: править
+    // её нельзя, читать незачем, а занимает она весь экран и отодвигает
+    // кнопку «Распознать». Плитка отвечает на единственный нужный вопрос —
+    // что загружено и прочиталось ли оно.
+    // ------------------------------------------------------------------
+
+    DOC_ICONS: {
+        pdf:  { label: 'PDF',  color: '#ef4444' },
+        xlsx: { label: 'XLS',  color: '#16a34a' },
+        docx: { label: 'DOC',  color: '#2563eb' },
+        html: { label: 'HTML', color: '#f59e0b' },
+        text: { label: 'TXT',  color: '#64748b' },
+    },
+
+    /** Плитки загруженных файлов и кнопка «+». */
+    showDocsPreview() {
         const wrap = document.getElementById('rec_prev_wrap');
         if (wrap) wrap.style.display = 'none';
-        let box = document.getElementById('rec_textprev');
+        const imgs = document.getElementById('rec_imgs');
+        if (imgs) imgs.style.display = 'none';
+
+        let box = document.getElementById('rec_docs');
         if (!box) {
-            box = document.createElement('pre');
-            box.id = 'rec_textprev';
-            box.className = 'rec-textprev';
+            box = document.createElement('div');
+            box.id = 'rec_docs';
+            box.className = 'rec-imgs';
             const host = document.getElementById('rec_body');
             const actions = host && host.querySelector('.rec-actions');
             if (actions) host.insertBefore(box, actions); else if (host) host.appendChild(box);
         }
-        box.style.display = 'block';   // мог быть скрыт после загрузки картинки
+
+        box.innerHTML = (this._docs || []).map((d, i) => {
+            const ic = this.DOC_ICONS[d.kind] || this.DOC_ICONS.text;
+            const lines = d.text.split('\n').length;
+            const name = d.name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+            return `<div class="rec-doc" title="${name}">
+               <div class="rec-doc-ic" style="background:${ic.color}">${ic.label}</div>
+               <div class="rec-doc-name">${name}</div>
+               <div class="rec-doc-sub">${lines} ${this.plural(lines, 'строка', 'строки', 'строк')}</div>
+               <button class="rec-thumb-del" title="Убрать файл"
+                       onclick="RecognizeUI.removeDoc(${i})">✕</button></div>`;
+        }).join('') +
+            `<button class="rec-add-tile" title="${this.ADD_HINT}"
+                     onclick="RecognizeUI.pickMore()">+</button>`;
+        box.style.display = 'flex';
         this.syncDrop();
-        const lines = text.split('\n');
-        box.textContent = lines.slice(0, 40).join('\n') +
-            (lines.length > 40 ? `\n… и ещё ${lines.length - 40} строк` : '');
+    },
+
+    plural(n, one, few, many) {
+        const a = Math.abs(n) % 100, b = a % 10;
+        if (a > 10 && a < 20) return many;
+        if (b > 1 && b < 5) return few;
+        return b === 1 ? one : many;
+    },
+
+    /**
+     * Сборка общего текста из загруженных файлов.
+     *
+     * Несколько файлов уходят в ОДИН запрос: это части одной сметы, и модель
+     * должна видеть их вместе. Заголовок с именем ставим только когда файлов
+     * больше одного — при единственном он лишняя строка в промпте.
+     */
+    syncDocs() {
+        const MAX = 24000;
+        const docs = this._docs || [];
+        let text = docs.length > 1
+            ? docs.map(d => `[Файл: ${d.name}]\n${d.text}`).join('\n\n')
+            : (docs[0] ? docs[0].text : '');
+        if (text.length > MAX) text = text.slice(0, MAX) + '\n[текст обрезан — распознаётся начало сметы]';
+
+        this._text = text;
+        this._fileKind = docs.length ? docs[0].kind : null;
+        this._file = docs.length ? docs[0].file : null;      // оригинал для архива
+        this._fileName = docs.length === 1
+            ? docs[0].name
+            : `${docs.length} ${this.plural(docs.length, 'файл', 'файла', 'файлов')}`;
+    },
+
+    docsStatus() {
+        const docs = this._docs || [];
+        const lines = docs.reduce((s, d) => s + d.text.split('\n').length, 0);
+        if (docs.length === 1) {
+            return `${docs[0].name}: извлечено ${lines} ${
+                this.plural(lines, 'строка', 'строки', 'строк')} текста, можно распознавать`;
+        }
+        return `${docs.length} ${this.plural(docs.length, 'файл готов', 'файла готовы', 'файлов готовы')} · ` +
+            `${lines} ${this.plural(lines, 'строка', 'строки', 'строк')} текста — можно распознавать все вместе`;
+    },
+
+    /** Докладываем файлы с текстом к уже загруженным. */
+    async addDocs(files) {
+        this.setGoReady(false);
+        let skipped = 0;
+
+        for (const f of files) {
+            const kind = RecognizeFiles ? RecognizeFiles.kindOf(f) : null;
+            // Фото к тексту не подмешать: это разные виды запроса.
+            if (!kind || kind === 'image') { skipped++; continue; }
+            this.setStatus(`Читаю ${f.name}…`);
+            try {
+                const r = await RecognizeFiles.extract(f, (m) => this.setStatus(m));
+                if (r.text) this._docs.push({ name: f.name || 'файл', kind, file: f, text: this.trimText(r.text) });
+                else skipped++;
+            } catch (e) {
+                skipped++;
+            }
+        }
+
+        this.syncDocs();
+        this.showDocsPreview();
+        this.setGoReady(!!this._text);
+        this.setStatus(this.docsStatus() +
+            (skipped ? ` · не удалось добавить: ${skipped} (фото и сканы к файлу с текстом не добавляются)` : ''));
+    },
+
+    /** Удаление файла из набора по крестику на плитке. */
+    removeDoc(i) {
+        if (!this._docs) return;
+        this._docs.splice(i, 1);
+        if (!this._docs.length) { this.clearFile(); return; }
+        this.syncDocs();
+        this.showDocsPreview();
+        this.setStatus(this.docsStatus());
     },
 
     prepare(file) {
@@ -638,9 +764,9 @@ const RecognizeUI = {
             if (prev) prev.src = url;
             if (wrap) wrap.style.display = 'flex';
             this.syncDrop();
-            // Убираем текстовое превью, если до этого грузили файл с текстом.
-            const tp = document.getElementById('rec_textprev');
-            if (tp) tp.style.display = 'none';
+            // Убираем плитки файлов, если до этого грузили файл с текстом.
+            const dl = document.getElementById('rec_docs');
+            if (dl) dl.style.display = 'none';
             this.setGoReady(true);
             this.setStatus(`${c.width}×${c.height}, ~${Math.round(this._img.length / 1365)} КБ — можно распознавать`);
         };
@@ -1584,6 +1710,7 @@ const RecognizeUI = {
         }
 
         this._rows = items.map(i => ({ ...i, _sel: false, _locked: false }));
+        this._rows.forEach(r => { if (this.looksLikeWork(r)) r.kind = 'work'; });
         this.inheritRepeats();
 
         // Тип показываем в том виде, в каком его понял подбор. Модель нет-нет
@@ -1635,6 +1762,8 @@ const RecognizeUI = {
             ? RecognizeMatch.profileOf(this._rows) : null;
 
         this._undo = [];
+        this._tab = 'eq';            // открываем всегда с оборудования
+        this._ourWorks = null;       // прайс монтажа мог смениться между разборами
         this._analogOn = false;      // новое распознавание — режим аналогов сброшен
         this._analogSaved = 0;
         this._deep = 0;
@@ -1841,6 +1970,9 @@ const RecognizeUI = {
         let added = 0;
         for (const r of this._rows) {
             if (r._m || r._locked) continue;
+            // Ослабленные правила и работы — худшее сочетание: «Монтаж
+            // котельной» находил «Монтажную гильзу» именно здесь.
+            if (this.looksLikeWork(r)) continue;
             const m = RecognizeMatch.matchByName(r, { deep: true });
             if (!m) continue;
             r._m = m;
@@ -1873,8 +2005,351 @@ const RecognizeUI = {
         return { total: miss.length, groups };
     },
 
+    /**
+     * Монтажная работа, а не товар.
+     *
+     * Модель размечает это полем kind, но в счёте поставщика работы идут одним
+     * списком с материалами, и она нет-нет да и назовёт «Монтаж радиатора»
+     * оборудованием. Дальше строка уходила в подбор и цеплялась за «Монтажную
+     * гильзу 16»: у слова «монтаж» общее начало с «монтажной», а углублённый
+     * проход разрешает предмету стоять где угодно в названии. Тринадцать строк
+     * работ на четверть миллиона получали артикул за 109 ₽ и уезжали в смету
+     * гильзами.
+     *
+     * Подстраховка ловит действие в начале строки. «Монтажная планка» и
+     * «Монтажный комплект» — предметы, поэтому проверяем ровно слово целиком,
+     * а не приставку.
+     */
+    WORK_RE: /^\s*(монтаж|демонтаж|установка|укладка|прокладка|опрессовка|пусконаладка|штробление|сборка|наладка|разводка|доставка|подъём|подъем)(\s|$|[.,:;])/i,
+
+    looksLikeWork(row) {
+        if (!row) return false;
+        if (row.kind === 'work') return true;
+        return this.WORK_RE.test(String(row.raw || ''));
+    },
+
+    // ------------------------------------------------------------------
+    // Подбор монтажной работы по НАШЕМУ прайсу
+    //
+    // Работы в каталоге товаров искать бессмысленно, но у нас есть свой
+    // прайс-лист монтажа — WORK_PRICE_CATALOG, тот же, что показывается в
+    // личном кабинете. По нему и сравниваем: чужая смета говорит, во сколько
+    // работу оценил конкурент, наш прайс — во сколько её считаем мы.
+    //
+    // Подбор по словам, а не по точному совпадению: у нас «Монтаж радиатора
+    // отопления», в счёте «Монтаж радиатора», и это одно и то же.
+    // ------------------------------------------------------------------
+
+    /**
+     * Слова, которые есть почти в каждом названии работы и потому ничего не
+     * различают. «Монтаж» стоит и в нашем прайсе, и в чужом счёте — считать
+     * его совпадением значит признать похожими все работы разом.
+     */
+    WORK_STOP: new Set([
+        'монтаж', 'монтажа', 'установка', 'установки', 'подключение', 'сборка',
+        'работы', 'работ', 'включая', 'также', 'систем', 'системы', 'система',
+        'шт', 'компл', 'комплект', 'точка', 'пара',
+    ]),
+
+    /**
+     * Слова строки, приведённые к основе.
+     *
+     * Сначала снимаем падежное окончание, потом обрезаем до шести букв.
+     * Одной обрезки мало: «ввода» и «ввод» дали бы разные начала. Одного
+     * снятия окончаний тоже — «водорозеток» и «водорозетки» расходятся на
+     * беглой гласной. Шесть букв, а не четыре: на четырёх «водорозетки» и
+     * «водонагреватель» сливаются в «водо», и монтаж водорозеток
+     * сопоставлялся с монтажом бойлера.
+     */
+    workStem(w) {
+        const s = w.replace(/(иями|ями|ами|иях|ях|ах|ого|его|ому|ему|ыми|ими|ой|ей|ая|яя|ое|ее|ые|ие|ый|ий|ом|ем|ов|ев|ам|ям|ю|я|ы|и|у|о|е|ь|а)$/, '');
+        const base = s.length >= 3 ? s : w;
+        return base.length > 6 ? base.slice(0, 6) : base;
+    },
+
+    workWords(s) {
+        const out = new Set();
+        String(s || '').toLowerCase().replace(/ё/g, 'е')
+            .replace(/[^а-яa-z0-9]+/g, ' ').split(' ')
+            .forEach(w => {
+                if (w.length < 3 || this.WORK_STOP.has(w)) return;
+                out.add(this.workStem(w));
+            });
+        return out;
+    },
+
+    /**
+     * Прямые соответствия «их формулировка → наша расценка».
+     *
+     * Подбор по словам решает не всё: в чужих КП работы называют укрупнённо и
+     * своими словами, а у нас прайс подробный. «Монтаж тёплого пола (включая
+     * монтаж утеплителя)» — это две наши расценки сразу, «Монтаж водорозеток» —
+     * наша «Точка присоединения ХВС», где кроме розетки посчитаны и трубы.
+     * Ни то, ни другое по совпадению слов не выводится.
+     *
+     * Таблица короткая и пополняемая: сюда стоит дописывать формулировки по
+     * мере того, как они встречаются в реальных КП. Порядок важен — проверка
+     * идёт сверху вниз, первое совпадение выигрывает.
+     *
+     * plus — работы, которые чужая строка включает в себя дополнительно. Они
+     * учитываются только если прямо названы в самой строке.
+     */
+    // ВНИМАНИЕ: \w и \b в JS — только латиница, на кириллице они молча не
+    // срабатывают. Внутри русского слова пишем [а-яё]*, а не \w*: на \w*
+    // шаблон «тепл\w*\s*пол» не совпал с «тёплого пола», и монтаж тёплого
+    // пола сопоставлялся с монтажом одного лишь утеплителя.
+    WORK_ALIASES: [
+        { all: [/тепл[а-яё]*\s*пол/i], work: 'Монтаж труб водяного тёплого пола',
+          plus: [{ re: /утеплител/i, work: 'Монтаж утеплителя для укладки ТП' }] },
+        { all: [/утеплител/i], work: 'Монтаж утеплителя для укладки ТП' },
+        { all: [/коллектор/i, /водоснабж|хвс|вод[аыуе]/i], work: 'Установка и подключение коллектора системы водоснабжения' },
+        { all: [/коллектор/i, /радиатор|отоплен|групп/i], work: 'Монтаж коллектора радиаторов' },
+        { all: [/водорозет/i], work: 'Точка присоединения ХВС (монтаж трубопроводов, водорозетки)' },
+        { all: [/радиатор/i], work: 'Монтаж радиатора отопления' },
+        { all: [/конвектор/i], work: 'Монтаж внутрипольного конвектора' },
+        { all: [/полотенцесушител/i], work: 'Монтаж водяного полотенцесушителя с обвязкой' },
+        { all: [/канализац/i], work: 'Монтаж труб канализации (без метража)' },
+        { all: [/инсталляц|унитаз/i], work: 'Монтаж инсталляции унитаза' },
+        { all: [/дымоход|коаксиал/i], work: 'Монтаж коаксиального дымохода' },
+        { all: [/ввод/i, /вод/i], work: 'Ввод воды в дом (греющий кабель, теплоизоляция)' },
+        { all: [/незамерзающ|уличн/i, /кран/i], work: 'Монтаж незамерзающего уличного крана' },
+        { all: [/скважинн/i, /насос/i], work: 'Монтаж скважинного насоса (опуск, оголовок, автоматика)' },
+        { all: [/насосн/i, /групп/i], work: 'Монтаж насосной группы' },
+        { all: [/гидрострелк|гидравлическ[а-яё]*\s*стрелк/i], work: 'Монтаж гидравлической стрелки' },
+        { all: [/бойлер|водонагреват/i], work: 'Монтаж водонагревателя / бойлера' },
+        // «котел(?![ья])» отсекает «котельную»: она начинается так же, но это
+        // не котёл, а помещение, и работа там совсем другая.
+        { all: [/газов/i, /котл|котёл|котел(?![ья])/i], work: 'Монтаж газового котла' },
+        { all: [/электрическ/i, /котл|котёл|котел(?![ья])/i], work: 'Mонтаж электрического котла' },
+        { all: [/опрессовк/i], work: 'Опрессовка котельной' },
+        { all: [/пусконаладк/i], work: 'Пусконаладка котельной' },
+        { all: [/сервопривод/i], work: 'Монтаж сервоприводов' },
+        { all: [/термостат/i], work: 'Монтаж термостатов' },
+        { all: [/стабилизатор/i], work: 'Монтаж стабилизатора напряжения' },
+        { all: [/фильтрац|big\s*blue|колб/i], work: 'Монтаж системы фильтрации Big Blue (колбы + картриджи)' },
+    ],
+
+    /** Наш прайс работ с учётом персональных цен монтажника. */
+    ourWorks() {
+        if (typeof WORK_PRICE_CATALOG === 'undefined') return [];
+        if (this._ourWorks) return this._ourWorks;
+        this._ourWorks = WORK_PRICE_CATALOG.map(w => ({
+            name: w.name,
+            unit: w.unit,
+            group: w.group,
+            price: this.ourWorkPrice(w.name, w.price),
+            words: this.workWords(w.name),
+        }));
+        return this._ourWorks;
+    },
+
+    /**
+     * Наша цена работы: сначала правка в этой смете, потом персональный
+     * прайс монтажника, и только затем цена по умолчанию — тот же порядок,
+     * что и в addToWorks() при расчёте сметы.
+     */
+    ourWorkPrice(name, base) {
+        const st = (typeof app !== 'undefined' && app.state) || {};
+        if (st.customWorks && st.customWorks[name] !== undefined) return Number(st.customWorks[name]) || 0;
+        if (typeof app !== 'undefined' && app.wp) return Number(app.wp(name, base)) || 0;
+        return Number(base) || 0;
+    },
+
+    /**
+     * Насколько наша работа похожа на строку из документа.
+     *
+     * Мера Дайса по общим основам: доля совпавших от суммы длин. Она не
+     * поощряет наши длинные названия («Точка присоединения ХВС (монтаж
+     * трубопроводов, водорозетки)») за то, что в них много слов.
+     *
+     * Планка высокая, и совпасть должно не меньше двух слов. Дешевле не
+     * сопоставить работу вовсе, чем сопоставить неверно: строка «Монтаж труб
+     * отопления, 250 м по 200 ₽» при низком пороге цеплялась за «Монтаж
+     * радиатора отопления» по одному слову «отопления» — и сравнение
+     * показывало разницу в тысячу процентов на ровном месте. Погонного
+     * монтажа труб у нас в прайсе нет, и честный ответ здесь — «нет».
+     */
+    WORK_MATCH_MIN: 0.5,
+
+    matchWork(row) {
+        const raw = String((row && row.raw) || '');
+        if (!raw) return null;
+
+        // Сначала прямые соответствия: они точнее любого счёта слов.
+        for (const a of this.WORK_ALIASES) {
+            if (!a.all.every(re => re.test(raw))) continue;
+            const w = this.ourWorks().find(x => x.name === a.work);
+            if (!w) continue;
+            const extra = (a.plus || [])
+                .filter(p => p.re.test(raw))
+                .map(p => this.ourWorks().find(x => x.name === p.work))
+                .filter(Boolean);
+            return { work: w, extra, score: 1, byAlias: true };
+        }
+
+        const q = this.workWords(raw);
+        if (q.size < 2) return null;   // из одного слова работу не опознать
+        let best = null;
+        for (const w of this.ourWorks()) {
+            let common = 0;
+            for (const x of q) if (w.words.has(x)) common++;
+            if (common < 2) continue;
+            const score = (2 * common) / (q.size + w.words.size);
+            if (!best || score > best.score) best = { work: w, extra: [], score };
+        }
+        return best && best.score >= this.WORK_MATCH_MIN ? best : null;
+    },
+
+    /**
+     * Свёртка нескольких их строк в одну нашу расценку.
+     *
+     * Разбивка смет не совпадает: у них «Монтаж водорозеток 14 шт по 250 ₽» и
+     * «Монтаж труб водоснабжения 153 м по 200 ₽» — две строки, у нас одна
+     * «Точка присоединения ХВС», и трубы в неё уже входят: так эта расценка и
+     * называется. Пока строки сравнивались порознь, наши 3 700 ₽ за точку
+     * стояли против их 250 ₽ за розетку, и вкладка показывала, что мы дороже
+     * в пятнадцать раз, — при том что их же трубы за 30 600 ₽ висели «вне
+     * сравнения» и в счёт не шли.
+     *
+     * Ведущая строка задаёт количество наших точек, поглощаемая добавляет свою
+     * сумму к их стороне сравнения. Свёртку можно разобрать обратно кнопкой:
+     * состав работ у всех разный, и решать за монтажника тут нельзя.
+     */
+    WORK_ROLLUPS: [
+        {
+            work: 'Точка присоединения ХВС (монтаж трубопроводов, водорозетки)',
+            lead: [/водорозет/i],
+            absorb: [[/труб/i, /водоснабж|хвс|вод[аыуе]/i]],
+            note: 'трубы водоснабжения посчитаны отдельной строкой, а в нашу точку они входят',
+        },
+        {
+            work: 'Точка присоединения ГВС (монтаж трубопроводов, водорозетки)',
+            lead: [/гвс|горяч/i, /точк|розет/i],
+            absorb: [[/труб/i, /гвс|горяч/i]],
+            note: 'трубы ГВС посчитаны отдельной строкой, а в нашу точку они входят',
+        },
+    ],
+
+    /**
+     * Сверка единиц измерения.
+     *
+     * «Монтаж тёплого пола, 94 м» и наша расценка «750 ₽/м²» — это метры трубы
+     * против квадратов пола, и перемножать их нельзя: на этой строке ошибка
+     * выходит в разы и выглядит достоверно. Считаем сопоставимыми только
+     * единицы одного рода: штуки, точки, комплекты и пары считают предметы,
+     * метры — длину, квадраты — площадь.
+     *
+     * Единицу, которой нет в списке, за ошибку не считаем: молчать лучше, чем
+     * ругаться на незнакомое сокращение.
+     */
+    UNIT_GROUP: {
+        'шт': 'count', 'штук': 'count', 'штука': 'count', 'ед': 'count',
+        'точка': 'count', 'точки': 'count', 'точек': 'count',
+        'компл': 'count', 'комплект': 'count', 'кт': 'count',
+        'пара': 'count', 'пар': 'count',
+        'м': 'len', 'мп': 'len', 'погм': 'len', 'пм': 'len',
+        'м2': 'area', 'кв2': 'area', 'квм': 'area',
+    },
+
+    unitGroup(u) {
+        const k = String(u || '').toLowerCase().replace(/ё/g, 'е')
+            .replace(/²/g, '2').replace(/[\s./\\-]/g, '');
+        return this.UNIT_GROUP[k] || null;
+    },
+
+    unitsOk(theirUnit, ourUnit) {
+        const a = this.unitGroup(theirUnit);
+        const b = this.unitGroup(ourUnit);
+        if (!a || !b) return true;
+        return a === b;
+    },
+
+    /**
+     * Во сколько раз наша расценка должна разойтись с их ценой, чтобы считать
+     * это ошибкой сопоставления, а не разницей в цене.
+     *
+     * Тот же смысл, что у PRICE_GUARD_RATIO для материалов: работа может стоить
+     * вдвое дороже и втрое дешевле, но не в пятнадцать раз. Пятнадцать — это
+     * когда «Монтаж водорозеток» по 250 ₽ сравнили с нашей точкой присоединения
+     * за 3 700 ₽, где посчитаны ещё и трубы. Сравнивать надо суммы строк, а не
+     * цены за единицу: единицы у нас и у них разные по определению.
+     */
+    WORK_GUARD_RATIO: 5,
+
+    /**
+     * Разметка работ перед показом и переносом: свёртка, единицы, цена.
+     * Ручной выбор расценки не трогаем — раз выбрали, значит так и надо.
+     */
+    prepareWorks(works) {
+        this.applyRollups(works);
+        for (const r of works) {
+            delete r._wUnitBad;
+            delete r._wAlarm;
+            const w = r._w && r._w.work;
+            if (!w || r._wLocked || r._rolledInto) continue;
+
+            if (!this.unitsOk(r.unit, w.unit)) { r._wUnitBad = w.unit; continue; }
+
+            const qty = this.docQty(r);
+            const their = this.docPrice(r) * qty + (r._roll
+                ? r._roll.rows.reduce((s, x) => s + this.docPrice(x) * this.docQty(x), 0) : 0);
+            const ours = this.workPriceOf(r._w) * qty;
+            if (their <= 0 || ours <= 0) continue;
+            const k = ours > their ? ours / their : their / ours;
+            if (k >= this.WORK_GUARD_RATIO) r._wAlarm = ours > their ? Math.round(k) : -Math.round(k);
+        }
+    },
+
+    /** Идёт ли работа в сравнение: расценка есть, единицы сходятся, цена не дикая. */
+    workComparable(r) {
+        return !!(r._w && r._w.work && !r._wUnitBad && !r._wAlarm && !r._rolledInto);
+    },
+
+    applyRollups(works) {
+        works.forEach(r => { delete r._rolledInto; delete r._roll; });
+        for (const rule of this.WORK_ROLLUPS) {
+            if (this._rollOff && this._rollOff[rule.work]) continue;
+            const lead = works.find(r => !r._rolledInto && r._w && r._w.work.name === rule.work
+                && rule.lead.every(re => re.test(r.raw || '')));
+            if (!lead) continue;
+            // Поглощаем только то, чему своей расценки не нашлось: строку,
+            // которая и сама с чем-то сопоставлена, забирать нельзя.
+            const absorbed = works.filter(r => r !== lead && !r._w && !r._rolledInto
+                && rule.absorb.some(set => set.every(re => re.test(r.raw || ''))));
+            if (!absorbed.length) continue;
+            absorbed.forEach(a => { a._rolledInto = lead; });
+            lead._roll = { rows: absorbed, note: rule.note, work: rule.work };
+        }
+    },
+
+    /** Разобрать свёртку обратно: строки снова сравниваются порознь. */
+    unroll(work) {
+        if (!this._rollOff) this._rollOff = {};
+        this._rollOff[work] = true;
+        this.renderReview();
+    },
+
+    reroll(work) {
+        if (this._rollOff) delete this._rollOff[work];
+        this.renderReview();
+    },
+
+    /** Наша цена строки работ: расценка плюс те, что чужая строка включает. */
+    workPriceOf(w) {
+        if (!w || !w.work) return 0;
+        return (w.work.price || 0) + (w.extra || []).reduce((s, x) => s + (x.price || 0), 0);
+    },
+
     rematch(row) {
         if (row._locked) return;   // ручной выбор автоподбор не перебивает
+        // Работу подбирать по каталогу нечем: в нём нет работ. Зато есть наш
+        // прайс монтажа — по нему и подбираем, для сравнения и переноса.
+        if (this.looksLikeWork(row)) {
+            row._m = null;
+            delete row._priceAlarm;
+            if (!row._wLocked) row._w = this.matchWork(row);
+            return;
+        }
         row._m = (typeof RecognizeMatch !== 'undefined' && typeof catalog !== 'undefined')
             ? RecognizeMatch.matchItem(row, this._sys) : null;
         this.priceGuard(row);
@@ -1889,6 +2364,17 @@ const RecognizeUI = {
      * уже другой предмет.
      */
     PRICE_GUARD_RATIO: 5,
+
+    /**
+     * Насколько узкой должна быть полоса цен при переподборе.
+     *
+     * Пять — это порог тревоги, а не критерий поиска: в полосе ±5x нашёлся
+     * «Коллектор хромированный» за 3 440 ₽ вместо коллекторной группы за
+     * 16 000 ₽, формально прошёл и молча снял предупреждение. Заменять промах
+     * можно только тем, что стоит примерно столько же; вдвое — это уже запас
+     * на чужую наценку и скидку.
+     */
+    PRICE_REMATCH_BAND: 2,
 
     /**
      * Предохранитель по цене документа.
@@ -1928,6 +2414,35 @@ const RecognizeUI = {
             row._priceFixed = true;
             return;
         }
+
+        /**
+         * Запасные варианты — это три соседа по той же оценке названия, и если
+         * подбор ушёл не в ту сторону целиком, верного среди них нет. Так
+         * «Коллекторная группа с расходомерами 1"х10х3/4" Rommer» за 16 123 ₽
+         * уходила в «Коллектор с запорными клапанами, 2 вых.» за 1 251 ₽, а
+         * рядом в прайсе лежал RMS-1200-000010 за 16 205 ₽ — тот самый, и цена
+         * сходится до полупроцента.
+         *
+         * Поэтому ищем ещё раз по всему каталогу и прайсу, но только среди
+         * того, что стоит того же порядка. Цена документа здесь работает как
+         * дополнительный признак: она не говорит, ЧТО это, но убирает из
+         * отбора всё, чем этот предмет быть не может.
+         */
+        if (typeof RecognizeMatch !== 'undefined' && RecognizeMatch.matchByName) {
+            const again = RecognizeMatch.matchByName(row, {
+                deep: true,
+                priceBand: {
+                    min: dp / this.PRICE_REMATCH_BAND,
+                    max: dp * this.PRICE_REMATCH_BAND,
+                    target: dp,
+                },
+            });
+            if (again && again.item && again.item !== m.item && !off(Number(again.item.price) || 0)) {
+                row._m = again;
+                row._priceFixed = true;
+                return;
+            }
+        }
         // Во сколько раз мимо — это и показываем монтажнику: «дороже в 48 раз»
         // говорит о промахе внятнее, чем «+4732%».
         row._priceAlarm = op > dp ? Math.round(op / dp) : -Math.round(dp / op);
@@ -1943,7 +2458,10 @@ const RecognizeUI = {
      * аналогов, сама отмена. Поэтому связи между товарами в снимок не идут —
      * для отката нужны сами строки, а не каталог целиком.
      */
-    SNAP_SKIP: ['alts', 'alternatives', 'rommer', 'comfort', '_item'],
+    // _rolledInto и _roll ссылаются на соседние строки того же массива. В
+    // снимок они не идут: свёртка пересчитывается при каждой отрисовке, а
+    // ссылка на строку в JSON превращается либо в её копию, либо в дыру.
+    SNAP_SKIP: ['alts', 'alternatives', 'rommer', 'comfort', '_item', '_rolledInto', '_roll'],
 
     snap() {
         const seen = new WeakSet();
@@ -2032,7 +2550,10 @@ const RecognizeUI = {
             // Строка с несходящейся ценой красится наравне с неподобранной:
             // молча оставленный чужой артикул за тридцать тысяч дороже
             // обходится, чем пустая строка, которую видно.
-            const cls = m ? (r._priceAlarm ? 'rec-pricebad' : '') : 'rec-nomatch';
+            // Работа без артикула — это норма, а не дыра в смете: красить её
+            // наравне с неподобранным материалом значит пугать зря.
+            const cls = m ? (r._priceAlarm ? 'rec-pricebad' : '')
+                : (this.looksLikeWork(r) ? 'rec-workrow' : 'rec-nomatch');
 
             const tbtns = THREADS.map(t =>
                 `<button class="rec-tbtn ${r.threadType === t ? 'on' : ''}"
@@ -2049,9 +2570,13 @@ const RecognizeUI = {
                     r._priceAlarm ? `<div class="rec-pricebad-note">Цена не сходится: ${
                         r._priceAlarm > 0 ? `у нас дороже в ${r._priceAlarm} раз` : `у нас дешевле в ${-r._priceAlarm} раз`
                     } — скорее всего подобрано другое изделие, проверьте 🔍</div>` : ''}`
-                : (docP
-                    ? `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой из документа</span>`
-                    : `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой 0</span>`);
+                : (this.looksLikeWork(r)
+                    ? `<span class="rec-work-tag">монтажная работа</span>
+                       <span class="rec-art">уйдёт в раздел работ${
+                        docP ? ' со своей ценой из документа' : ' без цены'}</span>`
+                    : docP
+                        ? `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой из документа</span>`
+                        : `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой 0</span>`);
 
             return `<tr class="${cls}">
               <td><input type="checkbox" ${r._sel ? 'checked' : ''}
@@ -2093,6 +2618,10 @@ const RecognizeUI = {
              <td colspan="8">${esc(s.reason || 'вычеркнуто')}</td></tr>`).join('');
 
         const found = this._rows.filter(r => r._m);
+        // Работы в проценте подбора не участвуют: артикула у них нет и быть не
+        // может, а в знаменателе они занижали цифру и выглядели как провал.
+        const works = this._rows.filter(r => this.looksLikeWork(r));
+        const eqTotal = this._rows.length - works.length;
         // В итог идут и цены из документа: именно с ними строки уедут в смету,
         // и сумма под таблицей должна совпадать с тем, что монтажник увидит.
         const sum = this._rows.reduce((s, r) => {
@@ -2103,10 +2632,18 @@ const RecognizeUI = {
         const noQty = this._rows.filter(r => !((r.qty || 0) + (r.qtyExtra || 0))).length;
         const selN = this._rows.filter(r => r._sel).length;
 
+        // Работы уехали на свою вкладку: в одной таблице с материалами им
+        // делать нечего — ни артикула, ни каталога, ни аналога ROMMER, зато
+        // есть свой прайс, с которым их и надо сравнивать.
+        if (works.length && this._tab === 'works') { this.renderWorksPane(works, sum); return; }
+        if (!works.length) this._tab = 'eq';
+
         document.getElementById('rec_body').innerHTML = `
           ${this._parseWarning ? `<div class="rec-err">${esc(this._parseWarning)}
              Проверьте, все ли строки сметы на месте.</div>` : ''}
           ${this.renderSavedTime(found.length)}
+          ${this.renderTabs(eqTotal, works)}
+          ${this.renderTotalsStrip()}
           <div class="rec-toolbar">
             <button class="rec-btn-g" onclick="RecognizeUI.undo()" ${this._undo.length ? '' : 'disabled'}>↶ Отменить</button>
             <button class="rec-btn-g" onclick="RecognizeUI.delSel()" ${selN ? '' : 'disabled'}>Удалить выбранные${selN ? ' (' + selN + ')' : ''}</button>
@@ -2117,15 +2654,20 @@ const RecognizeUI = {
                 `<option value="${esc(s)}">${esc(s)}</option>`).join('')}
             </select>
             ${this.renderRetryButton()}
+            <span class="rec-tb-right">${this.renderCompareButton()}</span>
+          </div>
+          <div class="rec-toolbar rec-toolbar-modes">
             ${this.renderSystemSelect()}
-            <span class="rec-status">Подобрано ${found.length} из ${this._rows.length} (${
-              this._rows.length ? Math.round(found.length / this._rows.length * 100) : 0}%)${
+            <span class="rec-status">Подобрано ${found.length} из ${eqTotal} (${
+              eqTotal ? Math.round(found.length / eqTotal * 100) : 0}%)${
+              works.length ? ` · монтажных работ ${works.length}` : ''}${
               this._deep ? ` · из них углублённым поиском ${this._deep}` : ''}${
               this._mergeInfo ? ' · ' + this._mergeInfo : ''}${
               noQty ? ` · без количества ${noQty}` : ''}</span>
-            ${this.renderAnalogButton()}
-            ${this.renderDocPriceButton()}
-            ${this.renderCompareButton()}
+            <span class="rec-tb-right">
+              ${this.renderAnalogButton()}
+              ${this.renderDocPriceButton()}
+            </span>
           </div>
           <div class="rec-tablewrap">
             <table class="rec-table">
@@ -2146,6 +2688,376 @@ const RecognizeUI = {
           ${this.renderSuggestions()}
           <div class="rec-foot">
             <div class="rec-total">Итого: <b>${Math.round(sum).toLocaleString('ru-RU')} ₽</b></div>
+            <button class="calc-dialog-btn calc-dialog-btn-cancel" onclick="RecognizeUI.apply('new')">Создать новую смету</button>
+            <button class="calc-dialog-btn calc-dialog-btn-confirm" onclick="RecognizeUI.apply('add')">Добавить в текущую смету</button>
+          </div>`;
+    },
+
+    // ------------------------------------------------------------------
+    // Вкладка монтажных работ
+    // ------------------------------------------------------------------
+
+    /**
+     * Итог по всему КП: оборудование и работы вместе.
+     *
+     * До этого сравнение жило на двух экранах врозь, и ответа на главный вопрос
+     * — «во сколько тот же объём выйдет у нас целиком» — не было ни на одном.
+     * Складываем только сопоставимое: там, где позиция не подобрана, единицы
+     * разошлись или цена ушла в разы, суммы идут в отдельный счёт «вне
+     * сравнения», а не растворяются в итоге.
+     */
+    compareTotals() {
+        const brand = this._cmpBrand === 'rommer' ? 'rommer' : 'stout';
+        const t = { eqTheir: 0, eqOur: 0, eqOut: 0, wTheir: 0, wOur: 0, wOut: 0 };
+
+        const works = this._rows.filter(r => this.looksLikeWork(r));
+        if (works.length) this.prepareWorks(works);
+
+        for (const r of this._rows) {
+            const qty = this.docQty(r);
+            const dp = this.docPrice(r);
+
+            if (this.looksLikeWork(r)) {
+                if (r._rolledInto) continue;      // её сумма уже в ведущей строке
+                const roll = r._roll
+                    ? r._roll.rows.reduce((s, x) => s + this.docPrice(x) * this.docQty(x), 0) : 0;
+                const their = dp * qty + roll;
+                const ours = this.workPriceOf(r._w) * qty;
+                if (this.workComparable(r) && their > 0 && ours > 0) {
+                    t.wTheir += their; t.wOur += ours;
+                } else {
+                    t.wOut += their;
+                }
+                continue;
+            }
+
+            const m = r._m;
+            const op = m ? (Number(m.item.price) || 0) : 0;
+            const ra = (m && typeof RecognizeMatch !== 'undefined' && RecognizeMatch.rommerAlt)
+                ? RecognizeMatch.rommerAlt(m.item) : null;
+            const bp = brand === 'rommer' ? (ra ? (Number(ra.item.price) || op) : op) : op;
+            if (dp > 0 && op > 0 && qty > 0 && !r._priceAlarm) {
+                t.eqTheir += dp * qty; t.eqOur += bp * qty;
+            } else {
+                t.eqOut += dp * qty;
+            }
+        }
+
+        t.their = t.eqTheir + t.wTheir;
+        t.our = t.eqOur + t.wOur;
+        t.out = t.eqOut + t.wOut;
+        t.delta = t.our - t.their;
+        t.pct = t.their > 0 ? Math.round((t.delta / t.their) * 100) : 0;
+        t.brand = brand;
+        return t;
+    },
+
+    /** Полоса итога — одна и та же на обеих вкладках. */
+    renderTotalsStrip() {
+        if (!this.hasDocPrices()) return '';
+        const t = this.compareTotals();
+        if (t.their <= 0) return '';
+        const money = n => Math.round(n || 0).toLocaleString('ru-RU') + ' ₽';
+        const part = (a, b) => `${money(a)} / ${money(b)}`;
+
+        return `<div class="rec-grand${t.delta > 0 ? ' up' : t.delta < 0 ? ' down' : ''}">
+            <div class="rec-grand-main">
+              <span class="rec-grand-lbl">По документу</span>
+              <b>${money(t.their)}</b>
+              <span class="rec-grand-arrow">→</span>
+              <span class="rec-grand-lbl">У нас · ${t.brand === 'rommer' ? 'ROMMER' : 'STOUT'}</span>
+              <b>${money(t.our)}</b>
+              <span class="rec-grand-delta">${t.delta === 0 ? 'разницы нет'
+                : `${t.delta > 0 ? '+' : '−'}${money(Math.abs(t.delta))} (${t.delta > 0 ? '+' : ''}${t.pct}%)`}</span>
+            </div>
+            <div class="rec-grand-sub">
+              оборудование ${part(t.eqTheir, t.eqOur)} · работы ${part(t.wTheir, t.wOur)}${
+            t.out > 0 ? ` · вне сравнения ${money(t.out)}` : ''}
+            </div>
+          </div>`;
+    },
+
+    /** Переключатель «Оборудование / Монтажные работы». */
+    renderTabs(eqTotal, works) {
+        if (!works.length) return '';
+        const wSum = works.reduce((s, r) => s + this.docPrice(r) * this.docQty(r), 0);
+        const on = this._tab === 'works';
+        return `<div class="rec-tabs">
+            <button class="rec-tab${on ? '' : ' on'}" onclick="RecognizeUI.tab('eq')">
+              Оборудование <em>${eqTotal}</em></button>
+            <button class="rec-tab${on ? ' on' : ''}" onclick="RecognizeUI.tab('works')">
+              Монтажные работы <em>${works.length}</em>${
+            wSum > 0 ? ` <i>${Math.round(wSum).toLocaleString('ru-RU')} ₽</i>` : ''}</button>
+          </div>`;
+    },
+
+    tab(t) {
+        this._tab = t;
+        this.renderReview();
+    },
+
+    /** В смету работы уезжают с нашей ценой; по умолчанию — да. */
+    ourWorkPricesOn() {
+        return this._useOurWorkPrices !== false;
+    },
+
+    toggleOurWorkPrices(on) {
+        this._useOurWorkPrices = !!on;
+        this.renderReview();
+    },
+
+    /** Смена подобранной работы вручную. */
+    setWork(n, name) {
+        this.snap();
+        const row = this._rows[n];
+        if (!row) return;
+        if (!name) {
+            row._w = null;
+            row._wLocked = true;          // «не сравнивать» — тоже решение
+        } else {
+            const w = this.ourWorks().find(x => x.name === name);
+            row._w = w ? { work: w, extra: [], score: 1 } : null;
+            row._wLocked = true;
+        }
+        this.renderReview();
+    },
+
+    /**
+     * Работы, которых в чужой смете нет, а по составу оборудования быть должны.
+     *
+     * Правила намеренно короткие и очевидные: есть радиаторы — должен быть их
+     * монтаж, есть бойлер — его подключение. Гадать за монтажника не надо, но
+     * забытая строка в чужом КП — это то, чем оно и отличается от нашего, и
+     * увидеть её стоит до того, как смету сравнили по деньгам.
+     */
+    WORK_HINTS: [
+        { re: /радиатор/i, work: 'Монтаж радиатора отопления' },
+        { re: /конвектор/i, work: 'Монтаж внутрипольного конвектора' },
+        { re: /полотенцесушител/i, work: 'Монтаж водяного полотенцесушителя с обвязкой' },
+        { re: /бойлер|водонагреват/i, work: 'Монтаж водонагревателя / бойлера' },
+        { re: /гидрострелк|гидравлическ[а-яё]*\s*стрелк/i, work: 'Монтаж гидравлической стрелки' },
+        { re: /насосн[а-яё]*\s*групп/i, work: 'Монтаж насосной группы' },
+        { re: /дымоход|коаксиал/i, work: 'Монтаж коаксиального дымохода' },
+        { re: /расширительн[а-яё]*\s*бак/i, work: 'Установка расширительного бака водоснабжения' },
+        { re: /сервопривод/i, work: 'Монтаж сервоприводов' },
+        { re: /термостат/i, work: 'Монтаж термостатов' },
+        { re: /скважинн[а-яё]*\s*насос/i, work: 'Монтаж скважинного насоса (опуск, оголовок, автоматика)' },
+        { re: /незамерзающ|уличн[а-яё]*\s*кран/i, work: 'Монтаж незамерзающего уличного крана' },
+        { re: /инсталляц|унитаз/i, work: 'Монтаж инсталляции унитаза' },
+        { re: /стабилизатор напряж/i, work: 'Монтаж стабилизатора напряжения' },
+    ],
+
+    missingWorks(works) {
+        const have = new Set(works.filter(r => r._w).map(r => r._w.work.name));
+        const eq = this._rows.filter(r => !this.looksLikeWork(r));
+        const out = [];
+        for (const h of this.WORK_HINTS) {
+            if (have.has(h.work)) continue;
+            const hit = eq.filter(r => h.re.test(r.raw || '') ||
+                (r._m && r._m.item && h.re.test(r._m.item.name || '')));
+            if (!hit.length) continue;
+            const w = this.ourWorks().find(x => x.name === h.work);
+            if (!w) continue;
+            const qty = hit.reduce((s, r) => s + this.docQty(r), 0) || hit.length;
+            out.push({ work: w, qty, why: hit.length + (hit.length === 1 ? ' позиция' : ' позиций') });
+        }
+        return out;
+    },
+
+    renderWorksPane(works, eqSum) {
+        const esc = s => String(s ?? '').replace(/[&<>"]/g,
+            c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const money = n => Math.round(n || 0).toLocaleString('ru-RU') + ' ₽';
+
+        // Наш прайс мог поменяться правкой в смете — пересобираем на каждый показ.
+        this._ourWorks = null;
+
+        this.prepareWorks(works);
+
+        let theirCmp = 0, ourCmp = 0, theirAll = 0, ourAll = 0;
+        let matched = 0, rolled = 0, flagged = 0;
+
+        const groups = {};
+        for (const w of this.ourWorks()) (groups[w.group] = groups[w.group] || []).push(w);
+        const options = sel => Object.keys(groups).map(g =>
+            `<optgroup label="${esc(g)}">${groups[g].map(w =>
+                `<option value="${esc(w.name)}" ${w.name === sel ? 'selected' : ''}>${
+                    esc(w.name)} · ${Math.round(w.price)} ₽/${esc(w.unit)}</option>`).join('')}</optgroup>`).join('');
+
+        const rows = works.map(r => {
+            const n = this._rows.indexOf(r);
+            const qty = this.docQty(r);
+            const dp = this.docPrice(r);
+            const dSum = dp * qty;
+            const w = r._w && r._w.work;
+            const extra = (r._w && r._w.extra) || [];
+            const op = this.workPriceOf(r._w);
+            const oSum = op * qty;
+
+            theirAll += dSum;
+
+            // Строка, свёрнутая в соседнюю: своей цены в сравнении у неё нет,
+            // её сумма учтена ведущей строкой. Показываем подстрочником.
+            if (r._rolledInto) {
+                rolled++;
+                return `<tr class="rec-rolled">
+                  <td class="rec-raw">${esc(r.raw)}</td>
+                  <td>${qty || '—'} ${esc(r.unit || 'шт')}</td>
+                  <td>${dp > 0 ? money(dp) : '—'}</td>
+                  <td><b>${dSum > 0 ? money(dSum) : '—'}</b></td>
+                  <td colspan="4"><span class="rec-art">учтено в строке
+                    «${esc(r._rolledInto.raw)}» — там наша расценка включает и это</span>
+                    <button class="rec-btn-g" style="margin-left:8px"
+                            onclick="RecognizeUI.unroll('${esc(r._rolledInto._w.work.name).replace(/'/g, "\\'")}')">Считать отдельно</button>
+                  </td></tr>`;
+            }
+
+            // Ведущая строка свёртки забирает суммы поглощённых на свою сторону.
+            const rollSum = r._roll ? r._roll.rows.reduce((s, x) => s + this.docPrice(x) * this.docQty(x), 0) : 0;
+            const dSumAll = dSum + rollSum;
+
+            // Наша цена идёт в смету только у сопоставимых строк: там, где
+            // единицы разъехались или цена ушла в разы, вернее взять их цену,
+            // чем умножать нашу расценку на чужой объём.
+            const ok = this.workComparable(r);
+            ourAll += ok ? oSum : dSum;
+            if (w) matched++;
+            if (w && !ok) flagged++;
+            if (ok) { theirCmp += dSumAll; ourCmp += oSum; }
+
+            let diff = '<span class="rec-cmp-eq">—</span>';
+            if (ok && dSumAll > 0 && qty > 0) {
+                const pct = Math.round(((oSum - dSumAll) / dSumAll) * 100);
+                diff = pct > 0 ? `<span class="rec-cmp-up">+${pct}%</span>`
+                    : pct < 0 ? `<span class="rec-cmp-down">${pct}%</span>`
+                        : '<span class="rec-cmp-eq">0%</span>';
+            } else if (w) {
+                diff = '<span class="rec-cmp-up" title="Не участвует в итогах">✕</span>';
+            }
+
+            return `<tr class="${w ? (ok ? '' : 'rec-pricebad') : 'rec-nomatch'}">
+              <td class="rec-raw">${esc(r.raw)}${r._roll
+                ? `<div class="rec-art">+ ${r._roll.rows.map(x => esc(x.raw)).join('; ')}
+                     <br>свёрнуто в одну нашу расценку: ${esc(r._roll.note)}</div>` : ''}</td>
+              <td><input class="rec-f rec-f-s" value="${qty || ''}"
+                         onchange="RecognizeUI.set(${n},'qty',this.value)"> ${esc(r.unit || 'шт')}</td>
+              <td>${dp > 0 ? money(dp) : '—'}</td>
+              <td><b>${dSumAll > 0 ? money(dSumAll) : '—'}</b>${r._roll
+                ? `<div class="rec-art">в т.ч. ${money(rollSum)} со свёрнутых</div>` : ''}</td>
+              <td>
+                <select class="rec-f" onchange="RecognizeUI.setWork(${n}, this.value)">
+                  <option value="">— нет в нашем прайсе —</option>
+                  ${options(w ? w.name : null)}
+                </select>
+                ${extra.map(x => `<div class="rec-art">+ ${esc(x.name)} · ${
+                    Math.round(x.price)} ₽/${esc(x.unit)} — их строка включает и это</div>`).join('')}
+                ${r._wUnitBad ? `<div class="rec-pricebad-note">Единицы разные: у них
+                    «${esc(r.unit || 'шт')}», у нас «${esc(r._wUnitBad)}» — перемножать нельзя.
+                    Строка идёт со своей ценой и в сравнение не входит. Если объём тот же,
+                    по нашему прайсу это <b>${money(oSum)}</b> — выберите расценку в списке
+                    вручную, и строка вернётся в сравнение.</div>` : ''}
+                ${r._wAlarm ? `<div class="rec-pricebad-note">Расценка расходится ${
+                    r._wAlarm > 0 ? `в ${r._wAlarm} раз в нашу сторону` : `в ${-r._wAlarm} раз в их сторону`
+                } — скорее всего сопоставлено не то. В итоги не идёт.</div>` : ''}
+                ${w && !r._wLocked && !r._w.byAlias
+                    ? '<div class="rec-art">похоже по названию — сверьте</div>' : ''}
+                ${w && r._wLocked ? '<div class="rec-art">выбрано вручную</div>' : ''}
+              </td>
+              <td>${w ? money(op) + '<div class="rec-art">за ' + esc(w.unit) + '</div>' : '—'}</td>
+              <td><b>${w ? money(oSum) : '—'}</b></td>
+              <td>${diff}</td></tr>`;
+        }).join('');
+
+        const delta = ourCmp - theirCmp;
+        const pct = theirCmp > 0 ? Math.round((delta / theirCmp) * 100) : 0;
+        // Свёрнутые строки не «вне сравнения»: их суммы учтены ведущей строкой.
+        const outN = works.length - rolled - (matched - flagged);
+
+        const miss = this.missingWorks(works);
+        const missSum = miss.reduce((s, m) => s + m.work.price * m.qty, 0);
+
+        document.getElementById('rec_body').innerHTML = `
+          ${this.renderTabs(this._rows.length - works.length, works)}
+          ${this.renderTotalsStrip()}
+          <div class="rec-toolbar">
+            <button class="rec-btn-g" onclick="RecognizeUI.undo()" ${this._undo.length ? '' : 'disabled'}>↶ Отменить</button>
+            <span class="rec-status">Сопоставлено с нашим прайсом ${matched} из ${works.length}${
+            rolled ? ` · ${rolled} свёрнуто в наши точки` : ''}${
+            flagged ? ` · ${flagged} отложено: единицы или цена не сходятся` : ''}${
+            works.length - matched - rolled > 0
+                ? ` · ${works.length - matched - rolled} уедут своей строкой с ценой из документа` : ''}</span>
+            ${Object.keys(this._rollOff || {}).filter(k => this._rollOff[k]).map(k =>
+                `<button class="rec-btn-g" onclick="RecognizeUI.reroll('${esc(k).replace(/'/g, "\\'")}')">↩ Вернуть свёртку</button>`).join('')}
+            <span class="rec-tb-right">
+              <label class="rec-switch${this.ourWorkPricesOn() ? ' on' : ''}"
+                     title="Чем считать работы в смете: нашим прайсом монтажа или ценами из чужого документа">
+                <input type="checkbox" ${this.ourWorkPricesOn() ? 'checked' : ''}
+                       onchange="RecognizeUI.toggleOurWorkPrices(this.checked)">
+                <span class="rec-switch-track"><span class="rec-switch-knob"></span></span>
+                <span class="rec-switch-text">В смету — наши расценки</span>
+              </label>
+            </span>
+          </div>
+
+          <div class="rec-cmp-sum">
+            <div class="rec-cmp-item">
+              <div class="rec-cmp-val">${money(theirCmp)}</div>
+              <div class="rec-cmp-lbl">Работы по документу · сопоставимые</div>
+            </div>
+            <div class="rec-cmp-item">
+              <div class="rec-cmp-val">${money(ourCmp)}</div>
+              <div class="rec-cmp-lbl">Те же работы по нашему прайсу</div>
+            </div>
+            ${outN > 0 ? `<div class="rec-cmp-item">
+              <div class="rec-cmp-val">${money(theirAll - theirCmp)}</div>
+              <div class="rec-cmp-lbl">Вне сравнения · ${outN} ${
+                outN === 1 ? 'работа' : 'работ'}</div>
+            </div>` : ''}
+            ${delta === 0 ? `<div class="rec-cmp-item"><div class="rec-cmp-val">0 ₽</div>
+                 <div class="rec-cmp-lbl">Разницы нет</div></div>`
+                : `<div class="rec-cmp-item">
+                 <div class="rec-cmp-val ${delta > 0 ? 'up' : 'down'}">${
+                    delta > 0 ? '+' : '−'}${money(Math.abs(delta))} (${delta > 0 ? '+' : ''}${pct}%)</div>
+                 <div class="rec-cmp-lbl">${delta > 0 ? 'У нас дороже' : 'У нас дешевле'}</div></div>`}
+          </div>
+
+          ${outN > 0 ? `<div class="rec-art" style="padding:0 0 10px;">
+            В сравнение идут только строки, которым нашлась наша расценка. Укрупнённые
+            формулировки вроде «монтаж котельной под ключ» на одну нашу работу не ложатся:
+            у нас та же работа разложена на котёл, обвязку, опрессовку и пусконаладку —
+            и сравнивать их построчно значит сравнивать разное.</div>` : ''}
+
+          ${miss.length ? `<div class="rec-missing">
+            <div class="rec-missing-hd">В чужой смете не нашлось ${miss.length === 1
+                ? 'работы, которая следует' : 'работ, которые следуют'} из состава оборудования —
+              на ${money(missSum)} по нашему прайсу</div>
+            <table class="rec-table">
+              <tbody>${miss.map(m => `<tr>
+                <td>${esc(m.work.name)}<div class="rec-art">в оборудовании: ${esc(m.why)}</div></td>
+                <td style="width:110px">${m.qty} ${esc(m.work.unit)}</td>
+                <td style="width:110px">${money(m.work.price)}</td>
+                <td style="width:110px"><b>${money(m.work.price * m.qty)}</b></td>
+              </tr>`).join('')}</tbody>
+            </table>
+            <div class="rec-art" style="padding:8px 12px 0;">Это подсказка, а не строка сметы:
+              в смету такие работы добавятся сами, когда калькулятор соберёт её по оборудованию.</div>
+          </div>` : ''}
+
+          <div class="rec-tablewrap">
+            <table class="rec-table">
+              <colgroup><col><col style="width:110px"><col style="width:86px"><col style="width:96px">
+                <col style="width:300px"><col style="width:96px"><col style="width:96px">
+                <col style="width:74px"></colgroup>
+              <thead><tr>
+                <th>Работа из документа</th><th>Кол.</th><th>Их цена</th><th>Их сумма</th>
+                <th>Наша расценка</th><th>Наша цена</th><th>Наша сумма</th><th>Разница</th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+          <div class="rec-foot">
+            <div class="rec-total">Работы: <b>${money(this.ourWorkPricesOn() ? ourAll : theirAll)}</b>
+              <span class="rec-art">оборудование: ${money(eqSum)}</span></div>
             <button class="calc-dialog-btn calc-dialog-btn-cancel" onclick="RecognizeUI.apply('new')">Создать новую смету</button>
             <button class="calc-dialog-btn calc-dialog-btn-confirm" onclick="RecognizeUI.apply('add')">Добавить в текущую смету</button>
           </div>`;
@@ -2189,7 +3101,7 @@ const RecognizeUI = {
 
     renderCompareButton() {
         if (!this.hasDocPrices()) return '';
-        return `<button class="rec-btn-g" onclick="RecognizeUI.renderCompare()"
+        return `<button class="rec-btn-g rec-btn-accent" onclick="RecognizeUI.renderCompare()"
                         title="Во сколько тот же объём выйдет на STOUT / ROMMER">⚖ Сравнить цены</button>`;
     },
 
@@ -2240,9 +3152,15 @@ const RecognizeUI = {
 
         let docTotal = 0, stoutTotal = 0, rommerTotal = 0;
         let cmpN = 0, matched = 0, priced = 0, alarmed = 0;
+        // Работы сравниваются не с прайсом, а с нашими расценками на монтаж.
+        // Здесь они только считаются отдельной строкой итога, чтобы не выглядеть
+        // как позиции, которым не нашлось аналога.
+        let workN = 0, workSum = 0;
+        const eqTotal = this._rows.filter(r => !this.looksLikeWork(r)).length;
 
         const rows = this._rows.map((r, n) => {
-            const m = r._m;
+            const isWork = this.looksLikeWork(r);
+            const m = isWork ? null : r._m;
             const qty = this.docQty(r);
             const dp = this.docPrice(r);
             const op = m ? (Number(m.item.price) || 0) : 0;
@@ -2254,8 +3172,9 @@ const RecognizeUI = {
             const bp = brand === 'rommer' ? rp : op;
             const dSum = dp * qty;
             const bSum = bp * qty;
+            if (isWork) { workN++; workSum += dSum; }
             if (m) matched++;
-            if (dp > 0) priced++;
+            if (dp > 0 && !isWork) priced++;
             if (r._priceAlarm) alarmed++;
 
             // В итоги идут только строки, где есть обе цены и количество —
@@ -2290,9 +3209,12 @@ const RecognizeUI = {
                     r._priceAlarm ? `<div class="rec-pricebad-note">Цена не сходится ${
                         r._priceAlarm > 0 ? `в ${r._priceAlarm} раз` : `в ${-r._priceAlarm} раз`
                     } — подобрано другое изделие, в сравнение не идёт</div>` : ''}`
-                : `<span class="rec-art">аналог не подобран</span>`;
+                : isWork
+                    ? `<span class="rec-work-tag">монтажная работа</span>
+                       <span class="rec-art">с прайсом не сравнивается</span>`
+                    : `<span class="rec-art">аналог не подобран</span>`;
 
-            return `<tr${r._priceAlarm ? ' class="rec-pricebad"' : ''}>
+            return `<tr${r._priceAlarm ? ' class="rec-pricebad"' : (isWork ? ' class="rec-workrow"' : '')}>
               <td>${n + 1}</td>
               <td class="rec-raw">${esc(r.raw)}</td>
               <td>${qty || '—'} ${esc(r.unit || 'шт')}</td>
@@ -2391,10 +3313,11 @@ const RecognizeUI = {
               <button class="rec-btn-g${brand === 'stout' ? ' on' : ''}" onclick="RecognizeUI.cmpBrand('stout')">STOUT</button>
               <button class="rec-btn-g${brand === 'rommer' ? ' on' : ''}" onclick="RecognizeUI.cmpBrand('rommer')">ROMMER</button>
             </span>
-            <span class="rec-status">Сравнимых позиций: ${cmpN} из ${this._rows.length}${
-              matched < this._rows.length ? ` · без аналога ${this._rows.length - matched}` : ''}${
-              priced < this._rows.length ? ` · без цены в документе ${this._rows.length - priced}` : ''}${
-              alarmed ? ` · цена не сходится ${alarmed}` : ''}</span>
+            <span class="rec-status">Сравнимых позиций: ${cmpN} из ${eqTotal}${
+              matched < eqTotal ? ` · без аналога ${eqTotal - matched}` : ''}${
+              priced < eqTotal ? ` · без цены в документе ${eqTotal - priced}` : ''}${
+              alarmed ? ` · цена не сходится ${alarmed}` : ''}${
+              workN ? ` · монтажных работ ${workN} на ${money(workSum)} — считаются отдельно` : ''}</span>
           </div>
           <div class="rec-cmp-sum">
             <div class="rec-cmp-item">
@@ -2406,7 +3329,7 @@ const RecognizeUI = {
             ${deltaBlock}
           </div>
           ${discountStrip}
-          ${cmpN < this._rows.length ? `<div class="rec-art" style="padding:0 0 10px;">
+          ${cmpN < eqTotal ? `<div class="rec-art" style="padding:0 0 10px;">
             Суммы посчитаны только по строкам, где известны обе цены и подбор не вызывает
             сомнений — иначе сравнение показывало бы экономию там, где позиция просто не
             подобрана${alarmed ? ', а один промах подбора двигал бы итог на сотни процентов' : ''}.
@@ -2824,12 +3747,21 @@ const RecognizeUI = {
             this._cmpApplyDiscount = false;
         }
 
-        const r = app.applyRecognized(this._rows, mode, { docPrices: this.docPricesOn() });
+        // Разметку работ считаем и здесь: во вкладку монтажник мог не заходить,
+        // а без неё две строки вместо одной точки уехали бы в смету, и нашей
+        // расценкой умножился бы объём в чужих единицах.
+        this.prepareWorks(this._rows.filter(x => this.looksLikeWork(x)));
+
+        const r = app.applyRecognized(this._rows, mode, {
+            docPrices: this.docPricesOn(),
+            ourWorkPrices: this.ourWorkPricesOn(),
+        });
 
         // Сбрасываем состояние: вкладка должна открыться чистой в следующий раз.
         this._img = null;
         this._imgs = null;
         this._text = '';
+        this._docs = [];
         this._rows = [];
         this._undo = [];
         this._skipped = [];
@@ -2991,7 +3923,7 @@ const RECOGNIZE_PROMPT = `Ты разбираешь рукописные сме�
     "angle": 90|45|null,
     "qty": число или null,
     "qtyExtra": число,
-    "unit": "шт"|"м",
+    "unit": "шт"|"м"|"м2"|"точка"|"компл",
     "price": цена за единицу ИЗ ДОКУМЕНТА или null,
     "sum": сумма по строке ИЗ ДОКУМЕНТА или null,
     "sections": число секций радиатора или null,
@@ -3045,6 +3977,20 @@ const RECOGNIZE_PROMPT = `Ты разбираешь рукописные сме�
 
 10. kind="work" только если строка описывает действие (монтаж, установка,
     опрессовка, пусконаладка, штробление). Предмет — всегда "equipment".
+    Работы в счёте поставщика идут вперемешку с материалами и часто отдельным
+    разделом «Монтажные работы» — всё, что в нём, это kind="work".
+    «Монтаж радиатора», «Монтаж труб отопления», «Монтаж котельной» — работы.
+    «Монтажная планка», «Монтажный комплект», «Монтажная гильза» — предметы.
+
+10a. ЕДИНИЦА ИЗМЕРЕНИЯ — КАК В ДОКУМЕНТЕ, не додумывай.
+    «94 м2» -> unit="м2"   (квадратные метры: тёплый пол, утеплитель)
+    «250 м.» -> unit="м"    (погонные метры: трубы, кабель)
+    «14 шт.» -> unit="шт"
+    «3 компл.» -> unit="компл"
+    «12 точек» -> unit="точка"
+    Квадратные метры пиши строго "м2" — без символа ² и без кавычек.
+    Метры и квадратные метры — РАЗНЫЕ единицы: по ним сверяется, можно ли
+    сравнивать объём с нашими расценками, и подмена «м2» на «м» ломает счёт.
 
 11. КАНАЛИЗАЦИЯ. Диаметры 40, 50, 110 (и 160) — канализационные. Труба,
     отвод, тройник, редукция, ревизия, заглушка этих диаметров относятся к

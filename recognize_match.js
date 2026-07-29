@@ -2599,6 +2599,7 @@ const RecognizeMatch = (function () {
   function matchByName(rec, opts) {
     const deep = !!(opts && opts.deep);
     const explain = !!(opts && opts.explain);
+    const band = (opts && opts.priceBand) || null;
     const idx = buildNameIndex();
     if (!idx.rows.length) return null;
 
@@ -2738,6 +2739,16 @@ const RecognizeMatch = (function () {
       const nw = row.w;
       if (!nw.length) continue;
       if (classConflict(rawLc, row.it.name)) continue;
+      // Отбор по цене документа (opts.priceBand). Нужен предохранителю: когда
+      // подобранное разошлось с ценой счёта в разы, ищем заново среди того,
+      // что вообще может столько стоить. Цена — не признак товара, но она
+      // отсекает целые классы промахов: коллекторную группу за 16 000 ₽ не
+      // спутать с коллектором за 1 200 ₽, если в отбор пущены только позиции
+      // того же порядка.
+      if (band) {
+        const p = Number(row.it.price) || 0;
+        if (!p || p < band.min || p > band.max) continue;
+      }
 
       let hitQ = 0, hitN = 0, nTotal = 0, hits = 0, hitNums = 0, headHit = !head;
       const used = new Array(nw.length).fill(false);
@@ -2803,7 +2814,29 @@ const RecognizeMatch = (function () {
         : (rank !== best.rank ? rank < best.rank : rel > best.rel));
       if (better) best = { rel, row, rank };
       if (!alt || byWordsRel > alt.rel) alt = { rel: byWordsRel, row };
-      runnerUps.push({ rel, it: row.it });
+      runnerUps.push({ rel, it: row.it, row });
+    }
+
+    /**
+     * В переподборе по цене ничью решает сама цена — отдельным проходом.
+     *
+     * Коллекторные группы ROMMER лежат в прайсе одной серией, различаются
+     * числом выходов, и по словам почти неотличимы: оценки 0.50 и 0.51. Внутри
+     * перебора такую ничью разобрать нельзя — сравнение идёт с текущим лидером,
+     * и кандидат с чуть более высокой оценкой, но втрое мимо цены, закрывал
+     * дорогу тому, что стоит ровно столько же, сколько в счёте. Поэтому среди
+     * всех, кто отстал от лидера не больше чем на ничью, выбираем ближайшего по
+     * цене. Близость считаем в разах, а не в рублях: иначе дешёвые позиции
+     * всегда выглядели бы «ближе».
+     */
+    if (band && best && band.target > 0) {
+      let win = null;
+      for (const p of runnerUps) {
+        if (p.rel < best.rel - BRAND_TIE) continue;
+        const fit = Math.abs(Math.log((Number(p.row.it.price) || 1) / band.target));
+        if (!win || fit < win.fit) win = { fit, rel: p.rel, row: p.row };
+      }
+      if (win) best = { rel: win.rel, row: win.row, rank: 0 };
     }
 
     // Порог выставлен по счёту поставщика на 122 позиции: выше — теряются
@@ -2829,6 +2862,7 @@ const RecognizeMatch = (function () {
     }
     if (!hit) return null;
     if (deep) note = 'найдено углублённым поиском — обязательно сверьте позицию';
+    if (band) note = 'переподобрано по цене документа — обязательно сверьте позицию';
 
     return {
       item: hit.row.it,

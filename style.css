@@ -1908,6 +1908,7 @@ body.menu-open .mobile-menu-backdrop {
 
     .swap-cycle-btn,
     .swap-alt-badge,
+    .swap-inline-btn,
     .work-del-btn {
         display: none !important;
     }
@@ -1952,6 +1953,7 @@ body.menu-open .mobile-menu-backdrop {
     .sku-control,
     .swap-cycle-btn,
     .swap-alt-badge,
+    .swap-inline-btn,
     .main-view-tabs,
     .footer-btns,
     footer,
@@ -5583,19 +5585,8 @@ body.dark-mode input[type="number"].eq-qty-input {
     100% { transform: translateX(120%); opacity: 0; }
 }
 
-.calc-toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 100000001;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    pointer-events: none;
-    max-width: 380px;
-    width: calc(100vw - 40px);
-}
-
+/* Контейнер у этих карточек общий с всплывающими сообщениями — .msg-toast-container
+   (правый нижний угол), см. блок «ВСПЛЫВАЮЩИЕ СООБЩЕНИЯ» ниже */
 .calc-toast-notification {
     pointer-events: auto;
     background: rgba(255, 255, 255, 0.92);
@@ -5694,15 +5685,189 @@ body.dark-mode .calc-toast-close:hover {
 }
 
 @media screen and (max-width: 480px) {
-    .calc-toast-container {
-        top: 10px;
-        right: 10px;
-        max-width: calc(100vw - 20px);
-        width: calc(100vw - 20px);
-    }
     .calc-toast-notification {
         padding: 12px 14px;
         border-radius: 12px;
+    }
+}
+
+/* === ВСПЛЫВАЮЩИЕ СООБЩЕНИЯ (мессенджер-стиль, правый нижний угол) === */
+/* Общая стопка для всех всплывашек — и сообщений, и тостов о смене статуса сметы:
+   копятся снизу справа, как в мессенджерах, новое — ближе всего к углу, стопка вверх. */
+.msg-toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100000001;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 10px;
+    pointer-events: none;
+    max-width: 380px;
+    width: calc(100vw - 40px);
+}
+
+/* Надстройка над .calc-toast-notification: та же карточка, но с полем ответа и
+   кнопками «Открыть / Удалить». Курсор и подпрыгивание при наведении убираем —
+   внутри поле ввода, карточка не должна ёрзать под курсором. */
+.msg-toast {
+    cursor: default;
+    flex-direction: row;
+}
+
+.msg-toast:hover {
+    transform: none;
+}
+
+.msg-toast-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.msg-toast-time {
+    font-size: 10px;
+    color: #9CA3AF;
+    flex-shrink: 0;
+    font-weight: 500;
+}
+
+.msg-toast-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 90px;
+    overflow: hidden;
+}
+
+.msg-toast-reply {
+    display: flex;
+    gap: 6px;
+    margin-top: 9px;
+}
+
+.msg-toast-input {
+    flex: 1;
+    min-width: 0;
+    height: 30px;
+    padding: 0 10px;
+    font-size: 12px;
+    font-family: inherit;
+    color: #111827;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.msg-toast-input:focus {
+    border-color: var(--primary);
+}
+
+.msg-toast-send {
+    flex-shrink: 0;
+    width: 34px;
+    height: 30px;
+    border: none;
+    border-radius: 8px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.msg-toast-send:hover {
+    opacity: 0.88;
+}
+
+.msg-toast-send:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.msg-toast-actions {
+    display: flex;
+    gap: 14px;
+    margin-top: 9px;
+}
+
+.msg-toast-actions button {
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6B7280;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.msg-toast-open:hover {
+    color: var(--primary);
+}
+
+.msg-toast-del:hover {
+    color: #EF4444;
+}
+
+.msg-toast-sent {
+    display: inline-block;
+    margin-top: 9px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #10B981;
+}
+
+.msg-toast-err {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #EF4444;
+}
+
+body.dark-mode .msg-toast-input {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(148, 163, 184, 0.25);
+    color: #F1F5F9;
+}
+
+body.dark-mode .msg-toast-time {
+    color: #64748B;
+}
+
+body.dark-mode .msg-toast-actions button {
+    color: #94A3B8;
+}
+
+/* На мобильных внизу висит .mobile-bottom-nav — приподнимаем стопку над ней */
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait) {
+    .msg-toast-container {
+        right: 10px;
+        bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+        max-width: calc(100vw - 20px);
+        width: calc(100vw - 20px);
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .msg-toast-input {
+        height: 34px;
+        font-size: 13px;
+    }
+
+    .msg-toast-send {
+        height: 34px;
+    }
+
+    .msg-toast-actions {
+        gap: 18px;
+    }
+
+    .msg-toast-actions button {
+        font-size: 12px;
     }
 }
 
@@ -5786,6 +5951,7 @@ body.html2pdf-printing .btn-print,
 body.html2pdf-printing .sku-control,
 body.html2pdf-printing .swap-cycle-btn,
 body.html2pdf-printing .swap-alt-badge,
+body.html2pdf-printing .swap-inline-btn,
 body.html2pdf-printing .main-view-tabs,
 body.html2pdf-printing .footer-btns,
 body.html2pdf-printing footer,
@@ -5906,6 +6072,7 @@ body.html2pdf-printing .qty-wrap .opt-btn,
 body.html2pdf-printing .qty-wrap .qty-step,
 body.html2pdf-printing .swap-cycle-btn,
 body.html2pdf-printing .swap-alt-badge,
+body.html2pdf-printing .swap-inline-btn,
 body.html2pdf-printing .work-del-btn,
 body.html2pdf-printing .mob-mult,
 body.html2pdf-printing .eq-badge-dot,
@@ -8694,18 +8861,34 @@ body.rec-sel-mode .inv-table .col-idx {
     white-space: pre-wrap; font-size: 12.5px;
 }
 
-.rec-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+/* Шапка таблицы проверки — два ряда с разным смыслом, иначе восемь разных
+   кнопок сваливаются в одну строку и переносятся как попало.
+   Первый ряд — действия над выбранными строками, второй — режимы, которые
+   меняют всю смету целиком. В правом углу каждого ряда своя итоговая
+   кнопка: сравнение цен и переключатели брендов/цен. */
+.rec-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.rec-toolbar-modes { margin-bottom: 12px; }
+.rec-tb-right {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.rec-tb-right:empty { display: none; }
 .rec-btn-g {
     background: var(--surface-light, #f1f5f9); color: var(--text-main, #0f172a);
     border: 1px solid var(--border, #e2e8f0); border-radius: 8px;
     padding: 6px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer;
 }
 .rec-btn-g:disabled { opacity: .45; cursor: default; }
-/* Переключатель «Аналог ROMMER» — в правом углу панели. Включённый режим
-   виден сразу: смета показывает уже не то, что написано в счёте, и об этом
-   нельзя догадываться по ценам. */
+/* «Сравнить цены» — ради неё чужое КП сюда и загружают, поэтому она
+   отличается от соседних служебных кнопок. */
+.rec-btn-accent {
+    background: transparent;
+    border-color: var(--primary, #0284c7); color: var(--primary, #0284c7);
+}
+.rec-btn-accent:hover { background: rgba(2, 132, 199, .08); }
+/* Переключатели режимов. Включённый виден сразу: смета показывает уже не то,
+   что написано в счёте, и об этом нельзя догадываться по ценам. */
 .rec-switch {
-    margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
+    display: inline-flex; align-items: center; gap: 8px;
     padding: 5px 12px 5px 8px; border-radius: 999px; cursor: pointer;
     border: 1px solid var(--border, #e2e8f0);
     background: var(--surface-light, #f1f5f9);
@@ -9040,19 +9223,110 @@ body.rec-sel-mode .inv-table .col-idx {
 }
 
 /* Превью текста, извлечённого из Excel/Word/PDF/HTML — видно, что прочиталось */
-.rec-textprev {
-    margin-top: 12px;
-    max-height: 220px;
-    overflow: auto;
-    padding: 10px 12px;
+/* Вкладки экрана проверки: материалы и работы — разные таблицы с разными
+   колонками, и мешать их в одном списке значит не показать толком ни те, ни
+   другие. Вкладка работ появляется, только если работы в смете есть. */
+.rec-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+.rec-tab {
+    display: inline-flex; align-items: baseline; gap: 7px;
+    padding: 8px 15px; border-radius: 9px;
+    border: 1px solid transparent; background: transparent;
+    color: var(--text-sec, #94a3b8);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: background var(--dur-fast, 150ms) var(--ease-out, ease),
+                color var(--dur-fast, 150ms) var(--ease-out, ease);
+}
+.rec-tab:hover { color: var(--text-main, #0f172a); }
+.rec-tab.on {
+    background: var(--surface-light, #f1f5f9);
+    border-color: var(--border, #e2e8f0);
+    color: var(--text-main, #0f172a);
+}
+.rec-tab em {
+    font-style: normal; font-weight: 700; font-size: 11.5px;
+    padding: 1px 7px; border-radius: 999px;
+    background: var(--border, #e2e8f0); color: var(--text-main, #0f172a);
+}
+.rec-tab.on em { background: var(--primary, #0284c7); color: #fff; }
+.rec-tab i { font-style: normal; font-weight: 500; opacity: .6; font-size: 12px; }
+
+/* Итог по всему КП — одна строка на обеих вкладках. Ради этого ответа чужое
+   КП сюда и загружают, поэтому он стоит выше таблиц, а не под ними. */
+.rec-grand {
+    margin-bottom: 12px; padding: 11px 14px; border-radius: 10px;
+    border: 1px solid var(--border, #e2e8f0);
+    background: var(--surface-light, #f8fafc);
+}
+.rec-grand.up { border-color: rgba(239, 68, 68, .35); background: rgba(239, 68, 68, .06); }
+.rec-grand.down { border-color: rgba(22, 163, 74, .35); background: rgba(22, 163, 74, .07); }
+.rec-grand-main {
+    display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+    font-size: 16px;
+}
+.rec-grand-main b { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.rec-grand-lbl {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--text-sec, #94a3b8);
+}
+.rec-grand-arrow { color: var(--text-sec, #94a3b8); }
+.rec-grand-delta { margin-left: auto; font-size: 15px; font-weight: 700; }
+.rec-grand.up .rec-grand-delta { color: #ef4444; }
+.rec-grand.down .rec-grand-delta { color: #16a34a; }
+.rec-grand-sub { margin-top: 5px; font-size: 12px; color: var(--text-sec, #94a3b8); }
+
+/* Строка, свёрнутая в соседнюю: её сумма учтена там, своей цены у неё нет. */
+.rec-rolled > td { background: var(--surface-light, #f8fafc); opacity: .75; }
+
+/* Работы, которых в чужой смете нет, а по оборудованию быть должны. */
+.rec-missing {
+    margin: 0 0 12px; padding: 10px 0 10px;
+    border: 1px solid rgba(245, 158, 11, .4); border-radius: 10px;
+    background: rgba(245, 158, 11, .07);
+}
+.rec-missing-hd { padding: 0 12px 8px; font-size: 13px; font-weight: 600; }
+.rec-missing .rec-table { background: transparent; }
+.rec-missing .rec-table td { border-color: rgba(245, 158, 11, .25); }
+
+/* Монтажная работа в таблице проверки. Артикула у неё нет и не будет, поэтому
+   красится она не как дыра в подборе, а нейтрально — это нормальная строка,
+   просто уезжает она в раздел работ, а не в оборудование. */
+.rec-workrow > td { background: rgba(2, 132, 199, .05); }
+.rec-work-tag {
+    display: inline-block; margin-bottom: 2px;
+    padding: 1px 7px; border-radius: 5px;
+    background: rgba(2, 132, 199, .12); color: var(--primary, #0284c7);
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em;
+}
+
+/* Плитка загруженного PDF/Excel/Word — вместо простыни извлечённого текста:
+   править его нельзя, а места он занимает весь экран. */
+.rec-doc {
+    position: relative;
+    width: 96px; height: 110px; flex: 0 0 auto;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 8px 6px;
     background: var(--surface-light, #f8fafc);
     border: 1px solid var(--border, #e2e8f0);
     border-radius: 8px;
-    font: 11.5px/1.5 ui-monospace, Consolas, monospace;
-    white-space: pre-wrap;
-    word-break: break-word;
-    color: var(--text-main, #334155);
+    overflow: hidden;
 }
+.rec-doc-ic {
+    width: 36px; height: 44px; flex: 0 0 auto;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 5px;
+    border-radius: 4px 10px 4px 4px;
+    color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .03em;
+}
+.rec-doc-name {
+    width: 100%; text-align: center;
+    font-size: 10.5px; line-height: 1.25; font-weight: 600;
+    color: var(--text-main, #334155);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; word-break: break-all;
+}
+.rec-doc-sub { font-size: 10px; color: var(--text-sec, #94a3b8); }
+.rec-doc:hover .rec-thumb-del { opacity: 1; }
 
 /* Миниатюры загруженных листов при многостраничной смете */
 .rec-imgs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }

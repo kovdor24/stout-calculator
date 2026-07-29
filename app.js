@@ -2947,6 +2947,10 @@ const app = {
             this.state.userAddedWorks = [];
         }
 
+        // Пометка «смета из распознавания» — уезжает вместе с calc_data в облако и
+        // показывается админу в канбане и списке смет
+        this.state.from_recognition = true;
+
         const stamp = Date.now();
         let eqCount = 0, workCount = 0, noPrice = 0, skippedNoQty = 0, docPriced = 0;
 
@@ -2973,15 +2977,52 @@ const app = {
             if (!price) noPrice++;
 
             if (r.kind === 'work') {
+                /**
+                 * Работа, сопоставленная с нашим прайсом монтажа (см. вкладку
+                 * «Монтажные работы» на экране проверки), уезжает под НАШИМ
+                 * названием, с нашей ценой и в свой раздел сметы. Чужая
+                 * формулировка при этом остаётся в описании: по ней монтажник
+                 * сверится с исходным КП.
+                 *
+                 * Тумблер «В смету — наши расценки» позволяет оставить цены
+                 * документа: если смету собирают, чтобы повторить чужое КП
+                 * один в один, наш прайс тут только мешает.
+                 */
+                const ourMode = !!(opts && opts.ourWorkPrices !== false);
+                // Строка, свёрнутая в соседнюю (их «трубы водоснабжения» внутри
+                // нашей «точки присоединения»), своей строкой в смету не идёт:
+                // иначе те же трубы будут посчитаны дважды. При переносе с
+                // ценами документа свёртки нет — там смета повторяется как есть.
+                if (ourMode && r._rolledInto) return;
+                // Единицы разошлись или расценка ушла в разы — умножать нашу
+                // цену на чужой объём нельзя, строка уедет со своей ценой.
+                // Ручной выбор расценки эту проверку снимает: там решил человек.
+                const workOk = r._w && (r._wLocked || (!r._wUnitBad && !r._wAlarm));
+                const useOur = !!(ourMode && workOk);
+                const ourWork = useOur ? r._w.work : null;
                 this.state.userAddedWorks.push({
-                    name: matched ? m.item.name : (r.raw || 'Работа из распознавания'),
+                    name: ourWork ? ourWork.name : (r.raw || 'Работа из распознавания'),
+                    desc: ourWork && r.raw && r.raw !== ourWork.name ? r.raw : undefined,
                     q: qty,
-                    price: price,
-                    unit: r.unit || 'шт',
-                    group: '5. Дополнительные работы',
+                    price: ourWork ? Math.round(ourWork.price) : price,
+                    unit: ourWork ? ourWork.unit : (r.unit || 'шт'),
+                    group: ourWork ? ourWork.group : '5. Дополнительные работы',
                     recognized: stamp,
                 });
                 workCount++;
+                // Одна чужая строка бывает двумя нашими работами: «монтаж
+                // тёплого пола (включая утеплитель)» у нас считается отдельно
+                // трубой и отдельно утеплителем. В смету они и уезжают порознь,
+                // иначе цена строки не сойдётся ни с одной нашей расценкой.
+                if (useOur) {
+                    for (const x of (r._w.extra || [])) {
+                        this.state.userAddedWorks.push({
+                            name: x.name, q: qty, price: Math.round(x.price),
+                            unit: x.unit, group: x.group, recognized: stamp,
+                        });
+                        workCount++;
+                    }
+                }
                 return;
             }
 
@@ -3041,6 +3082,9 @@ const app = {
         this.state.userAddedEq = this._recognizeUndo.userAddedEq;
         this.state.userAddedWorks = this._recognizeUndo.userAddedWorks;
         this._recognizeUndo = null;
+        // Откатили всё распознанное — снимаем и пометку, иначе смета осталась бы
+        // помеченной «распознавание» без единой распознанной строки
+        if (!this.isRecognizedEstimate()) delete this.state.from_recognition;
         this.saveState();
         this.render();
         return true;
@@ -3435,13 +3479,31 @@ const app = {
         }
     },
 
-    // Ленивая генерация calc_id при первом реальном расчёте (площадь задана) — это же
-    // момент, который считаем событием "расчитано". Срабатывает ровно один раз на проект,
-    // т.к. дальше calc_id уже существует и условие не выполняется.
-    ensureCalcId: function () {
-        if (this.state.calc_id || !this.state.area || this.state.area <= 0) return;
+    // Смета собрана распознаванием, а не подбором по параметрам объекта: хотя бы одна
+    // позиция пришла из загруженного файла. У такой сметы площадь обычно 0 — она и не
+    // нужна, позиции уже готовы, поэтому по площади её отличить нельзя.
+    isRecognizedEstimate: function () {
+        return !!(this.state.userAddedEq || []).some(eq => eq.recognized);
+    },
+
+    // Ленивая генерация calc_id при первом реальном расчёте — это же момент, который
+    // считаем событием "расчитано". Срабатывает ровно один раз на проект, т.к. дальше
+    // calc_id уже существует и условие не выполняется.
+    //
+    // Поводом считается либо заданная площадь (обычный подбор), либо появление своих /
+    // распознанных позиций: смета из одних распознанных строк — полноценная смета, её
+    // так же печатают и отправляют клиенту, и без номера она не сохранялась в облако и
+    // не попадала карточкой в канбан админки. force — для сценариев, где номер нужен
+    // безусловно (отправка ссылки клиенту).
+    ensureCalcId: function (force) {
+        if (this.state.calc_id) return;
+        const hasArea = this.state.area > 0;
+        const hasOwnRows = !!((this.state.userAddedEq || []).length || (this.state.userAddedWorks || []).length);
+        if (!force && !hasArea && !hasOwnRows) return;
         this.state.calc_id = String(Math.floor(100000 + Math.random() * 900000));
-        this.logInvoiceEvent('calculated');
+        const fromRecognition = this.isRecognizedEstimate();
+        if (fromRecognition) this.state.from_recognition = true;
+        this.logInvoiceEvent('calculated', fromRecognition ? { source: 'recognition' } : null);
     },
 
     getProUntilDate: function () {
@@ -4684,10 +4746,11 @@ const app = {
             // не считаем осиротевшими и оставляем — это штатная воронка, а не "зависшая" карточка.
             let liveCalcIds = null;
             let liveCalcMap = {};
+            let liveRecMap = {};
             try {
                 // Тянем calc_id и суммы из estimates для подсчета итогов по колонкам
                 const { data: liveEstimates, error: estErr } = await supabaseClient.from('estimates')
-                    .select('id, project_name, created_at, user_id, total_sum, eq_sum, works_sum, calc_id:calc_data->>calc_id, users(username, email)');
+                    .select('id, project_name, created_at, user_id, total_sum, eq_sum, works_sum, calc_id:calc_data->>calc_id, from_recognition:calc_data->>from_recognition, users(username, email)');
                 if (!estErr) {
                     liveCalcIds = new Set();
                     (liveEstimates || []).forEach(e => {
@@ -4695,6 +4758,8 @@ const app = {
                             liveCalcIds.add(String(e.calc_id));
                             const sum = parseFloat(e.total_sum) || ((parseFloat(e.eq_sum) || 0) + (parseFloat(e.works_sum) || 0)) || 0;
                             liveCalcMap[String(e.calc_id)] = sum;
+                            // Смета собрана распознаванием — помечаем карточку в канбане
+                            if (e.from_recognition === 'true' || e.from_recognition === true) liveRecMap[String(e.calc_id)] = true;
                         }
                     });
 
@@ -4765,12 +4830,14 @@ const app = {
             }
             this._kanbanUserMeta = userMeta;
             this._kanbanCalcSumMap = liveCalcMap;
+            this._kanbanRecMap = liveRecMap;
         } else if (!document.getElementById('kanban_root')) {
             content.innerHTML += `<div id="kanban_root"></div>`;
         }
 
         const userMeta = this._kanbanUserMeta || {};
         const liveCalcMap = this._kanbanCalcSumMap || {};
+        const liveRecMap = this._kanbanRecMap || {};
 
         // Группируем события по calc_id — каждая карточка живёт в колонке своего
         // последнего по времени события
@@ -4791,6 +4858,9 @@ const app = {
                 p.distributor_id = meta.distributor_id;
             }
             p.totalSum = liveCalcMap[String(e.calc_id)] || 0;
+            // Пометка «распознавание»: либо флаг в самой смете, либо meta события
+            // 'calculated' (у смет, сохранённых до появления флага в calc_data)
+            if (liveRecMap[String(e.calc_id)] || (e.meta && e.meta.source === 'recognition')) p.fromRecognition = true;
         });
         const list = Object.values(projects);
 
@@ -4853,6 +4923,7 @@ const app = {
                 return `
                                     <div onclick="app.renderKanbanCardDetail('${c.calc_id}')" style="cursor:pointer; background:var(--surface); border-radius:8px; padding:10px 12px; font-size:12px; box-shadow:0 1px 3px rgba(0,0,0,0.15); transition:0.15s;" onmouseover="this.style.boxShadow='0 3px 8px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.15)'">
                                         <div style="font-weight:700; color:var(--text-main); margin-bottom:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.project_name || 'Без названия'}</div>
+                                        ${c.fromRecognition ? `<div style="display:inline-block; background:rgba(139, 92, 246, 0.12); color:#7C3AED; font-size:9.5px; font-weight:800; border-radius:10px; padding:2px 7px; margin-bottom:6px; letter-spacing:0.02em;">🔍 РАСПОЗНАВАНИЕ</div>` : ''}
                                         <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
                                             <div style="width:20px; height:20px; border-radius:50%; background:${this.avatarColorFor(c.user_name || '?')}; color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${initial}</div>
                                             <div style="color:var(--text-sec); font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.user_name || '— (клиент)'}</div>
@@ -6805,13 +6876,11 @@ const app = {
             let uRow = null;
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
-                let { data } = await supabaseClient.from('users').select('id, email, account_type, demo_ends_at, distributor_id').eq('auth_user_id', session.user.id).maybeSingle();
+                let { data } = await supabaseClient.from('users').select('id, email, account_type, demo_ends_at, distributor_id, auth_user_id').eq('auth_user_id', session.user.id).maybeSingle();
                 uRow = data;
             } else if (tgUser.authUserId) {
-                let { data } = await supabaseClient.from('users').select('id, email, account_type, demo_ends_at, distributor_id').eq('auth_user_id', tgUser.authUserId).maybeSingle();
+                let { data } = await supabaseClient.from('users').select('id, email, account_type, demo_ends_at, distributor_id, auth_user_id').eq('auth_user_id', tgUser.authUserId).maybeSingle();
                 uRow = data;
-            } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                uRow = { id: '0279a53c-452b-474f-8626-08be2c2b32da', email: 'dima24ba@gmail.com', account_type: 'pro', demo_ends_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 4).toISOString() }; // Mock 4 days remaining for dev
             }
 
             if (!uRow) return;
@@ -7096,11 +7165,16 @@ const app = {
                         if (dist && dist.manager_email) {
                             const managerUser = await this.resolveManagerUserByEmail(dist.manager_email);
                             if (managerUser) {
-                                const { count } = await supabaseClient.from('manager_chat_messages')
-                                    .select('id', { count: 'exact', head: true })
+                                // Тянем сами строки, а не только счётчик: всплывающему окну нужен текст
+                                // последнего сообщения и данные нити, чтобы ответить прямо из него
+                                const { data: unreadRows } = await supabaseClient.from('manager_chat_messages')
+                                    .select('id, text, sender_name, created_at')
                                     .eq('installer_user_id', uRow.id).eq('manager_user_id', managerUser.id)
-                                    .neq('sender_user_id', uRow.id).eq('is_read', false);
+                                    .neq('sender_user_id', uRow.id).eq('is_read', false)
+                                    .order('created_at', { ascending: true });
+                                const count = (unreadRows || []).length;
                                 if (count > 0) {
+                                    const last = unreadRows[unreadRows.length - 1];
                                     const notifId = 'manager_chat_unread_installer';
                                     notifications.push({
                                         id: notifId,
@@ -7110,7 +7184,20 @@ const app = {
                                         comment: `У вас ${count} непрочитанных сообщений от менеджера${dist.company_name ? ' (' + dist.company_name + ')' : ''}.`,
                                         time: new Date().toISOString(),
                                         isRead: readIds.includes(notifId),
-                                        openTab: 'manager'
+                                        openTab: 'manager',
+                                        lastMsgId: last.id,
+                                        lastText: last.text,
+                                        lastTime: last.created_at,
+                                        senderName: last.sender_name || (dist.company_name ? 'Менеджер · ' + dist.company_name : 'Менеджер'),
+                                        chat: {
+                                            installerId: uRow.id,
+                                            installerAuthId: uRow.auth_user_id,
+                                            managerId: managerUser.id,
+                                            managerAuthId: managerUser.auth_user_id,
+                                            viewerId: uRow.id,
+                                            viewerName: this.formatShortName(tgUser) || tgUser.first_name || tgUser.username || 'Монтажник',
+                                            unreadIds: unreadRows.map(r => r.id)
+                                        }
                                     });
                                 }
                             }
@@ -7121,11 +7208,16 @@ const app = {
                     if (uRow.email) {
                         const managed = await this.resolveManagedInstallers(uRow.email);
                         if (managed.length) {
-                            const { count } = await supabaseClient.from('manager_chat_messages')
-                                .select('id', { count: 'exact', head: true })
+                            const { data: unreadRows } = await supabaseClient.from('manager_chat_messages')
+                                .select('id, text, sender_name, created_at, installer_user_id, installer_auth_user_id')
                                 .eq('manager_user_id', uRow.id)
-                                .neq('sender_user_id', uRow.id).eq('is_read', false);
+                                .neq('sender_user_id', uRow.id).eq('is_read', false)
+                                .order('created_at', { ascending: true });
+                            const count = (unreadRows || []).length;
                             if (count > 0) {
+                                // Непрочитанное может быть от разных монтажников — ответ из
+                                // всплывающего окна уходит тому, чьё сообщение пришло последним
+                                const last = unreadRows[unreadRows.length - 1];
                                 const notifId = 'manager_chat_unread_manager';
                                 notifications.push({
                                     id: notifId,
@@ -7135,7 +7227,20 @@ const app = {
                                     comment: `У вас ${count} непрочитанных сообщений от монтажников.`,
                                     time: new Date().toISOString(),
                                     isRead: readIds.includes(notifId),
-                                    openTab: 'installers'
+                                    openTab: 'installers',
+                                    lastMsgId: last.id,
+                                    lastText: last.text,
+                                    lastTime: last.created_at,
+                                    senderName: last.sender_name || 'Монтажник',
+                                    chat: {
+                                        installerId: last.installer_user_id,
+                                        installerAuthId: last.installer_auth_user_id,
+                                        managerId: uRow.id,
+                                        managerAuthId: uRow.auth_user_id,
+                                        viewerId: uRow.id,
+                                        viewerName: this.formatShortName(tgUser) || tgUser.first_name || tgUser.username || 'Менеджер',
+                                        unreadIds: unreadRows.filter(r => r.installer_user_id === last.installer_user_id).map(r => r.id)
+                                    }
                                 });
                             }
                         }
@@ -7171,6 +7276,9 @@ const app = {
                 this.playNotificationSound(savedSound);
             }
             this._lastUnreadCount = unreadCount;
+
+            // Всплывающие карточки в правом углу — по новым непрочитанным
+            this.popNewNotificationToasts(visibleNotifications);
         } catch (e) {
             console.error("Error fetching notifications:", e);
         }
@@ -7527,7 +7635,209 @@ const app = {
             readIds.push(notificationId);
             localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
         }
-        this.fetchNotifications().then(() => this.openNotificationsModal());
+        // Перерисовываем список только если модалка открыта — крестик может быть нажат
+        // и на всплывающей карточке в углу, тогда открывать модалку нельзя
+        this.fetchNotifications().then(() => {
+            const overlay = document.getElementById('notifications_modal_overlay');
+            if (overlay && overlay.style.display === 'flex') this.openNotificationsModal();
+        });
+    },
+
+    // ═══════════ ВСПЛЫВАЮЩИЕ СООБЩЕНИЯ В ПРАВОМ УГЛУ ═══════════
+    // Мессенджер-стиль: новое непрочитанное уведомление само всплывает карточкой поверх
+    // страницы (тот же контейнер и стили, что у showInAppNotification). Из карточки можно
+    // ответить не открывая кабинет, удалить уведомление совсем или просто скрыть карточку.
+    // Одно и то же сообщение всплывает один раз: ключи показанных лежат в localStorage,
+    // поэтому перезагрузка страницы не вываливает всё заново.
+
+    // Ключ показа. Для чата id уведомления постоянный ('manager_chat_unread_installer'),
+    // поэтому в ключ подмешиваем id последнего сообщения — иначе всплыло бы только раз.
+    notificationToastKey: function (n) {
+        return n.id + '|' + (n.lastMsgId || n.time || '');
+    },
+
+    popNewNotificationToasts: function (list) {
+        if (!Array.isArray(list) || !list.length) return;
+        let shown = [];
+        try { shown = JSON.parse(localStorage.getItem('stout_toasted_notifications') || '[]'); } catch (e) { shown = []; }
+
+        const fresh = list.filter(n => !n.isRead && !shown.includes(this.notificationToastKey(n)));
+        if (!fresh.length) return;
+
+        // Список отсортирован новыми вперёд. Показываем максимум три карточки за раз,
+        // остальные сразу помечаем показанными — чтобы не копилась очередь на пол-экрана.
+        // Порядок разворачиваем: стопка растёт вверх, самое свежее должно лечь в угол.
+        fresh.slice(0, 3).reverse().forEach(n => this.showNotificationToast(n));
+        fresh.forEach(n => shown.push(this.notificationToastKey(n)));
+        localStorage.setItem('stout_toasted_notifications', JSON.stringify(shown.slice(-300)));
+    },
+
+    showNotificationToast: function (n) {
+        // Правый нижний угол, как в мессенджерах. Контейнер общий с тостами о смене
+        // статуса сметы (showInAppNotification) — всё приходит в одну стопку.
+        let container = document.getElementById('msg_toast_container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'msg_toast_container';
+            container.className = 'msg-toast-container';
+            document.body.appendChild(container);
+        }
+
+        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const tid = 'msg_toast_' + Math.random().toString(36).slice(2, 9);
+        this._toastNotifs = this._toastNotifs || {};
+        this._toastNotifs[tid] = n;
+
+        const isChat = n.type === 'manager_chat' && !!n.chat;
+        const canReply = isChat || n.type === 'admin_message';
+        const icon = isChat ? '💬'
+            : n.type === 'admin_message' ? '✉️'
+                : n.type === 'invoice_reminder' ? '📄'
+                    : n.status === 'confirmed' ? '✅'
+                        : n.type === 'distributor_info' ? '🤝' : '🔔';
+        const title = isChat ? (n.senderName || 'Новое сообщение') : (n.projectName || 'Уведомление');
+        const bodyText = isChat
+            ? (n.lastText || n.comment || 'Новое сообщение')
+            : (n.comment || (n.projectName ? `Смета «${n.projectName}»` : ''));
+        const timeStr = new Date(n.lastTime || n.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+        const toast = document.createElement('div');
+        toast.className = 'calc-toast-notification msg-toast no-print';
+        toast.id = tid;
+        toast.innerHTML = `
+            <div class="calc-toast-icon">${icon}</div>
+            <div class="calc-toast-content">
+                <div class="msg-toast-head">
+                    <div class="calc-toast-title">${esc(title)}</div>
+                    <span class="msg-toast-time">${timeStr}</span>
+                </div>
+                <div class="calc-toast-body msg-toast-text">${esc(bodyText)}</div>
+                ${canReply ? `
+                <div class="msg-toast-reply">
+                    <input type="text" class="msg-toast-input" placeholder="Ответить...">
+                    <button class="msg-toast-send" title="Отправить">➤</button>
+                </div>` : ''}
+                <div class="msg-toast-actions">
+                    <button class="msg-toast-open">Открыть</button>
+                    <button class="msg-toast-del">Удалить</button>
+                </div>
+            </div>
+            <button class="calc-toast-close" title="Скрыть">✕</button>
+        `;
+        container.appendChild(toast);
+
+        // Больше четырёх карточек в стопке — это уже пол-экрана: самые старые убираем
+        while (container.children.length > 4) {
+            const oldest = container.children[0];
+            clearTimeout(oldest._hideTimer);
+            oldest.remove();
+        }
+
+        // Автоскрытие через 20 секунд, но пока карточку держат под курсором или пишут
+        // в ней ответ — таймер не идёт, чтобы окно не исчезло на полуслове
+        const startTimer = () => {
+            clearTimeout(toast._hideTimer);
+            toast._hideTimer = setTimeout(() => this.closeNotificationToast(tid), 20000);
+        };
+        toast.addEventListener('mouseenter', () => clearTimeout(toast._hideTimer));
+        toast.addEventListener('mouseleave', () => {
+            const inp = toast.querySelector('.msg-toast-input');
+            if (inp && (document.activeElement === inp || inp.value.trim())) return;
+            startTimer();
+        });
+
+        toast.querySelector('.calc-toast-close').addEventListener('click', () => this.closeNotificationToast(tid));
+        toast.querySelector('.msg-toast-del').addEventListener('click', () => this.deleteNotificationFromToast(tid));
+        toast.querySelector('.msg-toast-open').addEventListener('click', () => this.openNotificationFromToast(tid));
+
+        const inp = toast.querySelector('.msg-toast-input');
+        if (inp) {
+            inp.addEventListener('focus', () => clearTimeout(toast._hideTimer));
+            inp.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); this.sendNotificationToastReply(tid); }
+            });
+            toast.querySelector('.msg-toast-send').addEventListener('click', () => this.sendNotificationToastReply(tid));
+        }
+
+        startTimer();
+    },
+
+    // Скрыть карточку: уведомление остаётся в списке под колокольчиком, просто убираем с глаз
+    closeNotificationToast: function (tid) {
+        const toast = document.getElementById(tid);
+        if (this._toastNotifs) delete this._toastNotifs[tid];
+        if (!toast) return;
+        clearTimeout(toast._hideTimer);
+        toast.classList.add('toast-removing');
+        setTimeout(() => { if (toast.parentElement) toast.remove(); }, 350);
+    },
+
+    // Удалить уведомление совсем — то же действие, что крестик на карточке в модалке
+    deleteNotificationFromToast: function (tid) {
+        const n = (this._toastNotifs || {})[tid];
+        if (n) this.dismissNotification(n.id);
+        this.closeNotificationToast(tid);
+    },
+
+    openNotificationFromToast: function (tid) {
+        const n = (this._toastNotifs || {})[tid];
+        this.closeNotificationToast(tid);
+        if (n) this.handleNotificationClick(n.id, n.estimateId || null, n.openTab);
+    },
+
+    // Ответ прямо из всплывающей карточки: в чат с менеджером/монтажником — строкой
+    // переписки, на сообщение админа — тем же ответом, что из модалки уведомлений
+    sendNotificationToastReply: async function (tid) {
+        const toast = document.getElementById(tid);
+        const n = (this._toastNotifs || {})[tid];
+        if (!toast || !n) return;
+        const inp = toast.querySelector('.msg-toast-input');
+        const btn = toast.querySelector('.msg-toast-send');
+        const text = inp ? inp.value.trim() : '';
+        if (!text) { if (inp) inp.focus(); return; }
+
+        clearTimeout(toast._hideTimer);
+        if (btn) btn.disabled = true;
+        if (inp) inp.disabled = true;
+
+        try {
+            if (n.type === 'manager_chat' && n.chat) {
+                const c = n.chat;
+                await this.sendChatMessageRow(c.installerId, c.installerAuthId, c.managerId, c.managerAuthId, c.viewerId, c.viewerName, text);
+                // Ответил — значит прочитал: гасим входящие, иначе то же уведомление
+                // о непрочитанном соберётся при следующем опросе
+                if (c.unreadIds && c.unreadIds.length) {
+                    await supabaseClient.from('manager_chat_messages')
+                        .update({ is_read: true, read_at: new Date().toISOString() })
+                        .in('id', c.unreadIds);
+                }
+                if (this._activeChatThread) this.refreshChatThread(this._activeChatThread);
+            } else {
+                await this.sendUserReply(n.id, text, true);
+            }
+
+            const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
+            if (!readIds.includes(n.id)) {
+                readIds.push(n.id);
+                localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
+            }
+
+            const replyRow = toast.querySelector('.msg-toast-reply');
+            if (replyRow) replyRow.innerHTML = '<span class="msg-toast-sent">✓ Ответ отправлен</span>';
+            const actions = toast.querySelector('.msg-toast-actions');
+            if (actions) actions.remove();
+            setTimeout(() => this.closeNotificationToast(tid), 2000);
+
+            this.fetchNotifications();
+        } catch (e) {
+            console.error('[sendNotificationToastReply] Ошибка:', e);
+            if (btn) btn.disabled = false;
+            if (inp) inp.disabled = false;
+            const replyRow = toast.querySelector('.msg-toast-reply');
+            if (replyRow && !replyRow.querySelector('.msg-toast-err')) {
+                replyRow.insertAdjacentHTML('afterend', `<div class="msg-toast-err">Не удалось отправить: ${e.message}</div>`);
+            }
+        }
     },
 
     // Реакция монтажника на напоминание "Смета одобрена — выставить счёт?":
@@ -7902,7 +8212,7 @@ const app = {
             // 3. Fetch Recent Estimates (Fixed 50) — те же точечные JSON-поля, что и выше, вместо
             // полного calc_data (см. комментарий у запроса userEsts)
             let { data: recentEsts, error: errRE } = await supabaseClient.from('estimates')
-                .select('id, project_name, eq_sum, works_sum, total_sum, created_at, users(username, phone, email), calc_id:calc_data->>calc_id, shared_invoice_id:calc_data->>shared_invoice_id, area:calc_data->>area')
+                .select('id, project_name, eq_sum, works_sum, total_sum, created_at, users(username, phone, email), calc_id:calc_data->>calc_id, shared_invoice_id:calc_data->>shared_invoice_id, area:calc_data->>area, from_recognition:calc_data->>from_recognition')
                 .order('created_at', { ascending: false })
                 .limit(50);
             recentEsts = (recentEsts || []).map(e => ({ ...e, calc_data: { calc_id: e.calc_id, shared_invoice_id: e.shared_invoice_id, area: e.area } }));
@@ -8684,7 +8994,7 @@ const app = {
 
                 h += `<tr class="active-row admin-estimate-row" data-search="${estSearchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminEstimate('${e.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
                             <td style="color:var(--text-sec);">${i + 1}</td>
-                            <td><b>${projName}</b></td>
+                            <td><b>${projName}</b>${e.from_recognition === 'true' || e.from_recognition === true ? ` <span title="Смета собрана распознаванием файла" style="background:rgba(139, 92, 246, 0.12); color:#7C3AED; font-size:9.5px; font-weight:800; border-radius:10px; padding:2px 7px; white-space:nowrap;">🔍 РАСПОЗНАВАНИЕ</span>` : ''}</td>
                             <td>${author}</td>
                             <td style="font-weight:bold; color:var(--primary);">${sum}</td>
                             <td>${adminStatusBadge}</td>
@@ -9046,8 +9356,11 @@ const app = {
         }
     },
 
-    sendUserReply: async function (parentId, text) {
+    // silent = true — ответ отправлен из всплывающей карточки в углу: там своя индикация
+    // («✓ Отправлено» прямо в карточке), поэтому ни alert'ов, ни открытия модалки не нужно
+    sendUserReply: async function (parentId, text, silent) {
         if (!text || !text.trim()) {
+            if (silent) throw new Error('Введите текст ответа');
             app.alert("Введите текст ответа!");
             return;
         }
@@ -9064,6 +9377,7 @@ const app = {
                 uRow = data;
             }
             if (!uRow) {
+                if (silent) throw new Error('Необходимо авторизоваться для отправки ответа');
                 app.alert("Необходимо авторизоваться для отправки ответа.");
                 return;
             }
@@ -9078,7 +9392,7 @@ const app = {
 
             if (error) throw error;
 
-            app.alert("Ответ успешно отправлен администратору!");
+            if (!silent) app.alert("Ответ успешно отправлен администратору!");
 
             // Email Дублирование администраторам в фоне
             (async () => {
@@ -9102,9 +9416,10 @@ const app = {
             if (inp) inp.value = '';
 
             // Обновляем список уведомлений
-            this.openNotificationsModal();
+            if (!silent) this.openNotificationsModal();
         } catch (e) {
             console.error("Error sending reply:", e);
+            if (silent) throw e;
             app.alert("Не удалось отправить ответ: " + e.message);
         }
     },
@@ -11701,7 +12016,10 @@ const app = {
                 auth_user_id: authUserId,
                 email: email,
                 username: fullName,
-                phone: existingPhone,
+                // Пустой телефон в upsert НЕ отправляем (так же, как city ниже): при входе с
+                // нового устройства localStorage пуст, и телефон затирался бы в базе пустой
+                // строкой — после чего анкета считалась незаполненной и открывалась заново
+                phone: existingPhone || undefined,
                 city: existingCity || undefined,
                 utm_source: utm || undefined,
                 registration_ip: clientIp,
@@ -12998,9 +13316,12 @@ const app = {
             tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99", email: "test@installer.ru" };
         }
 
-        // Генерируем уникальный ID расчета (если еще нет), чтобы избежать дубликатов при saveToCloud
+        // Генерируем уникальный ID расчета (если еще нет), чтобы избежать дубликатов при
+        // saveToCloud. Через ensureCalcId, а не вручную: иначе номер появлялся, а событие
+        // 'calculated' не писалось — и отправленная клиенту смета не заводила карточку
+        // в канбане админки (типичный случай для сметы из распознавания).
         if (!this.state.calc_id) {
-            this.state.calc_id = String(Math.floor(100000 + Math.random() * 900000));
+            this.ensureCalcId(true);
             this.saveState();
         }
 
@@ -14548,12 +14869,14 @@ const app = {
     },
 
     // === ТОСТ-УВЕДОМЛЕНИЯ О СМЕНЕ СТАТУСА ===
+    // Контейнер общий с всплывающими сообщениями (showNotificationToast) — правый нижний
+    // угол, одна стопка: и статусы смет, и сообщения приходят в одно и то же место
     showInAppNotification: function (title, body, icon = '🔔') {
-        let container = document.getElementById('calc_toast_container');
+        let container = document.getElementById('msg_toast_container');
         if (!container) {
             container = document.createElement('div');
-            container.id = 'calc_toast_container';
-            container.className = 'calc-toast-container';
+            container.id = 'msg_toast_container';
+            container.className = 'msg-toast-container';
             document.body.appendChild(container);
         }
 
@@ -14569,6 +14892,13 @@ const app = {
         `;
 
         container.appendChild(toast);
+
+        // Стопка общая с сообщениями — держим её не выше четырёх карточек
+        while (container.children.length > 4) {
+            const oldest = container.children[0];
+            clearTimeout(oldest._hideTimer);
+            oldest.remove();
+        }
 
         // Автоудаление через 8 секунд
         setTimeout(() => {

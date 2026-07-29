@@ -5,3 +5,7 @@ Thumbs.db
 scratch/
 .claude/
 *ZENBOOK*.js
+
+# Промежуточные сборки прайса (боевой индекс — price_index.json)
+price_index.new.json
+price_index.prev.json

@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "ru.heatcalc.app",
+        "sha256_cert_fingerprints": ["4A:07:9E:44:E9:D4:32:18:A1:BB:9E:29:82:0B:23:2A:B3:1D:A1:54:01:67:F2:2D:FE:3B:75:CC:94:00:8D:2D"]
+      }
+    }]
