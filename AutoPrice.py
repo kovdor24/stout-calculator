@@ -79,10 +79,55 @@ def get_price_card_isolation(driver, sku, old_price):
     if "404" in driver.title or "Страница не найдена" in driver.page_source: 
         return "NOT_FOUND"
     soup = BeautifulSoup(driver.page_source, 'html.parser')
-    parts = re.findall(r'\d+', sku)
-    if not parts: return "NOT_FOUND"
-    unique_id = parts[-1] 
-    candidates = soup.find_all(string=re.compile(unique_id))
+
+    # Скрипты и стили — не содержимое страницы. Артикул попадает в них через
+    # инициализацию каталога и адрес поиска (/search/?q=SFW-0072-000020), и
+    # поиск по тексту цеплялся именно за них, а дальше поднимался по родителям
+    # до первой попавшейся цены.
+    for tag in soup(['script', 'style', 'noscript', 'template']):
+        tag.decompose()
+
+    # Нижняя граница цены.
+    #
+    # Здесь стояло жёсткое «дороже 100 ₽» — отсечка мусорных чисел, которые
+    # попадаются в тексте карточки. Заодно она отсекала весь мелкий крепёж:
+    # хомут SAC-0020-000012 стоит 39 ₽, уплотнительное кольцо RSS-1027-000022 —
+    # 21 ₽, и такие позиции ВСЕГДА возвращали NOT_FOUND, хотя на сайте они есть.
+    # В прогоне 29.07 из 40 дошедших до поиска артикулов STOUT/ROMMER так
+    # провалились 38 — все дешевле 110 ₽.
+    #
+    # Отталкиваемся от старой цены: это тот же коридор ±200%, который всё равно
+    # проверяется ниже, только применённый сразу. Старой цены нет — остаётся
+    # прежнее поведение.
+    try: _op_floor = int(float(old_price))
+    except: _op_floor = 0
+    price_floor = max(1, _op_floor * 0.33) if _op_floor else 100
+
+    # Опознаём товар по ПОЛНОМУ артикулу, а не по последней группе цифр.
+    #
+    # Было: unique_id = parts[-1], то есть «000020» для SFW-0072-000020. Когда
+    # артикула на сайте нет, teremonline не отвечает «не найдено», а показывает
+    # подборку «Найдено в категориях» — 7434 товара. В ней «000020» встречается
+    # у десятков чужих карточек, и парсер брал цену первой попавшейся: по
+    # SFW-0072-000020 он «нашёл» кран шаровой SVF 0002 000025. Совпадение цены
+    # с каталогом (3711 ₽) там было чистой случайностью — в другой раз в
+    # catalog.js уехала бы цена постороннего товара.
+    #
+    # Разделители в коде на сайте плавают: рядом лежат «SAC-0020-000012» и
+    # «SVF 0002 000025». Поэтому ищем группы артикула подряд, допуская между
+    # ними пробел, дефис или подчёркивание.
+    groups = re.findall(r'[0-9A-Za-z]+', sku)
+    if not groups: return "NOT_FOUND"
+    sku_re = re.compile(r'[\s\-–—_]*'.join(map(re.escape, groups)), re.IGNORECASE)
+
+    # Артикул в карточке стоит отдельной короткой строкой («Код: SAC-0020-000012»).
+    # Всё длинное, со слешами или фигурными скобками — это остатки разметки и
+    # адресов, а не код товара.
+    def _looks_like_code(node):
+        t = str(node).strip()
+        return len(t) <= 60 and '/' not in t and '{' not in t
+
+    candidates = [t for t in soup.find_all(string=sku_re) if _looks_like_code(t)]
     found_items = []
     
     fallback_status = None
@@ -112,13 +157,13 @@ def get_price_card_isolation(driver, sku, old_price):
                 price_el = card.find(class_=re.compile(r'price__value|product-price|club-price|catalog-item__price', re.I))
                 if price_el and 'old' not in str(price_el.get('class', [])) and 'old' not in str(price_el.parent.get('class', [])):
                     p = clean_price(price_el.get_text())
-                    if p and p > 100:
+                    if p and p >= price_floor:
                         price_in_card = p
                 if not price_in_card:
                     m = re.search(r'(\d{1,3}(?:\s\d{3})*|\d+)\s?(?:₽|руб)', card.get_text(" ", strip=True), re.IGNORECASE)
                     if m:
                         p = clean_price(m.group(1))
-                        if p and p > 100:
+                        if p and p >= price_floor:
                             price_in_card = p
             
             if price_in_card and status_in_card:
@@ -313,6 +358,22 @@ def update_catalog_prices():
         if not is_nested:
             valid_items.append(item)
     items_to_process = valid_items
+
+    # Ищем только СВОИ артикулы — STOUT и ROMMER, вида SVB-0012-000015.
+    #
+    # В каталоге лежат ещё ProAqua (STRS020RCT), Energoflex (EFXT018092SUPRK),
+    # Джилекс, Walraven, Tech-Krep и числовые коды прайса. На teremonline их под
+    # этими кодами нет, и поиск по ним всегда возвращает NOT_FOUND — но тратит
+    # те же ~15 секунд. Хуже того, у чужих позиций обычно нет price_date, а
+    # сортировка ниже ставит бездатные в начало очереди: прогон 29.07 за три
+    # часа перебрал 318 позиций, из них 278 чужих, и до просроченных товаров
+    # STOUT так и не дошёл.
+    OWN_SKU_RE = re.compile(r'^[A-Z]{3}-\d{4}-')
+    skipped_foreign = len(items_to_process)
+    items_to_process = [i for i in items_to_process if OWN_SKU_RE.match(i['sku'])]
+    skipped_foreign -= len(items_to_process)
+    if skipped_foreign:
+        print(f"Пропущено чужих артикулов (не STOUT/ROMMER): {skipped_foreign}")
 
     # Сортируем от самых старых price_date к самым свежим (без даты — считаем самыми
     # старыми, в начало очереди). Прогон часто не успевает пройти весь каталог за один раз
