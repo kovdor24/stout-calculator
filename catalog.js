@@ -1667,16 +1667,16 @@ const catalog = {
         { id: "SDG-0001-002001", name: "Группа насосная DN20 (Прямая) - для радиаторов до 10 кВт", price: 16243, rommer: { id: "RDG-1001-002501", name: "Группа насосная DN25 (Прямая) - для радиаторов до 23 кВт", price: 9514, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SDG-0002-002001", name: "Группа насосная DN20 (Смес.) - для радиаторов до 10 кВт, для тёплого пола до 5 кВт", price: 29589, rommer: { id: "RDG-1002-002501", name: "Насосная группа DN25 (термостатический клапан) - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 11212, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SDG-0003-002001", name: "Группа насосная DN20 (под сервопривод) - для радиаторов до 10 кВт, для тёплого пола до 5 кВт", price: 16243, rommer: { id: "RDG-1003-002501", name: "Группа насосная DN25 (под сервопривод) - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 11496, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SDG-0007-002001", name: "Группа насосная DN20 (3-х ход. приводной смеситель) - для радиаторов до 10 кВт, для тёплого пола до 5 кВт", price: 23382, rommer: { id: "RDG-1003-002501", name: "Группа насосная DN25 (под сервопривод) - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 11496, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-07-02" }
+        { id: "SDG-0007-002001", name: "Группа насосная DN20 (3-х ход. приводной смеситель) - для радиаторов до 10 кВт, для тёплого пола до 5 кВт", price: 23382, rommer: { id: "RDG-1003-002501", name: "Группа насосная DN25 (под сервопривод) - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 11496, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-07-02" }
     ],
     groups_dn25: [
-        { id: "SDG-0001-002501", name: "Группа насосная DN25 (Прямая) - для радиаторов до 24 кВт", price: 17535, rommer: { id: "RDG-1001-002501", name: "Группа насосная DN25 (Прямая) - для радиаторов до 23 кВт", price: 9514, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SDG-0002-002501", name: "Группа насосная DN25 (Смес.) - для радиаторов до 24 кВт, для тёплого пола до 12 кВт", price: 31942, rommer: { id: "RDG-1002-002501", name: "Насосная группа DN25 (термостатический клапан) - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 11212, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SDG-0003-002501", name: "Группа насосная DN25 (под сервопривод) - для радиаторов до 24 кВт, для тёплого пола до 12 кВт", price: 25240, rommer: { id: "RDG-1003-002501", name: "Группа насосная DN25 (под сервопривод) - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 11496, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SDG-0001-002501", name: "Группа насосная DN25 (Прямая) - для радиаторов до 24 кВт", price: 17535, rommer: { id: "RDG-1001-002501", name: "Группа насосная DN25 (Прямая) - для радиаторов до 23 кВт", price: 9514, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SDG-0002-002501", name: "Группа насосная DN25 (Смес.) - для радиаторов до 24 кВт, для тёплого пола до 12 кВт", price: 31942, rommer: { id: "RDG-1002-002501", name: "Насосная группа DN25 (термостатический клапан) - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 11212, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SDG-0003-002501", name: "Группа насосная DN25 (под сервопривод) - для радиаторов до 24 кВт, для тёплого пола до 12 кВт", price: 25240, rommer: { id: "RDG-1003-002501", name: "Группа насосная DN25 (под сервопривод) - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 11496, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SDG-0001-002504", name: "Группа насосная DN25 (Прямая, с насосом STOUT SPC 25/60-180) - для радиаторов до 24 кВт", price: 17535, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
         { id: "SDG-0002-002504", name: "Группа насосная DN25 (Смес., с насосом STOUT SPC 25/60-180) - для радиаторов до 24 кВт, для тёплого пола до 12 кВт", price: 31942, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
         { id: "SDG-0003-002504", name: "Группа насосная DN25 (под сервопривод, с насосом STOUT SPC 25/60-180) - для радиаторов до 24 кВт, для тёплого пола до 12 кВт", price: 25240, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0007-002501", name: "Группа насосная DN25 (3-х ход. приводной смеситель) - для радиаторов до 24 кВт, для тёплого пола до 12 кВт", price: 25240, rommer: { id: "RDG-1003-002501", name: "Группа насосная DN25 (под сервопривод) - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 11496, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-07-02" },
+        { id: "SDG-0007-002501", name: "Группа насосная DN25 (3-х ход. приводной смеситель) - для радиаторов до 24 кВт, для тёплого пола до 12 кВт", price: 25240, rommer: { id: "RDG-1003-002501", name: "Группа насосная DN25 (под сервопривод) - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 11496, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-07-02" },
         { id: "SDG-0007-002504", name: "Группа насосная DN25 (3-х ход. приводной смеситель, с насосом STOUT SPC 25/60-180) - для радиаторов до 24 кВт, для тёплого пола до 12 кВт", price: 25240, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
         { id: "RDG-1002-012501", name: "ROMMER Насосная группа с термостатическим смесительным клапаном (35-60°С) 1\", без насоса, левая - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 12333, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
         { id: "RDG-1003-012501", name: "ROMMER Насосная группа с 3-ходовым приводным смесителем 1\", без насоса, левая - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 12646, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
@@ -1720,50 +1720,50 @@ const catalog = {
         { id: "SDG-0016-005006", name: "Стальной распределительный коллектор DN32 (6 насосных групп)", price: 186672, brand: "STOUT", availability: "on_order", price_date: "2026-07-13" }
     ],
     hydro_dn20: [
-        { id: "SDG-0018-002502", name: "Коллектор-гидрострелка DN20 (2 конт)", price: 50005, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SDG-0018-002503", name: "Коллектор-гидрострелка DN20 (3 конт)", price: 57133, availability: "in_stock", price_date: "2026-07-12" }
+        { id: "SDG-0018-002502", name: "Коллектор-гидрострелка DN20 (2 конт)", price: 50005, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0018-002503", name: "Коллектор-гидрострелка DN20 (3 конт)", price: 57133, availability: "in_stock", price_date: "2026-07-29" }
     ],
     hydro_dn25: [
-        { id: "SDG-0018-004002", name: "Коллектор-гидрострелка DN25 (2 конт)", price: 56826, rommer: [{ id: "RDG-0017-004002", name: "Стальной распределительный коллектор 2 контура", price: 11340, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 7329, brand: "ROMMER", rommer: { id: "RDG-1015-004003", name: "Гидравлическая стрелка 1 1/2\", 3,0 м³/ч", price: 16722, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-06-27" }], availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SDG-0018-004003", name: "Коллектор-гидрострелка DN25 (3 конт)", price: 64925, rommer: [{ id: "RDG-0017-004003", name: "Стальной распределительный коллектор 3 контура", price: 14002, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 7329, brand: "ROMMER", rommer: { id: "RDG-1015-004003", name: "Гидравлическая стрелка 1 1/2\", 3,0 м³/ч", price: 16722, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-06-27" }], availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RDG-1015-004003", name: "Гидравлическая стрелка 1 1/2\", 3,0 м³/ч", price: 18394, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }
+        { id: "SDG-0018-004002", name: "Коллектор-гидрострелка DN25 (2 конт)", price: 56826, rommer: [{ id: "RDG-0017-004002", name: "Стальной распределительный коллектор 2 контура", price: 11340, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 7329, brand: "ROMMER", rommer: { id: "RDG-1015-004003", name: "Гидравлическая стрелка 1 1/2\", 3,0 м³/ч", price: 16722, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-06-27" }], availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SDG-0018-004003", name: "Коллектор-гидрострелка DN25 (3 конт)", price: 64925, rommer: [{ id: "RDG-0017-004003", name: "Стальной распределительный коллектор 3 контура", price: 14002, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 7329, brand: "ROMMER", rommer: { id: "RDG-1015-004003", name: "Гидравлическая стрелка 1 1/2\", 3,0 м³/ч", price: 16722, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-06-27" }], availability: "in_stock", price_date: "2026-06-27" },
+        { id: "RDG-1015-004003", name: "Гидравлическая стрелка 1 1/2\", 3,0 м³/ч", price: 18394, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }
     ],
     pumps_dn20: [
-        { id: "RCP-0002-1560130", brand: "ROMMER", name: "Насос 15/60-130", price: 3532, availability: "in_stock", price_date: "2026-07-12" }
+        { id: "RCP-0002-1560130", brand: "ROMMER", name: "Насос 15/60-130", price: 3532, availability: "in_stock", price_date: "2026-07-29" }
     ],
     pumps_dn25: [
-        { id: "SPC-0011-2560180", name: "Насос циркуляционный 25/60-180", price: 11669, type: "default", desc: "Базовый насос STOUT 25/60-180.", rommer: { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI", price: 4909, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SPC-0010-2560180", name: "Насос циркуляционный 25/60-180 (Std)", price: 11669, type: "std", desc: "Классический 3-х скоростной насос.", rommer: { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI", price: 4909, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SPC-0002-2560180", name: "Насос циркуляционный Mini 25/60-180", price: 21680, type: "mini", desc: "Энергоэффективный (частотный).", rommer: { id: "RCP-0030-2560180", name: "Насос частотный EVO 25/60-180", price: 8930, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SPC-0003-2560180", name: "Насос циркуляционный Mini Pro 25/60-180", price: 30622, type: "pro", desc: "Премиум Smart (дисплей, авто-адаптация).", rommer: { id: "RCP-0030-2560180", name: "Насос частотный EVO 25/60-180", price: 8930, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" }
+        { id: "SPC-0011-2560180", name: "Насос циркуляционный 25/60-180", price: 11669, type: "default", desc: "Базовый насос STOUT 25/60-180.", rommer: { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI", price: 4909, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SPC-0010-2560180", name: "Насос циркуляционный 25/60-180 (Std)", price: 11669, type: "std", desc: "Классический 3-х скоростной насос.", rommer: { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI", price: 4909, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SPC-0002-2560180", name: "Насос циркуляционный Mini 25/60-180", price: 21680, type: "mini", desc: "Энергоэффективный (частотный).", rommer: { id: "RCP-0030-2560180", name: "Насос частотный EVO 25/60-180", price: 8930, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SPC-0003-2560180", name: "Насос циркуляционный Mini Pro 25/60-180", price: 30622, type: "pro", desc: "Премиум Smart (дисплей, авто-адаптация).", rommer: { id: "RCP-0030-2560180", name: "Насос частотный EVO 25/60-180", price: 8930, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" }
     ],
     rommer_pumps: [
-        { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI", price: 4868, brand: "ROMMER", desc: "Бюджетный насос серии PROFI.", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RCP-0004-2560130", name: "Насос циркуляционный PROFI", price: 5006, brand: "ROMMER", desc: "Бюджетный насос серии PROFI.", availability: "in_stock", price_date: "2026-07-12" }
+        { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI", price: 4868, brand: "ROMMER", desc: "Бюджетный насос серии PROFI.", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RCP-0004-2560130", name: "Насос циркуляционный PROFI", price: 5006, brand: "ROMMER", desc: "Бюджетный насос серии PROFI.", availability: "in_stock", price_date: "2026-07-29" }
     ],
     pumps_mix: [
-        { id: "SPC-0011-2560130", brand: "STOUT", name: "Насос 25/60-130", price: 12666, rommer: { id: "RCP-0004-2560130", name: "Насос циркуляционный PROFI", price: 5048, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" }
+        { id: "SPC-0011-2560130", brand: "STOUT", name: "Насос 25/60-130", price: 12666, rommer: { id: "RCP-0004-2560130", name: "Насос циркуляционный PROFI", price: 5048, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" }
     ],
-    hydro_arrow: { id: "SDG-0015-004001", name: "Гидравлическая стрелка 3 м³/ч", price: 22082, rommer: { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 7329, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-    servo_rotary_sensor: { id: "SVM-0025-230017", name: "Сервопривод с датчиком", price: 40903, rommer: { id: "RVM-0015-230017", name: "Сервопривод с датчиком", price: 15810, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-12" },
-    servo_rotary_std: { id: "SVM-0005-230001", name: "Сервопривод 230V", price: 16079, rommer: { id: "ROT-0001-230001", name: "Сервопривод 230V", price: 5900, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-12" },
+    hydro_arrow: { id: "SDG-0015-004001", name: "Гидравлическая стрелка 3 м³/ч", price: 22082, rommer: { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 7329, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
+    servo_rotary_sensor: { id: "SVM-0025-230017", name: "Сервопривод с датчиком", price: 40903, rommer: { id: "RVM-0015-230017", name: "Сервопривод с датчиком", price: 15810, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-29" },
+    servo_rotary_std: { id: "SVM-0005-230001", name: "Сервопривод 230V", price: 16079, rommer: { id: "ROT-0001-230001", name: "Сервопривод 230V", price: 5900, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-07-29" },
     hydro_modular_dn20: [
-        { id: "SDG-0016-002502", name: "Стальной распр. коллектор 2 контура DN20", price: 26395, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SDG-0016-002503", name: "Стальной распр. коллектор 3 контура DN20", price: 29180, availability: "in_stock", price_date: "2026-07-12" }
+        { id: "SDG-0016-002502", name: "Стальной распр. коллектор 2 контура DN20", price: 26395, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0016-002503", name: "Стальной распр. коллектор 3 контура DN20", price: 29180, availability: "in_stock", price_date: "2026-07-29" }
     ],
     mats: [
-        { id: "SMF-0001-110802", name: "Мат с бобышками STOUT", area: 0.88, price: 1041, brand: "STOUT", rommer: [{ id: "418318", name: "XPS Технониколь Carbon Eco 50мм (1180х580)", price: 299, brand: "Technonicol" }, { id: "138605", name: "Дюбель тарельчатый 10х100 (Уп. 100 шт)", price: 936, brand: "Tech-Krep" }, { id: "SMF-0005-251620", name: "Скобы якорные для такера (Кассета 25 шт)", price: 121, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" }, { id: "160028", name: "Лента монтажная X-Glass ТПЛ армированная 50х50м", price: 236, brand: "X-Glass" }], availability: "in_stock", price_date: "2026-06-27" }
+        { id: "SMF-0001-110802", name: "Мат с бобышками STOUT", area: 0.88, price: 1041, brand: "STOUT", rommer: [{ id: "418318", name: "XPS Технониколь Carbon Eco 50мм (1180х580)", price: 299, brand: "Technonicol" }, { id: "138605", name: "Дюбель тарельчатый 10х100 (Уп. 100 шт)", price: 936, brand: "Tech-Krep" }, { id: "SMF-0005-251620", name: "Скобы якорные для такера (Кассета 25 шт)", price: 121, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }, { id: "160028", name: "Лента монтажная X-Glass ТПЛ армированная 50х50м", price: 236, brand: "X-Glass" }], availability: "in_stock", price_date: "2026-06-27" }
     ],
     xps_kit: [
         { id: "418318", name: "XPS Технониколь Carbon Eco 50мм (1180х580)", area: 0.6844, price: 299, brand: "Technonicol" },
         { id: "138605", name: "Дюбель тарельчатый 10х100 (Уп. 100 шт)", price: 936, brand: "Tech-Krep" },
-        { id: "SMF-0005-251620", name: "Скобы якорные для такера (Кассета 25 шт)", price: 109, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "SMF-0005-251620", name: "Скобы якорные для такера (Кассета 25 шт)", price: 109, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
         { id: "160028", name: "Лента монтажная X-Glass ТПЛ армированная 50х50м", price: 236, brand: "X-Glass" }
     ],
-    american_34: { id: "SFT-0041-000034", name: "Разъемное соед. американка ВН 3/4\"", price: 597, availability: "in_stock", price_date: "2026-07-12" },
-    ball_valve_34: { id: "SVB-0004-000020", name: "Кран шаровой ВР/НР, 3/4\"", price: 1090, rommer: { id: "RBV-0004-2210220", name: "Кран шаровой ВР/НР бабочка 3/4\"", price: 497, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-    check_valve_34: { id: "SVC-0011-000020", name: "Клапан обратный пружинный 3/4\"", price: 1547, rommer: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 535, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-06" },
-    rommer_check_valve_34: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 530, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
+    american_34: { id: "SFT-0041-000034", name: "Разъемное соед. американка ВН 3/4\"", price: 597, availability: "in_stock", price_date: "2026-07-29" },
+    ball_valve_34: { id: "SVB-0004-000020", name: "Кран шаровой ВР/НР, 3/4\"", price: 1090, rommer: { id: "RBV-0004-2210220", name: "Кран шаровой ВР/НР бабочка 3/4\"", price: 497, brand: "ROMMER", availability: "on_order", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
+    check_valve_34: { id: "SVC-0011-000020", name: "Клапан обратный пружинный 3/4\"", price: 1547, rommer: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 535, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-06" },
+    rommer_check_valve_34: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 530, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
     filter_mag: { id: "SFW-0072-000020", name: "Фильтр-шламоотделитель магнитный 3/4\"", price: 3711, rommer: { id: "RFW-0080-256620", name: "Фильтр-шламоотделитель магнитный 3/4\"", price: 2598, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
     filter_mag_alts: [
         { id: "RFW-0081-000820", name: "Сепаратор шлама поворотный ВР 3/4\"",      price: 6317,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
@@ -1773,22 +1773,22 @@ const catalog = {
         { id: "RFW-0081-002925", name: "Сепаратор шлама с щётками поворотный ВР 1\"",     price: 7489,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13", qtyRatio: 0.5 },
         { id: "RFW-0081-002932", name: "Сепаратор шлама с щётками поворотный ВР 1 1/4\"", price: 8237,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13", qtyRatio: 0.5 },
     ],
-    nipple_34: { id: "SFT-0003-003434", name: "Ниппель НН 3/4\"", price: 200, availability: "in_stock", price_date: "2026-07-12" },
+    nipple_34: { id: "SFT-0003-003434", name: "Ниппель НН 3/4\"", price: 200, availability: "in_stock", price_date: "2026-07-29" },
     coolants: [
         { id: "WARME-HYDRO-20", brand: "WARME", name: "Hydro, 20л", vol: 20, price: 1017, type: "water", availability: "in_stock", price_date: "2026-07-12" },
         { id: "WARME-ECO30-20", brand: "WARME", name: "Eco 30, 20кг", vol: 19, price: 4770, type: "eco30", availability: "in_stock", price_date: "2026-07-12" },
         { id: "WARME-PRO65-20", brand: "WARME", name: "Eco Pro 65, 20кг", vol: 18, price: 6588, type: "pro65", availability: "in_stock", price_date: "2026-07-12" }
     ],
     well_pumps: [
-        { id: "RPW-0012-350215", name: "Насос скважинный 2-44, Ду 75 мм, с кабелем", q_max: 2.7, h_max: 64, price: 12890, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RPW-0012-350221", name: "Насос скважинный 2-63, Ду 75 мм, с кабелем", q_max: 2.7, h_max: 89, price: 16348, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RPW-0012-370227", name: "Насос скважинный 2-81, Ду 75 мм, с кабелем", q_max: 2.7, h_max: 115, price: 22165, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RPW-0012-380239", name: "Насос скважинный 2-111, Ду 75 мм, с кабелем", q_max: 2.7, h_max: 166, price: 35369, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RPW-0012-350321", name: "Насос скважинный 3-51, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 84, price: 18549, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RPW-0012-350326", name: "Насос скважинный 3-63, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 104, price: 21665, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RPW-0012-370331", name: "Насос скважинный 3-77, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 124, price: 32334, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RPW-0012-380337", name: "Насос скважинный 3-92, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 148, price: 35369, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "RPW-0012-370428", name: "Насос скважинный 4-76, Ду 75 мм, с кабелем", q_max: 5.4, h_max: 115, price: 32602, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "RPW-0012-350215", name: "Насос скважинный 2-44, Ду 75 мм, с кабелем", q_max: 2.7, h_max: 64, price: 12890, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-0012-350221", name: "Насос скважинный 2-63, Ду 75 мм, с кабелем", q_max: 2.7, h_max: 89, price: 16348, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-0012-370227", name: "Насос скважинный 2-81, Ду 75 мм, с кабелем", q_max: 2.7, h_max: 115, price: 22165, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-0012-380239", name: "Насос скважинный 2-111, Ду 75 мм, с кабелем", q_max: 2.7, h_max: 166, price: 35369, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-0012-350321", name: "Насос скважинный 3-51, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 84, price: 18549, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-0012-350326", name: "Насос скважинный 3-63, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 104, price: 21665, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-0012-370331", name: "Насос скважинный 3-77, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 124, price: 32334, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-0012-380337", name: "Насос скважинный 3-92, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 148, price: 35369, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-0012-370428", name: "Насос скважинный 4-76, Ду 75 мм, с кабелем", q_max: 5.4, h_max: 115, price: 32602, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
         { id: "RPW-1012-350270",  name: "Насос скважинный RHS 2-70, кабель 50 м",  q_max: 4.5, h_max: 83,  watt: 800,  price: 36475, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
         { id: "RPW-1012-360295",  name: "Насос скважинный RHS 2-95, кабель 60 м",  q_max: 4.5, h_max: 108, watt: 1100, price: 46486, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
         { id: "RPW-1012-3802135", name: "Насос скважинный RHS 2-135, кабель 80 м", q_max: 4.5, h_max: 152, watt: 1500, price: 74983, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
@@ -1802,14 +1802,14 @@ const catalog = {
         { id: "75618", name: "Трос 4 мм нерж.сталь (кратно 10м)", price: 70, brand: "UNIPUMP", unit: "м", availability: "in_stock", price_date: "2026-06-06" },
         { id: "39023", name: "Зажим (хомут) для троса 4-5 мм", price: 36, brand: "UNIPUMP", unit: "шт" },
         { id: "83652", name: "Оголовок скважинный 133-152/32", price: 3828, brand: "UNIPUMP", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SVC-0011-000032", name: "Клапан обратный с металлическим седлом, 1 1/4\"", price: 3518, brand: "STOUT", unit: "шт", rommer: { id: "RVC-0001-000032", name: "Клапан обратный с метал. седлом 1 1/4\"", price: 1316, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-06" },
+        { id: "SVC-0011-000032", name: "Клапан обратный с металлическим седлом, 1 1/4\"", price: 3518, brand: "STOUT", unit: "шт", rommer: { id: "RVC-0001-000032", name: "Клапан обратный с метал. седлом 1 1/4\"", price: 1316, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-06" },
         { id: "53003214", name: "Муфта ПНД 32х1 1/4\" НР", price: 108, brand: "Политэк", unit: "шт", availability: "in_stock", price_date: "2026-06-06" },
         { id: "31852", name: "Коуш для крепления троса до 5 мм", price: 21, brand: "UNIPUMP", unit: "шт" },
-        { id: "STW-0001-000024", name: "Расширительный бак гидроаккумулятор 24 л (синий)", price: 3442, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STW-0002-000050", name: "Гидроаккумулятор STOUT 50 л (для водоснабжения)", price: 9648, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STW-0002-000080", name: "Гидроаккумулятор STOUT 80 л (для водоснабжения)", price: 12642, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STW-0002-000100", name: "Гидроаккумулятор STOUT 100 л (для водоснабжения)", price: 17077, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "STW-0002-000150", name: "Гидроаккумулятор STOUT 150 л (для водоснабжения)", price: 21957, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "STW-0001-000024", name: "Расширительный бак гидроаккумулятор 24 л (синий)", price: 3442, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STW-0002-000050", name: "Гидроаккумулятор STOUT 50 л (для водоснабжения)", price: 9648, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STW-0002-000080", name: "Гидроаккумулятор STOUT 80 л (для водоснабжения)", price: 12642, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STW-0002-000100", name: "Гидроаккумулятор STOUT 100 л (для водоснабжения)", price: 17077, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STW-0002-000150", name: "Гидроаккумулятор STOUT 150 л (для водоснабжения)", price: 21957, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
         { id: "SFH-0001-003232", name: "Фитинг ПНД, Муфта соединительная равнопроходная 32x32", price: 1721, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
         { id: "SFH-0002-000321", name: "Фитинг ПНД, Переходник с наружной резьбой 32xR 1\"", price: 1100, brand: "STOUT", unit: "шт", availability: "on_order", price_date: "2026-07-13" },
         { id: "SFH-0002-032114", name: "Муфта ПНД 32х1 1/4\" НР (латунь)", price: 1297, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
@@ -1820,9 +1820,9 @@ const catalog = {
         { id: "SFH-0006-003232", name: "Фитинг ПНД, Угольник 90° 32x32", price: 2201, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" }
     ],
     well_auto: [
-        { id: "SCS-0001-000070", name: "Блок управления насосом SIRIO UNIVERSAL", price: 38236, brand: "STOUT", unit: "шт", rommer: { id: "RCS-0001-000063", name: "Устройство управления насосом EPC-12 auto", price: 5880, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SCS-0001-000063", name: "Устройство управления насосом BRIO-TOP", price: 16078, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SCS-0001-000064", name: "Устройство управления насосом BRIO", price: 5141, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "SCS-0001-000070", name: "Блок управления насосом SIRIO UNIVERSAL", price: 38236, brand: "STOUT", unit: "шт", rommer: { id: "RCS-0001-000063", name: "Устройство управления насосом EPC-12 auto", price: 5880, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SCS-0001-000063", name: "Устройство управления насосом BRIO-TOP", price: 16078, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SCS-0001-000064", name: "Устройство управления насосом BRIO", price: 5141, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
         { id: "RCS-0001-000071", name: "Устройство управления насосом EPC-17", price: 0, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
         { id: "RCS-0001-000052", name: "Блок насосной автоматики EPC-2", price: 2654, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
         { id: "RCS-0001-000064", name: "Устройство управления насосом EPC-4", price: 2285, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
@@ -1834,10 +1834,10 @@ const catalog = {
         { id: "RCS-0001-000053", name: "Реле давления для водоснабжения со встроенным манометром KRS-7", price: 1159, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" }
     ],
     water_pipes: [
-        { id: "SPX-0001-001622", name: "Труба PEX-a 16x2.2 (серая)", price: 175, unit: "м", rommer: { id: "RPX-0001-001622", name: "Труба PEX-a 16x2.2", price: 86, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SPX-0001-002028", name: "Труба PEX-a 20x2.8 (серая)", price: 262, unit: "м", rommer: { id: "RPX-0001-002028", name: "Труба PEX-a 20x2.8", price: 130, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SPX-0001-002535", name: "Труба PEX-a 25x3.5 (серая)", price: 407, unit: "м", rommer: { id: "RPX-0001-002535", name: "Труба PEX-a 25x3.5", price: 210, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SPX-0001-003244", name: "Труба PEX-a 32x4.4 (серая)", price: 661, unit: "м", rommer: { id: "RPX-0001-003244", name: "Труба PEX-a 32x4.4", price: 357, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" }
+        { id: "SPX-0001-001622", name: "Труба PEX-a 16x2.2 (серая)", price: 175, unit: "м", rommer: { id: "RPX-0001-001622", name: "Труба PEX-a 16x2.2", price: 86, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SPX-0001-002028", name: "Труба PEX-a 20x2.8 (серая)", price: 262, unit: "м", rommer: { id: "RPX-0001-002028", name: "Труба PEX-a 20x2.8", price: 130, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SPX-0001-002535", name: "Труба PEX-a 25x3.5 (серая)", price: 407, unit: "м", rommer: { id: "RPX-0001-002535", name: "Труба PEX-a 25x3.5", price: 210, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SPX-0001-003244", name: "Труба PEX-a 32x4.4 (серая)", price: 661, unit: "м", rommer: { id: "RPX-0001-003244", name: "Труба PEX-a 32x4.4", price: 357, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" }
     ],
     water_pipes_mp: [
         { id: "SPM-0002-001620", name: "Труба металлопластиковая PE-Xb/Al/PE-Xb 16x2.0", price: 175, unit: "м", brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" },
@@ -1858,14 +1858,14 @@ const catalog = {
         { id: "RIC-0002-280602", name: "Трубка ПРОТЕКТ ПРО 28/6, 2м (красная)", dn: 28, thick: 6, len: 2, pack: 120, price: 36, unit: "м", brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }
     ],
     water_fittings: [
-        { id: "SFA-0032-001612", name: "Водорозетка 16x1/2\" (тупиковая)", price: 865, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SFA-0040-001612", name: "Угольник проточный 16x1/2\" (Бронза)", price: 2838, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SFA-0039-002012", name: "Угольник проточный 20x1/2\" (проходная)", price: 2698, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SFA-0027-252525", name: "Кронштейн монтажный (75/150)", price: 895, availability: "in_stock", price_date: "2026-07-12" },
+        { id: "SFA-0032-001612", name: "Водорозетка 16x1/2\" (тупиковая)", price: 865, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFA-0040-001612", name: "Угольник проточный 16x1/2\" (Бронза)", price: 2838, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFA-0039-002012", name: "Угольник проточный 20x1/2\" (проходная)", price: 2698, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFA-0027-252525", name: "Кронштейн монтажный (75/150)", price: 895, availability: "in_stock", price_date: "2026-07-29" },
         { id: "SFA-0035-100012", name: "Пробка с наружней резьбой (Синяя)", price: 28, availability: "in_stock", price_date: "2026-07-29" },
         { id: "SFA-0035-200012", name: "Пробка с наружней резьбой (Красная)", price: 28, availability: "in_stock", price_date: "2026-07-29" },
         { id: "SFA-0031-000016", name: "Фиксатор поворота 90° (14-18 мм)", price: 36, availability: "in_stock", price_date: "2026-07-29" },
-        { id: "SFA-0031-000120", name: "Фиксатор поворота 90° (20 мм)", price: 113, availability: "in_stock", price_date: "2026-07-12" },
+        { id: "SFA-0031-000120", name: "Фиксатор поворота 90° (20 мм)", price: 113, availability: "in_stock", price_date: "2026-07-29" },
         { id: "SMF-0003-028032", name: "Дюбель-крюк двойной", price: 7, availability: "in_stock", price_date: "2026-07-29" }
     ],
     water_fittings_press_mp: [
@@ -2089,32 +2089,32 @@ const catalog = {
         { id: "RMB-0008-011204", name: "Коллектор с шаровыми кранами, 1\"/1/2\"х4 вых.", price: 2034, brand: "ROMMER", inSize: "1", outSize: "1/2", loops: 4, connType: "flat", series: "ball", availability: "on_order", price_date: "2026-07-13" }
     ],
     water_parts: [
-        { id: "SFC-0020-001622", name: "Евроконус 16x2.2 (для коллектора)", price: 381, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SFC-0020-002028", name: "Евроконус 20x2.8 (для коллектора)", price: 390, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SFT-0024-000034", name: "Заглушка коллектора 3/4\" (HP)", price: 158, availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SFA-0037-300000", name: "Наклейки \"ВОДОСНАБЖЕНИЕ\"", price: 872, availability: "in_stock", price_date: "2026-07-12" },
+        { id: "SFC-0020-001622", name: "Евроконус 16x2.2 (для коллектора)", price: 381, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFC-0020-002028", name: "Евроконус 20x2.8 (для коллектора)", price: 390, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFT-0024-000034", name: "Заглушка коллектора 3/4\" (HP)", price: 158, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFA-0037-300000", name: "Наклейки \"ВОДОСНАБЖЕНИЕ\"", price: 872, availability: "in_stock", price_date: "2026-07-29" },
         { id: "SFA-0035-100016", name: "Защитная втулка синяя 16мм", price: 56, availability: "in_stock", price_date: "2026-07-29" },
         { id: "SFA-0035-200016", name: "Защитная втулка красная 16мм", price: 56, availability: "in_stock", price_date: "2026-07-29" },
         { id: "M571-VE-01", name: "Инсталляция с кнопкой хром глянцевая и шумоизоляцией", price: 31648, brand: "AlcaPlast", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SFA-0020-000016", name: "Гильза монтажная 16 (аксиальная)", price: 109, brand: "STOUT", rommer: { id: "RFA-0020-000016", name: "Монтажная гильза 16", price: 70, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SFC-0020-002020", name: "Евроконус 20x2.0 (для коллектора)", price: 371, availability: "in_stock", price_date: "2026-07-12" }
+        { id: "SFA-0020-000016", name: "Гильза монтажная 16 (аксиальная)", price: 109, brand: "STOUT", rommer: { id: "RFA-0020-000016", name: "Монтажная гильза 16", price: 70, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SFC-0020-002020", name: "Евроконус 20x2.0 (для коллектора)", price: 371, availability: "in_stock", price_date: "2026-07-29" }
     ],
     water_input_node: [
-        { id: "SFT-0045-000034", name: "Сгон прямой 3/4\" ВР-НР", price: 583, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "SFT-0045-000034", name: "Сгон прямой 3/4\" ВР-НР", price: 583, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
         { id: "VTr.136.N.0504", name: "Тройник косой для гильзы под погружной датчик температуры 3/4'' х 1/2''", price: 561, brand: "VALTEC", availability: "in_stock", price_date: "2026-07-12" },
         { id: "CBL 10-4", name: "Греющий кабель для водопровода, 4 м", price: 7829, brand: "SelfTec DW", availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SFT-0029-000134", name: "Переходник ВР-НР 1\" х 3/4\"", price: 236, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "SFT-0029-000134", name: "Переходник ВР-НР 1\" х 3/4\"", price: 236, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
         { id: "6395", name: "Пятивыводной штуцер", price: 836, brand: "Aquario", availability: "on_order", price_date: "2026-07-12" },
-        { id: "SFT-0004-000134", name: "Ниппель 1\" х 3/4\" НР", price: 350, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SVB-0004-200020", name: "Кран шаровой ВН-НР 3/4\"", price: 1167, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12", rommer: { id: "RBV-0001-2110320", name: "RBV-0001-2110320 ROMMER Кран шаровой, ВР/ВР, ручка рычаг 3/4\"", price: 477, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" } },
-        { id: "SFT-0002-003420", name: "Удлинитель ВН/НР 3/4\" 20 мм", price: 401, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "SFT-0004-000134", name: "Ниппель 1\" х 3/4\" НР", price: 350, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SVB-0004-200020", name: "Кран шаровой ВН-НР 3/4\"", price: 1167, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RBV-0001-2110320", name: "RBV-0001-2110320 ROMMER Кран шаровой, ВР/ВР, ручка рычаг 3/4\"", price: 477, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" } },
+        { id: "SFT-0002-003420", name: "Удлинитель ВН/НР 3/4\" 20 мм", price: 401, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
         { id: "100035512000", name: "Система защиты от протечки воды", price: 17990, brand: "Neptun", availability: "on_order", price_date: "2026-07-12" },
-        { id: "SFT-0004-003434", name: "Ниппель 3/4\" НР", price: 207, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "SFT-0004-003434", name: "Ниппель 3/4\" НР", price: 207, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
         { id: "VT.386.N.05", name: "Фильтр универсальный 3/4''", price: 7624, brand: "VALTEC", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SVC-0011-000020", name: "Клапан обратный 3/4’’ ВР", price: 1547, brand: "STOUT", rommer: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 535, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-12" }, availability: "in_stock", price_date: "2026-06-06" },
-        { id: "SFT-0020-000034", name: "Тройник 3/4\" ВР", price: 504, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SFT-0029-003412", name: "Футорка 3/4\" x 1/2\"", price: 156, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" },
-        { id: "SFT-0029-001214", name: "Футорка 1/2\" x 1/4\"", price: 108, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" },
+        { id: "SVC-0011-000020", name: "Клапан обратный 3/4’’ ВР", price: 1547, brand: "STOUT", rommer: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 535, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-06" },
+        { id: "SFT-0020-000034", name: "Тройник 3/4\" ВР", price: 504, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFT-0029-003412", name: "Футорка 3/4\" x 1/2\"", price: 156, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFT-0029-001214", name: "Футорка 1/2\" x 1/4\"", price: 108, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
         { id: "SIM-1010-500608", name: "Манометр 6 бар, 1/4''", price: 307, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" }
     ],
     outdoor_faucet: [
