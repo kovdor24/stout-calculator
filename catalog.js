@@ -1658,10 +1658,10 @@ const catalog = {
     ],
     mixing_units: [
         { id: "SDG-0120-001000", name: "Узел подмеса (7 кВт)", price: 25684, rommer: { id: "RDG-0120-008100", name: "Узел подмеса с термоголовкой (6 кВт)", price: 14227, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RDG-0120-008000", name: "Узел подмеса с термоголовкой, перепускным клапаном и байпасом (10 кВт)", price: 25252, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RDG-0120-009000", name: "Узел подмеса с термостатической головкой (9 кВт)", price: 8390, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RDG-0120-009001", name: "Узел подмеса с термостатической головкой, без кронштейна (9 кВт)", price: 8390, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RDG-0120-005010", name: "Узел подмеса с термостатическим клапаном 20-55°C (6 кВт)", price: 11388, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" }
+        { id: "RDG-0120-008000", name: "Узел подмеса с термоголовкой, перепускным клапаном и байпасом (10 кВт)", price: 25252, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RDG-0120-009000", name: "Узел подмеса с термостатической головкой (9 кВт)", price: 8390, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RDG-0120-009001", name: "Узел подмеса с термостатической головкой, без кронштейна (9 кВт)", price: 8390, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RDG-0120-005010", name: "Узел подмеса с термостатическим клапаном 20-55°C (6 кВт)", price: 11388, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }
     ],
     groups_dn20: [
         { id: "SDG-0001-002001", name: "Группа насосная DN20 (Прямая) - для радиаторов до 10 кВт", price: 16243, rommer: { id: "RDG-1001-002501", name: "Группа насосная DN25 (Прямая) - для радиаторов до 23 кВт", price: 9514, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
@@ -1678,46 +1678,46 @@ const catalog = {
         { id: "SDG-0003-002504", name: "Группа насосная DN25 (под сервопривод, с насосом STOUT SPC 25/60-180) - для радиаторов до 24 кВт, для тёплого пола до 12 кВт", price: 25240, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
         { id: "SDG-0007-002501", name: "Группа насосная DN25 (3-х ход. приводной смеситель) - для радиаторов до 24 кВт, для тёплого пола до 12 кВт", price: 25240, rommer: { id: "RDG-1003-002501", name: "Группа насосная DN25 (под сервопривод) - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 11496, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-07-02" },
         { id: "SDG-0007-002504", name: "Группа насосная DN25 (3-х ход. приводной смеситель, с насосом STOUT SPC 25/60-180) - для радиаторов до 24 кВт, для тёплого пола до 12 кВт", price: 25240, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RDG-1002-012501", name: "ROMMER Насосная группа с термостатическим смесительным клапаном (35-60°С) 1\", без насоса, левая - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 12333, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RDG-1003-012501", name: "ROMMER Насосная группа с 3-ходовым приводным смесителем 1\", без насоса, левая - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 12646, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
+        { id: "RDG-1002-012501", name: "ROMMER Насосная группа с термостатическим смесительным клапаном (35-60°С) 1\", без насоса, левая - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 12333, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RDG-1003-012501", name: "ROMMER Насосная группа с 3-ходовым приводным смесителем 1\", без насоса, левая - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 12646, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
         { id: "RDG-1004-002501", name: "ROMMER Насосная группа с 3-ходовым приводным смесителем 1\", без насоса, универсальная в теплоизоляции - для радиаторов до 23 кВт, для тёплого пола до 9 кВт", price: 12333, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" }
     ],
     groups_dn32: [
-        { id: "SDG-0001-003201", name: "Группа насосная DN32 (Прямая), 1 1/4\" - для радиаторов до 34 кВт (с насосом на 2-й скорости — насос в комплект не входит, подбирается отдельно)", price: 28990, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0007-003201", name: "Группа насосная DN32 (3-х ход. приводной смеситель), 1 1/4\" - для радиаторов до 34 кВт, для тёплого пола до 17 кВт (с насосом на 2-й скорости — насос в комплект не входит, подбирается отдельно)", price: 44439, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" }
+        { id: "SDG-0001-003201", name: "Группа насосная DN32 (Прямая), 1 1/4\" - для радиаторов до 34 кВт (с насосом на 2-й скорости — насос в комплект не входит, подбирается отдельно)", price: 28990, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0007-003201", name: "Группа насосная DN32 (3-х ход. приводной смеситель), 1 1/4\" - для радиаторов до 34 кВт, для тёплого пола до 17 кВт (с насосом на 2-й скорости — насос в комплект не входит, подбирается отдельно)", price: 44439, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
     ],
     heat_exchanger_groups: [
-        { id: "SDG-0038-182501", name: "Группа насосная с теплообменником 18 пластин (без насоса, в теплоизоляции)", price: 57239, rommer: { id: "RDG-1038-182501", name: "Группа насосная с теплообменником 18 пластин (без насоса, в теплоизоляции)", price: 26521, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" }, availability: "in_stock", price_date: "2026-07-02" },
-        { id: "SDG-0038-282501", name: "Группа насосная с теплообменником 28 пластин (без насоса, в теплоизоляции)", price: 61498, rommer: { id: "RDG-1038-282501", name: "Группа насосная с теплообменником 28 пластин (без насоса, в теплоизоляции)", price: 28682, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" }, availability: "in_stock", price_date: "2026-07-02" },
-        { id: "SDG-0038-342501", name: "Группа насосная с теплообменником 34 пластины (без насоса, в теплоизоляции)", price: 65652, rommer: { id: "RDG-1038-342501", name: "Группа насосная с теплообменником 34 пластины (без насоса, в теплоизоляции)", price: 30879, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" }, availability: "in_stock", price_date: "2026-07-02" }
+        { id: "SDG-0038-182501", name: "Группа насосная с теплообменником 18 пластин (без насоса, в теплоизоляции)", price: 57239, rommer: { id: "RDG-1038-182501", name: "Группа насосная с теплообменником 18 пластин (без насоса, в теплоизоляции)", price: 26521, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-07-02" },
+        { id: "SDG-0038-282501", name: "Группа насосная с теплообменником 28 пластин (без насоса, в теплоизоляции)", price: 61498, rommer: { id: "RDG-1038-282501", name: "Группа насосная с теплообменником 28 пластин (без насоса, в теплоизоляции)", price: 28682, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-07-02" },
+        { id: "SDG-0038-342501", name: "Группа насосная с теплообменником 34 пластины (без насоса, в теплоизоляции)", price: 65652, rommer: { id: "RDG-1038-342501", name: "Группа насосная с теплообменником 34 пластины (без насоса, в теплоизоляции)", price: 30879, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-07-02" }
     ],
     hydro_separators: [
-        { id: "SDG-0015-004001", name: "Гидравлическая стрелка 3 м³/ч", price: 22082, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0015-004004", name: "Гидравлическая стрелка 4 м³/ч", price: 32958, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0015-004002", name: "Гидравлическая стрелка 3 м³/ч", price: 36684, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0015-004003", name: "Гидравлическая стрелка 5 м³/ч", price: 41842, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0015-005001", name: "Гидравлическая стрелка 8 м³/ч", price: 68067, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RDG-1015-004003", name: "Гидравлическая стрелка с накидными гайками 1 1/2\", 3,0 м³/ч", price: 18394, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" }
+        { id: "SDG-0015-004001", name: "Гидравлическая стрелка 3 м³/ч", price: 22082, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0015-004004", name: "Гидравлическая стрелка 4 м³/ч", price: 32958, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0015-004002", name: "Гидравлическая стрелка 3 м³/ч", price: 36684, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0015-004003", name: "Гидравлическая стрелка 5 м³/ч", price: 41842, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0015-005001", name: "Гидравлическая стрелка 8 м³/ч", price: 68067, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RDG-1015-004003", name: "Гидравлическая стрелка с накидными гайками 1 1/2\", 3,0 м³/ч", price: 18394, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }
     ],
     collectors_dn20: [
-        { id: "SDG-0016-002502", name: "Стальной распределительный коллектор DN20 (2 насосных группы)", price: 26395, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0016-002503", name: "Стальной распределительный коллектор DN20 (3 насосных группы)", price: 29180, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" }
+        { id: "SDG-0016-002502", name: "Стальной распределительный коллектор DN20 (2 насосных группы)", price: 26395, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0016-002503", name: "Стальной распределительный коллектор DN20 (3 насосных группы)", price: 29180, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
     ],
     collectors_dn25: [
-        { id: "SDG-0016-004002", name: "Стальной распределительный коллектор DN25 (2 насосных группы)", price: 28495, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0016-004003", name: "Стальной распределительный коллектор DN25 (3 насосных группы)", price: 31501, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0016-004004", name: "Стальной распределительный коллектор DN25 (4 насосных группы)", price: 39918, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0016-004005", name: "Стальной распределительный коллектор DN25 (5 насосных групп)", price: 48695, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0016-004006", name: "Стальной распределительный коллектор DN25 (6 насосных групп)", price: 62139, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0017-004023", name: "Стальной распределительный коллектор DN25 (2(3) насосных группы)", price: 28982, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0017-004035", name: "Стальной распределительный коллектор DN25 (3(5) насосных группы)", price: 40118, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" }
+        { id: "SDG-0016-004002", name: "Стальной распределительный коллектор DN25 (2 насосных группы)", price: 28495, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0016-004003", name: "Стальной распределительный коллектор DN25 (3 насосных группы)", price: 31501, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0016-004004", name: "Стальной распределительный коллектор DN25 (4 насосных группы)", price: 39918, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0016-004005", name: "Стальной распределительный коллектор DN25 (5 насосных групп)", price: 48695, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0016-004006", name: "Стальной распределительный коллектор DN25 (6 насосных групп)", price: 62139, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0017-004023", name: "Стальной распределительный коллектор DN25 (2(3) насосных группы)", price: 28982, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0017-004035", name: "Стальной распределительный коллектор DN25 (3(5) насосных группы)", price: 40118, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
     ],
     collectors_dn32: [
-        { id: "SDG-0016-005002", name: "Стальной распределительный коллектор DN32 (2 насосных группы)", price: 79985, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0016-005003", name: "Стальной распределительный коллектор DN32 (3 насосных группы)", price: 92133, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0016-005004", name: "Стальной распределительный коллектор DN32 (4 насосных группы)", price: 122255, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0016-005005", name: "Стальной распределительный коллектор DN32 (5 насосных групп)", price: 143643, brand: "STOUT", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SDG-0016-005006", name: "Стальной распределительный коллектор DN32 (6 насосных групп)", price: 186672, brand: "STOUT", availability: "on_order", price_date: "2026-07-13" }
+        { id: "SDG-0016-005002", name: "Стальной распределительный коллектор DN32 (2 насосных группы)", price: 79985, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0016-005003", name: "Стальной распределительный коллектор DN32 (3 насосных группы)", price: 92133, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0016-005004", name: "Стальной распределительный коллектор DN32 (4 насосных группы)", price: 122255, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0016-005005", name: "Стальной распределительный коллектор DN32 (5 насосных групп)", price: 143643, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SDG-0016-005006", name: "Стальной распределительный коллектор DN32 (6 насосных групп)", price: 186672, brand: "STOUT", availability: "on_order", price_date: "2026-07-29" }
     ],
     hydro_dn20: [
         { id: "SDG-0018-002502", name: "Коллектор-гидрострелка DN20 (2 конт)", price: 50005, availability: "in_stock", price_date: "2026-07-29" },
@@ -1766,12 +1766,12 @@ const catalog = {
     rommer_check_valve_34: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 530, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
     filter_mag: { id: "SFW-0072-000020", name: "Фильтр-шламоотделитель магнитный 3/4\"", price: 3711, rommer: { id: "RFW-0080-256620", name: "Фильтр-шламоотделитель магнитный 3/4\"", price: 2598, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
     filter_mag_alts: [
-        { id: "RFW-0081-000820", name: "Сепаратор шлама поворотный ВР 3/4\"",      price: 6317,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RFW-0081-000825", name: "Сепаратор шлама поворотный ВР 1\"",         price: 6800,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RFW-0081-000832", name: "Сепаратор шлама поворотный ВР 1 1/4\"",     price: 7600,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RFW-0081-002920", name: "Сепаратор шлама с щётками поворотный ВР 3/4\"",   price: 6628,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RFW-0081-002925", name: "Сепаратор шлама с щётками поворотный ВР 1\"",     price: 7489,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13", qtyRatio: 0.5 },
-        { id: "RFW-0081-002932", name: "Сепаратор шлама с щётками поворотный ВР 1 1/4\"", price: 8237,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13", qtyRatio: 0.5 },
+        { id: "RFW-0081-000820", name: "Сепаратор шлама поворотный ВР 3/4\"",      price: 6317,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RFW-0081-000825", name: "Сепаратор шлама поворотный ВР 1\"",         price: 6800,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RFW-0081-000832", name: "Сепаратор шлама поворотный ВР 1 1/4\"",     price: 7600,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RFW-0081-002920", name: "Сепаратор шлама с щётками поворотный ВР 3/4\"",   price: 6628,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RFW-0081-002925", name: "Сепаратор шлама с щётками поворотный ВР 1\"",     price: 7489,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29", qtyRatio: 0.5 },
+        { id: "RFW-0081-002932", name: "Сепаратор шлама с щётками поворотный ВР 1 1/4\"", price: 8237,  brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29", qtyRatio: 0.5 },
     ],
     nipple_34: { id: "SFT-0003-003434", name: "Ниппель НН 3/4\"", price: 200, availability: "in_stock", price_date: "2026-07-29" },
     coolants: [
@@ -1789,13 +1789,13 @@ const catalog = {
         { id: "RPW-0012-370331", name: "Насос скважинный 3-77, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 124, price: 32334, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
         { id: "RPW-0012-380337", name: "Насос скважинный 3-92, Ду 75 мм, с кабелем", q_max: 3.9, h_max: 148, price: 35369, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
         { id: "RPW-0012-370428", name: "Насос скважинный 4-76, Ду 75 мм, с кабелем", q_max: 5.4, h_max: 115, price: 32602, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
-        { id: "RPW-1012-350270",  name: "Насос скважинный RHS 2-70, кабель 50 м",  q_max: 4.5, h_max: 83,  watt: 800,  price: 36475, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RPW-1012-360295",  name: "Насос скважинный RHS 2-95, кабель 60 м",  q_max: 4.5, h_max: 108, watt: 1100, price: 46486, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RPW-1012-3802135", name: "Насос скважинный RHS 2-135, кабель 80 м", q_max: 4.5, h_max: 152, watt: 1500, price: 74983, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RPW-1012-330345",  name: "Насос скважинный RHS 3-45, кабель 30 м",  q_max: 7.9, h_max: 52,  watt: 800,  price: 32256, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RPW-1012-350365",  name: "Насос скважинный RHS 3-65, кабель 50 м",  q_max: 7.9, h_max: 77,  watt: 1100, price: 41461, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RPW-1012-360390",  name: "Насос скважинный RHS 3-90, кабель 60 м",  q_max: 7.9, h_max: 102, watt: 1500, price: 59488, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RPW-1012-3703110", name: "Насос скважинный RHS 3-110, кабель 70 м", q_max: 7.9, h_max: 128, watt: 2200, price: 81465, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-13" }
+        { id: "RPW-1012-350270",  name: "Насос скважинный RHS 2-70, кабель 50 м",  q_max: 4.5, h_max: 83,  watt: 800,  price: 36475, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-1012-360295",  name: "Насос скважинный RHS 2-95, кабель 60 м",  q_max: 4.5, h_max: 108, watt: 1100, price: 46486, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-1012-3802135", name: "Насос скважинный RHS 2-135, кабель 80 м", q_max: 4.5, h_max: 152, watt: 1500, price: 74983, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-1012-330345",  name: "Насос скважинный RHS 3-45, кабель 30 м",  q_max: 7.9, h_max: 52,  watt: 800,  price: 32256, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-1012-350365",  name: "Насос скважинный RHS 3-65, кабель 50 м",  q_max: 7.9, h_max: 77,  watt: 1100, price: 41461, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-1012-360390",  name: "Насос скважинный RHS 3-90, кабель 60 м",  q_max: 7.9, h_max: 102, watt: 1500, price: 59488, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RPW-1012-3703110", name: "Насос скважинный RHS 3-110, кабель 70 м", q_max: 7.9, h_max: 128, watt: 2200, price: 81465, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }
     ],
     well_parts: [
         { id: "10011032", name: "Труба ПНД 32х3.0 питьевая (кратно 5м)", price: 112.4, brand: "CYKLON", unit: "м", availability: "in_stock", price_date: "2026-06-06" },
@@ -1810,28 +1810,28 @@ const catalog = {
         { id: "STW-0002-000080", name: "Гидроаккумулятор STOUT 80 л (для водоснабжения)", price: 12642, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
         { id: "STW-0002-000100", name: "Гидроаккумулятор STOUT 100 л (для водоснабжения)", price: 17077, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
         { id: "STW-0002-000150", name: "Гидроаккумулятор STOUT 150 л (для водоснабжения)", price: 21957, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-        { id: "SFH-0001-003232", name: "Фитинг ПНД, Муфта соединительная равнопроходная 32x32", price: 1721, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFH-0002-000321", name: "Фитинг ПНД, Переходник с наружной резьбой 32xR 1\"", price: 1100, brand: "STOUT", unit: "шт", availability: "on_order", price_date: "2026-07-13" },
-        { id: "SFH-0002-032114", name: "Муфта ПНД 32х1 1/4\" НР (латунь)", price: 1297, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFH-0002-040114", name: "Фитинг ПНД, Переходник с наружной резьбой 40xR 1 1/4\"", price: 1796, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFH-0003-000321", name: "Фитинг ПНД, Переходник с внутренней резьбой 32xRp 1\"", price: 1151, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFH-0003-040114", name: "Фитинг ПНД, Переходник с внутренней резьбой 40xRp 1\"", price: 1872, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFH-0004-323232", name: "Фитинг ПНД, Тройник равнопроходный 32x32x32", price: 2860, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFH-0006-003232", name: "Фитинг ПНД, Угольник 90° 32x32", price: 2201, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" }
+        { id: "SFH-0001-003232", name: "Фитинг ПНД, Муфта соединительная равнопроходная 32x32", price: 1721, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFH-0002-000321", name: "Фитинг ПНД, Переходник с наружной резьбой 32xR 1\"", price: 1100, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFH-0002-032114", name: "Муфта ПНД 32х1 1/4\" НР (латунь)", price: 1297, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFH-0002-040114", name: "Фитинг ПНД, Переходник с наружной резьбой 40xR 1 1/4\"", price: 1796, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFH-0003-000321", name: "Фитинг ПНД, Переходник с внутренней резьбой 32xRp 1\"", price: 1151, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFH-0003-040114", name: "Фитинг ПНД, Переходник с внутренней резьбой 40xRp 1\"", price: 1872, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFH-0004-323232", name: "Фитинг ПНД, Тройник равнопроходный 32x32x32", price: 2860, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFH-0006-003232", name: "Фитинг ПНД, Угольник 90° 32x32", price: 2201, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" }
     ],
     well_auto: [
         { id: "SCS-0001-000070", name: "Блок управления насосом SIRIO UNIVERSAL", price: 38236, brand: "STOUT", unit: "шт", rommer: { id: "RCS-0001-000063", name: "Устройство управления насосом EPC-12 auto", price: 5880, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SCS-0001-000063", name: "Устройство управления насосом BRIO-TOP", price: 16078, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
         { id: "SCS-0001-000064", name: "Устройство управления насосом BRIO", price: 5141, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
         { id: "RCS-0001-000071", name: "Устройство управления насосом EPC-17", price: 0, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-01" },
-        { id: "RCS-0001-000052", name: "Блок насосной автоматики EPC-2", price: 2654, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RCS-0001-000064", name: "Устройство управления насосом EPC-4", price: 2285, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RCS-0001-000055", name: "Блок насосной автоматики EPC-5", price: 2722, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" }
+        { id: "RCS-0001-000052", name: "Блок насосной автоматики EPC-2", price: 2654, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RCS-0001-000064", name: "Устройство управления насосом EPC-4", price: 2285, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RCS-0001-000055", name: "Блок насосной автоматики EPC-5", price: 2722, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-29" }
     ],
     well_relays: [
-        { id: "RCS-0001-000005", name: "Реле давления KRS-5, 1/4\"", price: 605, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RCS-0001-000003", name: "Реле сухого хода KRS-6, 1/4\"", price: 655, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
-        { id: "RCS-0001-000053", name: "Реле давления для водоснабжения со встроенным манометром KRS-7", price: 1159, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-13" }
+        { id: "RCS-0001-000005", name: "Реле давления KRS-5, 1/4\"", price: 605, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RCS-0001-000003", name: "Реле сухого хода KRS-6, 1/4\"", price: 655, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "RCS-0001-000053", name: "Реле давления для водоснабжения со встроенным манометром KRS-7", price: 1159, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-29" }
     ],
     water_pipes: [
         { id: "SPX-0001-001622", name: "Труба PEX-a 16x2.2 (серая)", price: 175, unit: "м", rommer: { id: "RPX-0001-001622", name: "Труба PEX-a 16x2.2", price: 86, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
@@ -1871,48 +1871,48 @@ const catalog = {
     water_fittings_press_mp: [
         // Латунные пресс-фитинги STOUT для труб PE-Xb/Al/PE-Xb
         // Переходник с наружной резьбой
-        { id: "SFP-0001-001216", name: "Переходник с наружной резьбой 1/2\"х16", price: 312, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0001-003416", name: "Переходник с наружной резьбой 3/4\"x16", price: 623, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0001-001220", name: "Переходник с наружной резьбой 1/2\"х20", price: 417, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0001-003420", name: "Переходник с наружной резьбой 3/4\"х20", price: 559, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0001-003426", name: "Переходник с наружной резьбой 3/4\"х26", price: 705, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0001-000126", name: "Переходник с наружной резьбой 1\"х26", price: 789, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0001-000132", name: "Переходник с наружной резьбой 1\"х32", price: 1144, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SFP-0001-001216", name: "Переходник с наружной резьбой 1/2\"х16", price: 312, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0001-003416", name: "Переходник с наружной резьбой 3/4\"x16", price: 623, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0001-001220", name: "Переходник с наружной резьбой 1/2\"х20", price: 417, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0001-003420", name: "Переходник с наружной резьбой 3/4\"х20", price: 559, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0001-003426", name: "Переходник с наружной резьбой 3/4\"х26", price: 705, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0001-000126", name: "Переходник с наружной резьбой 1\"х26", price: 789, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0001-000132", name: "Переходник с наружной резьбой 1\"х32", price: 1144, availability: "in_stock", price_date: "2026-07-29" },
         // Переходник с внутренней резьбой
-        { id: "SFP-0002-001216", name: "Переходник с внутренней резьбой 1/2\"х16", price: 476, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0002-001220", name: "Переходник с внутренней резьбой 1/2\"х20", price: 557, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0002-003420", name: "Переходник с внутренней резьбой 3/4\"х20", price: 664, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0002-003426", name: "Переходник с внутренней резьбой 3/4\"х26", price: 742, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0002-000126", name: "Переходник с внутренней резьбой 1\"х26", price: 858, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0002-000132", name: "Переходник с внутренней резьбой 1\"х32", price: 1232, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SFP-0002-001216", name: "Переходник с внутренней резьбой 1/2\"х16", price: 476, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0002-001220", name: "Переходник с внутренней резьбой 1/2\"х20", price: 557, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0002-003420", name: "Переходник с внутренней резьбой 3/4\"х20", price: 664, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0002-003426", name: "Переходник с внутренней резьбой 3/4\"х26", price: 742, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0002-000126", name: "Переходник с внутренней резьбой 1\"х26", price: 858, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0002-000132", name: "Переходник с внутренней резьбой 1\"х32", price: 1232, availability: "in_stock", price_date: "2026-07-29" },
         // Муфта соединительная равнопроходная
-        { id: "SFP-0003-001616", name: "Муфта соединительная равнопроходная 16х16", price: 564, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0003-002020", name: "Муфта соединительная равнопроходная 20х20", price: 657, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0003-002626", name: "Муфта соединительная равнопроходная 26х26", price: 1123, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0003-003232", name: "Муфта соединительная равнопроходная 32х32", price: 1657, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SFP-0003-001616", name: "Муфта соединительная равнопроходная 16х16", price: 564, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0003-002020", name: "Муфта соединительная равнопроходная 20х20", price: 657, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0003-002626", name: "Муфта соединительная равнопроходная 26х26", price: 1123, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0003-003232", name: "Муфта соединительная равнопроходная 32х32", price: 1657, availability: "in_stock", price_date: "2026-07-29" },
         // Муфта соединительная переходная
-        { id: "SFP-0004-002016", name: "Муфта соединительная переходная 20х16", price: 817, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0004-002620", name: "Муфта соединительная переходная 26х20", price: 1089, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0004-003226", name: "Муфта соединительная переходная 32х26", price: 1513, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SFP-0004-002016", name: "Муфта соединительная переходная 20х16", price: 817, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0004-002620", name: "Муфта соединительная переходная 26х20", price: 1089, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0004-003226", name: "Муфта соединительная переходная 32х26", price: 1513, availability: "in_stock", price_date: "2026-07-29" },
         // Тройник переходной
-        { id: "SFP-0005-162016", name: "Тройник переходной 16x20x16", price: 1168, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-201616", name: "Тройник переходной 20х16х16", price: 1083, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-201620", name: "Тройник переходной 20х16х20", price: 1124, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-202016", name: "Тройник переходной 20х20х16", price: 1130, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-202620", name: "Тройник переходной 20х26х20", price: 1600, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-261620", name: "Тройник переходной 26х16х20", price: 1573, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-261626", name: "Тройник переходной 26х16х26", price: 1573, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-262016", name: "Тройник переходной 26х20х16", price: 1588, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-262020", name: "Тройник переходной 26х20х20", price: 1588, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-262026", name: "Тройник переходной 26х20х26", price: 1573, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-262616", name: "Тройник переходной 26х26х16", price: 1600, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-262620", name: "Тройник переходной 26х26х20", price: 1585, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-263226", name: "Тройник переходной 26х32х26", price: 2603, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-322026", name: "Тройник переходной 32х20х26", price: 2625, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-322032", name: "Тройник переходной 32х20х32", price: 2748, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-322626", name: "Тройник переходной 32х26х26", price: 2748, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-322632", name: "Тройник переходной 32х26х32", price: 2748, availability: "in_stock", price_date: "2026-07-13" },
-        { id: "SFP-0005-323226", name: "Тройник переходной 32x32x26", price: 2748, availability: "in_stock", price_date: "2026-07-13" },
+        { id: "SFP-0005-162016", name: "Тройник переходной 16x20x16", price: 1168, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-201616", name: "Тройник переходной 20х16х16", price: 1083, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-201620", name: "Тройник переходной 20х16х20", price: 1124, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-202016", name: "Тройник переходной 20х20х16", price: 1130, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-202620", name: "Тройник переходной 20х26х20", price: 1600, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-261620", name: "Тройник переходной 26х16х20", price: 1573, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-261626", name: "Тройник переходной 26х16х26", price: 1573, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-262016", name: "Тройник переходной 26х20х16", price: 1588, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-262020", name: "Тройник переходной 26х20х20", price: 1588, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-262026", name: "Тройник переходной 26х20х26", price: 1573, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-262616", name: "Тройник переходной 26х26х16", price: 1600, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-262620", name: "Тройник переходной 26х26х20", price: 1585, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-263226", name: "Тройник переходной 26х32х26", price: 2603, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-322026", name: "Тройник переходной 32х20х26", price: 2625, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-322032", name: "Тройник переходной 32х20х32", price: 2748, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-322626", name: "Тройник переходной 32х26х26", price: 2748, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-322632", name: "Тройник переходной 32х26х32", price: 2748, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SFP-0005-323226", name: "Тройник переходной 32x32x26", price: 2748, availability: "in_stock", price_date: "2026-07-29" },
         // Тройник равнопроходный
         { id: "SFP-0006-161616", name: "Тройник равнопроходный 16х16х16", price: 775, availability: "in_stock", price_date: "2026-07-13" },
         { id: "SFP-0006-202020", name: "Тройник равнопроходный 20х20х20", price: 1132, availability: "in_stock", price_date: "2026-07-13" },
