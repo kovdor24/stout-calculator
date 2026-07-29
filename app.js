@@ -3070,10 +3070,37 @@ const app = {
             eqCount++;
         });
 
+        /**
+         * Работы, выведенные из состава оборудования (opts.addWorks).
+         *
+         * Накладная или отчёт по материалам строк монтажа не содержит вовсе, а
+         * калькулятор свои работы считает по state — площади, тумблерам,
+         * числу радиаторов, — которых после распознавания нет. Смета выходила
+         * с полным оборудованием и пустым монтажом. Что именно предложить,
+         * решает экран проверки; сюда приходит уже отмеченное монтажником.
+         *
+         * Одноимённую работу не задваиваем: если такая строка в смете уже есть
+         * (добавлена руками или прошлым распознаванием), берём большее из двух
+         * количеств, а не сумму.
+         */
+        let hintCount = 0;
+        for (const w of (opts && opts.addWorks) || []) {
+            if (!w || !w.name || !(w.q > 0)) continue;
+            const same = this.state.userAddedWorks.find(x => x.name === w.name && x.group === w.group);
+            if (same) { same.q = Math.max(Number(same.q) || 0, w.q); continue; }
+            this.state.userAddedWorks.push({
+                name: w.name, q: w.q, price: w.price, unit: w.unit, group: w.group,
+                desc: 'Добавлено по составу оборудования' + (w.why ? ' (' + w.why + ')' : ''),
+                recognized: stamp,
+            });
+            hintCount++;
+            workCount++;
+        }
+
         this.saveState();
         this.render();
 
-        return { eq: eqCount, works: workCount, noPrice: noPrice, skippedNoQty: skippedNoQty, docPriced: docPriced };
+        return { eq: eqCount, works: workCount, hintWorks: hintCount, noPrice: noPrice, skippedNoQty: skippedNoQty, docPriced: docPriced };
     },
 
     /** Откат последнего применения распознавания одним действием. */

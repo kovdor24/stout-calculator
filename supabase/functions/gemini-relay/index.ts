@@ -73,7 +73,10 @@ Deno.serve(async (req) => {
 
   const model = payload?.model;
   if (payload?.action !== "models" && !ALLOWED_MODELS.includes(model)) {
-    return json({ error: `Модель "${model}" не в белом списке ретранслятора` }, 400);
+    // Названия модели наружу не отдаём — это настроечная ошибка, и разбирать
+    // её будет админ по логам, а не монтажник по всплывающему окну.
+    console.error("model not allowed:", model);
+    return json({ code: "config", error: "Сервис распознавания настроен неверно." }, 400);
   }
 
   // Диагностика: список моделей, реально доступных этому ключу. Пригодится,
@@ -104,7 +107,14 @@ Deno.serve(async (req) => {
       body: isModelList ? undefined : JSON.stringify(payload.body ?? {}),
       // Распознавание фото — это долго. Ставим потолок выше, чем у чата,
       // но не бесконечный, чтобы зависший запрос не держал воркер.
-      signal: AbortSignal.timeout(110_000),
+      //
+      // 135 с, а не больше: у Edge Function свой предел на всю обработку
+      // запроса (150 с), и уйти за него — значит получить обрыв без ответа
+      // вместо внятного «не прошёл». На 110 с плотные листы смет не успевали,
+      // и монтажник видел «лист 2 не прочитан: TimeoutError».
+      //
+      // Бюджеты по цепочке: браузер 155 с → gemini_proxy.php 145 с → здесь.
+      signal: AbortSignal.timeout(135_000),
     });
 
     const text = await upstream.text();
@@ -113,6 +123,22 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json; charset=UTF-8" },
     });
   } catch (e) {
-    return json({ error: "Запрос к Gemini не прошёл: " + String(e) }, 502);
+    /**
+     * Наружу — только нейтральный текст: название языковой модели монтажнику
+     * ничего не говорит, а в пересланном скриншоте выглядит чужой кухней.
+     * Настоящая причина остаётся в логах функции.
+     *
+     * code — машинный признак для клиента: по нему recognize.js понимает, что
+     * это таймаут, и берёт следующую модель. По тексту ошибки такое различать
+     * нельзя — текст мы как раз и обезличиваем.
+     */
+    console.error("upstream failed:", String(e));
+    const timedOut = e instanceof DOMException && e.name === "TimeoutError";
+    return json({
+      code: timedOut ? "timeout" : "upstream",
+      error: timedOut
+        ? "Сервис распознавания не ответил вовремя."
+        : "Сервис распознавания недоступен.",
+    }, 502);
   }
 });

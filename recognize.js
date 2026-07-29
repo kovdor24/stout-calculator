@@ -1070,6 +1070,45 @@ const RecognizeUI = {
      */
     RETRY_WAITS: [4000, 12000, 25000],
 
+    /**
+     * Обезличивание технических ошибок.
+     *
+     * Монтажник пересылает скриншот ошибки заказчику и в поддержку, и в нём не
+     * должно быть ни названия языковой модели, ни английских исключений вида
+     * «TimeoutError: Signal timed out» — по ним всё равно ничего не сделать.
+     * Настоящий текст остаётся в консоли и в логах сервера.
+     *
+     * Правила на старые формулировки нужны, пока не обновлены прокси и
+     * ретранслятор: сообщение придёт от них в прежнем виде, и вычистить его
+     * может только клиент.
+     */
+    ERR_CLEAN: [
+        [/Запрос к \S+ не прошёл:\s*TimeoutError:\s*Signal timed out\.?/gi,
+            'Сервис распознавания не ответил вовремя.'],
+        [/Запрос к \S+ не прошёл:?\s*/gi, 'Сервис распознавания недоступен. '],
+        [/Не удалось связаться с ретранслятором:.*/gi, 'Сервис распознавания недоступен.'],
+        [/TimeoutError:\s*Signal timed out\.?/gi, 'превышено время ожидания'],
+        [/Модель "[^"]*" не в белом списке[^.]*\.?/gi, 'Сервис распознавания настроен неверно.'],
+        [/\bgemini[\w.\-]*/gi, 'сервис распознавания'],
+        [/\bGoogle\b/g, 'сервис распознавания'],
+    ],
+
+    /** Общий ответ там, где показывать нечего: подробности всё равно в консоли. */
+    ERR_GENERIC: 'Сервис распознавания не смог обработать лист. Попробуйте ещё раз.',
+
+    cleanError(msg) {
+        let s = String(msg == null ? '' : msg);
+        for (const [re, to] of this.ERR_CLEAN) s = s.replace(re, to);
+        // Замены могли встать подряд («…распознавания сервис распознавания…»).
+        s = s.replace(/(сервис распознавания)(\s+\1)+/gi, '$1')
+            .replace(/[ \t]{2,}/g, ' ').trim();
+        // Уцелевшая латиница — это остаток чужого стека вроде «is not found for
+        // API version v1beta». Монтажнику он не поможет, а выглядит как сбой
+        // калькулятора; отдаём общий текст.
+        if (/[A-Za-z]{3,}/.test(s)) return this.ERR_GENERIC;
+        return s || this.ERR_GENERIC;
+    },
+
     async askModel(parts, systemPrompt) {
         const MODELS = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3-flash-preview'];
 
@@ -1109,9 +1148,35 @@ const RecognizeUI = {
                     throw err;
                 }
 
+                /**
+                 * Ретранслятор сдался по времени («TimeoutError: Signal timed
+                 * out»). Ждать и повторять ТОЙ ЖЕ моделью бессмысленно: лист
+                 * не успел разобраться из-за своей плотности, а не из-за
+                 * загрузки Google, и второй раз не успеет так же. Зато
+                 * следующая модель в списке заметно быстрее — плотный лист у
+                 * неё обычно проходит. Раньше такая ошибка не подходила под
+                 * «временные» и роняла лист сразу, без единой попытки.
+                 */
+                // code приходит от прокси и ретранслятора машинным признаком:
+                // текст ошибки мы обезличиваем, и различать по нему таймаут
+                // больше нельзя. Разбор текста оставлен на переходный период,
+                // пока сервер отдаёт сообщения в прежнем виде.
+                if (parsed.code === 'timeout' ||
+                    /timed out|timeouterror|timeout|не ответил вовремя/i.test(msg)) {
+                    if (mi < MODELS.length - 1) break;   // к следующей модели
+                    throw new Error(
+                        'Лист не успел разобраться за отведённое время.\n' +
+                        'Так бывает с очень плотными листами. Нажмите «Дочитать листы» ' +
+                        'или переснимите этот лист двумя фотографиями — по половине на каждой.');
+                }
+
                 const busy = /high demand|overload|unavailable|503|429|too many requests|resource has been exhausted/i
                     .test(msg);
-                if (!busy) throw new Error(msg);
+                if (!busy) {
+                    // В консоль — как есть, монтажнику — обезличенно.
+                    console.warn('Распознавание, ответ сервиса:', msg);
+                    throw new Error(this.cleanError(msg));
+                }
 
                 if (attempt < this.RETRY_WAITS.length) {
                     // Google обычно называет паузу сам — «retryDelay: 27s».
@@ -1208,7 +1273,8 @@ const RecognizeUI = {
                     warnings.push(e.message);
                     break;
                 }
-                warnings.push(`лист ${i + 1} не прочитан: ${e.message.split('\n')[0]}`);
+                warnings.push(`лист ${i + 1} не прочитан: ${
+                    this.cleanError(e.message).split('\n')[0]}`);
             }
         }
 
@@ -1271,7 +1337,8 @@ const RecognizeUI = {
                     for (const k of left) if (k > i && !stillFailed.includes(k)) stillFailed.push(k);
                     break;
                 }
-                warning = `лист ${i + 1} не прочитан: ${e.message.split('\n')[0]}`;
+                warning = `лист ${i + 1} не прочитан: ${
+                    this.cleanError(e.message).split('\n')[0]}`;
             }
         }
 
@@ -1658,17 +1725,22 @@ const RecognizeUI = {
      * Повтор нужен, потому что хостинг прокси иногда обрывает связь на пустом
      * месте — но повторять запрос, который завис по таймауту, бессмысленно:
      * он завис из-за размера или сложности входа, и второй раз зависнет так же.
-     * Поэтому свой таймаут (100 с, чуть меньше 110 с у ретранслятора), и по
-     * нему — сразу понятная ошибка, а не три круга ожидания.
+     * Поэтому свой таймаут, и по нему — сразу понятная ошибка, а не три круга
+     * ожидания.
+     *
+     * Бюджеты по цепочке убывают, иначе первым сдаётся не тот, кто знает
+     * причину: браузер 155 с → gemini_proxy.php 145 с → gemini-relay 135 с.
+     * Меняете одно звено — правьте всю тройку, «лист не прочитан» без
+     * подробностей берётся ровно отсюда.
      */
     async fetchRetry(payload, attempts = 3) {
         let last;
         for (let i = 1; i <= attempts; i++) {
             const ctrl = new AbortController();
-            // Свой таймаут держим чуть БОЛЬШЕ серверного (у прокси на режим
-            // recognize стоит 120 с): иначе браузер сдавался первым и вместо
-            // внятной ошибки от сервера монтажник видел «слишком долго».
-            const timer = setTimeout(() => ctrl.abort(), 125000);
+            // Свой таймаут держим БОЛЬШЕ серверного: иначе браузер сдавался
+            // первым и вместо внятной ошибки от сервера монтажник видел
+            // «слишком долго».
+            const timer = setTimeout(() => ctrl.abort(), 155000);
             try {
                 const r = await fetch(this.PROXY, {
                     method: 'POST',
@@ -1694,8 +1766,8 @@ const RecognizeUI = {
                 }
             }
         }
-        throw new Error('Сервер распознавания не отвечает. Попробуйте через минуту.\n' +
-            (last ? last.message : ''));
+        if (last) console.warn('Распознавание, сеть:', last.message);
+        throw new Error('Сервер распознавания не отвечает. Попробуйте через минуту.');
     },
 
     // ------------------------------------------------------------------
@@ -2635,8 +2707,10 @@ const RecognizeUI = {
         // Работы уехали на свою вкладку: в одной таблице с материалами им
         // делать нечего — ни артикула, ни каталога, ни аналога ROMMER, зато
         // есть свой прайс, с которым их и надо сравнивать.
-        if (works.length && this._tab === 'works') { this.renderWorksPane(works, sum); return; }
-        if (!works.length) this._tab = 'eq';
+        if (this._tab === 'works' && (works.length || this.missingWorks(works).length)) {
+            this.renderWorksPane(works, sum); return;
+        }
+        if (!works.length && !this.missingWorks(works).length) this._tab = 'eq';
 
         document.getElementById('rec_body').innerHTML = `
           ${this._parseWarning ? `<div class="rec-err">${esc(this._parseWarning)}
@@ -2777,17 +2851,27 @@ const RecognizeUI = {
           </div>`;
     },
 
-    /** Переключатель «Оборудование / Монтажные работы». */
+    /**
+     * Переключатель «Оборудование / Монтажные работы».
+     *
+     * Вкладка нужна и тогда, когда своих строк работ в документе нет: накладная
+     * или отчёт по материалам — это ровно тот случай, ради которого считаются
+     * работы по составу оборудования. Раньше вкладка при нуле работ пропадала
+     * вместе с ними, и смета уезжала без монтажа.
+     */
     renderTabs(eqTotal, works) {
-        if (!works.length) return '';
+        const miss = this.missingWorks(works);
+        if (!works.length && !miss.length) return '';
         const wSum = works.reduce((s, r) => s + this.docPrice(r) * this.docQty(r), 0);
         const on = this._tab === 'works';
+        const n = works.length || miss.length;
         return `<div class="rec-tabs">
             <button class="rec-tab${on ? '' : ' on'}" onclick="RecognizeUI.tab('eq')">
               Оборудование <em>${eqTotal}</em></button>
             <button class="rec-tab${on ? ' on' : ''}" onclick="RecognizeUI.tab('works')">
-              Монтажные работы <em>${works.length}</em>${
-            wSum > 0 ? ` <i>${Math.round(wSum).toLocaleString('ru-RU')} ₽</i>` : ''}</button>
+              Монтажные работы <em>${n}</em>${
+            works.length ? (wSum > 0 ? ` <i>${Math.round(wSum).toLocaleString('ru-RU')} ₽</i>` : '')
+                : ' <i>по оборудованию</i>'}</button>
           </div>`;
     },
 
@@ -2831,37 +2915,150 @@ const RecognizeUI = {
      * увидеть её стоит до того, как смету сравнили по деньгам.
      */
     WORK_HINTS: [
-        { re: /радиатор/i, work: 'Монтаж радиатора отопления' },
-        { re: /конвектор/i, work: 'Монтаж внутрипольного конвектора' },
-        { re: /полотенцесушител/i, work: 'Монтаж водяного полотенцесушителя с обвязкой' },
-        { re: /бойлер|водонагреват/i, work: 'Монтаж водонагревателя / бойлера' },
+        // --- 1.1 Котёл и бойлер ---
+        { re: /кот[её]л/i, not: /обвязк|коллектор|автоматик|контроллер|термостат|дымоход|стабилизатор|фильтр|бак|насос/i,
+          sub: /газов/i, work: 'Монтаж газового котла' },
+        { re: /кот[её]л/i, not: /газов|обвязк|коллектор|автоматик|контроллер|термостат|дымоход|стабилизатор|фильтр|бак|насос/i,
+          work: 'Mонтаж электрического котла' },
+        { re: /дымоход|коаксиал/i, work: 'Монтаж коаксиального дымохода' },
+        { re: /стабилизатор напряж/i, work: 'Монтаж стабилизатора напряжения' },
+        // \b в JS считает словом только латиницу, поэтому границы слова в
+        // русских правилах задаются через (?![а-яё]) — иначе «тэн\b» и
+        // «трап\b» не срабатывают вообще ни на чём.
+        // «ТЭН» в исключения не берём: он стоит в названии самих бойлеров
+        // («с возм. уст. ТЭН»), и по нему терялся монтаж бойлера целиком.
+        { re: /бойлер|водонагреват/i, not: /насос|кран|американк|клапан|гильз/i,
+          work: 'Монтаж водонагревателя / бойлера' },
+        { re: /бойлер\s*косвенн|косвенн[а-яё]*\s*нагрев/i, qty: 'one',
+          work: 'Подключение бойлера косвенного нагрева (монтаж гидравлики)' },
+        { re: /расширительн[а-яё]*\s*бак|гидроаккумулятор|мембранн[а-яё]*\s*бак/i,
+          work: 'Установка расширительного бака водоснабжения' },
+
+        // --- 1.2 Обвязка котельной ---
         { re: /гидрострелк|гидравлическ[а-яё]*\s*стрелк/i, work: 'Монтаж гидравлической стрелки' },
         { re: /насосн[а-яё]*\s*групп/i, work: 'Монтаж насосной группы' },
-        { re: /дымоход|коаксиал/i, work: 'Монтаж коаксиального дымохода' },
-        { re: /расширительн[а-яё]*\s*бак/i, work: 'Установка расширительного бака водоснабжения' },
+        { re: /насос\s*циркуляционн|циркуляционн[а-яё]*\s*насос/i,
+          not: /рециркуляц|гвс|групп|скважин|блок управлени/i, work: 'Установка насоса' },
+        { re: /насос\s*гвс|рециркуляц/i, not: /точк|труб/i,
+          work: 'Монтаж циркуляционного насоса рециркуляции ГВС' },
+        { re: /распределительн[а-яё]*\s*коллектор\s*котельн|коллекторн[а-яё]*\s*балк/i,
+          work: 'Монтаж распределительного коллектора котельной' },
+
+        // --- 1.3 Радиаторы ---
+        // Радиатором считаем сам прибор. «Коллектор радиаторный», «трубка для
+        // подключения радиатора», кронштейны и термоголовки — это не точки
+        // монтажа, и складывать их в количество радиаторов нельзя.
+        { re: /радиатор/i, not: /коллектор|трубк|кронштейн|шкаф|термоголов|узел|переходник|заглушк|футорк|пробк|клапан|кран|уплотнен/i,
+          work: 'Монтаж радиатора отопления' },
+        { re: /конвектор/i, work: 'Монтаж внутрипольного конвектора' },
+        { re: /полотенцесушител/i, work: 'Монтаж водяного полотенцесушителя с обвязкой' },
+        { re: /коллектор\s*радиаторн|радиаторн[а-яё]*\s*коллектор/i, qty: 'pairs',
+          work: 'Установка коллектора для радиаторов' },
+        { re: /шкаф\s*(распределительн|коллекторн)|шрн|шрв/i,
+          work: 'Монтаж и обвязка распределительных шкафов' },
+
+        // --- 1.4 Тёплый пол ---
+        // Площадь берём только оттуда, где она написана прямо в названии
+        // (подложка и маты продаются в м²). По метражу трубы её не считаем:
+        // шаг укладки в документе не указан, а PEX-a идёт и на радиаторы.
+        { re: /подложк|мат[ыи]?\s*(для\s*)?(т[её]пл|тп(?![а-яё]))|теплоизоляционн[а-яё]*\s*мат/i, qty: 'area',
+          work: 'Монтаж труб водяного тёплого пола' },
+        { re: /подложк|мат[ыи]?\s*(для\s*)?(т[её]пл|тп(?![а-яё]))|теплоизоляционн[а-яё]*\s*мат/i, qty: 'area',
+          work: 'Монтаж утеплителя для укладки ТП' },
+        { re: /коллектор.*(т[её]пл[а-яё]*\s*пол|тп(?![а-яё]))|(т[её]пл[а-яё]*\s*пол).*коллектор/i, qty: 'pairs',
+          work: 'Установка и подключение коллектора теплого пола' },
+        { re: /скоб[аы]\s*якорн|такер|подложк|коллектор.*т[её]пл[а-яё]*\s*пол/i, qty: 'one',
+          work: 'Опрессовка систем водяного тёплого пола' },
+
+        // --- 1.4 Автоматика ---
         { re: /сервопривод/i, work: 'Монтаж сервоприводов' },
-        { re: /термостат/i, work: 'Монтаж термостатов' },
-        { re: /скважинн[а-яё]*\s*насос/i, work: 'Монтаж скважинного насоса (опуск, оголовок, автоматика)' },
+        { re: /термостат/i, not: /бойлер|водонагреват|с\s*термостатом/i, work: 'Монтаж термостатов' },
+        { re: /коммутационн[а-яё]*\s*блок|блок\s*управлени[а-яё]*\s*(смесительн|контур)|контроллер/i,
+          not: /насос/i, qty: 'one', work: 'Монтаж коммутационного блока' },
+
+        // --- 2.1 Внешнее водоснабжение ---
+        { re: /скважинн[а-яё]*\s*насос|погружн[а-яё]*\s*насос|блок\s*управлени[а-яё]*\s*насос|sirio/i,
+          qty: 'one', work: 'Монтаж скважинного насоса (опуск, оголовок, автоматика)' },
+
+        // --- 2.2 Узел ввода ХВС ---
+        { re: /big\s*blue|корпус\s+(для\s+)?(картриджн[а-яё]*\s+)?фильтр|колб[аы]\s+фильтр/i, qty: 'one',
+          work: 'Монтаж системы фильтрации Big Blue (колбы + картриджи)' },
         { re: /незамерзающ|уличн[а-яё]*\s*кран/i, work: 'Монтаж незамерзающего уличного крана' },
+
+        // --- 2.3 Внутреннее водоснабжение ---
+        { re: /водорозетк/i, work: 'Точка присоединения ХВС (монтаж трубопроводов, водорозетки)' },
+        { re: /коллектор\s*никелированн|коллектор.*водоснабж|коллектор\s*1["»].*вых/i,
+          not: /радиаторн|т[её]пл/i, work: 'Установка и подключение коллектора системы водоснабжения' },
+
+        // --- 3.1 Канализация ---
+        // Точки канализации считаем по приборам, а не по трубам и фитингам:
+        // сколько точек в доме, по метражу фановой трубы не узнать.
+        { re: /трап|сифон|унитаз|инсталляц|раковин|умывальник|мойк|ванн[аы](?![а-яё])|душев/i,
+          not: /трапец/i, work: 'Монтаж труб канализации (без метража)' },
         { re: /инсталляц|унитаз/i, work: 'Монтаж инсталляции унитаза' },
-        { re: /стабилизатор напряж/i, work: 'Монтаж стабилизатора напряжения' },
     ],
 
+    /**
+     * Количество для подсказанной работы.
+     *
+     * 'sum'   — сумма количеств подходящих позиций (радиаторы, сервоприводы);
+     * 'one'   — работа комплексная, сколько бы позиций её ни выдало;
+     * 'pairs' — коллекторы в прайсе считаются парами (подача + обратка);
+     * 'area'  — площадь, написанная прямо в названии позиции («... (30 м²)»).
+     */
+    hintQty(hits, mode) {
+        if (mode === 'one') return 1;
+        if (mode === 'area') {
+            let a = 0;
+            for (const r of hits) {
+                const src = ((r._m && r._m.item && r._m.item.name) || '') + ' ' + (r.raw || '');
+                const m = src.match(/(\d+(?:[.,]\d+)?)\s*м\s*(?:²|2|кв)/i);
+                if (m) a += parseFloat(m[1].replace(',', '.')) * (this.docQty(r) || 1);
+            }
+            return Math.round(a);
+        }
+        const sum = hits.reduce((s, r) => s + this.docQty(r), 0) || hits.length;
+        if (mode === 'pairs') return Math.max(1, Math.ceil(sum / 2));
+        return sum;
+    },
+
+    /** Текст строки, по которому ищем признак работы: и чужой, и наш. */
+    hintText(r) {
+        return (r.raw || '') + ' ' + ((r._m && r._m.item && r._m.item.name) || '');
+    },
+
     missingWorks(works) {
-        const have = new Set(works.filter(r => r._w).map(r => r._w.work.name));
-        const eq = this._rows.filter(r => !this.looksLikeWork(r));
+        const have = new Set((works || []).filter(r => r._w).map(r => r._w.work.name));
+        const eq = this._rows.filter(r => !this.looksLikeWork(r) && this.docQty(r) > 0);
         const out = [];
         for (const h of this.WORK_HINTS) {
-            if (have.has(h.work)) continue;
-            const hit = eq.filter(r => h.re.test(r.raw || '') ||
-                (r._m && r._m.item && h.re.test(r._m.item.name || '')));
+            if (have.has(h.work) || out.some(o => o.work.name === h.work)) continue;
+            const hit = eq.filter(r => {
+                const t = this.hintText(r);
+                if (!h.re.test(t)) return false;
+                if (h.not && h.not.test(t)) return false;
+                if (h.sub && !h.sub.test(t)) return false;
+                return true;
+            });
             if (!hit.length) continue;
             const w = this.ourWorks().find(x => x.name === h.work);
             if (!w) continue;
-            const qty = hit.reduce((s, r) => s + this.docQty(r), 0) || hit.length;
+            const qty = this.hintQty(hit, h.qty);
+            if (!(qty > 0)) continue;   // площадь не написана — не выдумываем её
             out.push({ work: w, qty, why: hit.length + (hit.length === 1 ? ' позиция' : ' позиций') });
         }
         return out;
+    },
+
+    /** Подсказанные работы, которые монтажник не снял галочкой. */
+    missingWorksOn(works) {
+        return this.missingWorks(works).filter(m => !(this._missOff || {})[m.work.name]);
+    },
+
+    toggleMiss(name, on) {
+        if (!this._missOff) this._missOff = {};
+        if (on) delete this._missOff[name]; else this._missOff[name] = true;
+        this.renderReview();
     },
 
     renderWorksPane(works, eqSum) {
@@ -2974,21 +3171,26 @@ const RecognizeUI = {
         const outN = works.length - rolled - (matched - flagged);
 
         const miss = this.missingWorks(works);
-        const missSum = miss.reduce((s, m) => s + m.work.price * m.qty, 0);
+        const missOff = this._missOff || {};
+        const missOn = miss.filter(m => !missOff[m.work.name]);
+        const missSum = missOn.reduce((s, m) => s + m.work.price * m.qty, 0);
 
         document.getElementById('rec_body').innerHTML = `
           ${this.renderTabs(this._rows.length - works.length, works)}
           ${this.renderTotalsStrip()}
           <div class="rec-toolbar">
             <button class="rec-btn-g" onclick="RecognizeUI.undo()" ${this._undo.length ? '' : 'disabled'}>↶ Отменить</button>
-            <span class="rec-status">Сопоставлено с нашим прайсом ${matched} из ${works.length}${
-            rolled ? ` · ${rolled} свёрнуто в наши точки` : ''}${
-            flagged ? ` · ${flagged} отложено: единицы или цена не сходятся` : ''}${
-            works.length - matched - rolled > 0
-                ? ` · ${works.length - matched - rolled} уедут своей строкой с ценой из документа` : ''}</span>
+            <span class="rec-status">${works.length
+                ? `Сопоставлено с нашим прайсом ${matched} из ${works.length}${
+                    rolled ? ` · ${rolled} свёрнуто в наши точки` : ''}${
+                    flagged ? ` · ${flagged} отложено: единицы или цена не сходятся` : ''}${
+                    works.length - matched - rolled > 0
+                        ? ` · ${works.length - matched - rolled} уедут своей строкой с ценой из документа` : ''}`
+                : `Строк монтажа в документе нет · работ по составу оборудования: ${missOn.length} из ${miss.length}`
+            }</span>
             ${Object.keys(this._rollOff || {}).filter(k => this._rollOff[k]).map(k =>
                 `<button class="rec-btn-g" onclick="RecognizeUI.reroll('${esc(k).replace(/'/g, "\\'")}')">↩ Вернуть свёртку</button>`).join('')}
-            <span class="rec-tb-right">
+            ${works.length ? `<span class="rec-tb-right">
               <label class="rec-switch${this.ourWorkPricesOn() ? ' on' : ''}"
                      title="Чем считать работы в смете: нашим прайсом монтажа или ценами из чужого документа">
                 <input type="checkbox" ${this.ourWorkPricesOn() ? 'checked' : ''}
@@ -2996,10 +3198,10 @@ const RecognizeUI = {
                 <span class="rec-switch-track"><span class="rec-switch-knob"></span></span>
                 <span class="rec-switch-text">В смету — наши расценки</span>
               </label>
-            </span>
+            </span>` : ''}
           </div>
 
-          <div class="rec-cmp-sum">
+          ${!works.length ? '' : `<div class="rec-cmp-sum">
             <div class="rec-cmp-item">
               <div class="rec-cmp-val">${money(theirCmp)}</div>
               <div class="rec-cmp-lbl">Работы по документу · сопоставимые</div>
@@ -3019,7 +3221,7 @@ const RecognizeUI = {
                  <div class="rec-cmp-val ${delta > 0 ? 'up' : 'down'}">${
                     delta > 0 ? '+' : '−'}${money(Math.abs(delta))} (${delta > 0 ? '+' : ''}${pct}%)</div>
                  <div class="rec-cmp-lbl">${delta > 0 ? 'У нас дороже' : 'У нас дешевле'}</div></div>`}
-          </div>
+          </div>`}
 
           ${outN > 0 ? `<div class="rec-art" style="padding:0 0 10px;">
             В сравнение идут только строки, которым нашлась наша расценка. Укрупнённые
@@ -3028,22 +3230,27 @@ const RecognizeUI = {
             и сравнивать их построчно значит сравнивать разное.</div>` : ''}
 
           ${miss.length ? `<div class="rec-missing">
-            <div class="rec-missing-hd">В чужой смете не нашлось ${miss.length === 1
-                ? 'работы, которая следует' : 'работ, которые следуют'} из состава оборудования —
+            <div class="rec-missing-hd">${works.length
+                ? `В документе не нашлось ${miss.length === 1
+                    ? 'работы, которая следует' : 'работ, которые следуют'} из состава оборудования`
+                : `Работ в документе нет — вот что следует из состава оборудования`} —
               на ${money(missSum)} по нашему прайсу</div>
             <table class="rec-table">
-              <tbody>${miss.map(m => `<tr>
+              <tbody>${miss.map(m => `<tr${missOff[m.work.name] ? ' class="rec-skip"' : ''}>
+                <td style="width:34px"><input type="checkbox" ${missOff[m.work.name] ? '' : 'checked'}
+                    onchange="RecognizeUI.toggleMiss('${esc(m.work.name).replace(/'/g, "\\'")}', this.checked)"></td>
                 <td>${esc(m.work.name)}<div class="rec-art">в оборудовании: ${esc(m.why)}</div></td>
                 <td style="width:110px">${m.qty} ${esc(m.work.unit)}</td>
                 <td style="width:110px">${money(m.work.price)}</td>
                 <td style="width:110px"><b>${money(m.work.price * m.qty)}</b></td>
               </tr>`).join('')}</tbody>
             </table>
-            <div class="rec-art" style="padding:8px 12px 0;">Это подсказка, а не строка сметы:
-              в смету такие работы добавятся сами, когда калькулятор соберёт её по оборудованию.</div>
+            <div class="rec-art" style="padding:8px 12px 0;">Отмеченные строки уедут в смету нашей
+              расценкой. Количество здесь — прикидка по документу: калькулятор не знает ни площади
+              дома, ни числа точек, поэтому проверьте цифры и снимите лишнее.</div>
           </div>` : ''}
 
-          <div class="rec-tablewrap">
+          ${!works.length ? '' : `<div class="rec-tablewrap">
             <table class="rec-table">
               <colgroup><col><col style="width:110px"><col style="width:86px"><col style="width:96px">
                 <col style="width:300px"><col style="width:96px"><col style="width:96px">
@@ -3054,9 +3261,10 @@ const RecognizeUI = {
               </tr></thead>
               <tbody>${rows}</tbody>
             </table>
-          </div>
+          </div>`}
           <div class="rec-foot">
-            <div class="rec-total">Работы: <b>${money(this.ourWorkPricesOn() ? ourAll : theirAll)}</b>
+            <div class="rec-total">Работы: <b>${money(
+                (this.ourWorkPricesOn() ? ourAll : theirAll) + missSum)}</b>
               <span class="rec-art">оборудование: ${money(eqSum)}</span></div>
             <button class="calc-dialog-btn calc-dialog-btn-cancel" onclick="RecognizeUI.apply('new')">Создать новую смету</button>
             <button class="calc-dialog-btn calc-dialog-btn-confirm" onclick="RecognizeUI.apply('add')">Добавить в текущую смету</button>
@@ -3750,11 +3958,22 @@ const RecognizeUI = {
         // Разметку работ считаем и здесь: во вкладку монтажник мог не заходить,
         // а без неё две строки вместо одной точки уехали бы в смету, и нашей
         // расценкой умножился бы объём в чужих единицах.
-        this.prepareWorks(this._rows.filter(x => this.looksLikeWork(x)));
+        const docWorks = this._rows.filter(x => this.looksLikeWork(x));
+        this.prepareWorks(docWorks);
+
+        // Работы, выведенные из состава оборудования. Считаем их и здесь: во
+        // вкладку монтажник мог не заходить, а по накладной на материалы это
+        // единственный источник монтажа — без них смета уедет с одним
+        // оборудованием и нулём работ.
+        const addWorks = this.missingWorksOn(docWorks).map(m => ({
+            name: m.work.name, q: m.qty, price: Math.round(m.work.price),
+            unit: m.work.unit, group: m.work.group, why: m.why,
+        }));
 
         const r = app.applyRecognized(this._rows, mode, {
             docPrices: this.docPricesOn(),
             ourWorkPrices: this.ourWorkPricesOn(),
+            addWorks,
         });
 
         // Сбрасываем состояние: вкладка должна открыться чистой в следующий раз.
@@ -3765,6 +3984,7 @@ const RecognizeUI = {
         this._rows = [];
         this._undo = [];
         this._skipped = [];
+        this._missOff = {};
         const panel = document.getElementById('panel_recognize');
         if (panel) panel.innerHTML = '';
 
@@ -3772,6 +3992,7 @@ const RecognizeUI = {
 
         const parts = [`Добавлено позиций: ${r.eq}`];
         if (r.works) parts.push(`работ: ${r.works}`);
+        if (r.hintWorks) parts.push(`из них по составу оборудования: ${r.hintWorks}`);
         if (r.docPriced) parts.push(`с ценой из документа: ${r.docPriced}`);
         if (r.noPrice) parts.push(`из них без цены: ${r.noPrice}`);
         if (r.skippedNoQty) parts.push(`пропущено без количества: ${r.skippedNoQty}`);

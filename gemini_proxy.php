@@ -57,9 +57,14 @@ $RELAY_TOKEN = 'YOUR_RELAY_TOKEN';
 
 // Лимиты по режимам: [запросов в час с одного IP, максимальный размер тела в байтах, таймаут в секундах].
 // У распознавания тело большое (base64-картинка), но запросов мало; у чата наоборот.
+//
+// Таймаут распознавания должен быть БОЛЬШЕ, чем у ретранслятора (135 с в
+// gemini-relay/index.ts), иначе curl обрывает связь раньше, чем функция успеет
+// объяснить причину, и монтажник видит «лист не прочитан» без подробностей.
+// Вся цепочка: браузер 155 с → здесь 145 с → ретранслятор 135 с.
 $LIMITS = [
     'chat'      => ['rate' => 120, 'bytes' => 512 * 1024,      'timeout' => 30],
-    'recognize' => ['rate' => 30,  'bytes' => 8 * 1024 * 1024, 'timeout' => 120],
+    'recognize' => ['rate' => 30,  'bytes' => 8 * 1024 * 1024, 'timeout' => 145],
 ];
 // ====================
 
@@ -69,12 +74,16 @@ function fail($code, $message) {
     exit;
 }
 
+// Настроечные ошибки монтажнику ни о чём не говорят, а имена ключей и моделей
+// в них — лишнее для чужих глаз. Наружу нейтральный текст, подробности в лог.
 if ($GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
-    fail(400, "Пожалуйста, настройте API-ключ Gemini в файле gemini_proxy.php на сервере.");
+    error_log('gemini_proxy: API key not configured');
+    fail(400, "Сервис распознавания не настроен. Сообщите администратору.");
 }
 
 if ($RELAY_TOKEN === 'YOUR_RELAY_TOKEN') {
-    fail(400, "Не настроен RELAY_TOKEN в gemini_proxy.php — он должен совпадать с секретом функции gemini-relay.");
+    error_log('gemini_proxy: RELAY_TOKEN not configured');
+    fail(400, "Сервис распознавания не настроен. Сообщите администратору.");
 }
 
 /**
@@ -97,8 +106,20 @@ function relay($url, $token, $payload, $timeout) {
     $response = curl_exec($ch);
     if (curl_errno($ch)) {
         $err = curl_error($ch);
+        $timedOut = (curl_errno($ch) === CURLE_OPERATION_TIMEDOUT);
         curl_close($ch);
-        fail(502, "Не удалось связаться с ретранслятором: " . $err);
+        error_log('gemini_proxy: relay failed: ' . $err);
+        // Наружу — без имён узлов и текста curl. Признак таймаута отдаём полем
+        // code: по нему клиент понимает, что стоит взять другую модель.
+        http_response_code(502);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'code'  => $timedOut ? 'timeout' : 'upstream',
+            'error' => $timedOut
+                ? 'Сервис распознавания не ответил вовремя.'
+                : 'Сервис распознавания недоступен.',
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
     }
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
