@@ -9,3 +9,8 @@ scratch/
 # Промежуточные сборки прайса (боевой индекс — price_index.json)
 price_index.new.json
 price_index.prev.json
+
+# Строки стенда — это сметы монтажников, а репозиторий открытый.
+# Сам стенд (bench/run.js, bench/from_archive.js) в репозитории нужен.
+bench/lines.json
+bench/new_lines.json
