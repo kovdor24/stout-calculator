@@ -4443,3 +4443,28 @@ const towelWarmersElectric = [
     { id: "SHQ-J8RR-F08050", name: "Полотенцесушитель эл. JAZZ round 80×50, Золотой хром (с полкой)", price: 24939, series: "JAZZ", shape: "round", size: "80×50", color: "gold", shelf: true, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
     { id: "SHQ-R8R0-012008", name: "Полотенцесушитель эл. ROCK round 120×08, Золотой хром (2 опоры)", price: 19416, series: "ROCK", shape: "round", size: "120×08", color: "gold", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" }
 ];
+
+/**
+ * Корни каталога для обхода всех позиций разом.
+ *
+ * Товары лежат не только в `catalog`: серии радиаторов, клапаны и аксессуары —
+ * это отдельные массивы верхнего уровня. Список нужен там, где надо пройти
+ * ВСЕ позиции без исключения — сейчас это наложение цен дистрибьютора
+ * (app.applyDistributorPrices). Обход рекурсивный, так что вложенные
+ * .rommer / .comfort / .alts подхватываются сами.
+ *
+ * Добавили новый массив товаров выше — допишите его сюда, иначе цены
+ * дистрибьютора мимо него пройдут.
+ */
+const CATALOG_PRICE_ROOTS = [
+    catalog,
+    titanRads, steelRads, spaceRuRads, spaceRu350Rads,
+    titanSideRads, titanSide350Rads, titanSide200Rads,
+    aluminumRads, aluminum350Rads,
+    rommerProfiAlRads, rommerOptimaBmRads, rommerProfiBmRads,
+    rommerPlusBmRads, rommerPlusAlRads, rommerPlusAl200Rads, rommerPlusBm200Rads,
+    vegaBmRads, alphaBmRads, titanBottom350Rads, titanGraphiteRads, vega500AlRads,
+    oscarRads, sebinoRads, anteprimaRads, tonaleRads, tubeQuadroRads, tubeRoundRads,
+    radValves, radValvesDesign, radManualValves, hValvesExtra, radKitsExtra,
+    radAccessories, towelWarmersElectric
+];

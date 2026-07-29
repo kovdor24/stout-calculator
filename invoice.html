@@ -2347,6 +2347,9 @@
     </div>
 
     <script src="catalog.js"></script>
+    <!-- Цены дистрибьюторов. Нужны здесь потому, что в ссылке для клиента у обычных
+         позиций едет только артикул, а цену эта страница берёт из каталога сама. -->
+    <script src="dist_prices.js"></script>
     <script>
         function copySpecFor1C() {
             if (!invoiceData || !invoiceData.items || !invoiceData.items.equipment) {
@@ -2691,6 +2694,24 @@
         // === OFFLINE SHARE LINK DECODER ===
         // ===================================
         // === OFFLINE SHARE LINK DECODER ===
+        // Накладывает цены дистрибьютора на каталог. Страница одноразовая — открыли,
+        // посмотрели, закрыли, — поэтому откат к базовым ценам тут не нужен, в отличие
+        // от калькулятора, где источник цен переключается на лету.
+        function applyDistPricesToCatalog(key) {
+            if (!key || typeof DIST_PRICES === 'undefined' || !DIST_PRICES[key]) return;
+            const prices = DIST_PRICES[key].items || {};
+            const seen = new Set();
+            const walk = (node) => {
+                if (!node || typeof node !== 'object' || seen.has(node)) return;
+                seen.add(node);
+                if (typeof node.id === 'string' && typeof node.price === 'number' && prices[node.id] !== undefined) {
+                    node.price = prices[node.id];
+                }
+                for (const k in node) walk(node[k]);
+            };
+            (typeof CATALOG_PRICE_ROOTS !== 'undefined' ? CATALOG_PRICE_ROOTS : [catalog]).forEach(walk);
+        }
+
         function findCatalogItem(sku) {
             if (typeof catalog === 'undefined') return null;
             for (const key in catalog) {
@@ -2734,6 +2755,12 @@
             };
 
             const discountPercent = compact.o.c || 0; // 'c' is the discount percentage
+
+            // Прайс-лист дистрибьютора (ключ 'k') накладываем на каталог ДО того, как
+            // начнём разворачивать позиции: у обычных строк в ссылке едет только артикул,
+            // цену findCatalogItem достаёт из каталога. Без этого клиент увидел бы цены
+            // Терем-онлайн, а итог в шапке — посчитанный по ценам дистрибьютора.
+            applyDistPricesToCatalog(compact.o.k || '');
 
             const equipmentList = (compact.i.e || []).map(item => {
                 // If it is in the old full format, return as-is

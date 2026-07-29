@@ -86,7 +86,12 @@ function compactPayload(data) {
             d: data.object_info.date || '',
             s: data.object_info.showSku ? 1 : 0,
             c: data.object_info.eqDiscount || 0,
-            q: data.object_info.sequence_id || ''
+            q: data.object_info.sequence_id || '',
+            // Прайс-лист дистрибьютора. У обычных позиций в ссылку уходит только
+            // артикул, а цену invoice.html берёт из каталога сам — без этого ключа
+            // клиент увидел бы цены Терема, а итог в шапке был бы посчитан по ценам
+            // дистрибьютора, и строки со сметой не сошлись бы.
+            k: data.object_info.priceListKey || ''
         },
         m: {
             n: data.manager_info.name || '',
@@ -4052,7 +4057,9 @@ const app = {
                 manager_name: dist.manager_name,
                 manager_email: dist.manager_email,
                 manager_phone: dist.manager_phone,
-                director_email: dist.director_email
+                director_email: dist.director_email,
+                use_own_prices: !!dist.use_own_prices,
+                price_list_key: dist.price_list_key || null
             };
             if (this.state.tgUser) {
                 if (grantsPro) this.state.tgUser.account_type = 'pro';
@@ -4081,17 +4088,100 @@ const app = {
         }
     },
 
+    // ═══════════════ Цены дистрибьютора ═══════════════
+    // Каталог хранит цены Терем-онлайн, и раз в месяц их целиком переписывает
+    // автообновление (AutoPrice.py). Своя цена дистрибьютора при таком раскладе
+    // жить в каталоге не может — её бы затирало каждый месяц. Поэтому цены
+    // дистрибьюторов лежат отдельным файлом (dist_prices.js) и накладываются
+    // поверх каталога уже здесь, в браузере, после его загрузки.
+
+    // Цены каталога до наложения: объект позиции → цена Терем-онлайн. Нужны,
+    // чтобы вернуть всё как было при выключении, не перезагружая страницу.
+    _distPriceBackup: null,
+    // Какой прайс сейчас наложен (ключ из DIST_PRICES), либо null.
+    _distPriceApplied: null,
+
+    // Какой прайс-лист должен действовать прямо сейчас. Условия все обязательны:
+    // монтажника не переключили на Терем вручную, у его дистрибьютора включены
+    // свои цены, и такой прайс действительно есть в dist_prices.js.
+    activeDistPriceKey: function () {
+        if (this.state.priceSource === 'terem') return null;
+        const d = this.state.distributorInfo;
+        if (!d || !d.use_own_prices) return null;
+        const key = d.price_list_key || '';
+        if (typeof DIST_PRICES === 'undefined' || !DIST_PRICES[key]) return null;
+        return key;
+    },
+
+    // Накладывает цены дистрибьютора на каталог (или снимает их). Возвращает
+    // true, если цены реально поменялись — значит вызвавшему нужен render().
+    applyDistributorPrices: function () {
+        const key = this.activeDistPriceKey();
+        if (key === this._distPriceApplied) return false;
+
+        // Сначала всегда откат к ценам каталога: иначе при переключении между
+        // двумя прайсами второй лёг бы поверх первого и вернуться было бы некуда.
+        if (this._distPriceBackup) {
+            this._distPriceBackup.forEach((basePrice, item) => { item.price = basePrice; });
+            this._distPriceBackup = null;
+        }
+        this._distPriceApplied = key;
+        if (!key) return true;
+
+        const prices = (DIST_PRICES[key] && DIST_PRICES[key].items) || {};
+        const backup = new Map();
+        const seen = new Set();
+        // Обход рекурсивный: цены есть и во вложенных .rommer / .comfort, а одна
+        // и та же позиция часто лежит сразу в нескольких массивах. seen заодно
+        // спасает от зацикливания на .alts, которые ссылаются назад.
+        const walk = (node) => {
+            if (!node || typeof node !== 'object' || seen.has(node)) return;
+            seen.add(node);
+            if (typeof node.id === 'string' && typeof node.price === 'number' && prices[node.id] !== undefined) {
+                backup.set(node, node.price);
+                node.price = prices[node.id];
+            }
+            for (const k in node) walk(node[k]);
+        };
+        // price_date не трогаем намеренно: прайс дистрибьютора ничего не говорит
+        // о наличии, а по этой дате считается признак «под заказ» (правило 31 дня).
+        (typeof CATALOG_PRICE_ROOTS !== 'undefined' ? CATALOG_PRICE_ROOTS : [catalog]).forEach(walk);
+        this._distPriceBackup = backup;
+        return true;
+    },
+
     loadDistributorInfo: async function () {
         if (!this.state.distributorId) return;
+        const BASE_COLS = 'company_name, manager_name, manager_email, manager_phone, director_email';
+        const PRICE_COLS = ', use_own_prices, price_list_key';
         try {
-            const { data: dist } = await supabaseClient
+            let { data: dist, error } = await supabaseClient
                 .from('distributors')
-                .select('company_name, manager_name, manager_email, manager_phone, director_email')
+                .select(BASE_COLS + PRICE_COLS)
                 .eq('id', this.state.distributorId)
                 .maybeSingle();
+            // Колонок своих цен может ещё не быть — миграция накатывается руками,
+            // и до неё карточка менеджера должна работать как работала.
+            if (error) {
+                ({ data: dist } = await supabaseClient
+                    .from('distributors')
+                    .select(BASE_COLS)
+                    .eq('id', this.state.distributorId)
+                    .maybeSingle());
+            }
             if (dist) {
                 this.state.distributorInfo = dist;
+                // Личный выбор монтажника (админ мог переключить его на Терем)
+                const userId = this.state.tgUser && this.state.tgUser.id;
+                if (userId) {
+                    const { data: uRow } = await supabaseClient
+                        .from('users').select('price_source').eq('id', userId).maybeSingle();
+                    if (uRow) this.state.priceSource = uRow.price_source || 'distributor';
+                }
                 this.saveState();
+                // Свои цены могли включить или выключить из админки уже после
+                // прошлого визита — пересчитываем смету, если цены изменились.
+                if (this.applyDistributorPrices()) this.render();
             }
         } catch (e) {
             console.warn('[loadDistributorInfo] Error:', e);
@@ -4632,9 +4722,19 @@ const app = {
 
         const dists = (this.adminData && this.adminData.distributors) || [];
 
+        // Прайс-листы приезжают файлом dist_prices.js, а не из базы: цены в базе
+        // держать смысла нет, они всё равно обновляются выкладкой новой версии.
+        // Здесь только выбираем, какой из готовых прайсов принадлежит компании.
+        const priceLists = (typeof DIST_PRICES !== 'undefined') ? DIST_PRICES : {};
+        const priceListOptions = Object.keys(priceLists).map(k => {
+            const pl = priceLists[k];
+            const dateText = pl.date ? new Date(pl.date).toLocaleDateString('ru-RU') : '';
+            return `<option value="${k}">${pl.title || k}${dateText ? ' — от ' + dateText : ''}</option>`;
+        }).join('');
+
         let tableRows = '';
         if (dists.length === 0) {
-            tableRows = '<tr><td colspan="6" style="text-align:center; padding: 30px; color: var(--text-sec);">Промокодов нет. Добавьте первый.</td></tr>';
+            tableRows = '<tr><td colspan="8" style="text-align:center; padding: 30px; color: var(--text-sec);">Промокодов нет. Добавьте первый.</td></tr>';
         } else {
             dists.forEach((d, i) => {
                 const statusBadge = d.is_active
@@ -4642,6 +4742,14 @@ const app = {
                     : '<span style="background:#FEE2E2; color:#EF4444; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;">Выкл</span>';
                 const validUntilText = d.valid_until ? new Date(d.valid_until).toLocaleDateString('ru-RU') : '∞';
                 const regionsText = (d.regions && d.regions.length) ? d.regions.join(', ') : '—';
+                const pl = d.price_list_key ? priceLists[d.price_list_key] : null;
+                // Прайс выбран, но выключен — это не ошибка, а «выключил до следующего раза».
+                // А вот включённые свои цены без файла прайса — уже ошибка, её и подсвечиваем.
+                const priceCell = d.use_own_prices
+                    ? (pl
+                        ? `<span style="color:#059669; font-weight:700;">Свои</span><br><span style="font-size:10px; color:var(--text-sec);">${pl.title || d.price_list_key}</span>`
+                        : `<span style="color:#EF4444; font-weight:700;" title="Свои цены включены, но прайс-лист не выбран — монтажники видят цены Терем-онлайн">Свои ⚠️</span>`)
+                    : `<span style="color:var(--text-sec);">Терем</span>`;
                 tableRows += `<tr>
                     <td style="color:var(--text-sec);">${i + 1}</td>
                     <td><b>${d.company_name || '—'}</b><br><span style="font-size:10px; color:var(--text-sec);">📍 ${regionsText}</span></td>
@@ -4651,6 +4759,7 @@ const app = {
                         ? `<b style="color:var(--primary);">${d.pro_months}</b>`
                         : '<span style="color:var(--text-sec);" title="Промокод только привязывает монтажника к дистрибьютору, тариф не выдаётся">без PRO</span>'
                     }<br><span style="font-size:10px; color:var(--text-sec);">до ${validUntilText}</span></td>
+                    <td style="text-align:center; font-size:12px;">${priceCell}</td>
                     <td>${statusBadge}</td>
                     <td style="text-align:right;">
                         <div style="display:flex; gap:6px; justify-content:flex-end;">
@@ -4713,6 +4822,20 @@ const app = {
                             <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Email директора (необяз.) — получит скрытую копию писем менеджеру. Несколько менеджеров одной компании — это несколько промокодов с одинаковыми названием компании и email директора</label>
                             <input type="email" id="dist_director_email" placeholder="director@teplokom.ru" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
                         </div>
+                        <div>
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Свои цены — монтажники этого дистрибьютора видят его прайс вместо Терем-онлайн</label>
+                            <select id="dist_own_prices" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                                <option value="0">Выключены — цены Терем-онлайн</option>
+                                <option value="1">Включены</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; display: block; margin-bottom: 4px;">Какой прайс-лист (файл dist_prices.js)</label>
+                            <select id="dist_price_list" ${isViewer ? 'disabled' : ''} style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 13px; box-sizing: border-box;">
+                                <option value="">— не выбран —</option>
+                                ${priceListOptions}
+                            </select>
+                        </div>
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <button class="auth-btn-base btn-email-submit" style="height: 36px; padding: 0 20px; font-size: 13px; ${isViewer ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isViewer ? 'disabled' : ''} onclick="app.saveDistributor()">💾 Сохранить</button>
@@ -4721,7 +4844,7 @@ const app = {
                 </div>
 
                 <table class="inv-table">
-                    <thead><tr><th style="width:30px;">#</th><th>Компания</th><th>Промокод</th><th>Менеджер</th><th>PRO мес.</th><th>Статус</th><th style="text-align:right;">Действия</th></tr></thead>
+                    <thead><tr><th style="width:30px;">#</th><th>Компания</th><th>Промокод</th><th>Менеджер</th><th>PRO мес.</th><th style="text-align:center;">Цены</th><th>Статус</th><th style="text-align:right;">Действия</th></tr></thead>
                     <tbody>${tableRows}</tbody>
                 </table>
             </div>
@@ -5186,9 +5309,18 @@ const app = {
         const isActive = document.getElementById('dist_active').value === '1';
         const regions = (document.getElementById('dist_regions')?.value || '').split(',').map(r => r.trim()).filter(Boolean);
         const directorEmail = (document.getElementById('dist_director_email')?.value || '').trim();
+        const useOwnPrices = document.getElementById('dist_own_prices')?.value === '1';
+        const priceListKey = document.getElementById('dist_price_list')?.value || '';
 
         if (!company || !code || !email) {
             app.alert('Обязательные поля: Название компании, Промокод, Email менеджера.');
+            return;
+        }
+
+        // Включённые свои цены без выбранного прайса ничего не поменяют — монтажники
+        // так и останутся на Тереме. Лучше сказать сразу, чем ждать вопроса «почему не работает».
+        if (useOwnPrices && !priceListKey) {
+            app.alert('Свои цены включены, но прайс-лист не выбран — монтажники увидят цены Терем-онлайн. Выберите прайс-лист.');
             return;
         }
 
@@ -5202,7 +5334,9 @@ const app = {
             pro_months: proMonths,
             valid_until: validUntilVal ? new Date(validUntilVal).toISOString() : null,
             is_active: isActive,
-            regions: regions
+            regions: regions,
+            use_own_prices: useOwnPrices,
+            price_list_key: priceListKey || null
         };
 
         try {
@@ -5238,6 +5372,8 @@ const app = {
         }
         document.getElementById('dist_active').value = dist.is_active ? '1' : '0';
         if (document.getElementById('dist_regions')) document.getElementById('dist_regions').value = (dist.regions || []).join(', ');
+        if (document.getElementById('dist_own_prices')) document.getElementById('dist_own_prices').value = dist.use_own_prices ? '1' : '0';
+        if (document.getElementById('dist_price_list')) document.getElementById('dist_price_list').value = dist.price_list_key || '';
         const titleEl = document.getElementById('dist_form_title');
         if (titleEl) titleEl.textContent = '✏️ Редактировать промокод';
         // Прокручиваем к форме
@@ -5256,6 +5392,8 @@ const app = {
         if (document.getElementById('dist_valid_until')) document.getElementById('dist_valid_until').value = '';
         document.getElementById('dist_active').value = '1';
         if (document.getElementById('dist_regions')) document.getElementById('dist_regions').value = '';
+        if (document.getElementById('dist_own_prices')) document.getElementById('dist_own_prices').value = '0';
+        if (document.getElementById('dist_price_list')) document.getElementById('dist_price_list').value = '';
         const titleEl = document.getElementById('dist_form_title');
         if (titleEl) titleEl.textContent = '➕ Добавить промокод';
     },
@@ -8163,7 +8301,7 @@ const app = {
         try {
             // 1. Fetch Users (Paginated)
             let query = supabaseClient.from('users')
-                .select('id, username, email, phone, created_at, last_visited, last_device, account_type, demo_ends_at, city, location, avatar_url, distributor_id, pro_expires_at, last_name, first_name, middle_name, birth_date, region, activity_types, is_blocked', { count: 'exact' });
+                .select('id, username, email, phone, created_at, last_visited, last_device, account_type, demo_ends_at, city, location, avatar_url, distributor_id, price_source, pro_expires_at, last_name, first_name, middle_name, birth_date, region, activity_types, is_blocked', { count: 'exact' });
             query = this.buildAdminUserFilter(query);
 
             const sortType = document.getElementById('sort-installers')?.value || 'login_desc';
@@ -9846,6 +9984,14 @@ const app = {
                                         </select>
                                         <div id="admin_edit_distributor_info" style="margin-top:6px; font-size:11px; color:var(--text-sec); line-height:1.5;"></div>
                                     </div>
+                                    <div id="admin_edit_price_source_wrapper" style="display: block; grid-column: 1 / -1;">
+                                        <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Откуда брать цены на оборудование</label>
+                                        <select id="admin_edit_price_source" ${isViewer ? 'disabled' : ''} style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
+                                            <option value="distributor" ${(user.price_source || 'distributor') !== 'terem' ? 'selected' : ''}>Цены дистрибьютора</option>
+                                            <option value="terem" ${user.price_source === 'terem' ? 'selected' : ''}>Терем-онлайн</option>
+                                        </select>
+                                        <div id="admin_edit_price_source_info" style="margin-top:6px; font-size:11px; color:var(--text-sec); line-height:1.5;"></div>
+                                    </div>
                                 </div>
                                 <button class="auth-btn-base btn-email-submit" style="width:100%; height:34px; font-size:12px; ${isViewer ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isViewer ? 'disabled' : ''} onclick="app.updateAdminUserTariff('${user.id}')">💾 Применить настройки</button>
                             </div>
@@ -9888,15 +10034,40 @@ const app = {
             }
             // Дистрибьютор/менеджер теперь не зависит от тарифа — просто показываем
             // ФИО/телефон/email выбранного менеджера рядом со списком
+            const priceSel = document.getElementById('admin_edit_price_source');
+            const priceInfo = document.getElementById('admin_edit_price_source_info');
+            // Подсказка под выбором источника цен. Смысл в том, чтобы не гадать:
+            // сюда влияют ДВА переключателя — этот и «свои цены» в карточке
+            // дистрибьютора, — и без пояснения непонятно, какой из них сейчас решает.
+            const renderPriceInfo = () => {
+                if (!priceSel || !priceInfo) return;
+                const d = (this.adminData.distributors || []).find(x => String(x.id) === String(distSel && distSel.value));
+                const priceLists = (typeof DIST_PRICES !== 'undefined') ? DIST_PRICES : {};
+                const pl = d && d.price_list_key ? priceLists[d.price_list_key] : null;
+                if (priceSel.value === 'terem') {
+                    priceInfo.innerHTML = '💰 Цены Терем-онлайн из каталога, прайс дистрибьютора игнорируется.';
+                } else if (!d) {
+                    priceInfo.innerHTML = '💰 Дистрибьютор не выбран — цены Терем-онлайн.';
+                } else if (!d.use_own_prices) {
+                    priceInfo.innerHTML = `💰 У «${d.company_name}» свои цены выключены — цены Терем-онлайн. Включить можно во вкладке «Дистрибьюторы».`;
+                } else if (!pl) {
+                    priceInfo.innerHTML = `⚠️ У «${d.company_name}» свои цены включены, но прайс-лист не выбран — цены Терем-онлайн.`;
+                } else {
+                    const dateText = pl.date ? new Date(pl.date).toLocaleDateString('ru-RU') : '';
+                    priceInfo.innerHTML = `💰 Прайс «${pl.title || d.price_list_key}»${dateText ? ', от ' + dateText : ''}.`;
+                }
+            };
             const renderDistInfo = () => {
                 if (!distSel || !distInfo) return;
                 const d = (this.adminData.distributors || []).find(x => String(x.id) === String(distSel.value));
                 distInfo.innerHTML = d
                     ? `👤 ${d.manager_name || '—'}<br>📞 ${d.manager_phone || '—'}<br>✉️ ${d.manager_email || '—'}`
                     : '';
+                renderPriceInfo();
             };
             renderDistInfo();
             if (distSel) distSel.addEventListener('change', renderDistInfo);
+            if (priceSel) priceSel.addEventListener('change', renderPriceInfo);
         }, 50);
 
         h += `
@@ -11440,7 +11611,8 @@ const app = {
                 date: new Date().toLocaleDateString('ru-RU'),
                 showSku: !!this.state.showSku,
                 sequence_id: this.state.calc_id,
-                eqDiscount: this.state.eqDiscount || 0
+                eqDiscount: this.state.eqDiscount || 0,
+                priceListKey: this.activeDistPriceKey()
             };
 
             let manager_info = {
@@ -12150,10 +12322,16 @@ const app = {
                 // Загружаем привязку к дистрибьютору
                 if (uRow.distributor_id) {
                     this.state.distributorId = uRow.distributor_id;
-                    // Загружаем полные данные дистрибьютора в фоне
-                    if (!this.state.distributorInfo) {
-                        this.loadDistributorInfo();
-                    }
+                    // Тянем карточку дистрибьютора всегда, а не только когда её нет:
+                    // свои цены и источник цен админ меняет на своей стороне, и узнать
+                    // об этом можно только свежим запросом.
+                    this.loadDistributorInfo();
+                } else if (this.state.distributorId) {
+                    // Дистрибьютора отвязали в админке — снимаем и его цены,
+                    // иначе они остались бы висеть из localStorage.
+                    this.state.distributorId = null;
+                    this.state.distributorInfo = null;
+                    if (this.applyDistributorPrices()) this.render();
                 }
 
                 // City check removed immediately after registration; now validated on actions
@@ -12233,6 +12411,9 @@ const app = {
         // Дистрибьютор/менеджер (для копии запроса счёта) не зависит от тарифа —
         // сохраняем то, что выбрано в списке, независимо от account_type
         updateData.distributor_id = distributorId || null;
+        // Источник цен: 'terem' — принудительно каталожные цены, 'distributor' —
+        // цены дистрибьютора, если он их у себя включил.
+        updateData.price_source = document.getElementById('admin_edit_price_source')?.value || 'distributor';
 
         try {
             const { error } = await supabaseClient.from('users').update(updateData).eq('id', userId);
@@ -13389,7 +13570,8 @@ const app = {
             date: new Date().toLocaleDateString('ru-RU'),
             showSku: !!this.state.showSku,
             sequence_id: this.state.calc_id,
-            eqDiscount: this.state.eqDiscount || 0
+            eqDiscount: this.state.eqDiscount || 0,
+            priceListKey: this.activeDistPriceKey()
         };
 
         let manager_info = {
@@ -14122,7 +14304,8 @@ const app = {
                     status: 'sent',
                     client_comment: null,
                     status_updated_at: null,
-                    sequence_id: this.state.calc_id
+                    sequence_id: this.state.calc_id,
+                    priceListKey: this.activeDistPriceKey()
                 };
 
                 const manager_info = {
@@ -14260,7 +14443,7 @@ const app = {
                         grandTotal: total
                     };
                     viewUrl = await this.generateLocalShareLink(
-                        { projectName: pName, area: this.state.area, floors: this.state.floors, res: this.state.res, mat: this.state.mat, power: 0, region: regionName, date: new Date().toLocaleDateString('ru-RU'), showSku: !!this.state.showSku },
+                        { projectName: pName, area: this.state.area, floors: this.state.floors, res: this.state.res, mat: this.state.mat, power: 0, region: regionName, date: new Date().toLocaleDateString('ru-RU'), showSku: !!this.state.showSku, priceListKey: this.activeDistPriceKey() },
                         { name: authorName, phone: tgUser.phone || '', city: tgUser.city || '', email: tgUser.email || '' },
                         items,
                         totals
@@ -14478,13 +14661,22 @@ const app = {
         const currentDarkMode = this.state.darkMode;
         const currentTgUser = this.state.tgUser;
         const currentAccType = this.state.accountType;
+        // Привязка к дистрибьютору — это про учётку, а не про расчёт: сброс сметы
+        // не должен ни отвязывать монтажника от менеджера, ни возвращать его
+        // с цен дистрибьютора на Терем.
+        const currentDistId = this.state.distributorId;
+        const currentDistInfo = this.state.distributorInfo;
+        const currentPriceSource = this.state.priceSource;
 
         // Полный сброс данных расчета
         this.state = {
             waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
-            accountType: currentAccType
+            accountType: currentAccType,
+            distributorId: currentDistId,
+            distributorInfo: currentDistInfo,
+            priceSource: currentPriceSource
         };
 
         this.saveState();
@@ -15043,6 +15235,11 @@ const app = {
             try { this.state = { ...this.state, ...JSON.parse(localStorage.getItem('stout_save')) }; } catch (e) { console.error("Ошибка загрузки сохранения", e); }
         }
         this.loadInstallerSettingsLocal();
+        // Цены дистрибьютора накладываем сразу из сохранённого состояния, не дожидаясь
+        // ответа Supabase: иначе смета сначала отрисуется по ценам Терема и через
+        // секунду прыгнет на другие. Придёт ответ — loadDistributorInfo перерисует,
+        // но только если цены действительно изменились.
+        this.applyDistributorPrices();
         // Инициализируем Rommer аналоги для нечетных секций радиаторов Space и Titan
         catalog.rads.forEach(rad => {
             if (!rad.rommer) {
