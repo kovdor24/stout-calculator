@@ -6,11 +6,20 @@ import subprocess
 import urllib3
 import traceback
 from bs4 import BeautifulSoup
+from urllib.parse import quote
 
 # --- НАСТРОЙКИ ---
 # Путь к файлу базы данных (Относительный для GitHub Actions)
 FULL_PATH = "catalog.js"
 SEARCH_URL = 'https://www.teremonline.ru'
+
+# Прямая ссылка /search/?q=... вместо прохода через форму — втрое быстрее, но
+# 12.07 она блокировалась DDoS-Guard с первого запроса (коммит b9e4a1c).
+# Разница в том, что теперь сессия сначала прогревается на главной: проверочная
+# кука ставится там и живёт до конца прогона. Если защита всё же сработает,
+# парсер сам вернётся к заходу через форму — см. process_sku_v42.
+USE_DIRECT_SEARCH = True
+BLOCK_HITS = 0
 
 # stdout не в терминал (как в GitHub Actions) по умолчанию блочно буферизуется — строки
 # print() могут не появляться в логе, пока буфер не наполнится или процесс не завершится.
@@ -250,54 +259,122 @@ def git_checkpoint(commit_msg):
     except Exception as e:
         print(f"[Чекпоинт] Ошибка при промежуточном коммите: {e} — не критично, продолжаем.")
 
-def process_sku_v42(driver, sku, old_price):
-    # Восстановлено дословно до версии, стабильно отработавшей месяцы (апрель-июнь, полные
-    # прогоны по 1-2 часа) — до коммита 359f0be (20.06), который разом добавил прямую ссылку
-    # /search/?q=..., "стелс"-настройки браузера и жёсткий обрыв по первому же признаку
-    # блокировки. Все три правки, сделанные сегодня, по очереди откатывали кусочки этого
-    # коммита; здесь — финальный откат: без явного детекта DDoS-Guard/CAPTCHA, просто до 8
-    # попыток прочитать цену с паузой в 1с — как и было в проверенной версии.
+# Признаки того, что вместо результатов поиска пришла заглушка защиты.
+BLOCK_MARKERS = ('ddos-guard', 'cloudflare', 'captcha', 'access denied', 'attention required')
+
+def looks_blocked(driver):
     try:
+        if any(m in (driver.title or '').lower() for m in BLOCK_MARKERS):
+            return True
+        head = (driver.page_source or '')[:4000].lower()
+        return any(m in head for m in BLOCK_MARKERS)
+    except Exception:
+        return False
+
+def warm_up(driver):
+    """Заход на главную — ради проверочной куки DDoS-Guard.
+
+    Прямой переход на /search/?q=... без неё 12.07 блокировался с первого же
+    запроса (коммит b9e4a1c). Кука ставится на главной и живёт всю сессию
+    браузера, поэтому грузим главную один раз на старте, а не перед каждым
+    артикулом — на этом и экономится время.
+    """
+    try:
+        driver.get(SEARCH_URL)
+    except TimeoutException:
+        driver.execute_script("window.stop();")
+    close_popups(driver)
+    return not looks_blocked(driver)
+
+
+def search_via_form(driver, raw_sku):
+    """Заход как у обычного человека: главная → форма поиска.
+
+    Медленно (лишняя загрузка главной, ввод, ожидание), но именно эта схема
+    месяцами работала без блокировок — держим её запасной.
+    """
+    try:
+        driver.get(SEARCH_URL)
+    except TimeoutException:
+        driver.execute_script("window.stop();")
+    close_popups(driver)
+    for attempt in range(3):
         try:
-            driver.get(SEARCH_URL)
-        except TimeoutException:
-            driver.execute_script("window.stop();")
-        close_popups(driver)
-        raw_sku = sku.strip()
-        for attempt in range(3):
+            wait = WebDriverWait(driver, 5)
+            try: inp = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='search'], input[name='q'], input[placeholder*='поиск']")))
+            except:
+                inp = next((i for i in driver.find_elements(By.TAG_NAME, "input") if i.is_displayed() and i.size['width'] > 50), None)
+            if not inp: return "ERR: Поле поиска"
+
+            inp.send_keys(Keys.CONTROL + "a")
+            inp.send_keys(Keys.BACKSPACE)
+            inp.send_keys(raw_sku)
+            time.sleep(1)
             try:
-                wait = WebDriverWait(driver, 5)
-                try: inp = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='search'], input[name='q'], input[placeholder*='поиск']")))
-                except:
-                    inp = next((i for i in driver.find_elements(By.TAG_NAME, "input") if i.is_displayed() and i.size['width'] > 50), None)
-                if not inp: return "ERR: Поле поиска"
+                driver.find_element(By.CSS_SELECTOR, "button[type='submit'], .search-btn").click()
+            except:
+                inp.send_keys(Keys.RETURN)
+            return None
+        except StaleElementReferenceException:
+            time.sleep(0.5)
+            continue
+        except Exception as e:
+            if attempt == 2: return f"ERR: {str(e)[:20]}"
+            time.sleep(0.5)
+            continue
+    return None
 
-                inp.send_keys(Keys.CONTROL + "a")
-                inp.send_keys(Keys.BACKSPACE)
 
-                inp.send_keys(raw_sku)
-                time.sleep(1)
-                try:
-                    driver.find_element(By.CSS_SELECTOR, "button[type='submit'], .search-btn").click()
-                except:
-                    inp.send_keys(Keys.RETURN)
-                break
-            except StaleElementReferenceException:
-                time.sleep(0.5)
-                continue
-            except Exception as e:
-                if attempt == 2: return f"ERR: {str(e)[:20]}"
-                time.sleep(0.5)
-                continue
+def process_sku_v42(driver, sku, old_price):
+    """Один артикул.
+
+    Быстрый путь — прямая ссылка /search/?q=АРТИКУЛ по уже прогретой сессии:
+    страница поиска приходит готовой, цена и статус есть прямо в HTML. Это
+    втрое короче прохода через форму, на котором прогон не укладывался в
+    шестичасовой лимит джобы.
+
+    Если вместо результатов пришла заглушка защиты — один раз прогреваемся
+    заново, а при повторной блокировке весь остаток прогона идём через форму:
+    схема медленная, но проверенная. Решение принимается автоматически и
+    запоминается на прогон, чтобы не биться в блокировку на каждом артикуле.
+    """
+    global USE_DIRECT_SEARCH, BLOCK_HITS
+    try:
+        raw_sku = sku.strip()
+
+        if USE_DIRECT_SEARCH:
+            url = f"{SEARCH_URL}/search/?q={quote(raw_sku)}"
+            try:
+                driver.get(url)
+            except TimeoutException:
+                driver.execute_script("window.stop();")
+
+            if looks_blocked(driver):
+                BLOCK_HITS += 1
+                print(f"[Защита] Прямая ссылка заблокирована ({BLOCK_HITS})", end=" ")
+                if BLOCK_HITS == 1:
+                    warm_up(driver)
+                    try:
+                        driver.get(url)
+                    except TimeoutException:
+                        driver.execute_script("window.stop();")
+                if looks_blocked(driver):
+                    USE_DIRECT_SEARCH = False
+                    print("-> перехожу на заход через форму до конца прогона", end=" ")
+                    err = search_via_form(driver, raw_sku)
+                    if err: return err
+        else:
+            err = search_via_form(driver, raw_sku)
+            if err: return err
 
         res = "NOT_FOUND"
         for _ in range(8):
-            time.sleep(1)
             res = get_price_card_isolation(driver, sku, old_price)
             if isinstance(res, dict): return res
-            if isinstance(res, str) and (res.startswith("ERR_DIFF") or res == "NOT_FOUND"): continue
+            time.sleep(1)
         return res
     except Exception as e: return f"ERR: {str(e)[:20]}"
+
 
 def update_catalog_prices():
     print(f"--- ЗАПУСК ПАРСЕРА (ЖЕСТКИЙ ПУТЬ + ЛИМИТ 200%) ---")
@@ -340,6 +417,17 @@ def update_catalog_prices():
     except Exception as e:
         print(f"Ошибка браузера: {e}")
         return
+
+    # Прогрев: главная ставит проверочную куку, с которой прямые ссылки на поиск
+    # проходят. Не получилось — сразу идём проверенным путём через форму, чтобы
+    # не тратить прогон на попытки пробиться.
+    global USE_DIRECT_SEARCH
+    print("Шаг 4: Прогрев сессии на главной...")
+    if warm_up(driver):
+        print("Сессия прогрета — иду прямыми ссылками на поиск.\n")
+    else:
+        USE_DIRECT_SEARCH = False
+        print("Главная ответила заглушкой защиты — иду через форму поиска.\n")
 
     with open(FULL_PATH, 'r', encoding='utf-8') as f: content = f.read()
     items_to_process = []
