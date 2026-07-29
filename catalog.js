@@ -2355,7 +2355,7 @@ const catalog = {
     ss_coupling_slide: [
         { id: "RSS-1019-000015", name: "Муфта надвижная ВПр 15", price: 203, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
         { id: "RSS-1019-000018", name: "Муфта надвижная ВПр 18", price: 231, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
-        { id: "RSS-1019-000022", name: "Муфта надвижная ВПр 22", price: 323, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-06-27" },
+        { id: "RSS-1019-000022", name: "Муфта надвижная ВПр 22", price: 294, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
         { id: "RSS-1019-000028", name: "Муфта надвижная ВПр 28", price: 351, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
         { id: "RSS-1019-000035", name: "Муфта надвижная ВПр 35", price: 480, brand: "ROMMER", unit: "шт", availability: "in_stock", price_date: "2026-07-12" },
         { id: "RSS-1019-000042", name: "Муфта надвижная ВПр 42", price: 566, brand: "ROMMER", unit: "шт", availability: "on_order", price_date: "2026-07-12" },
