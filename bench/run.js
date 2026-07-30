@@ -113,6 +113,18 @@ function toRec(line) {
  */
 const artKey = (a) => (a == null ? null : String(a).replace(/^[-\s]+|[-\s]+$/g, ''));
 
+/**
+ * Эталоном может быть НЕСКОЛЬКО артикулов.
+ *
+ * «Лента армированная … серая, С» и та же лента без исполнения «C» стоят
+ * одинаково — 520,24 ₽, — а различает их одна буква, которую подбор не видит
+ * и видеть не должен: слова короче трёх символов выброшены намеренно, иначе
+ * «мм» и «шт» лезли бы в сравнение. Требовать тут конкретный артикул значит
+ * держать стенд вечно красным ради разницы в ноль рублей.
+ */
+const expectedKeys = (expect) =>
+  (Array.isArray(expect) ? expect : [expect]).map(artKey);
+
 function runOne(RM, line) {
   let m = null;
   try {
@@ -132,7 +144,7 @@ function runOne(RM, line) {
       : { verdict: 'лишнее', got, item: m && m.item };
   }
   if (got === null) return { verdict: 'пусто', got, item: null };
-  return artKey(got) === artKey(line.expect)
+  return expectedKeys(line.expect).includes(artKey(got))
     ? { verdict: 'точно', got, item: m.item }
     : { verdict: 'неверно', got, item: m.item };
 }
@@ -169,7 +181,8 @@ function listProblems(res) {
   console.log('--- расхождения ---');
   for (const { line, res: r } of bad) {
     console.log(`  [${r.verdict}] ${cut(line.raw, 72)}`);
-    console.log(`      надо:  ${line.expect === null ? '(ничего)' : line.expect}`);
+    console.log(`      надо:  ${line.expect === null ? '(ничего)'
+      : expectedKeys(line.expect).join(' или ')}`);
     console.log(`      вышло: ${r.got || '(ничего)'}${r.item ? '  ' + cut(r.item.name, 60) + '  ' + r.item.price + ' ₽' : ''}`);
   }
   console.log('');
