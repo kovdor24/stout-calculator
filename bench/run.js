@@ -103,6 +103,16 @@ function toRec(line) {
   };
 }
 
+/**
+ * Артикул без висячих дефисов.
+ *
+ * В листах BAXI и De Dietrich код приезжал с хвостом («7671757--»), и правка
+ * price_update.php его снимает. Сравнивать по сырому виду нельзя: после
+ * пересборки индекса эталоны покраснели бы все разом, хотя подбор не менялся.
+ * Дефис по краям — мусор разбора, а не часть кода.
+ */
+const artKey = (a) => (a == null ? null : String(a).replace(/^[-\s]+|[-\s]+$/g, ''));
+
 function runOne(RM, line) {
   let m = null;
   try {
@@ -122,7 +132,7 @@ function runOne(RM, line) {
       : { verdict: 'лишнее', got, item: m && m.item };
   }
   if (got === null) return { verdict: 'пусто', got, item: null };
-  return got === String(line.expect)
+  return artKey(got) === artKey(line.expect)
     ? { verdict: 'точно', got, item: m.item }
     : { verdict: 'неверно', got, item: m.item };
 }

@@ -2132,6 +2132,31 @@ const RecognizeUI = {
              */
             const countsPacks = /компл|кассет|упак|набор|пач|рулон|бухт|^уп\.?$/i
                 .test(String(r.unit || '').trim());
+
+            /**
+             * Фасовки разного размера.
+             *
+             * «Скоба якорная, кассета … (30шт в кассете) — 100 компл.» это три
+             * тысячи скоб, а каталожная кассета идёт по 25 штук: честно нужно
+             * 120 кассет, а не 100. Пока своя фасовка строки не читалась, смета
+             * недосчитывала пятую часть — мало заметно глазом и заметно в
+             * деньгах.
+             *
+             * Считаем только когда обе фасовки названы и они разные: равные
+             * пересчитывать нечего, а неназванную выдумывать нельзя.
+             */
+            const own = (typeof RecognizeMatch !== 'undefined' && RecognizeMatch.packSize)
+                ? RecognizeMatch.packSize(r.raw) : null;
+            if (per && countsPacks && own && own !== per) {
+                r._packs = qty;
+                r._packed = per;
+                r._packNote = `${qty} × ${own} шт → упаковки по ${per} шт`;
+                r.qty = Math.ceil(qty * own / per);
+                r.qtyExtra = 0;
+                r.unit = 'шт';
+                return;
+            }
+
             if (per && !countsPacks && qty >= per * 3) {
                 r._pieces = qty;
                 r._packed = per;
