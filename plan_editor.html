@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Планы этажей — подложка и зоны</title>
+<style>
+  body { margin: 0; font: 14px/1.4 system-ui, sans-serif; background: #565656; color: #222; }
+  .bar { background: #2b2b2b; color: #fff; padding: 8px 12px; display: flex; gap: 10px;
+         align-items: center; flex-wrap: wrap; position: sticky; top: 0; z-index: 5; }
+  .bar b { font-weight: 600; }
+  button, select, input[type=text] { font: inherit; padding: 5px 10px; border-radius: 6px;
+         border: 1px solid #999; background: #f4f4f4; cursor: pointer; }
+  button.on { background: #ff6b35; color: #fff; border-color: #ff6b35; }
+  button.ghost { background: #444; color: #eee; border-color: #666; }
+  .tab { padding: 5px 10px; border-radius: 6px; background: #444; color: #ddd; cursor: pointer; }
+  .tab.on { background: #ff6b35; color: #fff; }
+  .wrap { display: flex; gap: 12px; padding: 12px; align-items: flex-start; }
+  .cvbox { background: #777; border-radius: 8px; padding: 8px; flex: 1 1 auto; min-width: 0; }
+  canvas { display: block; max-width: 100%; background: #fff; border-radius: 4px;
+           cursor: crosshair; touch-action: none; }
+  .side { flex: 0 0 300px; background: #f2f2f2; border-radius: 8px; padding: 10px; }
+  .side h3 { margin: 4px 0 8px; font-size: 15px; }
+  .zone { border: 1px solid #ccc; border-radius: 6px; padding: 6px 8px; margin-bottom: 6px;
+          background: #fff; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .zone .sw { width: 14px; height: 14px; border-radius: 3px; flex: 0 0 auto; }
+  .zone input[type=text] { flex: 1 1 90px; padding: 3px 6px; }
+  .zone .ar { color: #555; font-size: 12px; white-space: nowrap; }
+  .zone .del { color: #b00; cursor: pointer; font-weight: 700; padding: 0 4px; }
+  .hint { background: #fff7e6; border: 1px solid #f2c46d; border-radius: 6px;
+          padding: 7px 9px; font-size: 13px; margin-bottom: 8px; }
+  .ok { color: #0a7b28; font-weight: 600; }
+  /* пошаговые подсказки */
+  .guide { position: fixed; z-index: 50; max-width: 320px; background: #fff;
+           border: 2px solid #ff6b35; border-radius: 10px; padding: 10px 12px;
+           box-shadow: 0 6px 24px rgba(0,0,0,.35); font-size: 13.5px; color: #222;
+           cursor: move; user-select: none; touch-action: none; }
+  .guide .step { font-size: 11px; color: #ff6b35; font-weight: 700;
+                 text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
+  .guide .grip { color: #ccc; font-size: 12px; margin-right: 5px; }
+  .guide .close { float: right; color: #999; cursor: pointer; font-size: 12px;
+                  margin: -2px -4px 4px 8px; }
+  .guide .close:hover { color: #b00; }
+  .guide .demo { margin-top: 7px; border: 1px solid #eee; border-radius: 6px;
+                 overflow: hidden; background: #fcfcfc; }
+  .guide .demo svg { display: block; width: 100%; height: auto; }
+  @keyframes pulseG { 0% { box-shadow: 0 0 0 0 rgba(255,107,53,.75); }
+                      70% { box-shadow: 0 0 0 11px rgba(255,107,53,0); }
+                      100% { box-shadow: 0 0 0 0 rgba(255,107,53,0); } }
+  .pulse { animation: pulseG 1.6s infinite; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>Планы этажей</b>
+  <span id="tabs"></span>
+  <button class="ghost" onclick="addFloor()">+ этаж</button>
+  <span style="flex:1"></span>
+  <label class="ghost" id="b_upload" style="padding:5px 10px;border-radius:6px;background:#444;cursor:pointer">
+    Загрузить план <input type="file" multiple accept="image/*,.pdf,application/pdf" style="display:none" onchange="loadImage(this)">
+  </label>
+  <button id="b_scale" onclick="setMode('scale')">Масштаб</button>
+  <button id="b_autorooms" onclick="autoRooms()" title="Найти все комнаты по стенам и создать зоны ТП по комнатам расчёта">Распознать комнаты</button>
+  <button id="b_room" onclick="setMode('room')">Зона: по клику</button>
+  <button id="b_rect" onclick="setMode('rect')">Зона: прямоугольник</button>
+  <button id="b_poly" onclick="setMode('poly')">Зона: контур</button>
+  <button id="b_rad" onclick="setMode('rad')">Радиаторы</button>
+  <button id="b_autorad" onclick="autoRads()" title="Найти окна и поставить радиаторы под ними">Под окна</button>
+  <button id="b_coll" onclick="setMode('coll')" title="Точка коллектора ТП — от неё на листах рисуются подводки петель">Коллектор</button>
+  <button id="b_fixauto" onclick="toggleFixAuto()" title="Откуда берутся сантехприборы: из карточек санузлов расчёта или расставляются вручную">Приборы: из расчёта</button>
+  <button id="b_wc" onclick="setMode('wc')" title="Расставить сантехприборы вручную (в режиме «из расчёта» они появляются сами)">Сантехника</button>
+  <select id="wctype" onchange="if(mode!=='wc')setMode('wc')">
+    <option value="basin">Раковина</option>
+    <option value="toilet">Унитаз</option>
+    <option value="bath">Ванна</option>
+    <option value="shower">Душ</option>
+    <option value="wash">Стиральная машина</option>
+    <option value="dish">Посудомоечная машина</option>
+    <option value="riser">Стояк канализации</option>
+  </select>
+  <select id="ztype" onchange="typeChanged()">
+    <option value="tp">Тёплый пол</option>
+    <option value="boiler">Котельная</option>
+    <option value="wc">Санузел</option>
+  </select>
+  <button class="ghost" onclick="doUndo()" title="Ctrl+Z">↶ Шаг назад</button>
+  <button onclick="saveAll()" id="b_save" style="background:#0a7b28;color:#fff;border-color:#0a7b28">Сохранить</button>
+  <button class="ghost" onclick="openSheets()" title="Комплект собирается по смете калькулятора вместе с планами">Листы проекта →</button>
+  <button class="ghost" id="b_hints" onclick="toggleHints()">💡 Подсказки: вкл</button>
+</div>
+
+<div class="wrap">
+  <div class="cvbox"><canvas id="cv" width="1200" height="850"></canvas></div>
+  <div class="side">
+    <div class="hint" id="hint">Загрузите фото или скан плана этажа, затем задайте масштаб:
+      кнопка «Масштаб» → две точки на плане → длина отрезка в метрах.</div>
+    <h3>Зоны <span id="scale_note" style="font-weight:400;font-size:12px;color:#555"></span></h3>
+    <div id="zlist"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// Доступ к проектированию. Своей авторизации у страницы нет, поэтому отметку
+// оставляет калькулятор (app.syncDesignUI) — без неё редактор не открываем:
+// иначе прямая ссылка обходила бы переключатель в админке.
+(function () {
+  var ok = false;
+  try { ok = localStorage.getItem('heatcalc_design_access') === '1'; } catch (e) {}
+  if (ok) return;
+  document.body.innerHTML =
+    '<div style="max-width:520px;margin:80px auto;background:#fff;border-radius:12px;padding:28px 32px;' +
+    'font:15px/1.5 system-ui,sans-serif;color:#222;box-shadow:0 8px 30px rgba(0,0,0,.25)">' +
+    '<h2 style="margin:0 0 10px;font-size:19px">Раздел проектирования не открыт</h2>' +
+    '<p style="margin:0 0 14px;color:#555">Планы этажей и листы проекта включает администратор. ' +
+    'Если доступ вам уже дали — откройте калькулятор heatcalc.ru, войдите в свою учётную запись ' +
+    'и перейдите в редактор оттуда.</p>' +
+    '<a href="index.html" style="display:inline-block;padding:9px 18px;border-radius:8px;' +
+    'background:#ff6b35;color:#fff;text-decoration:none;font-weight:600">К калькулятору</a></div>';
+  document.body.style.background = '#565656';
+  throw new Error('design access denied');
+})();
+
+// Данные: этажи с подложкой и зонами. Точки зон — в пикселях ИЗОБРАЖЕНИЯ.
+var DATA = { floors: [{ img: null, w: 0, h: 0, pxPerM: 0, zones: [], rads: [] }] };
+var cur = 0, mode = 'select', tmp = [], scalePts = [], dragA = null, imgCache = {};
+var imgFailed = {};   // этажи, чью подложку не удалось забрать с сервера
+var polyCur = null, closeTs = 0, undoStack = [];
+var TYPES = { tp: ['Тёплый пол', '#ff8000'], rad: ['Радиаторы', '#d22'],
+  boiler: ['Котельная', '#5577aa'], wc: ['Санузел', '#0b7285'] };
+// Сантехприборы: подпись, буква на значке и габарит в мм (вдоль стены × от
+// стены). Габариты нужны и для привязки к стене, и для значка на листах.
+var FIXT = {
+  basin: ['Раковина', 'Р', 600, 450],
+  toilet: ['Унитаз', 'У', 360, 700],
+  bath: ['Ванна', 'В', 1700, 700],
+  shower: ['Душ', 'Д', 900, 900],
+  wash: ['Стиральная машина', 'СМ', 600, 600],
+  dish: ['Посудомоечная машина', 'ПМ', 600, 600],
+  riser: ['Стояк канализации', 'Ст', 110, 110]
+};
+
+try {
+  var saved = JSON.parse(localStorage.getItem('floor_plans_v1'));
+  if (saved && saved.floors && saved.floors.length) DATA = saved;
+} catch (e) {}
+
+// ─── Подложки на сервере (plans.php на Beget) ──────────────────────────
+// В хранилище браузера подложка больше не лежит: одна картинка — сотни
+// килобайт, на третьем этаже сохранение упиралось в лимит, а чистка кэша
+// уносила работу целиком. Здесь остаётся только разметка (зоны, масштаб,
+// радиаторы), сама картинка едет на хостинг и возвращается ссылкой.
+//
+// Мимо Supabase — сознательно: его egress выбран на две трети, а на Beget
+// свободно 12 ГБ и трафик не тарифицируется.
+var PLANS_URL = 'https://proxy.heatcalc.ru/plans.php';
+
+// Ключ проекта: 32 hex-знака, он же имя папки на сервере. По нему подложку
+// заберёт и заказчик, открывший ссылку на смету, — угадать 128 бит нельзя.
+function planKey() {
+  if (!/^[a-f0-9]{32}$/.test(DATA.key || '')) {
+    var a = new Uint8Array(16);
+    window.crypto.getRandomValues(a);
+    DATA.key = Array.prototype.map.call(a, function (b) {
+      return (b < 16 ? '0' : '') + b.toString(16);
+    }).join('');
+  }
+  return DATA.key;
+}
+
+function planUrl(file) {
+  return PLANS_URL + '?k=' + planKey() + '&n=' + encodeURIComponent(file);
+}
+
+/**
+ * Токен сессии Supabase из хранилища калькулятора.
+ *
+ * Своей авторизации у редактора нет (доступ он берёт из отметки
+ * heatcalc_design_access), но заливать файлы на хостинг без входа нельзя.
+ * Домен тот же, что у калькулятора, поэтому сессия лежит рядом: библиотека
+ * держит её под ключом sb-<проект>-auth-token и в разных версиях пишет туда
+ * либо JSON, либо тот же JSON, завёрнутый в base64.
+ */
+var authKeysSeen = [];   // что нашлось в хранилище — для внятной жалобы
+
+function authToken() {
+  // Имя ключа и вложенность зависят от версии библиотеки
+  // («sb-<проект>-auth-token» или «supabase.auth.token»; токен то в корне,
+  // то в currentSession). Поэтому формат не угадываем, а ищем access_token
+  // в любом ключе, похожем на хранилище Supabase — так же, как это делает
+  // калькулятор в recognitionToken().
+  function findToken(node, depth) {
+    if (!node || typeof node !== 'object' || depth > 4) return null;
+    if (typeof node.access_token === 'string' && node.access_token) return node.access_token;
+    for (var k in node) {
+      if (!Object.prototype.hasOwnProperty.call(node, k)) continue;
+      var found = findToken(node[k], depth + 1);
+      if (found) return found;
+    }
+    return null;
+  }
+  authKeysSeen = [];
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i) || '';
+      if (!/^(sb-|supabase)/i.test(key)) continue;
+      authKeysSeen.push(key);
+      var raw = localStorage.getItem(key);
+      // Часть версий заворачивает сессию в base64.
+      if (raw && raw.indexOf('base64-') === 0) {
+        try { raw = atob(raw.slice(7)); } catch (e) {}
+      }
+      var parsed;
+      try { parsed = JSON.parse(raw); } catch (e) { continue; }
+      var token = findToken(parsed, 0);
+      if (token) return token;
+    }
+  } catch (e) {}
+  return null;
+}
+
+/** Заливает подложку этажа. Резолвится именем файла на сервере. */
+function putFloorImage(fi) {
+  var f = DATA.floors[fi];
+  var m = /^data:image\/(jpeg|png|webp);base64,(.+)$/.exec(f.img || '');
+  if (!m) return Promise.resolve(null);
+  var tok = authToken();
+  if (!tok) {
+    console.warn('[plan_editor] ключи хранилища Supabase:', authKeysSeen);
+    return Promise.reject(new Error(authKeysSeen.length
+      ? 'сессия в браузере есть, но токен в ней не найден — выйдите и войдите заново'
+      : 'нет входа в учётную запись — войдите в калькуляторе по email или через Google'));
+  }
+  return fetch(PLANS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok },
+    body: JSON.stringify({
+      action: 'put', key: planKey(), floor: fi + 1,
+      ext: m[1] === 'jpeg' ? 'jpg' : m[1], data: m[2]
+    })
+  }).then(function (r) {
+    return r.json().catch(function () { return {}; }).then(function (j) {
+      if (!r.ok || !j.file) throw new Error(j.error || ('сервер ответил ' + r.status));
+      return j.file;
+    });
+  });
+}
+
+// Разметка ссылается на подложку именем файла — разворачиваем его обратно
+// в адрес, по которому картинку заберёт браузер.
+DATA.floors.forEach(function (f) {
+  if (!f.rads) f.rads = [];
+  if (!f.img && f.imgFile) f.img = planUrl(f.imgFile);
+});
+
+// комнаты подробного расчёта калькулятора: имена и площади для привязки зон
+var roomNames = [], calcRooms = [];
+try {
+  var st = JSON.parse(localStorage.getItem('stout_save'));
+  ((st && st.rooms) || []).forEach(function (r) {
+    if (!r) return;
+    var n = r.name || r.title;
+    if (!n || roomNames.indexOf(n) >= 0) return;
+    roomNames.push(n);
+    calcRooms.push({
+      name: n, area: +r.area || 0, floor: +r.floor || 1,
+      sys: r.sys || [], win: (r.windows || []).length
+    });
+  });
+} catch (e) {}
+
+// Санузлы расчёта: приборы из их карточек наследуются на план — обводить
+// санузел и отмечать в нём каждый прибор руками не нужно.
+var calcWc = [];
+try {
+  var stw = JSON.parse(localStorage.getItem('stout_save'));
+  ((stw && stw.waterZones) || []).forEach(function (z) {
+    if (!z || !z.name) return;
+    calcWc.push({ name: z.name, fixtures: z.fixtures || {} });
+    if (roomNames.indexOf(z.name) < 0) roomNames.push(z.name);
+  });
+} catch (e) {}
+
+if (roomNames.length) {
+  var dl = document.createElement('datalist'); dl.id = 'roomNames';
+  roomNames.forEach(function (n) { var o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+  document.body.appendChild(dl);
+}
+
+/** Карточка санузла расчёта по имени зоны (регистр и пробелы не важны) */
+function wcCardOf(name) {
+  var k = String(name || '').trim().toLowerCase();
+  if (!k) return null;
+  for (var i = 0; i < calcWc.length; i++)
+    if (String(calcWc[i].name).trim().toLowerCase() === k) return calcWc[i];
+  return null;
+}
+
+var cv = document.getElementById('cv'), cx = cv.getContext('2d');
+
+function F() { return DATA.floors[cur]; }
+
+// смена типа зоны — это намерение её рисовать: из режима радиаторов (или без
+// режима) сразу включаем «зону по клику», иначе клик ставил бы радиатор
+function typeChanged() {
+  if (!F().pxPerM) { updateGuide(); return; }
+  if (mode === 'rad' || mode === 'select') setMode('room');
+  else { draw(); updateGuide(); }
+}
+
+function setMode(m) {
+  if (m === 'scale' && !F().img) { alert('Сначала загрузите план.'); return; }
+  if ((m === 'rect' || m === 'poly' || m === 'room' || m === 'rad' || m === 'coll' || m === 'wc') && !F().pxPerM) { alert('Сначала задайте масштаб.'); return; }
+  mode = mode === m ? 'select' : m; tmp = []; scalePts = [];
+  ['scale', 'room', 'rect', 'poly', 'rad', 'coll', 'wc'].forEach(function (k) {
+    document.getElementById('b_' + k).className = (mode === k) ? 'on' : '';
+  });
+  hint(mode === 'scale' ? 'Кликните две точки известного отрезка (стена, дверь 0.9 м…)'
+    : mode === 'room' ? 'Кликните внутри комнаты — контур найдётся по стенам.'
+    : mode === 'rect' ? 'Растяните прямоугольник по комнате мышью — края прилипнут к стенам.'
+    : mode === 'poly' ? 'Кликайте углы контура; двойной клик — замкнуть.'
+    : mode === 'rad' ? 'Кликайте под окнами — радиатор встанет вдоль ближайшей стены. Клик по значку — убрать. Кнопка «Под окна» расставит автоматически.'
+    : mode === 'coll' ? 'Кликните, где стоит коллектор ТП (обычно в котельной). Клик по значку — убрать, клик в другом месте — передвинуть.'
+    : mode === 'wc' ? 'Выберите прибор в списке и кликните, где он стоит. Клик по значку — убрать. Не забудьте «Стояк канализации» — к нему сводятся выпуски.'
+    : '');
+  draw();
+}
+function hint(s) {
+  document.getElementById('hint').innerHTML = s ||
+    'Загрузите фото или скан плана этажа, затем задайте масштаб: кнопка «Масштаб» → две точки на плане → длина отрезка в метрах.';
+}
+
+function addFloor() {
+  undoStack.push({ t: 'floorAdd' });
+  DATA.floors.push({ img: null, w: 0, h: 0, pxPerM: 0, zones: [], rads: [] });
+  cur = DATA.floors.length - 1; renderTabs(); draw(); renderZones();
+}
+function renderTabs() {
+  var t = document.getElementById('tabs'); t.innerHTML = '';
+  DATA.floors.forEach(function (f, i) {
+    var s = document.createElement('span');
+    s.className = 'tab' + (i === cur ? ' on' : '');
+    s.textContent = (i + 1) + ' этаж';
+    s.onclick = function () { cur = i; renderTabs(); draw(); renderZones(); };
+    t.appendChild(s);
+  });
+}
+
+// pdf.js — лениво и с того же CDN, что использует распознавание накладных
+var PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+var PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+function loadPdfJs() {
+  return new Promise(function (ok, err) {
+    if (window.pdfjsLib) { ok(window.pdfjsLib); return; }
+    var s = document.createElement('script');
+    s.src = PDFJS_URL;
+    s.onload = function () {
+      if (!window.pdfjsLib) { err(new Error('pdfjs empty')); return; }
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+      ok(window.pdfjsLib);
+    };
+    s.onerror = function () { err(new Error('pdfjs load fail')); };
+    document.head.appendChild(s);
+  });
+}
+
+function applyPlanCanvas(c) {
+  pushUndo('plan');
+  var f = F();
+  f.img = c.toDataURL('image/jpeg', 0.82);
+  // Картинка новая — прежний файл на сервере к ней отношения не имеет;
+  // имя появится заново после «Сохранить».
+  f.imgFile = null;
+  f.w = c.width; f.h = c.height; f.pxPerM = 0; f.zones = [];
+  delete imgCache[cur];
+  delete imgFailed[cur];
+  delete maskCache[cur];
+  delete winCache[cur];
+  hint('План загружен. Теперь «Масштаб»: две точки + длина в метрах.');
+  draw(); renderZones();
+}
+
+// ─── Карта стен: тёмные пиксели подложки как преграды ──────────────────
+// Общая основа «зоны по клику» и прилипания прямоугольника к стенам.
+var maskCache = {};
+function getMask(fi) {
+  var idx = (fi == null) ? cur : fi;
+  var f = DATA.floors[idx];
+  if (!f || !f.img || !imgCache[idx]) return null;
+  if (maskCache[idx]) return maskCache[idx];
+  var k = Math.min(1, 900 / f.w);
+  var w = Math.round(f.w * k), h = Math.round(f.h * k);
+  var c = document.createElement('canvas'); c.width = w; c.height = h;
+  var g = c.getContext('2d');
+  g.drawImage(imgCache[idx], 0, 0, w, h);
+  var d = g.getImageData(0, 0, w, h).data;
+  var bar = new Uint8Array(w * h);
+  for (var i = 0, p = 0; i < bar.length; i++, p += 4) {
+    var r = d[p], gg = d[p + 1], b = d[p + 2];
+    var lum = (r * 3 + gg * 6 + b) / 10;
+    // тёмное — стена/линия; красноватое (размерные цепочки) преградой не считаем
+    bar[i] = (lum < 165 && !(r > gg + 28 && r > b + 28)) ? 1 : 0;
+  }
+  // bar2 — маска «с закрытыми дверями» для заливки комнат: белые разрывы
+  // до ~1.05 м между стенами замыкаются по строкам и по колонкам, иначе
+  // заливка утекает через открытые дверные проёмы и сливает комнаты
+  maskCache[idx] = { w: w, h: h, k: k, bar: bar };
+  return maskCache[idx];
+}
+
+// ─── Подводки петель ТП к коллектору ───────────────────────────────────
+// Маршруты считаются здесь при сохранении и уезжают в данные планов
+// (f.leads): листы (project_plans.js) их только рисуют, ничего не зная о
+// карте стен. Пересохранение пересчитывает маршруты заново.
+
+/** Ближайшая свободная клетка маски (значок мог попасть на линию стены) */
+function nearestFree(m, x, y) {
+  x = Math.max(0, Math.min(m.w - 1, x)); y = Math.max(0, Math.min(m.h - 1, y));
+  if (!m.bar[y * m.w + x]) return [x, y];
+  for (var r = 1; r < 40; r++)
+    for (var dy = -r; dy <= r; dy++)
+      for (var dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        var nx = x + dx, ny = y + dy;
+        if (nx >= 0 && ny >= 0 && nx < m.w && ny < m.h && !m.bar[ny * m.w + nx]) return [nx, ny];
+      }
+  return null;
+}
+
+/** Кратчайший маршрут по свободному полю (BFS): труба обходит стены,
+ *  проходит в дверные проёмы — как реальная подводка по полу */
+function routeOnMask(m, a, b) {
+  var W = m.w, N = W * m.h;
+  var prev = new Int32Array(N), i;
+  for (i = 0; i < N; i++) prev[i] = -1;
+  var q = new Int32Array(N), qt = 0, qh = 0;
+  var s = a[1] * W + a[0], e = b[1] * W + b[0];
+  prev[s] = s; q[qt++] = s;
+  while (qh < qt) {
+    var id = q[qh++];
+    if (id === e) break;
+    var x = id % W;
+    if (x && !m.bar[id - 1] && prev[id - 1] < 0) { prev[id - 1] = id; q[qt++] = id - 1; }
+    if (x < W - 1 && !m.bar[id + 1] && prev[id + 1] < 0) { prev[id + 1] = id; q[qt++] = id + 1; }
+    if (id >= W && !m.bar[id - W] && prev[id - W] < 0) { prev[id - W] = id; q[qt++] = id - W; }
+    if (id < N - W && !m.bar[id + W] && prev[id + W] < 0) { prev[id + W] = id; q[qt++] = id + W; }
+  }
+  if (prev[e] < 0) return null;
+  var path = [], id2 = e;
+  while (id2 !== s) { path.push([id2 % W, (id2 / W) | 0]); id2 = prev[id2]; }
+  path.push([s % W, (s / W) | 0]);
+  return path.reverse();
+}
+
+/** Точка входа в зону: ближайшая к p точка её контура */
+function zoneEntry(z, p) {
+  var best = null, bd = 1e18;
+  for (var i = 0; i < z.pts.length; i++) {
+    var a = z.pts[i], b = z.pts[(i + 1) % z.pts.length];
+    var dx = b[0] - a[0], dy = b[1] - a[1];
+    var L2 = dx * dx + dy * dy || 1;
+    var t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2));
+    var qx = a[0] + t * dx, qy = a[1] + t * dy;
+    var dd = (qx - p[0]) * (qx - p[0]) + (qy - p[1]) * (qy - p[1]);
+    if (dd < bd) { bd = dd; best = [Math.round(qx), Math.round(qy)]; }
+  }
+  return best;
+}
+
+// ─── Приборы санузлов из расчёта ───────────────────────────────────────
+// Обводить санузел и отмечать в нём каждый прибор руками долго: состав
+// приборов уже задан в карточке санузла калькулятора. Достаточно обвести
+// зону «Санузел» и подписать её именем санузла — приборы расставятся вдоль
+// стен сами. Ручной режим остаётся переключателем в шапке.
+
+var fixAuto = true;
+try { fixAuto = localStorage.getItem('plan_editor_fixauto') !== '0'; } catch (e) {}
+
+function toggleFixAuto() {
+  fixAuto = !fixAuto;
+  try { localStorage.setItem('plan_editor_fixauto', fixAuto ? '1' : '0'); } catch (e) {}
+  syncFixAutoBtn();
+  if (fixAuto) refreshAutoFixtures();
+  renderZones(); draw();
+}
+function syncFixAutoBtn() {
+  var b = document.getElementById('b_fixauto');
+  if (b) b.textContent = 'Приборы: ' + (fixAuto ? 'из расчёта' : 'вручную');
+  var w = document.getElementById('wctype');
+  if (w) w.style.display = fixAuto ? 'none' : '';
+}
+
+/** Рёбра зоны с внутренней нормалью: прибор ставится СПИНОЙ к стене, поэтому
+ *  сдвигать его нужно перпендикулярно ребру, а не «к центру комнаты» —
+ *  в Г-образном помещении центр лежит в стороне и прибор уезжал бы вбок. */
+function zoneEdges(pts) {
+  var out = [];
+  for (var i = 0; i < pts.length; i++) {
+    var a = pts[i], b = pts[(i + 1) % pts.length];
+    var dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
+    if (L < 1) continue;
+    var ux = dx / L, uy = dy / L;
+    var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    // из двух нормалей берём ту, что смотрит внутрь зоны
+    var nx = -uy, ny = ux;
+    if (!pip([mx + nx * 2, my + ny * 2], pts)) { nx = -nx; ny = -ny; }
+    out.push({ a: a, b: b, L: L, ux: ux, uy: uy, nx: nx, ny: ny,
+      ang: Math.round(Math.atan2(dy, dx) * 180 / Math.PI) });
+  }
+  return out;
+}
+
+/** Есть ли стена за спиной прибора: луч наружу от точки по карте стен.
+ *  Возвращает расстояние до стены в пикселях плана или -1 (проём, окно, край). */
+function wallBehind(m, x, y, nx, ny, maxPx) {
+  if (!m) return -1;
+  var sx = x * m.k, sy = y * m.k, lim = maxPx * m.k;
+  for (var d = 1; d <= lim; d++) {
+    var px2 = Math.round(sx - nx * d), py2 = Math.round(sy - ny * d);
+    if (px2 < 0 || py2 < 0 || px2 >= m.w || py2 >= m.h) return -1;
+    if (m.bar[py2 * m.w + px2]) return d / m.k;
+  }
+  return -1;
+}
+
+/** Приборы одной зоны «Санузел» по её карточке в расчёте.
+ *
+ *  Каждый прибор прижимается СПИНОЙ К СТЕНЕ: идём вдоль периметра, на каждом
+ *  шаге проверяем по карте стен, есть ли стена за спиной (в проёме двери её
+ *  нет — там прибор не ставим), отодвигаем прибор от стены на половину его
+ *  глубины и разворачиваем вдоль стены. Крупные приборы получают место по
+ *  своей ширине, наложений нет. Стояк — в ближайшем к унитазу углу.
+ */
+function fixturesOfWcZone(f, z) {
+  var card = wcCardOf(z.name);
+  if (!card) return [];
+  var order = ['toilet', 'basin', 'bath', 'shower', 'wash', 'dish'], list = [];
+  order.forEach(function (k) {
+    var v = +(card.fixtures || {})[k] || 0;
+    for (var i = 0; i < v; i++) list.push(k);
+  });
+  if (!list.length) return [];
+
+  var ppm = f.pxPerM || 100, m = getMask(DATA.floors.indexOf(f));
+  var edges = zoneEdges(z.pts);
+  if (!edges.length) return [];
+  var out = [], gap = 0.12 * ppm;          // зазор между приборами
+
+  // слоты вдоль всех стен: (ребро, положение) с шагом в четверть метра
+  var slots = [];
+  edges.forEach(function (e) {
+    for (var s = 0.25 * ppm; s <= e.L - 0.25 * ppm; s += 0.25 * ppm)
+      slots.push({ e: e, s: s });
+  });
+  if (!slots.length) slots.push({ e: edges[0], s: edges[0].L / 2 });
+
+  list.forEach(function (t) {
+    var W = (FIXT[t][2] || 500) / 1000 * ppm, D = (FIXT[t][3] || 500) / 1000 * ppm;
+    var best = null;
+    for (var i = 0; i < slots.length; i++) {
+      var e = slots[i].e, s = slots[i].s;
+      if (s - W / 2 < 0 || s + W / 2 > e.L) continue;       // не влезает по длине стены
+      var bx = e.a[0] + e.ux * s, by = e.a[1] + e.uy * s;   // точка на стене
+      // стена за спиной: в дверном проёме её нет — такой слот пропускаем
+      if (m && wallBehind(m, bx + e.nx * 2, by + e.ny * 2, e.nx, e.ny, 0.5 * ppm) < 0) continue;
+      var x = Math.round(bx + e.nx * (D / 2 + 0.02 * ppm));
+      var y = Math.round(by + e.ny * (D / 2 + 0.02 * ppm));
+      if (!pip([x, y], z.pts)) continue;                     // центр должен быть внутри
+      var clash = out.some(function (q) {
+        var qW = (FIXT[q.t][2] || 500) / 1000 * ppm;
+        return Math.hypot(q.x - x, q.y - y) < (W + qW) / 2 + gap;
+      });
+      if (clash) continue;
+      best = { x: x, y: y, t: t, ang: e.ang, w: FIXT[t][2], d: FIXT[t][3], a: 1, z: z.name || '' };
+      break;
+    }
+    // места у стен не нашлось (тесная зона или нет подложки) — ставим в центре
+    if (!best) {
+      var c = centroid(z.pts);
+      best = { x: Math.round(c[0]), y: Math.round(c[1]), t: t, ang: 0,
+        w: FIXT[t][2], d: FIXT[t][3], a: 1, z: z.name || '' };
+    }
+    out.push(best);
+  });
+
+  // стояк канализации — в углу зоны, ближайшем к унитазу (или к первому прибору)
+  var ref = out.filter(function (q) { return q.t === 'toilet'; })[0] || out[0];
+  if (ref) {
+    var cz = centroid(z.pts), bestV = null, bd = 1e18;
+    z.pts.forEach(function (p) {
+      var d = Math.hypot(p[0] - ref.x, p[1] - ref.y);
+      if (d < bd) { bd = d; bestV = p; }
+    });
+    if (bestV) {
+      var vx = cz[0] - bestV[0], vy = cz[1] - bestV[1], vl = Math.hypot(vx, vy) || 1;
+      out.push({ x: Math.round(bestV[0] + vx / vl * 0.25 * ppm),
+        y: Math.round(bestV[1] + vy / vl * 0.25 * ppm),
+        t: 'riser', ang: 0, w: FIXT.riser[2], d: FIXT.riser[3], a: 1, z: z.name || '' });
+    }
+  }
+  return out;
+}
+
+/** Пересборка приборов «из расчёта». Расставленные вручную (без флага a)
+ *  остаются на месте — авто и ручные приборы сочетаются. */
+function refreshAutoFixtures() {
+  if (!fixAuto) return;
+  DATA.floors.forEach(function (f) {
+    var manual = (f.fixtures || []).filter(function (q) { return !q.a; });
+    var auto = [];
+    (f.zones || []).forEach(function (z) {
+      if (z.type !== 'wc' || !z.pts || z.pts.length < 3) return;
+      auto = auto.concat(fixturesOfWcZone(f, z));
+    });
+    f.fixtures = manual.concat(auto);
+  });
+}
+
+/** Маршрут между двумя точками по свободному месту (обход стен, проход в
+ *  проёмы). Маски нет — прямая линия. */
+function routeBetween(m, a, b) {
+  if (!m) return [[a[0], a[1]], [b[0], b[1]]];
+  var A = nearestFree(m, Math.round(a[0] * m.k), Math.round(a[1] * m.k));
+  var B = nearestFree(m, Math.round(b[0] * m.k), Math.round(b[1] * m.k));
+  var path = (A && B) ? routeOnMask(m, A, B) : null;
+  if (!path) return [[a[0], a[1]], [b[0], b[1]]];
+  var pts = dpSimp(path, 2.2).map(function (q) {
+    return [Math.round(q[0] / m.k), Math.round(q[1] / m.k)];
+  });
+  pts[0] = [a[0], a[1]];
+  pts[pts.length - 1] = [b[0], b[1]];
+  return pts;
+}
+
+/** Трассы водоснабжения и канализации: вода — от котельной к каждому прибору,
+ *  канализация — от прибора к ближайшему стояку. Считаются при сохранении,
+ *  листы их только рисуют. Унитаз — выпуск 110 мм, остальное — 50 мм. */
+function computeVk() {
+  DATA.floors.forEach(function (f, fi) {
+    f.wlines = []; f.slines = [];
+    var fx = f.fixtures || [];
+    if (!fx.length || !f.pxPerM) return;
+    var m = getMask(fi);
+    var src = null;
+    (f.zones || []).forEach(function (z) { if (z.type === 'boiler') src = centroid(z.pts); });
+    if (!src && f.coll) src = [f.coll.x, f.coll.y];
+    var risers = fx.filter(function (q) { return q.t === 'riser'; });
+    fx.forEach(function (q, qi) {
+      if (q.t === 'riser') return;
+      if (src) f.wlines.push({ i: qi, pts: routeBetween(m, src, [q.x, q.y]) });
+      if (risers.length) {
+        var best = risers[0], bd = 1e18;
+        risers.forEach(function (r) {
+          var d = Math.hypot(r.x - q.x, r.y - q.y);
+          if (d < bd) { bd = d; best = r; }
+        });
+        f.slines.push({ i: qi, d: (q.t === 'toilet' ? 110 : 50),
+          pts: routeBetween(m, [q.x, q.y], [best.x, best.y]) });
+      }
+    });
+  });
+}
+
+function computeLeads() {
+  DATA.floors.forEach(function (f, fi) {
+    f.leads = [];
+    if (!f.coll || !f.pxPerM) return;
+    // этаж ни разу не открывали в этой сессии — картинки в кэше нет,
+    // маршрут не построить: подводка ляжет прямой линией
+    var m = getMask(fi);
+    f.zones.forEach(function (z, zi) {
+      if (z.type !== 'tp') return;
+      var E = zoneEntry(z, [f.coll.x, f.coll.y]);
+      if (!E) return;
+      var pts = null;
+      if (m) {
+        var a = nearestFree(m, Math.round(f.coll.x * m.k), Math.round(f.coll.y * m.k));
+        var b = nearestFree(m, Math.round(E[0] * m.k), Math.round(E[1] * m.k));
+        var path = (a && b) ? routeOnMask(m, a, b) : null;
+        if (path) {
+          pts = dpSimp(path, 2.2).map(function (q) {
+            return [Math.round(q[0] / m.k), Math.round(q[1] / m.k)];
+          });
+          pts[0] = [f.coll.x, f.coll.y];          // концы — точно в коллектор и вход
+          pts[pts.length - 1] = E;
+        }
+      }
+      if (!pts) pts = [[f.coll.x, f.coll.y], E];
+      f.leads.push({ i: zi, pts: pts });
+    });
+  });
+}
+
+/** Разметка комнат (watershed): карта расстояний до стен → «ядра» глубже
+ *  0.63 м разъединяются в дверях и проёмах сами → ядра разрастаются обратно
+ *  по свободному месту. Каждому пикселю — метка своей комнаты. */
+function labelRooms() {
+  var m = getMask(); if (!m) return null;
+  if (m.labels) return m;
+  var f = F(), ppm = (f.pxPerM || 100) * m.k;
+  var W = m.w, H = m.h, B = m.bar, N = W * H;
+  var d = new Int16Array(N), i, x, y, v;
+  for (i = 0; i < N; i++) d[i] = B[i] ? 0 : 30000;
+  for (y = 0; y < H; y++) for (x = 0; x < W; x++) {
+    i = y * W + x; if (!d[i]) continue;
+    v = d[i];
+    if (x) v = Math.min(v, d[i - 1] + 1);
+    if (y) {
+      v = Math.min(v, d[i - W] + 1);
+      if (x) v = Math.min(v, d[i - W - 1] + 1);
+      if (x < W - 1) v = Math.min(v, d[i - W + 1] + 1);
+    }
+    d[i] = v;
+  }
+  for (y = H - 1; y >= 0; y--) for (x = W - 1; x >= 0; x--) {
+    i = y * W + x; if (!d[i]) continue;
+    v = d[i];
+    if (x < W - 1) v = Math.min(v, d[i + 1] + 1);
+    if (y < H - 1) {
+      v = Math.min(v, d[i + W] + 1);
+      if (x < W - 1) v = Math.min(v, d[i + W + 1] + 1);
+      if (x) v = Math.min(v, d[i + W - 1] + 1);
+    }
+    d[i] = v;
+  }
+  var r = Math.max(3, Math.round(0.63 * ppm));
+  var lab = new Int32Array(N), q = new Int32Array(N), qt = 0, L = 0;
+  for (i = 0; i < N; i++) {                       // ядра комнат
+    if (lab[i] || d[i] <= r) continue;
+    L++;
+    lab[i] = L; q[qt++] = i;
+    var hd = qt - 1;
+    while (hd < qt) {
+      var idx = q[hd++], xx = idx % W;
+      if (xx && d[idx - 1] > r && !lab[idx - 1]) { lab[idx - 1] = L; q[qt++] = idx - 1; }
+      if (xx < W - 1 && d[idx + 1] > r && !lab[idx + 1]) { lab[idx + 1] = L; q[qt++] = idx + 1; }
+      if (idx >= W && d[idx - W] > r && !lab[idx - W]) { lab[idx - W] = L; q[qt++] = idx - W; }
+      if (idx < N - W && d[idx + W] > r && !lab[idx + W]) { lab[idx + W] = L; q[qt++] = idx + W; }
+    }
+  }
+  var qh = 0;                                      // разрастание ядер
+  while (qh < qt) {
+    var id2 = q[qh++], Lc = lab[id2], x2 = id2 % W;
+    if (x2 && d[id2 - 1] > 0 && !lab[id2 - 1]) { lab[id2 - 1] = Lc; q[qt++] = id2 - 1; }
+    if (x2 < W - 1 && d[id2 + 1] > 0 && !lab[id2 + 1]) { lab[id2 + 1] = Lc; q[qt++] = id2 + 1; }
+    if (id2 >= W && d[id2 - W] > 0 && !lab[id2 - W]) { lab[id2 - W] = Lc; q[qt++] = id2 - W; }
+    if (id2 < N - W && d[id2 + W] > 0 && !lab[id2 + W]) { lab[id2 + W] = Lc; q[qt++] = id2 + W; }
+  }
+  var cnt = new Int32Array(L + 1), edge = new Uint8Array(L + 1);
+  var mn = new Int32Array(L + 1);
+  for (i = 0; i <= L; i++) mn[i] = -1;
+  for (i = 0; i < N; i++) {
+    var Lx = lab[i]; if (!Lx) continue;
+    cnt[Lx]++;
+    if (mn[Lx] < 0) mn[Lx] = i;
+    x = i % W; y = (i / W) | 0;
+    if (x === 0 || y === 0 || x === W - 1 || y === H - 1) edge[Lx] = 1;
+  }
+  m.labels = lab; m.labCnt = cnt; m.labEdge = edge; m.labMin = mn; m.labN = L;
+  return m;
+}
+
+/** Контур области метки L → полигон в пикселях изображения.
+ *  Обход границы по рёбрам (crack following), регион всегда справа. */
+function traceLabel(m, L) {
+  var W = m.w, H = m.h, lab = m.labels;
+  var s0 = m.labMin[L]; if (s0 < 0) return null;
+  var bx = s0 % W, by = (s0 / W) | 0;
+  function inR(x, y) { return x >= 0 && y >= 0 && x < W && y < H && lab[y * W + x] === L; }
+  // dir: 0→право, 1→вниз, 2→влево, 3→вверх; клетки слева/справа по ходу
+  var LA = [[0, -1], [0, 0], [-1, 0], [-1, -1]];
+  var RA = [[0, 0], [-1, 0], [-1, -1], [0, -1]];
+  var DX = [1, 0, -1, 0], DY = [0, 1, 0, -1];
+  var x = bx, y = by, dir = 0, pts = [], steps = 0, maxSteps = 8 * W * H;
+  do {
+    pts.push([x, y]);
+    var la = LA[dir], ra = RA[dir];
+    if (inR(x + la[0], y + la[1])) dir = (dir + 3) % 4;        // поворот влево
+    else if (!inR(x + ra[0], y + ra[1])) dir = (dir + 1) % 4;  // поворот вправо
+    x += DX[dir]; y += DY[dir];
+  } while (!(x === bx && y === by) && ++steps < maxSteps);
+  if (pts.length < 8 || steps >= maxSteps) return null;
+  var simp = dpSimp(pts, 2.4);
+  if (simp.length < 3 || simp.length > 200) return null;
+  return simp.map(function (q) { return [Math.round(q[0] / m.k), Math.round(q[1] / m.k)]; });
+}
+
+function dpSimp(pts, eps) {
+  if (pts.length < 5) return pts;
+  var keep = new Uint8Array(pts.length);
+  keep[0] = keep[pts.length - 1] = 1;
+  var st = [[0, pts.length - 1]];
+  while (st.length) {
+    var seg = st.pop(), i0 = seg[0], i1 = seg[1];
+    var ax = pts[i0][0], ay = pts[i0][1];
+    var dx = pts[i1][0] - ax, dy = pts[i1][1] - ay;
+    var len = Math.sqrt(dx * dx + dy * dy) || 1e-9;
+    var maxd = -1, mi = -1;
+    for (var i = i0 + 1; i < i1; i++) {
+      var dd = Math.abs((pts[i][0] - ax) * dy - (pts[i][1] - ay) * dx) / len;
+      if (dd > maxd) { maxd = dd; mi = i; }
+    }
+    if (maxd > eps) { keep[mi] = 1; st.push([i0, mi], [mi, i1]); }
+  }
+  var out = [];
+  for (var j = 0; j < pts.length; j++) if (keep[j]) out.push(pts[j]);
+  return out;
+}
+
+/** Комната по клику: метка области из разметки watershed → контур.
+ *  null — если клик в стену или в «улицу» (область у края плана). */
+function roomAtPoint(ix, iy) {
+  var m = labelRooms(); if (!m) return null;
+  var sx = Math.round(ix * m.k), sy = Math.round(iy * m.k);
+  if (sx < 0 || sy < 0 || sx >= m.w || sy >= m.h) return null;
+  var L = m.labels[sy * m.w + sx];
+  if (!L || m.labEdge[L]) return null;
+  var ppm = (F().pxPerM || 100) * m.k;
+  var m2 = m.labCnt[L] / (ppm * ppm);
+  if (m2 < 1 || m2 > 200) return null;
+  return traceLabel(m, L);
+}
+
+/** Прилипание краёв прямоугольника к внутренним граням стен (±20 px плана) */
+function snapRect(a, b) {
+  var m = getMask(); if (!m) return [a, b];
+  var SN = Math.max(3, Math.round(20 * m.k));
+  var x0 = Math.min(a[0], b[0]) * m.k, x1 = Math.max(a[0], b[0]) * m.k;
+  var y0 = Math.min(a[1], b[1]) * m.k, y1 = Math.max(a[1], b[1]) * m.k;
+  function frX(xm, ya, yb) {
+    xm = Math.round(xm); if (xm < 0 || xm >= m.w) return 1;
+    var c2 = 0, n = 0;
+    for (var y = Math.max(0, Math.round(ya)); y <= Math.min(m.h - 1, Math.round(yb)); y += 2) {
+      n++; if (m.bar[y * m.w + xm]) c2++;
+    }
+    return n ? c2 / n : 0;
+  }
+  function frY(ym, xa, xb) {
+    ym = Math.round(ym); if (ym < 0 || ym >= m.h) return 1;
+    var c2 = 0, n = 0, base = ym * m.w;
+    for (var x = Math.max(0, Math.round(xa)); x <= Math.min(m.w - 1, Math.round(xb)); x += 2) {
+      n++; if (m.bar[base + x]) c2++;
+    }
+    return n ? c2 / n : 0;
+  }
+  function snap(pos, dirOut, frac) {
+    var o;
+    if (frac(pos) > 0.4) {                       // край на стене — уводим внутрь
+      for (o = 1; o <= SN; o++) if (frac(pos - dirOut * o) <= 0.4) return pos - dirOut * o;
+      return pos;
+    }
+    for (o = 1; o <= SN; o++)                    // стена рядом — прижимаемся изнутри
+      if (frac(pos + dirOut * o) > 0.5) return pos + dirOut * (o - 1);
+    return pos;
+  }
+  x0 = snap(x0, -1, function (p) { return frX(p, y0, y1); });
+  x1 = snap(x1, 1, function (p) { return frX(p, y0, y1); });
+  y0 = snap(y0, -1, function (p) { return frY(p, x0, x1); });
+  y1 = snap(y1, 1, function (p) { return frY(p, x0, x1); });
+  if (x1 - x0 < 8 * m.k || y1 - y0 < 8 * m.k) return [a, b];
+  return [[Math.round(x0 / m.k), Math.round(y0 / m.k)],
+          [Math.round(x1 / m.k), Math.round(y1 / m.k)]];
+}
+
+/** Shift: следующая точка контура строго по горизонтали/вертикали от прежней */
+function ortho(p, prev, useShift) {
+  if (!useShift || !prev) return p;
+  var dx = p[0] - prev[0], dy = p[1] - prev[1];
+  return Math.abs(dx) >= Math.abs(dy) ? [p[0], prev[1]] : [prev[0], p[1]];
+}
+
+// найденные окна этажа (кэш: пересчёт только после смены подложки)
+var winCache = {};
+function floorWindows() {
+  if (winCache[cur]) return winCache[cur];
+  var w = [];
+  try { w = detectWindows() || []; } catch (e) { console.error('[plan_editor] windows:', e); }
+  winCache[cur] = w;
+  return w;
+}
+
+/** Радиатор: клик рядом с окном центрируется по окну (70% его ширины),
+ *  иначе — 1000×140 мм с прилипанием к ближайшей стене */
+function placeRad(p) {
+  var f = F(), ppm = f.pxPerM || 100;
+  var wins = floorWindows(), bestW = null, bestD = 1.2 * ppm;
+  for (var wi = 0; wi < wins.length; wi++) {
+    var dW = Math.hypot(p[0] - wins[wi].x, p[1] - wins[wi].y);
+    if (dW < bestD) { bestD = dW; bestW = wins[wi]; }
+  }
+  if (bestW) return { x: Math.round(bestW.x), y: Math.round(bestW.y),
+    w: Math.round(bestW.w), ang: bestW.ang };
+  var rad = { x: p[0], y: p[1], w: Math.round(ppm), ang: 0 };
+  var m = getMask();
+  if (m) {
+    var R = Math.round(1.5 * ppm * m.k);           // ищем стену в радиусе 1.5 м
+    var sx = Math.round(p[0] * m.k), sy = Math.round(p[1] * m.k);
+    var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]], best = null;
+    for (var di = 0; di < 4; di++) {
+      for (var d = 1; d <= R; d++) {
+        var x = sx + dirs[di][0] * d, y = sy + dirs[di][1] * d;
+        if (x < 0 || y < 0 || x >= m.w || y >= m.h) break;
+        if (m.bar[y * m.w + x]) { if (!best || d < best[0]) best = [d, di]; break; }
+      }
+    }
+    if (best) {
+      var di2 = best[1];
+      var off = best[0] / m.k - 0.07 * ppm - 2;    // прижаться: до стены минус полтолщины
+      if (off > 0) {
+        rad.x = Math.round(p[0] + dirs[di2][0] * off);
+        rad.y = Math.round(p[1] + dirs[di2][1] * off);
+      }
+      rad.ang = di2 < 2 ? 90 : 0;                  // стена сбоку — радиатор вертикально
+    }
+  }
+  return rad;
+}
+function radAt(p) {
+  var rads = F().rads || [];
+  for (var i = rads.length - 1; i >= 0; i--)
+    if (Math.hypot(p[0] - rads[i].x, p[1] - rads[i].y) < rads[i].w / 2 + 6) return i;
+  return -1;
+}
+
+/** Автодетект окон на CAD-планах: разрыв толстой стены шириной 0.45–3.2 м,
+ *  внутри которого вдоль стены идут тонкие линии остекления (двери и пустые
+ *  проёмы такого заполнения не имеют). Кандидаты с рядов/колонок толщины
+ *  стены голосуют, окна < 3 голосов отбрасываются. */
+function detectWindows() {
+  var m = getMask(); if (!m) return [];
+  var f = F(), ppm = (f.pxPerM || 100) * m.k;      // пикселей маски на метр
+  var W = m.w, H = m.h, B = m.bar;
+  var Tmin = Math.max(2, 0.08 * ppm), Tmax = 0.6 * ppm;
+  var gapMin = 0.45 * ppm, gapMax = 3.2 * ppm, sideMin = 0.25 * ppm;
+  var x, y, i;
+
+  // полные длины горизонтальных/вертикальных серий преград в каждой точке
+  var hr = new Int16Array(W * H), vr = new Int16Array(W * H);
+  for (y = 0; y < H; y++) {
+    var run = 0;
+    for (x = 0; x < W; x++) { i = y * W + x; run = B[i] ? run + 1 : 0; hr[i] = run; }
+    for (x = W - 1; x > 0; x--) { i = y * W + x; if (B[i] && B[i - 1]) hr[i - 1] = hr[i]; }
+  }
+  for (x = 0; x < W; x++) {
+    var run2 = 0;
+    for (y = 0; y < H; y++) { i = y * W + x; run2 = B[i] ? run2 + 1 : 0; vr[i] = run2; }
+    for (y = H - 1; y > 0; y--) { i = y * W + x; if (B[i] && B[i - W]) vr[i - W] = vr[i]; }
+  }
+
+  var cand = [];
+  // горизонтальные стены: разрыв между двумя толстыми сериями; тонкие серии
+  // внутри проёма (остекление, торцевые чёрточки) не считаются концом разрыва
+  for (y = 0; y < H; y++) {
+    x = 0;
+    while (x < W) {
+      i = y * W + x;
+      if (!B[i]) { x++; continue; }
+      var L = hr[i], e1 = x + L - 1;
+      var t1 = vr[y * W + x + (L >> 1)];
+      if (L >= sideMin && t1 >= Tmin && t1 <= Tmax * 1.5 && e1 + 1 < W) {
+        var x2 = e1 + 1, fx = -1, t2 = 0;
+        while (x2 < W && x2 - e1 - 1 <= gapMax) {
+          var i2 = y * W + x2;
+          if (!B[i2]) { x2++; continue; }
+          var L2 = hr[i2];
+          t2 = vr[y * W + x2 + (L2 >> 1)];
+          if (L2 >= sideMin && t2 >= Tmin && t2 <= Tmax * 1.5) { fx = x2; break; }
+          x2 += L2;                              // шум проёма — пропустить
+        }
+        if (fx > 0) {
+          var g = fx - e1 - 1;
+          if (g >= gapMin)
+            cand.push({ a: 'h', cx: (e1 + 1 + fx - 1) / 2, cy: y, len: g, t: (t1 + t2) / 2 });
+        }
+      }
+      x = e1 + 1;
+    }
+  }
+  // вертикальные стены — симметрично
+  for (x = 0; x < W; x++) {
+    y = 0;
+    while (y < H) {
+      i = y * W + x;
+      if (!B[i]) { y++; continue; }
+      var Lv = vr[i], e1v = y + Lv - 1;
+      var t1v = hr[(y + (Lv >> 1)) * W + x];
+      if (Lv >= sideMin && t1v >= Tmin && t1v <= Tmax * 1.5 && e1v + 1 < H) {
+        var y2 = e1v + 1, fy = -1, t2v = 0;
+        while (y2 < H && y2 - e1v - 1 <= gapMax) {
+          var i3 = y2 * W + x;
+          if (!B[i3]) { y2++; continue; }
+          var L2v = vr[i3];
+          t2v = hr[(y2 + (L2v >> 1)) * W + x];
+          if (L2v >= sideMin && t2v >= Tmin && t2v <= Tmax * 1.5) { fy = y2; break; }
+          y2 += L2v;
+        }
+        if (fy > 0) {
+          var gv = fy - e1v - 1;
+          if (gv >= gapMin)
+            cand.push({ a: 'v', cx: x, cy: (e1v + 1 + fy - 1) / 2, len: gv, t: (t1v + t2v) / 2 });
+        }
+      }
+      y = e1v + 1;
+    }
+  }
+
+  // кластеризация голосов
+  var cl = [];
+  cand.forEach(function (c) {
+    for (var j = 0; j < cl.length; j++) {
+      var v = cl[j];
+      if (v.a === c.a && Math.abs(v.cx / v.n - c.cx) < 0.5 * ppm && Math.abs(v.cy / v.n - c.cy) < 0.5 * ppm) {
+        v.cx += c.cx; v.cy += c.cy; v.len += c.len; v.t += c.t; v.n++;
+        return;
+      }
+    }
+    cl.push({ a: c.a, cx: c.cx, cy: c.cy, len: c.len, t: c.t, n: 1 });
+  });
+
+  // внутренняя сторона — к центру тяжести стен здания
+  var scx = 0, scy = 0, sn = 0;
+  for (i = 0; i < B.length; i++) if (B[i]) { scx += i % W; scy += (i / W) | 0; sn++; }
+  if (sn) { scx /= sn; scy /= sn; }
+
+  var out = [];
+  cl.forEach(function (v) {
+    if (v.n < 3) return;
+    var cx = v.cx / v.n, cy = v.cy / v.n, len = v.len / v.n, t = v.t / v.n;
+    // окно ↔ дверь: остекление — прямая линия вдоль всего проёма (рама может
+    // быть смещена от оси стены, поэтому линию ищем по медиане попаданий);
+    // дуга и полотно двери дают редкое и «рваное» покрытие
+    var hb = Math.max(2, Math.round(t * 0.8));
+    var a0 = Math.round((v.a === 'h' ? cx : cy) - len / 2 + 1);
+    var a1 = Math.round((v.a === 'h' ? cx : cy) + len / 2 - 1);
+    var c0 = Math.round(v.a === 'h' ? cy : cx);
+    var hits = [], tot = 0, ai, ci, px2, py2;
+    for (ai = a0; ai <= a1; ai++) {
+      var best = 1e9;
+      for (ci = c0 - hb; ci <= c0 + hb; ci++) {
+        px2 = v.a === 'h' ? ai : ci; py2 = v.a === 'h' ? ci : ai;
+        if (px2 < 0 || py2 < 0 || px2 >= W || py2 >= H) continue;
+        if (B[py2 * W + px2] && Math.abs(ci - c0) < Math.abs(best - c0)) best = ci;
+      }
+      tot++;
+      hits.push(best === 1e9 ? null : best);
+    }
+    if (tot < 3) return;
+    var vals = hits.filter(function (q) { return q !== null; })
+      .sort(function (q, r) { return q - r; });
+    if (!vals.length) return;
+    var med = vals[vals.length >> 1], okN = 0;
+    var lineTol = Math.max(2, t * 0.3);
+    hits.forEach(function (q) { if (q !== null && Math.abs(q - med) <= lineTol) okN++; });
+    if (okN / tot < 0.75) return;
+    // окно смотрит на улицу: перпендикулярный луч хотя бы с одной стороны
+    // доходит до края плана, не встретив толстой стены (внутри дома луч
+    // всегда упрётся в наружную стену; тонкие размерные линии не преграда)
+    var street = false, sgn, d3, cnt, hitWall;
+    for (sgn = -1; sgn <= 1; sgn += 2) {
+      hitWall = false; cnt = 0;
+      for (d3 = Math.round(t / 2 + 3); ; d3++) {
+        ci = c0 + sgn * d3;
+        px2 = v.a === 'h' ? Math.round(cx) : ci;
+        py2 = v.a === 'h' ? ci : Math.round(cy);
+        if (px2 < 0 || py2 < 0 || px2 >= W || py2 >= H) break;   // дошли до края — улица
+        if (B[py2 * W + px2]) { cnt++; if (cnt >= Tmin) { hitWall = true; break; } }
+        else cnt = 0;
+      }
+      if (!hitWall) { street = true; break; }
+    }
+    if (!street) return;
+    var off = t / 2 + 0.13 * ppm;
+    var lenM = len / ppm;
+    var wM = Math.min(2.0, Math.max(0.6, 0.70 * lenM));   // радиатор — 70% ширины окна
+    var rx = cx, ry = cy, ang = 0;
+    if (v.a === 'h') ry = cy + (scy > cy ? off : -off);
+    else { rx = cx + (scx > cx ? off : -off); ang = 90; }
+    out.push({ x: rx / m.k, y: ry / m.k, ang: ang, w: wM * (f.pxPerM || 100) });
+  });
+  return out;
+}
+
+/** Все комнаты этажа из разметки watershed: [{pts, m2}] без «улицы» и мелочи */
+function enumerateRooms() {
+  var m = labelRooms(); if (!m) return [];
+  var ppm = (F().pxPerM || 100) * m.k, p2 = ppm * ppm;
+  var out = [];
+  for (var L = 1; L <= m.labN; L++) {
+    if (m.labEdge[L]) continue;                  // касается края плана — улица
+    var m2 = m.labCnt[L] / p2;
+    if (m2 < 1.5 || m2 > 130) continue;
+    var pts = traceLabel(m, L);
+    if (pts) out.push({ pts: pts, m2: m2 });
+  }
+  return out;
+}
+
+function pip(p, pts) {  // точка внутри полигона (ray casting)
+  var inn = false;
+  for (var a = 0, b = pts.length - 1; a < pts.length; b = a++) {
+    if ((pts[a][1] > p[1]) !== (pts[b][1] > p[1]) &&
+        p[0] < (pts[b][0] - pts[a][0]) * (p[1] - pts[a][1]) / (pts[b][1] - pts[a][1]) + pts[a][0])
+      inn = !inn;
+  }
+  return inn;
+}
+
+/** «Распознать комнаты»: зоны ТП по комнатам подробного расчёта.
+ *  Сопоставление по площади (лучшие пары, допуск 25% или 2 м²); без расчёта —
+ *  зоны для всех найденных комнат. Уже размеченные комнаты не трогаются. */
+function autoRooms() {
+  if (!F().pxPerM) { alert('Сначала задайте масштаб.'); return; }
+  var rooms = [];
+  try { rooms = enumerateRooms(); } catch (e) { console.error('[plan_editor] rooms:', e); }
+  if (!rooms.length) {
+    hint('Комнаты распознать не удалось (пёстрая подложка?) — обведите зоны вручную.');
+    return;
+  }
+  var free = rooms.filter(function (r) {
+    var c = centroid(r.pts);
+    return !F().zones.some(function (z) { return pip(c, z.pts); });
+  });
+  var targets = calcRooms.filter(function (r) {
+    return r.sys.indexOf('tp') >= 0 && (+r.floor || 1) === cur + 1;
+  });
+  pushUndo('zones');
+  var made = 0, missed = [];
+  if (targets.length) {
+    var pairs = [];
+    targets.forEach(function (t, ti) {
+      free.forEach(function (c, ci) { pairs.push([Math.abs(c.m2 - t.area), ti, ci]); });
+    });
+    pairs.sort(function (a, b) { return a[0] - b[0]; });
+    var tU = {}, cU = {};
+    pairs.forEach(function (p) {
+      if (tU[p[1]] || cU[p[2]]) return;
+      var t = targets[p[1]];
+      if (p[0] > Math.max(2, 0.25 * t.area)) return;
+      tU[p[1]] = 1; cU[p[2]] = 1;
+      F().zones.push({ type: 'tp', name: t.name, pts: free[p[2]].pts });
+      made++;
+    });
+    targets.forEach(function (t, ti) { if (!tU[ti]) missed.push(t.name); });
+  }
+  if (!made) {
+    free.forEach(function (c) { F().zones.push({ type: 'tp', name: '', pts: c.pts }); made++; });
+    missed = [];
+  }
+  renderZones(); draw();
+  hint('<span class=ok>Найдено комнат: ' + rooms.length + ', создано зон ТП: ' + made + '.</span>' +
+    (missed.length ? ' Не совпали по площади: ' + missed.join(', ') + ' — обведите вручную.' : '') +
+    ' Лишние зоны удаляйте крестиком, имена правятся в списке.');
+}
+
+/** Кнопка «Под окна»: расставить радиаторы по найденным окнам */
+function autoRads() {
+  if (!F().pxPerM) { alert('Сначала задайте масштаб.'); return; }
+  var wins = floorWindows();
+  if (!wins.length) {
+    hint('Окна распознать не удалось (нечёткий план?) — расставьте радиаторы кликами.');
+    if (mode !== 'rad') setMode('rad');
+    return;
+  }
+  pushUndo('zones');
+  var added = 0, ppmI = F().pxPerM;
+  wins.forEach(function (w) {
+    var busy = (F().rads || []).some(function (r) {
+      return Math.hypot(r.x - w.x, r.y - w.y) < 0.7 * ppmI;
+    });
+    if (busy) return;
+    F().rads.push({ x: Math.round(w.x), y: Math.round(w.y), w: Math.round(w.w), ang: w.ang });
+    added++;
+  });
+  renderZones(); draw();
+  hint('<span class=ok>Найдено окон: ' + wins.length + ', поставлено радиаторов: ' + added +
+    '.</span> Лишние уберите кликом по значку, недостающие добавьте кликом.');
+  if (mode !== 'rad') setMode('rad');
+}
+
+function loadPdfPlan(file, done) {
+  hint('Читаю PDF…');
+  var rd = new FileReader();
+  rd.onload = function () {
+    loadPdfJs().then(function (pdfjs) {
+      return pdfjs.getDocument({ data: rd.result }).promise;
+    }).then(function (pdf) {
+      var pno = 1;
+      if (pdf.numPages > 1) {
+        pno = parseInt(prompt('В PDF «' + file.name + '» ' + pdf.numPages +
+          ' стр. Какая страница с планом?', '1'), 10);
+        if (!(pno >= 1 && pno <= pdf.numPages)) pno = 1;
+      }
+      return pdf.getPage(pno);
+    }).then(function (page) {
+      var vp1 = page.getViewport({ scale: 1 });
+      var k = Math.min(4, 1600 / Math.max(vp1.width, vp1.height));
+      var vp = page.getViewport({ scale: k });
+      var c = document.createElement('canvas');
+      c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+      var g = c.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);  // PDF бывает прозрачным
+      return page.render({ canvasContext: g, viewport: vp }).promise.then(function () {
+        applyPlanCanvas(c);
+        if (done) done();
+      });
+    }).catch(function (e) {
+      console.error('[plan_editor] pdf:', e);
+      hint('');
+      alert('Не удалось прочитать PDF «' + file.name +
+        '». Сохраните план картинкой (скриншот страницы) и загрузите её.');
+      if (done) done();
+    });
+  };
+  rd.readAsArrayBuffer(file);
+}
+
+/** Один файл (картинка или PDF) → подложка ТЕКУЩЕГО этажа; резолв по готовности */
+function loadOne(file) {
+  return new Promise(function (done) {
+    if (/pdf$/i.test(file.type) || /\.pdf$/i.test(file.name)) {
+      loadPdfPlan(file, done); return;
+    }
+    var rd = new FileReader();
+    rd.onload = function () {
+      var im = new Image();
+      im.onload = function () {
+        // даунскейл: localStorage не резиновый, 1600 px хватает для печати подложкой
+        var k = Math.min(1, 1600 / Math.max(im.width, im.height));
+        var c = document.createElement('canvas');
+        c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        applyPlanCanvas(c);
+        done();
+      };
+      im.onerror = function () {
+        alert('Не удалось прочитать файл «' + file.name + '».');
+        done();
+      };
+      im.src = rd.result;
+    };
+    rd.readAsDataURL(file);
+  });
+}
+
+function loadImage(inp) {
+  var files = Array.prototype.slice.call(inp.files || []);
+  inp.value = '';
+  if (!files.length) return;
+  // Один файл — в текущий этаж (замена подложки). Несколько — по этажам:
+  // первый в текущий, если тот пуст, дальше каждый файл в новый этаж.
+  var chain = Promise.resolve();
+  files.forEach(function (file, idx) {
+    chain = chain.then(function () {
+      if (files.length > 1 && (idx > 0 || F().img)) {
+        undoStack.push({ t: 'floorAdd' });
+        DATA.floors.push({ img: null, w: 0, h: 0, pxPerM: 0, zones: [], rads: [] });
+        cur = DATA.floors.length - 1;
+        renderTabs();
+      }
+      return loadOne(file);
+    });
+  });
+  if (files.length > 1) chain.then(function () {
+    hint('Загружено файлов: ' + files.length +
+      '. Задайте масштаб на каждом этаже (вкладки сверху).');
+  });
+}
+
+function cs() { return F().w ? cv.width / F().w : 1; }  // канвас-пиксели на пиксель изображения
+
+function draw() {
+  var f = F();
+  if (f.img && !imgCache[cur] && !imgFailed[cur]) {
+    var im = new Image();
+    // Подложка приходит с proxy.heatcalc.ru, а по ней потом строится карта
+    // стен через getImageData. Без разрешения CORS канвас считается
+    // «испорченным» чужой картинкой, и «зона по клику» падает с ошибкой
+    // безопасности. Сервер отдаёт Access-Control-Allow-Origin: *.
+    if (f.img.indexOf('data:') !== 0) im.crossOrigin = 'anonymous';
+    im.onload = function () { imgCache[cur] = im; draw(); };
+    im.onerror = function () {
+      // Имя файла не трогаем: связь появится — подложка подтянется сама
+      // после перезагрузки страницы.
+      imgFailed[cur] = true;
+      hint('Не удалось загрузить подложку этажа с сервера. Проверьте связь и обновите ' +
+        'страницу — или загрузите план заново.');
+      draw();
+    };
+    im.src = f.img; return;
+  }
+  var im2 = imgCache[cur];
+  if (im2) {
+    cv.width = 1200; cv.height = Math.round(1200 * f.h / f.w);
+  } else { cv.width = 1200; cv.height = 850; }
+  cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+  if (im2) cx.drawImage(im2, 0, 0, cv.width, cv.height);
+  else {
+    cx.fillStyle = '#999'; cx.font = '20px system-ui'; cx.textAlign = 'center';
+    cx.fillText('Загрузите план этажа (фото или скан)', cv.width / 2, cv.height / 2);
+  }
+  var k = cs();
+  f.zones.forEach(function (z, i) {
+    var col = TYPES[z.type][1];
+    cx.beginPath();
+    z.pts.forEach(function (p, j) { j ? cx.lineTo(p[0] * k, p[1] * k) : cx.moveTo(p[0] * k, p[1] * k); });
+    cx.closePath();
+    cx.fillStyle = col + '33'; cx.fill();
+    cx.lineWidth = 2; cx.strokeStyle = col; cx.stroke();
+    var c = centroid(z.pts);
+    cx.fillStyle = col; cx.font = 'bold 14px system-ui'; cx.textAlign = 'center';
+    cx.fillText((z.name || TYPES[z.type][0]) + ' · ' + area(z.pts).toFixed(1) + ' м²', c[0] * k, c[1] * k);
+  });
+  // радиаторы — значки вдоль стен
+  (f.rads || []).forEach(function (r) {
+    cx.save();
+    cx.translate(r.x * k, r.y * k);
+    cx.rotate((r.ang || 0) * Math.PI / 180);
+    var w2 = r.w * k / 2, h2 = Math.max(2.5, 0.07 * (f.pxPerM || 100) * k);
+    cx.fillStyle = 'rgba(210,34,34,.28)';
+    cx.strokeStyle = '#d22222'; cx.lineWidth = 1.6;
+    cx.fillRect(-w2, -h2, w2 * 2, h2 * 2);
+    cx.strokeRect(-w2, -h2, w2 * 2, h2 * 2);
+    cx.lineWidth = 1;
+    for (var sq = -2; sq <= 2; sq++) {
+      var xs = sq * w2 / 2.8;
+      cx.beginPath(); cx.moveTo(xs, -h2); cx.lineTo(xs, h2); cx.stroke();
+    }
+    cx.restore();
+  });
+  // коллектор ТП — гребёнка с отводами
+  if (f.coll) {
+    var ccx = f.coll.x * k, ccy = f.coll.y * k;
+    var cw = Math.max(16, 0.55 * (f.pxPerM || 100) * k), ch = Math.max(6, cw * 0.36);
+    cx.fillStyle = '#fff'; cx.strokeStyle = '#b35900'; cx.lineWidth = 2;
+    cx.fillRect(ccx - cw / 2, ccy - ch / 2, cw, ch);
+    cx.strokeRect(ccx - cw / 2, ccy - ch / 2, cw, ch);
+    cx.lineWidth = 1.4;
+    for (var so = -1; so <= 1; so++) {
+      var sx2 = ccx + so * cw / 3.4;
+      cx.beginPath(); cx.moveTo(sx2, ccy - ch / 2 - 5); cx.lineTo(sx2, ccy - ch / 2); cx.stroke();
+    }
+    cx.fillStyle = '#b35900'; cx.font = 'bold 12px system-ui'; cx.textAlign = 'center';
+    cx.fillText('Коллектор ТП', ccx, ccy + ch / 2 + 13);
+  }
+  // сантехприборы: настоящий габарит и разворот вдоль стены
+  (f.fixtures || []).forEach(function (q) {
+    var col = q.t === 'riser' ? '#7a5c00' : '#0b7285';
+    var qx = q.x * k, qy = q.y * k, ppm2 = (f.pxPerM || 100) * k;
+    var W = (q.w || (FIXT[q.t] || [])[2] || 500) / 1000 * ppm2;
+    var D = (q.d || (FIXT[q.t] || [])[3] || 500) / 1000 * ppm2;
+    cx.save();
+    cx.translate(qx, qy);
+    cx.rotate((q.ang || 0) * Math.PI / 180);
+    cx.beginPath();
+    if (q.t === 'riser') cx.arc(0, 0, Math.max(6, W / 2), 0, 7);
+    else cx.rect(-W / 2, -D / 2, W, D);
+    cx.fillStyle = 'rgba(255,255,255,0.9)'; cx.fill();
+    cx.strokeStyle = col; cx.lineWidth = 2; cx.stroke();
+    cx.restore();
+    cx.fillStyle = col; cx.font = 'bold 11px system-ui'; cx.textAlign = 'center';
+    cx.fillText((FIXT[q.t] || ['', '?'])[1], qx, qy + 4);
+  });
+
+  // текущий ввод
+  cx.lineWidth = 2; cx.strokeStyle = '#ff6b35';
+  if (mode === 'poly' && tmp.length) {
+    cx.beginPath();
+    tmp.forEach(function (p, j) { j ? cx.lineTo(p[0] * k, p[1] * k) : cx.moveTo(p[0] * k, p[1] * k); });
+    cx.stroke();
+    if (polyCur) {                     // резиновая линия к курсору (Shift — строго 90°)
+      cx.save(); cx.setLineDash([6, 5]);
+      cx.beginPath();
+      cx.moveTo(tmp[tmp.length - 1][0] * k, tmp[tmp.length - 1][1] * k);
+      cx.lineTo(polyCur[0] * k, polyCur[1] * k);
+      cx.stroke(); cx.restore();
+    }
+    if (tmp.length >= 3) {             // мишень замыкания на первой точке
+      var nearS = polyCur && Math.hypot(polyCur[0] - tmp[0][0], polyCur[1] - tmp[0][1]) < 12 * F().w / 1200;
+      cx.beginPath(); cx.arc(tmp[0][0] * k, tmp[0][1] * k, nearS ? 9 : 6, 0, 7);
+      cx.fillStyle = nearS ? 'rgba(255,107,53,.45)' : 'rgba(255,107,53,.18)';
+      cx.fill(); cx.stroke();
+    }
+  }
+  if (mode === 'rect' && dragA && tmp.length) {
+    var sPrev = snapRect(dragA, tmp[0]);   // предпросмотр уже с прилипанием к стенам
+    var ax = sPrev[0][0] * k, ay = sPrev[0][1] * k;
+    var aw = (sPrev[1][0] - sPrev[0][0]) * k, ah = (sPrev[1][1] - sPrev[0][1]) * k;
+    cx.fillStyle = 'rgba(255,107,53,.12)';
+    cx.fillRect(ax, ay, aw, ah);
+    cx.strokeRect(ax, ay, aw, ah);
+  }
+  scalePts.forEach(function (p) {
+    cx.beginPath(); cx.arc(p[0] * k, p[1] * k, 5, 0, 7); cx.fillStyle = '#08c'; cx.fill();
+  });
+  if (scalePts.length === 2) {
+    cx.beginPath(); cx.moveTo(scalePts[0][0] * k, scalePts[0][1] * k);
+    cx.lineTo(scalePts[1][0] * k, scalePts[1][1] * k);
+    cx.strokeStyle = '#08c'; cx.stroke();
+  }
+  document.getElementById('scale_note').textContent =
+    f.pxPerM ? '· масштаб задан (' + f.pxPerM.toFixed(1) + ' px/м)' : '· масштаб не задан';
+}
+
+function evPt(e) {
+  var r = cv.getBoundingClientRect();
+  var x = (e.clientX - r.left) * (cv.width / r.width) / cs();
+  var y = (e.clientY - r.top) * (cv.height / r.height) / cs();
+  return [Math.round(x), Math.round(y)];
+}
+function area(pts) {
+  var s = 0, m = F().pxPerM || 1;
+  for (var i = 0; i < pts.length; i++) {
+    var a = pts[i], b = pts[(i + 1) % pts.length];
+    s += a[0] * b[1] - b[0] * a[1];
+  }
+  return Math.abs(s / 2) / (m * m);
+}
+function centroid(pts) {
+  var x = 0, y = 0;
+  pts.forEach(function (p) { x += p[0]; y += p[1]; });
+  return [x / pts.length, y / pts.length];
+}
+
+function closePoly() {
+  if (tmp.length < 3) return;
+  var pts = tmp.slice();
+  tmp = []; polyCur = null; closeTs = Date.now();
+  addZone(pts); draw();
+}
+
+cv.addEventListener('mousedown', function (e) {
+  if (mode === 'rect' && F().img) { dragA = evPt(e); tmp = [dragA]; }
+});
+cv.addEventListener('mousemove', function (e) {
+  if (mode === 'rect' && dragA) { tmp = [evPt(e)]; draw(); }
+  else if (mode === 'poly') {
+    polyCur = ortho(evPt(e), tmp.length ? tmp[tmp.length - 1] : null, e.shiftKey);
+    if (tmp.length) draw();
+  }
+});
+cv.addEventListener('mouseup', function (e) {
+  if (mode === 'rect' && dragA) {
+    var b = evPt(e), a = dragA; dragA = null; tmp = [];
+    if (Math.abs(b[0] - a[0]) > 8 && Math.abs(b[1] - a[1]) > 8) {
+      var s = snapRect(a, b);   // прилипание краёв к внутренним граням стен
+      addZone([[s[0][0], s[0][1]], [s[1][0], s[0][1]], [s[1][0], s[1][1]], [s[0][0], s[1][1]]]);
+    }
+    draw();
+  }
+});
+cv.addEventListener('click', function (e) {
+  var p = evPt(e);
+  if (mode === 'scale') {
+    scalePts.push(p); draw();
+    if (scalePts.length === 2) {
+      var d = Math.hypot(scalePts[1][0] - scalePts[0][0], scalePts[1][1] - scalePts[0][1]);
+      var m = parseFloat(prompt('Длина этого отрезка в метрах:', '1.0'));
+      if (m > 0) {
+        pushUndo('scale');
+        F().pxPerM = d / m;
+        hint('<span class=ok>Масштаб задан.</span> Теперь обведите зоны.');
+      }
+      scalePts = []; setMode('select');
+    }
+  } else if (mode === 'poly') {
+    if (Date.now() - closeTs < 500) return;   // хвост двойного клика после замыкания
+    p = ortho(p, tmp.length ? tmp[tmp.length - 1] : null, e.shiftKey);
+    // клик рядом с первой точкой — замкнуть контур
+    var tol = 12 * F().w / 1200;
+    if (tmp.length >= 3 && Math.hypot(p[0] - tmp[0][0], p[1] - tmp[0][1]) < tol) { closePoly(); return; }
+    tmp.push(p); draw();
+  } else if (mode === 'room') {
+    var poly = null;
+    try { poly = roomAtPoint(p[0], p[1]); } catch (err) { console.error('[plan_editor] room:', err); }
+    if (poly) addZone(poly);
+    else hint('Не удалось определить комнату по стенам (проём или пёстрая подложка). ' +
+      'Обведите её «Зона: прямоугольник» или «Зона: контур».');
+    draw();
+  } else if (mode === 'rad') {
+    var hitR = radAt(p);
+    pushUndo('zones');
+    if (hitR >= 0) F().rads.splice(hitR, 1);
+    else F().rads.push(placeRad(p));
+    renderZones(); draw();
+  } else if (mode === 'coll') {
+    // один коллектор на этаж: клик по значку убирает, клик в стороне — переносит
+    pushUndo('zones');
+    var fc = F();
+    if (fc.coll && Math.hypot(p[0] - fc.coll.x, p[1] - fc.coll.y) < 0.45 * (fc.pxPerM || 100)) fc.coll = null;
+    else fc.coll = { x: p[0], y: p[1] };
+    renderZones(); draw();
+  } else if (mode === 'wc') {
+    pushUndo('zones');
+    var fw = F();
+    fw.fixtures = fw.fixtures || [];
+    var hitF = -1, rr = 0.35 * (fw.pxPerM || 100);
+    for (var qi = fw.fixtures.length - 1; qi >= 0; qi--)
+      if (Math.hypot(p[0] - fw.fixtures[qi].x, p[1] - fw.fixtures[qi].y) < rr) { hitF = qi; break; }
+    if (hitF >= 0) fw.fixtures.splice(hitF, 1);
+    else fw.fixtures.push({ x: p[0], y: p[1], t: document.getElementById('wctype').value });
+    renderZones(); draw();
+  }
+});
+cv.addEventListener('dblclick', function () {
+  if (mode === 'poly' && tmp.length >= 3) { tmp = tmp.slice(0, -1); closePoly(); }
+});
+
+// ─── Шаг назад: кнопка и Ctrl+Z ────────────────────────────────────────
+function pushUndo(t) {
+  var f = F();
+  var rec = { t: t, floor: cur, prev: {
+    pxPerM: f.pxPerM,
+    zones: JSON.parse(JSON.stringify(f.zones)),
+    rads: JSON.parse(JSON.stringify(f.rads || [])),
+    coll: f.coll ? { x: f.coll.x, y: f.coll.y } : null,
+    fixtures: JSON.parse(JSON.stringify(f.fixtures || []))
+  } };
+  if (t === 'plan') {
+    rec.prev.img = f.img; rec.prev.imgFile = f.imgFile || null;
+    rec.prev.w = f.w; rec.prev.h = f.h;
+  }
+  undoStack.push(rec);
+  if (undoStack.length > 50) undoStack.shift();
+}
+
+function doUndo() {
+  // в процессе рисования отменяется последняя точка
+  if (mode === 'poly' && tmp.length) { tmp.pop(); draw(); return; }
+  if (mode === 'scale' && scalePts.length) { scalePts.pop(); draw(); return; }
+  var rec = undoStack.pop();
+  if (!rec) { hint('Отменять больше нечего.'); return; }
+  if (rec.t === 'floorAdd') {
+    if (DATA.floors.length > 1) {
+      DATA.floors.pop();
+      if (cur >= DATA.floors.length) cur = DATA.floors.length - 1;
+    }
+  } else {
+    cur = Math.min(rec.floor, DATA.floors.length - 1);
+    var f = DATA.floors[cur];
+    if (rec.t === 'plan') {
+      f.img = rec.prev.img; f.imgFile = rec.prev.imgFile || null;
+      f.w = rec.prev.w; f.h = rec.prev.h;
+      delete imgCache[cur]; delete maskCache[cur]; delete imgFailed[cur];
+    }
+    f.pxPerM = rec.prev.pxPerM;
+    f.zones = rec.prev.zones;
+    f.rads = rec.prev.rads || [];
+    f.coll = rec.prev.coll || null;
+    f.fixtures = rec.prev.fixtures || [];
+  }
+  renderTabs(); draw(); renderZones();
+}
+
+document.addEventListener('keydown', function (e) {
+  var tag = (document.activeElement && document.activeElement.tagName) || '';
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyZ' || String(e.key).toLowerCase() === 'z')) {
+    e.preventDefault(); doUndo(); return;
+  }
+  if (e.key === 'Enter' && mode === 'poly' && tmp.length >= 3) { closePoly(); return; }
+  if (e.key === 'Escape') { tmp = []; scalePts = []; polyCur = null; draw(); }
+});
+
+function addZone(pts) {
+  var type = document.getElementById('ztype').value;
+  if (type === 'boiler' && F().zones.some(function (z) { return z.type === 'boiler'; })) {
+    alert('Котельная на этаже уже отмечена.'); return;
+  }
+  pushUndo('zones');
+  F().zones.push({ type: type, name: '', pts: pts });
+  if (type === 'wc' && fixAuto) hint('Впишите имя санузла как в расчёте — приборы расставятся сами.');
+  renderZones();
+}
+
+function renderZones() {
+  var box = document.getElementById('zlist'); box.innerHTML = '';
+  F().zones.forEach(function (z, i) {
+    var d = document.createElement('div'); d.className = 'zone';
+    var sw = document.createElement('span'); sw.className = 'sw';
+    sw.style.background = TYPES[z.type][1]; d.appendChild(sw);
+    var lb = document.createElement('span'); lb.textContent = TYPES[z.type][0]; d.appendChild(lb);
+    var inp = document.createElement('input'); inp.type = 'text';
+    inp.placeholder = 'помещение…'; inp.value = z.name;
+    if (roomNames.length) inp.setAttribute('list', 'roomNames');
+    inp.oninput = function () {
+      z.name = inp.value;
+      // санузел подписали именем из расчёта — приборы появляются сразу
+      if (z.type === 'wc' && fixAuto) { refreshAutoFixtures(); renderZones(); }
+      draw();
+    };
+    d.appendChild(inp);
+    var ar = document.createElement('span'); ar.className = 'ar';
+    if (z.type === 'wc') {
+      var card = wcCardOf(z.name);
+      var cnt = 0;
+      if (card) Object.keys(card.fixtures || {}).forEach(function (k) { cnt += +card.fixtures[k] || 0; });
+      ar.textContent = card ? (cnt + ' приб.') : 'имя не найдено';
+      ar.style.color = card ? '#0a7b28' : '#b00';
+      ar.title = card ? 'Приборы взяты из карточки санузла в расчёте'
+        : 'Впишите имя санузла так же, как в расчёте — приборы подставятся сами';
+    } else {
+      ar.textContent = area(z.pts).toFixed(1) + ' м²';
+    }
+    d.appendChild(ar);
+    var del = document.createElement('span'); del.className = 'del'; del.textContent = '✕';
+    del.onclick = function () { pushUndo('zones'); F().zones.splice(i, 1); renderZones(); draw(); };
+    d.appendChild(del);
+    box.appendChild(d);
+  });
+  var rc = (F().rads || []).length;
+  if (rc) {
+    var rd = document.createElement('div'); rd.className = 'zone';
+    rd.innerHTML = '<span class="sw" style="background:#d22222"></span>' +
+      '<span>Радиаторы: ' + rc + ' шт.</span>' +
+      '<span class="ar">убрать — клик по значку в режиме «Радиаторы»</span>';
+    box.appendChild(rd);
+  }
+  // сводка этажа и статус котельной
+  var tpS = 0, tpN = 0;
+  F().zones.forEach(function (z) { if (z.type === 'tp') { tpS += area(z.pts); tpN++; } });
+  var hasB = DATA.floors.some(function (fl) {
+    return (fl.zones || []).some(function (z) { return z.type === 'boiler'; });
+  });
+  var sm = document.createElement('div');
+  sm.style.cssText = 'margin-top:8px;padding-top:8px;border-top:1px solid #ccc;font-size:13px;line-height:1.5';
+  sm.innerHTML = '<b>Этаж:</b> тёплый пол — ' + tpN + ' зон, ' + tpS.toFixed(1) + ' м²; радиаторов — ' +
+    rc + ' шт.<br><b>Котельная на планах:</b> ' +
+    (hasB ? 'отмечена ✓' : '<span style="color:#b00">не отмечена</span>') +
+    (tpN ? '<br><b>Коллектор ТП:</b> ' + (F().coll ? 'отмечен ✓'
+      : '<span style="color:#b00">не отмечен — подводки петель не нарисуются</span>') : '');
+  // санузлы и приборы: видно, что уйдёт на листы водоснабжения и канализации
+  var fxs = F().fixtures || [];
+  var wcz = F().zones.filter(function (z) { return z.type === 'wc'; });
+  if (wcz.length || fxs.length || calcWc.length) {
+    var noName = wcz.filter(function (z) { return !wcCardOf(z.name); }).length;
+    var risers = fxs.filter(function (q) { return q.t === 'riser'; }).length;
+    sm.innerHTML += '<br><b>Санузлы:</b> зон — ' + wcz.length +
+      (noName ? ', <span style="color:#b00">без имени из расчёта — ' + noName + '</span>' : '') +
+      '; приборов — ' + fxs.filter(function (q) { return q.t !== 'riser'; }).length +
+      '; стояков — ' + (risers ? risers + ' ✓' : '<span style="color:#b00">нет</span>');
+  }
+  box.appendChild(sm);
+  // комнаты подробного расчёта: клик подписывает первую безымянную зону
+  if (calcRooms.length) {
+    var cr = document.createElement('div');
+    cr.style.cssText = 'margin-top:8px;font-size:13px';
+    var h = '<b>Комнаты из расчёта</b> <span style="color:#777">(клик — подписать первую безымянную зону)</span>';
+    calcRooms.forEach(function (r, idx) {
+      h += '<div class="croom" data-i="' + idx +
+        '" style="cursor:pointer;padding:2px 4px;border-radius:4px;background:#fff;margin-top:3px;border:1px solid #ddd">' +
+        r.name + (r.area ? ' — ' + r.area + ' м²' : '') +
+        '<span style="color:#888"> · эт.' + r.floor +
+        (r.sys.indexOf('tp') >= 0 ? ' · ТП' : '') +
+        (r.sys.indexOf('rad') >= 0 ? ' · рад.' : '') +
+        (r.win ? ' · окон: ' + r.win : '') + '</span></div>';
+    });
+    cr.innerHTML = h;
+    cr.onclick = function (e) {
+      var t = e.target && e.target.closest ? e.target.closest('.croom') : null;
+      if (!t) return;
+      var r = calcRooms[+t.getAttribute('data-i')];
+      var z = null;
+      for (var zi = 0; zi < F().zones.length; zi++)
+        if (!F().zones[zi].name) { z = F().zones[zi]; break; }
+      if (!z) { hint('Все зоны этажа уже подписаны — исправьте имя прямо в списке зон.'); return; }
+      z.name = r.name;
+      renderZones(); draw();
+    };
+    box.appendChild(cr);
+  }
+}
+
+/**
+ * Разметка в хранилище браузера. Подложку сюда не кладём — только имя её
+ * файла на сервере: всё остальное вместе взятое весит единицы килобайт.
+ *
+ * keepImages — аварийный режим: сервер не ответил, и картинку приходится
+ * держать в браузере по-старому, иначе работа монтажника пропадёт.
+ */
+function writeLocal(keepImages) {
+  // Копируем этаж целиком и убираем только картинку: у этажа есть поля,
+  // которые считаются на лету (leads — маршруты подводок к коллектору), и
+  // перечислять их поимённо значило бы терять всё, что добавят потом.
+  // forCalc — номер расчёта, которому принадлежат планы; его ставит
+  // калькулятор перед открытием редактора. Проносим его через сохранение,
+  // иначе соседняя вкладка калькулятора приняла бы эти планы за свои.
+  var out = { key: planKey(), forCalc: DATA.forCalc || null, floors: DATA.floors.map(function (f) {
+    var o = {};
+    for (var k in f) if (Object.prototype.hasOwnProperty.call(f, k)) o[k] = f[k];
+    o.imgFile = f.imgFile || null;
+    delete o.img;
+    if (keepImages && f.img && f.img.indexOf('data:') === 0) o.img = f.img;
+    return o;
+  }) };
+  try {
+    localStorage.setItem('floor_plans_v1', JSON.stringify(out));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function saveAll() {
+  refreshAutoFixtures();   // приборы санузлов из расчёта — на случай правок зон
+  computeLeads();   // маршруты подводок к коллектору — свежие на момент сохранения
+  computeVk();      // и трассы водоснабжения с канализацией
+
+  // На сервер отправляем только те этажи, чья подложка ещё не там: у
+  // остальных в img уже стоит адрес, а не картинка.
+  var pending = [];
+  DATA.floors.forEach(function (f, i) {
+    if (f.img && f.img.indexOf('data:') === 0) pending.push(i);
+  });
+  if (pending.length) hint('Отправляю подложки на сервер…');
+
+  // Последовательно, а не разом: этаж — это мегабайты, и параллельные
+  // загрузки с телефона на объекте только мешают друг другу.
+  return pending.reduce(function (chain, fi) {
+    return chain.then(function () {
+      return putFloorImage(fi).then(function (name) {
+        if (!name) return;
+        DATA.floors[fi].imgFile = name;
+        DATA.floors[fi].img = planUrl(name);
+      });
+    });
+  }, Promise.resolve()).then(function () {
+    if (writeLocal()) {
+      hint('<span class=ok>Сохранено.</span> Откройте «Листы проекта» — планы этажей и тёплый пол попадут в комплект.');
+    } else {
+      alert('Не удалось сохранить разметку в браузере. Освободите место и попробуйте снова.');
+    }
+  }).catch(function (e) {
+    console.error('[plan_editor] загрузка подложки:', e);
+    // Связи нет или сессия истекла. Работу не теряем: пишем целиком в
+    // браузер, как было раньше, и честно говорим, чем это плохо.
+    if (writeLocal(true)) {
+      hint('<span class=ok>Сохранено в браузере.</span> Подложки не ушли на сервер (' +
+        (e && e.message ? e.message : 'нет связи') + '). Они видны только здесь и пропадут ' +
+        'при очистке кэша — нажмите «Сохранить» ещё раз, когда будет связь.');
+    } else {
+      alert('Подложки не удалось отправить на сервер (' + (e && e.message ? e.message : 'нет связи') +
+        '), а в браузер они не помещаются. Проверьте связь и войдите в учётную запись, ' +
+        'иначе разметка не сохранится.');
+    }
+  });
+}
+
+// ─── Пошаговые подсказки (переключаются кнопкой, выбор запоминается) ───
+var hintsOn = true, savedOnce = false, guideEl = null;
+try { hintsOn = localStorage.getItem('plan_editor_hints') !== '0'; } catch (e) {}
+
+function toggleHints() {
+  hintsOn = !hintsOn;
+  try { localStorage.setItem('plan_editor_hints', hintsOn ? '1' : '0'); } catch (e) {}
+  document.getElementById('b_hints').textContent = '💡 Подсказки: ' + (hintsOn ? 'вкл' : 'выкл');
+  updateGuide();
+}
+
+// мини-демки «как делать» — анимированный условный план (SVG + SMIL)
+var DEMO_CUR = '<polygon points="0,0 0,12 3.2,9 5.4,13.5 7.4,12.4 5.2,8 9.5,8" fill="#222" stroke="#fff" stroke-width="0.9"/>';
+var DEMOS = {
+  scale:
+    '<svg viewBox="0 0 280 115" xmlns="http://www.w3.org/2000/svg">' +
+    '<rect x="30" y="16" width="220" height="82" fill="#fff" stroke="#8a8a8a" stroke-width="6"/>' +
+    '<line x1="90" y1="98" x2="130" y2="98" style="stroke:#fff;stroke-width:7"/>' +
+    '<line x1="90" y1="98" x2="130" y2="98" style="stroke:#ddd;stroke-width:1"/>' +
+    '<circle cx="90" cy="98" r="3" fill="#08c"><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.17;0.19;1" dur="4.5s" repeatCount="indefinite"/></circle>' +
+    '<circle cx="90" cy="98" fill="none" stroke="#08c" stroke-width="1.6"><animate attributeName="r" values="3;3;13;13" keyTimes="0;0.17;0.3;1" dur="4.5s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.16;0.18;0.3;1" dur="4.5s" repeatCount="indefinite"/></circle>' +
+    '<circle cx="130" cy="98" r="3" fill="#08c"><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.48;0.5;1" dur="4.5s" repeatCount="indefinite"/></circle>' +
+    '<circle cx="130" cy="98" fill="none" stroke="#08c" stroke-width="1.6"><animate attributeName="r" values="3;3;13;13" keyTimes="0;0.48;0.6;1" dur="4.5s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.47;0.49;0.6;1" dur="4.5s" repeatCount="indefinite"/></circle>' +
+    '<line x1="90" y1="98" x2="130" y2="98" style="stroke:#08c;stroke-width:2"><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.52;0.57;1" dur="4.5s" repeatCount="indefinite"/></line>' +
+    '<text x="110" y="89" font-size="11" fill="#08c" text-anchor="middle" font-weight="700">0,9 м<animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.6;0.66;1" dur="4.5s" repeatCount="indefinite"/></text>' +
+    '<text x="140" y="40" font-size="9.5" fill="#999" text-anchor="middle">две точки проёма двери + длина</text>' +
+    '<g><animateTransform attributeName="transform" type="translate" values="210,35;90,98;90,98;130,98;130,98;210,35" keyTimes="0;0.15;0.25;0.45;0.8;1" dur="4.5s" repeatCount="indefinite"/>' + DEMO_CUR + '</g></svg>',
+  rect:
+    '<svg viewBox="0 0 280 115" xmlns="http://www.w3.org/2000/svg">' +
+    '<rect x="30" y="14" width="220" height="86" fill="#fff" stroke="#8a8a8a" stroke-width="6"/>' +
+    '<line x1="140" y1="17" x2="140" y2="97" style="stroke:#8a8a8a;stroke-width:4"/>' +
+    '<rect x="52" y="30" fill="#ff8000" fill-opacity="0.28" stroke="#ff8000" stroke-width="2">' +
+    '<animate attributeName="width" values="0;0;70;70" keyTimes="0;0.2;0.6;1" dur="4s" repeatCount="indefinite"/>' +
+    '<animate attributeName="height" values="0;0;55;55" keyTimes="0;0.2;0.6;1" dur="4s" repeatCount="indefinite"/></rect>' +
+    '<text x="195" y="60" font-size="9.5" fill="#999" text-anchor="middle">зажать и растянуть</text>' +
+    '<g><animateTransform attributeName="transform" type="translate" values="52,30;52,30;122,85;122,85" keyTimes="0;0.2;0.6;1" dur="4s" repeatCount="indefinite"/>' + DEMO_CUR + '</g></svg>',
+  room:
+    '<svg viewBox="0 0 280 115" xmlns="http://www.w3.org/2000/svg">' +
+    '<rect x="40" y="16" width="200" height="84" fill="#fff" stroke="#8a8a8a" stroke-width="6"/>' +
+    '<line x1="150" y1="19" x2="150" y2="97" style="stroke:#8a8a8a;stroke-width:4"/>' +
+    '<rect x="46" y="22" width="101" height="72" fill="#ff8000" fill-opacity="0.3" stroke="#ff8000" stroke-width="2">' +
+    '<animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.42;0.5;1" dur="3.5s" repeatCount="indefinite"/></rect>' +
+    '<circle cx="96" cy="58" fill="none" stroke="#ff6b35" stroke-width="1.6">' +
+    '<animate attributeName="r" values="3;3;13;13" keyTimes="0;0.3;0.42;1" dur="3.5s" repeatCount="indefinite"/>' +
+    '<animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.29;0.31;0.42;1" dur="3.5s" repeatCount="indefinite"/></circle>' +
+    '<text x="196" y="60" font-size="9.5" fill="#999" text-anchor="middle">один клик — вся комната</text>' +
+    '<g><animateTransform attributeName="transform" type="translate" values="210,90;96,58;96,58;210,90" keyTimes="0;0.28;0.75;1" dur="3.5s" repeatCount="indefinite"/>' + DEMO_CUR + '</g></svg>',
+  poly:
+    '<svg viewBox="0 0 280 115" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="M40,20 L240,20 L240,98 L40,98 Z" fill="#fff" stroke="#8a8a8a" stroke-width="6"/>' +
+    '<line x1="150" y1="60" x2="238" y2="60" style="stroke:#8a8a8a;stroke-width:4"/>' +
+    '<line x1="150" y1="60" x2="150" y2="96" style="stroke:#8a8a8a;stroke-width:4"/>' +
+    '<polygon points="55,30 225,30 225,52 142,52 142,90 55,90" fill="#ff8000" fill-opacity="0.28" stroke="none">' +
+    '<animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.8;0.87;1" dur="5.5s" repeatCount="indefinite"/></polygon>' +
+    '<path d="M55,30 L225,30 L225,52 L142,52 L142,90 L55,90 Z" pathLength="100" fill="none" stroke="#ff8000" stroke-width="2" stroke-dasharray="100">' +
+    '<animate attributeName="stroke-dashoffset" values="100;100;0;0" keyTimes="0;0.06;0.68;1" dur="5.5s" repeatCount="indefinite"/></path>' +
+    '<circle cx="55" cy="90" fill="none" stroke="#ff6b35" stroke-width="1.6"><animate attributeName="r" values="3;3;12;12;3;12;12" keyTimes="0;0.68;0.73;0.74;0.75;0.8;1" dur="5.5s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;0.9;0;0.9;0;0" keyTimes="0;0.67;0.7;0.74;0.76;0.8;1" dur="5.5s" repeatCount="indefinite"/></circle>' +
+    '<text x="192" y="80" font-size="9.5" fill="#999" text-anchor="middle">по углам, 2×клик — замкнуть</text>' +
+    '<g><animateMotion path="M55,30 L225,30 L225,52 L142,52 L142,90 L55,90 L55,30" keyPoints="0;0;1;1" keyTimes="0;0.06;0.68;1" calcMode="linear" dur="5.5s" repeatCount="indefinite"/>' + DEMO_CUR + '</g></svg>'
+};
+
+function guideStep() {
+  var f = F();
+  // в режимах рисования — говорим и про следующий шаг, когда зоны уже есть
+  var zn = f.zones.length
+    ? '<br><b>Зон на этаже: ' + f.zones.length + '.</b> Отметьте остальные комнаты — или жмите зелёную «Сохранить» вверху, когда закончите.'
+    : '';
+  if (mode === 'scale') return { t: 'cv', s: 'Масштаб', d: 'scale', txt: scalePts.length
+    ? 'Теперь кликните вторую точку отрезка — и введите его длину в метрах.'
+    : 'Кликните первую точку отрезка с известной длиной: край дверного проёма (обычно 0,9 м), стену или размерную линию плана.' };
+  if (mode === 'room') return { t: 'cv', s: 'Зона по клику', d: 'room',
+    txt: 'Кликните внутри комнаты — контур найдётся по стенам автоматически. Если не вышло (широкий проём, пёстрое фото) — обведите вручную.' + zn };
+  if (mode === 'rad') {
+    var rc = (f.rads || []).length;
+    return { t: 'cv', s: 'Радиаторы',
+      txt: 'Кнопка «Под окна» вверху найдёт окна и расставит радиаторы автоматически. Вручную: клик рядом с окном сам отцентрирует радиатор по окну; у глухой стены — прилипнет к стене. Клик по значку — удалить. Радиаторы свободно сочетаются с зоной тёплого пола.' +
+        (rc ? '<br><b>Поставлено: ' + rc + ' шт.</b> Закончили — жмите зелёную «Сохранить».' : '') };
+  }
+  if (mode === 'coll') return { t: 'cv', s: 'Коллектор ТП',
+    txt: 'Кликните точку, где будет стоять коллектор тёплого пола (обычно в котельной). От него при сохранении построятся подводки ко всем петлям. Клик по значку — убрать, клик в другом месте — передвинуть.' };
+  if (mode === 'wc') return { t: 'cv', s: 'Сантехприборы вручную',
+    txt: 'Выберите прибор в списке и кликните, где он стоит; клик по значку — убрать. Обычно это не нужно: в режиме «Приборы: из расчёта» они расставляются сами по карточкам санузлов — достаточно обвести зону «Санузел» и подписать её. Вручную удобно добавить то, чего нет в расчёте.' };
+  if (mode === 'rect') return { t: 'cv', s: 'Зона', d: 'rect',
+    txt: 'Зажмите кнопку мыши и растяните рамку по комнате — края прилипнут к стенам. Тип зоны: «' +
+      TYPES[document.getElementById('ztype').value][0] + '» (меняется в списке сверху).' + zn };
+  if (mode === 'poly') return { t: 'cv', s: 'Зона-контур', d: 'poly',
+    txt: (tmp.length ? 'Углов: ' + tmp.length + '. ' : '') +
+      'Кликайте углы комнаты по порядку. Замкнуть — клик по первой точке, двойной клик или Enter. Shift — линии строго под 90°, Ctrl+Z — убрать точку.' +
+      (tmp.length ? '' : zn) };
+  if (!f.img) return { t: 'b_upload', s: 'Шаг 1 из 7',
+    txt: 'Загрузите план этажа: фото, скан или PDF. Можно выбрать сразу несколько файлов — каждый станет своим этажом.' };
+  if (!f.pxPerM) return { t: 'b_scale', s: 'Шаг 2 из 7', d: 'scale',
+    txt: 'Задайте масштаб: нажмите «Масштаб», затем кликните две точки отрезка с известной длиной и введите её в метрах. Без масштаба площади зон не посчитать.' };
+  var hasTp = f.zones.some(function (z) { return z.type === 'tp'; });
+  var hasBoilerAll = DATA.floors.some(function (fl) {
+    return (fl.zones || []).some(function (z) { return z.type === 'boiler'; });
+  });
+  if (!hasTp) return { t: 'b_autorooms', s: 'Шаг 3 из 7 — тёплый пол', d: 'room',
+    txt: 'Нажмите «Распознать комнаты» — все комнаты найдутся по стенам, а зоны ТП создадутся и подпишутся по комнатам подробного расчёта. Поправить можно вручную: «Зона: по клику» внутри комнаты или «Зона: контур». Нет тёплого пола на этаже — переходите к радиаторам.' };
+  if (!(f.rads || []).length) return { t: 'b_autorad', s: 'Шаг 4 из 7 — радиаторы',
+    txt: 'Нажмите «Под окна» — радиаторы расставятся по найденным окнам. Лишние убираются кликом по значку, недостающие добавляются кликом в режиме «Радиаторы». Нет радиаторов на этаже — дальше: коллектор.' };
+  if (hasTp && !f.coll) return { t: 'b_coll', s: 'Шаг 5 из 7 — коллектор ТП',
+    txt: 'Нажмите «Коллектор» и кликните, где он будет стоять (обычно в котельной). От коллектора на листе «Тёплый пол» нарисуются подводки ко всем петлям, а длины петель посчитаются вместе с ними.' };
+  if (!hasBoilerAll) return { t: 'ztype', s: 'Шаг 6 из 8 — котельная',
+    txt: 'Выберите в списке типов «Котельная» и кликните внутри помещения котельной — его размеры уйдут на лист «Компоновка котельной». Отмечается один раз, на любом этаже.' };
+  // Санузлы: приборы наследуются из карточек расчёта, обводить нужно только зону
+  var wcZones = f.zones.filter(function (z) { return z.type === 'wc'; });
+  var wcNamed = wcZones.filter(function (z) { return wcCardOf(z.name); });
+  if (calcWc.length && !wcNamed.length) return { t: 'ztype', s: 'Шаг 7 из 8 — санузлы', d: 'room',
+    txt: 'В расчёте есть санузлы (' + calcWc.map(function (w) { return w.name; }).join(', ') +
+      '). Выберите в списке типов «Санузел», кликните внутри помещения и впишите его имя как в расчёте — ' +
+      'приборы и стояк канализации расставятся сами, а листы водоснабжения и канализации соберутся по ним. ' +
+      'Нужен особый прибор — переключите «Приборы: вручную» и добавьте кликом.' +
+      (wcZones.length ? '<br><b>Обведено зон: ' + wcZones.length + ', подписано: 0.</b>' : '') };
+  if (savedOnce) return { t: 'b_save', s: 'Готово',
+    txt: 'Сохранено! Планы попадут в комплект листов вместе со сметой.' +
+      '<br><button onclick="openSheets()" style="margin-top:7px;font:inherit;padding:5px 12px;' +
+      'border-radius:6px;border:1px solid #ff6b35;background:#ff6b35;color:#fff;cursor:pointer">' +
+      'Открыть листы проекта</button><br>Есть ещё этажи — переключите вкладку сверху и повторите шаги.' };
+  return { t: 'b_save', s: 'Шаг 8 из 8 — сохранить',
+    txt: 'Подпишите зоны именами комнат: клик по комнате в списке «Комнаты из расчёта» справа подставит имя. Затем нажмите зелёную «Сохранить».' };
+}
+
+/** Открыть комплект листов: смета уже лежит в localStorage после калькулятора */
+function openSheets() {
+  var has = false;
+  try { has = !!localStorage.getItem('project_sheets_payload'); } catch (e) {}
+  if (has) window.open('sheet_demo.html', '_blank');
+  else alert('Сначала откройте калькулятор и нажмите «Листы проекта» — комплект соберётся по смете вместе с планами этажей.');
+}
+
+var guidePos = null;     // позиция после ручного перетаскивания (пока страница открыта)
+var guideHtml = '';      // кэш содержимого: не перерисовывать без изменений, иначе
+                         // SMIL-анимации демок перезапускались бы на каждом движении мыши
+
+function placeGuide() {
+  if (!guidePos) return;
+  var w = guideEl.offsetWidth || 320, h = guideEl.offsetHeight || 120;
+  var L = Math.min(Math.max(4, guidePos.left), window.innerWidth - w - 4);
+  var T = Math.min(Math.max(4, guidePos.top), window.innerHeight - Math.min(h, 160) - 4);
+  guideEl.style.left = Math.round(L) + 'px';
+  guideEl.style.top = Math.round(T) + 'px';
+}
+
+function updateGuide() {
+  var pulsed = document.querySelectorAll('.pulse');
+  for (var i = 0; i < pulsed.length; i++) pulsed[i].classList.remove('pulse');
+  if (!guideEl) {
+    guideEl = document.createElement('div');
+    guideEl.className = 'guide'; guideEl.style.display = 'none';
+    guideEl.title = 'Подсказку можно перетащить, если она мешает';
+    document.body.appendChild(guideEl);
+    guideEl.addEventListener('pointerdown', function (e) {
+      if (e.target.classList && e.target.classList.contains('close')) return;
+      if (e.target.tagName === 'BUTTON') return;   // кнопка в подсказке — не перетаскивание
+      var r0 = guideEl.getBoundingClientRect();
+      var dx = e.clientX - r0.left, dy = e.clientY - r0.top;
+      try { guideEl.setPointerCapture(e.pointerId); } catch (err) {}
+      function mv(ev) { guidePos = { left: ev.clientX - dx, top: ev.clientY - dy }; placeGuide(); }
+      function up() {
+        guideEl.removeEventListener('pointermove', mv);
+        guideEl.removeEventListener('pointerup', up);
+        guideEl.removeEventListener('pointercancel', up);
+      }
+      guideEl.addEventListener('pointermove', mv);
+      guideEl.addEventListener('pointerup', up);
+      guideEl.addEventListener('pointercancel', up);
+      e.preventDefault();
+    });
+  }
+  if (!hintsOn) { guideEl.style.display = 'none'; return; }
+  var g = guideStep();
+  if (!g) { guideEl.style.display = 'none'; return; }
+  var html = '<span class="close" onclick="toggleHints()">✕ скрыть подсказки</span>' +
+    '<div class="step"><span class="grip">⠿</span>' + g.s + '</div>' + g.txt +
+    (g.d ? '<div class="demo">' + DEMOS[g.d] + '</div>' : '');
+  if (html !== guideHtml) { guideEl.innerHTML = html; guideHtml = html; }
+  guideEl.style.display = 'block';
+  var w = Math.min(324, window.innerWidth - 24);
+  guideEl.style.maxWidth = w + 'px';
+  var tgt = g.t === 'cv' ? cv : document.getElementById(g.t);
+  if (tgt && g.t !== 'cv') tgt.classList.add('pulse');
+  if (guidePos) { placeGuide(); return; }
+  var r = tgt ? tgt.getBoundingClientRect() : { left: 20, top: 60, bottom: 60 };
+  if (g.t === 'cv') {
+    guideEl.style.left = Math.round(r.left + 12) + 'px';
+    guideEl.style.top = Math.round(Math.max(8, r.top + 12)) + 'px';
+  } else {
+    guideEl.style.left = Math.round(Math.min(Math.max(8, r.left), window.innerWidth - w - 12)) + 'px';
+    guideEl.style.top = Math.round(r.bottom + 10) + 'px';
+  }
+}
+
+// после каждого изменения состояния подсказка обновляется сама
+var _draw = draw;
+draw = function () { _draw(); updateGuide(); };
+var _rz = renderZones;
+renderZones = function () { savedOnce = false; _rz(); updateGuide(); };
+var _sm = setMode;
+setMode = function (m) { _sm(m); updateGuide(); };
+var _sv = saveAll;
+// Сохранение теперь ждёт отправки подложек на сервер, поэтому отметку
+// «сохранено» ставим не сразу, а по завершении.
+saveAll = function () {
+  return Promise.resolve(_sv()).then(function () {
+    try { savedOnce = !!localStorage.getItem('floor_plans_v1'); } catch (e) { savedOnce = false; }
+    updateGuide();
+  });
+};
+window.addEventListener('resize', updateGuide);
+window.addEventListener('scroll', updateGuide, true);
+document.getElementById('b_hints').textContent = '💡 Подсказки: ' + (hintsOn ? 'вкл' : 'выкл');
+
+syncFixAutoBtn();
+refreshAutoFixtures();   // приборы санузлов из расчёта — сразу при открытии
+renderTabs(); draw(); renderZones();
+</script>
+</body>
+</html>

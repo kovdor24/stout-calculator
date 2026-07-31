@@ -5825,6 +5825,7 @@ const app = {
             let loadedState = data.calc_data;
             delete loadedState.tgUser; delete loadedState.accountType; delete loadedState.demoUsed; delete loadedState.darkMode; delete loadedState.themeMode;
             this.state = { ...this.state, ...loadedState };
+            this.adoptPlans(loadedState);
             this.saveState(); this.syncUI(); this.render();
 
             this.lastSavedStateString = this.getStateSignature();
@@ -7064,14 +7065,16 @@ const app = {
             if (!uRow) return;
 
             // Запрашиваем сметы — только shared_invoice_id точечно из calc_data (не весь блоб,
-            // это опрос статусов, вызывается часто для каждого пользователя)
-            let query = supabaseClient.from('estimates').select('id, project_name, total_sum, created_at, shared_invoice_id:calc_data->>shared_invoice_id, calc_id:calc_data->>calc_id');
-            const isAdmin = (uRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(uRow.email.toLowerCase())) || ['admin', 'viewer'].includes(uRow.account_type);
-            if (!isAdmin) {
-                query = query.eq('user_id', uRow.id);
-            }
-            const { data: estimates, error: estError } = await query;
+            // это опрос статусов, вызывается часто для каждого пользователя).
+            // Всегда только свои: раньше админ здесь выгружал сметы ВСЕХ пользователей при
+            // каждом опросе — сотни килобайт трафика Supabase каждые полминуты, это и съедало
+            // лимит egress. Чужая активность админу видна в самой админке (вкладки «Расчёты»
+            // и «Планировщик»), в колокольчике она не нужна.
+            const { data: estimates, error: estError } = await supabaseClient.from('estimates')
+                .select('id, project_name, total_sum, created_at, shared_invoice_id:calc_data->>shared_invoice_id, calc_id:calc_data->>calc_id')
+                .eq('user_id', uRow.id);
             if (estError) throw estError;
+            const isAdmin = (uRow.email && ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'].includes(uRow.email.toLowerCase())) || ['admin', 'viewer'].includes(uRow.account_type);
 
             // Обрабатываем уведомления
             const notifications = [];
@@ -7300,20 +7303,41 @@ const app = {
 
             // 2. ЗАПРОС ХОСТИНГА СООБЩЕНИЙ (Служба «Админ ⇄ Монтажник»)
             try {
-                const { data: dbMessages } = await supabaseClient
+                // Список сообщений копится в памяти вкладки: целиком он тянется один раз
+                // за загрузку страницы, дальше запрашивается только то, что появилось после
+                // самого свежего известного сообщения. Раньше при каждом опросе выкачивались
+                // все объявления за всё время с полным текстом — у каждого пользователя.
+                // Отсечку берём по created_at с сервера, а не по часам браузера (они врут).
+                if (!this._msgCache) this._msgCache = [];
+                let msgQuery = supabaseClient
                     .from('messages')
-                    .select('*')
+                    .select('id, sender_id, recipient_id, text, type, parent_id, created_at')
                     .or(`recipient_id.eq.${uRow.id},recipient_id.is.null,sender_id.eq.${uRow.id}`)
                     .order('created_at', { ascending: false });
+                const newestKnown = this._msgCache.reduce((mx, m) => (!mx || m.created_at > mx) ? m.created_at : mx, null);
+                if (newestKnown) msgQuery = msgQuery.gt('created_at', newestKnown);
+
+                const { data: freshMessages } = await msgQuery;
+                if (freshMessages && freshMessages.length) {
+                    const known = {};
+                    this._msgCache.forEach(m => { known[m.id] = true; });
+                    freshMessages.forEach(m => { if (!known[m.id]) this._msgCache.push(m); });
+                }
+                const dbMessages = this._msgCache;
 
                 if (dbMessages && dbMessages.length > 0) {
                     const parentMessages = dbMessages.filter(m => m.type !== 'reply');
                     const replies = dbMessages.filter(m => m.type === 'reply');
 
+                    // Кто мы — нужно для квитанций «доставлено/прочитано» (галочки в админке)
+                    this._receiptUser = { id: uRow.id, authId: uRow.auth_user_id };
+                    const incomingIds = [];
+
                     parentMessages.forEach(msg => {
                         // Выводим только входящие сообщения для монтажника (отправленные админом ему или всем)
                         if (msg.sender_id !== uRow.id) {
                             const msgReplies = replies.filter(r => r.parent_id === msg.id);
+                            incomingIds.push(msg.id);
 
                             notifications.push({
                                 id: msg.id,
@@ -7328,6 +7352,10 @@ const app = {
                             });
                         }
                     });
+
+                    // Сообщение доехало до устройства — ставим галочку «доставлено» в фоне,
+                    // ответ ждать незачем, на список уведомлений это не влияет
+                    this.markAdminMessagesDelivered(incomingIds);
                 }
             } catch (msgErr) {
                 console.warn("Could not load messages from Supabase (messages table might not exist yet):", msgErr);
@@ -7459,6 +7487,68 @@ const app = {
             this.popNewNotificationToasts(visibleNotifications);
         } catch (e) {
             console.error("Error fetching notifications:", e);
+        }
+    },
+
+    // ═══════════ КВИТАНЦИИ СООБЩЕНИЙ АДМИНА (галочки «доставлено / прочитано») ═══════════
+    // Факт прочтения раньше жил только в localStorage этого устройства, поэтому админ
+    // не мог понять, дошло ли письмо. Теперь на каждое входящее сообщение пишется строка
+    // в message_receipts: delivered_at — приложение загрузило сообщение, read_at — человек
+    // открыл список уведомлений. Локальный кэш нужен только чтобы не слать одинаковый
+    // запрос при каждом опросе (fetchNotifications вызывается часто).
+
+    receiptCache: function (key) {
+        try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { return []; }
+    },
+
+    markAdminMessagesDelivered: async function (msgIds) {
+        const u = this._receiptUser;
+        if (!u || !u.id || !u.authId || !Array.isArray(msgIds) || !msgIds.length) return;
+        const CACHE_KEY = 'stout_msg_delivered';
+        const sent = this.receiptCache(CACHE_KEY);
+        const fresh = msgIds.filter(id => id && !sent.includes(id));
+        if (!fresh.length) return;
+
+        try {
+            // ignoreDuplicates — если строка уже есть, время первой доставки не перетираем
+            const { error } = await supabaseClient.from('message_receipts').upsert(
+                fresh.map(id => ({ message_id: id, user_id: u.id, auth_user_id: u.authId })),
+                { onConflict: 'message_id,user_id', ignoreDuplicates: true }
+            );
+            if (error) throw error;
+            localStorage.setItem(CACHE_KEY, JSON.stringify(sent.concat(fresh).slice(-500)));
+        } catch (e) {
+            console.warn('[message_receipts] Не удалось отметить доставку:', e.message || e);
+        }
+    },
+
+    // ids — id уведомлений; из них берём только сообщения админа, остальные типы
+    // (статусы смет, тарифы, чат) в этой таблице не участвуют
+    markAdminMessagesRead: async function (ids) {
+        const u = this._receiptUser;
+        if (!u || !u.id || !u.authId) return;
+        const list = Array.isArray(ids) ? ids : [ids];
+        const known = this._notifications || [];
+        const msgIds = list.filter(id => known.some(n => n.id === id && n.type === 'admin_message'));
+        if (!msgIds.length) return;
+
+        const CACHE_KEY = 'stout_msg_read';
+        const sent = this.receiptCache(CACHE_KEY);
+        const fresh = msgIds.filter(id => !sent.includes(id));
+        if (!fresh.length) return;
+
+        try {
+            // delivered_at в payload не передаём: при вставке подставится значение по
+            // умолчанию (now()), при конфликте останется прежним — обновится только read_at
+            const now = new Date().toISOString();
+            const { error } = await supabaseClient.from('message_receipts').upsert(
+                fresh.map(id => ({ message_id: id, user_id: u.id, auth_user_id: u.authId, read_at: now })),
+                { onConflict: 'message_id,user_id' }
+            );
+            if (error) throw error;
+            localStorage.setItem(CACHE_KEY, JSON.stringify(sent.concat(fresh).slice(-500)));
+        } catch (e) {
+            console.warn('[message_receipts] Не удалось отметить прочтение:', e.message || e);
         }
     },
 
@@ -7611,6 +7701,9 @@ const app = {
             listEl.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 40px; font-size: 13px;">У вас пока нет уведомлений от клиентов.</div>';
             return;
         }
+
+        // Список открыт — текст сообщений админа виден целиком, значит они прочитаны
+        this.markAdminMessagesRead(notifications.filter(n => n.type === 'admin_message').map(n => n.id));
 
         let h = '';
         notifications.forEach(n => {
@@ -7780,6 +7873,7 @@ const app = {
             readIds.push(notificationId);
             localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
         }
+        this.markAdminMessagesRead(notificationId);
 
         // Обновляем бейдж
         this.fetchNotifications();
@@ -7813,6 +7907,7 @@ const app = {
             readIds.push(notificationId);
             localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
         }
+        this.markAdminMessagesRead(notificationId);
         // Перерисовываем список только если модалка открыта — крестик может быть нажат
         // и на всплывающей карточке в углу, тогда открывать модалку нельзя
         this.fetchNotifications().then(() => {
@@ -7999,6 +8094,7 @@ const app = {
                 readIds.push(n.id);
                 localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
             }
+            this.markAdminMessagesRead(n.id);
 
             const replyRow = toast.querySelector('.msg-toast-reply');
             if (replyRow) replyRow.innerHTML = '<span class="msg-toast-sent">✓ Ответ отправлен</span>';
@@ -8072,6 +8168,7 @@ const app = {
             }
         });
         localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
+        this.markAdminMessagesRead(notifications.map(n => n.id));
         this.fetchNotifications();
         this.openNotificationsModal(); // перерисовываем
     },
@@ -8090,6 +8187,7 @@ const app = {
         });
         localStorage.setItem('stout_dismissed_notifications', JSON.stringify(dismissedIds));
         localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
+        this.markAdminMessagesRead(notifications.map(n => n.id));
         await this.fetchNotifications();
         this.openNotificationsModal();
     },
@@ -8098,11 +8196,12 @@ const app = {
         document.getElementById('notifications_modal_overlay').style.display = 'none';
     },
 
+    SUPER_ADMIN_EMAILS: ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'],
+
     getAdminRole: function () {
         const user = this._currentUserRow || this.state.tgUser || {};
         const email = user.email ? user.email.toLowerCase() : '';
-        const superAdminEmails = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
-        if (email && superAdminEmails.includes(email)) {
+        if (email && this.SUPER_ADMIN_EMAILS.includes(email)) {
             return 'super_admin';
         }
         const accType = user.account_type || this.state.accountType || 'base';
@@ -8114,6 +8213,76 @@ const app = {
     hasAdminAccess: function () {
         const role = this.getAdminRole();
         return ['super_admin', 'admin', 'viewer'].includes(role);
+    },
+
+    // ═══ Доступ к инструментам: распознавание и проектирование ═══════════
+    // По должности инструменты открыты только администраторам. Наблюдателям —
+    // нет: их учётки заводят для показа и обучения, и что им видно, решает
+    // администратор переключателем, как и обычному монтажнику.
+    hasFeatureRoleAccess: function () {
+        return ['super_admin', 'admin'].includes(this.getAdminRole());
+    },
+
+    ACCESS_LISTS_URL: 'https://proxy.heatcalc.ru/recognize_archive.php?access=1',
+    _accessLists: null,
+    _accessListsPromise: null,
+
+    /**
+     * Списки доступа с сервера. Один запрос на страницу, общий для
+     * распознавания (recognize.js) и проектирования: оба спрашивают одно и то же.
+     *
+     * Сбой сети не роняет ничего — без списков инструменты просто остаются
+     * закрытыми, что безопаснее, чем открыть их всем при недоступном сервере.
+     */
+    loadAccessLists: function () {
+        if (this._accessListsPromise) return this._accessListsPromise;
+        this._accessListsPromise = fetch(this.ACCESS_LISTS_URL)
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.ok) this._accessLists = data;
+                return this._accessLists;
+            })
+            .catch(e => {
+                console.warn('[доступ] списки не получены:', e.message);
+                this._accessListsPromise = null;    // следующая попытка не заблокирована
+                return null;
+            });
+        return this._accessListsPromise;
+    },
+
+    /**
+     * Открыто ли пользователю проектирование — листы проекта и редактор планов.
+     *
+     * Администраторам всегда; остальным (наблюдатели в том числе) — поимённо,
+     * через дистрибьютора или через регион, как включит администратор.
+     */
+    canUseDesign: function () {
+        if (this.hasFeatureRoleAccess()) return true;
+        const d = this._accessLists && this._accessLists.design;
+        if (!d) return false;
+        const row = this._currentUserRow || this.state.tgUser || {};
+        const login = String(row.email || row.username || '').trim().toLowerCase();
+        if (login && Object.keys(d.users || {}).some(u => String(u).toLowerCase() === login)) return true;
+        const dist = row.distributor_id || this.state.distributorId;
+        if (dist && (d.dists || {})[dist]) return true;
+        const region = row.region || (this.state.tgUser && this.state.tgUser.region) || '';
+        return !!(region && (d.regions || {})[region]);
+    },
+
+    /**
+     * Показ и скрытие проектирования во всём интерфейсе — одним местом.
+     * Вызывается из syncUI и повторно, когда списки доедут с сервера.
+     */
+    syncDesignUI: function () {
+        const on = this.canUseDesign();
+        // Редактор планов и листы — отдельные страницы, своей авторизации у них
+        // нет: оставляем им отметку о доступе, чтобы прямая ссылка не открывала
+        // инструмент тому, кому его не включали.
+        try { localStorage.setItem('heatcalc_design_access', on ? '1' : '0'); } catch (e) { }
+        ['btn_sheets_trigger', 'blk_plan_editor_row', 'btn_plan_areas'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = on ? '' : 'none';
+        });
     },
 
     showAdminModal: function () {
@@ -8455,6 +8624,7 @@ const app = {
                 allMessages = data || [];
             } catch (e) { console.warn("Could not load messages history:", e); }
 
+
             // 8. Fetch distributors list
             let distributors = [];
             try {
@@ -8476,6 +8646,10 @@ const app = {
                 latestInvoiceEvents,
                 allUsersDropdown,
                 messages: allMessages,
+                // null = «ещё не загружали». Квитанции для галочек тянутся лениво, только
+                // при открытии вкладки «Сообщения» — незачем гонять трафик тем, кто зашёл
+                // в админку посмотреть статистику
+                messageReceipts: null,
                 distributors: distributors
             };
             // Кто допущен к распознаванию — нужно столбцу в таблице пользователей.
@@ -8506,7 +8680,8 @@ const app = {
             { id: 'kanban', icon: '📅', label: 'Планировщик' },
             { id: 'pricelist', icon: '💵', label: 'Прайс-лист' },
             { id: 'equipment', icon: '🧰', label: 'Своё оборудование' },
-            { id: 'recognition', icon: '🔍', label: 'Распознавание' }
+            { id: 'recognition', icon: '🔍', label: 'Распознавание' },
+            { id: 'plans', icon: '📐', label: 'Планы этажей' }
         ];
         // На узких экранах (см. .admin-tab-btn / .admin-tab-label в style.css) подписи
         // скрываются, остаются только иконки-квадраты — тем самым все 7 вкладок помещаются
@@ -8552,6 +8727,12 @@ const app = {
         if (this._adminTab === 'recognition') {
             content.innerHTML = navHtml;
             this.renderAdminRecognition();
+            return;
+        }
+
+        if (this._adminTab === 'plans') {
+            content.innerHTML = navHtml;
+            this.renderAdminPlans();
             return;
         }
 
@@ -8616,6 +8797,12 @@ const app = {
         const regionFilter = filters.region;
         const activityFilter = filters.activity;
         const sortArrow = (key) => sortType === key + '_asc' ? ' ▲' : (sortType === key + '_desc' ? ' ▼' : '');
+        // Проектирование: переключатели работают, только если на сервере лежит
+        // обновлённый recognize_archive.php (см. designAccessSupported).
+        const designOk = this.designAccessSupported();
+        const designOffHint = 'Обновите recognize_archive.php на сервере — раздел «проектирование» ещё не поддерживается';
+        const designRegionOn = !!(designOk && regionFilter &&
+            (this._recognitionAccess.design.regions || {})[regionFilter]);
 
         let h = `
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
@@ -8695,6 +8882,29 @@ const app = {
                             <button ${isViewer || !regionFilter ? 'disabled' : ''} onclick="app.toggleRegionRecognition(false)"
                                     style="height:28px; padding:0 12px; font-size:11.5px; font-weight:600; background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:6px; cursor:${isViewer || !regionFilter ? 'not-allowed' : 'pointer'}; ${isViewer || !regionFilter ? 'opacity:0.5;' : ''}">Выключить</button>
                         </div>
+                        <!-- Проектирование: тот же доступ, но включать можно ещё и
+                             целому дистрибьютору — его монтажники разбросаны по регионам. -->
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px;">
+                            <span style="font-size:11px; font-weight:600; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.5px;">📐 Проектирование региону${regionFilter ? ` «${regionFilter}»` : ''}:</span>
+                            <button ${isViewer || !regionFilter || !designOk ? 'disabled' : ''} onclick="app.toggleRegionDesign(true)"
+                                    title="${designOk ? (regionFilter ? 'Открыть листы проекта и редактор планов всем монтажникам региона' : 'Сначала выберите регион в фильтре') : designOffHint}"
+                                    style="height:28px; padding:0 12px; font-size:11.5px; font-weight:600; background:${designRegionOn ? '#10B981' : 'var(--surface)'}; color:${designRegionOn ? '#fff' : 'var(--text-main)'}; border:1px solid var(--border); border-radius:6px; cursor:${isViewer || !regionFilter || !designOk ? 'not-allowed' : 'pointer'}; ${isViewer || !regionFilter || !designOk ? 'opacity:0.5;' : ''}">Включить</button>
+                            <button ${isViewer || !regionFilter || !designOk ? 'disabled' : ''} onclick="app.toggleRegionDesign(false)"
+                                    style="height:28px; padding:0 12px; font-size:11.5px; font-weight:600; background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:6px; cursor:${isViewer || !regionFilter || !designOk ? 'not-allowed' : 'pointer'}; ${isViewer || !regionFilter || !designOk ? 'opacity:0.5;' : ''}">Выключить</button>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px;">
+                            <span style="font-size:11px; font-weight:600; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.5px;">📐 Проектирование дистрибьютору:</span>
+                            <select id="design_dist_select" ${isViewer || !designOk ? 'disabled' : ''} style="flex:1; min-width:200px; background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:6px; padding:0 10px; height:28px; font-size:11.5px; outline:none; cursor:pointer; ${isViewer || !designOk ? 'opacity:0.5;' : ''}">
+                                <option value="">Выберите дистрибьютора...</option>
+                                ${(this.adminData.distributors || []).map(d => `<option value="${d.id}">${((this._recognitionAccess && this._recognitionAccess.design && this._recognitionAccess.design.dists) || {})[d.id] ? '✅ ' : ''}${d.company_name} (${d.promo_code})</option>`).join('')}
+                            </select>
+                            <button ${isViewer || !designOk ? 'disabled' : ''} onclick="app.toggleDistDesign(true)"
+                                    title="${designOk ? 'Открыть проектирование всем монтажникам дистрибьютора' : designOffHint}"
+                                    style="height:28px; padding:0 12px; font-size:11.5px; font-weight:600; background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:6px; cursor:${isViewer || !designOk ? 'not-allowed' : 'pointer'}; ${isViewer || !designOk ? 'opacity:0.5;' : ''}">Включить</button>
+                            <button ${isViewer || !designOk ? 'disabled' : ''} onclick="app.toggleDistDesign(false)"
+                                    style="height:28px; padding:0 12px; font-size:11.5px; font-weight:600; background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:6px; cursor:${isViewer || !designOk ? 'not-allowed' : 'pointer'}; ${isViewer || !designOk ? 'opacity:0.5;' : ''}">Выключить</button>
+                            ${designOk ? '' : `<span style="font-size:10.5px; color:#D97706;">${designOffHint}</span>`}
+                        </div>
                     </div>
 
                     <!-- Ширины заданы явно и таблица фиксированной раскладки:
@@ -8702,14 +8912,15 @@ const app = {
                          а длинные названия дистрибьюторов рвали выравнивание. -->
                     <table class="inv-table" style="margin-bottom: 30px; table-layout: fixed; width: 100%; min-width: 1150px;">
                         <thead><tr>
-                            <th style="width:34px;">#</th>
-                            <th style="width:300px; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('name')" title="Сортировать по имени">Имя / Контакты${sortArrow('name')}</th>
-                            <th style="width:130px; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('ltv')" title="Сортировать по сумме">Статистика (LTV)${sortArrow('ltv')}</th>
-                            <th style="width:140px; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('tariff')" title="Сортировать по тарифу">Тариф / Устройство${sortArrow('tariff')}</th>
-                            <th style="width:230px;">Дистрибьютор</th>
-                            <th style="width:110px; text-align:center;" title="Доступ монтажника к распознаванию смет">Распознавание</th>
-                            <th style="text-align:right; cursor:pointer; user-select:none; width: 80px;" onclick="app.sortAdminColumn('login')" title="Сортировать по дате входа">Вход${sortArrow('login')}</th>
-                            <th style="text-align:center; width: 190px;">Действия</th>
+                            <th style="width:30px;">#</th>
+                            <th style="width:280px; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('name')" title="Сортировать по имени">Имя / Контакты${sortArrow('name')}</th>
+                            <th style="width:120px; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('ltv')" title="Сортировать по сумме">Статистика (LTV)${sortArrow('ltv')}</th>
+                            <th style="width:135px; cursor:pointer; user-select:none;" onclick="app.sortAdminColumn('tariff')" title="Сортировать по тарифу">Тариф / Устройство${sortArrow('tariff')}</th>
+                            <th style="width:205px;">Дистрибьютор</th>
+                            <th style="width:100px; text-align:center;" title="Доступ монтажника к распознаванию смет">Распознавание</th>
+                            <th style="width:100px; text-align:center;" title="Доступ к листам проекта и редактору планов">Проектирование</th>
+                            <th style="text-align:right; cursor:pointer; user-select:none; width: 90px;" onclick="app.sortAdminColumn('login')" title="Сортировать по дате последнего входа">Вход${sortArrow('login')}</th>
+                            <th style="text-align:center; width: 145px;">Действия</th>
                         </tr></thead>
                         <tbody>
                 `;
@@ -8756,6 +8967,11 @@ const app = {
             let phone = u.phone || 'Нет телефона';
             let device = u.last_device || 'Неизвестно';
             let lastVis = u.last_visited ? new Date(u.last_visited).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : date;
+            // Колонка узкая, показывает только «день.месяц, часы:минуты» —
+            // полную дату с годом отдаём подсказкой при наведении.
+            let lastVisTitle = u.last_visited
+                ? 'Последний вход: ' + new Date(u.last_visited).toLocaleString('ru-RU')
+                : 'Ни разу не заходил после регистрации ' + date;
             let avatarImg = u.avatar_url ? `<img src="${u.avatar_url}" style="width:32px; height:32px; border-radius:50%; vertical-align:middle; margin-right:10px; object-fit:cover; border:1px solid #E5E7EB;">` : `<span style="font-size:24px; vertical-align:middle; margin-right:10px;">👤</span>`;
 
             let cityText = u.city || 'Город не указан';
@@ -8780,6 +8996,9 @@ const app = {
             // Доступ к распознаванию: лично у монтажника, через его регион,
             // либо по должности (администраторам открыто всегда).
             const recCell = this.recognitionAccessCell(u, isViewer);
+            // Доступ к проектированию: лично, через дистрибьютора, через регион
+            // либо по должности (администраторам открыто всегда).
+            const desCell = this.designAccessCell(u, isViewer);
 
             h += `<tr class="active-row admin-list-row" data-search="${searchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminUser('${u.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
                         <td style="color:var(--text-sec);">${i + 1}</td>
@@ -8788,7 +9007,8 @@ const app = {
                         <td>${badge}<br><span style="font-size:10px;color:var(--text-sec);">${device}</span></td>
                         <td onclick="event.stopPropagation();">${distCell}</td>
                         <td onclick="event.stopPropagation();" style="text-align:center;">${recCell}</td>
-                        <td style="text-align:right;">${lastVis}</td>
+                        <td onclick="event.stopPropagation();" style="text-align:center;">${desCell}</td>
+                        <td style="text-align:right; white-space:nowrap;" title="${lastVisTitle}">${lastVis}</td>
                         <td onclick="event.stopPropagation();" style="text-align:center; white-space:nowrap;">
                             <div style="display:flex; gap:5px; justify-content:center; align-items:center;">
                                 <button class="admin-action-btn btn-msg" onclick="app.adminMessageUser('${u.id}', '${nameEscaped}')" title="Написать пользователю"><span class="btn-icon">💬</span><span class="btn-text"> Написать</span></button>
@@ -9022,20 +9242,15 @@ const app = {
         this.renderAdminMain();
     },
 
+    // «Написать» из карточки монтажника — открываем вкладку сообщений сразу на его диалоге
     adminMessageUser: function (userId, userName) {
         this._adminTab = 'messages';
+        this._adminChatId = userId;
+        this._adminChatOpen = true;
         this.renderAdminMain();
-        // После рендера — выбираем пользователя в дропдауне и фильтруем по имени
         setTimeout(() => {
-            const userSel = document.getElementById('admin_msg_recipient');
-            if (userSel) {
-                userSel.value = userId;
-            }
-            const searchInp = document.getElementById('admin_msg_search_user');
-            if (searchInp) {
-                searchInp.value = userName;
-                if (typeof app.filterAdminMessages === 'function') app.filterAdminMessages();
-            }
+            const ta = document.getElementById('admin_msg_text');
+            if (ta) ta.focus();
         }, 150);
     },
 
@@ -9216,62 +9431,108 @@ const app = {
         }
     },
 
+    // Вкладка «Сообщения» устроена как мессенджер: слева список диалогов с поиском,
+    // справа — переписка пузырями и поле ввода. Выбранный диалог лежит в
+    // this._adminChatId ('broadcast' | id пользователя). На узких экранах панели
+    // показываются по очереди (класс chat-open, см. .admin-chat-* в style.css).
     renderAdminMessages: function () {
         const isViewer = this.getAdminRole() === 'viewer';
         const dropdownUsers = this.adminData.allUsersDropdown || [];
         const messages = this.adminData.messages || [];
+        const receipts = this.adminData.messageReceipts || [];
         const content = document.getElementById('admin_content');
         if (!content) return;
 
-        // Сохраняем то, что уже введено в поиск (переживает перерисовку списка при отправке/удалении)
-        const textSearchBefore = document.getElementById('admin_msg_search_text')?.value || '';
-        const userSearchBefore = document.getElementById('admin_msg_search_user')?.value || '';
+        // Квитанции и чужие переписки подгружаем один раз при первом открытии вкладки
+        // и перерисовываем. Таблицы квитанций может не быть (миграция
+        // 20260731_add_message_receipts.sql не выполнена) — тогда просто не будет галочек,
+        // вкладка работать не перестанет.
+        if ((this.adminData.messageReceipts == null || this.adminData.managerChats == null) && !this._loadingReceipts) {
+            this._loadingReceipts = true;
+            (async () => {
+                try {
+                    const { data, error } = await supabaseClient.from('message_receipts')
+                        .select('message_id, user_id, delivered_at, read_at');
+                    if (error) throw error;
+                    this.adminData.messageReceipts = data || [];
+                } catch (e) {
+                    console.warn('Could not load message receipts:', e.message || e);
+                    this.adminData.messageReceipts = [];
+                }
+                try {
+                    // Переписки «монтажник ⇄ менеджер». attachments здесь НЕ запрашиваем:
+                    // в них лежат файлы целиком (base64 dataUrl), это мегабайты трафика на
+                    // ровном месте. Для списка и пузырей нужен только текст.
+                    const { data, error } = await supabaseClient.from('manager_chat_messages')
+                        .select('id, installer_user_id, manager_user_id, sender_user_id, sender_name, text, is_read, read_at, created_at')
+                        .order('created_at', { ascending: false })
+                        .limit(1000);
+                    if (error) throw error;
+                    this.adminData.managerChats = data || [];
+                } catch (e) {
+                    console.warn('Could not load manager chats:', e.message || e);
+                    this.adminData.managerChats = [];
+                }
+                this._loadingReceipts = false;
+                if (this._adminTab === 'messages') this.renderAdminMessages();
+            })();
+        }
 
-        let userOptions = '<option value="all">📢 Отправить ВСЕМ авторизованным</option>';
-        dropdownUsers.forEach(u => {
-            const name = u.username || u.email || `Пользователь #${u.id.substring(0, 6)}`;
-            userOptions += `<option value="${u.id}">👤 ${name} (${u.phone || 'без тел.'})</option>`;
-        });
+        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        // Переживают перерисовку: строка поиска и недописанное сообщение (если диалог тот же)
+        const searchBefore = document.getElementById('admin_chat_search')?.value || '';
+        const sameChat = this._lastRenderedChatId === this._adminChatId;
+        const draftBefore = sameChat ? (document.getElementById('admin_msg_text')?.value || '') : '';
 
-        let innerHtml = `
-            <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; background: var(--surface-light); border: 1px solid var(--border); padding: 15px; border-radius: 12px;">
-                <h4 style="margin: 0; color: var(--text-main); font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px;">💬 Отправить новое сообщение</h4>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <div>
-                        <label style="font-size: 11px; font-weight: 700; color: var(--text-sec); display: block; margin-bottom: 4px;">Получатель:</label>
-                        <select id="admin_msg_recipient" ${isViewer ? 'disabled' : ''} style="width: 100%; height: 36px; padding: 0 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 13px; outline: none; cursor: pointer;">
-                            ${userOptions}
-                        </select>
-                    </div>
-                    <div>
-                        <label style="font-size: 11px; font-weight: 700; color: var(--text-sec); display: block; margin-bottom: 4px;">Текст сообщения:</label>
-                        <textarea id="admin_msg_text" placeholder="Введите текст объявления или личного сообщения..." ${isViewer ? 'disabled' : ''} style="width: 100%; min-height: 80px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 13px; outline: none; resize: vertical; font-family: inherit;"></textarea>
-                    </div>
-                    <button class="auth-btn-base btn-email-submit" style="margin: 5px 0 0 auto; width: 100%; max-width: 180px; height: 34px; font-size: 12px; ${isViewer ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isViewer ? 'disabled' : ''} onclick="app.sendAdminMessage()">🚀 Отправить</button>
-                </div>
-            </div>
+        // Квитанции по сообщению: message_id -> [{user_id, delivered_at, read_at}]
+        const receiptsByMsg = {};
+        receipts.forEach(r => { (receiptsByMsg[r.message_id] = receiptsByMsg[r.message_id] || []).push(r); });
 
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
-                <h4 style="margin:0; font-size:14px; font-weight:700;">📋 История переписки</h4>
-                <button class="auth-btn-base" style="margin:0; width:auto; height:30px; padding:0 12px; font-size:11px; background:var(--surface-light); color:#EF4444; border:1px solid var(--border); ${isViewer ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isViewer ? 'disabled' : ''} onclick="app.deleteAllMessages()">🗑 Удалить всё</button>
-            </div>
-            <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
-                <input type="text" id="admin_msg_search_text" placeholder="🔍 Поиск по тексту сообщений..." value="${textSearchBefore.replace(/"/g, '&quot;')}" oninput="app.filterAdminMessages()" style="flex:1; min-width:180px; height:32px; padding:0 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 12px; outline: none;">
-                <input type="text" id="admin_msg_search_user" placeholder="🔍 Поиск по пользователю..." value="${userSearchBefore.replace(/"/g, '&quot;')}" oninput="app.filterAdminMessages()" style="flex:1; min-width:180px; height:32px; padding:0 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 12px; outline: none;">
-            </div>
-        `;
+        const fullTime = (d) => new Date(d).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const clockTime = (d) => new Date(d).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const dayLabel = (d) => {
+            const dt = new Date(d), today = new Date();
+            const same = (a, b) => a.toDateString() === b.toDateString();
+            const yest = new Date(today.getTime() - 86400000);
+            if (same(dt, today)) return 'Сегодня';
+            if (same(dt, yest)) return 'Вчера';
+            return dt.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: dt.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
+        };
+        const listTime = (d) => {
+            const dt = new Date(d);
+            return dt.toDateString() === new Date().toDateString() ? clockTime(d) : dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+        };
+        const avaColor = (s) => {
+            let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+            return ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#0EA5E9', '#84CC16'][h % 8];
+        };
 
-        // Разделяем на объявления, личные сообщения (сгруппированные по получателю) и ответы
+        // Галочки как в мессенджере: одна серая — отправлено, но приложение получателя
+        // ещё не забирало сообщение; две серые — доставлено; две синие — прочитано
+        const ticks = (m, isBroadcast) => {
+            const rs = receiptsByMsg[m.id] || [];
+            if (isBroadcast) {
+                const total = dropdownUsers.length;
+                const read = rs.filter(r => r.read_at).length;
+                return `<span title="Доставлено ${rs.length} из ${total} пользователей, прочитали ${read}" style="font-size:10px; color:rgba(255,255,255,0.85); white-space:nowrap;">✓✓ ${rs.length}/${total} · 👁 ${read}</span>`;
+            }
+            const r = rs.find(x => x.user_id === m.recipient_id) || rs[0];
+            if (!r) return `<span title="Отправлено. Пользователь ещё не заходил в калькулятор — сообщение не доставлено" style="font-size:11px; color:rgba(255,255,255,0.6);">✓</span>`;
+            if (r.read_at) return `<span title="Прочитано ${fullTime(r.read_at)}" style="font-size:11px; color:#7FE3FF; font-weight:700;">✓✓</span>`;
+            return `<span title="Доставлено ${fullTime(r.delivered_at)}, но ещё не прочитано" style="font-size:11px; color:rgba(255,255,255,0.6);">✓✓</span>`;
+        };
+
+        // Раскладываем сообщения по диалогам: объявления — отдельная «нить», личные
+        // письма и ответы монтажника — нить на каждого человека
         const parentMsgs = messages.filter(m => m.type !== 'reply');
         const replies = messages.filter(m => m.type === 'reply');
-        const broadcasts = parentMsgs.filter(m => m.type === 'broadcast');
-
         const findUser = (id) => dropdownUsers.find(u => u.id === id);
-        const userSearchKey = (u, fallbackId) => (u ? [u.username, u.email, u.phone].filter(Boolean).join(' ') : `Пользователь #${(fallbackId || '').substring(0, 6)}`).toLowerCase();
 
-        // Группируем личные сообщения + ответы по конкретному пользователю — так можно искать
-        // "переписку с человеком" целиком, а не отдельные письма россыпью
-        const groups = {}; // userId -> { userId, user, items: [{...msg, __from}] }
+        const broadcastItems = parentMsgs.filter(m => m.type === 'broadcast')
+            .map(m => Object.assign({ __from: 'admin' }, m))
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+        const groups = {};
         parentMsgs.filter(m => m.type === 'private').forEach(m => {
             const uid = m.recipient_id;
             if (!groups[uid]) groups[uid] = { userId: uid, user: findUser(uid), items: [] };
@@ -9284,97 +9545,336 @@ const app = {
         });
         Object.values(groups).forEach(g => g.items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
 
-        if (parentMsgs.length === 0 && replies.length === 0) {
-            innerHtml += `<div style="text-align: center; color: var(--text-sec); padding: 30px; font-size: 13px;">Сообщений пока нет. Отправьте первое сообщение выше!</div>`;
-        } else {
-            innerHtml += `<div id="admin_msg_list" style="display: flex; flex-direction: column; gap: 12px; max-height: 45vh; overflow-y: auto; padding-right: 5px;">`;
+        const userName = (u, id) => u ? (u.username || u.email || u.phone) : `Пользователь #${(id || '').substring(0, 6)}`;
+        const adminThreads = Object.values(groups).map(g => {
+            const name = userName(g.user, g.userId);
+            const last = g.items[g.items.length - 1];
+            // Сколько сообщений монтажника подряд висит без вашего ответа — это число
+            // и показывается зелёным кружком в списке, как счётчик непрочитанных в Telegram
+            let pending = 0;
+            for (let i = g.items.length - 1; i >= 0 && g.items[i].__from === 'user'; i--) pending++;
+            return {
+                id: g.userId, kind: 'admin', name, user: g.user, items: g.items, last, pending,
+                awaiting: !!last && last.__from === 'user',
+                search: ([name, g.user && g.user.email, g.user && g.user.phone, g.user && g.user.region, g.user && g.user.city]
+                    .filter(Boolean).join(' ') + ' ' + g.items.map(i => i.text || '').join(' ')).toLowerCase()
+            };
+        });
 
-            // Объявления для всех — не привязаны к конкретному пользователю, поиск по человеку их скрывает
-            broadcasts.forEach(msg => {
-                const dateStr = new Date(msg.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-                innerHtml += `
-                    <div class="admin-msg-group" data-search-user="" data-search-text="${(msg.text || '').toLowerCase().replace(/"/g, '&quot;')}" style="border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--surface); display: flex; flex-direction: column; gap: 6px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding-bottom: 6px;">
-                            <span style="font-size: 11px; font-weight: 800; color: #D97706; text-transform: uppercase; letter-spacing: 0.02em;">📢 Объявление для всех</span>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
-                                ${isViewer ? '' : `<span onclick="app.deleteAdminMessage('${msg.id}')" title="Удалить" style="cursor:pointer; color:var(--text-sec); font-size:13px;">🗑</span>`}
-                            </div>
+        // Чужие переписки «монтажник ⇄ менеджер дистрибьютора». Админ в них не участвует —
+        // RLS (20260712_add_manager_chat_messages.sql) разрешает ему только чтение, поэтому
+        // такая нить открывается на просмотр, без поля ввода. Ключ нити — 'mgr:монтажник:менеджер'.
+        const mgrGroups = {};
+        (this.adminData.managerChats || []).forEach(m => {
+            const key = 'mgr:' + m.installer_user_id + ':' + m.manager_user_id;
+            if (!mgrGroups[key]) mgrGroups[key] = { id: key, installerId: m.installer_user_id, managerId: m.manager_user_id, items: [] };
+            mgrGroups[key].items.push(Object.assign({ __from: m.sender_user_id === m.manager_user_id ? 'manager' : 'installer' }, m));
+        });
+        const mgrThreads = Object.values(mgrGroups).map(g => {
+            g.items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            const inst = findUser(g.installerId), mgr = findUser(g.managerId);
+            const instName = userName(inst, g.installerId), mgrName = userName(mgr, g.managerId);
+            const last = g.items[g.items.length - 1];
+            return {
+                id: g.id, kind: 'manager', name: `${instName} ⇄ ${mgrName}`,
+                installerId: g.installerId, instName, mgrName, items: g.items, last,
+                awaiting: false,
+                search: ([instName, mgrName, inst && inst.email, mgr && mgr.email, inst && inst.city, 'менеджер дистрибьютор']
+                    .filter(Boolean).join(' ') + ' ' + g.items.map(i => i.text || '').join(' ')).toLowerCase()
+            };
+        });
+
+        const threads = adminThreads.concat(mgrThreads)
+            .sort((a, b) => new Date(b.last ? b.last.created_at : 0) - new Date(a.last ? a.last.created_at : 0));
+
+        // Диалог по умолчанию — первый в списке; выбранный вручную сохраняется между перерисовками.
+        // В допустимые id входят и люди без переписки: их выбирают в блоке «Написать впервые»,
+        // и без этого выбор тут же сбрасывался на первый диалог — клик по найденному человеку
+        // выглядел так, будто он ничего не делает.
+        const allIds = ['broadcast'].concat(threads.map(t => t.id)).concat(dropdownUsers.map(u => u.id));
+        if (!this._adminChatId || allIds.indexOf(this._adminChatId) === -1) {
+            this._adminChatId = threads.length ? threads[0].id : 'broadcast';
+        }
+        const activeId = this._adminChatId;
+        this._lastRenderedChatId = activeId;
+
+        // ── Левая панель: список диалогов ──
+        const lastBroadcast = broadcastItems[broadcastItems.length - 1];
+        let listHtml = `
+            <div class="admin-chat-item ${activeId === 'broadcast' ? 'active' : ''}" data-search="объявление рассылка всем broadcast ${esc(broadcastItems.map(m => m.text || '').join(' ').toLowerCase())}" onclick="app.openAdminChat('broadcast')">
+                <div class="admin-chat-ava" style="background:#D97706;">📢</div>
+                <div class="admin-chat-item-body">
+                    <div class="admin-chat-item-row"><span class="admin-chat-name">Объявления для всех</span><span class="admin-chat-time">${lastBroadcast ? listTime(lastBroadcast.created_at) : ''}</span></div>
+                    <div class="admin-chat-item-row"><span class="admin-chat-prev">${lastBroadcast ? 'Вы: ' + esc((lastBroadcast.text || '').replace(/\s+/g, ' ')) : 'Рассылка всем авторизованным'}</span></div>
+                </div>
+            </div>
+        `;
+        threads.forEach(t => {
+            const isMgr = t.kind === 'manager';
+            let prev = '';
+            if (t.last) {
+                const who = isMgr
+                    ? (t.last.__from === 'manager' ? t.mgrName : t.instName) + ': '
+                    : (t.last.__from === 'admin' ? 'Вы: ' : '');
+                prev = who + (t.last.text || '').replace(/\s+/g, ' ');
+            }
+            listHtml += `
+                <div class="admin-chat-item ${activeId === t.id ? 'active' : ''}" data-search="${esc(t.search)}" onclick="app.openAdminChat('${t.id}')">
+                    <div class="admin-chat-ava" style="background:${isMgr ? '#64748B' : avaColor(t.name)};" title="${isMgr ? 'Переписка монтажника с менеджером' : ''}">${isMgr ? '⇄' : esc(t.name.trim().charAt(0).toUpperCase() || '?')}</div>
+                    <div class="admin-chat-item-body">
+                        <div class="admin-chat-item-row"><span class="admin-chat-name">${esc(t.name)}</span><span class="admin-chat-time">${t.last ? listTime(t.last.created_at) : ''}</span></div>
+                        <div class="admin-chat-item-row"><span class="admin-chat-prev">${esc(prev)}</span>${t.pending ? `<span class="admin-chat-badge" title="Сообщений монтажника без ответа: ${t.pending}">${t.pending}</span>` : ''}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Люди, с которыми переписки ещё не было: показываются только при поиске —
+        // так «найти человека и написать первым» не требует отдельного выпадающего списка
+        const withThread = {};
+        threads.forEach(t => { withThread[t.id] = true; });
+        let newHtml = '';
+        dropdownUsers.filter(u => !withThread[u.id]).forEach(u => {
+            const name = userName(u, u.id);
+            const sub = [u.region, u.city].filter(Boolean).join(', ') || u.email || u.phone || '';
+            newHtml += `
+                <div class="admin-chat-item admin-chat-new ${activeId === u.id ? 'active' : ''}" data-search="${esc([name, u.email, u.phone, u.region, u.city, u.id].filter(Boolean).join(' ').toLowerCase())}" onclick="app.openAdminChat('${u.id}')">
+                    <div class="admin-chat-ava" style="background:${avaColor(name)};">${esc(name.trim().charAt(0).toUpperCase() || '?')}</div>
+                    <div class="admin-chat-item-body">
+                        <div class="admin-chat-item-row"><span class="admin-chat-name">${esc(name)}</span></div>
+                        <div class="admin-chat-item-row"><span class="admin-chat-prev">${esc(sub)}</span></div>
+                    </div>
+                </div>
+            `;
+        });
+
+        // ── Правая панель: сама переписка ──
+        const isBroadcastChat = activeId === 'broadcast';
+        const activeThread = threads.find(t => t.id === activeId);
+        const isMgrChat = !!activeThread && activeThread.kind === 'manager';
+        const activeUser = activeThread && !isMgrChat ? activeThread.user : (isMgrChat ? null : findUser(activeId));
+        const chatName = isBroadcastChat ? 'Объявления для всех' : (isMgrChat ? activeThread.name : userName(activeUser, activeId));
+        const chatSub = isBroadcastChat
+            ? `${dropdownUsers.length} получателей`
+            : (isMgrChat
+                ? 'Переписка монтажника с менеджером — только просмотр'
+                : ([activeUser && activeUser.region, activeUser && activeUser.city].filter(Boolean).join(', ') || (activeUser && (activeUser.email || activeUser.phone)) || ''));
+        const chatItems = isBroadcastChat ? broadcastItems : (activeThread ? activeThread.items : []);
+
+        let bodyHtml = '';
+        if (!chatItems.length) {
+            bodyHtml = `<div class="admin-chat-empty">${isBroadcastChat ? 'Объявлений пока не было.' : 'Переписки ещё нет — напишите первым.'}</div>`;
+        } else {
+            let lastDay = '';
+            const SERIE_GAP_MS = 5 * 60 * 1000;
+            chatItems.forEach((m, i) => {
+                const day = dayLabel(m.created_at);
+                const newDay = day !== lastDay;
+                if (newDay) { bodyHtml += `<div class="admin-chat-day">${day}</div>`; lastDay = day; }
+
+                // Подряд идущие сообщения одного автора — одна «серия»: они прижимаются
+                // друг к другу, хвостик рисуется только у последнего, отступ — только перед
+                // первым. Серия рвётся сменой автора, сменой дня или паузой больше 5 минут.
+                const prevM = chatItems[i - 1], nextM = chatItems[i + 1];
+                const sameAsPrev = !newDay && prevM && prevM.__from === m.__from
+                    && (new Date(m.created_at) - new Date(prevM.created_at)) < SERIE_GAP_MS;
+                const sameAsNext = nextM && nextM.__from === m.__from
+                    && dayLabel(nextM.created_at) === day
+                    && (new Date(nextM.created_at) - new Date(m.created_at)) < SERIE_GAP_MS;
+                const serieCls = (sameAsNext ? '' : ' tail') + (sameAsPrev || newDay || i === 0 ? '' : ' admin-chat-serie-gap');
+
+                if (isMgrChat) {
+                    // Чужая переписка: справа менеджер, слева монтажник, админ — сторонний
+                    // наблюдатель. Галочка берётся из самой таблицы чата (is_read), отдельные
+                    // квитанции тут не нужны. Ни удаления, ни ответа — только чтение.
+                    const fromMgr = m.__from === 'manager';
+                    bodyHtml += `
+                        <div class="admin-chat-bubble ${fromMgr ? 'from-admin' : 'from-user'}${serieCls}">
+                            ${sameAsPrev ? '' : `<div class="admin-chat-sender">${esc(m.sender_name || (fromMgr ? activeThread.mgrName : activeThread.instName))}</div>`}
+                            <div class="admin-chat-text">${esc(m.text)}<span class="admin-chat-meta">
+                                <span class="admin-chat-metatime">${clockTime(m.created_at)}</span>
+                                ${m.is_read
+                            ? `<span title="Прочитано${m.read_at ? ' ' + fullTime(m.read_at) : ''}" style="font-size:11px; color:${fromMgr ? '#7FE3FF' : '#0EA5E9'}; font-weight:700;">✓✓</span>`
+                            : `<span title="Ещё не прочитано" style="font-size:11px; opacity:.6;">✓</span>`}
+                            </span></div>
                         </div>
-                        <div style="font-size: 13px; color: var(--text-main); white-space: pre-wrap; line-height: 1.4; margin-top: 4px;">${msg.text}</div>
+                    `;
+                    return;
+                }
+
+                const isUser = m.__from === 'user';
+                bodyHtml += `
+                    <div class="admin-chat-bubble ${isUser ? 'from-user' : 'from-admin'}${serieCls}">
+                        <div class="admin-chat-text">${esc(m.text)}<span class="admin-chat-meta">
+                            <span class="admin-chat-metatime">${clockTime(m.created_at)}</span>
+                            ${isUser ? '' : ticks(m, isBroadcastChat)}
+                            ${isViewer ? '' : `<span onclick="event.stopPropagation(); app.deleteAdminMessage('${m.id}')" title="Удалить сообщение" class="admin-chat-del">🗑</span>`}
+                        </span></div>
                     </div>
                 `;
             });
+        }
 
-            // Переписка по пользователям — новые сверху
-            Object.values(groups)
-                .sort((a, b) => {
-                    const ta = a.items.length ? new Date(a.items[a.items.length - 1].created_at).getTime() : 0;
-                    const tb = b.items.length ? new Date(b.items[b.items.length - 1].created_at).getTime() : 0;
-                    return tb - ta;
-                })
-                .forEach(g => {
-                    const displayName = g.user ? (g.user.username || g.user.email || g.user.phone) : `Пользователь #${(g.userId || '').substring(0, 6)}`;
-                    const searchUser = userSearchKey(g.user, g.userId);
-                    const searchText = g.items.map(i => (i.text || '').toLowerCase()).join(' ').replace(/"/g, '&quot;');
-
-                    let itemsHtml = g.items.map(m => {
-                        const dateStr = new Date(m.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-                        const isUser = m.__from === 'user';
-                        return `
-                            <div style="font-size: 12px; ${isUser ? 'padding-left:12px; border-left:2.5px solid #10B981;' : ''}">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 2px; align-items:center; gap:8px;">
-                                    <span style="font-weight: 700; color: ${isUser ? '#047857' : '#2563EB'};">${isUser ? '💬 Ответ' : '✉️ Админ'}:</span>
-                                    <div style="display:flex; align-items:center; gap:6px;">
-                                        <span style="font-size: 9px; color: var(--text-sec);">${dateStr}</span>
-                                        ${isViewer ? '' : `<span onclick="app.deleteAdminMessage('${m.id}')" title="Удалить" style="cursor:pointer; color:var(--text-sec); font-size:12px;">🗑</span>`}
-                                    </div>
-                                </div>
-                                <div style="color: var(--text-main); background: var(--surface); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); word-break: break-word;">${m.text}</div>
-                            </div>
-                        `;
-                    }).join('');
-
-                    innerHtml += `
-                        <div class="admin-msg-group" data-search-user="${searchUser.replace(/"/g, '&quot;')}" data-search-text="${searchText}" style="border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--surface); display: flex; flex-direction: column; gap: 8px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding-bottom: 6px;">
-                                <span onclick="app.openAdminUserFromMessages('${g.userId}')" title="Открыть карточку монтажника" style="cursor:pointer; font-size: 12px; font-weight: 800; color: var(--primary); text-decoration: underline; text-underline-offset: 2px;">👤 ${displayName}</span>
-                                <button class="auth-btn-base" style="margin:0; width:auto; height:24px; padding:0 8px; font-size:10px; background:var(--surface-light); color:#EF4444; border:1px solid var(--border); ${isViewer ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isViewer ? 'disabled' : ''} onclick="app.deleteUserMessages('${g.userId}')">🗑 Удалить переписку</button>
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 8px;">${itemsHtml}</div>
+        // Список получателей объявлений: открывается кликом по «N получателей» в шапке.
+        // Показывает, кто именно получит рассылку, и что стало с последним объявлением
+        // у каждого. Клик по человеку уводит в личную переписку с ним.
+        const recipientsOpen = isBroadcastChat && this._broadcastRecipientsOpen;
+        let recipientsHtml = '';
+        if (recipientsOpen) {
+            const lastRs = {};
+            (lastBroadcast ? (receiptsByMsg[lastBroadcast.id] || []) : []).forEach(r => { lastRs[r.user_id] = r; });
+            let rows = '';
+            dropdownUsers.forEach(u => {
+                const name = userName(u, u.id);
+                const sub = [u.region, u.city].filter(Boolean).join(', ') || u.email || u.phone || '';
+                const r = lastRs[u.id];
+                let mark;
+                if (!lastBroadcast) mark = `<span class="admin-chat-time">—</span>`;
+                else if (r && r.read_at) mark = `<span class="admin-chat-time" title="Прочитано ${fullTime(r.read_at)}" style="color:#0EA5E9; font-weight:700;">✓✓ прочитано</span>`;
+                else if (r) mark = `<span class="admin-chat-time" title="Доставлено ${fullTime(r.delivered_at)}, но ещё не открыто">✓✓ доставлено</span>`;
+                else mark = `<span class="admin-chat-time" title="Не заходил в калькулятор после объявления">✓ не доставлено</span>`;
+                rows += `
+                    <div class="admin-chat-item" data-search="${esc([name, u.email, u.phone, u.region, u.city].filter(Boolean).join(' ').toLowerCase())}" onclick="app.openAdminChat('${u.id}')" title="Открыть личную переписку">
+                        <div class="admin-chat-ava" style="background:${avaColor(name)};">${esc(name.trim().charAt(0).toUpperCase() || '?')}</div>
+                        <div class="admin-chat-item-body">
+                            <div class="admin-chat-item-row"><span class="admin-chat-name">${esc(name)}</span>${mark}</div>
+                            <div class="admin-chat-item-row"><span class="admin-chat-prev">${esc(sub)}</span></div>
                         </div>
-                    `;
-                });
-
-            innerHtml += `</div>`;
+                    </div>
+                `;
+            });
+            recipientsHtml = `
+                <div class="admin-chat-recip" id="admin_chat_recip">
+                    <div class="admin-chat-recip-head">
+                        <input type="text" id="admin_recip_search" placeholder="🔍 Поиск по получателям…" oninput="app.filterBroadcastRecipients()">
+                        <button class="admin-chat-clear" title="Закрыть список" onclick="app.toggleBroadcastRecipients()">✕</button>
+                    </div>
+                    <div class="admin-chat-recip-note">Объявления получают все ${dropdownUsers.length} авторизованных пользователей. Отметки — по последнему объявлению.</div>
+                    <div class="admin-chat-recip-list" id="admin_recip_list">
+                        ${rows || '<div class="admin-chat-empty" style="background:none; color:var(--text-sec);">Пользователей нет</div>'}
+                        <div class="admin-chat-empty" id="admin_recip_nores" style="display:none; background:none; color:var(--text-sec);">Никого не найдено</div>
+                    </div>
+                </div>
+            `;
         }
 
-        // Вставляем вкладку под навигацией
-        const navContainer = content.firstElementChild;
-        if (navContainer && navContainer.nextElementSibling) {
-            // ...
-            while (content.childNodes.length > 1) {
-                content.removeChild(content.lastChild);
-            }
-        }
+        const composePlaceholder = isBroadcastChat ? 'Объявление всем пользователям…' : `Сообщение для ${chatName}…`;
+
+        const innerHtml = `
+            <div class="admin-chat-wrap ${this._adminChatOpen ? 'chat-open' : ''}">
+                <div class="admin-chat-side">
+                    <div class="admin-chat-side-head">
+                        <input type="text" id="admin_chat_search" placeholder="🔍 Поиск: ФИО, ник, город, текст…" value="${esc(searchBefore)}" oninput="app.filterAdminChatList()">
+                        <button class="admin-chat-clear" title="Удалить всю переписку со всеми" ${isViewer ? 'disabled' : ''} onclick="app.deleteAllMessages()">🗑</button>
+                    </div>
+                    <div class="admin-chat-list" id="admin_chat_list">
+                        ${listHtml}
+                        <div class="admin-chat-newhdr" id="admin_chat_new_header">Написать впервые</div>
+                        ${newHtml}
+                        <div class="admin-chat-empty" id="admin_chat_nores" style="display:none;">Никого не найдено</div>
+                    </div>
+                </div>
+                <div class="admin-chat-main">
+                    <div class="admin-chat-head">
+                        <span class="admin-chat-back" onclick="app.closeAdminChat()">←</span>
+                        <div class="admin-chat-ava" style="background:${isBroadcastChat ? '#D97706' : (isMgrChat ? '#64748B' : avaColor(chatName))};">${isBroadcastChat ? '📢' : (isMgrChat ? '⇄' : esc(chatName.trim().charAt(0).toUpperCase() || '?'))}</div>
+                        <div style="min-width:0; flex:1;">
+                            <div class="admin-chat-headname" ${isBroadcastChat ? '' : `onclick="app.openAdminUserFromMessages('${isMgrChat ? activeThread.installerId : activeId}')" title="Открыть карточку монтажника"`}>${esc(chatName)}</div>
+                            <div class="admin-chat-headsub" ${isBroadcastChat ? `onclick="app.toggleBroadcastRecipients()" title="Показать, кто получает объявления"` : ''}>${esc(chatSub)}${isBroadcastChat ? ` <span style="opacity:.8;">${recipientsOpen ? '▲' : '▼'}</span>` : ''}</div>
+                        </div>
+                        ${isBroadcastChat || isMgrChat || isViewer ? '' : `<button class="admin-chat-clear" title="Удалить эту переписку" onclick="app.deleteUserMessages('${activeId}')">🗑</button>`}
+                    </div>
+                    ${recipientsOpen ? recipientsHtml : `<div class="admin-chat-body" id="admin_chat_body">${bodyHtml}</div>`}
+                    ${isMgrChat ? `
+                    <div class="admin-chat-readonly">👁 Вы смотрите чужую переписку. Написать в неё нельзя — чтобы связаться с монтажником, откройте его диалог в списке слева.</div>
+                    ` : `
+                    <div class="admin-chat-compose">
+                        <textarea id="admin_msg_text" rows="1" placeholder="${esc(composePlaceholder)}" ${isViewer ? 'disabled' : ''} onkeydown="app.adminChatKeydown(event)"></textarea>
+                        <button class="admin-chat-send" title="Отправить (Enter)" ${isViewer ? 'disabled' : ''} onclick="app.sendAdminMessage()">➤</button>
+                    </div>`}
+                </div>
+            </div>
+        `;
+
+        // Вставляем вкладку под навигацией. Считаем именно элементы, а не childNodes:
+        // в childNodes попадают ещё и текстовые узлы от переносов строк в разметке, и
+        // прежний цикл «удаляй, пока не останется один узел» сносил вместе с содержимым
+        // саму строку вкладок — после второй перерисовки из админки было не выйти.
+        const nav = document.getElementById('admin_nav_tabs');
+        content.innerHTML = '';
+        if (nav) content.appendChild(nav);
 
         const wrapper = document.createElement('div');
         wrapper.innerHTML = innerHtml;
         content.appendChild(wrapper);
 
-        this.filterAdminMessages();
+        const ta = document.getElementById('admin_msg_text');
+        if (ta && draftBefore) ta.value = draftBefore;
+        const body = document.getElementById('admin_chat_body');
+        if (body) body.scrollTop = body.scrollHeight;
+
+        this.filterAdminChatList();
     },
 
-    // Фильтрует уже отрисованные группы переписки по двум независимым полям поиска —
-    // без перестройки DOM (только display), чтобы не терять фокус в полях ввода
-    filterAdminMessages: function () {
-        const textQuery = (document.getElementById('admin_msg_search_text')?.value || '').trim().toLowerCase();
-        const userQuery = (document.getElementById('admin_msg_search_user')?.value || '').trim().toLowerCase();
-        document.querySelectorAll('.admin-msg-group').forEach(el => {
-            const matchesText = !textQuery || (el.getAttribute('data-search-text') || '').includes(textQuery);
-            const matchesUser = !userQuery || (el.getAttribute('data-search-user') || '').includes(userQuery);
-            el.style.display = (matchesText && matchesUser) ? '' : 'none';
+    // Фильтрует уже отрисованный список диалогов (только display, без перестройки DOM —
+    // иначе теряется фокус в поле поиска). Люди без переписки показываются только
+    // когда что-то введено: пустой поиск = обычный список диалогов.
+    filterAdminChatList: function () {
+        const q = (document.getElementById('admin_chat_search')?.value || '').trim().toLowerCase();
+        let visible = 0, anyNew = false;
+        document.querySelectorAll('#admin_chat_list .admin-chat-item').forEach(el => {
+            const hay = el.getAttribute('data-search') || '';
+            const isNew = el.classList.contains('admin-chat-new');
+            const show = isNew ? (!!q && hay.includes(q)) : (!q || hay.includes(q));
+            el.style.display = show ? '' : 'none';
+            if (show) { visible++; if (isNew) anyNew = true; }
         });
+        const hdr = document.getElementById('admin_chat_new_header');
+        if (hdr) hdr.style.display = anyNew ? '' : 'none';
+        const nores = document.getElementById('admin_chat_nores');
+        if (nores) nores.style.display = visible ? 'none' : '';
+    },
+
+    // Список получателей объявлений — раскрывается по клику на «N получателей» в шапке
+    toggleBroadcastRecipients: function () {
+        this._broadcastRecipientsOpen = !this._broadcastRecipientsOpen;
+        this.renderAdminMessages();
+    },
+
+    // Фильтрует уже отрисованный список получателей (только display, чтобы не терять фокус)
+    filterBroadcastRecipients: function () {
+        const q = (document.getElementById('admin_recip_search')?.value || '').trim().toLowerCase();
+        let visible = 0;
+        document.querySelectorAll('#admin_recip_list .admin-chat-item').forEach(el => {
+            const show = !q || (el.getAttribute('data-search') || '').includes(q);
+            el.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const nores = document.getElementById('admin_recip_nores');
+        if (nores) nores.style.display = visible ? 'none' : '';
+    },
+
+    openAdminChat: function (id) {
+        this._adminChatId = id;
+        this._adminChatOpen = true; // на узком экране показывает правую панель вместо списка
+        this._broadcastRecipientsOpen = false; // ушли в переписку — список получателей больше не нужен
+        this.renderAdminMessages();
+        // Открыли диалог — курсор сразу в поле ввода, как в мессенджере
+        const ta = document.getElementById('admin_msg_text');
+        if (ta && !ta.disabled) ta.focus();
+    },
+
+    closeAdminChat: function () {
+        this._adminChatOpen = false;
+        this.renderAdminMessages();
+    },
+
+    // Enter отправляет, Shift+Enter — перенос строки (привычно по мессенджерам)
+    adminChatKeydown: function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            this.sendAdminMessage();
+        }
     },
 
     // Открывает карточку монтажника прямо из истории переписки — пользователь может не быть
@@ -9454,10 +9954,20 @@ const app = {
             app.alert('Режим просмотра. Отправка сообщений запрещена.');
             return;
         }
-        const text = document.getElementById('admin_msg_text')?.value;
-        const recipientVal = document.getElementById('admin_msg_recipient')?.value;
+        const textEl = document.getElementById('admin_msg_text');
+        const text = textEl ? textEl.value : '';
+        // Получатель — это открытый диалог: отдельного выпадающего списка больше нет
+        const recipientVal = this._adminChatId === 'broadcast' ? 'all' : this._adminChatId;
         if (!text || !text.trim()) {
-            app.alert("Введите текст сообщения!");
+            if (textEl) textEl.focus();
+            return;
+        }
+        if (!recipientVal) {
+            app.alert('Выберите диалог слева или найдите человека через поиск.');
+            return;
+        }
+        if (String(recipientVal).indexOf('mgr:') === 0) {
+            app.alert('Это чужая переписка монтажника с менеджером — она открыта только на просмотр.');
             return;
         }
 
@@ -9489,7 +9999,8 @@ const app = {
 
             if (error) throw error;
 
-            app.alert("Сообщение успешно отправлено!");
+            // Alert'а нет намеренно: отправленное сообщение само появляется в переписке
+            if (textEl) textEl.value = '';
 
             // Email Дублирование получателям в фоне
             (async () => {
@@ -9521,13 +10032,18 @@ const app = {
                 }
             })();
 
-            // Очищаем форму и перезагружаем историю сообщений
-            document.getElementById('admin_msg_text').value = '';
-
-            // Перезапрашиваем сообщения
+            // Перезапрашиваем сообщения (и квитанции — у нового сообщения их пока нет,
+            // но у остальных статус мог измениться, пока админка была открыта)
             let { data: allMessages } = await supabaseClient.from('messages').select('*').order('created_at', { ascending: false });
             this.adminData.messages = allMessages || [];
+            try {
+                const { data: rec } = await supabaseClient.from('message_receipts').select('message_id, user_id, delivered_at, read_at');
+                this.adminData.messageReceipts = rec || [];
+            } catch (e) { /* таблицы может не быть — тогда просто без галочек */ }
+            this._lastRenderedChatId = null; // черновик уже отправлен, восстанавливать нечего
             this.renderAdminMessages();
+            const ta = document.getElementById('admin_msg_text');
+            if (ta) ta.focus();
         } catch (e) {
             console.error("Error sending admin message:", e);
             app.alert("Не удалось отправить сообщение: " + e.message);
@@ -10371,6 +10887,287 @@ const app = {
     RECOGNIZE_ARCHIVE: 'https://proxy.heatcalc.ru/recognize_archive.php',
 
     /**
+     * Вкладка «Планы этажей» — подложки планов, лежащие на том же Beget
+     * (plans.php). Здесь их видно все разом: чей объект, сколько этажей,
+     * сколько весит и когда к нему прикасались в последний раз.
+     *
+     * Роль проверяет сервер по той же сессии Supabase, что и архив
+     * распознаваний. Сами картинки отдаются по ключу объекта без
+     * авторизации (их должен увидеть и заказчик по ссылке), поэтому
+     * миниатюры в таблице — обычные <img>, без заголовков.
+     */
+    PLANS_ENDPOINT: 'https://proxy.heatcalc.ru/plans.php',
+
+    // ─── Планы этажей ↔ проект ───────────────────────────────────────────
+    // Разметка планов (зоны, масштаб, радиаторы, подводки) живёт в смете —
+    // state.plans, — поэтому уезжает в облако вместе с расчётом и не
+    // путается между объектами. Раньше она лежала одним общим ключом
+    // localStorage на всё приложение: план одного дома подмешивался ко всем
+    // сметам сразу, а сброс расчёта его не касался.
+    //
+    // Редактор планов — отдельная страница, своего доступа к state у неё
+    // нет. Поэтому 'floor_plans_v1' остаётся передаточным звеном: перед
+    // открытием редактора кладём туда планы текущего объекта, после его
+    // сохранения забираем обратно (браузер сообщает событием storage).
+    //
+    // Подложки в state не попадают никогда: они на Beget, здесь — только
+    // имена файлов.
+
+    /**
+     * Разметка планов текущего объекта.
+     *
+     * Источник — смета. Передаточный ключ хранилища общий на все вкладки, и
+     * читать его напрямую больше нельзя: соседняя вкладка с другим объектом
+     * перетирает его под себя. Откат к ключу оставлен для записей, сделанных
+     * до переноса, — их ещё не успели забрать в смету.
+     */
+    currentPlans: function () {
+        const p = this.state.plans;
+        if (p && Array.isArray(p.floors) && p.floors.length) return p;
+        try {
+            const legacy = JSON.parse(localStorage.getItem('floor_plans_v1'));
+            if (legacy && Array.isArray(legacy.floors)) return legacy;
+        } catch (e) { }
+        return null;
+    },
+
+    /**
+     * Планы текущего объекта → в хранилище, откуда их читает редактор.
+     *
+     * forCalc — номер расчёта, которому планы принадлежат. Вкладок
+     * калькулятора у монтажника обычно несколько, и запись в хранилище
+     * прилетает событием storage во все сразу: без этой метки соседняя
+     * вкладка затянула бы чужие планы в свою смету.
+     */
+    pushPlansToEditor: function () {
+        try {
+            const p = this.state.plans;
+            if (p && Array.isArray(p.floors) && p.floors.length) {
+                localStorage.setItem('floor_plans_v1', JSON.stringify(
+                    Object.assign({}, p, { forCalc: this.state.calc_id || null })));
+            } else {
+                localStorage.removeItem('floor_plans_v1');
+            }
+        } catch (e) {
+            console.warn('[планы] не удалось передать планы редактору:', e.message);
+        }
+        this.loadPlanCheckData();
+    },
+
+    /**
+     * Обратный ход: редактор сохранил планы — забираем их в смету.
+     * Возвращает true, если разметка действительно изменилась.
+     */
+    pullPlansFromEditor: function () {
+        let plans = null;
+        try { plans = JSON.parse(localStorage.getItem('floor_plans_v1')); } catch (e) { }
+        if (!plans || !Array.isArray(plans.floors)) return false;
+
+        // Планы помечены чужим расчётом — это соседняя вкладка калькулятора
+        // работает над другим объектом. Метки нет вовсе у записей, сделанных
+        // до переноса: их забираем, это и есть миграция.
+        if (plans.forCalc && String(plans.forCalc) !== String(this.state.calc_id || '')) return false;
+
+        // Аварийная копия подложки (редактор кладёт её в img, когда сервер
+        // недоступен) в смету не идёт: сотни килобайт на этаж раздули бы и
+        // localStorage, и запись в облако — ровно то, от чего уходили.
+        const clean = {
+            key: plans.key || null,
+            floors: plans.floors.map(f => {
+                const o = {};
+                for (const k in f) if (Object.prototype.hasOwnProperty.call(f, k) && k !== 'img') o[k] = f[k];
+                return o;
+            })
+        };
+        if (JSON.stringify(clean) === JSON.stringify(this.state.plans || null)) return false;
+        this.state.plans = clean;
+        this.saveState();
+        return true;
+    },
+
+    /**
+     * Планы при загрузке другого расчёта (из облака, по коду, по ссылке).
+     *
+     * state там собирается слиянием, а слияние сохраняет поля, которых в
+     * загруженном расчёте нет. Без явного присваивания планы прежнего
+     * объекта пережили бы загрузку нового и подмешались к нему — ровно та
+     * болезнь, от которой уходили.
+     */
+    adoptPlans: function (loadedState) {
+        this.state.plans = (loadedState && loadedState.plans) ? loadedState.plans : null;
+        this.pushPlansToEditor();
+        this.renderPlanChecks(); this.renderPlanAreaNote();
+    },
+
+    /** Открытие редактора планов: сначала отдаём ему планы этого объекта. */
+    openPlanEditor: function () {
+        if (!this.canUseDesign()) {
+            app.alert('Раздел проектирования вам пока не открыт. Его включает администратор.');
+            return;
+        }
+        // Номер объекта нужен и здесь: планы принадлежат конкретному расчёту,
+        // а без номера его нельзя ни сохранить в облако, ни отличить от других.
+        if (!this.state.calc_id) { this.ensureCalcId(true); this.saveState(); }
+        this.pushPlansToEditor();
+        window.open('plan_editor.html', '_blank');
+    },
+
+    renderAdminPlans: async function () {
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+        content.innerHTML += `<div id="admin_plans_root" style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка планов этажей…</div>`;
+
+        const headers = await this.recognitionAuthHeaders();
+        const root = () => document.getElementById('admin_plans_root');
+        if (!headers) {
+            // Ровно тот же случай, что и у архива распознаваний: роль «Владелец»
+            // берётся из сохранённого профиля, а вот сессии Supabase может не
+            // быть вовсе — например, после входа через Telegram или когда
+            // браузер почистил хранилище. Показываем найденные ключи: по ним
+            // сразу видно, сессии нет совсем или она есть, но без токена.
+            const found = (this._recognitionStorageKeys || []);
+            if (root()) root().innerHTML = `<div style="color:#EF4444; padding:20px;">
+                Список читается по вашей учётной записи, а токен сессии в браузере не найден.<br>
+                Попробуйте выйти и войти заново по email или через Google.
+                <div style="margin-top:10px; color:var(--text-sec); font-size:12px;">
+                    Для диагностики: ключи хранилища — ${found.length ? found.join(', ') : 'не найдены'}.<br>
+                    Вкладка «Распознавание» читает токен той же функцией — если там та же ошибка,
+                    дело в сессии, а не в планах.
+                </div></div>`;
+            return;
+        }
+
+        try {
+            const r = await fetch(`${this.PLANS_ENDPOINT}?admin=1`, { headers });
+            const data = await r.json();
+            if (!data.ok) throw new Error(data.error || (r.status === 403 ? 'доступ только для администраторов' : 'сервер не ответил'));
+            this._adminPlansData = data;
+        } catch (e) {
+            if (root()) root().innerHTML = `<div style="color:#EF4444; padding:20px;">Не удалось прочитать планы: ${e.message}</div>`;
+            return;
+        }
+        this.renderAdminPlansBody();
+    },
+
+    renderAdminPlansBody: function () {
+        const root = document.getElementById('admin_plans_root');
+        if (!root) return;
+        const data = this._adminPlansData || { projects: [], totalBytes: 0, retentionDays: 90 };
+        const projects = data.projects || [];
+        const isViewer = this.getAdminRole() === 'viewer';
+        const esc = s => String(s ?? '').replace(/[&<>"]/g,
+            c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const mb = b => (b / 1048576).toFixed(1) + ' МБ';
+        const dt = s => s ? new Date(s).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+        const keep = data.retentionDays || 90;
+
+        // Объекты у порога срока хранения подсвечиваем заранее: после
+        // удаления подложку уже не вернуть, план придётся рисовать заново.
+        const doomed = projects.filter(p => p.ageDays >= keep - 14).length;
+
+        let h = `
+            <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px;">
+                <h3 style="margin:0; color:var(--text-main);">📐 Планы этажей</h3>
+                <span style="font-size:12px; color:var(--text-sec);">
+                    Объектов: <b>${projects.length}</b> &nbsp;|&nbsp; занято: <b>${mb(data.totalBytes || 0)}</b>
+                    &nbsp;|&nbsp; срок хранения: <b>${keep} дн.</b>
+                </span>
+                <span style="flex:1"></span>
+                <button class="btn-ctrl" onclick="app.renderAdminPlans()">Обновить</button>
+                <button class="btn-ctrl" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}
+                        onclick="app.purgeAdminPlans(${keep})">Очистить старше ${keep} дней</button>
+                <button class="btn-ctrl" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}
+                        style="color:#EF4444;" onclick="app.purgeAdminPlans(0)">Очистить всё</button>
+            </div>
+            <div style="font-size:11.5px; color:var(--text-sec); margin-bottom:12px;">
+                Подложки лежат на Beget, мимо Supabase — его трафик узкое место.
+                Заброшенные объекты удаляются сами: раз в сутки, при очередной загрузке плана.
+                ${doomed ? `<b style="color:#D97706;">Скоро под удаление: ${doomed}.</b>` : ''}
+            </div>`;
+
+        if (!projects.length) {
+            h += `<div style="padding:30px; text-align:center; color:var(--text-sec);">Планов этажей пока нет.</div>`;
+            root.innerHTML = h;
+            return;
+        }
+
+        h += `<table class="inv-table" style="margin-bottom:30px; table-layout:fixed; width:100%;">
+                <thead><tr>
+                    <th style="width:30px;">#</th>
+                    <th style="width:210px;">Монтажник</th>
+                    <th>Этажи</th>
+                    <th style="width:80px; text-align:right;">Размер</th>
+                    <th style="width:150px;">Последняя правка</th>
+                    <th style="width:70px; text-align:center;">Действия</th>
+                </tr></thead><tbody>`;
+
+        projects.forEach((p, i) => {
+            const old = p.ageDays >= keep - 14;
+            const thumbs = (p.files || []).map(f => `
+                <a href="${this.PLANS_ENDPOINT}?k=${p.key}&n=${encodeURIComponent(f.name)}" target="_blank"
+                   title="${f.floor} этаж, ${mb(f.bytes)}, ${dt(f.mtime)}"
+                   style="display:inline-block; margin:0 6px 4px 0; text-align:center; text-decoration:none;">
+                    <img src="${this.PLANS_ENDPOINT}?k=${p.key}&n=${encodeURIComponent(f.name)}"
+                         loading="lazy" style="width:58px; height:44px; object-fit:cover; border-radius:4px; border:1px solid var(--border); background:#fff;">
+                    <div style="font-size:9px; color:var(--text-sec);">${f.floor} эт.</div>
+                </a>`).join('');
+
+            h += `<tr>
+                <td style="color:var(--text-sec);">${i + 1}</td>
+                <td>
+                    <b style="font-size:12px;">${esc(p.owner || 'неизвестно')}</b>
+                    <div style="font-size:10px; color:var(--text-sec); font-family:monospace;" title="Ключ объекта">${p.key.slice(0, 12)}…</div>
+                </td>
+                <td>${thumbs}</td>
+                <td style="text-align:right;">${mb(p.bytes)}</td>
+                <td style="${old ? 'color:#D97706; font-weight:600;' : ''}">
+                    ${dt(p.touchedAt)}<br>
+                    <span style="font-size:10px;">${p.ageDays} дн. назад</span>
+                </td>
+                <td style="text-align:center;">
+                    <button class="admin-action-btn btn-del" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}
+                            title="Удалить планы этого объекта"
+                            onclick="app.purgeAdminPlans(null, '${p.key}')"><span class="btn-icon">🗑</span><span class="btn-text"> Удалить</span></button>
+                </td>
+            </tr>`;
+        });
+
+        h += `</tbody></table>`;
+        root.innerHTML = h;
+    },
+
+    /**
+     * Очистка подложек. olderThanDays — «всё, к чему не прикасались столько
+     * дней» (0 — за всё время), либо key — один объект поимённо.
+     */
+    purgeAdminPlans: async function (olderThanDays, key) {
+        const what = key
+            ? 'планы этажей выбранного объекта'
+            : (olderThanDays ? `планы, к которым не прикасались больше ${olderThanDays} дней` : 'ВСЕ планы этажей');
+        if (!await this.confirm(`Удалить ${what}? Подложки восстановить будет нельзя — их придётся загружать заново.`)) return;
+
+        const headers = await this.recognitionAuthHeaders();
+        if (!headers) { app.alert('Сессия истекла — обновите страницу.'); return; }
+
+        try {
+            const body = key
+                ? { action: 'purge', keys: [key] }
+                : { action: 'purge', olderThanDays: olderThanDays || 0 };
+            const r = await fetch(this.PLANS_ENDPOINT, {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+                body: JSON.stringify(body),
+            });
+            const data = await r.json();
+            if (!data.ok) throw new Error(data.error || 'сервер отказал');
+            app.alert(`Удалено подложек: ${data.removed}. Освобождено: ${(data.freedBytes / 1048576).toFixed(1)} МБ.`);
+            this.renderAdminPlans();
+        } catch (e) {
+            app.alert('Не удалось очистить планы: ' + e.message);
+        }
+    },
+
+    /**
      * Токен текущей сессии Supabase — по нему сервер архива проверяет роль.
      *
      * Три источника подряд, потому что каждый по отдельности подводит:
@@ -10846,11 +11643,50 @@ const app = {
         try {
             const r = await fetch(`${this.RECOGNIZE_ARCHIVE}?access=1`);
             const data = await r.json();
-            if (data && data.ok) this._recognitionAccess = { users: data.users || {}, regions: data.regions || {} };
+            // Держим весь ответ: кроме распознавания в нём раздел design
+            // (проектирование) со своими списками людей, дистрибьюторов и регионов.
+            if (data && data.ok) {
+                this._recognitionAccess = data;
+                this._accessLists = data;
+            }
         } catch (e) {
             console.warn('[доступ] списки не получены:', e.message);
         }
         return this._recognitionAccess || { users: {}, regions: {} };
+    },
+
+    /**
+     * Сохранение любого переключателя доступа на сервере.
+     * feature: '' — распознавание, 'design' — проектирование;
+     * kind: 'user' | 'dist' | 'region'. Возвращает свежие списки.
+     */
+    postAccessChange: async function (feature, kind, name, enabled) {
+        const headers = await this.recognitionAuthHeaders();
+        if (!headers) throw new Error('Сессия истекла — обновите страницу.');
+        const body = { action: 'setAccess', kind: kind, name: name, enabled: enabled };
+        if (feature) body.feature = feature;
+        const r = await fetch(this.RECOGNIZE_ARCHIVE, {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+            body: JSON.stringify(body),
+        });
+        const data = await r.json();
+        if (!data.ok) throw new Error(data.error || 'сервер отказал');
+        this._recognitionAccess = data;
+        this._accessLists = data;
+        return data;
+    },
+
+    /**
+     * Понимает ли сервер раздел «проектирование».
+     *
+     * Старый recognize_archive.php ключа design не отдаёт и, что важнее,
+     * молча принял бы переключатель проектирования за переключатель
+     * распознавания — поэтому до обновления файла на сервере эти
+     * переключатели показываем выключенными и подписываем причину.
+     */
+    designAccessSupported: function () {
+        return !!(this._recognitionAccess && this._recognitionAccess.design);
     },
 
     /** Логин, под которым распознавания монтажника попадают в архив. */
@@ -10864,13 +11700,20 @@ const app = {
      * Обычный переключатель, а не кнопка: он реагирует на клик мгновенно,
      * своей анимацией, не дожидаясь ответа сервера и перерисовки таблицы.
      */
+    /** Администратору инструменты открыты по должности — наблюдателю нет. */
+    isRoleAlwaysAllowed: function (u) {
+        const email = (u.email || '').toLowerCase();
+        return u.account_type === 'admin' || (email && this.SUPER_ADMIN_EMAILS.includes(email));
+    },
+
     recognitionAccessCell: function (u, isViewer) {
         const acc = this._recognitionAccess || { users: {}, regions: {} };
         const key = this.recognitionUserKey(u);
         const region = u.region || '';
 
         // Администраторам инструмент доступен по должности, включать нечего.
-        if (['admin', 'viewer'].includes(u.account_type)) {
+        // Наблюдателям — включается переключателем, как обычным монтажникам.
+        if (this.isRoleAlwaysAllowed(u)) {
             return `<span style="font-size:10px; color:var(--text-sec);" title="Администраторам распознавание доступно всегда">по роли</span>`;
         }
         if (!key) {
@@ -10935,6 +11778,97 @@ const app = {
             if (input) input.checked = !enabled;
             setLabel(!enabled ? 'включено' : 'выключено', !enabled ? '#10B981' : 'var(--text-sec)');
             app.alert('Не удалось изменить доступ: ' + e.message);
+        }
+    },
+
+    /**
+     * Ячейка столбца «Проектирование» — доступ к листам проекта и редактору планов.
+     *
+     * Устроена как у распознавания, но открыть инструмент можно тремя путями:
+     * лично, всему дистрибьютору и всему региону — поэтому подпись под
+     * переключателем говорит, откуда доступ пришёл.
+     */
+    designAccessCell: function (u, isViewer) {
+        if (this.isRoleAlwaysAllowed(u)) {
+            return `<span style="font-size:10px; color:var(--text-sec);" title="Администраторам проектирование доступно всегда">по роли</span>`;
+        }
+        if (!this.designAccessSupported()) {
+            return `<span style="font-size:10px; color:#D97706;" title="Обновите recognize_archive.php на сервере — в ответе нет раздела «проектирование»">нет на сервере</span>`;
+        }
+        const key = this.recognitionUserKey(u);
+        if (!key) {
+            return `<span style="font-size:10px; color:var(--text-sec);" title="Нет email или логина — доступ включать не по чему">—</span>`;
+        }
+        const d = this._recognitionAccess.design;
+        const region = u.region || '';
+        const byUser = Object.keys(d.users || {}).some(x => String(x).toLowerCase() === key.toLowerCase());
+        const byDist = !!(u.distributor_id && (d.dists || {})[u.distributor_id]);
+        const byRegion = !!(region && (d.regions || {})[region]);
+        const on = byUser || byDist || byRegion;
+
+        const label = byUser ? 'включено' : (byDist ? 'по дистрибьютору' : (byRegion ? 'по региону' : 'выключено'));
+        const title = byUser
+            ? 'Доступ к проектированию включён лично'
+            : (byDist ? 'Открыто всему дистрибьютору. Переключатель включит доступ лично'
+                : (byRegion ? `Открыто всему региону «${region}». Переключатель включит доступ лично`
+                    : 'Доступ к листам проекта и редактору планов'));
+        const keyEsc = key.replace(/'/g, "\\'");
+        const cellId = 'des_acc_' + String(u.id).replace(/[^a-zA-Z0-9_-]/g, '');
+
+        return `<div style="display:flex; flex-direction:column; align-items:center; gap:3px;" title="${title}">
+            <label class="switch">
+                <input type="checkbox" ${on ? 'checked' : ''} ${isViewer ? 'disabled' : ''}
+                       onchange="app.toggleDesignAccess('${keyEsc}', this.checked, this, '${cellId}')">
+                <span class="slider"></span>
+            </label>
+            <span id="${cellId}" style="font-size:9.5px; color:${on ? '#10B981' : 'var(--text-sec)'};">${label}</span>
+        </div>`;
+    },
+
+    /** Включение и выключение проектирования конкретному пользователю. */
+    toggleDesignAccess: async function (key, enabled, input, cellId) {
+        const labelEl = cellId ? document.getElementById(cellId) : null;
+        const setLabel = (text, color) => {
+            if (!labelEl) return;
+            labelEl.textContent = text;
+            labelEl.style.color = color;
+        };
+        setLabel(enabled ? 'включено' : 'выключено', enabled ? '#10B981' : 'var(--text-sec)');
+        try {
+            await this.postAccessChange('design', 'user', key, enabled);
+        } catch (e) {
+            if (input) input.checked = !enabled;
+            setLabel(!enabled ? 'включено' : 'выключено', !enabled ? '#10B981' : 'var(--text-sec)');
+            app.alert('Не удалось изменить доступ: ' + e.message);
+        }
+    },
+
+    /** Проектирование целому региону — регион берётся из фильтра над таблицей. */
+    toggleRegionDesign: async function (enabled) {
+        const region = (document.getElementById('admin_filter_region') || {}).value || '';
+        if (!region) { app.alert('Сначала выберите регион в фильтре над таблицей.'); return; }
+        if (!await this.confirm(`${enabled ? 'Включить' : 'Выключить'} проектирование для региона «${region}»?`)) return;
+        try {
+            await this.postAccessChange('design', 'region', region, enabled);
+            this.loadAdminData(this._adminOffset || 0);
+        } catch (e) {
+            app.alert('Не удалось изменить доступ региона: ' + e.message);
+        }
+    },
+
+    /** Проектирование всем монтажникам дистрибьютора. */
+    toggleDistDesign: async function (enabled) {
+        const sel = document.getElementById('design_dist_select');
+        const distId = sel ? sel.value : '';
+        if (!distId) { app.alert('Сначала выберите дистрибьютора в списке рядом.'); return; }
+        const dist = (this.adminData.distributors || []).find(d => d.id === distId);
+        const distLabel = dist ? dist.company_name : distId;
+        if (!await this.confirm(`${enabled ? 'Включить' : 'Выключить'} проектирование всем монтажникам «${distLabel}»?`)) return;
+        try {
+            await this.postAccessChange('design', 'dist', distId, enabled);
+            this.loadAdminData(this._adminOffset || 0);
+        } catch (e) {
+            app.alert('Не удалось изменить доступ дистрибьютора: ' + e.message);
         }
     },
 
@@ -13686,6 +14620,380 @@ const app = {
         }
     },
 
+    // Данные для листа «Расчёт теплопотерь»: помещения из state.rooms,
+    // расчёт по конструкциям — тот же getRoomHeatLoss, что и в смете.
+    // Нумерация помещений «этаж.NN», как в проектах (1.01, 1.02, 2.01…).
+    buildHeatLossData: function () {
+        const s = this.state;
+        if (!s.detailedRooms || !s.rooms || !s.rooms.length) return null;
+        const byFloor = {};
+        s.rooms.forEach(r => {
+            const f = parseInt(r.floor) || 1;
+            (byFloor[f] = byFloor[f] || []).push(r);
+        });
+        return Object.keys(byFloor).sort((a, b) => a - b).map(f => {
+            let floorTotal = 0;
+            const rooms = byFloor[f].map((r, idx) => {
+                const L = this.getRoomHeatLoss(r);
+                const items = [];
+                if (L.Q_wall > 0) items.push({ type: 'Наружная стена', count: 1, area: L.wallArea, Tv: L.Tv, Tn: L.Tn, R: L.R_wall, n: L.n_wall, Q: L.Q_wall });
+                if (L.Q_glz > 0) items.push({ type: 'Окно', count: 1, area: L.totalWinArea, Tv: L.Tv, Tn: L.Tn, R: L.R_glz, n: L.n_glz, Q: L.Q_glz });
+                if (L.Q_roof > 0) items.push({ type: 'Кровля', count: 1, area: parseFloat(r.area) || 0, Tv: L.Tv, Tn: L.Tn, R: L.R_roof, n: L.n_roof, Q: L.Q_roof });
+                if (L.Q_floor > 0) items.push({ type: 'Пол', count: 1, area: parseFloat(r.area) || 0, Tv: L.Tv, Tn: L.Tn, R: L.R_floor, n: L.n_floor, Q: L.Q_floor });
+                floorTotal += L.Q_total;
+                return {
+                    id: f + '.' + String(idx + 1).padStart(2, '0'),
+                    name: r.name || 'Помещение ' + (idx + 1),
+                    area: parseFloat(r.area) || 0,
+                    items: items, total: L.Q_total
+                };
+            });
+            return { label: f + ' этаж', rooms: rooms, total: floorTotal };
+        });
+    },
+
+    /**
+     * Лист «Общие данные»: показатели по этажам, состав пола и технические
+     * указания. Всё берётся из состояния расчёта и состава сметы — руками
+     * вводить нечего, как и на остальных листах комплекта.
+     */
+    buildGeneralData: function () {
+        const s = this.state, spec = this.currentEquipmentList || [];
+        const has = re => spec.some(i => re.test(String(i.name || '')));
+        const tOut = s.selectedCity ? s.selectedCity.temp : -(s.region || 30);
+        const hasTp = (s.systems || []).includes('tp');
+        const hasRad = (s.systems || []).includes('rad');
+        const step = s.ufhStep1 || 150;
+        const pipeTp = s.ufhPipeMaterial === 'pert' ? 'PE-RT' : 'PEX-a';
+        const tee = s.radConnectionScheme === 'tee';
+
+        // показатели по этажам: площадь и теплопотери (тот же расчёт, что в смете)
+        let rows = [], totArea = 0, totQ = 0;
+        const hl = this.buildHeatLossData();
+        if (hl && hl.length) {
+            hl.forEach(fl => {
+                let a = 0;
+                fl.rooms.forEach(r => { a += r.area; });
+                totArea += a; totQ += fl.total;
+                rows.push([fl.label, String(tOut), a.toFixed(1),
+                    String(Math.round(fl.total)), '—', s.hotWater ? 'Приоритет' : '—']);
+            });
+        } else {
+            totArea = parseFloat(s.area) || 0;
+            totQ = Math.round(this.getHouseHeatLoss() * 1000);
+            rows.push(['Объект', String(tOut), totArea.toFixed(1),
+                String(totQ), '—', s.hotWater ? 'Приоритет' : '—']);
+        }
+        if (rows.length > 1)
+            rows.push(['Итого', '', totArea.toFixed(1), String(Math.round(totQ)), '—',
+                s.hotWater ? 'Приоритет' : '—']);
+
+        // состав пола: слои сверху вниз, трубы лежат в стяжке
+        const floorLayers = hasTp ? [
+            { name: 'Чистовое покрытие', h: 3 },
+            { name: 'Стяжка пола', h: 7 },
+            { name: 'ЭППС (тепло- и звукоизоляция)', h: 6, hatch: true },
+            { name: 'Черновой пол', h: 7, hatch: true }
+        ] : null;
+
+        const notes = [];
+        notes.push({ h: '1. Проект разработан на основании', lines: [
+            '– задания заказчика и планировки, переданной для расчёта;',
+            '– СП 60.13330.2020 «Отопление, вентиляция и кондиционирование воздуха»;',
+            '– СП 61.13330.2012 «Тепловая изоляция оборудования и трубопроводов»;',
+            '– СП 131.13330.2020 «Строительная климатология».'
+        ]});
+        notes.push({ h: '2. Внутренние расчётные температуры в отопительный период', lines: [
+            'Жилые комнаты +20…+22 °С; санузлы и ванные +25 °С; прихожая, холл, котельная +18…+20 °С.',
+            'Расчётная температура наружного воздуха: ' + tOut + ' °С' +
+                (s.selectedCity ? ' (' + s.selectedCity.name + ').' : '.')
+        ]});
+        notes.push({ h: '3. Сведения о температурных параметрах', lines: [
+            'В качестве теплоносителя принята вода.' +
+                (hasRad ? ' Теплоноситель на радиаторное отопление: 75–65 °С.' : '') +
+                (hasTp ? ' Теплоноситель на напольное отопление: 40–35 °С.' : ''),
+            'Расчётное давление в системе — 1,5 бар; опрессовка по завершении монтажа.'
+        ]});
+        if (hasRad) notes.push({ h: '4. Радиаторная система отопления', lines: [
+            'Система отопления запроектирована ' + (tee ? 'тройниковая.' : 'коллекторная (лучевая).'),
+            'Для разводки применяется труба в трубной теплоизоляции толщиной не менее 6 мм.',
+            'Радиаторы устанавливаются под окнами; ширина прибора 50–90 % ширины окна.',
+            'Для циркуляции теплоносителя применяется насос котла либо насосная группа.'
+        ]});
+        if (hasTp) notes.push({ h: (hasRad ? '5' : '4') + '. Система напольного отопления', lines: [
+            'В доме предусмотрен подогрев полов выбранных помещений. Схема подключения — зависимая, ' +
+                'теплоноситель единый с системой радиаторного отопления, график 40–35 °С.',
+            'Теплоноситель в коллектор тёплого пола подаётся от насосно-смесительного узла с ' +
+                'трёхходовым клапаном и циркуляционным насосом.',
+            'Коллектор устанавливается в помещении котельной либо на равноудалённом расстоянии до ' +
+                'контуров тёплого пола, в шкафу или открытым способом.',
+            'Для контуров применяется труба ' + pipeTp + ' 16×2,0 мм, шаг укладки ' + step + ' мм, ' +
+                'в неразъёмных присоединениях к коллектору; соединения в стяжке исключены.',
+            'Длина контура принята не более 100 м; помещения большой площади разделены на несколько петель.'
+        ]});
+        notes.push({ h: (hasRad && hasTp ? '6' : '5') + '. Общие указания по монтажу', lines: [
+            'Минимальная заливка бетоном — не менее 4 см над кожухом трубы; заливка производится ' +
+                'после гидравлического испытания на герметичность, труба при заливке под давлением.',
+            'Гидравлическое испытание — в течение 30 минут пробным давлением, превышающим рабочее, ' +
+                'с последующим осмотром трубопроводов по всей длине.',
+            'Оборудование и приборы указаны условно; окончательный подбор — согласно спецификации ' +
+                'и паспортам изделий.'
+        ]});
+
+        // Состав наружной стены — слои из подробного расчёта, для сводного плана
+        let wallLayers = null;
+        if (s.wallLayers && s.wallLayers.length) {
+            wallLayers = s.wallLayers.map(L => {
+                const mat = (typeof WALL_MATERIALS_DB !== 'undefined')
+                    ? WALL_MATERIALS_DB.find(m => m.id === L.matId) : null;
+                return { name: (mat ? mat.name : 'Слой') + ', ' + (L.thick || 0) + ' мм',
+                    thick: +L.thick || 0 };
+            });
+        }
+
+        return {
+            indicators: { rows: rows },
+            floorScheme: floorLayers ? { title: 'Схема 1', layers: floorLayers, pipeY: 6.5 } : null,
+            wallLayers: wallLayers,
+            notes: notes
+        };
+    },
+
+    /** Подпись монтажника для листов: «Фамилия И.О.» из личного кабинета */
+    installerSignName: function () {
+        const u = this._currentUserRow || this.state.tgUser || {};
+        const last = String(u.lastName || '').trim();
+        const gi = String(u.givenName || u.first_name || '').trim();
+        const mi = String(u.middleName || '').trim();
+        if (last) {
+            let s = last;
+            if (gi) s += ' ' + gi[0].toUpperCase() + '.';
+            if (mi) s += mi[0].toUpperCase() + '.';
+            return s;
+        }
+        return String(u.first_name || u.username || '').trim();
+    },
+
+    /**
+     * Лист «Общие данные раздела водоснабжения и канализации». Собирается так
+     * же, как отопительный: состав системы известен из сметы и настроек.
+     * null — водоснабжения в смете нет, лист в комплект не входит.
+     */
+    buildVkData: function () {
+        const s = this.state, spec = this.currentEquipmentList || [];
+        const zones = s.waterZones || [];
+        const hasWater = !!s.water || zones.length > 0;
+        if (!hasWater) return null;
+        const has = re => spec.some(i => re.test(String(i.name || '')));
+        const pipe = s.waterPipeMaterial === 'ppr' ? 'полипропилена' :
+            (s.waterPipeMaterial === 'pert' ? 'сшитого полиэтилена PE-RT' : 'сшитого полиэтилена PEX-a');
+        const well = !!s.well;
+        const dhw = s.hotWater ? (s.tankVol ? 'бойлером косвенного нагрева' : 'бойлером косвенного нагрева')
+            : 'двухконтурным котлом';
+
+        // приборы по санузлам — в таблицу показателей раздела
+        const L = { basin: 'раковина', shower: 'душ', bath: 'ванна', toilet: 'унитаз',
+            bidet: 'биде', wash: 'стиральная машина', dish: 'посудомоечная машина' };
+        let rows = [], totalPts = 0;
+        zones.forEach(z => {
+            const parts = [];
+            let cnt = 0;
+            Object.keys(L).forEach(k => {
+                const v = (z.fixtures || {})[k] || 0;
+                if (v > 0) { parts.push(L[k] + ' — ' + v); cnt += v; }
+            });
+            totalPts += cnt;
+            rows.push([z.name || 'Санузел', String(z.dist || ''), String(cnt),
+                String(cnt), '—', s.hotWater ? 'есть' : '—']);
+        });
+        if (rows.length > 1)
+            rows.push(['Итого', '', String(totalPts), String(totalPts), '—', s.hotWater ? 'есть' : '—']);
+
+        const notes = [];
+        notes.push({ h: '1. Исходные данные', lines: [
+            'Водопровод хозяйственно-питьевой предусмотрен для подачи воды на бытовые нужды' +
+                (s.outdoorFaucet ? ', в том числе на незамерзающие краны на фасаде здания' : '') + '.',
+            'Источником системы водоснабжения является ' + (well ? 'скважина' : 'централизованный ввод') +
+                '. Узел учёта воды устанавливается перед первым источником водоразбора.',
+            'Подключение внутренней системы водоснабжения осуществляется от ввода в помещении «Котельная».'
+        ]});
+        notes.push({ h: '2. Водоподготовка', lines: [
+            'Первичная водоподготовка осуществляется посредством ' +
+                (s.bigBlueFilter ? 'магистрального фильтра механической очистки типа Big Blue' :
+                    'магистрального фильтра механической очистки') + '.',
+            'На узле ввода предусмотрен байпас для подключения системы водоочистки (в настоящий ' +
+                'комплект не входит). Фильтрационная установка подбирается по анализу воды.'
+        ]});
+        notes.push({ h: '3. Принцип приготовления горячего водоснабжения', lines: [
+            'Приготовление горячей воды осуществляется ' + dhw + ' в помещении «Котельная».',
+            'Трассировка труб систем горячего и холодного водоснабжения — коллекторная. Для ' +
+                'распределения воды используются гребёнки с перекрывающими кранами.' +
+                (s.recirc ? ' Предусмотрена рециркуляция ГВС.' : '')
+        ]});
+        notes.push({ h: '4. Общая информация по монтажу системы водоснабжения', lines: [
+            'Монтаж трубопроводов В1, Т3 выполняется закрытым способом в слое ЭППС, конструкциях ' +
+                'стен, перегородок и перекрытий. Обязательна теплоизоляция трубными кожухами из ' +
+                'вспененного полиэтилена с толщиной стенки не менее 6 мм.',
+            'Трубопроводы водоснабжения — на основе труб из ' + pipe + '; соединения в стяжке исключены.',
+            'Открытые участки крепить перфорированной лентой с шагом 0,4–1,0 м. Водорозетки ' +
+                'монтировать на металлические планки.',
+            'Гидравлическое испытание проводится в течение 30 минут пробным давлением, превышающим ' +
+                'рабочее; падение давления не должно превысить 0,5 кгс/см².'
+        ]});
+        notes.push({ h: '5. Канализация', lines: [
+            'Отвод стоков — самотёчный, в стояк бытовой канализации. Выпуски приборов: унитаз — d110, ' +
+                'прочие приборы — d50.',
+            'Уклон трубопроводов в сторону стояка: d50 — 0,03; d110 — 0,02.',
+            'Все приборы подключаются через гидрозатворы. Стояк оборудуется ревизией и ' +
+                'вентиляционным выпуском либо аэрационным клапаном.'
+        ]});
+
+        return {
+            indicators: { title: 'Основные показатели раздела водоснабжения',
+                rows: rows.length ? rows : null },
+            floorScheme: { title: 'Схема 1', pipeLabels: ['В1', 'Т3'], pipeY: 6.5, layers: [
+                { name: 'Чистовое покрытие', h: 3 },
+                { name: 'Стяжка пола', h: 7 },
+                { name: 'ЭППС (тепло- и звукоизоляция)', h: 6, hatch: true },
+                { name: 'Черновой пол', h: 7, hatch: true }
+            ]},
+            notes: notes
+        };
+    },
+
+    // Конфигурация принципиальной схемы (project_scheme.js): состав системы
+    // определяется по state и позициям сметы — тем же способом, каким
+    // renderScheme собирает слои старой PNG-схемы. Возвращает null, если в
+    // смете нет котла (тогда лист схемы в комплект не входит).
+    buildSchemeConfig: function () {
+        const spec = this.currentEquipmentList || [];
+        const nameOf = i => (i && i.name ? String(i.name) : '');
+        const has = re => spec.some(i => re.test(nameOf(i)));
+        const s = this.state;
+        const isBoiler = i => /котел|котёл/i.test(nameOf(i));
+        // количество котлов каждого типа — по позициям сметы (каскад = qty > 1)
+        const cntBoilers = re => spec.filter(i => isBoiler(i) && re.test(nameOf(i)))
+            .reduce((a, i) => a + Math.max(1, Math.round(+i.q) || 1), 0);
+        const gasCount = cntBoilers(/газов/i);
+        const elCount = cntBoilers(/электрическ/i);
+        const gas = gasCount > 0, el = elCount > 0;
+        if (!gas && !el) return null;
+
+        const indirect = !!s.hotWater && has(/бойлер|водонагреват/i);
+        let tankVol = null;
+        if (indirect) {
+            const it = spec.find(i => /бойлер|водонагреват/i.test(nameOf(i)));
+            const m = nameOf(it).match(/(\d{2,4})\s*л/i);
+            tankVol = m ? +m[1] : (s.tankVol || null);
+        }
+        // объёмы расширительных баков — из названий подобранных позиций
+        const volOf = it => { const m = nameOf(it).match(/(\d{1,3})\s*л/i); return m ? +m[1] : 0; };
+        // \w не матчит кириллицу («расширительный» не находился) — потому \S*
+        const tankHeat = spec.find(i => /расширительн\S*\s+бак/i.test(nameOf(i)) && !/гвс/i.test(nameOf(i)));
+        const tankDhw = spec.find(i => /расширительн\S*\s+бак/i.test(nameOf(i)) && /гвс/i.test(nameOf(i)));
+
+        const power = Math.max(1, Math.round(this.getHouseHeatLoss() || 0));
+        const loadScheme = (s.tankLoadScheme || 'valve');
+
+        // Контурность газового котла — из названия подобранной позиции,
+        // запасной вариант — по правилу подбора (бойлер ⇒ одноконтурный)
+        let gasCircuits = indirect ? 1 : 2;
+        const gasIt = spec.find(i => isBoiler(i) && /газов/i.test(nameOf(i)));
+        if (gasIt && /одноконтурн/i.test(nameOf(gasIt))) gasCircuits = 1;
+        else if (gasIt && /двухконтурн/i.test(nameOf(gasIt))) gasCircuits = 2;
+
+        // Суммарная мощность котлов — из названий позиций «(NN кВт)»;
+        // по ней, как в расчёте обвязки, выбирается диаметр магистралей:
+        // нержавейка 22х1,2 / 28х1,2 (порог 30 кВт), в режиме ROMMER —
+        // аналог PPR 32х4,4 / 40х5,5 (те же замены, что в смете)
+        let boilerKw = 0;
+        spec.forEach(i => {
+            if (!isBoiler(i)) return;
+            const m = nameOf(i).match(/(\d{1,3})\s*кВт/i);
+            if (m) boilerKw += (+m[1]) * (i.q || 1);
+        });
+        if (!boilerKw) boilerKw = power;
+        const isPpr = s.brandMode === 'rommer';
+        const dia = boilerKw <= 30
+            ? (isPpr ? 'Ø32х4,4 мм' : 'Ø22х1,2 мм')
+            : (isPpr ? 'Ø40х5,5 мм' : 'Ø28х1,2 мм');
+
+        return {
+            gas: gas ? { circuits: gasCircuits, count: gasCount } : null,
+            el: el ? { count: elCount } : null,
+            indirect: indirect ? { vol: tankVol || undefined, wall: s.tankMount === 'wall' } : null,
+            fugas: indirect && loadScheme === 'valve',
+            loadPump: indirect && loadScheme === 'pump',
+            rad: (s.systems || []).includes('rad'),
+            tp: (s.systems || []).includes('tp'),
+            hydro: has(/гидрострелк|гидравлическ\S* раздел/i) ? { kw: Math.ceil(power / 5) * 5 } : null,
+            water: !!s.water || indirect,
+            recirc: !!s.recirc,
+            tankHeating: volOf(tankHeat),
+            tankDhw: volOf(tankDhw),
+            dia: dia
+        };
+    },
+
+    // Листы проекта (project_sheets.js): спецификация оборудования на листах А3
+    // по текущей смете. Данные уходят через localStorage, страницу листов рисует
+    // sheet_demo.html — по той же схеме, по какой invoice.html получает счёт.
+    openProjectSheets: async function () {
+        if (!this.canUseDesign()) { app.alert('Раздел проектирования вам пока не открыт. Его включает администратор.'); return; }
+        const list = this.currentEquipmentList || [];
+        if (!list.length) { app.alert("Смета пуста — сначала рассчитайте объект."); return; }
+        // Название объекта обязательно: оно уходит на титульный лист. Просим
+        // сразу с адресом — как в проектах-образцах («Жилой дом, 106 м², д. Марусино»).
+        let pName = (this.state.projectName || '').trim();
+        if (pName === 'true' || pName === 'false') pName = '';
+        if (!pName) {
+            pName = ((await app.prompt('Укажите название объекта и адрес — без названия листы проекта не формируются. Например: «Жилой дом 106 м², д. Марусино».', '', 'Листы проекта')) || '').trim();
+            if (!pName) return;
+            this.state.projectName = pName;
+            this.saveState(); this.syncUI();
+        }
+        // Вторая строка титульного — город объекта. Отдельно не спрашиваем:
+        // город уже выбран в расчёте (от него считаются теплопотери), а адрес
+        // монтажник пишет в самом названии. Города нет — строка не печатается.
+        const region = this.state.selectedCity ? this.state.selectedCity.name : '';
+        if (!this.state.calc_id) { this.ensureCalcId(true); this.saveState(); }
+        const cc = this.state.customCompany || null;
+        const payload = {
+            title: 'Спецификация оборудования и материалов',
+            // Шифр комплекта в штампы — как в проектах («2025 – 191 – MEP»);
+            // название объекта на титуле отдельно, без дублей.
+            code: new Date().getFullYear() + ' – ' + (this.state.calc_id || 'HC') + ' – ИС',
+            object: pName,
+            city: region,
+            // Логотип на титульный — тот же, что в шапке КП: свой логотип
+            // монтажника, если загружен в профиле, иначе ТЕРЕМ.
+            logo: (cc && cc.logo) ? cc.logo : 'img/logo.jpg',
+            area: this.state.area || 0,
+            heatloss: this.buildHeatLossData(),
+            scheme: this.buildSchemeConfig(),
+            // Данные для листа «Общие данные»: показатели по этажам и
+            // технические указания собираются по тем же параметрам, по каким
+            // считалась смета — отдельного ввода не требуют.
+            gd: this.buildGeneralData(),
+            gdVk: this.buildVkData(),
+            // Подписи на титульном и в штампах: «Разработал» — монтажник из
+            // личного кабинета, ГИП — по умолчанию; место под подпись между
+            // должностью и фамилией остаётся пустым, как в проектах.
+            people: { zakaz: '', gip: 'Ибатуллин Д.О.', razrab: this.installerSignName() },
+            items: list.map(i => ({
+                name: i.name, unit: i.unit, q: i.q,
+                sectionTitle: i.sectionTitle, group: i.group, isOpt: i.isOpt
+            }))
+        };
+        try { localStorage.setItem('project_sheets_payload', JSON.stringify(payload)); }
+        catch (e) { app.alert("Не удалось передать смету на листы."); return; }
+        // Планы этажей страница листов читает из того же передаточного ключа,
+        // что и редактор. Соседняя вкладка с другим объектом могла оставить
+        // там свои — кладём планы именно этой сметы.
+        this.pushPlansToEditor();
+        window.open('sheet_demo.html', '_blank');
+    },
+
     shareInvoice: async function () {
         if (!this.checkAccess('base')) return;
 
@@ -14810,6 +16118,7 @@ const app = {
                     delete savedState.themeMode;
 
                     this.state = { ...this.state, ...savedState };
+                    this.adoptPlans(savedState);
                     this.syncUI();
                     this.render();
                     app.alert("✅ Расчет успешно загружен по коду!");
@@ -14840,6 +16149,7 @@ const app = {
                 delete savedState.themeMode;
 
                 this.state = { ...this.state, ...savedState };
+                this.adoptPlans(savedState);
                 this.syncUI();
                 this.render();
             }
@@ -14877,8 +16187,22 @@ const app = {
             priceSource: currentPriceSource
         };
 
+        // Планы — часть объекта, а не настройка приложения: разметка ушла из
+        // state вместе с остальным расчётом, здесь дочищаем передаточный ключ
+        // редактора.
+        //
+        // Подложки с сервера при этом НЕ трогаем. «Сбросить всё» очищает рабочий
+        // стол, а не удаляет сохранённое: та же смета могла уже уехать в облако,
+        // и её разметка по-прежнему ссылается на эти файлы — удалив их здесь, мы
+        // сломали бы листы у сохранённого проекта. Папки, на которые и правда
+        // никто больше не сошлётся, уберёт автоочистка по сроку хранения.
+        try { localStorage.removeItem('floor_plans_v1'); } catch (e) { }
+        this.loadPlanCheckData();
+
         this.saveState();
         this.syncUI();
+        this.renderPlanChecks();
+        this.renderPlanAreaNote();
         // Явно перерисовываем список помещений: syncUI вызывает renderRoomsUI только в подробном
         // режиме (detailedRooms=true), а после сброса он выключен — без этого старые карточки
         // помещений остаются висеть в DOM (rooms_list_1/2 не очищаются). state.rooms уже пуст,
@@ -15438,6 +16762,41 @@ const app = {
             try { this.state = { ...this.state, ...JSON.parse(localStorage.getItem('stout_save')) }; } catch (e) { console.error("Ошибка загрузки сохранения", e); }
         }
         this.loadInstallerSettingsLocal();
+        // Списки доступа к инструментам: приходят с сервера, поэтому интерфейс
+        // пересобираем ещё раз, когда они доедут (до этого проектирование
+        // и распознавание закрыты — открывать «на всякий случай» нельзя).
+        this.loadAccessLists().then(() => {
+            this.syncDesignUI();
+            this.renderWaterPlanChecks();
+            if (typeof RecognizeUI !== 'undefined') RecognizeUI.syncButton();
+        });
+        // Сводка планов этажей для сверки приборов; при сохранении планов в редакторе
+        // (другая вкладка) браузер шлёт событие storage — пересверяем на лету
+        this.loadPlanCheckData();
+        window.addEventListener('storage', (e) => {
+            if (!e.key || e.key === 'floor_plans_v1') {
+                // Редактор открыт в соседней вкладке и только что сохранился —
+                // забираем разметку в смету, иначе она осталась бы жить сама
+                // по себе и не уехала бы в облако вместе с расчётом.
+                this.pullPlansFromEditor();
+                this.loadPlanCheckData();
+                this.renderPlanChecks(); this.renderWaterPlanChecks(); this.renderPlanAreaNote();
+            }
+        });
+        // На случай, если событие storage не дошло (в части браузеров его не
+        // получают фоновые вкладки): вернулись в калькулятор — сверяем планы.
+        window.addEventListener('focus', () => {
+            if (this.pullPlansFromEditor()) {
+                this.loadPlanCheckData();
+                this.renderPlanChecks(); this.renderWaterPlanChecks(); this.renderPlanAreaNote();
+            }
+        });
+        // Первый запуск после переноса: планы ещё лежат старым общим ключом, а
+        // в смете их нет. Сначала забираем их в текущий объект — иначе запись
+        // ниже стёрла бы человеку всю разметку.
+        if (!this.state.plans) this.pullPlansFromEditor();
+        // Планы из загруженной сметы кладём туда, откуда их читает редактор.
+        this.pushPlansToEditor();
         // Тему ставим до первой отрисовки, иначе в авто-режиме страница успеет мигнуть
         // светлой. Координаты, если их ещё нет, догружаются в фоне — до их появления
         // авто-режим работает по расписанию.
@@ -15717,12 +17076,24 @@ const app = {
         }
 
         // Запуск проверки соединения и опроса уведомлений
-        this.checkConnectionStatus();
-        this.fetchNotifications();
-        setInterval(() => {
+        // Опрос уведомлений. Раз в 2 минуты вместо получаса полуминутных проверок:
+        // для «пришло сообщение / клиент ответил на смету» этого с запасом хватает,
+        // а трафик Supabase падает вчетверо. Свёрнутая или неактивная вкладка не опрашивает
+        // вообще — фоновые вкладки, забытые открытыми на сутки, и давали основной расход.
+        const pollNotifications = (force) => {
+            if (document.hidden) return;
+            const now = Date.now();
+            // Возврат на вкладку проверяет сразу, но не чаще раза в минуту — иначе
+            // переключение туда-сюда между окнами превращается в шквал запросов
+            if (!force && this._lastNotifPoll && now - this._lastNotifPoll < 60000) return;
+            this._lastNotifPoll = now;
             this.checkConnectionStatus();
             this.fetchNotifications();
-        }, 30000);
+        };
+
+        pollNotifications(true);
+        setInterval(() => pollNotifications(true), 120000);
+        document.addEventListener('visibilitychange', () => pollNotifications(false));
 
         // Initialize mobile UI state and listeners
         this.syncMobileUI();
@@ -19800,6 +21171,407 @@ const app = {
             this.syncRoomsToState(); this.syncUI(); this.render();
         }
     },
+    // ─── Уточнение площадей комнат по планам этажей ────────────────────
+    // Зоны редактора планов (plan_editor.html, разметка живёт в смете)
+    // подписываются именами комнат подробного расчёта, а при заданном масштабе
+    // площадь зоны — это измеренная площадь комнаты. Кнопка «Уточнить площади
+    // по плану» показывает расхождения (дифф с галочками) и после подтверждения
+    // переписывает area отмеченных комнат значениями с плана.
+    refineAreasFromPlan: function () {
+        if (!this.canUseDesign()) { this.alert('Раздел проектирования вам пока не открыт. Его включает администратор.', 'Площади по плану'); return; }
+        if (!this.state.rooms || this.state.rooms.length === 0) {
+            this.alert('Сначала добавьте комнаты в подробном расчёте.', 'Площади по плану');
+            return;
+        }
+        const plans = this.currentPlans();
+        let floors = (plans && Array.isArray(plans.floors)) ? plans.floors : [];
+        // Подложка уехала на сервер: в разметке от неё остаётся имя файла.
+        // Записи, сделанные до переноса, держат картинку в img.
+        if (!floors.some(f => f && (f.img || f.imgFile))) {
+            this.alert('Планы этажей ещё не загружены. Нажмите «Открыть редактор» в блоке «Планы этажей для проекта», загрузите план и обведите зоны комнат.', 'Площади по плану');
+            return;
+        }
+        // площади подписанных зон: имя комнаты → сумма площадей её зон
+        let zoneMap = {}, noScaleNamed = false;
+        floors.forEach(f => {
+            if (!f) return;
+            if (!f.pxPerM) {
+                // зоны обведены, но масштаб не задан — площади посчитать нечем
+                if ((f.zones || []).some(z => String(z.name || '').trim())) noScaleNamed = true;
+                return;
+            }
+            (f.zones || []).forEach(z => {
+                let nm = String(z.name || '').trim();
+                if (!nm || !Array.isArray(z.pts) || z.pts.length < 3) return;
+                let s = 0;
+                for (let i = 0; i < z.pts.length; i++) {
+                    let a = z.pts[i], b = z.pts[(i + 1) % z.pts.length];
+                    s += a[0] * b[1] - b[0] * a[1];
+                }
+                let m2 = Math.abs(s / 2) / (f.pxPerM * f.pxPerM);
+                if (!(m2 > 0.1)) return;
+                let key = nm.toLowerCase();
+                if (!zoneMap[key]) zoneMap[key] = { area: 0, zones: 0 };
+                zoneMap[key].area += m2;
+                zoneMap[key].zones++;
+            });
+        });
+        // Комнаты-тёзки связать с планом нельзя: зона с таким именем одна, и обе
+        // комнаты забрали бы её площадь — площадь дома выросла бы вдвое.
+        let nameCount = {};
+        this.state.rooms.forEach(r => {
+            let k = String(r.name || '').trim().toLowerCase();
+            nameCount[k] = (nameCount[k] || 0) + 1;
+        });
+        let matched = [], unmatched = [], dupNames = [];
+        this.state.rooms.forEach(r => {
+            let key = String(r.name || '').trim().toLowerCase();
+            let z = key ? zoneMap[key] : null;
+            if (!z) { unmatched.push(r.name || 'без названия'); return; }
+            if (nameCount[key] > 1) {
+                if (dupNames.indexOf(r.name) < 0) dupNames.push(r.name);
+                return;
+            }
+            let cur = parseFloat(r.area) || 0;
+            let neu = Math.max(1, Math.round(z.area * 10) / 10);
+            matched.push({
+                id: r.id, name: r.name, floor: parseInt(r.floor) || 1,
+                cur: cur, neu: neu, zones: z.zones, changed: Math.abs(neu - cur) >= 0.05
+            });
+        });
+        if (!matched.length) {
+            if (noScaleNamed) {
+                this.alert('На плане не задан масштаб, поэтому площади зон посчитать нечем. Откройте редактор планов, нажмите «Масштаб» и укажите длину известного отрезка в метрах.', 'Площади по плану');
+            } else if (dupNames.length) {
+                this.alert('Комнаты с одинаковыми названиями связать с планом нельзя: ' + dupNames.join(', ') + '. Дайте им разные имена — и в расчёте, и в подписях зон.', 'Площади по плану');
+            } else {
+                this.alert('На планах не нашлось зон с именами комнат из расчёта. Подпишите зоны в редакторе планов (клик по комнате в списке «Комнаты из расчёта») и нажмите «Сохранить».', 'Площади по плану');
+            }
+            return;
+        }
+        if (!matched.some(m => m.changed)) {
+            this.alert('Площади уже совпадают с планом (комнат: ' + matched.length + ').' +
+                (unmatched.length ? ' Без зоны на плане: ' + unmatched.join(', ') + '.' : ''), 'Площади по плану');
+            return;
+        }
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const fmt = v => (Math.round(v * 10) / 10).toLocaleString('ru-RU');
+        let rowsHtml = matched.map(m => {
+            let d = m.neu - m.cur;
+            let fl = this.state.floors === 2 ? ' <span style="color:var(--text-sec); font-weight:400;">· ' + m.floor + ' эт.</span>' : '';
+            let zn = m.zones > 1 ? ' <span style="color:var(--text-sec); font-weight:400;">(зон: ' + m.zones + ')</span>' : '';
+            return '<label style="display:flex; align-items:center; gap:8px; padding:6px 8px; border:1px solid var(--border); border-radius:8px; font-size:12px;' + (m.changed ? ' cursor:pointer;' : ' opacity:0.55;') + '">' +
+                (m.changed
+                    ? '<input type="checkbox" checked data-room-id="' + m.id + '" data-area="' + m.neu + '" style="width:15px; height:15px; accent-color:var(--primary); flex-shrink:0; margin:0;">'
+                    : '<span style="width:15px; flex-shrink:0; text-align:center; color:var(--text-sec);">✓</span>') +
+                '<span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; color:var(--text-main);">' + esc(m.name) + fl + zn + '</span>' +
+                (m.changed
+                    ? '<span style="white-space:nowrap; color:var(--text-sec);">' + fmt(m.cur) + ' → <b style="color:var(--primary);">' + fmt(m.neu) + '</b> м² (' + (d > 0 ? '+' : '−') + fmt(Math.abs(d)) + ')</span>'
+                    : '<span style="white-space:nowrap; color:var(--text-sec);">' + fmt(m.cur) + ' м² — совпадает</span>') +
+                '</label>';
+        }).join('');
+        const overlay = document.createElement('div');
+        overlay.className = 'calc-dialog-overlay';
+        const card = document.createElement('div');
+        card.className = 'calc-dialog-card';
+        card.innerHTML =
+            '<h3 class="calc-dialog-title">Площади по плану</h3>' +
+            '<p class="calc-dialog-message">Отмеченным комнатам площадь будет заменена измеренной по зонам планов этажей:</p>' +
+            '<div style="display:flex; flex-direction:column; gap:6px; max-height:46vh; overflow-y:auto;">' + rowsHtml + '</div>' +
+            (unmatched.length ? '<div style="font-size:11px; color:var(--text-sec);">Без зоны на плане: ' + esc(unmatched.join(', ')) + ' — не изменятся.</div>' : '') +
+            (dupNames.length ? '<div style="font-size:11px; color:#D97706;">Одинаковые названия комнат — ' + esc(dupNames.join(', ')) + ': непонятно, какой из них принадлежит зона. Дайте им разные имена.</div>' : '') +
+            '<div class="calc-dialog-buttons">' +
+            '<button class="calc-dialog-btn calc-dialog-btn-cancel">Отмена</button>' +
+            '<button class="calc-dialog-btn calc-dialog-btn-confirm">Применить</button>' +
+            '</div>';
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        const close = () => {
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 200);
+        };
+        card.querySelector('.calc-dialog-btn-cancel').onclick = close;
+        card.querySelector('.calc-dialog-btn-confirm').onclick = () => {
+            let picked = [];
+            card.querySelectorAll('input[data-room-id]').forEach(chk => {
+                if (!chk.checked) return;
+                let v = parseFloat(chk.getAttribute('data-area'));
+                if (v > 0) picked.push({ id: +chk.getAttribute('data-room-id'), area: v });
+            });
+            // Расчёт рассчитан максимум на 300 м², и syncRoomsToState ужимает при
+            // переборе ВСЕ комнаты пропорционально — тогда применённые площади
+            // разошлись бы с планом, поехали бы даже неотмеченные комнаты. Не применяем.
+            let total = 0;
+            this.state.rooms.forEach(r => {
+                let p = picked.find(x => x.id === r.id);
+                total += p ? p.area : (parseFloat(r.area) || 0);
+            });
+            if (total > 300) {
+                this.alert('С площадями по плану сумма по дому выходит ' + fmt(total) +
+                    ' м², а расчёт рассчитан максимум на 300 м². Снимите часть галочек или уменьшите площади вручную.', 'Площади по плану');
+                return;
+            }
+            let n = 0;
+            picked.forEach(p => {
+                let r = this.state.rooms.find(x => x.id === p.id);
+                if (r) { r.area = p.area; n++; }
+            });
+            close();
+            if (n) { this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render(); }
+        };
+        setTimeout(() => overlay.classList.add('active'), 10);
+    },
+    // ─── Сверка приборов план↔расчёт ───────────────────────────────────
+    // Компактная сводка планов этажей: имена зон ТП и число радиаторов по этажам.
+    // Пересобирается при загрузке и по событию storage (редактор планов
+    // сохраняет из другой вкладки), а не на каждой перерисовке.
+    // null — планов нет, сверка молчит.
+    _planCheckData: null,
+    loadPlanCheckData: function () {
+        this._planCheckData = null;
+        const plans = this.currentPlans();
+        let floors = (plans && Array.isArray(plans.floors)) ? plans.floors : [];
+        // Подложка теперь лежит на сервере, а в разметке от неё остаётся имя
+        // файла (imgFile). Старые записи, сделанные до переноса, держат саму
+        // картинку в img — понимаем оба вида.
+        const hasPlan = f => !!(f && (f.img || f.imgFile));
+        if (!floors.some(hasPlan)) return;
+        let zonesArea = 0;   // сумма площадей всех зон (ТП и котельная — это помещения)
+        const polyM2 = (pts, ppm) => {
+            let s = 0;
+            for (let i = 0; i < pts.length; i++) {
+                let a = pts[i], b = pts[(i + 1) % pts.length];
+                s += a[0] * b[1] - b[0] * a[1];
+            }
+            return Math.abs(s / 2) / (ppm * ppm);
+        };
+        this._planCheckData = {
+            floors: floors.map(f => {
+                if (!hasPlan(f)) return null;   // пустая вкладка этажа — не сверяем
+                let tpNames = {}, wcNames = {};
+                (f.zones || []).forEach(z => {
+                    if (f.pxPerM && Array.isArray(z.pts) && z.pts.length >= 3)
+                        zonesArea += polyM2(z.pts, f.pxPerM);
+                    let nm = String(z.name || '').trim();
+                    if (z.type === 'tp') { if (nm) tpNames[nm.toLowerCase()] = nm; }
+                    else if (z.type === 'wc') { if (nm) wcNames[nm.toLowerCase()] = nm; }
+                });
+                // приборы: сколько каких стоит в каждом санузле плана
+                let fx = {}, risers = 0, loose = 0;
+                (f.fixtures || []).forEach(q => {
+                    if (q.t === 'riser') { risers++; return; }
+                    let key = String(q.z || '').trim().toLowerCase();
+                    if (!key) { loose++; return; }
+                    (fx[key] = fx[key] || {})[q.t] = ((fx[key] || {})[q.t] || 0) + 1;
+                });
+                return { tpNames: tpNames, rads: (f.rads || []).length,
+                    wcNames: wcNames, fx: fx, risers: risers, loose: loose,
+                    fixTotal: (f.fixtures || []).filter(q => q.t !== 'riser').length };
+            }),
+            zonesArea: Math.round(zonesArea * 10) / 10
+        };
+    },
+    // Предупреждения о расхождениях в #rooms_plan_checks: тёплый пол комнат против
+    // именованных зон ТП на планах (в обе стороны) и приборы под окнами по этажам —
+    // значки радиаторов на плане против счёта сметы (радиатор на каждое обычное
+    // окно комнаты с радиаторами + конвектор на каждое панорамное, как в render).
+    // Проверки не шумят, пока планами не пользуются: ТП сверяется только при
+    // наличии именованных зон, приборы — только если радиаторы на плане расставлены.
+    renderPlanChecks: function () {
+        const box = document.getElementById('rooms_plan_checks');
+        if (!box) return;
+        const data = this._planCheckData;
+        const rooms = (this.state.detailedRooms && this.state.rooms) || [];
+        if (!data || !rooms.length || !this.canUseDesign()) { box.style.display = 'none'; box.innerHTML = ''; return; }
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        let warns = [];
+        // норм. имя зоны → этаж плана, на котором она нарисована, и её подпись
+        let zoneFloor = {}, zoneName = {};
+        data.floors.forEach((fl, idx) => {
+            if (!fl) return;
+            for (const k in fl.tpNames) { zoneFloor[k] = idx + 1; zoneName[k] = fl.tpNames[k]; }
+        });
+        // Тёзки (частый случай — «Санузел» на обоих этажах) сверять по имени нельзя:
+        // непонятно, какой комнате принадлежит зона. Говорим об этом один раз.
+        let roomByKey = {}, nameCount = {};
+        rooms.forEach(r => {
+            const k = String(r.name || '').trim().toLowerCase();
+            if (!k) return;
+            roomByKey[k] = r;
+            nameCount[k] = (nameCount[k] || 0) + 1;
+        });
+        let dupWarned = {};
+        // Сторона плана: каждая подписанная зона ТП должна найти свою комнату
+        for (const k in zoneName) {
+            if (nameCount[k] > 1) {
+                if (!dupWarned[k]) {
+                    dupWarned[k] = 1;
+                    warns.push('Комнат с названием <b>' + esc(zoneName[k]) + '</b> в расчёте несколько — сверить их с планом по имени нельзя. Дайте им разные названия.');
+                }
+                continue;
+            }
+            const r = roomByKey[k];
+            if (!r) { warns.push('Зона ТП <b>' + esc(zoneName[k]) + '</b> на плане не совпадает по имени ни с одной комнатой расчёта.'); continue; }
+            if (!(r.sys && r.sys.includes('tp'))) {
+                warns.push('<b>' + esc(zoneName[k]) + '</b>: на плане есть зона ТП, а в расчёте тёплый пол у комнаты выключен.');
+                continue;
+            }
+            const rf = parseInt(r.floor) || 1;
+            if (rf !== zoneFloor[k])
+                warns.push('<b>' + esc(zoneName[k]) + '</b>: зона ТП нарисована на плане ' + zoneFloor[k] +
+                    ' этажа, а в расчёте комната на ' + rf + '-м.');
+        }
+        // Сторона расчёта: комнате с ТП нужна зона. Этажи, где разметку ещё не
+        // начинали (нет ни одной подписанной зоны), не трогаем — план дорисовывают
+        // постепенно, и ругаться на пустую вкладку этажа значило бы шуметь зря.
+        rooms.forEach(r => {
+            if (!(r.sys && r.sys.includes('tp'))) return;
+            const k = String(r.name || '').trim().toLowerCase();
+            if (!k || nameCount[k] > 1) return;             // без имени / тёзки — разобрано выше
+            if (zoneName[k]) return;                        // зона есть — разобрано выше
+            const fl = data.floors[(parseInt(r.floor) || 1) - 1];
+            if (!fl || !Object.keys(fl.tpNames).length) return;
+            warns.push('<b>' + esc(r.name) + '</b>: по расчёту тёплый пол, а зоны ТП на плане нет.');
+        });
+        // Приборы под окнами — только по этажам, где радиаторы уже расставлены
+        data.floors.forEach((fl, idx) => {
+            if (!fl || !fl.rads) return;
+            const floorNo = idx + 1;
+            let nRad = 0, nConv = 0;
+            rooms.forEach(r => {
+                if ((parseInt(r.floor) || 1) !== floorNo) return;
+                const roomHasRad = !r.sys || r.sys.includes('rad');
+                (r.windows || []).forEach(w => {
+                    if (w.isPan) nConv++;
+                    else if (roomHasRad) nRad++;
+                });
+            });
+            if (nRad + nConv !== fl.rads)
+                warns.push('<b>' + floorNo + ' этаж</b>: приборов под окнами на плане ' + fl.rads +
+                    ', по расчёту ' + (nRad + nConv) +
+                    (nConv ? ' (радиаторы ' + nRad + ' + конвекторы ' + nConv + ')' : '') + '.');
+        });
+        if (!warns.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+        box.innerHTML = '<div style="font-weight:700; color:#D97706; margin-bottom:2px;">⚠️ Расхождения с планами этажей</div>' +
+            warns.map(w => '<div style="margin-top:2px;">• ' + w + '</div>').join('') +
+            '<div style="margin-top:4px; opacity:0.8;">Поправьте план в редакторе («Планы этажей для проекта» → «Открыть редактор») или состав систем в комнатах.</div>';
+        box.style.display = 'block';
+    },
+    /**
+     * Сверка санузлов с планами — по образцу сверки радиаторов.
+     *
+     * Сопоставляются: санузлы расчёта и зоны «Санузел» на планах (по имени, в
+     * обе стороны) и состав приборов в каждом. Плюс стояк канализации: без
+     * него выпуски рисовать не от чего. Молчит, пока санузлы на планах не
+     * размечены, — план дорисовывают постепенно.
+     */
+    renderWaterPlanChecks: function () {
+        const box = document.getElementById('water_plan_checks');
+        if (!box) return;
+        const data = this._planCheckData;
+        const zones = (this.state.waterZones || []);
+        const hide = () => { box.style.display = 'none'; box.innerHTML = ''; };
+        if (!data || !zones.length || !this.canUseDesign()) { hide(); return; }
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const L = { basin: 'раковина', shower: 'душ', bath: 'ванна', toilet: 'унитаз',
+            bidet: 'биде', wash: 'стиральная машина', dish: 'посудомоечная машина' };
+
+        // зоны «Санузел» со всех этажей и приборы в них
+        let planWc = {}, planFx = {}, anyWc = false, risers = 0, fixTotal = 0, loose = 0;
+        data.floors.forEach(fl => {
+            if (!fl) return;
+            for (const k in fl.wcNames) { planWc[k] = fl.wcNames[k]; anyWc = true; }
+            for (const k in fl.fx) {
+                planFx[k] = planFx[k] || {};
+                for (const t in fl.fx[k]) planFx[k][t] = (planFx[k][t] || 0) + fl.fx[k][t];
+            }
+            risers += fl.risers || 0;
+            fixTotal += fl.fixTotal || 0;
+            loose += fl.loose || 0;
+        });
+        if (!anyWc && !fixTotal) { hide(); return; }   // санузлы на планах ещё не размечены
+
+        let warns = [];
+        let calcByKey = {}, dupNames = {};
+        zones.forEach(z => {
+            const k = String(z.name || '').trim().toLowerCase();
+            if (!k) return;
+            if (calcByKey[k]) dupNames[k] = 1;
+            calcByKey[k] = z;
+        });
+        // сторона расчёта: у каждого санузла должна быть зона на плане
+        zones.forEach(z => {
+            const k = String(z.name || '').trim().toLowerCase();
+            if (!k || dupNames[k]) return;
+            if (!planWc[k]) {
+                warns.push('<b>' + esc(z.name) + '</b>: есть в расчёте, а зоны «Санузел» на плане нет — ' +
+                    'приборы на листы водоснабжения и канализации не попадут.');
+                return;
+            }
+            // состав приборов: расчёт против плана
+            const onPlan = planFx[k] || {};
+            let diff = [];
+            Object.keys(L).forEach(t => {
+                const want = +((z.fixtures || {})[t] || 0), got = +(onPlan[t] || 0);
+                if (want !== got) diff.push(L[t] + ': по расчёту ' + want + ', на плане ' + got);
+            });
+            if (diff.length)
+                warns.push('<b>' + esc(z.name) + '</b>: состав приборов расходится — ' + esc(diff.join('; ')) + '.');
+        });
+        for (const k in dupNames)
+            warns.push('Санузлов с названием <b>' + esc(calcByKey[k].name) + '</b> в расчёте несколько — ' +
+                'сверить с планом по имени нельзя. Дайте им разные названия.');
+        // сторона плана: зона есть, а санузла в расчёте нет
+        for (const k in planWc)
+            if (!calcByKey[k])
+                warns.push('Зона <b>' + esc(planWc[k]) + '</b> на плане не совпадает по имени ни с одним ' +
+                    'санузлом расчёта — приборы для неё взять неоткуда.');
+        if (loose)
+            warns.push('Приборов, поставленных вне зон санузлов: <b>' + loose + '</b> — вода к ним подведётся, ' +
+                'но в сверку с расчётом они не попадают.');
+        if (fixTotal && !risers)
+            warns.push('<b>Стояк канализации не отмечен</b> — выпуски приборов вести некуда, ' +
+                'лист канализации не сформируется.');
+
+        if (!warns.length) { hide(); return; }
+        box.innerHTML = '<div style="font-weight:700; color:#D97706; margin-bottom:2px;">⚠️ Расхождения санузлов с планами</div>' +
+            warns.map(w => '<div style="margin-top:2px;">• ' + w + '</div>').join('') +
+            '<div style="margin-top:4px; opacity:0.8;">Поправьте на планах («Планы этажей для проекта» → «Открыть редактор») или состав санузлов здесь.</div>';
+        box.style.display = 'block';
+    },
+
+    // Общая площадь объекта с планов: сумма площадей всех зон против площади
+    // расчёта — подпись под ползунком «Основная площадь» (виден в обоих режимах).
+    // Расхождение больше max(2 м², 5%) подсвечивается янтарным; зон нет — скрыта.
+    renderPlanAreaNote: function () {
+        const box = document.getElementById('plan_area_note');
+        if (!box) return;
+        const data = this._planCheckData;
+        if (!data || !(data.zonesArea > 0) || !this.canUseDesign()) { box.style.display = 'none'; box.innerHTML = ''; return; }
+        const fmt = v => (Math.round(v * 10) / 10).toLocaleString('ru-RU');
+        const calcA = parseFloat(this.state.area) || 0;
+        const d = data.zonesArea - calcA;
+        // Обводят обычно часть комнат (радиаторные зон не имеют вовсе), поэтому
+        // «зон меньше, чем площадь дома» — норма, а не ошибка: показываем как факт.
+        // Тревога уместна в обратном случае: зоны заметно больше дома — так
+        // проявляется неверно заданный масштаб плана.
+        if (calcA <= 0) {
+            box.innerHTML = '📐 Зоны на планах этажей: ' + fmt(data.zonesArea) + ' м²';
+            box.style.color = 'var(--text-sec)';
+        } else if (d > Math.max(5, calcA * 0.25)) {
+            box.innerHTML = '📐 Зоны на планах этажей: <b>' + fmt(data.zonesArea) + ' м²</b> — больше площади расчёта (' +
+                fmt(calcA) + ' м²). Проверьте масштаб плана в редакторе.';
+            box.style.color = '#D97706';
+        } else if (Math.abs(d) <= Math.max(2, calcA * 0.05)) {
+            box.innerHTML = '📐 Зоны на планах этажей: ' + fmt(data.zonesArea) + ' м² — совпадает с расчётом';
+            box.style.color = 'var(--text-sec)';
+        } else {
+            box.innerHTML = '📐 Зоны на планах этажей: ' + fmt(data.zonesArea) + ' м² из ' + fmt(calcA) +
+                ' м² расчёта' + (d < 0 ? ' (обведено не всё)' : '');
+            box.style.color = 'var(--text-sec)';
+        }
+        box.style.display = 'block';
+    },
     updWindow: function (roomId, winId, field, val) {
         let r = this.state.rooms.find(x => x.id === roomId);
         if (r) {
@@ -20292,7 +22064,8 @@ const app = {
         c1.innerHTML = "";
         if (c2) c2.innerHTML = "";
 
-        if (!this.state.rooms) return;
+        const hs = document.getElementById('rooms_heatloss_summary');
+        if (!this.state.rooms) { if (hs) hs.style.display = 'none'; this.renderPlanChecks(); return; }
 
         let countFloor1 = 0;
         let countFloor2 = 0;
@@ -20361,6 +22134,10 @@ const app = {
                 roomIndex = countFloor1;
             }
 
+            // Теплопотери помещения — тот же расчёт, что уходит в лист
+            // «Расчёт теплопотерь» и в подбор котла
+            let roomQ = Math.round(this.getRoomHeatLoss(r).Q_total);
+
             let html = `<div class="zone-card" id="room_card_${r.id}" style="padding:8px; margin-bottom:0; border:1px solid var(--border); border-left:4px solid ${accentColor}; border-radius:6px; background:${cardBg}; box-shadow: ${cardShadow};">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
                             <div style="display:flex; align-items:center; flex:1; min-width:120px;">
@@ -20369,6 +22146,7 @@ const app = {
                             </div>
                             
                             <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                                <span style="font-size:10px; font-weight:700; color:var(--text-sec); background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:2px 6px; white-space:nowrap;" title="Теплопотери помещения через ограждения">${roomQ} Вт</span>
                                 <div style="position: relative; display:flex; align-items:center; gap:2px; background:var(--bg); padding:2px 6px; border-radius:6px; border:1px solid var(--border);">
                                     ${floorSel}
                                     <input type="number" class="room-num-input" id="room_area_input_${r.id}" style="width:40px; border:none; background:transparent; font-weight:600; font-size:12px; text-align:center; padding:0; outline:none; color:var(--primary); cursor:pointer;" value="${r.area}" onfocus="app.showRoomAreaSlider(${r.id}, event)" onclick="app.showRoomAreaSlider(${r.id}, event)" onchange="app.updRoomArea(${r.id}, this.value, false)">
@@ -20400,6 +22178,32 @@ const app = {
                 c1.insertAdjacentHTML('beforeend', html);
             }
         });
+
+        // Сводка теплопотерь по помещениям. Это только ограждения — вентиляция
+        // добавляется отдельно при подборе котла (getHouseHeatLoss), поэтому
+        // итог здесь меньше мощности котла; приписка об этом обязательна.
+        if (hs) {
+            if (this.state.rooms.length) {
+                const fmtW = v => Math.round(v).toLocaleString('ru-RU');
+                let q1 = 0, q2 = 0;
+                this.state.rooms.forEach(r => {
+                    const q = this.getRoomHeatLoss(r).Q_total;
+                    if ((parseInt(r.floor) || 1) === 2) q2 += q; else q1 += q;
+                });
+                let parts = [];
+                if (this.state.floors === 2 && q2 > 0) {
+                    parts.push('1 этаж — ' + fmtW(q1) + ' Вт');
+                    parts.push('2 этаж — ' + fmtW(q2) + ' Вт');
+                }
+                hs.innerHTML = '🔥 Теплопотери помещений: ' +
+                    (parts.length ? parts.join(' · ') + ' · итого ' : '') +
+                    '<b style="color:var(--text-main);">' + fmtW(q1 + q2) + ' Вт</b> ' +
+                    '<span style="opacity:0.7;">(ограждения, без вентиляции)</span>';
+                hs.style.display = 'block';
+            } else {
+                hs.style.display = 'none';
+            }
+        }
         // #4: возвращаем прокрутку и фокус после пересборки списка (см. захват в начале функции).
         if (_inputPanel) _inputPanel.scrollTop = _savedPanelTop;
         if (window.scrollY !== _savedWinY || window.scrollX !== _savedWinX) window.scrollTo(_savedWinX, _savedWinY);
@@ -20413,6 +22217,7 @@ const app = {
                 if (_selStart !== null && _el.setSelectionRange) { try { _el.setSelectionRange(_selStart, _selEnd); } catch (e) { } }
             }
         }
+        this.renderPlanChecks();
     },
     setUfhCtrl: function (type) {
         this.state.ufhCtrl = type;
@@ -20736,6 +22541,10 @@ const app = {
         // проверяем наличие объекта, а не полагаемся на порядок скриптов.
         if (typeof RecognizeUI !== 'undefined') RecognizeUI.syncButton();
 
+        // Проектирование (листы проекта, редактор планов) — по такому же
+        // доступу, как распознавание: по умолчанию закрыто всем, кроме админов.
+        this.syncDesignUI();
+
         // Кубок рейтинга (шапка) — пилот доступен монтажникам Калининградской области;
         // админы и наблюдатели видят его вне зависимости от своего региона (для контроля/теста).
         const trophyBtn = document.querySelector('.btn-trophy');
@@ -20759,6 +22568,7 @@ const app = {
         this.state.wallLayers = this.state.wallLayers || [];
 
         document.getElementById('inp_area').value = this.state.area; document.getElementById('val_area').innerText = this.state.area;
+        this.renderPlanAreaNote();
         if (document.getElementById('blk_h2_wrapper')) document.getElementById('blk_h2_wrapper').style.display = (this.state.floors === 2) ? 'flex' : 'none';
         if (document.getElementById('btn_add_floor')) document.getElementById('btn_add_floor').style.display = (this.state.floors === 2) ? 'none' : 'block';
         if (document.getElementById('inp_h1')) document.getElementById('inp_h1').value = this.state.h1 || 2.7;
@@ -22267,6 +24077,7 @@ const app = {
             let html = `<div class="zone-card"><div class="zone-header"><span class="zone-title" contenteditable="true" onblur="app.state.waterZones[${idx}].name=this.innerText">${z.name}</span><div class="zone-remove" onclick="app.removeZone(${z.id})">×</div></div><div style="margin-bottom:10px; font-size:11px; display:flex; align-items:center; gap:5px;"><span>Трасса (м):</span><input type="number" class="zone-input" value="${z.dist}" onchange="app.updZoneDist(${z.id}, this.value)"></div>${itemsHtml}</div>`;
             container.insertAdjacentHTML('beforeend', html);
         });
+        this.renderWaterPlanChecks();
     },
     updRes: function (d) { let n = this.state.res + d; if (n < 1) n = 1; if (n > 10) n = 10; this.state.res = n; this.syncUI(); this.render(); },
     setRes: function (v) { let n = parseInt(v); if (isNaN(n) || n < 1) n = 1; if (n > 10) n = 10; this.state.res = n; this.syncUI(); this.render(); },

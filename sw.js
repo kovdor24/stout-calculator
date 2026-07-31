@@ -1,4 +1,8 @@
-const CACHE_NAME = 'heatcalc-v11.8';
+const CACHE_NAME = 'heatcalc-v12.0';
+// Подложки планов этажей — отдельным кэшем, который переживает смену версии
+// приложения. В общем кэше они терялись бы при каждом выпуске, а это как раз
+// то, что монтажник открывает на объекте, где связи может не быть.
+const PLANS_CACHE = 'heatcalc-plans';
 const ASSETS = [
   '/',
   '/index.html',
@@ -30,7 +34,7 @@ self.addEventListener('activate', (e) => {
       clients.claim();
       return Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) {
+          if (key !== CACHE_NAME && key !== PLANS_CACHE) {
             console.log('[Service Worker] Removing old cache:', key);
             return caches.delete(key);
           }
@@ -41,6 +45,30 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  // Подложка плана этажа: чужой домен (proxy.heatcalc.ru), но по одному
+  // адресу она никогда не меняется — имя файла содержит хеш картинки, и
+  // перерисованный план приезжает под новым именем. Значит отдаём из кэша
+  // сразу, в сеть не ходим вовсе: и трафика ноль, и на объекте без связи
+  // план открывается. Списки файлов (?list=) кэшировать нельзя — меняются.
+  if (e.request.method === 'GET') {
+    let planFile = null;
+    try {
+      const u = new URL(e.request.url);
+      if (u.pathname.endsWith('/plans.php')) planFile = u.searchParams.get('n');
+    } catch (err) { /* нестандартный адрес — просто не наш случай */ }
+    if (planFile) {
+      e.respondWith(
+        caches.open(PLANS_CACHE).then((cache) =>
+          cache.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
+            if (res && res.status === 200) cache.put(e.request, res.clone());
+            return res;
+          }))
+        )
+      );
+      return;
+    }
+  }
+
   // Пропускаем не-GET запросы и сторонние API (например, Supabase)
   if (e.request.method !== 'GET' || !e.request.url.startsWith(self.location.origin)) {
     return;

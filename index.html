@@ -49,7 +49,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.79">
+    <link rel="stylesheet" href="style.css?v=2.84">
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.25" defer></script>
@@ -57,14 +57,14 @@
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.0" defer></script>
     <script src="gamification.js?v=2.0" defer></script>
-    <script src="app.js?v=3.38" defer></script>
+    <script src="app.js?v=3.48" defer></script>
     <!-- Распознавание смет: подбор по каталогу и интерфейс мастера.
          Порядок важен — recognize.js обращается к RecognizeMatch. -->
     <script src="recognize_match.js?v=4.3" defer></script>
     <!-- Извлечение текста из Excel, Word, PDF, HTML. Подключается до
          recognize.js, который его использует. -->
     <script src="recognize_files.js?v=1.0" defer></script>
-    <script src="recognize.js?v=4.8" defer></script>
+    <script src="recognize.js?v=4.9" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -199,6 +199,8 @@
                             onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">150</span>
                         м²</span></div><input type="range" id="inp_area" min="50" max="300" step="10" value="150"
                     oninput="app.setArea(this.value)">
+                <!-- Площадь по зонам планов этажей: заполняет app.renderPlanAreaNote(), без зон скрыта -->
+                <div id="plan_area_note" style="display:none; margin-top: 4px; font-size: 11px; line-height: 1.4; color: var(--text-sec);"></div>
             </div>
 
             <div class="control-item toggle-item" id="blk_detailed_rooms_header" style="display: none; margin-bottom: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">
@@ -208,6 +210,13 @@
                         <input type="checkbox" id="chk_detailed_rooms_toggle" onchange="app.toggleDetailedRoomsPanel(this.checked, event)">
                         <span class="slider"></span>
                     </label>
+                </div>
+                <!-- Планы этажей: подложка и зоны для листов проекта (редактор — отдельная страница).
+                     Виден только тем, кому открыто проектирование (app.syncDesignUI). -->
+                <div class="label-row" id="blk_plan_editor_row" style="margin: 8px 0 0; display: none;">
+                    <span class="lbl">Планы этажей для проекта</span>
+                    <button type="button" onclick="app.openPlanEditor()"
+                        style="font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: inherit; cursor: pointer;">Открыть редактор</button>
                 </div>
             </div>
 
@@ -243,7 +252,7 @@
                     <div id="rooms_list_2" style="display: flex; flex-direction: column; gap: 8px;"></div>
                 </div>
 
-                <div style="display: flex; gap: 10px; justify-content: center; margin: 10px 0 5px 0;">
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 10px 0 5px 0;">
                     <button
                         style="padding: 6px 16px; font-size: 11px; font-weight: 700; background: var(--primary-light); border: 1px dashed var(--primary); color: var(--primary); border-radius: 20px; cursor: pointer; transition: 0.2s;"
                         onclick="app.addRoom()"
@@ -255,6 +264,22 @@
                         onclick="app.addFloor()" onmouseover="this.style.background='#10B981'; this.style.color='#fff';"
                         onmouseout="this.style.background='#ECFDF5'; this.style.color='#10B981';">+ Добавить
                         этаж</button>
+                    <button id="btn_plan_areas"
+                        style="display: none; padding: 6px 16px; font-size: 11px; font-weight: 700; background: #EFF6FF; border: 1px dashed #3B82F6; color: #3B82F6; border-radius: 20px; cursor: pointer; transition: 0.2s;"
+                        onclick="app.refineAreasFromPlan()"
+                        onmouseover="this.style.background='#3B82F6'; this.style.color='#fff';"
+                        onmouseout="this.style.background='#EFF6FF'; this.style.color='#3B82F6';"
+                        title="Переписать площади комнат по зонам, обведённым в редакторе планов">📐 Уточнить площади
+                        по плану</button>
+                </div>
+
+                <div id="rooms_heatloss_summary"
+                    style="display:none; padding: 8px 12px; background: var(--surface-light); border: 1px solid var(--border); border-radius: 8px; font-size: 11px; color: var(--text-sec); text-align: center; line-height: 1.5;">
+                </div>
+
+                <!-- Сверка приборов план↔расчёт: заполняет app.renderPlanChecks(), без расхождений скрыт -->
+                <div id="rooms_plan_checks"
+                    style="display:none; padding: 8px 12px; background: var(--surface-light); border: 1px solid #F59E0B; border-left: 4px solid #F59E0B; border-radius: 8px; font-size: 11px; color: var(--text-sec); line-height: 1.5;">
                 </div>
             </div>
 
@@ -625,6 +650,11 @@
                         onmouseover="this.style.background='var(--primary)'; this.style.color='#fff';"
                         onmouseout="this.style.background='var(--primary-light)'; this.style.color='var(--primary)';">+
                         Добавить санузел / Кухню</button>
+
+                    <!-- Сверка санузлов с планами: заполняет app.renderWaterPlanChecks(), без расхождений скрыт -->
+                    <div id="water_plan_checks"
+                        style="display:none; padding: 8px 12px; background: var(--surface-light); border: 1px solid #F59E0B; border-left: 4px solid #F59E0B; border-radius: 8px; font-size: 11px; color: var(--text-sec); line-height: 1.5;">
+                    </div>
                     <div class="control-item" id="blk_sewer_type"
                         style="display:none; margin-bottom:0; border-top:1px solid #E5E7EB; padding-top:8px;">
                         <span class="lbl-sub" style="margin-bottom: 6px;"
@@ -849,6 +879,14 @@
                         <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
                         <rect x="6" y="14" width="12" height="8"></rect>
                     </svg>Печать</button>
+                <button id="btn_sheets_trigger" class="btn-print btn-base" style="display:none;" onclick="app.openProjectSheets();"><svg width="18"
+                        height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="8" y1="13" x2="16" y2="13"></line>
+                        <line x1="8" y1="17" x2="16" y2="17"></line>
+                    </svg>Листы проекта</button>
                 <button id="btn_share_trigger" class="btn-share btn-base" onclick="app.shareInvoice(); ym(109490947, 'reachGoal', 'click_link');" style="display:none;"><svg width="18"
                         height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">

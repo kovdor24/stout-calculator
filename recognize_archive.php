@@ -109,19 +109,36 @@ function limitsPath() { return __DIR__ . '/archive/limits.json'; }
 function accessPath() { return __DIR__ . '/archive/access.json'; }
 
 /**
- * Кому открыто распознавание.
+ * Кому открыты платные инструменты.
  *
- * Двумя списками: поимённо (логин или email монтажника) и по регионам —
- * так дистрибьютору можно включить инструмент целой области, не перебирая
- * людей вручную. Администраторам доступ не нужен: он у них всегда.
+ * Распознавание — двумя списками: поимённо (логин или email монтажника) и по
+ * регионам, так дистрибьютору можно включить инструмент целой области, не
+ * перебирая людей вручную. Администраторам доступ не нужен: он у них всегда.
+ *
+ * Проектирование (листы проекта, редактор планов) лежит отдельным разделом
+ * design и добавляет третий список — по дистрибьюторам: их монтажники часто
+ * разбросаны по регионам, и включать инструмент удобнее сразу всей компании.
+ * Ключи распознавания остались на верхнем уровне, чтобы старые калькуляторы,
+ * которые ещё не обновились, читали свой доступ как прежде.
  */
+function emptyFeature() {
+    return ['users' => [], 'regions' => [], 'dists' => []];
+}
+
 function readAccess() {
     $raw = @file_get_contents(accessPath());
     $data = $raw ? json_decode($raw, true) : null;
     if (!is_array($data)) $data = [];
+    $design = is_array($data['design'] ?? null) ? $data['design'] : [];
     return [
         'users'   => is_array($data['users'] ?? null) ? $data['users'] : [],
         'regions' => is_array($data['regions'] ?? null) ? $data['regions'] : [],
+        'dists'   => is_array($data['dists'] ?? null) ? $data['dists'] : [],
+        'design'  => [
+            'users'   => is_array($design['users'] ?? null) ? $design['users'] : [],
+            'regions' => is_array($design['regions'] ?? null) ? $design['regions'] : [],
+            'dists'   => is_array($design['dists'] ?? null) ? $design['dists'] : [],
+        ],
     ];
 }
 
@@ -370,18 +387,26 @@ if (is_array($req) && !empty($req['action'])) {
         exit;
     }
 
-    // Включение и выключение распознавания — человеку или целому региону.
+    // Включение и выключение инструмента — человеку, дистрибьютору или региону.
+    // feature: '' (распознавание, как было) либо 'design' (проектирование).
     if ($req['action'] === 'setAccess') {
         $access = readAccess();
         $enabled = !empty($req['enabled']);
-        $kind = ($req['kind'] ?? 'user') === 'region' ? 'regions' : 'users';
+        $feature = ($req['feature'] ?? '') === 'design' ? 'design' : '';
+        $kindRaw = $req['kind'] ?? 'user';
+        $kind = $kindRaw === 'region' ? 'regions' : ($kindRaw === 'dist' ? 'dists' : 'users');
         $names = is_array($req['names'] ?? null) ? $req['names'] : [(string)($req['name'] ?? '')];
 
         foreach ($names as $name) {
             $name = trim((string)$name);
             if ($name === '') continue;
-            if ($enabled) $access[$kind][$name] = true;
-            else unset($access[$kind][$name]);
+            if ($feature === 'design') {
+                if ($enabled) $access['design'][$kind][$name] = true;
+                else unset($access['design'][$kind][$name]);
+            } else {
+                if ($enabled) $access[$kind][$name] = true;
+                else unset($access[$kind][$name]);
+            }
         }
         writeAccess($access);
         echo json_encode(array_merge(['ok' => true], $access), JSON_UNESCAPED_UNICODE);

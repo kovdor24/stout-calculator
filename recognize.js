@@ -41,7 +41,15 @@ const RecognizeUI = {
             if (new URLSearchParams(location.search).get('recognize') === '1') return true;
         } catch (e) { /* location недоступен — не мешаем работе */ }
 
-        if (typeof app.hasAdminAccess === 'function' && app.hasAdminAccess()) return true;
+        // По должности инструмент открыт только администраторам: наблюдателю,
+        // как и монтажнику, его включает администратор переключателем.
+        // hasFeatureRoleAccess может не быть на старом кэше app.js — тогда
+        // ведём себя как раньше и смотрим на общий админский доступ.
+        if (typeof app.hasFeatureRoleAccess === 'function') {
+            if (app.hasFeatureRoleAccess()) return true;
+        } else if (typeof app.hasAdminAccess === 'function' && app.hasAdminAccess()) {
+            return true;
+        }
 
         // Монтажнику инструмент открывает администратор — поимённо либо
         // сразу всему региону.
@@ -54,11 +62,16 @@ const RecognizeUI = {
         return !!(region && acc.regions && acc.regions[region]);
     },
 
-    /** Загрузка списков доступа. Молча пропускаем сбой: без списков — как раньше. */
+    /**
+     * Загрузка списков доступа. Молча пропускаем сбой: без списков вкладка
+     * просто не появится. Списки те же, что у проектирования, поэтому берём
+     * их через app — один запрос на страницу вместо двух одинаковых.
+     */
     async loadAccess() {
         try {
-            const r = await fetch('https://proxy.heatcalc.ru/recognize_archive.php?access=1');
-            const data = await r.json();
+            const data = (typeof app !== 'undefined' && typeof app.loadAccessLists === 'function')
+                ? await app.loadAccessLists()
+                : await (await fetch('https://proxy.heatcalc.ru/recognize_archive.php?access=1')).json();
             if (data && data.ok) {
                 this._access = { users: data.users || {}, regions: data.regions || {} };
                 this.syncButton();
