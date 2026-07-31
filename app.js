@@ -6384,10 +6384,11 @@ const app = {
             ':</div>';
 
         const pwdInput = document.createElement('input');
-        pwdInput.type = 'password';
+        pwdInput.type = 'text';
         pwdInput.className = 'auth-input';
         pwdInput.placeholder = 'Новый пароль, минимум 6 символов';
-        pwdInput.autocomplete = 'new-password';
+        pwdInput.autocomplete = 'off';
+        pwdInput.oninput = () => this.checkPasswordLayout(pwdInput);
         pwdWrap.appendChild(pwdInput);
 
         const pwdBtn = document.createElement('button');
@@ -11683,6 +11684,21 @@ const app = {
             if (modalContent) { modalContent.style.maxWidth = '560px'; modalContent.style.maxHeight = '95vh'; modalContent.style.overflowY = 'auto'; }
             this.setBirthDateRange(document.getElementById('reg_birth_date'));
         }
+    },
+
+    // Пароль принимается только латиницей. Раскладку клавиатуры браузер не отдаёт,
+    // поэтому ловим сам факт ввода кириллицы и подсказываем переключиться.
+    checkPasswordLayout: function (input) {
+        if (!input) return;
+        let hint = input.nextElementSibling;
+        if (!hint || !hint.classList || !hint.classList.contains('pwd-layout-hint')) {
+            hint = document.createElement('div');
+            hint.className = 'pwd-layout-hint';
+            hint.style.cssText = 'color:#f59e0b; font-size:12px; line-height:1.3; text-align:left; margin:-6px 0 10px; display:none;';
+            hint.innerText = '⌨ Включена русская раскладка — переключите на английскую';
+            input.insertAdjacentElement('afterend', hint);
+        }
+        hint.style.display = /[Ѐ-ӿ]/.test(input.value) ? 'block' : 'none';
     },
 
     handleAuthSubmit: function () {

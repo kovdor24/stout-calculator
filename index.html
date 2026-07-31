@@ -57,7 +57,7 @@
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.0" defer></script>
     <script src="gamification.js?v=2.0" defer></script>
-    <script src="app.js?v=3.37" defer></script>
+    <script src="app.js?v=3.38" defer></script>
     <!-- Распознавание смет: подбор по каталогу и интерфейс мастера.
          Порядок важен — recognize.js обращается к RecognizeMatch. -->
     <script src="recognize_match.js?v=4.3" defer></script>
@@ -1166,11 +1166,11 @@
                     <input type="email" id="auth_email_input" class="auth-input" placeholder="Введите ваш Email" style="max-width:100%; margin:0 0 12px;">
                     <div id="login_fields">
                         <label class="reg-field-label" style="text-align:left;">Пароль</label>
-                        <input type="password" id="auth_password_input" class="auth-input" placeholder="Введите пароль" style="max-width:100%; margin:0 0 12px;">
+                        <input type="text" id="auth_password_input" class="auth-input" placeholder="Введите пароль" autocomplete="off" oninput="app.checkPasswordLayout(this)" style="max-width:100%; margin:0 0 12px;">
                     </div>
                     <div id="register_fields" style="display: none; text-align:left;">
                         <label class="reg-field-label">Пароль</label>
-                        <input type="password" id="auth_reg_password" class="auth-input" placeholder="Придумайте пароль" style="max-width:100%; margin:0 0 7px;">
+                        <input type="text" id="auth_reg_password" class="auth-input" placeholder="Придумайте пароль" autocomplete="off" oninput="app.checkPasswordLayout(this)" style="max-width:100%; margin:0 0 7px;">
 
                         <div class="reg-grid-3">
                             <div>
