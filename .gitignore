@@ -14,3 +14,4 @@ price_index.prev.json
 # Сам стенд (bench/run.js, bench/from_archive.js) в репозитории нужен.
 bench/lines.json
 bench/new_lines.json
+bench/proposed_*.json
