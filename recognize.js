@@ -41,24 +41,23 @@ const RecognizeUI = {
             if (new URLSearchParams(location.search).get('recognize') === '1') return true;
         } catch (e) { /* location недоступен — не мешаем работе */ }
 
-        // По должности инструмент открыт только администраторам: наблюдателю,
-        // как и монтажнику, его включает администратор переключателем.
-        // hasFeatureRoleAccess может не быть на старом кэше app.js — тогда
-        // ведём себя как раньше и смотрим на общий админский доступ.
-        if (typeof app.hasFeatureRoleAccess === 'function') {
-            if (app.hasFeatureRoleAccess()) return true;
-        } else if (typeof app.hasAdminAccess === 'function' && app.hasAdminAccess()) {
-            return true;
-        }
-
-        // Монтажнику инструмент открывает администратор — поимённо либо
-        // сразу всему региону.
+        // Администратору инструмент открыт по умолчанию, остальным — нет.
+        // Но личная отметка сильнее: снятый в админке доступ приходит с сервера
+        // как явное false и перебивает и должность, и доступ компании/региона.
         const acc = this._access;
-        if (!acc) return false;
         const row = app._currentUserRow || {};
         const login = (row.email || row.username || '').toLowerCase();
+        const own = (typeof app.accessFlagFor === 'function')
+            ? app.accessFlagFor(acc && acc.users, login)
+            : undefined;
+        if (own !== undefined) return own;
+
+        if (typeof app.hasFeatureRoleAccess === 'function' && app.hasFeatureRoleAccess()) return true;
+
+        if (!acc) return false;
         const region = row.region || '';
-        if (login && Object.keys(acc.users || {}).some(u => String(u).toLowerCase() === login)) return true;
+        const dist = row.distributor_id || (app.state && app.state.distributorId);
+        if (dist && (acc.dists || {})[dist]) return true;
         return !!(region && acc.regions && acc.regions[region]);
     },
 
@@ -73,7 +72,7 @@ const RecognizeUI = {
                 ? await app.loadAccessLists()
                 : await (await fetch('https://proxy.heatcalc.ru/recognize_archive.php?access=1')).json();
             if (data && data.ok) {
-                this._access = { users: data.users || {}, regions: data.regions || {} };
+                this._access = { users: data.users || {}, regions: data.regions || {}, dists: data.dists || {} };
                 this.syncButton();
             }
         } catch (e) {

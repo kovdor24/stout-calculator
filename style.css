@@ -247,10 +247,14 @@ body {
     overflow-y: auto;
 }
 
+/* Быстрый режим когда-то умещался целиком, и панели отключали свою прокрутку.
+   Настроек с тех пор прибавилось: без внутренней полосы левая панель тянет за
+   собой всю страницу, и чтобы дотянуться до следующего переключателя слева,
+   приходилось листать правую колонку со сметой. Поэтому прокрутка своя —
+   как в подробном режиме. */
 .input-panel.fast-mode {
-    /* Быстрый режим: контента немного, показываем всю панель целиком без внутренней прокрутки */
-    max-height: none;
-    overflow-y: visible;
+    max-height: calc(125vh - 60px);
+    overflow-y: auto;
 }
 
 .output-panel {
@@ -2901,14 +2905,156 @@ body.profile-incomplete-lock #page_scale_wrapper {
     transform: none !important;
     width: 100vw !important;
     height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
     border-radius: 0 !important;
     border: none !important;
     box-shadow: none !important;
     padding: 20px 24px !important;
     box-sizing: border-box !important;
     overflow: hidden !important;
+}
+
+/* Масштаб админки под ширину экрана. Панель лежит ВНЕ #page_scale_wrapper
+   (внутри zoom ломал бы координаты fixed-элементов), поэтому свой масштаб ей
+   нужен отдельно: без него калькулятор шёл в 80%, а админка в 100%, и на
+   ноутбучных 1280 CSS-пикселях девять вкладок и плотные таблицы уже не
+   помещались. Ширина и высота делятся на тот же множитель — иначе панель
+   займёт не весь экран (тот же приём, что и 125vh у .input-panel). Правила
+   идут ПОСЛЕ базового блока: там width/height с !important, и при равной
+   специфичности побеждает то, что ниже. Уже 900px не масштабируем — там
+   включается мобильная раскладка, уменьшать её ещё сильнее нечитаемо. */
+@media screen and (min-width: 900px) and (max-width: 1199.98px) {
+    #admin_modal_overlay .auth-modal-content {
+        zoom: 0.8;
+        width: calc(100vw / 0.8) !important;
+        height: calc(100vh / 0.8) !important;
+    }
+}
+
+@media screen and (min-width: 1200px) and (max-width: 1499.98px) {
+    #admin_modal_overlay .auth-modal-content {
+        zoom: 0.9;
+        width: calc(100vw / 0.9) !important;
+        height: calc(100vh / 0.9) !important;
+    }
+}
+
+/* Текстовая кнопка админки — по ширине содержимого, в один ряд, без переносов.
+   Раньше такие кнопки оформляли двумя чужими классами, и обе давали брак:
+   .btn-ctrl — это квадрат 38×38 под иконку, текст вылезал за него и кнопки
+   налезали друг на друга; .auth-btn-base — кнопка формы входа (width:100%,
+   max-width:280px, авто-поля), от неё «Обновить» растягивалась на пол-экрана,
+   а длинная подпись ломалась на две строки. */
+.admin-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: auto;
+    height: 32px;
+    padding: 0 12px;
+    margin: 0;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-light);
+    color: var(--text-main);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: 0.15s;
+}
+.admin-btn:hover:not(:disabled) {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.admin-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.admin-btn.danger {
+    color: #EF4444;
+}
+.admin-btn.danger:hover:not(:disabled) {
+    border-color: #EF4444;
+    color: #EF4444;
+}
+
+/* Переключатель массового доступа — тот же label.switch, что в колонках таблицы,
+   только подпись стоит сбоку, а не под ним: в один ряд она не растит строку. */
+.admin-bulk-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.admin-bulk-cap {
+    font-size: 10px;
+    color: var(--text-sec);
+    white-space: nowrap;
+}
+.admin-bulk-switch .switch:has(input:disabled) {
+    opacity: 0.45;
+}
+
+/* Массовые действия над таблицей монтажников: две строки вместо прежних четырёх
+   (те съедали пол-экрана до таблицы). Сверху — назначение дистрибьютора,
+   под ним три переключателя доступа, разложенные на всю ширину поровну. */
+.admin-bulk-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 9px 12px;
+    background: var(--surface-light);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+.admin-bulk-line {
+    display: flex;
+    align-items: center;
+    gap: 8px 14px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+/* Переключатели делят ширину поровну — так подписи не жмутся к левому краю,
+   а разнесены по окну и читаются как три отдельных блока. */
+.admin-bulk-toggles > .admin-bulk-group {
+    flex: 1 1 0;
+    justify-content: flex-start;
+}
+.admin-bulk-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.admin-bulk-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-sec);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+}
+.admin-bulk-sep {
+    width: 1px;
+    align-self: stretch;
+    background: var(--border);
+}
+.admin-bulk-row select {
+    background: var(--surface);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0 8px;
+    height: 28px;
+    font-size: 11.5px;
+    outline: none;
+    cursor: pointer;
+    min-width: 0;
 }
 
 /* Стили для кнопок действий в админке */
@@ -7433,6 +7579,12 @@ body.dark-mode .price-blur:hover {
     transform: translateY(0);
 }
 
+/* Кнопка «вниз» — та же кнопка, только ниже. Место под ней свободно:
+   «Сообщить о проблеме» временно скрыта (display:none выше). */
+.to-bottom-btn {
+    bottom: 16px;
+}
+
 .to-top-btn svg {
     stroke: var(--primary);
     width: 18px;
@@ -7487,6 +7639,10 @@ body.dark-mode .to-top-btn:hover {
     .to-top-btn:hover {
         background: #2563EB;
         transform: translateY(-2px);
+    }
+    /* Под кнопкой «наверх», но всё ещё над нижней панелью навигации */
+    .to-bottom-btn {
+        bottom: 51px;
     }
 }
 
@@ -9437,6 +9593,16 @@ select.rec-btn-g { padding-right: 8px; }
     height: 62vh; min-height: 360px;
     border: 1px solid var(--border); border-radius: 12px;
     background: var(--surface); overflow: hidden;
+}
+
+/* Мессенджер занимает всю оставшуюся высоту вкладки, а не долю экрана:
+   62vh не учитывали ни строку вкладок, ни масштаб админки — под чатом
+   оставалась пустая полоса, а на низких окнах он, наоборот, не влезал.
+   Класс вешает renderAdminMessages, он же делает #admin_content колонкой. */
+.admin-chat-wrap.fill-height {
+    height: auto;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 /* ── Левая колонка: список чатов ── */

@@ -13,7 +13,12 @@
  * площадями), легенда, печатный масштаб. Лист ТП: подложка приглушена,
  * в зонах — змейка укладки с шагом из сметы, таблица петель.
  *
- * Требует project_sheets.js. Глобал: window.projectPlans
+ * Петли считает floorLoops() — тем же расчётом пользуется смета (app.js):
+ * длина трубы и число выходов коллектора берутся из нарисованной укладки,
+ * иначе на листе было бы одно, а в деньгах другое.
+ *
+ * Требует project_sheets.js (кроме floorLoops — она чистая геометрия и
+ * работает и в калькуляторе, где листов нет). Глобал: window.projectPlans
  */
 (function () {
   'use strict';
@@ -176,6 +181,7 @@
   // помещение и обратно, без стыков и обрывов.
 
   var CELL_DIV = 2;         // клетка растра = шаг/2
+  var MAX_LOOP_M = 100;     // предел длины одной петли 16×2,0 мм
 
   /** Маска зоны на растре: клетки, чей центр внутри полигона */
   function zoneMask(z, stepPx) {
@@ -305,13 +311,48 @@
     return out;
   }
 
+  /** Одна петля по набору рядов: {sup, ret, lenM, m} в пикселях подложки */
+  function buildLoop(rows, m, vertical, anchor, lead, stepPx, ppm) {
+    var P = guideOfRows(rows, m, vertical, anchor);
+    if (!P) return null;
+    // подводка — начало той же направляющей; стык выпрямляем вместе со всем
+    // маршрутом, чтобы на нём не возникло косого отрезка
+    if (lead && lead.length > 1) P = orthoPath(lead.concat(P));
+    var h = stepPx / 2;
+    var sup = offsetOrtho(P, h), ret = offsetOrtho(P, -h);
+    if (!sup || !ret) return null;
+    ret = ret.slice().reverse();
+    var lenM = (lenPoly(sup) + lenPoly(ret) +
+      Math.hypot(sup[sup.length - 1][0] - ret[0][0], sup[sup.length - 1][1] - ret[0][1])) / ppm;
+    return { sup: sup, ret: ret, lenM: lenM, m: Math.round(lenM) };
+  }
+
+  /** Ряды на k примерно равных по длине трубы полос: длинную комнату кладут
+   *  не одной петлёй, а несколькими, каждая со своей подводкой к гребёнке. */
+  function splitRows(rows, k) {
+    var w = rows.map(function (r) { return (r.b - r.a) + 2 * CELL_DIV; });
+    var tot = w.reduce(function (a, b) { return a + b; }, 0) || 1;
+    var out = [], cur = [], acc = 0, gi = 1, i;
+    for (i = 0; i < rows.length; i++) {
+      cur.push(rows[i]); acc += w[i];
+      var left = rows.length - i - 1;
+      if (gi < k && acc >= tot * gi / k && left >= k - gi) { out.push(cur); cur = []; gi++; }
+    }
+    if (cur.length) out.push(cur);
+    return out;
+  }
+
   /**
-   * Петля помещения: {sup, ret, lenM} в пикселях подложки, либо null, если
-   * зона мала даже для одного ряда (лист рисует встречную змейку по габариту).
-   * lead — маршрут от коллектора (из редактора планов), становится началом
-   * направляющей: подача и обратка непрерывно идут от гребёнки и обратно.
+   * Петли помещения: [{sup, ret, lenM, m}] в пикселях подложки, либо null,
+   * если зона мала даже для одного ряда (лист рисует встречную змейку по
+   * габариту). lead — маршрут от коллектора (из редактора планов),
+   * становится началом направляющей: подача и обратка непрерывно идут от
+   * гребёнки и обратно.
+   *
+   * Петля длиннее maxLenM делится на несколько: по 16-й трубе на одном
+   * выходе коллектора больше сотни метров не гоняют — не продавит насос.
    */
-  function layZone(z, f, stepMm, entry, lead) {
+  function layZoneLoops(z, f, stepMm, entry, lead, maxLenM) {
     var ppm = f.pxPerM; if (!ppm) return null;
     var stepPx = stepMm / 1000 * ppm;
     var m = zoneMask(z, stepPx);
@@ -336,18 +377,64 @@
     var vertical = score(B, true) < score(A, false);
     var R = vertical ? B : A;
     if (!R) return null;
-    var P = guideOfRows(R.rows, m, vertical, anchor);
-    if (!P) return null;
-    // подводка — начало той же направляющей; стык выпрямляем вместе со всем
-    // маршрутом, чтобы на нём не возникло косого отрезка
-    if (lead && lead.length > 1) P = orthoPath(lead.concat(P));
-    var h = stepPx / 2;
-    var sup = offsetOrtho(P, h), ret = offsetOrtho(P, -h);
-    if (!sup || !ret) return null;
-    ret = ret.slice().reverse();
-    var lenM = (lenPoly(sup) + lenPoly(ret) +
-      Math.hypot(sup[sup.length - 1][0] - ret[0][0], sup[sup.length - 1][1] - ret[0][1])) / ppm;
-    return { sup: sup, ret: ret, lenM: lenM };
+    var one = buildLoop(R.rows, m, vertical, anchor, lead, stepPx, ppm);
+    if (!one) return null;
+    var lim = maxLenM || MAX_LOOP_M;
+    var k = Math.min(R.rows.length, Math.ceil(one.lenM / lim));
+    if (k < 2) return [one];
+    // Каждая петля тянет собственную подводку от коллектора, поэтому после
+    // деления сумма растёт и полосы могут снова не уложиться в предел —
+    // добавляем петлю и пробуем ещё раз (не больше трёх попыток).
+    var best = null, tries;
+    for (tries = 0; tries < 4 && k <= R.rows.length; tries++, k++) {
+      var parts = splitRows(R.rows, k), out = [], i, lp, worst = 0;
+      for (i = 0; i < parts.length; i++) {
+        lp = buildLoop(parts[i], m, vertical, anchor, lead, stepPx, ppm);
+        if (!lp) { out = null; break; }
+        worst = Math.max(worst, lp.lenM);
+        out.push(lp);
+      }
+      if (!out || !out.length) break;         // не поделилось — оставляем как было
+      if (worst <= lim) return out;
+      if (!best) best = out;
+    }
+    return best || [one];
+  }
+
+  /** Совместимость: одна петля зоны (стенд укладки) */
+  function layZone(z, f, stepMm, entry, lead) {
+    var lp = layZoneLoops(z, f, stepMm, entry, lead, 1e9);
+    return lp ? lp[0] : null;
+  }
+
+  /**
+   * Петли тёплого пола этажа — общий расчёт листа и сметы.
+   * [{ i, name, area, est, loops: [{sup, ret, lenM, m}] }], i — индекс зоны.
+   * est=true — геометрия не построилась (узкая зона), длины оценены по
+   * площади; лист рисует такую зону встречной змейкой по габариту.
+   */
+  function floorLoops(f, stepMm, maxLenM) {
+    var out = [];
+    if (!f || !f.pxPerM) return out;
+    var lim = maxLenM || MAX_LOOP_M, leads = f.leads || [];
+    (f.zones || []).forEach(function (z, i) {
+      if (z.type !== 'tp' || !z.pts || z.pts.length < 3) return;
+      var lead = null;
+      for (var li = 0; li < leads.length; li++) if (leads[li].i === i) { lead = leads[li]; break; }
+      var leadPts = (lead && lead.pts && lead.pts.length > 1) ? lead.pts : null;
+      var entry = leadPts ? leadPts[leadPts.length - 1] : (f.coll ? [f.coll.x, f.coll.y] : null);
+      var S = areaM2(z, f), lp = null;
+      try { lp = layZoneLoops(z, f, stepMm, entry, leadPts, lim); } catch (e) { lp = null; }
+      if (!lp) {
+        // Оценка по площади: та же формула, что в смете без планов.
+        var est = S / (stepMm / 1000) * 1.05;
+        var k = Math.max(1, Math.ceil(est / lim));
+        lp = [];
+        for (var j = 0; j < k; j++) lp.push({ lenM: est / k, m: Math.max(5, Math.round(est / k)) });
+      }
+      out.push({ i: i, name: z.name || '', area: S, est: !lp[0].sup, loops: lp });
+    });
+    return out;
   }
 
   /** Полилиния, сдвинутая на o px перпендикулярно ходу (для пары подводок) */
@@ -382,6 +469,46 @@
 
   var COL_SUP = '#cc2222', COL_RET = '#2b5fcc';
 
+  // ═══ Расход теплоносителя по петлям ═════════════════════════════════════
+  // По расходу балансируют коллектор (расходомеры на подающей гребёнке),
+  // поэтому в таблице петель он стоит рядом с шагом и длиной.
+  //   G = Q / (c × ΔT),  c = 1,163 Вт·ч/(кг·°C),  ΔT = 5 °C — тот же перепад,
+  // по которому смета проверяет насосную группу и узел подмеса.
+  var UFH_DT = 5, UFH_C = 1.163;
+
+  /** Предельная теплоотдача пола при шаге укладки, Вт/м² (СП 60.13330.2020) */
+  function qUdeFor(stepMm) {
+    return stepMm === 100 ? 90 : (stepMm === 200 ? 50 : 70);
+  }
+
+  /** Расход петли, л/мин: Q в ваттах → кг/ч → литры в минуту */
+  function flowLmin(qW) {
+    return qW / (UFH_C * UFH_DT) / 60;
+  }
+
+  /** Число с одним знаком и запятой — как принято на чертежах */
+  function num1(v) { return v.toFixed(1).replace('.', ','); }
+
+  /** Помещение расчёта, одноимённое зоне плана (по нему сверяются и площади) */
+  function roomOf(zName, rooms) {
+    var key = String(zName || '').trim().toLowerCase();
+    if (!key) return null;
+    for (var i = 0; i < (rooms || []).length; i++)
+      if (String(rooms[i].name || '').trim().toLowerCase() === key) return rooms[i];
+    return null;
+  }
+
+  /**
+   * Тепловая мощность зоны, Вт. Основа — теплопотери одноимённой комнаты
+   * расчёта, но не больше того, что пол отдаёт при этом шаге: в комнате с
+   * радиаторами остаток покрывают они (так же делит нагрузку и смета).
+   * Комнаты нет (планы без режима помещений) — считаем по площади и шагу.
+   */
+  function zoneHeat(room, area, stepMm) {
+    var cap = area * qUdeFor(stepMm);
+    return (room && room.q > 0) ? Math.min(room.q, cap) : cap;
+  }
+
   /** Запасная укладка совсем узких зон (меньше двух витков): встречная змейка —
    *  подача и обратка идут рядом, как и в спирали; обрезка контуром зоны */
   function serpentine(z, t, f, stepMm, cid) {
@@ -409,55 +536,72 @@
     return o.join('');
   }
 
-  /** Лист «Тёплый пол N этажа» */
-  function tpBody(f, num, stepMm) {
+  /**
+   * Петли этажа строкой на петлю — общий источник для таблиц.
+   * [{ no, name, area, step, m, flow, byLoss, est, zi, k, li, loop }]
+   * Нумерация сквозная по этажу: № в таблице коллектора и № на укладке —
+   * одно и то же число. rooms — помещения расчёта уже этого этажа.
+   */
+  function loopRows(f, stepMm, rooms) {
+    var out = [], no = 0, zno = 0;
+    floorLoops(f, stepMm, MAX_LOOP_M).forEach(function (Z) {
+      var k = Z.loops.length;
+      var zName = Z.name || 'зона ' + (++zno);
+      // мощность зоны делится между её петлями поровну — как и площадь
+      var rm = roomOf(Z.name, rooms);
+      var g = flowLmin(zoneHeat(rm, Z.area, stepMm) / k);
+      Z.loops.forEach(function (lp, li) {
+        out.push({ no: ++no, name: zName + (k > 1 ? ' ' + (li + 1) + '/' + k : ''),
+          area: Z.area / k, step: stepMm, m: lp.m, flow: g,
+          byLoss: !!rm, est: !!Z.est, zi: Z.i, k: k, li: li, loop: lp });
+      });
+    });
+    return out;
+  }
+
+  /** Лист «Тёплый пол N этажа». rooms — помещения расчёта (теплопотери) */
+  function tpBody(f, num, stepMm, rooms) {
     var t = fit(f), o = [];
     o.push(imageTag(f, t, 0.32));
-    var stepPx = stepMm / 1000 * (f.pxPerM || 100);
-    var leads = f.leads || [];
-    var rows = [], anyLead = false;
-    (f.zones || []).forEach(function (z, i) {
-      if (z.type !== 'tp') return;
-      o.push('<polygon points="' + polyPts(z.pts, t.X, t.Y) + '" style="fill:none;stroke:' +
-        COLT.tp + ';stroke-width:0.45;stroke-dasharray:1.6,1.2"/>');
-      // маршрут от коллектора к зоне (посчитан редактором при сохранении):
-      // он же — начало петли, поэтому подача и обратка идут от гребёнки без стыков
-      var lead = null;
-      for (var li = 0; li < leads.length; li++) if (leads[li].i === i) { lead = leads[li]; break; }
-      var leadPts = (lead && lead.pts && lead.pts.length > 1) ? lead.pts : null;
-      if (leadPts) anyLead = true;
-      var entry = leadPts ? leadPts[leadPts.length - 1] : (f.coll ? [f.coll.x, f.coll.y] : null);
-      var S = areaM2(z, f), zName = z.name || 'зона ' + (rows.length + 1);
-      var no = rows.length + 1;
-      // одна петля на помещение: змейка с шагом, оба конца выведены в коллектор
-      var lp = null;
-      try { lp = layZone(z, f, stepMm, entry, leadPts); } catch (e) { lp = null; }
-      if (!lp) {
-        o.push(serpentine(z, t, f, stepMm, 'tpz' + num + '_' + i));
-        var c0 = centroid(z.pts);
-        o.push('<circle cx="' + n(t.X(c0[0])) + '" cy="' + n(t.Y(c0[1])) + '" r="3.4"' +
-          ' style="fill:#ffffff;stroke:' + COLT.tp + ';stroke-width:0.4"/>');
-        o.push(txt(t.X(c0[0]), t.Y(c0[1]) + 1.2, no, { size: 3.4, anchor: 'middle' }));
-        rows.push([no, zName, S.toFixed(1), stepMm,
-          Math.max(5, Math.round(S / (stepMm / 1000) * 1.05 / 5) * 5)]);
-        return;
+    var anyLead = (f.leads || []).some(function (L) { return L.pts && L.pts.length > 1; });
+    var rows = [], flowSum = 0, byLoss = false;
+    rooms = (rooms || []).filter(function (r) { return (r.floor || 1) === num; });
+    // Петли считает общий расчёт: ровно те же числа уходят в смету и в
+    // таблицу контуров на листе узла коллектора.
+    loopRows(f, stepMm, rooms).forEach(function (R) {
+      var z = (f.zones || [])[R.zi], lp = R.loop;
+      if (R.byLoss) byLoss = true;
+      if (R.li === 0) {
+        o.push('<polygon points="' + polyPts(z.pts, t.X, t.Y) + '" style="fill:none;stroke:' +
+          COLT.tp + ';stroke-width:0.45;stroke-dasharray:1.6,1.2"/>');
+        // зона узкая — геометрия не строится, кладём встречной змейкой по габариту
+        if (R.est) o.push(serpentine(z, t, f, stepMm, 'tpz' + num + '_' + R.zi));
       }
-      var sE = lp.sup[lp.sup.length - 1], rS = lp.ret[0];
-      o.push('<path d="' + pathD(lp.sup, t) + '" style="fill:none;stroke:' + COL_SUP + ';stroke-width:0.5"/>');
-      o.push('<path d="' + pathD([sE, rS], t) + '" style="fill:none;stroke:' + COL_RET + ';stroke-width:0.5"/>');
-      o.push('<path d="' + pathD(lp.ret, t) + '" style="fill:none;stroke:' + COL_RET + ';stroke-width:0.5"/>');
-      var c = centroid(z.pts);
-      o.push('<circle cx="' + n(t.X(c[0])) + '" cy="' + n(t.Y(c[1])) + '" r="3.4"' +
-        ' style="fill:#ffffff;stroke:' + COLT.tp + ';stroke-width:0.4"/>');
-      o.push(txt(t.X(c[0]), t.Y(c[1]) + 1.2, no, { size: 3.4, anchor: 'middle' }));
-      rows.push([no, zName, S.toFixed(1), stepMm, Math.max(5, Math.round(lp.lenM / 5) * 5)]);
+      if (lp.sup) {
+        var sE = lp.sup[lp.sup.length - 1], rS = lp.ret[0];
+        o.push('<path d="' + pathD(lp.sup, t) + '" style="fill:none;stroke:' + COL_SUP + ';stroke-width:0.5"/>');
+        o.push('<path d="' + pathD([sE, rS], t) + '" style="fill:none;stroke:' + COL_RET + ';stroke-width:0.5"/>');
+        o.push('<path d="' + pathD(lp.ret, t) + '" style="fill:none;stroke:' + COL_RET + ';stroke-width:0.5"/>');
+      }
+      // Номер: у одной петли — в центре зоны, у поделённой — на своей полосе.
+      // У зоны без геометрии полос нет: значок ставим один, на всю зону.
+      if (lp.sup || R.li === 0) {
+        var mark = (R.k > 1 && lp.sup) ? lp.sup[Math.floor(lp.sup.length / 2)] : centroid(z.pts);
+        o.push('<circle cx="' + n(t.X(mark[0])) + '" cy="' + n(t.Y(mark[1])) + '" r="3.4"' +
+          ' style="fill:#ffffff;stroke:' + COLT.tp + ';stroke-width:0.4"/>');
+        o.push(txt(t.X(mark[0]), t.Y(mark[1]) + 1.2,
+          (R.est && R.k > 1) ? (R.no + '…' + (R.no + R.k - 1)) : R.no,
+          { size: (R.est && R.k > 1) ? 2.6 : 3.4, anchor: 'middle' }));
+      }
+      flowSum += R.flow;
+      rows.push([R.no, R.name, num1(R.area), R.step, R.m, num1(R.flow)]);
     });
     if (f.coll) collectorMark(f.coll, t, f, o);
     // таблица петель слева
-    var Lx = 22, Ty = 40, W = [8, 34, 16, 14, 18], rh = 6.4;
+    var Lx = 22, Ty = 40, W = [7, 27, 12, 13, 15, 16], rh = 6.4;
     var Wsum = W.reduce(function (a, b) { return a + b; }, 0);
     o.push(txt(Lx + Wsum / 2, Ty - 2.4, 'Петли тёплого пола', { size: 4.2, anchor: 'middle' }));
-    var hdr = ['№', 'Помещение', 'S, м²', 'Шаг, мм', 'Длина, м'];
+    var hdr = ['№', 'Помещение', 'S, м²', 'Шаг, мм', 'Длина, м', 'G, л/мин'];
     var all = [hdr].concat(rows);
     all.forEach(function (r, ri) {
       var y = Ty + ri * rh, x = Lx;
@@ -473,9 +617,18 @@
     var ny = Ty + all.length * rh + 5;
     o.push(txt(Lx, ny, 'Длины петель — по нарисованной укладке (подача и обратка' +
       (anyLead ? ', подводки' : '') + ');', { size: 3.0 }));
-    o.push(txt(Lx, ny + 4, 'помещение большой площади разделено на несколько петель.', { size: 3.0 }));
+    o.push(txt(Lx, ny + 4, 'петля длиннее ' + MAX_LOOP_M +
+      ' м разделена; эти же длины и число петель — в смете.', { size: 3.0 }));
+    // Расход: по нему выставляют расходомеры на подающей гребёнке, поэтому
+    // рядом с таблицей объясняем, из чего он получен, и даём сумму по этажу.
+    o.push(txt(Lx, ny + 8, 'Расход G = Q / (c × ΔT) при ΔT = ' + UFH_DT + ' °C, ' +
+      'c = ' + String(UFH_C).replace('.', ',') + ' Вт·ч/(кг·°C);', { size: 3.0 }));
+    o.push(txt(Lx, ny + 12, 'Q — ' + (byLoss ? 'теплопотери помещения, но не выше' : 'по площади зоны и') +
+      ' ' + qUdeFor(stepMm) + ' Вт/м² (шаг ' + stepMm + ' мм).', { size: 3.0 }));
+    o.push(txt(Lx, ny + 16, 'Суммарный расход по коллектору: ' + num1(flowSum) + ' л/мин (' +
+      (flowSum * 0.06).toFixed(2).replace('.', ',') + ' м³/ч).', { size: 3.0 }));
     // условные обозначения: подача/обратка встречной спирали
-    var ly = ny + 11;
+    var ly = ny + 23;
     o.push(txt(Lx, ly, 'Условные обозначения', { size: 3.6 }));
     [['Подача', COL_SUP], ['Обратка', COL_RET]].forEach(function (r, i) {
       var yy = ly + 4.6 + i * 5;
@@ -622,16 +775,17 @@
   function waterSheets(plans, opts) {
     opts = opts || {};
     var out = [], num = opts.sheetStart || 1;
+    var fmt = opts.num || function (v) { return String(v); };
     if (!plans || !plans.floors) return out;
     plans.floors.forEach(function (f, i) {
       if (!f.img || !f.pxPerM || !(f.fixtures || []).length) return;
       var t1 = 'Водоснабжение ' + (i + 1) + ' этажа';
       out.push({ title: t1, svg: window.projectSheets.sheet({
-        code: opts.code, sheet: String(num++), body: title(t1) + waterBody(f, i + 1) }) });
+        code: opts.code, sheet: fmt(num++), body: title(t1) + waterBody(f, i + 1) }) });
       if ((f.slines || []).length) {
         var t2 = 'Канализация ' + (i + 1) + ' этажа';
         out.push({ title: t2, svg: window.projectSheets.sheet({
-          code: opts.code, sheet: String(num++), body: title(t2) + sewerBody(f, i + 1) }) });
+          code: opts.code, sheet: fmt(num++), body: title(t2) + sewerBody(f, i + 1) }) });
       }
     });
     return out;
@@ -669,23 +823,18 @@
   }
 
   /** Лист «Этаж N. Сводный план сетей» */
-  function summaryBody(f, num, opts) {
-    var t = fit(f, SUM_PLAN), o = [], stepMm = opts.stepMm || 150;
+  function summaryBody(f, num, opts, stepMm) {
+    var t = fit(f, SUM_PLAN), o = [];
+    stepMm = stepMm || opts.stepMm || 150;
     o.push(imageTag(f, t, 0.5));
 
     // 1) тёплый пол — та же укладка, что на профильном листе, но тоньше
-    var leads = f.leads || [];
-    (f.zones || []).forEach(function (z, i) {
-      if (z.type !== 'tp') return;
-      var lead = null;
-      for (var li = 0; li < leads.length; li++) if (leads[li].i === i) { lead = leads[li]; break; }
-      var leadPts = (lead && lead.pts && lead.pts.length > 1) ? lead.pts : null;
-      var entry = leadPts ? leadPts[leadPts.length - 1] : (f.coll ? [f.coll.x, f.coll.y] : null);
-      var lp = null;
-      try { lp = layZone(z, f, stepMm, entry, leadPts); } catch (e) { }
-      if (!lp) return;
-      o.push('<path d="' + pathD(lp.sup, t) + '" style="fill:none;stroke:' + COL_SUP + ';stroke-width:0.28"/>');
-      o.push('<path d="' + pathD(lp.ret, t) + '" style="fill:none;stroke:' + COL_RET + ';stroke-width:0.28"/>');
+    floorLoops(f, stepMm, MAX_LOOP_M).forEach(function (Z) {
+      Z.loops.forEach(function (lp) {
+        if (!lp.sup) return;
+        o.push('<path d="' + pathD(lp.sup, t) + '" style="fill:none;stroke:' + COL_SUP + ';stroke-width:0.28"/>');
+        o.push('<path d="' + pathD(lp.ret, t) + '" style="fill:none;stroke:' + COL_RET + ';stroke-width:0.28"/>');
+      });
     });
     if (f.coll) collectorMark(f.coll, t, f, o);
 
@@ -802,40 +951,53 @@
     return null;
   }
 
-  /** Листы из планов: [{title, svg}] */
+  /**
+   * Листы из планов: [{kind, title, svg}].
+   * kind: 'summary' — сводный план сетей (идёт в общую часть комплекта, MEP),
+   * 'floor' и 'tp' — планы отопления (раздел «О»). opts.only ограничивает
+   * набор: у разделов свои шифры и своя нумерация, поэтому листы одного
+   * этажа приходится собирать в два захода.
+   * opts.num — как печатать номер листа (в разделе это «О-3», а не «3»).
+   */
   function sheets(plans, opts) {
     opts = opts || {};
     var out = [], num = opts.sheetStart || 1;
+    var fmt = opts.num || function (n) { return String(n); };
+    var want = function (k) { return !opts.only || opts.only.indexOf(k) >= 0; };
     if (!plans || !plans.floors) return out;
     plans.floors.forEach(function (f, i) {
       if (!f.img || !f.pxPerM) return;
+      // Шаг укладки у каждого этажа свой (в смете это ufhStep1 / ufhStep2).
+      var st = (opts.steps && opts.steps[i]) || opts.stepMm || 150;
       // Сводный план сетей — первым: на нём сразу всё, остальные листы этажа
       // раскрывают отдельные системы. Нужны помещения расчёта (экспликация).
-      if ((opts.rooms || []).some(function (r) { return (r.floor || 1) === i + 1; })) {
+      if (want('summary') && (opts.rooms || []).some(function (r) { return (r.floor || 1) === i + 1; })) {
         var t0 = 'Этаж ' + String(i + 1).padStart(2, '0') + '. Сводный план сетей';
         out.push({
-          title: t0,
+          kind: 'summary', title: t0,
           svg: window.projectSheets.sheet({
-            code: opts.code, sheet: String(num++),
-            body: title(t0) + summaryBody(f, i + 1, opts)
+            code: opts.code, sheet: fmt(num++),
+            body: title(t0) + summaryBody(f, i + 1, opts, st)
           })
         });
       }
-      var tt = 'План ' + (i + 1) + ' этажа';
-      out.push({
-        title: tt,
-        svg: window.projectSheets.sheet({
-          code: opts.code, sheet: String(num++),
-          body: title(tt) + floorBody(f, i + 1)
-        })
-      });
-      if ((f.zones || []).some(function (z) { return z.type === 'tp'; })) {
+      if (want('floor')) {
+        var tt = 'План ' + (i + 1) + ' этажа';
+        out.push({
+          kind: 'floor', title: tt,
+          svg: window.projectSheets.sheet({
+            code: opts.code, sheet: fmt(num++),
+            body: title(tt) + floorBody(f, i + 1)
+          })
+        });
+      }
+      if (want('tp') && (f.zones || []).some(function (z) { return z.type === 'tp'; })) {
         var t2 = 'Тёплый пол ' + (i + 1) + ' этажа';
         out.push({
-          title: t2,
+          kind: 'tp', title: t2,
           svg: window.projectSheets.sheet({
-            code: opts.code, sheet: String(num++),
-            body: title(t2) + tpBody(f, i + 1, opts.stepMm || 150)
+            code: opts.code, sheet: fmt(num++),
+            body: title(t2) + tpBody(f, i + 1, st, opts.rooms)
           })
         });
       }
@@ -845,6 +1007,12 @@
 
   // layZone открыт наружу для стенда укладки (scratchpad/render_plans.js):
   // геометрию петель надо проверять без браузера и без листа целиком.
+  // floorLoops — для сметы: длина трубы и число выходов коллектора берутся
+  // из той же укладки, что нарисована на листе.
+  // loopRows — для листа узла коллектора (project_ufh_manifold.js): номера,
+  // длины и расходы петель там должны совпадать с листом укладки.
   window.projectPlans = { sheets: sheets, waterSheets: waterSheets,
-    boilerRoom: boilerRoom, layZone: layZone };
+    boilerRoom: boilerRoom, layZone: layZone, layZoneLoops: layZoneLoops,
+    floorLoops: floorLoops, loopRows: loopRows, num1: num1,
+    UFH_DT: UFH_DT, UFH_C: UFH_C, MAX_LOOP_M: MAX_LOOP_M };
 })();

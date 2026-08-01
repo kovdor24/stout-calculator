@@ -49,22 +49,29 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.84">
+    <link rel="stylesheet" href="style.css?v=2.86">
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.25" defer></script>
+    <!-- Координаты и регионы населённых пунктов: карта проектов в админке и
+         адрес объекта. Данные вшиты в файл, наружу никаких запросов. -->
+    <script src="cities_geo.js?v=1.0" defer></script>
     <!-- Цены дистрибьюторов поверх каталога. Отдельный файл, потому что каталог
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.0" defer></script>
     <script src="gamification.js?v=2.0" defer></script>
-    <script src="app.js?v=3.48" defer></script>
+    <script src="app.js?v=3.58" defer></script>
+    <!-- Укладка тёплого пола по планам этажей. В калькуляторе нужна не ради
+         листов, а ради сметы: длину трубы и число выходов коллектора берём
+         из нарисованных петель (projectPlans.floorLoops). -->
+    <script src="project_plans.js?v=1.0" defer></script>
     <!-- Распознавание смет: подбор по каталогу и интерфейс мастера.
          Порядок важен — recognize.js обращается к RecognizeMatch. -->
     <script src="recognize_match.js?v=4.3" defer></script>
     <!-- Извлечение текста из Excel, Word, PDF, HTML. Подключается до
          recognize.js, который его использует. -->
     <script src="recognize_files.js?v=1.0" defer></script>
-    <script src="recognize.js?v=4.9" defer></script>
+    <script src="recognize.js?v=5.1" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -879,14 +886,14 @@
                         <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
                         <rect x="6" y="14" width="12" height="8"></rect>
                     </svg>Печать</button>
-                <button id="btn_sheets_trigger" class="btn-print btn-base" style="display:none;" onclick="app.openProjectSheets();"><svg width="18"
+                <button id="btn_sheets_trigger" class="btn-print btn-base" style="display:none;" onclick="app.openProjectSheets().catch(e => app.alert('Не удалось открыть проект: ' + (e && e.message ? e.message : e), 'Проект'));"><svg width="18"
                         height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                         <polyline points="14 2 14 8 20 8"></polyline>
                         <line x1="8" y1="13" x2="16" y2="13"></line>
                         <line x1="8" y1="17" x2="16" y2="17"></line>
-                    </svg>Листы проекта</button>
+                    </svg>Проект</button>
                 <button id="btn_share_trigger" class="btn-share btn-base" onclick="app.shareInvoice(); ym(109490947, 'reachGoal', 'click_link');" style="display:none;"><svg width="18"
                         height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -1619,6 +1626,7 @@
             const header = document.querySelector('.site-header');
             const inputTarget = document.querySelector('.input-panel');
             const btnToTop = document.getElementById('btn_to_top');
+            const btnToBottom = document.getElementById('btn_to_bottom');
 
             const handleScroll = () => {
                 const scrollY = Math.max(
@@ -1634,6 +1642,22 @@
                     }
                 }
 
+                // Кнопка «вниз» появляется, когда до низа ещё далеко, — и прячется
+                // у самого низа, чтобы не мозолить глаза без дела. Считаем по той
+                // прокрутке, у которой запас больше: страница или левая панель.
+                if (btnToBottom) {
+                    const winLeft = Math.max(0,
+                        document.documentElement.scrollHeight - window.innerHeight - (window.scrollY || document.documentElement.scrollTop || 0));
+                    const panelLeft = inputTarget
+                        ? Math.max(0, inputTarget.scrollHeight - inputTarget.clientHeight - inputTarget.scrollTop)
+                        : 0;
+                    if (Math.max(winLeft, panelLeft) > 150) {
+                        btnToBottom.classList.add('visible');
+                    } else {
+                        btnToBottom.classList.remove('visible');
+                    }
+                }
+
                 if (btnToTop) {
                     if (scrollY > 150) {
                         btnToTop.classList.add('visible');
@@ -1645,7 +1669,24 @@
 
             window.addEventListener('scroll', handleScroll, { passive: true });
             if (inputTarget) inputTarget.addEventListener('scroll', handleScroll, { passive: true });
-            
+            window.addEventListener('resize', handleScroll, { passive: true });
+
+            // Смета дорисовывается уже после загрузки, и высота страницы меняется
+            // без всякой прокрутки. Без этого кнопка «вниз» не появлялась до
+            // первого касания колеса, хотя листать было куда.
+            if (window.ResizeObserver) {
+                const ro = new ResizeObserver(() => handleScroll());
+                // Следим за обёрткой страницы и за колонкой сметы: именно они
+                // растут при отрисовке. У body высота не меняется (overflow: clip),
+                // поэтому наблюдение за ним ничего бы не дало.
+                const grows = [
+                    document.getElementById('page_scale_wrapper'),
+                    document.querySelector('.output-panel'),
+                    inputTarget
+                ].filter(Boolean);
+                grows.forEach(el => ro.observe(el));
+            }
+
             // Initial check
             handleScroll();
         });
@@ -1774,6 +1815,14 @@
     <button id="btn_to_top" class="to-top-btn no-print" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); document.querySelector('.input-panel')?.scrollTo({top: 0, behavior: 'smooth'});" title="Наверх">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="18 15 12 9 6 15"></polyline>
+        </svg>
+    </button>
+
+    <!-- BUTTON SCROLL TO BOTTOM — под кнопкой «наверх», тот же вид.
+         Листает и страницу, и левую панель: у неё своя прокрутка. -->
+    <button id="btn_to_bottom" class="to-top-btn to-bottom-btn no-print" onclick="window.scrollTo({top: document.documentElement.scrollHeight, behavior: 'smooth'}); document.querySelector('.input-panel')?.scrollTo({top: document.querySelector('.input-panel').scrollHeight, behavior: 'smooth'});" title="Вниз">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
     </button>
 

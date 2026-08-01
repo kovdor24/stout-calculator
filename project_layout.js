@@ -550,18 +550,19 @@
     if (!scheme) return [];
     var ctx = buildCtx(scheme, items || []);
     var start = opts.sheetStart || 1;
+    var fmt = opts.num || function (v) { return String(v); };
     return [
       {
         title: 'Компоновка котельной',
         svg: window.projectSheets.sheet({
-          code: opts.code, sheet: String(start),
+          code: opts.code, sheet: fmt(start),
           body: title('Компоновка котельной') + planBody(ctx, opts.room || null)
         })
       },
       {
         title: 'Вид котельной спереди',
         svg: window.projectSheets.sheet({
-          code: opts.code, sheet: String(start + 1),
+          code: opts.code, sheet: fmt(start + 1),
           body: title('Вид котельной спереди') + frontBody(ctx)
         })
       }

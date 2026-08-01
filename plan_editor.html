@@ -86,7 +86,7 @@
   </select>
   <button class="ghost" onclick="doUndo()" title="Ctrl+Z">↶ Шаг назад</button>
   <button onclick="saveAll()" id="b_save" style="background:#0a7b28;color:#fff;border-color:#0a7b28">Сохранить</button>
-  <button class="ghost" onclick="openSheets()" title="Комплект собирается по смете калькулятора вместе с планами">Листы проекта →</button>
+  <button class="ghost" onclick="openSheets()" title="Комплект собирается по смете калькулятора вместе с планами">Проект →</button>
   <button class="ghost" id="b_hints" onclick="toggleHints()">💡 Подсказки: вкл</button>
 </div>
 
@@ -113,7 +113,7 @@
     '<div style="max-width:520px;margin:80px auto;background:#fff;border-radius:12px;padding:28px 32px;' +
     'font:15px/1.5 system-ui,sans-serif;color:#222;box-shadow:0 8px 30px rgba(0,0,0,.25)">' +
     '<h2 style="margin:0 0 10px;font-size:19px">Раздел проектирования не открыт</h2>' +
-    '<p style="margin:0 0 14px;color:#555">Планы этажей и листы проекта включает администратор. ' +
+    '<p style="margin:0 0 14px;color:#555">Планы этажей и проект включает администратор. ' +
     'Если доступ вам уже дали — откройте калькулятор heatcalc.ru, войдите в свою учётную запись ' +
     'и перейдите в редактор оттуда.</p>' +
     '<a href="index.html" style="display:inline-block;padding:9px 18px;border-radius:8px;' +
@@ -1726,7 +1726,7 @@ function saveAll() {
     });
   }, Promise.resolve()).then(function () {
     if (writeLocal()) {
-      hint('<span class=ok>Сохранено.</span> Откройте «Листы проекта» — планы этажей и тёплый пол попадут в комплект.');
+      hint('<span class=ok>Сохранено.</span> Откройте «Проект» — планы этажей и тёплый пол попадут в комплект.');
     } else {
       alert('Не удалось сохранить разметку в браузере. Освободите место и попробуйте снова.');
     }
@@ -1861,10 +1861,10 @@ function guideStep() {
       'Нужен особый прибор — переключите «Приборы: вручную» и добавьте кликом.' +
       (wcZones.length ? '<br><b>Обведено зон: ' + wcZones.length + ', подписано: 0.</b>' : '') };
   if (savedOnce) return { t: 'b_save', s: 'Готово',
-    txt: 'Сохранено! Планы попадут в комплект листов вместе со сметой.' +
+    txt: 'Сохранено! Планы попадут в комплект проекта вместе со сметой.' +
       '<br><button onclick="openSheets()" style="margin-top:7px;font:inherit;padding:5px 12px;' +
       'border-radius:6px;border:1px solid #ff6b35;background:#ff6b35;color:#fff;cursor:pointer">' +
-      'Открыть листы проекта</button><br>Есть ещё этажи — переключите вкладку сверху и повторите шаги.' };
+      'Открыть проект</button><br>Есть ещё этажи — переключите вкладку сверху и повторите шаги.' };
   return { t: 'b_save', s: 'Шаг 8 из 8 — сохранить',
     txt: 'Подпишите зоны именами комнат: клик по комнате в списке «Комнаты из расчёта» справа подставит имя. Затем нажмите зелёную «Сохранить».' };
 }
@@ -1874,7 +1874,7 @@ function openSheets() {
   var has = false;
   try { has = !!localStorage.getItem('project_sheets_payload'); } catch (e) {}
   if (has) window.open('sheet_demo.html', '_blank');
-  else alert('Сначала откройте калькулятор и нажмите «Листы проекта» — комплект соберётся по смете вместе с планами этажей.');
+  else alert('Сначала откройте калькулятор и нажмите «Проект» — комплект соберётся по смете вместе с планами этажей.');
 }
 
 var guidePos = null;     // позиция после ручного перетаскивания (пока страница открыта)

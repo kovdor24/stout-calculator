@@ -439,6 +439,175 @@ const app = {
         });
     },
 
+    /**
+     * Окно «Проект»: название объекта и его адрес.
+     *
+     * Адрес спрашиваем у всех, кому открыт раздел, — он идёт на титульный лист и
+     * даёт точку на карте проектов в админке. Внешних сервисов подсказки НЕТ:
+     * населённый пункт подставляется из нашей же CITIES_DB, координаты и регион —
+     * из cities_geo.js (вшиты в файл). Поэтому проверить, что улица настоящая,
+     * мы не можем — проверяем только то, что реально проверяемо: населённый пункт
+     * должен быть из справочника, улица заполнена. Дом необязателен: объект может
+     * ещё строиться, такой адрес помечается как неточный (exact: false).
+     *
+     * Возвращает { name, city, street, house, region, lat, lon, exact } или null.
+     */
+    askProjectAddress: function (prev) {
+        prev = prev || {};
+        // Площадь в названии не спрашиваем: она уже посчитана и подставляется
+        // на листы сама (см. projectObjectTitle) — иначе после правки расчёта
+        // в названии оставалась бы старая цифра
+        const area = Math.round(Number(this.state.area) || 0);
+        const cities = (typeof CITIES_DB !== 'undefined' ? CITIES_DB : []).map(c => c.name);
+        const geo = (typeof CITY_GEO !== 'undefined') ? CITY_GEO : {};
+        const norm = s => String(s || '').trim().toLowerCase().replace(/ё/g, 'е');
+        const cityIndex = {};
+        cities.forEach(n => { cityIndex[norm(n)] = n; });
+
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'calc-dialog-overlay';
+            const card = document.createElement('div');
+            card.className = 'calc-dialog-card';
+            card.style.maxWidth = '460px';
+
+            card.innerHTML = `
+                <h3 class="calc-dialog-title">Проект</h3>
+                <p class="calc-dialog-message" style="margin-bottom:12px;">
+                    Адрес объекта — он попадёт на титульный лист.
+                    ${area ? `Название соберётся само: <b>Жилой дом, ${area} м²</b>.` : ''}
+                </p>
+                <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
+                    <label class="reg-field-label">Населённый пункт</label>
+                    <div class="city-search-wrapper" style="position:relative;">
+                        <div style="position:relative; display:flex; align-items:center;">
+                            <span style="position:absolute; left:12px; font-size:14px; pointer-events:none; opacity:0.6;">&#128269;</span>
+                            <input type="text" id="proj_city" class="city-search-input" placeholder="Поиск города" autocomplete="off"
+                                   style="width:100%; padding:10px 12px 10px 36px; border:1px solid var(--border); border-radius:8px; font-size:14px; background:var(--bg-card); color:var(--text-main);"
+                                   value="${(prev.city || '').replace(/"/g, '&quot;')}"
+                                   oninput="app.onProjCityInput(this.value)" onfocus="app.onProjCityInput(this.value)">
+                        </div>
+                        <div id="proj_city_suggestions" class="city-suggestions-dropdown"
+                             style="display:none; position:absolute; top:calc(100% + 4px); left:0; width:100%; max-height:200px; overflow-y:auto; background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:9999;"></div>
+                    </div>
+                    <div id="proj_addr_err" style="display:none; color:#EF4444; font-size:12px; line-height:1.35;"></div>
+                </div>
+                <div class="calc-dialog-buttons">
+                    <button class="calc-dialog-btn calc-dialog-btn-cancel" id="proj_cancel">Отмена</button>
+                    <button class="calc-dialog-btn calc-dialog-btn-confirm" id="proj_ok">ОК</button>
+                </div>`;
+            overlay.appendChild(card);
+            document.body.appendChild(overlay);
+            // Без класса active оверлей остаётся с opacity: 0 — окно есть в разметке,
+            // но невидимо, и при этом перехватывает клики по всей странице.
+            // Так же показывают себя prompt/confirm, поведение общее.
+            setTimeout(() => overlay.classList.add('active'), 10);
+
+            const $ = id => card.querySelector('#' + id);
+            const errEl = $('proj_addr_err');
+            const showErr = (t) => { errEl.innerText = t; errEl.style.display = 'block'; };
+            const close = (val) => { overlay.remove(); resolve(val); };
+
+            $('proj_cancel').onclick = () => close(null);
+            $('proj_ok').onclick = () => {
+                const cityRaw = $('proj_city').value.trim();
+                const city = cityIndex[norm(cityRaw)];
+                if (!city) {
+                    showErr(cityRaw
+                        ? `«${cityRaw}» нет в справочнике населённых пунктов. Выберите ближайший из подсказок — по нему считаются теплопотери и ставится точка на карте.`
+                        : 'Выберите населённый пункт из подсказок.');
+                    $('proj_city').focus();
+                    return;
+                }
+                const g = geo[city] || null;
+                close({
+                    city,
+                    region: g ? g.region : '',
+                    lat: g ? g.lat : null,
+                    lon: g ? g.lon : null
+                });
+            };
+            setTimeout(() => { const f = $('proj_city'); if (f) f.focus(); }, 30);
+        });
+    },
+
+    /**
+     * Подсказки городов в окне «Проект» — те же, что в поиске города расчёта:
+     * тот же отбор (совпадение в названии, первые пять) и тот же вид строки
+     * с флагом, страной и расчётной температурой. Родной список браузера
+     * (datalist) показывал совпадения где угодно в слове и вперемешку.
+     */
+    onProjCityInput: function (val) {
+        const box = document.getElementById('proj_city_suggestions');
+        if (!box) return;
+        const q = String(val || '').trim().toLowerCase();
+        if (!q) { box.style.display = 'none'; return; }
+        const found = (typeof CITIES_DB !== 'undefined' ? CITIES_DB : [])
+            .filter(c => c.name.toLowerCase().includes(q)).slice(0, 5);
+        if (!found.length) {
+            box.innerHTML = '<div style="padding:10px 14px; font-size:13px; opacity:0.6; text-align:center;">Город не найден</div>';
+            box.style.display = 'block';
+            return;
+        }
+        const flags = { RU: "\u{1F1F7}\u{1F1FA}", KZ: "\u{1F1F0}\u{1F1FF}", BY: "\u{1F1E7}\u{1F1FE}", UA: "\u{1F1FA}\u{1F1E6}" };
+        box.innerHTML = found.map(c => `
+            <div class="city-suggestion-item" onclick="app.pickProjCity('${String(c.name).replace(/'/g, "\'")}')">
+                <span>${flags[c.country] || "\u{1F4CD}"} ${c.name} <span class="city-suggestion-country">${c.country}</span></span>
+                <span class="city-suggestion-temp">${c.temp}&deg;C</span>
+            </div>`).join('');
+        box.style.display = 'block';
+    },
+
+    /** Выбор города из подсказки в окне «Проект». */
+    pickProjCity: function (name) {
+        const input = document.getElementById('proj_city');
+        const box = document.getElementById('proj_city_suggestions');
+        if (input) input.value = name;
+        if (box) box.style.display = 'none';
+        const err = document.getElementById('proj_addr_err');
+        if (err) err.style.display = 'none';
+    },
+
+    /** Адрес одной строкой — для титульного листа и таблиц админки. */
+    formatProjectAddress: function (a) {
+        if (!a || !a.city) return '';
+        // Регион и населённый пункт. Улицу с домом не спрашиваем: для титульного
+        // листа и точки на карте достаточно города, а дом всё равно не проверить.
+        return [a.region, a.city].filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i).join(', ');
+    },
+
+    /**
+     * Адрес объекта по данным расчёта: город уже выбран в подробном режиме,
+     * от него считаются теплопотери — спрашивать его второй раз незачем.
+     * Пересобирается при каждом открытии листов, поэтому смена города в
+     * расчёте сразу видна и на титульном листе, и на карте в админке.
+     */
+    projectAddressFromCalc: function () {
+        const city = this.state.selectedCity ? String(this.state.selectedCity.name || '').trim() : '';
+        if (!city) return null;
+        const g = (typeof CITY_GEO !== 'undefined' ? CITY_GEO : {})[city] || null;
+        return { city, region: g ? g.region : '', lat: g ? g.lat : null, lon: g ? g.lon : null };
+    },
+
+    /**
+     * Название объекта для титульного листа: имя плюс площадь из расчёта.
+     *
+     * Площадь берётся в момент открытия листов, а не из введённого текста —
+     * поправили расчёт, и на листах сразу новая цифра. Если монтажник всё же
+     * написал площадь руками, второй раз её не приписываем.
+     */
+    projectObjectTitle: function (name) {
+        // Калькулятор считает только жилые дома, поэтому название не спрашиваем:
+        // «Жилой дом» плюс площадь из текущего расчёта. Если объект всё же назвали
+        // по-своему (например, из КП) — берём это название, но площадь дописываем
+        // так же, чтобы после правки расчёта цифра не осталась старой.
+        const base = String(name || '').trim() || 'Жилой дом';
+        const area = Math.round(Number(this.state.area) || 0);
+        if (!area) return base;
+        if (/\d\s*(м²|м2|кв\.?\s*м)/i.test(base)) return base;
+        return `${base}, ${area} м²`;
+    },
+
     prompt: function (msg, defaultValue = "", title = "Ввод данных") {
         if (document.body.classList.contains('menu-open')) {
             try { this.toggleMenu(); } catch (e) { }
@@ -835,6 +1004,12 @@ const app = {
         if (clean === "Название объекта" || clean === "true" || clean === "false") {
             clean = "";
         }
+        // Название по расчёту («Жилой дом, 250 м²») — это не введённое имя, а
+        // подстановка. Если её оставили как есть, не запоминаем: иначе цифра
+        // застынет и перестанет меняться вместе с площадью. Сравниваем без учёта
+        // регистра: в заголовке стоит text-transform: uppercase, и обратно из
+        // разметки текст приходит прописными.
+        if (clean && clean.toLowerCase() === String(this.projectObjectTitle('')).toLowerCase()) clean = "";
         this.state.projectName = clean;
         this.saveState();
         this.updateDocumentTitle();
@@ -4716,6 +4891,66 @@ const app = {
         });
     },
 
+    /**
+     * Доступ к распознаванию и проектированию всем монтажникам дистрибьютора.
+     *
+     * Живёт в карточке дистрибьютора, а не в шапке списка монтажников: там это
+     * был отдельный выпадающий список «выберите дистрибьютора», оторванный от
+     * самой компании. Включённое здесь видно у каждого привязанного монтажника —
+     * и в его личном кабинете, и в колонках таблицы админки («по дистрибьютору»).
+     */
+    renderDistAccessCell: function (d, isViewer) {
+        const acc = this._recognitionAccess || {};
+        const designOk = this.designAccessSupported();
+        const recogOn = !!((acc.dists || {})[d.id]);
+        const designOn = !!(designOk && ((acc.design && acc.design.dists) || {})[d.id]);
+        const row = (icon, title, on, disabled, feature, capId) => `
+            <span class="admin-bulk-switch" title="${title}">
+                <span style="font-size:11px; color:var(--text-sec); width:14px;">${icon}</span>
+                <label class="switch">
+                    <input type="checkbox" ${on ? 'checked' : ''} ${disabled ? 'disabled' : ''}
+                           onchange="app.toggleDistAccess('${feature}', '${d.id}', this.checked, this, '${capId}')">
+                    <span class="slider"></span>
+                </label>
+                <span id="${capId}" class="admin-bulk-cap" style="color:${on ? '#10B981' : 'var(--text-sec)'};">${on ? 'включено' : 'выключено'}</span>
+            </span>`;
+        const idSafe = String(d.id).replace(/[^a-zA-Z0-9_-]/g, '');
+        return `<div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
+            ${row('🔍', 'Распознавание смет всем монтажникам этой компании', recogOn, isViewer, '', 'dist_rec_' + idSafe)}
+            ${designOk
+                ? row('📐', 'Листы проекта и редактор планов всем монтажникам этой компании', designOn, isViewer, 'design', 'dist_des_' + idSafe)
+                : `<span style="font-size:10px; color:#D97706;" title="Обновите recognize_archive.php на сервере">📐 нет на сервере</span>`}
+        </div>`;
+    },
+
+    /**
+     * Переключение доступа целой компании. Ответ сервера кладём целиком —
+     * из него же пересчитываются колонки в таблице монтажников.
+     */
+    toggleDistAccess: async function (feature, distId, enabled, input, capId) {
+        const cap = capId ? document.getElementById(capId) : null;
+        const setCap = (text, color) => { if (cap) { cap.textContent = text; cap.style.color = color; } };
+        const revert = () => {
+            if (input) input.checked = !enabled;
+            setCap(!enabled ? 'включено' : 'выключено', !enabled ? '#10B981' : 'var(--text-sec)');
+        };
+        const dist = (this.adminData.distributors || []).find(x => x.id === distId);
+        const name = dist ? dist.company_name : distId;
+        const what = feature === 'design' ? 'проектирование' : 'распознавание смет';
+        if (!await this.confirm(`${enabled ? 'Включить' : 'Выключить'} ${what} всем монтажникам «${name}»?`)) { revert(); return; }
+        setCap(enabled ? 'включено' : 'выключено', enabled ? '#10B981' : 'var(--text-sec)');
+        try {
+            // Перерисовываем через renderAdminMain: renderAdminDistributors
+            // дописывает разметку в конец (innerHTML +=), сам по себе он бы
+            // продублировал таблицу.
+            await this.postAccessChange(feature, 'dist', distId, enabled);
+            this.renderAdminMain();
+        } catch (e) {
+            revert();
+            app.alert('Не удалось изменить доступ компании: ' + e.message);
+        }
+    },
+
     renderAdminDistributors: function () {
         const isViewer = this.getAdminRole() === 'viewer';
         const content = document.getElementById('admin_content');
@@ -4735,7 +4970,7 @@ const app = {
 
         let tableRows = '';
         if (dists.length === 0) {
-            tableRows = '<tr><td colspan="8" style="text-align:center; padding: 30px; color: var(--text-sec);">Промокодов нет. Добавьте первый.</td></tr>';
+            tableRows = '<tr><td colspan="9" style="text-align:center; padding: 30px; color: var(--text-sec);">Промокодов нет. Добавьте первый.</td></tr>';
         } else {
             dists.forEach((d, i) => {
                 const statusBadge = d.is_active
@@ -4761,11 +4996,12 @@ const app = {
                         : '<span style="color:var(--text-sec);" title="Промокод только привязывает монтажника к дистрибьютору, тариф не выдаётся">без PRO</span>'
                     }<br><span style="font-size:10px; color:var(--text-sec);">до ${validUntilText}</span></td>
                     <td style="text-align:center; font-size:12px;">${priceCell}</td>
+                    <td style="text-align:center;">${this.renderDistAccessCell(d, isViewer)}</td>
                     <td>${statusBadge}</td>
                     <td style="text-align:right;">
                         <div style="display:flex; gap:6px; justify-content:flex-end;">
-                            <button class="btn-ctrl" style="height:28px; font-size:11px;" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} onclick="app.editDistributor('${d.id}')">✏️ Изменить</button>
-                            <button class="btn-ctrl" style="height:28px; font-size:11px; color:#EF4444;" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} onclick="app.deleteDistributor('${d.id}')">🗑</button>
+                            <button class="admin-btn" style="height:28px; font-size:11px;" ${isViewer ? 'disabled' : ''} onclick="app.editDistributor('${d.id}')">✏️ Изменить</button>
+                            <button class="admin-btn danger" style="height:28px; font-size:11px;" ${isViewer ? 'disabled' : ''} onclick="app.deleteDistributor('${d.id}')">🗑</button>
                         </div>
                     </td>
                 </tr>`;
@@ -4845,7 +5081,7 @@ const app = {
                 </div>
 
                 <table class="inv-table">
-                    <thead><tr><th style="width:30px;">#</th><th>Компания</th><th>Промокод</th><th>Менеджер</th><th>PRO мес.</th><th style="text-align:center;">Цены</th><th>Статус</th><th style="text-align:right;">Действия</th></tr></thead>
+                    <thead><tr><th style="width:30px;">#</th><th>Компания</th><th>Промокод</th><th>Менеджер</th><th>PRO мес.</th><th style="text-align:center;">Цены</th><th style="text-align:center;">Доступ монтажникам</th><th>Статус</th><th style="text-align:right;">Действия</th></tr></thead>
                     <tbody>${tableRows}</tbody>
                 </table>
             </div>
@@ -8216,11 +8452,34 @@ const app = {
     },
 
     // ═══ Доступ к инструментам: распознавание и проектирование ═══════════
-    // По должности инструменты открыты только администраторам. Наблюдателям —
-    // нет: их учётки заводят для показа и обучения, и что им видно, решает
-    // администратор переключателем, как и обычному монтажнику.
+    // Администраторам оба инструмента открыты ПО УМОЛЧАНИЮ, наблюдателям и
+    // монтажникам — нет. Но умолчание можно перебить: снятый переключатель
+    // сохраняется на сервере как явное false и переживает перезагрузку
+    // (см. setAccess в recognize_archive.php). Управлять переключателями
+    // по-прежнему может только админ, наблюдателю они заблокированы.
     hasFeatureRoleAccess: function () {
         return ['super_admin', 'admin'].includes(this.getAdminRole());
+    },
+
+    /**
+     * Явная отметка доступа для логина: true / false / undefined.
+     *
+     * undefined — «не настраивали», тогда решает умолчание по должности.
+     * Ключ ищем без учёта регистра: логины приходят и из анкеты, и из почты.
+     */
+    accessFlagFor: function (map, key) {
+        if (!map || !key) return undefined;
+        const want = String(key).toLowerCase();
+        for (const k of Object.keys(map)) {
+            if (String(k).toLowerCase() === want) return !!map[k];
+        }
+        return undefined;
+    },
+
+    /** Открыт ли инструмент по умолчанию, без явной отметки: да — только админам. */
+    featureDefaultFor: function (u) {
+        const email = ((u && u.email) || '').toLowerCase();
+        return (u && u.account_type === 'admin') || (email && this.SUPER_ADMIN_EMAILS.includes(email));
     },
 
     ACCESS_LISTS_URL: 'https://proxy.heatcalc.ru/recognize_archive.php?access=1',
@@ -8257,12 +8516,15 @@ const app = {
      * через дистрибьютора или через регион, как включит администратор.
      */
     canUseDesign: function () {
-        if (this.hasFeatureRoleAccess()) return true;
         const d = this._accessLists && this._accessLists.design;
-        if (!d) return false;
         const row = this._currentUserRow || this.state.tgUser || {};
         const login = String(row.email || row.username || '').trim().toLowerCase();
-        if (login && Object.keys(d.users || {}).some(u => String(u).toLowerCase() === login)) return true;
+        // Личная отметка сильнее всего: явное «выключено» перебивает и должность,
+        // и открытый доступ региону или компании
+        const own = this.accessFlagFor(d && d.users, login);
+        if (own !== undefined) return own;
+        if (this.hasFeatureRoleAccess()) return true;
+        if (!d) return false;
         const dist = row.distributor_id || this.state.distributorId;
         if (dist && (d.dists || {})[dist]) return true;
         const region = row.region || (this.state.tgUser && this.state.tgUser.region) || '';
@@ -8559,10 +8821,10 @@ const app = {
             // 3. Fetch Recent Estimates (Fixed 50) — те же точечные JSON-поля, что и выше, вместо
             // полного calc_data (см. комментарий у запроса userEsts)
             let { data: recentEsts, error: errRE } = await supabaseClient.from('estimates')
-                .select('id, project_name, eq_sum, works_sum, total_sum, created_at, users(username, phone, email), calc_id:calc_data->>calc_id, shared_invoice_id:calc_data->>shared_invoice_id, area:calc_data->>area, from_recognition:calc_data->>from_recognition')
+                .select('id, project_name, eq_sum, works_sum, total_sum, created_at, users(username, phone, email), calc_id:calc_data->>calc_id, shared_invoice_id:calc_data->>shared_invoice_id, area:calc_data->>area, from_recognition:calc_data->>from_recognition, addr:calc_data->projectAddress, share_id')
                 .order('created_at', { ascending: false })
                 .limit(50);
-            recentEsts = (recentEsts || []).map(e => ({ ...e, calc_data: { calc_id: e.calc_id, shared_invoice_id: e.shared_invoice_id, area: e.area } }));
+            recentEsts = (recentEsts || []).map(e => ({ ...e, calc_data: { calc_id: e.calc_id, shared_invoice_id: e.shared_invoice_id, area: e.area, projectAddress: e.addr || null } }));
 
             // 4. Fetch Global Totals (Only sums for dashboard cards)
             let { data: sums, error: errS } = await supabaseClient.from('estimates')
@@ -8668,6 +8930,13 @@ const app = {
         const content = document.getElementById('admin_content');
         if (!content) return;
 
+        // Возвращаем обычную раскладку вкладки: «Сообщения» переводят #admin_content
+        // в колонку с overflow:hidden ради чата во всю высоту, и без сброса
+        // остальные вкладки теряли бы собственную прокрутку.
+        content.style.display = '';
+        content.style.flexDirection = '';
+        content.style.overflow = 'auto';
+
         if (!this._adminTab) this._adminTab = 'stats';
 
         const { users, userEstimates, recentEstimates, totalUsers, totalEstimates, totalEq, totalWorks } = this.adminData;
@@ -8681,15 +8950,20 @@ const app = {
             { id: 'pricelist', icon: '💵', label: 'Прайс-лист' },
             { id: 'equipment', icon: '🧰', label: 'Своё оборудование' },
             { id: 'recognition', icon: '🔍', label: 'Распознавание' },
-            { id: 'plans', icon: '📐', label: 'Планы этажей' }
+            { id: 'plans', icon: '📐', label: 'Планы этажей' },
+            { id: 'projmap', icon: '🗺️', label: 'Карта проектов' }
         ];
+        // Вкладки растянуты на всю ширину, но отправная точка — содержимое:
+        // flex: 1 0 auto = расти можно, сжиматься нельзя. При равных долях (1 1 0)
+        // длинные подписи вроде «Своё оборудование» резались многоточием, а короткие
+        // держали лишнее место. Запрет на сжатие и означает «текст не съедается»:
+        // если девять вкладок не влезают, ряд переносится на вторую строку.
         // На узких экранах (см. .admin-tab-btn / .admin-tab-label в style.css) подписи
-        // скрываются, остаются только иконки-квадраты — тем самым все 7 вкладок помещаются
-        // в одну строку без сжатия текста до нечитаемой "каши"; title — подсказка при наведении
+        // скрываются, остаются только иконки-квадраты; title — подсказка при наведении.
         let navHtml = `
-            <div id="admin_nav_tabs" style="display: flex; gap: 6px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-shrink: 0; width: 100%; flex-wrap: nowrap; overflow-x: auto;">
+            <div id="admin_nav_tabs" style="display: flex; gap: 6px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-shrink: 0; width: 100%; flex-wrap: wrap;">
                 ${ADMIN_TAB_DEFS.map(t => `
-                    <button id="admin_tab_${t.id}" class="auth-btn-base admin-tab-btn" title="${t.label}" style="margin: 0; padding: 0 10px; height: 34px; font-size: 12px; font-weight: bold; flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background:${this._adminTab === t.id ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === t.id ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === t.id ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('${t.id}')">${t.icon}<span class="admin-tab-label"> ${t.label}</span></button>
+                    <button id="admin_tab_${t.id}" class="auth-btn-base admin-tab-btn" title="${t.label}" style="margin: 0; padding: 0 12px; height: 34px; font-size: 12px; font-weight: bold; flex: 1 0 auto; width: auto; max-width: none; white-space: nowrap; background:${this._adminTab === t.id ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === t.id ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === t.id ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('${t.id}')">${t.icon}<span class="admin-tab-label"> ${t.label}</span></button>
                 `).join('')}
             </div>
         `;
@@ -8733,6 +9007,12 @@ const app = {
         if (this._adminTab === 'plans') {
             content.innerHTML = navHtml;
             this.renderAdminPlans();
+            return;
+        }
+
+        if (this._adminTab === 'projmap') {
+            content.innerHTML = navHtml;
+            this.renderAdminProjectsMap();
             return;
         }
 
@@ -8801,8 +9081,11 @@ const app = {
         // обновлённый recognize_archive.php (см. designAccessSupported).
         const designOk = this.designAccessSupported();
         const designOffHint = 'Обновите recognize_archive.php на сервере — раздел «проектирование» ещё не поддерживается';
-        const designRegionOn = !!(designOk && regionFilter &&
-            (this._recognitionAccess.design.regions || {})[regionFilter]);
+        // Регион для массового доступа — из своего списка в строке действий
+        // (см. _bulkAccessRegion ниже), по умолчанию совпадает с фильтром таблицы
+        const bulkRegionSel = this._bulkAccessRegion !== undefined ? this._bulkAccessRegion : regionFilter;
+        const designRegionOn = !!(designOk && bulkRegionSel &&
+            (this._recognitionAccess.design.regions || {})[bulkRegionSel]);
 
         let h = `
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
@@ -8863,49 +9146,75 @@ const app = {
                         </div>
                     </div>
 
-                    <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px; background:var(--surface-light); border:1px solid var(--border); border-radius:8px; padding:10px 14px;">
-                        <span style="font-size:11px; font-weight:600; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.5px;">🏢 Массово назначить дистрибьютора отфильтрованным (${totalUsers}):</span>
-                        <div style="display:flex; gap:8px; align-items:center; width:100%;">
-                            <select id="admin_bulk_distributor_select" ${isViewer ? 'disabled' : ''} style="flex:1; min-width:0; background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:6px; padding:0 10px; height:32px; font-size:12px; outline:none; cursor:pointer;">
+                    <!-- Массовые действия одной строкой. Подписи короткие, полный
+                         смысл — в подсказке при наведении: четыре отдельные строки
+                         с длинными заголовками съедали пол-экрана до таблицы.
+                         Регион берётся из фильтра над таблицей — того же, по
+                         которому отобран список; дистрибьютору проектирование
+                         включается отдельно, его монтажники разбросаны по регионам. -->
+                    ${(() => {
+                        // Регион для массового включения выбирается ЗДЕСЬ же, своим списком:
+                        // раньше он молча брался из фильтра над таблицей, и было непонятно,
+                        // почему переключатель мёртвый и что вообще надо сделать.
+                        // Список — те же регионы, что указаны монтажниками при регистрации.
+                        // По умолчанию подставляется регион из фильтра, если он выбран.
+                        const bulkRegion = this._bulkAccessRegion !== undefined ? this._bulkAccessRegion : regionFilter;
+                        const allRegions = [...new Set((this.adminData.allUsersDropdown || []).map(u => {
+                            try { return app.normalizeUserRegionAndCity(u.region, u.city).region; } catch (e) { return ''; }
+                        }).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+                        const recogRegionOn = !!(this._recognitionAccess && this._recognitionAccess.regions && this._recognitionAccess.regions[bulkRegion]);
+                        const regHint = bulkRegion ? '' : ' Сначала выберите регион в списке слева.';
+                        const noRegion = isViewer || !bulkRegion;
+                        // Тот же переключатель, что в колонках таблицы (label.switch + подпись),
+                        // только подпись стоит сбоку, а не под ним — иначе строка растёт вдвое.
+                        const sw = (on, disabled, onChange, capId, title) => `
+                            <span class="admin-bulk-switch" title="${title}">
+                                <label class="switch">
+                                    <input type="checkbox" ${on ? 'checked' : ''} ${disabled ? 'disabled' : ''} onchange="${onChange}">
+                                    <span class="slider"></span>
+                                </label>
+                                <span id="${capId}" class="admin-bulk-cap" style="color:${on ? '#10B981' : 'var(--text-sec)'};">${disabled && !isViewer ? (noRegion ? 'нет региона' : 'нет доступа') : (on ? 'включено' : 'выключено')}</span>
+                            </span>`;
+                        return `
+                    <div class="admin-bulk-row">
+                        <div class="admin-bulk-line">
+                            <span class="admin-bulk-label">🏢 Массово назначить дистрибьютора отфильтрованным (${totalUsers}):</span>
+                            <select id="admin_bulk_distributor_select" ${isViewer ? 'disabled' : ''} style="flex:1;">
                                 <option value="">Выберите дистрибьютора...</option>
                                 ${(this.adminData.distributors || []).map(d => `<option value="${d.id}">${d.company_name} (${d.promo_code})</option>`).join('')}
                             </select>
-                            <button ${isViewer ? 'disabled' : ''} onclick="app.bulkAssignDistributor()" style="flex-shrink:0; height:32px; padding:0 16px; font-size:12px; font-weight:600; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer; white-space:nowrap; ${isViewer ? 'opacity:0.5;cursor:not-allowed;' : ''} transition:opacity 0.2s;" onmouseover="if(!${isViewer})this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Назначить</button>
+                            <button class="admin-btn" style="height:28px;" ${isViewer ? 'disabled' : ''} onclick="app.bulkAssignDistributor()">Назначить</button>
                         </div>
-                        <!-- Распознавание целому региону: регион берётся из фильтра
-                             над таблицей — того же, по которому отобран список. -->
-                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px;">
-                            <span style="font-size:11px; font-weight:600; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.5px;">🔍 Распознавание смет региону${regionFilter ? ` «${regionFilter}»` : ''}:</span>
-                            <button ${isViewer || !regionFilter ? 'disabled' : ''} onclick="app.toggleRegionRecognition(true)"
-                                    title="${regionFilter ? 'Открыть распознавание всем монтажникам региона' : 'Сначала выберите регион в фильтре'}"
-                                    style="height:28px; padding:0 12px; font-size:11.5px; font-weight:600; background:${(this._recognitionAccess && this._recognitionAccess.regions && this._recognitionAccess.regions[regionFilter]) ? '#10B981' : 'var(--surface)'}; color:${(this._recognitionAccess && this._recognitionAccess.regions && this._recognitionAccess.regions[regionFilter]) ? '#fff' : 'var(--text-main)'}; border:1px solid var(--border); border-radius:6px; cursor:${isViewer || !regionFilter ? 'not-allowed' : 'pointer'}; ${isViewer || !regionFilter ? 'opacity:0.5;' : ''}">Включить</button>
-                            <button ${isViewer || !regionFilter ? 'disabled' : ''} onclick="app.toggleRegionRecognition(false)"
-                                    style="height:28px; padding:0 12px; font-size:11.5px; font-weight:600; background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:6px; cursor:${isViewer || !regionFilter ? 'not-allowed' : 'pointer'}; ${isViewer || !regionFilter ? 'opacity:0.5;' : ''}">Выключить</button>
-                        </div>
-                        <!-- Проектирование: тот же доступ, но включать можно ещё и
-                             целому дистрибьютору — его монтажники разбросаны по регионам. -->
-                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px;">
-                            <span style="font-size:11px; font-weight:600; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.5px;">📐 Проектирование региону${regionFilter ? ` «${regionFilter}»` : ''}:</span>
-                            <button ${isViewer || !regionFilter || !designOk ? 'disabled' : ''} onclick="app.toggleRegionDesign(true)"
-                                    title="${designOk ? (regionFilter ? 'Открыть листы проекта и редактор планов всем монтажникам региона' : 'Сначала выберите регион в фильтре') : designOffHint}"
-                                    style="height:28px; padding:0 12px; font-size:11.5px; font-weight:600; background:${designRegionOn ? '#10B981' : 'var(--surface)'}; color:${designRegionOn ? '#fff' : 'var(--text-main)'}; border:1px solid var(--border); border-radius:6px; cursor:${isViewer || !regionFilter || !designOk ? 'not-allowed' : 'pointer'}; ${isViewer || !regionFilter || !designOk ? 'opacity:0.5;' : ''}">Включить</button>
-                            <button ${isViewer || !regionFilter || !designOk ? 'disabled' : ''} onclick="app.toggleRegionDesign(false)"
-                                    style="height:28px; padding:0 12px; font-size:11.5px; font-weight:600; background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:6px; cursor:${isViewer || !regionFilter || !designOk ? 'not-allowed' : 'pointer'}; ${isViewer || !regionFilter || !designOk ? 'opacity:0.5;' : ''}">Выключить</button>
-                        </div>
-                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px;">
-                            <span style="font-size:11px; font-weight:600; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.5px;">📐 Проектирование дистрибьютору:</span>
-                            <select id="design_dist_select" ${isViewer || !designOk ? 'disabled' : ''} style="flex:1; min-width:200px; background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:6px; padding:0 10px; height:28px; font-size:11.5px; outline:none; cursor:pointer; ${isViewer || !designOk ? 'opacity:0.5;' : ''}">
-                                <option value="">Выберите дистрибьютора...</option>
-                                ${(this.adminData.distributors || []).map(d => `<option value="${d.id}">${((this._recognitionAccess && this._recognitionAccess.design && this._recognitionAccess.design.dists) || {})[d.id] ? '✅ ' : ''}${d.company_name} (${d.promo_code})</option>`).join('')}
-                            </select>
-                            <button ${isViewer || !designOk ? 'disabled' : ''} onclick="app.toggleDistDesign(true)"
-                                    title="${designOk ? 'Открыть проектирование всем монтажникам дистрибьютора' : designOffHint}"
-                                    style="height:28px; padding:0 12px; font-size:11.5px; font-weight:600; background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:6px; cursor:${isViewer || !designOk ? 'not-allowed' : 'pointer'}; ${isViewer || !designOk ? 'opacity:0.5;' : ''}">Включить</button>
-                            <button ${isViewer || !designOk ? 'disabled' : ''} onclick="app.toggleDistDesign(false)"
-                                    style="height:28px; padding:0 12px; font-size:11.5px; font-weight:600; background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:6px; cursor:${isViewer || !designOk ? 'not-allowed' : 'pointer'}; ${isViewer || !designOk ? 'opacity:0.5;' : ''}">Выключить</button>
+                        <div class="admin-bulk-line admin-bulk-toggles">
+                            <div class="admin-bulk-group">
+                                <span class="admin-bulk-label" title="Регионы берутся из анкет монтажников. Выбранный здесь регион — общий для обоих переключателей рядом">🌍 Регион:</span>
+                                <select id="admin_bulk_region" ${isViewer ? 'disabled' : ''} style="flex:1; max-width:230px;" onchange="app.setBulkAccessRegion(this.value)">
+                                    <option value="">— выберите регион —</option>
+                                    ${allRegions.map(r => `<option value="${this.escapeHtml ? this.escapeHtml(r) : r}" ${bulkRegion === r ? 'selected' : ''}>${r}</option>`).join('')}
+                                </select>
+                            </div>
+                            <span class="admin-bulk-sep"></span>
+                            <div class="admin-bulk-group">
+                                <span class="admin-bulk-label" title="Распознавание смет всем монтажникам региона${bulkRegion ? ` «${bulkRegion}»` : ''}.${regHint}">🔍 Распознавание смет:</span>
+                                ${sw(!noRegion && recogRegionOn, noRegion, 'app.toggleRegionRecognition(this.checked, this)', 'cap_reg_recog',
+                            `Распознавание смет всем монтажникам региона.${regHint}`)}
+                            </div>
+                            <span class="admin-bulk-sep"></span>
+                            <div class="admin-bulk-group">
+                                <span class="admin-bulk-label" title="Листы проекта и редактор планов всем монтажникам региона${bulkRegion ? ` «${bulkRegion}»` : ''}.${regHint}">📐 Проектирование:</span>
+                                ${sw(!noRegion && designOk && designRegionOn, noRegion || !designOk, 'app.toggleRegionDesign(this.checked, this)', 'cap_reg_design',
+                            designOk ? `Листы проекта и редактор планов всем монтажникам региона.${regHint}` : designOffHint)}
+                            </div>
+                            <span class="admin-bulk-sep"></span>
+                            <div class="admin-bulk-group">
+                                <span class="admin-bulk-label" style="color:var(--text-sec); font-weight:500; text-transform:none; letter-spacing:0;">
+                                    Целой компании — во вкладке «Дистрибьюторы», колонка «Доступ монтажникам»
+                                </span>
+                            </div>
                             ${designOk ? '' : `<span style="font-size:10.5px; color:#D97706;">${designOffHint}</span>`}
                         </div>
-                    </div>
+                    </div>`;
+                    })()}
 
                     <!-- Ширины заданы явно и таблица фиксированной раскладки:
                          при авторазметке колонки прыгали от строки к строке,
@@ -8933,6 +9242,9 @@ const app = {
                                (['admin', 'viewer'].includes(u.account_type) && u.demo_ends_at);
 
             let tariffLabel = 'Базовый';
+            // Отдельная короткая подпись для админов и наблюдателей: у них тариф —
+            // не предмет разбирательств, поэтому без источника (промокод/оплата)
+            let tariffLabelShort = 'Базовый';
             if (hasProTariff) {
                 let proType = 'пробный';
                 if (u.distributor_id) proType = 'промокод';
@@ -8943,17 +9255,17 @@ const app = {
                     dateStr = 'навсегда';
                 }
 
-                if (isExpired) {
-                    tariffLabel = `<span style="color:#EF4444; font-weight:bold;">Профи до ${dateStr}</span> <span style="font-size:10px; color:#EF4444;">(${proType}) (ИСТЁК)</span>`;
-                } else {
-                    tariffLabel = `<span style="color:#D97706; font-weight:bold;">Профи до ${dateStr}</span> <span style="font-size:10px; color:var(--text-sec);">(${proType})</span>`;
-                }
+                // «Профи навсегда», а не «Профи до навсегда» — предлог нужен только перед датой
+                const term = dateStr === 'навсегда' ? 'Профи навсегда' : `Профи до ${dateStr}`;
+                const color = isExpired ? '#EF4444' : '#D97706';
+                tariffLabelShort = `<span style="color:${color}; font-weight:bold;">${term}</span>${isExpired ? ' <span style="font-size:10px; color:#EF4444;">(ИСТЁК)</span>' : ''}`;
+                tariffLabel = `<span style="color:${color}; font-weight:bold;">${term}</span> <span style="font-size:10px; color:${isExpired ? '#EF4444' : 'var(--text-sec)'};">(${proType})${isExpired ? ' (ИСТЁК)' : ''}</span>`;
             }
 
             if (u.account_type === 'viewer') {
-                badge = `<span style="color:#8B5CF6; font-weight:bold;">Наблюдатель 👁</span><br><span style="font-size:10px; color:var(--text-sec);">Тариф: ${tariffLabel}</span>`;
+                badge = `<span style="color:#8B5CF6; font-weight:bold;">Наблюдатель 👁</span><br><span style="font-size:10px; color:var(--text-sec);">Тариф: ${tariffLabelShort}</span>`;
             } else if (u.account_type === 'admin') {
-                badge = `<span style="color:#10B981; font-weight:bold;">Администратор ⚙️</span><br><span style="font-size:10px; color:var(--text-sec);">Тариф: ${tariffLabel}</span>`;
+                badge = `<span style="color:#10B981; font-weight:bold;">Администратор ⚙️</span><br><span style="font-size:10px; color:var(--text-sec);">Тариф: ${tariffLabelShort}</span>`;
             } else if (u.account_type === 'pro') {
                 badge = tariffLabel;
             } else {
@@ -9026,9 +9338,9 @@ const app = {
 
         h += `</tbody></table>
               <div style="display:flex; justify-content:center; align-items:center; gap:20px; margin-bottom:30px;">
-                  <button class="btn-ctrl" ${!hasPrev ? 'disabled style="opacity:0.5; cursor:default;"' : ''} onclick="app.loadAdminData(${this._adminOffset - this._adminPageSize})">⬅️ Назад</button>
+                  <button class="admin-btn" ${!hasPrev ? 'disabled' : ''} onclick="app.loadAdminData(${this._adminOffset - this._adminPageSize})">⬅️ Назад</button>
                   <span style="font-size:12px; color:var(--text-sec);">Записи ${this._adminOffset + 1} — ${Math.min(this._adminOffset + this._adminPageSize, totalUsers)} из ${totalUsers}</span>
-                  <button class="btn-ctrl" ${!hasNext ? 'disabled style="opacity:0.5; cursor:default;"' : ''} onclick="app.loadAdminData(${this._adminOffset + this._adminPageSize})">Вперед ➡️</button>
+                  <button class="admin-btn" ${!hasNext ? 'disabled' : ''} onclick="app.loadAdminData(${this._adminOffset + this._adminPageSize})">Вперед ➡️</button>
               </div>
         `;
 
@@ -9265,6 +9577,178 @@ const app = {
                 if (typeof app.filterAdminEstimatesTable === 'function') app.filterAdminEstimatesTable(userName);
             }
         }, 150);
+    },
+
+    /**
+     * Вкладка «Карта проектов»: где сделаны проекты.
+     *
+     * Точка ставится по населённому пункту (координаты из cities_geo.js),
+     * а не по дому: сервиса геокодирования у нас нет, улицу в координаты
+     * перевести нечем. Несколько объектов в одном городе разводятся веером
+     * вокруг центра, иначе они лягут друг на друга и кликнуть можно будет
+     * только по верхнему.
+     *
+     * Карту рисует Leaflet (лежит локально в vendor/), подложка — тайлы
+     * OpenStreetMap: это единственный внешний запрос во всей вкладке, и он
+     * идёт только когда админ её открыл.
+     */
+    renderAdminProjectsMap: async function () {
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+        // Карта тянется на всю оставшуюся высоту — как мессенджер во вкладке
+        // «Сообщения»; renderAdminMain вернёт обычную раскладку при уходе отсюда
+        content.style.display = 'flex';
+        content.style.flexDirection = 'column';
+        content.style.overflow = 'hidden';
+
+        const root = document.createElement('div');
+        root.id = 'admin_map_root';
+        root.style.cssText = 'flex:1 1 auto; min-height:0; display:flex; flex-direction:column;';
+        root.innerHTML = `<div style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка карты…</div>`;
+        content.appendChild(root);
+
+        try {
+            await this.loadLeaflet();
+        } catch (e) {
+            root.innerHTML = `<div style="color:#EF4444; padding:20px;">Не удалось загрузить карту: ${e.message}</div>`;
+            return;
+        }
+
+        const geo = (typeof CITY_GEO !== 'undefined') ? CITY_GEO : {};
+        const ests = this.adminData.recentEstimates || [];
+
+        // Точки: у сметы должен быть адрес с городом. Координаты берём из адреса,
+        // а если проект сохранён до появления адреса — по названию города.
+        const points = [];
+        let noAddr = 0;
+        ests.forEach(e => {
+            const a = (e.calc_data && e.calc_data.projectAddress) || null;
+            if (!a || !a.city) { noAddr++; return; }
+            const g = geo[a.city] || null;
+            const lat = (a.lat != null) ? a.lat : (g ? g.lat : null);
+            const lon = (a.lon != null) ? a.lon : (g ? g.lon : null);
+            if (lat == null || lon == null) { noAddr++; return; }
+            points.push({
+                id: e.id,
+                name: e.project_name || 'Без названия',
+                addr: this.formatProjectAddress(a),
+                city: a.city,
+                region: a.region || (g ? g.region : '') || 'Без региона',
+                exact: !!a.exact,
+                area: Number(e.calc_data && e.calc_data.area) || 0,
+                sum: e.total_sum || 0,
+                who: (e.users && (e.users.username || e.users.email)) || '',
+                link: e.share_id ? ('?cid=' + e.share_id) : null,
+                lat, lon
+            });
+        });
+
+        const byRegion = {};
+        points.forEach(p => { (byRegion[p.region] = byRegion[p.region] || []).push(p); });
+        const regions = Object.keys(byRegion).sort((a, b) => byRegion[b].length - byRegion[a].length);
+
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const fmt = n => (n || 0).toLocaleString('ru-RU');
+
+        root.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+                <h3 style="margin:0; color:var(--text-main);">🗺️ Карта проектов</h3>
+                <span style="font-size:12.5px; color:var(--text-sec);">
+                    проектов с адресом: <b>${points.length}</b>${noAddr ? ` · без адреса: ${noAddr}` : ''}
+                </span>
+                <button class="admin-btn" style="margin-left:auto;" onclick="app.renderAdminMain()">Обновить</button>
+            </div>
+            ${points.length ? '' : `<div style="font-size:11.5px; color:var(--text-sec); margin-bottom:10px;">
+                Адрес спрашивается при открытии раздела «Проект». У ранее сохранённых смет его нет — они появятся здесь после пересохранения.
+            </div>`}
+            <div style="display:flex; gap:12px; align-items:stretch; min-height:0; flex:1;">
+                <div style="flex:0 0 240px; display:flex; flex-direction:column; background:var(--surface-light); border:1px solid var(--border); border-radius:10px; overflow:hidden;">
+                    <div style="padding:8px 10px; font-size:11px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.4px; border-bottom:1px solid var(--border);">Регионы</div>
+                    <div id="admin_map_regions" style="overflow-y:auto; padding:4px;">
+                        ${regions.length ? regions.map(r => `
+                            <div class="admin-chat-item" style="padding:7px 8px;" onclick="app.zoomProjectsRegion('${esc(r).replace(/'/g, "\\'")}')" title="Показать проекты региона">
+                                <div class="admin-chat-item-body">
+                                    <div class="admin-chat-item-row">
+                                        <span class="admin-chat-name">${esc(r)}</span>
+                                        <span class="admin-chat-badge">${byRegion[r].length}</span>
+                                    </div>
+                                    <div class="admin-chat-item-row"><span class="admin-chat-prev">${esc([...new Set(byRegion[r].map(p => p.city))].join(', '))}</span></div>
+                                </div>
+                            </div>`).join('')
+                : '<div style="padding:12px; font-size:12px; color:var(--text-sec);">Пока пусто</div>'}
+                    </div>
+                    <div style="padding:8px 10px; border-top:1px solid var(--border); font-size:11.5px; color:var(--text-sec);">
+                        Всего площадь: <b>${fmt(Math.round(points.reduce((s, p) => s + p.area, 0)))}</b> м²
+                    </div>
+                </div>
+                <div id="admin_map_canvas" style="flex:1; min-height:420px; border:1px solid var(--border); border-radius:10px; overflow:hidden;"></div>
+            </div>`;
+
+        const map = L.map('admin_map_canvas', { scrollWheelZoom: true }).setView([57, 45], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+        this._projMap = map;
+        this._projMarkers = {};
+
+        // Веер вокруг центра города: одинаковые координаты иначе перекрывают друг друга
+        const seen = {};
+        points.forEach(p => {
+            const k = p.lat + ',' + p.lon;
+            const n = seen[k] = (seen[k] || 0);
+            seen[k]++;
+            const ang = n * (Math.PI * 2 / 8), r = n ? 0.02 + 0.01 * Math.floor(n / 8) : 0;
+            const lat = p.lat + r * Math.cos(ang), lon = p.lon + r * Math.sin(ang);
+            const m = L.circleMarker([lat, lon], {
+                radius: 7,
+                color: p.exact ? '#2563EB' : '#D97706',
+                fillColor: p.exact ? '#3B82F6' : '#F59E0B',
+                fillOpacity: 0.85, weight: 2
+            }).addTo(map);
+            m.bindPopup(`
+                <div style="font-size:13px; line-height:1.45; min-width:190px;">
+                    <b>${esc(p.name)}</b><br>
+                    📍 ${esc(p.addr)}${p.exact ? '' : ' <span style="color:#D97706;">(без дома)</span>'}<br>
+                    ${p.area ? `Площадь: <b>${fmt(p.area)}</b> м²<br>` : ''}
+                    ${p.sum ? `Смета: <b>${fmt(p.sum)}</b> ₽<br>` : ''}
+                    ${p.who ? `<span style="color:#666;">${esc(p.who)}</span><br>` : ''}
+                    ${p.link ? `<a href="${esc(p.link)}" target="_blank" style="color:#2563EB; font-weight:600;">Посмотреть проект →</a>` : '<span style="color:#999;">Ссылки нет</span>'}
+                </div>`);
+            (this._projMarkers[p.region] = this._projMarkers[p.region] || []).push(m);
+        });
+
+        if (points.length) {
+            map.fitBounds(L.latLngBounds(points.map(p => [p.lat, p.lon])).pad(0.25));
+        }
+        setTimeout(() => map.invalidateSize(), 60);
+    },
+
+    /** Приблизить карту к проектам выбранного региона. */
+    zoomProjectsRegion: function (region) {
+        const map = this._projMap, list = (this._projMarkers || {})[region];
+        if (!map || !list || !list.length) return;
+        map.fitBounds(L.latLngBounds(list.map(m => m.getLatLng())).pad(0.4));
+        if (list.length === 1) list[0].openPopup();
+    },
+
+    /** Leaflet лежит локально (vendor/) — подключаем один раз при открытии карты. */
+    loadLeaflet: function () {
+        if (window.L && window.L.map) return Promise.resolve();
+        if (this._leafletPromise) return this._leafletPromise;
+        this._leafletPromise = new Promise((resolve, reject) => {
+            if (!document.getElementById('leaflet_css')) {
+                const css = document.createElement('link');
+                css.id = 'leaflet_css'; css.rel = 'stylesheet'; css.href = 'vendor/leaflet.css';
+                document.head.appendChild(css);
+            }
+            const s = document.createElement('script');
+            s.src = 'vendor/leaflet.js';
+            s.onload = () => resolve();
+            s.onerror = () => { this._leafletPromise = null; reject(new Error('файл vendor/leaflet.js не найден')); };
+            document.head.appendChild(s);
+        });
+        return this._leafletPromise;
     },
 
     renderAdminEstimates: function () {
@@ -9761,7 +10245,7 @@ const app = {
         const composePlaceholder = isBroadcastChat ? 'Объявление всем пользователям…' : `Сообщение для ${chatName}…`;
 
         const innerHtml = `
-            <div class="admin-chat-wrap ${this._adminChatOpen ? 'chat-open' : ''}">
+            <div class="admin-chat-wrap fill-height ${this._adminChatOpen ? 'chat-open' : ''}">
                 <div class="admin-chat-side">
                     <div class="admin-chat-side-head">
                         <input type="text" id="admin_chat_search" placeholder="🔍 Поиск: ФИО, ник, город, текст…" value="${esc(searchBefore)}" oninput="app.filterAdminChatList()">
@@ -9804,7 +10288,15 @@ const app = {
         content.innerHTML = '';
         if (nav) content.appendChild(nav);
 
+        // Мессенджер тянется на всю оставшуюся высоту: делаем вкладку колонкой,
+        // прокрутка остаётся внутри самого чата, а не у всей вкладки.
+        // Обратно сбрасывается в renderAdminMain при переходе на другую вкладку.
+        content.style.display = 'flex';
+        content.style.flexDirection = 'column';
+        content.style.overflow = 'hidden';
+
         const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'flex:1 1 auto; min-height:0; display:flex; flex-direction:column;';
         wrapper.innerHTML = innerHtml;
         content.appendChild(wrapper);
 
@@ -10769,6 +11261,11 @@ const app = {
             root.id = 'admin_pricelist_root';
             content.appendChild(root);
         }
+        // Контейнер сначала живёт как заглушка «Загрузка данных…» и центрирует
+        // текст; содержимое вставляется в него же, и без сброса названия работ
+        // оказывались посередине строки вместо левого края.
+        root.style.textAlign = 'left';
+        root.style.padding = '';
         const focusSnap = this._snapshotAdminFilterFocus(root);
 
         const rows = this._adminPricelistRows || [];
@@ -11073,11 +11570,11 @@ const app = {
                     &nbsp;|&nbsp; срок хранения: <b>${keep} дн.</b>
                 </span>
                 <span style="flex:1"></span>
-                <button class="btn-ctrl" onclick="app.renderAdminPlans()">Обновить</button>
-                <button class="btn-ctrl" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}
+                <button class="admin-btn" onclick="app.renderAdminPlans()">Обновить</button>
+                <button class="admin-btn" ${isViewer ? 'disabled' : ''}
                         onclick="app.purgeAdminPlans(${keep})">Очистить старше ${keep} дней</button>
-                <button class="btn-ctrl" ${isViewer ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}
-                        style="color:#EF4444;" onclick="app.purgeAdminPlans(0)">Очистить всё</button>
+                <button class="admin-btn danger" ${isViewer ? 'disabled' : ''}
+                        onclick="app.purgeAdminPlans(0)">Очистить всё</button>
             </div>
             <div style="font-size:11.5px; color:var(--text-sec); margin-bottom:12px;">
                 Подложки лежат на Beget, мимо Supabase — его трафик узкое место.
@@ -11147,7 +11644,7 @@ const app = {
         if (!await this.confirm(`Удалить ${what}? Подложки восстановить будет нельзя — их придётся загружать заново.`)) return;
 
         const headers = await this.recognitionAuthHeaders();
-        if (!headers) { app.alert('Сессия истекла — обновите страницу.'); return; }
+        if (!headers) { app.alert('Нет активной сессии: переключатели доступа подписываются токеном входа. Войдите по email или через Яндекс ID — на локальной копии вход отдельный от heatcalc.ru. Через Telegram сессии Supabase не создаётся.'); return; }
 
         try {
             const body = key
@@ -11236,7 +11733,7 @@ const app = {
      */
     openRecognitionFile: async function (rel) {
         const headers = await this.recognitionAuthHeaders();
-        if (!headers) { app.alert('Сессия истекла — обновите страницу и войдите заново.'); return; }
+        if (!headers) { app.alert('Нет активной сессии: переключатели доступа подписываются токеном входа. Войдите по email или через Яндекс ID — на локальной копии вход отдельный от heatcalc.ru. Через Telegram сессии Supabase не создаётся.'); return; }
         try {
             const r = await fetch(`${this.RECOGNIZE_ARCHIVE}?get=${encodeURIComponent(rel)}`, { headers });
             if (!r.ok) throw new Error(r.status === 403 ? 'доступ только для администраторов' : 'HTTP ' + r.status);
@@ -11331,7 +11828,7 @@ const app = {
         if (value !== '' && !/^\d+$/.test(value)) { app.alert('Нужно целое число или пустое поле.'); return; }
 
         const headers = await this.recognitionAuthHeaders();
-        if (!headers) { app.alert('Сессия истекла — обновите страницу.'); return; }
+        if (!headers) { app.alert('Нет активной сессии: переключатели доступа подписываются токеном входа. Войдите по email или через Яндекс ID — на локальной копии вход отдельный от heatcalc.ru. Через Telegram сессии Supabase не создаётся.'); return; }
         try {
             const r = await fetch(this.RECOGNIZE_ARCHIVE, {
                 method: 'POST',
@@ -11390,7 +11887,7 @@ const app = {
         if (!await this.confirm(`Удалить ${what}? Действие необратимо.`)) return;
 
         const headers = await this.recognitionAuthHeaders();
-        if (!headers) { app.alert('Сессия истекла — обновите страницу.'); return; }
+        if (!headers) { app.alert('Нет активной сессии: переключатели доступа подписываются токеном входа. Войдите по email или через Яндекс ID — на локальной копии вход отдельный от heatcalc.ru. Через Telegram сессии Supabase не создаётся.'); return; }
 
         try {
             const r = await fetch(this.RECOGNIZE_ARCHIVE, {
@@ -11424,7 +11921,7 @@ const app = {
         if (!await this.confirm(`Удалить ${what} ${when}? Действие необратимо.`)) return;
 
         const headers = await this.recognitionAuthHeaders();
-        if (!headers) { app.alert('Сессия истекла — обновите страницу.'); return; }
+        if (!headers) { app.alert('Нет активной сессии: переключатели доступа подписываются токеном входа. Войдите по email или через Яндекс ID — на локальной копии вход отдельный от heatcalc.ru. Через Telegram сессии Supabase не создаётся.'); return; }
 
         try {
             const r = await fetch(this.RECOGNIZE_ARCHIVE, {
@@ -11573,10 +12070,10 @@ const app = {
                 <span style="color:var(--text-sec);">разборы: ${st.jsons} шт, ${mb(st.jsonBytes)}</span>
                 ${st.diskFree ? `<span style="color:var(--text-sec);">свободно на диске: ${(st.diskFree / 1073741824).toFixed(1)} ГБ</span>` : ''}
                 <span style="margin-left:auto; display:flex; gap:8px;">
-                    <button class="auth-btn-base" style="height:30px; padding:0 12px; font-size:12px;"
+                    <button class="admin-btn"
                             title="Удалить фотографии и PDF старше 90 дней. Разборы останутся, записи из таблицы не исчезнут"
                             onclick="app.purgeRecognitionFiles('originals', 90)">Очистить файлы старше 90 дней</button>
-                    <button class="auth-btn-base" style="height:30px; padding:0 12px; font-size:12px;"
+                    <button class="admin-btn danger"
                             title="Удалить все загруженные файлы. Разборы и статистика останутся"
                             onclick="app.purgeRecognitionFiles('originals', 0)">Очистить все файлы</button>
                 </span>
@@ -11589,13 +12086,13 @@ const app = {
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:9px 12px; margin-bottom:12px;
                         background:var(--primary-light); border:1px solid var(--primary); border-radius:10px; font-size:12.5px;">
                 <b>Выбрано: ${pickedCount}</b>
-                <button class="auth-btn-base" style="height:30px; padding:0 12px; font-size:12px;"
+                <button class="admin-btn"
                         title="Освободить диск: фотографии и PDF удаляются, записи с разбором и счётчиками остаются в истории"
                         onclick="app.deleteRecognitionPicked('originals')">Удалить только файлы</button>
                 <button class="delete-icon-btn" style="height:30px; padding:0 12px; font-size:12px;"
                         title="Удалить и файлы, и сами записи: они пропадут из истории вместе с израсходованным лимитом"
                         onclick="app.deleteRecognitionPicked('all')">Удалить файлы и записи</button>
-                <button class="auth-btn-base" style="height:30px; padding:0 12px; font-size:12px; margin-left:auto;"
+                <button class="admin-btn" style="margin-left:auto;"
                         onclick="app.clearRecognitionPicks()">Снять выделение</button>
             </div>` : '';
 
@@ -11603,7 +12100,7 @@ const app = {
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
                 <h3 style="margin:0; color:var(--text-main);">🔍 Распознавание смет</h3>
                 <span style="color:var(--text-sec); font-size:12.5px;">монтажников: ${sorted.length} · записей: ${rows.length}</span>
-                <button class="auth-btn-base" style="margin-left:auto; height:30px; padding:0 12px; font-size:12px;"
+                <button class="admin-btn" style="margin-left:auto;"
                         onclick="app.renderAdminRecognition()">Обновить</button>
             </div>
             ${diskHtml}
@@ -11662,7 +12159,7 @@ const app = {
      */
     postAccessChange: async function (feature, kind, name, enabled) {
         const headers = await this.recognitionAuthHeaders();
-        if (!headers) throw new Error('Сессия истекла — обновите страницу.');
+        if (!headers) throw new Error('Нет активной сессии: переключатели доступа подписываются токеном входа. Войдите по email или через Яндекс ID — на локальной копии вход отдельный от heatcalc.ru. Через Telegram сессии Supabase не создаётся.');
         const body = { action: 'setAccess', kind: kind, name: name, enabled: enabled };
         if (feature) body.feature = feature;
         const r = await fetch(this.RECOGNIZE_ARCHIVE, {
@@ -11700,34 +12197,35 @@ const app = {
      * Обычный переключатель, а не кнопка: он реагирует на клик мгновенно,
      * своей анимацией, не дожидаясь ответа сервера и перерисовки таблицы.
      */
-    /** Администратору инструменты открыты по должности — наблюдателю нет. */
-    isRoleAlwaysAllowed: function (u) {
-        const email = (u.email || '').toLowerCase();
-        return u.account_type === 'admin' || (email && this.SUPER_ADMIN_EMAILS.includes(email));
-    },
-
     recognitionAccessCell: function (u, isViewer) {
         const acc = this._recognitionAccess || { users: {}, regions: {} };
         const key = this.recognitionUserKey(u);
         const region = u.region || '';
 
-        // Администраторам инструмент доступен по должности, включать нечего.
-        // Наблюдателям — включается переключателем, как обычным монтажникам.
-        if (this.isRoleAlwaysAllowed(u)) {
-            return `<span style="font-size:10px; color:var(--text-sec);" title="Администраторам распознавание доступно всегда">по роли</span>`;
-        }
+        // Переключатель есть у всех, включая администраторов: доступ по должности
+        // отменён, иначе выключить инструмент админу было нечем — ползунок стоял бы
+        // для вида. Управлять ими может только админ, наблюдателю они заблокированы.
         if (!key) {
             return `<span style="font-size:10px; color:var(--text-sec);" title="Нет email или логина — доступ включать не по чему">—</span>`;
         }
 
-        const byUser = Object.keys(acc.users).some(x => String(x).toLowerCase() === key.toLowerCase());
+        // Личная отметка сильнее всего: явное «выключено» перебивает и должность,
+        // и доступ, открытый компании или региону
+        const own = this.accessFlagFor(acc.users, key);
+        const byDefault = this.featureDefaultFor(u);
+        const byDist = !!(u.distributor_id && (acc.dists || {})[u.distributor_id]);
         const byRegion = !!(region && acc.regions[region]);
-        const on = byUser || byRegion;
+        const on = own !== undefined ? own : (byDefault || byDist || byRegion);
 
-        const label = byRegion && !byUser ? 'по региону' : (on ? 'включено' : 'выключено');
-        const title = byRegion && !byUser
-            ? `Открыто всему региону «${region}». Переключатель включит доступ лично`
-            : 'Доступ монтажника к распознаванию смет';
+        const label = own === true ? 'включено'
+            : own === false ? 'выключено'
+                : (byDefault ? 'по роли' : (byDist ? 'по дистрибьютору' : (byRegion ? 'по региону' : 'выключено')));
+        const title = own !== undefined
+            ? (own ? 'Доступ к распознаванию включён лично' : 'Доступ снят лично — сильнее доступа по роли, компании и региону')
+            : (byDefault ? 'Администратору распознавание открыто по умолчанию. Переключатель снимет доступ лично'
+                : (byDist ? 'Открыто всей компании дистрибьютора. Переключатель включит доступ лично'
+                    : (byRegion ? `Открыто всему региону «${region}». Переключатель включит доступ лично`
+                        : 'Доступ монтажника к распознаванию смет')));
         const keyEsc = key.replace(/'/g, "\\'");
         const cellId = 'rec_acc_' + String(u.id).replace(/[^a-zA-Z0-9_-]/g, '');
 
@@ -11762,7 +12260,7 @@ const app = {
         if (!headers) {
             if (input) input.checked = !enabled;
             setLabel(!enabled ? 'включено' : 'выключено', !enabled ? '#10B981' : 'var(--text-sec)');
-            app.alert('Сессия истекла — обновите страницу.');
+            app.alert('Нет активной сессии: переключатели доступа подписываются токеном входа. Войдите по email или через Яндекс ID — на локальной копии вход отдельный от heatcalc.ru. Через Telegram сессии Supabase не создаётся.');
             return;
         }
         try {
@@ -11773,7 +12271,11 @@ const app = {
             });
             const data = await r.json();
             if (!data.ok) throw new Error(data.error || 'сервер отказал');
-            this._recognitionAccess = { users: data.users || {}, regions: data.regions || {} };
+            // Сохраняем ответ целиком: раньше пересобирали объект из users+regions и
+            // тем самым теряли ключ design — после любого переключения
+            // распознавания все переключатели проектирования гасли до перезагрузки.
+            this._recognitionAccess = data;
+            this._accessLists = data;
         } catch (e) {
             if (input) input.checked = !enabled;
             setLabel(!enabled ? 'включено' : 'выключено', !enabled ? '#10B981' : 'var(--text-sec)');
@@ -11789,9 +12291,7 @@ const app = {
      * переключателем говорит, откуда доступ пришёл.
      */
     designAccessCell: function (u, isViewer) {
-        if (this.isRoleAlwaysAllowed(u)) {
-            return `<span style="font-size:10px; color:var(--text-sec);" title="Администраторам проектирование доступно всегда">по роли</span>`;
-        }
+        // Переключатель есть и у администраторов — см. recognitionAccessCell
         if (!this.designAccessSupported()) {
             return `<span style="font-size:10px; color:#D97706;" title="Обновите recognize_archive.php на сервере — в ответе нет раздела «проектирование»">нет на сервере</span>`;
         }
@@ -11801,17 +12301,22 @@ const app = {
         }
         const d = this._recognitionAccess.design;
         const region = u.region || '';
-        const byUser = Object.keys(d.users || {}).some(x => String(x).toLowerCase() === key.toLowerCase());
+        // Правило то же, что у распознавания: личная отметка сильнее умолчания
+        const own = this.accessFlagFor(d.users, key);
+        const byDefault = this.featureDefaultFor(u);
         const byDist = !!(u.distributor_id && (d.dists || {})[u.distributor_id]);
         const byRegion = !!(region && (d.regions || {})[region]);
-        const on = byUser || byDist || byRegion;
+        const on = own !== undefined ? own : (byDefault || byDist || byRegion);
 
-        const label = byUser ? 'включено' : (byDist ? 'по дистрибьютору' : (byRegion ? 'по региону' : 'выключено'));
-        const title = byUser
-            ? 'Доступ к проектированию включён лично'
-            : (byDist ? 'Открыто всему дистрибьютору. Переключатель включит доступ лично'
-                : (byRegion ? `Открыто всему региону «${region}». Переключатель включит доступ лично`
-                    : 'Доступ к листам проекта и редактору планов'));
+        const label = own === true ? 'включено'
+            : own === false ? 'выключено'
+                : (byDefault ? 'по роли' : (byDist ? 'по дистрибьютору' : (byRegion ? 'по региону' : 'выключено')));
+        const title = own !== undefined
+            ? (own ? 'Доступ к проектированию включён лично' : 'Доступ снят лично — сильнее доступа по роли, компании и региону')
+            : (byDefault ? 'Администратору проектирование открыто по умолчанию. Переключатель снимет доступ лично'
+                : (byDist ? 'Открыто всему дистрибьютору. Переключатель включит доступ лично'
+                    : (byRegion ? `Открыто всему региону «${region}». Переключатель включит доступ лично`
+                        : 'Доступ к листам проекта и редактору планов')));
         const keyEsc = key.replace(/'/g, "\\'");
         const cellId = 'des_acc_' + String(u.id).replace(/[^a-zA-Z0-9_-]/g, '');
 
@@ -11844,32 +12349,40 @@ const app = {
     },
 
     /** Проектирование целому региону — регион берётся из фильтра над таблицей. */
-    toggleRegionDesign: async function (enabled) {
-        const region = (document.getElementById('admin_filter_region') || {}).value || '';
-        if (!region) { app.alert('Сначала выберите регион в фильтре над таблицей.'); return; }
-        if (!await this.confirm(`${enabled ? 'Включить' : 'Выключить'} проектирование для региона «${region}»?`)) return;
+    toggleRegionDesign: async function (enabled, input) {
+        const revert = () => { if (input) input.checked = !enabled; };
+        const region = this.bulkAccessRegion();
+        if (!region) { revert(); app.alert('Сначала выберите регион в списке слева от переключателя.'); return; }
+        if (!await this.confirm(`${enabled ? 'Включить' : 'Выключить'} проектирование для региона «${region}»?`)) { revert(); return; }
         try {
             await this.postAccessChange('design', 'region', region, enabled);
+            this.renderAdminMain();
             this.loadAdminData(this._adminOffset || 0);
         } catch (e) {
+            revert();
             app.alert('Не удалось изменить доступ региона: ' + e.message);
         }
     },
 
-    /** Проектирование всем монтажникам дистрибьютора. */
-    toggleDistDesign: async function (enabled) {
-        const sel = document.getElementById('design_dist_select');
-        const distId = sel ? sel.value : '';
-        if (!distId) { app.alert('Сначала выберите дистрибьютора в списке рядом.'); return; }
-        const dist = (this.adminData.distributors || []).find(d => d.id === distId);
-        const distLabel = dist ? dist.company_name : distId;
-        if (!await this.confirm(`${enabled ? 'Включить' : 'Выключить'} проектирование всем монтажникам «${distLabel}»?`)) return;
-        try {
-            await this.postAccessChange('design', 'dist', distId, enabled);
-            this.loadAdminData(this._adminOffset || 0);
-        } catch (e) {
-            app.alert('Не удалось изменить доступ дистрибьютора: ' + e.message);
-        }
+    /**
+     * Регион для массового включения доступа.
+     *
+     * Свой список рядом с переключателями, а не фильтр над таблицей: раньше
+     * регион брался из фильтра неявно, и было непонятно, почему переключатель
+     * не нажимается. Список монтажников при этом не пересобирается — это
+     * отдельная настройка, а не фильтр.
+     */
+    setBulkAccessRegion: function (region) {
+        this._bulkAccessRegion = region || '';
+        this.renderAdminMain();
+    },
+
+    /** Регион, к которому относятся массовые переключатели доступа. */
+    bulkAccessRegion: function () {
+        const sel = document.getElementById('admin_bulk_region');
+        if (sel) return sel.value || '';
+        if (this._bulkAccessRegion !== undefined) return this._bulkAccessRegion;
+        return (document.getElementById('admin_filter_region') || {}).value || '';
     },
 
     /**
@@ -11878,13 +12391,14 @@ const app = {
      * Регион берётся из фильтра над таблицей: он же и определяет, кого видно,
      * поэтому «включить региону» читается однозначно.
      */
-    toggleRegionRecognition: async function (enabled) {
-        const region = (document.getElementById('admin_filter_region') || {}).value || '';
-        if (!region) { app.alert('Сначала выберите регион в фильтре над таблицей.'); return; }
-        if (!await this.confirm(`${enabled ? 'Включить' : 'Выключить'} распознавание для региона «${region}»?`)) return;
+    toggleRegionRecognition: async function (enabled, input) {
+        const revert = () => { if (input) input.checked = !enabled; };
+        const region = this.bulkAccessRegion();
+        if (!region) { revert(); app.alert('Сначала выберите регион в списке слева от переключателя.'); return; }
+        if (!await this.confirm(`${enabled ? 'Включить' : 'Выключить'} распознавание для региона «${region}»?`)) { revert(); return; }
 
         const headers = await this.recognitionAuthHeaders();
-        if (!headers) { app.alert('Сессия истекла — обновите страницу.'); return; }
+        if (!headers) { revert(); app.alert('Нет активной сессии: переключатели доступа подписываются токеном входа. Войдите по email или через Яндекс ID — на локальной копии вход отдельный от heatcalc.ru. Через Telegram сессии Supabase не создаётся.'); return; }
         try {
             const r = await fetch(this.RECOGNIZE_ARCHIVE, {
                 method: 'POST',
@@ -11893,9 +12407,15 @@ const app = {
             });
             const data = await r.json();
             if (!data.ok) throw new Error(data.error || 'сервер отказал');
-            this._recognitionAccess = { users: data.users || {}, regions: data.regions || {} };
+            // Сохраняем ответ целиком: раньше пересобирали объект из users+regions и
+            // тем самым теряли ключ design — после любого переключения
+            // распознавания все переключатели проектирования гасли до перезагрузки.
+            this._recognitionAccess = data;
+            this._accessLists = data;
+            this.renderAdminMain();
             this.loadAdminData(this._adminOffset || 0);
         } catch (e) {
+            revert();
             app.alert('Не удалось изменить доступ региона: ' + e.message);
         }
     },
@@ -11942,6 +12462,10 @@ const app = {
             root.id = 'admin_equipment_root';
             content.appendChild(root);
         }
+        // Тот же контейнер сначала был заглушкой «Загрузка данных…» с центровкой —
+        // сбрасываем, иначе строки без своей раскладки уезжают в середину
+        root.style.textAlign = 'left';
+        root.style.padding = '';
         const focusSnap = this._snapshotAdminFilterFocus(root);
 
         const data = this._adminEquipmentData || { added: [], removed: [], swaps: [] };
@@ -11985,7 +12509,7 @@ const app = {
                         </div>
                         ${g.added.length ? `<div style="margin-bottom:8px;"><div style="font-size:11px; color:#10B981; font-weight:700; margin-bottom:4px;">+ Добавлено (${g.added.length})</div>${g.added.map(r => `<div style="display:flex; justify-content:space-between; gap:10px; padding:5px 8px; background:var(--bg); border-radius:6px; font-size:12px; margin-bottom:4px;"><span>${r.name}</span><b style="white-space:nowrap;">${fmt(r.price)} ₽</b></div>`).join('')}</div>` : ''}
                         ${g.removed.length ? `<div style="margin-bottom:8px;"><div style="font-size:11px; color:#EF4444; font-weight:700; margin-bottom:4px;">− Удалено (${g.removed.length})</div>${g.removed.map(r => `<div style="display:flex; justify-content:space-between; gap:10px; padding:5px 8px; background:var(--bg); border-radius:6px; font-size:12px; margin-bottom:4px;"><span>${r.name}${r.qty > 1 ? ' × ' + r.qty : ''}</span><span style="white-space:nowrap; color:var(--text-sec);">${fmt(r.price)} ₽ · ${fmtDate(r.date)}</span></div>`).join('')}</div>` : ''}
-                        ${g.swaps.length ? `<div><div style="font-size:11px; color:var(--primary); font-weight:700; margin-bottom:4px;">⇄ Замены (${g.swaps.length})</div>${g.swaps.map(r => `<div style="padding:5px 8px; background:var(--bg); border-radius:6px; font-size:12px; margin-bottom:4px;"><s style="color:var(--text-sec);">${r.fromName}</s> → <b>${r.toName}</b> <span style="color:var(--text-sec); font-size:10.5px;">(${fmtDate(r.date)})</span></div>`).join('')}</div>` : ''}
+                        ${g.swaps.length ? `<div><div style="font-size:11px; color:var(--primary); font-weight:700; margin-bottom:4px;">⇄ Замены (${g.swaps.length})</div>${g.swaps.map(r => `<div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:5px 8px; background:var(--bg); border-radius:6px; font-size:12px; margin-bottom:4px; text-align:left;"><span><s style="color:var(--text-sec);">${r.fromName}</s> → <b>${r.toName}</b></span><span style="white-space:nowrap; color:var(--text-sec); font-size:10.5px;">${fmtDate(r.date)}</span></div>`).join('')}</div>` : ''}
                     </div>
                 `).join('');
         } else {
@@ -14759,6 +15283,99 @@ const app = {
         };
     },
 
+    /**
+     * Лист «Общие указания» раздела ТМ (котельная).
+     *
+     * В проектах-образцах на этом листе описание котельной, регулирование
+     * температуры, температурные параметры и энергоэффективность. Всё это
+     * известно из сметы и настроек: состав оборудования — по подобранным
+     * позициям, режимы — по тем же параметрам, по каким считалась обвязка.
+     * Указания по отоплению живут в разделе «О» (buildGeneralData) и здесь
+     * не повторяются.
+     */
+    buildTmData: function () {
+        const s = this.state, spec = this.currentEquipmentList || [];
+        const nameOf = i => (i && i.name ? String(i.name) : '');
+        const has = re => spec.some(i => re.test(nameOf(i)));
+        const find = re => { const it = spec.find(i => re.test(nameOf(i))); return it ? nameOf(it) : null; };
+        const cfg = this.buildSchemeConfig();
+        if (!cfg) return null;                      // котла в смете нет — раздела ТМ тоже
+        const tOut = s.selectedCity ? s.selectedCity.temp : -(s.region || 30);
+        const hasTp = (s.systems || []).includes('tp');
+        const hasRad = (s.systems || []).includes('rad');
+        const ppr = s.brandMode === 'rommer';
+
+        // 1. Что стоит в котельной — по позициям сметы, без выдумок
+        const eq = [];
+        const boiler = find(/кот[её]л\s+газов|газов\S*\s+кот[её]л/i);
+        const elBoiler = find(/кот[её]л\s+электрическ|электрическ\S*\s+кот[её]л/i);
+        // контурность в названии позиции обычно уже есть — не дублируем
+        if (boiler) eq.push('– ' + boiler +
+            ((cfg.gasCircuits === 1 && !/контурн/i.test(boiler)) ? ' (одноконтурный);' : ';'));
+        if (elBoiler) eq.push('– ' + elBoiler + ';');
+        const tank = find(/бойлер|водонагреват/i);
+        if (tank) eq.push('– ' + tank + ';');
+        const hydro = find(/гидрострелк|гидравлическ\S*\s+раздел/i);
+        if (hydro) eq.push('– ' + hydro + ';');
+        if (cfg.tankHeating) eq.push('– расширительный бак системы отопления ' + cfg.tankHeating + ' л;');
+        if (cfg.tankDhw) eq.push('– расширительный бак ГВС ' + cfg.tankDhw + ' л;');
+        if (has(/насосн\S*\s+групп/i)) eq.push('– насосные группы контуров отопления;');
+        if (eq.length) eq[eq.length - 1] = eq[eq.length - 1].replace(/;$/, '.');
+
+        const notes = [];
+        notes.push({ h: '1. Описание котельной', lines: [
+            'Котельная расположена в доме, в отдельном помещении; размеры помещения приняты ' +
+                'по архитектурному решению. Расчётная тепловая мощность — ' +
+                Math.max(1, Math.round(this.getHouseHeatLoss() || 0)) + ' кВт.',
+            'Для обеспечения теплом и горячей водой в котельной устанавливается:'
+        ].concat(eq).concat([
+            'Оборудование работает в автоматическом режиме, без постоянного обслуживающего персонала.'
+        ]) });
+
+        notes.push({ h: '2. Регулирование температуры', lines: [
+            (boiler || elBoiler)
+                ? 'Котёл работает под управлением собственной автоматики; при подключении датчика ' +
+                  'наружного воздуха возможен погодозависимый режим по отопительному графику.'
+                : 'Источник тепла работает под управлением собственной автоматики.',
+            'Датчик наружного воздуха устанавливается на северной стороне здания, так, чтобы на ' +
+                'него не попадали прямые солнечные лучи.',
+            hasTp ? 'Температура контура тёплого пола поддерживается насосно-смесительным узлом ' +
+                'с термостатической головкой, независимо от температуры котлового контура.'
+                : 'Температура контуров поддерживается автоматикой котла.'
+        ]});
+
+        notes.push({ h: '3. Сведения о температурных параметрах', lines: [
+            'В качестве теплоносителя принята ' +
+                ((s.coolant && s.coolant !== 'water') ? 'незамерзающая жидкость на основе пропиленгликоля.' : 'вода.') +
+                (hasRad ? ' График радиаторного отопления 75–65 °С.' : '') +
+                (hasTp ? ' График напольного отопления 40–35 °С.' : ''),
+            'Расчётная температура наружного воздуха ' + tOut + ' °С' +
+                (s.selectedCity ? ' (' + s.selectedCity.name + ').' : '.') +
+                ' Расчётное давление в системе — 1,5 бар.'
+        ]});
+
+        notes.push({ h: '4. Обвязка оборудования', lines: [
+            'Магистрали котельной выполняются ' + (ppr
+                ? 'трубой из полипропилена ' + (cfg.dia || '') + ' на сварных соединениях.'
+                : 'трубой из нержавеющей стали ' + (cfg.dia || '') + ' на пресс-соединениях.'),
+            'Узлы обвязки выполнить по листам настоящего раздела; арматура и соединительные ' +
+                'детали — по спецификации.',
+            'Трубопроводы в котельной крепить хомутами с шагом не более 1,5 м, у арматуры — ' +
+                'дополнительное крепление.',
+            'По завершении монтажа выполнить промывку и гидравлическое испытание пробным ' +
+                'давлением, превышающим рабочее, с осмотром соединений.'
+        ]});
+
+        notes.push({ h: '5. Энергоэффективность', lines: [
+            'Применены средства автоматизации и контроля, снижающие потребление тепловой энергии; ' +
+                'регулирование работает в режиме погодной компенсации.',
+            'Предусмотрены высокоэффективные циркуляционные насосы с электронным управлением.',
+            'Трубопроводы в неотапливаемых зонах и магистрали изолируются по СП 61.13330.2012.'
+        ]});
+
+        return { notes: notes };
+    },
+
     /** Подпись монтажника для листов: «Фамилия И.О.» из личного кабинета */
     installerSignName: function () {
         const u = this._currentUserRow || this.state.tgUser || {};
@@ -14942,28 +15559,40 @@ const app = {
         if (!this.canUseDesign()) { app.alert('Раздел проектирования вам пока не открыт. Его включает администратор.'); return; }
         const list = this.currentEquipmentList || [];
         if (!list.length) { app.alert("Смета пуста — сначала рассчитайте объект."); return; }
-        // Название объекта обязательно: оно уходит на титульный лист. Просим
-        // сразу с адресом — как в проектах-образцах («Жилой дом, 106 м², д. Марусино»).
+        // Название не спрашиваем: калькулятор считает жилые дома, а площадь берётся
+        // из расчёта (см. projectObjectTitle). Спрашиваем только адрес — он идёт на
+        // титульный лист и даёт точку на карте проектов в админке.
         let pName = (this.state.projectName || '').trim();
         if (pName === 'true' || pName === 'false') pName = '';
-        if (!pName) {
-            pName = ((await app.prompt('Укажите название объекта и адрес — без названия листы проекта не формируются. Например: «Жилой дом 106 м², д. Марусино».', '', 'Листы проекта')) || '').trim();
-            if (!pName) return;
-            this.state.projectName = pName;
-            this.saveState(); this.syncUI();
+        // Город из расчёта сильнее сохранённого: поменяли город — поменялся и
+        // титульный лист. Спрашиваем только если в расчёте города нет вовсе
+        // (быстрый режим, где выбран лишь регион по температуре).
+        let addr = this.projectAddressFromCalc() || this.state.projectAddress || null;
+        if (!addr || !addr.city) {
+            const got = await this.askProjectAddress({});
+            if (!got) return;
+            addr = got;
         }
-        // Вторая строка титульного — город объекта. Отдельно не спрашиваем:
-        // город уже выбран в расчёте (от него считаются теплопотери), а адрес
-        // монтажник пишет в самом названии. Города нет — строка не печатается.
-        const region = this.state.selectedCity ? this.state.selectedCity.name : '';
+        if (JSON.stringify(this.state.projectAddress || null) !== JSON.stringify(addr)) {
+            this.state.projectAddress = addr;
+            this.saveState();
+        }
+        // Вторая строка титульного — адрес объекта из окна «Проект»;
+        // если проект сохранён по старой схеме, без адреса, — город расчёта.
+        const region = this.formatProjectAddress(addr)
+            || (this.state.selectedCity ? this.state.selectedCity.name : '');
         if (!this.state.calc_id) { this.ensureCalcId(true); this.saveState(); }
         const cc = this.state.customCompany || null;
         const payload = {
             title: 'Спецификация оборудования и материалов',
-            // Шифр комплекта в штампы — как в проектах («2025 – 191 – MEP»);
-            // название объекта на титуле отдельно, без дублей.
-            code: new Date().getFullYear() + ' – ' + (this.state.calc_id || 'HC') + ' – ИС',
-            object: pName,
+            // Шифр в штампы — как в проектах («2025 – 191 – О»). Марку раздела
+            // добавляет страница листов: отопление идёт с «– О», водоснабжение
+            // и канализация — отдельным разделом с «– В», у каждого свой
+            // титульный лист и своя спецификация.
+            codeBase: new Date().getFullYear() + ' – ' + (this.state.calc_id || 'HC'),
+            code: new Date().getFullYear() + ' – ' + (this.state.calc_id || 'HC') + ' – О',
+            // Площадь дописывается из текущего расчёта, а не хранится в названии
+            object: this.projectObjectTitle(pName),
             city: region,
             // Логотип на титульный — тот же, что в шапке КП: свой логотип
             // монтажника, если загружен в профиле, иначе ТЕРЕМ.
@@ -14976,6 +15605,12 @@ const app = {
             // считалась смета — отдельного ввода не требуют.
             gd: this.buildGeneralData(),
             gdVk: this.buildVkData(),
+            // «Общие указания» раздела котельной (ТМ): описание, режимы, обвязка
+            gdTm: this.buildTmData(),
+            // Шаг укладки ТП по этажам: лист «Тёплый пол» должен строить петли
+            // тем же шагом, каким смета считала трубу, иначе длины разойдутся.
+            // Раньше страница листов доставала одно число из названия позиции.
+            ufhSteps: [this.state.ufhStep1 || 150, this.state.ufhStep2 || 150],
             // Подписи на титульном и в штампах: «Разработал» — монтажник из
             // личного кабинета, ГИП — по умолчанию; место под подпись между
             // должностью и фамилией остаётся пустым, как в проектах.
@@ -14991,7 +15626,30 @@ const app = {
         // что и редактор. Соседняя вкладка с другим объектом могла оставить
         // там свои — кладём планы именно этой сметы.
         this.pushPlansToEditor();
-        window.open('sheet_demo.html', '_blank');
+        // Раньше листы открывались сразу по нажатию кнопки, теперь между нажатием
+        // и открытием стоит окно адреса — а браузеры считают всплывающим окном
+        // всё, что открылось не «сразу по клику», и молча блокируют. Ловим это:
+        // если окно не открылось, показываем ссылку, по которой достаточно щёлкнуть.
+        const win = window.open('sheet_demo.html', '_blank');
+        if (!win || win.closed) {
+            this.alert(
+                'Браузер заблокировал новое окно с листами проекта.\n\n' +
+                'Откройте их по ссылке ниже, а чтобы это не повторялось — ' +
+                'разрешите всплывающие окна для этого сайта.',
+                'Проект'
+            );
+            setTimeout(() => {
+                const card = document.querySelector('.calc-dialog-card');
+                if (!card) return;
+                const a = document.createElement('a');
+                a.href = 'sheet_demo.html';
+                a.target = '_blank';
+                a.textContent = 'Открыть листы проекта →';
+                a.style.cssText = 'display:inline-block; margin-top:6px; color:var(--primary); font-weight:700; text-decoration:none;';
+                const msg = card.querySelector('.calc-dialog-message');
+                (msg || card).appendChild(a);
+            }, 30);
+        }
     },
 
     shareInvoice: async function () {
@@ -21329,6 +21987,8 @@ const app = {
     _planCheckData: null,
     loadPlanCheckData: function () {
         this._planCheckData = null;
+        // Разметка сменилась — геометрия петель ТП пересчитывается заново.
+        this._plansRev = (this._plansRev || 0) + 1;
         const plans = this.currentPlans();
         let floors = (plans && Array.isArray(plans.floors)) ? plans.floors : [];
         // Подложка теперь лежит на сервере, а в разметке от неё остаётся имя
@@ -21371,6 +22031,52 @@ const app = {
             zonesArea: Math.round(zonesArea * 10) / 10
         };
     },
+
+    // ─── Петли тёплого пола по планам ────────────────────────────────────
+    // Пока петель нет, метраж трубы ТП в смете оценочный (площадь / шаг), а на
+    // листе «Тёплый пол» рисуется настоящая укладка со своей длиной. Монтажник
+    // видел на листе одно, в деньгах другое. Здесь берём длины и число петель
+    // из той же геометрии, что на листе: расчёт один — projectPlans.floorLoops.
+    //
+    // Считается это заметно дольше отрисовки сметы (растр по каждой зоне),
+    // поэтому результат кэшируется до следующей правки планов или шага.
+    _plansRev: 0,
+    _ufhGeomCache: null,
+    /**
+     * {floors:[{loops, meters, area, zones}|null], any:bool} либо null, если
+     * планов нет. meters — сумма длин петель этажа, без запаса.
+     * Этаж без разметки ТП — null: его смета считает по-старому, по площади.
+     */
+    ufhGeom: function () {
+        const PP = window.projectPlans;
+        if (!PP || !PP.floorLoops) return null;
+        const plans = this.currentPlans();
+        if (!plans || !Array.isArray(plans.floors) || !plans.floors.length) return null;
+        const st1 = this.state.ufhStep1 || 150, st2 = this.state.ufhStep2 || 150;
+        const key = this._plansRev + '|' + st1 + '|' + st2;
+        if (this._ufhGeomCache && this._ufhGeomCache.key === key) return this._ufhGeomCache.val;
+        let any = false;
+        const floors = plans.floors.map((f, i) => {
+            if (!f || !f.pxPerM) return null;
+            let zones;
+            try { zones = PP.floorLoops(f, i === 1 ? st2 : st1, PP.MAX_LOOP_M); }
+            catch (e) { console.warn('[планы] петли ТП не посчитались:', e.message); return null; }
+            if (!zones.length) return null;
+            let loops = 0, meters = 0, area = 0;
+            zones.forEach(z => {
+                loops += z.loops.length;
+                z.loops.forEach(l => { meters += l.m; });
+                area += z.area;
+            });
+            any = true;
+            return { loops: loops, meters: Math.round(meters),
+                area: Math.round(area * 10) / 10, zones: zones.length };
+        });
+        const val = any ? { floors: floors, any: true } : null;
+        this._ufhGeomCache = { key: key, val: val };
+        return val;
+    },
+
     // Предупреждения о расхождениях в #rooms_plan_checks: тёплый пол комнат против
     // именованных зон ТП на планах (в обе стороны) и приборы под окнами по этажам —
     // значки радиаторов на плане против счёта сметы (радиатор на каждое обычное
@@ -23069,10 +23775,12 @@ const app = {
         // Синхронизация имени и проверка прав на его редактирование
         let nameEdit = document.getElementById('project_name_edit');
         if (nameEdit) {
-            // Если имя пустое или с глюком, выводим красивую заглушку
+            // Пока объект не переименовали руками, показываем название по расчёту —
+            // «Жилой дом, 250 м²» — и оно само меняется вслед за площадью. Стоит
+            // щёлкнуть и вписать своё, как имя становится обычным, статичным.
             let currentName = this.state.projectName;
             if (currentName === "true" || currentName === "false") currentName = "";
-            nameEdit.innerText = currentName || "Название объекта";
+            nameEdit.innerText = currentName || this.projectObjectTitle('') || "Название объекта";
 
             // Определяем, является ли пользователь Гостем (нет tgUser)
             const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
@@ -24219,7 +24927,14 @@ const app = {
             } else if (val2 === 'rad') {
                 formula = `<b>Тип:</b> Радиаторное отопление.<br><b>Формула:</b> 1 пара выходов на 1 радиатор.<br><b>Радиаторов:</b> ${val1} шт.`;
             } else if (val2 === 'ufh') {
-                formula = `<b>Тип:</b> Тёплый пол.<br><b>Формула:</b> Длина трубы L / 80 м (длина одной петли).<br><b>Контуров:</b> ${val1} шт.`;
+                // С планами этажей выходов ровно столько, сколько петель нарисовано
+                // (петля длиннее 100 м делится) — иначе прежняя оценка по метражу.
+                const _fc = this._ufhFloorCalc || [];
+                const _byPlan = (_fc[0] && _fc[0].geo) || (_fc[1] && _fc[1].geo);
+                formula = `<b>Тип:</b> Тёплый пол.<br><b>Формула:</b> ` +
+                    (_byPlan ? `1 выход на каждую петлю с планов этажей (петля длиннее 100 м делится надвое).`
+                             : `Длина трубы L / 80 м (длина одной петли).`) +
+                    `<br><b>Контуров:</b> ${val1} шт.`;
             }
             let minWarn = (val1 === 1) ? "<br><br><i>*Выбран блок на 2 выхода (заводской минимум). 1 выход — резерв.</i>" : "";
             return `<span style="${styles}"><span style="${head}">Коллекторный блок</span><b>Зачем:</b> ${why}<br><br>${formula}${minWarn}</span>`;
@@ -24629,8 +25344,22 @@ const app = {
                 let tpArea = this.state.tp1 + (this.state.floors === 2 ? this.state.tp2 : 0);
                 let stepStr = (this.state.floors === 2 && this.state.tp2 > 0) ? `1 этаж: ${stepVal1} мм, 2 этаж: ${stepVal2} мм` : `${stepVal1} мм`;
 
-                let details = "";
-                if (this.state.floors === 2 && this.state.tp2 > 0) {
+                // Этаж, размеченный в редакторе планов, считается по нарисованной
+                // укладке — те же длины стоят в таблице петель на листе «Тёплый пол».
+                const fc = this._ufhFloorCalc || [];
+                const byPlan = (fc[0] && fc[0].geo) || (fc[1] && fc[1].geo);
+                let details = "", fStr = `L_трубы = (S_пола / Шаг_укладки) × 1.1 (коэффициент изгиба и запаса 10%)`;
+                if (byPlan) {
+                    fStr = `длина петель по планам этажей × 1,05 (подрезка и подъём концов к гребёнке); ` +
+                        `этаж без разметки — по формуле (S_пола / Шаг_укладки) × 1.1`;
+                    [0, 1].forEach(i => {
+                        const c = fc[i]; if (!c || !(c.m > 0)) return;
+                        const nm = (i ? '2' : '1') + ' этаж';
+                        details += c.geo
+                            ? `${nm}: ${c.geo.loops} петель по плану, ${c.geo.meters} м × 1,05 = ${c.m.toFixed(1)} м.<br>`
+                            : `${nm}: по площади — ${c.m.toFixed(1)} м.<br>`;
+                    });
+                } else if (this.state.floors === 2 && this.state.tp2 > 0) {
                     let L1 = (this.state.tp1 / (stepVal1 / 1000)) * 1.1;
                     let L2 = (this.state.tp2 / (stepVal2 / 1000)) * 1.1;
                     details = `1 этаж: (${this.state.tp1} м² / ${stepVal1 / 1000} м) × 1.1 = ${L1.toFixed(1)} м.<br>2 этаж: (${this.state.tp2} м² / ${stepVal2 / 1000} м) × 1.1 = ${L2.toFixed(1)} м.`;
@@ -24643,11 +25372,12 @@ const app = {
 
                 return `<span style="${styles}"><span style="${head}">Труба водяного тёплого пола 16x2.0</span>` +
                     `<b>Зачем:</b> Труба укладывается змейкой или улиткой в бетонную стяжку и служит нагревательным элементом, обеспечивая комфортный обогрев помещения.<br><br>` +
-                    `<b>Формула подбора:</b> L_трубы = (S_пола / Шаг_укладки) × 1.1 (коэффициент изгиба и запаса 10%).<br><br>` +
+                    (byPlan ? `<b>Откуда длина:</b> из укладки, нарисованной на планах этажей — ровно те же метры и петли показывает лист «Тёплый пол».<br><br>` : ``) +
+                    `<b>Формула подбора:</b> ${fStr}.<br><br>` +
                     `<b>Подставленные значения:</b><br>` +
                     `• Площадь тёплого пола: ${tpArea} м².<br>` +
                     `• Шаг укладки: ${stepStr}.<br>` +
-                    `• Расчёт по формуле:<br>${details}<br>` +
+                    `• Расчёт:<br>${details}<br>` +
                     `• Общая длина: ${val1} м.</span>`;
             }
             case 'ufh_mat':
@@ -26042,25 +26772,30 @@ const app = {
 
         let stepVal1 = this.state.ufhStep1 || 150;
         let stepVal2 = this.state.ufhStep2 || 150;
+        // Метраж трубы ТП и число петель. У этажа, размеченного в редакторе
+        // планов, берём их из нарисованной укладки — те же числа стоят в
+        // таблице петель на листе «Тёплый пол», поэтому комплект и деньги
+        // больше не расходятся. Без планов — прежняя оценка по площади и шагу.
+        // 1,05 к геометрии: подрезка и подъём концов петель к гребёнке (на
+        // плане укладка плоская, высоты в ней нет).
+        // Растр петель считается не мгновенно, поэтому не трогаем его вовсе,
+        // пока тёплого пола в расчёте нет.
+        const _ufhGeom = (hasTp && tpArea > 0) ? this.ufhGeom() : null;
+        const tpFloorCalc = (area, step, gi) => {
+            if (!(area > 0)) return { m: 0, loops: 0, geo: null };
+            const g = _ufhGeom && _ufhGeom.floors[gi];
+            if (g && g.loops > 0) return { m: g.meters * 1.05, loops: g.loops, geo: g };
+            const L = (area / (step / 1000)) * 1.1;
+            return { m: L, loops: Math.ceil(L / 80), geo: null };
+        };
+        const tpF1 = tpFloorCalc(this.state.tp1, stepVal1, 0);
+        const tpF2 = tpFloorCalc(this.state.floors === 2 ? this.state.tp2 : 0, stepVal2, 1);
+        this._ufhFloorCalc = [tpF1, tpF2];   // для расшифровки строки трубы (getDesc)
         let estMans = 0;
         if (hasTp && tpArea > 0) {
-            let l1 = 0;
-            let l2 = 0;
-            if (this.state.tp1 > 0) {
-                let h1 = stepVal1 / 1000;
-                let L1 = (this.state.tp1 / h1) * 1.1;
-                l1 = Math.ceil(L1 / 80);
-                tpMeters += L1;
-            }
-            if (this.state.tp2 > 0 && this.state.floors === 2) {
-                let h2 = stepVal2 / 1000;
-                let L2 = (this.state.tp2 / h2) * 1.1;
-                l2 = Math.ceil(L2 / 80);
-                tpMeters += L2;
-            }
-            tpMeters = Math.ceil(tpMeters);
-            if (l1 > 0) estMans += Math.ceil(l1 / 12);
-            if (l2 > 0) estMans += Math.ceil(l2 / 12);
+            tpMeters = Math.ceil(tpF1.m + tpF2.m);
+            if (tpF1.loops > 0) estMans += Math.ceil(tpF1.loops / 12);
+            if (tpF2.loops > 0) estMans += Math.ceil(tpF2.loops / 12);
         }
 
         // Автоматически корректируем тип смесительного узла при изменении площади или несовместимости
@@ -27611,7 +28346,7 @@ const app = {
                     ].filter(Boolean);
                     addToBill(_trItem, _trCoils,
                         `<span style="font-size:11px;line-height:1.5;">` +
-                        `<b>Зачем:</b> Транзитная трасса от котельной (насосной группы) до коллектора тёплого пола 2-го этажа. Петли ТП считаются отдельно — по площади обогрева, без этой подводки.<br>` +
+                        `<b>Зачем:</b> Транзитная трасса от котельной (насосной группы) до коллектора тёплого пола 2-го этажа. Петли ТП считаются отдельно (по площади обогрева либо по укладке с планов) и подъём на этаж в себя не включают.<br>` +
                         `<b>Формула:</b> (высота 1-го этажа + 1 м на обвязку + √площади ТП 2-го этажа) × 2 (подача и обратка) × 1,1 (запас).<br>` +
                         `<b>Подставленные значения:</b> (${_h1} + 1 + ${_horiz.toFixed(1)}) × 2 × 1,1 ≈ <b>${_transitM} м</b> → ${_trCoils} бухт(ы) по ${_trBase.len || 50} м.<br>` +
                         `<b>Диаметр:</b> больше петлевого 16 мм — трасса несёт нагрузку всего этажа.` +
@@ -27619,11 +28354,12 @@ const app = {
                 }
             }
             let loops = 0, mans = 0, mansNoFitting = 0;
-            const proc = (a, stepVal, lbl) => {
+            // fc — расчёт этажа (петли с планов либо оценка по площади), см. выше:
+            // сколько на этаже петель, столько и выходов у коллектора.
+            const proc = (a, fc, lbl) => {
                 if (a <= 0) return;
-                let h = stepVal / 1000;
-                let L = (a / h) * 1.1;
-                let l = Math.ceil(L / 80);
+                let l = fc.loops;
+                if (l <= 0) return;
                 loops += l;
                 let n = Math.ceil(l / 12);
                 for (let i = 0; i < n; i++) {
@@ -27641,8 +28377,8 @@ const app = {
                     }
                 }
             };
-            proc(this.state.tp1, stepVal1, "1 этаж");
-            proc(this.state.floors === 2 ? this.state.tp2 : 0, stepVal2, "2 этаж");
+            proc(this.state.tp1, tpF1, "1 этаж");
+            proc(this.state.floors === 2 ? this.state.tp2 : 0, tpF2, "2 этаж");
             if (mansNoFitting > 0) addToBill(catalog.parts[0], mansNoFitting * 2, "Концевые фитинги.", grpPipe);
             addToBill(catalog.parts[3], loops * 2, "Евроконус 16 (ТП).", grpPipe); addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.", grpPipe);
             addToBill(catalog.protective_sleeves[0], loops, "Втулка красная.", grpPipe); addToBill(catalog.protective_sleeves[1], loops, "Втулка синяя.", grpPipe); addToBill(catalog.label_kits[1], 1, "Наклейки.", grpPipe);
@@ -27670,6 +28406,26 @@ const app = {
                             Расчетная потребность: <b>${Math.round(f)} Вт/м²</b> (комфортный предел теплоотдачи пола: до 75 Вт/м²).<br>
                             <span style="font-weight: 500;">Чтобы покрыть такие теплопотери в сильные морозы, пол придется нагревать выше санитарных норм (поверхность будет некомфортно горячей для ног). Настоятельно рекомендуется добавить радиаторы отопления.</span>`;
                 }
+            }
+            // Метраж взят с планов — говорим об этом прямо в разделе. Если зоны
+            // на плане размечены не на всю площадь этажа, труба выйдет короче
+            // ожидаемой: это видно только здесь, счётом по площади не поймать.
+            const _planNote = [];
+            [[tpF1, this.state.tp1, '1 этаж'], [tpF2, this.state.floors === 2 ? this.state.tp2 : 0, '2 этаж']]
+                .forEach(([c, aState, lbl]) => {
+                    if (!c || !c.geo || !(aState > 0)) return;
+                    const _n = c.geo.loops, _d = _n % 10, _dd = _n % 100;
+                    const _w = (_d === 1 && _dd !== 11) ? 'петля'
+                        : (_d >= 2 && _d <= 4 && (_dd < 12 || _dd > 14)) ? 'петли' : 'петель';
+                    let s = `${lbl}: <b>${_n}</b> ${_w} по плану, <b>${Math.round(c.m)} м</b> трубы (зоны ${c.geo.area} м²`;
+                    const d = Math.abs(c.geo.area - aState) / aState;
+                    s += (d > 0.15) ? `, а в расчёте ${aState} м² — разметьте зоны целиком или поправьте площадь).` : `).`;
+                    _planNote.push(s);
+                });
+            if (_planNote.length) {
+                warn = (warn ? warn + '<br><br>' : '') +
+                    `📐 <b>Труба и коллектор — по планам этажей.</b><br>` + _planNote.join('<br>') +
+                    `<br><span style="font-weight:500;">Те же длины и номера петель стоят в таблице на листе «Тёплый пол».</span>`;
             }
             flushBill("4. Водяной тёплый пол", warn);
         }

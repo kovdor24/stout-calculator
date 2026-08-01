@@ -563,6 +563,7 @@
     var f1 = function (v) { return (Math.round(v * 10) / 10).toFixed(1); };
     var f2 = function (v) { return (Math.round(v * 100) / 100).toFixed(2); };
     var sheets = [], start = opts.sheetStart || 1;
+    var fmtNo = opts.num || function (v) { return String(v); };
 
     (floors || []).forEach(function (fl) {
       var rows = [];
@@ -591,7 +592,7 @@
         var t = table(FR.l, BODY_TOP, HL_COLS, pageRows, {});
         sheets.push(sheet({
           title: 'Расчет теплопотерь — ' + fl.label, titleSize: 5.47,
-          code: opts.code, sheet: String(start + sheets.length), body: t.svg
+          code: opts.code, sheet: fmtNo(start + sheets.length), body: t.svg
         }));
       });
     });
@@ -641,11 +642,12 @@
     }
 
     var start = opts.sheetStart || 1;
+    var fmtNo = opts.num || function (v) { return String(v); };
     return pages.map(function (pageRows, idx) {
       var t = table(FR.l, BODY_TOP, SPEC_COLS, pageRows, {});
       return sheet({
         title: opts.title || 'Спецификация оборудования и материалов',
-        code: opts.code, sheet: String(start + idx), body: t.svg
+        code: opts.code, sheet: fmtNo(start + idx), body: t.svg
       });
     });
   }

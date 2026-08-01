@@ -400,12 +400,15 @@ if (is_array($req) && !empty($req['action'])) {
         foreach ($names as $name) {
             $name = trim((string)$name);
             if ($name === '') continue;
+            // Выключение записывается как false, а не удаляется. Иначе
+            // «выключено» неотличимо от «никогда не настраивали», а это разные
+            // вещи: администратору инструменты открыты ПО УМОЛЧАНИЮ, и снятый
+            // ему доступ обязан пережить перезагрузку. Для всех остальных
+            // отсутствие записи по-прежнему означает «выключено».
             if ($feature === 'design') {
-                if ($enabled) $access['design'][$kind][$name] = true;
-                else unset($access['design'][$kind][$name]);
+                $access['design'][$kind][$name] = $enabled;
             } else {
-                if ($enabled) $access[$kind][$name] = true;
-                else unset($access[$kind][$name]);
+                $access[$kind][$name] = $enabled;
             }
         }
         writeAccess($access);
