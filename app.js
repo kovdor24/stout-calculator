@@ -443,7 +443,7 @@ const app = {
      * Окно «Проект»: название объекта и его адрес.
      *
      * Адрес спрашиваем у всех, кому открыт раздел, — он идёт на титульный лист и
-     * даёт точку на карте проектов в админке. Внешних сервисов подсказки НЕТ:
+     * в строку объекта во вкладке «Проекты» админки. Внешних сервисов подсказки НЕТ:
      * населённый пункт подставляется из нашей же CITIES_DB, координаты и регион —
      * из cities_geo.js (вшиты в файл). Поэтому проверить, что улица настоящая,
      * мы не можем — проверяем только то, что реально проверяемо: населённый пункт
@@ -514,7 +514,7 @@ const app = {
                 const city = cityIndex[norm(cityRaw)];
                 if (!city) {
                     showErr(cityRaw
-                        ? `«${cityRaw}» нет в справочнике населённых пунктов. Выберите ближайший из подсказок — по нему считаются теплопотери и ставится точка на карте.`
+                        ? `«${cityRaw}» нет в справочнике населённых пунктов. Выберите ближайший из подсказок — по нему считаются теплопотери.`
                         : 'Выберите населённый пункт из подсказок.');
                     $('proj_city').focus();
                     return;
@@ -580,7 +580,7 @@ const app = {
      * Адрес объекта по данным расчёта: город уже выбран в подробном режиме,
      * от него считаются теплопотери — спрашивать его второй раз незачем.
      * Пересобирается при каждом открытии листов, поэтому смена города в
-     * расчёте сразу видна и на титульном листе, и на карте в админке.
+     * расчёте сразу видна и на титульном листе, и во вкладке «Проекты» админки.
      */
     projectAddressFromCalc: function () {
         const city = this.state.selectedCity ? String(this.state.selectedCity.name || '').trim() : '';
@@ -8951,7 +8951,7 @@ const app = {
             { id: 'equipment', icon: '🧰', label: 'Своё оборудование' },
             { id: 'recognition', icon: '🔍', label: 'Распознавание' },
             { id: 'plans', icon: '📐', label: 'Планы этажей' },
-            { id: 'projmap', icon: '🗺️', label: 'Карта проектов' }
+            { id: 'projects', icon: '📁', label: 'Проекты' }
         ];
         // Вкладки растянуты на всю ширину, но отправная точка — содержимое:
         // flex: 1 0 auto = расти можно, сжиматься нельзя. При равных долях (1 1 0)
@@ -9010,9 +9010,9 @@ const app = {
             return;
         }
 
-        if (this._adminTab === 'projmap') {
+        if (this._adminTab === 'projects') {
             content.innerHTML = navHtml;
-            this.renderAdminProjectsMap();
+            this.renderAdminProjects();
             return;
         }
 
@@ -9580,175 +9580,131 @@ const app = {
     },
 
     /**
-     * Вкладка «Карта проектов»: где сделаны проекты.
+     * Вкладка «Проекты»: объекты, по которым выпущен комплект листов.
      *
-     * Точка ставится по населённому пункту (координаты из cities_geo.js),
-     * а не по дому: сервиса геокодирования у нас нет, улицу в координаты
-     * перевести нечем. Несколько объектов в одном городе разводятся веером
-     * вокруг центра, иначе они лягут друг на друга и кликнуть можно будет
-     * только по верхнему.
+     * Строка появляется в момент, когда монтажник нажал «Проект» и листы
+     * собрались (logProjectSheets). Смета и проект — разные вещи: смету считают
+     * и переделывают по многу раз, проект выпускают осознанно, поэтому у него
+     * своя таблица projects и своя дата, а не created_at сметы.
      *
-     * Карту рисует Leaflet (лежит локально в vendor/), подложка — тайлы
-     * OpenStreetMap: это единственный внешний запрос во всей вкладке, и он
-     * идёт только когда админ её открыл.
+     * Список тянем лениво, только при открытии вкладки: в loadAdminData ему
+     * делать нечего — это лишний трафик для тех, кто зашёл за статистикой.
      */
-    renderAdminProjectsMap: async function () {
+    renderAdminProjects: function () {
         const content = document.getElementById('admin_content');
         if (!content) return;
-        // Карта тянется на всю оставшуюся высоту — как мессенджер во вкладке
-        // «Сообщения»; renderAdminMain вернёт обычную раскладку при уходе отсюда
-        content.style.display = 'flex';
-        content.style.flexDirection = 'column';
-        content.style.overflow = 'hidden';
 
-        const root = document.createElement('div');
-        root.id = 'admin_map_root';
-        root.style.cssText = 'flex:1 1 auto; min-height:0; display:flex; flex-direction:column;';
-        root.innerHTML = `<div style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка карты…</div>`;
-        content.appendChild(root);
+        const wrap = document.createElement('div');
+        wrap.id = 'admin-projects-body';
+        content.appendChild(wrap);
 
-        try {
-            await this.loadLeaflet();
-        } catch (e) {
-            root.innerHTML = `<div style="color:#EF4444; padding:20px;">Не удалось загрузить карту: ${e.message}</div>`;
+        if (this.adminData.projects == null) {
+            wrap.innerHTML = `<div style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка проектов…</div>`;
+            if (!this._loadingProjects) {
+                this._loadingProjects = true;
+                (async () => {
+                    try {
+                        const { data, error } = await supabaseClient.from('projects')
+                            .select('id, calc_id, project_name, address, sections, area, eq_sum, works_sum, user_name, user_email, issued_at')
+                            .order('issued_at', { ascending: false })
+                            .limit(200);
+                        if (error) throw error;
+                        this.adminData.projects = data || [];
+                        this._projectsError = null;
+                    } catch (e) {
+                        // Чаще всего таблицы просто нет: миграцию
+                        // 20260801_add_projects.sql ещё не выполняли в Supabase
+                        console.warn('Could not load projects:', e.message || e);
+                        this.adminData.projects = [];
+                        this._projectsError = e.message || String(e);
+                    }
+                    this._loadingProjects = false;
+                    if (this._adminTab === 'projects') this.renderAdminMain();
+                })();
+            }
             return;
         }
 
-        const geo = (typeof CITY_GEO !== 'undefined') ? CITY_GEO : {};
-        const ests = this.adminData.recentEstimates || [];
-
-        // Точки: у сметы должен быть адрес с городом. Координаты берём из адреса,
-        // а если проект сохранён до появления адреса — по названию города.
-        const points = [];
-        let noAddr = 0;
-        ests.forEach(e => {
-            const a = (e.calc_data && e.calc_data.projectAddress) || null;
-            if (!a || !a.city) { noAddr++; return; }
-            const g = geo[a.city] || null;
-            const lat = (a.lat != null) ? a.lat : (g ? g.lat : null);
-            const lon = (a.lon != null) ? a.lon : (g ? g.lon : null);
-            if (lat == null || lon == null) { noAddr++; return; }
-            points.push({
-                id: e.id,
-                name: e.project_name || 'Без названия',
-                addr: this.formatProjectAddress(a),
-                city: a.city,
-                region: a.region || (g ? g.region : '') || 'Без региона',
-                exact: !!a.exact,
-                area: Number(e.calc_data && e.calc_data.area) || 0,
-                sum: e.total_sum || 0,
-                who: (e.users && (e.users.username || e.users.email)) || '',
-                link: e.share_id ? ('?cid=' + e.share_id) : null,
-                lat, lon
-            });
-        });
-
-        const byRegion = {};
-        points.forEach(p => { (byRegion[p.region] = byRegion[p.region] || []).push(p); });
-        const regions = Object.keys(byRegion).sort((a, b) => byRegion[b].length - byRegion[a].length);
-
         const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-        const fmt = n => (n || 0).toLocaleString('ru-RU');
+        const fmt = n => Math.round(Number(n) || 0).toLocaleString('ru-RU');
+        const projects = this.adminData.projects || [];
+        const MARK_TITLE = {
+            'MEP': 'Сводный проект инженерных систем',
+            'ТМ': 'Индивидуальная котельная',
+            'О': 'Система отопления',
+            'В': 'Водоснабжение и канализация'
+        };
 
-        root.innerHTML = `
-            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-                <h3 style="margin:0; color:var(--text-main);">🗺️ Карта проектов</h3>
-                <span style="font-size:12.5px; color:var(--text-sec);">
-                    проектов с адресом: <b>${points.length}</b>${noAddr ? ` · без адреса: ${noAddr}` : ''}
-                </span>
-                <button class="admin-btn" style="margin-left:auto;" onclick="app.renderAdminMain()">Обновить</button>
-            </div>
-            ${points.length ? '' : `<div style="font-size:11.5px; color:var(--text-sec); margin-bottom:10px;">
-                Адрес спрашивается при открытии раздела «Проект». У ранее сохранённых смет его нет — они появятся здесь после пересохранения.
-            </div>`}
-            <div style="display:flex; gap:12px; align-items:stretch; min-height:0; flex:1;">
-                <div style="flex:0 0 240px; display:flex; flex-direction:column; background:var(--surface-light); border:1px solid var(--border); border-radius:10px; overflow:hidden;">
-                    <div style="padding:8px 10px; font-size:11px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.4px; border-bottom:1px solid var(--border);">Регионы</div>
-                    <div id="admin_map_regions" style="overflow-y:auto; padding:4px;">
-                        ${regions.length ? regions.map(r => `
-                            <div class="admin-chat-item" style="padding:7px 8px;" onclick="app.zoomProjectsRegion('${esc(r).replace(/'/g, "\\'")}')" title="Показать проекты региона">
-                                <div class="admin-chat-item-body">
-                                    <div class="admin-chat-item-row">
-                                        <span class="admin-chat-name">${esc(r)}</span>
-                                        <span class="admin-chat-badge">${byRegion[r].length}</span>
-                                    </div>
-                                    <div class="admin-chat-item-row"><span class="admin-chat-prev">${esc([...new Set(byRegion[r].map(p => p.city))].join(', '))}</span></div>
-                                </div>
-                            </div>`).join('')
-                : '<div style="padding:12px; font-size:12px; color:var(--text-sec);">Пока пусто</div>'}
-                    </div>
-                    <div style="padding:8px 10px; border-top:1px solid var(--border); font-size:11.5px; color:var(--text-sec);">
-                        Всего площадь: <b>${fmt(Math.round(points.reduce((s, p) => s + p.area, 0)))}</b> м²
-                    </div>
+        let h = `
+            <div style="margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:15px;">
+                    <h3 style="margin:0; color:var(--text-main);">📁 Проекты</h3>
+                    <span style="font-size:12.5px; color:var(--text-sec);">выпущено комплектов: <b>${projects.length}</b></span>
+                    <button class="admin-btn" style="margin-left:auto;" onclick="app.adminData.projects = null; app.renderAdminMain()">Обновить</button>
                 </div>
-                <div id="admin_map_canvas" style="flex:1; min-height:420px; border:1px solid var(--border); border-radius:10px; overflow:hidden;"></div>
-            </div>`;
+                <table class="inv-table">
+                    <thead>
+                        <tr>
+                            <th style="width:30px;">#</th>
+                            <th>Объект</th>
+                            <th>Адрес</th>
+                            <th>Разделы</th>
+                            <th style="text-align:right; white-space:nowrap;">Оборудование</th>
+                            <th style="text-align:right; white-space:nowrap;">Монтаж</th>
+                            <th>Кто сделал</th>
+                            <th style="text-align:right; white-space:nowrap;">Дата и время</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
 
-        const map = L.map('admin_map_canvas', { scrollWheelZoom: true }).setView([57, 45], 4);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 18,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
-        this._projMap = map;
-        this._projMarkers = {};
+        if (!projects.length) {
+            h += `<tr><td colspan="8" style="text-align:center; padding:30px; color:var(--text-sec);">${this._projectsError
+                ? 'Список проектов недоступен. Похоже, миграция supabase/migrations/20260801_add_projects.sql ещё не выполнена.'
+                : 'Проектов пока нет. Объект попадает сюда, когда монтажник нажимает «Проект» и листы сформированы.'
+                }</td></tr>`;
+        } else {
+            projects.forEach((p, i) => {
+                const dt = new Date(p.issued_at);
+                const when = dt.toLocaleDateString('ru-RU') + ' ' +
+                    dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                const badges = String(p.sections || '').split(',').map(s => s.trim()).filter(Boolean).map(s =>
+                    `<span title="${esc(MARK_TITLE[s] || s)}" style="display:inline-block; background:var(--primary-light); color:var(--primary); font-size:10.5px; font-weight:800; border-radius:6px; padding:2px 7px; margin-right:4px;">${esc(s)}</span>`
+                ).join('');
 
-        // Веер вокруг центра города: одинаковые координаты иначе перекрывают друг друга
-        const seen = {};
-        points.forEach(p => {
-            const k = p.lat + ',' + p.lon;
-            const n = seen[k] = (seen[k] || 0);
-            seen[k]++;
-            const ang = n * (Math.PI * 2 / 8), r = n ? 0.02 + 0.01 * Math.floor(n / 8) : 0;
-            const lat = p.lat + r * Math.cos(ang), lon = p.lon + r * Math.sin(ang);
-            const m = L.circleMarker([lat, lon], {
-                radius: 7,
-                color: p.exact ? '#2563EB' : '#D97706',
-                fillColor: p.exact ? '#3B82F6' : '#F59E0B',
-                fillOpacity: 0.85, weight: 2
-            }).addTo(map);
-            m.bindPopup(`
-                <div style="font-size:13px; line-height:1.45; min-width:190px;">
-                    <b>${esc(p.name)}</b><br>
-                    📍 ${esc(p.addr)}${p.exact ? '' : ' <span style="color:#D97706;">(без дома)</span>'}<br>
-                    ${p.area ? `Площадь: <b>${fmt(p.area)}</b> м²<br>` : ''}
-                    ${p.sum ? `Смета: <b>${fmt(p.sum)}</b> ₽<br>` : ''}
-                    ${p.who ? `<span style="color:#666;">${esc(p.who)}</span><br>` : ''}
-                    ${p.link ? `<a href="${esc(p.link)}" target="_blank" style="color:#2563EB; font-weight:600;">Посмотреть проект →</a>` : '<span style="color:#999;">Ссылки нет</span>'}
-                </div>`);
-            (this._projMarkers[p.region] = this._projMarkers[p.region] || []).push(m);
-        });
-
-        if (points.length) {
-            map.fitBounds(L.latLngBounds(points.map(p => [p.lat, p.lon])).pad(0.25));
+                h += `<tr class="active-row" style="cursor:pointer; transition:0.2s;" onclick="app.openAdminProject('${esc(p.calc_id)}')" title="Открыть карточку проекта" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
+                        <td style="color:var(--text-sec);">${i + 1}</td>
+                        <td><b>${esc(p.project_name || 'Жилой дом')}</b></td>
+                        <td style="color:var(--text-sec);">${esc(p.address || '')}</td>
+                        <td style="white-space:nowrap;">${badges}</td>
+                        <td style="text-align:right; white-space:nowrap;">${fmt(p.eq_sum)} ₽</td>
+                        <td style="text-align:right; white-space:nowrap;">${fmt(p.works_sum)} ₽</td>
+                        <td>${esc(p.user_name || p.user_email || 'Неизвестен')}</td>
+                        <td style="text-align:right; white-space:nowrap; color:var(--text-sec); font-size:12px;">${when}</td>
+                      </tr>`;
+            });
         }
-        setTimeout(() => map.invalidateSize(), 60);
+
+        h += `</tbody></table></div>`;
+        wrap.innerHTML = h;
     },
 
-    /** Приблизить карту к проектам выбранного региона. */
-    zoomProjectsRegion: function (region) {
-        const map = this._projMap, list = (this._projMarkers || {})[region];
-        if (!map || !list || !list.length) return;
-        map.fitBounds(L.latLngBounds(list.map(m => m.getLatLng())).pad(0.4));
-        if (list.length === 1) list[0].openPopup();
-    },
-
-    /** Leaflet лежит локально (vendor/) — подключаем один раз при открытии карты. */
-    loadLeaflet: function () {
-        if (window.L && window.L.map) return Promise.resolve();
-        if (this._leafletPromise) return this._leafletPromise;
-        this._leafletPromise = new Promise((resolve, reject) => {
-            if (!document.getElementById('leaflet_css')) {
-                const css = document.createElement('link');
-                css.id = 'leaflet_css'; css.rel = 'stylesheet'; css.href = 'vendor/leaflet.css';
-                document.head.appendChild(css);
-            }
-            const s = document.createElement('script');
-            s.src = 'vendor/leaflet.js';
-            s.onload = () => resolve();
-            s.onerror = () => { this._leafletPromise = null; reject(new Error('файл vendor/leaflet.js не найден')); };
-            document.head.appendChild(s);
-        });
-        return this._leafletPromise;
+    /**
+     * Открыть проект из вкладки «Проекты». В таблице projects лежит номер
+     * расчёта (calc_id), а карточке нужен id строки estimates — ищем сначала
+     * среди уже загруженных смет, потом отдельным запросом по share_id.
+     */
+    openAdminProject: async function (calcId) {
+        const hit = (this.adminData.recentEstimates || [])
+            .find(e => String(e.calc_data && e.calc_data.calc_id) === String(calcId));
+        if (hit) { this.viewAdminEstimate(hit.id); return; }
+        try {
+            const { data } = await supabaseClient.from('estimates')
+                .select('id').eq('share_id', String(calcId)).limit(1);
+            if (data && data.length) { this.viewAdminEstimate(data[0].id); return; }
+        } catch (e) {
+            console.warn('[openAdminProject] Поиск сметы не удался:', e.message || e);
+        }
+        this.alert('Смета этого проекта не найдена — возможно, монтажник её не сохранял или удалил.');
     },
 
     renderAdminEstimates: function () {
@@ -15626,6 +15582,21 @@ const app = {
         // что и редактор. Соседняя вкладка с другим объектом могла оставить
         // там свои — кладём планы именно этой сметы.
         this.pushPlansToEditor();
+        // Комплект собран — отмечаем объект как выпущенный проект (вкладка
+        // «Проекты» в админке). Разделы считаем ровно так же, как их поделит
+        // страница листов: по номеру раздела сметы (см. SECTION_MARK в
+        // sheet_demo.html), MEP есть всегда.
+        const SEC_MARK = { 1: 'ТМ', 2: 'ТМ', 6: 'ТМ', 3: 'О', 4: 'О', 9: 'О', 5: 'В', 7: 'В', 8: 'В' };
+        const marks = { MEP: true };
+        list.forEach(i => {
+            const m = /^\s*(\d+)/.exec(String(i.sectionTitle || ''));
+            marks[(m && SEC_MARK[+m[1]]) || 'ТМ'] = true;
+        });
+        this.logProjectSheets({
+            name: payload.object,
+            address: region,
+            sections: ['MEP', 'ТМ', 'О', 'В'].filter(k => marks[k]).join(', ')
+        });
         // Раньше листы открывались сразу по нажатию кнопки, теперь между нажатием
         // и открытием стоит окно адреса — а браузеры считают всплывающим окном
         // всё, что открылось не «сразу по клику», и молча блокируют. Ловим это:
@@ -15649,6 +15620,43 @@ const app = {
                 const msg = card.querySelector('.calc-dialog-message');
                 (msg || card).appendChild(a);
             }, 30);
+        }
+    },
+
+    /**
+     * Отметка «проект выпущен» — строка в таблице projects.
+     *
+     * Пишется в момент, когда комплект листов собран, а не при сохранении
+     * сметы: смету правят и пересохраняют десятки раз, а проект выпускают
+     * осознанно. Ключ — номер расчёта (calc_id), поэтому повторный выпуск по
+     * тому же объекту обновляет строку, а не плодит дубли: в списке остаётся
+     * последний выпуск с его датой и суммами.
+     *
+     * Пишем «в фон» и молча: не получилось — монтажник всё равно получает свои
+     * листы, ругаться ему тут не на что. Если таблицы ещё нет (миграция
+     * 20260801_add_projects.sql не выполнена), в консоли будет предупреждение.
+     */
+    logProjectSheets: function (info) {
+        try {
+            if (typeof supabaseClient === 'undefined' || !this.state.calc_id) return;
+            const u = this.state.tgUser || {};
+            supabaseClient.from('projects').upsert([{
+                calc_id: String(this.state.calc_id),
+                project_name: info.name || null,
+                address: info.address || null,
+                sections: info.sections || null,
+                area: Math.round(Number(this.state.area) || 0) || null,
+                eq_sum: Math.round(this.lastEqSum || 0),
+                works_sum: Math.round(this.lastWorksSum || 0),
+                user_name: u.first_name || u.username || null,
+                user_email: u.email || null,
+                issued_at: new Date().toISOString()
+            }], { onConflict: 'calc_id' })
+                .then(({ error }) => {
+                    if (error) console.warn('[logProjectSheets] Проект не записан:', error.message || error);
+                });
+        } catch (e) {
+            console.warn('[logProjectSheets] Исключение:', e);
         }
     },
 
