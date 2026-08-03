@@ -8893,8 +8893,12 @@ const app = {
             // 6. Fetch Lightweight list of all users for the message composer dropdown selection
             let allUsersDropdown = [];
             try {
+                // avatar_url — ради фотографий в списке диалогов вкладки «Сообщения».
+                // Это одна короткая строка-адрес на человека (сотня байт), картинки
+                // лежат не в Supabase, а на стороне Google/Яндекса/Telegram, поэтому
+                // на расход трафика базы это практически не влияет.
                 let { data } = await supabaseClient.from('users')
-                    .select('id, username, email, phone, region, city')
+                    .select('id, username, email, phone, region, city, avatar_url')
                     .order('username', { ascending: true });
                 allUsersDropdown = data || [];
                 this.autoCleanupDatabaseUsers(allUsersDropdown);
@@ -9982,6 +9986,17 @@ const app = {
             let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
             return ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#0EA5E9', '#84CC16'][h % 8];
         };
+        // Кружок собеседника: фото из профиля, если оно есть, иначе прежняя буква на цветном фоне.
+        // Картинка лежит на стороне Google/Яндекса/Telegram, в базе — только ссылка на неё.
+        // referrerpolicy нужен Google: без него аватарки иногда отдаются с ошибкой 403,
+        // а onerror убирает не открывшуюся картинку, и снизу остаётся кружок с буквой.
+        const avaHtml = (u, name, style, attrs) => {
+            const label = String(name || '?').trim();
+            const img = u && u.avatar_url
+                ? `<img src="${esc(u.avatar_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`
+                : '';
+            return `<div class="admin-chat-ava" style="background:${style || avaColor(label)};"${attrs || ''}>${img}${esc(label.charAt(0).toUpperCase() || '?')}</div>`;
+        };
 
         // Галочки как в мессенджере: одна серая — отправлено, но приложение получателя
         // ещё не забирало сообщение; две серые — доставлено; две синие — прочитано
@@ -10096,7 +10111,9 @@ const app = {
             }
             listHtml += `
                 <div class="admin-chat-item ${activeId === t.id ? 'active' : ''}" data-search="${esc(t.search)}" onclick="app.openAdminChat('${t.id}')">
-                    <div class="admin-chat-ava" style="background:${isMgr ? '#64748B' : avaColor(t.name)};" title="${isMgr ? 'Переписка монтажника с менеджером' : ''}">${isMgr ? '⇄' : esc(t.name.trim().charAt(0).toUpperCase() || '?')}</div>
+                    ${isMgr
+                    ? `<div class="admin-chat-ava" style="background:#64748B;" title="Переписка монтажника с менеджером">⇄</div>`
+                    : avaHtml(t.user, t.name)}
                     <div class="admin-chat-item-body">
                         <div class="admin-chat-item-row"><span class="admin-chat-name">${esc(t.name)}</span><span class="admin-chat-time">${t.last ? listTime(t.last.created_at) : ''}</span></div>
                         <div class="admin-chat-item-row"><span class="admin-chat-prev">${esc(prev)}</span>${t.pending ? `<span class="admin-chat-badge" title="Сообщений монтажника без ответа: ${t.pending}">${t.pending}</span>` : ''}</div>
@@ -10115,7 +10132,7 @@ const app = {
             const sub = [u.region, u.city].filter(Boolean).join(', ') || u.email || u.phone || '';
             newHtml += `
                 <div class="admin-chat-item admin-chat-new ${activeId === u.id ? 'active' : ''}" data-search="${esc([name, u.email, u.phone, u.region, u.city, u.id].filter(Boolean).join(' ').toLowerCase())}" onclick="app.openAdminChat('${u.id}')">
-                    <div class="admin-chat-ava" style="background:${avaColor(name)};">${esc(name.trim().charAt(0).toUpperCase() || '?')}</div>
+                    ${avaHtml(u, name)}
                     <div class="admin-chat-item-body">
                         <div class="admin-chat-item-row"><span class="admin-chat-name">${esc(name)}</span></div>
                         <div class="admin-chat-item-row"><span class="admin-chat-prev">${esc(sub)}</span></div>
@@ -10211,7 +10228,7 @@ const app = {
                 else mark = `<span class="admin-chat-time" title="Не заходил в калькулятор после объявления">✓ не доставлено</span>`;
                 rows += `
                     <div class="admin-chat-item" data-search="${esc([name, u.email, u.phone, u.region, u.city].filter(Boolean).join(' ').toLowerCase())}" onclick="app.openAdminChat('${u.id}')" title="Открыть личную переписку">
-                        <div class="admin-chat-ava" style="background:${avaColor(name)};">${esc(name.trim().charAt(0).toUpperCase() || '?')}</div>
+                        ${avaHtml(u, name)}
                         <div class="admin-chat-item-body">
                             <div class="admin-chat-item-row"><span class="admin-chat-name">${esc(name)}</span>${mark}</div>
                             <div class="admin-chat-item-row"><span class="admin-chat-prev">${esc(sub)}</span></div>
@@ -10253,7 +10270,11 @@ const app = {
                 <div class="admin-chat-main">
                     <div class="admin-chat-head">
                         <span class="admin-chat-back" onclick="app.closeAdminChat()">←</span>
-                        <div class="admin-chat-ava" style="background:${isBroadcastChat ? '#D97706' : (isMgrChat ? '#64748B' : avaColor(chatName))};">${isBroadcastChat ? '📢' : (isMgrChat ? '⇄' : esc(chatName.trim().charAt(0).toUpperCase() || '?'))}</div>
+                        ${isBroadcastChat
+                ? `<div class="admin-chat-ava" style="background:#D97706;">📢</div>`
+                : (isMgrChat
+                    ? `<div class="admin-chat-ava" style="background:#64748B;">⇄</div>`
+                    : avaHtml(activeUser, chatName))}
                         <div style="min-width:0; flex:1;">
                             <div class="admin-chat-headname" ${isBroadcastChat ? '' : `onclick="app.openAdminUserFromMessages('${isMgrChat ? activeThread.installerId : activeId}')" title="Открыть карточку монтажника"`}>${esc(chatName)}</div>
                             <div class="admin-chat-headsub" ${isBroadcastChat ? `onclick="app.toggleBroadcastRecipients()" title="Показать, кто получает объявления"` : ''}>${esc(chatSub)}${isBroadcastChat ? ` <span style="opacity:.8;">${recipientsOpen ? '▲' : '▼'}</span>` : ''}</div>
