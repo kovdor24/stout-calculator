@@ -836,11 +836,16 @@ const app = {
         });
     },
 
-    // Мобильная/компактная раскладка: узкий экран (телефон) ИЛИ планшет в портретной ориентации
-    // (до 1024px) — должно совпадать с брейкпоинтами в style.css, иначе кнопки будут видны
-    // по CSS, но не будут работать по JS (или наоборот).
+    // Мобильная/компактная раскладка: телефон, планшет стоймя (до 1024px) ИЛИ телефон,
+    // положенный набок. Последнее — по высоте: в альбомной ориентации ширина у телефона
+    // и планшета похожая (800–930px), а высота нет — у телефона 350–430px, у планшета от
+    // 600px. Планшет лёжа идёт по компьютерной раскладке: места хватает на обе колонки.
+    // Те же три условия — в style.css (см. «ГРАНИЦЫ РАСКЛАДОК»); если они разойдутся,
+    // кнопки будут видны по CSS, но не будут работать по JS (или наоборот).
     isMobileLayout: function () {
-        return window.innerWidth <= 768 || (window.innerWidth <= 1024 && window.matchMedia('(orientation: portrait)').matches);
+        const landscape = window.matchMedia('(orientation: landscape)').matches;
+        if (landscape && window.innerHeight <= 500) return true;
+        return window.innerWidth <= 768 || (window.innerWidth <= 1024 && !landscape);
     },
 
     // Отдельная от isMobileLayout() проверка — та завязана на ширину/ориентацию (для переноса
@@ -8935,9 +8940,12 @@ const app = {
      * Сбой сети не роняет ничего — без списков инструменты просто остаются
      * закрытыми, что безопаснее, чем открыть их всем при недоступном сервере.
      */
-    loadAccessLists: function () {
+    loadAccessLists: function (bust) {
         if (this._accessListsPromise) return this._accessListsPromise;
-        this._accessListsPromise = fetch(this.ACCESS_LISTS_URL)
+        // bust — обойти кэш браузера при перепроверке (см. refreshAccessLists):
+        // адрес один и тот же, и без метки браузер может отдать старый ответ,
+        // из-за чего только что включённый доступ «не появлялся».
+        this._accessListsPromise = fetch(this.ACCESS_LISTS_URL + (bust ? '&_=' + Date.now() : ''))
             .then(r => r.json())
             .then(data => {
                 if (data && data.ok) this._accessLists = data;
@@ -8949,6 +8957,30 @@ const app = {
                 return null;
             });
         return this._accessListsPromise;
+    },
+
+    /**
+     * Перепроверка списков доступа без перезагрузки страницы.
+     *
+     * Списки читаются один раз за загрузку и лежат в памяти вкладки, поэтому
+     * включённый администратором инструмент раньше появлялся у монтажника
+     * только после F5 — а вкладка у него могла висеть открытой сутками.
+     * Теперь проверка идёт при каждом возвращении к вкладке, но не чаще раза
+     * в минуту: событие срабатывает на любое переключение окна, а список
+     * доступа меняется от силы несколько раз в день.
+     */
+    refreshAccessLists: async function (force) {
+        const now = Date.now();
+        if (!force && this._accessListsCheckedAt && now - this._accessListsCheckedAt < 60000) return;
+        this._accessListsCheckedAt = now;
+        this._accessListsPromise = null;            // сбрасываем запомненный ответ
+        await this.loadAccessLists(true);
+        this.syncDesignUI();
+        // Вкладка распознавания держит свою копию списков — обновляем и её.
+        // Повторного запроса не будет: loadAccessLists уже отдаёт свежий ответ.
+        if (typeof RecognizeUI !== 'undefined' && typeof RecognizeUI.loadAccess === 'function') {
+            await RecognizeUI.loadAccess();
+        }
     },
 
     /**
@@ -17968,6 +18000,12 @@ const app = {
             this.renderWaterPlanChecks();
             if (typeof RecognizeUI !== 'undefined') RecognizeUI.syncButton();
         });
+        // Вернулись к вкладке — перепроверяем доступ (см. refreshAccessLists):
+        // администратор мог включить инструмент, пока окно было свёрнуто.
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) this.refreshAccessLists();
+        });
+        window.addEventListener('focus', () => this.refreshAccessLists());
         // Сводка планов этажей для сверки приборов; при сохранении планов в редакторе
         // (другая вкладка) браузер шлёт событие storage — пересверяем на лету
         this.loadPlanCheckData();
