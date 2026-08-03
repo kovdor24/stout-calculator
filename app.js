@@ -8576,6 +8576,18 @@ const app = {
         return [u.last_name, u.first_name, u.middle_name].filter(Boolean).join(' ') || u.username || u.email || 'Без имени';
     },
 
+    // Вес тарифа для сортировки: чем больше, тем «старше» тариф.
+    // Сортировать по самой колонке account_type нельзя — это строка, и по алфавиту
+    // получалось admin, base, pro, viewer, то есть «Профи→Базовый» ставил вперёд
+    // наблюдателей, а администраторов задвигал за Базовый. Тариф здесь считается
+    // так же, как он потом рисуется в таблице (см. hasProTariff в renderAdminMain):
+    // у админа и наблюдателя Профи определяется наличием demo_ends_at.
+    adminTariffRank: function (u) {
+        const isPro = (u.account_type === 'pro') ||
+            (['admin', 'viewer'].includes(u.account_type) && u.demo_ends_at);
+        return isPro ? 1 : 0;
+    },
+
     // Клик по заголовку столбца таблицы монтажников — переключает сортировку по этому столбцу
     // (по возрастанию/убыванию), просто подставляя нужное значение в уже существующий select
     // сортировки и переиспользуя его логику в renderAdminMain()
@@ -8739,6 +8751,11 @@ const app = {
 
             const sortType = document.getElementById('sort-installers')?.value || 'login_desc';
             const isLtvSort = sortType.startsWith('ltv_');
+            // Тариф, как и LTV, база отсортировать правильно не может: в колонке лежит строка
+            // (base/pro/admin/viewer), а нужен порядок «Профи → Базовый». Поэтому тянем весь
+            // список и сортируем на клиенте (см. adminTariffRank), а страницу нарезаем сами.
+            const isTariffSort = sortType.startsWith('tariff_');
+            const isClientSort = isLtvSort || isTariffSort;
 
             if (sortType === 'login_desc') {
                 query = query
@@ -8764,10 +8781,9 @@ const app = {
                 query = query.order('demo_ends_at', { ascending: true, nullsFirst: false });
             } else if (sortType === 'expiry_desc') {
                 query = query.order('demo_ends_at', { ascending: false, nullsFirst: false });
-            } else if (sortType === 'tariff_asc') {
-                query = query.order('account_type', { ascending: true });
-            } else if (sortType === 'tariff_desc') {
-                query = query.order('account_type', { ascending: false });
+            } else if (isTariffSort) {
+                // Внутри одного тарифа — сначала те, кто заходил недавно
+                query = query.order('last_visited', { ascending: false, nullsFirst: false });
             } else if (!isLtvSort) {
                 query = query.order('created_at', { ascending: false });
             }
@@ -8775,7 +8791,7 @@ const app = {
             let users = [];
             let totalUsers = 0;
 
-            if (isLtvSort) {
+            if (isClientSort) {
                 let { data, error, count } = await query;
                 if (error) throw error;
                 users = data || [];
@@ -8785,6 +8801,13 @@ const app = {
                 if (error) throw error;
                 users = data || [];
                 totalUsers = count || users.length;
+            }
+
+            // Сортировка по тарифу — до запроса смет, чтобы тянуть их только для своей страницы
+            if (isTariffSort) {
+                const rank = (u) => this.adminTariffRank(u);
+                users.sort((a, b) => sortType === 'tariff_desc' ? rank(b) - rank(a) : rank(a) - rank(b));
+                users = users.slice(offset, offset + this._adminPageSize);
             }
 
             // 2. Fetch Estimates for these specific users to calc LTV in the list
@@ -9059,8 +9082,10 @@ const app = {
                 }
                 if (sortType === 'name_asc') return this.getAdminUserDisplayName(a).localeCompare(this.getAdminUserDisplayName(b), 'ru');
                 if (sortType === 'name_desc') return this.getAdminUserDisplayName(b).localeCompare(this.getAdminUserDisplayName(a), 'ru');
-                if (sortType === 'tariff_asc') return (a.account_type || '').localeCompare(b.account_type || '');
-                if (sortType === 'tariff_desc') return (b.account_type || '').localeCompare(a.account_type || '');
+                // Тариф — по весу, а не по названию колонки: «Профи→Базовый» означает
+                // сначала все Профи (включая админов и наблюдателей с Профи), потом Базовый
+                if (sortType === 'tariff_asc') return this.adminTariffRank(a) - this.adminTariffRank(b);
+                if (sortType === 'tariff_desc') return this.adminTariffRank(b) - this.adminTariffRank(a);
                 return 0;
             });
         }
@@ -9284,6 +9309,15 @@ const app = {
             let lastVisTitle = u.last_visited
                 ? 'Последний вход: ' + new Date(u.last_visited).toLocaleString('ru-RU')
                 : 'Ни разу не заходил после регистрации ' + date;
+            // Дата входа из будущего = у монтажника врут часы на устройстве: до миграции
+            // 20260803_last_visited_server_time.sql время входа записывал сам браузер
+            // (new Date().toISOString()), а не база. Такие записи помечаем, чтобы «03.08, 19:12
+            // в 12:56» не выглядело ошибкой админки. После миграции время ставит Postgres.
+            const lastVisFuture = !!u.last_visited && (new Date(u.last_visited).getTime() - Date.now() > 5 * 60 * 1000);
+            if (lastVisFuture) {
+                lastVis = '⚠ ' + lastVis;
+                lastVisTitle += ' — время из будущего: на устройстве пользователя сбиты часы';
+            }
             let avatarImg = u.avatar_url ? `<img src="${u.avatar_url}" style="width:32px; height:32px; border-radius:50%; vertical-align:middle; margin-right:10px; object-fit:cover; border:1px solid #E5E7EB;">` : `<span style="font-size:24px; vertical-align:middle; margin-right:10px;">👤</span>`;
 
             let cityText = u.city || 'Город не указан';
@@ -9313,7 +9347,9 @@ const app = {
             const desCell = this.designAccessCell(u, isViewer);
 
             h += `<tr class="active-row admin-list-row" data-search="${searchStr}" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminUser('${u.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
-                        <td style="color:var(--text-sec);">${i + 1}</td>
+                        <!-- Нумерация сквозная по всему списку, а не по странице: на второй
+                             странице отсчёт снова с 1 сбивал с толку (44 записи → 1…44) -->
+                        <td style="color:var(--text-sec);">${this._adminOffset + i + 1}</td>
                         <td><div style="display:flex; align-items:center;">${avatarImg} <div><b style="font-size:13px;">${name}</b><br><span style="font-size:11px;color:var(--text-sec);">${phone}</span>${locHTML}${extraHTML}</div></div></td>
                         <td><b style="color:var(--primary);">${u.ltv.toLocaleString()} ₽</b><br><span style="font-size:10px;color:var(--text-sec);">Смет: ${u.projectsCount} | Ср.объект: ${u.avgArea} м²</span></td>
                         <td>${badge}<br><span style="font-size:10px;color:var(--text-sec);">${device}</span></td>
