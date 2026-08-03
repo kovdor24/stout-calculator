@@ -7299,6 +7299,12 @@ const app = {
             }
 
             if (!uRow) return;
+            // Кто мы — нужно окну переписки (renderUserChat): по этому id отличаем свои
+            // сообщения от входящих. Смена пользователя на том же устройстве сбрасывает
+            // кэш сообщений, иначе в переписку попала бы чужая.
+            if (this._msgCacheOwner && this._msgCacheOwner !== uRow.id) this._msgCache = [];
+            this._msgCacheOwner = uRow.id;
+            this._meRow = uRow;
 
             // Запрашиваем сметы — только shared_invoice_id точечно из calc_data (не весь блоб,
             // это опрос статусов, вызывается часто для каждого пользователя).
@@ -7592,6 +7598,48 @@ const app = {
                     // Сообщение доехало до устройства — ставим галочку «доставлено» в фоне,
                     // ответ ждать незачем, на список уведомлений это не влияет
                     this.markAdminMessagesDelivered(incomingIds);
+
+                    // Ответ монтажника уходит с recipient_id = null («администрации»), а не
+                    // конкретному админу, поэтому раньше он попадал только во вкладку
+                    // «Сообщения» панели управления: в колокольчике про него не было ни слова,
+                    // и узнать об ответе можно было, лишь открыв админку. Теперь ответы
+                    // показываются админам как обычные уведомления — со звуком и всплывашкой.
+                    // Берём только свежие (14 дней): в кэше лежит переписка за всё время
+                    // хранения (90 дней), и на первом заходе список утонул бы в старых ответах.
+                    if (isAdmin) {
+                        const replyCutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
+                        const freshReplies = replies.filter(r => r.sender_id && r.sender_id !== uRow.id
+                            && new Date(r.created_at).getTime() > replyCutoff);
+                        if (freshReplies.length) {
+                            // Имена отправителей запрашиваем один раз за сеанс и держим в памяти:
+                            // опрос уведомлений идёт часто, дёргать за ними базу каждый раз незачем
+                            this._replySenderNames = this._replySenderNames || {};
+                            const unknownIds = [...new Set(freshReplies.map(r => r.sender_id))]
+                                .filter(id => !this._replySenderNames[id]);
+                            if (unknownIds.length) {
+                                const { data: senders } = await supabaseClient.from('users')
+                                    .select('id, username, email, last_name, first_name').in('id', unknownIds);
+                                (senders || []).forEach(s => {
+                                    this._replySenderNames[s.id] = [s.last_name, s.first_name].filter(Boolean).join(' ')
+                                        || s.username || s.email || 'Монтажник';
+                                });
+                                unknownIds.forEach(id => { if (!this._replySenderNames[id]) this._replySenderNames[id] = 'Монтажник'; });
+                            }
+                            freshReplies.forEach(r => {
+                                notifications.push({
+                                    id: r.id,
+                                    type: 'installer_reply',
+                                    projectName: '💬 Ответ монтажника',
+                                    senderName: this._replySenderNames[r.sender_id] || 'Монтажник',
+                                    senderId: r.sender_id,
+                                    status: 'message',
+                                    comment: r.text,
+                                    time: r.created_at,
+                                    isRead: readIds.includes(r.id)
+                                });
+                            });
+                        }
+                    }
                 }
             } catch (msgErr) {
                 console.warn("Could not load messages from Supabase (messages table might not exist yet):", msgErr);
@@ -7721,6 +7769,11 @@ const app = {
 
             // Всплывающие карточки в правом углу — по новым непрочитанным
             this.popNewNotificationToasts(visibleNotifications);
+
+            // Окно переписки открыто — сразу дорисовываем то, что успело прийти,
+            // чтобы ответ администратора появлялся без переоткрытия окна
+            const chatPane = document.getElementById('notif_pane_chat');
+            if (chatPane && chatPane.style.display === 'flex') this.renderUserChat();
         } catch (e) {
             console.error("Error fetching notifications:", e);
         }
@@ -7913,8 +7966,60 @@ const app = {
         this.updateSoundIconUI(val);
     },
 
-    openNotificationsModal: async function () {
+    // Кнопка-конверт в шапке. У монтажника открывается переписка с администратором —
+    // то же окно, что и раньше, но сразу на вкладке разговора. Админу переписка тут не
+    // нужна: все диалоги у него в панели управления, поэтому ему открывается список
+    // уведомлений (там же теперь и ответы монтажников).
+    openMessagesCenter: function () {
+        this.openNotificationsModal(this.hasAdminAccess() ? 'list' : 'chat');
+    },
+
+    switchNotifTab: function (tab) {
+        this._notifTab = tab;
+        this.renderNotifTabs();
+        if (tab === 'chat') {
+            this.renderUserChat();
+            const inp = document.getElementById('user_chat_input');
+            if (inp) inp.focus();
+        }
+    },
+
+    // Показывает нужную вкладку и подсвечивает кнопку. Счётчик на вкладке
+    // «Уведомления» — те же непрочитанные, что и в бейдже на конверте.
+    renderNotifTabs: function () {
+        const tab = this._notifTab === 'chat' ? 'chat' : 'list';
+        const chatPane = document.getElementById('notif_pane_chat');
+        const listPane = document.getElementById('notif_pane_list');
+        if (chatPane) chatPane.style.display = tab === 'chat' ? 'flex' : 'none';
+        if (listPane) listPane.style.display = tab === 'list' ? 'flex' : 'none';
+        const btnChat = document.getElementById('notif_tab_chat');
+        const btnList = document.getElementById('notif_tab_list');
+        if (btnChat) btnChat.classList.toggle('active', tab === 'chat');
+        if (btnList) btnList.classList.toggle('active', tab === 'list');
+        const title = document.getElementById('notif_modal_title');
+        if (title) title.textContent = tab === 'chat' ? '💬 Переписка с администратором' : '🔔 Уведомления';
+
+        // Админу вкладка переписки не показывается — у него мессенджер в админке
+        const tabs = document.getElementById('notif_tabs');
+        if (tabs) tabs.style.display = this.hasAdminAccess() ? 'none' : 'flex';
+
+        const badge = document.getElementById('notif_tab_badge');
+        if (badge) {
+            const unread = (this._notifications || []).filter(n => !n.isRead && n.type !== 'admin_message').length;
+            badge.textContent = unread;
+            badge.style.display = unread > 0 ? 'inline-flex' : 'none';
+        }
+    },
+
+    openNotificationsModal: async function (tab) {
         document.getElementById('notifications_modal_overlay').style.display = 'flex';
+        // Вкладка задаётся только явно (кнопка-конверт, переключатель). Перерисовки
+        // после отправки/прочтения вызывают эту функцию без аргумента и не должны
+        // перекидывать человека с той вкладки, где он сейчас находится.
+        if (tab) this._notifTab = tab;
+        // У админа вкладки нет вообще — только список
+        if (this.hasAdminAccess() || !this._notifTab) this._notifTab = this.hasAdminAccess() ? 'list' : (this._notifTab || 'list');
+        this.renderNotifTabs();
 
         // Синхронизируем значение селектора звука
         const savedSound = localStorage.getItem('stout_notification_sound') || 'iphone';
@@ -7931,6 +8036,8 @@ const app = {
 
         // Обновляем уведомления при открытии
         await this.fetchNotifications();
+        this.renderNotifTabs();
+        this.renderUserChat();
 
         const notifications = this._notifications || [];
         if (notifications.length === 0) {
@@ -7942,7 +8049,10 @@ const app = {
         this.markAdminMessagesRead(notifications.filter(n => n.type === 'admin_message').map(n => n.id));
 
         let h = '';
+        const isAdminView = this.hasAdminAccess();
         notifications.forEach(n => {
+            // Письма администратора монтажник читает во вкладке «Переписка»
+            if (n.type === 'admin_message' && !isAdminView) return;
             const dateStr = new Date(n.time).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
             const isUnread = !n.isRead;
             const unreadDot = isUnread ? '<span style="width: 7px; height: 7px; background: #3B82F6; border-radius: 50%; display: inline-block; margin-left: 5px;" title="Новое сообщение"></span>' : '';
@@ -8004,6 +8114,23 @@ const app = {
                             </div>
                         </div>
                         <div style="font-size: 11.5px; color: var(--text-main); font-weight: 500; line-height: 1.4;">${n.comment}</div>
+                    </div>
+                `;
+            } else if (n.type === 'installer_reply') {
+                // Ответ монтажника — только у админов. Клик уводит в панель управления,
+                // сразу в переписку с этим человеком, отвечать прямо из карточки незачем.
+                h += `
+                    <div class="notification-card" style="background: rgba(16, 185, 129, 0.04); border-left: 4.5px solid #10B981; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border); border-left-color: #10B981; position: relative; cursor: pointer; ${isUnread ? 'box-shadow: 0 2px 6px rgba(16, 185, 129, 0.08);' : 'opacity: 0.85;'}" onclick="app.openAdminReplyChat('${n.senderId}', '${n.id}')">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 800; color: #065F46; font-size: 10px; letter-spacing: 0.03em;">ОТВЕТ МОНТАЖНИКА${unreadDot}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size: 10px; color: var(--text-sec); font-weight: 500;">${dateStr}</span>
+                                <span onclick="event.stopPropagation(); app.dismissNotification('${n.id}', event)" title="Удалить уведомление" style="cursor:pointer; color:var(--text-sec); font-size:13px; line-height:1; padding:2px;">✕</span>
+                            </div>
+                        </div>
+                        <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.3;">${n.senderName}</div>
+                        <div style="font-size: 11.5px; color: var(--text-main); font-weight: 500; line-height: 1.4; white-space: pre-wrap;">${n.comment}</div>
+                        <div style="font-size: 10.5px; color: #065F46; font-weight: 700; margin-top: 2px;">Открыть переписку →</div>
                     </div>
                 `;
             } else if (n.type === 'admin_message') {
@@ -8099,7 +8226,152 @@ const app = {
             }
         });
 
-        listEl.innerHTML = h;
+        // Письма админа у монтажника показываются во вкладке «Переписка», в списке их нет —
+        // иначе одно и то же сообщение висело бы дважды, с двумя разными полями ответа.
+        listEl.innerHTML = h || '<div style="text-align: center; color: var(--text-sec); padding: 40px; font-size: 13px;">У вас пока нет уведомлений от клиентов.</div>';
+    },
+
+    // ═══════════ ПЕРЕПИСКА МОНТАЖНИКА С АДМИНИСТРАТОРОМ ═══════════
+    // Тот же вид, что и мессенджер в панели управления (общие стили .admin-chat-*),
+    // только собеседник один. Сообщения берутся из того же кэша, что и уведомления
+    // (this._msgCache), поэтому отдельных запросов в базу окно не делает.
+    // Классы пузырей достались от админки и названы с её точки зрения:
+    // from-admin — синий справа (здесь это «мы»), from-user — белый слева (админ).
+    renderUserChat: function () {
+        const body = document.getElementById('user_chat_body');
+        if (!body) return;
+        const meId = this._meRow && this._meRow.id;
+        if (!meId) {
+            body.innerHTML = '<div class="admin-chat-empty">Войдите в аккаунт, чтобы написать администратору.</div>';
+            return;
+        }
+
+        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const clockTime = (d) => new Date(d).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const dayLabel = (d) => {
+            const dt = new Date(d), today = new Date();
+            const same = (a, b) => a.toDateString() === b.toDateString();
+            if (same(dt, today)) return 'Сегодня';
+            if (same(dt, new Date(today.getTime() - 86400000))) return 'Вчера';
+            return dt.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: dt.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
+        };
+
+        // Входящие — письма и объявления администратора; исходящие — свои ответы.
+        // В кэше лежат и чужие ответы (они уходят с recipient_id = null и потому видны
+        // всем), поэтому по sender_id отбираем строго свои.
+        const all = (this._msgCache || []);
+        const items = all
+            .filter(m => (m.type !== 'reply' && m.sender_id !== meId) || (m.type === 'reply' && m.sender_id === meId))
+            .slice()
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+        if (!items.length) {
+            body.innerHTML = '<div class="admin-chat-empty">Переписки пока нет. Напишите — администратор ответит, а ответ придёт сюда же.</div>';
+            return;
+        }
+
+        const SERIE_GAP_MS = 5 * 60 * 1000;
+        let html = '', lastDay = '';
+        items.forEach((m, i) => {
+            const mine = m.sender_id === meId;
+            const day = dayLabel(m.created_at);
+            const newDay = day !== lastDay;
+            if (newDay) { html += `<div class="admin-chat-day">${day}</div>`; lastDay = day; }
+
+            const prev = items[i - 1], next = items[i + 1];
+            const sameAsPrev = !newDay && prev && (prev.sender_id === meId) === mine
+                && (new Date(m.created_at) - new Date(prev.created_at)) < SERIE_GAP_MS;
+            const sameAsNext = next && (next.sender_id === meId) === mine
+                && dayLabel(next.created_at) === day
+                && (new Date(next.created_at) - new Date(m.created_at)) < SERIE_GAP_MS;
+            const serieCls = (sameAsNext ? '' : ' tail') + (sameAsPrev || newDay || i === 0 ? '' : ' admin-chat-serie-gap');
+
+            const from = mine ? '' : (m.type === 'broadcast' ? '📢 Объявление для всех' : 'Администратор');
+            html += `
+                <div class="admin-chat-bubble ${mine ? 'from-admin' : 'from-user'}${serieCls}">
+                    ${(!mine && !sameAsPrev) ? `<div class="user-chat-from">${from}</div>` : ''}
+                    <div class="admin-chat-text">${esc(m.text)}<span class="admin-chat-meta">
+                        <span class="admin-chat-metatime">${clockTime(m.created_at)}</span>
+                    </span></div>
+                </div>
+            `;
+        });
+        body.innerHTML = html;
+        body.scrollTop = body.scrollHeight;
+
+        // Переписка открыта и текст виден целиком — значит письма прочитаны: ставим
+        // галочку в админке и гасим по ним бейдж на конверте. Когда окно открыто на
+        // вкладке уведомлений, переписку никто не читал — отметки не ставим.
+        if (this._notifTab === 'chat') {
+            const incomingIds = items.filter(m => m.sender_id !== meId).map(m => m.id);
+            this.markAdminMessagesRead(incomingIds);
+            const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
+            const fresh = incomingIds.filter(id => !readIds.includes(id));
+            if (fresh.length) {
+                localStorage.setItem('stout_read_notifications', JSON.stringify(readIds.concat(fresh)));
+                (this._notifications || []).forEach(n => { if (fresh.includes(n.id)) n.isRead = true; });
+                this.fetchNotifications();
+            }
+        }
+    },
+
+    userChatKey: function (e) {
+        // Enter отправляет, Shift+Enter — перенос строки, как в мессенджере админки
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            this.sendUserChatMessage();
+        }
+    },
+
+    sendUserChatMessage: async function () {
+        const inp = document.getElementById('user_chat_input');
+        const btn = document.getElementById('user_chat_send');
+        const text = (inp && inp.value || '').trim();
+        if (!text) return;
+        const meId = this._meRow && this._meRow.id;
+        if (!meId) { app.alert('Необходимо авторизоваться, чтобы написать администратору.'); return; }
+
+        // Ответ привязывается к последнему письму администратора. Если он ещё ничего
+        // не писал, отправляем без привязки — в панели управления такое сообщение всё
+        // равно попадает в переписку с этим монтажником (диалоги там группируются по автору).
+        const incoming = (this._msgCache || [])
+            .filter(m => m.type !== 'reply' && m.sender_id !== meId)
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        const parentId = incoming.length ? incoming[incoming.length - 1].id : null;
+
+        if (btn) btn.disabled = true;
+        try {
+            await this.sendUserReply(parentId, text, true);
+            if (inp) inp.value = '';
+            // Дорисовываем сразу, не дожидаясь следующего опроса базы
+            (this._msgCache = this._msgCache || []).push({
+                id: 'local_' + Date.now(), sender_id: meId, recipient_id: null,
+                text: text, type: 'reply', parent_id: parentId, created_at: new Date().toISOString()
+            });
+            this.renderUserChat();
+        } catch (e) {
+            app.alert('Не удалось отправить сообщение: ' + (e.message || e));
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    },
+
+    // Клик по уведомлению «Ответ монтажника» у админа — открываем панель управления
+    // сразу на вкладке «Сообщения» и на диалоге с этим человеком
+    openAdminReplyChat: function (userId, notifId) {
+        if (notifId) {
+            const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
+            if (!readIds.includes(notifId)) {
+                readIds.push(notifId);
+                localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
+            }
+        }
+        this.closeNotificationsModal();
+        this._adminTab = 'messages';
+        this._adminChatId = userId;
+        this._adminChatOpen = true;
+        this.showAdminModal();
+        this.fetchNotifications();
     },
 
     handleNotificationClick: function (notificationId, estimateId, openTab) {

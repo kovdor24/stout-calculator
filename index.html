@@ -49,7 +49,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.87">
+    <link rel="stylesheet" href="style.css?v=2.88">
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.25" defer></script>
@@ -60,7 +60,7 @@
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.0" defer></script>
     <script src="gamification.js?v=2.0" defer></script>
-    <script src="app.js?v=3.61" defer></script>
+    <script src="app.js?v=3.62" defer></script>
     <!-- Укладка тёплого пола по планам этажей. В калькуляторе нужна не ради
          листов, а ради сметы: длину трубы и число выходов коллектора берём
          из нарисованных петель (projectPlans.floorLoops). -->
@@ -128,7 +128,7 @@
                 
                 <div class="header-cloud-btns" style="display: flex; align-items: center; gap: 8px;">
                     <!-- Notification / Envelope Button -->
-                    <button id="btn_notifications" class="btn-ctrl" onclick="app.openNotificationsModal()" title="Сообщения от клиентов" style="position: relative;">
+                    <button id="btn_notifications" class="btn-ctrl" onclick="app.openMessagesCenter()" title="Сообщения и уведомления" style="position: relative;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                             <polyline points="22,6 12,13 2,6"></polyline>
@@ -938,7 +938,7 @@
                             </svg>
                         </button>
                         <!-- Bell button with badge -->
-                        <button class="btn-ctrl" onclick="app.openNotificationsModal()" title="Уведомления" style="width: 42px; height: 42px; border-radius: 50%; background: var(--surface-light); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-main); position: relative; transition: 0.2s;">
+                        <button class="btn-ctrl" onclick="app.openMessagesCenter()" title="Сообщения и уведомления" style="width: 42px; height: 42px; border-radius: 50%; background: var(--surface-light); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-main); position: relative; transition: 0.2s;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
                                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
@@ -1716,7 +1716,7 @@
         <div class="auth-modal-content" style="max-width: 420px; width: 95%; max-height: 85vh; display: flex; flex-direction: column; padding: 18px; border-radius: 16px;">
             <span class="auth-modal-close" onclick="app.closeNotificationsModal()">&times;</span>
             <h3 class="auth-modal-title" style="margin-top: 0; margin-bottom: 15px; font-size: 15px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-shrink: 0; flex-wrap: wrap;">
-                <span>💬 Уведомления</span>
+                <span id="notif_modal_title">💬 Уведомления</span>
                 <span style="font-size: 11px; font-weight: normal; color: var(--text-sec); display: inline-flex; align-items: center; gap: 4px; margin-right: 20px;">
                     <span id="sound_status_icon">🔊</span> Звук:
                     <select id="notification_sound_select" onchange="app.changeNotificationSound(this.value)" style="background: transparent; color: var(--text-sec); border: none; padding: 2px; font-size: 11px; outline: none; cursor: pointer; font-weight: 600;">
@@ -1727,14 +1727,33 @@
                 </span>
             </h3>
             
-            <div id="notifications_list" style="overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 10px; padding-right: 5px; margin-bottom: 12px; max-height: 50vh;">
-                <div style="text-align: center; color: var(--text-sec); padding: 40px 10px; font-size: 13px;">У вас пока нет уведомлений.</div>
+            <!-- Две вкладки: переписка с администратором и обычные уведомления
+                 (статусы смет у заказчиков, напоминания по счетам, срок тарифа).
+                 По кнопке-конверту в шапке открывается переписка, у админов —
+                 список уведомлений: переписка со всеми у них в панели управления. -->
+            <div class="notif-tabs" id="notif_tabs">
+                <button class="notif-tab" id="notif_tab_chat" onclick="app.switchNotifTab('chat')">💬 Переписка</button>
+                <button class="notif-tab" id="notif_tab_list" onclick="app.switchNotifTab('list')">🔔 Уведомления<span class="notif-tab-badge" id="notif_tab_badge" style="display: none;">0</span></button>
             </div>
-            
-            <div style="flex-shrink: 0; border-top: 1px solid var(--border); padding-top: 12px; display: flex; justify-content: center; gap: 10px;">
-                <button class="auth-btn-base btn-email-submit" style="margin: 0; max-width: 140px; height: 34px; font-size: 12px;" onclick="app.markAllNotificationsRead()">Прочитать все</button>
-                <button class="auth-btn-base" style="margin: 0; max-width: 130px; height: 34px; font-size: 12px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border);" onclick="app.clearAllNotifications()">Очистить всё</button>
-                <button class="auth-btn-base" style="margin: 0; max-width: 100px; height: 34px; font-size: 12px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border);" onclick="app.closeNotificationsModal()">Закрыть</button>
+
+            <div id="notif_pane_chat" style="display: none; flex-direction: column; flex: 1; min-height: 0; margin: 0 -18px -18px; border-top: 1px solid var(--border); border-radius: 0 0 16px 16px; overflow: hidden;">
+                <div class="admin-chat-body" id="user_chat_body" style="min-height: 240px;"></div>
+                <div class="admin-chat-compose">
+                    <textarea id="user_chat_input" rows="1" placeholder="Сообщение администратору…" onkeydown="app.userChatKey(event)"></textarea>
+                    <button class="admin-chat-send" id="user_chat_send" title="Отправить (Enter)" onclick="app.sendUserChatMessage()">➤</button>
+                </div>
+            </div>
+
+            <div id="notif_pane_list" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+                <div id="notifications_list" style="overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 10px; padding-right: 5px; margin-bottom: 12px; max-height: 50vh;">
+                    <div style="text-align: center; color: var(--text-sec); padding: 40px 10px; font-size: 13px;">У вас пока нет уведомлений.</div>
+                </div>
+
+                <div style="flex-shrink: 0; border-top: 1px solid var(--border); padding-top: 12px; display: flex; justify-content: center; gap: 10px;">
+                    <button class="auth-btn-base btn-email-submit" style="margin: 0; max-width: 140px; height: 34px; font-size: 12px;" onclick="app.markAllNotificationsRead()">Прочитать все</button>
+                    <button class="auth-btn-base" style="margin: 0; max-width: 130px; height: 34px; font-size: 12px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border);" onclick="app.clearAllNotifications()">Очистить всё</button>
+                    <button class="auth-btn-base" style="margin: 0; max-width: 100px; height: 34px; font-size: 12px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border);" onclick="app.closeNotificationsModal()">Закрыть</button>
+                </div>
             </div>
         </div>
     </div>
