@@ -8929,6 +8929,20 @@ const app = {
         return (u && u.account_type === 'admin') || (email && this.SUPER_ADMIN_EMAILS.includes(email));
     },
 
+    /**
+     * Кто мы — для проверок доступа к инструментам.
+     *
+     * _currentUserRow заполняется только при загрузке своих смет из облака,
+     * то есть на свежей странице его нет. Поэтому нужен запасной источник —
+     * профиль из state.tgUser, там тот же email и регион. Распознавание раньше
+     * смотрело в один _currentUserRow и получало пустой логин: администратор
+     * включал инструмент, проектирование появлялось, а вкладка распознавания —
+     * нет. Обе проверки должны брать данные отсюда, чтобы не разъезжаться.
+     */
+    accessUserRow: function () {
+        return this._currentUserRow || this.state.tgUser || {};
+    },
+
     ACCESS_LISTS_URL: 'https://proxy.heatcalc.ru/recognize_archive.php?access=1',
     _accessLists: null,
     _accessListsPromise: null,
@@ -8991,7 +9005,7 @@ const app = {
      */
     canUseDesign: function () {
         const d = this._accessLists && this._accessLists.design;
-        const row = this._currentUserRow || this.state.tgUser || {};
+        const row = this.accessUserRow();
         const login = String(row.email || row.username || '').trim().toLowerCase();
         // Личная отметка сильнее всего: явное «выключено» перебивает и должность,
         // и открытый доступ региону или компании

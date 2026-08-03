@@ -45,7 +45,12 @@ const RecognizeUI = {
         // Но личная отметка сильнее: снятый в админке доступ приходит с сервера
         // как явное false и перебивает и должность, и доступ компании/региона.
         const acc = this._access;
-        const row = app._currentUserRow || {};
+        // Тот же источник данных о пользователе, что и у проектирования
+        // (app.accessUserRow): один _currentUserRow заполняется только после
+        // загрузки смет из облака, и на свежей странице логин выходил пустым —
+        // личная отметка не находилась и вкладка не появлялась, хотя админ
+        // её включил.
+        const row = (typeof app.accessUserRow === 'function') ? app.accessUserRow() : (app._currentUserRow || {});
         const login = (row.email || row.username || '').toLowerCase();
         const own = (typeof app.accessFlagFor === 'function')
             ? app.accessFlagFor(acc && acc.users, login)
@@ -988,8 +993,12 @@ const RecognizeUI = {
 
     /** Логин, под которым распознавания попадают в архив и считается лимит. */
     userKey() {
-        return (app._currentUserRow && (app._currentUserRow.email || app._currentUserRow.username))
-            || (app.state.tgUser && app.state.tgUser.username) || 'admin';
+        // Тот же порядок полей, что у ключа в админке (recognitionUserKey):
+        // сначала email, потом ник. Раньше при незагруженном _currentUserRow
+        // сюда попадал ник из профиля, и лимит считался под другим именем,
+        // чем то, которому админ его выставил.
+        const row = (typeof app.accessUserRow === 'function') ? app.accessUserRow() : (app._currentUserRow || {});
+        return (row.email || row.username || '').trim() || 'admin';
     },
 
     /**
