@@ -9806,6 +9806,56 @@ select.rec-btn-g { padding-right: 8px; }
 }
 .admin-chat-send:hover { transform: scale(1.06); }
 .admin-chat-send:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+/* ── Смайлики в переписке (и у монтажника, и в мессенджере админки) ──
+   Панель одна на всё приложение: лежит в конце body с position: fixed, поэтому
+   её не режут ни модалка уведомлений, ни окно админки со своей прокруткой.
+   z-index выше окна админки (100000), иначе панель открывалась бы под ним. */
+.emoji-open-btn {
+    flex-shrink: 0; width: 38px; height: 38px; padding: 0;
+    background: transparent; border: none; border-radius: 50%;
+    font-size: 19px; line-height: 1; cursor: pointer; opacity: .75;
+    display: flex; align-items: center; justify-content: center; transition: 0.15s;
+}
+.emoji-open-btn:hover { opacity: 1; background: var(--surface-light); }
+.emoji-open-btn:disabled { opacity: .3; cursor: not-allowed; }
+.emoji-panel {
+    /* z-index заведомо выше окна админки: у него в разметке стоит 100000, но правило
+       .auth-modal-overlay поднимает его до 2000000 !important (чтобы перекрыть боковое
+       меню на телефоне). С меньшим значением панель открывалась ПОД панелью управления —
+       нажатие на 🙂 выглядело так, будто кнопка не работает. */
+    display: none; position: fixed; z-index: 20000010;
+    width: 322px; max-width: calc(100vw - 16px);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; box-shadow: 0 14px 38px rgba(0, 0, 0, .3);
+    overflow: hidden;
+}
+.emoji-panel.open { display: block; }
+.emoji-tabs {
+    display: flex; gap: 2px; padding: 6px 6px 5px;
+    border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none;
+}
+.emoji-tabs::-webkit-scrollbar { display: none; }
+.emoji-tab {
+    flex: 1 0 auto; min-width: 32px; height: 28px; padding: 0;
+    border: none; border-radius: 8px; background: transparent;
+    font-size: 15px; line-height: 1; cursor: pointer; opacity: .55; transition: 0.12s;
+}
+.emoji-tab:hover { opacity: .85; }
+.emoji-tab.active { background: var(--primary-light); opacity: 1; }
+.emoji-set-name { padding: 7px 10px 2px; font-size: 10.5px; font-weight: 700; color: var(--text-sec); letter-spacing: 0.02em; }
+.emoji-grid {
+    display: grid; grid-template-columns: repeat(8, 1fr); gap: 1px;
+    padding: 4px 6px 8px; max-height: 208px; overflow-y: auto;
+}
+.emoji-grid::-webkit-scrollbar { width: 6px; }
+.emoji-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.emoji-grid button {
+    border: none; background: transparent; border-radius: 8px;
+    font-size: 20px; line-height: 1; padding: 5px 0; cursor: pointer;
+}
+.emoji-grid button:hover { background: var(--surface-light); }
+.emoji-grid-empty { grid-column: 1 / -1; padding: 22px 10px; text-align: center; font-size: 11.5px; color: var(--text-sec); }
+
 /* ── Окно «Сообщения» у монтажника: вкладки «Переписка» / «Уведомления» ──
    Переписка использует те же пузыри и поле ввода, что и мессенджер админки
    (.admin-chat-body / .admin-chat-bubble / .admin-chat-compose), поэтому
@@ -9828,6 +9878,23 @@ select.rec-btn-g { padding-right: 8px; }
     display: inline-flex; align-items: center; justify-content: center; line-height: 1;
 }
 #notif_pane_chat .admin-chat-body { max-height: 46vh; }
+/* На вкладке «Переписка» окно разворачивается почти во весь экран: читать чат
+   в узкой колонке уведомлений неудобно, а вид должен быть тот же, что у
+   мессенджера в панели управления. Размеры заданы в разметке инлайном
+   (max-width: 420px), поэтому здесь !important — иначе не перебить. */
+.auth-modal-content.notif-modal-wide {
+    max-width: 900px !important;
+    width: 96% !important;
+    height: 88vh;
+    max-height: 88vh !important;
+}
+.notif-modal-wide #notif_pane_chat .admin-chat-body { max-height: none; }
+@media (max-width: 768px) {
+    .auth-modal-content.notif-modal-wide {
+        width: 100% !important; max-width: 100% !important;
+        height: 100%; max-height: 100% !important; border-radius: 0;
+    }
+}
 #notif_pane_chat .admin-chat-compose textarea { min-height: 38px; font-size: 13px; }
 #notif_pane_chat .admin-chat-send { width: 38px; height: 38px; }
 /* Ярлык над входящим сообщением: «Администратор» или «Объявление для всех» */

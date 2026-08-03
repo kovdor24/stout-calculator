@@ -7626,6 +7626,14 @@ const app = {
                                 unknownIds.forEach(id => { if (!this._replySenderNames[id]) this._replySenderNames[id] = 'Монтажник'; });
                             }
                             freshReplies.forEach(r => {
+                                // Переписка с этим монтажником открыта прямо сейчас — значит
+                                // сообщение он читает в ней, и всплывашка поверх собственного
+                                // чата только мешает. Считаем такой ответ сразу прочитанным.
+                                const openNow = this.adminChatIsOpenFor(r.sender_id);
+                                if (openNow && !readIds.includes(r.id)) {
+                                    readIds.push(r.id);
+                                    localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
+                                }
                                 notifications.push({
                                     id: r.id,
                                     type: 'installer_reply',
@@ -7635,9 +7643,25 @@ const app = {
                                     status: 'message',
                                     comment: r.text,
                                     time: r.created_at,
-                                    isRead: readIds.includes(r.id)
+                                    isRead: openNow || readIds.includes(r.id)
                                 });
                             });
+                        }
+
+                        // Ответ уже лежит в кэше уведомлений, а мессенджер админки берёт
+                        // сообщения из своей выборки (loadAdminData) — из-за этого всплывашка
+                        // приходила, а в переписке сообщения ещё не было до перезагрузки
+                        // вкладки. Подкладываем новое прямо в открытый список.
+                        if (this.adminData && Array.isArray(this.adminData.messages)) {
+                            const known = new Set(this.adminData.messages.map(m => m.id));
+                            const missing = dbMessages.filter(m => !known.has(m.id));
+                            if (missing.length) {
+                                this.adminData.messages = missing.concat(this.adminData.messages);
+                                const admOverlay = document.getElementById('admin_modal_overlay');
+                                if (admOverlay && admOverlay.style.display === 'flex' && this._adminTab === 'messages') {
+                                    this.renderAdminMessages();
+                                }
+                            }
                         }
                     }
                 }
@@ -7998,6 +8022,9 @@ const app = {
         if (btnList) btnList.classList.toggle('active', tab === 'list');
         const title = document.getElementById('notif_modal_title');
         if (title) title.textContent = tab === 'chat' ? '💬 Переписка с администратором' : '🔔 Уведомления';
+        // Переписка занимает всё окно, список уведомлений — прежнюю узкую колонку
+        const box = document.querySelector('#notifications_modal_overlay .auth-modal-content');
+        if (box) box.classList.toggle('notif-modal-wide', tab === 'chat');
 
         // Админу вкладка переписки не показывается — у него мессенджер в админке
         const tabs = document.getElementById('notif_tabs');
@@ -8229,6 +8256,147 @@ const app = {
         // Письма админа у монтажника показываются во вкладке «Переписка», в списке их нет —
         // иначе одно и то же сообщение висело бы дважды, с двумя разными полями ответа.
         listEl.innerHTML = h || '<div style="text-align: center; color: var(--text-sec); padding: 40px; font-size: 13px;">У вас пока нет уведомлений от клиентов.</div>';
+    },
+
+    // ═══════════ СМАЙЛИКИ В ПЕРЕПИСКЕ ═══════════
+    // Наборы свои, без библиотек и картинок: символы рисует шрифт системы, поэтому
+    // панель ничего не грузит и работает без сети. Первый набор — «Стройка и тепло»:
+    // в рабочей переписке зовут именно эти знаки, а не сердечки.
+    emojiSets: [
+        { icon: '🕘', name: 'Часто используемые', recent: true, chars: [] },
+        {
+            icon: '🔧', name: 'Стройка и тепло',
+            chars: '🔧 🔨 🪛 🪚 ⚙️ 🧰 🔩 ⛏️ 🧱 🏠 🏡 🏗️ 🚿 🛁 🚽 🔥 💧 ♨️ 🌡️ ❄️ ⚡ 🔌 💡 🪫 📏 📐 🧮 📦 🚚 🧯 ⏱️ 🔍 📋 📝 ✅ ❌ ⚠️ 🆗 💰 💵'.split(' ')
+        },
+        {
+            icon: '😀', name: 'Смайлы и люди',
+            chars: '😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😗 😚 😙 😋 😛 😜 🤪 😝 🤑 🤗 🤭 🤫 🤔 🤐 🤨 😐 😑 😶 😏 😒 🙄 😬 😌 😔 😪 🤤 😴 😷 🤒 🤕 🤢 🤮 🥵 🥶 😵 🤯 🤠 🥳 😎 🤓 🧐 😕 😟 🙁 😮 😯 😲 😳 🥺 😦 😧 😨 😰 😥 😢 😭 😱 😖 😣 😞 😓 😩 😫 🥱 😤 😡 😠 🤬 😈 💀 💩 🤝 👍 👎 👌 ✌️ 🤞 🤟 👊 ✊ 👋 🙏 💪 👀 🙌 👏 🫡 🤦 🤷 💬 👤 👨‍🔧 👷 🧑‍💻'.split(' ')
+        },
+        {
+            icon: '🐱', name: 'Животные и природа',
+            chars: '🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🙈 🙉 🙊 🐔 🐧 🐦 🐤 🦆 🦅 🦉 🦇 🐺 🐗 🐴 🦄 🐝 🐛 🦋 🐌 🐞 🐢 🐍 🐙 🦀 🐠 🐟 🐬 🐳 🦈 🌵 🌲 🌳 🌴 🌱 🌿 ☘️ 🍀 🍁 🍂 🍃 🌸 🌼 🌻 🌹 🌷 🌍 🌙 ⭐ 🌟 ☀️ ⛅ ☁️ 🌧️ ⛈️ 🌨️ 🌈 🌊 ⛄ 🌬️'.split(' ')
+        },
+        {
+            icon: '🍏', name: 'Еда и напитки',
+            chars: '🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🫐 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🥑 🍆 🥔 🥕 🌽 🌶️ 🥒 🥬 🥦 🧄 🧅 🍄 🥜 🌰 🍞 🥐 🥖 🥨 🧀 🥚 🍳 🥞 🥓 🍔 🍟 🍕 🌭 🥪 🌮 🍜 🍝 🍣 🍤 🍱 🥟 🍚 🍲 🥗 🍿 🧂 🍦 🍩 🍪 🎂 🍰 🍫 🍬 🍭 ☕ 🍵 🥤 🍺 🍻 🥂 🍷 🥃 🍾 🧊 💧'.split(' ')
+        },
+        {
+            icon: '⚽', name: 'Активность',
+            chars: '⚽ 🏀 🏈 ⚾ 🎾 🏐 🏉 🎱 🏓 🏸 🥅 🏒 🏑 🏏 ⛳ 🏹 🎣 🥊 🥋 ⛸️ 🎿 ⛷️ 🏂 🏋️ 🤸 🤼 🤽 🤾 🚴 🚵 🏊 🏄 🧗 🧘 🏆 🥇 🥈 🥉 🏅 🎖️ 🎯 🎮 🎲 🎳 🎪 🎬 🎤 🎧 🎵 🎸 🥁 🎺 🎻 🎨 ♟️'.split(' ')
+        },
+        {
+            icon: '🚗', name: 'Путешествия и места',
+            chars: '🚗 🚕 🚙 🚌 🚎 🏎️ 🚓 🚑 🚒 🚐 🛻 🚚 🚛 🚜 🏍️ 🛵 🚲 🛴 🚨 🚔 🚍 🚝 🚄 🚅 🚈 🚂 ✈️ 🛫 🛬 🚁 🚀 🛸 ⛵ 🚤 🛳️ ⛴️ ⚓ ⛽ 🚧 🚦 🚥 🗺️ 🗿 🗽 🏰 🏯 🏟️ 🎡 🎢 🏖️ 🏝️ ⛰️ 🏔️ 🌋 🏕️ 🏭 🏢 🏬 🏦 🏥 🏫 ⛪ 🕌 🏛️ 🌆 🌃 🌉'.split(' ')
+        },
+        {
+            icon: '💡', name: 'Предметы',
+            chars: '⌚ 📱 💻 🖥️ 🖨️ ⌨️ 🖱️ 💾 💿 📷 📹 🎥 📞 ☎️ 📠 📺 📻 🧭 ⏰ ⏳ 🔋 🔌 💡 🔦 🕯️ 🧯 🛢️ 💸 💳 🧾 📧 📨 📩 📤 📥 📦 📪 📫 📮 🗳️ ✏️ ✒️ 🖊️ 🖍️ 📝 💼 📁 📂 🗂️ 📅 📆 🗒️ 📇 📈 📉 📊 📋 📌 📍 📎 🖇️ 📏 📐 ✂️ 🗃️ 🗄️ 🗑️ 🔒 🔓 🔑 🗝️ 🔗 ⛓️ 🧲 🔬 🔭 📡 💊 🩹 🩺 🚪 🪟 🛏️ 🚿 🧴 🧹 🧺 🧻 🧼 🪣'.split(' ')
+        },
+        {
+            icon: '🔣', name: 'Символы',
+            chars: '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 💔 ❣️ 💕 💯 💥 💫 ⭐ 🌟 ✨ ⚡ 🔥 💧 ✅ ☑️ ✔️ ❌ ❎ ➕ ➖ ➗ ✖️ ♾️ ❗ ❓ ⁉️ ⚠️ 🚫 ⛔ 🔞 ♻️ ✳️ ❇️ 🔱 ⚜️ 🔰 ⭕ 🆗 🆕 🆒 🆓 🆙 🔝 🔜 🔙 🔄 🔃 ▶️ ⏸️ ⏹️ ⏺️ ⏭️ ⏮️ 🔀 🔁 🔂 🔊 🔇 🔔 🔕 ➡️ ⬅️ ⬆️ ⬇️ ↗️ ↘️ ↙️ ↖️ 🔴 🟠 🟡 🟢 🔵 🟣 ⚫ ⚪ 🟥 🟧 🟨 🟩 🟦 🟪 ⬛ ⬜'.split(' ')
+        }
+    ],
+
+    // Панель одна на всё приложение и живёт в конце body: и в модалке уведомлений,
+    // и в окне админки она должна всплывать поверх, ничем не обрезаясь.
+    toggleEmojiPicker: function (targetId, btn) {
+        if (this._emojiPanel && this._emojiPanel.classList.contains('open') && this._emojiTarget === targetId) {
+            this.closeEmojiPicker();
+            return;
+        }
+        this._emojiTarget = targetId;
+        if (!this._emojiPanel) {
+            const panel = document.createElement('div');
+            panel.className = 'emoji-panel';
+            panel.id = 'emoji_panel';
+            // Клик внутри панели не должен «проваливаться» в подложку модалки —
+            // иначе окно уведомлений закрывалось бы вместе с выбором смайлика
+            panel.onclick = (e) => e.stopPropagation();
+            document.body.appendChild(panel);
+            this._emojiPanel = panel;
+            // Клик мимо панели и Esc — закрыть. Слушатели ставим один раз.
+            document.addEventListener('mousedown', (e) => {
+                if (!this._emojiPanel || !this._emojiPanel.classList.contains('open')) return;
+                if (this._emojiPanel.contains(e.target)) return;
+                if (this._emojiBtn && this._emojiBtn.contains(e.target)) return;
+                this.closeEmojiPicker();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') this.closeEmojiPicker();
+            });
+        }
+        this._emojiBtn = btn || null;
+        if (!this._emojiSet) this._emojiSet = 1; // «Стройка и тепло» — рабочий набор
+        this.renderEmojiPanel();
+        this._emojiPanel.classList.add('open');
+        this.placeEmojiPanel();
+    },
+
+    closeEmojiPicker: function () {
+        if (this._emojiPanel) this._emojiPanel.classList.remove('open');
+    },
+
+    // Панель встаёт над кнопкой и прижимается к её правому краю; если сверху не
+    // хватает места (низкое окно, телефон) — раскрывается под кнопкой.
+    placeEmojiPanel: function () {
+        const panel = this._emojiPanel, btn = this._emojiBtn;
+        if (!panel || !btn) return;
+        const r = btn.getBoundingClientRect();
+        const w = panel.offsetWidth, h = panel.offsetHeight;
+        let left = Math.min(r.right - w, window.innerWidth - w - 8);
+        left = Math.max(8, left);
+        let top = r.top - h - 8;
+        if (top < 8) top = Math.min(r.bottom + 8, window.innerHeight - h - 8);
+        panel.style.left = left + 'px';
+        panel.style.top = Math.max(8, top) + 'px';
+    },
+
+    emojiRecent: function () {
+        try { return JSON.parse(localStorage.getItem('stout_emoji_recent') || '[]'); } catch (e) { return []; }
+    },
+
+    renderEmojiPanel: function () {
+        const panel = this._emojiPanel;
+        if (!panel) return;
+        const sets = this.emojiSets;
+        const idx = Math.min(Math.max(this._emojiSet || 0, 0), sets.length - 1);
+        const set = sets[idx];
+        const chars = set.recent ? this.emojiRecent() : set.chars;
+        const grid = chars.length
+            ? chars.map(c => `<button type="button" title="${c}" onclick="app.insertEmoji('${c}')">${c}</button>`).join('')
+            : '<div class="emoji-grid-empty">Здесь появятся смайлики, которые вы уже отправляли.</div>';
+        panel.innerHTML = `
+            <div class="emoji-tabs">
+                ${sets.map((s, i) => `<button type="button" class="emoji-tab ${i === idx ? 'active' : ''}" title="${s.name}" onclick="app.switchEmojiSet(${i})">${s.icon}</button>`).join('')}
+            </div>
+            <div class="emoji-set-name">${set.name}</div>
+            <div class="emoji-grid">${grid}</div>
+        `;
+    },
+
+    switchEmojiSet: function (i) {
+        this._emojiSet = i;
+        this.renderEmojiPanel();
+        this.placeEmojiPanel();
+    },
+
+    // Смайлик встаёт в место курсора, а не в конец: часто дописывают в середину
+    // уже набранного текста. Панель не закрываем — подряд ставят несколько.
+    insertEmoji: function (ch) {
+        const ta = document.getElementById(this._emojiTarget);
+        if (!ta) return;
+        const start = typeof ta.selectionStart === 'number' ? ta.selectionStart : ta.value.length;
+        const end = typeof ta.selectionEnd === 'number' ? ta.selectionEnd : start;
+        ta.value = ta.value.slice(0, start) + ch + ta.value.slice(end);
+        const pos = start + ch.length;
+        ta.focus();
+        try { ta.setSelectionRange(pos, pos); } catch (e) { /* input без выделения */ }
+
+        const recent = this.emojiRecent().filter(c => c !== ch);
+        recent.unshift(ch);
+        localStorage.setItem('stout_emoji_recent', JSON.stringify(recent.slice(0, 24)));
+        if (this._emojiSet === 0) this.renderEmojiPanel();
     },
 
     // ═══════════ ПЕРЕПИСКА МОНТАЖНИКА С АДМИНИСТРАТОРОМ ═══════════
@@ -8702,6 +8870,8 @@ const app = {
 
     closeNotificationsModal: function () {
         document.getElementById('notifications_modal_overlay').style.display = 'none';
+        // Панель смайликов живёт в body и сама об окне не знает — гасим вместе с ним
+        this.closeEmojiPicker();
     },
 
     SUPER_ADMIN_EMAILS: ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'],
@@ -8838,7 +9008,7 @@ const app = {
         document.getElementById('admin_modal_overlay').style.display = 'flex';
         this.loadAdminData();
     },
-    closeAdminModal: function () { document.getElementById('admin_modal_overlay').style.display = 'none'; },
+    closeAdminModal: function () { document.getElementById('admin_modal_overlay').style.display = 'none'; this.closeEmojiPicker(); },
 
     // Общие условия фильтра списка монтажников — переиспользуются и для загрузки страницы
     // списка, и для массового назначения дистрибьютора всем, кто попадает под фильтр
@@ -10309,13 +10479,21 @@ const app = {
         Object.values(groups).forEach(g => g.items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
 
         const userName = (u, id) => u ? (u.username || u.email || u.phone) : `Пользователь #${(id || '').substring(0, 6)}`;
+        // Докуда переписка уже прочитана — по диалогу, локально на этом устройстве.
+        // В базе для этого ничего нет: сообщения монтажников читает только админ,
+        // и заводить ради счётчика ещё одну таблицу с квитанциями незачем.
+        const seenMap = this.adminChatSeen();
         const adminThreads = Object.values(groups).map(g => {
             const name = userName(g.user, g.userId);
             const last = g.items[g.items.length - 1];
-            // Сколько сообщений монтажника подряд висит без вашего ответа — это число
-            // и показывается зелёным кружком в списке, как счётчик непрочитанных в Telegram
+            // Зелёный кружок в списке — сообщения монтажника, которых вы ещё не читали.
+            // Раньше считались все подряд идущие сообщения без вашего ответа, поэтому
+            // счётчик висел и на открытом, уже прочитанном диалоге — пока не ответишь.
+            const seenAt = seenMap[g.userId] ? new Date(seenMap[g.userId]).getTime() : 0;
             let pending = 0;
-            for (let i = g.items.length - 1; i >= 0 && g.items[i].__from === 'user'; i--) pending++;
+            for (let i = g.items.length - 1; i >= 0 && g.items[i].__from === 'user'; i--) {
+                if (new Date(g.items[i].created_at).getTime() > seenAt) pending++;
+            }
             return {
                 id: g.userId, kind: 'admin', name, user: g.user, items: g.items, last, pending,
                 awaiting: !!last && last.__from === 'user',
@@ -10360,6 +10538,17 @@ const app = {
         }
         const activeId = this._adminChatId;
         this._lastRenderedChatId = activeId;
+
+        // Открытый диалог виден целиком — значит прочитан: счётчик у него гаснет сразу,
+        // а не висит до вашего ответа. Отметку двигаем на последнее сообщение диалога.
+        const openThread = threads.find(t => t.id === activeId);
+        if (openThread && openThread.kind === 'admin' && openThread.last) {
+            openThread.pending = 0;
+            if (seenMap[activeId] !== openThread.last.created_at) {
+                seenMap[activeId] = openThread.last.created_at;
+                try { localStorage.setItem('stout_admin_chat_seen', JSON.stringify(seenMap)); } catch (e) { /* переполнено — не критично */ }
+            }
+        }
 
         // ── Левая панель: список диалогов ──
         const lastBroadcast = broadcastItems[broadcastItems.length - 1];
@@ -10559,6 +10748,7 @@ const app = {
                     ` : `
                     <div class="admin-chat-compose">
                         <textarea id="admin_msg_text" rows="1" placeholder="${esc(composePlaceholder)}" ${isViewer ? 'disabled' : ''} onkeydown="app.adminChatKeydown(event)"></textarea>
+                        <button class="emoji-open-btn" type="button" title="Смайлики" ${isViewer ? 'disabled' : ''} onclick="app.toggleEmojiPicker('admin_msg_text', this)">🙂</button>
                         <button class="admin-chat-send" title="Отправить (Enter)" ${isViewer ? 'disabled' : ''} onclick="app.sendAdminMessage()">➤</button>
                     </div>`}
                 </div>
@@ -10629,6 +10819,19 @@ const app = {
         });
         const nores = document.getElementById('admin_recip_nores');
         if (nores) nores.style.display = visible ? 'none' : '';
+    },
+
+    // Открыт ли прямо сейчас мессенджер админки на переписке с этим человеком
+    adminChatIsOpenFor: function (userId) {
+        const overlay = document.getElementById('admin_modal_overlay');
+        return !!(overlay && overlay.style.display === 'flex'
+            && this._adminTab === 'messages'
+            && userId && String(this._adminChatId) === String(userId));
+    },
+
+    // Отметки «докуда прочитано» по диалогам админки: { id_монтажника: время_последнего_прочитанного }
+    adminChatSeen: function () {
+        try { return JSON.parse(localStorage.getItem('stout_admin_chat_seen') || '{}') || {}; } catch (e) { return {}; }
     },
 
     openAdminChat: function (id) {
