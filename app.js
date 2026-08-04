@@ -7558,7 +7558,11 @@ const app = {
                 if (!this._msgCache) this._msgCache = [];
                 let msgQuery = supabaseClient
                     .from('messages')
-                    .select('id, sender_id, recipient_id, text, type, parent_id, created_at')
+                    // Звёздочка, а не перечисление: в таблице нет тяжёлых полей (вложения
+                    // живут в другой), зато к ней добавляются колонки — например
+                    // sender_name (подпись наблюдателя). С перечислением запрос падал бы
+                    // целиком, пока миграция не выполнена, и человек остался бы без писем.
+                    .select('*')
                     .or(`recipient_id.eq.${uRow.id},recipient_id.is.null,sender_id.eq.${uRow.id}`)
                     .order('created_at', { ascending: false });
                 const newestKnown = this._msgCache.reduce((mx, m) => (!mx || m.created_at > mx) ? m.created_at : mx, null);
@@ -7589,7 +7593,11 @@ const app = {
                             notifications.push({
                                 id: msg.id,
                                 type: 'admin_message',
-                                projectName: msg.type === 'broadcast' ? '📢 Объявление для всех' : '✉️ Личное сообщение от администратора',
+                                // Ответы наблюдателей подписаны именем — показываем его
+                                // вместо безликого «от администратора»
+                                projectName: msg.type === 'broadcast'
+                                    ? '📢 Объявление для всех'
+                                    : (msg.sender_name ? `✉️ Сообщение от ${msg.sender_name}` : '✉️ Личное сообщение от администратора'),
                                 status: 'message',
                                 comment: msg.text,
                                 time: msg.created_at,
@@ -8410,12 +8418,42 @@ const app = {
     // (this._msgCache), поэтому отдельных запросов в базу окно не делает.
     // Классы пузырей достались от админки и названы с её точки зрения:
     // from-admin — синий справа (здесь это «мы»), from-user — белый слева (админ).
+    /**
+     * Своя строка в таблице пользователей — нужна переписке, чтобы отличать свои
+     * сообщения от входящих. Обычно её заполняет опрос уведомлений, но он может
+     * не успеть или молча выйти (нет сети, не поднялась сессия), и тогда окно
+     * переписки говорило «войдите в аккаунт» человеку, который уже вошёл.
+     * Поэтому спрашиваем базу сами и запоминаем.
+     */
+    resolveMeRow: async function () {
+        if (this._meRow && this._meRow.id) return this._meRow;
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            const authId = (session && session.user && session.user.id)
+                || (this.state.tgUser && this.state.tgUser.authUserId);
+            if (!authId) return null;
+            const { data } = await supabaseClient.from('users')
+                .select('id, auth_user_id, email, username').eq('auth_user_id', authId).maybeSingle();
+            if (data && data.id) this._meRow = data;
+            return this._meRow;
+        } catch (e) {
+            console.warn('[переписка] не удалось определить пользователя:', e.message || e);
+            return null;
+        }
+    },
+
     renderUserChat: function () {
         const body = document.getElementById('user_chat_body');
         if (!body) return;
         const meId = this._meRow && this._meRow.id;
         if (!meId) {
-            body.innerHTML = '<div class="admin-chat-empty">Войдите в аккаунт, чтобы написать администратору.</div>';
+            // Данных о себе ещё нет — спрашиваем базу и рисуем повторно. Поле ввода
+            // при этом не блокируем: написать можно и до того, как строка доедет.
+            body.innerHTML = '<div class="admin-chat-empty">Загружаем переписку…</div>';
+            this.resolveMeRow().then(row => {
+                if (row && row.id) this.renderUserChat();
+                else body.innerHTML = '<div class="admin-chat-empty">Переписки пока нет. Напишите — администратор ответит, а ответ придёт сюда же.</div>';
+            });
             return;
         }
 
@@ -8459,7 +8497,9 @@ const app = {
                 && (new Date(next.created_at) - new Date(m.created_at)) < SERIE_GAP_MS;
             const serieCls = (sameAsNext ? '' : ' tail') + (sameAsPrev || newDay || i === 0 ? '' : ' admin-chat-serie-gap');
 
-            const from = mine ? '' : (m.type === 'broadcast' ? '📢 Объявление для всех' : 'Администратор');
+            // Подпись входящего: имя автора, если оно есть в сообщении (так подписаны
+            // ответы наблюдателей), иначе привычное «Администратор».
+            const from = mine ? '' : (m.type === 'broadcast' ? '📢 Объявление для всех' : (m.sender_name || 'Администратор'));
             html += `
                 <div class="admin-chat-bubble ${mine ? 'from-admin' : 'from-user'}${serieCls}">
                     ${(!mine && !sameAsPrev) ? `<div class="user-chat-from">${from}</div>` : ''}
@@ -8501,8 +8541,10 @@ const app = {
         const btn = document.getElementById('user_chat_send');
         const text = (inp && inp.value || '').trim();
         if (!text) return;
-        const meId = this._meRow && this._meRow.id;
-        if (!meId) { app.alert('Необходимо авторизоваться, чтобы написать администратору.'); return; }
+        // Не отказываем заранее из-за незагруженных данных о себе: сначала пробуем
+        // их получить, а если не вышло — всё равно отправляем. sendUserReply ищет
+        // пользователя сам и, если человек правда не вошёл, скажет об этом точнее.
+        const meId = (this._meRow && this._meRow.id) || ((await this.resolveMeRow()) || {}).id || null;
 
         // Ответ привязывается к последнему письму администратора. Если он ещё ничего
         // не писал, отправляем без привязки — в панели управления такое сообщение всё
@@ -8523,7 +8565,11 @@ const app = {
             });
             this.renderUserChat();
         } catch (e) {
-            app.alert('Не удалось отправить сообщение: ' + (e.message || e));
+            // Техническую причину — в журнал, человеку короткий текст и код, чтобы
+            // было что назвать администратору, если повторится
+            console.error('[переписка] сообщение не отправилось:', e);
+            app.alert('Сообщение не отправилось. Проверьте связь и попробуйте ещё раз.'
+                + (e && e.code ? ' (код ' + e.code + ')' : ''));
         } finally {
             if (btn) btn.disabled = false;
         }
@@ -10703,8 +10749,14 @@ const app = {
                 }
 
                 const isUser = m.__from === 'user';
+                // Кто из своих написал: письма наблюдателей подписаны именем, чтобы
+                // в общей переписке было видно, кто ответил монтажнику. Письма
+                // владельца и администраторов подписи не несут и выглядят как раньше.
+                const byName = !isUser && m.sender_name && !sameAsPrev
+                    ? `<div class="admin-chat-sender">${esc(m.sender_name)}</div>` : '';
                 bodyHtml += `
                     <div class="admin-chat-bubble ${isUser ? 'from-user' : 'from-admin'}${serieCls}">
+                        ${byName}
                         <div class="admin-chat-text">${esc(m.text)}<span class="admin-chat-meta">
                             <span class="admin-chat-metatime">${clockTime(m.created_at)}</span>
                             ${isUser ? '' : ticks(m, isBroadcastChat)}
@@ -10792,10 +10844,14 @@ const app = {
                     ${isMgrChat ? `
                     <div class="admin-chat-readonly">👁 Вы смотрите чужую переписку. Написать в неё нельзя — чтобы связаться с монтажником, откройте его диалог в списке слева.</div>
                     ` : `
+                    <!-- Наблюдателю переписка открыта на запись, в отличие от остальной
+                         панели: смотреть на вопрос монтажника и не иметь возможности
+                         ответить — бессмысленно. Удаление сообщений и переписок ему
+                         по-прежнему закрыто (см. кнопки с корзиной выше). -->
                     <div class="admin-chat-compose">
-                        <textarea id="admin_msg_text" rows="1" placeholder="${esc(composePlaceholder)}" ${isViewer ? 'disabled' : ''} onkeydown="app.adminChatKeydown(event)"></textarea>
-                        <button class="emoji-open-btn" type="button" title="Смайлики" ${isViewer ? 'disabled' : ''} onclick="app.toggleEmojiPicker('admin_msg_text', this)">🙂</button>
-                        <button class="admin-chat-send" title="Отправить (Enter)" ${isViewer ? 'disabled' : ''} onclick="app.sendAdminMessage()">➤</button>
+                        <textarea id="admin_msg_text" rows="1" placeholder="${esc(composePlaceholder)}" onkeydown="app.adminChatKeydown(event)"></textarea>
+                        <button class="emoji-open-btn" type="button" title="Смайлики" onclick="app.toggleEmojiPicker('admin_msg_text', this)">🙂</button>
+                        <button class="admin-chat-send" title="Отправить (Enter)" onclick="app.sendAdminMessage()">➤</button>
                     </div>`}
                 </div>
             </div>
@@ -10976,10 +11032,9 @@ const app = {
     },
 
     sendAdminMessage: async function () {
-        if (this.getAdminRole() === 'viewer') {
-            app.alert('Режим просмотра. Отправка сообщений запрещена.');
-            return;
-        }
+        // Наблюдателю отправка разрешена намеренно: он ведёт переписку с монтажниками,
+        // хотя всё остальное в панели ему только на просмотр. Запрет стоял здесь и на
+        // поле ввода — из-за него ответить на вопрос монтажника было нечем.
         const textEl = document.getElementById('admin_msg_text');
         const text = textEl ? textEl.value : '';
         // Получатель — это открытый диалог: отдельного выпадающего списка больше нет
@@ -11001,14 +11056,15 @@ const app = {
             const recipientId = recipientVal === 'all' ? null : recipientVal;
             const type = recipientVal === 'all' ? 'broadcast' : 'private';
 
-            // Получаем ID админа
+            // Получаем ID админа. Заодно ФИО — им подписывается письмо наблюдателя
+            const cols = 'id, username, email, last_name, first_name, middle_name';
             let uRow = null;
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
-                let { data } = await supabaseClient.from('users').select('id').eq('auth_user_id', session.user.id).maybeSingle();
+                let { data } = await supabaseClient.from('users').select(cols).eq('auth_user_id', session.user.id).maybeSingle();
                 uRow = data;
             } else if (this.state.tgUser && this.state.tgUser.authUserId) {
-                let { data } = await supabaseClient.from('users').select('id').eq('auth_user_id', this.state.tgUser.authUserId).maybeSingle();
+                let { data } = await supabaseClient.from('users').select(cols).eq('auth_user_id', this.state.tgUser.authUserId).maybeSingle();
                 uRow = data;
             }
             if (!uRow) {
@@ -11016,12 +11072,28 @@ const app = {
                 return;
             }
 
-            const { error } = await supabaseClient.from('messages').insert({
+            const row = {
                 sender_id: uRow.id,
                 recipient_id: recipientId,
                 text: text.trim(),
                 type: type
-            });
+            };
+            // Имя подставляем только наблюдателю: монтажник не может узнать его по
+            // sender_id (чужие строки таблицы пользователей ему не отдаются), а
+            // письма владельца и администраторов остаются подписаны «Администратор».
+            if (this.getAdminRole() === 'viewer') {
+                row.sender_name = this.getAdminUserDisplayName(uRow);
+            }
+
+            let { error } = await supabaseClient.from('messages').insert(row);
+            // Колонки может не быть, если миграция 20260804_add_message_sender_name.sql
+            // ещё не выполнена — тогда отправляем как раньше, без подписи, лишь бы
+            // сообщение дошло (код 42703 — «нет такой колонки»).
+            if (error && (error.code === '42703' || /sender_name/i.test(error.message || ''))) {
+                console.warn('[сообщения] колонки sender_name нет — письмо уйдёт без подписи');
+                delete row.sender_name;
+                ({ error } = await supabaseClient.from('messages').insert(row));
+            }
 
             if (error) throw error;
 
@@ -11102,13 +11174,26 @@ const app = {
                 return;
             }
 
-            const { error } = await supabaseClient.from('messages').insert({
+            const row = {
                 sender_id: uRow.id,
                 recipient_id: null, // Предназначен админу
                 text: text.trim(),
                 type: 'reply',
                 parent_id: parentId
-            });
+            };
+            let { error } = await supabaseClient.from('messages').insert(row);
+
+            // Письмо, на которое отвечают, могло быть удалено админом («Удалить
+            // переписку») или подчищено автоочисткой через 90 дней, а карточка с ним
+            // осталась в приложении монтажника. База отклоняет такой ответ по внешнему
+            // ключу (код 23503), и человек упирался в «не могу ответить». Повторяем без
+            // привязки: в панели управления диалоги группируются по автору, а не по
+            // родителю, поэтому сообщение всё равно придёт в его переписку.
+            if (error && (error.code === '23503' || /foreign key|parent_id/i.test(error.message || ''))) {
+                console.warn('[переписка] родительское письмо удалено — отправляем без привязки');
+                row.parent_id = null;
+                ({ error } = await supabaseClient.from('messages').insert(row));
+            }
 
             if (error) throw error;
 
