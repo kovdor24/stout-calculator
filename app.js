@@ -1446,6 +1446,61 @@ const app = {
         return this._priceExtraLoadPromise;
     },
 
+    // Общий прайс-лист ТЕРЕМ в тот же поисковый индекс: до этого ручное добавление
+    // видело только catalog.js и price_extra.json, и половины номенклатуры для него
+    // просто не существовало — инсталляций, например, в каталоге одна, а в прайсе 72.
+    // Позиции идут вперемешку с каталожными, отдельной группой не выделяются; при
+    // равной релевантности проверенные позиции каталога всё равно оказываются выше
+    // (сортировка по .extra в searchCatalog).
+    //
+    // Цены в индексе уже в рублях: листы, где цена стоит только в евро, пересчитывает
+    // price_update.php при сборке — по курсу самой книги (медиана отношений ₽/€ по
+    // таблицам с обеими ценами). Здесь пересчитывать нечего и не по чему: какая
+    // позиция пришла из евро-листа, в индексе не помечено.
+    _ensurePriceIndexLoaded: function () {
+        if (this._priceIndexLoadPromise) return this._priceIndexLoadPromise;
+        this._buildCatalogSearchIndex();
+
+        // Распознавание грузит тот же файл. Если оно уже сходило за ним — берём
+        // готовое, второй раз мегабайты не тянем.
+        const ready = (typeof RecognizeUI !== 'undefined' && RecognizeUI._priceItems && RecognizeUI._priceItems.length)
+            ? Promise.resolve(RecognizeUI._priceItems)
+            : fetch('https://proxy.heatcalc.ru/price_index.php')
+                .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+                .catch(() => fetch('price_index.json').then(r => r.ok ? r.json() : []))
+                .then(d => (d && d.items) || []);
+
+        this._priceIndexLoadPromise = ready
+            .then(items => {
+                const idx = this._catalogSearchIndex;
+                const seen = new Set(idx.map(it => it.id));
+                // Тот же фильтр, что и у price_extra: комплектующие и запчасти в ручном
+                // добавлении только засоряют выдачу — их подбирают не по названию.
+                const isSparePart = /комплектующ|запасны?е\s+част/i;
+                (items || []).forEach(it => {
+                    if (!it || !it.n || typeof it.p !== 'number' || it.p <= 0) return;
+                    // Позиции без артикула в прайсе есть («Лён сантехнический коса 200 г»),
+                    // и в смете они полезны — ключ таким собираем из названия.
+                    const id = (it.a && String(it.a).trim()) || ('px_' + it.n.slice(0, 40));
+                    if (seen.has(id) || isSparePart.test(it.n)) return;
+                    seen.add(id);
+                    const sheet = it.s || '';
+                    const brand = /rommer/i.test(sheet) || /^rommer\b/i.test(it.n) ? 'ROMMER'
+                        : (/stout/i.test(sheet) || /^stout\b/i.test(it.n) ? 'STOUT' : (sheet.split(/[\s(]/)[0] || ''));
+                    const t = this._tokenizeSearchText(it.n + ' ' + brand + ' ' + sheet);
+                    idx.push({
+                        id: id, name: it.n, price: it.p, brand: brand,
+                        article: (it.a && String(it.a).trim()) || '',
+                        _words: t.words, _numbers: new Set(t.numbers), _abbrev: t.abbrev,
+                        _countedNumbers: t.countedNumbers, extra: true,
+                        _hideForBase: brand === 'ROMMER'
+                    });
+                });
+            })
+            .catch(() => { });
+        return this._priceIndexLoadPromise;
+    },
+
     // Поиск по каталогу: разбираем запрос на слова/числа и ищем совпадения независимо от порядка
     // ("Коллектор 5 выходов" находит "...х5 вых."), плюс отдельно — точное совпадение по артикулу.
     searchCatalog: function (query) {
@@ -2821,8 +2876,9 @@ const app = {
         if (document.body.classList.contains('menu-open')) {
             try { this.toggleMenu(); } catch (e) { }
         }
-        // Догружаем расширенный прайс-лист в фоне; когда придёт — обновим уже показанные подсказки
-        this._ensurePriceExtraLoaded().then(() => {
+        // Догружаем расширенный прайс и общий прайс-лист ТЕРЕМ в фоне; когда придут —
+        // обновим уже показанные подсказки. Поиск до этого работает по каталогу.
+        Promise.all([this._ensurePriceExtraLoaded(), this._ensurePriceIndexLoaded()]).then(() => {
             if (nameInput && nameInput.value.trim().length >= 2 && document.body.contains(nameInput)) {
                 const r = searchWithFallback(nameInput.value);
                 renderResults(r.list, r.loose);
@@ -3426,7 +3482,8 @@ const app = {
         run();
         // Прайс-лист сверх каталога догружается в фоне — когда придёт,
         // переспрашиваем поиск, чтобы позиции из него тоже попали в список.
-        this._ensurePriceExtraLoaded().then(() => { if (document.body.contains(q)) run(); });
+        Promise.all([this._ensurePriceExtraLoaded(), this._ensurePriceIndexLoaded()])
+            .then(() => { if (document.body.contains(q)) run(); });
         setTimeout(() => { q.focus(); q.select(); }, 30);
     },
 
