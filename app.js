@@ -766,7 +766,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null },
 
     lastSavedStateString: "",
 
@@ -18187,7 +18187,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType,
@@ -19287,6 +19287,7 @@ const app = {
         }
         else if (originalId === 'SAC-0020-411040_boiler') { this.state.boilerFrameFastenerType = (this.state.boilerFrameFastenerType === 'anchor') ? 'stud' : 'anchor'; }
         else if (originalId === 'SDG-0001-002501_polis') { this.state.polisKit = (this.state.polisKit === 'parts') ? 'gbm' : 'parts'; }
+        else if (originalId === 'SFA-0025-001650_bottom') { const _bk = this.state.radBottomKit || 'gtube'; this.state.radBottomKit = (_bk === 'gtube') ? 'shoe' : (_bk === 'shoe') ? 'shoe_np' : 'gtube'; }
 
         else if (originalId.startsWith('SAC-0030-000825')) { this.state.expansionTankMountType = (this.state.expansionTankMountType === 'standard') ? 'stout' : 'standard'; }
         else if (originalId === 'SAC-0022-600001') {
@@ -19639,6 +19640,18 @@ const app = {
             customAlts = [
                 { id: 'gbm', name: 'Группа быстрого монтажа DN25 (прямая, в теплоизоляции)', brand: 'STOUT', price: _gbmP, imgId: 'SDG-0001-002501' },
                 { id: 'parts', name: 'Сборная обвязка: 2 крана шаровых с американкой 1"', brand: 'STOUT', price: _bvP * 2, imgId: 'SVB-0007-000025' }
+            ];
+        }
+        else if (item.originalId === 'SFA-0025-001650_bottom') {
+            // Подключение к нижним выводам радиатора. Цены в списке — за ОДИН радиатор
+            // (комплект целиком), иначе варианты не сравнить: у Г-образных трубок в набор
+            // входят ещё скоба, гильзы и компрессионные фитинги, у «башмака» — ничего.
+            const _p = (arr, i) => ((arr && arr[i]) ? arr[i].price : 0) || 0;
+            const _caseP = _p(catalog.rad_shoe_set, 2);
+            customAlts = [
+                { id: 'gtube', name: 'Г-образные трубки 16/500 + скоба, гильзы, фитинги', brand: 'STOUT', price: _p(catalog.rad_tube_set, 0) * 2 + _p(catalog.rad_tube_set, 1) + _p(catalog.rad_tube_set, 2) * 2 + _p(catalog.rad_tube_set, 3) * 2, imgId: 'SFA-0025-001650' },
+                { id: 'shoe', name: 'Фиксаторы поворота «башмак» (базовый) + защитные кожухи', brand: 'STOUT', price: _p(catalog.rad_shoe_set, 0) + _caseP, imgId: 'SFA-0038-100016' },
+                { id: 'shoe_np', name: 'Фиксаторы «башмак» без подпятника + защитные кожухи', brand: 'STOUT', price: _p(catalog.rad_shoe_set, 1) + _caseP, imgId: 'SFA-0038-300016' }
             ];
         }
         else if (item.originalId === 'SAC-0020-411040_boiler') {
@@ -20999,6 +21012,9 @@ const app = {
                 else if (item.originalId === 'SDG-0001-002501_polis') {
                     isActive = (alt.id === ((this.state.polisKit === 'parts') ? 'parts' : 'gbm'));
                 }
+                else if (item.originalId === 'SFA-0025-001650_bottom') {
+                    isActive = (alt.id === (this.state.radBottomKit || 'gtube'));
+                }
                 else if (alt.id === 'hidden' || alt.id === 'double' || alt.id === 'single') {
                     isActive = (alt.id === this.state.pipeMountType);
                 }
@@ -22343,6 +22359,13 @@ const app = {
                 if (this.state.elBoilerPower != null) { this.state.elBoilerPower = null; changed = true; }
                 if (this.state.boilerSeriesManual) { this.state.boilerSeriesManual = false; changed = true; }
             }
+            // Вариант нижнего подключения радиаторов живёт не в swaps, а в radBottomKit —
+            // сброс позиции должен возвращать Г-образные трубки, иначе строка осталась бы
+            // «башмаком», а значок ручной правки с неё уже исчез.
+            if (originalId === 'SFA-0025-001650_bottom' && (this.state.radBottomKit || 'gtube') !== 'gtube') {
+                this.state.radBottomKit = 'gtube';
+                changed = true;
+            }
             if (originalId && this.state.swapQtyRatios && this.state.swapQtyRatios[originalId] !== undefined) {
                 delete this.state.swapQtyRatios[originalId];
             }
@@ -22531,6 +22554,9 @@ const app = {
         }
         else if (originalId === 'SDG-0001-002501_polis') {
             this.state.polisKit = (chosenId === 'parts') ? 'parts' : 'gbm';
+        }
+        else if (originalId === 'SFA-0025-001650_bottom') {
+            this.state.radBottomKit = (chosenId === 'shoe' || chosenId === 'shoe_np') ? chosenId : 'gtube';
         }
         else if (originalId === 'SAC-0022-283020_boiler') {
             if (chosenId === 'SAC-0022-283020') this.state.boilerFrameType = 'profile_single';
@@ -27648,7 +27674,7 @@ const app = {
             let forceAnalog = false;
             let forceStout = false;
 
-            let isCustomToggle = ['standard', 'basic', 'pro', 'std', 'comfort', 'economy', 'insulated', 'split', 'insulated_mp', 'split_mp', 'pex', 'metal_plastic', 'mat', 'xps', 'sirio', 'top', 'base', 'epc12auto', 'epc2', 'epc4', 'epc5', 'relay_krs5', 'scq', 'scn', 'straight', 'angled', 'proaqua', 'wavin', 'double', 'single', 'hidden', 'sensor', 'gbm', 'parts'].includes(manualSwapId);
+            let isCustomToggle = ['standard', 'basic', 'pro', 'std', 'comfort', 'economy', 'insulated', 'split', 'insulated_mp', 'split_mp', 'pex', 'metal_plastic', 'mat', 'xps', 'sirio', 'top', 'base', 'epc12auto', 'epc2', 'epc4', 'epc5', 'relay_krs5', 'scq', 'scn', 'straight', 'angled', 'proaqua', 'wavin', 'double', 'single', 'hidden', 'sensor', 'gbm', 'parts', 'gtube', 'shoe', 'shoe_np'].includes(manualSwapId);
 
             if (manualSwapId && !isCustomToggle) {
                 let analog = item.rommer;
@@ -30246,7 +30272,33 @@ const app = {
                 if (totalRadCountBottom > 0) {
                     let activeHValve = catalog.h_valves.find(v => v.type === this.state.connectionType) || catalog.h_valves[0]; activeHValve.alts = catalog.h_valves; addToBill(activeHValve, totalRadCountBottom, this.getDesc('rad_valves'), grp);
                     if (totalRadCountBottomSteel > 0) { addToBill(catalog.rad_kits[0], totalRadCountBottomSteel * 2, "Ниппель переходной.", grp); }
-                    if (activeHValve.id === 'SVH-0002-000020') { addToBill(catalog.rad_tube_set[0], totalRadCountBottom * 2, "Трубка Г-образная.", grp); addToBill(catalog.rad_tube_set[1], totalRadCountBottom, "Скоба фиксатор.", grp); addToBill(catalog.rad_tube_set[2], totalRadCountBottom * 2, "Гильза 16.", grp); addToBill(catalog.rad_tube_set[3], totalRadCountBottom * 2, "Фитинг компрессионный.", grp); }
+                    // Подключение к нижним выводам радиатора при трубах из пола: либо
+                    // Г-образные трубки с гильзами и компрессионными фитингами, либо фиксаторы
+                    // поворота типа «башмак» — они держат ту же трубу 16, что идёт по полу,
+                    // поэтому отдельная трубка и фитинг под неё не нужны вовсе.
+                    // Оба варианта висят на одном originalId-«якоре»: строка остаётся в смете
+                    // всегда, и с любого варианта есть куда кликнуть, чтобы вернуться.
+                    if (activeHValve.id === 'SVH-0002-000020') {
+                        // Цены в списке нулевые намеренно: реальные подставляет модалка
+                        // (customAlts), а getCheapestAlternative пропускает позиции с price <= 0 —
+                        // иначе в режиме «Аналог» он подменил бы комплект этим списком.
+                        const _radBottomKitAlts = [
+                            { id: 'gtube', name: 'Г-образные трубки 16/500 мм', brand: 'STOUT', price: 0 },
+                            { id: 'shoe', name: 'Фиксаторы поворота «башмак» 16 мм (базовый комплект)', brand: 'STOUT', price: 0 },
+                            { id: 'shoe_np', name: 'Фиксаторы поворота «башмак» 16 мм (без подпятника)', brand: 'STOUT', price: 0 }
+                        ];
+                        const _bottomKit = this.state.radBottomKit || 'gtube';
+                        if (_bottomKit === 'shoe' || _bottomKit === 'shoe_np') {
+                            const _shoe = catalog.rad_shoe_set[_bottomKit === 'shoe_np' ? 1 : 0];
+                            addToBill({ ..._shoe, originalId: 'SFA-0025-001650_bottom', alts: _radBottomKitAlts }, totalRadCountBottom, "Фиксаторы поворота «башмак»: 1 комплект (2 шт.) на радиатор.", grp);
+                            addToBill(catalog.rad_shoe_set[2], totalRadCountBottom, "Защитные кожухи на трубу: 1 комплект (2 шт.) на радиатор.", grp);
+                        } else {
+                            addToBill({ ...catalog.rad_tube_set[0], originalId: 'SFA-0025-001650_bottom', alts: _radBottomKitAlts }, totalRadCountBottom * 2, "Трубка Г-образная.", grp);
+                            addToBill(catalog.rad_tube_set[1], totalRadCountBottom, "Скоба фиксатор.", grp);
+                            addToBill(catalog.rad_tube_set[2], totalRadCountBottom * 2, "Гильза 16.", grp);
+                            addToBill(catalog.rad_tube_set[3], totalRadCountBottom * 2, "Фитинг компрессионный.", grp);
+                        }
+                    }
                 }
                 if (totalRadCountSide > 0) {
                     // #11: под ДИЗАЙН-радиаторы (isDesignRad) по умолчанию подбираем дизайнерскую
@@ -31969,6 +32021,14 @@ const app = {
             let gTubes = this.currentEquipmentList.filter(x => String(x.group || '').startsWith("3.") && (x.name || '').toLowerCase().includes("трубка г-образная")).reduce((sum, x) => sum + x.q, 0);
             if (gTubes > 0) {
                 addToWorks("Монтаж Г-образной трубки подключения радиатора", gTubes, 900, "шт", radGroup);
+            }
+
+            // Монтаж фиксаторов поворота типа «башмак» — второй вариант того же
+            // подключения. Считаем по комплектам (комплект = 2 фиксатора на радиатор),
+            // поэтому расценка тут за радиатор, а не за одну подводку.
+            let shoeKits = this.currentEquipmentList.filter(x => String(x.group || '').startsWith("3.") && (x.name || '').toLowerCase().includes("фиксаторов поворота")).reduce((sum, x) => sum + x.q, 0);
+            if (shoeKits > 0) {
+                addToWorks("Монтаж комплекта фиксаторов поворота \"башмак\"", shoeKits, 600, "шт", radGroup);
             }
 
             // Монтаж настенного регулятора Vartronic
