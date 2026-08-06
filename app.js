@@ -19646,13 +19646,20 @@ const app = {
             // Подключение к нижним выводам радиатора. Цены в списке — за ОДИН радиатор
             // (комплект целиком), иначе варианты не сравнить: у Г-образных трубок в набор
             // входят ещё скоба, гильзы и компрессионные фитинги, у «башмака» — ничего.
+            // Единица вынесена в название: цена в шапке модалки берётся у активного
+            // варианта, и без пометки читалась бы как цена одной трубки.
             const _p = (arr, i) => ((arr && arr[i]) ? arr[i].price : 0) || 0;
             const _caseP = _p(catalog.rad_shoe_set, 2);
             customAlts = [
-                { id: 'gtube', name: 'Г-образные трубки 16/500 + скоба, гильзы, фитинги', brand: 'STOUT', price: _p(catalog.rad_tube_set, 0) * 2 + _p(catalog.rad_tube_set, 1) + _p(catalog.rad_tube_set, 2) * 2 + _p(catalog.rad_tube_set, 3) * 2, imgId: 'SFA-0025-001650' },
-                { id: 'shoe', name: 'Фиксаторы поворота «башмак» (базовый) + защитные кожухи', brand: 'STOUT', price: _p(catalog.rad_shoe_set, 0) + _caseP, imgId: 'SFA-0038-100016' },
-                { id: 'shoe_np', name: 'Фиксаторы «башмак» без подпятника + защитные кожухи', brand: 'STOUT', price: _p(catalog.rad_shoe_set, 1) + _caseP, imgId: 'SFA-0038-300016' }
+                { id: 'gtube', name: 'Г-образные трубки 16/500 + скоба, гильзы, фитинги (на радиатор)', brand: 'STOUT', price: _p(catalog.rad_tube_set, 0) * 2 + _p(catalog.rad_tube_set, 1) + _p(catalog.rad_tube_set, 2) * 2 + _p(catalog.rad_tube_set, 3) * 2, imgId: 'SFA-0025-001650' },
+                { id: 'shoe', name: 'Фиксаторы поворота «башмак» (базовый) + защитные кожухи (на радиатор)', brand: 'STOUT', price: _p(catalog.rad_shoe_set, 0) + _caseP, imgId: 'SFA-0038-100016' },
+                { id: 'shoe_np', name: 'Фиксаторы «башмак» без подпятника + защитные кожухи (на радиатор)', brand: 'STOUT', price: _p(catalog.rad_shoe_set, 1) + _caseP, imgId: 'SFA-0038-300016' }
             ];
+            // Цену в шапке модалки (_selectedPrice) считают ДО того, как список проставит
+            // isActive построчно, и без этой пометки при первом открытии там оказывалась
+            // цена артикула из строки сметы — 2 863 ₽ за одну трубку против 7 525 ₽ комплекта.
+            const _curBottomKit = this.state.radBottomKit || 'gtube';
+            customAlts.forEach(a => { a.isActive = (a.id === _curBottomKit); });
         }
         else if (item.originalId === 'SAC-0020-411040_boiler') {
             customAlts = [
