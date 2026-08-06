@@ -7275,7 +7275,7 @@ const app = {
 
             // Если все успешно — зеленая точка (соединение работает)
             dot.style.backgroundColor = '#10B981';
-            if (btn) { btn.setAttribute('title', 'Соединение с базой активно'); btn.style.display = ''; }
+            if (btn) { btn.setAttribute('title', 'Онлайн'); btn.style.display = ''; }
             // Показываем кнопку «Ссылка для клиента» только при активном VPN
             if (btnShare) btnShare.style.display = '';
         } catch (e) {
@@ -7811,6 +7811,15 @@ const app = {
             // чтобы ответ администратора появлялся без переоткрытия окна
             const chatPane = document.getElementById('notif_pane_chat');
             if (chatPane && chatPane.style.display === 'flex') this.renderUserChat();
+
+            // Открытая лента уведомлений в мессенджере панели управления живёт из этого
+            // же массива — обновляем её тут же, иначе конверт открывал бы панель с
+            // прошлым содержимым и дорисовывал новое только по клику.
+            const adminBox = document.getElementById('admin_modal_overlay');
+            if (adminBox && adminBox.style.display === 'flex'
+                && this._adminTab === 'messages' && this._adminChatId === 'notifications') {
+                this.renderAdminMessages();
+            }
         } catch (e) {
             console.error("Error fetching notifications:", e);
         }
@@ -8004,11 +8013,40 @@ const app = {
     },
 
     // Кнопка-конверт в шапке. У монтажника открывается переписка с администратором —
-    // то же окно, что и раньше, но сразу на вкладке разговора. Админу переписка тут не
-    // нужна: все диалоги у него в панели управления, поэтому ему открывается список
-    // уведомлений (там же теперь и ответы монтажников).
+    // то же окно, что и раньше, но сразу на вкладке разговора. Админу открывается
+    // мессенджер панели управления: все диалоги сразу, а уведомления и смены статусов
+    // смет лежат там же закреплённой нитью «Уведомления» (см. renderAdminMessages).
+    // Прежний узкий список уведомлений админу больше не показывается.
     openMessagesCenter: function () {
-        this.openNotificationsModal(this.hasAdminAccess() ? 'list' : 'chat');
+        if (this.hasAdminAccess()) {
+            this._adminTab = 'messages';
+            // Пришли посмотреть, что нового: есть непрочитанные уведомления — открываем
+            // сразу их ленту, нет — оставляем тот диалог, на котором остановились.
+            const unread = (this._notifications || []).filter(n => !n.isRead).length;
+            if (unread > 0) {
+                this._adminChatId = 'notifications';
+                // На узком экране панели показываются по очереди — раз знаем, что
+                // показывать, сразу разворачиваем правую.
+                this._adminChatOpen = true;
+            }
+            this.showAdminModal();
+            this.fetchNotifications();
+            return;
+        }
+        this.openNotificationsModal('chat');
+    },
+
+    // После действия с уведомлением (прочитано/удалено/ответ) перерисовываем то место,
+    // откуда его открыли: ленту в мессенджере панели управления либо прежнее окно.
+    // Без этого клик по карточке в панели поднимал бы поверх неё узкую модалку.
+    refreshNotificationsView: function () {
+        const adminOpen = (document.getElementById('admin_modal_overlay') || {}).style;
+        if (this._adminTab === 'messages' && this._adminChatId === 'notifications'
+            && adminOpen && adminOpen.display === 'flex') {
+            this.renderAdminMessages();
+            return;
+        }
+        this.openNotificationsModal();
     },
 
     switchNotifTab: function (tab) {
@@ -8051,43 +8089,10 @@ const app = {
         }
     },
 
-    openNotificationsModal: async function (tab) {
-        document.getElementById('notifications_modal_overlay').style.display = 'flex';
-        // Вкладка задаётся только явно (кнопка-конверт, переключатель). Перерисовки
-        // после отправки/прочтения вызывают эту функцию без аргумента и не должны
-        // перекидывать человека с той вкладки, где он сейчас находится.
-        if (tab) this._notifTab = tab;
-        // У админа вкладки нет вообще — только список
-        if (this.hasAdminAccess() || !this._notifTab) this._notifTab = this.hasAdminAccess() ? 'list' : (this._notifTab || 'list');
-        this.renderNotifTabs();
-
-        // Синхронизируем значение селектора звука
-        const savedSound = localStorage.getItem('stout_notification_sound') || 'iphone';
-        const soundSelect = document.getElementById('notification_sound_select');
-        if (soundSelect) {
-            soundSelect.value = savedSound;
-        }
-        this.updateSoundIconUI(savedSound);
-
-        const listEl = document.getElementById('notifications_list');
-        if (!listEl) return;
-
-        listEl.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 40px; font-size: 13px;">⌛ Загрузка сообщений...</div>';
-
-        // Обновляем уведомления при открытии
-        await this.fetchNotifications();
-        this.renderNotifTabs();
-        this.renderUserChat();
-
-        const notifications = this._notifications || [];
-        if (notifications.length === 0) {
-            listEl.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 40px; font-size: 13px;">У вас пока нет уведомлений от клиентов.</div>';
-            return;
-        }
-
-        // Список открыт — текст сообщений админа виден целиком, значит они прочитаны
-        this.markAdminMessagesRead(notifications.filter(n => n.type === 'admin_message').map(n => n.id));
-
+    // Карточки уведомлений одним куском разметки. Вынесено из openNotificationsModal:
+    // тот же список показывается ещё и лентой «Уведомления» в мессенджере панели
+    // управления, а две копии такой разметки неизбежно разошлись бы.
+    renderNotificationCards: function (notifications) {
         let h = '';
         const isAdminView = this.hasAdminAccess();
         notifications.forEach(n => {
@@ -8265,6 +8270,47 @@ const app = {
                 `;
             }
         });
+        return h;
+    },
+
+    openNotificationsModal: async function (tab) {
+        document.getElementById('notifications_modal_overlay').style.display = 'flex';
+        // Вкладка задаётся только явно (кнопка-конверт, переключатель). Перерисовки
+        // после отправки/прочтения вызывают эту функцию без аргумента и не должны
+        // перекидывать человека с той вкладки, где он сейчас находится.
+        if (tab) this._notifTab = tab;
+        // У админа вкладки нет вообще — только список
+        if (this.hasAdminAccess() || !this._notifTab) this._notifTab = this.hasAdminAccess() ? 'list' : (this._notifTab || 'list');
+        this.renderNotifTabs();
+
+        // Синхронизируем значение селектора звука
+        const savedSound = localStorage.getItem('stout_notification_sound') || 'iphone';
+        const soundSelect = document.getElementById('notification_sound_select');
+        if (soundSelect) {
+            soundSelect.value = savedSound;
+        }
+        this.updateSoundIconUI(savedSound);
+
+        const listEl = document.getElementById('notifications_list');
+        if (!listEl) return;
+
+        listEl.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 40px; font-size: 13px;">⌛ Загрузка сообщений...</div>';
+
+        // Обновляем уведомления при открытии
+        await this.fetchNotifications();
+        this.renderNotifTabs();
+        this.renderUserChat();
+
+        const notifications = this._notifications || [];
+        if (notifications.length === 0) {
+            listEl.innerHTML = '<div style="text-align: center; color: var(--text-sec); padding: 40px; font-size: 13px;">У вас пока нет уведомлений от клиентов.</div>';
+            return;
+        }
+
+        // Список открыт — текст сообщений админа виден целиком, значит они прочитаны
+        this.markAdminMessagesRead(notifications.filter(n => n.type === 'admin_message').map(n => n.id));
+
+        const h = this.renderNotificationCards(notifications);
 
         // Письма админа у монтажника показываются во вкладке «Переписка», в списке их нет —
         // иначе одно и то же сообщение висело бы дважды, с двумя разными полями ответа.
@@ -8607,15 +8653,19 @@ const app = {
 
         if (estimateId && estimateId !== 'undefined' && estimateId !== 'null') {
             this.closeNotificationsModal();
+            // Уведомление могли открыть из ленты в панели управления — её тоже
+            // закрываем, иначе смета загрузится под открытой панелью, невидимкой
+            this.closeAdminModal();
             // Загружаем смету
             app.loadSingleEstimate(estimateId);
         } else if (openTab) {
             // Уведомление о чате — сразу открываем нужную вкладку личного кабинета
             this.closeNotificationsModal();
+            this.closeAdminModal();
             this.showProfileModal(false, openTab);
         } else {
             // Если это сервисное/админское сообщение, не закрываем модал, просто перерисовываем
-            this.openNotificationsModal();
+            this.refreshNotificationsView();
         }
     },
 
@@ -8879,7 +8929,7 @@ const app = {
             }
 
             await this.fetchNotifications();
-            this.openNotificationsModal();
+            this.refreshNotificationsView();
         } catch (e) {
             console.error('[respondInvoiceReminder] Error:', e);
             app.alert('Ошибка: ' + e.message);
@@ -8897,7 +8947,7 @@ const app = {
         localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
         this.markAdminMessagesRead(notifications.map(n => n.id));
         this.fetchNotifications();
-        this.openNotificationsModal(); // перерисовываем
+        this.refreshNotificationsView(); // перерисовываем
     },
 
     // Полная очистка списка (в отличие от «Прочитать все» — карточки не просто гаснут,
@@ -8916,7 +8966,7 @@ const app = {
         localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
         this.markAdminMessagesRead(notifications.map(n => n.id));
         await this.fetchNotifications();
-        this.openNotificationsModal();
+        this.refreshNotificationsView();
     },
 
     closeNotificationsModal: function () {
@@ -10630,7 +10680,7 @@ const app = {
         // В допустимые id входят и люди без переписки: их выбирают в блоке «Написать впервые»,
         // и без этого выбор тут же сбрасывался на первый диалог — клик по найденному человеку
         // выглядел так, будто он ничего не делает.
-        const allIds = ['broadcast'].concat(threads.map(t => t.id)).concat(dropdownUsers.map(u => u.id));
+        const allIds = ['broadcast', 'notifications'].concat(threads.map(t => t.id)).concat(dropdownUsers.map(u => u.id));
         if (!this._adminChatId || allIds.indexOf(this._adminChatId) === -1) {
             this._adminChatId = threads.length ? threads[0].id : 'broadcast';
         }
@@ -10649,8 +10699,25 @@ const app = {
         }
 
         // ── Левая панель: список диалогов ──
+        // Первой закреплена нить «Уведомления»: смены статусов смет у заказчиков,
+        // напоминания по счетам, срок тарифа, ответы монтажников. Это не переписка,
+        // отвечать в неё нельзя — вместо поля ввода у неё кнопки списка.
+        // Уведомления отсортированы новыми вперёд (см. fetchNotifications).
+        const notifItems = this._notifications || [];
+        const notifUnread = notifItems.filter(n => !n.isRead).length;
+        const lastNotif = notifItems[0];
+        const notifPrev = lastNotif
+            ? [lastNotif.projectName, lastNotif.comment].filter(Boolean).join(' — ').replace(/\s+/g, ' ')
+            : 'Статусы смет, счета и срок тарифа';
         const lastBroadcast = broadcastItems[broadcastItems.length - 1];
         let listHtml = `
+            <div class="admin-chat-item ${activeId === 'notifications' ? 'active' : ''}" data-search="уведомления статусы смет счета напоминания тариф ответы монтажников ${esc(notifItems.map(n => [n.projectName, n.comment].filter(Boolean).join(' ')).join(' ').toLowerCase())}" onclick="app.openAdminChat('notifications')">
+                <div class="admin-chat-ava" style="background:#3B82F6;">🔔</div>
+                <div class="admin-chat-item-body">
+                    <div class="admin-chat-item-row"><span class="admin-chat-name">Уведомления и статусы смет</span><span class="admin-chat-time">${lastNotif ? listTime(lastNotif.time) : ''}</span></div>
+                    <div class="admin-chat-item-row"><span class="admin-chat-prev">${esc(notifPrev)}</span>${notifUnread ? `<span class="admin-chat-badge" title="Непрочитанных уведомлений: ${notifUnread}">${notifUnread}</span>` : ''}</div>
+                </div>
+            </div>
             <div class="admin-chat-item ${activeId === 'broadcast' ? 'active' : ''}" data-search="объявление рассылка всем broadcast ${esc(broadcastItems.map(m => m.text || '').join(' ').toLowerCase())}" onclick="app.openAdminChat('broadcast')">
                 <div class="admin-chat-ava" style="background:#D97706;">📢</div>
                 <div class="admin-chat-item-body">
@@ -10701,20 +10768,31 @@ const app = {
         });
 
         // ── Правая панель: сама переписка ──
+        const isNotifChat = activeId === 'notifications';
         const isBroadcastChat = activeId === 'broadcast';
         const activeThread = threads.find(t => t.id === activeId);
         const isMgrChat = !!activeThread && activeThread.kind === 'manager';
-        const activeUser = activeThread && !isMgrChat ? activeThread.user : (isMgrChat ? null : findUser(activeId));
-        const chatName = isBroadcastChat ? 'Объявления для всех' : (isMgrChat ? activeThread.name : userName(activeUser, activeId));
-        const chatSub = isBroadcastChat
-            ? `${dropdownUsers.length} получателей`
-            : (isMgrChat
-                ? 'Переписка монтажника с менеджером — только просмотр'
-                : ([activeUser && activeUser.region, activeUser && activeUser.city].filter(Boolean).join(', ') || (activeUser && (activeUser.email || activeUser.phone)) || ''));
+        const activeUser = activeThread && !isMgrChat && !isNotifChat ? activeThread.user : ((isMgrChat || isNotifChat) ? null : findUser(activeId));
+        const chatName = isNotifChat ? 'Уведомления и статусы смет'
+            : (isBroadcastChat ? 'Объявления для всех' : (isMgrChat ? activeThread.name : userName(activeUser, activeId)));
+        const chatSub = isNotifChat
+            ? (notifUnread ? `${notifUnread} непрочитанных из ${notifItems.length}` : (notifItems.length ? 'Все прочитаны' : 'Пока пусто'))
+            : (isBroadcastChat
+                ? `${dropdownUsers.length} получателей`
+                : (isMgrChat
+                    ? 'Переписка монтажника с менеджером — только просмотр'
+                    : ([activeUser && activeUser.region, activeUser && activeUser.city].filter(Boolean).join(', ') || (activeUser && (activeUser.email || activeUser.phone)) || '')));
         const chatItems = isBroadcastChat ? broadcastItems : (activeThread ? activeThread.items : []);
 
         let bodyHtml = '';
-        if (!chatItems.length) {
+        if (isNotifChat) {
+            // Разметку карточек берём ту же, что и в окне уведомлений у монтажника
+            // (renderNotificationCards) — иначе две копии со временем разошлись бы.
+            const cards = notifItems.length ? this.renderNotificationCards(notifItems) : '';
+            bodyHtml = cards
+                ? `<div style="display:flex; flex-direction:column; gap:10px; padding:4px 2px;">${cards}</div>`
+                : '<div class="admin-chat-empty">Уведомлений пока нет.</div>';
+        } else if (!chatItems.length) {
             bodyHtml = `<div class="admin-chat-empty">${isBroadcastChat ? 'Объявлений пока не было.' : 'Переписки ещё нет — напишите первым.'}</div>`;
         } else {
             let lastDay = '';
@@ -10835,19 +10913,28 @@ const app = {
                 <div class="admin-chat-main">
                     <div class="admin-chat-head">
                         <span class="admin-chat-back" onclick="app.closeAdminChat()">←</span>
-                        ${isBroadcastChat
-                ? `<div class="admin-chat-ava" style="background:#D97706;">📢</div>`
-                : (isMgrChat
-                    ? `<div class="admin-chat-ava" style="background:#64748B;">⇄</div>`
-                    : avaHtml(activeUser, chatName))}
+                        ${isNotifChat
+                ? `<div class="admin-chat-ava" style="background:#3B82F6;">🔔</div>`
+                : (isBroadcastChat
+                    ? `<div class="admin-chat-ava" style="background:#D97706;">📢</div>`
+                    : (isMgrChat
+                        ? `<div class="admin-chat-ava" style="background:#64748B;">⇄</div>`
+                        : avaHtml(activeUser, chatName)))}
                         <div style="min-width:0; flex:1;">
-                            <div class="admin-chat-headname" ${isBroadcastChat ? '' : `onclick="app.openAdminUserFromMessages('${isMgrChat ? activeThread.installerId : activeId}')" title="Открыть карточку монтажника"`}>${esc(chatName)}</div>
+                            <div class="admin-chat-headname" ${isBroadcastChat || isNotifChat ? '' : `onclick="app.openAdminUserFromMessages('${isMgrChat ? activeThread.installerId : activeId}')" title="Открыть карточку монтажника"`}>${esc(chatName)}</div>
                             <div class="admin-chat-headsub" ${isBroadcastChat ? `onclick="app.toggleBroadcastRecipients()" title="Показать, кто получает объявления"` : ''}>${esc(chatSub)}${isBroadcastChat ? ` <span style="opacity:.8;">${recipientsOpen ? '▲' : '▼'}</span>` : ''}</div>
                         </div>
-                        ${isBroadcastChat || isMgrChat || isViewer ? '' : `<button class="admin-chat-clear" title="Удалить эту переписку" onclick="app.deleteUserMessages('${activeId}')">🗑</button>`}
+                        ${isBroadcastChat || isMgrChat || isNotifChat || isViewer ? '' : `<button class="admin-chat-clear" title="Удалить эту переписку" onclick="app.deleteUserMessages('${activeId}')">🗑</button>`}
                     </div>
                     ${recipientsOpen ? recipientsHtml : `<div class="admin-chat-body" id="admin_chat_body">${bodyHtml}</div>`}
-                    ${isMgrChat ? `
+                    ${isNotifChat ? `
+                    <!-- В ленту уведомлений не пишут — вместо поля ввода те же кнопки,
+                         что были внизу прежнего окна уведомлений. -->
+                    <div class="admin-chat-compose" style="justify-content:center; gap:10px;">
+                        <button class="auth-btn-base btn-email-submit" style="margin:0; max-width:150px; height:32px; font-size:12px;" onclick="app.markAllNotificationsRead()">Прочитать все</button>
+                        <button class="auth-btn-base" style="margin:0; max-width:130px; height:32px; font-size:12px; background:var(--surface-light); color:var(--text-sec); border:1px solid var(--border);" onclick="app.clearAllNotifications()">Очистить всё</button>
+                    </div>
+                    ` : (isMgrChat ? `
                     <div class="admin-chat-readonly">👁 Вы смотрите чужую переписку. Написать в неё нельзя — чтобы связаться с монтажником, откройте его диалог в списке слева.</div>
                     ` : `
                     <!-- Наблюдателю переписка открыта на запись, в отличие от остальной
@@ -10858,7 +10945,7 @@ const app = {
                         <textarea id="admin_msg_text" rows="1" placeholder="${esc(composePlaceholder)}" onkeydown="app.adminChatKeydown(event)"></textarea>
                         <button class="emoji-open-btn" type="button" title="Смайлики" onclick="app.toggleEmojiPicker('admin_msg_text', this)">🙂</button>
                         <button class="admin-chat-send" title="Отправить (Enter)" onclick="app.sendAdminMessage()">➤</button>
-                    </div>`}
+                    </div>`)}
                 </div>
             </div>
         `;
@@ -11227,7 +11314,7 @@ const app = {
             if (inp) inp.value = '';
 
             // Обновляем список уведомлений
-            if (!silent) this.openNotificationsModal();
+            if (!silent) this.refreshNotificationsView();
         } catch (e) {
             console.error("Error sending reply:", e);
             if (silent) throw e;
