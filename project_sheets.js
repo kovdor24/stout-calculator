@@ -37,38 +37,26 @@
 
   var ROW_H = 5.47;        // высота строки таблицы
   var BODY_TOP = 15.6;     // верх таблицы под заголовком листа (снято с оригинала)
-  var LW = { thick: 0.7, thin: 0.25, hair: 0.18 };
+  var LW = { thick: 0.7, thin: 0.2, hair: 0.18 };   // тонкая — 0.2 мм, обмер по PDF
 
-  // Размеры шрифта, обмеренные по PDF оригинала (мм):
-  // таблицы и заголовок листа — 3.88, штамп и боковые графы — 3.53, шифр — 4.94
-  var SZ = { body: 3.88, stamp: 3.53, code: 4.94 };
+  // Кегли, обмеренные по PDF оригинала: ISOCPEUR 10.4 pt (3.67 мм) — таблицы,
+  // GOST-Common 9.5 pt (3.35 мм) — штамп и боковые графы, шифр 13.3 pt (4.69 мм).
+  var SZ = { body: 3.67, stamp: 3.35, code: 4.69 };
+  var WIDTH_F = 0.95;      // ширина шрифта в стилях текста оригинала
 
   // В оригинале два шрифта: ISOCPEUR (таблицы) и GOST-Common (штамп, графы).
-  // Их сабсеты извлечены из PDF проекта-образца и лежат в fonts/ — страница
-  // должна объявить @font-face (см. sheet_demo.html). Дальше локальные копии
-  // полных шрифтов, затем свободные GOST type A/B, в конце — узкий системный.
+  // Оба лежат в fonts/ полными файлами, страница объявляет @font-face
+  // (см. sheet_demo.html). Дальше — системные копии и свободные аналоги.
   var FONT = "'ISOCPEUR','GOST type A','GOST type B','Arial Narrow','Liberation Sans Narrow',sans-serif";
   var FONT_STAMP = "'GOST Common','GOST-Common','ISOCPEUR','GOST type A','Arial Narrow',sans-serif";
 
-  // Чертёжные шрифты у нас — сабсеты, вырезанные из PDF-образца: кириллица в
-  // них полная, а латиница нет (нет b, u, i, j и др.). Если в строке попадётся
-  // такая буква, браузер подставит её из системного шрифта — и слово выйдет
-  // разнобоем. Поэтому строки с «неподдержанной» латиницей рисуем целиком
-  // запасным узким шрифтом: вид ровный, стиль чертежа сохраняется.
+  // Раньше здесь была подмена шрифта на узкий системный: чертёжные шрифты были
+  // сабсетами из PDF образца, латиница в них покрыта наполовину, и слово с «b»
+  // или «u» выходило разнобоем. Теперь шрифты полные (66/66 кириллицы и 52/52
+  // латиницы у обоих), подменять нечего — но имя запасного оставлено: модули
+  // листов сверяются с ним, и совпадение сломало бы им подпись.
   var FONT_LAT = "'Arial Narrow','Liberation Sans Narrow',Arial,sans-serif";
-  var COV_ISOC = 'ADEFGHIKLMNOPRSTUVXZacehlmnortx';
-  var COV_GOST = 'ACDEFGILMNOPRSTVWXZacefghilmnorstx';
-
-  function fontFor(s, base) {
-    s = String(s == null ? '' : s);
-    if (!/[A-Za-z]/.test(s)) return base;
-    var cov = (base === FONT_STAMP) ? COV_GOST : COV_ISOC;
-    for (var i = 0; i < s.length; i++) {
-      var c = s[i];
-      if (/[A-Za-z]/.test(c) && cov.indexOf(c) < 0) return FONT_LAT;
-    }
-    return base;
-  }
+  function fontFor(s, base) { return base; }
 
   // ─── Примитивы ─────────────────────────────────────────────────────────
   function esc(s) {
@@ -93,13 +81,20 @@
     var a = { start: 'start', middle: 'middle', end: 'end' }[o.anchor || 'start'];
     var attrs = ' x="' + n(x) + '" y="' + n(y) + '" font-size="' + (o.size || SZ.body) +
       '" text-anchor="' + a + '"';
+    // Ширина шрифта 0.95 — как в стилях текста оригинала: там ISOCPEUR сжат
+    // по горизонтали, и наши строки без этого выходили на 5 % длиннее
+    // (замер по PDF: «Конструкция» 18.00 мм против наших 18.98).
     if (o.rotate) attrs += ' transform="rotate(' + o.rotate + ' ' + n(x) + ' ' + n(y) + ')"';
+    else if (WIDTH_F !== 1) attrs += ' transform="translate(' + n(x) + ' 0) scale(' +
+      WIDTH_F + ' 1) translate(' + n(-x) + ' 0)"';
     if (o.weight) attrs += ' font-weight="' + o.weight + '"';
     // семейство: заданное, либо запасное — если в строке есть латиница,
     // которой нет в чертёжном шрифте (иначе слово вышло бы разнобоем)
     var fam = fontFor(s, o.font || FONT);
     if (fam !== FONT) attrs += ' font-family="' + fam + '"';
-    if (o.fill) attrs += ' fill="' + o.fill + '"';
+    // цвет — только инлайн-стилем: у листа есть правило .sheet-a3 text{fill:#000},
+    // и обычный атрибут fill оно перебивает
+    if (o.fill) attrs += ' style="fill:' + o.fill + '"';
     if (o.fit) attrs += ' textLength="' + n(o.fit) + '" lengthAdjust="spacingAndGlyphs"';
     return '<text' + attrs + '>' + esc(s) + '</text>';
   }
@@ -268,6 +263,12 @@
    * cols:  [{w, title, align}]  ширины в мм, сумма = ширина таблицы
    * rows:  [ [v,v,v], … ]  либо { section: 'Арматура трубопроводов' }
    */
+  /** Заливка ячейки: цвет снят пипеткой с оригинала, поэтому задаётся точно */
+  function fillRect(x, y, w, h, color) {
+    return '<rect x="' + n(x) + '" y="' + n(y) + '" width="' + n(w) + '" height="' + n(h) +
+      '" style="fill:' + color + ';stroke:none"/>';
+  }
+
   function table(x, y, cols, rows, o) {
     o = o || {};
     var out = [], headH = o.headH || 5.5, rh = o.rowH || ROW_H;
@@ -276,6 +277,11 @@
 
     // шапка — жирная (в оригинале двойная прорисовка)
     var cx = x;
+    cols.forEach(function (c) {
+      if (c.fill) out.push(fillRect(cx, cy, c.w, headH, c.fill));
+      cx += c.w;
+    });
+    cx = x;
     out.push(rect(x, cy, total, headH, LW.thin));
     cols.forEach(function (c, i) {
       if (i) out.push(line(cx, cy, cx, cy + headH));
@@ -292,8 +298,30 @@
         cy += rh;
         return;
       }
-      out.push(rect(x, cy, total, rh, LW.thin));
+      if (r.plain) {
+        // Итог по помещению и по этажу: в оригинале это пустая строка без
+        // разделителей — номер прижат к левому краю рамки, сумма в последней
+        // графе. Разделители на ней не рисуются вовсе.
+        out.push(rect(x, cy, total, rh, LW.thin));
+        out.push(text(x + 1, cy + rh - 1.6, r[0]));
+        var lastW = cols[cols.length - 1].w;
+        out.push(cellText(x + total - lastW, cy, lastW, rh, r[r.length - 1],
+          { align: 'center' }));
+        cy += rh;
+        return;
+      }
       var kx = x;
+      // Заливка колонок — как в оригинале: цветом помечены графы, которые
+      // читают глазами (конструкция, количество, температуры, n, результат).
+      // Строки итогов не заливаются.
+      if (!r.nofill) {
+        cols.forEach(function (c) {
+          if (c.fill) out.push(fillRect(kx, cy, c.w, rh, c.fill));
+          kx += c.w;
+        });
+        kx = x;
+      }
+      out.push(rect(x, cy, total, rh, LW.thin));
       cols.forEach(function (c, i) {
         if (i) out.push(line(kx, cy, kx, cy + rh));
         out.push(cellText(kx, cy, c.w, rh, r[i], { align: c.align || 'center', maxW: c.w - 1.6 }));
@@ -316,7 +344,9 @@
     var head = '';
     if (opts.title) {
       var ts = opts.titleSize || SZ.body;
-      head = text((FR.l + FR.r) / 2, ts > 4.5 ? 12.3 : 11.7, opts.title,
+      // titleY — для листов, где в оригинале заголовок стоит выше обычного
+      // (расчёт теплопотерь: 7.0 мм от верха рамки)
+      head = text((FR.l + FR.r) / 2, opts.titleY || (ts > 4.5 ? 12.3 : 11.7), opts.title,
         { size: ts, anchor: 'middle', weight: 'bold' });
     }
     // штамп: 'small' — форма 6 (последующие листы), 'big' — форма 3
@@ -331,7 +361,10 @@
       '.sheet-a3 line,.sheet-a3 rect{stroke:#000;fill:none}' +
       '</style>' +
       '<rect x="0" y="0" width="' + A3.w + '" height="' + A3.h + '" fill="#fff" stroke="none"/>' +
-      '<g stroke-linecap="square" font-family="' + FONT + '" font-style="italic" font-size="' +
+      // Начертание прямое: в оригинале ISOCPEUR стоит без курсива (наклон
+      // заложен в самих глифах), а запрос italic заставлял браузер
+      // доклонять текст поверх — буквы «падали» сильнее оригинала.
+      '<g stroke-linecap="square" font-family="' + FONT + '" font-size="' +
       SZ.body + '">' +
       frame() + sideBoxes() + st + fmt +
       '<g class="sheet-body">' + head + body + '</g>' +
@@ -339,12 +372,16 @@
   }
 
   // ─── Готовый лист: спецификация ────────────────────────────────────────
+  // Состав колонок — как в проектах-образцах: после наименования идут
+  // артикул и производитель, по ним позицию заказывают без сверки с прайсом.
   var SPEC_COLS = [
-    { w: 25, title: '№', align: 'center' },
-    { w: 240, title: 'Наименование', align: 'left' },
+    { w: 20, title: '№', align: 'center' },
+    { w: 168, title: 'Наименование', align: 'left' },
+    { w: 46, title: 'Артикул', align: 'center' },
+    { w: 36, title: 'Производитель', align: 'center' },
     { w: 20, title: 'Ед. изм.', align: 'center' },
-    { w: 40, title: 'Кол-во', align: 'center' },
-    { w: 70, title: 'Примечание', align: 'left' }
+    { w: 30, title: 'Кол-во', align: 'center' },
+    { w: 55, title: 'Примечание', align: 'left' }
   ];
 
   /** items: [{ section } | { name, unit, qty, note }]
@@ -379,28 +416,32 @@
     // Логотип компании над названием объекта — как в проектах-образцах.
     // Пропорции не знаем заранее (у монтажников логотипы любые), поэтому
     // рамка с letterbox: картинка вписывается, не растягиваясь.
+    // Логотип: поле 90x44 мм, верх на 32. Пропорции логотипов у монтажников
+    // любые, поэтому картинка вписывается в рамку, а не растягивается.
     if (opts.logo) {
       o.push('<image x="' + n(C - 45) + '" y="32" width="90" height="44"' +
         ' preserveAspectRatio="xMidYMid meet" href="' + String(opts.logo).replace(/"/g, '&quot;') + '"/>');
     }
-    o.push(text(C, 106.3, opts.object || '', { size: 7.06, anchor: 'middle', weight: 'bold', font: FONT_STAMP }));
-    o.push(text(C, 118.8, opts.region || '', { size: 7.06, anchor: 'middle', weight: 'bold', font: FONT_STAMP }));
-    o.push(text(C, 132.0, opts.docType || 'Рабочая документация',
-      { size: 4.23, anchor: 'middle', weight: 'bold', font: FONT_STAMP }));
-    o.push(text(C, 171.2, opts.code || '', { size: 7.06, anchor: 'middle', weight: 'bold', font: FONT_STAMP }));
-    o.push(text(C, 180.7, opts.section || '', { size: 4.23, anchor: 'middle', weight: 'bold', font: FONT_STAMP }));
+    // Кегли и базовые линии — с титульного листа оригинала (лист 6):
+    // объект и регион 6.70, вид документации и раздел 4.02, год 3.35
+    o.push(text(C, 105.9, opts.object || '', { size: 6.70, anchor: 'middle', weight: 'bold', font: FONT_STAMP }));
+    o.push(text(C, 118.4, opts.region || '', { size: 6.70, anchor: 'middle', weight: 'bold', font: FONT_STAMP }));
+    o.push(text(C, 131.7, opts.docType || 'Рабочая документация',
+      { size: 4.02, anchor: 'middle', weight: 'bold', font: FONT_STAMP }));
+    o.push(text(C, 170.8, opts.code || '', { size: 6.70, anchor: 'middle', weight: 'bold', font: FONT_STAMP }));
+    o.push(text(C, 180.4, opts.section || '', { size: 4.02, anchor: 'middle', weight: 'bold', font: FONT_STAMP }));
 
     // подписные линейки: три строки 177.6–257.6, y 229.1 / 237.1 / 245.1
     var sigs = opts.sigs || [{ label: 'Заказчик' }, { label: 'ГИП' }, { label: 'Разработал' }];
     var sigY = [229.1, 237.1, 245.1];
     sigs.slice(0, 3).forEach(function (s, i) {
-      o.push(line(177.6, sigY[i], 257.6, sigY[i]));
-      o.push(text(178.2, sigY[i] - 0.8, s.label, { size: SZ.stamp, font: FONT_STAMP }));
-      if (s.name) o.push(text(256.8, sigY[i] - 0.8, s.name,
+      o.push(line(177.5, sigY[i], 257.5, sigY[i], 0.3));
+      o.push(text(178.2, sigY[i] - 0.6, s.label, { size: SZ.stamp, font: FONT_STAMP }));
+      if (s.name) o.push(text(257.5, sigY[i] - 0.6, s.name,
         { size: SZ.stamp, anchor: 'end', font: FONT_STAMP }));
     });
 
-    o.push(text(C, 278.5, String(opts.year || new Date().getFullYear()),
+    o.push(text(C, 278.6, String(opts.year || new Date().getFullYear()),
       { size: SZ.stamp, anchor: 'middle', font: FONT_STAMP }));
     return sheet({ stampType: 'none', body: o.join('') });
   }
@@ -444,7 +485,8 @@
     // Таблица «Основные показатели» под списком листов (как в образце):
     // площадь и расход тепла по этажам с итогом.
     if (opts.indicators && opts.indicators.rows && opts.indicators.rows.length) {
-      var IX = LX, IY = cy + 12, iw = [38, 22, 22, 21, 21, 21], isum = 145;
+      // семь колонок: последняя «Общий» — так свёрстана таблица в образце
+      var IX = LX, IY = cy + 12, iw = [34, 20, 20, 19, 19, 19, 19], isum = 150;
       o.push(text(IX + isum / 2, IY - 2.6, opts.indicators.title ||
         'Основные показатели по рабочим чертежам марки ОВ',
         { size: 4.23, anchor: 'middle', weight: 'bold' }));
@@ -457,13 +499,13 @@
         hx += iw[i];
       });
       o.push(line(hx, IY, hx, IY + ROW_H * 2));
-      var hw = iw[3] + iw[4] + iw[5];
-      o.push(cellText(hx, IY, hw, ROW_H, 'Расход тепла, Вт', { weight: 'bold' }));
+      var hw = iw[3] + iw[4] + iw[5] + iw[6];
+      o.push(cellText(hx, IY, hw, ROW_H, 'Расход теплоты, Вт', { weight: 'bold' }));
       o.push(line(hx, IY + ROW_H, hx + hw, IY + ROW_H));
       var hx2 = hx;
-      ['на отопление', 'на вентиляцию', 'на ГВС'].forEach(function (c, i) {
+      ['на отопление', 'на вентиляцию', 'на горячее водоснабжение', 'Общий'].forEach(function (c, i) {
         if (i) o.push(line(hx2, IY + ROW_H, hx2, IY + ROW_H * 2));
-        o.push(cellText(hx2, IY + ROW_H, iw[3 + i], ROW_H, c, { weight: 'bold', size: 3.1 }));
+        o.push(cellLines(hx2, IY + ROW_H, iw[3 + i], ROW_H, c, { weight: 'bold', size: 3.1 }));
         hx2 += iw[3 + i];
       });
       var iy = IY + ROW_H * 2;
@@ -481,8 +523,30 @@
       cy = iy;
     }
 
-    // Схема пирога пола с выносками (как «Схема 2» в образце)
-    if (opts.floorScheme && opts.floorScheme.layers && opts.floorScheme.layers.length) {
+    // Условные обозначения систем трубопроводов: подчёркнутый заголовок и
+    // цветные линии с расшифровкой — как на листе общих данных оригинала.
+    if (opts.legend && opts.legend.length) {
+      var LGY = cy + 14, LGX = 88;
+      var lgTitle = 'Условные обозначения  систем  трубопроводов :';
+      o.push(text(116, LGY, lgTitle, { anchor: 'middle' }));
+      o.push(line(116 - lgTitle.length * SZ.body * 0.44 * WIDTH_F / 2, LGY + 1,
+        116 + lgTitle.length * SZ.body * 0.44 * WIDTH_F / 2, LGY + 1, 0.2));
+      opts.legend.forEach(function (g, i) {
+        var y = LGY + 12 + i * 6.4;
+        o.push('<line x1="' + n(LGX) + '" y1="' + n(y) + '" x2="' + n(LGX + 40) +
+          '" y2="' + n(y) + '" style="stroke:' + g.color + ';stroke-width:0.6"/>');
+        o.push(text(LGX + 46, y + 1.2, '– ' + g.code + ' –  ' + g.text));
+      });
+      cy = LGY + 12 + opts.legend.length * 6.4;
+    }
+
+    // Схема пирога пола: если задана картинка — ставим её на то же место и в
+    // тот же размер, что в оригинале (74..200 мм по x, 163..230 по y).
+    if (opts.floorScheme && opts.floorScheme.image) {
+      o.push('<image x="74" y="163" width="126" height="67"' +
+        ' preserveAspectRatio="xMidYMid meet" href="' +
+        String(opts.floorScheme.image).replace(/"/g, '&quot;') + '"/>');
+    } else if (opts.floorScheme && opts.floorScheme.layers && opts.floorScheme.layers.length) {
       var FX = LX + 22, FY = cy + 16, FW = 92, lay = opts.floorScheme.layers;
       o.push(text(LX + 72, FY - 5, opts.floorScheme.title || 'Схема 1',
         { size: 4.23, anchor: 'middle', weight: 'bold' }));
@@ -511,22 +575,59 @@
       }
     }
 
-    // правая колонка указаний: x 223.5, заголовок 5.47, строки через 4.75
-    var NX = 223.5, LH = 4.75;
+    // Правая часть — указания: x 223.5, заголовок 5.47, строки через 4.75.
+    // Пока текст помещается, колонка одна и широкая, как было. Не помещается
+    // (у котельной указаний много) — перевёрстываем в две узкие колонки, как
+    // в проектах-образцах: иначе текст уезжал на штамп.
+    var NX = 223.5, LH = 4.75, NY0 = 20.8, NBOT = 270, NW = 96;
     o.push(text(311, 11.6, opts.notesTitle || 'Общие указания',
-      { size: 5.47, anchor: 'middle', weight: 'bold' }));
-    var ny = 20.8;
-    (opts.notes || []).forEach(function (sec) {
-      o.push(text(NX + 2.7, ny, sec.h, { weight: 'bold' }));
-      ny += LH * 2;
-      (sec.lines || []).forEach(function (ln) {
-        wrap(ln, 100).forEach(function (w) {
-          o.push(text(NX, ny, w));
-          ny += LH;
+      { size: 5.47, anchor: 'middle' }));
+    var secs = opts.notes || [];
+    // раскладка секций в строки: [x-сдвиг заголовка, текст, жирный?]
+    var layout = function (cols) {
+      var rows = [], wide = cols === 1 ? 100 : 47;
+      secs.forEach(function (sec) {
+        rows.push({ t: sec.h, b: true });
+        (sec.lines || []).forEach(function (ln) {
+          wrap(ln, wide).forEach(function (w) { rows.push({ t: w }); });
         });
+        rows.push({ t: '' });
       });
-      ny += LH;
+      return rows;
+    };
+    var rows1 = layout(1);
+    // высота одной строки заголовка — двойная (как было в одноколоночной вёрстке)
+    var height = function (rows) {
+      var h = 0;
+      rows.forEach(function (r) { h += r.b ? LH * 2 : LH; });
+      return h;
+    };
+    var two = height(rows1) > (NBOT - NY0);
+    var rows = two ? layout(2) : rows1;
+    var perCol = two ? Math.ceil(height(rows) / 2 / LH) * LH : 1e9;
+    var ny = NY0, cx = NX;
+    rows.forEach(function (r) {
+      if (two && ny - NY0 >= perCol && cx === NX) { cx = NX + NW; ny = NY0; }
+      if (r.t) {
+        var tx = cx + (r.b ? 2.7 : 0);
+        o.push(text(tx, ny, r.t, r.b ? { weight: 'bold' } : null));
+        // Заголовок раздела в оригинале подчёркнут — линия по ширине строки
+        // на 1 мм ниже базовой линии.
+        if (r.b) {
+          var uw = r.t.length * SZ.body * 0.44 * WIDTH_F;
+          o.push(line(tx, ny + 1.0, tx + uw, ny + 1.0, 0.2));
+        }
+      }
+      ny += r.b ? LH * 2 : LH;
     });
+
+    if (opts.footer) {
+      var f = opts.footer, fy = 240.8;
+      (f.note || []).forEach(function (ln) { o.push(text(26.5, fy, ln)); fy += 4.75; });
+      fy = 262.1;
+      (f.legalLines || []).forEach(function (ln) { o.push(text(25.8, fy, ln)); fy += 4.75; });
+      if (f.gip) o.push(text(25.8, 285.9, f.gip));
+    }
 
     return sheet({
       stampType: 'big',
@@ -541,15 +642,15 @@
   // Колонки и размеры обмерены по стр. 5 оригинала (лист 4 раздела MEP)
   var HL_COLS = [
     { w: 25.4, title: '№ пом.' },
-    { w: 44.5, title: 'Конструкция', align: 'left' },
-    { w: 19.5, title: 'К-во' },
-    { w: 29.4, title: 'Площадь, м²' },
-    { w: 24.5, title: 'Тв, °C' },
-    { w: 24.3, title: 'Тн, °C' },
+    { w: 44.5, title: 'Конструкция', fill: '#edf0ee' },
+    { w: 19.5, title: 'К-во', fill: '#edf0ff' },
+    { w: 29.4, title: 'Площадь, м2' },
+    { w: 24.5, title: 'Тв, °C', fill: '#edc8ee' },
+    { w: 24.3, title: 'Тн, °C', fill: '#edc8ee' },
     { w: 44.8, title: 'R, (м²·K)/Вт' },
-    { w: 26.2, title: 'n' },
-    { w: 115, title: 'Расчет', align: 'left' },
-    { w: 41.4, title: 'Теплопотери, Вт' }
+    { w: 26.2, title: 'n', fill: '#edf0d3' },
+    { w: 115, title: 'Расчет' },
+    { w: 41.4, title: 'Теплопотери, Вт', fill: '#edffff' }
   ];
 
   /**
@@ -575,9 +676,13 @@
             it.Tn + ' °C', f2(it.R) + ' (м²·K)/Вт', it.n, formula,
             Math.round(it.Q) + ' Вт']);
         });
-        rows.push([r.id, '', '', '', '', '', '', '', '', Math.round(r.total) + ' Вт']);
+        var sub = [r.id, '', '', '', '', '', '', '', '', Math.round(r.total) + ' Вт'];
+        sub.nofill = true; sub.plain = true;
+        rows.push(sub);
       });
-      rows.push([fl.label, '', '', '', '', '', '', '', '', Math.round(fl.total) + ' Вт']);
+      var fin = [fl.label, '', '', '', '', '', '', '', '', Math.round(fl.total) + ' Вт'];
+      fin.nofill = true; fin.plain = true;
+      rows.push(fin);
 
       // разбивка длинного этажа на листы — как у спецификации
       var perSheet = Math.floor((275 - BODY_TOP - 5.5) / ROW_H);
@@ -589,9 +694,10 @@
       if (page.length) pages.push(page);
 
       pages.forEach(function (pageRows) {
-        var t = table(FR.l, BODY_TOP, HL_COLS, pageRows, {});
+        var t = table(FR.l, BODY_TOP, HL_COLS, pageRows, { rowH: 5.47, headH: 5.5 });
         sheets.push(sheet({
-          title: 'Расчет теплопотерь — ' + fl.label, titleSize: 5.47,
+          title: 'Расчет теплопотерь ' + fl.label.replace(/(\d+)\s*этаж/, '$1 этажа'),
+          titleSize: 5.19, titleY: 11.2,
           code: opts.code, sheet: fmtNo(start + sheets.length), body: t.svg
         }));
       });
@@ -623,7 +729,8 @@
       }
       num++;
       var unit = i.unit === 'шт' ? 'шт.' : (i.unit || 'шт.');
-      rows.push([num, i.name, unit, i.q, i.isOpt ? 'опция' : '']);
+      rows.push([num, i.name, i.article || '', i.brand || '', unit, i.q,
+        i.isOpt ? 'опция' : '']);
     });
 
     // Разбивка по листам: последняя строка не ниже 275 мм — над штампом
@@ -659,8 +766,8 @@
     titleSheet: titleSheet, generalData: generalData, stampBig: stampBig,
     heatLossSheets: heatLossSheets,
     text: text, cellText: cellText, cellLines: cellLines, line: line, rect: rect,
-    // общий подбор семейства: модули листов рисуют свой текст сами, но
-    // латиницу вне покрытия чертёжного шрифта должны обрабатывать так же
+    // Подбор семейства оставлен для модулей листов: шрифты теперь полные,
+    // подменять нечего, но вызовы у них сохранены.
     fontFor: fontFor, FONT_LAT: FONT_LAT,
     SPEC_COLS: SPEC_COLS
   };

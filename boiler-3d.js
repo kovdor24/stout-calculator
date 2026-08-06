@@ -37,6 +37,9 @@
             // Component positions
             boilerGas: { x: -0.8, y: 1.7, z: 0.15, w: 0.45, h: 0.8, d: 0.35, label: "Газовый котёл" },
             boilerEl: { x: 0.1, y: 1.7, z: 0.12, w: 0.35, h: 0.6, d: 0.22, label: "Электрический котёл" },
+            // Группа быстрого монтажа котла POLIS — висит вплотную под котлом, на его
+            // патрубках, а не в ряду насосных групп коллектора: это котловой контур.
+            boilerGbm: { x: 0.1, y: 1.19, z: 0.14, w: 0.3, h: 0.3, d: 0.19, label: "Группа быстрого монтажа котла" },
             boilerSolid: { x: -1.3, y: 0.7, z: 0.5, w: 0.6, h: 1.1, d: 0.7, label: "Твердотопливный котёл" },
             waterHeater: { x: -1.9, y: 0.8, z: 0.65, w: 0.6, h: 1.6, d: 0.6, label: "Бойлер ГВС" },
             
@@ -79,37 +82,49 @@
             this.tooltipEl.style.transition = 'opacity 0.15s ease';
             this.container.appendChild(this.tooltipEl);
 
-            // 2. Create UI Control Overlay
-            this.createUIOverlay(state);
+            // 2. Create UI Control Overlay (на снимке для листа его нет)
+            if (!this._snap) this.createUIOverlay(state);
 
             // 3. Initialize Three.js Scene, Camera, Renderer
             this.scene = new THREE.Scene();
-            this.scene.background = new THREE.Color(this.viewMode === 'realistic' ? 0x0f172a : 0x020617);
-            
+            // Для листа проекта фон белый: тёмная сцена на печати съедает тонер
+            // и «заливает» рамку листа.
+            this.scene.background = new THREE.Color(this._snap ? 0xffffff
+                : (this.viewMode === 'realistic' ? 0x0f172a : 0x020617));
+
             // Fog for depth in realistic mode
-            if (this.viewMode === 'realistic') {
+            if (this.viewMode === 'realistic' && !this._snap) {
                 this.scene.fog = new THREE.FogExp2(0x0f172a, 0.1);
             }
 
             this.camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
-            this.camera.position.set(0, 1.8, 4.6);
+            // Общий вид (три четверти) — как на листе «3D вид котельной» в
+            // проектах-образцах; точную дистанцию подберём по габариту сцены
+            // после сборки оборудования, иначе трубы уходят за кадр.
+            if (this._snap) this.camera.position.set(2.6, 2.2, 4.4);
+            else this.camera.position.set(0, 1.8, 4.6);
 
-            this.renderer = new THREE.WebGLRenderer({ antialias: true });
+            this.renderer = new THREE.WebGLRenderer({ antialias: true,
+                preserveDrawingBuffer: !!this._snap });
             this.renderer.setSize(container.clientWidth, container.clientHeight);
             this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             this.renderer.shadowMap.enabled = true;
             this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             this.container.appendChild(this.renderer.domElement);
 
-            // 4. Orbit Controls
-            this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-            this.controls.enableDamping = true;
-            this.controls.dampingFactor = 0.05;
-            this.controls.maxPolarAngle = Math.PI / 2 - 0.05; // Don't go below floor
-            this.controls.minDistance = 1.5;
-            this.controls.maxDistance = 12;
-            this.controls.target.set(0.1, 1.1, 0);
-            this.controls.update();
+            // 4. Orbit Controls (снимку для листа они не нужны — крутить некому)
+            if (!this._snap) {
+                this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.maxPolarAngle = Math.PI / 2 - 0.05; // Don't go below floor
+                this.controls.minDistance = 1.5;
+                this.controls.maxDistance = 12;
+                this.controls.target.set(0.1, 1.1, 0);
+                this.controls.update();
+            } else {
+                this.camera.lookAt(0.1, 1.1, 0);
+            }
 
             // 5. Lighting
             this.setupLights();
@@ -127,15 +142,90 @@
             this.buildBoilerRoom(equipmentList, state);
 
             // 9. Event Listeners
-            this.setupEvents();
+            if (!this._snap) this.setupEvents();
 
-            // 10. Start Animation Loop
-            this.animate();
+            // 10. Start Animation Loop (снимок рисуется одним кадром)
+            if (this._snap) {
+                this.fitSnapCamera();
+                this.renderer.render(this.scene, this.camera);
+            }
+            else this.animate();
+        },
+
+        /**
+         * Кадр по габариту сцены: оборудование целиком, поля одинаковые.
+         * Без этого трубы к коллектору уходили за верхнюю кромку листа.
+         */
+        fitSnapCamera: function () {
+            var bb = new THREE.Box3();
+            var self = this;
+            this.scene.traverse(function (o) {
+                if (o.isMesh && !o.userData.env) bb.expandByObject(o);
+            });
+            if (bb.isEmpty()) return;
+            var size = bb.getSize(new THREE.Vector3());
+            var target = bb.getCenter(new THREE.Vector3());
+            var dir = new THREE.Vector3(0.62, 0.42, 1).normalize();
+            var dist = Math.max(size.x, size.y, size.z) * 2;
+            for (var it = 0; it < 4; it++) {
+                this.camera.position.copy(target).add(dir.clone().multiplyScalar(dist));
+                this.camera.lookAt(target);
+                this.camera.updateMatrixWorld(true); this.camera.updateProjectionMatrix();
+                var xs = [], ys = [];
+                for (var i = 0; i < 8; i++) {
+                    var p = new THREE.Vector3(i & 1 ? bb.max.x : bb.min.x,
+                        i & 2 ? bb.max.y : bb.min.y, i & 4 ? bb.max.z : bb.min.z).project(this.camera);
+                    xs.push(p.x); ys.push(p.y);
+                }
+                var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+                var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+                var visH = 2 * Math.tan(this.camera.fov * Math.PI / 360) * dist;
+                var visW = visH * this.camera.aspect;
+                var fwd = this.camera.getWorldDirection(new THREE.Vector3());
+                var right = new THREE.Vector3().crossVectors(fwd, this.camera.up).normalize();
+                var up = new THREE.Vector3().crossVectors(right, fwd).normalize();
+                target.add(right.multiplyScalar((x0 + x1) / 2 * visW / 2))
+                      .add(up.multiplyScalar((y0 + y1) / 2 * visH / 2));
+                dist *= Math.max((x1 - x0) / 1.72, (y1 - y0) / 1.72);
+            }
+        },
+
+        /**
+         * Снимок котельной для листа «Общий вид котельной».
+         *
+         * Та же сцена, что в калькуляторе, но офф-скрин: белый фон, общий
+         * ракурс, без интерфейса, кадр один. Модели .glb не берём — они
+         * приходят асинхронно и в кадр не попали бы; рисуем процедурные,
+         * как в режиме эскиза.
+         *
+         * Возвращает data:image/jpeg (в localStorage листов уходит смета
+         * целиком, PNG раздул бы её на мегабайты) либо null.
+         */
+        snapshot: function (state, equipmentList, o) {
+            o = o || {};
+            if (typeof THREE === 'undefined') return null;
+            var W = o.width || 1600, H = o.height || 1000, url = null;
+            var host = document.createElement('div');
+            host.style.cssText = 'position:fixed;left:-20000px;top:0;pointer-events:none;' +
+                'width:' + W + 'px;height:' + H + 'px;';
+            document.body.appendChild(host);
+            this._snap = true;
+            try {
+                this.initAndRender(host, state, equipmentList || []);
+                url = this.renderer.domElement.toDataURL('image/jpeg', 0.86);
+            } catch (e) {
+                console.warn('[3D] снимок не получился:', e.message);
+            }
+            this._snap = false;
+            try { this.dispose(); } catch (e) { }
+            if (host.parentNode) host.parentNode.removeChild(host);
+            return url;
         },
 
         loadModelOrFallback: function (item, pos, drawProceduralCallback) {
-            // In sketch mode, we always use the wireframe procedural model for performance and styling
-            if (this.viewMode === 'sketch') {
+            // In sketch mode, we always use the wireframe procedural model for performance and styling.
+            // Снимок для листа рисуется одним кадром — асинхронная модель в него не успеет.
+            if (this.viewMode === 'sketch' || this._snap) {
                 drawProceduralCallback();
                 return;
             }
@@ -202,6 +292,26 @@
         },
 
         setupLights: function () {
+            // Снимок для листа проекта — студийный свет: ровный, нейтральный,
+            // с мягкой тенью. Синий и оранжевый акценты вьюера на печати
+            // выглядят как подсветка витрины, а не как чертёж.
+            if (this._snap) {
+                this.scene.add(new THREE.HemisphereLight(0xffffff, 0xdfe3e8, 0.85));
+                var key = new THREE.DirectionalLight(0xffffff, 0.85);
+                key.position.set(3.5, 6, 4.5);
+                key.castShadow = true;
+                key.shadow.mapSize.width = 2048; key.shadow.mapSize.height = 2048;
+                key.shadow.camera.near = 0.5; key.shadow.camera.far = 20;
+                var dd = 4;
+                key.shadow.camera.left = -dd; key.shadow.camera.right = dd;
+                key.shadow.camera.top = dd; key.shadow.camera.bottom = -dd;
+                key.shadow.bias = -0.0004;
+                this.scene.add(key);
+                var fill = new THREE.DirectionalLight(0xffffff, 0.35);
+                fill.position.set(-4, 2.5, 3);
+                this.scene.add(fill);
+                return;
+            }
             if (this.viewMode === 'sketch') {
                 // High ambient, flat look for wireframe blueprints
                 const ambient = new THREE.AmbientLight(0xffffff, 0.9);
@@ -251,8 +361,9 @@
 
         buildEnvironment: function () {
             const isRealistic = this.viewMode === 'realistic';
-            const wallColor = isRealistic ? 0x1e293b : 0x020617;
-            const floorColor = isRealistic ? 0x0f172a : 0x020617;
+            // Для листа — светлое помещение: пол и стена почти белые, сетки нет.
+            const wallColor = this._snap ? 0xdde3ea : (isRealistic ? 0x1e293b : 0x020617);
+            const floorColor = this._snap ? 0xc4ccd5 : (isRealistic ? 0x0f172a : 0x020617);
 
             // Room Floor
             const floorGeo = new THREE.PlaneGeometry(this.layout.wallW, this.layout.floorD);
@@ -262,6 +373,7 @@
                 metalness: 0.1
             });
             const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.userData.env = true;
             floor.rotation.x = -Math.PI / 2;
             floor.position.set(0, 0, this.layout.floorD / 2);
             floor.receiveShadow = true;
@@ -275,12 +387,21 @@
                 metalness: 0.05
             });
             const wall = new THREE.Mesh(wallGeo, wallMat);
+            wall.userData.env = true;
             wall.position.set(0, this.layout.wallH / 2, 0);
             wall.receiveShadow = true;
             this.scene.add(wall);
 
             // Floor & Wall Grid lines
-            if (isRealistic) {
+            if (this._snap) {
+                // плинтус вдоль стены — линия, за которую цепляется глаз
+                const plinth = new THREE.Mesh(
+                    new THREE.BoxGeometry(this.layout.wallW, 0.08, 0.02),
+                    new THREE.MeshStandardMaterial({ color: 0xd7dbe0, roughness: 0.8 }));
+                plinth.userData.env = true;
+                plinth.position.set(0, 0.04, 0.012);
+                this.scene.add(plinth);
+            } else if (isRealistic) {
                 const gridFloor = new THREE.GridHelper(this.layout.wallW, 20, 0x475569, 0x334155);
                 gridFloor.position.set(0, 0.002, this.layout.floorD / 2);
                 this.scene.add(gridFloor);
@@ -322,6 +443,7 @@
             let items = {
                 boilerGas: null,
                 boilerEl: null,
+                boilerGbm: null,
                 boilerSolid: null,
                 waterHeater: null,
                 hydroSeparator: null,
@@ -337,7 +459,13 @@
                 const sku = (item.displaySku || "").toLowerCase();
                 
                 // Identify item categories
-                if (name.includes("газов") && name.includes("кот")) {
+                // ГБМ котла POLIS проверяем первой: в её названии есть и «кот» («обвязка
+                // котла»), и «груп», поэтому иначе она уехала бы либо в котлы, либо в ряд
+                // насосных групп коллектора — а она стоит на котловом контуре. Если POLIS
+                // обвязан россыпью (кранами), узла под котлом нет — и рисовать нечего.
+                if (name.includes("быстрого монтажа")) {
+                    items.boilerGbm = item;
+                } else if (name.includes("газов") && name.includes("кот")) {
                     items.boilerGas = item;
                 } else if (name.includes("электр") && name.includes("кот")) {
                     items.boilerEl = item;
@@ -404,6 +532,17 @@
                 this.loadModelOrFallback(bData, this.layout.boilerEl, () => {
                     this.drawWallBoiler(this.layout.boilerEl, 0xe2e8f0, false, bData);
                 });
+
+                // ГБМ котла POLIS: рисуется тем же узлом, что и насосные группы
+                // коллектора — это она и есть, только на котловом контуре.
+                if (items.boilerGbm) {
+                    const gPos = Object.assign({}, this.layout.boilerGbm, {
+                        label: items.boilerGbm.name || this.layout.boilerGbm.label
+                    });
+                    this.loadModelOrFallback(items.boilerGbm, gPos, () => {
+                        this.drawPumpGroup(gPos, items.boilerGbm, 0);
+                    });
+                }
             }
 
             // HYDRAULIC SEPARATOR & MANIFOLD
@@ -877,9 +1016,26 @@
             // Determine boiler exit point
             let bExitX = this.layout.boilerGas.x;
             let bExitZ = this.layout.boilerGas.z - 0.02;
+            let bExitY = 1.3;
             if (!items.boilerGas && items.boilerEl) {
                 bExitX = this.layout.boilerEl.x;
                 bExitZ = this.layout.boilerEl.z - 0.02;
+
+                // POLIS: между котлом и разводкой стоит ГБМ. Рисуем переходные муфты
+                // от патрубков котла к группе, а дальше контур идёт уже от её низа —
+                // иначе трубы прошли бы сквозь корпус группы.
+                if (items.boilerGbm) {
+                    const g = this.layout.boilerGbm;
+                    const bBottom = this.layout.boilerEl.y - this.layout.boilerEl.h / 2;
+                    const gTop = g.y + g.h / 2, gBot = g.y - g.h / 2;
+                    this.drawPipeSegment(
+                        new THREE.Vector3(bExitX - 0.1, bBottom, bExitZ),
+                        new THREE.Vector3(bExitX - 0.1, gTop, bExitZ), r, cRed, true);
+                    this.drawPipeSegment(
+                        new THREE.Vector3(bExitX + 0.1, bBottom, bExitZ),
+                        new THREE.Vector3(bExitX + 0.1, gTop, bExitZ), r, cBlue, true);
+                    bExitY = gBot;
+                }
             }
 
             // Separator inlets
@@ -890,7 +1046,7 @@
             // Boiler to Separator loops (Supply & Return)
             if (state.hydroType === 'combo' || state.hydroArrowType === 'standard' || items.hydroSeparator) {
                 // Hot Supply: Boiler bottom to Separator top
-                const supply1 = new THREE.Vector3(bExitX - 0.1, 1.3, bExitZ);
+                const supply1 = new THREE.Vector3(bExitX - 0.1, bExitY, bExitZ);
                 const supply2 = new THREE.Vector3(bExitX - 0.1, sepInY + 0.2, sepInZ);
                 const supply3 = new THREE.Vector3(sepInX - 0.03, sepInY + 0.2, sepInZ);
                 
@@ -900,7 +1056,7 @@
                 // Cold Return: Separator bottom to Boiler bottom
                 const return1 = new THREE.Vector3(sepInX - 0.03, sepInY - 0.2, sepInZ);
                 const return2 = new THREE.Vector3(bExitX + 0.1, sepInY - 0.2, bExitZ);
-                const return3 = new THREE.Vector3(bExitX + 0.1, 1.3, bExitZ);
+                const return3 = new THREE.Vector3(bExitX + 0.1, bExitY, bExitZ);
                 
                 this.drawPipeSegment(return1, return2, r, cBlue, true);
                 this.drawPipeSegment(return2, return3, r, cBlue, true);

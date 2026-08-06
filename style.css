@@ -143,6 +143,17 @@ body.dark-mode #blk_res div {
     border-top-color: #2A2A2A !important;
 }
 
+/* Блок автоматики котельной оформлен как блок горячей воды — и тёмную тему
+   получает по тому же правилу: у рамки свой фон, у разделителей свой цвет. */
+body.dark-mode #blk_boiler_auto_box {
+    background: #161616 !important;
+    border-color: #2A2A2A !important;
+}
+
+body.dark-mode #blk_boiler_auto_box div {
+    border-top-color: #2A2A2A !important;
+}
+
 /* === УЗЕЛ ВВОДА ХВС — тёмная тема === */
 body.dark-mode #blk_water_input_opts {
     background: #161616 !important;
@@ -2319,10 +2330,10 @@ body.html2pdf-printing .expand-locs-btn {
     width: max-content; min-width: 260px; max-width: 420px; white-space: normal;
     background: #1F2937;
     color: #fff;
-    padding: 10px;
+    padding: 12px 14px;
     border-radius: 6px;
     font-size: 11px;
-    line-height: 1.4;
+    line-height: 1.55;
     opacity: 0;
     transition: 0.2s;
     pointer-events: auto;
@@ -2348,6 +2359,45 @@ body.html2pdf-printing .expand-locs-btn {
 .tooltip-wrapper:hover .tooltip-content {
     visibility: visible;
     opacity: 1;
+}
+
+/* На телефоне наведения нет — подсказка открывается нажатием: обработчик
+   вешает на обёртку класс tip-open (см. app.initPanelTips). */
+.tooltip-wrapper.tip-open .tooltip-content {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Подсказки в левой панели. Панель узкая (на телефоне ~350 px), а базовая
+   ширина подсказки до 420 px — она уезжала за левый край экрана. Здесь
+   ограничиваем её шириной окна. */
+/* Подсказки левой панели привязаны не к иконке, а к своей строке: панель узкая
+   (около 270 px), и подсказка шириной с иконку-якорь уезжала за левый край
+   экрана. Обёртку делаем непозиционированной, тогда точкой отсчёта становится
+   строка, и подсказка занимает ровно её ширину — выйти за панель уже не может. */
+.tooltip-wrapper.tip-panel-wrap {
+    position: static;
+}
+
+.tooltip-content.tip-panel {
+    min-width: 0;
+    left: 0;
+    right: auto;
+    width: 100%;
+    max-width: none;
+}
+
+/* Абзац подсказки. Отступ ставим не каждому переносу строки, а осмысленным
+   блокам: перечисление фактов (контуры, котлы, ГВС) должно идти плотно, а вот
+   назначение прибора и предупреждения — отдельными абзацами. */
+.tooltip-content .tip-p {
+    margin-top: 9px;
+}
+
+/* Названия пунктов — светлее основного текста, чтобы глаз цеплялся за них
+   при просмотре по диагонали. */
+.tooltip-content b {
+    color: #F3F4F6;
 }
 
 .tooltip-content::after {

@@ -593,11 +593,30 @@
       var xs = b.w === 33 ? bx + 3.03 : bx + 9;
       var xRet = b.carrier ? xs + 27 : xs + 9;
 
+      // POLIS — единственный электрокотёл без встроенного насоса: котловой контур
+      // собирается на группе быстрого монтажа (насос на подаче + краны 1" с
+      // термометрами). Обводим её штрихпунктиром как заводской узел, а обратную
+      // ветку сдвигаем ниже контура — фильтр в состав ГБМ не входит.
+      var isPolis = (kind === 'el' && cfg.el && cfg.el.polis);
+      var portSize = isPolis ? '1"' : '3/4"';
+
       // подача
       o.push(ln(xs, bBot, xs, bBot + 2.53, { c: COL.supply, w: LW.pipe }));
       o.push(ballValve(xs, bBot + 5.03, true));
-      o.push(leaderValve(xs, bBot + 5.03, '3/4"'));
+      o.push(leaderValve(xs, bBot + 5.03, portSize));
       var ys = bBot + 7.53;
+      if (isPolis) {
+        o.push(ln(xs, ys, xs, ys + 1.6, { c: COL.supply, w: LW.pipe }));
+        o.push(pump(xs, ys + 4.52, 'down'));
+        ys += 7.44;
+        // Заводскую группу подписываем выноской у насоса, а не обводим штрихпунктиром:
+        // контур пришлось бы вести между стояками, а там у блока-носителя идут стояки
+        // загрузки бойлера, на обратке сразу под краном стоит фильтр (в ГБМ не входит),
+        // и полки выносок соседнего стояка ложатся ровно на границу. Что краны 1" —
+        // часть той же группы, видно по их выноскам. При обвязке россыпью подписи нет:
+        // насос там стоит сам по себе.
+        if (cfg.el.gbm) o.push(leader(xs - 3.4, bBot + 13.1, 'ГБМ'));
+      }
       if (multi) {
         o.push(ln(xs, ys, xs, ys + 1.5, { c: COL.supply, w: LW.pipe }));
         o.push(checkValve(xs, ys + 4, 'down'));
@@ -610,7 +629,7 @@
       // обратка: кран + фильтр + кран (+ обратный клапан при двух котлах)
       o.push(ln(xRet, bBot, xRet, bBot + 2.53, { c: COL.ret, w: LW.pipe }));
       o.push(ballValve(xRet, bBot + 5.03, true));
-      o.push(leaderValve(xRet, bBot + 5.03, '3/4"'));
+      o.push(leaderValve(xRet, bBot + 5.03, portSize));
       o.push(ln(xRet, bBot + 7.53, xRet, bBot + 9.6, { c: COL.ret, w: LW.pipe }));
       o.push(filterSym(xRet, bBot + 13.14));
       o.push(leaderFilter(xRet, bBot + 13.14, '3/4"'));

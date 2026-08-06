@@ -156,9 +156,11 @@
       o.push(line(xs, yBr, xr, yBr, { w: 0.3 }));
       o.push(circle(x, yNo, 3.2, { fill: '#ffffff' }));
       o.push(txt(x, yNo + 1.1, r.no, { anchor: 'middle' }));
-      // название помещения — вдоль листа, ужимается только если не влезает
+      // Название помещения — вдоль листа, ужимается, если не влезает. Когда
+      // под схемой места нет (сверху стоит объёмный вид), обходимся номером:
+      // имя петли есть в таблице контуров.
       var room = P.yName - yNo - 5.4;
-      o.push(txt(x + 1.1, yNo + 5.4, r.name,
+      if (room > 10) o.push(txt(x + 1.1, yNo + 5.4, r.name,
         { rotate: 90, size: SZ.small, fit: (r.name.length * 1.5 > room) ? room : 0 }));
     });
 
@@ -208,7 +210,26 @@
     var o = [], num1 = window.projectPlans.num1;
     o.push(txt(217.5, 14.8, ctx.title, { anchor: 'middle', size: SZ.title }));
 
+    // Объёмный вид узла — как в проектах-образцах; под ним схема подключения
+    // с номерами петель (в 3D номера не подписать) и таблицы справа.
     var P = { x0: 30, w: 218, ySup: 92, yRet: 114, yGrp: 44, yLoop: 152, yName: 210 };
+    var photoUrl = ctx.photo && ctx.photo.url ? ctx.photo.url : ctx.photo;
+    if (photoUrl) {
+      var ratio = (ctx.photo && ctx.photo.ratio) || 1.58;
+      var iw = 148, ih = iw / ratio, ix = 34, iy = 22;
+      o.push('<image x="' + n(ix) + '" y="' + n(iy) + '" width="' + n(iw) + '" height="' + n(ih) +
+        '" preserveAspectRatio="xMidYMid meet" href="' +
+        String(photoUrl).replace(/&/g, '&amp;') + '"/>');
+      o.push(rect(ix, iy, iw, ih, { w: 0.25 }));
+      o.push(txt(ix + iw, iy - 1.8, 'Общий вид узла', { anchor: 'end', size: SZ.small }));
+      // Как и в проектах-образцах: вид — принципиальная схема обвязки,
+      // фактическое число выходов берут из таблицы контуров и с плана
+      o.push(txt(ix, iy + ih + 3.4, 'На виде показана принципиальная схема обвязки;' +
+        ' число выходов — по таблице контуров.', { size: SZ.small }));
+      // схема опускается под картинку и примечание к ней
+      P = { x0: 30, w: 218, ySup: iy + ih + 32, yRet: iy + ih + 50,
+        yGrp: iy + ih + 18, yLoop: iy + ih + 80, yName: iy + ih + 82 };
+    }
     scheme(o, rows, ctx, P);
 
     // таблица контуров: чем настраивать расходомеры и что к чему подключено
@@ -227,8 +248,8 @@
     y2 = table(o, TX, y2, [10, 122], ['Поз.', 'Наименование'], ctx.parts.rows,
       { title: 'Состав узла', left: [1] });
 
-    // примечания
-    var ny = Math.max(y2 + 8, 224), NX = 30;
+    // примечания: ниже и таблиц, и номеров петель под схемой
+    var ny = Math.max(y2 + 8, P.yLoop + 14, 224), NX = 30;
     o.push(txt(NX, ny, 'Указания по монтажу и наладке', { size: 4.2 }));
     [
       '1. Расходомеры подающей гребёнки настроить по колонке G таблицы контуров' +
@@ -270,7 +291,7 @@
 
   /**
    * Листы узла коллектора: по листу на каждый коллектор ТП.
-   * opts: { code, sheetStart, steps, stepMm, rooms, items }
+   * opts: { code, sheetStart, steps, stepMm, rooms, items, photo }
    */
   function sheets(plans, opts) {
     opts = opts || {};
@@ -295,7 +316,7 @@
         from += sz;
         var title = 'Узел обвязки коллектора тёплого пола' +
           (many ? ' ' + (fi + 1) + ' этажа' : '') + (k > 1 ? '. Коллектор ' + (j + 1) : '');
-        var ctx = Object.assign({}, base, { title: title });
+        var ctx = Object.assign({}, base, { title: title, photo: opts.photo || null });
         ctx.parts = nodeParts(opts.items, ctx);
         out.push({ title: title, svg: window.projectSheets.sheet({
           code: opts.code, sheet: fmt(num++), body: body(part, ctx) }) });

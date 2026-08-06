@@ -15,3 +15,16 @@ price_index.prev.json
 bench/lines.json
 bench/new_lines.json
 bench/proposed_*.json
+
+# Тяжёлые ассеты 3D и листов проекта: models/ 99 МБ, img/equip 11 МБ,
+# img/nodes3d 17 МБ. Пока не выложены НАМЕРЕННО — в git такой объём попадает
+# навсегда, и вычистить его потом можно только переписыванием истории.
+# Код к их отсутствию устойчив: 3D рисуется процедурно (loadModelOrFallback),
+# виды узлов просто не появляются (projectNodes3D отдаёт null). Решить отдельно,
+# что из этого нужно на сайте, а что остаётся исходниками (models/raw — FBX).
+models/
+img/equip/
+img/nodes3d/
+
+# Резервные копии от ручной правки
+*.bak

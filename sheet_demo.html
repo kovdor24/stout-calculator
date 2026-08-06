@@ -4,15 +4,19 @@
 <meta charset="utf-8">
 <title>Проба листа А3 — спецификация</title>
 <style>
-  /* Шрифты оригинала: сабсеты, извлечённые из PDF проекта-образца.
-     local() первым: если в системе стоит полный шрифт (с AutoCAD/Revit) — берём его. */
+  /* Шрифты оригинала, полными файлами: ISOCPEUR из поставки AutoCAD и
+     GOST-Common. local() первым — если шрифт стоит в системе, берём его. */
+  /* Только файл из папки fonts: local() убран намеренно. Установленный в
+     системе ISOCPEUR зарегистрирован курсивным начертанием, и при запросе
+     прямого правило local() не совпадало — браузер откатывался на Arial
+     Narrow, отчего лист переставал быть похожим на оригинал. */
   @font-face {
-    font-family: 'ISOCPEUR'; font-style: italic;
-    src: local('ISOCPEUR'), url('fonts/isocpeur.ttf') format('truetype');
+    font-family: 'ISOCPEUR'; font-style: normal;
+    src: url('fonts/isocpeur.ttf?v=4.14') format('truetype');
   }
   @font-face {
-    font-family: 'GOST Common'; font-style: italic;
-    src: local('GOST Common'), local('GOST-Common'), url('fonts/gost_common.ttf') format('truetype');
+    font-family: 'GOST Common'; font-style: normal;
+    src: url('fonts/gost_common.ttf?v=4.14') format('truetype');
   }
   body { margin: 0; background: #6b6b6b; font: 14px/1.4 system-ui, sans-serif; color: #fff; }
   .bar { padding: 10px 16px; background: #2b2b2b; display: flex; gap: 16px; align-items: center; }
@@ -49,14 +53,16 @@
 
 <div class="wrap" id="out"></div>
 
-<script src="project_sheets.js"></script>
-<script src="project_scheme.js"></script>
-<script src="project_layout.js"></script>
-<script src="project_plans.js"></script>
-<script src="project_nodes.js"></script>
+<script src="project_sheets.js?v=4.14"></script>
+<script src="project_scheme.js?v=4.15"></script>
+<script src="project_layout.js?v=4.14"></script>
+<script src="project_plans.js?v=4.18"></script>
+<script src="project_nodes.js?v=4.14"></script>
 <!-- Узел коллектора ТП: рисуется вектором и берёт петли из project_plans.js,
      поэтому подключается после него. -->
-<script src="project_ufh_manifold.js"></script>
+<script src="project_ufh_manifold.js?v=4.14"></script>
+<!-- Листы узлов по 3D-рендеру: коллектор водоснабжения и панельный радиатор. -->
+<script src="project_node_sheets.js?v=4.14"></script>
 <script>
 // Данные один в один с листа ТМ-16 примера
 var items = [
@@ -119,18 +125,26 @@ if (payload && payload.items && payload.items.length) {
     mep: { code: codeBase + ' – MEP', name: 'Сводный проект инженерных систем', pre: '' },
     tm:  { code: codeBase + ' – ТМ',  name: 'Индивидуальная котельная',        pre: 'ТМ-' },
     o:   { code: codeBase + ' – О',   name: 'Система отопления',               pre: 'О-' },
-    v:   { code: codeBase + ' – В',   name: 'Система водоснабжения',           pre: 'В-' }
+    v:   { code: codeBase + ' – В',   name: 'Система водоснабжения',           pre: 'В-' },
+    k:   { code: codeBase + ' – К',   name: 'Система канализации',             pre: 'К-' }
   };
+  // Нумерация как в проектах-образцах: номер двузначный, титульный лист —
+  // первый (О-01), а спецификации выделены суффиксом СО (О-СО-11).
+  // Нумерация как в проектах-образцах Виталяна: одна цифра без ведущего
+  // нуля, титульный лист нулевой (В-0), общие данные В-1, содержательные с
+  // В-2, спецификация продолжает тот же ряд — отдельного суффикса СО нет.
+  // Внутри страницы счёт по-прежнему ведётся с единицы, поэтому сдвиг тут.
   var numOf = function (mk) {
-    return function (v) { return MARK[mk].pre + v; };
+    return function (v) { return MARK[mk].pre + String(Math.max(0, v - 1)); };
   };
+  var specNumOf = numOf;
 
   // Позиции сметы по разделам. Котельная (1, 2) и узел ввода ХВС (6) — в ТМ;
   // приборы отопления, тёплый пол и расходные материалы (3, 4, 9) — в О;
   // водоснабжение и канализация (5, 7, 8) — в В. Так же поделены спецификации
   // в проектах-образцах.
-  var SECTION_MARK = { 1: 'tm', 2: 'tm', 6: 'tm', 3: 'o', 4: 'o', 9: 'o', 5: 'v', 7: 'v', 8: 'v' };
-  var itemsBy = { mep: [], tm: [], o: [], v: [] };
+  var SECTION_MARK = { 1: 'tm', 2: 'tm', 6: 'tm', 3: 'o', 4: 'o', 9: 'o', 5: 'v', 7: 'v', 8: 'k' };
+  var itemsBy = { mep: [], tm: [], o: [], v: [], k: [] };
   payload.items.forEach(function (i) {
     var m = /^\s*(\d+)/.exec(String(i.sectionTitle || ''));
     itemsBy[(m && SECTION_MARK[+m[1]]) || 'tm'].push(i);
@@ -197,25 +211,46 @@ if (payload && payload.items && payload.items.length) {
     (payload.city ? ', ' + payload.city : '') + '.';
 
   // ── MEP: сводные планы сетей и расчёт теплопотерь ────────────────────
-  var mepPlans = (plans && window.projectPlans)
-    ? projectPlans.sheets(plans, withOpts({ code: MARK.mep.code, sheetStart: 1,
-        only: ['summary'], num: numOf('mep') }))
-    : [];
-  var mepHlStart = 1 + mepPlans.length;
+  // Номера листов MEP — как в эталоне: два знака, титульный 01, сводная
+  // схема сетей котельной 02, дальше по два листа на этаж (сводный план и
+  // сводная схема сетей этажа), затем расчёт теплопотерь по этажам. Слот
+  // ненаписанного листа остаётся пустым — по разрыву в номерах сразу видно,
+  // какого листа не хватает.
+  var pad2 = function (v) { return (v < 10 ? '0' : '') + v; };
+  var numMep = function (v) { return pad2(v); };
+  var nFloors = (plans && plans.floors) ? plans.floors.length : 0;
+  var mepPlans = [], mepSlots = [];
+  mepSlots.push(['02', 'Сводная схема сетей помещения котельной', 'лист не формируется']);
+  if (plans && window.projectPlans) {
+    (plans.floors || []).forEach(function (_, i) {
+      var fl = i + 1, base = 3 + i * 2;
+      var got = projectPlans.sheets(plans, withOpts({ code: MARK.mep.code,
+        sheetStart: base, only: ['summary'], floor: fl, num: numMep }));
+      got.forEach(function (p) { mepPlans.push(p); mepSlots.push([pad2(base), p.title, '']); });
+      if (!got.length) mepSlots.push([pad2(base),
+        'Этаж ' + pad2(fl) + '. Сводный план сетей', 'лист не сформирован']);
+      mepSlots.push([pad2(base + 1), 'Сводная схема сетей ' + fl + ' этажа', 'лист не формируется']);
+    });
+  }
+  var mepHlStart = 3 + nFloors * 2;
   var mepHl = (payload.heatloss && payload.heatloss.length)
     ? projectSheets.heatLossSheets(payload.heatloss,
-        { code: MARK.mep.code, sheetStart: mepHlStart, num: numOf('mep') })
+        { code: MARK.mep.code, sheetStart: mepHlStart, num: numMep })
     : [];
 
   // ── ТМ: котельная ────────────────────────────────────────────────────
-  var tmSchemeNo = 2;                       // 1 — общие указания
+  var tmSchemeNo = 3;                       // 01 — титул, 02 — общие указания
   var tmScheme = (payload.scheme && window.projectScheme)
-    ? [projectScheme.sheet(payload.scheme, { code: MARK.tm.code, sheet: 'ТМ-' + tmSchemeNo })]
+    ? [projectScheme.sheet(payload.scheme, { code: MARK.tm.code, sheet: numOf('tm')(tmSchemeNo) })]
     : [];
   var tmLayoutStart = tmSchemeNo + tmScheme.length;
   var tmLayout = (payload.scheme && window.projectLayout)
     ? projectLayout.sheets(payload.scheme, payload.items,
-        { code: MARK.tm.code, sheetStart: tmLayoutStart, room: room, num: numOf('tm') })
+        { code: MARK.tm.code, sheetStart: tmLayoutStart, room: room,
+          photo: payload.boiler3d || null, num: numOf('tm'),
+          equip: payload.equip || null,
+          front: (payload.node3d || {}).boiler_front || null,
+          frontDhw: (payload.node3d || {}).boiler_dhw || null })
     : [];
   // Обвязка узлов: по умолчанию подбор считает готовые насосные группы и
   // коллекторы в теплоизоляции — листы сборки групп из нержавейки скрыты;
@@ -231,41 +266,114 @@ if (payload && payload.items && payload.items.length) {
   // projectNodes.sheets() нумерует список подряд с единицы.
   var tmNodes = nodesPlan.map(function (p, i) {
     return projectNodes.sheet(p.id, p.title, nodeCtx,
-      { code: MARK.tm.code, sheet: 'ТМ-' + (tmNodesStart + i) });
+      { code: MARK.tm.code, sheet: numOf('tm')(tmNodesStart + i) });
   });
-  var tmSpecStart = tmNodesStart + tmNodes.length;
+  // Листы обвязки из фитингов сняты: не совпадают с эталоном, узлы идут
+  // прежними видами из img/nodes.
+  var tmPipeNo = tmNodesStart + tmNodes.length;
+  var tmPipe = [];
+  var tmSpecStart = tmPipeNo + tmPipe.length;
   var tmSpec = itemsBy.tm.length ? projectSheets.fromEquipment(itemsBy.tm, {
     title: 'Спецификация материалов и оборудования котельной',
-    code: MARK.tm.code, sheetStart: tmSpecStart, num: numOf('tm')
+    code: MARK.tm.code, sheetStart: tmSpecStart, num: specNumOf('tm')
   }) : [];
 
   // ── О: отопление ─────────────────────────────────────────────────────
-  var oPlans = (plans && window.projectPlans)
-    ? projectPlans.sheets(plans, withOpts({ code: MARK.o.code, sheetStart: 2,
-        only: ['floor', 'tp'], num: numOf('o') }))
-    : [];
-  var oManStart = 2 + oPlans.length;
+  // Порядок листов внутри раздела — как в проектах-образцах: этажами, а не
+  // пачками. На каждом этаже: план напольного отопления, его объёмный вид,
+  // затем план радиаторного отопления (его объёмного вида у нас нет).
+  // На этаж отведено четыре слота эталона: план напольного отопления, его
+  // объёмный вид, план отопления, объёмный вид отопления. Пустой слот —
+  // разрыв в нумерации и строка «нет» в списке листов.
+  var oBody = [], oSlots = [];
+  if (plans && window.projectPlans) {
+    (plans.floors || []).forEach(function (_, i) {
+      var fl = i + 1, base = 3 + i * 4, ttl = 'Этаж ' + pad2(fl);
+      var put = function (n, list, want) {
+        list.forEach(function (p) { oBody.push(p); oSlots.push([numOf('o')(n), p.title, '']); });
+        if (!list.length) oSlots.push([numOf('o')(n), want, 'лист не сформирован']);
+      };
+      put(base, projectPlans.sheets(plans, withOpts({ code: MARK.o.code,
+        sheetStart: base, only: ['tp'], floor: fl, num: numOf('o') })),
+        ttl + '. План напольного отопления');
+      put(base + 1, projectPlans.iso3dSheets(plans, { kind: 'tp', code: MARK.o.code,
+        sheetStart: base + 1, stepMm: tpStep, rooms: expRooms, floor: fl, num: numOf('o') }),
+        ttl + '. 3D вид напольного отопления');
+      put(base + 2, projectPlans.sheets(plans, withOpts({ code: MARK.o.code,
+        sheetStart: base + 2, only: ['floor'], floor: fl, num: numOf('o') })),
+        ttl + '. План отопления');
+      oSlots.push([numOf('o')(base + 3), ttl + '. 3D вид отопления', 'лист не формируется']);
+    });
+  }
+  var oManStart = 3 + nFloors * 4;
   // Узел коллектора ТП: таблица контуров (номера петель, длины, расходы)
   // и подключение петель к гребёнкам.
   var oMan = (plans && window.projectUfhManifold)
     ? projectUfhManifold.sheets(plans, { code: MARK.o.code, sheetStart: oManStart,
         stepMm: tpStep, steps: tpSteps, rooms: expRooms, items: payload.items,
-        num: numOf('o') })
+        photo: (payload.node3d || {}).ufh || null, num: numOf('o') })
     : [];
-  var oSpecStart = oManStart + oMan.length;
+  // Узел обвязки панельного радиатора — по 3D-рендеру, как в образцах
+  var oRadStart = oManStart + oMan.length;
+  var oRad = (window.projectNodeSheets && (payload.node3d || {}).radiator)
+    ? [projectNodeSheets.radiator({ code: MARK.o.code, sheet: numOf('o')(oRadStart),
+        photo: payload.node3d.radiator, items: itemsBy.o })].filter(Boolean)
+    : [];
+  var oSpecStart = oRadStart + oRad.length;
   var oSpec = itemsBy.o.length ? projectSheets.fromEquipment(itemsBy.o, {
     title: 'Спецификация материалов и оборудования отопления',
-    code: MARK.o.code, sheetStart: oSpecStart, num: numOf('o')
+    code: MARK.o.code, sheetStart: oSpecStart, num: specNumOf('o')
   }) : [];
 
-  // ── В: водоснабжение и канализация ───────────────────────────────────
-  var vPlans = (plans && window.projectPlans && itemsBy.v.length)
-    ? projectPlans.waterSheets(plans, { code: MARK.v.code, sheetStart: 2, num: numOf('v') })
+  // ── В: водоснабжение ─────────────────────────────────────────────────
+  // Этажами, как в эталоне: план водоснабжения этажа — сразу его объёмный вид.
+  var vBody = [], vSlots = [];
+  if (plans && window.projectPlans && itemsBy.v.length) {
+    (plans.floors || []).forEach(function (_, i) {
+      var fl = i + 1, base = 3 + i * 2, ttl = 'Этаж ' + pad2(fl);
+      var put = function (n, list, want) {
+        list.forEach(function (p) { vBody.push(p); vSlots.push([numOf('v')(n), p.title, '']); });
+        if (!list.length) vSlots.push([numOf('v')(n), want, 'лист не сформирован']);
+      };
+      put(base, projectPlans.waterSheets(plans, { code: MARK.v.code, sheetStart: base,
+        only: 'water', floor: fl, num: numOf('v') }), ttl + '. План водоснабжения');
+      put(base + 1, projectPlans.iso3dSheets(plans, { kind: 'water', code: MARK.v.code,
+        sheetStart: base + 1, floor: fl, num: numOf('v') }), ttl + '. 3D вид водоснабжения');
+    });
+  }
+  var vNodeStart = itemsBy.v.length ? 3 + nFloors * 2 : 3;
+  var vNodes = (window.projectNodeSheets && itemsBy.v.length && (payload.node3d || {}).water)
+    ? [projectNodeSheets.water({ code: MARK.v.code, sheet: numOf('v')(vNodeStart),
+        photo: payload.node3d.water, items: itemsBy.v })].filter(Boolean)
     : [];
-  var vSpecStart = 2 + vPlans.length;
+  var vPipeNo = vNodeStart + vNodes.length;
+  var vPipe = [];
+  var vSpecStart = vPipeNo + vPipe.length;
   var vSpec = itemsBy.v.length ? projectSheets.fromEquipment(itemsBy.v, {
     title: 'Спецификация материалов и оборудования водоснабжения',
-    code: MARK.v.code, sheetStart: vSpecStart, num: numOf('v')
+    code: MARK.v.code, sheetStart: vSpecStart, num: specNumOf('v')
+  }) : [];
+
+  // ── К: канализация ───────────────────────────────────────────────────
+  // В проектах-образцах это самостоятельный раздел со своим титулом,
+  // общими данными, планами и спецификацией, а не часть водоснабжения.
+  var kNo = 3;
+  var kBody = [];
+  if (plans && window.projectPlans && itemsBy.k.length) {
+    (plans.floors || []).forEach(function (_, i) {
+      var fl = i + 1, add = function (list) {
+        list.forEach(function (p) { kBody.push(p); kNo++; });
+      };
+      add(projectPlans.waterSheets(plans, { code: MARK.k.code, sheetStart: kNo,
+        only: 'sewer', floor: fl, num: numOf('k') }));
+      add(projectPlans.iso3dSheets(plans, { kind: 'sewer', code: MARK.k.code,
+        sheetStart: kNo, floor: fl, num: numOf('k') }));
+    });
+  }
+  var kSpecStart = kNo;
+  var kSpec = itemsBy.k.length ? projectSheets.fromEquipment(itemsBy.k, {
+    title: 'Спецификация материалов и оборудования канализации',
+    code: MARK.k.code, sheetStart: kSpecStart, num: specNumOf('k')
   }) : [];
 
   // ── Сборка разделов ──────────────────────────────────────────────────
@@ -285,25 +393,58 @@ if (payload && payload.items && payload.items.length) {
   // список листов раздела: [номер, имя листа, примечание]; титульный — нулевой
   var listOf = function (mk, rows) {
     var pre = MARK[mk].pre;
-    var out2 = [[pre + '0', 'Титульный лист', '']];
-    if (mk !== 'mep') out2.push([pre + '1', 'Общие данные', '']);
-    rows.forEach(function (r) { out2.push([pre + r[0], r[1], '']); });
+    // Имена листов — как в оригинале: титульный лист называет систему
+    var sysName = { tm: ' котельной', o: ' системы отопления',
+                    v: ' системы водоснабжения', k: ' системы канализации' }[mk] || '';
+    var out2 = [[numOf(mk)(1), 'Титульный лист' + sysName, '']];
+    if (mk !== 'mep') out2.push([numOf(mk)(2), 'Общие данные', '']);
+    rows.forEach(function (r) { out2.push([String(r[0]), r[1], r[2] || '']); });
     return out2;
   };
   var gdOf = function (mk, list, notes, total, extra) {
     extra = extra || {};
     return projectSheets.generalData({
-      listTitle: 'Список листов раздела',
+      // В оригинале название таблицы указывает систему: «Список листов
+      // раздела водоснабжения», «…отопления» и так далее
+      listTitle: 'Список листов раздела' + ({
+        tm: ' котельной', o: ' отопления', v: ' водоснабжения', k: ' канализации'
+      }[mk] || ''),
       sheetsList: list,
       notesTitle: mk === 'tm' ? 'Общие указания' : 'Общие данные',
       notes: notes,
       indicators: extra.indicators || null,
-      floorScheme: extra.floorScheme || null,
+      // Разрез пола — вырезка из оригинала: слои, штриховки и выноски там
+      // выверены, перерисовывать вектором смысла нет.
+      floorScheme: (mk === 'v' || mk === 'o')
+        ? { image: 'img/scheme_floor.png' } : (extra.floorScheme || null),
+      // Условные обозначения систем: в оригинале они стоят на листе общих
+      // данных того раздела, чьи трубопроводы показаны на схеме пола.
+      legend: {
+        v: [{ code: 'В1', color: '#4fc3d9', text: 'трубопровод холодного водоснабжения' },
+            { code: 'Т3', color: '#e8a35a', text: 'трубопровод горячего водоснабжения' }],
+        o: [{ code: 'Т11', color: '#c62828', text: 'трубопровод подачи отопления' },
+            { code: 'Т21', color: '#2c47a8', text: 'трубопровод обратки отопления' }],
+        k: [{ code: 'К1', color: '#7a7a7a', text: 'трубопровод бытовой канализации' }]
+      }[mk] || null,
+      // Сноска к схеме, типовая оговорка и подпись ГИП — как в оригинале
+      footer: {
+        note: [
+          '*На Схеме 1 приведена принципиальная модель расположения трубопроводов в составе перекрытия 1',
+          'этажа. Толщина слоев, как и состав перекрытия может меняться в зависимости от требований',
+          'архитектурного проекта.'
+        ],
+        legalLines: [
+          'Технические решения, принятые в рабочих чертежах, соответствуют требованиям экологических, санитарно-гигиенических,',
+          'противопожарных и других действующих норм и правил, обеспечивающих безопасную для жизни и здоровья людей эксплуатацию',
+          'объекта при проведении мероприятий, предусмотренных рабочим проектом.'
+        ],
+        gip: 'Главный инженер проекта _________________/ ' + ((payload.people || {}).gip || '')
+      },
       code: MARK[mk].code, object: payload.object,
       section: MARK[mk].name,
       sheetTitle: mk === 'tm' ? 'Общие указания' : 'Общие данные',
       people: { razrab: ppl.razrab, utv: ppl.gip },
-      sheet: MARK[mk].pre + '1', total: String(total), date: stampDate
+      sheet: numOf(mk)(2), total: String(total), date: stampDate
     });
   };
   var made = [];        // [{mk, total}] — для перекрёстных ссылок в общих данных
@@ -311,10 +452,14 @@ if (payload && payload.items && payload.items.length) {
 
   var mepTotal = mepPlans.length + mepHl.length;
   var tmTotal = (tmScheme.length + tmNodes.length + tmSpec.length)
-    ? 1 + tmScheme.length + tmLayout.length + tmNodes.length + tmSpec.length : 0;
-  var oTotal = (oPlans.length + oMan.length + oSpec.length)
-    ? 1 + oPlans.length + oMan.length + oSpec.length : 0;
-  var vTotal = (vPlans.length + vSpec.length) ? 1 + vPlans.length + vSpec.length : 0;
+    ? 1 + tmScheme.length + tmLayout.length + tmNodes.length + tmPipe.length +
+      tmSpec.length : 0;
+  var oTotal = (oBody.length + oMan.length + oRad.length + oSpec.length)
+    ? 1 + oBody.length + oMan.length + oRad.length + oSpec.length : 0;
+  var vTotal = (vBody.length + vNodes.length + vSpec.length)
+    ? 1 + vBody.length + vNodes.length + vPipe.length + vSpec.length : 0;
+  var kTotal = (kBody.length + kSpec.length)
+    ? 1 + kBody.length + kSpec.length : 0;
 
   // перечень «другие разделы» для общих данных каждого раздела
   var otherLine = function (mk) {
@@ -323,6 +468,7 @@ if (payload && payload.items && payload.items.length) {
     if (mk !== 'tm' && tmTotal) parts.push(MARK.tm.code + ' (' + tmTotal + ' л.)');
     if (mk !== 'o' && oTotal) parts.push(MARK.o.code + ' (' + oTotal + ' л.)');
     if (mk !== 'v' && vTotal) parts.push(MARK.v.code + ' (' + vTotal + ' л.)');
+    if (mk !== 'k' && kTotal) parts.push(MARK.k.code + ' (' + kTotal + ' л.)');
     return parts.length ? ['Другие разделы комплекта: ' + parts.join(', ') + '.'] : [];
   };
   var commonNotes = function (mk, composition, total) {
@@ -351,11 +497,12 @@ if (payload && payload.items && payload.items.length) {
 
   if (tmTotal) {
     var tmRows = [];
-    tmScheme.forEach(function () { tmRows.push([tmSchemeNo, 'Принципиальная схема']); });
-    tmLayout.forEach(function (p, i) { tmRows.push([tmLayoutStart + i, p.title]); });
-    nodesPlan.forEach(function (p, i) { tmRows.push([tmNodesStart + i, p.title]); });
+    tmScheme.forEach(function () { tmRows.push([numOf('tm')(tmSchemeNo), 'Принципиальная схема']); });
+    tmLayout.forEach(function (p, i) { tmRows.push([numOf('tm')(tmLayoutStart + i), p.title]); });
+    nodesPlan.forEach(function (p, i) { tmRows.push([numOf('tm')(tmNodesStart + i), p.title]); });
+    tmPipe.forEach(function (p, i) { tmRows.push([numOf('tm')(tmPipeNo + i), p.title]); });
     tmSpec.forEach(function (_, i) {
-      tmRows.push([tmSpecStart + i, 'Спецификация материалов и оборудования котельной']);
+      tmRows.push([specNumOf('tm')(tmSpecStart + i), 'Спецификация материалов и оборудования котельной']);
     });
     // Указания по котельной приходят из сметы (gdTm): описание, режимы,
     // обвязка, энергоэффективность. Их нет у смет, отправленных на листы
@@ -377,50 +524,77 @@ if (payload && payload.items && payload.items.length) {
     tmScheme.forEach(function (s) { svgs.push(s); });
     tmLayout.forEach(function (p) { svgs.push(p.svg); });
     tmNodes.forEach(function (s) { svgs.push(s); });
+    tmPipe.forEach(function (p) { svgs.push(p.svg); });
     tmSpec.forEach(function (s) { svgs.push(s); });
     made.push({ mk: 'tm', total: tmTotal });
   }
 
   if (oTotal) {
     var oRows = [];
-    oPlans.forEach(function (p, i) { oRows.push([2 + i, p.title]); });
-    oMan.forEach(function (p, i) { oRows.push([oManStart + i, p.title]); });
+    oSlots.forEach(function (r) { oRows.push(r); });
+    oMan.forEach(function (p, i) { oRows.push([numOf('o')(oManStart + i), p.title]); });
+    oRad.forEach(function (p, i) { oRows.push([numOf('o')(oRadStart + i), p.title]); });
     oSpec.forEach(function (_, i) {
-      oRows.push([oSpecStart + i, 'Спецификация материалов и оборудования отопления']);
+      oRows.push([specNumOf('o')(oSpecStart + i), 'Спецификация материалов и оборудования отопления']);
     });
     var gd = payload.gd || {};
     var oNotes = (gd.notes && gd.notes.length) ? gd.notes
       : commonNotes('o', 'Титульный лист, общие данные' +
-          (oPlans.length ? ', планы этажей (' + oPlans.length + ' л.)' : '') +
+          (oBody.length ? ', планы этажей (' + oBody.length + ' л.)' : '') +
           (oMan.length ? ', узел коллектора тёплого пола' : '') +
+          (oRad.length ? ', узел обвязки радиатора' : '') +
           ' и спецификация', oTotal);
     svgs.push(titleOf('o'));
     svgs.push(gdOf('o', listOf('o', oRows), oNotes, oTotal,
       { indicators: gd.indicators, floorScheme: gd.floorScheme }));
-    oPlans.forEach(function (p) { svgs.push(p.svg); });
+    oBody.forEach(function (p) { svgs.push(p.svg); });
     oMan.forEach(function (p) { svgs.push(p.svg); });
+    oRad.forEach(function (p) { svgs.push(p.svg); });
     oSpec.forEach(function (s) { svgs.push(s); });
     made.push({ mk: 'o', total: oTotal });
   }
 
   if (vTotal) {
     var vRows = [];
-    vPlans.forEach(function (p, i) { vRows.push([2 + i, p.title]); });
+    vSlots.forEach(function (r) { vRows.push(r); });
+    vNodes.forEach(function (p, i) { vRows.push([numOf('v')(vNodeStart + i), p.title]); });
+    vPipe.forEach(function (p, i) { vRows.push([numOf('v')(vPipeNo + i), p.title]); });
     vSpec.forEach(function (_, i) {
-      vRows.push([vSpecStart + i, 'Спецификация материалов и оборудования водоснабжения']);
+      vRows.push([specNumOf('v')(vSpecStart + i), 'Спецификация материалов и оборудования водоснабжения']);
     });
     var gdVk = payload.gdVk || {};
     var vNotes = (gdVk.notes && gdVk.notes.length) ? gdVk.notes
       : commonNotes('v', 'Титульный лист, общие данные' +
-          (vPlans.length ? ', планы водоснабжения и канализации (' + vPlans.length + ' л.)' : '') +
+          (vBody.length ? ', планы водоснабжения (' + vBody.length + ' л.)' : '') +
+          (vNodes.length ? ', узел коллектора водоснабжения' : '') +
           ' и спецификация', vTotal);
     svgs.push(titleOf('v'));
     svgs.push(gdOf('v', listOf('v', vRows), vNotes, vTotal,
-      { indicators: (gdVk.indicators && gdVk.indicators.rows) ? gdVk.indicators : null,
-        floorScheme: gdVk.floorScheme }));
-    vPlans.forEach(function (p) { svgs.push(p.svg); });
+      // Таблицы показателей на листе общих данных раздела В в оригинале нет —
+      // её место занимают условные обозначения систем и схема пола.
+      { floorScheme: gdVk.floorScheme }));
+    vBody.forEach(function (p) { svgs.push(p.svg); });
+    vNodes.forEach(function (p) { svgs.push(p.svg); });
+    vPipe.forEach(function (p) { svgs.push(p.svg); });
     vSpec.forEach(function (s) { svgs.push(s); });
     made.push({ mk: 'v', total: vTotal });
+  }
+
+  if (kTotal) {
+    var kRows = [];
+    kBody.forEach(function (p, i) { kRows.push([numOf('k')(3 + i), p.title]); });
+    kSpec.forEach(function (_, i) {
+      kRows.push([specNumOf('k')(kSpecStart + i), 'Спецификация материалов и оборудования канализации']);
+    });
+    var kNotes = (payload.gdK && payload.gdK.length) ? payload.gdK
+      : commonNotes('k', 'Титульный лист, общие данные' +
+          (kBody.length ? ', планы канализации (' + kBody.length + ' л.)' : '') +
+          ' и спецификация', kTotal);
+    svgs.push(titleOf('k'));
+    svgs.push(gdOf('k', listOf('k', kRows), kNotes, kTotal));
+    kBody.forEach(function (p) { svgs.push(p.svg); });
+    kSpec.forEach(function (s) { svgs.push(s); });
+    made.push({ mk: 'k', total: kTotal });
   }
 
   document.getElementById('bar_title').textContent = payload.title;

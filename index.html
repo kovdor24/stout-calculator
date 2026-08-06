@@ -49,10 +49,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.91">
+    <link rel="stylesheet" href="style.css?v=2.98">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.25" defer></script>
+    <script src="catalog.js?v=2.36" defer></script>
     <!-- Координаты и регионы населённых пунктов: карта проектов в админке и
          адрес объекта. Данные вшиты в файл, наружу никаких запросов. -->
     <script src="cities_geo.js?v=1.0" defer></script>
@@ -60,14 +60,14 @@
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.0" defer></script>
     <script src="gamification.js?v=2.0" defer></script>
-    <script src="app.js?v=3.69" defer></script>
+    <script src="app.js?v=4.40" defer></script>
     <!-- Укладка тёплого пола по планам этажей. В калькуляторе нужна не ради
          листов, а ради сметы: длину трубы и число выходов коллектора берём
          из нарисованных петель (projectPlans.floorLoops). -->
-    <script src="project_plans.js?v=1.0" defer></script>
+    <script src="project_plans.js?v=1.5" defer></script>
     <!-- Распознавание смет: подбор по каталогу и интерфейс мастера.
          Порядок важен — recognize.js обращается к RecognizeMatch. -->
-    <script src="recognize_match.js?v=4.3" defer></script>
+    <script src="recognize_match.js?v=4.6" defer></script>
     <!-- Извлечение текста из Excel, Word, PDF, HTML. Подключается до
          recognize.js, который его использует. -->
     <script src="recognize_files.js?v=1.0" defer></script>
@@ -208,22 +208,29 @@
                     oninput="app.setArea(this.value)">
                 <!-- Площадь по зонам планов этажей: заполняет app.renderPlanAreaNote(), без зон скрыта -->
                 <div id="plan_area_note" style="display:none; margin-top: 4px; font-size: 11px; line-height: 1.4; color: var(--text-sec);"></div>
+
+                <!-- План помещений: подложка и зоны для листов проекта (редактор —
+                     отдельная страница). Стоит сразу под площадью: зоны плана эту
+                     площадь и уточняют. Виден только тем, кому открыто
+                     проектирование (app.syncDesignUI). -->
+                <div class="label-row" id="blk_plan_editor_row"
+                    style="margin: 18px 0 0; padding: 12px 0; border-top: 1px dashed var(--border); border-bottom: 1px dashed var(--border); display: none;">
+                    <span class="lbl">План помещений</span>
+                    <button type="button" onclick="app.openPlanEditor()"
+                        style="font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: inherit; cursor: pointer;">Загрузить</button>
+                </div>
             </div>
 
-            <div class="control-item toggle-item" id="blk_detailed_rooms_header" style="display: none; margin-bottom: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">
+            <!-- Верхнюю пунктирную линию класса .toggle-item гасим: она приходилась
+                 ровно под «Планом помещений» и отрезала его от площади, к которой он
+                 относится. Черта снизу остаётся — она отделяет весь блок. -->
+            <div class="control-item toggle-item" id="blk_detailed_rooms_header" style="display: none; margin-top: 0; padding-top: 0; border-top: none; margin-bottom: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">
                 <div class="label-row" style="margin-bottom: 0;">
                     <span class="lbl">Расчёт по комнатам</span>
                     <label class="switch">
                         <input type="checkbox" id="chk_detailed_rooms_toggle" onchange="app.toggleDetailedRoomsPanel(this.checked, event)">
                         <span class="slider"></span>
                     </label>
-                </div>
-                <!-- Планы этажей: подложка и зоны для листов проекта (редактор — отдельная страница).
-                     Виден только тем, кому открыто проектирование (app.syncDesignUI). -->
-                <div class="label-row" id="blk_plan_editor_row" style="margin: 8px 0 0; display: none;">
-                    <span class="lbl">Планы этажей для проекта</span>
-                    <button type="button" onclick="app.openPlanEditor()"
-                        style="font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: inherit; cursor: pointer;">Открыть редактор</button>
                 </div>
             </div>
 
@@ -488,11 +495,100 @@
                 </div>
             </div>
 
-            <div class="control-item" id="blk_coolant_wrap"><span class="lbl-sub">Теплоноситель</span>
-                <div class="tabs" id="blk_coolant">
-                    <div class="tab cool-tab active" data-type="water" onclick="app.setCoolant('water', event)">💧 Вода</div>
-                    <div class="tab cool-tab" data-type="eco30" onclick="app.setCoolant('eco30', event)">❄️ -30°C</div>
-                    <div class="tab cool-tab" data-type="pro65" onclick="app.setCoolant('pro65', event)">❄️ -40°C</div>
+            <!-- Идёт в одном блоке с «Типом котла», поэтому вместо стандартной
+                 верхней пунктирной линии .toggle-item черта уходит вниз: она
+                 отделяет весь блок целиком, а не эти два пункта друг от друга. -->
+            <div class="control-item"
+                style="border-bottom:1px dashed var(--border); padding-bottom:16px; margin-bottom:16px;">
+                <div class="label-row">
+                    <span class="lbl"
+                        title="Контроллер STOUT Thermatic 3001: держит температуру в каждом контуре по погоде, управляет котлами, бойлером и рециркуляцией, доступен с телефона через интернет.">Автоматика
+                        котельной</span>
+                    <label class="switch"><input type="checkbox" id="chk_boiler_auto"
+                            onchange="app.toggleBoilerAuto(this.checked, event)"><span class="slider"></span></label>
+                </div>
+                <!-- Подпункты собраны в серую рамку — тем же приёмом, что и блок «Горячая
+                     вода (Бойлер)»: пока основной тумблер выключен, рамки нет вовсе, а
+                     включённый контроллер показывает всё своё хозяйство одним куском. -->
+                <div id="blk_boiler_auto_box"
+                    style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">
+                    <div id="blk_boiler_auto_info" style="font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
+
+                    <!-- Защита от протечки, регулирование по воздуху и выносная панель —
+                         только в подробном режиме (app.syncUI). -->
+                    <div id="blk_boiler_auto_opts" style="display:none; flex-direction:column; gap:10px;">
+                        <!-- Первый подпункт — без линии сверху: она отделяла бы его
+                             от сводки, а при пустом объекте сводки нет вовсе и черта
+                             висела бы по верхнему краю рамки. Так же и в блоке
+                             «Горячая вода»: разделители идут только между пунктами. -->
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="lbl" style="font-size:12px;"
+                                title="Датчик протечки на аналоговый вход контроллера, шаровой зональный кран STOUT с сервоприводом на вводе. Сработал датчик — вода перекрыта, ушло оповещение.">Защита от протечки</span>
+                            <label class="switch" style="transform:scale(0.8); transform-origin:right;">
+                                <input type="checkbox" id="chk_leak_protect" onchange="app.toggleLeakProtect(this.checked, event)"><span class="slider"></span>
+                            </label>
+                        </div>
+                        <div id="blk_leak_opts" style="display:none;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span class="lbl" style="font-size:12px;">Количество датчиков</span>
+                                <div class="stepper" style="width:100px;">
+                                    <button class="step-btn" onclick="app.updLeakSensors(-1)">−</button>
+                                    <div class="step-val editable-val" id="val_leak_sensors" contenteditable="true"
+                                        onblur="app.setLeakSensors(this.innerText)"
+                                        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">1</div>
+                                    <button class="step-btn" onclick="app.updLeakSensors(1)">+</button>
+                                </div>
+                            </div>
+                            <div id="leak_sensors_hint" style="margin-top:8px; font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
+                        </div>
+                        <div style="border-top:1px solid #E5E7EB; padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
+                            <span class="lbl" style="font-size:12px;"
+                                title="Контур держит заданную температуру воздуха в своей зоне, а не температуру теплоносителя. На каждый контур нужен свой датчик.">Регулирование по воздуху</span>
+                            <label class="switch" style="transform:scale(0.8); transform-origin:right;">
+                                <input type="checkbox" id="chk_air_control" onchange="app.toggleAirControl(this.checked, event)"><span class="slider"></span>
+                            </label>
+                        </div>
+                        <div id="blk_air_opts" style="display:none;">
+                        <span class="lbl-sub" style="margin-bottom:6px;">Устройство в помещении</span>
+                        <div class="tabs" style="font-size:11px;">
+                            <div class="tab air-kind-tab" data-akind="sensor" onclick="app.setAirDeviceType('sensor')"
+                                title="Только датчик температуры, все уставки задаются в приложении.">Датчик</div>
+                            <div class="tab air-kind-tab" data-akind="thermostat" onclick="app.setAirDeviceType('thermostat')"
+                                title="Датчик со своим экраном и колесом уставки — температуру можно менять прямо в комнате.">Термостат</div>
+                        </div>
+                        <!-- Двухпозиционные термостаты STOUT отдельной вкладки не имеют:
+                             они меняют сам способ регулирования, поэтому выбираются
+                             осознанно — заменой позиции в смете. -->
+                        <!-- Для сухого контакта выбор связи неприменим — прячется -->
+                        <div id="blk_air_link">
+                            <span class="lbl-sub" style="margin:10px 0 6px 0; display:block;">Связь</span>
+                            <div class="tabs" style="font-size:11px;">
+                                <div class="tab air-link-tab" data-alink="wired" onclick="app.setAirLink('wired')"
+                                    title="Шина RS-485, витая пара, до 200 м.">Проводом</div>
+                                <div class="tab air-link-tab" data-alink="radio" onclick="app.setAirLink('radio')"
+                                    title="868 МГц. Дополнительно нужен радиомодуль — он добавится сам.">По радио</div>
+                            </div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                            <span class="lbl" style="font-size:12px;">Количество</span>
+                            <div class="stepper" style="width:100px;">
+                                <button class="step-btn" onclick="app.updAirSensors(-1)">−</button>
+                                <div class="step-val editable-val" id="val_air_sensors" contenteditable="true"
+                                    onblur="app.setAirSensors(this.innerText)"
+                                    onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">1</div>
+                                <button class="step-btn" onclick="app.updAirSensors(1)">+</button>
+                            </div>
+                        </div>
+                        <div id="air_hint" style="margin-top:8px; font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
+                        </div>
+                        <div style="border-top:1px solid #E5E7EB; padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
+                            <span class="lbl" style="font-size:12px;"
+                                title="Панель с экраном в жилой зоне: сменить режим или температуру, не спускаясь в котельную.">Выносная панель управления</span>
+                            <label class="switch" style="transform:scale(0.8); transform-origin:right;">
+                                <input type="checkbox" id="chk_ctrl_panel" onchange="app.toggleState('ctrlPanel', this.checked)"><span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -501,6 +597,18 @@
                 <div class="tabs">
                     <div class="tab multi-active" id="sys_rad" onclick="app.toggleSys('rad', event)">🌡️ Радиаторы</div>
                     <div class="tab" id="sys_tp" onclick="app.toggleSys('tp', event)">♨️ Тёплый пол</div>
+                </div>
+            </div>
+
+            <!-- Заголовок тем же <h4>, что и «Тип котла» с «Типом отопления»:
+                 раньше здесь был мелкий .lbl-sub, и «Теплоноситель» читался как
+                 подпись к соседнему блоку, а не как самостоятельный выбор. -->
+            <h4 id="lbl_coolant" style="margin-bottom: 6px; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal; color: var(--text-main);">Теплоноситель</h4>
+            <div class="control-item" id="blk_coolant_wrap">
+                <div class="tabs" id="blk_coolant">
+                    <div class="tab cool-tab active" data-type="water" onclick="app.setCoolant('water', event)">💧 Вода</div>
+                    <div class="tab cool-tab" data-type="eco30" onclick="app.setCoolant('eco30', event)">❄️ -30°C</div>
+                    <div class="tab cool-tab" data-type="pro65" onclick="app.setCoolant('pro65', event)">❄️ -40°C</div>
                 </div>
             </div>
             <div class="control-item" id="blk_rad_scheme" style="display:none; margin-bottom: 12px;">
@@ -698,12 +806,25 @@
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
-                        <span class="lbl" style="font-size:12px;">Подпитка отопления</span>
-                        <label class="switch">
-                            <input type="checkbox" id="chk_heating_feed" onchange="app.toggleState('heatingFeed', this.checked)">
-                            <span class="slider"></span>
-                        </label>
+                    <div style="padding:6px 0; border-top:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="lbl" style="font-size:12px;">Подпитка отопления</span>
+                            <label class="switch">
+                                <input type="checkbox" id="chk_heating_feed" onchange="app.toggleState('heatingFeed', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div id="blk_feed_type" style="display:none; margin-top:8px;">
+                            <div class="tabs" style="font-size:11px;">
+                                <div class="tab feed-type-tab" data-ftype="manual"
+                                    onclick="app.setFeedType('manual', event)"
+                                    title="Кран с заглушкой: доливать давление вручную.">Ручная</div>
+                                <div class="tab feed-type-tab" data-ftype="auto"
+                                    onclick="app.setFeedType('auto', event)"
+                                    title="Автоматический подпиточный клапан: держит заданное давление сам. Если в смете есть контроллер отопления, к нему добавится датчик давления с оповещением.">Авто</div>
+                            </div>
+                            <div id="feed_type_hint" style="margin-top:8px; font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
+                        </div>
                     </div>
                 </div>
             </div>

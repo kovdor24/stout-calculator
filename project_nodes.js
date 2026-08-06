@@ -43,8 +43,10 @@
     o = o || {};
     var a = ' x="' + n(x) + '" y="' + n(y) + '" font-size="' + (o.size || SZ.txt) + '"';
     if (o.anchor) a += ' text-anchor="' + o.anchor + '"';
-    // длинные имена из сметы ужимаются межбуквенно, как в таблицах движка
-    if (o.maxW && String(s).length * (o.size || SZ.txt) * 0.42 > o.maxW)
+    // Длинные имена из сметы ужимаются межбуквенно, как в таблицах движка.
+    // 0.46 — измеренная ширина знака чертёжного шрифта; при 0.42 самая
+    // длинная выноска («Вентиль отсечной…») вылезала на рамку листа.
+    if (o.maxW && String(s).length * (o.size || SZ.txt) * 0.46 > o.maxW)
       a += ' textLength="' + n(o.maxW) + '" lengthAdjust="spacingAndGlyphs"';
     // латиница вне покрытия чертёжного шрифта — запасным семейством целиком
     var PS = window.projectSheets;

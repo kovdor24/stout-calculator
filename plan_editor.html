@@ -100,6 +100,7 @@
   </div>
 </div>
 
+<script src="project_plans.js?v=1.5"></script>
 <script>
 'use strict';
 // Доступ к проектированию. Своей авторизации у страницы нет, поэтому отметку
@@ -125,6 +126,7 @@
 // Данные: этажи с подложкой и зонами. Точки зон — в пикселях ИЗОБРАЖЕНИЯ.
 var DATA = { floors: [{ img: null, w: 0, h: 0, pxPerM: 0, zones: [], rads: [] }] };
 var cur = 0, mode = 'select', tmp = [], scalePts = [], dragA = null, imgCache = {};
+var scaleCur = null, scaleFree = false;   // след масштабной линейки и режим угла
 var imgFailed = {};   // этажи, чью подложку не удалось забрать с сервера
 var polyCur = null, closeTs = 0, undoStack = [];
 var TYPES = { tp: ['Тёплый пол', '#ff8000'], rad: ['Радиаторы', '#d22'],
@@ -377,8 +379,13 @@ function applyPlanCanvas(c) {
   delete imgFailed[cur];
   delete maskCache[cur];
   delete winCache[cur];
-  hint('План загружен. Теперь «Масштаб»: две точки + длина в метрах.');
+  hint('План загружен. Кликните две точки известного отрезка — режим масштаба уже включён.');
   draw(); renderZones();
+  // Следующий шаг после загрузки всегда один и тот же, поэтому режим
+  // масштаба включаем сами: нажимать «Масштаб» вручную незачем. Проверка
+  // на текущий режим обязательна — setMode переключает, и повторный вызов
+  // в режиме масштаба его бы выключил.
+  if (mode !== 'scale') setMode('scale');
 }
 
 // ─── Карта стен: тёмные пиксели подложки как преграды ──────────────────
@@ -402,11 +409,63 @@ function getMask(fi) {
     // тёмное — стена/линия; красноватое (размерные цепочки) преградой не считаем
     bar[i] = (lum < 165 && !(r > gg + 28 && r > b + 28)) ? 1 : 0;
   }
-  // bar2 — маска «с закрытыми дверями» для заливки комнат: белые разрывы
-  // до ~1.05 м между стенами замыкаются по строкам и по колонкам, иначе
-  // заливка утекает через открытые дверные проёмы и сливает комнаты
+  // Чистить маску от размерных линий здесь нельзя: на планах они заодно
+  // перекрывают широкие проёмы, и без них заливка комнат утекает через
+  // проходы — помещения слипаются в одно. Чистка живёт в exportGeom, где
+  // она нужна только контурам стен для листа.
   maskCache[idx] = { w: w, h: h, k: k, bar: bar };
   return maskCache[idx];
+}
+
+/**
+ * Размыкание маски: эрозия и обратная дилатация радиусом r.
+ *
+ * Считается по интегральной сумме, поэтому не зависит от радиуса по времени.
+ * Если чистка съедает больше половины тёмного — стены на плане нарисованы
+ * тонким контуром, а не залиты; тогда откатываемся к исходной маске, иначе
+ * от плана ничего не осталось бы.
+ */
+function openThin(bar, W, H, ppm) {
+  var r = Math.max(1, Math.round(0.035 * ppm));
+  if (r < 1 || W < 3 || H < 3) return;
+  var N = W * H, i, x, y;
+  var keep = new Uint8Array(N), was = 0;
+  for (i = 0; i < N; i++) if (bar[i]) was++;
+  if (!was) return;
+  var sum = new Int32Array((W + 1) * (H + 1));
+  var box = function (S, x0, y0, x1, y1) {           // сумма по прямоугольнику
+    x0 = Math.max(0, x0); y0 = Math.max(0, y0);
+    x1 = Math.min(W - 1, x1); y1 = Math.min(H - 1, y1);
+    return S[(y1 + 1) * (W + 1) + x1 + 1] - S[y0 * (W + 1) + x1 + 1]
+         - S[(y1 + 1) * (W + 1) + x0] + S[y0 * (W + 1) + x0];
+  };
+  var integral = function (src, S) {
+    for (y = 0; y < H; y++) {
+      var row = 0;
+      for (x = 0; x < W; x++) {
+        row += src[y * W + x];
+        S[(y + 1) * (W + 1) + x + 1] = S[y * (W + 1) + x + 1] + row;
+      }
+    }
+  };
+  integral(bar, sum);
+  var er = new Uint8Array(N);
+  for (y = 0; y < H; y++) for (x = 0; x < W; x++) {
+    var x0 = x - r, y0 = y - r, x1 = x + r, y1 = y + r;
+    var cells = (Math.min(W - 1, x1) - Math.max(0, x0) + 1) *
+                (Math.min(H - 1, y1) - Math.max(0, y0) + 1);
+    er[y * W + x] = (box(sum, x0, y0, x1, y1) === cells) ? 1 : 0;
+  }
+  var sum2 = new Int32Array((W + 1) * (H + 1));
+  integral(er, sum2);
+  var left = 0;
+  for (y = 0; y < H; y++) for (x = 0; x < W; x++) {
+    var v = box(sum2, x - r, y - r, x + r, y + r) > 0 ? 1 : 0;
+    keep[y * W + x] = v;
+    if (v) left++;
+  }
+  if (left < was * 0.4) return;                       // стены контуром — не трогаем
+  for (i = 0; i < N; i++) bar[i] = keep[i];
 }
 
 // ─── Подводки петель ТП к коллектору ───────────────────────────────────
@@ -695,6 +754,101 @@ function computeLeads() {
 /** Разметка комнат (watershed): карта расстояний до стен → «ядра» глубже
  *  0.63 м разъединяются в дверях и проёмах сами → ядра разрастаются обратно
  *  по свободному месту. Каждому пикселю — метка своей комнаты. */
+/**
+ * Геометрия этажа для листов: контуры стен и окна.
+ *
+ * Лист «Сводный план сетей» рисуется программой, а не подложкой: подложка
+ * у монтажников любая (фото, скан, экспорт CAD), а лист должен выглядеть
+ * одинаково. Контуры берём из той же маски, по которой считаются маршруты
+ * труб: тёмное — стена. Дверные проёмы отдельно искать не нужно — в маске
+ * это разрывы, и в контуре они остаются разрывами.
+ *
+ * Мелочь (текст, размерные цепочки, штриховки) отсекается по площади и по
+ * средней толщине: стена толще 5 см, надпись — нет.
+ */
+function exportGeom(fi) {
+  var idx = (fi == null) ? cur : fi;
+  var f = DATA.floors[idx];
+  var m = getMask(idx);
+  if (!f || !m || !f.pxPerM) return null;
+  var W = m.w, H = m.h, N = W * H;
+  var ppm = f.pxPerM * m.k;                       // пикселей маски на метр
+  // Копия маски, очищенная от тонкого: размерные цепочки и подписи не должны
+  // попасть в контуры стен. Исходная маска не трогается — по ней считаются
+  // комнаты и маршруты труб.
+  var wm = getWallMask(idx);
+  var bar = wm ? wm.bar : m.bar;
+  var lab = new Int32Array(N), labMin = [-1], labCnt = [0];
+  var bb = [null], q = new Int32Array(N), L = 0;
+  for (var s0 = 0; s0 < N; s0++) {
+    if (!bar[s0] || lab[s0]) continue;
+    L++; labMin.push(s0); labCnt.push(0);
+    var x0 = s0 % W, y0 = (s0 / W) | 0, box = [x0, y0, x0, y0];
+    var qh = 0, qt = 0;
+    lab[s0] = L; q[qt++] = s0;
+    while (qh < qt) {
+      var c = q[qh++], cx = c % W, cy = (c / W) | 0;
+      labCnt[L]++;
+      if (cx < box[0]) box[0] = cx;
+      if (cy < box[1]) box[1] = cy;
+      if (cx > box[2]) box[2] = cx;
+      if (cy > box[3]) box[3] = cy;
+      for (var d = 0; d < 8; d++) {
+        var nx = cx + [1, -1, 0, 0, 1, 1, -1, -1][d];
+        var ny = cy + [0, 0, 1, -1, 1, -1, 1, -1][d];
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        var ni = ny * W + nx;
+        if (bar[ni] && !lab[ni]) { lab[ni] = L; q[qt++] = ni; }
+      }
+    }
+    bb.push(box);
+  }
+  var fake = { w: W, h: H, k: m.k, labels: lab, labMin: labMin };
+  var walls = [];
+  for (var i = 1; i <= L; i++) {
+    var box2 = bb[i], side = Math.max(box2[2] - box2[0], box2[3] - box2[1]) || 1;
+    if (labCnt[i] < 0.10 * ppm * ppm) continue;   // мелкое — надписи, значки
+    if (labCnt[i] / side < 0.05 * ppm) continue;  // тонкое — размерные линии
+    var pts = traceLabel(fake, i);
+    if (pts && pts.length > 2) walls.push(pts);
+  }
+  // Ширину окна округляем до стандартной: измерение по растру даёт ±5 см,
+  // а на листе рядом с окном стоит размер — врать он не должен. Дверей это
+  // не касается: их detectWindows не отдаёт (у проёма нет тонких линий
+  // остекления, по ним окно и опознаётся).
+  var STD_W = [600, 900, 1000, 1200, 1300, 1400, 1500, 1600, 1800, 2000, 2100, 2400, 2700, 3000];
+  var wins = [], doors = [];
+  try {
+    var save = cur; cur = idx;
+    wins = (detectWindows() || []).map(function (w) {
+      var mmW = (w.ow || w.w) / (f.pxPerM || 100) * 1000;
+      var best = STD_W[0];
+      STD_W.forEach(function (v) { if (Math.abs(v - mmW) < Math.abs(best - mmW)) best = v; });
+      var std = Math.abs(best - mmW) <= 150 ? best : Math.round(mmW / 50) * 50;
+      return { x: Math.round(w.ox != null ? w.ox : w.x), y: Math.round(w.oy != null ? w.oy : w.y),
+        w: Math.round(w.ow || w.w), ang: w.ang || 0, mm: std };
+    });
+    doors = DOORS.map(function (d) {
+      var dmm = d.w / (f.pxPerM || 100) * 1000;
+      var STD_D = [600, 700, 800, 900, 1000, 1200, 1500];
+      var bd = STD_D[0];
+      STD_D.forEach(function (v) { if (Math.abs(v - dmm) < Math.abs(bd - dmm)) bd = v; });
+      return { x: Math.round(d.x), y: Math.round(d.y), w: Math.round(d.w), ang: d.ang,
+        side: d.side, hinge: d.hinge, mm: Math.abs(bd - dmm) <= 120 ? bd : Math.round(dmm / 50) * 50 };
+    });
+    cur = save;
+  } catch (e) { console.error('[plan_editor] geom windows:', e); }
+  return { walls: walls, wins: wins, doors: doors };
+}
+
+/** Геометрия всех этажей — считается при сохранении, уезжает в данные планов */
+function computeGeom() {
+  DATA.floors.forEach(function (f, fi) {
+    try { f.geom = exportGeom(fi); }
+    catch (e) { console.error('[plan_editor] geom:', e); f.geom = f.geom || null; }
+  });
+}
+
 function labelRooms() {
   var m = getMask(); if (!m) return null;
   if (m.labels) return m;
@@ -823,6 +977,46 @@ function roomAtPoint(ix, iy) {
 }
 
 /** Прилипание краёв прямоугольника к внутренним граням стен (±20 px плана) */
+// Маска стен: та же карта, но очищенная от тонкого — размерные цепочки,
+// выноски и подписи не должны считаться стеной при привязке.
+var wallMaskCache = {};
+function getWallMask(fi) {
+  var idx = (fi == null) ? cur : fi;
+  var m = getMask(idx);
+  if (!m) return null;
+  if (wallMaskCache[idx] && wallMaskCache[idx].src === m) return wallMaskCache[idx].m;
+  var f = DATA.floors[idx];
+  var bar = new Uint8Array(m.bar);
+  openThin(bar, m.w, m.h, (f.pxPerM || 100) * m.k);
+  var out = { w: m.w, h: m.h, k: m.k, bar: bar };
+  wallMaskCache[idx] = { src: m, m: out };
+  return out;
+}
+
+/**
+ * Точка к стене и углу: ищем ближайший тёмный пиксель маски в радиусе 12 px
+ * плана. Если рядом угол (стена и по горизонтали, и по вертикали) — точка
+ * встаёт в него: масштаб чаще всего снимают по проёму или углу комнаты.
+ */
+function snapWall(p) {
+  var m = getWallMask(); if (!m) return p;
+  var R = Math.max(4, Math.round(12 * m.k));
+  var sx = Math.round(p[0] * m.k), sy = Math.round(p[1] * m.k);
+  var best = null, bd = 1e9;
+  for (var dy = -R; dy <= R; dy++) for (var dx = -R; dx <= R; dx++) {
+    var x = sx + dx, y = sy + dy;
+    if (x < 0 || y < 0 || x >= m.w || y >= m.h) continue;
+    if (!m.bar[y * m.w + x]) continue;
+    var d = dx * dx + dy * dy;
+    // угол притягивает сильнее ровной стены
+    var horiz = (x > 0 && m.bar[y * m.w + x - 1]) || (x + 1 < m.w && m.bar[y * m.w + x + 1]);
+    var vert = (y > 0 && m.bar[(y - 1) * m.w + x]) || (y + 1 < m.h && m.bar[(y + 1) * m.w + x]);
+    if (horiz && vert) d *= 0.45;
+    if (d < bd) { bd = d; best = [x, y]; }
+  }
+  return best ? [Math.round(best[0] / m.k), Math.round(best[1] / m.k)] : p;
+}
+
 function snapRect(a, b) {
   var m = getMask(); if (!m) return [a, b];
   var SN = Math.max(3, Math.round(20 * m.k));
@@ -870,6 +1064,8 @@ function ortho(p, prev, useShift) {
   return Math.abs(dx) >= Math.abs(dy) ? [p[0], prev[1]] : [prev[0], p[1]];
 }
 
+// двери этажа: заполняются вместе с окнами в detectWindows
+var DOORS = [];
 // найденные окна этажа (кэш: пересчёт только после смены подложки)
 var winCache = {};
 function floorWindows() {
@@ -1024,6 +1220,7 @@ function detectWindows() {
   if (sn) { scx /= sn; scy /= sn; }
 
   var out = [];
+  DOORS = [];
   cl.forEach(function (v) {
     if (v.n < 3) return;
     var cx = v.cx / v.n, cy = v.cy / v.n, len = v.len / v.n, t = v.t / v.n;
@@ -1052,7 +1249,42 @@ function detectWindows() {
     var med = vals[vals.length >> 1], okN = 0;
     var lineTol = Math.max(2, t * 0.3);
     hits.forEach(function (q) { if (q !== null && Math.abs(q - med) <= lineTol) okN++; });
-    if (okN / tot < 0.75) return;
+    // Проём без сплошного заполнения — это дверь: полотно и дуга дают
+    // рваное покрытие. Такие проёмы собираем отдельно, со стороной навески
+    // и стороной открывания, чтобы нарисовать дугу на листе.
+    if (okN / tot < 0.75) {
+      var dm = len / ppm;
+      if (dm >= 0.6 && dm <= 1.6) {
+        var freeCnt = function (sgn) {
+          var c = 0, R = Math.round(len), ai2, ci2;
+          for (ai2 = a0; ai2 <= a1; ai2++)
+            for (var d4 = Math.round(t / 2 + 2); d4 <= R; d4++) {
+              ci2 = c0 + sgn * d4;
+              var X2 = v.a === 'h' ? ai2 : ci2, Y2 = v.a === 'h' ? ci2 : ai2;
+              if (X2 < 0 || Y2 < 0 || X2 >= W || Y2 >= H) continue;
+              if (!B[Y2 * W + X2]) c++;
+            }
+          return c;
+        };
+        var side = freeCnt(1) >= freeCnt(-1) ? 1 : -1;      // открывается в свободное
+        // навеска — у того края проёма, где ближе поперечная стена
+        var wallNear = function (end) {
+          var c = 0, R2 = Math.round(0.8 * ppm);
+          for (var d5 = 1; d5 <= R2; d5++) {
+            var A2 = end + (end > (v.a === 'h' ? cx : cy) ? d5 : -d5);
+            var X3 = v.a === 'h' ? Math.round(A2) : c0, Y3 = v.a === 'h' ? c0 : Math.round(A2);
+            if (X3 < 0 || Y3 < 0 || X3 >= W || Y3 >= H) break;
+            if (B[Y3 * W + X3]) { c = R2 - d5; break; }
+          }
+          return c;
+        };
+        var hinge = wallNear(a0) >= wallNear(a1) ? -1 : 1;   // -1 — у начала проёма
+        DOORS.push({ x: (v.a === 'h' ? cx : cx) / m.k, y: (v.a === 'h' ? cy : cy) / m.k,
+          w: len / m.k, ang: v.a === 'h' ? 0 : 90, side: side, hinge: hinge,
+          th: Math.max(2, t) / m.k });
+      }
+      return;
+    }
     // окно смотрит на улицу: перпендикулярный луч хотя бы с одной стороны
     // доходит до края плана, не встретив толстой стены (внутри дома луч
     // всегда упрётся в наружную стену; тонкие размерные линии не преграда)
@@ -1076,7 +1308,10 @@ function detectWindows() {
     var rx = cx, ry = cy, ang = 0;
     if (v.a === 'h') ry = cy + (scy > cy ? off : -off);
     else { rx = cx + (scx > cx ? off : -off); ang = 90; }
-    out.push({ x: rx / m.k, y: ry / m.k, ang: ang, w: wM * (f.pxPerM || 100) });
+    out.push({ x: rx / m.k, y: ry / m.k, ang: ang, w: wM * (f.pxPerM || 100),
+      // настоящая геометрия проёма: по ней рисуется окно и его размер
+      // (w выше — ширина радиатора, 70% проёма, её место в другом месте)
+      ox: cx / m.k, oy: cy / m.k, ow: len / m.k, oth: Math.max(2, t) / m.k });
   });
   return out;
 }
@@ -1138,13 +1373,17 @@ function autoRooms() {
       var t = targets[p[1]];
       if (p[0] > Math.max(2, 0.25 * t.area)) return;
       tU[p[1]] = 1; cU[p[2]] = 1;
-      F().zones.push({ type: 'tp', name: t.name, pts: free[p[2]].pts });
+      F().zones.push({ type: 'tp', name: t.name,
+        pts: simplifyZone(free[p[2]].pts, F().pxPerM || 100) });
       made++;
     });
     targets.forEach(function (t, ti) { if (!tU[ti]) missed.push(t.name); });
   }
   if (!made) {
-    free.forEach(function (c) { F().zones.push({ type: 'tp', name: '', pts: c.pts }); made++; });
+    free.forEach(function (c) {
+      F().zones.push({ type: 'tp', name: '', pts: simplifyZone(c.pts, F().pxPerM || 100) });
+      made++;
+    });
     missed = [];
   }
   renderZones(); draw();
@@ -1269,6 +1508,73 @@ function loadImage(inp) {
 
 function cs() { return F().w ? cv.width / F().w : 1; }  // канвас-пиксели на пиксель изображения
 
+// ─── Петли тёплого пола в редакторе ───────────────────────────────────
+// Зона показывается не заливкой, а самой укладкой: те же змейки, что уйдут
+// на лист, — красная подача, синяя обратка. Раскладку считает project_plans.js,
+// поэтому редактор и лист рисуют одно и то же.
+var UFH_STEP = [150, 150];
+try {
+  var _stp = JSON.parse(localStorage.getItem('stout_save'));
+  if (_stp) { UFH_STEP[0] = +_stp.ufhStep1 || 150; UFH_STEP[1] = +_stp.ufhStep2 || 150; }
+} catch (e) {}
+// Деление петель — по длине трубы (предел 100 м, projectPlans.MAX_LOOP_M),
+// как на листах и в смете: редактор считает ту же раскладку тем же вызовом,
+// поэтому картинка и число веток совпадают везде.
+var loopCache = { key: null, val: {} };
+var noLayWarned = {};      // о какой зоне уже сообщили в консоль
+
+function tpLoops(f, stepMm) {
+  if (!window.projectPlans || !projectPlans.floorLoops || !f.pxPerM) return {};
+  var key = stepMm + '|' + (f.coll ? f.coll.x + ',' + f.coll.y : '-') + '|' +
+    JSON.stringify((f.zones || []).map(function (z) {
+      return z.type === 'tp' ? z.pts : 0;
+    })) + '|' + JSON.stringify(f.leads || []);
+  if (loopCache.key === key) return loopCache.val;
+  if (dragZ) return loopCache.val;            // тянут край — пересчёт по отпусканию
+  var out = {};
+  try {
+    projectPlans.floorLoops(f, stepMm).forEach(function (Z) {
+      if (Z.loops && Z.loops.length && Z.loops[0].sup) out[Z.i] = Z.loops;
+    });
+  } catch (e) { console.error('[plan_editor] петли:', e); return loopCache.val; }
+  loopCache = { key: key, val: out };
+  return out;
+}
+
+/**
+ * Запасная укладка — та же, что рисует лист, когда геометрия петли не
+ * строится (узкая зона, лестница внутри контура, слишком мелкий масштаб):
+ * встречная змейка по габариту, обрезанная контуром зоны. Комната не
+ * остаётся пустой, и в редакторе видно ровно то, что попадёт на лист.
+ */
+function drawSnake(z, stepMm, k, lw) {
+  var f = F(), stepPx = stepMm / 1000 * (f.pxPerM || 100);
+  if (!stepPx || z.pts.length < 3) return;
+  var xs = z.pts.map(function (p) { return p[0]; });
+  var ys = z.pts.map(function (p) { return p[1]; });
+  var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+  var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+  cx.save();
+  cx.beginPath();
+  z.pts.forEach(function (p, j) { j ? cx.lineTo(p[0] * k, p[1] * k) : cx.moveTo(p[0] * k, p[1] * k); });
+  cx.closePath(); cx.clip();
+  var snake = function (yFrom, col) {
+    cx.beginPath();
+    var dir = 0, first = true;
+    for (var y = yFrom; y <= y1; y += 2 * stepPx) {
+      if (first) { cx.moveTo(x0 * k, y * k); first = false; }
+      cx.lineTo((dir ? x0 : x1) * k, y * k);
+      var yn = y + 2 * stepPx;
+      if (yn <= y1) cx.lineTo((dir ? x0 : x1) * k, yn * k);
+      dir = 1 - dir;
+    }
+    cx.strokeStyle = col; cx.lineWidth = lw; cx.stroke();
+  };
+  snake(y0 + stepPx / 2, '#ff8080');
+  snake(y0 + stepPx * 1.5, '#8080ff');
+  cx.restore();
+}
+
 function draw() {
   var f = F();
   if (f.img && !imgCache[cur] && !imgFailed[cur]) {
@@ -1300,17 +1606,116 @@ function draw() {
     cx.fillText('Загрузите план этажа (фото или скан)', cv.width / 2, cv.height / 2);
   }
   var k = cs();
+  var stepMm = UFH_STEP[cur] || 150;
+  var loops = tpLoops(f, stepMm);
   f.zones.forEach(function (z, i) {
     var col = TYPES[z.type][1];
+    var lp = loops[i];
     cx.beginPath();
     z.pts.forEach(function (p, j) { j ? cx.lineTo(p[0] * k, p[1] * k) : cx.moveTo(p[0] * k, p[1] * k); });
     cx.closePath();
-    cx.fillStyle = col + '33'; cx.fill();
-    cx.lineWidth = 2; cx.strokeStyle = col; cx.stroke();
+    // Зона с посчитанной укладкой показывается петлями, а не заливкой:
+    // сразу видно шаг, число веток и как ляжет труба.
+    cx.fillStyle = col + (lp ? '14' : '33'); cx.fill();
+    cx.lineWidth = lp ? 1.4 : 2; cx.strokeStyle = col; cx.stroke();
+    if (lp) {
+      var lw = Math.max(1, Math.min(2.4, 0.022 * (f.pxPerM || 100) * k));
+      cx.lineJoin = 'round'; cx.lineCap = 'round';
+      // Цвета и скругления — как на листах: подача #ff8080, обратка #8080ff,
+      // радиус гиба в полшага укладки (труба гнётся, а не ломается).
+      var rr = stepMm / 1000 * (f.pxPerM || 100) * k * 0.5;
+      lp.forEach(function (L) {
+        if (!L.sup || !L.ret) return;
+        [[L.sup, '#ff8080'], [L.ret, '#8080ff']].forEach(function (pair) {
+          var P = pair[0];
+          cx.beginPath();
+          cx.moveTo(P[0][0] * k, P[0][1] * k);
+          for (var j = 1; j < P.length - 1; j++)
+            cx.arcTo(P[j][0] * k, P[j][1] * k, P[j + 1][0] * k, P[j + 1][1] * k, rr);
+          cx.lineTo(P[P.length - 1][0] * k, P[P.length - 1][1] * k);
+          cx.lineWidth = lw; cx.strokeStyle = pair[1];
+          cx.lineJoin = 'round'; cx.lineCap = 'round';
+          cx.stroke();
+        });
+      });
+    }
+    if (!lp && z.type === 'tp' && f.pxPerM) {
+      // Геометрия не построилась — рисуем запасную змейку и говорим об этом
+      // в консоли: по контуру потом видно, что именно не даётся раскладке.
+      drawSnake(z, stepMm, k, Math.max(1, Math.min(2.4, 0.022 * (f.pxPerM || 100) * k)));
+      var wk = cur + '|' + i + '|' + z.pts.length;
+      if (!noLayWarned[wk]) {
+        noLayWarned[wk] = 1;                       // в данные зоны не пишем: они сохраняются
+        console.warn('[plan_editor] зона без раскладки:', area(z.pts).toFixed(1) + ' м²',
+          'точек', z.pts.length, JSON.stringify(z.pts));
+      }
+    }
     var c = centroid(z.pts);
-    cx.fillStyle = col; cx.font = 'bold 14px system-ui'; cx.textAlign = 'center';
-    cx.fillText((z.name || TYPES[z.type][0]) + ' · ' + area(z.pts).toFixed(1) + ' м²', c[0] * k, c[1] * k);
+    var nm = (z.name || TYPES[z.type][0]) + ' · ' + area(z.pts).toFixed(1) + ' м²' +
+      ' · ' + z.pts.length + ' угл.' +
+      (lp && lp.length > 1 ? ' · ' + lp.length + ' петли' : '');
+    cx.font = 'bold 13px system-ui'; cx.textAlign = 'center';
+    if (lp) {                                   // подпись поверх петель — с подложкой
+      var wtx = cx.measureText(nm).width;
+      cx.fillStyle = 'rgba(255,255,255,.82)';
+      cx.fillRect(c[0] * k - wtx / 2 - 4, c[1] * k - 12, wtx + 8, 17);
+    }
+    cx.fillStyle = col;
+    cx.fillText(nm, c[0] * k, c[1] * k);
   });
+  // выбранная зона — пунктирная обводка, чтобы было видно, что удалит Delete
+  if (selZ >= 0 && f.zones[selZ]) {
+    var sz = f.zones[selZ];
+    cx.save(); cx.setLineDash([7, 4]); cx.lineWidth = 3;
+    cx.strokeStyle = TYPES[sz.type][1];
+    cx.beginPath();
+    sz.pts.forEach(function (p, j) { j ? cx.lineTo(p[0] * k, p[1] * k) : cx.moveTo(p[0] * k, p[1] * k); });
+    cx.closePath(); cx.stroke(); cx.restore();
+  }
+  // зона под курсором (или выбранная): узлы контура и крестик удаления
+  var actZ = hoverZ >= 0 ? hoverZ : selZ;
+  if (actZ >= 0 && f.zones[actZ]) {
+    var hz = f.zones[actZ], hc = TYPES[hz.type][1];
+    cx.lineWidth = 3; cx.strokeStyle = hc;
+    cx.beginPath();
+    hz.pts.forEach(function (p, j) { j ? cx.lineTo(p[0] * k, p[1] * k) : cx.moveTo(p[0] * k, p[1] * k); });
+    cx.closePath(); cx.stroke();
+    hz.pts.forEach(function (p, j) {
+      cx.fillStyle = (j === hoverV) ? hc : '#fff';
+      cx.strokeStyle = hc; cx.lineWidth = 2;
+      cx.fillRect(p[0] * k - 4, p[1] * k - 4, 8, 8);
+      cx.strokeRect(p[0] * k - 4, p[1] * k - 4, 8, 8);
+    });
+    // Середина стороны — только у той, к которой поднесён курсор: показывать
+    // кружки на всех сторонах сразу значит удвоить число значков, и зона
+    // выглядит как контур из двух десятков точек.
+    var me = (dragZ && dragZ.ei >= 0) ? dragZ.ei : hoverE;
+    if (me >= 0 && hz.pts[me]) {
+      var mp = edgeMid(hz.pts, me);
+      cx.beginPath(); cx.arc(mp[0] * k, mp[1] * k, 6, 0, 6.2832);
+      cx.fillStyle = hc; cx.fill();
+      cx.strokeStyle = '#fff'; cx.lineWidth = 2; cx.stroke();
+    }
+    if (dragZ) {
+      var tip = dragZ.free ? 'без привязки (Shift)' : 'привязка к стене · Shift — свободно';
+      cx.font = 'bold 12px system-ui'; cx.textAlign = 'left';
+      var tw = cx.measureText(tip).width;
+      var tp = dragZ.last;
+      cx.fillStyle = 'rgba(255,255,255,.85)';
+      cx.fillRect(tp[0] * k + 8, tp[1] * k - 20, tw + 8, 16);
+      cx.fillStyle = dragZ.free ? '#b35900' : '#0a7b28';
+      cx.fillText(tip, tp[0] * k + 12, tp[1] * k - 8);
+    }
+    var dp = zoneDelPt(actZ);
+    cx.beginPath(); cx.arc(dp[0] * k, dp[1] * k, 9, 0, 6.2832);
+    cx.fillStyle = '#fff'; cx.fill();
+    cx.strokeStyle = '#c92a2a'; cx.lineWidth = 2; cx.stroke();
+    cx.strokeStyle = '#c92a2a'; cx.lineWidth = 2;
+    cx.beginPath();
+    cx.moveTo(dp[0] * k - 4, dp[1] * k - 4); cx.lineTo(dp[0] * k + 4, dp[1] * k + 4);
+    cx.moveTo(dp[0] * k + 4, dp[1] * k - 4); cx.lineTo(dp[0] * k - 4, dp[1] * k + 4);
+    cx.stroke();
+  }
   // радиаторы — значки вдоль стен
   (f.rads || []).forEach(function (r) {
     cx.save();
@@ -1398,6 +1803,21 @@ function draw() {
     cx.lineTo(scalePts[1][0] * k, scalePts[1][1] * k);
     cx.strokeStyle = '#08c'; cx.stroke();
   }
+  // след за курсором до второго клика: сразу видно, куда ляжет отрезок
+  if (mode === 'scale' && scalePts.length === 1 && scaleCur) {
+    cx.beginPath(); cx.moveTo(scalePts[0][0] * k, scalePts[0][1] * k);
+    cx.lineTo(scaleCur[0] * k, scaleCur[1] * k);
+    cx.setLineDash([6, 4]); cx.lineWidth = 2;
+    cx.strokeStyle = scaleFree ? '#b35900' : '#08c'; cx.stroke();
+    cx.setLineDash([]);
+    cx.font = 'bold 12px system-ui'; cx.textAlign = 'left';
+    var lbl = scaleFree ? 'угол разблокирован (Shift)' : 'прямой угол · Shift — свободно';
+    var lw2 = cx.measureText(lbl).width;
+    cx.fillStyle = 'rgba(255,255,255,.85)';
+    cx.fillRect(scaleCur[0] * k + 8, scaleCur[1] * k - 20, lw2 + 8, 16);
+    cx.fillStyle = scaleFree ? '#b35900' : '#08c';
+    cx.fillText(lbl, scaleCur[0] * k + 12, scaleCur[1] * k - 8);
+  }
   document.getElementById('scale_note').textContent =
     f.pxPerM ? '· масштаб задан (' + f.pxPerM.toFixed(1) + ' px/м)' : '· масштаб не задан';
 }
@@ -1429,17 +1849,190 @@ function closePoly() {
   addZone(pts); draw();
 }
 
+/**
+ * Правка готовой зоны: наводим на неё в обычном режиме (ни одна кнопка
+ * разметки не нажата) — появляются узлы контура и крестик удаления. Узел
+ * тянется мышью, край тянется целиком; площадь пересчитывается на ходу.
+ */
+var hoverZ = -1, hoverV = -1, hoverE = -1, dragZ = null, justDragged = 0;
+var selZ = -1;             // зона, выбранная щелчком: её удаляет Delete
+function zoneTol() { return 10 / cs(); }
+function segDist(p, a, b) {
+  var dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy;
+  var t = L2 ? ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+}
+/** Середина стороны — ручка «двигать всю сторону» */
+function edgeMid(pts, j) {
+  var a = pts[j], b = pts[(j + 1) % pts.length];
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+}
+function zoneHit(p) {
+  var f = F(), tol = zoneTol(), inside = -1, i, j;
+  for (i = f.zones.length - 1; i >= 0; i--) {
+    var pts = f.zones[i].pts;
+    // сначала середины сторон: за них тянут чаще, чем за углы
+    for (j = 0; j < pts.length; j++) {
+      var mp = edgeMid(pts, j);
+      if (Math.hypot(p[0] - mp[0], p[1] - mp[1]) < tol * 1.2) return { zi: i, vi: -1, ei: j };
+    }
+    for (j = 0; j < pts.length; j++)
+      if (Math.hypot(p[0] - pts[j][0], p[1] - pts[j][1]) < tol) return { zi: i, vi: j, ei: -1 };
+    for (j = 0; j < pts.length; j++)
+      if (segDist(p, pts[j], pts[(j + 1) % pts.length]) < tol) return { zi: i, vi: -1, ei: j };
+    if (inside < 0 && pip(p, pts)) inside = i;
+  }
+  return { zi: inside, vi: -1, ei: -1 };
+}
+/**
+ * Перед тем как тянуть грань, раздваиваем её узлы там, где соседняя грань
+ * лежит на той же прямой (так бывает сразу после добавления точки). Из
+ * нулевого звена при перетаскивании вырастает перемычка, и вместо косой
+ * линии получается прямой угол. Возвращает индекс грани после вставок.
+ */
+function splitParallel(zi, ei) {
+  var pts = F().zones[zi].pts, n = pts.length;
+  if (n < 4) return ei;
+  var a = pts[ei], b = pts[(ei + 1) % n];
+  var ex = b[0] - a[0], ey = b[1] - a[1];
+  var par = function (p1, p2) {
+    var dx = p2[0] - p1[0], dy = p2[1] - p1[1];
+    var L = Math.hypot(dx, dy) * Math.hypot(ex, ey) || 1;
+    return Math.abs(dx * ey - dy * ex) / L < 0.12;      // ~7° — считаем «на одной прямой»
+  };
+  var prev = pts[(ei + n - 1) % n], next = pts[(ei + 2) % n];
+  var addTail = par(b, next);
+  var addHead = par(prev, a);
+  if (addTail) pts.splice((ei + 1) % n === 0 ? n : ei + 1, 0, [b[0], b[1]]);
+  if (addHead) { pts.splice(ei, 0, [a[0], a[1]]); return ei + 1; }
+  return ei;
+}
+
+/** Крестик удаления — над подписью зоны */
+function zoneDelPt(zi) {
+  var c = centroid(F().zones[zi].pts);
+  return [c[0], c[1] - 22 / cs()];
+}
+
 cv.addEventListener('mousedown', function (e) {
-  if (mode === 'rect' && F().img) { dragA = evPt(e); tmp = [dragA]; }
+  if (mode === 'rect' && F().img) { dragA = evPt(e); tmp = [dragA]; return; }
+  // Править зону можно и в режиме «Зона: по клику»: разметил комнату — сразу
+  // подправил контур, не переключая режим.
+  if ((mode !== 'select' && mode !== 'room') || !F().zones.length) return;
+  var p = evPt(e), h = zoneHit(p);
+  if (h.zi < 0 || (h.vi < 0 && h.ei < 0)) return;
+  pushUndo('zones');
+  if (h.ei >= 0) h.ei = splitParallel(h.zi, h.ei);
+  dragZ = { zi: h.zi, vi: h.vi, ei: h.ei, last: p };
+  e.preventDefault();
 });
 cv.addEventListener('mousemove', function (e) {
+  if (dragZ) {
+    // Узел и сторона липнут к стенам и углам плана; Shift — тянуть свободно.
+    var q = evPt(e), pts = F().zones[dragZ.zi].pts, free = e.shiftKey;
+    dragZ.free = free;
+    if (dragZ.vi >= 0) {
+      // Узел без Shift ходит строго по горизонтали или вертикали от соседних
+      // точек — иначе в прямоугольном контуре появляется косая сторона.
+      var v = free ? q : snapWall(q);
+      if (!free) {
+        var pv = pts[(dragZ.vi + pts.length - 1) % pts.length];
+        var nx2 = pts[(dragZ.vi + 1) % pts.length];
+        if (Math.abs(v[0] - pv[0]) < Math.abs(v[1] - pv[1])) v = [pv[0], v[1]];
+        else v = [v[0], pv[1]];
+        if (Math.abs(v[0] - nx2[0]) < 6 / cs()) v = [nx2[0], v[1]];
+        if (Math.abs(v[1] - nx2[1]) < 6 / cs()) v = [v[0], nx2[1]];
+      }
+      pts[dragZ.vi] = v;
+    }
+    else {
+      var dx = q[0] - dragZ.last[0], dy = q[1] - dragZ.last[1];
+      var a1 = pts[dragZ.ei], b1 = pts[(dragZ.ei + 1) % pts.length];
+      // Сторона едет поперёк себя — так её двигают, чтобы расширить или
+      // сузить комнату. Shift пускает сторону в любом направлении.
+      if (!free) {
+        var ex = b1[0] - a1[0], ey = b1[1] - a1[1], eL = Math.hypot(ex, ey) || 1;
+        var nx = -ey / eL, ny = ex / eL, dn = dx * nx + dy * ny;
+        dx = nx * dn; dy = ny * dn;
+      }
+      a1[0] += dx; a1[1] += dy; b1[0] += dx; b1[1] += dy;
+      if (!free) {                                   // сторону прижимаем целиком
+        var mid = [(a1[0] + b1[0]) / 2, (a1[1] + b1[1]) / 2], sn = snapWall(mid);
+        var tol = 14 / cs();
+        if (Math.abs(b1[0] - a1[0]) >= Math.abs(b1[1] - a1[1])) {
+          if (Math.abs(sn[1] - mid[1]) < tol) { a1[1] = sn[1]; b1[1] = sn[1]; }
+        } else if (Math.abs(sn[0] - mid[0]) < tol) { a1[0] = sn[0]; b1[0] = sn[0]; }
+      }
+    }
+    dragZ.last = q; draw(); return;
+  }
+  if (mode === 'scale') {
+    if (!scalePts.length) { scaleCur = null; return; }
+    var sp = snapWall(evPt(e));
+    scaleFree = !!e.shiftKey;
+    if (!scaleFree) sp = ortho(sp, scalePts[0], true);
+    scaleCur = sp; draw(); return;
+  }
   if (mode === 'rect' && dragA) { tmp = [evPt(e)]; draw(); }
   else if (mode === 'poly') {
     polyCur = ortho(evPt(e), tmp.length ? tmp[tmp.length - 1] : null, e.shiftKey);
     if (tmp.length) draw();
+  } else if (mode === 'select' || mode === 'room') {
+    var h2 = zoneHit(evPt(e));
+    if (h2.zi !== hoverZ || h2.vi !== hoverV || h2.ei !== hoverE) {
+      hoverZ = h2.zi; hoverV = h2.vi; hoverE = h2.ei; draw();
+    }
+    cv.style.cursor = h2.vi >= 0 ? 'grab' : (h2.ei >= 0 ? 'move' : 'default');
   }
 });
+/**
+ * Правая кнопка по зоне: на стороне — добавить точку, на углу — убрать.
+ *
+ * Так из простого четырёхугольника делается любая форма под нишу, эркер
+ * или обход лестницы: щёлкнули по стороне, потянули новый узел куда надо.
+ */
+cv.addEventListener('contextmenu', function (e) {
+  if ((mode !== 'select' && mode !== 'room') || !F().zones.length) return;
+  var p = evPt(e), tol = zoneTol(), f = F();
+  for (var i = f.zones.length - 1; i >= 0; i--) {
+    var pts = f.zones[i].pts, j;
+    for (j = 0; j < pts.length; j++) {
+      if (Math.hypot(p[0] - pts[j][0], p[1] - pts[j][1]) >= tol) continue;
+      e.preventDefault();
+      if (pts.length <= 3) { hint('У зоны и так три угла — точку убрать нельзя.'); return; }
+      pushUndo('zones');
+      pts.splice(j, 1);
+      hoverZ = i; hoverV = -1; hoverE = -1;
+      renderZones(); draw();
+      return;
+    }
+    for (j = 0; j < pts.length; j++) {
+      var a1 = pts[j], b1 = pts[(j + 1) % pts.length];
+      if (segDist(p, a1, b1) >= tol * 1.6) continue;
+      e.preventDefault();
+      pushUndo('zones');
+      // Новая точка — проекция курсора на сторону: сторона делится надвое,
+      // и каждую половину можно тянуть за её кружок. Прямые углы при этом
+      // держатся сами (см. splitParallel при начале перетаскивания).
+      var ex = b1[0] - a1[0], ey = b1[1] - a1[1], L2 = ex * ex + ey * ey || 1;
+      var t = Math.max(0, Math.min(1, ((p[0] - a1[0]) * ex + (p[1] - a1[1]) * ey) / L2));
+      pts.splice(j + 1, 0, [Math.round(a1[0] + ex * t), Math.round(a1[1] + ey * t)]);
+      hoverZ = i; hoverV = -1; hoverE = j; selZ = i;
+      hint('Точка добавлена. Тяните половину стороны за кружок в её середине — угол останется прямым.');
+      renderZones(); draw();
+      return;
+    }
+  }
+});
+cv.addEventListener('mouseleave', function () {
+  if (hoverZ >= 0 && !dragZ) { hoverZ = hoverV = hoverE = -1; draw(); }
+});
 cv.addEventListener('mouseup', function (e) {
+  if (dragZ) {
+    dragZ = null; justDragged = Date.now();
+    renderZones(); draw(); return;
+  }
   if (mode === 'rect' && dragA) {
     var b = evPt(e), a = dragA; dragA = null; tmp = [];
     if (Math.abs(b[0] - a[0]) > 8 && Math.abs(b[1] - a[1]) > 8) {
@@ -1451,17 +2044,42 @@ cv.addEventListener('mouseup', function (e) {
 });
 cv.addEventListener('click', function (e) {
   var p = evPt(e);
+  if (mode === 'select') {
+    if (Date.now() - justDragged < 300) return;      // хвост перетаскивания
+    if (hoverZ >= 0 && F().zones[hoverZ]) {
+      var d = zoneDelPt(hoverZ);
+      if (Math.hypot(p[0] - d[0], p[1] - d[1]) < 12 / cs()) {
+        pushUndo('zones');
+        F().zones.splice(hoverZ, 1);
+        hoverZ = hoverV = hoverE = -1; selZ = -1;
+        renderZones(); draw();
+        return;
+      }
+    }
+    // Щелчок по зоне выбирает её: выбранная обведена пунктиром и удаляется
+    // клавишей Delete. Щелчок мимо — снять выбор.
+    selZ = zoneHit(p).zi;
+    draw();
+    return;
+  }
   if (mode === 'scale') {
+    // Точка липнет к стене и углу; вторая по умолчанию строго по горизонтали
+    // или вертикали — Shift снимает ограничение.
+    p = snapWall(p);
+    if (scalePts.length === 1 && !e.shiftKey) p = ortho(p, scalePts[0], true);
     scalePts.push(p); draw();
     if (scalePts.length === 2) {
       var d = Math.hypot(scalePts[1][0] - scalePts[0][0], scalePts[1][1] - scalePts[0][1]);
-      var m = parseFloat(prompt('Длина этого отрезка в метрах:', '1.0'));
+      var ans = prompt('Длина этого отрезка в метрах:', '1,0');
+      // «1,5» и «1.5» — одно и то же: на телефоне и в русской раскладке
+      // запятая под рукой, а точка нет.
+      var m = parseFloat(String(ans == null ? '' : ans).replace(',', '.').replace(/\s+/g, ''));
       if (m > 0) {
         pushUndo('scale');
         F().pxPerM = d / m;
         hint('<span class=ok>Масштаб задан.</span> Теперь обведите зоны.');
       }
-      scalePts = []; setMode('select');
+      scalePts = []; scaleCur = null; setMode('select');
     }
   } else if (mode === 'poly') {
     if (Date.now() - closeTs < 500) return;   // хвост двойного клика после замыкания
@@ -1471,6 +2089,13 @@ cv.addEventListener('click', function (e) {
     if (tmp.length >= 3 && Math.hypot(p[0] - tmp[0][0], p[1] - tmp[0][1]) < tol) { closePoly(); return; }
     tmp.push(p); draw();
   } else if (mode === 'room') {
+    if (Date.now() - justDragged < 300) return;      // хвост правки контура
+    var hitZ = zoneHit(p);
+    if (hitZ.zi >= 0) {                              // клик по готовой зоне — выбрать её
+      selZ = hitZ.zi; draw();
+      hint('Зона выбрана: тяните узлы и грани, правой кнопкой добавляется точка, Delete удаляет.');
+      return;
+    }
     var poly = null;
     try { poly = roomAtPoint(p[0], p[1]); } catch (err) { console.error('[plan_editor] room:', err); }
     if (poly) addZone(poly);
@@ -1559,10 +2184,131 @@ document.addEventListener('keydown', function (e) {
     e.preventDefault(); doUndo(); return;
   }
   if (e.key === 'Enter' && mode === 'poly' && tmp.length >= 3) { closePoly(); return; }
+  // Delete — убрать зону, на которую наведён курсор: то же, что крестик,
+  // только с клавиатуры. В поле ввода имени клавиша работает как обычно.
+  if ((e.key === 'Delete' || e.key === 'Del') && selZ >= 0 && !dragZ) {
+    var t = e.target && e.target.tagName;
+    if (t !== 'INPUT' && t !== 'TEXTAREA' && t !== 'SELECT') {
+      e.preventDefault();
+      pushUndo('zones');
+      F().zones.splice(selZ, 1);
+      selZ = -1; hoverZ = hoverV = hoverE = -1;
+      renderZones(); draw();
+      return;
+    }
+  }
   if (e.key === 'Escape') { tmp = []; scalePts = []; polyCur = null; draw(); }
 });
 
+/**
+ * Упрощение контура комнаты до нескольких углов.
+ *
+ * Распознавание даёт контур по пикселям: два-три десятка точек, тянуть за
+ * сторону такой контур невозможно. Комнаты почти всегда прямоугольные или
+ * Г-образные, поэтому стороны выпрямляем по осям, короткие (меньше 0.35 м)
+ * убираем, а дальше прореживаем, пока не останется 4–8 углов.
+ */
+function simplifyZone(pts, ppm) {
+  if (!pts || pts.length < 5) return pts;   // прямоугольник упрощать нечего
+  ppm = ppm || 100;
+  var out = dpSimp(pts.slice(), Math.max(2, 0.06 * ppm));
+  // стороны почти по осям — выпрямляем
+  var ax = function (P) {
+    for (var i = 0; i < P.length; i++) {
+      var a = P[i], b = P[(i + 1) % P.length];
+      var dx = b[0] - a[0], dy = b[1] - a[1];
+      if (Math.abs(dx) < 1e-6 || Math.abs(dy) < 1e-6) continue;
+      if (Math.abs(dy) < Math.abs(dx) * 0.28) { var my = (a[1] + b[1]) / 2; a[1] = my; b[1] = my; }
+      else if (Math.abs(dx) < Math.abs(dy) * 0.28) { var mx = (a[0] + b[0]) / 2; a[0] = mx; b[0] = mx; }
+    }
+    return P;
+  };
+  var drop = function (P, minLen) {                 // короткие стороны — схлопнуть
+    var res = [], i;
+    for (i = 0; i < P.length; i++) {
+      var a = P[i], b = P[(i + 1) % P.length];
+      if (Math.hypot(b[0] - a[0], b[1] - a[1]) < minLen && P.length - res.length > 4) {
+        res.push([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]); i++;   // пара точек в одну
+      } else res.push(a);
+    }
+    return res;
+  };
+  var col = function (P) {                          // выкинуть точки на прямой
+    var res = [], i;
+    for (i = 0; i < P.length; i++) {
+      var a = P[(i + P.length - 1) % P.length], b = P[i], c = P[(i + 1) % P.length];
+      var cr = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+      var L = Math.hypot(c[0] - a[0], c[1] - a[1]) || 1;
+      if (Math.abs(cr) / L > 0.15 * ppm || res.length < 3) res.push(b);
+    }
+    return res.length >= 4 ? res : P;
+  };
+  out = col(drop(ax(out), 0.6 * ppm));
+  // Из распознавания оставляем только четырёх- и шестиугольники: сложнее
+  // фигуру монтажник дочертит руками по точкам, зато за любую сторону
+  // готовой зоны можно потянуть. Лишние углы убираем по одному — тот,
+  // без которого площадь меняется меньше всего.
+  var target = out.length <= 4 ? 4 : (out.length <= 6 ? out.length : 6);
+  if (target === 5) target = 4;
+  while (out.length > target) {
+    var worst = -1, wd = Infinity;
+    for (var i = 0; i < out.length; i++) {
+      var a2 = out[(i + out.length - 1) % out.length], b2 = out[i], c2 = out[(i + 1) % out.length];
+      var d2 = Math.abs((b2[0] - a2[0]) * (c2[1] - a2[1]) - (b2[1] - a2[1]) * (c2[0] - a2[0])) / 2;
+      if (d2 < wd) { wd = d2; worst = i; }
+    }
+    if (worst < 0) break;
+    out.splice(worst, 1);
+  }
+  // Последний проход — стороны строго по осям, без косых: помещения на
+  // планах прямоугольные, а косая сторона у зоны берётся от разметки и
+  // мешает и тянуть за сторону, и класть петли.
+  var rect = function (P) {
+    for (var t2 = 0; t2 < 3; t2++) {
+      for (var e2 = 0; e2 < P.length; e2++) {
+        var p1 = P[e2], p2 = P[(e2 + 1) % P.length];
+        var ddx = p2[0] - p1[0], ddy = p2[1] - p1[1];
+        if (Math.abs(ddx) < 1e-6 || Math.abs(ddy) < 1e-6) continue;
+        if (Math.abs(ddx) >= Math.abs(ddy)) { var yy = (p1[1] + p2[1]) / 2; p1[1] = yy; p2[1] = yy; }
+        else { var xx = (p1[0] + p2[0]) / 2; p1[0] = xx; p2[0] = xx; }
+      }
+    }
+    return P;
+  };
+  out = col(rect(out));
+  // Ступеньки короче 0.9 м — это не форма комнаты, а огрехи распознавания
+  // у лестницы и дверных откосов: убираем их и выпрямляем контур ещё раз.
+  out = col(rect(drop(out, 0.9 * ppm)));
+  while (out.length === 5) {                        // пятиугольник сводим к четырём
+    var w5 = -1, wd5 = Infinity;
+    for (var i5 = 0; i5 < out.length; i5++) {
+      var a5 = out[(i5 + out.length - 1) % out.length], b5 = out[i5], c5 = out[(i5 + 1) % out.length];
+      var d5 = Math.abs((b5[0] - a5[0]) * (c5[1] - a5[1]) - (b5[1] - a5[1]) * (c5[0] - a5[0])) / 2;
+      if (d5 < wd5) { wd5 = d5; w5 = i5; }
+    }
+    if (w5 < 0) break;
+    out.splice(w5, 1);
+    out = col(rect(out));
+  }
+  // Четырёхугольник с косой стороной сводим к прямоугольнику: попарное
+  // выпрямление на четырёх точках может не сойтись, а косых в зоне быть
+  // не должно.
+  var skew = out.some(function (p3, i3) {
+    var q3 = out[(i3 + 1) % out.length];
+    return Math.abs(q3[0] - p3[0]) > 1 && Math.abs(q3[1] - p3[1]) > 1;
+  });
+  if (skew && out.length <= 4) {
+    var xs2 = out.map(function (q4) { return q4[0]; });
+    var ys2 = out.map(function (q4) { return q4[1]; });
+    var X0 = Math.min.apply(null, xs2), X1 = Math.max.apply(null, xs2);
+    var Y0 = Math.min.apply(null, ys2), Y1 = Math.max.apply(null, ys2);
+    out = [[X0, Y0], [X1, Y0], [X1, Y1], [X0, Y1]];
+  }
+  return out.map(function (q) { return [Math.round(q[0]), Math.round(q[1])]; });
+}
+
 function addZone(pts) {
+  pts = simplifyZone(pts, F().pxPerM || 100);
   var type = document.getElementById('ztype').value;
   if (type === 'boiler' && F().zones.some(function (z) { return z.type === 'boiler'; })) {
     alert('Котельная на этаже уже отмечена.'); return;
@@ -1705,6 +2451,7 @@ function saveAll() {
   refreshAutoFixtures();   // приборы санузлов из расчёта — на случай правок зон
   computeLeads();   // маршруты подводок к коллектору — свежие на момент сохранения
   computeVk();      // и трассы водоснабжения с канализацией
+  computeGeom();    // и контуры стен с окнами — по ним рисуются листы планов
 
   // На сервер отправляем только те этажи, чья подложка ещё не там: у
   // остальных в img уже стоит адрес, а не картинка.
@@ -1886,6 +2633,7 @@ function placeGuide() {
   var w = guideEl.offsetWidth || 320, h = guideEl.offsetHeight || 120;
   var L = Math.min(Math.max(4, guidePos.left), window.innerWidth - w - 4);
   var T = Math.min(Math.max(4, guidePos.top), window.innerHeight - Math.min(h, 160) - 4);
+  guideEl.style.right = ''; guideEl.style.bottom = '';
   guideEl.style.left = Math.round(L) + 'px';
   guideEl.style.top = Math.round(T) + 'px';
 }
@@ -1916,8 +2664,15 @@ function updateGuide() {
       e.preventDefault();
     });
   }
-  if (!hintsOn) { guideEl.style.display = 'none'; return; }
   var g = guideStep();
+  // Подсказки выключены — окно не показываем, но кнопку следующего шага
+  // подсвечиваем: иначе непонятно, куда нажимать дальше.
+  if (!hintsOn) {
+    guideEl.style.display = 'none';
+    var off = g && g.t !== 'cv' ? document.getElementById(g.t) : null;
+    if (off) off.classList.add('pulse');
+    return;
+  }
   if (!g) { guideEl.style.display = 'none'; return; }
   var html = '<span class="close" onclick="toggleHints()">✕ скрыть подсказки</span>' +
     '<div class="step"><span class="grip">⠿</span>' + g.s + '</div>' + g.txt +
@@ -1929,14 +2684,11 @@ function updateGuide() {
   var tgt = g.t === 'cv' ? cv : document.getElementById(g.t);
   if (tgt && g.t !== 'cv') tgt.classList.add('pulse');
   if (guidePos) { placeGuide(); return; }
-  var r = tgt ? tgt.getBoundingClientRect() : { left: 20, top: 60, bottom: 60 };
-  if (g.t === 'cv') {
-    guideEl.style.left = Math.round(r.left + 12) + 'px';
-    guideEl.style.top = Math.round(Math.max(8, r.top + 12)) + 'px';
-  } else {
-    guideEl.style.left = Math.round(Math.min(Math.max(8, r.left), window.innerWidth - w - 12)) + 'px';
-    guideEl.style.top = Math.round(r.bottom + 10) + 'px';
-  }
+  // По умолчанию — правый нижний угол: там подсказка не закрывает ни план,
+  // ни панель зон. Перетащить её по-прежнему можно куда угодно.
+  guideEl.style.left = ''; guideEl.style.top = '';
+  guideEl.style.right = '16px';
+  guideEl.style.bottom = '16px';
 }
 
 // после каждого изменения состояния подсказка обновляется сама

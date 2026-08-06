@@ -131,6 +131,39 @@
   }
 
   // ─── Габариты оборудования (реальные мм) ───────────────────────────────
+  /**
+   * Проекция прибора из BIM-модели вместо нарисованного контура. Картинки
+   * готовит scratch/render_nodes.py --equip: ортогональный вид с прозрачным
+   * фоном, пропорции равны габариту модели. Нет картинки — вернём null, и
+   * прибор нарисуется как раньше.
+   */
+  function pic(ctx, key, view, x, y, w, h, val) {
+    if (!ctx.equip) return null;
+    var use = picKey(ctx, key, val);
+    if (!ctx.equip[use]) return null;
+    // у типоразмера с той же геометрией своего кадра нет — берём базовый
+    var file = ctx.equip[use].img || use;
+    return '<image x="' + n(x) + '" y="' + n(y) + '" width="' + n(w) + '" height="' + n(h) +
+      '" preserveAspectRatio="none" href="img/equip/' + file + '_' + view + '.png"/>';
+  }
+
+  /**
+   * Кадр нужного типоразмера: бак на 24 л, а не тот тип семейства Revit,
+   * который оказался активным при выгрузке. Типоразмеры сняты отдельными
+   * кадрами и помечены в equip.json полями base и num (литры, киловатты).
+   */
+  function picKey(ctx, key, val) {
+    if (!val || !ctx.equip) return key;
+    var best = null;
+    Object.keys(ctx.equip).forEach(function (k) {
+      var it = ctx.equip[k];
+      if (!it || it.base !== key || !it.num) return;
+      var d = Math.abs(it.num - val);
+      if (!best || d < best.d) best = { k: k, d: d };
+    });
+    return best ? best.k : key;
+  }
+
   function tankSize(vol) {
     if (!vol) return null;
     if (vol <= 12) return { d: 280, h: 330 };
@@ -193,10 +226,18 @@
       gasCount: gasCount, elCount: elCount,
       boilerW: 440, boilerH: 750, boilerD: 350,
       elW: 420, elH: 640, elD: 300,
+      // корпус электрокотла зависит от серии: STATUS или PLUS
+      elKey: (scheme.el && scheme.el.status) ? 'boiler_status' : 'boiler_plus',
       hydro: !!scheme.hydro,
       indirect: scheme.indirect ? boilerTankSize(scheme.indirect.vol, scheme.indirect.wall) : null,
       tankH: tankSize(scheme.tankHeating),
       tankD: tankSize(scheme.tankDhw),
+      // объёмы из сметы — по ним берётся кадр нужного типоразмера
+      vol: {
+        tankH: scheme.tankHeating || null,
+        tankD: scheme.tankDhw || null,
+        indirect: (scheme.indirect && scheme.indirect.vol) || null
+      },
       loops: loops,
       tp: !!scheme.tp,
       names: {
@@ -252,7 +293,140 @@
   }
 
   // ─── Лист «Вид котельной спереди» ──────────────────────────────────────
+  /**
+   * Фасад котельной кадром из BIM-моделей.
+   *
+   * Кадр готовит scratch/render_nodes.py (узел boiler_front): котёл, шины,
+   * стояки контуров с настоящей арматурой. Вместе с картинкой приходят
+   * опорные точки в долях кадра — по ним ставим размерную цепочку между
+   * стояками и кружки с номерами контуров, как на листе образца.
+   */
+  /** Контуры бойлерной стороны: подписи приходят вместе с кадром */
+  function dhwLoops(ctx) {
+    var pts = ((ctx.frontDhw || {}).anchors || {}).pts || [];
+    return pts.filter(function (p) { return p.k === 'loop'; })
+      .sort(function (a, b) { return a.x - b.x; })
+      .map(function (p) { return { t: p.name || 'Контур ' + p.no }; });
+  }
+
+  function frontPhotoBody(ctx) {
+    var ph = ctx.front, o = [];
+    // Кадров несколько — по составу контуров. Ключ собираем из их цветов,
+    // тогда цвет стояка на кадре и строка легенды описывают одно и то же.
+    if (ph && !ph.url) {
+      var code = (ctx.loops || []).map(function (L) {
+        if (L.c === COL.supply) return 'S';
+        if (L.c === COL.ret) return 'R';
+        if (L.c === COL.dhw) return 'D';
+        return 'C';
+      }).join('');
+      ph = ph[code] || ph['SRSRCSR'] || ph['SR'] || null;
+    }
+    if (!ph || !ph.url) return null;
+    var F = { x: 122, y: 26, w: 274, h: 216 };
+    var r = ph.ratio || 1;
+    var w = F.w, h = w / r;
+    if (h > F.h) { h = F.h; w = h * r; }
+    var x = F.x + (F.w - w) / 2, y = F.y;
+    o.push('<image x="' + n(x) + '" y="' + n(y) + '" width="' + n(w) + '" height="' + n(h) +
+      '" preserveAspectRatio="xMidYMid meet" href="' +
+      String(ph.url).replace(/&/g, '&amp;') + '"/>');
+
+    var A = ph.anchors || {}, pts = A.pts || [];
+    var loops = pts.filter(function (p) { return p.k === 'loop'; })
+      .sort(function (a, b) { return a.x - b.x; });
+    var PX = function (p) { return x + p.x * w; };
+    var PY = function (p) { return y + p.y * h; };
+
+    // кружки с номерами контуров под стояками
+    var cy = y + h + 6;
+    loops.forEach(function (p) {
+      o.push(circle(PX(p), cy, 3.2, '#ffffff', { stroke: '#000', sw: 0.25 }));
+      o.push(txt(PX(p), cy + 1.2, String(p.no), { size: 3.3, anchor: 'middle' }));
+      o.push(line(PX(p), PY(p), PX(p), cy - 3.4, { w: 0.15, c: '#888' }));
+    });
+    // размерная цепочка: шаг между стояками
+    if (loops.length > 1) {
+      var dy = cy + 8;
+      o.push(dimH(loops.map(PX), dy, { vals: loops.slice(1).map(function () {
+        return A.step_mm || 90; }) }));
+    }
+
+    // Вертикальная цепочка справа: отметки коллекторов, кранов и низа стояков.
+    // Высоты приходят в опорных точках, поэтому подписи — настоящие, а не
+    // пересчитанные из пикселей картинки.
+    var lv = {};
+    pts.forEach(function (p) {
+      if (p.z == null) return;
+      var k = p.k === 'loop' ? 'loop' : p.k;
+      if (k === 'rail_r' || k === 'rail_l') return;
+      if (!lv[k] || p.y < lv[k].y) lv[k] = p;
+    });
+    var levels = Object.keys(lv).map(function (k) { return lv[k]; })
+      .sort(function (a, b) { return a.y - b.y; });
+    if (levels.length > 1) {
+      var dx = x + w + 8;
+      o.push(dimV(levels.map(PY), dx, { vals: levels.slice(1).map(function (p, i) {
+        return Math.abs(levels[i].z - p.z);
+      }) }));
+      levels.forEach(function (p) {
+        o.push(line(PX(p), PY(p), dx - 2, PY(p), { w: 0.12, c: '#888' }));
+      });
+    }
+
+    // Выноски к приборам: точки приходят вместе с кадром, подписи — оттуда же.
+    // Полки уводим влево, как в образце, и разводим по высоте, чтобы не
+    // налезали друг на друга.
+    var ms = (ph.marks || []).slice().sort(function (a, b) { return a.y - b.y; });
+    // Две колонки, как на листах образца: левая набирается сверху вниз, а что
+    // ниже таблицы обозначений уже не помещается — уходит в правую.
+    var ly = y + 4, ry = y + 4, LIM = 205;
+    ms.forEach(function (m) {
+      var ax = x + m.x * w, ay = y + m.y * h;
+      if (ly <= LIM) {
+        if (ly < ay) ly = ay;
+        if (ly <= LIM) {
+          o.push(callout(ax, ay, 138, ly, m.t, { right: false, maxW: 112 }));
+          ly += 5.4;
+          return;
+        }
+      }
+      if (ry < ay) ry = ay;
+      o.push(callout(ax, ay, 348, Math.min(ry, 250), m.t, { right: true, maxW: 56 }));
+      ry += 5.4;
+    });
+    // условные обозначения контуров — как в образце, таблицей слева
+    // Названия контуров берём из сметы (ctx.loops) — их же печатает
+    // векторный вариант листа; по цвету системы не различить.
+    var nameOf = function (p, i) {
+      var L = (ctx.loops || [])[i];
+      if (L && L.t) return L.t;
+      if (p.sys === 'hot') return 'Линия ГВС';
+      if (p.sys === 'cold') return 'Линия ХВС';
+      return (p.sys === 'sup' ? 'Подача' : 'Обратка') + ' отопления';
+    };
+    var LX = 24, TY = 210;
+    o.push(txt(LX + 55, TY - 3, 'Условные обозначения', { size: 4.2, anchor: 'middle' }));
+    o.push(rect(LX, TY, 110, 6.4 * (loops.length + 1), 'none', { stroke: '#000', sw: 0.2 }));
+    [['№', 'Наименование']].concat(loops.map(function (p, li) {
+      return [String(p.no), nameOf(p, li)];
+    })).forEach(function (row, i) {
+      var ry = TY + i * 6.4;
+      if (i) o.push(line(LX, ry, LX + 110, ry, { w: 0.2 }));
+      o.push(txt(LX + 8, ry + 4.2, row[0], { size: 3.3, anchor: 'middle' }));
+      o.push(txt(LX + 20, ry + 4.2, row[1], { size: 3.3 }));
+    });
+    o.push(line(LX + 16, TY, LX + 16, TY + 6.4 * (loops.length + 1), { w: 0.2 }));
+    o.push(txt(LX, TY + 6.4 * (loops.length + 1) + 5,
+      'Примечание: крепёж показан условно и не является частью проекта.', { size: 3.1 }));
+    return o.join('');
+  }
+
   function frontBody(ctx) {
+    if (ctx.front) {
+      var photo = frontPhotoBody(ctx);
+      if (photo) return photo;
+    }
     var o = [];
     var B = planWall(ctx);
     var H = 2200;                       // высота стены, мм
@@ -298,13 +472,20 @@
     B.boilers.forEach(function (b) {
       var bx = X(b.x), bw = b.w * s, bh = b.h * s;
       var byTop = Y(1350 + b.h), pw;
-      o.push(rect(bx, byTop, bw, bh, COL.body, { stroke: '#9a9a9a', sw: 0.15, rx: 0.8 }));
-      // панель управления с экраном
-      pw = bw * 0.7;
-      o.push(rect(bx + (bw - pw) / 2, byTop + bh * 0.78, pw, bh * 0.13, COL.panel, { rx: 0.5 }));
-      o.push(rect(bx + bw / 2 - 2.6, byTop + bh * 0.81, 5.2, 2.0, b.gas ? '#b2b2b2' : '#2ab5b5'));
-      // дымоход газового
-      if (b.gas) o.push(rect(bx + bw / 2 - 2, Y(1350 + b.h) - 4, 4, 4, '#b2b2b2'));
+      // электрический котёл есть моделью (SEB-2201), газового в семействах нет
+      var im = pic(ctx, b.gas ? 'boiler_gas' : (ctx.elKey || 'boiler_plus'),
+        'front', bx, byTop, bw, bh);
+      if (im) {
+        o.push(im);
+      } else {
+        o.push(rect(bx, byTop, bw, bh, COL.body, { stroke: '#9a9a9a', sw: 0.15, rx: 0.8 }));
+        // панель управления с экраном
+        pw = bw * 0.7;
+        o.push(rect(bx + (bw - pw) / 2, byTop + bh * 0.78, pw, bh * 0.13, COL.panel, { rx: 0.5 }));
+        o.push(rect(bx + bw / 2 - 2.6, byTop + bh * 0.81, 5.2, 2.0, b.gas ? '#b2b2b2' : '#2ab5b5'));
+        // дымоход газового
+        if (b.gas) o.push(rect(bx + bw / 2 - 2, Y(1350 + b.h) - 4, 4, 4, '#b2b2b2'));
+      }
       // подводки вниз до гребёнок
       var cx = b.x + b.w / 2;
       o.push(rect(X(cx - 60) - 1.1, Y(1350), 2.2, (1350 - railY.supply) * s, COL.supply));
@@ -314,9 +495,14 @@
     // гидрострелка справа от зоны отводов
     if (ctx.hydro) {
       var hx = X(B.hydro.x), hw = B.hydro.w * s;
-      o.push(rect(hx, Y(1250), hw, (1250 - 850) * s, COL.body, { stroke: '#9a9a9a', sw: 0.15, rx: 1 }));
-      o.push(rect(hx + hw / 2 - 0.8, Y(1290), 1.6, 40 * s, COL.brass));
-      o.push(circle(hx + hw / 2, Y(1296), 1.6, COL.brass));
+      var hIm = pic(ctx, 'hydro_sep', 'front', hx, Y(1250), hw, (1250 - 850) * s);
+      if (hIm) {
+        o.push(hIm);
+      } else {
+        o.push(rect(hx, Y(1250), hw, (1250 - 850) * s, COL.body, { stroke: '#9a9a9a', sw: 0.15, rx: 1 }));
+        o.push(rect(hx + hw / 2 - 0.8, Y(1290), 1.6, 40 * s, COL.brass));
+        o.push(circle(hx + hw / 2, Y(1296), 1.6, COL.brass));
+      }
     }
 
     // бойлер косвенного нагрева
@@ -327,11 +513,17 @@
           { stroke: '#9a9a9a', sw: 0.15, rx: 1.2 }));
       } else {
         var ih = ctx.indirect.h * s;
-        o.push(rect(ix, Y(ctx.indirect.h - 20), iw, ih - (40 * s), '#8a8a8a', { rx: 2 }));
-        o.push(ellipse(ix + iw / 2, Y(ctx.indirect.h - 20), iw / 2, 3, '#7d7d7d'));
-        o.push(ellipse(ix + iw / 2, Y(60), iw / 2, 3.2, '#828282'));
-        o.push(rect(ix + iw * 0.2, Y(0), iw * 0.12, 60 * s, '#4a4a4a'));
-        o.push(rect(ix + iw * 0.68, Y(0), iw * 0.12, 60 * s, '#4a4a4a'));
+        var tIm = pic(ctx, 'boiler_tank', 'front', ix, Y(ctx.indirect.h), iw, ih,
+          (ctx.vol || {}).indirect);
+        if (tIm) {
+          o.push(tIm);
+        } else {
+          o.push(rect(ix, Y(ctx.indirect.h - 20), iw, ih - (40 * s), '#8a8a8a', { rx: 2 }));
+          o.push(ellipse(ix + iw / 2, Y(ctx.indirect.h - 20), iw / 2, 3, '#7d7d7d'));
+          o.push(ellipse(ix + iw / 2, Y(60), iw / 2, 3.2, '#828282'));
+          o.push(rect(ix + iw * 0.2, Y(0), iw * 0.12, 60 * s, '#4a4a4a'));
+          o.push(rect(ix + iw * 0.68, Y(0), iw * 0.12, 60 * s, '#4a4a4a'));
+        }
       }
     }
 
@@ -339,10 +531,16 @@
     if (ctx.tankH) {
       var tb = B.tankH, tw = tb.w * s, tx = X(tb.x);
       var th = ctx.tankH.h * s;
-      o.push(rect(tx, Y(ctx.tankH.h - 15), tw, th - 30 * s, COL.tankHeat, { rx: 2.4 }));
-      o.push(ellipse(tx + tw / 2, Y(ctx.tankH.h - 15), tw / 2, 2.6, '#a92c21'));
-      o.push(rect(tx + tw / 2 - 0.9, Y(ctx.tankH.h), 1.8, 15 * s + 2, COL.brass));
-      o.push(rect(tx + tw / 2 - 3, Y(0), 6, 3, '#3a3a3a'));
+      var kIm = pic(ctx, 'exp_tank', 'front', tx, Y(ctx.tankH.h), tw, th,
+        (ctx.vol || {}).tankH);
+      if (kIm) {
+        o.push(kIm);
+      } else {
+        o.push(rect(tx, Y(ctx.tankH.h - 15), tw, th - 30 * s, COL.tankHeat, { rx: 2.4 }));
+        o.push(ellipse(tx + tw / 2, Y(ctx.tankH.h - 15), tw / 2, 2.6, '#a92c21'));
+        o.push(rect(tx + tw / 2 - 0.9, Y(ctx.tankH.h), 1.8, 15 * s + 2, COL.brass));
+        o.push(rect(tx + tw / 2 - 3, Y(0), 6, 3, '#3a3a3a'));
+      }
     }
 
     // отводы контуров вниз + краны + марки
@@ -544,14 +742,42 @@
     return txt(217.5, 14.8, s, { size: SZ.title, anchor: 'middle' });
   }
 
+  /**
+   * Лист «Общий вид котельной»: снимок 3D-модели из калькулятора
+   * (Boiler3D.snapshot) — та же котельная, что монтажник крутит на экране.
+   * Картинка вписывается в поле листа по своим пропорциям, под ней рамка
+   * и примечание: расстановка условная, размеры берутся с листа компоновки.
+   */
+  function viewBody(photo, ratio) {
+    var F = { x0: 26, y0: 24, x1: 409, y1: 252 };      // поле под изображение
+    var r = ratio || 1.6;
+    var w = F.x1 - F.x0, h = w / r;
+    if (h > F.y1 - F.y0) { h = F.y1 - F.y0; w = h * r; }
+    var x = F.x0 + ((F.x1 - F.x0) - w) / 2, y = F.y0 + ((F.y1 - F.y0) - h) / 2;
+    var o = [];
+    o.push('<image x="' + n(x) + '" y="' + n(y) + '" width="' + n(w) + '" height="' + n(h) +
+      '" preserveAspectRatio="xMidYMid meet" href="' + String(photo).replace(/&/g, '&amp;') + '"/>');
+    o.push('<rect x="' + n(x) + '" y="' + n(y) + '" width="' + n(w) + '" height="' + n(h) +
+      '" style="fill:none;stroke:#000;stroke-width:0.25"/>');
+    o.push(txt(x, y + h + 5.4, 'Общий вид помещения котельной по составу сметы.', { size: 3.2 }));
+    o.push(txt(x, y + h + 9.6, 'Расстановка оборудования показана условно; ' +
+      'габариты и привязки — по листу «Компоновка котельной».', { size: 3.2 }));
+    o.push(txt(228, 273.8, 'Модель построена автоматически по подобранному оборудованию.', { size: 3.0 }));
+    return o.join('');
+  }
+
   /** Листы этапа 4: [{title, svg}] */
   function sheets(scheme, items, opts) {
     opts = opts || {};
     if (!scheme) return [];
     var ctx = buildCtx(scheme, items || []);
+    // проекции приборов из BIM-моделей, если они собраны (img/equip)
+    ctx.equip = opts.equip || null;
+    ctx.front = opts.front || null;
+    ctx.frontDhw = opts.frontDhw || null;
     var start = opts.sheetStart || 1;
     var fmt = opts.num || function (v) { return String(v); };
-    return [
+    var out = [
       {
         title: 'Компоновка котельной',
         svg: window.projectSheets.sheet({
@@ -563,10 +789,32 @@
         title: 'Вид котельной спереди',
         svg: window.projectSheets.sheet({
           code: opts.code, sheet: fmt(start + 1),
-          body: title('Вид котельной спереди') + frontBody(ctx)
+          body: title(ctx.frontDhw ? 'Вид котельной спереди на котлы'
+            : 'Вид котельной спереди') + frontBody(ctx)
         })
       }
     ];
+    // Второй фасад — со стороны бойлера. В образце на 179 м² это отдельный
+    // лист: на один вид котлы и бойлер с обвязкой не помещаются.
+    if (ctx.frontDhw && ctx.frontDhw.url) {
+      var dctx = Object.assign({}, ctx, { front: ctx.frontDhw, loops: dhwLoops(ctx) });
+      out.push({
+        title: 'Вид котельной спереди на бойлер',
+        svg: window.projectSheets.sheet({
+          code: opts.code, sheet: fmt(start + out.length),
+          body: title('Вид котельной спереди на бойлер') + frontPhotoBody(dctx)
+        })
+      });
+    }
+    // Снимка нет (нет сети, нет WebGL) — лист просто не выпускается
+    if (opts.photo) out.push({
+      title: 'Общий вид котельной',
+      svg: window.projectSheets.sheet({
+        code: opts.code, sheet: fmt(start + 2),
+        body: title('Общий вид котельной') + viewBody(opts.photo, opts.photoRatio)
+      })
+    });
+    return out;
   }
 
   window.projectLayout = { sheets: sheets, buildCtx: buildCtx };

@@ -2419,8 +2419,25 @@ const RecognizeMatch = (function () {
    */
   const LATIN_TECH = /^(ppr|pprc|pex|pert|pert|pe|pp|pvc|al|din|dn|du|pn|sdr|rp|npt|bsp|aisi|xps|epdm|fpm|abs|hdpe|ix)$/;
 
+  /**
+   * Серия внутри каталога — не бренд, а единственное, что различает товар.
+   *
+   * Электрокотлы STOUT называются одинаково во всём, кроме серии: «Котёл
+   * электрический PLUS (12 кВт)», «… STATUS (12 кВт)», «… POLIS (12 кВт)».
+   * Пока серия шла как имя бренда с весом 0,5, строка «STOUT POLIS Котел
+   * электрический 12 кВт» подбиралась к PLUS за 62 657 ₽ вместо POLIS за
+   * 39 027 ₽: слова «котёл», «электрический», «12» и «кВт» совпадали у всех
+   * трёх, а то единственное слово, которое их разводит, почти ничего не весило.
+   * Так же терялся и STATUS — этот промах старше POLIS.
+   *
+   * Список закрытый и только по сериям, которые в каталоге реально дублируются
+   * по остальным словам. Общее правило «латиница = бренд» верное: чужое имя
+   * (Tiemme, Ostendorf) в каталоге STOUT/ROMMER действительно ничего не ищет.
+   */
+  const LATIN_SERIES = /^(polis|status|plus)$/;
+
   function isBrandWord(w) {
-    return /[a-z]/.test(w) && !/[а-я]/.test(w) && !LATIN_TECH.test(w);
+    return /[a-z]/.test(w) && !/[а-я]/.test(w) && !LATIN_TECH.test(w) && !LATIN_SERIES.test(w);
   }
 
   /**
@@ -2822,7 +2839,11 @@ const RecognizeMatch = (function () {
       const key = (it.id || '') + '|' + it.name;
       if (seen.has(key)) return;
       seen.add(key);
-      rows.push({ it, fromPrice, w: nameParts(it.name), sw: sheetParts(sheet, it.name) });
+      // an — числа из кода модели в названии («EX-108» → 108). Считаем на
+      // сборке индекса: в отборе они нужны каждому кандидату (см. «модель
+      // против модели»), а обход двенадцати тысяч названий на каждую строку
+      // сметы стоил бы дороже самого подбора.
+      rows.push({ it, fromPrice, w: nameParts(it.name), sw: sheetParts(sheet, it.name), an: articleNumbers(it.name) });
     };
 
     if (typeof catalog !== 'undefined') {
@@ -2949,7 +2970,8 @@ const RecognizeMatch = (function () {
      * могут совпасть ни с чем, но занимали три четверти веса строки — верный
      * «Блок управления насосом» набирал треть и до порога не доходил.
      */
-    const packs = articleNumbers(rec.raw);
+    const artNums = articleNumbers(rec.raw);
+    const packs = new Set(artNums);
     for (const m of String(rec.raw || '').matchAll(/(\d+)\s*(?:шт|штук|уп\b|упак|компл|кассет)/gi)) {
       packs.add(m[1]);
     }
@@ -3113,6 +3135,26 @@ const RecognizeMatch = (function () {
       if (!nw.length) continue;
       if (classConflict(rawLc, row.it.name)) continue;
       if (qBrands.length && brandMiss(row)) continue;
+      /**
+       * Модель против модели.
+       *
+       * Когда и строка, и кандидат названы кодом с числом, но числа разные —
+       * это разные изделия, сколько бы слов у них ни совпало. «Блок
+       * расширения EX-108» подбирался к «Блоку расширения ZE-22»: слова
+       * одинаковы, номер из сравнения выброшен (см. packs), а короткое имя
+       * ZE-22 давало ему точность выше — и в смету вставал блок за 15 150 ₽
+       * вместо нужного за 27 900 ₽.
+       *
+       * Правило срабатывает, только когда код есть С ОБЕИХ сторон. У
+       * «Контроллера насоса ERMANGIZER ER-G-220-02-2.2» верный кандидат
+       * называется «Блок управления насосом SIRIO UNIVERSAL» — кода в нём нет
+       * вовсе, и отбор идёт как раньше.
+       */
+      if (artNums.size && row.an && row.an.size) {
+        let sharedModel = false;
+        for (const a of artNums) if (row.an.has(a)) { sharedModel = true; break; }
+        if (!sharedModel) continue;
+      }
       // Отбор по цене документа (opts.priceBand). Нужен предохранителю: когда
       // подобранное разошлось с ценой счёта в разы, ищем заново среди того,
       // что вообще может столько стоить. Цена — не признак товара, но она
@@ -3184,7 +3226,30 @@ const RecognizeMatch = (function () {
       let byWordsRel = byWords;
       if (!used[0] && !isBrandWord(nw[0])) { rel *= 0.8; byWordsRel *= 0.8; }
 
-      const bonus = brandBonus(row.it);
+      /**
+       * Номер модели РАЗЛИЧАЕТ кандидатов, даже если в вес не идёт.
+       *
+       * Числа из артикула выброшены из сравнения выше (см. packs) — и
+       * правильно: у «ERMANGIZER ER-G-220-02-2.2» они не совпадают ни с чем и
+       * топили верного кандидата. Но там, где вся разница между товарами
+       * именно в номере, это выбрасывание делает их неотличимыми: «Блок
+       * расширения EX-108» и «Блок расширения ZE-22» по словам одинаковы, и
+       * побеждал первый попавшийся — ZE-22 вместо EX-108 (15 150 ₽ вместо
+       * 27 900 ₽). Так же «Датчик давления MLD-10.01» уходил в «MLD 4-20 мА».
+       *
+       * Поэтому номер не возвращаем в вес, а даём надбавку тому, у кого он
+       * есть в названии. Поднять она может только того, кто и так дошёл до
+       * оценки, а кандидату без номера ничего не портит — случай ERMANGIZER,
+       * где номера нет ни у кого, остаётся как был.
+       */
+      let modelBonus = 0;
+      if (artNums.size) {
+        let hitArt = 0;
+        for (const a of artNums) if (nw.includes(a)) hitArt++;
+        if (hitArt) modelBonus = Math.min(0.15, 0.08 * hitArt);
+      }
+
+      const bonus = brandBonus(row.it) + modelBonus;
       rel = Math.min(1, rel + bonus);
       byWordsRel = Math.min(1, byWordsRel + bonus);
 
@@ -3505,6 +3570,7 @@ const RecognizeMatch = (function () {
     boilers_baxi: '1. Котёл + водонагреватель',
     boilers_plus: '1. Котёл + водонагреватель',
     boilers_status: '1. Котёл + водонагреватель',
+    boilers_polis: '1. Котёл + водонагреватель',
     tanks_optibase: '1. Котёл + водонагреватель',
     tanks_standard: '1. Котёл + водонагреватель',
     tanks_stainless: '1. Котёл + водонагреватель',
@@ -3541,6 +3607,15 @@ const RecognizeMatch = (function () {
     servo_rotary_std: '2. Обвязка котельной',
     dhw_pump: '2. Обвязка котельной',
     coolants: '2. Обвязка котельной',
+    boiler_automation: '2. Обвязка котельной',
+    leak_sensors: '2. Обвязка котельной',
+    leak_valves: '2. Обвязка котельной',
+    leak_actuators: '2. Обвязка котельной',
+    air_sensors: '2. Обвязка котельной',
+    radio_modules: '2. Обвязка котельной',
+    // feed_line_parts сюда НЕ вносим: фильтр сетчатый и обратный клапан 1/2"
+    // стоят и на подпитке, и в узле ввода, и в обвязке насоса — по категории
+    // их раздел не определить.
 
     // 3. Приборы отопления
     rads: '3. Приборы отопления',
@@ -3586,6 +3661,7 @@ const RecognizeMatch = (function () {
 
     // 6. Узел ввода ХВС
     water_input_node: '6. Узел ввода ХВС',
+    feed_valves: '6. Узел ввода ХВС',
     filter_big_blue: BIG_BLUE,
 
     // 7.1. Обвязка скважинного насоса
