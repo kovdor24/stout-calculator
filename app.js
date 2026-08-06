@@ -195,7 +195,7 @@ function getFriendlyErrorMessage(err, defaultMsg = 'Неизвестная ош�
         !navigator.onLine;
     if (isNetwork) {
         const code = (typeof err.status === 'number') ? ` (код ${err.status})` : '';
-        return `Нет связи с сервером${code}. Попробуйте:\n1. Войти через мобильный интернет (не Wi-Fi)\n2. Отключить AdBlock / uBlock в браузере\n3. Включить VPN\n4. Проверить интернет-соединение`;
+        return `Нет связи с сервером${code}. Попробуйте:\n1. Проверить интернет-соединение\n2. Войти через мобильный интернет (не Wi-Fi)\n3. Отключить AdBlock / uBlock в браузере`;
     }
 
     if (msg.includes('invalid login credentials') || msg.includes('invalid email or password')) {
@@ -210,7 +210,7 @@ function getFriendlyErrorMessage(err, defaultMsg = 'Неизвестная ош�
     return err.message || err.text || defaultMsg;
 }
 
-async function withTimeout(promise, timeoutMs = 6000, errorMsg = 'Превышено время ожидания ответа от сервера Supabase. Возможно, требуется включить VPN или проверить интернет-соединение.') {
+async function withTimeout(promise, timeoutMs = 6000, errorMsg = 'Сервер не ответил вовремя. Проверьте интернет-соединение и попробуйте ещё раз.') {
     let timeoutId;
     const timeoutPromise = new Promise((_, reject) => {
         timeoutId = setTimeout(() => {
@@ -7275,7 +7275,7 @@ const app = {
 
             // Если все успешно — зеленая точка (соединение работает)
             dot.style.backgroundColor = '#10B981';
-            if (btn) { btn.setAttribute('title', 'Соединение с базой активно (VPN работает)'); btn.style.display = ''; }
+            if (btn) { btn.setAttribute('title', 'Соединение с базой активно'); btn.style.display = ''; }
             // Показываем кнопку «Ссылка для клиента» только при активном VPN
             if (btnShare) btnShare.style.display = '';
         } catch (e) {
