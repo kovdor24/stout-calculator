@@ -2739,6 +2739,33 @@
             return null;
         }
 
+        /**
+         * Разворачивает сжатое описание позиции обратно в HTML подсказки.
+         *
+         * Парная функция к compactDesc() в app.js: там разметка ушла в метки
+         * (§заголовок первой строкой, ¦…¬ вместо <b>…</b>, перевод строки вместо
+         * <br>), здесь она возвращается. Ссылки, выпущенные до августа 2026,
+         * везут готовый HTML без меток — такую строку отдаём как есть, иначе у
+         * клиентов со старой ссылкой подсказка развалилась бы.
+         */
+        function expandDesc(d) {
+            if (!d) return '';
+            let s = String(d);
+            if (s.indexOf('§') === -1 && s.indexOf('¦') === -1 && s.indexOf('\n') === -1) return s;
+
+            let title = '';
+            if (s.charAt(0) === '§') {
+                const nl = s.indexOf('\n');
+                title = nl === -1 ? s.slice(1) : s.slice(1, nl);
+                s = nl === -1 ? '' : s.slice(nl + 1);
+            }
+            const body = s.split('¦').join('<b>').split('¬').join('</b>').split('\n').join('<br>');
+            if (!title) return body;
+
+            const head = 'font-weight:700; color:#93C5FD; display:block; margin-bottom:9px; padding-bottom:7px; border-bottom:1px solid rgba(255,255,255,0.15);';
+            return `<span style="font-size:11px; line-height:1.4;"><span style="${head}">${title}</span>${body}</span>`;
+        }
+
         function decompressPayload(compact) {
             const SECTION_MAP_REV = {
                 1: "1. Котёл + водонагреватель",
@@ -2779,7 +2806,7 @@
                         sum: Math.round(item.m || 0),
                         sectionTitle: item.t,
                         isOpt: !!item.isOpt,
-                        desc: item.desc || item.d || '',
+                        desc: item.desc || expandDesc(item.d) || '',
                         availability: resolveAvailability(item.availability || item.a || '', item.price_date || item.pd || '')
                     };
                 }
@@ -2802,7 +2829,7 @@
                         sum: Math.round(price * q),
                         sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
                         isOpt: false,
-                        desc: item.d || item.desc || '',
+                        desc: expandDesc(item.d) || item.desc || '',
                         availability: ''
                     };
                 }
@@ -2831,7 +2858,7 @@
                     sum: Math.round(Math.round(finalPrice) * q),
                     sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
                     isOpt: item.o === 1,
-                    desc: item.d || catalogItem.desc || '',
+                    desc: expandDesc(item.d) || catalogItem.desc || '',
                     availability: resolveAvailability(catalogItem.availability || '', catalogItem.price_date || '')
                 };
             });

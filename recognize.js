@@ -370,6 +370,8 @@ const RecognizeUI = {
         if (dup) dup.remove();
         const frame = document.getElementById('rec_frame');
         if (frame) frame.remove();
+        const fnote = document.getElementById('rec_filenote');
+        if (fnote) fnote.remove();
         const dl = document.getElementById('rec_docs');
         if (dl) dl.style.display = 'none';
         const err = document.querySelector('#rec_body .rec-err');
@@ -445,6 +447,7 @@ const RecognizeUI = {
         this._fileName = '';
         this._fileKind = null;
         this._imgWarn = null;   // замечания по кадру относились к тем снимкам
+        this._fileNote = '';    // и замечание о неполном чтении — тоже
     },
 
     /**
@@ -710,6 +713,28 @@ const RecognizeUI = {
         });
     },
 
+    /**
+     * Замечание о самом файле: что-то из него в разбор не попало.
+     *
+     * Показывается на экране загрузки и повторяется на экране проверки —
+     * там, где монтажник сверяет строки. Одного показа мало: между загрузкой
+     * и проверкой проходит минута ожидания, и предупреждение забывается.
+     */
+    showFileNote() {
+        const host = document.getElementById('rec_body');
+        if (!host || !this._fileNote) return;
+        let box = document.getElementById('rec_filenote');
+        if (!box) {
+            box = document.createElement('div');
+            box.id = 'rec_filenote';
+            box.className = 'rec-frame';
+            const actions = host.querySelector('.rec-actions');
+            if (actions) host.insertBefore(box, actions); else host.appendChild(box);
+        }
+        box.innerHTML = `<b>Файл прочитан не полностью</b><div>${
+            String(this._fileNote).replace(/[&<>]/g, '')}</div>`;
+    },
+
     /** Строка с замечаниями по кадру под миниатюрами. */
     showFrameHints() {
         const host = document.getElementById('rec_body');
@@ -855,6 +880,12 @@ const RecognizeUI = {
         try {
             const r = await RecognizeFiles.extract(file, (m) => this.setStatus(m));
 
+            // Читатель файла мог взять не всё — например, у PDF есть потолок
+            // страниц. Молчать об этом нельзя: неполная смета выглядит ровно
+            // как полная, и заметить пропажу монтажнику не по чему.
+            this._fileNote = r.note || '';
+            if (this._fileNote) this.showFileNote();
+
             if (r.images && r.images.length) {
                 // Скан в PDF: текстового слоя нет, работаем с картинкой.
                 this._img = r.images[0];
@@ -897,8 +928,16 @@ const RecognizeUI = {
      * ретранслятора. Отрезаем всё до таблицы оборудования по её заголовку,
      * а остаток ещё и ограничиваем по длине.
      */
+    /**
+     * Потолок объёма текста.
+     *
+     * Раньше стоял на 24 000 символов, потому что всё уходило одним запросом
+     * и больше в него не помещалось. Теперь длинный текст режется на части
+     * (splitText), и предел задаёт не запрос, а месячный лимит монтажника:
+     * каждая часть стоит одного обращения к распознаванию.
+     */
     trimText(text) {
-        const MAX = 24000;   // символов; настоящая смета сильно меньше
+        const MAX = this.TEXT_CHUNK * this.TEXT_MAX_CHUNKS;
 
         // Заголовок таблицы оборудования: «# НАИМЕНОВАНИЕ … КОЛ … СУММА».
         // Всё выше него — расчётная часть, она не нужна.
@@ -1325,6 +1364,21 @@ const RecognizeUI = {
                 return;
             }
 
+            // Длинный текст разбираем по частям — по той же причине, по
+            // которой фотографии идут полистно: одним запросом такой ответ не
+            // успевает вернуться.
+            if (this._text && this._text.length > this.TEXT_ONE_SHOT) {
+                const chunks = this.splitText(this._text);
+                if (chunks.length > 1) {
+                    const res = await this.runByChunks(chunks);
+                    this.progressTo(2);
+                    this.startReview(res);
+                    this._busy = false;
+                    if (go) go.disabled = false;
+                    return;
+                }
+            }
+
             // Из текстового файла картинку не шлём: текст в запросе точнее и
             // дешевле, модель не тратит зрение на то, что уже прочитано.
             let parts;
@@ -1538,6 +1592,127 @@ const RecognizeUI = {
      * теряются: его номер попадает в предупреждение, а работа продолжается.
      * Полный отказ — только когда не прочитался ни один лист.
      */
+    // ------------------------------------------------------------------
+    // Разбор длинного текста по частям
+    //
+    // Фотографии разбираются полистно давно, а текстовый файл до сих пор
+    // уходил одним запросом целиком — и на настоящем КП это не работало.
+    // Дело не во входе: 25 тысяч символов модель принимает спокойно. Дело в
+    // ВЫХОДЕ: на смету в две с половиной сотни позиций надо вернуть такой же
+    // огромный JSON, а он отдаётся по строчке, и в отведённые полторы минуты
+    // ответ не укладывается. Монтажник получал «слишком долго» и не получал
+    // ничего — при том что четверть файла до модели даже не доехала.
+    //
+    // Режем так же, как листы: по частям, по очереди, с показом хода работы.
+    // Сбой на одной части не отменяет остальные, повторный прогон берёт
+    // разобранное из памяти, а сводящий проход склеивает строки на стыках.
+    // ------------------------------------------------------------------
+
+    TEXT_CHUNK: 7000,        // символов на один запрос
+    TEXT_ONE_SHOT: 9000,     // короче этого режем зря — уходит одним запросом
+    TEXT_MAX_CHUNKS: 12,     // каждый кусок стоит запроса из месячного лимита
+
+    /**
+     * Нарезка текста на части.
+     *
+     * Границы страниц (их ставит читатель PDF) — лучшее место для разреза:
+     * позиция сметы редко переползает со страницы на страницу. Если страница
+     * сама больше куска, режем по строкам, но никогда не посреди строки:
+     * половина названия не опознаётся ни там, ни там.
+     */
+    splitText(text) {
+        const out = [];
+        let cur = '';
+        const flush = () => { if (cur.trim()) out.push(cur.trim()); cur = ''; };
+        const add = (piece, sep) => {
+            if (cur && (cur.length + piece.length) > this.TEXT_CHUNK) flush();
+            cur += (cur ? sep : '') + piece;
+        };
+
+        for (const page of String(text || '').split('\f')) {
+            if (page.length <= this.TEXT_CHUNK) { add(page, '\n'); continue; }
+            flush();
+            for (const line of page.split('\n')) add(line, '\n');
+        }
+        flush();
+        return out;
+    },
+
+    /**
+     * Разбор по частям. Устроен как полистный: та же память, тот же показ
+     * хода работы, то же сведение в конце.
+     */
+    async runByChunks(chunks) {
+        const items = [];
+        const skipped = [];
+        const warnings = [];
+        const docTotals = [];
+        let quotaHit = false;
+
+        this._sheetsTotal = chunks.length;
+        this._sheetsDone = 0;
+        this._itemsSoFar = 0;
+        this._fromCache = 0;
+
+        for (let i = 0; i < chunks.length; i++) {
+            try {
+                let parsed = this.cachedSheet(chunks[i]);
+                if (parsed) {
+                    this._fromCache++;
+                    this.setStatus(`Часть ${i + 1} из ${chunks.length} — из памяти`);
+                } else {
+                    this.setStatus(`Разбираю часть ${i + 1} из ${chunks.length}…`);
+                    const data = await this.askModel([{
+                        text: `Разбери эту смету по правилам. Это ЧАСТЬ ${i + 1} из ${chunks.length} ` +
+                            'одного документа, текст извлечён из файла. Разбирай только те строки, ' +
+                            'которые здесь есть: продолжение придёт отдельно, выдумывать его не надо.\n\n' +
+                            chunks[i],
+                    }]);
+                    const cand = data?.candidates?.[0];
+                    const text = cand?.content?.parts?.[0]?.text;
+                    if (!text) throw new Error('пустой ответ');
+
+                    parsed = this.parseModelJson(text, cand.finishReason);
+                    if (this._parseWarning) warnings.push(`часть ${i + 1}: ${this._parseWarning}`);
+                    if (!this._parseWarning) this.rememberSheet(chunks[i], parsed);
+                }
+
+                for (const it of (parsed.items || [])) items.push({ ...it, _sheet: i });
+                for (const s of (parsed.skipped || [])) skipped.push(s);
+
+                this.mergeDocTotals(docTotals, this.docTotalsOf(parsed));
+
+                this._sheetsDone++;
+                this._itemsSoFar = items.length;
+            } catch (e) {
+                if (e.quota) {
+                    quotaHit = true;
+                    warnings.push(e.message);
+                    break;
+                }
+                warnings.push(`часть ${i + 1} не разобрана: ${
+                    this.cleanError(e.message).split('\n')[0]}`);
+            }
+        }
+
+        if (!items.length) {
+            throw new Error('Не удалось разобрать ни одну часть документа.\n' + warnings.join('\n'));
+        }
+
+        const done = this._sheetsDone === chunks.length;
+        const merged = quotaHit ? { items } : await this.mergeSheets(items, chunks.length);
+        if (merged.warning) warnings.push(merged.warning);
+
+        this._parseWarning = warnings.join(' · ');
+        this.setStatus('');
+        return {
+            items: merged.items, skipped,
+            // Сверять итог с суммой строк можно только когда прочитано всё:
+            // при пропущенной части расхождение объясняется ею.
+            docTotals: done ? docTotals : [],
+        };
+    },
+
     async runBySheets() {
         const imgs = this._imgs;
         const items = [];
@@ -1551,7 +1726,7 @@ const RecognizeUI = {
         this._failedSheets = [];
         this._fromCache = 0;
         let quotaHit = false;
-        let docTotal = 0, docTotalLabel = '';
+        const docTotals = [];
 
         for (let i = 0; i < imgs.length; i++) {
             try {
@@ -1582,15 +1757,10 @@ const RecognizeUI = {
                 for (const it of (parsed.items || [])) items.push({ ...it, _sheet: i });
                 for (const s of (parsed.skipped || [])) skipped.push(s);
 
-                // Окончательный итог стоит на последнем листе, но снимают листы
-                // не всегда по порядку, а на промежуточных встречаются итоги по
-                // разделу. Берём наибольший: итог всего документа не может быть
-                // меньше любой своей части.
-                const dt = this.docNum(parsed.docTotal);
-                if (dt > docTotal) {
-                    docTotal = dt;
-                    docTotalLabel = String(parsed.docTotalLabel || '');
-                }
+                // Итогов в документе может быть несколько: КП часто делится на
+                // «Итого к оплате» по оборудованию и по монтажу. Собираем все —
+                // выбирать между ними будет сверка.
+                this.mergeDocTotals(docTotals, this.docTotalsOf(parsed));
 
                 // Лист готов — отмечаем его галочкой и обновляем счётчики,
                 // из которых складываются подсказки в строке ожидания.
@@ -1633,16 +1803,14 @@ const RecognizeUI = {
         this.setStatus('');
         // Найденный итог помним отдельно: дочитывание упавших листов начнёт
         // с него, иначе итог, стоявший на прочитанном листе, потерялся бы.
-        this._sheetsDocTotal = docTotal;
-        this._sheetsDocTotalLabel = docTotalLabel;
+        this._sheetsDocTotals = docTotals;
 
         // Сверять итог с суммой строк можно только тогда, когда прочитаны все
         // листы: при упавшем листе расхождение объясняется им, а не потерей
         // строки, и пугать монтажника нечем.
         return {
             items: merged.items, skipped,
-            docTotal: failed.length ? 0 : docTotal,
-            docTotalLabel: failed.length ? '' : docTotalLabel,
+            docTotals: failed.length ? [] : docTotals,
         };
     },
 
@@ -1663,8 +1831,7 @@ const RecognizeUI = {
         const added = [];
         const stillFailed = [];
         let warning = '';
-        let docTotal = this._sheetsDocTotal || 0;
-        let docTotalLabel = this._sheetsDocTotalLabel || '';
+        const docTotals = (this._sheetsDocTotals || []).slice();
 
         this.setStatus('');
         this.progressStart(false);
@@ -1683,11 +1850,7 @@ const RecognizeUI = {
                 if (!text) throw new Error('пустой ответ');
                 const parsed = this.parseModelJson(text, cand.finishReason);
                 for (const it of (parsed.items || [])) added.push(it);
-                const dt = this.docNum(parsed.docTotal);
-                if (dt > docTotal) {
-                    docTotal = dt;
-                    docTotalLabel = String(parsed.docTotalLabel || '');
-                }
+                this.mergeDocTotals(docTotals, this.docTotalsOf(parsed));
                 this.markSheet(i, 'done');
             } catch (e) {
                 stillFailed.push(i);
@@ -1704,8 +1867,7 @@ const RecognizeUI = {
 
         this._failedSheets = stillFailed;
         this._parseWarning = warning;
-        this._sheetsDocTotal = docTotal;
-        this._sheetsDocTotalLabel = docTotalLabel;
+        this._sheetsDocTotals = docTotals;
         this.progressStop();
         this._busy = false;
 
@@ -1714,8 +1876,7 @@ const RecognizeUI = {
         this.startReview({
             items: rows.concat(added), skipped: this._skipped || [],
             // Все листы наконец прочитаны — сверка с итогом снова осмысленна.
-            docTotal: stillFailed.length ? 0 : docTotal,
-            docTotalLabel: stillFailed.length ? '' : docTotalLabel,
+            docTotals: stillFailed.length ? [] : docTotals,
         });
     },
 
@@ -2207,8 +2368,7 @@ const RecognizeUI = {
                 at: Date.now(),
                 rows: this._rows.map(r => this.draftRow(r)),
                 skipped: this._skipped || [],
-                docTotal: this._docTotal || 0,
-                docTotalLabel: this._docTotalLabel || '',
+                docTotals: this._docTotals || [],
                 parseWarning: this._parseWarning || '',
                 mergeInfo: this._mergeInfo || '',
                 deep: this._deep || 0,
@@ -2295,8 +2455,7 @@ const RecognizeUI = {
         if (!d) { this.renderUpload(); return; }
 
         this._skipped = d.skipped || [];
-        this._docTotal = d.docTotal || 0;
-        this._docTotalLabel = d.docTotalLabel || '';
+        this._docTotals = Array.isArray(d.docTotals) ? d.docTotals : [];
         this._parseWarning = d.parseWarning || '';
         this._mergeInfo = d.mergeInfo || '';
         this._deep = d.deep || 0;
@@ -2360,8 +2519,14 @@ const RecognizeUI = {
         // Итог, НАПЕЧАТАННЫЙ в документе. По нему проверяется, все ли строки
         // прочитаны: пропущенную в середине счёта позицию иначе не увидеть
         // ни монтажнику, ни нам.
-        this._docTotal = this.docNum(res.docTotal);
-        this._docTotalLabel = String(res.docTotalLabel || '').slice(0, 60);
+        this._docTotals = this.docTotalsOf(res);
+
+        // Замечание о неполно прочитанном файле должно доехать до экрана
+        // проверки: там монтажник сверяет строки, и знать, что часть файла
+        // до разбора не дошла, ему нужно именно там.
+        if (this._fileNote) {
+            this._parseWarning = [this._fileNote, this._parseWarning].filter(Boolean).join(' · ');
+        }
         if (typeof RecognizeMatch !== 'undefined') {
             RecognizeMatch.setPprBrand(app.state.pprSystemBrand || 'proaqua');
         }
@@ -3578,7 +3743,9 @@ const RecognizeUI = {
         t.our = t.eqOur + t.wOur;
         t.out = t.eqOut + t.wOut;
         t.delta = t.our - t.their;
-        t.pct = t.their > 0 ? Math.round((t.delta / t.their) * 100) : 0;
+        // Точное значение; округляет уже показ (fmtPct), иначе мелкая разница
+        // превращалась в «+0%» рядом с ненулевой суммой.
+        t.pct = t.their > 0 ? (t.delta / t.their) * 100 : 0;
         t.brand = brand;
         return t;
     },
@@ -3599,7 +3766,7 @@ const RecognizeUI = {
               <span class="rec-grand-lbl">У нас · ${t.brand === 'rommer' ? 'ROMMER' : 'STOUT'}</span>
               <b>${money(t.our)}</b>
               <span class="rec-grand-delta">${t.delta === 0 ? 'разницы нет'
-                : `${t.delta > 0 ? '+' : '−'}${money(Math.abs(t.delta))} (${t.delta > 0 ? '+' : ''}${t.pct}%)`}</span>
+                : `${t.delta > 0 ? '+' : '−'}${money(Math.abs(t.delta))} (${t.delta > 0 ? '+' : ''}${this.fmtPct(t.pct)}%)`}</span>
             </div>
             <div class="rec-grand-sub">
               оборудование ${part(t.eqTheir, t.eqOur)} · работы ${part(t.wTheir, t.wOur)}${
@@ -3950,9 +4117,9 @@ const RecognizeUI = {
 
             let diff = '<span class="rec-cmp-eq">—</span>';
             if (ok && dSumAll > 0 && qty > 0) {
-                const pct = Math.round(((oSum - dSumAll) / dSumAll) * 100);
-                diff = pct > 0 ? `<span class="rec-cmp-up">+${pct}%</span>`
-                    : pct < 0 ? `<span class="rec-cmp-down">${pct}%</span>`
+                const pct = ((oSum - dSumAll) / dSumAll) * 100;
+                diff = pct > 0 ? `<span class="rec-cmp-up">+${this.fmtPct(pct)}%</span>`
+                    : pct < 0 ? `<span class="rec-cmp-down">${this.fmtPct(pct)}%</span>`
                         : '<span class="rec-cmp-eq">0%</span>';
             } else if (w) {
                 diff = '<span class="rec-cmp-up" title="Не участвует в итогах">✕</span>';
@@ -3992,7 +4159,7 @@ const RecognizeUI = {
         }).join('');
 
         const delta = ourCmp - theirCmp;
-        const pct = theirCmp > 0 ? Math.round((delta / theirCmp) * 100) : 0;
+        const pct = theirCmp > 0 ? (delta / theirCmp) * 100 : 0;
         // Свёрнутые строки не «вне сравнения»: их суммы учтены ведущей строкой.
         const outN = works.length - rolled - (matched - flagged);
 
@@ -4044,7 +4211,7 @@ const RecognizeUI = {
                     this.plural(cmpN, 'работе', 'работам', 'работам')}</span></div></div>`
                 : `<div class="rec-cmp-item">
                  <div class="rec-cmp-val ${delta > 0 ? 'up' : 'down'}">${
-                    delta > 0 ? '+' : '−'}${money(Math.abs(delta))} (${delta > 0 ? '+' : ''}${pct}%)</div>
+                    delta > 0 ? '+' : '−'}${money(Math.abs(delta))} (${delta > 0 ? '+' : ''}${this.fmtPct(pct)}%)</div>
                  <div class="rec-cmp-lbl">${delta > 0 ? 'У нас дороже' : 'У нас дешевле'}<br><span>только по этим ${
                     cmpN} ${this.plural(cmpN, 'работе', 'работам', 'работам')}</span></div></div>`}
           </div>`}
@@ -4158,6 +4325,40 @@ const RecognizeUI = {
     // обесценит.
     // ------------------------------------------------------------------
 
+    /**
+     * Итоги, найденные в разобранном куске.
+     *
+     * Приводим к одному виду и старый ответ (docTotal + docTotalLabel), и
+     * новый список: в памяти листов лежат разборы, сделанные до этой правки,
+     * и терять их из-за смены формата незачем.
+     */
+    docTotalsOf(parsed) {
+        const out = [];
+        const push = (sum, label) => {
+            const n = this.docNum(sum);
+            if (n > 0) out.push({ sum: n, label: String(label || '').slice(0, 60) });
+        };
+        for (const t of (parsed && parsed.docTotals) || []) {
+            if (t) push(t.sum, t.label);
+        }
+        if (!out.length && parsed) push(parsed.docTotal, parsed.docTotalLabel);
+        return out;
+    },
+
+    /**
+     * Слияние итогов, найденных в разных частях.
+     *
+     * Одинаковые числа схлопываем: один и тот же итог видят и лист, на котором
+     * он напечатан, и сводящий проход, а сложить его с самим собой значит
+     * получить вдвое больше документа.
+     */
+    mergeDocTotals(into, more) {
+        for (const t of more || []) {
+            if (!into.some(x => Math.abs(x.sum - t.sum) < 0.5)) into.push(t);
+        }
+        return into;
+    },
+
     /** Число из документа: модель нет-нет да и вернёт «348 500,00 ₽» строкой. */
     docNum(v) {
         if (typeof v === 'number') return isFinite(v) && v > 0 ? v : 0;
@@ -4165,6 +4366,19 @@ const RecognizeUI = {
             .replace(/[\s ]/g, '').replace(/,/g, '.').replace(/[^\d.]/g, '');
         const n = parseFloat(s);
         return isFinite(n) && n > 0 ? n : 0;
+    },
+
+    /**
+     * Проценты для показа.
+     *
+     * Крупная разница в десятых не нуждается — «+37,2%» читается хуже, чем
+     * «+37%». А вот мелкая без них превращается в ноль: семь тысяч на итоге в
+     * полтора миллиона округлялись до «+0%», и цифра выглядела опечаткой при
+     * ненулевой сумме рядом. Граница — десять процентов.
+     */
+    fmtPct(p) {
+        const v = Math.abs(p) >= 10 ? Math.round(p) : Math.round(p * 10) / 10;
+        return v.toLocaleString('ru-RU');
     },
 
     /** Копеечные округления по строкам — не потеря. Полпроцента на это с запасом. */
@@ -4178,9 +4392,35 @@ const RecognizeUI = {
      * нет, или часть листов не прочиталась (там расхождение объясняется
      * упавшим листом, а не потерей строки).
      */
+    /**
+     * С чем сверять сумму строк.
+     *
+     * Итогов в документе бывает несколько: КП делится на «Итого к оплате» по
+     * оборудованию и по монтажу, и ни одно из этих чисел само по себе всей
+     * смете не отвечает — отвечает их сумма. Раньше брался наибольший, и на
+     * таком КП сверка ругалась на разницу в 400 тысяч, которой не было: она
+     * сравнивала итог по оборудованию со строками оборудования И монтажа.
+     *
+     * Поэтому кандидатов несколько: каждый итог по отдельности и все вместе.
+     * Подходит любой — значит документ прочитан целиком.
+     */
+    totalCandidates() {
+        const list = (this._docTotals || []).filter(t => t && t.sum > 0);
+        if (!list.length) return [];
+        const out = list.map(t => ({ sum: t.sum, label: t.label || '', parts: 1 }));
+        if (list.length > 1) {
+            out.push({
+                sum: list.reduce((s, t) => s + t.sum, 0),
+                label: list.map(t => t.label).filter(Boolean).join(' + '),
+                parts: list.length,
+            });
+        }
+        return out;
+    },
+
     totalCheck() {
-        const doc = this._docTotal || 0;
-        if (doc <= 0) return null;
+        const cands = this.totalCandidates();
+        if (!cands.length) return null;
 
         let sum = 0, priced = 0, blind = 0;
         for (const r of (this._rows || [])) {
@@ -4191,9 +4431,22 @@ const RecognizeUI = {
         }
         if (!priced) return null;
 
+        // Берём тот итог, к которому строки ближе всего. Если подходит хоть
+        // один — сверка сошлась, и придираться к остальным незачем.
+        let best = cands[0];
+        for (const c of cands) {
+            if (Math.abs(c.sum - sum) < Math.abs(best.sum - sum)) best = c;
+        }
+
+        const doc = best.sum;
         const delta = doc - sum;                       // чего итогу не хватило в строках
         const pct = Math.abs(delta) / doc;
-        const base = { doc, sum, delta, pct, blind };
+        const base = {
+            doc, sum, delta, pct, blind,
+            label: best.label,
+            parts: best.parts,
+            all: cands.filter(c => c.parts === 1),
+        };
 
         if (pct <= this.TOTAL_EPS) return { ...base, kind: 'ok' };
 
@@ -4218,35 +4471,42 @@ const RecognizeUI = {
         const esc = s => String(s ?? '').replace(/[&<>"]/g,
             c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const money = n => Math.round(Math.abs(n) || 0).toLocaleString('ru-RU') + ' ₽';
-        const pct = Math.round(t.pct * 1000) / 10;
-        const label = this._docTotalLabel ? ` (${esc(this._docTotalLabel)})` : '';
+        const pct = this.fmtPct(t.pct * 100);
+        const label = t.label ? ` (${esc(t.label)})` : '';
+
+        // Из чего сложился итог, с которым сверялись. Когда итогов в документе
+        // несколько, без этой расшифровки цифра выглядит взятой с потолка.
+        const from = t.parts > 1
+            ? `<div>Итогов в документе несколько, сверка идёт по их сумме: ${
+                t.all.map(c => `${esc(c.label || 'итог')} ${money(c.sum)}`).join(' + ')}.</div>`
+            : '';
 
         const TEXT = {
             ok: {
                 cls: 'ok', icon: '✓',
                 head: `Сходится с итогом документа: ${money(t.doc)}${label}`,
-                sub: 'Все строки на месте — сумма разобранного совпала с напечатанным итогом.',
+                sub: 'Все строки на месте — сумма разобранного совпала с напечатанным итогом.' + from,
             },
             vat: {
                 cls: 'ok', icon: '✓',
                 head: `Сходится с итогом документа: ${money(t.doc)}${label}`,
-                sub: `Строки дают ${money(t.sum)} — итог больше ровно на НДС 20%, значит цены в таблице без налога. Позиции прочитаны все.`,
+                sub: `Строки дают ${money(t.sum)} — итог больше ровно на НДС 20%, значит цены в таблице без налога. Позиции прочитаны все.` + from,
             },
             blind: {
                 cls: 'warn', icon: '!',
-                head: `Итог документа ${money(t.doc)}${label}, строки дают ${money(t.sum)}`,
+                head: `Итог документа ${money(t.doc)}${label}, строки таблицы дают ${money(t.sum)}`,
                 sub: `Разница ${money(t.delta)} (${pct}%). У ${t.blind} ${
-                    this.plural(t.blind, 'строки', 'строк', 'строк')} цена не прочиталась — скорее всего дело в них, но проверьте и то, все ли позиции на месте.`,
+                    this.plural(t.blind, 'строки', 'строк', 'строк')} цена не прочиталась — скорее всего дело в них, но проверьте и то, все ли позиции на месте.` + from,
             },
             short: {
                 cls: 'bad', icon: '!',
                 head: `Не сходится с итогом документа: не хватает ${money(t.delta)}`,
-                sub: `В документе ${money(t.doc)}${label}, разобранные строки дают ${money(t.sum)} — это ${pct}%. Цены есть у всех строк, значит позиция при распознавании потерялась. Сверьте таблицу с оригиналом и допишите недостающее кнопкой поиска 🔍.`,
+                sub: `В документе ${money(t.doc)}${label}, строки таблицы дают ${money(t.sum)} — разница ${pct}%. Цены есть у всех строк, так что похоже на потерянную позицию: сверьте таблицу с оригиналом и допишите недостающее кнопкой поиска 🔍.` + from,
             },
             over: {
                 cls: 'bad', icon: '!',
                 head: `Не сходится с итогом документа: строки дают на ${money(t.delta)} больше`,
-                sub: `В документе ${money(t.doc)}${label}, в таблице ${money(t.sum)} — это ${pct}%. Обычно так выходит, когда строка задвоилась на стыке листов или в список попал промежуточный итог. Лишнюю строку удалите крестиком.`,
+                sub: `В документе ${money(t.doc)}${label}, строки таблицы дают ${money(t.sum)} — разница ${pct}%. Причина может быть в задвоенной на стыке листов строке или в промежуточном итоге, попавшем в список отдельной позицией; посмотрите строки с самыми крупными суммами.` + from,
             },
         };
         const v = TEXT[t.kind];
@@ -4396,9 +4656,9 @@ const RecognizeUI = {
 
             let diff = '<span class="rec-cmp-eq">—</span>';
             if (comparable) {
-                const pct = Math.round(((bp - dp) / dp) * 100);
-                diff = pct > 0 ? `<span class="rec-cmp-up">+${pct}%</span>`
-                    : pct < 0 ? `<span class="rec-cmp-down">${pct}%</span>`
+                const pct = ((bp - dp) / dp) * 100;
+                diff = pct > 0 ? `<span class="rec-cmp-up">+${this.fmtPct(pct)}%</span>`
+                    : pct < 0 ? `<span class="rec-cmp-down">${this.fmtPct(pct)}%</span>`
                         : `<span class="rec-cmp-eq">0%</span>`;
             } else if (r._priceAlarm) {
                 diff = `<span class="rec-cmp-up" title="Не участвует в итогах">✕</span>`;
@@ -4436,7 +4696,10 @@ const RecognizeUI = {
 
         const ourTotal = brand === 'rommer' ? rommerTotal : stoutTotal;
         const delta = ourTotal - docTotal;
-        const pct = docTotal > 0 ? Math.round((delta / docTotal) * 100) : 0;
+        // До десятых: на итоге в полтора миллиона разница в семь тысяч — это
+        // 0,4%, а округление до целых показывало «+7 006 ₽ (+0%)» и выглядело
+        // опечаткой.
+        const pct = docTotal > 0 ? (delta / docTotal) * 100 : 0;
         // Сравнили не всю смету — в подписи к итогам это должно быть видно
         // сразу, а не только в примечании под ними: цифра со звёздочкой,
         // прочитанная как итог целиком, — готовый спор с клиентом.
@@ -4505,10 +4768,10 @@ const RecognizeUI = {
           </label>`;
 
         const deltaBlock = !cmpN ? '' : delta < 0
-            ? `<div class="rec-cmp-item"><div class="rec-cmp-val down">${money(-delta)} (${-pct}%)</div>
+            ? `<div class="rec-cmp-item"><div class="rec-cmp-val down">${money(-delta)} (${this.fmtPct(-pct)}%)</div>
                <div class="rec-cmp-lbl">У нас дешевле · ${brand === 'rommer' ? 'ROMMER' : 'STOUT'}</div></div>`
             : delta > 0
-                ? `<div class="rec-cmp-item"><div class="rec-cmp-val up">+${money(delta)} (+${pct}%)</div>
+                ? `<div class="rec-cmp-item"><div class="rec-cmp-val up">+${money(delta)} (+${this.fmtPct(pct)}%)</div>
                    <div class="rec-cmp-lbl">У нас дороже · ${brand === 'rommer' ? 'ROMMER' : 'STOUT'}</div></div>`
                 : `<div class="rec-cmp-item"><div class="rec-cmp-val">0 ₽</div>
                    <div class="rec-cmp-lbl">Разницы нет</div></div>`;
@@ -5653,8 +5916,7 @@ const RECOGNIZE_PROMPT = `Ты разбираешь рукописные сме�
     "note": "пояснение, если что-то неясно"
   }],
   "skipped": [{ "raw": "...", "reason": "вычеркнуто" }],
-  "docTotal": окончательный итог документа числом или null,
-  "docTotalLabel": "как подписан этот итог" или null
+  "docTotals": [{ "sum": число, "label": "как подписан итог" }]
 }
 
 ПРАВИЛА:
@@ -5786,21 +6048,29 @@ const RECOGNIZE_PROMPT = `Ты разбираешь рукописные сме�
     два поля вовсе: пустые "price": null в каждой строке только раздувают
     ответ, а длинную смету он и так еле вмещает.
 
-19. ИТОГ ДОКУМЕНТА. Внизу счёта стоит окончательная сумма — «Итого», «Всего»,
-    «Всего к оплате», «Итого по смете». Верни её числом в поле "docTotal"
-    ВЕРХНЕГО УРОВНЯ (рядом с "items", а не внутри него), а подпись как она
-    написана — в "docTotalLabel": «Итого с НДС», «Всего к оплате».
-    Отдельной строкой в items итог не пиши: это не позиция сметы.
+19. ИТОГИ ДОКУМЕНТА. Внизу счёта стоит окончательная сумма — «Итого», «Всего
+    к оплате», «Итого по смете». Верни её в списке "docTotals" ВЕРХНЕГО УРОВНЯ
+    (рядом с "items", а не внутри него): число в "sum", подпись как она
+    написана — в "label". Отдельной строкой в items итог не пиши: это не
+    позиция сметы.
 
-    НЕ СКЛАДЫВАЙ СТРОКИ САМ. Нужно ровно то число, которое НАПЕЧАТАНО в
-    документе. По нему проверяется, все ли строки прочитаны, и посчитанная
-    тобой сумма эту проверку обесценивает: она сойдётся всегда, даже если
-    половина сметы потеряна.
+    ИТОГОВ МОЖЕТ БЫТЬ НЕСКОЛЬКО. Смета часто делится на части со своими
+    итогами к оплате — отдельно оборудование, отдельно монтаж. Тогда в списке
+    должно быть НЕСКОЛЬКО записей:
+    "docTotals": [{"sum": 1516649, "label": "Итого к оплате (оборудование)"},
+                  {"sum": 583400, "label": "Итого к оплате (монтаж)"}]
+    Один общий итог на весь документ — одна запись. Ни одного — пустой список.
 
-    Бери только ОКОНЧАТЕЛЬНЫЙ итог всего документа. Промежуточные — «Итого по
-    разделу», «Итого материалы», «Итого по странице», «Перенос на след. лист»
-    — не бери. Итога на листе нет, он не читается или виден лишь частично ->
-    "docTotal": null. Пустое поле честнее выдуманного числа.
+    НЕ СКЛАДЫВАЙ СТРОКИ САМ и не складывай итоги между собой. Нужны ровно те
+    числа, которые НАПЕЧАТАНЫ в документе, каждое отдельной записью. По ним
+    проверяется, все ли строки прочитаны, и посчитанная тобой сумма эту
+    проверку обесценивает: она сойдётся всегда, даже если половина сметы
+    потеряна.
+
+    Промежуточные итоги — «Итого по разделу», «Итого материалы», «Итого по
+    странице», «Перенос на след. лист» — НЕ бери: это части, а не итоги к
+    оплате. Итог не читается или виден лишь частично -> не пиши его вовсе.
+    Пустой список честнее выдуманного числа.
 
 СЛОВАРЬ ТИПОВ (значение поля "type" пиши КИРИЛЛИЦЕЙ, ровно как здесь —
 "kran_ppr" вместо "кран_ppr" калькулятор не понимает):

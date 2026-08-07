@@ -2293,7 +2293,7 @@ const catalog = {
     // как самую дешёвую, а это другая комплектация, а не другой бренд. Выбор голой
     // рамы добавляет в смету вторую строку — панель смыва из flush_panels.
     installations: [
-        { id: "19101011001", name: "Инсталляция NOVAFLOW для подвесного унитаза (без панели)", price: 23116, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", noCheapen: true },
+        { id: "19101011001", name: "Инсталляция NOVAFLOW для подвесного унитаза (без панели)", price: 23116, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", noCheapen: true, series: "none" },
         { id: "19101021001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA QUAD 001, белый глянец", price: 24536, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "QUAD", color: "white" },
         { id: "19101031001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA QUAD 001, хром глянец", price: 27172, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "QUAD", color: "chrome" },
         { id: "19101041001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA QUAD 001, чёрный мат", price: 26868, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "QUAD", color: "black" },
@@ -2303,7 +2303,7 @@ const catalog = {
         { id: "19101081001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA ELLIPSE 001, белый глянец", price: 24536, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ELLIPSE", color: "white" },
         { id: "19101091001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA ELLIPSE 001, хром глянец", price: 27172, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ELLIPSE", color: "chrome" },
         { id: "19101101001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA ELLIPSE 001, чёрный мат", price: 26868, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ELLIPSE", color: "black" },
-        { id: "M571-VE-01", name: "Инсталляция с кнопкой хром глянцевая и шумоизоляцией", price: 31648, brand: "AlcaPlast", availability: "in_stock", price_date: "2026-07-12" }
+        { id: "M571-VE-01", name: "Инсталляция с кнопкой хром глянцевая и шумоизоляцией", price: 31648, brand: "AlcaPlast", availability: "in_stock", price_date: "2026-07-12", series: "QUAD", color: "chrome" }
     ],
     // Панели смыва РЕХАУ: нужны только при выборе инсталляции без панели.
     flush_panels: [

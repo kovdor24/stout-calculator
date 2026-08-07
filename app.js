@@ -59,6 +59,65 @@ const CONTEST_CATS_2026 = [
 
 // ===================================
 // === OFFLINE SHARE LINK GENERATOR (COMPRESSION & BASE64) ===
+
+/**
+ * Сжимает описание позиции (подсказка ⓘ) для клиентской ссылки.
+ *
+ * Описания — самая тяжёлая часть ссылки: на смете из 20 позиций они занимали
+ * почти 88% данных. Причина не в тегах (одинаковые обёртки deflate схлопывает
+ * почти в ноль), а в самом тексте: формулы подбора, подставленные значения,
+ * паспортные характеристики. Всё это — обоснование для монтажника, клиенту оно
+ * не нужно, поэтому в ссылку уходит только заголовок и абзац «Зачем». Разметку
+ * заменяем однобуквенными метками; invoice.html разворачивает их обратно
+ * (expandDesc). Вместе это укоротило ссылку примерно вдвое.
+ *
+ * Метки: §заголовок в первой строке, ¦…¬ вместо <b>…</b>, перевод строки
+ * вместо <br>. Ни один из трёх символов в текстах описаний не встречается.
+ */
+function compactDesc(desc) {
+    if (!desc) return '';
+    let s = String(desc);
+
+    // 1. Снимаем внешнюю обёртку и вынимаем заголовок (синяя строка с чертой).
+    let title = '';
+    const wrapped = s.match(/^<span style="font-size:11px;[^"]*">([\s\S]*)<\/span>$/);
+    if (wrapped) {
+        s = wrapped[1];
+        const head = s.match(/^<span style="font-weight:700; color:#93C5FD;[^"]*">([\s\S]*?)<\/span>/);
+        if (head) {
+            title = head[1];
+            s = s.slice(head[0].length);
+        }
+    }
+
+    // 2. Оставляем только «Зачем». Шаблонов два: абзацы <div class="tip-p">
+    //    (autoTip) и сплошной текст с <br> (getDesc). Если абзаца «Зачем» нет
+    //    вовсе — это короткое описание фитинга, оставляем его целиком.
+    const paras = s.match(/<div class="tip-p">[\s\S]*?<\/div>/g);
+    if (paras) {
+        const why = paras.filter(p => p.indexOf('<b>Зачем:</b>') !== -1);
+        if (why.length) s = why.join('');
+    } else {
+        const at = s.indexOf('<b>Зачем:</b>');
+        if (at !== -1) {
+            const tail = s.slice(at + 13);
+            const end = tail.search(/<br|<b[ >]|<i[ >]|<div/);
+            s = '<b>Зачем:</b>' + (end === -1 ? tail : tail.slice(0, end));
+        }
+    }
+
+    // 3. Разметку — в метки, всё нераспознанное выбрасываем.
+    s = s.replace(/<br\s*\/?>/g, '\n')
+        .replace(/<\/div>/g, '\n')
+        .replace(/<b[^>]*>/g, '¦')
+        .replace(/<\/b>/g, '¬')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\n{2,}/g, '\n')
+        .trim();
+
+    return (title ? '§' + title + '\n' : '') + s;
+}
+
 function compactPayload(data) {
     const SECTION_MAP = {
         "1. Котёл + водонагреватель": 1,
@@ -119,7 +178,7 @@ function compactPayload(data) {
                         q: item.q || 0,
                         t: SECTION_MAP[item.sectionTitle] || item.sectionTitle || 9,
                         o: item.isOpt ? 1 : 0,
-                        d: item.desc || ''
+                        d: compactDesc(item.desc)
                     };
                 }
             }),
@@ -5208,7 +5267,14 @@ const app = {
         rejected: { label: 'Отклонен', color: '#EF4444' },
         invoice_reminder_sent: { label: 'Напоминание: выставить счёт?', color: '#F59E0B' },
         invoice_reminder_declined: { label: 'Монтажник отказался от счёта', color: '#94A3B8' },
+        // Техническая отметка, не статус — в колонки канбана не попадает, видна только в истории
+        offline_link: { label: 'Облако не ответило — длинная ссылка', color: '#94A3B8' },
     },
+    // Технические отметки: пишутся в ту же таблицу invoice_events, но воронкой не являются.
+    // Карточка канбана живёт в колонке своего ПОСЛЕДНЕГО события, а событие, не входящее ни в
+    // одну колонку, выкинуло бы карточку из канбана целиком — поэтому такие события при выборе
+    // колонки пропускаем. В истории самой карточки они остаются.
+    ADMIN_KANBAN_TECH_EVENTS: ['offline_link'],
     ADMIN_KANBAN_STAGES: [
         { key: 'draft', label: 'Расчёты', color: '#60A5FA', events: ['calculated', 'saved'] },
         { key: 'review', label: 'На согласовании', color: '#818CF8', events: ['sent', 'printed', 'confirmed', 'needs_revision', 'invoice_reminder_sent', 'invoice_reminder_declined'] },
@@ -5347,9 +5413,13 @@ const app = {
             if (!projects[e.calc_id]) projects[e.calc_id] = { calc_id: e.calc_id, history: [] };
             const p = projects[e.calc_id];
             p.history.push(e);
-            p.current = e.event;
-            p.currentMeta = e.meta || null;
-            p.lastAt = e.created_at;
+            // Технические отметки не двигают карточку и не меняют дату последнего
+            // изменения — иначе смета уехала бы из своей колонки в никуда.
+            if (!this.ADMIN_KANBAN_TECH_EVENTS.includes(e.event)) {
+                p.current = e.event;
+                p.currentMeta = e.meta || null;
+                p.lastAt = e.created_at;
+            }
             if (e.user_name) p.user_name = e.user_name;
             if (e.user_email) p.user_email = e.user_email;
             if (e.project_name) p.project_name = e.project_name;
@@ -5419,6 +5489,12 @@ const app = {
             </div>
         `;
 
+        // Сводка технических отметок «облако не ответило» за 30 дней. Считаем по уже
+        // загруженным событиям — отдельный запрос к Supabase не делаем, egress не растёт.
+        // Фильтры канбана (монтажник/регион/период) на сводку намеренно не влияют: это не
+        // часть воронки, а состояние связи в целом, поэтому окно всегда одно — 30 дней.
+        const offlineHtml = this.buildOfflineLinkSummaryHtml(this._kanbanEvents);
+
         const columnsHtml = `
             <div style="display:flex; gap:14px; align-items:start; overflow-x:auto; padding-bottom:12px; width:100%;">
                 ${STAGES.map(s => {
@@ -5466,7 +5542,81 @@ const app = {
         `;
 
         const root = document.getElementById('kanban_root');
-        if (root) root.outerHTML = `<div id="kanban_root">${filterHtml}${columnsHtml}</div>`;
+        if (root) root.outerHTML = `<div id="kanban_root">${filterHtml}${offlineHtml}${columnsHtml}</div>`;
+    },
+
+    /**
+     * Плашка «Облако не ответило» над колонками канбана.
+     *
+     * Считает отметки offline_link за 30 дней: сколько раз, у скольких монтажников и
+     * по какой причине. Отметку ставит queueInvoiceEvent(), когда сохранение сметы в
+     * Supabase не прошло и клиенту ушла длинная офлайн-ссылка вместо короткой ?id=.
+     *
+     * Если отметок нет — не показываем ничего: пустая плашка «0 отказов» висела бы
+     * над канбаном всё время и только отвлекала. Список свёрнут в <details>, чтобы не
+     * занимать место, пока он не понадобился.
+     */
+    buildOfflineLinkSummaryHtml: function (allEvents) {
+        const DAYS = 30;
+        const since = Date.now() - DAYS * 24 * 60 * 60 * 1000;
+        const hits = (allEvents || []).filter(e =>
+            e.event === 'offline_link' && e.created_at && new Date(e.created_at).getTime() >= since
+        ).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        if (!hits.length) return '';
+
+        const people = new Set(hits.map(e => e.user_email || e.user_name || '—'));
+        const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const WHERE_LABEL = { share_link: 'Ссылка для клиента', invoice_email: 'Запрос счёта' };
+
+        const rows = hits.map(e => {
+            const m = e.meta || {};
+            const dt = new Date(e.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+            // online:true при отказе — связь была, но до Supabase не достучались:
+            // это блокировка (нет VPN, провайдер), а не отсутствие интернета.
+            const net = m.online === false ? 'нет сети' : 'сеть была';
+            return `
+                <tr style="border-top:1px solid var(--border);">
+                    <td style="padding:6px 8px; white-space:nowrap; color:var(--text-sec);">${dt}</td>
+                    <td style="padding:6px 8px;">${esc(e.user_name || e.user_email || '—')}</td>
+                    <td style="padding:6px 8px; color:var(--text-sec);">${esc(e.project_name || '—')}</td>
+                    <td style="padding:6px 8px; white-space:nowrap;">${esc(WHERE_LABEL[m.where] || m.where || '—')}</td>
+                    <td style="padding:6px 8px; white-space:nowrap; color:${m.online === false ? '#94A3B8' : '#F59E0B'};">${net}</td>
+                    <td style="padding:6px 8px; color:var(--text-sec);">${esc(m.reason || '—')}</td>
+                </tr>`;
+        }).join('');
+
+        const word = (n, one, few, many) => {
+            const n10 = n % 10, n100 = n % 100;
+            if (n10 === 1 && n100 !== 11) return one;
+            if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return few;
+            return many;
+        };
+
+        return `
+            <details style="background:var(--surface-light); border:1px solid var(--border); border-left:3px solid #F59E0B; border-radius:10px; margin-bottom:16px;">
+                <summary style="padding:10px 14px; cursor:pointer; font-size:12.5px; color:var(--text-main);">
+                    ☁️ <b>Облако не ответило:</b> ${hits.length} ${word(hits.length, 'раз', 'раза', 'раз')}
+                    за ${DAYS} дней у ${people.size} ${word(people.size, 'монтажника', 'монтажников', 'монтажников')}
+                    <span style="color:var(--text-sec);">— клиенту ушла длинная ссылка вместо короткой. Нажмите, чтобы раскрыть</span>
+                </summary>
+                <div style="padding:0 14px 12px; overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse; font-size:11.5px;">
+                        <thead>
+                            <tr style="color:var(--text-sec); text-align:left;">
+                                <th style="padding:6px 8px; font-weight:600;">Когда</th>
+                                <th style="padding:6px 8px; font-weight:600;">Монтажник</th>
+                                <th style="padding:6px 8px; font-weight:600;">Объект</th>
+                                <th style="padding:6px 8px; font-weight:600;">Где</th>
+                                <th style="padding:6px 8px; font-weight:600;">Интернет</th>
+                                <th style="padding:6px 8px; font-weight:600;">Причина</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </details>
+        `;
     },
 
     // Карточка расчёта из канбана "Статусы смет" — номер расчёта и полная история
@@ -5484,7 +5634,11 @@ const app = {
             return;
         }
 
-        const last = events[events.length - 1];
+        // Статус карточки и кнопки менеджера считаем по последнему СТАТУСНОМУ событию:
+        // техническая отметка (offline_link), пришедшая после «Запрошен счёт», иначе
+        // спрятала бы кнопки «Счёт выставлен» / «Отклонить». В истории ниже она остаётся.
+        const statusEvents = events.filter(e => !this.ADMIN_KANBAN_TECH_EVENTS.includes(e.event));
+        const last = statusEvents.length ? statusEvents[statusEvents.length - 1] : events[events.length - 1];
         const distributorsById = {};
         ((this.adminData && this.adminData.distributors) || []).forEach(d => { distributorsById[String(d.id)] = d.company_name; });
         const meta = last.user_email ? (this._kanbanUserMeta || {})[last.user_email.toLowerCase()] : null;
@@ -10058,7 +10212,8 @@ const app = {
                     .order('created_at', { ascending: true });
                 if (evList) {
                     evList.forEach(e => {
-                        if (e.calc_id) latestInvoiceEvents[String(e.calc_id)] = e.event;
+                        // Технические отметки статусом сметы не являются (см. ADMIN_KANBAN_TECH_EVENTS)
+                        if (e.calc_id && !this.ADMIN_KANBAN_TECH_EVENTS.includes(e.event)) latestInvoiceEvents[String(e.calc_id)] = e.event;
                     });
                 }
             } catch (e) {
@@ -14214,8 +14369,10 @@ const app = {
 
                     if (evError) throw evError;
 
-                    if (events && events.length) {
-                        const last = events[events.length - 1];
+                    // Технические отметки в «Текущий статус» не попадают (см. ADMIN_KANBAN_TECH_EVENTS)
+                    const statusEvents = (events || []).filter(e => !this.ADMIN_KANBAN_TECH_EVENTS.includes(e.event));
+                    if (statusEvents.length) {
+                        const last = statusEvents[statusEvents.length - 1];
                         const EVENT_META = this.ADMIN_KANBAN_EVENT_META;
                         const em = EVENT_META[last.event] || { label: last.event, color: '#94A3B8' };
                         const dt = new Date(last.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -17951,6 +18108,7 @@ const app = {
             // (например, у монтажника заблокирован Supabase без VPN), не задерживаем его
             // дольше и отдаём офлайн-ссылку с данными во фрагменте — как раньше.
             let shareUrl = null;
+            let fastSaveReason = '';
             try {
                 const isSaved = await withTimeout(
                     this.saveSharedInvoiceJobToCloud({ shareId, object_info, manager_info, items, totals, tgUser: this.state.tgUser }),
@@ -17958,9 +18116,12 @@ const app = {
                 );
                 if (isSaved) {
                     shareUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
+                } else {
+                    fastSaveReason = 'Сохранение вернуло отказ без ошибки';
                 }
             } catch (fastSaveErr) {
                 console.warn('[executeShareInvoice] Быстрое сохранение в облако не удалось, используем офлайн-ссылку:', fastSaveErr);
+                fastSaveReason = String((fastSaveErr && fastSaveErr.message) || fastSaveErr || 'Неизвестная ошибка').slice(0, 300);
             }
 
             if (!shareUrl) {
@@ -17969,6 +18130,14 @@ const app = {
                 // Сеть недоступна прямо сейчас — ставим сохранение в очередь с повторами,
                 // чтобы ссылка стала доступна и по короткому ?id= при следующем открытии.
                 this.queueSharedInvoiceSave(shareId, object_info, manager_info, items, totals, this.state.tgUser);
+                // Техническая отметка для админки: по ней видно, у кого и как часто Supabase
+                // не отвечает и клиенту уходит длинная офлайн-ссылка вместо короткой.
+                this.queueInvoiceEvent('offline_link', {
+                    where: 'share_link',
+                    reason: fastSaveReason,
+                    online: !!navigator.onLine,
+                    link_len: shareUrl.length
+                });
             }
 
             GRM.trackAction('share', shareId);  // геймификация: +10 XP + значки ссылок (шаринг ссылки клиенту)
@@ -18242,6 +18411,39 @@ const app = {
             created_at: Date.now()
         });
     },
+    // Отметка в invoice_events через очередь с повторами.
+    //
+    // Обычный logInvoiceEvent пишет напрямую и молча теряет запись, если Supabase не
+    // ответил. Для технических отметок это неприемлемо: их пишут как раз в тот момент,
+    // когда Supabase недоступен, — отметка упала бы вместе с тем отказом, который мы и
+    // хотим померить. Очередь дошлёт её, когда связь вернётся.
+    //
+    // Данные снимаем сразу: пока задача лежит в очереди, монтажник успеет переключиться
+    // на другой объект, и this.state будет уже не тот.
+    queueInvoiceEvent: function (event, extra) {
+        try {
+            if (!this.state.calc_id) return;
+            const tgUser = this.state.tgUser || {};
+            this.queue.addJob({
+                id: "eventjob_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+                type: 'invoice_event',
+                row: {
+                    calc_id: String(this.state.calc_id),
+                    event: event,
+                    user_id: tgUser.id ? String(tgUser.id) : null,
+                    user_name: tgUser.first_name || tgUser.username || null,
+                    user_email: tgUser.email || null,
+                    project_name: this.state.projectName || null,
+                    meta: extra || null
+                },
+                retries: 0,
+                status: 'pending',
+                created_at: Date.now()
+            });
+        } catch (e) {
+            console.warn('[queueInvoiceEvent] Не удалось поставить отметку в очередь:', e);
+        }
+    },
     // Фоновая запись/обновление "Ссылки для клиента" (shared_invoices) с retry — id для ссылки
     // генерируется локально заранее (generateCustomInvoiceId), поэтому сама ссылка отдаётся
     // монтажнику мгновенно и не ждёт эту задачу; задача лишь синхронизирует запись в облако,
@@ -18352,7 +18554,18 @@ const app = {
 
                 let success = false;
                 try {
-                    if (job.type === 'shared_invoice_save') {
+                    if (job.type === 'invoice_event') {
+                        // Техническая отметка (см. queueInvoiceEvent) — та же строка, что пишет
+                        // logInvoiceEvent, но с повторами: в момент события связи не было.
+                        if (typeof supabaseClient === 'undefined') {
+                            throw new Error("Supabase недоступен");
+                        }
+                        const { error } = await withTimeout(supabaseClient.from('invoice_events').insert([job.row]), 10000);
+                        if (error) {
+                            throw new Error(error.message || "Не удалось записать отметку в invoice_events");
+                        }
+                        success = true;
+                    } else if (job.type === 'shared_invoice_save') {
                         // Задача на фоновое сохранение "Ссылки для клиента" (shared_invoices) —
                         // не трогает estimates/calc_id, отдельный тип сохранения.
                         console.log("[Queue] Сохранение shared_invoice для задачи:", job.id);
@@ -18753,6 +18966,14 @@ const app = {
                         items,
                         totals
                     );
+                    // Та же техническая отметка, что и в "Ссылке для клиента", — чтобы оба
+                    // аварийных случая считались вместе и различались по meta.where.
+                    this.queueInvoiceEvent('offline_link', {
+                        where: 'invoice_email',
+                        reason: String((err && err.message) || err || 'Неизвестная ошибка').slice(0, 300),
+                        online: !!navigator.onLine,
+                        link_len: viewUrl.length
+                    });
                 } catch (fallbackErr) {
                     console.error("[sendEmail] Ошибка генерации офлайн-ссылки:", fallbackErr);
                 }
@@ -19676,6 +19897,18 @@ const app = {
         };
         allTankArrays.forEach(arr => arr.forEach(setBoilerAlts));
         let pumpAlts = catalog.pumps_dn25; catalog.pumps_dn25.forEach(p => { p.alts = pumpAlts; });
+        // Насосы рециркуляции ГВС: в каталоге их три (с таймером, базовый, бюджетный) —
+        // в таблице замены показываем весь список.
+        //
+        // noCheapen — они не равнозначные аналоги друг друга: таймер есть только у
+        // старшего, и какой насос нужен, решает наличие контроллера котельной (см.
+        // ветку recirc в render()). Без этой пометки режим «Аналог» молча съезжал бы
+        // на самый дешёвый насос и отменял подбор — в том числе там, где таймер
+        // обязателен, потому что автоматики в смете нет.
+        if (catalog.dhw_pump) {
+            const _dhwPumpOpts = catalog.dhw_pump.map(p => ({ ...p, noCheapen: true }));
+            catalog.dhw_pump.forEach(p => { p.alts = _dhwPumpOpts.filter(x => x.id !== p.id); });
+        }
         // Электрокотлы: .alts у них служит ровно одному — зажечь кнопку замены у позиции
         // (кнопки нет, пока список пуст). САМ список модалка собирает заново, по выбранной
         // мощности и с учётом допустимости серии (см. openSwapModal), поэтому здесь стоит
@@ -22003,19 +22236,21 @@ const app = {
         } else if (_origId0 === 'install_kit' || _origId0 === 'flush_panel') {
             // Инсталляции и панели смыва РЕХАУ различаются формой клавиш и цветом, панели —
             // ещё и материалом. Кнопки собираем из того, что реально есть в списке (у панелей
-            // серий и цветов больше, чем у готовых комплектов). Позиции без этих полей —
-            // рама без панели и AlcaPlast — не прячем никогда: иначе при включённом фильтре
-            // на них нельзя было бы переключиться.
+            // серий и цветов больше, чем у готовых комплектов). Рама без панели попадает под
+            // отдельную кнопку «Без панели» (series: 'none'), а AlcaPlast описан своими
+            // клавишами и цветом — исключений из фильтра нет, иначе в выборке «прямоугольные
+            // чёрные» оказывались бы позиции, которые ни к прямоугольным, ни к чёрным
+            // отношения не имеют.
             const _ipIsPanel = (_origId0 === 'flush_panel');
             const _ipS = this.state.installSwapSeries || 'all';
             const _ipC = this.state.installSwapColor || 'all';
             const _ipM = this.state.installSwapMat || 'all';
             const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
-            const _serName = { QUAD: 'Прямоугольные', ORB: 'Круглые', ELLIPSE: 'Овальные', LONG: 'Длинные', PUBLIC: 'Антивандальные' };
+            const _serName = { QUAD: 'Прямоугольные', ORB: 'Круглые', ELLIPSE: 'Овальные', LONG: 'Длинные', PUBLIC: 'Антивандальные', none: 'Без панели' };
             const _colName = { white: 'Белый', chrome: 'Хром', black: 'Чёрный', silver: 'Серебро', graphite: 'Графит', gold: 'Золото', rose: 'Розовое золото', steel: 'Сталь', red: 'Красный' };
             const _matName = { plastic: 'Пластик', glass: 'Стекло', steel: 'Нерж. сталь' };
             const _have = (field, order) => order.filter(v => alts.some(a => a[field] === v));
-            const _serBtns = _have('series', ['QUAD', 'ORB', 'ELLIPSE', 'LONG', 'PUBLIC'])
+            const _serBtns = _have('series', ['QUAD', 'ORB', 'ELLIPSE', 'LONG', 'PUBLIC', 'none'])
                 .map(s => `<span onclick="app.setInstallSwapSeries('${s}')" ${_b(_ipS===s)}>${_serName[s] || s}</span>`).join('');
             const _colBtns = _have('color', ['white', 'chrome', 'black', 'silver', 'graphite', 'gold', 'rose', 'steel', 'red'])
                 .map(c => `<span onclick="app.setInstallSwapColor('${c}')" ${_b(_ipC===c)}>${_colName[c] || c}</span>`).join('');
@@ -22044,7 +22279,6 @@ const app = {
                 `</div>` +
                 `</div>`;
             alts = alts.filter(a => {
-                if (!a.series && !a.color && !a.panelMat) return true;
                 if (_ipS !== 'all' && a.series !== _ipS) return false;
                 if (_ipC !== 'all' && a.color !== _ipC) return false;
                 if (_ipM !== 'all' && a.panelMat !== _ipM) return false;
@@ -30246,7 +30480,48 @@ const app = {
             addToBill(catalog.dhw_fittings[0], 2, "Американка 1\" (Змеевик)", grp); addToBill(catalog.dhw_fittings[1], 2, "Кран 1\" (Змеевик)", grp);
             addToBill(catalog.dhw_fittings[2], 1, "Американка 3/4\" (ГВС)", grp); addToBill(catalog.dhw_fittings[3], 1, "Кран 3/4\" (ГВС)", grp);
             addToBill(catalog.dhw_fittings[4], 1, "Клапан 6 бар", grp); addToBill(catalog.dhw_fittings[5], 1, "Крестовина 3/4\"", grp); addToBill(catalog.dhw_fittings[6], 1, "Клапан обратный (ХВС)", grp); addToBill(catalog.dhw_fittings[7], 1, "Кран 3/4\" (ХВС)", grp);
-            if (this.state.recirc) { addToBill(catalog.dhw_pump[0], 1, "Насос ГВС", grp); addToBill(catalog.dhw_fittings[2], 1, "Американка 3/4\" (Рецирк.)", grp); addToBill(catalog.dhw_fittings[3], 1, "Кран 3/4\" (Рецирк.)", grp); addToBill(catalog.dhw_fittings[6], 1, "Обратный клапан (Рецирк.)", grp); }
+            if (this.state.recirc) {
+                // Насос рециркуляции. По умолчанию — со встроенным таймером: без внешней
+                // автоматики иначе он гоняет контур круглосуточно. Но если в котельной стоит
+                // контроллер Thermatic 3001, расписание ведёт он — насос садится на клемму
+                // «ГВС ЦН» и включается вместе с режимом «Комфорт» (см. getThermaticConfig,
+                // там же под рециркуляцию заранее резервируется реле). Собственный таймер
+                // насоса в этой связке не просто лишний, а вреден: он рвал бы команды
+                // контроллера по своему окну. Условие повторяет ветку раздела 2.8 ниже —
+                // подменять насос можно только тогда, когда контроллер реально в смете.
+                const _autoRuns = !!(this.state.boilerAuto && this.state.area > 0 && catalog.boiler_automation);
+                const _pumpTimer = catalog.dhw_pump[0];
+                const _pumpPlain = catalog.dhw_pump[1];
+                const _recircPump = (_autoRuns && _pumpPlain) ? _pumpPlain : _pumpTimer;
+                // Подсказка должна описывать ту позицию, которая реально встанет в строку.
+                // Ручная замена перебивает автоподбор (её применяет addToBill по тому же
+                // ключу, уже после нас), и текст «подобран без таймера, потому что есть
+                // контроллер» после неё оказался бы про чужой товар.
+                const _pumpManual = (this.state.swaps || {})['dhw_recirc_pump'];
+                const _pumpFinalId = _pumpManual || _recircPump.id;
+                let _recircDesc = "Насос ГВС";
+                if (_autoRuns && _pumpPlain && _pumpFinalId === _pumpPlain.id) {
+                    _recircDesc = this.autoTip('Насос рециркуляции ГВС — без таймера', [
+                        `<b>Почему заменён:</b> в смете есть контроллер котельной STOUT Thermatic 3001. Рециркуляцией управляет он — насос подключается на клемму «ГВС ЦН» и работает по расписанию режима «Комфорт».`,
+                        `<b>Что поменялось:</b> вместо «${_pumpTimer.name}» (${_pumpTimer.id}) подобран «${_pumpPlain.name}» (${_pumpPlain.id}). Гидравлика та же, разница только во встроенном таймере — здесь он лишний и мешал бы контроллеру, отключая насос по своему окну.`,
+                        `<b>Если выключить автоматику котельной:</b> вернётся насос с таймером — без контроллера рециркуляцию иначе нечем ограничить по времени.`,
+                        `Любой из насосов ГВС можно поставить вручную — кнопкой замены в строке.`
+                    ]);
+                }
+                // originalId — служебный, а не артикул. Ключ ручной замены (state.swaps,
+                // qtyOverrides, optItems) берётся из originalId || id, и если бы строка
+                // ходила под собственным артикулом, он менялся бы вместе с автоподбором:
+                // выбор, сделанный руками при включённой автоматике, лежал бы под ключом
+                // RCP-0005-151780 и молча переставал применяться, как только автоматику
+                // выключили и базовой стала другая позиция. С постоянным ключом ручной
+                // выбор переживает переключение автоматики, а «Сбросить» возвращает
+                // автоподбор. Пары в каталоге под этим id нет намеренно: openSwapModal и
+                // addToBill не находят его в catalog и берут за основу саму строку.
+                addToBill({ ..._recircPump, originalId: 'dhw_recirc_pump' }, 1, _recircDesc, grp);
+                addToBill(catalog.dhw_fittings[2], 1, "Американка 3/4\" (Рецирк.)", grp);
+                addToBill(catalog.dhw_fittings[3], 1, "Кран 3/4\" (Рецирк.)", grp);
+                addToBill(catalog.dhw_fittings[6], 1, "Обратный клапан (Рецирк.)", grp);
+            }
         }
         let hasRad = this.state.systems.includes('rad');
         let hasTp = this.state.systems.includes('tp');

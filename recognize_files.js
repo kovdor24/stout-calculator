@@ -209,27 +209,59 @@ const RecognizeFiles = {
      * точно и бесплатно. Если это скан, текста не будет: страницы рисуем
      * в картинки и отправляем на обычное распознавание.
      */
+    /**
+     * Сколько страниц PDF читаем.
+     *
+     * Раньше стояло 10, и это молча резало смету: КП на 14 страницах теряло
+     * четыре последние вместе со строкой «Итого к оплате» — то есть ровно то,
+     * по чему проверяется полнота разбора. Причём без единого слова: смета
+     * выглядела разобранной целиком.
+     *
+     * Потолок остаётся, но высокий и с оговоркой вслух: смету на шесть
+     * десятков страниц действительно разумнее разбирать частями.
+     */
+    PDF_MAX_PAGES: 60,
+    PDF_MAX_SCAN: 20,
+
+    /** Русское склонение по числу: 1 страница, 3 страницы, 5 страниц. */
+    plural(n, one, few, many) {
+        const d = Math.abs(n) % 10, h = Math.abs(n) % 100;
+        if (d === 1 && h !== 11) return one;
+        if (d >= 2 && d <= 4 && (h < 10 || h >= 20)) return few;
+        return many;
+    },
+
     async fromPdf(buf, onProgress) {
         const pdfjs = await this.loadPdfJs();
         const pdf = await pdfjs.getDocument({ data: buf }).promise;
 
-        const maxPages = Math.min(pdf.numPages, 10);
+        const maxPages = Math.min(pdf.numPages, this.PDF_MAX_PAGES);
         let text = '';
         for (let i = 1; i <= maxPages; i++) {
             if (onProgress) onProgress(`читаю страницу ${i} из ${maxPages}`);
             const page = await pdf.getPage(i);
             const c = await page.getTextContent();
-            text += c.items.map(t => t.str).join(' ') + '\n';
+            // Разделитель страниц: по нему длинная смета режется на части для
+            // разбора, и резать её по живому — посреди строки — не приходится.
+            text += c.items.map(t => t.str).join(' ') + '\n\f';
         }
+
+        const note = pdf.numPages > maxPages
+            ? `В файле ${pdf.numPages} ${this.plural(pdf.numPages, 'страница', 'страницы', 'страниц')}, ` +
+              `прочитаны первые ${maxPages}. Остальное в смету не попало.`
+            : '';
 
         // Порог опытный: у настоящей сметы текста заведомо больше, а у скана
         // попадаются одиночные символы из штампов и колонтитулов.
         if (text.replace(/\s/g, '').length > 200) {
-            return { text: text.trim(), images: [] };
+            return { text: text.trim(), images: [], note };
         }
 
+        // Скан: страницы уходят картинками и разбираются полистно, каждая
+        // своим запросом. Прежний потолок в три страницы был занижен вчетверо
+        // против фотографий и, как и текстовый, молчал о том, что отрезал.
         const images = [];
-        const scanPages = Math.min(pdf.numPages, 3);
+        const scanPages = Math.min(pdf.numPages, this.PDF_MAX_SCAN);
         for (let i = 1; i <= scanPages; i++) {
             if (onProgress) onProgress(`страница ${i} из ${scanPages}: текста нет, готовлю изображение`);
             const page = await pdf.getPage(i);
@@ -240,7 +272,13 @@ const RecognizeFiles = {
             await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
             images.push(RecognizeFiles.shrink(canvas));
         }
-        return { text: '', images };
+        return {
+            text: '', images,
+            note: pdf.numPages > scanPages
+                ? `В файле ${pdf.numPages} ${this.plural(pdf.numPages, 'страница', 'страницы', 'страниц')}, ` +
+                  `взяты первые ${scanPages}. Остальные добавьте отдельно кнопкой «+».`
+                : '',
+        };
     },
 
     /** Ужимание до 1600px — тот же предел, что и для фотографий. */
