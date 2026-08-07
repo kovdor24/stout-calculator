@@ -3432,6 +3432,13 @@ body.admin-modal-open .hc-cookie-banner {
     display: none !important;
 }
 
+/* То же и для окон поверх калькулятора: в «Профиле» баннер закрывал поля
+   «Город» и «Регион» вместе с кнопками «Сохранить» и «Отмена», в окне тарифов —
+   кнопку «Оформить подписку». Класс ставит app.syncModalOverlayClass. */
+body.modal-over-banner .hc-cookie-banner {
+    display: none !important;
+}
+
 @media screen and (max-width: 899.98px) {
     /* Высота по видимой части экрана: у 100vh на телефоне под адресной строкой
        прячется низ панели вместе с кнопками страниц */

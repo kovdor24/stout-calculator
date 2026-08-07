@@ -3912,6 +3912,29 @@ const app = {
         return true;
     },
 
+    /**
+     * Отметка на body, пока открыто окно, которому мешает баннер cookie.
+     *
+     * Баннер лежит выше любой модалки (z-index 50000000) и на телефоне закрывает
+     * нижние 165px экрана — вместе с «Сохранить» и «Отмена» в профиле и
+     * «Оформить подписку» в окне тарифов. По этому классу он прячется (см.
+     * style.css), а когда окно закроют — возвращается со своими кнопками:
+     * решение по cookie никуда не девается. Тот же приём уже применён к окну
+     * входа (body.auth-modal-open) и к панели управления.
+     *
+     * Открыто окно или нет — смотрим по самим окнам, а не считаем открытия:
+     * из профиля открывается окно тарифов, и снимать класс при закрытии
+     * верхнего из них нельзя, пока под ним осталось нижнее.
+     */
+    MODAL_OVER_BANNER_IDS: ['profile_modal_overlay', 'custom_modal_overlay'],
+    syncModalOverlayClass: function () {
+        const open = this.MODAL_OVER_BANNER_IDS.some(id => {
+            const el = document.getElementById(id);
+            return el && getComputedStyle(el).display !== 'none';
+        });
+        document.body.classList.toggle('modal-over-banner', open);
+    },
+
     showModal: function (type) {
         let overlay = document.getElementById('custom_modal_overlay');
         let icon = document.getElementById('custom_modal_icon');
@@ -3971,11 +3994,13 @@ const app = {
             }
         }
         if (overlay) overlay.classList.add('active');
+        this.syncModalOverlayClass();
     },
 
     closeModal: function () {
         let overlay = document.getElementById('custom_modal_overlay');
         if (overlay) overlay.classList.remove('active');
+        this.syncModalOverlayClass();
     },
 
     activateTrial: function () {
@@ -7157,6 +7182,8 @@ const app = {
         // остаётся поверх и перекрывает кнопки формы (реквизиты компании, Сохранить/Отмена).
         const aiFabBtn = document.getElementById('ai_parse_fab_btn');
         if (aiFabBtn) aiFabBtn.style.display = 'none';
+        // Баннер cookie перекрывает ту же нижнюю часть формы, что и кнопка выше
+        this.syncModalOverlayClass();
     },
     closeProfileModal: function () {
         if (this._profileForceComplete && this.isProfileIncomplete()) {
@@ -7171,6 +7198,7 @@ const app = {
         this._cloudListHostId = 'cloud_list_content';
 
         this.syncAiFabVisibility();
+        this.syncModalOverlayClass();
     },
     // ── Город → регион в анкете ──
     // Регион подставляется по справочнику CITY_REGION_MAP (catalog.js). Как только
