@@ -1254,7 +1254,7 @@ const RecognizeUI = {
             const saved = done ? Math.round(done * 40 / 60) : 0;
             el.innerHTML = `<span class="rec-tip">${tip}</span>` +
                 `<span class="rec-tip-sec">${sec} с</span>` +
-                (saved >= 2 ? `<span class="rec-tip-save">вручную было бы ~${saved} мин</span>` : '');
+                (saved >= 2 ? `<span class="rec-tip-save">вручную было бы ~${this.handTime(saved)}</span>` : '');
         } else {
             const s = el.querySelector('.rec-tip-sec');
             if (s) s.textContent = sec + ' с';
@@ -5040,14 +5040,26 @@ const RecognizeUI = {
         if (!found) return '';
         const min = Math.round(found * 40 / 60);
         if (min < 3) return '';
-        const time = min >= 60
-            ? `${Math.floor(min / 60)} ч ${min % 60 ? (min % 60) + ' мин' : ''}`.trim()
-            : `${min} мин`;
+        const time = this.handTime(min);
         const secs = Math.round((this._elapsed || 0) / 1000);
         return `<div class="rec-saved">
             <b>${found}</b> ${this.plural(found, 'позиция', 'позиции', 'позиций')} перенесено в смету
             ${secs ? `за ${secs} с` : ''} — вручную это заняло бы около <b>${time}</b>
           </div>`;
+    },
+
+    /**
+     * Время ручной работы словами.
+     *
+     * Полторы сотни минут человек в уме не переводит, а «~135 мин» именно так
+     * и выглядело в счётчике во время разбора: в итоговой плашке часы были, а
+     * здесь нет. Считаем в одном месте — расходиться этим двум надписям не с
+     * чего, обе про одно и то же.
+     */
+    handTime(min) {
+        if (min < 60) return `${min} мин`;
+        const h = Math.floor(min / 60), m = min % 60;
+        return m ? `${h} ч ${m} мин` : `${h} ч`;
     },
 
     /** Русское склонение после числа. */
