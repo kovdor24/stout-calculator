@@ -3703,17 +3703,45 @@ const app = {
      * объявлены отдельными массивами вне catalog{}, поэтому просматриваются
      * дополнительно (см. _getSecRadSeries).
      */
+    /**
+     * Одна и та же позиция лежит в каталоге в нескольких категориях, и аналоги
+     * проставлены не всем копиям.
+     *
+     * Труба PEX-a 25x3.5 есть и в rad_pipes_grey, и в water_pipes — артикул
+     * один, а поле rommer только у второй. Поиск возвращал первое совпадение,
+     * то есть копию без аналога, и кнопка «Аналог» по такой строке молчала,
+     * хотя ROMMER-версия в каталоге есть. Так же перекрывались alts и comfort.
+     *
+     * Поэтому копию берём по-прежнему первую — от неё зависят название, цена,
+     * единица и картинка, и менять их эта правка не должна, — а недостающие
+     * аналоги подтягиваем с остальных копий того же артикула. Просмотр идёт до
+     * конца только тогда, когда у первой копии аналогов нет вовсе.
+     */
     findCatalogItemById: function (id) {
         if (!id) return null;
+        const hasAnalogs = (it) => !!(it && (it.rommer || it.comfort || (it.alts && it.alts.length)));
+        let base = null;
+
         for (const key in catalog) {
             const v = catalog[key];
-            if (Array.isArray(v)) {
-                const found = v.find(x => x && (x.id === id || x.article === id));
-                if (found) return found;
-            } else if (v && (v.id === id || v.article === id)) {
-                return v;
+            const arr = Array.isArray(v) ? v : [v];
+            for (const it of arr) {
+                if (!it || (it.id !== id && it.article !== id)) continue;
+                if (!base) {
+                    base = it;
+                    if (hasAnalogs(base)) return base;
+                    continue;
+                }
+                if (!hasAnalogs(it)) continue;
+                // Дополняем, а не подменяем: всё остальное остаётся от первой копии.
+                return Object.assign({}, base, {
+                    rommer: base.rommer || it.rommer,
+                    comfort: base.comfort || it.comfort,
+                    alts: (base.alts && base.alts.length) ? base.alts : it.alts,
+                });
             }
         }
+        if (base) return base;
         if (typeof this._getSecRadSeries === 'function') {
             for (const s of this._getSecRadSeries()) {
                 const found = s.arr && s.arr.find(x => x && x.id === id);
@@ -5468,7 +5496,7 @@ const app = {
         const filterHtml = `
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
                 <div style="font-size:13px; color:var(--text-sec);">Проекты: <b style="color:var(--text-main);">${filtered.length}</b></div>
-                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <div class="admin-filter-row" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                     <select id="kanban_installer_filter" onchange="app.renderAdminKanban(true)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px; outline: none; cursor: pointer;">
                         <option value="all">Все монтажники (${list.length})</option>
                         ${installers.map(name => `<option value="${name.replace(/"/g, '&quot;')}" ${installerFilter === name ? 'selected' : ''}>${name}</option>`).join('')}
@@ -5496,7 +5524,7 @@ const app = {
         const offlineHtml = this.buildOfflineLinkSummaryHtml(this._kanbanEvents);
 
         const columnsHtml = `
-            <div style="display:flex; gap:14px; align-items:start; overflow-x:auto; padding-bottom:12px; width:100%;">
+            <div class="admin-kanban-cols" style="display:flex; gap:14px; align-items:start; overflow-x:auto; padding-bottom:12px; width:100%;">
                 ${STAGES.map(s => {
             const cards = filtered.filter(p => stageOf(p.current) === s).sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
             const totalSum = cards.reduce((acc, c) => acc + (c.totalSum || 0), 0);
@@ -9893,9 +9921,22 @@ const app = {
             }
         }
         document.getElementById('admin_modal_overlay').style.display = 'flex';
+        // Пока панель открыта, нижняя навигация и плавающие кнопки калькулятора
+        // не нужны: они висят поверх (z-index выше модалок) и закрывают нижние
+        // строки таблиц вместе с кнопками действий.
+        document.body.classList.add('admin-modal-open');
+        this.startAdminMobileLabels();
+        this.watchAdminViewport();
         this.loadAdminData();
     },
-    closeAdminModal: function () { document.getElementById('admin_modal_overlay').style.display = 'none'; this.closeEmojiPicker(); },
+    closeAdminModal: function () {
+        document.getElementById('admin_modal_overlay').style.display = 'none';
+        document.body.classList.remove('admin-modal-open');
+        this.stopAdminMobileLabels();
+        // На телефоне следующий вход снова начинается с меню разделов
+        if (this.isAdminMobile()) this._adminTab = null;
+        this.closeEmojiPicker();
+    },
 
     // Общие условия фильтра списка монтажников — переиспользуются и для загрузки страницы
     // списка, и для массового назначения дистрибьютора всем, кто попадает под фильтр
@@ -10282,6 +10323,139 @@ const app = {
         }
     },
 
+    // Разделы панели управления. Один список на два вида навигации: ряд вкладок
+    // на большом экране и список-меню на телефоне (buildAdminMobileHome), поэтому
+    // он лежит здесь, а не внутри renderAdminMain. hint виден только в меню.
+    ADMIN_TAB_DEFS: [
+        { id: 'stats', icon: '👥', label: 'Пользователи', hint: 'Монтажники, тарифы, доступы' },
+        { id: 'estimates', icon: '📋', label: 'Расчёты', hint: 'Все сохранённые сметы' },
+        { id: 'messages', icon: '💬', label: 'Сообщения', hint: 'Переписка и уведомления' },
+        { id: 'distributors', icon: '🏢', label: 'Дистрибьюторы', hint: 'Промокоды, менеджеры, свои цены' },
+        { id: 'kanban', icon: '📅', label: 'Планировщик', hint: 'Статусы смет по этапам' },
+        { id: 'pricelist', icon: '💵', label: 'Прайс-лист', hint: 'Свои расценки монтажников' },
+        { id: 'equipment', icon: '🧰', label: 'Своё оборудование', hint: 'Добавленное, удалённое, замены' },
+        { id: 'recognition', icon: '🔍', label: 'Распознавание', hint: 'Архив смет и месячные лимиты' },
+        { id: 'plans', icon: '📐', label: 'Планы этажей', hint: 'Подложки планов на сервере' },
+        { id: 'projects', icon: '📁', label: 'Проекты', hint: 'Выпущенные комплекты листов' }
+    ],
+
+    // Ниже этой ширины админка живёт по-мобильному: вместо ряда вкладок — меню
+    // разделов, вместо таблиц — карточки (см. «АДМИНКА НА ТЕЛЕФОНЕ» в style.css).
+    // 900px выбрано не случайно: ровно с неё начинается масштабирование панели
+    // под десктоп, то есть шире этой границы плотная вёрстка ещё помещается.
+    ADMIN_MOBILE_MAX: 900,
+    isAdminMobile: function () { return window.innerWidth < this.ADMIN_MOBILE_MAX; },
+
+    // Пустой _adminTab на телефоне и означает «показано меню разделов»
+    adminGoHome: function () {
+        this._adminTab = null;
+        this.renderAdminMain();
+        const c = document.getElementById('admin_content');
+        if (c) c.scrollTop = 0;
+    },
+
+    /**
+     * Стартовый экран админки на телефоне: сводка и список разделов.
+     *
+     * Оформлен как основное мобильное меню приложения (иконка — подпись —
+     * стрелка): десять вкладок в один ряд на 400px превращались в неподписанные
+     * квадратики, по которым нельзя понять, куда ведёт каждый.
+     */
+    buildAdminMobileHome: function () {
+        const d = this.adminData || {};
+        const n = (v) => Number(v || 0).toLocaleString('ru-RU');
+        const unread = (this._notifications || []).filter(x => !x.isRead).length;
+
+        const cards = `
+            <div class="admin-stat-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+                <div class="control-card" style="background: rgba(37, 99, 235, 0.1); border-color: var(--primary); padding: 15px;"><span class="lbl" style="color: var(--text-sec);">Пользователей</span><span style="font-size: 24px; font-weight: 800; color: var(--primary);">${n(d.totalUsers)}</span></div>
+                <div class="control-card" style="background: rgba(16, 185, 129, 0.1); border-color: #10B981; padding: 15px;"><span class="lbl" style="color: var(--text-sec);">Смет сохранено</span><span style="font-size: 24px; font-weight: 800; color: #10B981;">${n(d.totalEstimates)}</span></div>
+                <div class="control-card" style="background: rgba(99, 102, 241, 0.1); border-color: #6366F1; padding: 15px;"><span class="lbl" style="color: var(--text-sec);">Оборудование</span><span style="font-size: 20px; font-weight: 800; color: #6366F1;">${n(d.totalEq)} ₽</span></div>
+                <div class="control-card" style="background: rgba(249, 115, 22, 0.1); border-color: #F97316; padding: 15px;"><span class="lbl" style="color: var(--text-sec);">Работы</span><span style="font-size: 20px; font-weight: 800; color: #F97316;">${n(d.totalWorks)} ₽</span></div>
+            </div>`;
+
+        const items = this.ADMIN_TAB_DEFS.map(t => `
+            <div class="admin-mob-item" onclick="app.switchAdminTab('${t.id}')">
+                <span class="admin-mob-ico">${t.icon}</span>
+                <span class="admin-mob-body"><b>${t.label}</b><small>${t.hint || ''}</small></span>
+                ${(t.id === 'messages' && unread) ? `<span class="admin-mob-badge">${unread}</span>` : ''}
+                <span class="admin-mob-arrow">›</span>
+            </div>`).join('');
+
+        return cards + `<div class="admin-mob-list">${items}</div>`;
+    },
+
+    /**
+     * Подписи к ячейкам таблиц для телефона.
+     *
+     * На узком экране таблицы админки разворачиваются в карточки: шапка
+     * скрывается, а над каждой ячейкой встаёт название её столбца — иначе строка
+     * выглядит набором чисел без смысла. Название берём из <thead> и кладём в
+     * атрибут data-l, откуда его достаёт CSS (content: attr(data-l)).
+     *
+     * Таблицы рисует с десяток разных функций и перерисовывает на каждый фильтр,
+     * поэтому вызов не дописан в каждую из них, а работает наблюдатель за
+     * содержимым панели: любая новая таблица подписывается сама.
+     */
+    startAdminMobileLabels: function () {
+        const root = document.getElementById('admin_content');
+        if (!root || this._adminLabelObserver || !window.MutationObserver) return;
+
+        const label = () => {
+            root.querySelectorAll('table').forEach(t => {
+                // Разметку не трогаем повторно: атрибуты наблюдатель не отслеживает,
+                // но лишний проход по всем строкам при каждом рендере ни к чему
+                if (t.dataset.mobLabels === '1') return;
+                t.dataset.mobLabels = '1';
+                const headRows = t.tHead ? t.tHead.rows : null;
+                if (!headRows || !headRows.length) return;
+                const heads = [...headRows[headRows.length - 1].cells]
+                    .map(th => (th.textContent || '').replace(/[▲▼↕]/g, '').trim());
+                [...t.tBodies].forEach(tb => [...tb.rows].forEach(tr => {
+                    let col = 0;
+                    [...tr.cells].forEach(td => {
+                        const cap = heads[col] || '';
+                        // Ячейки на всю ширину («Смет пока нет») подписи не получают
+                        if (cap && td.colSpan === 1) td.setAttribute('data-l', cap);
+                        col += td.colSpan || 1;
+                    });
+                }));
+            });
+        };
+
+        this._adminLabelObserver = new MutationObserver(() => {
+            clearTimeout(this._adminLabelTimer);
+            this._adminLabelTimer = setTimeout(label, 50);
+        });
+        this._adminLabelObserver.observe(root, { childList: true, subtree: true });
+        label();
+    },
+
+    stopAdminMobileLabels: function () {
+        if (this._adminLabelObserver) this._adminLabelObserver.disconnect();
+        this._adminLabelObserver = null;
+        clearTimeout(this._adminLabelTimer);
+    },
+
+    // Поворот телефона может перевести панель через границу 900px: раскладку
+    // задают и CSS, и разметка (меню против вкладок), поэтому вторую надо
+    // пересобрать руками, иначе останется мобильное меню над десктопной таблицей.
+    watchAdminViewport: function () {
+        if (this._adminResizeBound) return;
+        this._adminResizeBound = true;
+        this._adminMobileWas = this.isAdminMobile();
+        window.addEventListener('resize', () => {
+            clearTimeout(this._adminResizeTimer);
+            this._adminResizeTimer = setTimeout(() => {
+                const now = this.isAdminMobile();
+                if (now === this._adminMobileWas) return;
+                this._adminMobileWas = now;
+                const ov = document.getElementById('admin_modal_overlay');
+                if (ov && ov.style.display === 'flex') this.renderAdminMain();
+            }, 200);
+        });
+    },
+
     renderAdminMain: function () {
         const isViewer = this.getAdminRole() === 'viewer';
         const content = document.getElementById('admin_content');
@@ -10294,36 +10468,44 @@ const app = {
         content.style.flexDirection = '';
         content.style.overflow = 'auto';
 
-        if (!this._adminTab) this._adminTab = 'stats';
+        // На телефоне ряда вкладок нет вовсе: панель открывается списком разделов,
+        // и пустой _adminTab как раз означает «сейчас показан этот список».
+        const mobile = this.isAdminMobile();
+        if (!this._adminTab && !mobile) this._adminTab = 'stats';
 
         const { users, userEstimates, recentEstimates, totalUsers, totalEstimates, totalEq, totalWorks } = this.adminData;
 
-        const ADMIN_TAB_DEFS = [
-            { id: 'stats', icon: '👥', label: 'Пользователи' },
-            { id: 'estimates', icon: '📋', label: 'Расчёты' },
-            { id: 'messages', icon: '💬', label: 'Сообщения' },
-            { id: 'distributors', icon: '🏢', label: 'Дистрибьюторы' },
-            { id: 'kanban', icon: '📅', label: 'Планировщик' },
-            { id: 'pricelist', icon: '💵', label: 'Прайс-лист' },
-            { id: 'equipment', icon: '🧰', label: 'Своё оборудование' },
-            { id: 'recognition', icon: '🔍', label: 'Распознавание' },
-            { id: 'plans', icon: '📐', label: 'Планы этажей' },
-            { id: 'projects', icon: '📁', label: 'Проекты' }
-        ];
+        const ADMIN_TAB_DEFS = this.ADMIN_TAB_DEFS;
+
+        let navHtml;
+        if (mobile) {
+            if (!this._adminTab) {
+                content.innerHTML = this.buildAdminMobileHome();
+                return;
+            }
+            // Внутри раздела вместо вкладок — строка возврата к меню, как в
+            // мобильных приложениях: десять кнопок наверху съедали пол-экрана.
+            const cur = ADMIN_TAB_DEFS.find(t => t.id === this._adminTab) || { icon: '', label: '' };
+            navHtml = `
+            <div class="admin-mob-bar">
+                <button class="admin-mob-back" onclick="app.adminGoHome()">‹ Разделы</button>
+                <span class="admin-mob-cur">${cur.icon} ${cur.label}</span>
+            </div>
+        `;
+        } else {
         // Вкладки растянуты на всю ширину, но отправная точка — содержимое:
         // flex: 1 0 auto = расти можно, сжиматься нельзя. При равных долях (1 1 0)
         // длинные подписи вроде «Своё оборудование» резались многоточием, а короткие
         // держали лишнее место. Запрет на сжатие и означает «текст не съедается»:
         // если девять вкладок не влезают, ряд переносится на вторую строку.
-        // На узких экранах (см. .admin-tab-btn / .admin-tab-label в style.css) подписи
-        // скрываются, остаются только иконки-квадраты; title — подсказка при наведении.
-        let navHtml = `
+        navHtml = `
             <div id="admin_nav_tabs" style="display: flex; gap: 6px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-shrink: 0; width: 100%; flex-wrap: wrap;">
                 ${ADMIN_TAB_DEFS.map(t => `
                     <button id="admin_tab_${t.id}" class="auth-btn-base admin-tab-btn" title="${t.label}" style="margin: 0; padding: 0 12px; height: 34px; font-size: 12px; font-weight: bold; flex: 1 0 auto; width: auto; max-width: none; white-space: nowrap; background:${this._adminTab === t.id ? 'var(--primary)' : 'var(--surface-light)'}; color: ${this._adminTab === t.id ? 'white' : 'var(--text-sec)'}; border: 1px solid ${this._adminTab === t.id ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminTab('${t.id}')">${t.icon}<span class="admin-tab-label"> ${t.label}</span></button>
                 `).join('')}
             </div>
         `;
+        }
 
         if (this._adminTab === 'messages') {
             content.innerHTML = navHtml;
@@ -10447,7 +10629,7 @@ const app = {
             (this._recognitionAccess.design.regions || {})[bulkRegionSel]);
 
         let h = `
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div class="admin-stat-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                         <div class="control-card" style="background: rgba(37, 99, 235, 0.1); border-color: var(--primary); padding: 15px;"><span class="lbl" style="color: var(--text-sec);">Пользователей</span><span style="font-size: 24px; font-weight: 800; color: var(--primary);">${totalUsers}</span></div>
                         <div class="control-card" style="background: rgba(16, 185, 129, 0.1); border-color: #10B981; padding: 15px;"><span class="lbl" style="color: var(--text-sec);">Смет сохранено</span><span style="font-size: 24px; font-weight: 800; color: #10B981;">${totalEstimates}</span></div>
                         <div class="control-card" style="background: rgba(99, 102, 241, 0.1); border-color: #6366F1; padding: 15px;"><span class="lbl" style="color: var(--text-sec);">Оборудование (Сумма)</span><span style="font-size: 20px; font-weight: 800; color: #6366F1;">${totalEq.toLocaleString()} ₽</span></div>
@@ -10456,7 +10638,7 @@ const app = {
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                         <h4 style="margin: 0; white-space: nowrap;">👥 Пользователи</h4>
-                        <div style="display: flex; gap: 8px; width: auto; flex-grow: 1; justify-content: flex-end; flex-wrap: wrap;">
+                        <div class="admin-filter-row" style="display: flex; gap: 8px; width: auto; flex-grow: 1; justify-content: flex-end; flex-wrap: wrap;">
                             <input type="text" id="admin_search_input" placeholder="🔍 Поиск по имени..." style="width: 180px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 12px; outline: none; height: 34px; box-sizing: border-box;" onkeyup="app.debouncedAdminSearch()">
                             <select id="admin_filter_tariff" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer; height: 34px; box-sizing: border-box;">
                                 <option value="all" ${tariffFilter === 'all' ? 'selected' : ''}>Все тарифы</option>
@@ -10922,6 +11104,10 @@ const app = {
     switchAdminTab: function (tab) {
         this._adminTab = tab;
         this.renderAdminMain();
+        // Переход из меню разделов — всегда к началу раздела, а не туда, где
+        // осталась прокрутка предыдущего
+        const c = document.getElementById('admin_content');
+        if (c) c.scrollTop = 0;
     },
 
     // «Написать» из карточки монтажника — открываем вкладку сообщений сразу на его диалоге
@@ -11694,7 +11880,9 @@ const app = {
         // в childNodes попадают ещё и текстовые узлы от переносов строк в разметке, и
         // прежний цикл «удаляй, пока не останется один узел» сносил вместе с содержимым
         // саму строку вкладок — после второй перерисовки из админки было не выйти.
-        const nav = document.getElementById('admin_nav_tabs');
+        // На телефоне вместо ряда вкладок стоит строка возврата в меню разделов —
+        // сохранять надо её, иначе из мессенджера некуда выйти.
+        const nav = document.getElementById('admin_nav_tabs') || content.querySelector('.admin-mob-bar');
         content.innerHTML = '';
         if (nav) content.appendChild(nav);
 
