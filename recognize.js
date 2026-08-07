@@ -2537,6 +2537,7 @@ const RecognizeUI = {
 
         this._rows = items.map(i => ({ ...i, _sel: false, _locked: false }));
         this._rows.forEach(r => { if (this.looksLikeWork(r)) r.kind = 'work'; });
+        this.roundQty();
         this.inheritRepeats();
 
         // Тип показываем в том виде, в каком его понял подбор. Модель нет-нет
@@ -2728,6 +2729,23 @@ const RecognizeUI = {
             r.type = prev.type;
             if (!r.threadType) r.threadType = prev.row.threadType;
             r._inherited = prev.row.raw || '';
+        });
+    },
+
+    /**
+     * Количество — целым числом.
+     *
+     * В сметах метраж пишут с половинками: «607,5 м.п.», «1192,5». Половина
+     * метра трубы или изоляции не покупается и не монтируется, а в таблице
+     * такое число ещё и не помещается в колонку — видно «607,». Округляем
+     * вверх, как и остаток штанги: недостача материала хуже излишка.
+     */
+    roundQty() {
+        this._rows.forEach(r => {
+            ['qty', 'qtyExtra'].forEach(f => {
+                const v = Number(r[f]);
+                if (v > 0 && v !== Math.floor(v)) r[f] = Math.ceil(v);
+            });
         });
     },
 
