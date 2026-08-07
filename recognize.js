@@ -979,6 +979,7 @@ const RecognizeUI = {
     DOC_ICONS: {
         pdf:  { label: 'PDF',  color: '#ef4444' },
         xlsx: { label: 'XLS',  color: '#16a34a' },
+        xls:  { label: 'XLS',  color: '#16a34a' },
         docx: { label: 'DOC',  color: '#2563eb' },
         html: { label: 'HTML', color: '#f59e0b' },
         text: { label: 'TXT',  color: '#64748b' },

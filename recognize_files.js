@@ -36,7 +36,9 @@ const RecognizeFiles = {
         const n = (file.name || '').toLowerCase();
         if (/\.(jpe?g|png|webp|gif|bmp)$/.test(n) || (file.type || '').startsWith('image/')) return 'image';
         if (/\.pdf$/.test(n)) return 'pdf';
-        if (/\.xlsx?$/.test(n)) return 'xlsx';
+        // Старый .xls — не zip, а совсем другой формат (см. fromXls).
+        if (/\.xls$/.test(n)) return 'xls';
+        if (/\.xlsx$/.test(n)) return 'xlsx';
         if (/\.docx$/.test(n)) return 'docx';
         if (/\.html?$/.test(n)) return 'html';
         if (/\.txt$/.test(n)) return 'text';
@@ -150,6 +152,286 @@ const RecognizeFiles = {
             lines.push(`[файл обрезан: показаны первые ${this.MAX_ROWS} строк]`);
         }
         return lines.join('\n');
+    },
+
+    // ======================================================================
+    // Excel 97–2003 (.xls)
+    // ======================================================================
+
+    /**
+     * Старый .xls — это не zip.
+     *
+     * Внутри контейнер OLE2 (он же Compound File): подобие файловой системы с
+     * таблицей секторов, и уже в нём поток «Workbook» с записями BIFF8. Пока
+     * .xls шёл общей веткой с .xlsx, любой такой файл падал с «это не
+     * zip-архив»: КП поставщика в этом формате приходят до сих пор.
+     *
+     * Библиотеку не подключаем: нужен не Excel целиком, а текст ячеек, и это
+     * три десятка строк разбора против сотен килобайт стороннего кода.
+     */
+    CFB_MAGIC: [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1],
+
+    /** Потоки OLE2-контейнера: { имя: Uint8Array }. */
+    cfbStreams(buf) {
+        const u8 = new Uint8Array(buf);
+        const dv = new DataView(buf);
+        if (!this.CFB_MAGIC.every((b, i) => u8[i] === b)) throw new Error('не OLE2');
+
+        const ssz = 1 << dv.getUint16(30, true);          // размер сектора
+        const msz = 1 << dv.getUint16(32, true);          // размер мини-сектора
+        const nFat = dv.getUint32(44, true);
+        const dirStart = dv.getUint32(48, true);
+        const miniCutoff = dv.getUint32(56, true);
+        const miniFatStart = dv.getUint32(60, true);
+        const difatStart = dv.getUint32(68, true);
+        const nDifat = dv.getUint32(72, true);
+        const off = (sec) => (sec + 1) * ssz;
+
+        // DIFAT — список секторов, в которых лежит сама FAT. Первые 109 стоят
+        // в заголовке, остальные цепочкой.
+        const fatSectors = [];
+        for (let i = 0; i < Math.min(109, nFat); i++) fatSectors.push(dv.getUint32(76 + i * 4, true));
+        let ds = difatStart;
+        for (let i = 0; i < nDifat && ds !== 0xFFFFFFFE && ds !== 0xFFFFFFFF; i++) {
+            const base = off(ds), per = ssz / 4 - 1;
+            for (let j = 0; j < per; j++) {
+                const s = dv.getUint32(base + j * 4, true);
+                if (s !== 0xFFFFFFFF) fatSectors.push(s);
+            }
+            ds = dv.getUint32(base + per * 4, true);
+        }
+
+        const fat = [];
+        for (const s of fatSectors) {
+            const base = off(s);
+            for (let j = 0; j < ssz / 4; j++) fat.push(dv.getUint32(base + j * 4, true));
+        }
+
+        const chain = (start, table) => {
+            const out = [];
+            let s = start, guard = 0;
+            while (s !== 0xFFFFFFFE && s !== 0xFFFFFFFF && s !== undefined && guard++ < 1e6) {
+                out.push(s);
+                s = table[s];
+            }
+            return out;
+        };
+        const join = (parts, size) => {
+            let total = 0;
+            for (const p of parts) total += p.length;
+            const out = new Uint8Array(total);
+            let at = 0;
+            for (const p of parts) { out.set(p, at); at += p.length; }
+            return size < total ? out.subarray(0, size) : out;
+        };
+        const read = (start, size, table, secSize, secOff) =>
+            join(chain(start, table).map((s) => u8.subarray(secOff(s), secOff(s) + secSize)), size >>> 0);
+
+        // Каталог: записи по 128 байт, имя в UTF-16.
+        const dir = read(dirStart, 0xFFFFFFFF, fat, ssz, off);
+        const ddv = new DataView(dir.buffer, dir.byteOffset, dir.byteLength);
+        const entries = [];
+        for (let p = 0; p + 128 <= dir.length; p += 128) {
+            const nameLen = ddv.getUint16(p + 64, true);
+            if (!nameLen) continue;
+            entries.push({
+                name: new TextDecoder('utf-16le').decode(dir.subarray(p, p + Math.max(0, nameLen - 2))),
+                type: dir[p + 66],
+                start: ddv.getUint32(p + 116, true),
+                size: ddv.getUint32(p + 120, true),
+            });
+        }
+
+        // Мелкие потоки лежат не в секторах, а в мини-потоке корневой записи.
+        const root = entries.find((e) => e.type === 5);
+        const miniFatBytes = read(miniFatStart, 0xFFFFFFFF, fat, ssz, off);
+        const mdv = new DataView(miniFatBytes.buffer, miniFatBytes.byteOffset, miniFatBytes.byteLength);
+        const miniFat = [];
+        for (let i = 0; i + 4 <= miniFatBytes.length; i += 4) miniFat.push(mdv.getUint32(i, true));
+        const mini = root ? read(root.start, root.size, fat, ssz, off) : new Uint8Array(0);
+
+        const out = {};
+        for (const e of entries) {
+            if (e.type !== 2) continue;
+            out[e.name] = (e.size < miniCutoff && root)
+                ? read(e.start, e.size, miniFat, msz, (s) => s * msz).subarray(0, e.size)
+                : read(e.start, e.size, fat, ssz, off);
+        }
+        return out;
+    },
+
+    /** Строка BIFF8: длина, признак кодировки, дальше символы. */
+    biffStr(b, dv, o, cch, grbit) {
+        const wide = grbit & 0x01;
+        if (wide) return new TextDecoder('utf-16le').decode(b.subarray(o, o + cch * 2));
+        // Сжатая строка — это те же символы Юникода с кодом меньше 256.
+        let s = '';
+        for (let i = 0; i < cch; i++) s += String.fromCharCode(b[o + i]);
+        return s;
+    },
+
+    /** Текст листов из потока Workbook. */
+    fromBiff(stream) {
+        const dv = new DataView(stream.buffer, stream.byteOffset, stream.byteLength);
+
+        // Записи; CONTINUE (0x3C) — продолжение предыдущей, а не своя запись.
+        const recs = [];
+        for (let p = 0; p + 4 <= stream.length;) {
+            const type = dv.getUint16(p, true);
+            const len = dv.getUint16(p + 2, true);
+            const data = stream.subarray(p + 4, p + 4 + len);
+            p += 4 + len;
+            if (type === 0x003C && recs.length) recs[recs.length - 1].cont.push(data);
+            else recs.push({ type, data, cont: [] });
+        }
+
+        // Таблица общих строк. Строка может разрываться между кусками, и после
+        // разрыва признак кодировки пишется заново — иначе текст рассыпается.
+        const sst = [];
+        const sstRec = recs.find((r) => r.type === 0x00FC);
+        if (sstRec) {
+            const chunks = [sstRec.data, ...sstRec.cont];
+            const total = new DataView(sstRec.data.buffer, sstRec.data.byteOffset).getUint32(4, true);
+            let ci = 0, o = 8;
+            const dvOf = (b) => new DataView(b.buffer, b.byteOffset, b.byteLength);
+            for (let i = 0; i < total; i++) {
+                while (ci < chunks.length && o + 3 > chunks[ci].length) { ci++; o = 0; }
+                if (ci >= chunks.length) break;
+                let b = chunks[ci], d = dvOf(b);
+                const cch = d.getUint16(o, true); o += 2;
+                let grbit = b[o]; o += 1;
+                let rich = 0, ext = 0;
+                if (grbit & 0x08) { rich = d.getUint16(o, true); o += 2; }
+                if (grbit & 0x04) { ext = d.getUint32(o, true); o += 4; }
+
+                let s = '', left = cch;
+                while (left > 0) {
+                    if (o >= b.length) {
+                        if (++ci >= chunks.length) break;
+                        b = chunks[ci]; d = dvOf(b); o = 0;
+                        grbit = b[o]; o += 1;
+                    }
+                    const wide = grbit & 0x01;
+                    const avail = wide ? (b.length - o) >> 1 : (b.length - o);
+                    const take = Math.min(left, avail);
+                    s += this.biffStr(b, d, o, take, grbit);
+                    o += wide ? take * 2 : take;
+                    left -= take;
+                }
+                o += rich * 4 + ext;
+                sst.push(s);
+            }
+        }
+
+        /** Число в упаковке RK: либо целое, либо старшие биты double. */
+        const rk = (v) => {
+            let num;
+            if (v & 0x02) num = v >> 2;
+            else {
+                const tmp = new DataView(new ArrayBuffer(8));
+                tmp.setInt32(4, v & 0xFFFFFFFC, true);
+                num = tmp.getFloat64(0, true);
+            }
+            return (v & 0x01) ? num / 100 : num;
+        };
+        const fmt = (n) => (Number.isInteger(n) ? String(n) : String(Math.round(n * 1000) / 1000));
+
+        const rows = new Map();
+        const put = (r, c, v) => {
+            if (v === '' || v == null) return;
+            if (!rows.has(r)) rows.set(r, new Map());
+            rows.get(r).set(c, v);
+        };
+
+        let formulaCell = null;
+        for (const r of recs) {
+            const b = r.data;
+            if (!b.length) continue;
+            const d = new DataView(b.buffer, b.byteOffset, b.byteLength);
+            switch (r.type) {
+                case 0x00FD:                                   // ячейка со строкой из таблицы
+                    put(d.getUint16(0, true), d.getUint16(2, true), sst[d.getUint32(6, true)] || '');
+                    break;
+                case 0x0204:                                   // строка прямо в ячейке
+                    put(d.getUint16(0, true), d.getUint16(2, true),
+                        this.biffStr(b, d, 9, d.getUint16(6, true), b[8]));
+                    break;
+                case 0x027E:                                   // число в упаковке
+                    put(d.getUint16(0, true), d.getUint16(2, true), fmt(rk(d.getInt32(6, true))));
+                    break;
+                case 0x00BD: {                                 // подряд идущие упакованные
+                    const row = d.getUint16(0, true), first = d.getUint16(2, true);
+                    for (let i = 0; i * 6 + 10 <= b.length; i++) {
+                        put(row, first + i, fmt(rk(d.getInt32(4 + i * 6 + 2, true))));
+                    }
+                    break;
+                }
+                case 0x0203:                                   // обычное число
+                    put(d.getUint16(0, true), d.getUint16(2, true), fmt(d.getFloat64(6, true)));
+                    break;
+                case 0x0006: {                                 // формула
+                    const row = d.getUint16(0, true), col = d.getUint16(2, true);
+                    // Признак «результат не число» — 0xFFFF в старших байтах;
+                    // сам текст приезжает следующей записью STRING.
+                    if (b[12] === 0xFF && b[13] === 0xFF) {
+                        if (b[6] === 0x00) formulaCell = [row, col];
+                    } else {
+                        put(row, col, fmt(d.getFloat64(6, true)));
+                    }
+                    break;
+                }
+                case 0x0207:                                   // текстовый результат формулы
+                    if (formulaCell) {
+                        put(formulaCell[0], formulaCell[1],
+                            this.biffStr(b, d, 3, d.getUint16(0, true), b[2]));
+                        formulaCell = null;
+                    }
+                    break;
+                default: break;
+            }
+        }
+
+        const lines = [];
+        let truncated = false;
+        for (const r of [...rows.keys()].sort((a, b) => a - b)) {
+            if (lines.length >= this.MAX_ROWS) { truncated = true; break; }
+            const cells = rows.get(r);
+            const line = [...cells.keys()].sort((a, b) => a - b)
+                .map((c) => String(cells.get(c)).trim()).filter(Boolean).join(' | ');
+            if (line.trim()) lines.push(line);
+        }
+        if (truncated) lines.push(`[файл обрезан: показаны первые ${this.MAX_ROWS} строк]`);
+        return lines.join('\n');
+    },
+
+    /**
+     * Расширение .xls носят три разных формата.
+     *
+     * Кроме настоящего Excel 97–2003 так называют выгрузки 1С, внутри которых
+     * лежит обычный HTML или уже новый xlsx. Определяем по началу файла, а не
+     * по имени: файл, честно прочитанный не тем разбором, — это молчаливая
+     * ошибка, а монтажник видит только «не загружается».
+     */
+    async fromXls(buf) {
+        const u8 = new Uint8Array(buf);
+        if (u8[0] === 0x50 && u8[1] === 0x4B) return await this.fromXlsx(buf);   // на деле xlsx
+
+        if (!this.CFB_MAGIC.every((b, i) => u8[i] === b)) {
+            const head = new TextDecoder().decode(u8.subarray(0, 512)).toLowerCase();
+            if (/<html|<table|<\?xml|<workbook/.test(head)) {
+                // Кодировку не угадываем по имени: 1С отдаёт и UTF-8, и 1251.
+                // Ошибку декодирования видно по символу замены — тогда 1251.
+                let str = new TextDecoder('utf-8').decode(u8);
+                if (str.includes('�')) str = new TextDecoder('windows-1251').decode(u8);
+                return this.fromHtml(str);
+            }
+            throw new Error('файл не похож на книгу Excel');
+        }
+
+        const streams = this.cfbStreams(buf);
+        const key = Object.keys(streams).find((n) => /^(workbook|book)$/i.test(n));
+        if (!key) throw new Error('в файле нет листа Excel');
+        return this.fromBiff(streams[key]);
     },
 
     // ======================================================================
@@ -325,6 +607,7 @@ const RecognizeFiles = {
         const buf = await file.arrayBuffer();
 
         if (kind === 'xlsx') return { kind, text: (await this.fromXlsx(buf)).trim(), images: [] };
+        if (kind === 'xls') return { kind, text: (await this.fromXls(buf)).trim(), images: [] };
         if (kind === 'docx') return { kind, text: (await this.fromDocx(buf)).trim(), images: [] };
         if (kind === 'pdf') {
             const r = await this.fromPdf(buf, onProgress);
