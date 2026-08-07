@@ -49,18 +49,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.99">
+    <link rel="stylesheet" href="style.css?v=3.04">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.37" defer></script>
+    <script src="catalog.js?v=2.43" defer></script>
     <!-- Координаты и регионы населённых пунктов: карта проектов в админке и
          адрес объекта. Данные вшиты в файл, наружу никаких запросов. -->
     <script src="cities_geo.js?v=1.0" defer></script>
     <!-- Цены дистрибьюторов поверх каталога. Отдельный файл, потому что каталог
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.1" defer></script>
-    <script src="gamification.js?v=2.0" defer></script>
-    <script src="app.js?v=4.46" defer></script>
+    <script src="gamification.js?v=2.1" defer></script>
+    <script src="app.js?v=4.58" defer></script>
     <!-- Укладка тёплого пола по планам этажей. В калькуляторе нужна не ради
          листов, а ради сметы: длину трубы и число выходов коллектора берём
          из нарисованных петель (projectPlans.floorLoops). -->
@@ -71,7 +71,7 @@
     <!-- Извлечение текста из Excel, Word, PDF, HTML. Подключается до
          recognize.js, который его использует. -->
     <script src="recognize_files.js?v=1.0" defer></script>
-    <script src="recognize.js?v=5.2" defer></script>
+    <script src="recognize.js?v=5.3" defer></script>
     <script src="qrcode.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" defer></script>
@@ -1121,7 +1121,7 @@
                     </div>
 
                     <!-- My Estimates Item -->
-                    <div class="profile-menu-item" onclick="app.loadFromCloudList()" style="display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;">
+                    <div class="profile-menu-item" onclick="app.showProfileModal(false, 'objects')" style="display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="color: var(--text-sec); flex-shrink: 0;">
                             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                         </svg>
@@ -1144,7 +1144,7 @@
                     </div>
 
                     <!-- Requested Invoices (Purchase History) Item -->
-                    <div class="profile-menu-item" onclick="app.showRequestedInvoicesHistory()" style="display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;">
+                    <div class="profile-menu-item" onclick="app.showProfileModal(false, 'orders')" style="display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="color: var(--text-sec); flex-shrink: 0;">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                             <polyline points="14 2 14 8 20 8"></polyline>
@@ -1158,19 +1158,8 @@
                         </svg>
                     </div>
 
-                    <!-- Delivery & Payment Item -->
-                    <div id="profile_delivery_item" class="profile-menu-item" onclick="app.showDeliveryPaymentInfo()" style="display: none; align-items: center; gap: 14px; padding: 16px 18px; cursor: pointer; transition: background 0.2s;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="color: var(--text-sec); flex-shrink: 0;">
-                            <rect x="1" y="3" width="15" height="13"></rect>
-                            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-                            <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                            <circle cx="18.5" cy="18.5" r="2.5"></circle>
-                        </svg>
-                        <span style="flex-grow: 1; font-weight: 600; font-size: 14.5px; color: var(--text-main); text-align: left;">Условия доставки и оплаты</span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="color: var(--text-sec); opacity: 0.5;">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </div>
+                    <!-- «Условия доставки и оплаты» переехали внутрь раздела «Мой менеджер»
+                         личного кабинета (app.showSupplierSection) — отдельным пунктом дублировались -->
 
                     <!-- Logout Item -->
                     <div id="profile_logout_item" class="profile-menu-item" onclick="app.logout()" style="display: none; align-items: center; gap: 14px; padding: 16px 18px; cursor: pointer; transition: background 0.2s; border-top: 1px solid var(--border);">
@@ -1335,60 +1324,24 @@
                         <input type="text" id="auth_password_input" class="auth-input" placeholder="Введите пароль" autocomplete="off" oninput="app.checkPasswordLayout(this)" style="max-width:100%; margin:0 0 12px;">
                     </div>
                     <div id="register_fields" style="display: none; text-align:left;">
-                        <label class="reg-field-label">Пароль</label>
-                        <input type="text" id="auth_reg_password" class="auth-input" placeholder="Придумайте пароль" autocomplete="off" oninput="app.checkPasswordLayout(this)" style="max-width:100%; margin:0 0 7px;">
+                        <label class="reg-field-label" style="text-align:left;">Пароль</label>
+                        <input type="text" id="auth_reg_password" class="auth-input" placeholder="Придумайте пароль" autocomplete="off" oninput="app.checkPasswordLayout(this)" style="max-width:100%; margin:0 0 12px;">
 
-                        <div class="reg-grid-3">
-                            <div>
-                                <label class="reg-field-label">Фамилия</label>
-                                <input type="text" id="reg_last_name" class="auth-input" placeholder="Иванов" style="max-width:100%; margin:0;">
-                            </div>
-                            <div>
-                                <label class="reg-field-label">Имя</label>
-                                <input type="text" id="reg_first_name" class="auth-input" placeholder="Иван" style="max-width:100%; margin:0;">
-                            </div>
-                            <div>
-                                <label class="reg-field-label">Отчество</label>
-                                <input type="text" id="reg_middle_name" class="auth-input" placeholder="Иванович" style="max-width:100%; margin:0;">
-                            </div>
-                        </div>
+                        <!-- Промокод дистрибьютора спрашивается не здесь, а в анкете
+                             личного кабинета (раздел «Профиль») — форма регистрации
+                             остаётся из двух полей. -->
 
-                        <div class="reg-grid-2">
-                            <div>
-                                <label class="reg-field-label">Телефон</label>
-                                <input type="tel" id="reg_phone" class="auth-input" placeholder="+7 (___) ___-__-__" oninput="app.maskPhone(this)" style="max-width:100%; margin:0;">
-                            </div>
-                            <div>
-                                <label class="reg-field-label">Дата рождения</label>
-                                <input type="date" id="reg_birth_date" class="auth-input" style="max-width:100%; margin:0; color-scheme: light dark;">
-                            </div>
-                        </div>
-
-                        <label class="reg-field-label">Сфера деятельности</label>
-                        <div class="reg-grid-2 reg-activity-grid">
-                            <label class="reg-activity-chip"><input type="checkbox" id="reg_act_installer" value="Монтажник"><span>Монтажник</span></label>
-                            <label class="reg-activity-chip"><input type="checkbox" id="reg_act_seller" value="Продавец"><span>Продавец</span></label>
-                        </div>
-
-                        <div class="reg-grid-2">
-                            <div>
-                                <label class="reg-field-label">Регион</label>
-                                <input type="text" id="reg_region" class="auth-input" placeholder="Московская область" style="max-width:100%; margin:0;">
-                            </div>
-                            <div>
-                                <label class="reg-field-label">Населённый пункт</label>
-                                <input type="text" id="reg_city" class="auth-input" placeholder="Москва" style="max-width:100%; margin:0;">
-                            </div>
-                        </div>
-
-                        <div id="auth_terms_wrapper" style="padding: 0 5px; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 6px; max-width: 100%; margin: 4px auto 0 auto;">
-                            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 10px; color: var(--text-sec); text-align: left; line-height: 1.2; white-space: nowrap;">
-                                <input type="checkbox" id="chk_terms" style="width: 13px; height: 13px; cursor: pointer; flex-shrink: 0;">
-                                <span>Принимаю <a href="oferta.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">оферту</a></span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 10px; color: var(--text-sec); text-align: left; line-height: 1.2; white-space: nowrap;">
-                                <input type="checkbox" id="chk_privacy" required style="width: 13px; height: 13px; cursor: pointer; flex-shrink: 0;">
-                                <span>Согласен с <a href="privacy-policy.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">политикой</a></span>
+                        <!-- Анкета (ФИО, телефон, дата рождения, сфера, регион и город) больше
+                             не спрашивается при регистрации: её обязательно заполняют сразу после
+                             входа в личном кабинете, окно которого нельзя закрыть до сохранения
+                             (app.isProfileIncomplete → app.showProfileModal(true)). -->
+                        <!-- Согласие на обработку персональных данных — отдельной галочкой:
+                             его нужно получить до создания аккаунта и в явном виде.
+                             Оферта принимается конклюдентно, текстом под кнопкой (#auth_terms_note). -->
+                        <div id="auth_terms_wrapper" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin: 4px 0 12px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12.5px; color: var(--text-sec); line-height: 1.3;">
+                                <input type="checkbox" id="chk_privacy" required style="width: 15px; height: 15px; cursor: pointer; flex-shrink: 0;">
+                                <span>Согласен с <a href="privacy-policy.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">политикой обработки персональных данных</a></span>
                             </label>
                         </div>
                     </div>
@@ -1397,6 +1350,11 @@
                     <button class="auth-btn-base btn-email-submit" id="auth_submit_btn" onclick="app.handleAuthSubmit()">
                         Войти
                     </button>
+
+                    <!-- Показывается только на вкладке регистрации (app.switchAuthTab) -->
+                    <div id="auth_terms_note" style="display: none; margin-top: 10px; font-size: 11.5px; line-height: 1.4; color: var(--text-sec); text-align: center;">
+                        Нажимая «Зарегистрироваться», вы принимаете условия <a href="oferta.html" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">оферты</a>
+                    </div>
 
                     <div id="auth_forgot_link" style="text-align: center; margin-top: 12px; font-size: 13px;">
                         <a href="#" onclick="app.showForgotPasswordView()" style="color: var(--text-sec); text-decoration: none;">Забыли пароль?</a>
@@ -1548,40 +1506,93 @@
     <div id="profile_modal_overlay" class="auth-modal-overlay" style="display: none;">
         <div class="auth-modal-content" style="box-sizing: border-box; transition: max-width 0.3s ease; display: flex; flex-direction: column;">
             <span id="profile_modal_close_btn" class="auth-modal-close" onclick="app.closeProfileModal()" style="top: 10px; right: 16px;">&times;</span>
-            <h3 class="auth-modal-title" style="margin-top: 0; margin-bottom: 8px; font-size: 17px;">Личный кабинет</h3>
 
-            <div id="profile_tabs_bar" class="mode-selector-tabs" style="margin-bottom: 10px; flex-wrap: wrap;">
-                <div class="mode-tab active" data-tab="requisites" onclick="app.setProfileTab('requisites')">Реквизиты</div>
-                <div class="mode-tab" data-tab="manager" onclick="app.setProfileTab('manager')">Менеджер</div>
+            <!-- Кабинет: слева колонка разделов, справа содержимое выбранного раздела.
+                 На узких экранах колонка превращается в горизонтальный ряд иконок
+                 (см. .lk-nav в style.css). Разделы переключает app.setProfileTab. -->
+            <div class="lk-layout">
+            <nav id="profile_nav" class="lk-nav">
+                <div class="lk-nav-user">
+                    <div id="profile_nav_avatar" class="lk-nav-avatar">·</div>
+                    <div class="lk-nav-user-text">
+                        <div id="profile_nav_name" class="lk-nav-name">—</div>
+                        <div id="profile_nav_tariff" class="lk-nav-tariff"></div>
+                    </div>
+                </div>
+
+                <button type="button" class="lk-nav-item active" data-tab="requisites" title="Профиль" onclick="app.setProfileTab('requisites')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <span class="lk-nav-label">Профиль</span>
+                </button>
+                <button type="button" class="lk-nav-item" data-tab="company" title="Реквизиты компании" onclick="app.setProfileTab('company')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 21h18"></path><path d="M5 21V7l7-4 7 4v14"></path><path d="M10 21v-5h4v5"></path><path d="M9 10h.01"></path><path d="M15 10h.01"></path></svg>
+                    <span class="lk-nav-label">Реквизиты компании</span>
+                </button>
+                <button type="button" class="lk-nav-item" data-tab="manager" title="Мой менеджер" onclick="app.setProfileTab('manager')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>
+                    <span class="lk-nav-label">Мой менеджер</span>
+                </button>
+                <!-- Раздел «Подписка» временно скрыт из меню на время тестирования тарифа;
+                     сам раздел рабочий (app.renderSubscriptionTab), достаточно убрать display:none -->
+                <button type="button" class="lk-nav-item" data-tab="subscription" style="display:none;" title="Подписка" onclick="app.setProfileTab('subscription')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 2l2.6 6.6L21 9.3l-5 4.5 1.4 6.8L12 17.3 6.6 20.6 8 13.8 3 9.3l6.4-.7z"></path></svg>
+                    <span class="lk-nav-label">Подписка</span>
+                </button>
+                <button type="button" class="lk-nav-item" data-tab="objects" title="Мои объекты" onclick="app.setProfileTab('objects')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    <span class="lk-nav-label">Мои объекты</span>
+                </button>
+                <button type="button" class="lk-nav-item" data-tab="orders" title="Заказы и счета" onclick="app.setProfileTab('orders')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    <span class="lk-nav-label">Заказы и счета</span>
+                </button>
                 <!-- Показывается только зарегистрированным менеджерам дистрибьюторов (email совпал
                      с distributors.manager_email) — см. app.refreshManagerTabVisibility -->
-                <div class="mode-tab" data-tab="installers" style="display:none;" onclick="app.setProfileTab('installers')">Мои монтажники</div>
-                <div class="mode-tab" data-tab="workprices" onclick="app.setProfileTab('workprices')">Прайс-лист монтаж</div>
-                <div class="mode-tab" data-tab="equipment" onclick="app.setProfileTab('equipment')">Своё оборудование</div>
-            </div>
+                <button type="button" class="lk-nav-item" data-tab="installers" style="display:none;" title="Мои монтажники" onclick="app.setProfileTab('installers')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <span class="lk-nav-label">Мои монтажники</span>
+                </button>
+                <button type="button" class="lk-nav-item" data-tab="workprices" title="Прайс монтажа" onclick="app.setProfileTab('workprices')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                    <span class="lk-nav-label">Прайс монтажа</span>
+                </button>
+                <button type="button" class="lk-nav-item" data-tab="equipment" title="Своё оборудование" onclick="app.setProfileTab('equipment')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    <span class="lk-nav-label">Своё оборудование</span>
+                </button>
+                <a class="lk-nav-item" href="/rating/" target="_blank" rel="noopener" title="Баллы и рейтинг">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"></path><path d="M7 5H4.5A1.5 1.5 0 0 0 3 6.5v1A3.5 3.5 0 0 0 6.5 11H7"></path><path d="M17 5h2.5A1.5 1.5 0 0 1 21 6.5v1A3.5 3.5 0 0 1 17.5 11H17"></path><path d="M12 13v4"></path><path d="M9 21h6"></path><path d="M10 17h4"></path></svg>
+                    <span class="lk-nav-label">Баллы и рейтинг</span>
+                </a>
+
+                <div class="lk-nav-spacer"></div>
+
+                <button type="button" class="lk-nav-item lk-nav-logout" title="Выйти из аккаунта" onclick="app.logout()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span class="lk-nav-label">Выйти</span>
+                </button>
+            </nav>
+
+            <div class="lk-pane">
 
             <div id="profile_tab_requisites">
             <!-- Баннер принудительного дозаполнения обязательных полей (Google/Telegram-вход
                  или старый аккаунт без анкеты) — до сохранения окно нельзя закрыть -->
             <div id="profile_incomplete_banner" style="display: none; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 12px; color: #EF4444; font-weight: 600; text-align: left; line-height: 1.4;">
-                Осталось указать ФИО и телефон — они нужны для оформления коммерческих предложений.
+                Заполните профиль до конца — эти данные подставляются в сметы и коммерческие предложения. Пока форма не сохранена, окно не закрывается.
             </div>
 
-            <!-- PRO Status Banner -->
-            <div id="profile_pro_badge_banner" style="display: none; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 6px 12px; margin-bottom: 12px; align-items: center; justify-content: space-between; font-size: 11px;">
-                <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
-                    <span style="font-weight: 700; color: #D97706; text-transform: uppercase; letter-spacing: 0.03em;">Тариф Профи активен</span>
-                    <span id="profile_pro_expiry_text" style="color: var(--text-sec); font-weight: 600;">до 06.06.2026</span>
-                </div>
-                <button type="button" onclick="app.closeProfileModal(); app.showModal('pro');" style="padding: 4px 8px; font-size: 10px; font-weight: bold; background: #D97706; border: 1px solid #D97706; color: #fff; border-radius: 6px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#B45309'; this.style.borderColor='#B45309';" onmouseout="this.style.background='#D97706'; this.style.borderColor='#D97706';">Продлить</button>
-            </div>
+            <!-- Тариф и его срок переехали в отдельный раздел «Подписка»
+                 (app.renderSubscriptionTab) — здесь баннер дублировал ту же строку -->
 
-            <div style="margin-bottom: 12px; box-sizing: border-box; width: 100%;">
+            <div class="lk-section-head"><h4>👤 Профиль</h4></div>
+
+            <div style="box-sizing: border-box; width: 100%;">
                 <div class="profile-grid" style="display: flex; gap: 15px; flex-wrap: wrap; text-align: left;">
-                    
+
                     <!-- Left Column (General info) -->
-                    <div style="flex: 1 1 340px; min-width: 300px; display: flex; flex-direction: column; justify-content: flex-start; padding: 0;">
-                        <h4 style="margin: 0 0 8px 0; color: var(--primary); font-size: 13.5px; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 4px;">Основные данные</h4>
+                    <div class="lk-card" style="flex: 1 1 100%; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start;">
+                        <div class="lk-card-label" style="margin-bottom: 10px;">Основные данные</div>
 
                         <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 8px;">
                             <div>
@@ -1615,35 +1626,54 @@
                                 <input type="date" id="profile_birth_date_input" class="auth-input" style="max-width: 100%; margin-bottom: 6px; height: 32px; font-size: 13px; padding: 6px 10px; color-scheme: light dark;">
                             </div>
                             <div>
-                                <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 2px; display: block;">Регион</label>
-                                <input type="text" id="profile_region_input" class="auth-input" placeholder="Например: Московская область" style="max-width: 100%; margin-bottom: 6px; height: 32px; font-size: 13px; padding: 6px 10px;">
+                                <!-- Промокод дистрибьютора: привязывает монтажника к поставщику и,
+                                     если у промокода задано pro_months, выдаёт тариф. Состояние
+                                     блока (поле/кнопка либо название компании) — renderProfilePromoField -->
+                                <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 2px; display: block;">Промокод</label>
+                                <div id="profile_promo_box" style="display: flex; gap: 6px; align-items: center; margin-bottom: 6px;"></div>
                             </div>
                         </div>
 
                         <div class="profile-2col-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 0 8px;">
                             <div>
                                 <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 2px; display: block;">Ваш город (для смет)</label>
-                                <input type="text" id="profile_city_input" class="auth-input" placeholder="Например: Москва" style="max-width: 100%; margin-bottom: 6px; height: 32px; font-size: 13px; padding: 6px 10px;">
+                                <input type="text" id="profile_city_input" class="auth-input" placeholder="Например: Москва" list="city_suggestions" oninput="app.autofillRegionByCity('profile_city_input', 'profile_region_input')" style="max-width: 100%; margin-bottom: 6px; height: 32px; font-size: 13px; padding: 6px 10px;">
                             </div>
                             <div>
-                                <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 2px; display: block;">Сфера деятельности</label>
-                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; height: 32px; align-items:center;">
-                                    <label class="reg-activity-chip"><input type="checkbox" id="profile_act_installer" value="Монтажник"><span>Монтажник</span></label>
-                                    <label class="reg-activity-chip"><input type="checkbox" id="profile_act_seller" value="Продавец"><span>Продавец</span></label>
-                                </div>
+                                <!-- Регион подставляется по городу (app.autofillRegionByCity); как только
+                                     пользователь правит его сам, автоподстановка для него отключается -->
+                                <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 2px; display: block;">Регион</label>
+                                <input type="text" id="profile_region_input" class="auth-input" placeholder="Подставится по городу" oninput="app.markRegionEdited(this)" style="max-width: 100%; margin-bottom: 6px; height: 32px; font-size: 13px; padding: 6px 10px;">
                             </div>
                         </div>
 
-                        <!-- Кнопка-раскрывашка блока реквизитов компании/логотипа — доступна на любом тарифе -->
-                        <button type="button" id="toggle_branding_btn" class="auth-btn-base" style="display: none; margin-top: 3px; background: var(--surface-light); border: 1px solid var(--border); color: var(--primary); font-size: 12px; max-width: 100%; height: 34px; border-radius: 8px;" onclick="app.toggleBrandingSection()">⚙️ Настроить логотип и реквизиты</button>
+                        <div>
+                            <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 2px; display: block;">Сфера деятельности</label>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:center;">
+                                <label class="reg-activity-chip"><input type="checkbox" id="profile_act_installer" value="Монтажник"><span>Монтажник</span></label>
+                                <label class="reg-activity-chip"><input type="checkbox" id="profile_act_seller" value="Продавец"><span>Продавец</span></label>
+                            </div>
+                        </div>
+
                     </div>
 
-                    <!-- Right Column (Company Branding) -->
-                    <div id="pro_profile_company_section" style="flex: 1 2 320px; min-width: 280px; display: none; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-sizing: border-box;">
-                        <h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 13.5px; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 4px;">
-                            <span>Реквизиты компании</span>
-                        </h4>
-                        
+                </div>
+            </div>
+
+            <!-- Способ входа в аккаунт и привязка Яндекс ID — заполняет app.renderProfileLoginMethod -->
+            <div id="profile_login_method"></div>
+
+            <!-- Подсказки городов для поля «Ваш город»: заполняет app.fillCitySuggestions из CITIES_DB -->
+            <datalist id="city_suggestions"></datalist>
+            </div>
+
+            <!-- Реквизиты компании — отдельный раздел меню (раньше открывались кнопкой-
+                 раскрывашкой внутри профиля). Поля сохраняются той же app.saveProfile. -->
+            <div id="profile_tab_company" style="display:none; text-align:left;">
+                <div class="lk-section-head"><h4>🏢 Реквизиты компании</h4></div>
+                <p class="lk-hint">Логотип и реквизиты попадают в шапку коммерческого предложения и в счёт.</p>
+
+                    <div class="lk-card">
                         <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Логотип компании</label>
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
                             <div id="profile_logo_preview_container" style="width: 60px; height: 38px; background: #fff; border: 1px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
@@ -1668,12 +1698,23 @@
                         <label style="font-size: 11px; color: var(--text-sec); font-weight: 600; margin-bottom: 3px; display: block;">Банковские реквизиты</label>
                         <textarea id="profile_company_bank" class="auth-input" style="height: 44px; resize: none; font-size: 11px; padding: 6px; font-family: inherit; max-width: 100%; margin-bottom: 8px;" placeholder="ИНН 7729646148..."></textarea>
 
-                        <button type="button" class="auth-btn-base btn-email-submit" onclick="app.resetCompanyDetails()" style="margin: 3px auto 0 auto; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border); font-size: 10px; height: 28px; padding: 0 8px; max-width: 100%; border-radius: 6px;">Сбросить реквизиты по умолчанию</button>
+                        <button type="button" class="lk-btn-sm" style="margin-top: 4px;" onclick="app.resetCompanyDetails()">Сбросить реквизиты по умолчанию</button>
                     </div>
+            </div>
 
+            <div id="profile_tab_subscription" style="display:none; text-align:left;"></div>
+
+            <!-- Список сохранённых смет: тот же рендер, что и в отдельной модалке
+                 «Сохранённые сметы» (app.renderCloudList пишет в активный контейнер) -->
+            <div id="profile_tab_objects" style="display:none; text-align:left;">
+                <div class="lk-section-head">
+                    <h4>📁 Мои объекты</h4>
+                    <button type="button" class="lk-btn-sm" onclick="app.setProfileTab('objects')">↻ Обновить</button>
                 </div>
+                <div id="profile_cloud_list_content"></div>
             </div>
-            </div>
+
+            <div id="profile_tab_orders" style="display:none; text-align:left;"></div>
 
             <div id="profile_tab_manager" style="display:none; text-align:left;"></div>
 
@@ -1685,10 +1726,13 @@
 
             <div id="profile_modal_footer_requisites" style="flex-shrink: 0; border-top: 1px solid var(--border); padding-top: 10px; display: flex; justify-content: center; gap: 10px; width: 100%;">
                 <button class="auth-btn-base btn-email-submit" style="margin: 0; max-width: 180px; height: 36px; font-size: 13px;" onclick="app.saveProfile()">Сохранить</button>
-                <button class="auth-btn-base" style="margin: 0; max-width: 110px; height: 36px; font-size: 13px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border);" onclick="app.closeProfileModal()">Отмена</button>
+                <button id="profile_cancel_btn" class="auth-btn-base" style="margin: 0; max-width: 110px; height: 36px; font-size: 13px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border);" onclick="app.closeProfileModal()">Отмена</button>
             </div>
             <div id="profile_modal_footer_other" style="display:none; flex-shrink: 0; border-top: 1px solid var(--border); padding-top: 10px; justify-content: center; gap: 10px; width: 100%;">
                 <button class="auth-btn-base" style="margin: 0; max-width: 140px; height: 36px; font-size: 13px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border);" onclick="app.closeProfileModal()">Закрыть</button>
+            </div>
+
+            </div>
             </div>
         </div>
     </div>

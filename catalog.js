@@ -1315,19 +1315,45 @@ const catalog = {
         { id: "SWH-4110-050500", name: "Бойлер напольный 500л (нержавейка) DUPLEX", vol: 500, price: 213015, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RWH-2110-000500", name: "RWH-2110-000500 ROMMER GT бойлер косвенного нагрева напольный 500 л, 60 кВт,  без возм. уст. ТЭН", price: 149437, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" } }
     ],
     exp_dhw: [
-        { id: "STW-0015-000012", name: "Расширительный бак для ГВС 12л", vol: 12, price: 2882, availability: "in_stock", price_date: "2026-07-29" },
-        { id: "STW-0015-000018", name: "Расширительный бак для ГВС 18л", vol: 18, price: 3316, availability: "in_stock", price_date: "2026-07-29" },
-        { id: "STW-0015-000024", name: "Расширительный бак для ГВС 24л", vol: 24, price: 3614, availability: "in_stock", price_date: "2026-07-29" }
+        { id: "STW-0015-000012", name: "Расширительный бак для ГВС 12л", vol: 12, color: "white", conn: "3/4", price: 2882, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STW-0015-000018", name: "Расширительный бак для ГВС 18л", vol: 18, color: "white", conn: "3/4", price: 3316, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STW-0015-000024", name: "Расширительный бак для ГВС 24л", vol: 24, color: "white", conn: "3/4", price: 3614, availability: "in_stock", price_date: "2026-07-29" }
+    ],
+    // Пул таблицы замены бака ГВС (app.expTankPool('dhw') = exp_dhw + этот массив).
+    // Здесь только те артикулы, которых нет в exp_dhw, чтобы автоподбор бака (он идёт
+    // строго по exp_dhw) не поехал от добавления новых типоразмеров.
+    // Белый ряд — баки для ГВС (STW-0015), синий — гидроаккумуляторы водоснабжения
+    // (STW-0001). Резьба: 8 и 12 л — 3/4", синие 20 и 24 л — 1".
+    exp_dhw_alts: [
+        { id: "STW-0015-000008", name: "Расширительный бак для ГВС 8л", vol: 8, color: "white", conn: "3/4", price: 2654, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STW-0001-000008", name: "Расширительный бак гидроаккумулятор 8 л (синий)", vol: 8, color: "blue", conn: "3/4", price: 2527, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STW-0001-000012", name: "Расширительный бак гидроаккумулятор 12 л (синий)", vol: 12, color: "blue", conn: "3/4", price: 2744, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STW-0001-000020", name: "Расширительный бак гидроаккумулятор 20 л (синий)", vol: 20, color: "blue", conn: "1", price: 3158, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STW-0001-100020", name: "Расширительный бак гидроаккумулятор 20 л горизонтальный (синий)", vol: 20, color: "blue", conn: "1", price: 3576, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STW-0001-000024", name: "Расширительный бак гидроаккумулятор 24 л (синий)", vol: 24, color: "blue", conn: "1", price: 3442, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
     ],
     exp_heating: [
-        { id: "STH-0004-000018", name: "Расширительный бак для отопления 18л", vol: 18, price: 2897, availability: "in_stock", price_date: "2026-07-29" },
-        { id: "STH-0006-000024", name: "Расширительный бак для отопления 24л", vol: 24, price: 3050, availability: "in_stock", price_date: "2026-07-29" },
-        { id: "STH-0006-000050", name: "Расширительный бак для отопления 50л", vol: 50, price: 6764, availability: "in_stock", price_date: "2026-07-29" },
-        { id: "STH-0006-000080", name: "Расширительный бак для отопления 80л", vol: 80, price: 10836, availability: "in_stock", price_date: "2026-07-29" },
-        { id: "STH-0006-000100", name: "Расширительный бак для отопления 100л", vol: 100, price: 12642, availability: "in_stock", price_date: "2026-07-29" }
+        { id: "STH-0004-000018", name: "Расширительный бак для отопления 18л", vol: 18, color: "red", conn: "3/4", price: 2897, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STH-0006-000024", name: "Расширительный бак для отопления 24л", vol: 24, color: "red", conn: "1", price: 3050, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STH-0006-000050", name: "Расширительный бак для отопления 50л", vol: 50, color: "red", conn: "1", price: 6764, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STH-0006-000080", name: "Расширительный бак для отопления 80л", vol: 80, color: "red", conn: "1", price: 10836, availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STH-0006-000100", name: "Расширительный бак для отопления 100л", vol: 100, color: "red", conn: "1", price: 12642, availability: "in_stock", price_date: "2026-07-29" }
+    ],
+    // Пул таблицы замены бака отопления (app.expTankPool('heat') = exp_heating + этот
+    // массив). Красный ряд STOUT целиком: до 18 л — с диафрагмой (STH-0004), 35 л —
+    // STH-0005, от 24 л — со сменной мембраной (STH-0006). Резьба: до 18 л — 3/4",
+    // дальше 1". Баки от 500 л не берём: там уже 1 1/2" и другая обвязка.
+    exp_heating_alts: [
+        { id: "STH-0004-000005", name: "Расширительный бак для отопления 5л", vol: 5, color: "red", conn: "3/4", price: 2400, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STH-0004-000008", name: "Расширительный бак для отопления 8л", vol: 8, color: "red", conn: "3/4", price: 2424, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STH-0004-000012", name: "Расширительный бак для отопления 12л", vol: 12, color: "red", conn: "3/4", price: 2505, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STH-0005-000035", name: "Расширительный бак для отопления 35л", vol: 35, color: "red", conn: "1", price: 6253, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STH-0006-000150", name: "Расширительный бак для отопления 150л", vol: 150, color: "red", conn: "1", price: 20626, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STH-0006-000200", name: "Расширительный бак для отопления 200л", vol: 200, color: "red", conn: "1", price: 27280, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "STH-0006-000300", name: "Расширительный бак для отопления 300л", vol: 300, color: "red", conn: "1", price: 35486, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
     ],
     tank_mount: { id: "SAC-0030-000825", name: "Крепление для бака", price: 1266, availability: "in_stock", price_date: "2026-07-29" },
-    tank_kit: { id: "RVS-0008-002020", name: "Комплект подключения мембранного бака", price: 1436, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
+    tank_kit: { id: "SVS-0008-012020", name: "Комплект подключения мембранного бака", price: 1990, brand: "STOUT", availability: "in_stock", price_date: "2026-08-07", rommer: { id: "RVS-0008-002020", name: "Комплект подключения мембранного бака", price: 1436, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
     rads: [
         { id: "SRB-0320-050004", name: "Радиатор Space 4 секций", sec: 4, price: 6457, power50: 117, rommer: { id: "RAL-0210-050004", name: "Радиатор Optima 4 секций", price: 2743, brand: "ROMMER", power50: 117, availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SRB-0320-050005", name: "Радиатор Space 5 секций", sec: 5, price: 7528, power50: 117, availability: "in_stock", price_date: "2026-07-29" },
@@ -1522,6 +1548,57 @@ const catalog = {
         { id: "SMB-6850-013404", name: "Коллекторный блок 1\" x 4 вых", loops: 4, price: 5511, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RMS-1001-030001", name: "Комплект прямых шаровых кранов с термометрами 1”", price: 6212, brand: "ROMMER", availability: "in_stock", price_date: "2026-06-27" } }
     ],
     manifold_brackets: { id: "SMB-0002-000002", name: "Кронштейны для коллекторов (пара)", price: 797, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+    // === КОЛЛЕКТОРНЫЕ ШКАФЫ ===
+    // outs — паспортное число выходов, inner — ВНУТРЕННЯЯ ширина корпуса (мм).
+    // Подбираем по inner, а не по outs: сноска в паспорте STOUT SCC (ред. 2026) гласит,
+    // что outs указано для коллектора БЕЗ запорной и сливной гарнитуры. Комплектный блок
+    // на 10 выходов длиной 712 мм в ШРН-3 (внутри 670 мм) не входит — см. app.pickCabinet().
+    cabinets_shrn: [
+        { id: "SCC-0001-000013", name: "Шкаф распределительный наружный ШРН-0 (1–3 вых.)", sizeName: "ШРН-0", outs: [1, 3], inner: 330, innerH: 560, innerD: 120, price: 3804, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0001-000013", name: "Шкаф распределительный наружный ШРН-0 (1–3 вых.)", price: 3084, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0001-000045", name: "Шкаф распределительный наружный ШРН-1 (4–5 вых.)", sizeName: "ШРН-1", outs: [4, 5], inner: 420, innerH: 560, innerD: 120, price: 4334, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0001-000045", name: "Шкаф распределительный наружный ШРН-1 (4–5 вых.)", price: 3513, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0001-000067", name: "Шкаф распределительный наружный ШРН-2 (6–7 вых.)", sizeName: "ШРН-2", outs: [6, 7], inner: 520, innerH: 560, innerD: 120, price: 4635, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0001-000067", name: "Шкаф распределительный наружный ШРН-2 (6–7 вых.)", price: 3757, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0001-000810", name: "Шкаф распределительный наружный ШРН-3 (8–10 вых.)", sizeName: "ШРН-3", outs: [8, 10], inner: 670, innerH: 560, innerD: 120, price: 5418, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0001-000810", name: "Шкаф распределительный наружный ШРН-3 (8–10 вых.)", price: 4391, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0001-001112", name: "Шкаф распределительный наружный ШРН-4 (11–12 вых.)", sizeName: "ШРН-4", outs: [11, 12], inner: 820, innerH: 560, innerD: 120, price: 6924, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0001-001112", name: "Шкаф распределительный наружный ШРН-4 (11–12 вых.)", price: 5612, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0001-001316", name: "Шкаф распределительный наружный ШРН-5 (13–16 вых.)", sizeName: "ШРН-5", outs: [13, 16], inner: 970, innerH: 560, innerD: 120, price: 8142, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0001-001316", name: "Шкаф распределительный наружный ШРН-5 (13–16 вых.)", price: 6600, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0001-001718", name: "Шкаф распределительный наружный ШРН-6 (17–18 вых.)", sizeName: "ШРН-6", outs: [17, 18], inner: 1120, innerH: 560, innerD: 120, price: 9078, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0001-001718", name: "Шкаф распределительный наружный ШРН-6 (17–18 вых.)", price: 7358, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0001-001920", name: "Шкаф распределительный наружный ШРН-7 (19–20 вых.)", sizeName: "ШРН-7", outs: [19, 20], inner: 1270, innerH: 560, innerD: 120, price: 10767, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
+    ],
+    cabinets_shrv: [
+        { id: "SCC-0002-000013", name: "Шкаф распределительный встроенный ШРВ-0 (1–3 вых.)", sizeName: "ШРВ-0", outs: [1, 3], inner: 354, innerH: 490, innerD: 121, price: 4614, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0002-000013", name: "Шкаф распределительный встроенный ШРВ-0 (1–3 вых.)", price: 3740, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0002-000045", name: "Шкаф распределительный встроенный ШРВ-1 (4–5 вых.)", sizeName: "ШРВ-1", outs: [4, 5], inner: 444, innerH: 490, innerD: 121, price: 4968, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0002-000045", name: "Шкаф распределительный встроенный ШРВ-1 (4–5 вых.)", price: 4027, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0002-000067", name: "Шкаф распределительный встроенный ШРВ-2 (6–7 вых.)", sizeName: "ШРВ-2", outs: [6, 7], inner: 544, innerH: 490, innerD: 121, price: 5269, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0002-000067", name: "Шкаф распределительный встроенный ШРВ-2 (6–7 вых.)", price: 4271, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0002-000810", name: "Шкаф распределительный встроенный ШРВ-3 (8–10 вых.)", sizeName: "ШРВ-3", outs: [8, 10], inner: 694, innerH: 490, innerD: 121, price: 6030, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0002-000810", name: "Шкаф распределительный встроенный ШРВ-3 (8–10 вых.)", price: 4888, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0002-001112", name: "Шкаф распределительный встроенный ШРВ-4 (11–12 вых.)", sizeName: "ШРВ-4", outs: [11, 12], inner: 844, innerH: 490, innerD: 121, price: 7620, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0002-001112", name: "Шкаф распределительный встроенный ШРВ-4 (11–12 вых.)", price: 6176, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0002-001316", name: "Шкаф распределительный встроенный ШРВ-5 (13–16 вых.)", sizeName: "ШРВ-5", outs: [13, 16], inner: 994, innerH: 490, innerD: 121, price: 8937, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0002-001316", name: "Шкаф распределительный встроенный ШРВ-5 (13–16 вых.)", price: 7244, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0002-001718", name: "Шкаф распределительный встроенный ШРВ-6 (17–18 вых.)", sizeName: "ШРВ-6", outs: [17, 18], inner: 1144, innerH: 490, innerD: 121, price: 9777, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", rommer: { id: "RCM-0002-001718", name: "Шкаф распределительный встроенный ШРВ-6 (17–18 вых.)", price: 7925, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+        { id: "SCC-0002-001920", name: "Шкаф распределительный встроенный ШРВ-7 (19–20 вых.)", sizeName: "ШРВ-7", outs: [19, 20], inner: 1294, innerH: 490, innerD: 121, price: 11823, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
+    ],
+    // Углублённый (180 мм) — единственная серия, куда по глубине входит насосно-смесительный
+    // узел. Встроенного углублённого у STOUT нет: у ШРВ раздвигается глубина УСТАНОВКИ
+    // в стене (125→195), а внутренняя глубина корпуса остаётся 121 мм.
+    // ВАЖНО: у SCC-1003 нет боковой перфорации — только нижнее подключение труб.
+    cabinets_shrn180: [
+        { id: "SCC-1003-000013", imgId: "SCC-1003-000810", name: "Шкаф распределительный наружный углублённый ШРН-180-0 (1–3 вых.)", sizeName: "ШРН-180-0", outs: [1, 3], inner: 328, innerH: 560, innerD: 178, price: 10302, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SCC-1003-000045", imgId: "SCC-1003-000810", name: "Шкаф распределительный наружный углублённый ШРН-180-1 (4–5 вых.)", sizeName: "ШРН-180-1", outs: [4, 5], inner: 418, innerH: 560, innerD: 178, price: 10998, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SCC-1003-000067", name: "Шкаф распределительный наружный углублённый ШРН-180-2 (6–7 вых.)", sizeName: "ШРН-180-2", outs: [6, 7], inner: 518, innerH: 560, innerD: 178, price: 12008, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SCC-1003-000810", name: "Шкаф распределительный наружный углублённый ШРН-180-3 (8–10 вых.)", sizeName: "ШРН-180-3", outs: [8, 10], inner: 668, innerH: 560, innerD: 178, price: 14165, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SCC-1003-001112", name: "Шкаф распределительный наружный углублённый ШРН-180-4 (11–12 вых.)", sizeName: "ШРН-180-4", outs: [11, 12], inner: 818, innerH: 560, innerD: 178, price: 16844, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SCC-1003-001316", name: "Шкаф распределительный наружный углублённый ШРН-180-5 (13–16 вых.)", sizeName: "ШРН-180-5", outs: [13, 16], inner: 968, innerH: 560, innerD: 178, price: 19093, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SCC-1003-001718", name: "Шкаф распределительный наружный углублённый ШРН-180-6 (17–18 вых.)", sizeName: "ШРН-180-6", outs: [17, 18], inner: 1118, innerH: 560, innerD: 178, price: 20490, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SCC-1003-001920", name: "Шкаф распределительный наружный углублённый ШРН-180-7 (19–20 вых.)", sizeName: "ШРН-180-7", outs: [19, 20], inner: 1268, innerH: 560, innerD: 178, price: 22611, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
+    ],
+    // Эконом-серия наружных шкафов. Паспорта с внутренними размерами у неё нет,
+    // поэтому inner — оценка «наружная ширина минус 34 мм» (разница корпуса и просвета
+    // у SCC-0001 постоянна и равна 34–35 мм). Диапазоны выходов свои, не как у SCC-0001.
+    cabinets_shrn_eco: [
+        { id: "SSC-0004-000045", imgId: "SCC-0001-000045", name: "Шкаф распределительный наружный ШРН-1 эконом (1–3 вых.)", sizeName: "ШРН-1 эконом", outs: [1, 3], inner: 416, innerApprox: true, innerH: 560, innerD: 118, price: 2872, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SSC-0004-000067", imgId: "SCC-0001-000045", name: "Шкаф распределительный наружный ШРН-2 эконом (4–6 вых.)", sizeName: "ШРН-2 эконом", outs: [4, 6], inner: 516, innerApprox: true, innerH: 560, innerD: 118, price: 3094, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SSC-0004-000810", imgId: "SCC-0001-000045", name: "Шкаф распределительный наружный ШРН-3 эконом (7–9 вых.)", sizeName: "ШРН-3 эконом", outs: [7, 9], inner: 663, innerApprox: true, innerH: 560, innerD: 118, price: 3637, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SSC-0004-001112", imgId: "SCC-0001-000045", name: "Шкаф распределительный наружный ШРН-4 эконом (10–12 вых.)", sizeName: "ШРН-4 эконом", outs: [10, 12], inner: 814, innerApprox: true, innerH: 560, innerD: 118, price: 4634, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SSC-0004-001316", imgId: "SCC-0001-000045", name: "Шкаф распределительный наружный ШРН-5 эконом (13–15 вых.)", sizeName: "ШРН-5 эконом", outs: [13, 15], inner: 964, innerApprox: true, innerH: 560, innerD: 118, price: 5296, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SSC-0004-001718", imgId: "SCC-0001-000045", name: "Шкаф распределительный наружный ШРН-6 эконом (16–18 вых.)", sizeName: "ШРН-6 эконом", outs: [16, 18], inner: 1113, innerApprox: true, innerH: 560, innerD: 118, price: 6020, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "SSC-0004-001920", imgId: "SCC-0001-000045", name: "Шкаф распределительный наружный ШРН-7 эконом (19–20 вых.)", sizeName: "ШРН-7 эконом", outs: [19, 20], inner: 1266, innerApprox: true, innerH: 560, innerD: 118, price: 7888, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
+    ],
     pipes: [
         { id: "SPX-0002-101620", name: "Труба 16x2.0 (100 м)", len: 100, price: 152, rommer: { id: "RPX-0002-101620", name: "Труба PEX-a 16x2.0 (100 м)", price: 80, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SPX-0002-501620", name: "Труба 16x2.0 (500 м)", len: 500, price: 152, rommer: { id: "RPX-0002-501620", name: "Труба PEX-a 16x2.0 (500 м)", price: 80, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" }
@@ -2149,9 +2226,16 @@ const catalog = {
         { id: "SFA-0037-300000", name: "Наклейки \"ВОДОСНАБЖЕНИЕ\"", price: 872, availability: "in_stock", price_date: "2026-07-29" },
         { id: "SFA-0035-100016", name: "Защитная втулка синяя 16мм", price: 56, availability: "in_stock", price_date: "2026-07-29" },
         { id: "SFA-0035-200016", name: "Защитная втулка красная 16мм", price: 56, availability: "in_stock", price_date: "2026-07-29" },
-        { id: "M571-VE-01", name: "Инсталляция с кнопкой хром глянцевая и шумоизоляцией", price: 31648, brand: "AlcaPlast", availability: "in_stock", price_date: "2026-07-12" },
         { id: "SFA-0020-000016", name: "Гильза монтажная 16 (аксиальная)", price: 109, brand: "STOUT", rommer: { id: "RFA-0020-000016", name: "Монтажная гильза 16", price: 70, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SFC-0020-002020", name: "Евроконус 20x2.0 (для коллектора)", price: 371, availability: "in_stock", price_date: "2026-07-29" }
+    ],
+    // Компенсатор гидроудара: 1/2" НР, 1–10 бар рабочее, пик до 50 бар, среда до 90 °C.
+    // По паспорту ставится на распределительных коллекторах ХВС/ГВС либо возле точки
+    // водоразбора; монтаж только вертикально вверх или горизонтально. Торец коллектора
+    // 3/4" ВР (туда же идёт заглушка SFT-0024-000034), поэтому нужна футорка 3/4"НР х 1/2"ВР.
+    water_hammer_arrestors: [
+        { id: "SVS-1014-000015", name: "Компенсатор гидроудара 1/2\" НР, хром", price: 2582, brand: "STOUT", availability: "in_stock", price_date: "2026-08-07", rommer: { id: "RVS-1001-000015", name: "Компенсатор гидроудара мембранный 1/2\" НР, никель", price: 1484, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-07" } },
+        { id: "SFT-0029-003412", name: "Футорка 3/4\" x 1/2\"", price: 156, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
     ],
     water_input_node: [
         { id: "SFT-0045-000034", name: "Сгон прямой 3/4\" ВР-НР", price: 583, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
@@ -2202,6 +2286,96 @@ const catalog = {
         { id: "SFT-0004-000134", name: "Ниппель 1\" х 3/4\" НР", price: 350, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
     ],
     plug_34: { id: "SFT-0025-000034", name: "Заглушка 3/4\" НР", price: 176, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+    // Инсталляция подвесного унитаза. По умолчанию в смету идёт готовый комплект
+    // РЕХАУ NOVAFLOW с панелью смыва NOVA QUAD 001 (белый глянец) — комплект дешевле
+    // рамы и панели по отдельности на 6%. Первая позиция списка — голая рама без
+    // панели: она помечена noCheapen, потому что режим «Аналог» иначе подставил бы её
+    // как самую дешёвую, а это другая комплектация, а не другой бренд. Выбор голой
+    // рамы добавляет в смету вторую строку — панель смыва из flush_panels.
+    installations: [
+        { id: "19101011001", name: "Инсталляция NOVAFLOW для подвесного унитаза (без панели)", price: 23116, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", noCheapen: true },
+        { id: "19101021001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA QUAD 001, белый глянец", price: 24536, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "QUAD", color: "white" },
+        { id: "19101031001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA QUAD 001, хром глянец", price: 27172, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "QUAD", color: "chrome" },
+        { id: "19101041001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA QUAD 001, чёрный мат", price: 26868, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "QUAD", color: "black" },
+        { id: "19101051001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA ORB 001, белый глянец", price: 24536, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ORB", color: "white" },
+        { id: "19101061001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA ORB 001, хром глянец", price: 27172, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ORB", color: "chrome" },
+        { id: "19101071001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA ORB 001, чёрный мат", price: 26868, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ORB", color: "black" },
+        { id: "19101081001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA ELLIPSE 001, белый глянец", price: 24536, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ELLIPSE", color: "white" },
+        { id: "19101091001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA ELLIPSE 001, хром глянец", price: 27172, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ELLIPSE", color: "chrome" },
+        { id: "19101101001", name: "Комплект: инсталляция NOVAFLOW + панель NOVA ELLIPSE 001, чёрный мат", price: 26868, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ELLIPSE", color: "black" },
+        { id: "M571-VE-01", name: "Инсталляция с кнопкой хром глянцевая и шумоизоляцией", price: 31648, brand: "AlcaPlast", availability: "in_stock", price_date: "2026-07-12" }
+    ],
+    // Панели смыва РЕХАУ: нужны только при выборе инсталляции без панели.
+    flush_panels: [
+        { id: "19102011001", name: "Панель смыва NOVA QUAD 001, белый глянец", price: 2914, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "QUAD", color: "white", panelMat: "plastic" },
+        { id: "19102021001", name: "Панель смыва NOVA QUAD 001, хром глянец", price: 5819, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "QUAD", color: "chrome", panelMat: "plastic" },
+        { id: "19102031001", name: "Панель смыва NOVA QUAD 001, серебро мат", price: 5445, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "QUAD", color: "silver", panelMat: "plastic" },
+        { id: "19102041001", name: "Панель смыва NOVA QUAD 001, графитовый мат", price: 5445, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "QUAD", color: "graphite", panelMat: "plastic" },
+        { id: "19102051001", name: "Панель смыва NOVA QUAD 001, чёрный мат", price: 5445, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "QUAD", color: "black", panelMat: "plastic" },
+        { id: "19102061001", name: "Панель смыва NOVA QUAD 001, золотой мат", price: 5445, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "QUAD", color: "gold", panelMat: "plastic" },
+        { id: "19102071001", name: "Панель смыва NOVA QUAD 001, розовое золото мат", price: 5445, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "QUAD", color: "rose", panelMat: "plastic" },
+        { id: "19102101001", name: "Панель смыва NOVA ELLIPSE 001, белый глянец", price: 2864, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ELLIPSE", color: "white", panelMat: "plastic" },
+        { id: "19102111001", name: "Панель смыва NOVA ELLIPSE 001, хром глянец", price: 5819, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ELLIPSE", color: "chrome", panelMat: "plastic" },
+        { id: "19102121001", name: "Панель смыва NOVA ELLIPSE 001, серебро мат", price: 5445, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ELLIPSE", color: "silver", panelMat: "plastic" },
+        { id: "19102131001", name: "Панель смыва NOVA ELLIPSE 001, графитовый мат", price: 5445, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ELLIPSE", color: "graphite", panelMat: "plastic" },
+        { id: "19102141001", name: "Панель смыва NOVA ELLIPSE 001, чёрный мат", price: 5445, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ELLIPSE", color: "black", panelMat: "plastic" },
+        { id: "19102151001", name: "Панель смыва NOVA ELLIPSE 001, золотой мат", price: 5445, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ELLIPSE", color: "gold", panelMat: "plastic" },
+        { id: "19102161001", name: "Панель смыва NOVA ELLIPSE 001, розовое золото мат", price: 5445, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ELLIPSE", color: "rose", panelMat: "plastic" },
+        { id: "19102201001", name: "Панель смыва NOVA ORB 001, белый глянец", price: 2864, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ORB", color: "white", panelMat: "plastic" },
+        { id: "19102211001", name: "Панель смыва NOVA ORB 001, хром глянец", price: 5715, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ORB", color: "chrome", panelMat: "plastic" },
+        { id: "19102221001", name: "Панель смыва NOVA ORB 001, серебро мат", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ORB", color: "silver", panelMat: "plastic" },
+        { id: "19102231001", name: "Панель смыва NOVA ORB 001, графитовый мат", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ORB", color: "graphite", panelMat: "plastic" },
+        { id: "19102241001", name: "Панель смыва NOVA ORB 001, чёрный мат", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ORB", color: "black", panelMat: "plastic" },
+        { id: "19102251001", name: "Панель смыва NOVA ORB 001, золотой мат", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ORB", color: "gold", panelMat: "plastic" },
+        { id: "19102261001", name: "Панель смыва NOVA ORB 001, розовое золото мат", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ORB", color: "rose", panelMat: "plastic" },
+        { id: "19102301001", name: "Панель смыва NOVA LONG 001, белый глянец", price: 2864, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "white", panelMat: "plastic" },
+        { id: "19102311001", name: "Панель смыва NOVA LONG 001, белый глянец, клавиши хром глянец", price: 2864, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "white", panelMat: "plastic" },
+        { id: "19102321001", name: "Панель смыва NOVA LONG 001, хром глянец", price: 5715, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "chrome", panelMat: "plastic" },
+        { id: "19102331001", name: "Панель смыва NOVA LONG 001, серебро мат", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "silver", panelMat: "plastic" },
+        { id: "19102341001", name: "Панель смыва NOVA LONG 001, графитовый мат", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "graphite", panelMat: "plastic" },
+        { id: "19102351001", name: "Панель смыва NOVA LONG 001, чёрный мат", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "black", panelMat: "plastic" },
+        { id: "19102361001", name: "Панель смыва NOVA LONG 001, чёрный мат, контур клавиш хром глянец", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "black", panelMat: "plastic" },
+        { id: "19102371001", name: "Панель смыва NOVA LONG 001, золотой мат", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "gold", panelMat: "plastic" },
+        { id: "19102381001", name: "Панель смыва NOVA LONG 001, розовое золото мат", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "rose", panelMat: "plastic" },
+        { id: "19102401001", name: "Панель смыва NOVA ELLIPSE 002, белый глянец, контур клавиш хром глянец", price: 2864, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ELLIPSE", color: "white", panelMat: "plastic" },
+        { id: "19102411001", name: "Панель смыва NOVA ELLIPSE 002, хром глянец, контур клавиш хром глянец", price: 5715, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ELLIPSE", color: "chrome", panelMat: "plastic" },
+        { id: "19102421001", name: "Панель смыва NOVA ELLIPSE 002, серебро мат, контур клавиш хром глянец", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ELLIPSE", color: "silver", panelMat: "plastic" },
+        { id: "19102431001", name: "Панель смыва NOVA ELLIPSE 002, графитовый мат, контур клавиш хром глянец", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ELLIPSE", color: "graphite", panelMat: "plastic" },
+        { id: "19102441001", name: "Панель смыва NOVA ELLIPSE 002, чёрный мат, контур клавиш хром глянец", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ELLIPSE", color: "black", panelMat: "plastic" },
+        { id: "19102451001", name: "Панель смыва NOVA ELLIPSE 002, золотой мат, контур клавиш хром глянец", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ELLIPSE", color: "gold", panelMat: "plastic" },
+        { id: "19102461001", name: "Панель смыва NOVA ELLIPSE 002, розовое золото мат, контур клавиш хром глянец", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ELLIPSE", color: "rose", panelMat: "plastic" },
+        { id: "19102501001", name: "Панель смыва NOVA LONG 002, белый глянец, нижняя полоса клавиш хром глянец", price: 2864, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "white", panelMat: "plastic" },
+        { id: "19102511001", name: "Панель смыва NOVA LONG 002, хром глянец, нижняя полоса клавиш хром глянец", price: 5715, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "chrome", panelMat: "plastic" },
+        { id: "19102521001", name: "Панель смыва NOVA LONG 002, серебро мат, нижняя полоса клавиш хром глянец", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "silver", panelMat: "plastic" },
+        { id: "19102531001", name: "Панель смыва NOVA LONG 002, графитовый матовый, нижняя полоса клавиш хром глянец", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "graphite", panelMat: "plastic" },
+        { id: "19102541001", name: "Панель смыва NOVA LONG 002, чёрный мат, нижняя полоса клавиш хром глянец", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "black", panelMat: "plastic" },
+        { id: "19102551001", name: "Панель смыва NOVA LONG 002, золотой мат, нижняя полоса клавиш хром глянец", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "gold", panelMat: "plastic" },
+        { id: "19102561001", name: "Панель смыва NOVA LONG 002, розовое золото, нижняя полоса клавиш хром глянец", price: 5349, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "LONG", color: "rose", panelMat: "plastic" },
+        { id: "19102901001", name: "Панель смыва NOVA ORB GLASS, закалённое стекло, белый, клавиши и их контур хром глянец", price: 8665, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ORB", color: "white", panelMat: "glass" },
+        { id: "19102911001", name: "Панель смыва NOVA ORB GLASS, закалённое стекло, чёрный, клавиши и их контур хром глянец", price: 8665, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ORB", color: "black", panelMat: "glass" },
+        { id: "19102921001", name: "Панель смыва NOVA ORB GLASS, закалённое стекло, красный, клавиши и их контур хром глянец", price: 8665, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ORB", color: "red", panelMat: "glass" },
+        { id: "19102601001", name: "Панель смыва NOVA ORB STEEL, нержавеющая сталь, брашированная мат", price: 7227, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ORB", color: "steel", panelMat: "steel" },
+        { id: "19102611001", name: "Панель смыва NOVA ORB STEEL, нержавеющая сталь глянец", price: 7227, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ORB", color: "steel", panelMat: "steel" },
+        { id: "19102621001", name: "Панель смыва NOVA ORB STEEL, нержавеющая сталь, брашированный графитовый мат", price: 12167, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ORB", color: "graphite", panelMat: "steel" },
+        { id: "19102631001", name: "Панель смыва NOVA ORB STEEL, нержавеющая сталь, чёрный мат", price: 7227, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ORB", color: "black", panelMat: "steel" },
+        { id: "19102641001", name: "Панель смыва NOVA ORB STEEL, нержавеющая сталь, брашированное розовое золото мат", price: 12167, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ORB", color: "rose", panelMat: "steel" },
+        { id: "19102651001", name: "Панель смыва NOVA ORB STEEL, нержавеющая сталь, брашированное циркониевое золото мат", price: 12167, brand: "REHAU", availability: "in_stock", price_date: "2026-08-07", series: "ORB", color: "gold", panelMat: "steel" },
+        { id: "19102661001", name: "Панель смыва NOVA ORB STEEL, нержавеющая сталь, брашированное титановое золото мат", price: 12167, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "ORB", color: "gold", panelMat: "steel" },
+        { id: "19102701001", name: "Панель смыва NOVA QUAD STEEL, нержавеющая сталь, брашированная мат", price: 7227, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "QUAD", color: "steel", panelMat: "steel" },
+        { id: "19102711001", name: "Панель смыва NOVA QUAD STEEL, нержавеющая сталь глянец", price: 7227, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "QUAD", color: "steel", panelMat: "steel" },
+        { id: "19102721001", name: "Панель смыва NOVA QUAD STEEL, нержавеющая сталь, брашированный графитовый мат", price: 12167, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "QUAD", color: "graphite", panelMat: "steel" },
+        { id: "19102731001", name: "Панель смыва NOVA QUAD STEEL, нержавеющая сталь, чёрный мат", price: 7227, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "QUAD", color: "black", panelMat: "steel" },
+        { id: "19102741001", name: "Панель смыва NOVA QUAD STEEL, нержавеющая сталь, брашированное розовое золото мат", price: 12167, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "QUAD", color: "rose", panelMat: "steel" },
+        { id: "19102751001", name: "Панель смыва NOVA QUAD STEEL, нержавеющая сталь, брашированное циркониевое золото мат", price: 12167, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "QUAD", color: "gold", panelMat: "steel" },
+        { id: "19102761001", name: "Панель смыва NOVA QUAD STEEL, нержавеющая сталь, брашированное титановое золото мат", price: 12167, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "QUAD", color: "gold", panelMat: "steel" },
+        { id: "19102801001", name: "Панель смыва NOVA PUBLIC антивандальная, нержавеющая сталь, брашированная мат", price: 10138, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "PUBLIC", color: "steel", panelMat: "steel" },
+        { id: "19102811001", name: "Панель смыва NOVA PUBLIC антивандальная, нержавеющая сталь глянец", price: 10138, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "PUBLIC", color: "steel", panelMat: "steel" },
+        { id: "19102821001", name: "Панель смыва NOVA PUBLIC антивандальная, нержавеющая сталь, брашированный графитовый мат", price: 14195, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "PUBLIC", color: "graphite", panelMat: "steel" },
+        { id: "19102831001", name: "Панель смыва NOVA PUBLIC антивандальная, нержавеющая сталь, чёрный мат", price: 14195, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "PUBLIC", color: "black", panelMat: "steel" },
+        { id: "19102841001", name: "Панель смыва NOVA PUBLIC антивандальная, нержавеющая сталь, брашированное розовое золото мат", price: 14195, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "PUBLIC", color: "rose", panelMat: "steel" },
+        { id: "19102851001", name: "Панель смыва NOVA PUBLIC антивандальная, нержавеющая сталь, брашированное циркониевое золото мат", price: 14195, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "PUBLIC", color: "gold", panelMat: "steel" },
+        { id: "19102861001", name: "Панель смыва NOVA PUBLIC антивандальная, нержавеющая сталь, брашированное титановое золото мат", price: 14195, brand: "REHAU", availability: "on_order", price_date: "2026-08-07", series: "PUBLIC", color: "gold", panelMat: "steel" }
+    ],
     sewer_silent: [
         { id: "SKB-0002-110100", name: "Труба канализационная бесшумная D 110 L 1000", price: 2349, brand: "STOUT", availability: "in_stock", rommer: { id: "500089", article: "500089", name: "Труба кан. ПП D 110 L 1000", price: 589, brand: "Sinikon" }, comfort: { id: "500089K", article: "500089.K", name: "Труба кан. D 110 L 1000 Comfort", price: 940, brand: "Sinikon" }, price_date: "2026-06-27" },
         { id: "SKB-0002-110200", name: "Труба канализационная бесшумная D 110 L 2000", price: 4334, brand: "STOUT", availability: "in_stock", rommer: { id: "500093", article: "500093", name: "Труба кан. ПП D 110 L 2000", price: 935, brand: "Sinikon" }, comfort: { id: "500093K", article: "500093.K", name: "Труба кан. D 110 L 2000 Comfort", price: 1550, brand: "Sinikon" }, price_date: "2026-06-27" },
@@ -4608,3 +4782,167 @@ const towelWarmersElectric = [
     { id: "SHQ-J8RR-F08050", name: "Полотенцесушитель эл. JAZZ round 80×50, Золотой хром (с полкой)", price: 24939, series: "JAZZ", shape: "round", size: "80×50", color: "gold", shelf: true, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
     { id: "SHQ-R8R0-012008", name: "Полотенцесушитель эл. ROCK round 120×08, Золотой хром (2 опоры)", price: 19416, series: "ROCK", shape: "round", size: "120×08", color: "gold", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" }
 ];
+
+// Город → регион для автоподстановки в анкете (app.autofillRegionByCity).
+// Ключ — название города в нижнем регистре, «ё» приведена к «е». Одноимённые города
+// разных регионов (Железногорск, Светлогорск и т.п.) сюда сознательно не включены:
+// подставить один из двух наугад хуже, чем оставить поле пустым — пользователь допишет сам.
+const CITY_REGION_MAP = {
+    // Города федерального значения
+    "москва": "Москва", "зеленоград": "Москва", "санкт-петербург": "Санкт-Петербург", "севастополь": "Севастополь",
+    // Административные центры субъектов РФ
+    "абакан": "Республика Хакасия", "анадырь": "Чукотский автономный округ", "архангельск": "Архангельская область",
+    "астрахань": "Астраханская область", "барнаул": "Алтайский край", "белгород": "Белгородская область",
+    "биробиджан": "Еврейская автономная область", "благовещенск": "Амурская область", "брянск": "Брянская область",
+    "великий новгород": "Новгородская область", "владивосток": "Приморский край", "владикавказ": "Республика Северная Осетия — Алания",
+    "владимир": "Владимирская область", "волгоград": "Волгоградская область", "вологда": "Вологодская область",
+    "воронеж": "Воронежская область", "горно-алтайск": "Республика Алтай", "грозный": "Чеченская Республика",
+    "екатеринбург": "Свердловская область", "иваново": "Ивановская область", "ижевск": "Удмуртская Республика",
+    "иркутск": "Иркутская область", "йошкар-ола": "Республика Марий Эл", "казань": "Республика Татарстан",
+    "калининград": "Калининградская область", "калуга": "Калужская область", "кемерово": "Кемеровская область",
+    "киров": "Кировская область", "кострома": "Костромская область", "краснодар": "Краснодарский край",
+    "красноярск": "Красноярский край", "курган": "Курганская область", "курск": "Курская область",
+    "кызыл": "Республика Тыва", "липецк": "Липецкая область", "магадан": "Магаданская область",
+    "магас": "Республика Ингушетия", "майкоп": "Республика Адыгея", "махачкала": "Республика Дагестан",
+    "мурманск": "Мурманская область", "нальчик": "Кабардино-Балкарская Республика", "нарьян-мар": "Ненецкий автономный округ",
+    "нижний новгород": "Нижегородская область", "новосибирск": "Новосибирская область", "омск": "Омская область",
+    "орел": "Орловская область", "оренбург": "Оренбургская область", "пенза": "Пензенская область",
+    "пермь": "Пермский край", "петрозаводск": "Республика Карелия", "петропавловск-камчатский": "Камчатский край",
+    "псков": "Псковская область", "ростов-на-дону": "Ростовская область", "рязань": "Рязанская область",
+    "салехард": "Ямало-Ненецкий автономный округ", "самара": "Самарская область", "саранск": "Республика Мордовия",
+    "саратов": "Саратовская область", "симферополь": "Республика Крым", "смоленск": "Смоленская область",
+    "ставрополь": "Ставропольский край", "сыктывкар": "Республика Коми", "тамбов": "Тамбовская область",
+    "тверь": "Тверская область", "томск": "Томская область", "тула": "Тульская область", "тюмень": "Тюменская область",
+    "улан-удэ": "Республика Бурятия", "ульяновск": "Ульяновская область", "уфа": "Республика Башкортостан",
+    "хабаровск": "Хабаровский край", "ханты-мансийск": "Ханты-Мансийский автономный округ — Югра",
+    "чебоксары": "Чувашская Республика", "челябинск": "Челябинская область", "черкесск": "Карачаево-Черкесская Республика",
+    "чита": "Забайкальский край", "элиста": "Республика Калмыкия", "южно-сахалинск": "Сахалинская область",
+    "якутск": "Республика Саха (Якутия)", "ярославль": "Ярославская область",
+    // Московская и Ленинградская области
+    "балашиха": "Московская область", "химки": "Московская область", "подольск": "Московская область",
+    "королев": "Московская область", "мытищи": "Московская область", "люберцы": "Московская область",
+    "красногорск": "Московская область", "одинцово": "Московская область", "домодедово": "Московская область",
+    "щелково": "Московская область", "пушкино": "Московская область", "раменское": "Московская область",
+    "электросталь": "Московская область", "серпухов": "Московская область", "ногинск": "Московская область",
+    "орехово-зуево": "Московская область", "сергиев посад": "Московская область", "долгопрудный": "Московская область",
+    "реутов": "Московская область", "жуковский": "Московская область", "дмитров": "Московская область",
+    "клин": "Московская область", "коломна": "Московская область", "видное": "Московская область",
+    "лобня": "Московская область", "дубна": "Московская область", "егорьевск": "Московская область",
+    "ступино": "Московская область", "чехов": "Московская область", "наро-фоминск": "Московская область",
+    "воскресенск": "Московская область", "павловский посад": "Московская область", "истра": "Московская область",
+    "солнечногорск": "Московская область", "зарайск": "Московская область", "фрязино": "Московская область",
+    "ивантеевка": "Московская область", "лыткарино": "Московская область", "можайск": "Московская область",
+    "гатчина": "Ленинградская область", "выборг": "Ленинградская область", "всеволожск": "Ленинградская область",
+    "сосновый бор": "Ленинградская область", "кириши": "Ленинградская область", "тихвин": "Ленинградская область",
+    "кингисепп": "Ленинградская область", "волхов": "Ленинградская область",
+    // Урал и Поволжье
+    "нижний тагил": "Свердловская область", "каменск-уральский": "Свердловская область", "первоуральск": "Свердловская область",
+    "серов": "Свердловская область", "асбест": "Свердловская область", "верхняя пышма": "Свердловская область",
+    "березовский": "Свердловская область", "ревда": "Свердловская область",
+    "магнитогорск": "Челябинская область", "златоуст": "Челябинская область", "миасс": "Челябинская область",
+    "копейск": "Челябинская область", "озерск": "Челябинская область",
+    "набережные челны": "Республика Татарстан", "нижнекамск": "Республика Татарстан", "альметьевск": "Республика Татарстан",
+    "зеленодольск": "Республика Татарстан", "елабуга": "Республика Татарстан",
+    "стерлитамак": "Республика Башкортостан", "салават": "Республика Башкортостан", "нефтекамск": "Республика Башкортостан",
+    "октябрьский": "Республика Башкортостан", "белорецк": "Республика Башкортостан",
+    "тольятти": "Самарская область", "сызрань": "Самарская область", "новокуйбышевск": "Самарская область",
+    "дзержинск": "Нижегородская область", "арзамас": "Нижегородская область", "саров": "Нижегородская область",
+    "энгельс": "Саратовская область", "балаково": "Саратовская область", "балашов": "Саратовская область",
+    "орск": "Оренбургская область", "новотроицк": "Оренбургская область", "бузулук": "Оренбургская область",
+    "сарапул": "Удмуртская Республика", "глазов": "Удмуртская Республика", "воткинск": "Удмуртская Республика",
+    "новочебоксарск": "Чувашская Республика", "волжск": "Республика Марий Эл", "рузаевка": "Республика Мордовия",
+    "березники": "Пермский край", "соликамск": "Пермский край", "чайковский": "Пермский край",
+    "димитровград": "Ульяновская область", "кузнецк": "Пензенская область", "кирово-чепецк": "Кировская область",
+    // Юг
+    "сочи": "Краснодарский край", "новороссийск": "Краснодарский край", "армавир": "Краснодарский край",
+    "анапа": "Краснодарский край", "геленджик": "Краснодарский край", "ейск": "Краснодарский край",
+    "туапсе": "Краснодарский край", "кропоткин": "Краснодарский край", "славянск-на-кубани": "Краснодарский край",
+    "таганрог": "Ростовская область", "шахты": "Ростовская область", "новочеркасск": "Ростовская область",
+    "волгодонск": "Ростовская область", "батайск": "Ростовская область", "азов": "Ростовская область",
+    "волжский": "Волгоградская область", "камышин": "Волгоградская область",
+    "пятигорск": "Ставропольский край", "кисловодск": "Ставропольский край", "невинномысск": "Ставропольский край",
+    "ессентуки": "Ставропольский край", "минеральные воды": "Ставропольский край", "железноводск": "Ставропольский край",
+    "георгиевск": "Ставропольский край", "буденновск": "Ставропольский край",
+    "керчь": "Республика Крым", "евпатория": "Республика Крым", "ялта": "Республика Крым",
+    "феодосия": "Республика Крым", "джанкой": "Республика Крым", "саки": "Республика Крым",
+    "дербент": "Республика Дагестан", "каспийск": "Республика Дагестан", "хасавюрт": "Республика Дагестан",
+    "буйнакск": "Республика Дагестан", "избербаш": "Республика Дагестан",
+    "гудермес": "Чеченская Республика", "урус-мартан": "Чеченская Республика", "аргун": "Чеченская Республика",
+    "назрань": "Республика Ингушетия", "малгобек": "Республика Ингушетия",
+    "моздок": "Республика Северная Осетия — Алания", "беслан": "Республика Северная Осетия — Алания",
+    "прохладный": "Кабардино-Балкарская Республика", "нарткала": "Кабардино-Балкарская Республика",
+    "баксан": "Кабардино-Балкарская Республика", "усть-джегута": "Карачаево-Черкесская Республика",
+    // Сибирь и Дальний Восток
+    "норильск": "Красноярский край", "ачинск": "Красноярский край", "канск": "Красноярский край",
+    "минусинск": "Красноярский край", "бердск": "Новосибирская область", "искитим": "Новосибирская область",
+    "северск": "Томская область", "бийск": "Алтайский край", "рубцовск": "Алтайский край",
+    "новоалтайск": "Алтайский край", "белокуриха": "Алтайский край",
+    "новокузнецк": "Кемеровская область", "прокопьевск": "Кемеровская область", "междуреченск": "Кемеровская область",
+    "ленинск-кузнецкий": "Кемеровская область", "белово": "Кемеровская область",
+    "братск": "Иркутская область", "ангарск": "Иркутская область", "усть-илимск": "Иркутская область",
+    "усолье-сибирское": "Иркутская область", "черногорск": "Республика Хакасия", "саяногорск": "Республика Хакасия",
+    "северобайкальск": "Республика Бурятия", "краснокаменск": "Забайкальский край",
+    "комсомольск-на-амуре": "Хабаровский край", "находка": "Приморский край", "уссурийск": "Приморский край",
+    "артем": "Приморский край", "белогорск": "Амурская область", "свободный": "Амурская область",
+    "холмск": "Сахалинская область", "корсаков": "Сахалинская область", "елизово": "Камчатский край",
+    "нерюнгри": "Республика Саха (Якутия)", "мирный": "Республика Саха (Якутия)",
+    // Тюменский север
+    "тобольск": "Тюменская область", "ишим": "Тюменская область",
+    "сургут": "Ханты-Мансийский автономный округ — Югра", "нижневартовск": "Ханты-Мансийский автономный округ — Югра",
+    "нефтеюганск": "Ханты-Мансийский автономный округ — Югра", "когалым": "Ханты-Мансийский автономный округ — Югра",
+    "мегион": "Ханты-Мансийский автономный округ — Югра", "нягань": "Ханты-Мансийский автономный округ — Югра",
+    "новый уренгой": "Ямало-Ненецкий автономный округ", "ноябрьск": "Ямало-Ненецкий автономный округ",
+    "надым": "Ямало-Ненецкий автономный округ", "муравленко": "Ямало-Ненецкий автономный округ",
+    "губкинский": "Ямало-Ненецкий автономный округ",
+    // Северо-Запад и Центр
+    "северодвинск": "Архангельская область", "котлас": "Архангельская область",
+    "апатиты": "Мурманская область", "североморск": "Мурманская область", "мончегорск": "Мурманская область",
+    "ухта": "Республика Коми", "воркута": "Республика Коми", "печора": "Республика Коми",
+    "череповец": "Вологодская область", "великий устюг": "Вологодская область", "сокол": "Вологодская область",
+    "кондопога": "Республика Карелия", "сегежа": "Республика Карелия", "костомукша": "Республика Карелия",
+    "советск": "Калининградская область", "черняховск": "Калининградская область", "гусев": "Калининградская область",
+    "зеленоградск": "Калининградская область", "балтийск": "Калининградская область",
+    "великие луки": "Псковская область", "боровичи": "Новгородская область", "старая русса": "Новгородская область",
+    "ковров": "Владимирская область", "муром": "Владимирская область", "александров": "Владимирская область",
+    "гусь-хрустальный": "Владимирская область",
+    "рыбинск": "Ярославская область", "переславль-залесский": "Ярославская область", "тутаев": "Ярославская область",
+    "ржев": "Тверская область", "вышний волочек": "Тверская область", "кимры": "Тверская область",
+    "конаково": "Тверская область", "торжок": "Тверская область",
+    "обнинск": "Калужская область", "людиново": "Калужская область",
+    "новомосковск": "Тульская область", "алексин": "Тульская область", "щекино": "Тульская область",
+    "старый оскол": "Белгородская область", "губкин": "Белгородская область",
+    "россошь": "Воронежская область", "лиски": "Воронежская область", "борисоглебск": "Воронежская область",
+    "елец": "Липецкая область", "клинцы": "Брянская область", "ливны": "Орловская область", "мценск": "Орловская область",
+    "касимов": "Рязанская область", "скопин": "Рязанская область",
+    "кинешма": "Ивановская область", "шуя": "Ивановская область",
+    "вязьма": "Смоленская область", "рославль": "Смоленская область", "сафоново": "Смоленская область",
+    "десногорск": "Смоленская область", "мичуринск": "Тамбовская область",
+    // Казахстан
+    "астана": "Астана", "алматы": "Алматы", "шымкент": "Шымкент",
+    "караганда": "Карагандинская область", "темиртау": "Карагандинская область", "балхаш": "Карагандинская область",
+    "актобе": "Актюбинская область", "тараз": "Жамбылская область", "павлодар": "Павлодарская область",
+    "экибастуз": "Павлодарская область", "усть-каменогорск": "Восточно-Казахстанская область",
+    "семей": "Область Абай", "атырау": "Атырауская область", "костанай": "Костанайская область",
+    "рудный": "Костанайская область", "кызылорда": "Кызылординская область", "уральск": "Западно-Казахстанская область",
+    "петропавловск": "Северо-Казахстанская область", "актау": "Мангистауская область", "жанаозен": "Мангистауская область",
+    "туркестан": "Туркестанская область", "кокшетау": "Акмолинская область", "талдыкорган": "Жетысуская область",
+    "жезказган": "Улытауская область",
+    // Беларусь
+    "минск": "Минск", "гомель": "Гомельская область", "могилев": "Могилёвская область", "витебск": "Витебская область",
+    "гродно": "Гродненская область", "брест": "Брестская область", "бобруйск": "Могилёвская область",
+    "барановичи": "Брестская область", "борисов": "Минская область", "пинск": "Брестская область",
+    "орша": "Витебская область", "мозырь": "Гомельская область", "солигорск": "Минская область",
+    "новополоцк": "Витебская область", "лида": "Гродненская область", "молодечно": "Минская область",
+    "полоцк": "Витебская область", "жлобин": "Гомельская область", "речица": "Гомельская область",
+    "слуцк": "Минская область", "жодино": "Минская область",
+    // Украина
+    "киев": "Киев", "харьков": "Харьковская область", "одесса": "Одесская область", "днепр": "Днепропетровская область",
+    "донецк": "Донецкая область", "запорожье": "Запорожская область", "львов": "Львовская область",
+    "кривой рог": "Днепропетровская область", "николаев": "Николаевская область", "мариуполь": "Донецкая область",
+    "луганск": "Луганская область", "винница": "Винницкая область", "херсон": "Херсонская область",
+    "полтава": "Полтавская область", "чернигов": "Черниговская область", "черкассы": "Черкасская область",
+    "житомир": "Житомирская область", "сумы": "Сумская область", "хмельницкий": "Хмельницкая область",
+    "черновцы": "Черновицкая область", "ровно": "Ровенская область", "ивано-франковск": "Ивано-Франковская область",
+    "тернополь": "Тернопольская область", "луцк": "Волынская область", "ужгород": "Закарпатская область",
+    "кропивницкий": "Кировоградская область"
+};
