@@ -604,22 +604,25 @@ const RecognizeUI = {
     //     размытии всего в два пикселя. Граница 0.004 стоит на порядок ниже
     //     чёткого: лучше промолчать о слабой нерезкости, чем ругать хороший
     //     кадр, который монтажник и так видит своими глазами.
-    //   размер кадра — 1100 брали под рукописный лист, но на печатной смете
-    //     514×683 предупреждение вылезало зря: подобралось 21 из 21. Граница
-    //     600 стоит чуть ниже проверенного кадра — ругаем только те снимки,
-    //     где строки заведомо в пару пикселей.
-    FRAME_MIN_SIDE: 600,      // ниже этого мелкий текст плывёт
+    /**
+     * Про РАЗМЕР кадра не предупреждаем вовсе.
+     *
+     * Порог был 1100 (брали под рукописный лист), потом 600. Оба раза он
+     * срабатывал на снимках, которые читались без единой ошибки: скан 514×683
+     * дал 21 позицию из 21, фотография экрана 480×360 — все четыре строки.
+     * Число пикселей по стороне ничего не говорит о том, читается ли текст:
+     * это зависит от того, какая часть кадра занята строкой, а не от кадра.
+     * Предупреждение, которое дважды подряд оказалось ложным, монтажник
+     * перестаёт читать — и пропустит настоящее, про темноту и смаз. Их и
+     * оставляем: они меряют сам снимок, а не его размер.
+     */
     FRAME_DARK: 140,          // средняя яркость 0..255
     FRAME_EDGE_STEP: 40,      // перепад, который считаем «резким краем»
     FRAME_EDGE_MIN: 0.004,    // доля таких пикселей у чёткого снимка
 
-    frameHints(canvas, srcMaxSide) {
+    frameHints(canvas) {
         const hints = [];
         try {
-            if (srcMaxSide && srcMaxSide < this.FRAME_MIN_SIDE) {
-                hints.push('снимок мелкий — мелкий текст может не прочитаться');
-            }
-
             // Центральный кусок: и быстрее, и по делу.
             const side = Math.min(600, canvas.width, canvas.height);
             const x = Math.round((canvas.width - side) / 2);
@@ -662,7 +665,7 @@ const RecognizeUI = {
             const c = this.drawScaled(src, 0);
             const b = c.toDataURL('image/jpeg', 0.85).split(',')[1];
 
-            const hints = this.frameHints(c, Math.max(src.width, src.height));
+            const hints = this.frameHints(c);
             if (!this._imgWarn) this._imgWarn = new Map();
             this._imgWarn.set(this.imgKey(b), hints);
             if (src.close) src.close();
@@ -1106,8 +1109,7 @@ const RecognizeUI = {
         this._img = url.split(',')[1];
 
         if (!this._imgWarn) this._imgWarn = new Map();
-        this._imgWarn.set(this.imgKey(this._img),
-            this.frameHints(c, Math.max(src.width, src.height)));
+        this._imgWarn.set(this.imgKey(this._img), this.frameHints(c));
         if (src.close) src.close();
 
         const prev = document.getElementById('rec_prev');
