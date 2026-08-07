@@ -505,6 +505,30 @@ const RecognizeFiles = {
     PDF_MAX_PAGES: 60,
     PDF_MAX_SCAN: 20,
 
+    /**
+     * Текстовый слой бывает обманкой.
+     *
+     * В проектной спецификации таблица нарисована линиями и кривыми, а текстом
+     * в файле лежат только пометки, добавленные поверх неё. Текста набирается
+     * несколько тысяч символов — порога «есть текстовый слой» хватает с
+     * запасом, — и разбор шёл по этим пометкам: 62 строки с названиями и ни
+     * одного количества, потому что колонка с количеством НАРИСОВАНА.
+     *
+     * Отличаем по тому, сколько рисования приходится на символ текста.
+     * Замерено на настоящих файлах:
+     *   1,6 и 3,3 — сметы МЕР.СО на 49 и 62 страницы;
+     *   3,1 — коммерческое предложение самого калькулятора;
+     *   8,5 — КП поставщика;
+     *   30,3 — план этажа (чертёж, текста почти нет);
+     *   45,7 — та самая спецификация.
+     * Граница 20 стоит в разрыве между этими двумя группами: у набранного
+     * документа запас больше чем вдвое, у нарисованного — тоже.
+     *
+     * Проверяем на первых страницах: разбирать ради этого весь файл незачем.
+     */
+    PDF_PROBE_PAGES: 6,
+    PDF_DRAW_PER_CHAR: 20,
+
     /** Русское склонение по числу: 1 страница, 3 страницы, 5 страниц. */
     plural(n, one, few, many) {
         const d = Math.abs(n) % 10, h = Math.abs(n) % 100;
@@ -519,25 +543,47 @@ const RecognizeFiles = {
 
         const maxPages = Math.min(pdf.numPages, this.PDF_MAX_PAGES);
         let text = '';
+        let probeChars = 0, probeOps = 0, probed = 0;
         for (let i = 1; i <= maxPages; i++) {
             if (onProgress) onProgress(`читаю страницу ${i} из ${maxPages}`);
             const page = await pdf.getPage(i);
             const c = await page.getTextContent();
+            const pageText = c.items.map(t => t.str).join(' ');
             // Разделитель страниц: по нему длинная смета режется на части для
             // разбора, и резать её по живому — посреди строки — не приходится.
-            text += c.items.map(t => t.str).join(' ') + '\n\f';
+            text += pageText + '\n\f';
+
+            if (probed < this.PDF_PROBE_PAGES) {
+                probed++;
+                probeChars += pageText.replace(/\s/g, '').length;
+                try {
+                    probeOps += (await page.getOperatorList()).fnArray.length;
+                } catch (e) { /* не разобралась страница — считаем её ненарисованной */ }
+            }
         }
 
-        const note = pdf.numPages > maxPages
-            ? `В файле ${pdf.numPages} ${this.plural(pdf.numPages, 'страница', 'страницы', 'страниц')}, ` +
-              `прочитаны первые ${maxPages}. Остальное в смету не попало.`
-            : '';
+        const pageNote = (n, taken, tail) => `В файле ${n} ${
+            this.plural(n, 'страница', 'страницы', 'страниц')}, ${taken}. ${tail}`;
+
+        // Таблица нарисована, а не набрана: текст в файле есть, но он не о ней.
+        const drawn = probeChars > 0 && probeOps / probeChars > this.PDF_DRAW_PER_CHAR;
 
         // Порог опытный: у настоящей сметы текста заведомо больше, а у скана
         // попадаются одиночные символы из штампов и колонтитулов.
-        if (text.replace(/\s/g, '').length > 200) {
-            return { text: text.trim(), images: [], note };
+        if (!drawn && text.replace(/\s/g, '').length > 200) {
+            return {
+                text: text.trim(), images: [],
+                note: pdf.numPages > maxPages
+                    ? pageNote(pdf.numPages, `прочитаны первые ${maxPages}`,
+                        'Остальное в смету не попало.')
+                    : '',
+            };
         }
+
+        const note = drawn
+            ? 'В файле таблица нарисована, а не набрана: текстом в нём лежат только ' +
+              'пометки поверх неё. Читаю страницы как изображения.'
+            : '';
 
         // Скан: страницы уходят картинками и разбираются полистно, каждая
         // своим запросом. Прежний потолок в три страницы был занижен вчетверо
@@ -545,7 +591,7 @@ const RecognizeFiles = {
         const images = [];
         const scanPages = Math.min(pdf.numPages, this.PDF_MAX_SCAN);
         for (let i = 1; i <= scanPages; i++) {
-            if (onProgress) onProgress(`страница ${i} из ${scanPages}: текста нет, готовлю изображение`);
+            if (onProgress) onProgress(`готовлю изображение страницы ${i} из ${scanPages}`);
             const page = await pdf.getPage(i);
             const vp = page.getViewport({ scale: 2 });
             const canvas = document.createElement('canvas');
@@ -556,10 +602,10 @@ const RecognizeFiles = {
         }
         return {
             text: '', images,
-            note: pdf.numPages > scanPages
-                ? `В файле ${pdf.numPages} ${this.plural(pdf.numPages, 'страница', 'страницы', 'страниц')}, ` +
-                  `взяты первые ${scanPages}. Остальные добавьте отдельно кнопкой «+».`
-                : '',
+            note: [note, pdf.numPages > scanPages
+                ? pageNote(pdf.numPages, `взяты первые ${scanPages}`,
+                    'Остальные добавьте отдельно кнопкой «+».')
+                : ''].filter(Boolean).join(' '),
         };
     },
 

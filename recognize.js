@@ -893,17 +893,33 @@ const RecognizeUI = {
             this._fileNote = r.note || '';
             if (this._fileNote) this.showFileNote();
 
-            if (r.images && r.images.length) {
-                // Скан в PDF: текстового слоя нет, работаем с картинкой.
+            if (r.images && r.images.length > 1) {
+                /**
+                 * Многостраничный скан — это листы сметы, все до одного.
+                 *
+                 * Раньше отсюда бралась ТОЛЬКО первая страница: «возьму первую
+                 * из 17» — и семнадцатистраничная спецификация превращалась в
+                 * одну. Разбор по листам в калькуляторе есть и работает (им же
+                 * пользуется кнопка «+»), просто этот путь его не звал.
+                 */
+                this._imgs = r.images;
+                this._img = null;
+                this._fileKind = 'image';
+                const dl = document.getElementById('rec_docs');
+                if (dl) dl.style.display = 'none';
+                this.showImagesPreview();
+                this.setStatus(`${r.images.length} ${
+                    this.plural(r.images.length, 'страница', 'страницы', 'страниц')
+                    } PDF готовы — распознаю их как листы сметы`);
+            } else if (r.images && r.images.length) {
+                // Одна страница: обычный путь с превью снимка.
                 this._img = r.images[0];
                 const prev = document.getElementById('rec_prev');
                 const wrap = document.getElementById('rec_prev_wrap');
                 if (prev) prev.src = 'data:image/jpeg;base64,' + this._img;
                 if (wrap) wrap.style.display = 'flex';
                 this.syncDrop();
-                this.setStatus(r.images.length > 1
-                    ? `PDF без текста: возьму первую страницу из ${r.images.length}`
-                    : 'PDF без текста — распознаю как изображение');
+                this.setStatus('Страница PDF готова — распознаю как изображение');
             } else if (r.text) {
                 this._docs = [{ name: file.name || 'файл', kind, file, text: this.trimText(r.text) }];
                 this.syncDocs();
