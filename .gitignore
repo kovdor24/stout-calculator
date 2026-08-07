@@ -28,3 +28,6 @@ img/nodes3d/
 
 # Резервные копии от ручной правки
 *.bak
+
+# Кэш байткода Python от локальных запусков AutoPrice/AutoImage
+__pycache__/

@@ -310,11 +310,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
             $result = is_array($meta['result'] ?? null) ? $meta['result'] : [];
             $counts = is_array($meta['counts'] ?? null) ? $meta['counts'] : [];
+
+            // Строки, подобранные монтажником ВРУЧНУЮ. Это единственное место,
+            // где он сообщает то, чего калькулятор знать не может: как именно
+            // его поставщик называет наш товар. Отдаём их прямо в списке, а не
+            // прячем в разборе: иначе сводку «что правят чаще всего» пришлось
+            // бы собирать, открывая каждую запись по одной.
+            //
+            // Ограничение сверху — на случай сметы, где переподобрано всё:
+            // список читается целиком на каждое открытие вкладки.
+            $manual = [];
+            foreach ($result as $line) {
+                if (!is_array($line) || empty($line['manual'])) continue;
+                $matched = is_array($line['matched'] ?? null) ? $line['matched'] : [];
+                $manual[] = [
+                    'raw'  => mb_substr((string)($line['raw'] ?? ''), 0, 120),
+                    'id'   => $matched['id'] ?? null,
+                    'name' => mb_substr((string)($matched['name'] ?? ''), 0, 120),
+                ];
+                if (count($manual) >= 40) break;
+            }
+
             $rows[] = [
                 'id'          => "$day/$f",
                 'day'         => $day,
                 'savedAt'     => $meta['saved_at'] ?? null,
                 'user'        => $meta['user'] ?? null,
+                'region'      => $meta['region'] ?? null,
+                'distributorId' => $meta['distributorId'] ?? null,
                 'source'      => $meta['source'] ?? null,
                 'fileName'    => $meta['fileName'] ?? null,
                 'mode'        => $meta['mode'] ?? null,
@@ -323,6 +346,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 'recognized'  => $counts['recognized'] ?? count($result),
                 'applied'     => $counts['applied'] ?? null,
                 'replaced'    => $counts['replaced'] ?? null,
+                'fromMemory'  => $counts['fromMemory'] ?? null,
+                'manual'      => $manual,
                 'files'       => $attached,
                 'bytes'       => $bytes,
                 'json'        => "$day/$f",
@@ -508,6 +533,11 @@ $meta = [
     'source'      => $req['source'] ?? null,    // вид файла: image/xlsx/pdf/...
     'fileName'    => $req['fileName'] ?? null,
     'mode'        => $req['mode'] ?? null,      // add | new
+    // Регион и дистрибьютор монтажника. Лежат в списках доступа, а не здесь,
+    // и раньше в запись не попадали — из-за чего архив нельзя было разрезать
+    // по регионам: кто прислал смету, видно, а откуда он — нет.
+    'region'      => $req['region'] ?? null,
+    'distributorId' => $req['distributorId'] ?? null,
     // Счётчики для вкладки «Распознавание» в админке: сколько строк
     // распознано, сколько ушло в смету, сколько монтажник заменил вручную.
     'counts'      => $req['counts'] ?? null,

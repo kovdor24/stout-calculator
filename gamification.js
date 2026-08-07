@@ -669,6 +669,7 @@ const GRM = (function () {
         onUnlock,
         onNeedAuth,
         isEligibleRegion,
+        isPrivilegedUser,
         switchLbMode
     };
 })();

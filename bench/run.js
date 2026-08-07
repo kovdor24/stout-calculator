@@ -21,6 +21,11 @@
  *
  * Строки лежат в bench/lines.json. Файл не публикуется (см. .gitignore): это
  * сметы монтажников, а репозиторий открытый.
+ *
+ * Пополняется набор из архива распознаваний — bench/from_archive.js. Строки,
+ * которые монтажник подобрал руками, приезжают оттуда с готовым эталоном и
+ * пометкой src; по ним стенд считает отдельный процент, и смотреть надо
+ * прежде всего на него (см. reportBySource).
  */
 
 const fs = require('fs');
@@ -188,6 +193,40 @@ function report(label, res, total) {
   console.log('');
 }
 
+/**
+ * Отдельный счёт по строкам, эталон которых поставил монтажник.
+ *
+ * Их приносит from_archive.js из архива: `src: "manual"` — человек выбрал
+ * артикул сам через поиск по каталогу, `src: "memory"` — подставилось его же
+ * решение с прошлой сметы. Ручная замена случается ровно там, где автоподбор
+ * промахнулся, поэтому процент по этой группе заведомо ниже общего.
+ *
+ * Смотреть надо именно на него. Общий итог держат сотни простых строк, и
+ * поломка в трудных на нём почти не видна: сто лёгких строк перевесят десять
+ * тяжёлых, и правка, ухудшившая ровно то, ради чего затевалась, пройдёт как
+ * улучшение.
+ */
+function reportBySource(res) {
+  const groups = [
+    { src: 'manual', label: 'выбрано монтажником вручную' },
+    { src: 'memory', label: 'из памяти замен монтажника' },
+  ];
+  const out = [];
+  for (const g of groups) {
+    const rows = res.marked.filter((r) => r.line.src === g.src);
+    if (!rows.length) continue;
+    const ok = rows.filter((r) => r.res.verdict === 'точно').length;
+    out.push(`   ${g.label.padEnd(30)} ${String(ok).padStart(3)} из ${String(rows.length).padEnd(4)} ${
+      Math.round(100 * ok / rows.length)}%`);
+  }
+  if (!out.length) return;
+  console.log('--- строки, размеченные монтажниками ---');
+  console.log('    здесь автоподбор однажды промахнулся, и человек его исправил;');
+  console.log('    процент ниже общего — это норма, а вот падать ему нельзя');
+  console.log(out.join('\n'));
+  console.log('');
+}
+
 function listProblems(res) {
   const bad = res.rows.filter((r) => ['неверно', 'пусто', 'лишнее', 'ошибка'].includes(r.res.verdict));
   if (!bad.length) return;
@@ -221,6 +260,7 @@ console.log(`код: ${CODE_DIR === ROOT ? 'текущий' : CODE_DIR}\n`);
 
 const res = score(main.RM, lines);
 report('ИТОГ', res, lines.length);
+reportBySource(res);
 
 if (COMPARE_DIR) {
   const other = withIndex(COMPARE_DIR, INDEX_FILE);

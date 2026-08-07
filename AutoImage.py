@@ -315,9 +315,34 @@ def save_image(url, sku):
             os.remove(temp_file)
         return False
 
+# Уценка на teremonline.ru лежит отдельными карточками с тем же артикулом:
+# «Уценённый товар (мятый / нетоварный вид упаковки, скол краски) …». В выдаче
+# они нередко идут ПЕРВЫМИ, и парсер утаскивал их фото — вместо изделия в каталог
+# попадали снимки помятых коробок на складской паллете. Так пришли битые картинки
+# коллекторных шкафов SCC-0001/0002/1003. Такие карточки пропускаем.
+MARKDOWN_URL_MARKERS = ('utsenennyy', 'utsenenniy', 'utsenka', 'utsenennaya')
+MARKDOWN_TEXT_RE = re.compile(r'уцен|нетоварн(ый|ого)\s+вид|скол\s+краски|м[яa]тый', re.I)
+
+def is_markdown_card(el):
+    """True, если карточка товара — уценка (по ссылке или по тексту карточки)."""
+    if el is None:
+        return False
+    for a in el.select('a[href]'):
+        href = (a.get('href') or '').lower()
+        if any(m in href for m in MARKDOWN_URL_MARKERS):
+            return True
+    return bool(MARKDOWN_TEXT_RE.search(el.get_text(' ', strip=True)))
+
 def extract_image_url(driver, sku):
     soup = BeautifulSoup(driver.page_source, 'html.parser')
-    
+
+    # Если поиск сразу открыл карточку уценённого товара — фото с неё не берём:
+    # пусть лучше артикул уйдёт в NOT_FOUND и попадёт в отчёт, чем в каталог
+    # встанет снимок брака.
+    page_url = (driver.current_url or '').lower()
+    if any(m in page_url for m in MARKDOWN_URL_MARKERS):
+        return None
+
     # Try 1: Look at og:image metadata (usually high-res main product image)
     og_img = soup.find('meta', property='og:image')
     if og_img and og_img.get('content'):
@@ -341,10 +366,12 @@ def extract_image_url(driver, sku):
             if 'logo' not in src_lower and 'banner' not in src_lower and 'icon' not in src_lower and 'arrow' not in src_lower and 'brand' not in src_lower:
                 return src
                 
-    # Try 4: Search only inside the first product item on the search page
-    first_item = soup.select_one('.product-item, .product-item-container, .product-card')
-    if first_item:
-        img_els = first_item.select('.product-item-image-original, .product-item-image-alternative, img')
+    # Try 4: первая карточка в выдаче, НЕ являющаяся уценкой. Раньше бралась просто
+    # первая — а уценённые позиции у Терема часто стоят выше обычных.
+    for item_el in soup.select('.product-item, .product-item-container, .product-card'):
+        if is_markdown_card(item_el):
+            continue
+        img_els = item_el.select('.product-item-image-original, .product-item-image-alternative, img')
         for el in img_els:
             src = el.get('src') or el.get('data-src') or el.get('style') or ''
             if 'background-image' in src:
@@ -355,7 +382,7 @@ def extract_image_url(driver, sku):
                 src_lower = src.lower()
                 if 'logo' not in src_lower and 'banner' not in src_lower and 'icon' not in src_lower and 'arrow' not in src_lower and 'brand' not in src_lower:
                     return src
-                    
+
     return None
 
 def process_sku_image(driver, item):

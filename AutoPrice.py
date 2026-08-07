@@ -107,6 +107,174 @@ def read_status(text):
         if word == found: return code
     return None
 
+def collect_catalog_items(content):
+    """Позиции каталога с ценой: артикул, старая цена и границы объекта в тексте файла.
+
+    Вложенные объекты (.rommer, .comfort внутри родительской позиции) отбрасываем:
+    их цену обновляет собственная строка каталога, а тут они только сбили бы границы.
+    """
+    items = []
+    processed_starts = set()
+    for match in re.finditer(r'(["\']?price["\']?\s*:\s*)(\d+(?:\.\d+)?)', content, re.IGNORECASE):
+        start_idx, end_idx = get_enclosing_object(content, match.start())
+        if start_idx == -1 or end_idx == -1 or start_idx in processed_starts: continue
+        processed_starts.add(start_idx)
+        obj_text = content[start_idx:end_idx]
+        sku = None
+        art_m = re.search(r'["\']?article["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
+        if art_m: sku = art_m.group(1)
+        else:
+            id_m = re.search(r'["\']?id["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
+            if id_m: sku = id_m.group(1)
+        if not sku: continue
+        old_price_str = match.group(2)
+        old_price = float(old_price_str) if '.' in old_price_str else int(old_price_str)
+        date_m = re.search(r'["\']?price_date["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
+        price_date = date_m.group(1) if date_m else None
+        items.append({'sku': sku, 'old_price': old_price, 'match': match, 'start_idx': start_idx, 'end_idx': end_idx, 'obj_text': obj_text, 'price_date': price_date})
+
+    valid_items = []
+    for item in items:
+        is_nested = False
+        for other in items:
+            if item['start_idx'] > other['start_idx'] and item['end_idx'] < other['end_idx']:
+                is_nested = True
+                break
+        if not is_nested:
+            valid_items.append(item)
+    return valid_items
+
+
+# Переписывает одну позицию каталога: цена, дата и наличие. Вынесено из основного
+# цикла, чтобы быстрый шаг по листингу (см. update_from_brand_listings) писал файл
+# ровно теми же правилами — иначе два пути обновления однажды разъедутся.
+def apply_price_status(obj_text, price_local_start, price_local_end, new_price, old_price, new_status, current_date_str):
+    if new_price != old_price:
+        obj_text = obj_text[:price_local_start] + str(new_price) + obj_text[price_local_end:]
+
+    def _insert_before_brace(text, field, value):
+        m = re.search(r'(["\']?' + field + r'["\']?\s*:\s*["\'])([^"\']+)(["\'])', text, re.IGNORECASE)
+        if m:
+            return text[:m.start(2)] + value + text[m.end(2):]
+        last_brace = text.rfind('}')
+        if last_brace == -1:
+            return text
+        idx = last_brace - 1
+        while idx >= 0 and text[idx].isspace():
+            idx -= 1
+        comma = ',' if text[idx] != ',' else ''
+        return text[:idx+1] + f"{comma}\n  {field}: '{value}'" + text[idx+1:]
+
+    obj_text = _insert_before_brace(obj_text, 'price_date', current_date_str)
+    if new_status:
+        obj_text = _insert_before_brace(obj_text, 'availability', new_status)
+    return obj_text
+
+
+# Разделы, которые обновляются целиком по листингу, без поштучного поиска.
+#
+# У РЕХАУ артикулы числовые (19101021001), и поиск по ним работает — но тратит
+# те же ~15 секунд на позицию, что и на STOUT: 78 инсталляций и панелей это плюс
+# двадцать минут к прогону, который и так не всегда успевает пройти каталог.
+# При этом у раздела есть фильтр по бренду, а его листинг отдаёт всё нужное —
+# артикул, цену и наличие — обычным GET, без Selenium: три страницы за секунды.
+BRAND_LISTINGS = [
+    ('РЕХАУ NOVAFLOW', SEARCH_URL + '/catalog/kanalizatsiya/installyatsii-1/filter/brand-is-rehau/apply/'),
+]
+
+def fetch_brand_listing(url):
+    """{артикул: {'price': int, 'status': 'in_stock'|'on_order'|None}} со всех страниц листинга"""
+    import urllib.request, ssl
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+
+    def get(u):
+        req = urllib.request.Request(u, headers=headers)
+        return urllib.request.urlopen(req, timeout=60, context=ctx).read().decode('utf-8', 'ignore')
+
+    found = {}
+    seen_pages = set()
+    queue = [url]
+    while queue:
+        page_url = queue.pop(0)
+        if page_url in seen_pages:
+            continue
+        seen_pages.add(page_url)
+        html = get(page_url)
+        for block in html.split('product-item-container'):
+            art_m = re.search(r'ARTICLE">.*?<dd class="text-dark">\s*([^\s<]+)', block, re.S)
+            if not art_m:
+                continue
+            price_m = re.search(r'class="price-value">([^<]+)<', block)
+            status_m = re.search(r'class="sar-stock[^"]*"[^>]*>([^<]+)<', block)
+            found[art_m.group(1)] = {
+                'price': clean_price(price_m.group(1)) if price_m else None,
+                'status': read_status(status_m.group(1)) if status_m else None,
+            }
+        # Страницы листинга помечены data-page_num — идём по ним, не угадывая
+        # имя параметра: у разных разделов это PAGEN_1, PAGEN_2 и т.д.
+        for href in re.findall(r'href="([^"]+)"\s+data-page_num="\d+"', html):
+            nxt = href if href.startswith('http') else SEARCH_URL + href
+            if nxt not in seen_pages:
+                queue.append(nxt)
+        time.sleep(1)
+    return found
+
+
+def update_from_brand_listings():
+    """Быстрое обновление цен и наличия по листингам разделов. Selenium не нужен."""
+    import datetime
+    current_date_str = datetime.datetime.now().strftime('%Y-%m-%d')
+
+    with open(FULL_PATH, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    site = {}
+    for title, url in BRAND_LISTINGS:
+        try:
+            got = fetch_brand_listing(url)
+            print(f"  {title}: карточек на сайте {len(got)}")
+            site.update(got)
+        except Exception as e:
+            print(f"  {title}: листинг не прочитан ({e}) — раздел пропущен, цены остаются прежними")
+
+    if not site:
+        return
+
+    replacements = []
+    updated = skipped = 0
+    for item in collect_catalog_items(content):
+        data = site.get(item['sku'])
+        if not data or not data['price']:
+            continue
+        old_price, new_price = item['old_price'], data['price']
+        # Та же защита, что и в поштучном режиме: расхождение больше чем вдвое —
+        # это почти всегда чужая карточка или сломанная вёрстка, а не новая цена.
+        if old_price and (new_price > old_price * 2 or new_price * 2 < old_price):
+            print(f"  {item['sku']}: цена {new_price} ₽ против {old_price} ₽ — пропуск (блок 200%)")
+            skipped += 1
+            continue
+        new_status = data['status'] or 'on_order'
+        new_obj_text = apply_price_status(
+            item['obj_text'],
+            item['match'].start(2) - item['start_idx'],
+            item['match'].end(2) - item['start_idx'],
+            new_price, old_price, new_status, current_date_str)
+        if new_obj_text != item['obj_text']:
+            replacements.append((item['start_idx'], item['end_idx'], new_obj_text))
+            updated += 1
+
+    if replacements:
+        replacements.sort(key=lambda x: x[0], reverse=True)
+        for s, e, val in replacements:
+            content = content[:s] + val + content[e:]
+        with open(FULL_PATH, 'w', encoding='utf-8') as f:
+            f.write(content)
+    print(f"  Обновлено по листингам: {updated}, пропущено: {skipped}\n")
+
+
 def get_price_card_isolation(driver, sku, old_price):
     if "404" in driver.title or "Страница не найдена" in driver.page_source: 
         return "NOT_FOUND"
@@ -388,6 +556,12 @@ def update_catalog_prices():
     print("Шаг 2: Очистка старых процессов...")
     kill_zombies()
 
+    print("Шаг 2а: Обновление по листингам разделов (без браузера)...")
+    try:
+        update_from_brand_listings()
+    except Exception as e:
+        print(f"  Шаг пропущен: {e}\n")
+
     print("Шаг 3: Инициализация Selenium (стабильный режим)...")
     try:
         options = Options()
@@ -430,36 +604,7 @@ def update_catalog_prices():
         print("Главная ответила заглушкой защиты — иду через форму поиска.\n")
 
     with open(FULL_PATH, 'r', encoding='utf-8') as f: content = f.read()
-    items_to_process = []
-    processed_starts = set()
-    for match in re.finditer(r'(["\']?price["\']?\s*:\s*)(\d+(?:\.\d+)?)', content, re.IGNORECASE):
-        start_idx, end_idx = get_enclosing_object(content, match.start())
-        if start_idx == -1 or end_idx == -1 or start_idx in processed_starts: continue
-        processed_starts.add(start_idx)
-        obj_text = content[start_idx:end_idx]
-        sku = None
-        art_m = re.search(r'["\']?article["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
-        if art_m: sku = art_m.group(1)
-        else:
-            id_m = re.search(r'["\']?id["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
-            if id_m: sku = id_m.group(1)
-        if not sku: continue
-        old_price_str = match.group(2)
-        old_price = float(old_price_str) if '.' in old_price_str else int(old_price_str)
-        date_m = re.search(r'["\']?price_date["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
-        price_date = date_m.group(1) if date_m else None
-        items_to_process.append({'sku': sku, 'old_price': old_price, 'match': match, 'start_idx': start_idx, 'end_idx': end_idx, 'obj_text': obj_text, 'price_date': price_date})
-
-    valid_items = []
-    for item in items_to_process:
-        is_nested = False
-        for other in items_to_process:
-            if item['start_idx'] > other['start_idx'] and item['end_idx'] < other['end_idx']:
-                is_nested = True
-                break
-        if not is_nested:
-            valid_items.append(item)
-    items_to_process = valid_items
+    items_to_process = collect_catalog_items(content)
 
     # Ищем только СВОИ артикулы — STOUT и ROMMER, вида SVB-0012-000015.
     #
@@ -538,44 +683,14 @@ def update_catalog_prices():
             elif new_status == 'in_stock': print(" (В наличии)")
             else: print(" (Под заказ)")
             
-            new_obj_text = obj_text
-            if new_price != old_price:
-                price_local_start = match.start(2) - start_idx
-                price_local_end = match.end(2) - start_idx
-                new_obj_text = new_obj_text[:price_local_start] + str(new_price) + new_obj_text[price_local_end:]
-                
             import datetime
             current_date_str = datetime.datetime.now().strftime('%Y-%m-%d')
-            
-            # 1. Update/insert price_date
-            date_m = re.search(r'(["\']?price_date["\']?\s*:\s*["\'])([^"\']+)(["\'])', new_obj_text, re.IGNORECASE)
-            if date_m:
-                new_obj_text = new_obj_text[:date_m.start(2)] + current_date_str + new_obj_text[date_m.end(2):]
-            else:
-                last_brace = new_obj_text.rfind('}')
-                if last_brace != -1:
-                    last_content_idx = last_brace - 1
-                    while last_content_idx >= 0 and new_obj_text[last_content_idx].isspace():
-                        last_content_idx -= 1
-                    comma = ',' if new_obj_text[last_content_idx] != ',' else ''
-                    insert_str = f"{comma}\n  price_date: '{current_date_str}'"
-                    new_obj_text = new_obj_text[:last_content_idx+1] + insert_str + new_obj_text[last_content_idx+1:]
-            
-            # 2. Update/insert availability
-            if new_status:
-                avail_m = re.search(r'(["\']?availability["\']?\s*:\s*["\'])([^"\']+)(["\'])', new_obj_text, re.IGNORECASE)
-                if avail_m:
-                    new_obj_text = new_obj_text[:avail_m.start(2)] + new_status + new_obj_text[avail_m.end(2):]
-                else:
-                    last_brace = new_obj_text.rfind('}')
-                    if last_brace != -1:
-                        last_content_idx = last_brace - 1
-                        while last_content_idx >= 0 and new_obj_text[last_content_idx].isspace():
-                            last_content_idx -= 1
-                        comma = ',' if new_obj_text[last_content_idx] != ',' else ''
-                        insert_str = f"{comma}\n  availability: '{new_status}'"
-                        new_obj_text = new_obj_text[:last_content_idx+1] + insert_str + new_obj_text[last_content_idx+1:]
-            
+            new_obj_text = apply_price_status(
+                obj_text,
+                match.start(2) - start_idx,
+                match.end(2) - start_idx,
+                new_price, old_price, new_status, current_date_str)
+
             if new_obj_text != obj_text:
                 replacements.append((start_idx, end_idx, new_obj_text))
                 updated_count += 1

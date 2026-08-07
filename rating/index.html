@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Рейтинг и достижения — HeatCalc.ru</title>
+    <!-- Нейтральный заголовок: страница пилотная, её содержимое (и само название)
+         показываем только после проверки региона — см. гейт в конце файла. -->
+    <title>HeatCalc.ru</title>
     <link rel="icon" type="image/png" href="../img/logo_HC.png">
     <script>
         // На localhost/127.0.0.1 сбрасываем Service Worker и Cache Storage, зарегистрированные
@@ -57,7 +59,11 @@
             background: var(--bg);
             color: var(--text-main);
             min-height: 100vh;
+            /* Скрыта до проверки доступа: пока не известно, из пилотного ли региона
+               пользователь, он не должен увидеть даже шапку и название страницы. */
+            visibility: hidden;
         }
+        body.rt-ready { visibility: visible; }
 
         .rt-header {
             display: flex;
@@ -138,7 +144,7 @@
         <div id="grm_root"><div class="grm-empty">Загрузка…</div></div>
     </div>
 
-    <script src="../gamification.js?v=2.0"></script>
+    <script src="../gamification.js?v=2.1"></script>
     <script>
         // Те же ключи, что и в app.js (calc-калькулятор) — единый Supabase-проект.
         const supabaseUrl = 'https://ahanbwugsmcyvrwbmtlx.supabase.co';
@@ -177,7 +183,30 @@
         // сейчас действия начисления XP происходят только на странице калькулятора).
         GRM.onUnlock(() => { GRM.renderFullInto(document.getElementById('grm_root'), { loginUrl: '../' }); });
 
-        GRM.renderFullInto(document.getElementById('grm_root'), { loginUrl: '../' });
+        // ─── Гейт доступа ────────────────────────────────────────────────────────
+        // Пилот рейтинга идёт только в Калининградской области. Всем остальным —
+        // гостям, монтажникам других регионов, тем, у кого регион не заполнен —
+        // страница не открывается вовсе: молча уводим на калькулятор, не показав
+        // ни шапки, ни рассказа о конкурсе. Раньше здесь рисовалась плашка «пока
+        // недоступно в вашем регионе», то есть по прямой ссылке страницу видели все.
+        // replace(), а не href: страница не должна оседать в истории, иначе «назад»
+        // с калькулятора возвращало бы сюда по кругу.
+        (async function ratingAccessGate() {
+            let allowed = false;
+            try {
+                const user = await GRM.resolveUser();
+                allowed = !!user && (GRM.isEligibleRegion(user.region) || GRM.isPrivilegedUser(user));
+            } catch (e) {
+                allowed = false; // нет сети/сессии — считаем, что доступа нет
+            }
+            if (!allowed) {
+                window.location.replace('../');
+                return;
+            }
+            document.title = 'Рейтинг и достижения — HeatCalc.ru';
+            document.body.classList.add('rt-ready');
+            GRM.renderFullInto(document.getElementById('grm_root'), { loginUrl: '../' });
+        })();
     </script>
 </body>
 
