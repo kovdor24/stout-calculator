@@ -12446,7 +12446,11 @@ const app = {
             statCurrent: stat ? (stat.current || null) : null,
             statCtrl: stat ? (stat.ctrlType || null) : null,
             blocks: blk ? (blk.q || 0) : 0, blockName: blk ? nameOf(blk) : '',
-            ko: koUfh ? koUfh.name : null
+            ko: koUfh ? koUfh.name : null,
+            // Автоматика котельной в смете. Без неё контроллера Thermatic нет, и
+            // ссылаться на его клеммы (метка А, «вход контура …») лист не должен:
+            // связывать сухой контакт не с чем.
+            auto: !!tc
         };
         if (!ufh.blocks && !ufh.stats) return '';
         const a = window.projectScheme.ufhScheme(ufh);
@@ -30339,8 +30343,13 @@ const app = {
                 // бы в одну с чужой подписью. При выключенной группировке ключ прежний — id
                 // по всей смете: подразделов там нет, и разбивать сводную строку по названию
                 // означало бы менять уже сложившийся вид «схлопнутой» сметы.
+                // Пометка назначения патрубка (обвязка бойлера) разводит строки одного
+                // артикула только когда она показывается — при включённой схеме. Иначе
+                // слитая строка «4 шт.» несла бы подпись первого из четырёх кранов.
+                // Схема выключена — строки схлопываются как раньше, подписи всё равно нет.
+                const _portSplit = !!(this.state.showScheme && (finalItem.portTag || undefined));
                 let existing = bill.find(x => x.id === finalItem.id &&
-                    (forceMerge ? true : (x.group === itemGroup && x.name === finalItem.name)));
+                    (_portSplit ? (x.group === itemGroup && x.portTag === finalItem.portTag) : (forceMerge ? true : (x.group === itemGroup && x.name === finalItem.name))));
                 if (existing) {
                     existing.q += finalQty;
                     existing.sum = Math.round(existing.sum + finalItem.price * finalQty);
@@ -30822,7 +30831,13 @@ const app = {
                 const rowClick = i.recognized
                     ? `app.toggleRecSel('${lookupId}')`
                     : `this.classList.toggle('active-row')`;
-                rows += `<tr ${rowStyle}${rowClass} onclick="${rowClick}"><td class="col-idx">${recSelHtml}${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${nameBtnHtml}${eqBadgeHtml}${swapInlineHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td>${priceCell}${sumCell}</tr>` + locsRows;
+                // Пометка «куда какой патрубок» (обвязка бойлера). Нужна, когда
+                // монтажник сверяет смету с принципиальной схемой, поэтому видна
+                // только при включённой схеме и снимается в печати (.port-tag).
+                const portTagHtml = (i.portTag && this.state.showScheme)
+                    ? ` <span class="port-tag no-print">(${i.portTag})</span>`
+                    : '';
+                rows += `<tr ${rowStyle}${rowClass} onclick="${rowClick}"><td class="col-idx">${recSelHtml}${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${portTagHtml}${nameBtnHtml}${eqBadgeHtml}${swapInlineHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td>${priceCell}${sumCell}</tr>` + locsRows;
             });
             let addCustomRow = "";
             if (this.state.viewMode === 'equipment') {
@@ -31399,9 +31414,15 @@ const app = {
             // размера это буквально один артикул) слипались в одну строку «4 шт.», и по
             // смете нельзя было понять, какой кран куда идёт. Свой originalId — чтобы
             // строки не смёрзлись обратно и ручная замена одной не задевала другую.
+            // Назначение держим отдельным полем portTag, а не в самом названии:
+            // название уходит в счёт, в клиентскую ссылку и в печать, а пометка
+            // «куда какой кран» нужна только монтажнику и только когда он смотрит
+            // схему (см. отрисовку строки — там же она снимается для печати).
+            // Свой originalId — чтобы строки одного артикула не слиплись в одну
+            // и ручная замена одной не задевала другую.
             const _named = (item, suffix, key) => ({
                 ...item,
-                name: `${item.name.replace(/\s*\([^)]*\)\s*$/, '')} (${suffix})`,
+                portTag: suffix,
                 originalId: item.id + '_' + key
             });
 
@@ -33473,7 +33494,12 @@ const app = {
                 // только до термостатов в комнатах, всё остальное рядом.
                 const _cab = this.ufhCableCalc(zones, loops, finalCnt);
                 const grpCabUfh = "4.3.1. Провода и кабели (для тёплого пола)";
+                // Экранированный МКЭШ идёт от сухого контакта планки к контроллеру
+                // котельной. Нет контроллера в смете — некуда его вести, и в смете
+                // его быть не должно (лист ТП про эту связь тоже молчит, см. ufhScheme).
+                const _noBoilerCtrl = !this.thermaticConfig;
                 (catalog.ufh_cables || []).forEach(c => {
+                    if (_noBoilerCtrl && c.id === 'CBL-MKESH-2X05') return;
                     const m = _cab.qty[c.id] || 0;
                     if (m > 0) addToBill(c, m, _cab.desc[c.id], grpCabUfh);
                 });
