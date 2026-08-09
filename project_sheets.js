@@ -768,7 +768,7 @@
     text: text, cellText: cellText, cellLines: cellLines, line: line, rect: rect,
     // Подбор семейства оставлен для модулей листов: шрифты теперь полные,
     // подменять нечего, но вызовы у них сохранены.
-    fontFor: fontFor, FONT_LAT: FONT_LAT,
+    fontFor: fontFor, FONT: FONT, FONT_LAT: FONT_LAT,
     SPEC_COLS: SPEC_COLS
   };
 })();

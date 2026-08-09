@@ -825,7 +825,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null },
 
     lastSavedStateString: "",
 
@@ -2588,11 +2588,13 @@ const app = {
     },
     // Единое место, откуда решается, показывать ли плавающую кнопку ИИ-заполнения:
     // гостю её не даём вовсе (см. render), а на вкладке распознавания сметы она не
-    // при делах — там параметры объекта не заполняют.
+    // при делах — там параметры объекта не заполняют. На мобильной вёрстке кнопка
+    // живёт только на экране «Дом» — на «Смете» и «Профиле» заполнять нечего.
     syncAiFabVisibility: function () {
         const btn = document.getElementById('ai_parse_fab_btn');
         if (!btn) return;
-        const hide = !this.state.tgUser || this.state.viewMode === 'recognize';
+        const mobHide = this.isMobileLayout() && (this.state.mobTab || 'inputs') !== 'inputs';
+        const hide = !this.state.tgUser || this.state.viewMode === 'recognize' || mobHide;
         btn.style.display = hide ? 'none' : 'flex';
         if (!hide) this.applyAiFabCollapsedState();
     },
@@ -12270,9 +12272,270 @@ const app = {
             app.alert("Не удалось отправить ответ: " + e.message);
         }
     },
+    // Схема котельной под переключателем «Схема». Рисуется тем же векторным
+    // композитором, что и лист «Принципиальная схема» в проекте
+    // (project_scheme.js): УГО, арматура, диаметры и объёмы собираются из
+    // конфигурации по текущей смете. Старые PNG-слои оставлены запасным
+    // вариантом — на случай, если движок листов не подключился, и для смет
+    // без котла, для которых конфигурации не существует.
     renderScheme: function () {
-        const s = this.state;
         const spec = this.currentSpec || [];
+        const cfg = (window.projectScheme && window.projectSheets)
+            ? this.buildSchemeConfig() : null;
+        // Панель «Подобранное оборудование» под векторным листом не выводится:
+        // модели и количества монтажник видит в смете сразу под схемой.
+        // У PNG-запаски панель остаётся — там конкретику больше взять неоткуда.
+        return cfg ? this._renderSchemeVector(cfg) : this._renderSchemeLayers(spec);
+    },
+    _renderSchemeVector: function (cfg) {
+        // Лист А3 (420×297) без рамки и штампа: смета — не рабочая
+        // документация, шапка у неё своя. Координаты композитора абсолютные,
+        // поэтому viewBox берём во весь лист.
+        const font = (window.projectSheets.FONT) ||
+            "'ISOCPEUR','GOST type A','Arial Narrow',sans-serif";
+        const svg =
+            `<svg xmlns="http://www.w3.org/2000/svg" class="sheet-a3 scheme-svg" viewBox="0 0 420 297">` +
+            `<style>.sheet-a3 text{fill:#000;stroke:none}` +
+            `.sheet-a3 line,.sheet-a3 rect{stroke:#000;fill:none}</style>` +
+            `<rect x="0" y="0" width="420" height="297" fill="#fff" stroke="none"/>` +
+            `<g stroke-linecap="square" font-family="${font}" font-size="3.67">` +
+            window.projectScheme.build(cfg) +
+            `</g></svg>`;
+
+        // Стили держим внутри блока: render() удаляет #dynamic_scheme целиком,
+        // и вынесенный наружу <style> копился бы в документе с каждой отрисовкой.
+        return `<div id="dynamic_scheme" class="scheme-vector">
+                <style>
+                    /* height/overflow перебивают правило #dynamic_scheme из style.css
+                       (высота 70vh + overflow:hidden писались под PNG-слои и резали
+                       векторный лист снизу) */
+                    #dynamic_scheme.scheme-vector {
+                        position: relative; width: 100%; margin-bottom: 20px;
+                        height: auto; min-height: 0; max-height: none; overflow: visible;
+                    }
+                    #dynamic_scheme.scheme-vector .scheme-svg {
+                        display: block; width: 100%; height: auto;
+                        background: #fff; border: 1px solid #E2E8F0; border-radius: 8px;
+                    }
+                    /* Чертёж остаётся на белом листе и в ночном режиме: инверсия
+                       увела бы цвета трубопроводов (красный/синий/оранжевый —
+                       часть легенды и читаются по ней). */
+                    body.dark-mode #dynamic_scheme.scheme-vector .scheme-svg {
+                        border-color: #334155;
+                    }
+                    @media print {
+                        @page scheme-page { size: A4 landscape; margin: 10mm; }
+                        #dynamic_scheme .scheme-zoom-btn { display: none !important; }
+                        /* Разрыв страницы — только если перед схемой уже что-то
+                           напечатано (класс навешивает prepareForPrint), иначе
+                           схема первым разделом форсировала бы пустой лист. */
+                        #dynamic_scheme.scheme-vector.print-page-break {
+                            page-break-before: always !important;
+                            break-before: page !important;
+                        }
+                        #dynamic_scheme.scheme-vector {
+                            page: scheme-page !important;
+                            page-break-after: avoid !important;
+                            break-after: avoid !important;
+                            margin: 0 !important; padding: 0 !important;
+                        }
+                        /* Поле листа А4 альбомного с полями 10 мм — 277×190 мм.
+                           Отдаём чертежу 150 мм по высоте (212 мм по ширине),
+                           остальное — таблице подобранного оборудования. */
+                        #dynamic_scheme.scheme-vector .scheme-svg {
+                            width: 212mm !important; height: 150mm !important;
+                            margin: 0 auto !important; border: none !important;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                    }
+                </style><div class="scheme-svg-wrap" onclick="app.openSchemeFullscreen()" title="Открыть на весь экран">${svg}<button type="button" class="scheme-zoom-btn" aria-label="На весь экран">⛶ На весь экран</button></div></div>`;
+    },
+    // Полноэкранный просмотр схемы: на панели сметы лист ужат до ~900 px,
+    // и линии 0.2 мм становятся тоньше пикселя. Оверлей даёт масштаб
+    // колесом/кнопками и прокрутку перетаскиванием. srcEl — какой SVG
+    // открывать (схема автоматики передаёт свой), по умолчанию —
+    // принципиальная схема.
+    openSchemeFullscreen: function (srcEl) {
+        const src = srcEl || document.querySelector('#dynamic_scheme .scheme-svg');
+        if (!src) return;
+        const old = document.getElementById('scheme_zoom_overlay');
+        if (old) old.remove();
+        const ov = document.createElement('div');
+        ov.id = 'scheme_zoom_overlay';
+        ov.innerHTML =
+            `<div class="scheme-zoom-bar">
+                <button type="button" data-z="out" aria-label="Уменьшить">−</button>
+                <button type="button" data-z="fit">Вписать</button>
+                <button type="button" data-z="in" aria-label="Увеличить">+</button>
+                <button type="button" data-z="close" aria-label="Закрыть">✕</button>
+            </div>
+            <div class="scheme-zoom-canvas">${src.outerHTML}</div>`;
+        document.body.appendChild(ov);
+        const canvas = ov.querySelector('.scheme-zoom-canvas');
+        const svg = canvas.querySelector('svg');
+        let w = 0;
+        const fit = () => { w = canvas.clientWidth - 32; svg.style.width = w + 'px'; };
+        const zoom = (k, cx, cy) => {
+            // держим точку (cx,cy) на месте: пересчитываем прокрутку от масштаба
+            const rect = canvas.getBoundingClientRect();
+            const px = (canvas.scrollLeft + (cx ?? rect.width / 2)) / w;
+            const py = (canvas.scrollTop + (cy ?? rect.height / 2)) / w;
+            w = Math.min(w * k, 12000); w = Math.max(w, 300);
+            svg.style.width = w + 'px';
+            canvas.scrollLeft = px * w - (cx ?? rect.width / 2);
+            canvas.scrollTop = py * w - (cy ?? rect.height / 2);
+        };
+        fit();
+        ov.addEventListener('click', (e) => {
+            const z = e.target.dataset && e.target.dataset.z;
+            if (z === 'in') zoom(1.3);
+            else if (z === 'out') zoom(1 / 1.3);
+            else if (z === 'fit') fit();
+            else if (z === 'close' || e.target === ov || e.target === canvas) ov.remove();
+        });
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const r = canvas.getBoundingClientRect();
+            zoom(e.deltaY < 0 ? 1.2 : 1 / 1.2, e.clientX - r.left, e.clientY - r.top);
+        }, { passive: false });
+        // перетаскивание мышью; на сенсорных прокрутка нативная
+        let drag = null;
+        canvas.addEventListener('mousedown', (e) => {
+            drag = { x: e.clientX, y: e.clientY, sl: canvas.scrollLeft, st: canvas.scrollTop, moved: false };
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!drag) return;
+            if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 3) drag.moved = true;
+            canvas.scrollLeft = drag.sl - (e.clientX - drag.x);
+            canvas.scrollTop = drag.st - (e.clientY - drag.y);
+        });
+        window.addEventListener('mouseup', () => {
+            // клик без движения по фону закрывает, обработано выше; сброс перетаскивания
+            setTimeout(() => { drag = null; }, 0);
+        });
+        // клик по свободному полю канваса не закрывает после перетаскивания
+        canvas.addEventListener('click', (e) => { if (drag && drag.moved) e.stopPropagation(); }, true);
+        const onKey = (e) => { if (e.key === 'Escape') { ov.remove(); window.removeEventListener('keydown', onKey); } };
+        window.addEventListener('keydown', onKey);
+    },
+    // Схема подключения автоматики котельной: контроллер с именными
+    // клеммами, слева датчики, справа силовые выходы, снизу котлы и
+    // периферия RS-485. Состав считает getThermaticConfig() — схема всегда
+    // совпадает со сметой. Рисует projectScheme.automation(), сюда — обёртка
+    // с viewBox по фактической высоте и кнопкой полноэкранного режима.
+    // Схема подключения автоматики тёплого пола: своя система, свой лист.
+    // Композиция — функциональная схема подключения из паспорта STE-3050
+    // (п. 3.5), расположение клемм — по фотографии платы (стр. 3).
+    renderUfhScheme: function () {
+        if (!window.projectScheme || !window.projectScheme.ufhScheme || !window.projectSheets) return '';
+        const spec = this.currentSpec || [];
+        const nameOf = i => (i && i.name ? String(i.name) : '');
+        const rows = spec.filter(i => /^\s*4\.3/.test(i.group || ''));
+        if (!rows.length) return '';
+        const pick = re => rows.find(i => re.test(nameOf(i)));
+        const servo = pick(/сервопривод/i), stat = pick(/термостат|терморегулятор/i), blk = pick(/контроллер|коммутацион/i);
+        const tc = this.thermaticConfig;
+        const koUfh = tc && (tc.circuits || []).find(c => c.src === 'ufh');
+        const ufh = {
+            servos: servo ? (servo.q || 0) : 0, servoName: servo ? nameOf(servo) : '',
+            // \b в JS не срабатывает на кириллице, поэтому «НО» ищем явными границами
+            servoType: servo ? (servo.type || (/(^|[^А-Яа-яЁё])НО([^А-Яа-яЁё]|$)|\(NO\)|нормально\s*откр/i.test(nameOf(servo)) ? 'no' : 'nc')) : 'nc',
+            servoVolt: servo ? (servo.voltage || (/\b24\s*В/.test(nameOf(servo)) ? 24 : 230)) : 230,
+            stats: stat ? (stat.q || 0) : 0, statName: stat ? nameOf(stat) : '',
+            statCurrent: stat ? (stat.current || null) : null,
+            statCtrl: stat ? (stat.ctrlType || null) : null,
+            blocks: blk ? (blk.q || 0) : 0, blockName: blk ? nameOf(blk) : '',
+            ko: koUfh ? koUfh.name : null
+        };
+        if (!ufh.blocks && !ufh.stats) return '';
+        const a = window.projectScheme.ufhScheme(ufh);
+        const font = window.projectSheets.FONT ||
+            "'ISOCPEUR','GOST type A','Arial Narrow',sans-serif";
+        return `<div class="automation-scheme" onclick="app.openSchemeFullscreen(this.querySelector('svg'))" title="Открыть на весь экран">` +
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${a.w} ${a.h}">` +
+            `<rect x="0" y="0" width="${a.w}" height="${a.h}" fill="#fff" stroke="none"/>` +
+            `<g stroke-linecap="square" font-family="${font}" font-size="3.67">${a.svg}</g></svg>` +
+            `<button type="button" class="scheme-zoom-btn" aria-label="На весь экран">⛶ На весь экран</button></div>`;
+    },
+    renderAutomationScheme: function () {
+        const tc = this.thermaticConfig;
+        if (!tc || !window.projectScheme || !window.projectScheme.automation || !window.projectSheets) return '';
+        // Артикулы подобранных позиций — постер показывает фото именно того
+        // оборудования, которое лежит в смете (img/<артикул>.jpg)
+        const spec = this.currentSpec || [];
+        const nameOf = i => (i && i.name ? String(i.name) : '');
+        const idOf = it => (it && it.id) || null;
+        const find = (re, excl) => spec.find(i => re.test(nameOf(i)) && (!excl || !excl.test(nameOf(i))));
+        const isBoiler = i => /котел|котёл/i.test(nameOf(i));
+        const gasB = spec.find(i => isBoiler(i) && /газов/i.test(nameOf(i)));
+        const elB = spec.find(i => isBoiler(i) && /электрическ/i.test(nameOf(i)));
+        const mixG = find(/насосная.*(сервопривод|смесит)/i) || find(/узел подмеса/i);
+        const dirG = find(/насосная.*прям/i, /(загрузк|для) бойлера|обвязка котла/i);
+        const dhwG = find(/(загрузк[аи]|для) бойлера/i);
+        const items = {
+            boilerIds: (tc.boilers || []).slice(0, 2).map(b => b.kind === 'gas' ? idOf(gasB) : idOf(elB)),
+            mixGroupId: idOf(mixG),
+            dirGroupId: idOf(dirG),
+            dhwPumpId: idOf(dhwG) || idOf(dirG),
+            // фолбэк — циркуляционный насос ГВС из каталога: позиция
+            // рециркуляции может называться без слова «насос». catalog —
+            // const из catalog.js, на window его нет, проверяем через typeof
+            recircPumpId: idOf(find(/насос.*(рециркуляц|гвс)|рециркуляц.*насос/i)) ||
+                (typeof catalog !== 'undefined' && catalog.dhw_pump && catalog.dhw_pump[0] && catalog.dhw_pump[0].id) || null,
+            airId: (tc.airDevice && tc.airDevice.id) || null,
+            servoId: idOf(find(/сервопривод/i)),
+            radioId: (typeof catalog !== 'undefined' && catalog.radio_modules && catalog.radio_modules[0] && catalog.radio_modules[0].id) || null,
+            leakValveId: (tc.leakValve && tc.leakValve.id) || null,
+            boardId: 'ML00005842',
+            panelId: 'ML00004742'
+        };
+        // Названия подобранных позиций — второй строкой под каждым прибором:
+        // монтажник видит не «насос вообще», а что именно он ставит.
+        const nameOfItem = it => (it && it.name) ? String(it.name) : '';
+        items.names = {
+            mixGroup: nameOfItem(mixG), dirGroup: nameOfItem(dirG),
+            dhwPump: nameOfItem(dhwG) || nameOfItem(dirG),
+            recircPump: nameOfItem(find(/насос.*(рециркуляц|гвс)|рециркуляц.*насос/i)),
+            leakValve: nameOfItem(find(/зональн|соленоид/i)),
+            panel: nameOfItem(find(/панель управлени/i)),
+            air: nameOfItem(find(/датчик температуры комнатн|термостат.*МЛ|радиодатчик/i)),
+            radio: nameOfItem(find(/радиомодул/i)),
+            boiler0: nameOfItem((tc.boilers || [])[0] && (tc.boilers[0].kind === 'gas' ? gasB : elB)),
+            boiler1: nameOfItem((tc.boilers || [])[1] && (tc.boilers[1].kind === 'gas' ? gasB : elB))
+        };
+        // Автоматика тёплого пола (раздел 4.3) — самостоятельная зональная
+        // система на 230 В, к клеммам контроллера она не подключается напрямую.
+        // Состав берём из самой сметы, а не пересчитываем: там он уже посчитан
+        // по петлям, зонам и этажам.
+        const ufhRows = spec.filter(i => /^\s*4\.3/.test(i.group || ''));
+        if (ufhRows.length) {
+            const pick = re => ufhRows.find(i => re.test(nameOf(i)));
+            const servo = pick(/сервопривод/i), stat = pick(/термостат|терморегулятор/i), blk = pick(/контроллер|коммутацион/i);
+            const koUfh = (tc.circuits || []).find(c => c.src === 'ufh');
+            // Тип и напряжение привода решают, как его подключать и как
+            // читать индикацию зон (паспорт STE-3050, п. 3.3): НО-приводы
+            // дают инверсную индикацию, а 24 В контроллер не коммутирует.
+            items.ufh = {
+                servos: servo ? (servo.q || 0) : 0, servoName: servo ? nameOf(servo) : '',
+                servoType: servo ? (servo.type || (/\bНО\b|\(NO\)/.test(nameOf(servo)) ? 'no' : 'nc')) : 'nc',
+                servoVolt: servo ? (servo.voltage || (/\b24\s*В/.test(nameOf(servo)) ? 24 : 230)) : 230,
+                stats: stat ? (stat.q || 0) : 0, statName: stat ? nameOf(stat) : '',
+                blocks: blk ? (blk.q || 0) : 0, blockName: blk ? nameOf(blk) : '',
+                ko: koUfh ? koUfh.name : null
+            };
+        }
+        const a = window.projectScheme.automation(tc, items);
+        const font = window.projectSheets.FONT ||
+            "'ISOCPEUR','GOST type A','Arial Narrow',sans-serif";
+        return `<div class="automation-scheme" onclick="app.openSchemeFullscreen(this.querySelector('svg'))" title="Открыть на весь экран">` +
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${a.w} ${a.h}">` +
+            `<rect x="0" y="0" width="${a.w}" height="${a.h}" fill="#fff" stroke="none"/>` +
+            `<g stroke-linecap="square" font-family="${font}" font-size="3.67">${a.svg}</g></svg>` +
+            `<button type="button" class="scheme-zoom-btn" aria-label="На весь экран">⛶ На весь экран</button></div>`;
+    },
+    _renderSchemeLayers: function (spec) {
+        const s = this.state;
         const basePath = 'img/scheme/';
         const layers = [];
 
@@ -15597,6 +15860,9 @@ const app = {
                 this.state.accountType = 'base';
             }
 
+            // Анкета доехала из базы — теперь есть чем заполнить город в подробном расчёте
+            this.autofillCityFromProfile();
+
             this.saveState();
             this.closeAuthModal();
             this.syncUI();
@@ -15853,10 +16119,14 @@ const app = {
         this.state.customCompany.bank = document.getElementById('profile_company_bank').value.trim();
         this.updateHeaderCompanyDetails();
 
+        // Город в анкете только что заполнили или сменили — подставляем его в расчёт
+        const cityApplied = this.autofillCityFromProfile();
+
         this.saveState();
         localStorage.setItem('user_city', city); // Дублируем для надежности
 
         this.syncUI();
+        if (cityApplied) this.render(); // сменился регион — пересчитываем смету
         this.closeProfileModal();
 
         // Промокод из анкеты применяем тем же сохранением: своей кнопки у поля нет.
@@ -16799,10 +17069,140 @@ const app = {
         if (val) val.innerText = this.airSensorCount();
     },
 
+    /**
+     * Кран защиты от протечки, подобранный по умолчанию.
+     *
+     * Артикул закреплён явно, а не ищется по диаметру: под DN20 в справочнике
+     * подходят ДВА крана — шаровой зональный 3/4" и соленоидный 3/4". Поиск
+     * «первый с dn 20» давал правильный ответ только потому, что шаровой
+     * лежит в списке раньше; при любой перестановке в catalog.js по умолчанию
+     * молча начал бы подставляться соленоид.
+     *
+     * Тот же базовый артикул служит ключом в state.swaps, поэтому он обязан
+     * совпадать в смете и в getThermaticConfig — отсюда общий метод.
+     */
+    // Метраж кабеля для разделов 2.8.1…2.8.3. Контроллер стоит в котельной,
+    // поэтому насосы, смесители, кран протечки и шина котла — это метры;
+    // длинные линии идут только к комнатным приборам и датчикам протечки.
+    boilerCableRows: function (cfg, groups) {
+        const s = this.state, out = [];
+        const num = v => parseFloat(v) || 0;
+        const cat = catalog.auto_cables || [];
+        const pick = id => cat.find(x => x.id === id);
+        const h1 = num(s.h1) || 2.7;
+        const span = Math.sqrt(Math.max(num(s.area), 25)) * 1.2;
+        const note = '<br><i style="color:#94A3B8;">Кабель в комплект поставки не входит, цена ориентировочная — уточните у поставщика.</i>';
+        const add = (id, qty, desc, group) => {
+            const it = pick(id);
+            if (it && qty > 0) out.push({ item: it, qty: Math.ceil(qty), group, desc: `<span style="font-size:11px;line-height:1.5;">${desc}${note}</span>` });
+        };
+        const exp = (cfg.expansion || []).reduce((a, e) => a + e.qty, 0);
+
+        const pumps = (cfg.circuitCount || 0) + (cfg.dhw === 'boiler' ? 1 : 0) + (cfg.recirc ? 1 : 0);
+        const mixers = cfg.mixCount || 0;
+        const solenoid = cfg.leakQty > 0 && cfg.leakSolenoid;
+        const powerM = 10 + 3 * (pumps + mixers) + (solenoid ? 3 : 0);
+        add('CBL-VVG-3X15-AUTO', powerM,
+            `<b>Куда:</b> питание контроллера от отдельного автомата и линии на насосы и смесители контуров — всё в пределах котельной.` +
+            `<br><b>Расчёт:</b> 10 м до щита + ${pumps} насос. × 3 м + ${mixers} смеситель. × 3 м${solenoid ? ' + 3 м на соленоидный клапан' : ''} = ${Math.ceil(powerM)} м.`,
+            groups.auto);
+
+        const ntcIn = Math.max(0, (cfg.ntcUsed || 0) - 1), ntcM = ntcIn * 2 + ((cfg.ntcUsed || 0) > 0 ? 10 : 0);
+        add('CBL-MKESH-2X05-NTC', ntcM,
+            `<b>Куда:</b> штатные NTC контроллера — теплоноситель контуров и бойлер по котельной, уличный на северную стену.` +
+            `<br><b>Расчёт:</b> ${ntcIn} датч. × 2 м + уличный 10 м = ${Math.ceil(ntcM)} м. Вести отдельно от силовых линий, пересекать под 90° (паспорт Thermatic 3001).`,
+            groups.auto);
+
+        const panelM = cfg.panel ? span + h1 + 3 : 0;
+        const busM = 3 * (cfg.digitalBoards || 0) + 3 * exp + panelM + 10;
+        add('CBL-UTP-BUS', busM,
+            `<b>Куда:</b> цифровая шина от платы ЦШ до котла, RS-485 на блоки расширения${cfg.panel ? ' и выносную панель' : ''}, интернет от роутера.` +
+            `<br><b>Расчёт:</b> ${cfg.digitalBoards || 0} × 3 м (котёл) + ${exp} × 3 м (блоки)${cfg.panel ? ` + ${panelM.toFixed(1)} м (панель)` : ''} + 10 м (интернет) = ${Math.ceil(busM)} м.`,
+            groups.auto);
+
+        if (cfg.airOn && cfg.airDevice && cfg.airQty > 0 && cfg.airDevice.link !== 'radio') {
+            const line = span + h1 + 3, m = cfg.airQty * line, dry = cfg.airDevice.link === 'dry';
+            add(dry ? 'CBL-MKESH-2X05-AIR' : 'CBL-UTP-AIR', m,
+                `<b>Куда:</b> от контроллера в котельной до комнатных приборов, ${cfg.airQty} лин.` +
+                (dry ? ' — сухим контактом на «Входы термостатов».' : ' — по шине RS-485.') +
+                `<br><b>Расчёт:</b> ${cfg.airQty} × ${line.toFixed(1)} м = ${Math.ceil(m)} м. Длина линии = √площади дома × 1,2 + высота этажа + 3 м запаса.`,
+                groups.air);
+        }
+
+        if (cfg.leakQty > 0) {
+            if (!cfg.leakSolenoid) add('CBL-VVG-4X15-LEAK', 3,
+                `<b>Куда:</b> от релейного выхода 1 контроллера до привода запорного крана на вводе ХВС.` +
+                `<br><b>Расчёт:</b> 3 м — кран и контроллер в одной котельной. Привод четырёхполюсный, поэтому и кабель четырёхжильный.`,
+                groups.leak);
+            const line = span + 3, m = cfg.leakQty * line;
+            add('CBL-MKESH-2X05-LEAK', m,
+                `<b>Куда:</b> от контроллера до извещателей протечки в мокрых зонах.` +
+                `<br><b>Расчёт:</b> ${cfg.leakQty} датч. × ${line.toFixed(1)} м = ${Math.ceil(m)} м. При подключении соблюдать полярность.`,
+                groups.leak);
+        }
+        return out;
+    },
+    // Метраж кабеля для раздела 4.3. Планка STE-3050 висит в котельной рядом
+    // с коллектором ТП, поэтому приводы, насос и сухой контакт — это метры,
+    // а длинные линии идут только к термостатам в комнатах. Термостаты условно
+    // расставляем по самым крупным помещениям с тёплым полом.
+    ufhCableCalc: function (zones, loops, blocks) {
+        const s = this.state;
+        const num = v => parseFloat(v) || 0;
+        const h1 = num(s.h1) || 2.7, h2 = num(s.h2) || 2.7;
+        const a1 = num(s.tp1), a2 = (s.floors === 2 ? num(s.tp2) : 0);
+        // характерный размер этажа: сторона квадрата той же площади плюс запас
+        // на обход углов и простенков
+        const span = a => Math.sqrt(Math.max(a, 9)) * 1.2;
+        const z2 = (a1 + a2) > 0 ? Math.round(zones * a2 / (a1 + a2)) : 0;
+        const z1 = Math.max(0, zones - z2);
+        const line1 = span(a1) + h1 + 3;              // спуск к термостату + запас
+        const line2 = span(a2) + h1 + h2 + 3;         // плюс подъём на второй этаж
+        const statM = Math.ceil(z1 * line1 + z2 * line2);
+        const servoM = Math.ceil(loops * 1.5) + 2;    // приводы на самом коллекторе
+        const powerM = 10 + 3 * (blocks || 1);        // щит → котельная и линия насоса
+        const dryM = 3 * (blocks || 1);               // планка и контроллер в одной котельной
+        const rooms = (s.rooms || [])
+            .filter(r => (r.sys || []).includes('tp'))
+            .sort((x, y) => num(y.area) - num(x.area))
+            .slice(0, zones).map(r => r.name);
+        const note = '<br><i style="color:#94A3B8;">Кабель в комплект поставки не входит, цена ориентировочная — уточните у поставщика.</i>';
+        const wrap = t => `<span style="font-size:11px;line-height:1.5;">${t}${note}</span>`;
+        const roomsTxt = rooms.length
+            ? ` Термостаты условно по самым крупным помещениям с тёплым полом: ${rooms.join(', ')}.`
+            : '';
+        return {
+            qty: {
+                'CBL-VVG-3X15-TS': statM,
+                'CBL-VVG-2X15-SV': servoM,
+                'CBL-VVG-3X15-PW': powerM,
+                'CBL-MKESH-2X05': dryM
+            },
+            desc: {
+                'CBL-VVG-3X15-TS': wrap(`<b>Куда:</b> от планки в котельной до термостата каждой зоны, ${zones} линий.` +
+                    `<br><b>Расчёт:</b> ${z1} лин. × ${line1.toFixed(1)} м` + (z2 ? ` + ${z2} лин. × ${line2.toFixed(1)} м (2 этаж)` : '') +
+                    ` = ${statM} м. Длина линии = √площади ТП × 1,2 + высота этажа + 3 м запаса.` + roomsTxt),
+                'CBL-VVG-2X15-SV': wrap(`<b>Куда:</b> от клемм исполнительных устройств до сервоприводов на коллекторе.` +
+                    `<br><b>Расчёт:</b> ${loops} привод. × 1,5 м + 2 м = ${servoM} м. Планка висит рядом с коллектором, поэтому линии короткие.`),
+                'CBL-VVG-3X15-PW': wrap(`<b>Куда:</b> питание планки от отдельного автомата 10 А и линия на насос группы ТП.` +
+                    `<br><b>Расчёт:</b> 10 м до щита + 3 м на насос${(blocks || 1) > 1 ? ` × ${blocks} планки` : ''} = ${powerM} м.`),
+                'CBL-MKESH-2X05': wrap(`<b>Куда:</b> сухой контакт COM + NC планки на вход термостата контроллера котельной.` +
+                    `<br><b>Расчёт:</b> ${dryM} м — оба устройства в котельной. Экранированный, вести отдельно от силовых линий.`)
+            }
+        };
+    },
+    leakValveBase: function () {
+        const list = catalog.leak_valves || [];
+        return list.find(v => v.id === 'SVM-0072-200025') || list.find(v => v.dn === 20 && !v.solenoid) || list[0] || null;
+    },
+
     clearAirSwaps: function () {
         (catalog.air_sensors || []).forEach(x => {
             if (this.state.swaps && this.state.swaps[x.id]) delete this.state.swaps[x.id];
         });
+        // Переключили вид прибора или связь — ручной выбор артикула из таблицы
+        // замен больше не действует, подбор снова берёт первый подходящий
+        this.state.airDeviceId = null;
         if (this.state.airLink === 'dry') this.state.airLink = 'wired';
     },
 
@@ -16937,6 +17337,13 @@ const app = {
         }
         if (!this.state.sectionAnalog) this.state.sectionAnalog = {};
         this.state.sectionAnalog[title] = !!val;
+        this.saveState();
+        this.render();
+    },
+    // Схема конкретного раздела: гасится независимо от общего переключателя «Схема»
+    toggleSectionScheme: function (title, val) {
+        if (!this.state.sectionScheme) this.state.sectionScheme = {};
+        this.state.sectionScheme[title] = !!val;
         this.saveState();
         this.render();
     },
@@ -17899,12 +18306,38 @@ const app = {
         }
         // объёмы расширительных баков — из названий подобранных позиций
         const volOf = it => { const m = nameOf(it).match(/(\d{1,3})\s*л/i); return m ? +m[1] : 0; };
-        // \w не матчит кириллицу («расширительный» не находился) — потому \S*
-        const tankHeat = spec.find(i => /расширительн\S*\s+бак/i.test(nameOf(i)) && !/гвс/i.test(nameOf(i)));
+        // \w не матчит кириллицу («расширительный» не находился) — потому \S*.
+        // Гидроаккумулятор водоснабжения (скважина) тоже «расширительный бак»,
+        // но к отоплению отношения не имеет — без минус-слова схема рисовала бы
+        // ложный бак отопления при котле STATUS со встроенным баком.
+        const tankHeat = spec.find(i => /расширительн\S*\s+бак/i.test(nameOf(i)) && !/гвс|гидроаккумул/i.test(nameOf(i)));
         const tankDhw = spec.find(i => /расширительн\S*\s+бак/i.test(nameOf(i)) && /гвс/i.test(nameOf(i)));
 
         const power = Math.max(1, Math.round(this.getHouseHeatLoss() || 0));
         const loadScheme = (s.tankLoadScheme || 'valve');
+
+        // Насосные группы — по позициям сметы, как котлы выше. Раньше конфигурация
+        // несла только флаги rad/tp, и схема рисовала ровно один радиаторный контур
+        // и один контур ТП, сколько бы групп ни стояло в спецификации.
+        // Смесительная группа (Смес./сервопривод/3-х ход.) — контур тёплого пола,
+        // прямая — радиаторный. Группа загрузки бойлера считается отдельно (loadPump).
+        const qOf = i => Math.max(1, Math.round(+i.q) || 1);
+        // Коллектор пишет число групп в собственном названии («Стальной
+        // распределительный коллектор DN25 (5 насосных групп)») и без этого
+        // минус-слова считался бы ещё одной насосной группой.
+        const isPumpGroup = i => /(групп\S*\s+насосн|насосн\S*\s+групп)/i.test(nameOf(i)) &&
+            !/(коллектор|гидрострелк|стрелк|раздел)/i.test(nameOf(i));
+        const isMixGroup = i => /(смес|сервопривод|3-х\s*ход|3-ходов|тр[её]х\s*ход)/i.test(nameOf(i));
+        // DN присоединения — из названия позиции. У ROMMER-групп без «универсального
+        // корпуса» DN в названии нет, они физически DN25 (та же оговорка, что в
+        // фильтре типоразмера таблицы замены).
+        const dnOf = i => { const m = nameOf(i).match(/DN\s*(\d{2})/i); return m ? +m[1] : 25; };
+        let radGroups = 0, tpGroups = 0, radDn = 0, tpDn = 0;
+        spec.forEach(i => {
+            if (!isPumpGroup(i) || /для\s+бойлера/i.test(nameOf(i))) return;
+            if (isMixGroup(i)) { tpGroups += qOf(i); if (!tpDn) tpDn = dnOf(i); }
+            else { radGroups += qOf(i); if (!radDn) radDn = dnOf(i); }
+        });
 
         // Контурность газового котла — из названия подобранной позиции,
         // запасной вариант — по правилу подбора (бойлер ⇒ одноконтурный)
@@ -17936,21 +18369,66 @@ const app = {
         const dia = boilerKw <= 30
             ? (isPpr ? 'Ø32х4,4 мм' : 'Ø22х1,2 мм')
             : (isPpr ? 'Ø40х5,5 мм' : 'Ø28х1,2 мм');
+        // Резьба присоединения котлового контура — по тому же порогу, по которому
+        // смета берёт переходники к патрубкам котла и змеевика бойлера
+        // (RSS-1022-002234 3/4" на 22 мм против RSS-1022-000281 1" на 28 мм).
+        const mainThread = boilerKw <= 30 ? '3/4"' : '1"';
+
+        // Узел загрузки бойлера. POLIS клапаном приоритета управлять не может
+        // (нет ни выхода на сервопривод, ни датчика бойлера) — если он
+        // единственный источник, узел на схеме рисуем насосным: клапанный
+        // вариант оставил бы змеевик бойлера без побудителя циркуляции.
+        let fugas = indirect && loadScheme === 'valve';
+        let loadPump = indirect && loadScheme === 'pump';
+        if (fugas && !gas && elPolis) { fugas = false; loadPump = true; }
 
         return {
             gas: gas ? { circuits: gasCircuits, count: gasCount } : null,
             el: el ? { count: elCount, status: s.boilerSeries === 'status', polis: elPolis, gbm: elPolisGbm } : null,
             indirect: indirect ? { vol: tankVol || undefined, wall: s.tankMount === 'wall' } : null,
-            fugas: indirect && loadScheme === 'valve',
-            loadPump: indirect && loadScheme === 'pump',
+            fugas: fugas,
+            loadPump: loadPump,
             rad: (s.systems || []).includes('rad'),
             tp: (s.systems || []).includes('tp'),
-            hydro: has(/гидрострелк|гидравлическ\S* раздел/i) ? { kw: Math.ceil(power / 5) * 5 } : null,
+            // Сколько отводов рисовать и какой резьбой подписывать их арматуру.
+            // 0 групп при живой системе — контур без коллектора (местный узел
+            // подмеса или прямая обвязка от котла): схема рисует один отвод.
+            radGroups: radGroups,
+            tpGroups: tpGroups,
+            radDn: radDn || null,
+            tpDn: tpDn || null,
+            loadDn: (function () {
+                const it = spec.find(i => isPumpGroup(i) && /для\s+бойлера/i.test(nameOf(i)));
+                return it ? dnOf(it) : null;
+            })(),
+            // Гидроразделение есть и в совмещённом узле («Коллектор-гидрострелка»),
+            // и в модульной схеме, где смета ставит отдельную позицию
+            // «Гидравлическая стрелка N м³/ч» — её прежний шаблон не ловил, и на
+            // схеме пропадали и стрелка, и насосы радиаторных групп.
+            hydro: has(/гидрострелк|гидравлическ\S*\s+(стрелк|раздел)/i) ? { kw: Math.ceil(power / 5) * 5 } : null,
             water: !!s.water || indirect,
             recirc: !!s.recirc,
             tankHeating: volOf(tankHeat),
             tankDhw: volOf(tankDhw),
-            dia: dia
+            dia: dia,
+            mainThread: mainThread,
+            // Паспортные патрубки подобранного бойлера — арматуру его обвязки на
+            // схеме подписываем ими, а не общим размером котлового контура.
+            tankPorts: this._tankPorts || null,
+            // Санитарные линии и рециркуляция — со своими диаметрами: раньше
+            // на В1/Т3/Т4 уходил диаметр котловой магистрали (вплоть до
+            // «рециркуляции Ø40х5,5» при PPR)
+            sanDia: isPpr ? 'Ø25х4,2 мм' : 'Ø22х1,2 мм',
+            recDia: isPpr ? 'Ø20х3,4 мм' : 'Ø15х1,0 мм',
+            // Автоматика котельной: точки установки датчиков контроллера на
+            // гидравлике (сами кабельные связи — на отдельной схеме
+            // подключения над разделом 2.8.1). thermaticConfig считает
+            // render() до отрисовки схемы.
+            auto: this.thermaticConfig ? {
+                cascade: !!this.thermaticConfig.cascade,
+                dhwSensor: this.thermaticConfig.dhw === 'boiler',
+                mixServo: (this.thermaticConfig.mixCount || 0) > 0
+            } : null
         };
     },
 
@@ -19417,7 +19895,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType,
@@ -19622,6 +20100,7 @@ const app = {
     syncMobileUI: function () {
         if (!this.isMobileLayout()) {
             document.body.classList.remove('mob-tab-inputs', 'mob-tab-output', 'mob-tab-profile');
+            this.syncAiFabVisibility();
             return;
         }
         document.querySelectorAll('.mob-nav-item').forEach(el => el.classList.remove('active'));
@@ -19640,6 +20119,7 @@ const app = {
         } else {
             document.body.classList.add('mob-tab-inputs');
         }
+        this.syncAiFabVisibility();
     },
 
     updateProfileTabDetails: function () {
@@ -20139,7 +20619,7 @@ const app = {
         // PLUS снят с производства: из подбора и замен убран, в каталоге оставлен только
         // ради распознавания — старые сметы и накладные с ним продолжают разбираться.
         catalog.boilers_plus.forEach(b => { b.alts = []; });
-        let hydroAlts = catalog.hydro_modular_dn20; catalog.hydro_dn20.forEach(h => { h.alts = hydroAlts; }); catalog.hydro_modular_dn20.forEach(h => { h.alts = catalog.hydro_dn20; });
+        let hydroAlts = catalog.hydro_modular_dn20; catalog.hydro_dn20.forEach(h => { h.alts = hydroAlts; h.noCheapenAlts = true; }); catalog.hydro_modular_dn20.forEach(h => { h.alts = catalog.hydro_dn20; h.noCheapenAlts = true; });
         let pipeAlts = catalog.rad_pipes_grey; catalog.insulated_pipes.forEach(p => { p.alts = pipeAlts; }); catalog.rad_pipes_grey.forEach(p => { p.alts = catalog.insulated_pipes; });
         if (catalog.mixing_units && catalog.groups_dn20 && catalog.groups_dn25) {
             let ufhMixAlts = [
@@ -20159,10 +20639,12 @@ const app = {
                 catalog.groups_dn32 && catalog.groups_dn32.find(g => g.id === 'SDG-0001-003201'),
                 catalog.groups_dn32 && catalog.groups_dn32.find(g => g.id === 'SDG-0007-003201')
             ].filter(Boolean);
-            catalog.mixing_units.forEach(mu => { mu.alts = ufhMixAlts; });
-            catalog.groups_dn20.forEach(g => { g.alts = ufhMixAlts; });
-            catalog.groups_dn25.forEach(g => { g.alts = ufhMixAlts; });
-            if (catalog.groups_dn32) catalog.groups_dn32.forEach(g => { g.alts = ufhMixAlts; });
+            // noCheapenAlts — см. getCheapestAlternative(). Список общий на все узлы ТП и
+            // насосные группы: он нужен ручной замене, но подставлять из него по цене нельзя.
+            catalog.mixing_units.forEach(mu => { mu.alts = ufhMixAlts; mu.noCheapenAlts = true; });
+            catalog.groups_dn20.forEach(g => { g.alts = ufhMixAlts; g.noCheapenAlts = true; });
+            catalog.groups_dn25.forEach(g => { g.alts = ufhMixAlts; g.noCheapenAlts = true; });
+            if (catalog.groups_dn32) catalog.groups_dn32.forEach(g => { g.alts = ufhMixAlts; g.noCheapenAlts = true; });
         }
         if (catalog.collectors_dn20 || catalog.collectors_dn25 || catalog.collectors_dn32 || catalog.hydro_dn20 || catalog.hydro_dn25) {
             let collectorAlts = [
@@ -20172,16 +20654,45 @@ const app = {
                 ...((catalog.hydro_dn20 || []).filter(h => h.id === 'SDG-0018-002502' || h.id === 'SDG-0018-002503')),
                 ...((catalog.hydro_dn25 || []).filter(h => h.id === 'SDG-0018-004002' || h.id === 'SDG-0018-004003'))
             ];
-            collectorAlts.forEach(c => { c.alts = collectorAlts; });
+            // noCheapenAlts — коллектор подбирается по числу контуров (см. render()), и брать
+            // из ряда самый дешёвый значит поставить коллектор на 2 группы под четыре контура.
+            collectorAlts.forEach(c => { c.alts = collectorAlts; c.noCheapenAlts = true; });
+        }
+        // Евроконус 16 → аксиальный переходник. Два способа посадить трубу 16 на выход
+        // коллектора: компрессионный евроконус (накидная гайка + обжимное кольцо) и
+        // аксиальный переходник с надвижной гильзой. Оба есть у STOUT и у ROMMER, поэтому
+        // выбор схемы живёт в таблице замены, а бренд по-прежнему переключает «Аналог».
+        // noCheapen — аксиальный вариант тянет за собой монтажную гильзу (см. addEurocone
+        // в render()), это смена комплектации, и подставлять его по цене «Аналог» не вправе.
+        if (catalog.parts) {
+            const _axialEk = catalog.parts.find(x => x.id === 'SFA-0034-001634');
+            if (_axialEk) {
+                const _axialAlt = { ..._axialEk, noCheapen: true };
+                [catalog.parts, catalog.water_parts].forEach(pool => {
+                    (pool || []).forEach(p => {
+                        if (p.id === 'SFC-0020-001620' || p.id === 'SFC-0020-001622') p.alts = [_axialAlt];
+                    });
+                });
+                _axialEk.alts = [
+                    { ...catalog.parts.find(x => x.id === 'SFC-0020-001620'), noCheapen: true },
+                    { ...catalog.parts.find(x => x.id === 'SFC-0020-001622'), noCheapen: true }
+                ].filter(x => x.id);
+            }
         }
         if (catalog.hydro_separators && catalog.hydro_arrow) {
+            // noCheapenAlts — ряд гидрострелок отличается пропускной способностью (м³/ч).
             catalog.hydro_arrow.alts = catalog.hydro_separators;
-            catalog.hydro_separators.forEach(h => { h.alts = catalog.hydro_separators; });
+            catalog.hydro_arrow.noCheapenAlts = true;
+            catalog.hydro_separators.forEach(h => { h.alts = catalog.hydro_separators; h.noCheapenAlts = true; });
         }
         if (catalog.servo_rotary_sensor && catalog.servo_rotary_std) {
+            // noCheapenAlts — привод с накладным датчиком и обычный это разные схемы
+            // управления (state.servoType), а не два бренда одного товара.
             let servoAlts = [catalog.servo_rotary_sensor, catalog.servo_rotary_std];
             catalog.servo_rotary_sensor.alts = servoAlts;
             catalog.servo_rotary_std.alts = servoAlts;
+            catalog.servo_rotary_sensor.noCheapenAlts = true;
+            catalog.servo_rotary_std.noCheapenAlts = true;
         }
         if (catalog.ppr_proaqua_pipe && catalog.ppr_ekoplastik_pipe) {
             const ext1 = n => {
@@ -20313,6 +20824,9 @@ const app = {
             };
         }
         // ===================================================
+        // Город из анкеты — до первой отрисовки, иначе смета успела бы посчитаться
+        // по региону по умолчанию и тут же пересчиталась заново
+        this.autofillCityFromProfile();
         this.updateHeaderCompanyDetails(); this.syncUI(); this.render();
 
         // Предпросмотр/печать конкретной сметы из админки (см. renderAdminEstimates и
@@ -20734,7 +21248,15 @@ const app = {
 
         addCandidate(item);
 
-        let alts = item.alts || [];
+        // noCheapenAlts — у позиции в .alts лежит не «тот же товар другого бренда», а
+        // ТИПОРАЗМЕРНЫЙ РЯД: коллекторы на 2/3/4/5/6 групп, насосные группы и узлы подмеса
+        // разной мощности, гидрострелки на разный расход. Список нужен модалке ручной
+        // замены, но режим «Аналог» не вправе выбирать из него по цене: он подставлял
+        // коллектор на 2 группы там, где контуров четыре, и узел подмеса с термоголовкой
+        // вместо насосной группы под сервопривод — без насоса, мимо коллектора и без
+        // посадочного места под привод, который добавляется отдельно. Смена бренда у самой
+        // позиции (item.rommer / ANALOG_MAP) при этом работает как раньше.
+        let alts = (item.noCheapenAlts ? [] : (item.alts || []));
         alts.forEach(alt => {
             // noCheapen — альтернатива не равнозначна позиции, а меняет саму комплектацию
             // (заглушка вместо компенсатора гидроудара). Она есть в модалке замены, но режим
@@ -21673,7 +22195,7 @@ const app = {
             `;
         } else if (catalog.ufh_mech.find(m => m.id === item.id) || catalog.ufh_electro.find(m => m.id === item.id) || catalog.thermostats_stout.find(m => m.id === item.id)) {
             const _thData = catalog.ufh_mech.find(m => m.id === item.id) || catalog.ufh_electro.find(m => m.id === item.id) || catalog.thermostats_stout.find(m => m.id === item.id) || item;
-            const _thCtrl = _thData.ctrlType === 'mech' ? 'Механический' : (_thData.ctrlType === 'electronic' ? 'Электронный' : '—');
+            const _thCtrl = { mech: 'Механический', electronic: 'Электронный', touch: 'Сенсорный' }[_thData.ctrlType] || '—';
             const _thWifi = _thData.wifi === true ? 'С Wi-Fi' : (_thData.wifi === false ? 'Без Wi-Fi' : '—');
             const _thColorMap = { white: 'Белый', black: 'Чёрный', gray: 'Серый' };
             const _thColor = _thColorMap[_thData.color] || '—';
@@ -22013,7 +22535,12 @@ const app = {
             if (_gt === 'traditional') alts = alts.filter(b => !_isCond(b));
             else if (_gt === 'cond') alts = alts.filter(b => _isCond(b));
             if (_gp !== 'all') alts = alts.filter(b => b.power === _gp);
-        } else if (catalog.air_sensors && catalog.air_sensors.some(x => x.id === _origId0)) {
+        // Часть артикулов лежит и в air_sensors, и в термостатах тёплого пола
+        // (это один и тот же прибор в разных ролях). Разбирать по одному id
+        // нельзя: для позиции из раздела 4.3 включались фильтры «по воздуху»,
+        // и кнопки не совпадали со списком. Ориентируемся на сам список замен —
+        // у приборов в помещении всегда есть поле link.
+        } else if (catalog.air_sensors && catalog.air_sensors.some(x => x.id === _origId0) && alts.some(a => a.link)) {
             // Приборы в помещении различаются по трём осям, и без фильтров
             // список из двенадцати позиций читать тяжело. Значения берём из
             // самого каталога: добавили модель — кнопка появилась сама.
@@ -22033,7 +22560,9 @@ const app = {
                     values.map(v => `<span onclick="app.${setter}('${v}')" ${_b(cur === v)}>${map[v] || v}</span>`).join('') +
                     `<span onclick="app.${setter}('all')" ${_b(cur === 'all')}>Все</span></div>`;
             };
-            const _vals = (field) => [...new Set(catalog.air_sensors.map(x => x[field]).filter(Boolean))];
+            // Значения берём из самого списка замен: кнопка, под которую
+            // нечего показать, только сбивает с толку.
+            const _vals = (field) => [...new Set(alts.map(x => x[field]).filter(Boolean))];
             _tankFiltersHtml =
                 `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0 10px;border-bottom:1px solid var(--border);">` +
                 _row('Связь:', _LINK, _al, 'setAirSwapLink', _vals('link')) +
@@ -22380,7 +22909,11 @@ const app = {
             if (isFirstOpen) {
                 const _curTh = catalog.ufh_mech.find(x => x.id === item.id) || catalog.ufh_electro.find(x => x.id === item.id) || catalog.thermostats_stout.find(x => x.id === item.id);
                 this.state.thermoCtrl = _curTh && _curTh.ctrlType ? _curTh.ctrlType : 'all';
-                this.state.thermoWifi = _curTh && _curTh.wifi !== undefined ? String(_curTh.wifi) : 'all';
+                // Wi-Fi не предустанавливаем: у механических его нет ни у одной
+                // модели, а у электронных и сенсорных есть у всех. Предустановка
+                // намертво запирала фильтр «Тип» — переключение на «Сенсорный»
+                // давало пустой список.
+                this.state.thermoWifi = 'all';
                 this.state.thermoColor = _curTh && _curTh.color ? _curTh.color : 'all';
                 this.state.thermoCurrent = _curTh && _curTh.current != null ? String(_curTh.current) : 'all';
             }
@@ -22395,6 +22928,7 @@ const app = {
                 `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Тип:</span>` +
                 `<span onclick="app.setThermoCtrl('mech')" ${_b(_tc==='mech')}>Механический</span>` +
                 `<span onclick="app.setThermoCtrl('electronic')" ${_b(_tc==='electronic')}>Электронный</span>` +
+                `<span onclick="app.setThermoCtrl('touch')" ${_b(_tc==='touch')}>Сенсорный</span>` +
                 `<span onclick="app.setThermoCtrl('all')" ${_b(_tc==='all')}>Все</span>` +
                 `</div>` +
                 `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
@@ -24078,12 +24612,41 @@ const app = {
         // своего радио у контроллера нет. Поэтому замена в смете переставляет
         // и сами настройки — иначе выбранный руками МЛ-740 остался бы без
         // модуля, то есть неработающим, и никто бы этого не заметил.
-        else if (catalog.air_sensors && catalog.air_sensors.some(x => x.id === originalId)) {
+        // Часть термостатов STOUT числится и в приборах в помещении, и в
+        // термостатах тёплого пола — это один артикул в двух ролях. Поэтому
+        // мало совпадения по id: замена в разделе 4.3 попадала сюда и тут же
+        // стиралась строкой «снимаем запись из swaps». Смотрим, из какого
+        // раздела сметы пришла позиция.
+        else if (catalog.air_sensors && catalog.air_sensors.some(x => x.id === originalId) &&
+            (this.currentSpec || []).some(i => (i.originalId || i.id) === originalId && /^\s*2\.8/.test(i.group || ''))) {
             let dev = catalog.air_sensors.find(x => x.id === chosenId);
             if (dev) {
                 this.state.airDeviceType = dev.kind;
                 this.state.airLink = dev.link;
+                // Запоминаем САМ артикул, а не только вид и связь. Раньше
+                // getThermaticConfig подбирал прибор заново по паре
+                // «вид + связь», а двухпозиционных термостатов STOUT в
+                // каталоге несколько — и любой выбор из таблицы схлопывался
+                // в первый из них (STE-3001 белый).
+                this.state.airDeviceId = dev.id;
             }
+            // Датчик воздуха живёт не через state.swaps, а через поля выше.
+            // Запись в swaps, сделанную общим кодом, снимаем вместе со всеми
+            // прежними по датчикам: иначе выбор МЛ-232 → STE-3001 → МЛ-232
+            // возвращал бы STE-3001 — старая запись переживала смену прибора
+            // и срабатывала снова. Это же давало «применяется со второго
+            // раза»: первый выбор менял поля, а вторым срабатывал swaps.
+            // clearAirSwaps() здесь не годится: она сбрасывает airLink с 'dry'
+            // на 'wired', то есть отменила бы выбор двухпозиционного термостата.
+            // Артикул базового термостата тёплого пола не трогаем: он есть и
+            // в air_sensors, и замена в разделе 4.3 живёт как раз под этим
+            // ключом — общая чистка стирала её вместе со своими.
+            const _ufhBase = ((this.state.ufhCtrl === 'mech'
+                ? (catalog.ufh_mech || [])[0] : (catalog.ufh_electro || [])[0]) || {}).id;
+            const _airIds = catalog.air_sensors.map(x => x.id).filter(id => id !== _ufhBase);
+            Object.keys(this.state.swaps).forEach(k => {
+                if (_airIds.includes(k)) delete this.state.swaps[k];
+            });
         }
         else if (originalId.startsWith('SEB-')) {
             // PLUS в списке замен больше нет (снят с производства), поэтому и ветки под
@@ -24428,6 +24991,8 @@ const app = {
             // полом — иначе термостаты считать не по чему (см. applyTpAreaToRooms)
             this.applyTpAreaToRooms(1, this.state.tp1);
             if (this.state.floors === 2) this.applyTpAreaToRooms(2, this.state.tp2);
+            // Поиск города виден только в подробном режиме — сюда же и подставляем
+            this.autofillCityFromProfile();
         } else {
             // При выключении: суммируем площади всех комнат и отдаем эту цифру общему ползунку
             if (this.state.rooms && this.state.rooms.length > 0) {
@@ -26283,8 +26848,15 @@ const app = {
     },
     setThermoCtrl: function (val) {
         this.state.thermoCtrl = val;
-        if (val !== 'all') { this.state.ufhCtrl = (val === 'electronic') ? 'electro' : 'mech'; this.syncUI(); this.render(); }
-        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+        // сенсорные модели лежат в том же пуле, что и электронные
+        if (val !== 'all') { this.state.ufhCtrl = (val === 'electronic' || val === 'touch') ? 'electro' : 'mech'; this.syncUI(); this.render(); }
+        // Смена типа меняет базовую позицию в смете, и старый lookupId
+        // становится недействительным: окно переоткрывалось «с нуля» и сбрасывало
+        // сам фильтр. Ищем термостат в свежей смете и открываем окно на нём.
+        const pool = [...(catalog.ufh_mech || []), ...(catalog.ufh_electro || []), ...(catalog.thermostats_stout || [])];
+        const row = (this.currentSpec || []).find(i => pool.some(p => p.id === (i.originalId || i.id)));
+        const id = (row && (row.originalId || row.id)) || this._lastSwapLookupId;
+        if (id) { this._lastSwapLookupId = id; this.openSwapModal(id); }
     },
     setThermoWifi: function (val) {
         this.state.thermoWifi = val;
@@ -27720,6 +28292,64 @@ const app = {
         this.saveState();
     },
 
+    // Город из анкеты монтажника сам подставляется в подробный расчёт — как заготовка,
+    // которую в поле поиска можно в любой момент заменить вручную. Условия: город из анкеты
+    // есть в CITIES_DB, регион анкеты ему не противоречит и в расчёте город ещё не выбран.
+    // Какой город уже подставляли, помним в state.autoCityDone: если человек его стёр или
+    // сменил, второй раз не навязываемся (пока он не поменяет город в самой анкете).
+    autofillCityFromProfile: function () {
+        if (!this.state.detailedRooms) return false;
+        if (this.state.selectedCity) return false;
+        if (typeof CITIES_DB === 'undefined') return false;
+
+        const prof = this.state.tgUser || this.state.user || {};
+        const profCity = (prof.city || '').trim();
+        if (!profCity) return false;
+
+        const norm = s => String(s || '').toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
+        const key = norm(profCity);
+        if (this.state.autoCityDone === key) return false;
+        this.state.autoCityDone = key;
+
+        const city = CITIES_DB.find(c => norm(c.name) === key);
+        if (!city) return false;
+
+        if (!this.isProfileCityRegionConsistent(profCity, prof.region)) {
+            console.log('[autofillCityFromProfile] Город и регион в анкете расходятся, город не подставляем:', profCity, '/', prof.region);
+            return false;
+        }
+
+        this.state.selectedCity = city;
+        // Та же формула, что и в selectCity: K = (20 - T_наружная) / 45
+        this.state.region = Math.round(((20 - city.temp) / 45) * 100);
+        return true;
+    },
+
+    // Сверка «город ↔ регион» из анкеты по справочнику CITY_REGION_MAP (catalog.js).
+    // Сравниваем по началу слова, а не буква в букву: «Москва» и «Московская область» —
+    // одно и то же, а «Сочи» при «Московской области» — уже расхождение. Если города нет
+    // в справочнике или регион в анкете пуст — сверять не с чем, считаем что всё сходится.
+    isProfileCityRegionConsistent: function (city, region) {
+        if (typeof CITY_REGION_MAP === 'undefined') return true;
+        const key = String(city || '').trim().toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ');
+        const mapped = CITY_REGION_MAP[key];
+        if (!mapped) return true;
+        if (!String(region || '').trim()) return true;
+
+        // \b с кириллицей не работает (в JS это ASCII-граница), поэтому служебные слова
+        // вырезаем просто по вхождению — внутри названий регионов они не встречаются
+        const stem = s => String(s).toLowerCase().replace(/ё/g, 'е')
+            .replace(/область|обл\.|край|республика|респ\.|автономный|округ|г\./g, ' ')
+            .replace(/[^а-я\-\s]/g, ' ')
+            .trim().split(/\s+/)[0] || '';
+        const a = stem(mapped), b = stem(region);
+        if (!a || !b) return true;
+
+        let same = 0;
+        while (same < a.length && same < b.length && a[same] === b[same]) same++;
+        return same >= 4;
+    },
+
     handleCityKeydown: function (e) {
         const dropdown = document.getElementById('city_suggestions');
         if (!dropdown || dropdown.style.display === 'none') return;
@@ -28403,8 +29033,14 @@ const app = {
         // сидят на сухом контакте, поэтому выбор «проводом/радио» к ним не
         // применяется.
         const airLink = (airKind === 'dry') ? 'dry' : (s.airLink || 'wired');
+        // Сначала — прибор, выбранный руками в таблице замен (state.airDeviceId).
+        // Проверку по виду и связи оставляем: если после ручного выбора
+        // переключили «Датчик/Термостат» или «Проводом/По радио», старый
+        // артикул не подойдёт и подбор сам вернётся к первому подходящему.
+        const airPool = catalog.air_sensors || [];
         const airDevice = airOn
-            ? ((catalog.air_sensors || []).find(x => x.kind === airKind && x.link === airLink) || null)
+            ? ((s.airDeviceId && airPool.find(x => x.id === s.airDeviceId && x.kind === airKind && x.link === airLink))
+                || airPool.find(x => x.kind === airKind && x.link === airLink) || null)
             : null;
 
         /**
@@ -28439,6 +29075,15 @@ const app = {
         const airCapped = roomsAll.length > 0 && airAuto < airByCircuits;
         const airManual = (s.airSensors === null || s.airSensors === undefined) ? null : s.airSensors;
         const airQty = airOn ? Math.max(0, airManual === null ? airAuto : airManual) : 0;
+        // Способ терморегулирования каждого контура — то, что контроллер
+        // показывает в «ПОЛЕ КОНТУРА» на экране (техдокументация, стр. 24):
+        // по воздуху, если на контур куплен комнатный датчик или термостат,
+        // иначе по теплоносителю. Датчики достаются тем же контурам, по
+        // которым они и считались выше (при автоматике ТП — радиаторным).
+        const airTargets = (s.ufhAuto && tQ > 0)
+            ? circuits.filter(x => x.src === 'rad')
+            : circuits.slice();
+        airTargets.slice(0, airQty).forEach(x => { x.byAir = true; });
         // Радиомодуль — один на объект, независимо от числа радиоустройств
         // (их он держит до сорока). Нужен, как только появилось хоть одно.
         const needRadio = airOn && airLink === 'radio';
@@ -28447,7 +29092,7 @@ const app = {
         // Какой запорный орган выбран под защиту от протечки. По умолчанию
         // шаровой кран 3/4" с приводом; заменой его можно сменить на соленоид —
         // тогда отдельный привод не нужен, соленоид сам себе привод.
-        const leakValveBase = (catalog.leak_valves || []).find(v => v.dn === 20) || (catalog.leak_valves || [])[0] || null;
+        const leakValveBase = this.leakValveBase();
         const leakSwapId = leakValveBase && s.swaps && s.swaps[leakValveBase.id];
         const leakValve = (leakSwapId && (catalog.leak_valves || []).find(v => v.id === leakSwapId)) || leakValveBase;
         const leakSolenoid = !!(leakValve && leakValve.solenoid);
@@ -29355,6 +30000,11 @@ const app = {
         this.currentEquipmentList = [];
         this.currentWorksList = [];
         app.tempWarns = []; // Массив для сбора предупреждений о дефиците мощности
+        // Паспортные патрубки подобранного бойлера (см. блок подбора бака ниже).
+        // Сбрасываем на каждой отрисовке: без этого при выключении ГВС обвязка
+        // считалась бы по патрубкам бака из прошлого расчёта.
+        this._tankPorts = null;
+        this._tankPortsModel = null;
         this._ufhTransitMeters = 0; // метраж транзита до коллектора ТП 2-го этажа (#18)
         this.currentSpec = []; // Список оборудования для генерации схемы
         this.swapWindowWidthMap = {}; // originalId → min ширина окна (м) для фильтра замен
@@ -29676,47 +30326,66 @@ const app = {
                 this.currentSpec.push({ ...finalItem, q: finalQty, group: itemGroup });
                 this.calcFinalTotal += Math.round(originalPrice * finalQty);
 
-                let shouldMergeThisItem = forceMerge ||
-                    (this.state.detailedRooms && itemGroup === "3. Приборы отопления" && tip && tip.includes('|||')) ||
-                    (itemGroup === "8. Канализация" || (itemGroup && (itemGroup.includes("Канализация:") || itemGroup.includes("[Инсталляция]"))));
-                if (shouldMergeThisItem) {
-                    let existing = bill.find(x => x.id === finalItem.id && (forceMerge ? true : x.group === itemGroup));
-                    if (existing) {
-                        existing.q += finalQty;
-                        existing.sum = Math.round(existing.sum + finalItem.price * finalQty);
-                        if (tip && tip.includes('|||')) {
-                            let parts = tip.split('|||');
-                            let locInfo = parts[0];
-                            let devInfo = parts[1];
-                            if (!existing.locs) {
-                                let oldParts = existing.qtyTip ? existing.qtyTip.split('|||') : [];
-                                existing.locs = oldParts.length > 1 ? [oldParts[0]] : [existing.qtyTip];
-                            }
-                            if (!existing.instanceKeys) existing.instanceKeys = [existing.originalId || existing.id];
-                            if (!existing.locs.includes(locInfo)) {
-                                existing.locs.push(locInfo);
-                                existing.instanceKeys.push(finalItem.originalId || finalItem.id);
-                            }
-                            existing.qtyTip = existing.locs.join('<br>') + '<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">' + devInfo;
-                        } else if (tip && (!existing.qtyTip || !existing.qtyTip.includes(tip))) {
-                            existing.qtyTip = existing.qtyTip ? existing.qtyTip + "<br>" + tip : tip;
+                // Одинаковые позиции внутри одного подраздела складываем в одну строку.
+                // Раньше слияние включалось только при выключенной группировке (forceMerge),
+                // в приборах отопления и в канализации — и один и тот же товар, добавленный
+                // из двух разных мест render(), давал в разделе визуальный дубль: насосы под
+                // насосно-смесительные группы ТП и насос под радиаторную группу — обе строки
+                // в «2.4. Гидравлика котельной», товар и подсказка совпадают, отличается
+                // только количество.
+                // Ключ слияния — id ПЛЮС название: у части позиций имя переписывается под
+                // назначение при том же id каталога («…для бойлера» против «…для радиаторов»,
+                // группа ТП без упоминания радиаторов), и по одному id такие строки слиплись
+                // бы в одну с чужой подписью. При выключенной группировке ключ прежний — id
+                // по всей смете: подразделов там нет, и разбивать сводную строку по названию
+                // означало бы менять уже сложившийся вид «схлопнутой» сметы.
+                let existing = bill.find(x => x.id === finalItem.id &&
+                    (forceMerge ? true : (x.group === itemGroup && x.name === finalItem.name)));
+                if (existing) {
+                    existing.q += finalQty;
+                    existing.sum = Math.round(existing.sum + finalItem.price * finalQty);
+                    if (tip && tip.includes('|||')) {
+                        let parts = tip.split('|||');
+                        let locInfo = parts[0];
+                        let devInfo = parts[1];
+                        if (!existing.locs) {
+                            let oldParts = existing.qtyTip ? existing.qtyTip.split('|||') : [];
+                            existing.locs = oldParts.length > 1 ? [oldParts[0]] : [existing.qtyTip];
                         }
-                    } else {
-                        let finalTip = tip;
-                        if (tip && tip.includes('|||')) {
-                            let parts = tip.split('|||');
-                            finalItem.locs = [parts[0]];
-                            finalItem.instanceKeys = [finalItem.originalId || finalItem.id];
-                            finalTip = parts[0] + '<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">' + parts[1];
+                        if (!existing.instanceKeys) existing.instanceKeys = [existing.originalId || existing.id];
+                        if (!existing.locs.includes(locInfo)) {
+                            existing.locs.push(locInfo);
+                            existing.instanceKeys.push(finalItem.originalId || finalItem.id);
                         }
-                        bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), basePrice: originalPrice, displaySku: finalItem.displaySku || finalItem.article || finalItem.id, qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
+                        existing.qtyTip = existing.locs.join('<br>') + '<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">' + devInfo;
+                    } else if (tip && (!existing.qtyTip || !existing.qtyTip.includes(tip))) {
+                        existing.qtyTip = existing.qtyTip ? existing.qtyTip + "<br>" + tip : tip;
                     }
                 } else {
                     let finalTip = tip;
-                    if (tip && tip.includes('|||')) finalTip = tip.split('|||').join('<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">');
+                    if (tip && tip.includes('|||')) {
+                        let parts = tip.split('|||');
+                        finalItem.locs = [parts[0]];
+                        finalItem.instanceKeys = [finalItem.originalId || finalItem.id];
+                        finalTip = parts[0] + '<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">' + parts[1];
+                    }
                     bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), basePrice: originalPrice, displaySku: finalItem.displaySku || finalItem.article || finalItem.id, qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
                 }
             });
+        };
+        // Евроконус 16 к коллектору: компрессионный (по умолчанию) или аксиальный переходник
+        // SFA-0034-001634, выбранный в таблице замены. У аксиального соединения обжимного
+        // кольца нет — трубу держит надвижная монтажная гильза, и без неё соединение просто
+        // не собирается. Поэтому гильзу добавляем тем же количеством и только вместе с ним:
+        // отдельной строкой в смете она бы висела мёртвым грузом при компрессионной схеме.
+        const addEurocone = (item, qty, tip, group = null) => {
+            if (!item || qty <= 0) return;
+            addToBill(item, qty, tip, group);
+            const _chosen = (this.state.swaps || {})[item.originalId || item.id];
+            if (_chosen === 'SFA-0034-001634') {
+                const _sleeve = (catalog.axial_fittings_pex || []).find(x => x.id === 'SFA-0020-000016');
+                if (_sleeve) addToBill(_sleeve, qty, "Монтажная гильза 16 — надвижная, держит трубу в аксиальном переходнике (1 шт на переходник).", group);
+            }
         };
         // Каталожная цена труб-бухт (pipes, metal_plastic_pipes, rad_pipes_grey, stable_pipes,
         // insulated_pipes, insulated_pipes_mp_red/blue) хранится ЗА МЕТР (так короче и удобнее
@@ -30522,6 +31191,24 @@ const app = {
             let warn = targetVol > 500 ? `<br><b style="color:#EF4444; font-size:10px;">⚠️ Требуемый объем ГВС превышает 500л! Добавьте в смету второй бойлер вручную или проверьте количество потребителей ГВС.</b>` : warnWall;
 
             addToBill(t, 1, this.getDesc('boiler_tank', this.state.res, vol, hw_fixtures_vol, chosenBy) + warn);
+
+            // Присоединительные размеры бойлера — из паспорта позиции (поле ports в
+            // каталоге). У разных серий они разные: у OptiBase змеевик и ХВС 1",
+            // у нержавеющего SWH-4110 и ROMMER GT всё 3/4" плюс отдельный патрубок
+            // клапана 1/2". Берём ту позицию, которая реально встанет в смету:
+            // ручная замена и режим ROMMER подставляют бак с другими патрубками.
+            let _portSrc = baseItem;
+            const _tankSwapId = (this.state.swaps || {})[baseItem.id];
+            if (_tankSwapId) {
+                for (const _db of allTankDbs) {
+                    const _f = _db.find(x => x.id === _tankSwapId) || _db.find(x => x.rommer && x.rommer.id === _tankSwapId);
+                    if (_f) { _portSrc = (_f.id === _tankSwapId) ? _f : _f.rommer; break; }
+                }
+            } else if (this.state.brandMode === 'rommer' && baseItem.rommer) {
+                _portSrc = baseItem.rommer;
+            }
+            this._tankPorts = (_portSrc && _portSrc.ports) || null;
+            this._tankPortsModel = _portSrc ? _portSrc.id : null;
         }
         flushBill("1. Котёл + водонагреватель");
 
@@ -30693,9 +31380,46 @@ const app = {
             } else {
                 addToBill(catalog.tank_kit, 1, "Подключение расширительного бака ГВС.", grp);
             }
-            addToBill(catalog.dhw_fittings[0], 2, "Американка 1\" (Змеевик)", grp); addToBill(catalog.dhw_fittings[1], 2, "Кран 1\" (Змеевик)", grp);
-            addToBill(catalog.dhw_fittings[2], 1, "Американка 3/4\" (ГВС)", grp); addToBill(catalog.dhw_fittings[3], 1, "Кран 3/4\" (ГВС)", grp);
-            addToBill(catalog.dhw_fittings[4], 1, "Клапан 6 бар", grp); addToBill(catalog.dhw_fittings[5], 1, "Крестовина 3/4\"", grp); addToBill(catalog.dhw_fittings[6], 1, "Клапан обратный (ХВС)", grp); addToBill(catalog.dhw_fittings[7], 1, "Кран 3/4\" (ХВС)", grp);
+            // Арматура обвязки — по паспортным патрубкам подобранного бойлера
+            // (this._tankPorts). Раньше размеры были прибиты: змеевик всегда 1",
+            // и на нержавеющем SWH-4110 или ROMMER GT с патрубками 3/4" смета
+            // выдавала краны на типоразмер больше, чем сам бак.
+            const _tp = this._tankPorts || {};
+            const _coilSz = _tp.coil || '1"';
+            const _dhwSz = _tp.dhw || '3/4"';
+            const _coldSz = _tp.cold || '3/4"';
+            // Пары «американка + кран» есть только в двух размерах: 1" (позиции 0/1)
+            // и 3/4" (позиции 2/3). Всё, что не 1", собирается на 3/4".
+            const _un = sz => (sz === '1"') ? catalog.dhw_fittings[0] : catalog.dhw_fittings[2];
+            const _bv = sz => (sz === '1"') ? catalog.dhw_fittings[1] : catalog.dhw_fittings[3];
+            const _portNote = sz => ` Патрубок бойлера — ${sz} по паспорту.`;
+
+            // Назначение каждой единицы арматуры — прямо в названии строки, в скобках.
+            // Без этого одинаковые позиции змеевика и ГВС (у баков с патрубками одного
+            // размера это буквально один артикул) слипались в одну строку «4 шт.», и по
+            // смете нельзя было понять, какой кран куда идёт. Свой originalId — чтобы
+            // строки не смёрзлись обратно и ручная замена одной не задевала другую.
+            const _named = (item, suffix, key) => ({
+                ...item,
+                name: `${item.name.replace(/\s*\([^)]*\)\s*$/, '')} (${suffix})`,
+                originalId: item.id + '_' + key
+            });
+
+            addToBill(_named(_un(_coilSz), 'змеевик бойлера, подача и обратка', 'coil'), 2,
+                `Разъёмное соединение (американка) ${_coilSz} на подаче и обратке змеевика — снимается для обслуживания бойлера без резки трубы.${_portNote(_coilSz)}`, grp);
+            addToBill(_named(_bv(_coilSz), 'змеевик бойлера, подача и обратка', 'coil'), 2,
+                `Кран шаровой ${_coilSz} на змеевике — отсекает греющий контур, по одному на подачу и обратку.${_portNote(_coilSz)}`, grp);
+            addToBill(_named(_un(_dhwSz), 'выход ГВС, Т3', 'dhw'), 1,
+                `Разъёмное соединение (американка) ${_dhwSz} на выходе горячей воды Т3.${_portNote(_dhwSz)}`, grp);
+            addToBill(_named(_bv(_dhwSz), 'выход ГВС, Т3', 'dhw'), 1,
+                `Кран шаровой ${_dhwSz} на выходе ГВС Т3 — отсекает бойлер от разводки горячей воды.${_portNote(_dhwSz)}`, grp);
+            addToBill(catalog.dhw_fittings[4], 1,
+                `Клапан предохранительный 6 бар${_tp.safety ? ` (${_tp.safety}) — у этого бойлера под него отдельный патрубок ${_tp.safety}` : ' (1/2") — ставится на линии входа холодной воды В1, между клапаном и патрубком бойлера запорной арматуры быть не должно'}.`, grp);
+            addToBill(_named(catalog.dhw_fittings[5], 'вход ХВС, В1', 'cold'), 1, `Крестовина 3/4" на входе холодной воды В1 — узел предохранительного клапана, расширительного бака ГВС и слива.`, grp);
+            addToBill(_named(catalog.dhw_fittings[6], 'вход ХВС, В1', 'cold'), 1, `Клапан обратный 3/4" на входе ХВС — не пускает нагретую воду обратно в водопровод.`, grp);
+            addToBill(_named(catalog.dhw_fittings[7], 'вход ХВС, В1', 'cold'), 1,
+                `Кран шаровой 3/4" на входе ХВС — отсекает бойлер от водопровода.` +
+                (_coldSz !== '3/4"' ? ` <b>Внимание:</b> патрубок ХВС этого бойлера — ${_coldSz}, узел В1 собран на 3/4": нужен переходник ${_coldSz}–3/4" (в смету не входит).` : ''), grp);
             if (this.state.recirc) {
                 // Насос рециркуляции. По умолчанию — со встроенным таймером: без внешней
                 // автоматики иначе он гоняет контур круглосуточно. Но если в котельной стоит
@@ -30734,9 +31458,15 @@ const app = {
                 // автоподбор. Пары в каталоге под этим id нет намеренно: openSwapModal и
                 // addToBill не находят его в catalog и берут за основу саму строку.
                 addToBill({ ..._recircPump, originalId: 'dhw_recirc_pump' }, 1, _recircDesc, grp);
-                addToBill(catalog.dhw_fittings[2], 1, "Американка 3/4\" (Рецирк.)", grp);
-                addToBill(catalog.dhw_fittings[3], 1, "Кран 3/4\" (Рецирк.)", grp);
-                addToBill(catalog.dhw_fittings[6], 1, "Обратный клапан (Рецирк.)", grp);
+                // Узел рециркуляции — тоже с назначением в названии строки и с
+                // паспортным размером патрубка Т4 в подсказке.
+                const _recSz = (this._tankPorts && this._tankPorts.recirc) || '3/4"';
+                addToBill(_named(catalog.dhw_fittings[2], 'рециркуляция ГВС, Т4', 'recirc'), 1,
+                    `Разъёмное соединение (американка) 3/4" на линии рециркуляции — снимается для обслуживания насоса. Патрубок рециркуляции бойлера — ${_recSz} по паспорту.`, grp);
+                addToBill(_named(catalog.dhw_fittings[3], 'рециркуляция ГВС, Т4', 'recirc'), 1,
+                    `Кран шаровой 3/4" на линии рециркуляции — отсекает контур рециркуляции от бойлера.`, grp);
+                addToBill(_named(catalog.dhw_fittings[6], 'рециркуляция ГВС, Т4', 'recirc'), 1,
+                    `Клапан обратный 3/4" на линии рециркуляции — не даёт горячей воде идти в обход насоса.`, grp);
             }
         }
         let hasRad = this.state.systems.includes('rad');
@@ -30966,7 +31696,13 @@ const app = {
         }
         let brand = this.state.brandMode;
         let radNeedsDn25 = (brand === 'rommer') || (this.state.manualDnOverride ? (this.state.manualDnOverride !== 'dn20') : ((pwr > 10) || useAnalogSec2));
-        let dn25 = radNeedsDn25 || (this.state.ufhMixType === 'dn25' || this.state.ufhMixType === 'dn25_servo');
+        // Тип узла тёплого пола учитываем ТОЛЬКО когда тёплый пол реально есть. Блок,
+        // который синхронизирует ufhMixType с ручной сменой DN, работает внутри
+        // if (hasTp && tpArea > 0) — при выключенном ТП в state остаётся значение от
+        // прежней конфигурации, и оно молча перебивало ручной выбор DN20: группа в
+        // строке DN20, а коллектор, группа бойлера и насосы — DN25.
+        let ufhWantsDn25 = (hasTp && tpArea > 0) && (this.state.ufhMixType === 'dn25' || this.state.ufhMixType === 'dn25_servo');
+        let dn25 = radNeedsDn25 || ufhWantsDn25;
         let pmp = null;
 
         // #7: проверка «хватит ли ОДНОЙ насосной группы на радиаторы всех этажей».
@@ -30995,6 +31731,10 @@ const app = {
                 else if (_needByPower > rQ) rQ = _needByPower;
             }
         }
+
+        // Предупреждение по разделу «2. Обвязка котельной» (см. flushBill ниже):
+        // ручная замена насосной группы отопления на меньший типоразмер.
+        let hydroWarnHtml = null;
 
         if (needCollector) {
             // Несущий каркас (рама) или хомуты коллектора котельной на базе C-образного профиля и консолей STOUT
@@ -31119,15 +31859,59 @@ const app = {
                 pmp = catalog.pumps_dn20[0];
             }
 
+            // Ручная замена радиаторной насосной группы через таблицу замены применяется
+            // в слое отрисовки строки (см. state.swaps в renderBill), а подбор о ней не
+            // знает: насос и проверка мощности шли по группе «по умолчанию». Отсюда пара
+            // «группа DN20 + насос 25/60-180», которая физически не собирается. Достаём
+            // фактически стоящую в смете группу и дальше считаем по ней.
+            let radGrpActual = grps[0];
+            const _radGrpSwapId = (this.state.swaps || {})[grps[0].id];
+            if (_radGrpSwapId && _radGrpSwapId !== grps[0].id) {
+                const _grpPool = [].concat(catalog.groups_dn20 || [], catalog.groups_dn25 || [], catalog.groups_dn32 || []);
+                const _byId = _grpPool.find(g => g.id === _radGrpSwapId);
+                // Замена могла быть и на ROMMER-версию позиции — у неё свой DN и своя мощность.
+                const _byRommer = _byId ? null : _grpPool.find(g => g.rommer && g.rommer.id === _radGrpSwapId);
+                if (_byId) radGrpActual = _byId;
+                else if (_byRommer) radGrpActual = _byRommer.rommer;
+            }
+            // ROMMER-группы без «универсального корпуса» не пишут DN в названии — они все DN25
+            // (та же оговорка, что и в фильтре типоразмера в таблице замены).
+            const _actDnMatch = /DN\s*(\d+)/i.exec(radGrpActual.name || '');
+            const _actDn = _actDnMatch ? parseInt(_actDnMatch[1], 10) : (dn25 ? 25 : 20);
+
             // Цена варианта «загрузка бойлера насосной группой» для таблицы замены: узел
             // плюс насос. Считаем здесь, потому что DN20/DN25 известен только тут.
             this._tankLoadKitInfo = { price: ((grps[0] || {}).price || 0) + ((pmp || {}).price || 0), imgId: (grps[0] || {}).id };
 
             // Добавляем группы и насосы
+            // Насос — под ФАКТИЧЕСКИ стоящую группу, а не под флаг dn25: в DN20-группу
+            // насос 25/60-180 (1½", 180 мм) не встанет, там 15/60-130, и наоборот.
             let radPump = pmp;
+            if (_actDn === 20 && catalog.pumps_dn20 && catalog.pumps_dn20[0]) {
+                radPump = catalog.pumps_dn20[0];
+            } else if (_actDn >= 25 && !dn25) {
+                radPump = catalog.pumps_dn25.find(p => p.type === this.state.pumpType) || catalog.pumps_dn25[0];
+            }
             if (rQ > 0) {
                 addToBill(grps[0], rQ, this.getDesc('pump_group', grps[0], rQ, 'rad', pwr), grpHydro);
                 addToBill(radPump, rQ, this.getDesc('pump_std'), grpHydro);
+
+                // Паспортная мощность фактически выбранной группы против нагрузки
+                // радиаторного контура. Автоподбор такую проверку делает сам (число групп
+                // считается по мощности выше), но ручную замену на меньший типоразмер
+                // он не отслеживал — смета молча оставалась недогруженной по мощности.
+                const _actCapM = /для\s+радиаторов\s+(?:до\s+)?(\d+(?:[.,]\d+)?)\s*кВт/i.exec(radGrpActual.name || '');
+                const _actCapKw = _actCapM ? parseFloat(_actCapM[1].replace(',', '.')) : 0;
+                const _loadKw = this._radGroupLoadKw || 0;
+                if (_actCapKw > 0 && _loadKw > 0 && (_actCapKw * rQ) < _loadKw) {
+                    hydroWarnHtml = `⚠️ <b>ВНИМАНИЕ: насосная группа не проходит по мощности!</b><br>` +
+                        `«${radGrpActual.name}» — паспортная мощность ${_actCapKw} кВт` +
+                        (rQ > 1 ? ` × ${rQ} шт = ${Math.round(_actCapKw * rQ * 10) / 10} кВт` : ``) +
+                        `, а на радиаторный контур приходится ${Math.round(_loadKw * 10) / 10} кВт.` +
+                        `<br><span style="font-weight:500; display:block; margin-top:6px;">` +
+                        `Группа выбрана вручную. Верните подбор по умолчанию кнопкой ↺ у метки «Изменён» в строке группы ` +
+                        `либо поставьте типоразмер больше — иначе контур не прокачается.</span>`;
+                }
             }
             if (tankNeedsPumpGroup) {
                 let tankBase = grps[0];
@@ -31347,13 +32131,23 @@ const app = {
                     addToBill(this.getPprItem(catalog.ppr_ekoplastik_tee_red, 'STKR04032RCT'), 2, `Тройник переходной 40х32х40 PP-RCT для ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
                 }
             } else {
+                // Резьба переходника — по ПАСПОРТНОМУ патрубку змеевика, а не по
+                // диаметру трубы: у нержавеющего SWH-4110 и ROMMER GT змеевик 3/4",
+                // у OptiBase и HAJDU — 1". Пресс-сторона по-прежнему по трубе.
+                // Пары 22х1" в ряду нержавейки нет — там переходим 22х3/4" и пишем
+                // в подсказке, что нужен резьбовой переход на 1".
+                const _coilPort = (this._tankPorts && this._tankPorts.coil) || '1"';
+                const _coilIs1 = (_coilPort === '1"');
                 if (ss_diameter === 22) {
-                    addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-002234'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 3/4" для подключения нержавеющей трубы к патрубкам змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
+                    const _adp = catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-002234');
+                    addToBill(_adp, 2, `Переходник с пресс-соединения на внутреннюю резьбу 3/4" для подключения нержавеющей трубы к патрубкам змеевика бойлера ГВС. Патрубок змеевика — ${_coilPort} по паспорту.` +
+                        (_coilIs1 ? ` <b>Внимание:</b> для патрубка 1" дополнительно нужен резьбовой переход 3/4"–1" (в смету не входит).` : ``) + ` Требуется: 2 шт.`, grp);
                     addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000022'), 4, `Пресс-угольник 90° В-В для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
                     addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000022'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
                     addToBill(catalog.ss_tee.find(x => x.id === 'RSS-1013-000022'), 2, `Пресс-тройник для создания ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
                 } else {
-                    addToBill(catalog.ss_adapter_fi.find(x => x.id === 'RSS-1022-000281'), 2, `Переходник с пресс-соединения на внутреннюю резьбу 1" для подключения нержавеющей трубы к патрубкам змеевика бойлера ГВС. Требуется: 2 шт.`, grp);
+                    const _adp28 = catalog.ss_adapter_fi.find(x => x.id === (_coilIs1 ? 'RSS-1022-000281' : 'RSS-1022-002834'));
+                    addToBill(_adp28, 2, `Переходник с пресс-соединения на внутреннюю резьбу ${_coilIs1 ? '1"' : '3/4"'} для подключения нержавеющей трубы к патрубкам змеевика бойлера ГВС. Патрубок змеевика — ${_coilPort} по паспорту. Требуется: 2 шт.`, grp);
                     addToBill(catalog.ss_elbow90_ff.find(x => x.id === 'RSS-1003-000028'), 4, `Пресс-угольник 90° В-В для поворотов трубопровода греющего контура бойлера ГВС. Требуется: 4 шт.`, grp);
                     addToBill(catalog.ss_elbow45.find(x => x.id === 'RSS-1004-000028'), 2, `Пресс-угольник 45° В-В для обхода препятствий и плавных поворотов в обвязке бойлера ГВС. Требуется: 2 шт.`, grp);
                     addToBill(catalog.ss_tee_red.find(x => x.id === 'RSS-1014-282228'), 2, `Пресс-тройник переходной для создания ответвлений в греющем контуре бойлера ГВС. Требуется: 2 шт.`, grp);
@@ -31540,8 +32334,9 @@ const app = {
                     `<b>Важно:</b> при подключении соблюдать полярность — иначе датчик постоянно показывает сработку.`
                 ]), grpLeak);
 
-                // Диаметр — по вводу ХВС, он в смете штатно 3/4".
-                let valve = catalog.leak_valves.find(v => v.dn === 20) || catalog.leak_valves[0];
+                // Диаметр — по вводу ХВС, он в смете штатно 3/4". Артикул
+                // закреплён в leakValveBase(): он же ключ в state.swaps.
+                let valve = this.leakValveBase();
                 valve = { ...valve, alts: catalog.leak_valves };
                 addToBill(valve, 1, this.autoTip(cfg.leakValve ? cfg.leakValve.name : valve.name, cfg.leakSolenoid
                     ? [
@@ -31579,10 +32374,19 @@ const app = {
                     `<b>Важно:</b> контроллер только следит и оповещает — открывать подпитку он не умеет, это делает механический клапан.`
                 ]), grpPress);
             }
+
+            // Кабель к автоматике: в комплекты он не входит, а без него раздел
+            // не смонтировать. Каждая позиция подписана назначением и несёт
+            // свой расчёт в подсказке.
+            // 2.8.4 занято контролем давления, поэтому кабели идут следующим
+            // номером — весь провод собран в одном подразделе.
+            let grpCable = "2.8.5. Провода и кабели (для контроллера котельной)";
+            this.boilerCableRows(cfg, { auto: grpCable, air: grpCable, leak: grpCable })
+                .forEach(r => addToBill(r.item, r.qty, r.desc, r.group));
         }
         this.renderBoilerAutoInfo();
 
-        flushBill("2. Обвязка котельной");
+        flushBill("2. Обвязка котельной", hydroWarnHtml);
 
         currentSectionTitle = "3. Приборы отопления";
         if (hasRad && radSecs > 0) {
@@ -32179,7 +32983,7 @@ const app = {
                     addToBill(lockshieldValve, totalRadCountSide, "Запорно-балансировочный клапан.", grp);
                 }
                 let radEurocone = (this.state.pipeType === 'insulated_mp' || this.state.pipeType === 'split_mp') ? catalog.parts[3] : catalog.parts[1];
-                addToBill(radEurocone, totalRadCount * 2, "Евроконус 16 (Рад).", grp); addToBill(catalog.parts[2], totalRadCount * 2, "Фиксатор 90°.", grp); addToBill(catalog.protective_sleeves[0], totalRadCount, "Втулка (под).", grp); addToBill(catalog.protective_sleeves[1], totalRadCount, "Втулка (обр).", grp); addToBill(catalog.label_kits[0], 1, "Наклейки.", grp);
+                addEurocone(radEurocone, totalRadCount * 2, "Евроконус 16 (Рад).", grp); addToBill(catalog.parts[2], totalRadCount * 2, "Фиксатор 90°.", grp); addToBill(catalog.protective_sleeves[0], totalRadCount, "Втулка (под).", grp); addToBill(catalog.protective_sleeves[1], totalRadCount, "Втулка (обр).", grp); addToBill(catalog.label_kits[0], 1, "Наклейки.", grp);
                 // Секционные (алюминиевые/биметаллические) радиаторы кронштейны в комплект не включают —
                 // в отличие от стальных панельных, которые продаются с кронштейнами в заводской упаковке.
                 if (totalRadCountSectional > 0) {
@@ -32315,6 +33119,10 @@ const app = {
                     // трубы показывал бы не относящийся к делу пикер «PEX / металлопластик» без эффекта на смету.
                     let boughtItem = asCoilPrice({ ...base, originalId: 'tee_pipe_d' + d });
                     boughtItem.alts = pipeDiamAlts; // даёт возможность вручную выбрать другой диаметр этого же материала (цена в этом списке — за метр, как в каталоге)
+                    // noCheapenAlts — в списке лежат все диаметры и все три материала. Самая
+                    // дешёвая позиция за метр там всегда Ø16, и «Аналог» схлопывал бы в неё
+                    // магистраль любого диаметра. Бренд позиции переключается своим .rommer.
+                    boughtItem.noCheapenAlts = true;
                     let desc = `<span style="font-size:11px;line-height:1.5;">` +
                         `<b>Зачем:</b> ${label} В тройниковой схеме труба идёт единой магистралью мимо всех радиаторов (а не отдельным лучом на каждый прибор, как в коллекторной) — у котла/стояка несёт расход сразу всех приборов, к концу трассы — расход одного-двух последних.<br>` +
                         `<b>Формула метража:</b> Длина трассы в одну сторону = 0,75·√(Приборов × Площадь этажа) + 3м (запас на подключение к стояку) — оценка длины обхода N точек по площади без плана дома. ×2 — подача и обратка, +10% запас на подрезку и обходы. Короткие отводы от магистрали до каждого радиатора — 0,9 м/прибор (обе трубы, с запасом).<br>` +
@@ -32358,6 +33166,9 @@ const app = {
                     if (!base) return;
                     let teeItem = { ...base, originalId: base.id + '_teerad' };
                     teeItem.alts = teeAlts; // даёт возможность вручную выбрать другой типоразмер тройника
+                    // noCheapenAlts — ряд типоразмеров, а не бренды: без этого «Аналог» ставил
+                    // на врезку Ø25 самый дешёвый тройник ряда (16), и магистраль «худела».
+                    teeItem.noCheapenAlts = true;
                     let fellBack = !teeIds[d];
                     let desc = `<span style="font-size:11px;line-height:1.5;">` +
                         `<b>Зачем:</b> Тройник врезки радиатора в магистраль — вместо отдельной петли до коллектора радиатор подключается прямой врезкой в проходящую мимо трубу (одна сторона — подача, другая — обратка).<br>` +
@@ -32382,6 +33193,8 @@ const app = {
                     anchorItem.alts = isMp
                         ? catalog.water_fittings_press_mp.filter(x => x.id.startsWith('SFP-0001') || x.id.startsWith('SFP-0002'))
                         : catalog.axial_fittings_pex.filter(x => x.id.startsWith('SFA-0001') || x.id.startsWith('SFA-0002'));
+                    // noCheapenAlts — тот же типоразмерный ряд, см. тройники выше.
+                    anchorItem.noCheapenAlts = true;
                     let anchorDesc = `<span style="font-size:11px;line-height:1.5;">` +
                         `<b>Зачем:</b> Узел подключения магистрали тройниковой разводки к стояку/насосной группе котельной. В этой схеме нет радиаторного коллектора — труба подключается напрямую резьбовым переходником (клик по этой строке — «Заменить» — позволяет вернуться на коллекторную схему).<br>` +
                         `<b>Формула диаметра:</b> берётся диаметр самого нагруженного (ближнего к котлу) участка магистрали — см. формулу диаметра трубы выше.<br>` +
@@ -32639,7 +33452,7 @@ const app = {
             proc(this.state.tp1, tpF1, "1 этаж");
             proc(this.state.floors === 2 ? this.state.tp2 : 0, tpF2, "2 этаж");
             if (mansNoFitting > 0) addToBill(catalog.parts[0], mansNoFitting * 2, "Концевые фитинги.", grpPipe);
-            addToBill(catalog.parts[3], loops * 2, "Евроконус 16 (ТП).", grpPipe); addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.", grpPipe);
+            addEurocone(catalog.parts[3], loops * 2, "Евроконус 16 (ТП).", grpPipe); addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.", grpPipe);
             addToBill(catalog.protective_sleeves[0], loops, "Втулка красная.", grpPipe); addToBill(catalog.protective_sleeves[1], loops, "Втулка синяя.", grpPipe); addToBill(catalog.label_kits[1], 1, "Наклейки.", grpPipe);
             let grpIns = "4.2. УТЕПЛИТЕЛЬ И КРЕПЁЖ";
 
@@ -32655,6 +33468,15 @@ const app = {
                 let cntByZones = Math.ceil(zones / 8); let cntByFloors = (this.state.floors === 2 && this.state.tp2 > 0) ? 2 : 1;
                 let finalCnt = Math.max(cntByZones, cntByFloors);
                 addToBill(catalog.wiring_center, finalCnt, "Коммутационный блок.", grpAuto);
+                // Кабель в комплект не входит, а без него раздел не смонтировать.
+                // Планка стоит в котельной у коллектора, поэтому длинные линии —
+                // только до термостатов в комнатах, всё остальное рядом.
+                const _cab = this.ufhCableCalc(zones, loops, finalCnt);
+                const grpCabUfh = "4.3.1. Провода и кабели (для тёплого пола)";
+                (catalog.ufh_cables || []).forEach(c => {
+                    const m = _cab.qty[c.id] || 0;
+                    if (m > 0) addToBill(c, m, _cab.desc[c.id], grpCabUfh);
+                });
             }
 
             let warn = null;
@@ -32802,7 +33624,7 @@ const app = {
                 if (q4) addToBill(getWaterManifold(catalog.water_manifolds_cold[2]), q4, descColl, grpCold);
                 if (q3) addToBill(getWaterManifold(catalog.water_manifolds_cold[1]), q3, descColl, grpCold);
                 if (q2) addToBill(getWaterManifold(catalog.water_manifolds_cold[0]), q2, descColl, grpCold);
-                addToBill(waterEurocone, totalColdPoints, this.getDesc('eurocone_water', totalColdPoints), grpCold);
+                addEurocone(waterEurocone, totalColdPoints, this.getDesc('eurocone_water', totalColdPoints), grpCold);
                 _addManifoldEnd('ХВС', 'cw', grpCold);
                 // Крепление коллектора ХВС
                 let clampItem = catalog.mounting_system.find(x => x.id === "SAC-0020-300001");
@@ -32873,7 +33695,7 @@ const app = {
                 if (q4) addToBill(getWaterManifold(catalog.water_manifolds_hot[2]), q4, descColl, grpHot);
                 if (q3) addToBill(getWaterManifold(catalog.water_manifolds_hot[1]), q3, descColl, grpHot);
                 if (q2) addToBill(getWaterManifold(catalog.water_manifolds_hot[0]), q2, descColl, grpHot);
-                addToBill(waterEurocone, totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpHot);
+                addEurocone(waterEurocone, totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpHot);
                 _addManifoldEnd('ГВС', 'hw', grpHot);
                 // Крепление коллектора ГВС
                 let clampItem = catalog.mounting_system.find(x => x.id === "SAC-0020-300001");
@@ -32947,7 +33769,7 @@ const app = {
                 if (q4) addToBill(getWaterManifold(catalog.water_manifolds_recirc[2]), q4, descColl, grpRecirc);
                 if (q3) addToBill(getWaterManifold(catalog.water_manifolds_recirc[1]), q3, descColl, grpRecirc);
                 if (q2) addToBill(getWaterManifold(catalog.water_manifolds_recirc[0]), q2, descColl, grpRecirc);
-                addToBill(waterEurocone, totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpRecirc);
+                addEurocone(waterEurocone, totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpRecirc);
                 addToBill(catalog.water_parts.find(x => x.id === "SFT-0024-000034"), 1, "Заглушка коллектора", grpRecirc);
                 // Крепление коллектора рециркуляции ГВС
                 let clampItem = catalog.mounting_system.find(x => x.id === "SAC-0020-300001");
@@ -34355,6 +35177,52 @@ const app = {
                 tableWrapper.insertAdjacentHTML('beforebegin', this.renderScheme());
             }
         }
+        // Схема подключения автоматики — строкой таблицы над разделом
+        // «2.8.1. Контроллер и связь». Живёт вместе с разделом: включили
+        // автоматику — есть раздел и есть схема к нему.
+        // Схема-картинка над своим разделом сметы: котловая автоматика над
+        // «2.8.1», автоматика тёплого пола над «4.3» — каждая там, где её
+        // позиции, а не обе в одном месте.
+        // Общий переключатель «Схема» гасит их все; у раздела со схемой в шапке
+        // появляется свой переключатель — на тех же правах, что и «РАЗДЕЛ»:
+        // по умолчанию спрятан, показывается щелчком по заголовку раздела.
+        document.querySelectorAll('.sec-scheme-badge').forEach(el => el.remove());
+        [['automation_scheme_row', '2.8.1.', () => this.thermaticConfig && this.renderAutomationScheme()],
+         ['ufh_scheme_row', '4.3.', () => this.renderUfhScheme()]].forEach(([rowId, marker, build]) => {
+            const old = document.getElementById(rowId);
+            if (old) old.remove();
+            if (this.state.viewMode !== 'equipment' || !this.state.showScheme) return;
+            const html = build();
+            if (!html) return;
+            const hdrRow = Array.from(document.querySelectorAll('#print-area tr'))
+                .find(tr => tr.textContent.includes(marker));
+            if (!hdrRow) return;
+            // заголовок раздела, внутри которого лежит этот подраздел
+            let secRow = hdrRow.previousElementSibling;
+            while (secRow && !secRow.classList.contains('row-sec')) secRow = secRow.previousElementSibling;
+            const secTitle = secRow ? ((secRow.querySelector('.row-sec-title') || {}).dataset || {}).title : null;
+            if (secTitle) {
+                const wrap = secRow.querySelector('.row-sec-header-wrap > div');
+                if (wrap && !wrap.querySelector('.sec-scheme-badge')) {
+                    const on = (this.state.sectionScheme || {})[secTitle] !== false;
+                    const revealed = (this.state.revealedToggles || []).includes(secTitle);
+                    wrap.insertAdjacentHTML('afterbegin',
+                        `<div class="row-sec-toggle-wrap sec-scheme-badge no-print" onclick="event.stopPropagation()" style="${revealed ? '' : 'display:none;'}">
+                            <span class="sec-toggle-label">СХЕМА</span>
+                            <label class="switch">
+                                <input type="checkbox" ${on ? 'checked' : ''}
+                                    onchange="app.toggleSectionScheme('${secTitle.replace(/'/g, "\\'")}', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>`);
+                }
+                if ((this.state.sectionScheme || {})[secTitle] === false) return;
+            }
+            const firstRow = hdrRow.closest('table').querySelector('tr');
+            const cols = (firstRow && firstRow.cells.length) || (hdrRow.cells.length) || 8;
+            hdrRow.insertAdjacentHTML('beforebegin',
+                `<tr id="${rowId}"><td colspan="${cols}">${html}</td></tr>`);
+        });
         this.saveState();
 
         if (this.state.viewMode === '3d') {

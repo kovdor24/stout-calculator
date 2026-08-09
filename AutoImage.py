@@ -333,7 +333,10 @@ def is_markdown_card(el):
             return True
     return bool(MARKDOWN_TEXT_RE.search(el.get_text(' ', strip=True)))
 
-def extract_image_url(driver, sku):
+def norm_article(s):
+    return re.sub(r'[^A-Z0-9]', '', (s or '').upper())
+
+def extract_image_url(driver, sku, article=None):
     soup = BeautifulSoup(driver.page_source, 'html.parser')
 
     # Если поиск сразу открыл карточку уценённого товара — фото с неё не берём:
@@ -342,6 +345,16 @@ def extract_image_url(driver, sku):
     page_url = (driver.current_url or '').lower()
     if any(m in page_url for m in MARKDOWN_URL_MARKERS):
         return None
+
+    # Артикула нет НИГДЕ на странице — значит поиск его не знает и показал что-то
+    # своё (соседний товар той же группы, а то и просто первую позицию каталога).
+    # Раньше картинка с этой чужой карточки молча уезжала в img/<наш_id>.jpg: так
+    # у серии коллекторов ROMMER RMB-* оказались фото шаровых кранов, а у
+    # несуществующего артикула — бухта трубы. Лучше NOT_FOUND и строка в отчёте.
+    if article:
+        want = norm_article(article)
+        if want and want not in norm_article(soup.get_text(' ', strip=True)):
+            return None
 
     # Try 1: Look at og:image metadata (usually high-res main product image)
     og_img = soup.find('meta', property='og:image')
@@ -366,9 +379,17 @@ def extract_image_url(driver, sku):
             if 'logo' not in src_lower and 'banner' not in src_lower and 'icon' not in src_lower and 'arrow' not in src_lower and 'brand' not in src_lower:
                 return src
                 
-    # Try 4: первая карточка в выдаче, НЕ являющаяся уценкой. Раньше бралась просто
-    # первая — а уценённые позиции у Терема часто стоят выше обычных.
-    for item_el in soup.select('.product-item, .product-item-container, .product-card'):
+    # Try 4: карточка в выдаче, НЕ являющаяся уценкой. Раньше бралась просто первая —
+    # а уценённые позиции у Терема часто стоят выше обычных. Плюс: если в выдаче
+    # несколько товаров, берём именно ту карточку, где стоит наш артикул, а не
+    # верхнюю (проверка выше гарантирует лишь то, что артикул есть где-то на странице).
+    cards = list(soup.select('.product-item, .product-item-container, .product-card'))
+    if article:
+        want = norm_article(article)
+        exact = [c for c in cards if want and want in norm_article(c.get_text(' ', strip=True))]
+        if exact:
+            cards = exact
+    for item_el in cards:
         if is_markdown_card(item_el):
             continue
         img_els = item_el.select('.product-item-image-original, .product-item-image-alternative, img')
@@ -416,7 +437,7 @@ def process_sku_image(driver, item):
                     
                 # Ждем загрузки полноценной страницы с хорошим исходником
                 time.sleep(2)
-                img_url = extract_image_url(driver, save_filename)
+                img_url = extract_image_url(driver, save_filename, search_query)
                 break
             except StaleElementReferenceException:
                 time.sleep(0.5)

@@ -1,6 +1,18 @@
 /* === РЎРўРР›Р === */
 * { box-sizing: border-box; }
 
+/* Чертёжный шрифт принципиальной схемы (переключатель «Схема»). Тот же файл,
+   что на листах проекта. local() намеренно не указан: установленный в системе
+   ISOCPEUR зарегистрирован курсивным начертанием, и при запросе прямого
+   браузер откатывался на Arial Narrow — схема переставала быть похожей на
+   чертёж. Файл качается только когда схема реально нарисована. */
+@font-face {
+    font-family: 'ISOCPEUR';
+    font-style: normal;
+    font-display: swap;
+    src: url('fonts/isocpeur.ttf?v=4.14') format('truetype');
+}
+
 :root {
     --primary: #2563EB;
     --primary-light: #EFF6FF;
@@ -8058,6 +8070,60 @@ body.dark-mode .to-top-btn:hover {
         bottom: 51px;
     }
 }
+
+/* === СХЕМА ПОДКЛЮЧЕНИЯ АВТОМАТИКИ (над разделом 2.8.1 в смете) === */
+.automation-scheme {
+    position: relative; cursor: zoom-in;
+    margin: 10px 0 14px; max-width: 1100px;
+}
+.automation-scheme svg {
+    display: block; width: 100%; height: auto;
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+}
+body.dark-mode .automation-scheme svg { border-color: #334155; }
+#automation_scheme_row td { padding: 4px 0 !important; border: none !important; }
+@media print {
+    .automation-scheme { break-inside: avoid; page-break-inside: avoid; max-width: none; }
+    .automation-scheme svg { border: none !important; }
+    .automation-scheme .scheme-zoom-btn { display: none !important; }
+}
+
+/* === СХЕМА КОТЕЛЬНОЙ: ПОЛНОЭКРАННЫЙ ПРОСМОТР ВЕКТОРНОГО ЛИСТА === */
+.scheme-svg-wrap { position: relative; cursor: zoom-in; }
+.scheme-zoom-btn {
+    position: absolute; top: 10px; right: 10px;
+    padding: 6px 12px; font-size: 12.5px; font-weight: 600;
+    color: var(--text-sec); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+.scheme-zoom-btn:hover { color: var(--primary); border-color: var(--primary); }
+#scheme_zoom_overlay {
+    position: fixed; inset: 0; z-index: 10050;
+    background: rgba(15, 23, 42, 0.88);
+    display: flex; flex-direction: column;
+}
+#scheme_zoom_overlay .scheme-zoom-bar {
+    flex: 0 0 auto; display: flex; gap: 8px; justify-content: flex-end;
+    padding: 10px 14px;
+}
+#scheme_zoom_overlay .scheme-zoom-bar button {
+    min-width: 40px; height: 36px; padding: 0 12px;
+    font-size: 16px; font-weight: 700; color: #E2E8F0;
+    background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px; cursor: pointer;
+}
+#scheme_zoom_overlay .scheme-zoom-bar button:hover { background: rgba(255, 255, 255, 0.22); }
+#scheme_zoom_overlay .scheme-zoom-canvas {
+    flex: 1 1 auto; overflow: auto; padding: 16px;
+    cursor: grab; -webkit-overflow-scrolling: touch;
+}
+#scheme_zoom_overlay .scheme-zoom-canvas:active { cursor: grabbing; }
+#scheme_zoom_overlay .scheme-zoom-canvas svg {
+    display: block; margin: 0 auto; height: auto;
+    background: #fff; border-radius: 6px;
+}
+@media print { #scheme_zoom_overlay { display: none !important; } }
 
 /* === СХЕМА КОТЕЛЬНОЙ (ЭКРАННЫЕ СТИЛИ) === */
 #dynamic_scheme {
