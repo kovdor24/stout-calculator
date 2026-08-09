@@ -17118,10 +17118,13 @@ const app = {
             groups.auto);
 
         const panelM = cfg.panel ? span + h1 + 3 : 0;
-        const busM = 3 * (cfg.digitalBoards || 0) + 3 * exp + panelM + 10;
+        // Кабель шины считаем по платам, которые реально остались в смете:
+        // убрали плату — тянуть шину к этому котлу не к чему, он идёт релейно.
+        const _boards = (cfg.boardsUsed !== undefined ? cfg.boardsUsed : cfg.digitalBoards) || 0;
+        const busM = 3 * _boards + 3 * exp + panelM + 10;
         add('CBL-UTP-BUS', busM,
-            `<b>Куда:</b> цифровая шина от платы ЦШ до котла, RS-485 на блоки расширения${cfg.panel ? ' и выносную панель' : ''}, интернет от роутера.` +
-            `<br><b>Расчёт:</b> ${cfg.digitalBoards || 0} × 3 м (котёл) + ${exp} × 3 м (блоки)${cfg.panel ? ` + ${panelM.toFixed(1)} м (панель)` : ''} + 10 м (интернет) = ${Math.ceil(busM)} м.`,
+            `<b>Куда:</b> ${_boards > 0 ? 'цифровая шина от платы ЦШ до котла, ' : ''}RS-485 на блоки расширения${cfg.panel ? ' и выносную панель' : ''}, интернет от роутера.` +
+            `<br><b>Расчёт:</b> ${_boards} × 3 м (котёл) + ${exp} × 3 м (блоки)${cfg.panel ? ` + ${panelM.toFixed(1)} м (панель)` : ''} + 10 м (интернет) = ${Math.ceil(busM)} м.`,
             groups.auto);
 
         if (cfg.airOn && cfg.airDevice && cfg.airQty > 0 && cfg.airDevice.link !== 'radio') {
@@ -28952,18 +28955,45 @@ const app = {
         // в типе ГВС (по перемычке уставку не передать) и предупреждением.
         // Шина есть не у всех: бюджетный POLIS помечен в каталоге noBus и
         // ведётся только релейно — плату ему покупать не за что.
-        const boardRemoved = !!(s.optItems && s.optItems['ML00005842']);
-        const boilerList = boilers.map(b => ({
-            kind: (b && b.type === 'gas') ? 'gas' : 'el',
-            iface: (boardRemoved || (b && b.noBus)) ? 'relay' : 'digital',
-            circuits: (b && b.circuits) || 1
-        }));
-        const cascade = boilerList.length > 1;
+        const BOARD_ID = 'ML00005842';
+        const boardRemoved = !!(s.optItems && s.optItems[BOARD_ID]);
         // Сколько плат нужно на объект: по одной на котёл С ШИНОЙ, максимум две.
         // Считаем по самим котлам, а не по iface: при удалённой плате iface у всех
         // становится 'relay', и счёт обнулился бы — строка исчезла бы из сметы
         // вместо того, чтобы остаться вычеркнутой и позволить себя вернуть.
         const digitalBoards = Math.min(boilers.filter(b => !(b && b.noBus)).length, MAX_BOILERS);
+        /**
+         * Сколько плат реально осталось в смете.
+         *
+         * Количество в строке монтажник правит руками (qtyOverrides), и на два
+         * котла плат может остаться одна. Плата обслуживает ровно один котёл,
+         * значит шина достаётся первому, а второй уходит на релейное
+         * управление. Раньше это нигде не отражалось: удаление одной платы из
+         * двух не меняло ни разбор котлов, ни схему подключения.
+         */
+        const boardOverride = (s.qtyOverrides && s.qtyOverrides[BOARD_ID] !== undefined)
+            ? Math.max(0, parseInt(s.qtyOverrides[BOARD_ID], 10) || 0) : null;
+        const boardsUsed = boardRemoved ? 0
+            : (boardOverride === null ? digitalBoards : Math.min(boardOverride, digitalBoards));
+        /**
+         * Кому достаётся оставшаяся плата.
+         *
+         * Сначала газовым котлам, потом электрическим: по шине газовый отдаёт
+         * модуляцию горелки, уставку и коды аварий — терять там нечего. У
+         * электрокотла шина даёт заметно меньше, ступени он всё равно набирает
+         * сам, поэтому релейное управление для него — меньшая потеря.
+         */
+        const busOrder = boilers
+            .map((b, i) => ({ b, i }))
+            .filter(x => !(x.b && x.b.noBus))
+            .sort((x, y) => ((y.b && y.b.type === 'gas') ? 1 : 0) - ((x.b && x.b.type === 'gas') ? 1 : 0) || x.i - y.i);
+        const busIdx = new Set(busOrder.slice(0, boardsUsed).map(x => x.i));
+        const boilerList = boilers.map((b, i) => ({
+            kind: (b && b.type === 'gas') ? 'gas' : 'el',
+            iface: busIdx.has(i) ? 'digital' : 'relay',
+            circuits: (b && b.circuits) || 1
+        }));
+        const cascade = boilerList.length > 1;
 
         // --- Контур ГВС (он у контроллера ровно один) ---
         // 'boiler'    — насосом загрузки и датчиком ГВС управляет сам контроллер;
@@ -29130,6 +29160,18 @@ const app = {
                 ' на релейное управление, по перемычке комнатного термостата. Контроллер сможет только ' +
                 'включать и выключать нагрев: уставка, модуляция горелки и коды аварий по перемычке ' +
                 'не передаются. Верните позицию в смету, если это не то, что нужно.');
+        } else if (boardsUsed < digitalBoards && boilerList.length > 0) {
+            // Плат оставили меньше, чем котлов с шиной: одна плата — один котёл,
+            // делить её между двумя нельзя. Говорим, кто именно остался без шины.
+            const _kindName = k => k === 'gas' ? 'газовый' : 'электрический';
+            const _dig = boilerList.filter(b => b.iface === 'digital').map(b => _kindName(b.kind));
+            const _rel = boilerList.filter(b => b.iface === 'relay').map(b => _kindName(b.kind));
+            warnings.push('Плат цифровых шин в смете ' + boardsUsed + ', а котлов с шиной ' + digitalBoards +
+                '. Одна плата обслуживает ровно один котёл, поэтому по шине идёт ' +
+                (_dig.length ? _dig.join(' и ') + ' котёл' : 'ни один котёл') +
+                ', а ' + _rel.join(' и ') + ' — релейно, по перемычке комнатного термостата. ' +
+                'Плату оставляем газовому: у него по шине идут уставка, модуляция горелки и коды аварий, ' +
+                'а электрокотёл ступени набирает сам.');
         }
         if (leakQty > MAX_LEAK_SENSORS) {
             warnings.push('Датчиков протечки ' + leakQty + ', а на один аналоговый вход контроллера ставим ' +
@@ -29188,7 +29230,7 @@ const app = {
             boilers: boilerList, boilerCount: boilerList.length, cascade, digitalBoards,
             dhw, recirc,
             ntc, ntcUsed: ntc.length,
-            expansion, needsPsu: ex77 > 0, boardRemoved,
+            expansion, needsPsu: ex77 > 0, boardRemoved, boardsUsed,
             relays, relaysMax: MAX_RELAYS,
             airOn, airDevice, airQty, airAuto, airManual, airKind, airCapped, airByCircuits, roomsFit,
             dryInputs: DRY_INPUTS, needRadio, leakQty, leakValve, leakSolenoid,
@@ -32277,7 +32319,9 @@ const app = {
                     `<b>Протоколы:</b> определяются автоматически — OpenTherm, E-Bus (Vaillant, Protherm), BridgeNet (Ariston), Navien, BSB (Siemens), WOLF, Kiturami.`,
                     cfg.boardRemoved
                         ? `⚠️ <b>Плата удалена из сметы.</b> ${cfg.boilerCount > 1 ? 'Котлы переходят' : 'Котёл переходит'} на релейное управление — по перемычке комнатного термостата, только «греет / не греет». Уставка, модуляция горелки и коды аварий по ней не передаются.`
-                        : `<b>Если убрать из сметы:</b> останется релейное управление по перемычке комнатного термостата — контроллер сможет лишь включать и выключать нагрев.`
+                        : (cfg.boardsUsed < cfg.digitalBoards
+                            ? `⚠️ <b>Плат оставлено ${cfg.boardsUsed} из ${cfg.digitalBoards}.</b> По цифровой шине пойдёт ${cfg.boardsUsed === 1 ? 'только первый котёл' : 'часть котлов'}, остальные — релейно, по перемычке комнатного термостата. На схеме подключения это уже учтено.`
+                            : `<b>Если убрать из сметы:</b> останется релейное управление по перемычке комнатного термостата — контроллер сможет лишь включать и выключать нагрев.`)
                 ]), grpAuto);
             }
 
@@ -34904,8 +34948,11 @@ const app = {
 
             addToWorks("Монтаж контроллера отопления", 1, 6000, "шт", ctrlGroup);
 
-            if (_cfgW.digitalBoards > 0) {
-                addToWorks("Подключение котла к контроллеру по цифровой шине", _cfgW.digitalBoards, 3500, "шт", ctrlGroup);
+            // Работа по факту: платы в смете нет — котёл подключается релейно,
+            // и настраивать протокол цифровой шины не на чем.
+            const _wBoards = (_cfgW.boardsUsed !== undefined ? _cfgW.boardsUsed : _cfgW.digitalBoards) || 0;
+            if (_wBoards > 0) {
+                addToWorks("Подключение котла к контроллеру по цифровой шине", _wBoards, 3500, "шт", ctrlGroup);
             }
             addToWorks("Подключение датчиков температуры контроллера", 1, 5000, "компл", ctrlGroup);
 
