@@ -1274,7 +1274,7 @@ const catalog = {
         { id: "SEB-5101-000006", name: "Котёл электрический POLIS (6 кВт)", power: 6, price: 26877, type: "el", exp: 0, vol: 5, noPump: true, noBus: true, volt: "220/380", desc: "POLIS: бюджетный. Без насоса и бака — монтируется на ГБМ.", availability: "in_stock", price_date: "2026-08-10" },
         { id: "SEB-5101-000009", name: "Котёл электрический POLIS (9 кВт)", power: 9, price: 27522, type: "el", exp: 0, vol: 5, noPump: true, noBus: true, volt: "220/380", desc: "POLIS: бюджетный. Без насоса и бака — монтируется на ГБМ.", availability: "in_stock", price_date: "2026-08-10" },
         { id: "SEB-5101-000012", name: "Котёл электрический POLIS (12 кВт)", power: 12, price: 39027, type: "el", exp: 0, vol: 5, noPump: true, noBus: true, volt: "380", desc: "POLIS: бюджетный. Без насоса и бака — монтируется на ГБМ. Только 380 В.", availability: "in_stock", price_date: "2026-08-10" },
-        { id: "SEB-5101-000015", name: "Котёл электрический POLIS (15 кВт)", power: 15, price: 39580, type: "el", exp: 0, vol: 5, noPump: true, noBus: true, volt: "380", desc: "POLIS: бюджетный. Без насоса и бака — монтируется на ГБМ. Только 380 В.", availability: "in_stock", price_date: "2026-08-06" }
+        { id: "SEB-5101-000015", name: "Котёл электрический POLIS (15 кВт)", power: 15, price: 39580, type: "el", exp: 0, vol: 5, noPump: true, noBus: true, volt: "380", desc: "POLIS: бюджетный. Без насоса и бака — монтируется на ГБМ. Только 380 В.", availability: "in_stock", price_date: "2026-08-10" }
     ],
     chimneys: [
         { id: "SCA-6010-210850", name: "Дымоход коаксиальный 60/100", price: 6298, brand: "STOUT", chimType: "trad", rommer: { id: "RCA-6010-251220", name: "Дымоход коаксиальный 60/100", price: 3622, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-08-10" },
@@ -1353,7 +1353,7 @@ const catalog = {
         { id: "STH-0006-000300", name: "Расширительный бак для отопления 300л", vol: 300, color: "red", conn: "1", price: 35486, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" }
     ],
     tank_mount: { id: "SAC-0030-000825", name: "Крепление для бака", price: 1266, availability: "in_stock", price_date: "2026-08-10" },
-    tank_kit: { id: "SVS-0008-012020", name: "Комплект подключения мембранного бака", price: 1990, brand: "STOUT", availability: "in_stock", price_date: "2026-08-07", rommer: { id: "RVS-0008-002020", name: "Комплект подключения мембранного бака", price: 1436, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
+    tank_kit: { id: "SVS-0008-012020", name: "Комплект подключения мембранного бака", price: 1990, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RVS-0008-002020", name: "Комплект подключения мембранного бака", price: 1436, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" } },
     rads: [
         { id: "SRB-0320-050004", name: "Радиатор Space 4 секций", sec: 4, price: 6457, power50: 117, rommer: { id: "RAL-0210-050004", name: "Радиатор Optima 4 секций", price: 2743, brand: "ROMMER", power50: 117, availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SRB-0320-050005", name: "Радиатор Space 5 секций", sec: 5, price: 7528, power50: 117, availability: "in_stock", price_date: "2026-08-10" },
@@ -1470,9 +1470,9 @@ const catalog = {
     // гильзы, ни компрессионного фитинга под отдельную трубку им не требуется.
     // В пакете — комплект на ОДИН радиатор (по 2 шт. каждой детали, на подачу и обратку).
     rad_shoe_set: [
-        { id: "SFA-0038-100016", name: "Комплект фиксаторов поворота \"башмак\" 16 мм (базовый)", price: 223, brand: "STOUT", availability: "in_stock", price_date: "2026-08-06" },
-        { id: "SFA-0038-300016", name: "Комплект фиксаторов поворота \"башмак\" 16 мм (без подпятника)", price: 209.75, brand: "STOUT", availability: "in_stock", price_date: "2026-08-06" },
-        { id: "SFA-0038-200016", name: "Комплект защитных кожухов 1/2 на трубу 16 мм (белые)", price: 198, brand: "STOUT", availability: "in_stock", price_date: "2026-08-06" }
+        { id: "SFA-0038-100016", name: "Комплект фиксаторов поворота \"башмак\" 16 мм (базовый)", price: 201, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+        { id: "SFA-0038-300016", name: "Комплект фиксаторов поворота \"башмак\" 16 мм (без подпятника)", price: 189, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+        { id: "SFA-0038-200016", name: "Комплект защитных кожухов 1/2 на трубу 16 мм (белые)", price: 178, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" }
     ],
     protective_sleeves: [
         { id: "SFA-0035-200016", name: "Защитная втулка красная (для трубы 16 мм)", price: 56, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
@@ -1805,7 +1805,7 @@ const catalog = {
         // надвижная гильза вместо накидной гайки с обжимным кольцом. Ставится в паре с
         // монтажной гильзой SFA-0020-000016 — она входит в комплектацию, а не опция
         // (без гильзы соединение не собирается). Отсюда noCheapen в таблице замены.
-        { id: "SFA-0034-001634", name: "Переходник с накидной гайкой (евроконус) 16xG3/4\" (аксиальный)", price: 559, brand: "STOUT", rommer: { id: "RFA-0034-001634", name: "Переходник с накидной гайкой (евроконус) 16xG3/4\"", price: 250, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-09" }, availability: "in_stock", price_date: "2026-08-09" },
+        { id: "SFA-0034-001634", name: "Переходник с накидной гайкой (евроконус) 16xG3/4\" (аксиальный)", price: 526, brand: "STOUT", rommer: { id: "RFA-0034-001634", name: "Переходник с накидной гайкой (евроконус) 16xG3/4\"", price: 250, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-08-09" },
         { id: "RDG-0120-100000", name: "ROMMER Термостат для смесительных узлов RDG-0120-005010", price: 1066, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" },
         { id: "RDG-0120-100025", name: "ROMMER Сдвоенный ниппель (комплект 2 шт.)", price: 1173, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }
     ],
@@ -1899,7 +1899,7 @@ const catalog = {
     ],
     hydro_arrow: { id: "SDG-0015-004001", name: "Гидравлическая стрелка 3 м³/ч", price: 22082, rommer: { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 7329, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
     servo_rotary_sensor: { id: "SVM-0025-230017", name: "Сервопривод с датчиком", price: 40903, rommer: { id: "RVM-0015-230017", name: "Сервопривод с датчиком", price: 15810, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-08-10" },
-    servo_rotary_std: { id: "SVM-0005-230001", name: "Сервопривод 230V", price: 16079, rommer: { id: "RVM-0005-230002", name: "Сервопривод 230V, 120s, 10Nm", price: 7287, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-09" }, availability: "in_stock", price_date: "2026-07-29" },
+    servo_rotary_std: { id: "SVM-0005-230001", name: "Сервопривод 230V", price: 16079, rommer: { id: "RVM-0005-230002", name: "Сервопривод 230V, 120s, 10Nm", price: 7287, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-07-29" },
     hydro_modular_dn20: [
         { id: "SDG-0016-002502", name: "Стальной распр. коллектор 2 контура DN20", price: 26395, availability: "in_stock", price_date: "2026-08-10" },
         { id: "SDG-0016-002503", name: "Стальной распр. коллектор 3 контура DN20", price: 29180, availability: "in_stock", price_date: "2026-08-10" }
@@ -1929,7 +1929,7 @@ const catalog = {
     nipple_34: { id: "SFT-0003-003434", name: "Ниппель НН 3/4\"", price: 200, availability: "in_stock", price_date: "2026-08-10" },
     // Переходные муфты (проставки) между патрубками котла 1" и группой быстрого монтажа —
     // паспорт STOUT POLIS, п. 6.2, Рис.5.
-    pump_union_1: { id: "SPC-0010-000025", name: "Присоединительный комплект G 1 1/2\" x Rp 1\"", price: 554, brand: "STOUT", availability: "in_stock", price_date: "2026-08-06" },
+    pump_union_1: { id: "SPC-0010-000025", name: "Присоединительный комплект G 1 1/2\" x Rp 1\"", price: 555, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
     coolants: [
         { id: "WARME-HYDRO-20", brand: "WARME", name: "Hydro, 20л", vol: 20, price: 1017, type: "water", availability: "in_stock", price_date: "2026-07-12" },
         { id: "WARME-ECO30-20", brand: "WARME", name: "Eco 30, 20кг", vol: 19, price: 4770, type: "eco30", availability: "in_stock", price_date: "2026-07-12" },
@@ -2259,7 +2259,7 @@ const catalog = {
     // водоразбора; монтаж только вертикально вверх или горизонтально. Торец коллектора
     // 3/4" ВР (туда же идёт заглушка SFT-0024-000034), поэтому нужна футорка 3/4"НР х 1/2"ВР.
     water_hammer_arrestors: [
-        { id: "SVS-1014-000015", name: "Компенсатор гидроудара 1/2\" НР, хром", price: 2582, brand: "STOUT", availability: "in_stock", price_date: "2026-08-07", rommer: { id: "RVS-1001-000015", name: "Компенсатор гидроудара мембранный 1/2\" НР, никель", price: 1484, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-07" } },
+        { id: "SVS-1014-000015", name: "Компенсатор гидроудара 1/2\" НР, хром", price: 2582, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RVS-1001-000015", name: "Компенсатор гидроудара мембранный 1/2\" НР, никель", price: 1484, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-07" } },
         { id: "SFT-0029-003412", name: "Футорка 3/4\" x 1/2\"", price: 156, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" }
     ],
     water_input_node: [
