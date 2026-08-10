@@ -1,0 +1,43 @@
+name: Quarterly Electricity Tariffs
+
+# Тарифы на электроэнергию пересматривают дважды в год (в 2026-м — с 1 января
+# и с 1 октября), поэтому раз в квартал с запасом хватает: январь, апрель,
+# июль, октябрь, 12-го числа — к этому дню регионы свои приказы уже публикуют.
+# Если в источнике ничего не поменялось, коммита не будет.
+#
+# Справочник можно обновить и руками, не дожидаясь расписания: вкладка Actions
+# → Quarterly Electricity Tariffs → Run workflow.
+on:
+  schedule:
+    - cron: '0 4 12 1,4,7,10 *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      # Зависимостей нет: скрипт обходится стандартной библиотекой.
+      - name: Run tariff parser
+        run: python AutoTariff.py
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add el_tariffs.js
+          if git diff --staged --quiet; then
+            echo "Тарифы не изменились."
+          else
+            git commit -m "Автообновление тарифов на электроэнергию"
+            for i in {1..5}; do
+              git pull --rebase origin main && git push origin main && exit 0
+              git rebase --abort || true
+              sleep 5
+            done
+            exit 1
+          fi

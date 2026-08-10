@@ -49,23 +49,31 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.15">
+    <link rel="stylesheet" href="style.css?v=3.21">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.52" defer></script>
+    <script src="catalog.js?v=2.55" defer></script>
     <!-- Координаты и регионы населённых пунктов: карта проектов в админке и
          адрес объекта. Данные вшиты в файл, наружу никаких запросов. -->
     <script src="cities_geo.js?v=1.0" defer></script>
+    <!-- Тарифы на электроэнергию по регионам для прогноза стоимости отопления.
+         Файл собирает AutoTariff.py раз в месяц через GitHub Actions, регион
+         берётся из cities_geo.js — поэтому подключать надо после него. -->
+    <script src="el_tariffs.js?v=1.0" defer></script>
+    <!-- Тарифы на природный газ по регионам, категория «бытовое отопление».
+         Файл собирает AutoGasTariff.py раз в месяц через GitHub Actions,
+         регион берётся из cities_geo.js — подключать после него. -->
+    <script src="gas_tariffs.js?v=1.0" defer></script>
     <!-- Цены дистрибьюторов поверх каталога. Отдельный файл, потому что каталог
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.1" defer></script>
     <script src="gamification.js?v=2.1" defer></script>
-    <script src="app.js?v=4.92" defer></script>
+    <script src="app.js?v=5.09" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
          векторный композитор, что рисует лист схемы в проекте, поэтому нужен
          и движок листов (рамка/штамп из него не берутся, только текст). -->
     <script src="project_sheets.js?v=4.15" defer></script>
-    <script src="project_scheme.js?v=4.41" defer></script>
+    <script src="project_scheme.js?v=4.42" defer></script>
     <!-- Укладка тёплого пола по планам этажей. В калькуляторе нужна не ради
          листов, а ради сметы: длину трубы и число выходов коллектора берём
          из нарисованных петель (projectPlans.floorLoops). -->
@@ -500,10 +508,240 @@
                 </div>
             </div>
 
-            <!-- Идёт в одном блоке с «Типом котла», поэтому вместо стандартной
-                 верхней пунктирной линии .toggle-item черта уходит вниз: она
-                 отделяет весь блок целиком, а не эти два пункта друг от друга. -->
-            <div class="control-item"
+            <!-- Выделенная на участок электрическая мощность. Котёл мощнее неё
+                 подбирать нельзя — сеть не потянет, поэтому подбор упирается в
+                 этот потолок и каскад в нём не собирает. Показывается только в
+                 подробном режиме и только при включённом электрокотле
+                 (app.syncUI). -->
+            <div class="control-item" id="blk_el_power_limit" style="display:none;">
+                <!-- position:relative обязателен: tip-panel-wrap снимает позиционирование
+                     с обёртки подсказки, и якорем становится эта строка. Без него
+                     подсказка считает координаты от далёкого предка и уезжает за экран. -->
+                <div class="label-row" style="position:relative;">
+                    <!-- Подсказку про остаток мощности собирает app.updElLimitHint()
+                         в #el_limit_tip — тем же компонентом, что подсказки остальной
+                         панели: на десктопе по наведению, на телефоне по нажатию. -->
+                    <span class="lbl">Ограничение мощности на участок, кВт ⚡<span
+                            id="el_limit_tip"></span></span>
+                    <!-- Ползунок постоянно на виду не нужен: мощность ввода — цифра
+                         известная, её обычно просто вписывают. Поэтому как у площади
+                         комнаты и у участков снеготаяния: степпер всегда, а ползунок
+                         выезжает по нажатию на само значение и закрывается кликом мимо
+                         (обработчик в initCityAutocomplete). -->
+                    <div style="position:relative; display:inline-flex; align-items:center;">
+                        <div class="stepper" style="width:110px;">
+                            <button class="step-btn" onclick="app.updElPowerLimit(-1)">−</button>
+                            <div class="step-val editable-val el-limit-val" id="val_el_limit" contenteditable="true"
+                                onfocus="app.showElLimitSlider(event)"
+                                onclick="app.showElLimitSlider(event)"
+                                onblur="app.setElPowerLimit(this.innerText)"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">15</div>
+                            <button class="step-btn" onclick="app.updElPowerLimit(1)">+</button>
+                        </div>
+                        <div class="el-limit-slider-container" id="el_limit_slider_box"
+                            style="display:none; position:absolute; z-index:1000; bottom:40px; right:0; align-items:center; padding:6px 12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; gap:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"
+                            onclick="event.stopPropagation();">
+                            <input type="range" id="inp_el_limit" min="3" max="60" step="1" value="15"
+                                oninput="app.setElPowerLimit(this.value, true)"
+                                onchange="app.setElPowerLimit(this.value)"
+                                style="width:140px; accent-color:var(--primary); height:6px; cursor:pointer;">
+                            <span
+                                style="font-size:11px; color:var(--primary); font-weight:700; cursor:pointer; user-select:none; padding:2px 6px; background:var(--primary-light); border-radius:4px;"
+                                onclick="document.getElementById('el_limit_slider_box').style.display='none'; event.stopPropagation();">OK</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Во сколько обойдётся отопление электричеством. Условия те же, что
+                 у ограничения мощности: подробный режим и включённый электрокотёл
+                 (app.syncUI). Таблицу собирает app.renderElCostUI(). -->
+            <div class="control-item" id="blk_el_cost" style="display:none;">
+                <div class="label-row">
+                    <span class="lbl"
+                        title="Во сколько обойдётся отопление электричеством: расход и счёт по месяцам, итог за отопительный сезон.">Стоимость
+                        отопления ⚡</span>
+                    <label class="switch"><input type="checkbox" id="chk_el_cost"
+                            onchange="app.toggleElCost(this.checked)"><span class="slider"></span></label>
+                </div>
+                <!-- Тарифы и таблица — подпункты тумблера, как у «Автоматики котельной»:
+                     пока прогноз выключен, в панели остаётся одна строка. -->
+                <div id="blk_el_cost_box"
+                    style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">
+                    <div class="tabs" style="font-size:11px;">
+                        <div class="tab el-tariff-mode-tab" data-tmode="single"
+                            onclick="app.setElTariffMode('single')"
+                            title="Один тариф круглые сутки.">Один тариф</div>
+                        <div class="tab el-tariff-mode-tab" data-tmode="day_night"
+                            onclick="app.setElTariffMode('day_night')"
+                            title="Двухтарифный счётчик: ночная зона 23:00–07:00 по своей цене.">День-ночь</div>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="lbl" style="font-size:12px;" id="lbl_el_tariff_day">Тариф, ₽/кВт·ч</span>
+                        <div style="position:relative; display:inline-flex; align-items:center;">
+                            <!-- 124px, а не 110: в тарифах четыре знака («26.0»), и в
+                                 стандартную ширину степпера значение не влезает — переносится
+                                 на вторую строку. -->
+                            <div class="stepper" style="width:124px;">
+                                <button class="step-btn" onclick="app.updElTariff(-1)">−</button>
+                                <div class="step-val editable-val el-tariff-val" id="val_el_tariff"
+                                    contenteditable="true"
+                                    onfocus="app.showElTariffSlider('day', event)"
+                                    onclick="app.showElTariffSlider('day', event)"
+                                    onblur="app.setElTariff(this.innerText)"
+                                    onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">6.0</div>
+                                <button class="step-btn" onclick="app.updElTariff(1)">+</button>
+                            </div>
+                            <div class="el-tariff-slider-container" id="el_tariff_slider_box"
+                                style="display:none; position:absolute; z-index:1000; bottom:40px; right:0; align-items:center; padding:6px 12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; gap:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"
+                                onclick="event.stopPropagation();">
+                                <input type="range" id="inp_el_tariff" min="1" max="20" step="0.1" value="6"
+                                    oninput="app.setElTariff(this.value, true)"
+                                    onchange="app.setElTariff(this.value)"
+                                    style="width:140px; accent-color:var(--primary); height:6px; cursor:pointer;">
+                                <span
+                                    style="font-size:11px; color:var(--primary); font-weight:700; cursor:pointer; user-select:none; padding:2px 6px; background:var(--primary-light); border-radius:4px;"
+                                    onclick="document.getElementById('el_tariff_slider_box').style.display='none'; event.stopPropagation();">OK</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="blk_el_tariff_night"
+                        style="display:none; justify-content:space-between; align-items:center;">
+                        <span class="lbl" style="font-size:12px;">Ночь (23–07), ₽/кВт·ч</span>
+                        <div style="position:relative; display:inline-flex; align-items:center;">
+                            <div class="stepper" style="width:124px;">
+                                <button class="step-btn" onclick="app.updElTariffNight(-1)">−</button>
+                                <div class="step-val editable-val el-tariff-val" id="val_el_tariff_night"
+                                    contenteditable="true"
+                                    onfocus="app.showElTariffSlider('night', event)"
+                                    onclick="app.showElTariffSlider('night', event)"
+                                    onblur="app.setElTariffNight(this.innerText)"
+                                    onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">3.0</div>
+                                <button class="step-btn" onclick="app.updElTariffNight(1)">+</button>
+                            </div>
+                            <div class="el-tariff-slider-container" id="el_tariff_night_slider_box"
+                                style="display:none; position:absolute; z-index:1000; bottom:40px; right:0; align-items:center; padding:6px 12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; gap:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"
+                                onclick="event.stopPropagation();">
+                                <input type="range" id="inp_el_tariff_night" min="1" max="20" step="0.1" value="3"
+                                    oninput="app.setElTariffNight(this.value, true)"
+                                    onchange="app.setElTariffNight(this.value)"
+                                    style="width:140px; accent-color:var(--primary); height:6px; cursor:pointer;">
+                                <span
+                                    style="font-size:11px; color:var(--primary); font-weight:700; cursor:pointer; user-select:none; padding:2px 6px; background:var(--primary-light); border-radius:4px;"
+                                    onclick="document.getElementById('el_tariff_night_slider_box').style.display='none'; event.stopPropagation();">OK</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Видно только когда тариф правили руками: иначе кнопка сброса
+                         ничего не сбрасывает и только путает. Та же логика, что у газа. -->
+                    <div id="el_tariff_region_row" style="display:none; text-align:right;">
+                        <span onclick="app.resetElTariff()"
+                            style="font-size:10px; color:var(--primary); cursor:pointer; text-decoration:underline dotted;">вернуть
+                            тариф региона</span>
+                    </div>
+
+                    <div id="el_cost_body"></div>
+                </div>
+            </div>
+
+            <!-- Стоимость отопления газом. Устроено как блок по электричеству, но
+                 переключатель другой: магистральный газ считается по тарифу региона
+                 (GAS_TARIFF_RU в catalog.js, подставляется по выбранному городу),
+                 сжиженный тарифом не регулируется и задаётся руками. -->
+            <div class="control-item" id="blk_gas_cost" style="display:none;">
+                <div class="label-row">
+                    <span class="lbl"
+                        title="Во сколько обойдётся отопление газом: расход в кубометрах или литрах и счёт по месяцам, итог за отопительный сезон.">Стоимость
+                        отопления 🔥</span>
+                    <label class="switch"><input type="checkbox" id="chk_gas_cost"
+                            onchange="app.toggleGasCost(this.checked)"><span class="slider"></span></label>
+                </div>
+                <div id="blk_gas_cost_box"
+                    style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">
+                    <div class="tabs" style="font-size:11px;">
+                        <div class="tab gas-tariff-mode-tab" data-gmode="lpg"
+                            onclick="app.setGasTariffMode('lpg')"
+                            title="Пропан-бутан из газгольдера или баллонов. Тарифом не регулируется — цену задаёт поставщик.">Сжиженный</div>
+                        <div class="tab gas-tariff-mode-tab" data-gmode="main"
+                            onclick="app.setGasTariffMode('main')"
+                            title="Газ из трубы. Тариф устанавливает регион, подставляется по выбранному городу.">Магистральный</div>
+                    </div>
+
+                    <div id="blk_gas_tariff_main" style="flex-direction:column; gap:4px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="lbl" style="font-size:12px;">Тариф, ₽/м³</span>
+                            <div style="position:relative; display:inline-flex; align-items:center;">
+                                <div class="stepper" style="width:124px;">
+                                    <button class="step-btn" onclick="app.updGasTariff(-1)">−</button>
+                                    <div class="step-val editable-val gas-tariff-val" id="val_gas_tariff"
+                                        contenteditable="true"
+                                        onfocus="app.showGasTariffSlider('main', event)"
+                                        onclick="app.showGasTariffSlider('main', event)"
+                                        onblur="app.setGasTariff(this.innerText)"
+                                        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">8.50</div>
+                                    <button class="step-btn" onclick="app.updGasTariff(1)">+</button>
+                                </div>
+                                <div class="gas-tariff-slider-container" id="gas_tariff_slider_box"
+                                    style="display:none; position:absolute; z-index:1000; bottom:40px; right:0; align-items:center; padding:6px 12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; gap:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"
+                                    onclick="event.stopPropagation();">
+                                    <input type="range" id="inp_gas_tariff" min="3" max="20" step="0.01" value="8.5"
+                                        oninput="app.setGasTariff(this.value, true)"
+                                        onchange="app.setGasTariff(this.value)"
+                                        style="width:140px; accent-color:var(--primary); height:6px; cursor:pointer;">
+                                    <span
+                                        style="font-size:11px; color:var(--primary); font-weight:700; cursor:pointer; user-select:none; padding:2px 6px; background:var(--primary-light); border-radius:4px;"
+                                        onclick="document.getElementById('gas_tariff_slider_box').style.display='none'; event.stopPropagation();">OK</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Видно только когда тариф правили руками: иначе кнопка сброса
+                             ничего не сбрасывает и только путает. -->
+                        <div id="gas_tariff_region_row" style="display:none; text-align:right;">
+                            <span onclick="app.resetGasTariff()"
+                                style="font-size:10px; color:var(--primary); cursor:pointer; text-decoration:underline dotted;">вернуть
+                                тариф региона</span>
+                        </div>
+                    </div>
+
+                    <div id="blk_gas_tariff_lpg" style="display:none; justify-content:space-between; align-items:center;">
+                        <span class="lbl" style="font-size:12px;">Цена, ₽/л</span>
+                        <div style="position:relative; display:inline-flex; align-items:center;">
+                            <div class="stepper" style="width:124px;">
+                                <button class="step-btn" onclick="app.updLpgTariff(-1)">−</button>
+                                <div class="step-val editable-val gas-tariff-val" id="val_gas_lpg" contenteditable="true"
+                                    onfocus="app.showGasTariffSlider('lpg', event)"
+                                    onclick="app.showGasTariffSlider('lpg', event)"
+                                    onblur="app.setLpgTariff(this.innerText)"
+                                    onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">26.0</div>
+                                <button class="step-btn" onclick="app.updLpgTariff(1)">+</button>
+                            </div>
+                            <div class="gas-tariff-slider-container" id="gas_lpg_slider_box"
+                                style="display:none; position:absolute; z-index:1000; bottom:40px; right:0; align-items:center; padding:6px 12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; gap:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"
+                                onclick="event.stopPropagation();">
+                                <input type="range" id="inp_gas_lpg" min="10" max="60" step="0.5" value="26"
+                                    oninput="app.setLpgTariff(this.value, true)"
+                                    onchange="app.setLpgTariff(this.value)"
+                                    style="width:140px; accent-color:var(--primary); height:6px; cursor:pointer;">
+                                <span
+                                    style="font-size:11px; color:var(--primary); font-weight:700; cursor:pointer; user-select:none; padding:2px 6px; background:var(--primary-light); border-radius:4px;"
+                                    onclick="document.getElementById('gas_lpg_slider_box').style.display='none'; event.stopPropagation();">OK</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="gas_cost_body"></div>
+                </div>
+            </div>
+
+            <!-- Идёт в одном блоке с «Типом котла», поэтому нижняя черта отделяет
+                 весь блок целиком. Верхнюю ставим только в подробном режиме
+                 (app.syncUI): в быстром пункты «Ограничение мощности» и
+                 «Стоимость отопления» скрыты, и линия легла бы вплотную под
+                 вкладки выбора топлива. -->
+            <div class="control-item" id="blk_boiler_auto_item"
                 style="border-bottom:1px dashed var(--border); padding-bottom:16px; margin-bottom:16px;">
                 <div class="label-row">
                     <span class="lbl"
@@ -605,6 +843,20 @@
                 </div>
             </div>
 
+            <!-- Схема разводки идёт сразу за «Типом отопления»: это продолжение
+                 того же выбора — чем греем и как это разведено по дому. Заголовок
+                 тем же <h4>, что и соседние: мелкий .lbl-sub читался как подпись
+                 к чужому блоку, а не как самостоятельная настройка. Прячется
+                 вместе со своими вкладками (см. syncUI), иначе в быстром режиме
+                 и без радиаторов остаётся висеть без содержимого. -->
+            <h4 id="lbl_rad_scheme" style="display:none; margin-bottom: 6px; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal; color: var(--text-main);">Схема разводки радиаторов</h4>
+            <div class="control-item" id="blk_rad_scheme" style="display:none;">
+                <div class="tabs" id="rad_scheme_tabs">
+                    <div class="tab" id="rad_scheme_tee" onclick="app.setRadConnectionScheme('tee')">Тройниковая</div>
+                    <div class="tab active" id="rad_scheme_manifold" onclick="app.setRadConnectionScheme('manifold')">Коллекторная</div>
+                </div>
+            </div>
+
             <!-- Заголовок тем же <h4>, что и «Тип котла» с «Типом отопления»:
                  раньше здесь был мелкий .lbl-sub, и «Теплоноситель» читался как
                  подпись к соседнему блоку, а не как самостоятельный выбор. -->
@@ -614,13 +866,6 @@
                     <div class="tab cool-tab active" data-type="water" onclick="app.setCoolant('water', event)">💧 Вода</div>
                     <div class="tab cool-tab" data-type="eco30" onclick="app.setCoolant('eco30', event)">❄️ -30°C</div>
                     <div class="tab cool-tab" data-type="pro65" onclick="app.setCoolant('pro65', event)">❄️ -40°C</div>
-                </div>
-            </div>
-            <div class="control-item" id="blk_rad_scheme" style="display:none; margin-bottom: 12px;">
-                <span class="lbl-sub" style="margin-bottom: 6px;">Схема разводки радиаторов</span>
-                <div class="tabs" id="rad_scheme_tabs">
-                    <div class="tab" id="rad_scheme_tee" onclick="app.setRadConnectionScheme('tee')">Тройниковая</div>
-                    <div class="tab active" id="rad_scheme_manifold" onclick="app.setRadConnectionScheme('manifold')">Коллекторная</div>
                 </div>
             </div>
             <div id="blk_tp_sliders" style="display:none; border-top:1px dashed #E5E7EB; padding-top:15px;">
@@ -691,67 +936,6 @@
                             <div class="tab ufh-tab" data-type="electro" onclick="app.setUfhCtrl('electro')">Электронный
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Снеготаяние: уличный контур на гликоле, развязанный с домом насосной
-                 группой с пластинчатым теплообменником. Виден только в подробном
-                 режиме — расчёт опирается на расчётную зимнюю температуру города,
-                 а город выбирается только там (app.syncUI). -->
-            <div class="control-item toggle-item" id="blk_snow_header" style="display:none;">
-                <div class="label-row"><span class="lbl">Снеготаяние</span><label class="switch"><input
-                            type="checkbox" id="chk_snow" onchange="app.toggleSnowMelt(this.checked, event)"><span
-                            class="slider"></span></label></div>
-                <div id="blk_snow_opts"
-                    style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">
-                    <div id="snow_zones_list"></div>
-                    <div style="border-top:1px solid #E5E7EB; padding-top:8px;">
-                        <button
-                            style="margin: 0 auto; display: block; width: fit-content; padding: 5px 16px; font-size: 11px; font-weight: 700; background: var(--primary-light); border: 1px dashed var(--primary); color: var(--primary); border-radius: 20px; cursor: pointer; transition: 0.2s;"
-                            onclick="app.addSnowZone()"
-                            onmouseover="this.style.background='var(--primary)'; this.style.color='#fff';"
-                            onmouseout="this.style.background='var(--primary-light)'; this.style.color='var(--primary)';">+
-                            Добавить участок</button>
-                    </div>
-                    <div id="snow_summary"
-                        style="display:none; border-top:1px solid #E5E7EB; padding-top:4px; font-size:11px; line-height:1.5; color:var(--text-sec);">
-                    </div>
-                    <!-- position:relative обязателен: .tip-panel-wrap снимает позиционирование
-                         с самой обёртки подсказки, чтобы та привязалась к строке и не уезжала
-                         за левый край узкой панели. Без него точкой отсчёта становится
-                         случайный предок, и подсказка не появляется вовсе. -->
-                    <div style="border-top:1px solid #E5E7EB; padding-top:8px; position:relative;">
-                        <span class="lbl"
-                            style="font-size:12px; display:flex; align-items:center; gap:4px; margin-bottom:6px;">Управление<span
-                                class="tooltip-wrapper tip-panel-wrap"><i class="info-icon" tabindex="0"
-                                    role="button" aria-label="Подробнее">i</i>
-                                <div class="tooltip-content tip-panel"><b>Датчик осадков.</b> В смету добавляются
-                                    грунтовый датчик снега и влаги с блоком управления и кабель к нему. Контроллер
-                                    получает от датчика сухой контакт и включает контур сам, как только пошёл снег
-                                    и на улице холодно, а после — держит выбег, пока площадка не просохнет.<br><br>
-                                    <b>Ручной.</b> Датчика и кабеля в смете нет, узел дешевле. Включать приходится
-                                    самому — из приложения контроллера или выключателем.<br><br>
-                                    <b>На что влияет ещё.</b> В обоих режимах контур ведёт контроллер и всю зиму
-                                    держит дежурные +5…+8 °C: остывшую уличную стяжку разогреть с нуля — это часы,
-                                    а не минуты. Разница только в том, кто даёт команду выйти на рабочий режим.
-                                </div>
-                            </span></span>
-                        <div class="tabs" id="snow_ctrl_tabs" style="font-size:11px;">
-                            <div class="tab active" id="snow_ctrl_sensor" onclick="app.setSnowCtrl('sensor')">Датчик
-                                осадков</div>
-                            <div class="tab" id="snow_ctrl_manual" onclick="app.setSnowCtrl('manual')"
-                                title="Датчик осадков в смету не попадает. Снеготаяние включается вручную — из приложения контроллера или выключателем.">Ручной</div>
-                        </div>
-                    </div>
-                    <div
-                        style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #E5E7EB; padding-top:8px;">
-                        <span class="lbl" style="font-size:12px;"
-                            title="Снеготаяние — самостоятельная нагрузка, часто больше половины дома. Включено — котёл подбирается с её учётом. Выключено — котёл считается по дому, а контроллер гасит снеготаяние при нехватке мощности.">Учесть
-                            в мощности котла</span><label class="switch"
-                            style="transform:scale(0.8); transform-origin:right;"><input type="checkbox"
-                                id="chk_snow_boiler" onchange="app.toggleSnowBoilerPower(this.checked)"><span
-                                class="slider"></span></label>
                     </div>
                 </div>
             </div>
@@ -919,6 +1103,67 @@
                         </div>
                         <input type="range" id="inp_wellDist" min="0" max="150" step="1" value="10"
                             oninput="app.setWellDist(this.value)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Снеготаяние: уличный контур на гликоле, развязанный с домом насосной
+                 группой с пластинчатым теплообменником. Виден только в подробном
+                 режиме — расчёт опирается на расчётную зимнюю температуру города,
+                 а город выбирается только там (app.syncUI). -->
+            <div class="control-item toggle-item" id="blk_snow_header" style="display:none;">
+                <div class="label-row"><span class="lbl">Снеготаяние</span><label class="switch"><input
+                            type="checkbox" id="chk_snow" onchange="app.toggleSnowMelt(this.checked, event)"><span
+                            class="slider"></span></label></div>
+                <div id="blk_snow_opts"
+                    style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">
+                    <div id="snow_zones_list"></div>
+                    <div style="border-top:1px solid #E5E7EB; padding-top:8px;">
+                        <button
+                            style="margin: 0 auto; display: block; width: fit-content; padding: 5px 16px; font-size: 11px; font-weight: 700; background: var(--primary-light); border: 1px dashed var(--primary); color: var(--primary); border-radius: 20px; cursor: pointer; transition: 0.2s;"
+                            onclick="app.addSnowZone()"
+                            onmouseover="this.style.background='var(--primary)'; this.style.color='#fff';"
+                            onmouseout="this.style.background='var(--primary-light)'; this.style.color='var(--primary)';">+
+                            Добавить участок</button>
+                    </div>
+                    <div id="snow_summary"
+                        style="display:none; border-top:1px solid #E5E7EB; padding-top:4px; font-size:11px; line-height:1.5; color:var(--text-sec);">
+                    </div>
+                    <!-- position:relative обязателен: .tip-panel-wrap снимает позиционирование
+                         с самой обёртки подсказки, чтобы та привязалась к строке и не уезжала
+                         за левый край узкой панели. Без него точкой отсчёта становится
+                         случайный предок, и подсказка не появляется вовсе. -->
+                    <div style="border-top:1px solid #E5E7EB; padding-top:8px; position:relative;">
+                        <span class="lbl"
+                            style="font-size:12px; display:flex; align-items:center; gap:4px; margin-bottom:6px;">Управление<span
+                                class="tooltip-wrapper tip-panel-wrap"><i class="info-icon" tabindex="0"
+                                    role="button" aria-label="Подробнее">i</i>
+                                <div class="tooltip-content tip-panel"><b>Датчик осадков.</b> В смету добавляются
+                                    грунтовый датчик снега и влаги с блоком управления и кабель к нему. Контроллер
+                                    получает от датчика сухой контакт и включает контур сам, как только пошёл снег
+                                    и на улице холодно, а после — держит выбег, пока площадка не просохнет.<br><br>
+                                    <b>Ручной.</b> Датчика и кабеля в смете нет, узел дешевле. Включать приходится
+                                    самому — из приложения контроллера или выключателем.<br><br>
+                                    <b>На что влияет ещё.</b> В обоих режимах контур ведёт контроллер и всю зиму
+                                    держит дежурные +5…+8 °C: остывшую уличную стяжку разогреть с нуля — это часы,
+                                    а не минуты. Разница только в том, кто даёт команду выйти на рабочий режим.
+                                </div>
+                            </span></span>
+                        <div class="tabs" id="snow_ctrl_tabs" style="font-size:11px;">
+                            <div class="tab active" id="snow_ctrl_sensor" onclick="app.setSnowCtrl('sensor')">Датчик
+                                осадков</div>
+                            <div class="tab" id="snow_ctrl_manual" onclick="app.setSnowCtrl('manual')"
+                                title="Датчик осадков в смету не попадает. Снеготаяние включается вручную — из приложения контроллера или выключателем.">Ручной</div>
+                        </div>
+                    </div>
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #E5E7EB; padding-top:8px;">
+                        <span class="lbl" style="font-size:12px;"
+                            title="Снеготаяние — самостоятельная нагрузка, часто больше половины дома. Включено — котёл подбирается с её учётом. Выключено — котёл считается по дому, а контроллер гасит снеготаяние при нехватке мощности.">Учесть
+                            в мощности котла</span><label class="switch"
+                            style="transform:scale(0.8); transform-origin:right;"><input type="checkbox"
+                                id="chk_snow_boiler" onchange="app.toggleSnowBoilerPower(this.checked)"><span
+                                class="slider"></span></label>
                     </div>
                 </div>
             </div>

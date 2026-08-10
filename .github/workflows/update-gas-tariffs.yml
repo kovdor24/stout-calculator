@@ -1,0 +1,40 @@
+name: Monthly Gas Tariff Parser
+
+# Тарифы на газ регионы пересматривают дважды в год (1 января и 1 октября),
+# но даты плавают и объявляются задним числом, поэтому проверяем ежемесячно.
+# 12-е число выбрано, чтобы не сталкиваться с парсером цен (10-е).
+on:
+  schedule:
+    - cron: '0 3 12 * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      # Зависимостей нет: скрипт ходит по страницам через urllib и разбирает
+      # таблицы регулярками — ставить selenium ради семи таблиц незачем.
+      - name: Run parser script
+        run: python AutoGasTariff.py
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add gas_tariffs.js
+          if git diff --staged --quiet; then
+            echo "Тарифы на газ не изменились."
+          else
+            git commit -m "Автообновление тарифов на газ"
+            for i in {1..5}; do
+              git pull --rebase origin main && git push origin main && exit 0
+              git rebase --abort || true
+              sleep 5
+            done
+            exit 1
+          fi

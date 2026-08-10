@@ -832,7 +832,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false },
 
     lastSavedStateString: "",
 
@@ -1792,7 +1792,8 @@ const app = {
         if (/этаж[а-я]*/i.test(t)) fields.push('floors');
         if (/материал\s*стен|стен[а-я]*/i.test(t)) fields.push('mat');
         if (/тип\s*радиатор[а-я]*|панельник[а-я]*|алюминь[а-я]*|алюминиев[а-я]*|биметалл[а-я]*/i.test(t)) fields.push('radType');
-        else if (/котел|котл[а-я]*|источник\s*тепла|топливо/i.test(t)) fields.push('fuels');
+        // "котел" с оговоркой: в "котельной" тот же корень, но речь о помещении, а не о топливе
+        else if (/котел(?!ьн)[а-я]*|котл[а-я]*|источник\s*тепла|топливо/i.test(t)) fields.push('fuels');
         if (/тепл[а-я]*\s*пол[а-я]*|радиатор[а-я]*|систем[а-я]*\s*отоплени[а-я]*/i.test(t)) { fields.push('systems'); fields.push('ufhEverywhere'); }
         if (/жиль[а-я]*|проживающ[а-я]*/i.test(t)) fields.push('res');
         if (/объ[её]м\s*бойлер[а-я]*|литраж[а-я]*/i.test(t)) fields.push('tankVol');
@@ -1807,7 +1808,22 @@ const app = {
         if (/кровл[а-я]*|крыш[а-я]*|черда[а-я]*/i.test(t)) fields.push('roofMat');
         if (/материал\s*пола|основани[а-я]*\s*пола/i.test(t)) fields.push('floorMat');
         if (/остеклени[а-я]*|стеклопакет[а-я]*/i.test(t)) fields.push('glazingMat');
-        if (/автоматик[а-я]*/i.test(t)) fields.push('ufhAuto');
+        if (/автоматик[а-я]*\s*котельн[а-я]*|терматик[а-я]*|thermatic/i.test(t)) fields.push('boilerAuto');
+        else if (/автоматик[а-я]*/i.test(t)) fields.push('ufhAuto');
+        if (/снеготаян[а-я]*|обогрев[а-я]*\s*(?:дорожк|площадк|крыльц|въезд)[а-я]*|антил[её]д[а-я]*/i.test(t)) fields.push('snowMelt');
+        if (/протеч[а-я]*|аквасторож[а-я]*|нептун[а-я]*/i.test(t)) fields.push('leakProtect');
+        if (/рециркуляц[а-я]*/i.test(t)) fields.push('recirc');
+        if (/полотенцесушител[а-я]*|полотенчик[а-я]*/i.test(t)) fields.push('towelWarmer');
+        if (/по\s*воздуху|датчик[а-я]*\s*воздуха/i.test(t)) fields.push('airControl');
+        if (/выносн[а-я]*\s*панел[а-я]*|панел[а-я]*\s*управлени[а-я]*/i.test(t)) fields.push('ctrlPanel');
+        if (/узел\s*ввода|ввод[а-я]*\s*хвс|ввод\s*воды/i.test(t)) fields.push('waterInput');
+        if (/незамерзающ[а-я]*\s*кран[а-я]*|уличн[а-я]*\s*кран[а-я]*|поливочн[а-я]*\s*кран[а-я]*/i.test(t)) fields.push('outdoorFaucet');
+        if (/big\s*blue|биг\s*блю|магистральн[а-я]*\s*фильтр[а-я]*|фильтрац[а-я]*/i.test(t)) fields.push('bigBlueFilter');
+        if (/подпитк[а-я]*/i.test(t)) fields.push('heatingFeed');
+        if (/канализац[а-я]*/i.test(t)) fields.push('sewerType');
+        if (/шаг[а-я]*\s*укладк[а-я]*/i.test(t)) fields.push('ufhStep');
+        if (/ограничени[а-я]*\s*мощност[а-я]*|лимит[а-я]*\s*мощност[а-я]*/i.test(t)) fields.push('elPowerLimit');
+        if (/стоимост[а-я]*\s*отоплен[а-я]*|расход[а-я]*\s*на\s*отоплен[а-я]*/i.test(t)) fields.push('heatCost');
 
         return fields.length ? fields : null;
     },
@@ -1827,7 +1843,7 @@ const app = {
         }
         // Проверяем ДО "проверки связи" — иначе "работает" в "как это работает" перетягивает на себя
         if (/что\s*ты\s*умеешь|как[а-я]*\s*это\s*работает|что\s*сказать|что\s*говорить|помоги[а-я]*|инструкц[а-я]*/i.test(t)) {
-            return { type: 'help', message: 'Я умею распознавать характеристики объекта из текста. Просто скажите мне общую площадь, этажность, тип остекления или особенности котельной, и я сам расставлю галочки в форме.' };
+            return { type: 'help', message: 'Я умею распознавать характеристики объекта из текста. Скажите площадь, этажность, отопление и остекление — расставлю галочки сам. Понимаю и остальное хозяйство: автоматику котельной, защиту от протечек, рециркуляцию, полотенцесушитель, узел ввода воды, снеготаяние дорожек, материал труб и выделенную мощность по электричеству.' };
         }
         if (/тест[а-я]*|проверк[а-я]*\s*связ[а-я]*|раз\s*два\s*три|раз\s*раз|123|работает|слышно|(?<![а-я])ау(?![а-я])|ку-?ку|(?<![а-я])алло(?![а-я])/i.test(t)) {
             return { type: 'test', message: 'Слышу вас отлично! Проверка пройдена. Теперь расскажите про объект: какая площадь, сколько этажей, будут ли радиаторы?' };
@@ -1858,21 +1874,72 @@ const app = {
         return false;
     },
 
+    // Числительные прописью — голосовой ввод часто отдаёт именно словами
+    // ("сто пятьдесят квадратов"), а не цифрами.
+    _NUM_WORDS: {
+        'один': 1, 'одна': 1, 'два': 2, 'две': 2, 'три': 3, 'четыре': 4, 'пять': 5, 'шесть': 6,
+        'семь': 7, 'восемь': 8, 'девять': 9, 'десять': 10, 'одиннадцать': 11, 'двенадцать': 12,
+        'тринадцать': 13, 'четырнадцать': 14, 'пятнадцать': 15, 'шестнадцать': 16,
+        'семнадцать': 17, 'восемнадцать': 18, 'девятнадцать': 19, 'двадцать': 20,
+        'тридцать': 30, 'сорок': 40, 'пятьдесят': 50, 'шестьдесят': 60, 'семьдесят': 70,
+        'восемьдесят': 80, 'девяносто': 90, 'сто': 100, 'двести': 200, 'триста': 300,
+        'четыреста': 400, 'пятьсот': 500, 'шестьсот': 600, 'семьсот': 700, 'восемьсот': 800,
+        'девятьсот': 900
+    },
+    // "сто пятьдесят квадратов" -> "150 квадратов". Идущие подряд числительные складываем,
+    // как их и произносят (сто + пятьдесят = 150, двести + сорок = 240).
+    //
+    // Результат кладём в ОТДЕЛЬНУЮ строку, а не подменяем исходную: часть правил ниже
+    // опирается как раз на слова ("минус сорок" у антифриза, "в три слоя" у кровли), и
+    // после подстановки цифр они бы перестали срабатывать. Цифровые правила смотрят в
+    // переписанную строку, словесные — в исходную.
+    _numeralsToDigits: function (t) {
+        if (!this._numWordsRe) {
+            const words = Object.keys(this._NUM_WORDS).sort((a, b) => b.length - a.length).join('|');
+            this._numWordsRe = new RegExp('(?<![а-я])(?:' + words + ')(?:\\s+(?:' + words + '))*(?![а-я])', 'g');
+        }
+        return t.replace(this._numWordsRe, (m) =>
+            String(m.split(/\s+/).reduce((acc, w) => acc + (this._NUM_WORDS[w] || 0), 0)));
+    },
+
     // Разбор свободного текстового описания объекта в параметры левой панели —
     // без ИИ, набором правил (числа/ключевые слова), по образцу умного поиска оборудования.
     // ВАЖНО: в JS \w не включает кириллицу, поэтому окончания слов везде матчим через [а-я]*,
     // а не \w* (как и в остальном поиске по каталогу — см. _SEARCH_SLANG).
     parseHouseQuery: function (text) {
         const t = (' ' + (text || '').toLowerCase() + ' ').replace(/ё/g, 'е');
+        const tn = this._numeralsToDigits(t); // та же строка, но числительные — цифрами
         const results = [];
+
+        // Снеготаяние ищем раньше площади дома: у обогреваемой площадки свои квадратные
+        // метры ("обогрев дорожки 20 квадратов"), и без этой отметки они уехали бы в
+        // площадь дома. Границы куска фразы про снеготаяние запоминаем и исключаем.
+        // Между участком и словом про обогрев обычно вклинивается его площадь
+        // ("площадка 40 квадратов с подогревом") — поэтому допускаем разрыв.
+        const SNOW_RE = /снеготаян[а-я]*|антиобледенен[а-я]*|антил[её]д[а-я]*|(?:подогрев|обогрев)[а-я]*\s*(?:дорожк|площадк|крыльц|въезд|парковк|тротуар|ступен|отмостк)[а-я]*|(?:дорожк|площадк|крыльц|въезд|парковк|тротуар|ступен|отмостк)[а-я]*.{0,25}?(?:подогрев|обогрев)[а-я]*|топ[а-я]*\s*снег|растапл[а-я]*\s*снег/i;
+        const snowM = tn.match(SNOW_RE);
+        const snowFrom = snowM ? Math.max(0, snowM.index - 12) : -1;
+        const snowTo = snowM ? snowM.index + snowM[0].length + 45 : -1;
+        const outsideSnow = (idx) => !snowM || idx < snowFrom || idx > snowTo;
 
         // Площадь дома — после "дом/площадь/коттедж" разрешаем и полное "метров", и голое "м"
         // ("дом 200 м"), но не даём "м" быть началом другого слова (иначе смотри следующий тест).
-        let m = t.match(/(\d{2,4})\s*(?:кв\.?\s*м\.?|м2|м²|квадрат[а-я]*)/i);
-        if (!m) m = t.match(/(?:дом[а-я]*|площад[а-я]*|коттедж[а-я]*)\D{0,15}(\d{2,4})\s*(?:метр[а-я]*|м(?![а-я]))/i);
+        let m = null;
+        for (const mm of tn.matchAll(/(\d{2,4})\s*(?:кв\.?\s*м\.?|м2|м²|квадрат[а-я]*)/gi)) {
+            if (outsideSnow(mm.index)) { m = mm; break; }
+        }
+        if (!m) {
+            for (const mm of tn.matchAll(/(?:дом[а-я]*|площад[а-я]*|коттедж[а-я]*)\D{0,15}(\d{2,4})\s*(?:метр[а-я]*|м(?![а-я]))/gi)) {
+                if (outsideSnow(mm.index)) { m = mm; break; }
+            }
+        }
         if (m) {
-            const area = Math.max(20, Math.min(1000, parseInt(m[1], 10)));
-            results.push({ field: 'area', value: area, label: 'Площадь дома', display: `${area} м²` });
+            // Границы те же, что у ползунка площади (см. setArea): назвали больше — не молчим,
+            // а пишем в превью, что взяли предел, иначе цифра «уменьшилась сама собой».
+            const said = parseInt(m[1], 10);
+            const area = Math.max(50, Math.min(this.MAX_AREA, said));
+            const note = said > this.MAX_AREA ? ` (максимум калькулятора, сказано ${said})` : '';
+            results.push({ field: 'area', value: area, label: 'Площадь дома', display: `${area} м²${note}` });
         }
 
         // Этажность
@@ -1895,13 +1962,22 @@ const app = {
                 'электр', 'отоплен', 'радиатор', 'батаре', 'комнат', 'человек', 'жильц', 'гвс', 'горяч', 'вод', 'бойлер',
                 'рекупера', 'принудительн', 'вентиляц', 'окон', 'окна', 'квадрат', 'метр', 'расчет', 'расчёт', 'везде', 'полность',
                 'потолк', 'высот', 'чист', 'черн', 'плит', 'перекрыт', 'балок', 'ригел', 'свет', 'антифриз', 'тосол', 'незамерз',
-                'жижа', 'дистилл', 'скважин', 'кран', 'эко', 'зелен', 'пропилен', 'сороковк', 'тридцатк', 'этилен', 'красн', 'ядовит',
+                'жижа', 'дистилл', 'скважин', 'кран', 'эко', 'пропилен', 'сороковк', 'тридцатк', 'этилен', 'ядовит',
                 'кровл', 'черда', 'мансард', 'вата', 'базальт', 'роквул', 'урса', 'пеноплэкс', 'эппс', 'пенопласт', 'экструз', 'слое', 'слоя',
                 'лага', 'доска', 'фанер', 'каркасн', 'подвал', 'цокольн', 'пустотк', 'грунт', 'земл', 'ушп', 'уфф', 'стяжк',
                 'камер', 'стекл', 'пакет', 'напылен', 'аргон', 'рамк', 'мультифункциональн',
                 'автоматик', 'напряму', 'вручну', 'глазок', 'умн', 'покомнатн', 'зональн', 'позонн', 'терморегулятор',
                 'вайфай', 'сервопривод', 'сервак', 'контроллер', 'клеммник', 'телефон', 'зонт', 'термоголов', 'термух', 'крутилк', 'барашк', 'термоклапан',
-                'город', 'водоснабжен', 'санузел', 'санузл', 'туалет', 'ванная', 'ванн', 'стиральн', 'посудомо', 'буд'];
+                'город', 'водоснабжен', 'санузел', 'санузл', 'туалет', 'ванная', 'ванн', 'стиральн', 'посудомо', 'буд',
+                // Узлы, добавленные в калькулятор позже: без них "поставь" тянуло за собой
+                // город Поставы, а "фильтрация" — Фильтровск и им подобные
+                'котельн', 'терматик', 'погодозависим', 'протеч', 'аквасторож', 'нептун', 'гидролок', 'датчик',
+                'рециркуляц', 'полотенцесушител', 'полотенчик', 'лесенк', 'снеготаян', 'антилед', 'антиобледенен',
+                'дорожк', 'крыльц', 'въезд', 'площадк', 'тротуар', 'парковк', 'отмостк', 'ступен', 'подогрев', 'обогрев',
+                'подпитк', 'фильтр', 'водоподготовк', 'магистральн', 'канализац', 'бесшумн', 'малошумн',
+                'металлопласт', 'полиэтилен', 'сшит', 'панел', 'выносн', 'воздух', 'управлен', 'регулирован',
+                'выделен', 'лимит', 'ограничен', 'разрешен', 'подведен', 'киловатт', 'мощност', 'укладк',
+                'постав', 'убер', 'удал', 'отмен', 'сдел', 'нужн', 'хоч', 'давай', 'добав', 'посчита', 'стоимост', 'расход'];
             // Разговорные названия городов, которых нет в официальной базе городов дословно
             // ("Питер"/"СПб" вместо "Санкт-Петербург", "мск" вместо "Москва")
             const CITY_NICKNAMES = { 'питер': 'санкт-петербург', 'спб': 'санкт-петербург', 'мск': 'москва' };
@@ -1912,8 +1988,16 @@ const app = {
                     if (foundCity) break;
                 }
             }
+            // Цвета антифриза отсекаем целыми словами, а не корнем: корень "красн"/"зелен"
+            // отбрасывал вместе с ними Красноярск и Зеленоград — города, которые в
+            // калькуляторе выбирают чаще, чем называют цвет теплоносителя.
+            const DOMAIN_STOPWORDS = new Set(['красный', 'красная', 'красное', 'красные', 'красным', 'красной', 'красного',
+                'зеленый', 'зеленая', 'зеленое', 'зеленые', 'зеленым', 'зеленой', 'зеленого']);
             const queryWords = t.split(/[^а-я]+/)
                 .filter(w => w.length >= 4)
+                // Числительные прописью тоже похожи на города ("минус сорок" -> Сорочинск)
+                .filter(w => !this._NUM_WORDS[w])
+                .filter(w => !DOMAIN_STOPWORDS.has(w))
                 .filter(w => !DOMAIN_STOPSTEMS.some(s => w.startsWith(s)));
             for (const c of (foundCity ? [] : CITIES_DB)) {
                 if (!c || !c.name) continue;
@@ -1975,7 +2059,7 @@ const app = {
         }
 
         // ГВС / количество жильцов
-        const resM = t.match(/на\s*(\d{1,2})\s*(?:человек[а-я]*|чел\.?|жильц[а-я]*|проживающ[а-я]*)/i);
+        const resM = tn.match(/на\s*(\d{1,2})\s*(?:человек[а-я]*|чел\.?|жильц[а-я]*|проживающ[а-я]*)/i);
         if (resM) {
             const res = parseInt(resM[1], 10);
             results.push({ field: 'res', value: res, label: 'Жильцов', display: `${res} чел.` });
@@ -1991,10 +2075,10 @@ const app = {
         }
 
         // Объём бойлера в литрах ("бойлер 200 л", "на 200 литров")
-        const tankM = t.match(/(\d{2,4})\s*л(?:итр[а-я]*)?(?![а-я])/i);
+        const tankM = tn.match(/(\d{2,4})\s*л(?:итр[а-я]*)?(?![а-я])/i);
         // Если явного "л"/"литров" нет — разрешаем голое число прямо рядом со словом "бойлер"/"дюплекс"
         // ("бойлер 200", "дюплекс 200", "роммер бойлер 200") в разумном диапазоне литража
-        const tankBareM = !tankM && t.match(/(?:бойлер[а-я]*|дюплекс[а-я]*|duplex)\s*(?:на\s*)?(\d{2,4})\b/i);
+        const tankBareM = !tankM && tn.match(/(?:бойлер[а-я]*|дюплекс[а-я]*|duplex)\s*(?:на\s*)?(\d{2,4})\b/i);
         if (tankM || tankBareM) {
             const vol = Math.max(30, Math.min(1000, parseInt((tankM || tankBareM)[1], 10)));
             results.push({ field: 'tankVol', value: vol, label: 'Объём бойлера', display: `${vol} л` });
@@ -2023,7 +2107,7 @@ const app = {
         // (state.waterZones). Наличие хотя бы одного санузла с унитазом само по себе включает в смету
         // и водоснабжение, и канализацию — отдельно спрашивать про канализацию не нужно.
         if (/санузел|санузл[а-я]*|туалет[а-я]*|ванная[а-я]*|ванн[а-я]*/i.test(t)) {
-            const sanM = t.match(/(\d{1,2})\s*санузл[а-я]*|(\d{1,2})\s*туалет[а-я]*/i);
+            const sanM = tn.match(/(\d{1,2})\s*санузл[а-я]*|(\d{1,2})\s*туалет[а-я]*/i);
             const count = Math.max(1, Math.min(10, sanM ? parseInt(sanM[1] || sanM[2], 10) : 1));
             const fixtures = { toilet: 1, basin: 1, bath: 0, shower: 0, wash: 0, dish: 0 };
             if (/ванн[а-я]*/i.test(t)) fixtures.bath = 1;
@@ -2047,12 +2131,14 @@ const app = {
         // Вентиляция — стем "рекупера" (не "рекуперат"), т.к. общий для "рекуператор" и "рекуперация"
         if (/рекупера[а-я]*/i.test(t)) {
             results.push({ field: 'ventilationType', value: 'recuperator', label: 'Вентиляция', display: 'с рекуперацией' });
-        } else if (/принудительн[а-я]*\s*вентиляц[а-я]*/i.test(t)) {
+        } else if (/принудительн[а-я]*\s*вентиляц[а-я]*|приточн[а-я]*|вытяжн[а-я]*|приточно-?вытяжн[а-я]*/i.test(t)) {
             results.push({ field: 'ventilationType', value: 'forced', label: 'Вентиляция', display: 'принудительная' });
+        } else if (/естественн[а-я]*\s*вентиляц[а-я]*|вентиляц[а-я]*\s*естественн[а-я]*/i.test(t)) {
+            results.push({ field: 'ventilationType', value: 'natural', label: 'Вентиляция', display: 'естественная' });
         }
 
         // Количество окон (быстрый режим)
-        const winM = t.match(/(\d{1,2})\s*окон[а-я]*|(\d{1,2})\s*окна[а-я]*/i);
+        const winM = tn.match(/(\d{1,2})\s*окон[а-я]*|(\d{1,2})\s*окна[а-я]*/i);
         if (winM) {
             const n = parseInt(winM[1] || winM[2], 10);
             results.push({ field: 'win', value: n, label: 'Количество окон', display: `${n} шт.` });
@@ -2063,7 +2149,7 @@ const app = {
         if (/втор[а-я]*\s*свет/i.test(t)) {
             results.push({ field: 'h', value: 5, label: 'Высота потолков', display: '5 м (второй свет)' });
         } else {
-            const hM = t.match(/(?:потолк[а-я]*|высот[а-я]*|в\s*чистоте|в\s*черне|черновой|до\s*плит[а-я]*|до\s*перекрыти[а-я]*|до\s*балок|до\s*ригел[а-я]*)\D{0,12}(\d(?:[.,]\d)?)/i);
+            const hM = tn.match(/(?:потолк[а-я]*|высот[а-я]*|в\s*чистоте|в\s*черне|черновой|до\s*плит[а-я]*|до\s*перекрыти[а-я]*|до\s*балок|до\s*ригел[а-я]*)\D{0,12}(\d(?:[.,]\d)?)/i);
             if (hM) {
                 const h = Math.max(2, Math.min(6, parseFloat(hM[1].replace(',', '.'))));
                 results.push({ field: 'h', value: h, label: 'Высота потолков', display: `${h} м` });
@@ -2072,11 +2158,14 @@ const app = {
 
         // Теплоноситель — сначала проверяем специфичные признаки конкретного вида (цвет/температура/
         // хим.название), и только потом общее неконкретное "антифриз/незамерзайка" (по умолчанию — эко-30)
-        if (/сороковк[а-я]*|минус\s*сорок[а-я]*|шестьдесят\s*пят[а-я]*|красн[а-я]*|этилен[а-я]*|\sядовит[а-я]*|\sяд\s/i.test(t)) {
+        // Цвет — только целым словом ("красный"), иначе корень цеплял названия городов
+        if (/сороковк[а-я]*|минус\s*сорок[а-я]*|шестьдесят\s*пят[а-я]*|красн(?:ый|ая|ое|ые|ым|ой|ого)(?![а-я])|этилен[а-я]*|\sядовит[а-я]*|\sяд\s/i.test(t)) {
             results.push({ field: 'coolant', value: 'pro65', label: 'Теплоноситель', display: 'антифриз до -40°C' });
-        } else if (/тридцатк[а-я]*|минус\s*тридцат[а-я]*|\sэко[а-я]*|зелен[а-я]*|пропилен[а-я]*/i.test(t)) {
+        } else if (/тридцатк[а-я]*|минус\s*тридцат[а-я]*|\sэко[а-я]*|зелен(?:ый|ая|ое|ые|ым|ой|ого)(?![а-я])|пропилен[а-я]*/i.test(t)) {
             results.push({ field: 'coolant', value: 'eco30', label: 'Теплоноситель', display: 'антифриз до -30°C' });
-        } else if (/антифриз[а-я]*|тосол[а-я]*|незамерзайк[а-я]*|незамерзающ[а-я]*|\sжижа\s/i.test(t)) {
+            // "Незамерзающий кран" — это уличный кран узла ввода ХВС, а не теплоноситель:
+            // без этой оговорки любое упоминание такого крана заливало в систему антифриз.
+        } else if (/антифриз[а-я]*|тосол[а-я]*|незамерзайк[а-я]*|незамерзающ(?![а-я]*\s*кран)[а-я]*|\sжижа\s/i.test(t)) {
             results.push({ field: 'coolant', value: 'eco30', label: 'Теплоноситель', display: 'антифриз до -30°C' });
         } else if (/дистиллят[а-я]*|водичк[а-я]*|из\s*скважин[а-я]*|из-?под\s*кран[а-я]*|прост[а-я]*\s*вод[а-я]*|обычн[а-я]*\s*вод[а-я]*/i.test(t)) {
             results.push({ field: 'coolant', value: 'water', label: 'Теплоноситель', display: 'вода' });
@@ -2136,6 +2225,140 @@ const app = {
             results.push({ field: 'ufhAuto', value: true, ctrl: 'electro', label: 'Автоматика отопления', display: 'электронная (покомнатная)' });
         } else if (/термоголов[а-я]*|термух[а-я]*|крутилк[а-я]*|барашк[а-я]*|термоклапан[а-я]*/i.test(t)) {
             results.push({ field: 'ufhAuto', value: true, ctrl: 'mech', label: 'Автоматика отопления', display: 'механическая (термоголовки)' });
+        }
+
+        // ─── Узлы, появившиеся в калькуляторе после первой версии разбора ────────
+        // Автоматика котельной (контроллер Thermatic) и три её подпункта: защита от
+        // протечек, регулирование по воздуху и выносная панель. В смету они попадают
+        // только вместе с самим контроллером (см. render), поэтому упоминание любого
+        // из подпунктов включает и его — иначе распознали бы то, что не посчитается.
+        // "протеч" без "к": слово склоняется с выпадающей буквой — протечка, но протечек
+        const leakM = /протеч[а-я]*|аквасторож[а-я]*|нептун[а-я]*|гидролок[а-я]*|зато?пл[а-я]*\s*сосед[а-я]*/i.test(t);
+        const airM = /регулирован[а-я]*\s*по\s*воздуху|управлени[а-я]*\s*по\s*воздуху|по\s*воздуху|датчик[а-я]*\s*воздуха/i.test(t);
+        const panelM = /выносн[а-я]*\s*панел[а-я]*|панел[а-я]*\s*управлени[а-я]*/i.test(t);
+        const boilerAutoM = /терматик[а-я]*|thermatic|climatic|климатик[а-я]*|автоматик[а-я]*\s*котельн[а-я]*|котельн[а-я]*\s*автоматик[а-я]*|погодозависим[а-я]*|погодн[а-я]*\s*регулирован[а-я]*|уличн[а-я]*\s*датчик[а-я]*|датчик[а-я]*\s*улиц[а-я]*/i.test(t);
+        if (boilerAutoM || leakM || airM || panelM) {
+            results.push({ field: 'boilerAuto', value: true, label: 'Автоматика котельной', display: 'контроллер Thermatic' });
+        }
+        if (leakM) {
+            const cntM = tn.match(/(\d{1,2})\s*датчик[а-я]*\s*протеч[а-я]*|протеч[а-я]*\D{0,12}(\d{1,2})\s*датчик[а-я]*/i);
+            const sensors = cntM ? Math.max(1, Math.min(this.LEAK_SENSORS_MAX, parseInt(cntM[1] || cntM[2], 10))) : null;
+            results.push({ field: 'leakProtect', value: true, sensors: sensors, label: 'Защита от протечек', display: sensors ? `есть, ${sensors} датчиков` : 'есть' });
+        }
+        if (airM) {
+            results.push({ field: 'airControl', value: true, label: 'Регулирование по воздуху', display: 'да' });
+        }
+        if (panelM) {
+            results.push({ field: 'ctrlPanel', value: true, label: 'Выносная панель управления', display: 'да' });
+        }
+
+        // Рециркуляция ГВС — подпункт блока горячей воды: сама по себе, без бойлера,
+        // в смете не появится, поэтому заодно включаем и ГВС.
+        if (/рециркуляц[а-я]*/i.test(t)) {
+            results.push({ field: 'hotWater', value: true, label: 'Горячая вода', display: 'нужна' });
+            results.push({ field: 'recirc', value: true, label: 'Рециркуляция ГВС', display: 'есть' });
+        }
+
+        // Полотенцесушитель. Водяной он или электрический, смотрим в окне вокруг самого
+        // слова, а не по всей фразе — "водяной тёплый пол" в другом её конце иначе
+        // сделал бы электрический полотенцесушитель водяным.
+        const twM = t.match(/полотенцесушител[а-я]*|полотенчик[а-я]*|полотенечн[а-я]*\s*сушител[а-я]*/i);
+        if (twM) {
+            const twWin = t.slice(Math.max(0, twM.index - 25), twM.index + twM[0].length + 25);
+            const twType = /водян[а-я]*/i.test(twWin) ? 'water' : (/электрическ[а-я]*|электро(?![а-я])/i.test(twWin) ? 'electric' : null);
+            const twCntM = tn.match(/(\d{1,2})\s*полотенцесушител[а-я]*/i);
+            const twCnt = twCntM ? Math.max(1, Math.min(20, parseInt(twCntM[1], 10))) : null;
+            const twDisp = [twType === 'water' ? 'водяной' : (twType === 'electric' ? 'электрический' : null), twCnt ? `${twCnt} шт.` : null].filter(Boolean).join(', ');
+            results.push({ field: 'towelWarmer', value: true, twType: twType, count: twCnt, label: 'Полотенцесушитель', display: twDisp || 'есть' });
+        }
+
+        // Узел ввода ХВС и его начинка. Кран, фильтр и подпитка живут внутри узла —
+        // упомянули любое из трёх, значит узел ввода тоже нужен.
+        const faucetM = /незамерзающ[а-я]*\s*кран[а-я]*|уличн[а-я]*\s*кран[а-я]*|кран[а-я]*\s*на\s*улиц[а-я]*|поливочн[а-я]*\s*кран[а-я]*/i.test(t);
+        const filterM = /big\s*blue|биг\s*блю|магистральн[а-я]*\s*фильтр[а-я]*|систем[а-я]*\s*фильтрац[а-я]*|фильтр[а-я]*\s*очистк[а-я]*\s*воды|водоподготовк[а-я]*/i.test(t);
+        const feedM = /подпитк[а-я]*/i.test(t);
+        if (/узел\s*ввода|ввод[а-я]*\s*хвс|ввод\s*воды|водомерн[а-я]*\s*узел|сч[её]тчик[а-я]*\s*воды/i.test(t) || faucetM || filterM || feedM) {
+            results.push({ field: 'waterInput', value: true, label: 'Узел ввода ХВС', display: 'нужен' });
+        }
+        if (faucetM) {
+            const fCntM = tn.match(/(\d{1,2})\s*(?:незамерзающ|уличн|поливочн)[а-я]*\s*кран[а-я]*/i);
+            const fCnt = fCntM ? Math.max(1, Math.min(5, parseInt(fCntM[1], 10))) : 1;
+            results.push({ field: 'outdoorFaucet', value: fCnt, label: 'Незамерзающий кран', display: `${fCnt} шт.` });
+        }
+        if (filterM) {
+            results.push({ field: 'bigBlueFilter', value: true, label: 'Фильтрация (Big Blue)', display: 'есть' });
+        }
+        if (feedM) {
+            results.push({ field: 'heatingFeed', value: true, label: 'Подпитка системы', display: 'есть' });
+        }
+
+        // Канализация: бесшумная (по умолчанию) или обычная серая
+        if (/бесшумн[а-я]*\s*канализац[а-я]*|тих[а-я]*\s*канализац[а-я]*|малошумн[а-я]*\s*канализац[а-я]*/i.test(t)) {
+            results.push({ field: 'sewerType', value: 'std', label: 'Канализация', display: 'бесшумная' });
+        } else if (/обычн[а-я]*\s*канализац[а-я]*|эконом[а-я]*\s*канализац[а-я]*|сер[а-я]*\s*канализац[а-я]*|пвх\s*канализац[а-я]*/i.test(t)) {
+            results.push({ field: 'sewerType', value: 'economy', label: 'Канализация', display: 'обычная' });
+        }
+
+        // Материал труб. Одним словом ("всё металлопластом") монтажник обычно
+        // описывает сразу и отопление, и воду — поэтому без уточнения ставим оба.
+        const pipeM = t.match(/металлопласт[а-я]*|(?<![а-я])pex(?![а-я])|пекс[а-я]*|сшит[а-я]*\s*полиэтилен[а-я]*/i);
+        if (pipeM) {
+            const pipeWin = t.slice(Math.max(0, pipeM.index - 35), pipeM.index + pipeM[0].length + 35);
+            const forUfh = /т[её]пл[а-я]*\s*пол[а-я]*|(?<![а-я])тп(?![а-я])|отоплен[а-я]*|контур[а-я]*/i.test(pipeWin);
+            const forWater = /водоснабжен[а-я]*|развод[а-я]*\s*вод[а-я]*|(?<![а-я])хвс(?![а-я])|(?<![а-я])гвс(?![а-я])|сантехник[а-я]*/i.test(pipeWin);
+            const pipeVal = /металлопласт/i.test(pipeM[0]) ? 'metal_plastic' : 'pex';
+            const pipeDisp = pipeVal === 'metal_plastic' ? 'металлопластик' : 'сшитый полиэтилен PEX-a';
+            if (forUfh || !forWater) results.push({ field: 'ufhPipeMaterial', value: pipeVal, label: 'Труба тёплого пола', display: pipeDisp });
+            if (forWater || !forUfh) results.push({ field: 'waterPipeMaterial', value: pipeVal, label: 'Труба водоснабжения', display: pipeDisp });
+        }
+
+        // Шаг укладки тёплого пола
+        const stepM = tn.match(/шаг[а-я]*\s*(?:укладк[а-я]*\s*)?(\d{2,3})|с\s*шагом\s*(\d{2,3})/i);
+        if (stepM) {
+            const step = Math.max(50, Math.min(400, parseInt(stepM[1] || stepM[2], 10)));
+            results.push({ field: 'ufhStep', value: step, label: 'Шаг укладки ТП', display: `${step} мм` });
+        }
+
+        // Выделенная мощность по электричеству — от неё зависит, влезет ли электрокотёл.
+        // Требуем слово "выделено/лимит/ограничение" рядом, иначе сюда попадала бы
+        // любая названная мощность котла.
+        const elLimM = tn.match(/(?:выделен[а-я]*|лимит[а-я]*|ограничен[а-я]*|разрешен[а-я]*|подведен[а-я]*)\D{0,20}(\d{1,2})\s*(?:квт|киловатт[а-я]*)/i);
+        if (elLimM) {
+            const kw = Math.max(3, Math.min(60, parseInt(elLimM[1], 10)));
+            results.push({ field: 'elPowerLimit', value: kw, label: 'Ограничение мощности', display: `${kw} кВт` });
+        }
+
+        // Глубина скважины
+        const wellDepthM = tn.match(/скважин[а-я]*\D{0,15}(\d{1,3})\s*(?:метр[а-я]*|м(?![а-я]))/i);
+        if (wellDepthM) {
+            const d = Math.max(5, Math.min(200, parseInt(wellDepthM[1], 10)));
+            results.push({ field: 'wellDepth', value: d, label: 'Глубина скважины', display: `${d} м` });
+        }
+
+        // Подробный (покомнатный) режим расчёта
+        if (/подробн[а-я]*\s*расч[её]т[а-я]*|покомнатн[а-я]*\s*расч[её]т[а-я]*|расч[её]т\s*по\s*комнат[а-я]*|по\s*комнатам|теплотехническ[а-я]*\s*расч[её]т[а-я]*/i.test(t)) {
+            results.push({ field: 'detailedRooms', value: true, label: 'Режим расчёта', display: 'подробный (по комнатам)' });
+        }
+
+        // Снеготаяние. Границы куска фразы уже нашли выше (там же, где отделяли
+        // площадь площадки от площади дома) — отсюда берём и площадь, и вид участка.
+        if (snowM) {
+            const snowWin = tn.slice(snowFrom, snowTo);
+            const zoneAreaM = snowWin.match(/(\d{1,4})\s*(?:кв\.?\s*м\.?|м2|м²|квадрат[а-я]*|метр[а-я]*)/i);
+            const zoneArea = zoneAreaM ? Math.max(2, Math.min(500, parseInt(zoneAreaM[1], 10))) : null;
+            const isWalk = /дорожк[а-я]*|тротуар[а-я]*|крыльц[а-я]*|ступен[а-я]*|отмостк[а-я]*/i.test(snowWin);
+            const zoneName = /крыльц[а-я]*|ступен[а-я]*/i.test(snowWin) ? 'Крыльцо'
+                : (/дорожк[а-я]*|тротуар[а-я]*|отмостк[а-я]*/i.test(snowWin) ? 'Дорожка' : 'Въезд');
+            results.push({
+                field: 'snowMelt', value: true, zoneName: zoneName, zoneArea: zoneArea, zoneKind: isWalk ? 'walk' : 'drive',
+                label: 'Снеготаяние', display: zoneArea ? `${zoneName.toLowerCase()}, ${zoneArea} м²` : zoneName.toLowerCase()
+            });
+        }
+
+        // Просьба показать эксплуатационные расходы — включаем строку стоимости
+        // отопления по тому топливу, которое у объекта уже выбрано.
+        if (/стоимост[а-я]*\s*отоплен[а-я]*|сколько\s*(?:будет\s*)?(?:сто[ий][а-я]*|платить|выходит|уходит)\s*(?:за\s*)?(?:отоплен|газ|свет|электр|месяц|зим)[а-я]*|расход[а-я]*\s*на\s*(?:газ|электричеств|отоплен)[а-я]*|эксплуатационн[а-я]*\s*(?:затрат|расход)[а-я]*/i.test(t)) {
+            results.push({ field: 'heatCost', value: true, label: 'Стоимость отопления', display: 'показать расчёт' });
         }
 
         return results;
@@ -2502,11 +2725,65 @@ const app = {
                     break;
                 }
                 case 'well': this.state.well = r.value; break;
+                case 'wellDepth': this.state.wellDepth = r.value; this.state.well = true; break;
                 case 'waterEnabled': this.state.water = r.value; break;
                 case 'waterZones': this.state.waterZones = r.value; this.state.water = true; break;
                 case 'radType': this.state.radType = r.value; break;
+                case 'boilerAuto': this.state.boilerAuto = r.value; break;
+                case 'leakProtect': {
+                    this.state.leakProtect = r.value;
+                    // Число датчиков задаём, только если его назвали: иначе оставляем null,
+                    // и счёт идёт от состава санузлов (см. leakSensorCount)
+                    if (r.sensors) this.state.leakSensors = r.sensors;
+                    break;
+                }
+                case 'airControl': this.state.airControl = r.value; break;
+                case 'ctrlPanel': this.state.ctrlPanel = r.value; break;
+                case 'recirc': this.state.recirc = r.value; break;
+                case 'towelWarmer': {
+                    const tw = this.getTowelWarmer();
+                    tw.enabled = true;
+                    if (r.twType) tw.type = r.twType;
+                    if (r.count) tw.count = r.count;
+                    break;
+                }
+                case 'waterInput': this.state.waterInput = r.value; break;
+                case 'outdoorFaucet': this.state.outdoorFaucet = r.value; break;
+                case 'bigBlueFilter': this.state.bigBlueFilter = r.value; break;
+                case 'heatingFeed': this.state.heatingFeed = r.value; break;
+                case 'sewerType': this.state.sewerType = r.value; break;
+                case 'ufhPipeMaterial': this.state.ufhPipeMaterial = r.value; break;
+                case 'waterPipeMaterial': this.state.waterPipeMaterial = r.value; break;
+                case 'ufhStep': this.state.ufhStep1 = r.value; this.state.ufhStep2 = r.value; break;
+                case 'elPowerLimit': this.state.elPowerLimit = r.value; this.state.elPowerLimitOff = false; break;
+                case 'heatCost': {
+                    // Показываем строку расходов по тому топливу, что уже выбрано у объекта
+                    const fu = this.state.fuels || [];
+                    if (fu.includes('gas')) this.state.showGasCost = true;
+                    if (fu.includes('el')) this.state.showElCost = true;
+                    break;
+                }
+                case 'snowMelt': {
+                    this.state.snowMelt = true;
+                    if (!this.state.snowZones) this.state.snowZones = [];
+                    if (!this.state.snowZones.length) this.addSnowZone(true);
+                    const z = this.state.snowZones[0];
+                    if (z) {
+                        z.name = r.zoneName || z.name;
+                        z.kind = r.zoneKind || z.kind;
+                        if (r.zoneArea) z.area = r.zoneArea;
+                    }
+                    break;
+                }
             }
         });
+        // Подробный режим переключаем после всех остальных полей: он пересобирает
+        // комнаты от площади объекта, и сделай мы это в середине цикла — считал бы
+        // площадь, которую распознанное описание ещё не успело поставить.
+        // Снеготаяние тянет его за собой: в быстром режиме тумблер снеготаяния
+        // скрыт (см. syncUI), и включённые участки было бы не видно и не поправить.
+        const wantsDetailed = results.some(r => r.field === 'detailedRooms' || r.field === 'snowMelt');
+        if (wantsDetailed && !this.state.detailedRooms) this.toggleDetailedRooms(true);
         this.syncUI();
         this.render();
         this.saveState();
@@ -2818,6 +3095,19 @@ const app = {
                 question: 'Нужна принудительная вентиляция с рекуперацией, или хватит естественной?',
                 yesField: { field: 'ventilationType', value: 'forced', label: 'Вентиляция', display: 'принудительная' },
             },
+            {
+                key: 'boilerAuto',
+                addressed: () => accumulated.has('boilerAuto') || declined.has('boilerAuto'),
+                question: 'Ставим автоматику котельной — погодозависимый контроллер с управлением с телефона?',
+                yesField: { field: 'boilerAuto', value: true, label: 'Автоматика котельной', display: 'контроллер Thermatic' },
+            },
+            {
+                key: 'snowMelt',
+                addressed: () => accumulated.has('snowMelt') || declined.has('snowMelt'),
+                // Без площади участка считать нечего, поэтому голого "да" здесь мало
+                question: 'Нужно снеготаяние — обогрев въезда, дорожек или крыльца? Если да, скажите площадь участка.',
+                ambiguousYes: true,
+            },
         ];
 
         const isBareYes = (s) => /^(да|нужен|нужна|нужно|давай|давайте|хочу|хотим|можно|надо|конечно|ага|угу|согласен|согласна)[.!\s]*$/i.test(s.trim());
@@ -2908,7 +3198,16 @@ const app = {
                 return;
             }
 
-            const results = this.parseHouseQuery(text);
+            // Ответ на вопрос про снеготаяние обычно состоит из одной площади ("40 квадратов"):
+            // сам по себе такой ответ ушёл бы в площадь ДОМА. Дописываем к нему слово из
+            // вопроса — дальше разбор идёт как обычно и относит метры к участку.
+            let parseText = text;
+            if (pendingTopic === 'snowMelt' && /(?:\d+\s*(?:кв|м2|м²|квадрат|метр)|дорожк|въезд|крыльц|площадк|тротуар|парковк)/i.test(text)
+                && !/снеготаян|обогрев|подогрев/i.test(text)) {
+                parseText = 'снеготаяние ' + text;
+            }
+
+            const results = this.parseHouseQuery(parseText);
             if (results.length) {
                 results.forEach(r => accumulated.set(r.field, r));
                 applyBtn.style.display = '';
@@ -10763,7 +11062,10 @@ const app = {
                                     <input type="checkbox" ${on ? 'checked' : ''} ${disabled ? 'disabled' : ''} onchange="${onChange}">
                                     <span class="slider"></span>
                                 </label>
-                                <span id="${capId}" class="admin-bulk-cap" style="color:${on ? '#10B981' : 'var(--text-sec)'};">${disabled && !isViewer ? (noRegion ? 'нет региона' : 'нет доступа') : (on ? 'включено' : 'выключено')}</span>
+                                <!-- Без выбранного региона подпись пуста: строкой выше стоит
+                                     сам список с «— выберите регион —», и «нет региона» под
+                                     каждым переключателем только повторяло его дважды. -->
+                                <span id="${capId}" class="admin-bulk-cap" style="color:${on ? '#10B981' : 'var(--text-sec)'};">${disabled && !isViewer ? (noRegion ? '' : 'нет доступа') : (on ? 'включено' : 'выключено')}</span>
                             </span>`;
                         return `
                     <div class="admin-bulk-row">
@@ -10784,19 +11086,27 @@ const app = {
                                 </select>
                             </div>
                             <span class="admin-bulk-sep"></span>
-                            <div class="admin-bulk-group">
-                                <span class="admin-bulk-label" title="Распознавание смет всем монтажникам региона${bulkRegion ? ` «${bulkRegion}»` : ''}.${regHint}">🔍 Распознавание смет:</span>
-                                ${sw(!noRegion && recogRegionOn, noRegion, 'app.toggleRegionRecognition(this.checked, this)', 'cap_reg_recog',
+                            <!-- Обёртка нужна только телефону: там два переключателя доступа
+                                 встают в один ряд. На десктопе она прозрачна (display:contents
+                                 в style.css) и строку не меняет. -->
+                            <div class="admin-bulk-access">
+                                <div class="admin-bulk-group">
+                                    <span class="admin-bulk-label" title="Распознавание смет всем монтажникам региона${bulkRegion ? ` «${bulkRegion}»` : ''}.${regHint}">🔍 Распознавание смет:</span>
+                                    ${sw(!noRegion && recogRegionOn, noRegion, 'app.toggleRegionRecognition(this.checked, this)', 'cap_reg_recog',
                             `Распознавание смет всем монтажникам региона.${regHint}`)}
-                            </div>
-                            <span class="admin-bulk-sep"></span>
-                            <div class="admin-bulk-group">
-                                <span class="admin-bulk-label" title="Листы проекта и редактор планов всем монтажникам региона${bulkRegion ? ` «${bulkRegion}»` : ''}.${regHint}">📐 Проектирование:</span>
-                                ${sw(!noRegion && designOk && designRegionOn, noRegion || !designOk, 'app.toggleRegionDesign(this.checked, this)', 'cap_reg_design',
+                                </div>
+                                <span class="admin-bulk-sep"></span>
+                                <div class="admin-bulk-group">
+                                    <span class="admin-bulk-label" title="Листы проекта и редактор планов всем монтажникам региона${bulkRegion ? ` «${bulkRegion}»` : ''}.${regHint}">📐 Проектирование:</span>
+                                    ${sw(!noRegion && designOk && designRegionOn, noRegion || !designOk, 'app.toggleRegionDesign(this.checked, this)', 'cap_reg_design',
                             designOk ? `Листы проекта и редактор планов всем монтажникам региона.${regHint}` : designOffHint)}
+                                </div>
                             </div>
                             <span class="admin-bulk-sep"></span>
-                            <div class="admin-bulk-group">
+                            <!-- Подсказка про целую компанию — только для десктопа: на телефоне
+                                 она занимала строку под переключателями, а вкладка, на которую
+                                 указывает, оттуда всё равно в одно касание не открывается. -->
+                            <div class="admin-bulk-group admin-bulk-hint">
                                 <span class="admin-bulk-label" style="color:var(--text-sec); font-weight:500; text-transform:none; letter-spacing:0;">
                                     Целой компании — во вкладке «Дистрибьюторы», колонка «Доступ монтажникам»
                                 </span>
@@ -10916,13 +11226,18 @@ const app = {
                              странице отсчёт снова с 1 сбивал с толку (44 записи → 1…44) -->
                         <td style="color:var(--text-sec);">${this._adminOffset + i + 1}</td>
                         <td><div style="display:flex; align-items:center;">${avatarImg} <div><b style="font-size:13px;">${name}</b><br><span style="font-size:11px;color:var(--text-sec);">${phone}</span>${locHTML}${extraHTML}</div></div></td>
-                        <td><b style="color:var(--primary);">${u.ltv.toLocaleString()} ₽</b><br><span style="font-size:10px;color:var(--text-sec);">Смет: ${u.projectsCount} | Ср.объект: ${u.avgArea} м²</span></td>
-                        <td>${badge}<br><span style="font-size:10px;color:var(--text-sec);">${device}</span></td>
+                        <!-- admin-cell-half: на телефоне карточка ставит помеченную
+                             пару в один ряд по половине ширины (см. style.css).
+                             Содержимое коротких и однотипных ячеек — сумма со
+                             сметами, тариф с устройством, два переключателя
+                             доступа — отдельной строки на каждую не стоило. -->
+                        <td class="admin-cell-half"><b style="color:var(--primary);">${u.ltv.toLocaleString()} ₽</b><br><span style="font-size:10px;color:var(--text-sec);">Смет: ${u.projectsCount} | Ср.объект: ${u.avgArea} м²</span></td>
+                        <td class="admin-cell-half">${badge}<br><span style="font-size:10px;color:var(--text-sec);">${device}</span></td>
                         <td onclick="event.stopPropagation();">${distCell}</td>
-                        <td onclick="event.stopPropagation();" style="text-align:center;">${recCell}</td>
-                        <td onclick="event.stopPropagation();" style="text-align:center;">${desCell}</td>
+                        <td class="admin-cell-half" onclick="event.stopPropagation();" style="text-align:center;">${recCell}</td>
+                        <td class="admin-cell-half" onclick="event.stopPropagation();" style="text-align:center;">${desCell}</td>
                         <td style="text-align:right; white-space:nowrap;" title="${lastVisTitle}">${lastVis}</td>
-                        <td onclick="event.stopPropagation();" style="text-align:center; white-space:nowrap;">
+                        <td class="admin-cell-actions" onclick="event.stopPropagation();" style="text-align:center; white-space:nowrap;">
                             <div style="display:flex; gap:5px; justify-content:center; align-items:center;">
                                 <button class="admin-action-btn btn-msg" onclick="app.adminMessageUser('${u.id}', '${nameEscaped}')" title="Написать пользователю"><span class="btn-icon">💬</span><span class="btn-text"> Написать</span></button>
                                 <button class="admin-action-btn btn-obj" onclick="app.adminViewUserEstimates('${nameEscaped}')" title="Открыть его объекты"><span class="btn-icon">📁</span><span class="btn-text"> Объекты</span></button>
@@ -20278,10 +20593,15 @@ const app = {
         const currentDistId = this.state.distributorId;
         const currentDistInfo = this.state.distributorInfo;
         const currentPriceSource = this.state.priceSource;
+        // «Схема» — это про вид сметы, а не про сам расчёт: как монтажник
+        // поставил переключатель, так он и должен стоять на следующем объекте.
+        // Раньше сброс возвращал его в исходное положение, и включать схемы
+        // приходилось заново под каждую смету.
+        const currentShowScheme = this.state.showScheme;
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: currentShowScheme, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType,
@@ -25645,6 +25965,546 @@ const app = {
         if (s.selectedCity && s.selectedCity.temp !== undefined) return s.selectedCity.temp;
         return s.region >= 125 ? -38 : s.region >= 115 ? -34 : s.region >= 90 ? -25 : -10;
     },
+
+    /**
+     * Стоимость отопления электрокотлом за отопительный сезон, с разбивкой по
+     * месяцам.
+     *
+     * Считать месяцы напрямую не по чему: в CITIES_DB у города есть только
+     * расчётная зимняя температура, средних месячных температур там нет. Зато
+     * СП 131.13330 даёт на каждый город два числа — среднюю температуру
+     * отопительного периода t_от и его продолжительность z_от, и оба однозначно
+     * определяются расчётной температурой. Обе зависимости заданы таблицами
+     * реальных городов с линейной интерполяцией между узлами: прямой они не
+     * описываются — продолжительность на севере выходит на полку ~225 суток, а
+     * на юге падает круче любой прямой (Краснодар 145 суток при −17), средняя
+     * же температура наоборот круто уходит вниз за Полярным кругом (Якутск
+     * −20.6 при −52), и подогнанная по средней полосе прямая давала ему −14.6.
+     *
+     * Дальше всё держится на ГСОП = (20 − t_от) * z_от: сколько градусо-суток,
+     * столько и тепла. Разбивка по месяцам — доля ГСОП, приходящаяся на месяц:
+     * форма кривой у континентального климата устойчивая, а её масштаб задаёт
+     * уже свой ГСОП города. Проверка обратным ходом (средняя температура месяца
+     * = 20 − ГСОП_мес / дней) даёт по Москве −6.9 в январе при паспортных −6.5,
+     * по Новосибирску −17.8 при −16.5.
+     *
+     * База 20 °C — та же, на которой построены сами t_от и z_от в СП. Расчёт
+     * теплопотерь внутри дома ведётся от 22 °C по комнатам, поэтому сезонная
+     * цифра выходит на несколько процентов ниже — это оценка, а не счёт.
+     *
+     * @returns {null|{months:Array, seasonKwh:number, seasonKwhNight:number,
+     *                 seasonCost:number, activeMonths:number, avgMonthCost:number,
+     *                 tOt:number, zOt:number, gsop:number, kw:number,
+     *                 twoRate:boolean, tariffDay:number, tariffNight:number}}
+     */
+    EL_COST_MONTHS: [
+        { name: 'Октябрь', days: 31, share: 0.100 },
+        { name: 'Ноябрь', days: 30, share: 0.142 },
+        { name: 'Декабрь', days: 31, share: 0.174 },
+        { name: 'Январь', days: 31, share: 0.183 },
+        { name: 'Февраль', days: 28, share: 0.167 },
+        { name: 'Март', days: 31, share: 0.145 },
+        { name: 'Апрель', days: 30, share: 0.089 }
+    ],
+    // Продолжительность отопительного периода, суток, по расчётной зимней
+    // температуре. Тёплый край нужен не меньше холодного: у Сочи расчётная всего
+    // −2 °C и сезон 94 суток, а без этих узлов таблица выдавала бы ему московские 140.
+    EL_COST_ZOT: [[-2, 95], [-5, 105], [-10, 125], [-15, 140], [-20, 170], [-25, 205], [-30, 213], [-35, 218], [-40, 225], [-50, 250]],
+    // Средняя температура отопительного периода, °C. Узлы — паспортные пары
+    // «расчётная / средняя за период»: Сочи, Краснодар, Москва, Екатеринбург,
+    // Новосибирск, Якутск.
+    EL_COST_TOT: [[-2, 8.4], [-17, 2.0], [-25, -2.2], [-32, -5.4], [-39, -8.1], [-52, -20.6]],
+    // Ночная зона двухтарифного счётчика: 23:00–07:00, восемь часов.
+    EL_NIGHT_HOURS: 8,
+    // Половина суточной амплитуды температуры, °C: ночью на столько холоднее
+    // средней за сутки, днём на столько же теплее.
+    EL_DAY_SWING: 2.5,
+    /**
+     * Линейная интерполяция по таблице [[x, y], ...] с убывающим x.
+     * За краями таблицы — значение крайнего узла: экстраполировать климат
+     * незачем, крайние узлы и так покрывают от Сочи до Якутска.
+     */
+    interpByTemp: function (tbl, t) {
+        if (t >= tbl[0][0]) return tbl[0][1];
+        if (t <= tbl[tbl.length - 1][0]) return tbl[tbl.length - 1][1];
+        for (let i = 0; i < tbl.length - 1; i++) {
+            if (t <= tbl[i][0] && t >= tbl[i + 1][0]) {
+                const f = (tbl[i][0] - t) / (tbl[i][0] - tbl[i + 1][0]);
+                return tbl[i][1] + f * (tbl[i + 1][1] - tbl[i][1]);
+            }
+        }
+        return tbl[tbl.length - 1][1];
+    },
+    /**
+     * Потребность в тепле по месяцам отопительного сезона, кВт·ч. Топливо здесь
+     * не при чём: сколько тепла нужно дому — столько нужно и газовому котлу, и
+     * электрическому, различается лишь цена киловатт-часа. Поэтому расчёт один
+     * на оба прогноза (calcElHeatingCost и calcGasHeatingCost).
+     * @returns {null|{months:Array, seasonKwh:number, tOt:number, zOt:number,
+     *                 gsop:number, kw:number, activeMonths:number}}
+     */
+    calcHeatingSeason: function () {
+        // getHouseHeatLoss() отдаёт строку, а не число — без parseFloat дальше
+        // молча работала бы арифметика, но toFixed() на строке падает.
+        const kw = parseFloat(this.getHouseHeatLoss()) || 0;
+        if (!(kw > 0)) return null;
+        const tP = this.getDesignTemp();
+        const tIn = 20;
+        const dTdesign = tIn - tP;
+        if (!(dTdesign > 0)) return null;
+
+        const tOt = this.interpByTemp(this.EL_COST_TOT, tP);
+        const zOt = this.interpByTemp(this.EL_COST_ZOT, tP);
+        const gsop = (tIn - tOt) * zOt;
+        const kwhPerGsop = kw * 24 / dTdesign;
+
+        // Сколько месяцев в сезоне — берём из его же продолжительности: 205 суток
+        // Москвы это семь месяцев, 152 суток Краснодара — пять, 95 суток Сочи —
+        // три. Октябрь с апрелем на юге отопления не требуют, и вешать на них
+        // счёт нельзя. Выбрасываем самые тёплые месяцы (в EL_COST_MONTHS это те,
+        // у кого меньше доля), а их градусо-сутки раздаём остальным: сумма за
+        // сезон обязана остаться равной ГСОП, иначе оценка занизится ровно на
+        // выброшенное.
+        //
+        // Считать по порогу +8 °C, как определяет сезон СП, тут нельзя: порог
+        // проверял бы средние месяца, а они сами выведены из этой же разбивки, и
+        // на мягком климате обнулялся весь сезон разом — у Сочи ни один месяц
+        // семимесячной раскладки под +8 не проходит, хотя сезон там есть.
+        const nMonths = Math.max(1, Math.min(this.EL_COST_MONTHS.length, Math.round(zOt / 30.4)));
+        const cutoff = this.EL_COST_MONTHS.map(m => m.share).sort((a, b) => b - a)[nMonths - 1];
+        const restSum = this.EL_COST_MONTHS.reduce((a, m) => a + (m.share >= cutoff ? m.share : 0), 0);
+        const shares = this.EL_COST_MONTHS.map(m => m.share >= cutoff ? m.share / restSum : 0);
+
+        let seasonKwh = 0;
+        const months = this.EL_COST_MONTHS.map((m, i) => {
+            const gsopM = gsop * shares[i];
+            const kwh = kwhPerGsop * gsopM;
+            seasonKwh += kwh;
+            // days отдаём наружу: прогноз по электричеству пересчитывает месячные
+            // киловатт-часы в среднюю мощность, чтобы упереть её в мощность котла.
+            return { name: m.name, days: m.days, off: !(shares[i] > 0), tAvg: tIn - gsopM / m.days, kwh: kwh };
+        });
+        return {
+            months, seasonKwh, tOt, zOt, gsop, kw,
+            activeMonths: months.filter(m => !m.off).length || 1
+        };
+    },
+    // Тариф, который подставляется, когда города нет или региона нет в
+    // справочнике. Медиана по льготной категории — с ней ошибка меньше, чем
+    // с любой красивой круглой цифрой.
+    EL_TARIFF_DEFAULT_DAY: 6,
+    EL_TARIFF_DEFAULT_NIGHT: 3,
+    /**
+     * Какой из периодов года действует сегодня. Тарифы пересматривают внутри
+     * года (в 2026-м — с 1 октября), и в справочнике на каждую ставку лежит
+     * столько чисел, сколько периодов.
+     */
+    elTariffPeriod: function () {
+        const meta = (typeof EL_TARIFFS_META !== 'undefined') ? EL_TARIFFS_META : null;
+        const list = (meta && meta.periods) || [];
+        if (list.length < 2) return 0;
+        const now = new Date();
+        for (let i = list.length - 1; i > 0; i--) {
+            const p = String(list[i][0] || '').split('.');
+            if (p.length === 3) {
+                const from = new Date(+p[2], +p[1] - 1, +p[0]);
+                if (now >= from) return i;
+            }
+        }
+        return 0;
+    },
+    /**
+     * Тариф на электроэнергию по выбранному городу, ₽/кВт·ч.
+     *
+     * Регион берём из CITY_GEO (там он есть у 651 города базы), ставки — из
+     * el_tariffs.js, который собирает AutoTariff.py. Категорию берём льготную
+     * («дома с электроплитами и (или) электроотопительными установками»): дом
+     * с электрокотлом попадает в неё по закону, а разница с полным городским
+     * тарифом — процентов тридцать. Если такой категории у региона в источнике
+     * нет, отступаем на сельскую, потом на городскую.
+     *
+     * Правка руками поднимает elTariffManual и с этого момента справочник
+     * молчит: квитанция точнее любой нашей таблицы.
+     * @returns {{day:number, night:number, region:string|null, exact:boolean,
+     *            manual:boolean, category:string|null}}
+     */
+    getElTariff: function () {
+        const twoRate = this.state.elTariffMode === 'day_night';
+        if (this.state.elTariffManual) {
+            const d = parseFloat(this.state.elTariff) || this.EL_TARIFF_DEFAULT_DAY;
+            return {
+                day: d,
+                night: twoRate ? (parseFloat(this.state.elTariffNight) || this.EL_TARIFF_DEFAULT_NIGHT) : d,
+                region: null, exact: false, manual: true, category: null
+            };
+        }
+        const table = (typeof EL_TARIFFS !== 'undefined') ? EL_TARIFFS : {};
+        const geo = (typeof CITY_GEO !== 'undefined') ? CITY_GEO : {};
+        const city = this.state.selectedCity && this.state.selectedCity.name;
+        const region = (city && geo[city]) ? geo[city].region : null;
+        const rec = region ? table[region] : null;
+        const cat = rec ? (rec.electric ? 'electric' : (rec.rural ? 'rural' : 'urban')) : null;
+        const set = cat ? rec[cat] : null;
+        if (!set || !set.single) {
+            return {
+                day: this.EL_TARIFF_DEFAULT_DAY, night: this.EL_TARIFF_DEFAULT_NIGHT,
+                region: region, exact: false, manual: false, category: null
+            };
+        }
+        // Период выбираем один раз: смешивать зимнюю ставку с осенней в одной
+        // строке настройки нельзя — монтажник увидит цифру, которой нет ни в
+        // одной квитанции.
+        const i = this.elTariffPeriod();
+        const at = arr => (arr && arr.length) ? arr[Math.min(i, arr.length - 1)] : null;
+        const day = twoRate ? (at(set.day) || at(set.single)) : at(set.single);
+        const night = at(set.night) || day;
+        return {
+            day: day, night: twoRate ? night : day,
+            region: region, exact: true, manual: false, category: cat
+        };
+    },
+    /**
+     * Сколько киловатт электрокотёл из сметы реально способен отдать в дом.
+     *
+     * Прогноз раньше считался прямо от расчётных теплопотерь и на доме с 29 кВт
+     * показывал счёт на все 29, хотя в смете стоял котёл на 12: больше не
+     * пропускает выделенная на участок мощность. Платят за то, что котёл может
+     * взять из сети, поэтому потолок — его паспортная мощность, а если даже она
+     * выше остатка лимита участка (младший котёл линейки крупнее лимита —
+     * подбор его всё равно оставляет), то остаток лимита.
+     * @returns {{kw:number, fromLimit:boolean}} kw = 0 — потолка нет
+     */
+    getElHeatCapKw: function () {
+        const boiler = parseFloat(this._elBoilerKw) || 0;
+        if (!(boiler > 0)) return { kw: 0, fromLimit: false };
+        // Лимит участка действует только в подробном режиме — там же, где
+        // показывается и сам прогноз (см. syncUI).
+        const budget = this.state.detailedRooms ? this.getElBoilerBudget() : 0;
+        return (budget > 0 && budget < boiler)
+            ? { kw: budget, fromLimit: true }
+            : { kw: boiler, fromLimit: false };
+    },
+    calcElHeatingCost: function () {
+        const s = this.calcHeatingSeason();
+        if (!s) return null;
+        const tIn = 20;
+        const twoRate = this.state.elTariffMode === 'day_night';
+        const tar = this.getElTariff();
+        const tariffDay = tar.day;
+        const tariffNight = twoRate ? tar.night : tariffDay;
+        // Потолок мощности. Нужен, только если котёл слабее теплопотерь: иначе
+        // он и так закрывает дом целиком, и ограничение ничего не меняет.
+        const cap = this.getElHeatCapKw();
+        const capKw = (cap.kw > 0 && cap.kw < s.kw) ? cap.kw : 0;
+        // КПД ТЭНового котла принимаем за единицу: вся электроэнергия уходит в
+        // теплоноситель, теряется только на корпусе, и это доли процента.
+        let seasonKwh = 0, seasonKwhNight = 0, seasonCost = 0, capped = false;
+        const months = s.months.map(m => {
+            // Доля ночного потребления. Делить сутки просто по часам (8 из 24)
+            // нельзя: ночь холоднее, и котёл в ночной зоне работает напряжённее.
+            // Нагрузка пропорциональна разнице температур, суточный ход берём
+            // ±2.5 °C от средней (амплитуда 5 °C — типовая для отопительного
+            // сезона средней полосы), ночная зона 23:00–07:00, восемь часов.
+            // У Москвы в январе так выходит 37 % расхода, в октябре 41 % — чем
+            // теплее месяц, тем заметнее ночной перекос.
+            const dT = tIn - m.tAvg;
+            const nQ = this.EL_NIGHT_HOURS * Math.max(0, dT + this.EL_DAY_SWING);
+            const dQ = (24 - this.EL_NIGHT_HOURS) * Math.max(0, dT - this.EL_DAY_SWING);
+            const nightShare = (nQ + dQ) > 0 ? nQ / (nQ + dQ) : this.EL_NIGHT_HOURS / 24;
+
+            let kwhNight = m.kwh * nightShare;
+            let kwhDay = m.kwh - kwhNight;
+            // Потолок накладываем на дневную и ночную зоны по отдельности:
+            // котёл не умеет отдавать больше своих киловатт ни ночью, ни днём.
+            // Общим множителем на месяц это делать нельзя — доля ночного
+            // расхода тогда осталась бы прежней, хотя в мороз котёл жжёт полную
+            // мощность круглые сутки и ночь становится ровно третью счёта.
+            if (capKw > 0) {
+                const maxNight = capKw * this.EL_NIGHT_HOURS * m.days;
+                const maxDay = capKw * (24 - this.EL_NIGHT_HOURS) * m.days;
+                if (kwhNight > maxNight) { kwhNight = maxNight; capped = true; }
+                if (kwhDay > maxDay) { kwhDay = maxDay; capped = true; }
+            }
+            const kwh = kwhDay + kwhNight;
+            const cost = kwhDay * tariffDay + kwhNight * tariffNight;
+            seasonKwh += kwh;
+            seasonKwhNight += kwhNight;
+            seasonCost += cost;
+            return { ...m, kwh, kwhNeed: m.kwh, kwhNight, cost, capped: kwh < m.kwh - 0.5 };
+        });
+        // Потребность дома в тепле за сезон — то, что котёл закрыл бы, будь он
+        // по расчёту. Разница с seasonKwh и есть непокрытая часть.
+        const seasonKwhNeed = s.seasonKwh;
+        const gsop = s.gsop, tOt = s.tOt, zOt = s.zOt, kw = s.kw;
+        // Средний счёт делим на число месяцев, за которые реально платят, а не на
+        // z_от/30.4: на юге сезон короче семи месяцев, и деление на календарь
+        // размазало бы счёт на месяцы без отопления.
+        const activeMonths = months.filter(m => !m.off).length || 1;
+        return {
+            months, seasonKwh, seasonKwhNeed, seasonKwhNight, seasonCost, activeMonths,
+            avgMonthCost: seasonCost / activeMonths,
+            tOt, zOt, gsop, kw, twoRate, tariffDay, tariffNight, tariff: tar,
+            capKw, capped, capFromLimit: cap.fromLimit,
+            boilerKw: parseFloat(this._elBoilerKw) || 0,
+            gasKw: parseFloat(this._gasBoilerKw) || 0
+        };
+    },
+
+    // Теплота сгорания и КПД для пересчёта тепла в топливо.
+    // Природный газ: низшая теплота сгорания 34 МДж/м³ = 9.45 кВт·ч/м³.
+    // СУГ (пропан-бутан): 12.8 кВт·ч/кг при плотности 0.54 кг/л = 6.91 кВт·ч/л.
+    // КПД 0.92 — обычный для настенного котла с закрытой камерой (не конденсат).
+    GAS_KWH_PER_M3: 9.45,
+    LPG_KWH_PER_LITER: 6.91,
+    GAS_BOILER_EFF: 0.92,
+    // Цена сжиженного газа тарифом не регулируется — её задаёт поставщик,
+    // возит цистернами и считает по литрам. Поэтому только значение по умолчанию.
+    LPG_DEFAULT_PRICE: 26,
+    /**
+     * Тариф на природный газ по выбранному городу.
+     *
+     * Регион города берём из CITY_GEO (cities_geo.js) — он там уже есть для
+     * 651 из 684 российских городов и используется картой проектов. Своей
+     * карты «город → субъект» заводить не надо: две таблицы одного и того же
+     * неизбежно разъедутся.
+     *
+     * Города не из покрытых субъектов получают среднюю цифру, и признак exact
+     * говорит подсказке сказать об этом прямо, а не выдавать средний тариф за
+     * тариф города.
+     * @returns {{rub:number, region:string|null, exact:boolean, manual:boolean}}
+     */
+    getGasTariff: function () {
+        if (this.state.gasTariffManual && parseFloat(this.state.gasTariff) > 0) {
+            return { rub: parseFloat(this.state.gasTariff), region: null, exact: false, manual: true };
+        }
+        const city = this.state.selectedCity && this.state.selectedCity.name;
+        const geo = (city && typeof CITY_GEO !== 'undefined') ? CITY_GEO[city] : null;
+        const region = (geo && geo.region) || null;
+        const def = (typeof GAS_TARIFF_RU_DEFAULT !== 'undefined') ? GAS_TARIFF_RU_DEFAULT : 8.5;
+        // Сначала автосправочник (gas_tariffs.js, собирает AutoGasTariff.py),
+        // потом ручной остаток по регионам, которые парсер не читает. Порядок
+        // важен: обновляется автоматически именно первый, и он должен
+        // выигрывать у зафиксированных руками цифр.
+        const auto = (typeof GAS_TARIFFS !== 'undefined' && region) ? GAS_TARIFFS[region] : null;
+        if (auto && auto.rub && auto.rub.length) {
+            return { rub: auto.rub[0], region: region, exact: true, manual: false, auto: true };
+        }
+        const table = (typeof GAS_TARIFF_RU !== 'undefined') ? GAS_TARIFF_RU : {};
+        // Тариф есть только по субъектам РФ. Для городов Казахстана, Беларуси
+        // и Украины цен у нас нет — там средняя цифра тем более ориентир, и
+        // подсказка это скажет.
+        return (region && table[region])
+            ? { rub: table[region], region: region, exact: true, manual: false, auto: false }
+            : { rub: def, region: region, exact: false, manual: false, auto: false };
+    },
+    /**
+     * Стоимость отопления газом за сезон, с разбивкой по месяцам.
+     * Тепло берём из calcHeatingSeason(), дальше делим на теплоту сгорания и
+     * КПД котла — получаем кубометры (магистральный) или литры (сжиженный).
+     */
+    calcGasHeatingCost: function () {
+        const s = this.calcHeatingSeason();
+        if (!s) return null;
+        const lpg = this.state.gasTariffMode === 'lpg';
+        const kwhPerUnit = (lpg ? this.LPG_KWH_PER_LITER : this.GAS_KWH_PER_M3) * this.GAS_BOILER_EFF;
+        const tar = lpg
+            ? { rub: parseFloat(this.state.lpgTariff) || this.LPG_DEFAULT_PRICE, region: null, exact: false, manual: true }
+            : this.getGasTariff();
+
+        let seasonUnits = 0;
+        const months = s.months.map(m => {
+            const units = m.kwh / kwhPerUnit;
+            seasonUnits += units;
+            return { ...m, units: units, cost: units * tar.rub };
+        });
+        const seasonCost = seasonUnits * tar.rub;
+        return {
+            months, seasonUnits, seasonCost,
+            seasonKwh: s.seasonKwh,
+            activeMonths: s.activeMonths,
+            avgMonthCost: seasonCost / s.activeMonths,
+            tOt: s.tOt, zOt: s.zOt, gsop: s.gsop, kw: s.kw,
+            lpg, unit: lpg ? 'л' : 'м³', kwhPerUnit, tariff: tar
+        };
+    },
+
+    /**
+     * Экономия от автоматики котельной, доля сезонного счёта.
+     *
+     * Одним числом её задавать нельзя: контроллер на доме с одним прямым
+     * контуром и на доме с шестью зонами экономит по-разному, а в КП эта цифра
+     * идёт рядом с ценой прибора. Поэтому складываем по фактической
+     * конфигурации сметы — каждое слагаемое отвечает своему механизму и видно
+     * в подсказке.
+     *
+     * Верх ограничен двадцатью процентами: больше не обещаем ни при какой
+     * конфигурации. Экономия зависит от того, как хозяин пользуется
+     * расписанием, и от инерции системы — на тёплых полах с постоянным
+     * проживанием она ближе к нижней границе. Конденсационного прироста тут
+     * нет: GAS_BOILER_EFF = 0.92, котёл не конденсационный.
+     */
+    BOILER_AUTO_SAVE: {
+        // ПЗА. У газового котла погодная кривая убирает и перетоп, и тактование
+        // горелки — каждый пуск это продувка камеры холодным воздухом, прямая
+        // потеря. У ТЭНового котла пусковых потерь нет вовсе, там остаётся
+        // только перетоп, поэтому вклад меньше.
+        pzaGas: 0.10,
+        pzaEl: 0.08,
+        // Расписание упирается в инерцию системы: радиатор остывает и
+        // прогревается за час, стяжка тёплого пола — за полсуток, и ночное
+        // понижение на ней почти ничего не даёт.
+        schedRad: 0.07,
+        schedUfh: 0.02,
+        airPerCircuit: 0.02,// каждый контур, регулируемый по воздуху, а не по теплоносителю
+        airMax: 0.08,
+        cascade: 0.03,      // второй котёл включается под нагрузку, а не «оба вполсилы»
+        total: 0.20
+    },
+    /**
+     * @param {'el'|'gas'} fuel — по какому топливу считаем: вклад ПЗА у газового
+     *        и электрического котла разный (см. BOILER_AUTO_SAVE).
+     * @returns {null|{pct:number, parts:Array<{label:string,pct:number}>,
+     *                 capped:boolean, extras:Array<string>, ufhStd:boolean,
+     *                 ufhShare:number}}
+     */
+    boilerAutoSavings: function (fuel) {
+        if (!this.state.boilerAuto) return null;
+        const cfg = this.thermaticConfig;
+        // Контуров нет — контроллеру нечем управлять, и экономить не на чем.
+        if (!cfg || !cfg.circuitCount) return null;
+        const s = this.state;
+        const K = this.BOILER_AUTO_SAVE;
+
+        // Доля тепла на тёплый пол — по площади, а не по числу контуров: один
+        // контур ТП на 200 м² и три радиаторных на 60 м² это разные дома, а
+        // контуров в обоих случаях поровну.
+        const ufhArea = (s.systems || []).includes('tp')
+            ? (parseFloat(s.tp1) || 0) + (s.floors === 2 ? (parseFloat(s.tp2) || 0) : 0)
+            : 0;
+        const area = parseFloat(s.area) || 0;
+        const ufhShare = (area > 0) ? Math.max(0, Math.min(1, ufhArea / area)) : 0;
+        const radShare = 1 - ufhShare;
+        // Тёплый пол через узел подмеса с термостатической головкой контроллеру
+        // не подчиняется: она держит температуру механически (о том же говорит
+        // предупреждение конфигурации в getThermaticConfig). Значит погодная
+        // коррекция достаётся только радиаторной части дома.
+        const ufhStd = ufhArea > 0 && (s.ufhMixType || 'std') === 'std';
+        const pzaShare = ufhStd ? radShare : 1;
+
+        const parts = [];
+        const pzaBase = (fuel === 'el') ? K.pzaEl : K.pzaGas;
+        if (pzaShare > 0.01) {
+            parts.push({
+                label: 'Погодозависимое регулирование (ПЗА): подача считается по улице, а не держится «всегда 70»'
+                    + (ufhStd ? ` — но только на радиаторной части, это ${Math.round(pzaShare * 100)} % площади` : ''),
+                pct: pzaBase * pzaShare
+            });
+        }
+        parts.push({
+            label: 'Расписание и режим «Эконом»: ночное понижение и «дом пустой»'
+                + (ufhShare > 0.01 ? ` — тёплый пол занимает ${Math.round(ufhShare * 100)} % площади, а стяжка инерционная, и на ней понижение почти не работает` : ''),
+            pct: K.schedRad * radShare + K.schedUfh * ufhShare
+        });
+        // Контуры, которые ведутся по воздуху комнаты, а не по теплоносителю:
+        // зона не греется, когда в ней и так тепло от солнца, камина или людей.
+        const byAir = (cfg.circuits || []).filter(x => x.byAir).length;
+        if (byAir > 0) {
+            parts.push({
+                label: `Регулирование по воздуху, контуров: ${byAir}`,
+                pct: Math.min(byAir * K.airPerCircuit, K.airMax)
+            });
+        }
+        if (cfg.cascade) parts.push({ label: 'Управление каскадом: второй котёл включается только под нагрузку', pct: K.cascade });
+
+        // Экономия, которую контроллер даёт мимо этого процента: прогноз считает
+        // только отопление, а рециркуляция, снеготаяние и приоритет ГВС в нём не
+        // участвуют вовсе. Приписывать их к проценту нельзя — уменьшать нечего.
+        const extras = [];
+        if (cfg.recirc) extras.push('насос рециркуляции ГВС работает по расписанию, а не круглые сутки');
+        if (cfg.snowSensor) extras.push('снеготаяние греет по датчику осадков, а не всю зиму подряд');
+        if (cfg.dhw === 'boiler') extras.push('приоритет ГВС: бойлер греется в свой заход, а не вместе с отоплением');
+        if (s.ufhAuto && ufhArea > 0) extras.push('покомнатная автоматика тёплого пола (раздел 4.3) экономит сверх этого — считается отдельно от контроллера');
+
+        const raw = parts.reduce((a, p) => a + p.pct, 0);
+        return { pct: Math.min(raw, K.total), parts, capped: raw > K.total, extras, ufhStd, ufhShare };
+    },
+    /**
+     * Во сколько автоматика обошлась в этой смете: оборудование подразделов 2.8
+     * плюс работы группы 1.5. Считаем по currentEquipmentList, а не по каталогу:
+     * монтажник правит количества и вычёркивает позиции, и окупаемость должна
+     * считаться от того, что клиент реально заплатит. Вычеркнутые (isOpt) не в счёт.
+     */
+    boilerAutoCost: function () {
+        const eq = (this.currentEquipmentList || [])
+            .filter(i => !i.isOpt && String(i.group || '').startsWith('2.8'))
+            .reduce((a, i) => a + (i.sum || 0), 0);
+        const works = (this.currentWorksList || [])
+            .filter(w => String(w.group || '').startsWith('1.5'))
+            .reduce((a, w) => a + (w.sum || 0), 0);
+        return { eq, works, total: eq + works };
+    },
+    /**
+     * Блок экономии под таблицей прогноза — общий для электричества и газа:
+     * механизм экономии один и тот же, различается только цена киловатт-часа,
+     * а она уже сидит в seasonCost.
+     * @param {number} seasonCost — счёт за сезон без автоматики
+     * @param {number} activeMonths — месяцев, за которые реально платят
+     * @param {'el'|'gas'} fuel — вклад ПЗА у газового и электрического разный
+     */
+    boilerAutoSaveHtml: function (seasonCost, activeMonths, fuel) {
+        const sv = this.boilerAutoSavings(fuel);
+        if (!sv || !(seasonCost > 0)) return '';
+        const cost = this.boilerAutoCost();
+        const money = v => Math.round(v).toLocaleString('ru-RU');
+        const saveSeason = seasonCost * sv.pct;
+        const months = Math.max(1, activeMonths || 1);
+        // Окупаемость — самый сильный аргумент в КП, но делить можно только
+        // когда автоматика в смете действительно стоит денег: позиции могли
+        // вычеркнуть, и тогда строки окупаемости просто нет.
+        let payback = '';
+        if (cost.total > 0 && saveSeason > 0) {
+            const y = Math.round(cost.total / saveSeason * 10) / 10;
+            const word = (n) => {
+                const i = Math.abs(Math.round(n)) % 100, j = i % 10;
+                if (i > 10 && i < 20) return 'сезонов';
+                if (j === 1) return 'сезон';
+                if (j >= 2 && j <= 4) return 'сезона';
+                return 'сезонов';
+            };
+            // Дробная цифра требует родительного падежа единственного числа
+            // («за 4,3 сезона»), целая — обычного счёта («за 4 сезона»).
+            const yStr = Number.isInteger(y) ? `${y} ${word(y)}` : `${String(y).replace('.', ',')} сезона`;
+            payback = `<div style="margin-top:3px;">Автоматика в смете — ${money(cost.total)} ₽, окупается за <b>${y < 1 ? 'один сезон' : yStr}</b>.</div>`;
+        }
+        const tip = this.tipHtml(
+            `<div class="tip-p">Оценка <b>сверху</b>: сколько выйдет на самом деле, зависит от того, как хозяин пользуется расписанием, и от инерции системы. На тёплых полах с постоянным проживанием экономия ближе к нижней границе.</div>` +
+            `<div class="tip-p"><b>Из чего сложилось:</b></div>` +
+            sv.parts.map(p => `<div class="tip-p">• ${p.label} — <b>${Math.round(p.pct * 100)} %</b></div>`).join('') +
+            (sv.capped ? `<div class="tip-p">Сумма подрезана до <b>${Math.round(this.BOILER_AUTO_SAVE.total * 100)} %</b>: больше не обещаем ни при какой конфигурации.</div>` : '') +
+            // Узел подмеса с термоголовкой режет процент сильнее всего
+            // остального, и это лечится заменой одной позиции — говорим как.
+            (sv.ufhStd
+                ? `<div class="tip-p">⚠️ Тёплый пол идёт через <b>узел подмеса с термостатической головкой</b> — она держит температуру механически, и контроллер этим контуром не управляет. Погодная коррекция достаётся только радиаторам. Замените узел на насосную группу со смесительным клапаном (прямо в смете, на самой позиции) — и тёплый пол тоже пойдёт по погоде.</div>`
+                : '') +
+            (sv.extras.length
+                ? `<div class="tip-p"><b>Сверх этого, в проценте не учтено</b> (прогноз считает только отопление): ${sv.extras.join('; ')}.</div>`
+                : '') +
+            (cost.total > 0
+                ? `<div class="tip-p"><b>Автоматика в смете:</b> оборудование ${money(cost.eq)} ₽ + работы ${money(cost.works)} ₽ = ${money(cost.total)} ₽. Вычеркнутые позиции не считаются.</div>`
+                : ''));
+        // Оформление то же, что у сводки снеготаяния и предупреждений автоматики
+        // (renderSnowZonesUI / renderBoilerAutoInfo): цветная полоса слева и
+        // абзац за абзацем, без рамки и заливки. Цветная плашка тут спорила с
+        // остальной панелью, а три числа в одну строку не читались.
+        // position:relative обязателен: tip-panel-wrap снимает позиционирование
+        // с обёртки подсказки, и якорем становится этот абзац.
+        return `
+            <div style="position:relative; margin-top:8px; padding-left:8px; border-left:3px solid #10B981; color:var(--text-main); font-size:11px; line-height:1.5;">
+                <div style="font-weight:700;">С автоматикой котельной ≈ ${money((seasonCost - saveSeason) / months)} ₽ в месяц — на ${Math.round(sv.pct * 100)} % меньше${tip}</div>
+                <div style="margin-top:3px;">Экономия за сезон ≈ <b>${money(saveSeason)} ₽</b>.</div>
+                ${payback}
+            </div>`;
+    },
     /**
      * Концентрация пропиленгликоля во вторичном контуре, % массовых.
      *
@@ -27690,17 +28550,21 @@ const app = {
         const isGuest = !this.state.tgUser;
         const isPro = this.isPro();
 
-        // Умолчания авторизованного пользователя: «Группировать», «Картинки»
-        // и «Схема» включены. Ставятся один раз — дальше решает сам
-        // пользователь, выключенный им переключатель обратно не поднимаем.
+        // Умолчания авторизованного пользователя: «Группировать» и «Картинки»
+        // включены. Ставятся один раз — дальше решает сам пользователь,
+        // выключенный им переключатель обратно не поднимаем.
         // Метку кладём только в state: её запишет ближайшее сохранение вместе
         // с самими переключателями, отдельным saveState() здесь дёргать
         // автосохранение проекта на пустом открытии калькулятора незачем.
+        //
+        // «Схемы» здесь нет намеренно: она по умолчанию выключена. Врезки схем
+        // растягивают смету и нужны не в каждом расчёте, а включённой по
+        // умолчанию она к тому же возвращалась после каждого сброса — метка
+        // authDefaultsApplied сбросом стирается, и умолчание применялось заново.
         if (!isGuest && !this.state.authDefaultsApplied) {
             this.state.authDefaultsApplied = true;
             this.state.groupItems = true;
             this.state.showImages = true;
-            this.state.showScheme = true;
         }
 
         // Кнопка распознавания смет — бета, показывается только админам.
@@ -27745,6 +28609,103 @@ const app = {
         if (document.getElementById('val_h2')) document.getElementById('val_h2').innerText = parseFloat(this.state.h2 || 2.7).toFixed(1);
         document.getElementById('val_win').innerText = this.state.win; document.getElementById('chk_floors').checked = (this.state.floors === 2); document.getElementById('div_tp2').style.display = (this.state.floors === 2) ? 'block' : 'none';
         document.getElementById('fuel_el').className = this.state.fuels.includes('el') ? 'tab multi-active' : 'tab'; document.getElementById('fuel_gas').className = this.state.fuels.includes('gas') ? 'tab multi-active' : 'tab';
+        // Ограничение по выделенной на участок мощности: только подробный режим и
+        // только при включённом электрокотле. В быстром режиме поля нет, и подбор
+        // электрокотла лимитом не режется (см. render) — иначе смета менялась бы
+        // от невидимой настройки.
+        const elLimBlk = document.getElementById('blk_el_power_limit');
+        if (elLimBlk) {
+            const elLimOn = this.state.detailedRooms && this.state.fuels.includes('el');
+            elLimBlk.style.display = elLimOn ? 'block' : 'none';
+            if (elLimOn) {
+                const lim = parseFloat(this.state.elPowerLimit) || 15;
+                const limVal = document.getElementById('val_el_limit');
+                // Пока правим число руками, курсор стоит внутри — перезапись
+                // innerText выбросила бы каретку в начало строки.
+                // Снятый лимит показываем прочерком: пустое поле выглядело бы
+                // сломанной вёрсткой, а не осознанной настройкой.
+                if (limVal && document.activeElement !== limVal) limVal.innerText = this.state.elPowerLimitOff ? '—' : lim;
+                const limSlider = document.getElementById('inp_el_limit');
+                if (limSlider) limSlider.value = lim;
+                this.updElLimitHint();
+            }
+        }
+        // Прогноз стоимости отопления электричеством — там же и по тем же
+        // условиям: цифра имеет смысл только когда электрокотёл действительно
+        // подобран, а расчётные теплопотери известны (подробный режим).
+        const elCostBlk = document.getElementById('blk_el_cost');
+        if (elCostBlk) {
+            const elCostOn = this.state.detailedRooms && this.state.fuels.includes('el');
+            elCostBlk.style.display = elCostOn ? 'block' : 'none';
+            const elCostChk = document.getElementById('chk_el_cost');
+            if (elCostChk) elCostChk.checked = !!this.state.showElCost;
+            const elCostBox = document.getElementById('blk_el_cost_box');
+            if (elCostBox) elCostBox.style.display = (elCostOn && this.state.showElCost) ? 'flex' : 'none';
+            if (elCostOn && this.state.showElCost) {
+                const twoRate = this.state.elTariffMode === 'day_night';
+                document.querySelectorAll('.el-tariff-mode-tab').forEach(t => {
+                    t.className = (t.dataset.tmode === (twoRate ? 'day_night' : 'single')) ? 'tab el-tariff-mode-tab active' : 'tab el-tariff-mode-tab';
+                });
+                const dayLbl = document.getElementById('lbl_el_tariff_day');
+                if (dayLbl) dayLbl.innerText = twoRate ? 'День (07–23), ₽/кВт·ч' : 'Тариф, ₽/кВт·ч';
+                const nightBlk = document.getElementById('blk_el_tariff_night');
+                if (nightBlk) nightBlk.style.display = twoRate ? 'flex' : 'none';
+                // Ставки берём из справочника по городу, пока их не правили
+                // руками (см. getElTariff): в полях должна стоять та же цифра,
+                // по которой посчитан прогноз.
+                const et = this.getElTariff();
+                const tar = et.day;
+                const tarVal = document.getElementById('val_el_tariff');
+                if (tarVal && document.activeElement !== tarVal) tarVal.innerText = tar.toFixed(1);
+                const tarSlider = document.getElementById('inp_el_tariff');
+                if (tarSlider) tarSlider.value = tar;
+                const tarN = et.night;
+                const tarNVal = document.getElementById('val_el_tariff_night');
+                if (tarNVal && document.activeElement !== tarNVal) tarNVal.innerText = tarN.toFixed(1);
+                const tarNSlider = document.getElementById('inp_el_tariff_night');
+                if (tarNSlider) tarNSlider.value = tarN;
+                const elResetRow = document.getElementById('el_tariff_region_row');
+                if (elResetRow) elResetRow.style.display = this.state.elTariffManual ? 'block' : 'none';
+                this.renderElCostUI();
+            }
+        }
+        // Прогноз стоимости отопления газом — по тем же условиям, но от газового
+        // котла: подробный режим и включённая вкладка «🔥 Газ».
+        const gasCostBlk = document.getElementById('blk_gas_cost');
+        if (gasCostBlk) {
+            const gasCostOn = this.state.detailedRooms && this.state.fuels.includes('gas');
+            gasCostBlk.style.display = gasCostOn ? 'block' : 'none';
+            const gasChk = document.getElementById('chk_gas_cost');
+            if (gasChk) gasChk.checked = !!this.state.showGasCost;
+            const gasBox = document.getElementById('blk_gas_cost_box');
+            if (gasBox) gasBox.style.display = (gasCostOn && this.state.showGasCost) ? 'flex' : 'none';
+            if (gasCostOn && this.state.showGasCost) {
+                const isLpg = this.state.gasTariffMode === 'lpg';
+                document.querySelectorAll('.gas-tariff-mode-tab').forEach(t => {
+                    t.className = (t.dataset.gmode === (isLpg ? 'lpg' : 'main')) ? 'tab gas-tariff-mode-tab active' : 'tab gas-tariff-mode-tab';
+                });
+                const mainBlk = document.getElementById('blk_gas_tariff_main');
+                if (mainBlk) mainBlk.style.display = isLpg ? 'none' : 'flex';
+                const lpgBlk = document.getElementById('blk_gas_tariff_lpg');
+                if (lpgBlk) lpgBlk.style.display = isLpg ? 'flex' : 'none';
+
+                const gt = this.getGasTariff();
+                const gtVal = document.getElementById('val_gas_tariff');
+                if (gtVal && document.activeElement !== gtVal) gtVal.innerText = gt.rub.toFixed(2);
+                const gtSlider = document.getElementById('inp_gas_tariff');
+                if (gtSlider) gtSlider.value = gt.rub;
+                const resetRow = document.getElementById('gas_tariff_region_row');
+                if (resetRow) resetRow.style.display = this.state.gasTariffManual ? 'block' : 'none';
+
+                const lp = parseFloat(this.state.lpgTariff) || this.LPG_DEFAULT_PRICE;
+                const lpVal = document.getElementById('val_gas_lpg');
+                if (lpVal && document.activeElement !== lpVal) lpVal.innerText = lp.toFixed(1);
+                const lpSlider = document.getElementById('inp_gas_lpg');
+                if (lpSlider) lpSlider.value = lp;
+
+                this.renderGasCostUI();
+            }
+        }
         const hasTp = this.state.systems.includes('tp'); document.getElementById('sys_rad').className = this.state.systems.includes('rad') ? 'tab multi-active' : 'tab'; document.getElementById('sys_tp').className = hasTp ? 'tab multi-active' : 'tab';
         document.getElementById('blk_tp_sliders').style.display = hasTp ? 'block' : 'none'; document.getElementById('blk_ufh_ctrl').style.display = hasTp ? 'block' : 'none';
         // Снеготаяние живёт только в подробном режиме: концентрация гликоля и
@@ -27769,7 +28730,12 @@ const app = {
         }
         const hasRad = this.state.systems.includes('rad');
         const radSchemeBlock = document.getElementById('blk_rad_scheme');
-        if (radSchemeBlock) radSchemeBlock.style.display = (this.state.detailedRooms && hasRad) ? 'block' : 'none';
+        const radSchemeOn = this.state.detailedRooms && hasRad;
+        if (radSchemeBlock) radSchemeBlock.style.display = radSchemeOn ? 'block' : 'none';
+        // Заголовок вынесен из блока отдельным <h4> (как у «Теплоносителя») —
+        // прячем его вместе с вкладками, иначе он висит без содержимого.
+        const radSchemeLbl = document.getElementById('lbl_rad_scheme');
+        if (radSchemeLbl) radSchemeLbl.style.display = radSchemeOn ? 'block' : 'none';
         const isTeeScheme = this.state.radConnectionScheme === 'tee';
         const radSchemeManifoldTab = document.getElementById('rad_scheme_manifold');
         const radSchemeTeeTab = document.getElementById('rad_scheme_tee');
@@ -28265,6 +29231,13 @@ const app = {
         // Синхронизация Автоматики котельной. Саму сводку наполняет render(),
         // здесь только галочка и скрытие панели при выключении.
         if (document.getElementById('chk_boiler_auto')) document.getElementById('chk_boiler_auto').checked = this.state.boilerAuto;
+        // Верхняя пунктирная линия — только в подробном режиме. В быстром над
+        // блоком стоят одни вкладки топлива, и черта прижалась бы к ним.
+        const _autoItem = document.getElementById('blk_boiler_auto_item');
+        if (_autoItem) {
+            _autoItem.style.borderTop = this.state.detailedRooms ? '1px dashed var(--border)' : '';
+            _autoItem.style.paddingTop = this.state.detailedRooms ? '16px' : '';
+        }
         // Серая рамка со всем хозяйством контроллера — как у блока «Горячая
         // вода (Бойлер)». Пустой её показывать нельзя, см. updateBoilerAutoBox.
         this.updateBoilerAutoBox();
@@ -28903,6 +29876,15 @@ const app = {
             if (!e.target.closest('.snow-slider-container') && !e.target.closest('.snow-slider-val')) {
                 document.querySelectorAll('.snow-slider-container').forEach(c => c.style.display = 'none');
             }
+            if (!e.target.closest('.el-limit-slider-container') && !e.target.closest('.el-limit-val')) {
+                document.querySelectorAll('.el-limit-slider-container').forEach(c => c.style.display = 'none');
+            }
+            if (!e.target.closest('.el-tariff-slider-container') && !e.target.closest('.el-tariff-val')) {
+                document.querySelectorAll('.el-tariff-slider-container').forEach(c => c.style.display = 'none');
+            }
+            if (!e.target.closest('.gas-tariff-slider-container') && !e.target.closest('.gas-tariff-val')) {
+                document.querySelectorAll('.gas-tariff-slider-container').forEach(c => c.style.display = 'none');
+            }
         });
     },
 
@@ -29073,6 +30055,410 @@ const app = {
         }
     },
     toggleFuel: function (f) { let idx = this.state.fuels.indexOf(f); if (idx > -1) { if (this.state.fuels.length > 1) this.state.fuels.splice(idx, 1); } else { this.state.fuels.push(f); } this.syncUI(); this.render(); },
+    // Выделенная на участок электрическая мощность. Диапазон 3…60 кВт: ниже
+    // трёх не бывает даже дачного ввода, а верх взят под каскад из двух котлов —
+    // одиночный старший в линейке всего 27 кВт, но пара STATUS берёт из сети до
+    // 54, и с запасом на бытовую нагрузку это как раз шестьдесят.
+    /**
+     * Ползунок лимита — тот же приём, что у площади комнаты и участков
+     * снеготаяния: постоянно на виду он не нужен, выезжает по нажатию на само
+     * значение, закрывается кликом мимо (обработчик в initCityAutocomplete).
+     */
+    showElLimitSlider: function (event) {
+        if (event) { event.stopPropagation(); event.preventDefault(); }
+        const c = document.getElementById('el_limit_slider_box');
+        if (c) c.style.display = 'flex';
+    },
+    /**
+     * @param {boolean} live — тянут ползунок: пересчитываем смету и обновляем
+     *        только цифру с подсказкой. Полный syncUI тут звать нельзя — он
+     *        перезаписывает value самого ползунка, и тот дёргается под пальцем.
+     */
+    setElPowerLimit: function (v, live) {
+        const raw = String(v == null ? '' : v).replace(/\s/g, '').replace(',', '.');
+        // Стёртая руками цифра — это снятое ограничение, а не «вернуть 15 кВт».
+        // Так его и снимают: очищают поле. Прочерк принимаем тоже — его же мы
+        // в поле и рисуем, и при повторном заходе он вернулся бы сюда.
+        const off = (raw === '' || raw === '—' || raw === '–' || raw === '-');
+        this.state.elPowerLimitOff = off;
+        let n = Math.round(parseFloat(raw));
+        // Число оставляем прежним: с него степпер и ползунок вернут лимит.
+        if (!isFinite(n)) n = parseFloat(this.state.elPowerLimit) || 15;
+        n = Math.max(3, Math.min(60, n));
+        this.state.elPowerLimit = n;
+        // Ручной типоразмер котла лимиту не подчиняется, поэтому при смене
+        // лимита его сбрасываем — иначе ползунок двигается, а в смете стоит
+        // прежний котёл и кажется, что ограничение не работает.
+        this.state.elBoilerPower = null;
+        if (live) {
+            const el = document.getElementById('val_el_limit');
+            if (el) el.innerText = off ? '—' : n;
+            this.updElLimitHint();
+            this.render();
+            return;
+        }
+        this.syncUI();
+        this.render();
+    },
+    // Прогноз занимает половину экрана панели, а нужен не каждому расчёту —
+    // поэтому он спрятан под тумблер и по умолчанию свёрнут.
+    toggleElCost: function (chk) {
+        this.state.showElCost = !!chk;
+        this.syncUI();
+        this.saveState();
+    },
+    setElTariffMode: function (mode) {
+        this.state.elTariffMode = (mode === 'day_night') ? 'day_night' : 'single';
+        this.syncUI();
+        this.saveState();
+    },
+    showElTariffSlider: function (which, event) {
+        if (event) { event.stopPropagation(); event.preventDefault(); }
+        const c = document.getElementById(which === 'night' ? 'el_tariff_night_slider_box' : 'el_tariff_slider_box');
+        if (c) c.style.display = 'flex';
+    },
+    /**
+     * Тариф на электроэнергию, ₽/кВт·ч. Границы 1…20: ниже рубля не бывает даже
+     * ночного тарифа, выше двадцати — уже не бытовая сеть.
+     * @param {boolean} live — тянут ползунок: перерисовываем только сам прогноз,
+     *        смета от тарифа не зависит, поэтому render() тут не нужен.
+     */
+    setElTariff: function (v, live) {
+        this._setElTariffField('elTariff', this.EL_TARIFF_DEFAULT_DAY, 'val_el_tariff', 'inp_el_tariff', v, live);
+    },
+    updElTariff: function (d) { this.setElTariff(this.getElTariff().day + d * 0.5); },
+    setElTariffNight: function (v, live) {
+        this._setElTariffField('elTariffNight', this.EL_TARIFF_DEFAULT_NIGHT, 'val_el_tariff_night', 'inp_el_tariff_night', v, live);
+    },
+    updElTariffNight: function (d) { this.setElTariffNight(this.getElTariff().night + d * 0.5); },
+    /**
+     * Вернуть тариф региона: снимаем ручную правку, и справочник снова
+     * подставляет ставки по выбранному городу. Ссылка видна только когда
+     * правка была — иначе кнопка ничего не сбрасывает и только путает.
+     */
+    resetElTariff: function () {
+        this.state.elTariffManual = false;
+        this.state.elTariff = null;
+        this.state.elTariffNight = null;
+        this.syncUI();
+        this.saveState();
+    },
+    /**
+     * Общая обвязка для дневного и ночного тарифа: границы 1…20 ₽/кВт·ч (ниже
+     * рубля не бывает даже ночного, выше двадцати — уже не бытовая сеть), шаг
+     * ползунка и степпера один и тот же.
+     * @param {boolean} live — тянут ползунок: перерисовываем только прогноз,
+     *        смета от тарифа не зависит, поэтому render() тут не нужен.
+     */
+    _setElTariffField: function (key, def, valId, sliderId, v, live) {
+        let n = parseFloat(String(v).replace(',', '.'));
+        if (!isFinite(n)) n = def;
+        n = Math.max(1, Math.min(20, Math.round(n * 10) / 10));
+        this.state[key] = n;
+        // С первой же правки справочник отходит в сторону — как у газа.
+        this.state.elTariffManual = true;
+        const resetRow = document.getElementById('el_tariff_region_row');
+        if (resetRow) resetRow.style.display = 'block';
+        const el = document.getElementById(valId);
+        if (el && document.activeElement !== el) el.innerText = n.toFixed(1);
+        this.renderElCostUI();
+        if (!live) {
+            const sl = document.getElementById(sliderId);
+            if (sl) sl.value = n;
+            this.saveState();
+        }
+    },
+    /**
+     * Прогноз стоимости отопления электричеством: таблица по месяцам, итог за
+     * сезон и средний месяц. Живёт в панели настроек под ограничением мощности,
+     * рисуется только в подробном режиме при включённом электрокотле (syncUI).
+     */
+    renderElCostUI: function () {
+        const box = document.getElementById('el_cost_body');
+        if (!box) return;
+        // Обработчик подсказок по нажатию (телефон) вешают renderSnowZonesUI и
+        // renderBoilerAutoInfo, а они могут ни разу не запуститься: снеготаяние
+        // и контроллер выключены, а прогноз включён. Вызов идемпотентный.
+        this.initPanelTips();
+        const r = this.calcElHeatingCost();
+        if (!r) {
+            box.innerHTML = `<div style="font-size:11px; color:var(--text-sec);">Задайте площадь объекта — прогноз считается от расчётных теплопотерь.</div>`;
+            return;
+        }
+        const money = v => Math.round(v).toLocaleString('ru-RU');
+        // Потолок мощности показываем без хвоста «.0»: у котла из сметы это целые
+        // киловатты, дробь появляется только когда потолок задал остаток лимита.
+        const elCapKw = (Math.round(r.capKw * 10) / 10).toString().replace('.', ',');
+        // Дом закрывает газовый котёл — электрический тут резервный по проекту,
+        // и его меньшая мощность не дефицит, а норма. Ни звёздочек в таблице,
+        // ни жёлтой плашки в таком расчёте быть не должно (см. capNote ниже).
+        const gasCovers = r.gasKw > 0 && r.gasKw >= r.kw - 0.05;
+        // Оговорки расчёта убраны под иконку «i» рядом со средним счётом: в
+        // развёрнутом виде они занимали больше места, чем сама таблица. Компонент
+        // тот же, что у подсказок остальной панели (tipHtml + initPanelTips):
+        // на десктопе открывается наведением, на телефоне — нажатием.
+        // Откуда взялась ставка — то же самое, что и в газовом прогнозе: цифру
+        // из справочника легко принять за свою квитанцию, а разброс по стране
+        // от 3 до 12 ₽.
+        const meta = (typeof EL_TARIFFS_META !== 'undefined') ? EL_TARIFFS_META : null;
+        const catName = { electric: 'дома с электроотоплением', rural: 'сельское население', urban: 'город' };
+        const elSrc = r.tariff.manual
+            ? `<div class="tip-p">Тариф <b>задан вручную</b>. Справочник по регионам его не переигрывает — квитанция точнее любой нашей таблицы.</div>`
+            : r.tariff.exact
+                ? `<div class="tip-p">Тариф региона: <b>${r.tariff.region}</b>, категория «${catName[r.tariff.category] || r.tariff.category}»${meta ? `, ${meta.year} год` : ''}. Дом с электрокотлом относится к льготной категории по закону, поэтому ставка ниже обычной городской. В сельской местности бывает ещё ниже — сверьтесь с квитанцией.</div>`
+                : `<div class="tip-p">⚠️ ${r.tariff.region ? `Тариф региона <b>${r.tariff.region}</b> в справочнике отсутствует` : 'Город не выбран'}, подставлена средняя цифра ${r.tariffDay} ₽/кВт·ч. По стране разброс от 3 до 12 ₽ — возьмите цену из квитанции и впишите вручную.</div>`;
+        const tip = this.tipHtml(
+            elSrc +
+            `<div class="tip-p">Ориентировочно, <b>только отопление</b> — ГВС, снеготаяние и прочая бытовая нагрузка не учтены.</div>` +
+            `<div class="tip-p">Теплопотери дома <b>${r.kw.toFixed(1)} кВт</b> при расчётной зиме ${this.getDesignTemp()} °C. Отопительный период <b>${Math.round(r.zOt)} суток</b> со средней ${r.tOt.toFixed(1)} °C, ГСОП ${Math.round(r.gsop).toLocaleString('ru-RU')} °C·сут (от 20 °C в помещении).</div>` +
+            (r.capped
+                ? `<div class="tip-p">Расход ограничен мощностью котла <b>${elCapKw} кВт</b>: в тёплые месяцы он закрывает потребность целиком, в мороз работает на полную и больше отдать не может. Без ограничения за сезон вышло бы ${Math.round(r.seasonKwhNeed).toLocaleString('ru-RU')} кВт·ч.</div>`
+                : '') +
+            `<div class="tip-p">Средние температуры месяцев <b>выведены из ГСОП</b>, а не взяты по факту прошлой зимы.</div>` +
+            (r.twoRate
+                ? `<div class="tip-p">Ночная зона <b>${this.EL_NIGHT_HOURS} ч</b> (23:00–07:00) по ${r.tariffNight} ₽ — на неё приходится <b>${Math.round(r.seasonKwhNight / r.seasonKwh * 100)} %</b> расхода: ночью холоднее средней за сутки, и котёл работает напряжённее, чем просто треть времени.</div>`
+                : ''));
+        const rows = r.months.map(m => m.off
+            ? `<tr style="opacity:0.45;">
+                <td style="padding:2px 4px;">${m.name}</td>
+                <td colspan="${r.twoRate ? 4 : 3}" style="padding:2px 4px; text-align:right; font-style:italic;">отопление не требуется</td>
+            </tr>`
+            : `<tr>
+                <td style="padding:2px 4px;">${m.name}</td>
+                <td style="padding:2px 4px; text-align:right; color:var(--text-sec);">${m.tAvg.toFixed(1)}</td>
+                <td style="padding:2px 4px; text-align:right;">${money(m.kwh)}${(m.capped && !gasCovers) ? `<span style="color:#B45309;" title="Месяц упёрся в мощность котла: по теплопотерям требовалось ${money(m.kwhNeed)} кВт·ч">*</span>` : ''}</td>
+                ${r.twoRate ? `<td style="padding:2px 4px; text-align:right; color:var(--text-sec);">${money(m.kwhNight)}</td>` : ''}
+                <td style="padding:2px 4px; text-align:right; font-weight:700; color:var(--primary);">${money(m.cost)}</td>
+            </tr>`).join('');
+        // Сноска о потолке мощности. Без неё цифры читаются как ошибка: в
+        // подсказке теплопотери 29 кВт, а расход в таблице как у котла на 12 —
+        // ровно того, что стоит в смете и что пропускает ввод на участок.
+        //
+        // Но когда дом закрывает газовый котёл, предупреждать не о чем:
+        // электрический там по проекту резервный, меньшая мощность — это норма,
+        // а не дефицит. Плашка в таком расчёте только зря пугает; оговорка про
+        // потолок остаётся в подсказке под «i».
+        // Оформление то же, что у сводки снеготаяния: жёлтая полоса слева и
+        // абзац за абзацем — тревожное во всей панели выглядит одинаково.
+        const capNote = (r.capped && !gasCovers)
+            ? `<div style="margin-top:8px; padding-left:8px; border-left:3px solid #F59E0B; color:var(--text-main); font-size:11px; line-height:1.5;">
+                    <div>⚠️ <b>*</b> Расход считаем по электрокотлу <b>${elCapKw} кВт</b> из сметы, а не по теплопотерям дома ${r.kw.toFixed(1)} кВт: больше он из сети не возьмёт${r.capFromLimit ? ` — упирается в выделенные на участок ${this.elLimitKw()} кВт` : ''}.</div>
+                    <div style="margin-top:3px;">Он закрывает <b>${Math.round(r.capKw / r.kw * 100)} %</b> теплопотерь. ${r.gasKw > 0
+                ? `Газовый котёл в смете — ${r.gasKw} кВт, и вдвоём они дом тоже не закрывают: добавьте мощности.`
+                : `Такой котёл — <b>резервный</b>: одним им дом в морозы до 20 °C не прогреть, основным источником должен быть газовый котёл.`}</div>
+                </div>`
+            : '';
+        box.innerHTML = `
+            <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                <thead><tr style="color:var(--text-sec); font-size:10px; text-transform:uppercase;">
+                    <th style="padding:2px 4px; text-align:left; font-weight:600;">Месяц</th>
+                    <th style="padding:2px 4px; text-align:right; font-weight:600;">°C</th>
+                    <th style="padding:2px 4px; text-align:right; font-weight:600;">кВт·ч</th>
+                    ${r.twoRate ? `<th style="padding:2px 4px; text-align:right; font-weight:600;">ночь</th>` : ''}
+                    <th style="padding:2px 4px; text-align:right; font-weight:600;">₽</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+                <tfoot><tr style="border-top:1px solid var(--border); font-weight:700;">
+                    <td style="padding:4px;">За сезон</td>
+                    <td></td>
+                    <td style="padding:4px; text-align:right;">${money(r.seasonKwh)}</td>
+                    ${r.twoRate ? `<td style="padding:4px; text-align:right; color:var(--text-sec);">${money(r.seasonKwhNight)}</td>` : ''}
+                    <td style="padding:4px; text-align:right; color:var(--primary);">${money(r.seasonCost)}</td>
+                </tr></tfoot>
+            </table>${capNote}
+            <div style="position:relative; margin-top:6px; padding:6px 8px; background:var(--primary-light); border-radius:6px; font-size:11px; font-weight:700; color:var(--primary); display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                <span>В среднем ${money(r.avgMonthCost)} ₽ в месяц ⚡</span>${tip}
+            </div>${this.boilerAutoSaveHtml(r.seasonCost, r.activeMonths, 'el')}`;
+    },
+    toggleGasCost: function (chk) {
+        this.state.showGasCost = !!chk;
+        this.syncUI();
+        this.saveState();
+    },
+    setGasTariffMode: function (mode) {
+        this.state.gasTariffMode = (mode === 'lpg') ? 'lpg' : 'main';
+        this.syncUI();
+        this.saveState();
+    },
+    showGasTariffSlider: function (which, event) {
+        if (event) { event.stopPropagation(); event.preventDefault(); }
+        const c = document.getElementById(which === 'lpg' ? 'gas_lpg_slider_box' : 'gas_tariff_slider_box');
+        if (c) c.style.display = 'flex';
+    },
+    /**
+     * Тариф на магистральный газ. Правка руками поднимает gasTariffManual — с этого
+     * момента таблица по регионам этот расчёт не переигрывает: монтажник смотрит
+     * в свою квитанцию, и она точнее любой нашей таблицы. Сброс — кнопкой
+     * «по региону» (resetGasTariff).
+     */
+    setGasTariff: function (v, live) {
+        let n = parseFloat(String(v).replace(',', '.'));
+        if (!isFinite(n)) n = this.getGasTariff().rub;
+        n = Math.max(1, Math.min(60, Math.round(n * 100) / 100));
+        this.state.gasTariff = n;
+        this.state.gasTariffManual = true;
+        this._applyGasTariffUI(n, 'val_gas_tariff', 'inp_gas_tariff', live);
+    },
+    updGasTariff: function (d) { this.setGasTariff((parseFloat(this.state.gasTariff) || this.getGasTariff().rub) + d * 0.1); },
+    resetGasTariff: function () {
+        this.state.gasTariffManual = false;
+        this.state.gasTariff = null;
+        this.syncUI();
+        this.saveState();
+    },
+    setLpgTariff: function (v, live) {
+        let n = parseFloat(String(v).replace(',', '.'));
+        if (!isFinite(n)) n = this.LPG_DEFAULT_PRICE;
+        n = Math.max(1, Math.min(120, Math.round(n * 10) / 10));
+        this.state.lpgTariff = n;
+        this._applyGasTariffUI(n, 'val_gas_lpg', 'inp_gas_lpg', live);
+    },
+    updLpgTariff: function (d) { this.setLpgTariff((parseFloat(this.state.lpgTariff) || this.LPG_DEFAULT_PRICE) + d * 0.5); },
+    // Общий хвост сеттеров тарифов на газ: обновить цифру, перерисовать прогноз,
+    // а ползунок и сохранение — только когда его отпустили (см. setElTariff).
+    _applyGasTariffUI: function (n, valId, sliderId, live) {
+        const el = document.getElementById(valId);
+        if (el && document.activeElement !== el) el.innerText = n.toFixed(valId === 'val_gas_tariff' ? 2 : 1);
+        this.renderGasCostUI();
+        if (!live) {
+            const sl = document.getElementById(sliderId);
+            if (sl) sl.value = n;
+            // Ссылку сброса показываем здесь же: syncUI отсюда не зовём (он бы
+            // перетёр цифру, которую сейчас правят), а видимость ссылки меняется
+            // ровно в момент, когда тариф стал ручным.
+            const resetRow = document.getElementById('gas_tariff_region_row');
+            if (resetRow) resetRow.style.display = this.state.gasTariffManual ? 'block' : 'none';
+            this.saveState();
+        }
+    },
+    /**
+     * Прогноз стоимости отопления газом: таблица по месяцам с расходом в м³ или
+     * литрах, итог за сезон и средний месяц. Устроен как прогноз по
+     * электричеству (renderElCostUI), оговорки — под иконкой «i».
+     */
+    renderGasCostUI: function () {
+        const box = document.getElementById('gas_cost_body');
+        if (!box) return;
+        this.initPanelTips();
+        const r = this.calcGasHeatingCost();
+        if (!r) {
+            box.innerHTML = `<div style="font-size:11px; color:var(--text-sec);">Задайте площадь объекта — прогноз считается от расчётных теплопотерь.</div>`;
+            return;
+        }
+        const money = v => Math.round(v).toLocaleString('ru-RU');
+        const units = v => v >= 100 ? Math.round(v).toLocaleString('ru-RU') : v.toFixed(1);
+        // Откуда взялась цена — самое важное в этом блоке: средний тариф легко
+        // принять за тариф своего города, а разница между регионами до 30 %.
+        const src = r.lpg
+            ? `<div class="tip-p">Сжиженный газ тарифом <b>не регулируется</b> — цену задаёт поставщик, и её нужно уточнять у него. Значение по умолчанию ${this.LPG_DEFAULT_PRICE} ₽/л — ориентир по доставке цистерной.</div>`
+            : r.tariff.manual
+                ? `<div class="tip-p">Тариф <b>задан вручную</b>. Таблица по регионам его не переигрывает — квитанция точнее любой нашей таблицы.</div>`
+                : r.tariff.exact
+                    ? `<div class="tip-p">Тариф региона: <b>${r.tariff.region}</b>, ${r.tariff.rub.toFixed(2)} ₽/м³ — категория «отопление».${r.tariff.auto && typeof GAS_TARIFFS_UPDATED !== 'undefined' ? ` Справочник обновлён ${GAS_TARIFFS_UPDATED}.` : ''} Регионы пересматривают тарифы дважды в год, перед подписанием сверьте с квитанцией.</div>`
+                    : `<div class="tip-p">⚠️ Тариф вашего региона <b>в таблице отсутствует</b>, подставлена средняя цифра ${r.tariff.rub.toFixed(2)} ₽/м³. Между регионами разброс до 30 % — возьмите цену из квитанции и впишите вручную.</div>`;
+        const tip = this.tipHtml(
+            src +
+            `<div class="tip-p">Ориентировочно, <b>только отопление</b> — ГВС, снеготаяние и газовая плита не учтены.</div>` +
+            `<div class="tip-p">Расход считается от тепла: <b>${r.seasonKwh.toFixed(0)} кВт·ч</b> за сезон делим на ${r.lpg ? `${this.LPG_KWH_PER_LITER} кВт·ч/л` : `${this.GAS_KWH_PER_M3} кВт·ч/м³`} и КПД котла ${Math.round(this.GAS_BOILER_EFF * 100)} % — выходит ${r.kwhPerUnit.toFixed(2)} кВт·ч с ${r.unit}.</div>` +
+            `<div class="tip-p">Мощность <b>${r.kw.toFixed(1)} кВт</b> при расчётной зиме ${this.getDesignTemp()} °C. Отопительный период <b>${Math.round(r.zOt)} суток</b> со средней ${r.tOt.toFixed(1)} °C, ГСОП ${Math.round(r.gsop).toLocaleString('ru-RU')} °C·сут (от 20 °C в помещении).</div>` +
+            `<div class="tip-p">Средние температуры месяцев <b>выведены из ГСОП</b>, а не взяты по факту прошлой зимы.</div>`);
+
+        const rows = r.months.map(m => m.off
+            ? `<tr style="opacity:0.45;">
+                <td style="padding:2px 4px;">${m.name}</td>
+                <td colspan="3" style="padding:2px 4px; text-align:right; font-style:italic;">отопление не требуется</td>
+            </tr>`
+            : `<tr>
+                <td style="padding:2px 4px;">${m.name}</td>
+                <td style="padding:2px 4px; text-align:right; color:var(--text-sec);">${m.tAvg.toFixed(1)}</td>
+                <td style="padding:2px 4px; text-align:right;">${units(m.units)}</td>
+                <td style="padding:2px 4px; text-align:right; font-weight:700; color:var(--primary);">${money(m.cost)}</td>
+            </tr>`).join('');
+        box.innerHTML = `
+            <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                <thead><tr style="color:var(--text-sec); font-size:10px; text-transform:uppercase;">
+                    <th style="padding:2px 4px; text-align:left; font-weight:600;">Месяц</th>
+                    <th style="padding:2px 4px; text-align:right; font-weight:600;">°C</th>
+                    <th style="padding:2px 4px; text-align:right; font-weight:600;">${r.unit}</th>
+                    <th style="padding:2px 4px; text-align:right; font-weight:600;">₽</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+                <tfoot><tr style="border-top:1px solid var(--border); font-weight:700;">
+                    <td style="padding:4px;">За сезон</td>
+                    <td></td>
+                    <td style="padding:4px; text-align:right;">${units(r.seasonUnits)}</td>
+                    <td style="padding:4px; text-align:right; color:var(--primary);">${money(r.seasonCost)}</td>
+                </tr></tfoot>
+            </table>
+            <div style="position:relative; margin-top:6px; padding:6px 8px; background:var(--primary-light); border-radius:6px; font-size:11px; font-weight:700; color:var(--primary); display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                <span>В среднем ${money(r.avgMonthCost)} ₽ в месяц 🔥</span>${tip}
+            </div>${this.boilerAutoSaveHtml(r.seasonCost, r.activeMonths, 'gas')}`;
+    },
+    // Доля выделенной мощности, которую котлу не отдают: свет, розетки и бытовая
+    // техника работают одновременно с отоплением. Пятнадцать процентов — обычный
+    // запас, с которым вводной автомат не выбивает в мороз.
+    EL_HOUSEHOLD_RESERVE: 0.15,
+    /**
+     * Выделенная на участок мощность, кВт. Ноль — ограничения нет: поле можно
+     * очистить руками, и это значит «лимита не ставим», а не «вернуть 15 кВт».
+     * Само число при снятом лимите в state остаётся — степпер и ползунок
+     * возвращают ограничение с той же цифры, на которой его сняли.
+     */
+    elLimitKw: function () {
+        if (this.state.elPowerLimitOff) return 0;
+        return parseFloat(this.state.elPowerLimit) || 15;
+    },
+    // Сколько киловатт из лимита участка остаётся собственно котлу. Ноль —
+    // лимит снят, подбор идёт по расчётной мощности.
+    getElBoilerBudget: function () {
+        const lim = this.elLimitKw();
+        return lim > 0 ? lim * (1 - this.EL_HOUSEHOLD_RESERVE) : 0;
+    },
+    // Хватает ли выделенной мощности на расчётную — считаем и при перерисовке
+    // панели (syncUI), и на каждый шаг ползунка, поэтому вынесено отдельно.
+    updElLimitHint: function () {
+        const hint = document.getElementById('el_limit_tip');
+        if (!hint) return;
+        this.initPanelTips();
+        const lim = this.elLimitKw();
+        const needKw = Math.round((parseFloat(this.getHouseHeatLoss()) || 0) * 10) / 10;
+        // Лимит снят руками — подбор идёт по расчётной мощности, и всё
+        // остальное в подсказке (остаток на бытовую нагрузку, доля покрытия)
+        // теряет смысл: ограничивать нечем.
+        if (!(lim > 0)) {
+            hint.innerHTML = this.tipHtml(
+                `<div class="tip-p">Ограничение <b>снято</b>: котёл подбирается по расчётной мощности` +
+                (needKw > 0 ? ` — нужно ${needKw} кВт` : '') +
+                `, при нехватке линейки собирается каскад из двух котлов.</div>` +
+                `<div class="tip-p">Чтобы вернуть ограничение, впишите киловатты или подвиньте ползунок.</div>`);
+            return;
+        }
+        const budget = Math.round(this.getElBoilerBudget() * 10) / 10;
+        const pct = Math.round(this.EL_HOUSEHOLD_RESERVE * 100);
+        const reserve = `<div class="tip-p">Котлу доступно <b>${budget} кВт</b>: ${pct} % выделенной мощности оставлено на освещение и бытовые приборы.</div>` +
+            `<div class="tip-p">Ограничения нет? Сотрите цифру в поле — подбор пойдёт по расчётной мощности.</div>`;
+        let head;
+        if (needKw > 0 && needKw > budget) {
+            // Долю теплопотерь считаем по фактически подобранному котлу, а не по
+            // остатку лимита: типоразмеры идут ступенями, и в 10.2 кВт остатка
+            // попадает котёл на 9 кВт — закрывает он именно свои 9, а не 10.2.
+            const picked = this._elPickedKw || 0;
+            const cover = picked > 0 ? Math.round(picked / needKw * 100) : null;
+            head = `<div class="tip-p">⚠️ По расчёту нужно <b>${needKw} кВт</b>, а на участок выделено ${lim} кВт — котёл подобран по лимиту` +
+                (cover !== null ? `, закрывает <b>${cover} %</b> от теплопотерь дома` : '') +
+                `. Подобран как резерв.</div>`;
+        } else {
+            head = `<div class="tip-p">Электрокотёл мощнее <b>${budget} кВт</b> в смету не подбирается.` +
+                (needKw > 0 ? ` По расчёту нужно ${needKw} кВт — хватает.` : '') + `</div>`;
+        }
+        hint.innerHTML = this.tipHtml(head + reserve);
+    },
+    // Первое нажатие степпера при снятом лимите просто возвращает ограничение —
+    // на ту же цифру, на которой его сняли, а не сдвинутую на шаг.
+    updElPowerLimit: function (d) {
+        const base = parseFloat(this.state.elPowerLimit) || 15;
+        this.setElPowerLimit(this.state.elPowerLimitOff ? base : base + d);
+    },
     toggleSys: function (s, event) {
         if ((s === 'tp' || s === 'rad') && !this.checkAccess('pro', event)) return;
         setTimeout(() => {
@@ -29955,7 +31341,7 @@ const app = {
         };
     },
 
-    getDesc: function (type, val1, val2, val3, val4) {
+    getDesc: function (type, val1, val2, val3, val4, val5) {
         const styles = "font-size:11px; line-height:1.4;";
         const head = "font-weight:700; color:#93C5FD; display:block; margin-bottom:9px; padding-bottom:7px; border-bottom:1px solid rgba(255,255,255,0.15);";
 
@@ -30337,6 +31723,9 @@ const app = {
                 // Серию передаёт подбор котла (val4): в режиме «Аналог» смета может уехать
                 // на POLIS, а this.state.boilerSeries при этом остаётся прежним.
                 let series = val4 || this.state.boilerSeries;
+                // val5 — лимит выделенной на участок мощности, если именно он не дал
+                // подобрать котёл под расчёт. Приходит только когда ограничение сработало.
+                let elLimitKw = val5 || 0;
                 // Серий в подборе осталось две: PLUS снят с производства, и всё, что не
                 // POLIS, — это STATUS (см. выбор массива каталога в render).
                 let isPolis = (series === 'polis');
@@ -30377,8 +31766,13 @@ const app = {
                     // сам мощность не занижает, а вот выбранный руками типоразмер — может,
                     // и монтажник должен видеть это числом, а не догадываться.
                     : (coverPct < 100
-                        ? `• <b style="color:#F59E0B;">Перекрывает ${coverPct} % расчётных теплопотерь</b> (${totalPwrLimit} из ${targetPwr.toFixed(1)} кВт) — типоразмер выбран вручную, автоподбор взял бы больший.<br>`
+                        ? `• <b style="color:#F59E0B;">Перекрывает ${coverPct} % расчётных теплопотерь</b> (${totalPwrLimit} из ${targetPwr.toFixed(1)} кВт) — ${elLimitKw ? 'больше не даёт ограничение по выделенной мощности' : 'типоразмер выбран вручную, автоподбор взял бы больший'}.<br>`
                         : '');
+                // Ограничение по выделенной на участок мощности сработало — говорим об этом
+                // прямо, иначе занижённый котёл читается как ошибка подбора.
+                let elLimitLine = elLimitKw
+                    ? `• <b style="color:#F59E0B;">Ограничение по мощности на участок: ${this.elLimitKw()} кВт</b>, из них ${Math.round(this.EL_HOUSEHOLD_RESERVE * 100)} % оставлено на освещение и бытовые приборы — котлу доступно ${Math.round(elLimitKw * 10) / 10} кВт. Он подобран под этот потолок, а не под расчётные ${targetPwr.toFixed(1)} кВт. Каскад из двух котлов в этом случае не собирается — он взял бы из сети вдвое больше. Чтобы закрыть дом целиком, нужно увеличить выделенную мощность либо добавить второй источник тепла (газ, твёрдое топливо).<br>`
+                    : '';
 
                 return `<span style="${styles}"><span style="${head}">Электрический котёл STOUT ${seriesName}</span>` +
                     `<b>Зачем:</b> ${whyText}<br><br>` +
@@ -30389,6 +31783,7 @@ const app = {
                     `• Мощность подобранного котла: ${singlePower} кВт (серия ${seriesText}).<br>` +
                     polisLines +
                     sumPwrLine +
+                    elLimitLine +
                     `</span>`;
             }
             case 'polis_gbm': {
@@ -31890,7 +33285,34 @@ const app = {
                 let db = (ft === 'gas')
                     ? catalog.boilers_gas
                     : (elSeries === 'polis' ? catalog.boilers_polis : catalog.boilers_status);
+                // Выделенная на участок электрическая мощность: котлы мощнее неё
+                // из линейки убираем совсем — сеть такой не потянет, и подбор
+                // упирается в потолок вместо расчётной мощности. Лимит живёт
+                // только в подробном режиме (поле показывается там же, см. syncUI):
+                // в быстром расчёте настройка невидима, и смета от неё меняться
+                // не должна. Если под лимит не проходит даже младший котёл в
+                // линейке — оставляем младший, иначе строка котла молча исчезла бы
+                // из сметы.
+                // Вся выделенная мощность котлу не достаётся: свет, розетки, насосы
+                // и бытовая техника работают одновременно с отоплением, поэтому от
+                // лимита участка отнимаем EL_HOUSEHOLD_RESERVE и подбираем котёл по
+                // остатку. Иначе в самый мороз котёл на полной мощности выбивал бы
+                // вводной автомат при включённом чайнике.
+                let elLimit = (ft === 'el' && this.state.detailedRooms)
+                    ? this.getElBoilerBudget()
+                    : null;
+                // Полная линейка нужна ветке ручного выбора ниже: лимит правит
+                // автоподбор, а осознанно выбранный в таблице замены типоразмер
+                // подбор не переигрывает — так же, как он не переигрывает его
+                // расчётной мощностью.
+                let dbFull = db;
+                if (elLimit) {
+                    let _fit = db.filter(x => x.power <= elLimit);
+                    db = _fit.length ? _fit : [db[0]];
+                }
                 let b = db.find(x => x.power >= needed);
+                // Лимит реально режет подбор — об этом надо сказать в подсказке позиции.
+                let elCapped = !!(elLimit && !b);
                 // Типоразмер, выбранный руками в таблице замены, подбор не переигрывает:
                 // ставим ровно его и ровно один. Иначе выбранный POLIS 6 кВт сразу
                 // возвращался к 15 кВт — подбор пересчитывал мощность по теплопотерям.
@@ -31898,9 +33320,9 @@ const app = {
                 // не слабее, а если и её нет — старшую в линейке.
                 let _manualPower = (ft === 'el') ? this.state.elBoilerPower : null;
                 if (_manualPower) {
-                    let t = db.find(x => x.power === _manualPower)
-                        || db.find(x => x.power >= _manualPower)
-                        || db[db.length - 1];
+                    let t = dbFull.find(x => x.power === _manualPower)
+                        || dbFull.find(x => x.power >= _manualPower)
+                        || dbFull[dbFull.length - 1];
                     addToBill(t, 1, this.getDesc('boiler_el', needed, t.power, 1, elSeries));
                     selBoilers.push(t);
                 }
@@ -31916,8 +33338,31 @@ const app = {
                     // подсказке позиции. Если и половины не хватает у STATUS — ставим
                     // два самых мощных котла серии, как это делает ветка одиночного котла,
                     // иначе строка котла молча пропала бы из сметы.
-                    if (!b && needed > maxPower && elSeries !== 'polis') { let half = needed / 2; let b2 = db.find(x => x.power >= half) || db[db.length - 1]; addToBill(b2, 2, this.getDesc('boiler_el', needed, b2.power, 2, elSeries)); selBoilers.push(b2, b2); }
-                    else { let t = b || db[db.length - 1]; addToBill(t, 1, this.getDesc('boiler_el', needed, t.power, 1, elSeries)); selBoilers.push(t); }
+                    // Лимит участка стоит на весь ввод, поэтому в него должна
+                    // укладываться сумма мощностей каскада, а не мощность одного
+                    // котла: db выше отфильтрован поштучно и пару не проверяет.
+                    // Запрещать каскад при любом лимите, как было раньше, нельзя —
+                    // на 60 кВт ввода два котла по 15 проходят с запасом, а дом
+                    // получал один STATUS 27 кВт и предупреждение о нехватке.
+                    let _casc = null;
+                    if (!b && needed > maxPower && elSeries !== 'polis') {
+                        const half = needed / 2;
+                        const b2 = db.find(x => x.power >= half) || db[db.length - 1];
+                        if (!elLimit || b2.power * 2 <= elLimit) _casc = b2;
+                    }
+                    if (_casc) {
+                        this._elPickedKw = _casc.power * 2;
+                        addToBill(_casc, 2, this.getDesc('boiler_el', needed, _casc.power, 2, elSeries));
+                        selBoilers.push(_casc, _casc);
+                    }
+                    else {
+                        let t = b || db[db.length - 1];
+                        // Мощность подобранного котла нужна подсказке под ползунком
+                        // лимита: она показывает, какую долю теплопотерь он закрывает.
+                        this._elPickedKw = t.power;
+                        addToBill(t, 1, this.getDesc('boiler_el', needed, t.power, 1, elSeries, elCapped ? elLimit : null));
+                        selBoilers.push(t);
+                    }
                 } else if (ft === 'gas') {
                     // === ПОДБОР ГАЗОВОГО КОТЛА HAIER ===
                     // Расчетная мощность (без запаса)
@@ -31955,6 +33400,13 @@ const app = {
             }
         });
         boilerCnt = selBoilers.length;
+        // Мощность источников, попавших в смету. Нужна прогнозу стоимости
+        // отопления: платят не за расчётные теплопотери, а за то, что реально
+        // может отдать стоящий в смете котёл. Считаем по selBoilers, а не по
+        // одной ветке подбора, — в него попадают все три случая: автоподбор,
+        // каскад и выбранный руками типоразмер.
+        this._elBoilerKw = selBoilers.reduce((a, b) => a + ((b && b.type !== 'gas') ? (b.power || 0) : 0), 0);
+        this._gasBoilerKw = selBoilers.reduce((a, b) => a + ((b && b.type === 'gas') ? (b.power || 0) : 0), 0);
 
         if (this.state.hotWater) {
             let hw_fixtures_vol = 0;
@@ -32035,7 +33487,27 @@ const app = {
             this._tankPorts = (_portSrc && _portSrc.ports) || null;
             this._tankPortsModel = _portSrc ? _portSrc.id : null;
         }
-        flushBill("1. Котёл + водонагреватель");
+        // Дефицит мощности источника. Электрокотёл подбирается по выделенной на
+        // участок мощности, и она бывает вдвое ниже теплопотерь: на 360 м² в
+        // Москве это 29.3 кВт против котла на 12. Пока рядом стоит газовый
+        // котёл, всё в порядке — электрический там резервный. А когда других
+        // источников в смете нет, дом в мороз останется недогретым, и сказать
+        // об этом надо на самой смете, а не только в подсказке под ползунком:
+        // плашка та же, что у нехватки приборов отопления (flushBill(title, warn)).
+        let boilerWarnHtml = null;
+        {
+            const _needKw = parseFloat(this.getHouseHeatLoss()) || 0;
+            const _elKw = this._elBoilerKw || 0;
+            const _gasKw = this._gasBoilerKw || 0;
+            if (_needKw > 0 && _elKw > 0 && _gasKw === 0 && _elKw < _needKw - 0.05) {
+                const _limKw = this.state.detailedRooms ? this.elLimitKw() : 0;
+                boilerWarnHtml = `⚠️ <b>ВНИМАНИЕ: мощности котла не хватает!</b><br>` +
+                    `Теплопотери дома ${_needKw.toFixed(1)} кВт, а электрокотёл в смете — ${_elKw} кВт: он закрывает ${Math.round(_elKw / _needKw * 100)} % и в морозы дом до 20 °C не прогреет.` +
+                    (_limKw ? ` Мощнее не подбирается: на участок выделено ${_limKw} кВт, из них котлу остаётся ${Math.round(this.getElBoilerBudget() * 10) / 10} кВт — остальное берут свет и бытовая техника.` : '') +
+                    `<br><span style="font-weight: 500; display:block; margin-top:6px;">Добавьте второй источник тепла (вкладка «🔥 Газ» в настройках) или увеличьте выделенную на участок мощность.</span>`;
+            }
+        }
+        flushBill("1. Котёл + водонагреватель", boilerWarnHtml);
 
         // === 2. ОБВЯЗКА КОТЕЛЬНОЙ ===
         currentSectionTitle = "2. Обвязка котельной";
@@ -36320,6 +37792,18 @@ const app = {
             } else {
                 dBadge.style.display = 'none';
             }
+        }
+
+        // Ограничение мощности и прогноз стоимости электроотопления считаются от
+        // теплопотерь, поэтому обновляем их на каждую отрисовку сметы, а не только
+        // в syncUI: теплопотери меняют и правки комнат, и пирог стен, и город, а
+        // они доходят до сюда не всегда через syncUI.
+        if (this.state.detailedRooms && this.state.fuels.includes('el')) {
+            this.updElLimitHint();
+            if (this.state.showElCost) this.renderElCostUI();
+        }
+        if (this.state.detailedRooms && this.state.fuels.includes('gas') && this.state.showGasCost) {
+            this.renderGasCostUI();
         }
     },
 

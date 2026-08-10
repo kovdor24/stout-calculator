@@ -166,6 +166,15 @@ body.dark-mode #blk_boiler_auto_box div {
     border-top-color: #2A2A2A !important;
 }
 
+/* Прогноз стоимости электроотопления — та же рамка, что у автоматики котельной,
+   и тёмную тему получает тем же правилом. Без него фон оставался #F8FAFC, а
+   текст поверх него шёл светлым: в тёмной теме блок читался только наполовину. */
+body.dark-mode #blk_el_cost_box,
+body.dark-mode #blk_gas_cost_box {
+    background: #161616 !important;
+    border-color: #2A2A2A !important;
+}
+
 /* Блок снеготаяния оформлен так же, как блок горячей воды, — и тёмную тему
    получает по тому же правилу: у рамки свой фон, у разделителей свой цвет.
    Разделители есть и внутри списка участков, поэтому селектор без «>». */
@@ -450,6 +459,10 @@ input[type=range] {
     color: #212529;
     min-width: 20px;
     text-align: center;
+    /* Значение степпера всегда в одну строку: место ему добавляет ширина
+       самого степпера, а разрыв «26.0» на две строки ломает всю строку
+       настройки. */
+    white-space: nowrap;
 }
 
 
@@ -1486,9 +1499,19 @@ body.menu-open .mobile-menu-backdrop {
     }
 
     /* 2. РџСЂРµРІСЂР°С‰Р°РµРј С‚Р°Р±Р»РёС†Сѓ РІ Р±Р»РѕС‡РЅС‹Рµ РєР°СЂС‚РѕС‡РєРё */
+    /* Сам список — на 20 % мельче: на телефоне в экран влезало три позиции,
+       и смету приходилось листать бесконечно. Уменьшение живёт на обёртке
+       таблицы, поэтому шапки сайта и нижней панели навигации не касается.
+
+       zoom, а не transform: scale — тот только перерисовывает, оставляя
+       исходные размеры в потоке: строки налезали бы друг на друга, а под
+       таблицей оставалась бы пустая полоса в пятую часть её высоты. И не
+       правка десятка font-size по отдельности: вместе с текстом должны
+       ужаться картинки, отступы, скруглённые плашки и переключатели. */
     .table-responsive {
         overflow: visible !important;
         border: none !important;
+        zoom: 0.8;
     }
 
     .inv-table,
@@ -3150,8 +3173,13 @@ body.profile-incomplete-lock #page_scale_wrapper {
     width: 100%;
 }
 /* Переключатели делят ширину поровну — так подписи не жмутся к левому краю,
-   а разнесены по окну и читаются как три отдельных блока. */
-.admin-bulk-toggles > .admin-bulk-group {
+   а разнесены по окну и читаются как три отдельных блока.
+   Вторая строка селектора — про .admin-bulk-access: display:contents убирает
+   обёртку из раскладки, но не из дерева, и её дети перестают быть прямыми
+   потомками .admin-bulk-toggles. Без этой строки два переключателя доступа
+   потеряли бы на десктопе равную долю ширины. */
+.admin-bulk-toggles > .admin-bulk-group,
+.admin-bulk-toggles > .admin-bulk-access > .admin-bulk-group {
     flex: 1 1 0;
     justify-content: flex-start;
 }
@@ -3160,6 +3188,13 @@ body.profile-incomplete-lock #page_scale_wrapper {
     align-items: center;
     gap: 6px;
     min-width: 0;
+}
+/* Обёртка вокруг двух переключателей доступа. Нужна только на телефоне (там они
+   встают в один ряд, см. мобильный блок), а на десктопе обязана быть прозрачной:
+   display:contents убирает сам блок из раскладки, и его дети остаются прямыми
+   элементами flex-строки, как были до обёртки. */
+.admin-bulk-access {
+    display: contents;
 }
 .admin-bulk-label {
     font-size: 11px;
@@ -3505,13 +3540,28 @@ body.modal-over-banner .hc-cookie-banner {
     #admin_content table tbody { display: block !important; }
     /* Мобильная смета раскладывает СВОИ строки в grid с областями «картинка /
        название / количество» и делает это через !important — без такого же
-       !important здесь ячейки админки уезжали в чужие области. */
+       !important здесь ячейки админки уезжали в чужие области.
+
+       Больше того: таблицы админки носят класс .inv-table ради десктопного
+       оформления, и ниже 768px под них подпадают ВСЕ мобильные правила сметы —
+       она ловит строки просто по `.inv-table tr`. Оттуда прилетало
+       `border: none !important` с `border-bottom` обратно, и карточка теряла
+       рамку со скруглением, превращаясь в строку под чертой; из режима
+       «Монтажные работы» (body.work-mode) прилетал ещё и свой padding, тоже
+       через !important. Поэтому здесь переобъявлено с !important всё, что с той
+       раскладкой спорит, а сеточные свойства заодно погашены: при display:block
+       они не работают, но останутся ловушкой, если строку когда-нибудь снова
+       сделают флексом или гридом. */
     #admin_content table tr {
         display: block !important;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 6px 12px;
-        margin-bottom: 8px;
+        grid-template-columns: none !important;
+        grid-template-rows: none !important;
+        grid-template-areas: none !important;
+        gap: 0 !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 12px !important;
+        padding: 6px 12px !important;
+        margin-bottom: 8px !important;
     }
     /* Обратная сторона !important: поиск по таблицам прячет строки, выставляя им
        style="display:none", и это перестало бы работать. Ловим такие строки по
@@ -3547,6 +3597,54 @@ body.modal-over-banner .hc-cookie-banner {
         letter-spacing: 0.3px;
         color: var(--text-sec);
     }
+    /* Переключатели доступа — «Распознавание» и «Проектирование» — короткие и
+       одинаковые, отдельная строка карточки под каждый была расточительной:
+       ставим их в ряд по половине ширины. Класс вешает разметка строки в
+       renderAdminMain.
+
+       float, а не inline-block: между ячейками в разметке стоит перевод строки,
+       и у строки-карточки (display:block) он превращается в обычный пробел —
+       двум блокам по 50 % вместе с ним уже не хватило бы места, и второй уехал
+       бы вниз. */
+    #admin_content table td.admin-cell-half {
+        float: left;
+        width: 50% !important;
+        box-sizing: border-box !important;
+    }
+    #admin_content table td.admin-cell-half + td.admin-cell-half {
+        padding-left: 10px !important;
+    }
+    /* Обычная ячейка после пары обтекать её не должна — иначе «Дистрибьютор»
+       встал бы справа от суммы, а не под ней. Пар в карточке несколько, поэтому
+       сброс висит на каждой следующей за парой ячейке, а не только в конце. */
+    #admin_content table td.admin-cell-half + td:not(.admin-cell-half) {
+        clear: both;
+    }
+    /* И на самой карточке — на случай, если пара оказалась последней: без этого
+       рамка схлопнулась бы по высоте оставшихся строк, обрезав переключатели. */
+    #admin_content table tr::after {
+        content: "";
+        display: block;
+        clear: both;
+    }
+
+    /* Кнопки действий — в ряд на всю ширину карточки. Раньше они жались к
+       левому краю узкими прямоугольниками, а справа оставалась пустота в
+       половину строки.
+
+       flex: 1 1 auto, а не 1 1 0: подписи внутри идут в одну строку
+       (white-space: nowrap), и при нулевой базе кнопка сжималась бы уже
+       собственного текста, а тот вылезал бы за её границы. С auto кнопки
+       растут от своей ширины, а если вчетвером не помещаются — переносятся,
+       и каждый ряд всё равно занят целиком. */
+    #admin_content table td.admin-cell-actions > div {
+        width: 100% !important;
+        gap: 6px !important;
+    }
+    #admin_content table td.admin-cell-actions .admin-action-btn {
+        flex: 1 1 auto !important;
+    }
+
     /* Ячейки без подписи (объединённые «данных нет», технические колонки) */
     #admin_content table td:not([data-l])::before,
     #admin_content table td[data-l=""]::before { content: none; }
@@ -3632,6 +3730,32 @@ body.modal-over-banner .hc-cookie-banner {
     }
     .admin-bulk-sep { display: none; }
     .admin-bulk-toggles > .admin-bulk-group { flex: none; }
+    /* Подсказка «Целой компании — во вкладке „Дистрибьюторы“…» на телефоне
+       занимала целую строку под переключателями, а вкладка, на которую она
+       указывает, оттуда всё равно в одно касание не открывается. */
+    .admin-bulk-hint { display: none !important; }
+    /* Два переключателя доступа — в один ряд по половине ширины: подписи у них
+       короткие, и каждому по своей строке было расточительно. Обёртка из
+       прозрачной (display:contents) становится обычной flex-строкой. */
+    .admin-bulk-access {
+        display: flex !important;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    .admin-bulk-access > .admin-bulk-group {
+        flex: 1 1 0;
+        min-width: 0;
+        /* В колонку: «🔍 Распознавание смет:» с переключателем в одну строку в
+           половину экрана не помещается, и подпись всё равно переносилась бы —
+           но вразнобой у двух групп, с разной высотой блоков. */
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    .admin-bulk-access .admin-bulk-label {
+        white-space: normal;
+        line-height: 1.3;
+    }
     .admin-bulk-group {
         justify-content: space-between;
         flex-wrap: wrap;
@@ -6603,6 +6727,14 @@ body.html2pdf-printing #print-area {
 }
 
 /* Force table layout for estimates during html2pdf compilation */
+/* Мобильная смета уменьшена на 20 % (zoom на .table-responsive), но PDF
+   собирается теми же экранными правилами — #print-area выше принудительно
+   разворачивается в 800 px. Без сброса zoom документ, выгруженный с телефона,
+   выходил бы на пятую часть мельче, чем тот же документ с компьютера. */
+body.html2pdf-printing .table-responsive {
+    zoom: 1 !important;
+}
+
 body.html2pdf-printing .inv-table {
     display: table !important;
     width: 100% !important;
@@ -8073,8 +8205,17 @@ body.dark-mode .to-top-btn:hover {
 
 /* На мобильных устройствах скрыта кнопка обратной связи, поэтому перемещаем кнопку Наверх вниз */
 @media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait), screen and (orientation: landscape) and (max-height: 500px) {
+    /* Высота нижней панели навигации: у .mob-nav-item это 8px отступа + иконка
+       24px + 3px до подписи + строка подписи ≈ 57px, и сверху сама панель
+       добавляет padding-bottom под системный жест. Раньше отступы кнопок были
+       вбиты числами 95 и 51, и нижняя кнопка залезала на панель: 51px + её же
+       38px высоты как раз попадали в эти 57. */
+    :root {
+        --mob-nav-h: calc(57px + env(safe-area-inset-bottom, 15px));
+    }
+
     .to-top-btn {
-        bottom: 95px; /* Приподнимаем над .mobile-bottom-nav */
+        bottom: calc(var(--mob-nav-h) + 54px); /* над кнопкой «вниз»: 38px кнопки + 16px просвета */
         right: 16px;
         width: 38px;
         height: 38px;
@@ -8092,7 +8233,7 @@ body.dark-mode .to-top-btn:hover {
     }
     /* Под кнопкой «наверх», но всё ещё над нижней панелью навигации */
     .to-bottom-btn {
-        bottom: 51px;
+        bottom: calc(var(--mob-nav-h) + 10px);
     }
 }
 
