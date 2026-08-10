@@ -1271,9 +1271,9 @@ const catalog = {
     // только релейно, по перемычке комнатного термостата, и плата цифровых шин
     // ему не нужна (в отличие от PLUS и STATUS, которые работают по OpenTherm).
     boilers_polis: [
-        { id: "SEB-5101-000006", name: "Котёл электрический POLIS (6 кВт)", power: 6, price: 26877, type: "el", exp: 0, vol: 5, noPump: true, noBus: true, volt: "220/380", desc: "POLIS: бюджетный. Без насоса и бака — монтируется на ГБМ.", availability: "in_stock", price_date: "2026-08-06" },
-        { id: "SEB-5101-000009", name: "Котёл электрический POLIS (9 кВт)", power: 9, price: 27521, type: "el", exp: 0, vol: 5, noPump: true, noBus: true, volt: "220/380", desc: "POLIS: бюджетный. Без насоса и бака — монтируется на ГБМ.", availability: "in_stock", price_date: "2026-08-06" },
-        { id: "SEB-5101-000012", name: "Котёл электрический POLIS (12 кВт)", power: 12, price: 39027, type: "el", exp: 0, vol: 5, noPump: true, noBus: true, volt: "380", desc: "POLIS: бюджетный. Без насоса и бака — монтируется на ГБМ. Только 380 В.", availability: "in_stock", price_date: "2026-08-06" },
+        { id: "SEB-5101-000006", name: "Котёл электрический POLIS (6 кВт)", power: 6, price: 26877, type: "el", exp: 0, vol: 5, noPump: true, noBus: true, volt: "220/380", desc: "POLIS: бюджетный. Без насоса и бака — монтируется на ГБМ.", availability: "in_stock", price_date: "2026-08-10" },
+        { id: "SEB-5101-000009", name: "Котёл электрический POLIS (9 кВт)", power: 9, price: 27522, type: "el", exp: 0, vol: 5, noPump: true, noBus: true, volt: "220/380", desc: "POLIS: бюджетный. Без насоса и бака — монтируется на ГБМ.", availability: "in_stock", price_date: "2026-08-10" },
+        { id: "SEB-5101-000012", name: "Котёл электрический POLIS (12 кВт)", power: 12, price: 39027, type: "el", exp: 0, vol: 5, noPump: true, noBus: true, volt: "380", desc: "POLIS: бюджетный. Без насоса и бака — монтируется на ГБМ. Только 380 В.", availability: "in_stock", price_date: "2026-08-10" },
         { id: "SEB-5101-000015", name: "Котёл электрический POLIS (15 кВт)", power: 15, price: 39580, type: "el", exp: 0, vol: 5, noPump: true, noBus: true, volt: "380", desc: "POLIS: бюджетный. Без насоса и бака — монтируется на ГБМ. Только 380 В.", availability: "in_stock", price_date: "2026-08-06" }
     ],
     chimneys: [
@@ -4494,107 +4494,107 @@ const vegaBmRads = [
     { id: "SRB-1310-035012", name: "Радиатор VEGA BM (350мм, бок.) 12 секций", sec: 12, price: 13440, power50: 87, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
     { id: "SRB-1310-020004", name: "Радиатор VEGA BM (200мм, бок.) 4 секций", sec: 4, price: 4160, power50: 61, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
     { id: "SRB-1310-020006", name: "Радиатор VEGA BM (200мм, бок.) 6 секций", sec: 6, price: 6240, power50: 61, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
-    { id: "SRB-1310-020008", name: "Радиатор VEGA BM (200мм, бок.) 8 секций", sec: 8, price: 8320, power50: 61, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-1310-020010", name: "Радиатор VEGA BM (200мм, бок.) 10 секций", sec: 10, price: 10400, power50: 61, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-1310-020012", name: "Радиатор VEGA BM (200мм, бок.) 12 секций", sec: 12, price: 12480, power50: 61, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
+    { id: "SRB-1310-020008", name: "Радиатор VEGA BM (200мм, бок.) 8 секций", sec: 8, price: 8320, power50: 61, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-1310-020010", name: "Радиатор VEGA BM (200мм, бок.) 10 секций", sec: 10, price: 10400, power50: 61, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-1310-020012", name: "Радиатор VEGA BM (200мм, бок.) 12 секций", sec: 12, price: 12480, power50: 61, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" }
 ];
 
 // STOUT ALPHA, биметалл, боковое подключение (не путать с алюминиевым ALPHA SRA-2310). SRB-2310-05/035. Прайс 07.2026.
 const alphaBmRads = [
-    { id: "SRB-2310-050004", name: "Радиатор ALPHA биметалл (500мм, бок.) 4 секций", sec: 4, price: 4000, power50: 107, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-2310-050006", name: "Радиатор ALPHA биметалл (500мм, бок.) 6 секций", sec: 6, price: 6000, power50: 107, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-2310-050008", name: "Радиатор ALPHA биметалл (500мм, бок.) 8 секций", sec: 8, price: 8000, power50: 107, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-2310-050010", name: "Радиатор ALPHA биметалл (500мм, бок.) 10 секций", sec: 10, price: 10000, power50: 107, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-2310-050012", name: "Радиатор ALPHA биметалл (500мм, бок.) 12 секций", sec: 12, price: 12000, power50: 107, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-2310-035004", name: "Радиатор ALPHA биметалл (350мм, бок.) 4 секций", sec: 4, price: 3960, power50: 79, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-2310-035006", name: "Радиатор ALPHA биметалл (350мм, бок.) 6 секций", sec: 6, price: 5940, power50: 79, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-2310-035008", name: "Радиатор ALPHA биметалл (350мм, бок.) 8 секций", sec: 8, price: 7920, power50: 79, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-2310-035010", name: "Радиатор ALPHA биметалл (350мм, бок.) 10 секций", sec: 10, price: 9900, power50: 79, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-2310-035012", name: "Радиатор ALPHA биметалл (350мм, бок.) 12 секций", sec: 12, price: 11880, power50: 79, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
+    { id: "SRB-2310-050004", name: "Радиатор ALPHA биметалл (500мм, бок.) 4 секций", sec: 4, price: 4000, power50: 107, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-2310-050006", name: "Радиатор ALPHA биметалл (500мм, бок.) 6 секций", sec: 6, price: 6000, power50: 107, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-2310-050008", name: "Радиатор ALPHA биметалл (500мм, бок.) 8 секций", sec: 8, price: 8000, power50: 107, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-2310-050010", name: "Радиатор ALPHA биметалл (500мм, бок.) 10 секций", sec: 10, price: 10000, power50: 107, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-2310-050012", name: "Радиатор ALPHA биметалл (500мм, бок.) 12 секций", sec: 12, price: 12000, power50: 107, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-2310-035004", name: "Радиатор ALPHA биметалл (350мм, бок.) 4 секций", sec: 4, price: 3960, power50: 79, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-2310-035006", name: "Радиатор ALPHA биметалл (350мм, бок.) 6 секций", sec: 6, price: 5940, power50: 79, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-2310-035008", name: "Радиатор ALPHA биметалл (350мм, бок.) 8 секций", sec: 8, price: 7920, power50: 79, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-2310-035010", name: "Радиатор ALPHA биметалл (350мм, бок.) 10 секций", sec: 10, price: 9900, power50: 79, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-2310-035012", name: "Радиатор ALPHA биметалл (350мм, бок.) 12 секций", sec: 12, price: 11880, power50: 79, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" }
 ];
 
 // STOUT TITAN, нижнее подключение, 350мм (компаньон titanRads-500мм). SRB-3320-035. Прайс 07.2026.
 const titanBottom350Rads = [
-    { id: "SRB-3320-035004", name: "Радиатор TITAN 350 (нижн.) 4 секций", sec: 4, price: 7310, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-3320-035005", name: "Радиатор TITAN 350 (нижн.) 5 секций", sec: 5, price: 8520, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-3320-035006", name: "Радиатор TITAN 350 (нижн.) 6 секций", sec: 6, price: 9730, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-3320-035007", name: "Радиатор TITAN 350 (нижн.) 7 секций", sec: 7, price: 10940, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-3320-035008", name: "Радиатор TITAN 350 (нижн.) 8 секций", sec: 8, price: 12150, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-3320-035009", name: "Радиатор TITAN 350 (нижн.) 9 секций", sec: 9, price: 13360, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-3320-035010", name: "Радиатор TITAN 350 (нижн.) 10 секций", sec: 10, price: 14570, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-3320-035011", name: "Радиатор TITAN 350 (нижн.) 11 секций", sec: 11, price: 15780, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-3320-035012", name: "Радиатор TITAN 350 (нижн.) 12 секций", sec: 12, price: 16990, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-3320-035013", name: "Радиатор TITAN 350 (нижн.) 13 секций", sec: 13, price: 18200, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRB-3320-035014", name: "Радиатор TITAN 350 (нижн.) 14 секций", sec: 14, price: 19410, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
+    { id: "SRB-3320-035004", name: "Радиатор TITAN 350 (нижн.) 4 секций", sec: 4, price: 7310, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-3320-035005", name: "Радиатор TITAN 350 (нижн.) 5 секций", sec: 5, price: 8520, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-3320-035006", name: "Радиатор TITAN 350 (нижн.) 6 секций", sec: 6, price: 9730, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-3320-035007", name: "Радиатор TITAN 350 (нижн.) 7 секций", sec: 7, price: 10940, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-3320-035008", name: "Радиатор TITAN 350 (нижн.) 8 секций", sec: 8, price: 12150, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-3320-035009", name: "Радиатор TITAN 350 (нижн.) 9 секций", sec: 9, price: 13360, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-3320-035010", name: "Радиатор TITAN 350 (нижн.) 10 секций", sec: 10, price: 14570, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-3320-035011", name: "Радиатор TITAN 350 (нижн.) 11 секций", sec: 11, price: 15780, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-3320-035012", name: "Радиатор TITAN 350 (нижн.) 12 секций", sec: 12, price: 16990, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-3320-035013", name: "Радиатор TITAN 350 (нижн.) 13 секций", sec: 13, price: 18200, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRB-3320-035014", name: "Радиатор TITAN 350 (нижн.) 14 секций", sec: 14, price: 19410, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" }
 ];
 
 // STOUT TITAN, нижнее подключение, цвет графит RAL7024. SRB-3320-05/035 7024. Прайс 07.2026.
 const titanGraphiteRads = [
-    { id: "SRB-3320-050004-7024", name: "Радиатор TITAN Графит RAL7024 (500мм, нижн.) 4 секций", sec: 4, price: 8000, power50: 128, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", color: "graphite" },
-    { id: "SRB-3320-050006-7024", name: "Радиатор TITAN Графит RAL7024 (500мм, нижн.) 6 секций", sec: 6, price: 10700, power50: 128, brand: "STOUT", availability: "on_order", price_date: "2026-07-29", color: "graphite" },
-    { id: "SRB-3320-050008-7024", name: "Радиатор TITAN Графит RAL7024 (500мм, нижн.) 8 секций", sec: 8, price: 13400, power50: 128, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", color: "graphite" },
-    { id: "SRB-3320-050010-7024", name: "Радиатор TITAN Графит RAL7024 (500мм, нижн.) 10 секций", sec: 10, price: 16100, power50: 128, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", color: "graphite" },
-    { id: "SRB-3320-050012-7024", name: "Радиатор TITAN Графит RAL7024 (500мм, нижн.) 12 секций", sec: 12, price: 18800, power50: 128, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", color: "graphite" },
-    { id: "SRB-3320-050014-7024", name: "Радиатор TITAN Графит RAL7024 (500мм, нижн.) 14 секций", sec: 14, price: 21500, power50: 128, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", color: "graphite" },
-    { id: "SRB-3320-035004-7024", name: "Радиатор TITAN Графит RAL7024 (350мм, нижн.) 4 секций", sec: 4, price: 7800, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", color: "graphite" },
-    { id: "SRB-3320-035006-7024", name: "Радиатор TITAN Графит RAL7024 (350мм, нижн.) 6 секций", sec: 6, price: 10400, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", color: "graphite" },
-    { id: "SRB-3320-035008-7024", name: "Радиатор TITAN Графит RAL7024 (350мм, нижн.) 8 секций", sec: 8, price: 13000, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", color: "graphite" },
-    { id: "SRB-3320-035010-7024", name: "Радиатор TITAN Графит RAL7024 (350мм, нижн.) 10 секций", sec: 10, price: 15600, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", color: "graphite" },
-    { id: "SRB-3320-035012-7024", name: "Радиатор TITAN Графит RAL7024 (350мм, нижн.) 12 секций", sec: 12, price: 18200, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", color: "graphite" },
-    { id: "SRB-3320-035014-7024", name: "Радиатор TITAN Графит RAL7024 (350мм, нижн.) 14 секций", sec: 14, price: 20800, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29", color: "graphite" }
+    { id: "SRB-3320-050004-7024", name: "Радиатор TITAN Графит RAL7024 (500мм, нижн.) 4 секций", sec: 4, price: 8000, power50: 128, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", color: "graphite" },
+    { id: "SRB-3320-050006-7024", name: "Радиатор TITAN Графит RAL7024 (500мм, нижн.) 6 секций", sec: 6, price: 10700, power50: 128, brand: "STOUT", availability: "on_order", price_date: "2026-08-10", color: "graphite" },
+    { id: "SRB-3320-050008-7024", name: "Радиатор TITAN Графит RAL7024 (500мм, нижн.) 8 секций", sec: 8, price: 13400, power50: 128, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", color: "graphite" },
+    { id: "SRB-3320-050010-7024", name: "Радиатор TITAN Графит RAL7024 (500мм, нижн.) 10 секций", sec: 10, price: 16100, power50: 128, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", color: "graphite" },
+    { id: "SRB-3320-050012-7024", name: "Радиатор TITAN Графит RAL7024 (500мм, нижн.) 12 секций", sec: 12, price: 18800, power50: 128, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", color: "graphite" },
+    { id: "SRB-3320-050014-7024", name: "Радиатор TITAN Графит RAL7024 (500мм, нижн.) 14 секций", sec: 14, price: 21500, power50: 128, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", color: "graphite" },
+    { id: "SRB-3320-035004-7024", name: "Радиатор TITAN Графит RAL7024 (350мм, нижн.) 4 секций", sec: 4, price: 7800, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", color: "graphite" },
+    { id: "SRB-3320-035006-7024", name: "Радиатор TITAN Графит RAL7024 (350мм, нижн.) 6 секций", sec: 6, price: 10400, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", color: "graphite" },
+    { id: "SRB-3320-035008-7024", name: "Радиатор TITAN Графит RAL7024 (350мм, нижн.) 8 секций", sec: 8, price: 13000, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", color: "graphite" },
+    { id: "SRB-3320-035010-7024", name: "Радиатор TITAN Графит RAL7024 (350мм, нижн.) 10 секций", sec: 10, price: 15600, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", color: "graphite" },
+    { id: "SRB-3320-035012-7024", name: "Радиатор TITAN Графит RAL7024 (350мм, нижн.) 12 секций", sec: 12, price: 18200, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", color: "graphite" },
+    { id: "SRB-3320-035014-7024", name: "Радиатор TITAN Графит RAL7024 (350мм, нижн.) 14 секций", sec: 14, price: 20800, power50: 106, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", color: "graphite" }
 ];
 
 // STOUT VEGA 500 AL, алюминий, боковое подключение. SRA-1310-05. Прайс 07.2026.
 const vega500AlRads = [
-    { id: "SRA-1310-050004", name: "Радиатор VEGA 500 AL (бок.) 4 секций", sec: 4, price: 3980, power50: 121, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1310-050006", name: "Радиатор VEGA 500 AL (бок.) 6 секций", sec: 6, price: 5970, power50: 121, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1310-050008", name: "Радиатор VEGA 500 AL (бок.) 8 секций", sec: 8, price: 7960, power50: 121, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1310-050010", name: "Радиатор VEGA 500 AL (бок.) 10 секций", sec: 10, price: 9950, power50: 121, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1310-050012", name: "Радиатор VEGA 500 AL (бок.) 12 секций", sec: 12, price: 11940, power50: 121, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
+    { id: "SRA-1310-050004", name: "Радиатор VEGA 500 AL (бок.) 4 секций", sec: 4, price: 3980, power50: 121, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1310-050006", name: "Радиатор VEGA 500 AL (бок.) 6 секций", sec: 6, price: 5970, power50: 121, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1310-050008", name: "Радиатор VEGA 500 AL (бок.) 8 секций", sec: 8, price: 7960, power50: 121, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1310-050010", name: "Радиатор VEGA 500 AL (бок.) 10 секций", sec: 10, price: 9950, power50: 121, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1310-050012", name: "Радиатор VEGA 500 AL (бок.) 12 секций", sec: 12, price: 11940, power50: 121, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" }
 ];
 
 // STOUT OSCAR (Италия), дизайн-радиатор, боковое подключение, 1800/2000мм, 3 цвета. SRA-0110-*. Прайс 07.2026.
 const oscarRads = [
-    { id: "SRA-0110-180003", name: "Радиатор STOUT OSCAR 1800мм RAL9010 белый 3 секций", sec: 3, price: 28162, power50: 302, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-180004", name: "Радиатор STOUT OSCAR 1800мм RAL9010 белый 4 секций", sec: 4, price: 37546, power50: 302, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-180005", name: "Радиатор STOUT OSCAR 1800мм RAL9010 белый 5 секций", sec: 5, price: 46940, power50: 302, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-180006", name: "Радиатор STOUT OSCAR 1800мм RAL9010 белый 6 секций", sec: 6, price: 56324, power50: 302, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-18000703", name: "Радиатор STOUT OSCAR 1800мм 2748 черный 3 секций", sec: 3, price: 36618, power50: 302, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-18000704", name: "Радиатор STOUT OSCAR 1800мм 2748 черный 4 секций", sec: 4, price: 48817, power50: 302, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-18000705", name: "Радиатор STOUT OSCAR 1800мм 2748 черный 5 секций", sec: 5, price: 61027, power50: 302, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-18000706", name: "Радиатор STOUT OSCAR 1800мм 2748 черный 6 секций", sec: 6, price: 73226, power50: 302, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-18000803", name: "Радиатор STOUT OSCAR 1800мм 2676 серый 3 секций", sec: 3, price: 36618, power50: 302, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-18000804", name: "Радиатор STOUT OSCAR 1800мм 2676 серый 4 секций", sec: 4, price: 48817, power50: 302, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-18000805", name: "Радиатор STOUT OSCAR 1800мм 2676 серый 5 секций", sec: 5, price: 61027, power50: 302, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-18000806", name: "Радиатор STOUT OSCAR 1800мм 2676 серый 6 секций", sec: 6, price: 73226, power50: 302, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-200003", name: "Радиатор STOUT OSCAR 2000мм RAL9010 белый 3 секций", sec: 3, price: 31243, power50: 327, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-200004", name: "Радиатор STOUT OSCAR 2000мм RAL9010 белый 4 секций", sec: 4, price: 41657, power50: 327, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-200005", name: "Радиатор STOUT OSCAR 2000мм RAL9010 белый 5 секций", sec: 5, price: 52071, power50: 327, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-200006", name: "Радиатор STOUT OSCAR 2000мм RAL9010 белый 6 секций", sec: 6, price: 62485, power50: 327, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-20000703", name: "Радиатор STOUT OSCAR 2000мм 2748 черный 3 секций", sec: 3, price: 40616, power50: 327, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-20000704", name: "Радиатор STOUT OSCAR 2000мм 2748 черный 4 секций", sec: 4, price: 54152, power50: 327, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-20000705", name: "Радиатор STOUT OSCAR 2000мм 2748 черный 5 секций", sec: 5, price: 67697, power50: 327, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-20000706", name: "Радиатор STOUT OSCAR 2000мм 2748 черный 6 секций", sec: 6, price: 81233, power50: 327, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-20000803", name: "Радиатор STOUT OSCAR 2000мм 2676 серый 3 секций", sec: 3, price: 40616, power50: 327, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-20000804", name: "Радиатор STOUT OSCAR 2000мм 2676 серый 4 секций", sec: 4, price: 54152, power50: 327, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-20000805", name: "Радиатор STOUT OSCAR 2000мм 2676 серый 5 секций", sec: 5, price: 67697, power50: 327, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-0110-20000806", name: "Радиатор STOUT OSCAR 2000мм 2676 серый 6 секций", sec: 6, price: 81233, power50: 327, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
+    { id: "SRA-0110-180003", name: "Радиатор STOUT OSCAR 1800мм RAL9010 белый 3 секций", sec: 3, price: 28162, power50: 302, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-180004", name: "Радиатор STOUT OSCAR 1800мм RAL9010 белый 4 секций", sec: 4, price: 37546, power50: 302, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-180005", name: "Радиатор STOUT OSCAR 1800мм RAL9010 белый 5 секций", sec: 5, price: 46940, power50: 302, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-180006", name: "Радиатор STOUT OSCAR 1800мм RAL9010 белый 6 секций", sec: 6, price: 56324, power50: 302, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-18000703", name: "Радиатор STOUT OSCAR 1800мм 2748 черный 3 секций", sec: 3, price: 36618, power50: 302, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-18000704", name: "Радиатор STOUT OSCAR 1800мм 2748 черный 4 секций", sec: 4, price: 48817, power50: 302, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-18000705", name: "Радиатор STOUT OSCAR 1800мм 2748 черный 5 секций", sec: 5, price: 61027, power50: 302, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-18000706", name: "Радиатор STOUT OSCAR 1800мм 2748 черный 6 секций", sec: 6, price: 73226, power50: 302, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-18000803", name: "Радиатор STOUT OSCAR 1800мм 2676 серый 3 секций", sec: 3, price: 36618, power50: 302, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-18000804", name: "Радиатор STOUT OSCAR 1800мм 2676 серый 4 секций", sec: 4, price: 48817, power50: 302, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-18000805", name: "Радиатор STOUT OSCAR 1800мм 2676 серый 5 секций", sec: 5, price: 61027, power50: 302, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-18000806", name: "Радиатор STOUT OSCAR 1800мм 2676 серый 6 секций", sec: 6, price: 73226, power50: 302, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-200003", name: "Радиатор STOUT OSCAR 2000мм RAL9010 белый 3 секций", sec: 3, price: 31243, power50: 327, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-200004", name: "Радиатор STOUT OSCAR 2000мм RAL9010 белый 4 секций", sec: 4, price: 41657, power50: 327, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-200005", name: "Радиатор STOUT OSCAR 2000мм RAL9010 белый 5 секций", sec: 5, price: 52071, power50: 327, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-200006", name: "Радиатор STOUT OSCAR 2000мм RAL9010 белый 6 секций", sec: 6, price: 62485, power50: 327, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-20000703", name: "Радиатор STOUT OSCAR 2000мм 2748 черный 3 секций", sec: 3, price: 40616, power50: 327, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-20000704", name: "Радиатор STOUT OSCAR 2000мм 2748 черный 4 секций", sec: 4, price: 54152, power50: 327, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-20000705", name: "Радиатор STOUT OSCAR 2000мм 2748 черный 5 секций", sec: 5, price: 67697, power50: 327, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-20000706", name: "Радиатор STOUT OSCAR 2000мм 2748 черный 6 секций", sec: 6, price: 81233, power50: 327, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-20000803", name: "Радиатор STOUT OSCAR 2000мм 2676 серый 3 секций", sec: 3, price: 40616, power50: 327, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-20000804", name: "Радиатор STOUT OSCAR 2000мм 2676 серый 4 секций", sec: 4, price: 54152, power50: 327, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-20000805", name: "Радиатор STOUT OSCAR 2000мм 2676 серый 5 секций", sec: 5, price: 67697, power50: 327, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-0110-20000806", name: "Радиатор STOUT OSCAR 2000мм 2676 серый 6 секций", sec: 6, price: 81233, power50: 327, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" }
 ];
 
 // STOUT SEBINO (Италия), дизайн-радиатор, универсальное подключение (комплект+кронштейны в комплекте). SRA-1120-*. Прайс 07.2026.
 const sebinoRads = [
-    { id: "SRA-1120-180004", name: "Радиатор STOUT SEBINO 1800мм RAL9010 белый 4 секций", sec: 4, price: 55070, power50: 236, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1120-180006", name: "Радиатор STOUT SEBINO 1800мм RAL9010 белый 6 секций", sec: 6, price: 77479, power50: 236, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1120-18000704", name: "Радиатор STOUT SEBINO 1800мм 2748 черный 4 секций", sec: 4, price: 68799, power50: 236, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1120-18000706", name: "Радиатор STOUT SEBINO 1800мм 2748 черный 6 секций", sec: 6, price: 96808, power50: 236, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1120-18000804", name: "Радиатор STOUT SEBINO 1800мм 2676 серый 4 секций", sec: 4, price: 68799, power50: 236, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1120-18000806", name: "Радиатор STOUT SEBINO 1800мм 2676 серый 6 секций", sec: 6, price: 96808, power50: 236, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1120-200004", name: "Радиатор STOUT SEBINO 2000мм RAL9010 белый 4 секций", sec: 4, price: 57202, power50: 256, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1120-200006", name: "Радиатор STOUT SEBINO 2000мм RAL9010 белый 6 секций", sec: 6, price: 83232, power50: 256, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1120-20000704", name: "Радиатор STOUT SEBINO 2000мм 2748 черный 4 секций", sec: 4, price: 71482, power50: 256, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1120-20000706", name: "Радиатор STOUT SEBINO 2000мм 2748 черный 6 секций", sec: 6, price: 103989, power50: 256, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1120-20000804", name: "Радиатор STOUT SEBINO 2000мм 2676 серый 4 секций", sec: 4, price: 71482, power50: 256, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-1120-20000806", name: "Радиатор STOUT SEBINO 2000мм 2676 серый 6 секций", sec: 6, price: 103989, power50: 256, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
+    { id: "SRA-1120-180004", name: "Радиатор STOUT SEBINO 1800мм RAL9010 белый 4 секций", sec: 4, price: 55070, power50: 236, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1120-180006", name: "Радиатор STOUT SEBINO 1800мм RAL9010 белый 6 секций", sec: 6, price: 77479, power50: 236, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1120-18000704", name: "Радиатор STOUT SEBINO 1800мм 2748 черный 4 секций", sec: 4, price: 68799, power50: 236, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1120-18000706", name: "Радиатор STOUT SEBINO 1800мм 2748 черный 6 секций", sec: 6, price: 96808, power50: 236, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1120-18000804", name: "Радиатор STOUT SEBINO 1800мм 2676 серый 4 секций", sec: 4, price: 68799, power50: 236, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1120-18000806", name: "Радиатор STOUT SEBINO 1800мм 2676 серый 6 секций", sec: 6, price: 96808, power50: 236, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1120-200004", name: "Радиатор STOUT SEBINO 2000мм RAL9010 белый 4 секций", sec: 4, price: 57202, power50: 256, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1120-200006", name: "Радиатор STOUT SEBINO 2000мм RAL9010 белый 6 секций", sec: 6, price: 83232, power50: 256, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1120-20000704", name: "Радиатор STOUT SEBINO 2000мм 2748 черный 4 секций", sec: 4, price: 71482, power50: 256, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1120-20000706", name: "Радиатор STOUT SEBINO 2000мм 2748 черный 6 секций", sec: 6, price: 103989, power50: 256, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1120-20000804", name: "Радиатор STOUT SEBINO 2000мм 2676 серый 4 секций", sec: 4, price: 71482, power50: 256, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-1120-20000806", name: "Радиатор STOUT SEBINO 2000мм 2676 серый 6 секций", sec: 6, price: 103989, power50: 256, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" }
 ];
 // SEBINO поставляется с монтажным набором подключения в комплекте — отдельный набор
 // (SKU-0211/0221/0231) в смету не добавляем (см. app.js, раздел 3.1, флаг kitIncluded).
@@ -4602,34 +4602,34 @@ sebinoRads.forEach(x => { x.kitIncluded = true; });
 
 // STOUT ANTEPRIMA (Италия), дизайн-радиатор, универсальное подключение. SRA-3120-*. Прайс 07.2026.
 const anteprimaRads = [
-    { id: "SRA-3120-180004", name: "Радиатор STOUT ANTEPRIMA 1800мм RAL9010 белый 4 секций", sec: 4, price: 52856, power50: 204, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-3120-180006", name: "Радиатор STOUT ANTEPRIMA 1800мм RAL9010 белый 6 секций", sec: 6, price: 79213, power50: 204, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-3120-18000704", name: "Радиатор STOUT ANTEPRIMA 1800мм 2748 черный 4 секций", sec: 4, price: 66035, power50: 204, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-3120-18000706", name: "Радиатор STOUT ANTEPRIMA 1800мм 2748 черный 6 секций", sec: 6, price: 99011, power50: 204, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-3120-18000804", name: "Радиатор STOUT ANTEPRIMA 1800мм 2676 серый 4 секций", sec: 4, price: 66035, power50: 204, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-3120-18000806", name: "Радиатор STOUT ANTEPRIMA 1800мм 2676 серый 6 секций", sec: 6, price: 99011, power50: 204, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-3120-200004", name: "Радиатор STOUT ANTEPRIMA 2000мм RAL9010 белый 4 секций", sec: 4, price: 55784, power50: 222, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-3120-200006", name: "Радиатор STOUT ANTEPRIMA 2000мм RAL9010 белый 6 секций", sec: 6, price: 83630, power50: 222, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-3120-20000704", name: "Радиатор STOUT ANTEPRIMA 2000мм 2748 черный 4 секций", sec: 4, price: 69666, power50: 222, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-3120-20000706", name: "Радиатор STOUT ANTEPRIMA 2000мм 2748 черный 6 секций", sec: 6, price: 104540, power50: 222, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-3120-20000804", name: "Радиатор STOUT ANTEPRIMA 2000мм 2676 серый 4 секций", sec: 4, price: 69666, power50: 222, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-3120-20000806", name: "Радиатор STOUT ANTEPRIMA 2000мм 2676 серый 6 секций", sec: 6, price: 104540, power50: 222, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
+    { id: "SRA-3120-180004", name: "Радиатор STOUT ANTEPRIMA 1800мм RAL9010 белый 4 секций", sec: 4, price: 52856, power50: 204, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-3120-180006", name: "Радиатор STOUT ANTEPRIMA 1800мм RAL9010 белый 6 секций", sec: 6, price: 79213, power50: 204, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-3120-18000704", name: "Радиатор STOUT ANTEPRIMA 1800мм 2748 черный 4 секций", sec: 4, price: 66035, power50: 204, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-3120-18000706", name: "Радиатор STOUT ANTEPRIMA 1800мм 2748 черный 6 секций", sec: 6, price: 99011, power50: 204, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-3120-18000804", name: "Радиатор STOUT ANTEPRIMA 1800мм 2676 серый 4 секций", sec: 4, price: 66035, power50: 204, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-3120-18000806", name: "Радиатор STOUT ANTEPRIMA 1800мм 2676 серый 6 секций", sec: 6, price: 99011, power50: 204, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-3120-200004", name: "Радиатор STOUT ANTEPRIMA 2000мм RAL9010 белый 4 секций", sec: 4, price: 55784, power50: 222, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-3120-200006", name: "Радиатор STOUT ANTEPRIMA 2000мм RAL9010 белый 6 секций", sec: 6, price: 83630, power50: 222, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-3120-20000704", name: "Радиатор STOUT ANTEPRIMA 2000мм 2748 черный 4 секций", sec: 4, price: 69666, power50: 222, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-3120-20000706", name: "Радиатор STOUT ANTEPRIMA 2000мм 2748 черный 6 секций", sec: 6, price: 104540, power50: 222, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-3120-20000804", name: "Радиатор STOUT ANTEPRIMA 2000мм 2676 серый 4 секций", sec: 4, price: 69666, power50: 222, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-3120-20000806", name: "Радиатор STOUT ANTEPRIMA 2000мм 2676 серый 6 секций", sec: 6, price: 104540, power50: 222, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" }
 ];
 
 // STOUT TONALE (Италия), дизайн-радиатор, универсальное подключение. SRA-2120-*. Прайс 07.2026.
 const tonaleRads = [
-    { id: "SRA-2120-180004", name: "Радиатор STOUT TONALE 1800мм RAL9010 белый 4 секций", sec: 4, price: 52856, power50: 210, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-2120-180006", name: "Радиатор STOUT TONALE 1800мм RAL9010 белый 6 секций", sec: 6, price: 79213, power50: 210, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-2120-18000704", name: "Радиатор STOUT TONALE 1800мм 2748 черный 4 секций", sec: 4, price: 66035, power50: 210, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-2120-18000706", name: "Радиатор STOUT TONALE 1800мм 2748 черный 6 секций", sec: 6, price: 99011, power50: 210, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-2120-18000804", name: "Радиатор STOUT TONALE 1800мм 2676 серый 4 секций", sec: 4, price: 66035, power50: 210, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-2120-18000806", name: "Радиатор STOUT TONALE 1800мм 2676 серый 6 секций", sec: 6, price: 99011, power50: 210, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-2120-200004", name: "Радиатор STOUT TONALE 2000мм RAL9010 белый 4 секций", sec: 4, price: 55784, power50: 228, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-2120-200006", name: "Радиатор STOUT TONALE 2000мм RAL9010 белый 6 секций", sec: 6, price: 83630, power50: 228, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-2120-20000704", name: "Радиатор STOUT TONALE 2000мм 2748 черный 4 секций", sec: 4, price: 69666, power50: 228, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-2120-20000706", name: "Радиатор STOUT TONALE 2000мм 2748 черный 6 секций", sec: 6, price: 104540, power50: 228, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-2120-20000804", name: "Радиатор STOUT TONALE 2000мм 2676 серый 4 секций", sec: 4, price: 69666, power50: 228, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SRA-2120-20000806", name: "Радиатор STOUT TONALE 2000мм 2676 серый 6 секций", sec: 6, price: 104540, power50: 228, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" }
+    { id: "SRA-2120-180004", name: "Радиатор STOUT TONALE 1800мм RAL9010 белый 4 секций", sec: 4, price: 52856, power50: 210, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-2120-180006", name: "Радиатор STOUT TONALE 1800мм RAL9010 белый 6 секций", sec: 6, price: 79213, power50: 210, height: 1800, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-2120-18000704", name: "Радиатор STOUT TONALE 1800мм 2748 черный 4 секций", sec: 4, price: 66035, power50: 210, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-2120-18000706", name: "Радиатор STOUT TONALE 1800мм 2748 черный 6 секций", sec: 6, price: 99011, power50: 210, height: 1800, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-2120-18000804", name: "Радиатор STOUT TONALE 1800мм 2676 серый 4 секций", sec: 4, price: 66035, power50: 210, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-2120-18000806", name: "Радиатор STOUT TONALE 1800мм 2676 серый 6 секций", sec: 6, price: 99011, power50: 210, height: 1800, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-2120-200004", name: "Радиатор STOUT TONALE 2000мм RAL9010 белый 4 секций", sec: 4, price: 55784, power50: 228, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-2120-200006", name: "Радиатор STOUT TONALE 2000мм RAL9010 белый 6 секций", sec: 6, price: 83630, power50: 228, height: 2000, color: "white", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-2120-20000704", name: "Радиатор STOUT TONALE 2000мм 2748 черный 4 секций", sec: 4, price: 69666, power50: 228, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-2120-20000706", name: "Радиатор STOUT TONALE 2000мм 2748 черный 6 секций", sec: 6, price: 104540, power50: 228, height: 2000, color: "black", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-2120-20000804", name: "Радиатор STOUT TONALE 2000мм 2676 серый 4 секций", sec: 4, price: 69666, power50: 228, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SRA-2120-20000806", name: "Радиатор STOUT TONALE 2000мм 2676 серый 6 секций", sec: 6, price: 104540, power50: 228, height: 2000, color: "gray", isDesignRad: true, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" }
 ];
 
 // STOUT TUBE QUADRO (Россия), трубчатый дизайн-радиатор, id синтетические (в прайсе только описательное наименование, без артикула). Прайс 07.2026.
@@ -4680,11 +4680,11 @@ const tubeRoundRads = [
 // ("угловой" вместо факт. "осевой" по прайсу) и отсутствует настоящий угловой SVT-0002-000015 —
 // здесь корректные названия по прайс-листу, existing conv_valves не трогаем.
 const radValves = [
-    { id: "SVT-0001-000015", name: "Клапан термостатический, прямой 1/2\"", price: 1180, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVT-0002-000015", name: "Клапан термостатический, угловой 1/2\"", price: 1101, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVT-0005-000015", name: "Клапан термостатический, осевой 1/2\"", price: 1614, type: "axial", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVL-1176-000015", name: "Клапан запорно-балансировочный прямой 1/2\"", price: 656, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVL-1156-000015", name: "Клапан запорно-балансировочный угловой 1/2\"", price: 597, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" }
+    { id: "SVT-0001-000015", name: "Клапан термостатический, прямой 1/2\"", price: 1180, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVT-0002-000015", name: "Клапан термостатический, угловой 1/2\"", price: 1101, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVT-0005-000015", name: "Клапан термостатический, осевой 1/2\"", price: 1614, type: "axial", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVL-1176-000015", name: "Клапан запорно-балансировочный прямой 1/2\"", price: 656, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVL-1156-000015", name: "Клапан запорно-балансировочный угловой 1/2\"", price: 597, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" }
 ];
 
 // Радиаторная арматура STOUT Design — хром/белый/чёрный, прямое/угловое подключение.
@@ -4720,33 +4720,33 @@ const radManualValves = [
     { id: "SVRS-1172-000020", name: "Клапан ручной с неподъемным шпинделем, прямой 3/4\"", price: 1128, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
     { id: "SVRS-1152-000015", name: "Клапан ручной с неподъемным шпинделем, угловой 1/2\"", price: 725, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
     { id: "SVRS-1152-000020", name: "Клапан ручной с неподъемным шпинделем, угловой 3/4\"", price: 1077, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-13" },
-    { id: "SVR-2122-000015", name: "Клапан ручной с закрытием \"металл по металлу\", прямой 1/2\"", price: 699, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVR-2122-000020", name: "Клапан ручной с закрытием \"металл по металлу\", прямой 3/4\"", price: 1005, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVR-2102-000015", name: "Клапан ручной с закрытием \"металл по металлу\", угловой 1/2\"", price: 645, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVR-2102-000020", name: "Клапан ручной с закрытием \"металл по металлу\", угловой 3/4\"", price: 962, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVR-2122-100015", name: "Клапан ручной с закрытием \"металл по металлу\" (доп. уплотнение), прямой 1/2\"", price: 808, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVR-2102-100015", name: "Клапан ручной с закрытием \"металл по металлу\" (доп. уплотнение), угловой 1/2\"", price: 680, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVL-1156-100015", name: "Клапан запорно-балансировочный (доп. уплотнение), угловой 1/2\"", price: 671, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVL-1176-100015", name: "Клапан запорно-балансировочный (доп. уплотнение), прямой 1/2\"", price: 730, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVL-1196-000015", name: "Клапан запорно-балансировочный, прямой (евроконус) 1/2\"х3/4\"ЕК", price: 713, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVL-1166-000015", name: "Клапан запорно-балансировочный, угловой (евроконус) 1/2\"х3/4\"ЕК", price: 656, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVT-0001-100015", name: "Клапан термостатический прямой (евроконус) 1/2\"х3/4\"ЕК", price: 1314, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVT-0002-100015", name: "Клапан термостатический угловой (евроконус) 1/2\"х3/4\"ЕК", price: 1261, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVT-0005-100015", name: "Клапан термостатический осевой (евроконус) 1/2\"х3/4\"ЕК", price: 1695, type: "axial", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" }
+    { id: "SVR-2122-000015", name: "Клапан ручной с закрытием \"металл по металлу\", прямой 1/2\"", price: 699, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVR-2122-000020", name: "Клапан ручной с закрытием \"металл по металлу\", прямой 3/4\"", price: 1005, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVR-2102-000015", name: "Клапан ручной с закрытием \"металл по металлу\", угловой 1/2\"", price: 645, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVR-2102-000020", name: "Клапан ручной с закрытием \"металл по металлу\", угловой 3/4\"", price: 962, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVR-2122-100015", name: "Клапан ручной с закрытием \"металл по металлу\" (доп. уплотнение), прямой 1/2\"", price: 808, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVR-2102-100015", name: "Клапан ручной с закрытием \"металл по металлу\" (доп. уплотнение), угловой 1/2\"", price: 680, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVL-1156-100015", name: "Клапан запорно-балансировочный (доп. уплотнение), угловой 1/2\"", price: 671, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVL-1176-100015", name: "Клапан запорно-балансировочный (доп. уплотнение), прямой 1/2\"", price: 730, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVL-1196-000015", name: "Клапан запорно-балансировочный, прямой (евроконус) 1/2\"х3/4\"ЕК", price: 713, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVL-1166-000015", name: "Клапан запорно-балансировочный, угловой (евроконус) 1/2\"х3/4\"ЕК", price: 656, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVT-0001-100015", name: "Клапан термостатический прямой (евроконус) 1/2\"х3/4\"ЕК", price: 1314, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVT-0002-100015", name: "Клапан термостатический угловой (евроконус) 1/2\"х3/4\"ЕК", price: 1261, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVT-0005-100015", name: "Клапан термостатический осевой (евроконус) 1/2\"х3/4\"ЕК", price: 1695, type: "axial", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" }
 ];
 
 // Недостающие узлы нижнего подключения (однотрубный и раздельный) — добавляются к существующему
 // catalog.h_valves (SVH-0002/0004 не трогаем). Источник: прайс 07.2026.
 const hValvesExtra = [
-    { id: "SVH-0001-000020", name: "Узел нижн. подкл. однотрубный (Прямой)", price: 2028, type: "straight", desc: "Для однотрубной системы.", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVH-0003-000020", name: "Узел нижн. подкл. однотрубный (Угловой)", price: 1896, type: "angled", desc: "Для однотрубной системы.", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVH-0005-000020", name: "Узел нижн. подкл. раздельный (Прямой)", price: 767, type: "straight", desc: "Раздельный монтаж.", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SVH-0006-000020", name: "Узел нижн. подкл. раздельный (Угловой)", price: 747, type: "angled", desc: "Раздельный монтаж.", availability: "in_stock", price_date: "2026-07-29" }
+    { id: "SVH-0001-000020", name: "Узел нижн. подкл. однотрубный (Прямой)", price: 2028, type: "straight", desc: "Для однотрубной системы.", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVH-0003-000020", name: "Узел нижн. подкл. однотрубный (Угловой)", price: 1896, type: "angled", desc: "Для однотрубной системы.", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVH-0005-000020", name: "Узел нижн. подкл. раздельный (Прямой)", price: 767, type: "straight", desc: "Раздельный монтаж.", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SVH-0006-000020", name: "Узел нижн. подкл. раздельный (Угловой)", price: 747, type: "angled", desc: "Раздельный монтаж.", availability: "in_stock", price_date: "2026-08-10" }
 ];
 
 // Переходник под плоское уплотнение — добавляется к rad_kits (SFT-0049-000002 не трогаем).
 const radKitsExtra = [
-    { id: "SFT-0049-000001", name: "Переходник под плоское уплотнение", price: 114, availability: "in_stock", price_date: "2026-07-29" }
+    { id: "SFT-0049-000001", name: "Переходник под плоское уплотнение", price: 114, availability: "in_stock", price_date: "2026-08-10" }
 ];
 
 // Аксессуары к радиаторам STOUT — монтажные комплекты, кронштейны, ниппель/прокладка, O-ring.
@@ -4758,14 +4758,14 @@ const radAccessories = [
     { id: "SKU-0111-000134", name: "Универсальный монтажный комплект для подключения радиатора 3/4\" RAL9016", price: 1709, brand: "STOUT", availability: "on_order", price_date: "2026-07-13" },
     // Монтажные наборы для подключения радиатора STOUT в цвет прибора (белый RAL9016 / графит / чёрный 9011),
     // 1/2" и 3/4". Цены РРЦ. Подбираются автоматически по цвету секционного/дизайн-радиатора (см. app.js, раздел 3.1).
-    { id: "SKU-0211-000112", name: "Монтажный набор для подключения радиатора 1/2\" RAL9016", price: 630, color: "white", size: "1/2", brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SKU-0211-000134", name: "Монтажный набор для подключения радиатора 3/4\" RAL9016", price: 720, color: "white", size: "3/4", brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SKU-0221-000112", name: "Монтажный набор для подключения радиатора 1/2\" (Графит)", price: 720, color: "graphite", size: "1/2", brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SKU-0221-000134", name: "Монтажный набор для подключения радиатора 3/4\" (Графит)", price: 810, color: "graphite", size: "3/4", brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SKU-0231-000112", name: "Монтажный набор для подключения радиатора 1/2\" (Чёрный 9011)", price: 720, color: "black", size: "1/2", brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SKU-0231-000134", name: "Монтажный набор для подключения радиатора 3/4\" (Чёрный 9011)", price: 810, color: "black", size: "3/4", brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SKU-0320-000080", name: "Комплект настенных регулируемых кронштейнов для радиаторов (2 шт.) RAL9016", price: 326, color: "white", brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
-    { id: "SKU-0320-000080-7024", name: "Комплект настенных регулируемых кронштейнов (2 шт.) Графит RAL7024", price: 541, color: "graphite", brand: "STOUT", availability: "in_stock", price_date: "2026-07-29" },
+    { id: "SKU-0211-000112", name: "Монтажный набор для подключения радиатора 1/2\" RAL9016", price: 630, color: "white", size: "1/2", brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SKU-0211-000134", name: "Монтажный набор для подключения радиатора 3/4\" RAL9016", price: 720, color: "white", size: "3/4", brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SKU-0221-000112", name: "Монтажный набор для подключения радиатора 1/2\" (Графит)", price: 720, color: "graphite", size: "1/2", brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SKU-0221-000134", name: "Монтажный набор для подключения радиатора 3/4\" (Графит)", price: 810, color: "graphite", size: "3/4", brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SKU-0231-000112", name: "Монтажный набор для подключения радиатора 1/2\" (Чёрный 9011)", price: 720, color: "black", size: "1/2", brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SKU-0231-000134", name: "Монтажный набор для подключения радиатора 3/4\" (Чёрный 9011)", price: 810, color: "black", size: "3/4", brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SKU-0320-000080", name: "Комплект настенных регулируемых кронштейнов для радиаторов (2 шт.) RAL9016", price: 326, color: "white", brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+    { id: "SKU-0320-000080-7024", name: "Комплект настенных регулируемых кронштейнов (2 шт.) Графит RAL7024", price: 541, color: "graphite", brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
     { id: "SKU-0320-000080-9005", name: "Комплект настенных регулируемых кронштейнов (2 шт.) черный RAL9005", price: 541, color: "black", brand: "STOUT", availability: "in_stock", price_date: "2026-07-01" },
     { id: "SKU-0310-000001", name: "Ниппель межсекционный 1\" (ALPHA, VEGA)", price: 4080, brand: "STOUT", availability: "in_stock", price_date: "2026-07-01" },
     { id: "SKU-0310-000002", name: "Прокладка межсекционная (ALPHA, VEGA)", price: 3376, brand: "STOUT", availability: "in_stock", price_date: "2026-07-01" },
