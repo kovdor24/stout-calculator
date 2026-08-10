@@ -818,6 +818,13 @@ const app = {
         }
     },
 
+    // Верхняя граница площади объекта, м². Ограничение сидело числом 300 в девяти
+    // местах (ползунок, добавление комнаты, добавление 2-го этажа, ввод площади
+    // комнаты, применение площадей по плану, ужимание комнат в syncRoomsToState),
+    // и поднять её означало найти их все. Теперь значение одно и здесь; максимум
+    // ползунка «Площадь объекта» в index.html выставляется из него в syncUI().
+    MAX_AREA: 360,
+
     _saveRateLimit: { count: 0, lastReset: 0 },
     _adminOffset: 0,
     _adminPageSize: 30,
@@ -825,7 +832,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false },
 
     lastSavedStateString: "",
 
@@ -1079,15 +1086,26 @@ const app = {
         this.updateDocumentTitle();
     },
 
+    // Блок скидки под таблицей один, а смет две. Какую он правит — решает
+    // открытая вкладка: «Оборудование» → eqDiscount, «Монтажные работы» →
+    // worksDiscount. Скидки независимы: на материалах монтажник уступает свою
+    // маржу поставщика, на работе — свою собственную, и это разные проценты.
+    discountFields: function () {
+        return (this.state.viewMode === 'works')
+            ? { val: 'worksDiscount', mode: 'worksDiscountMode' }
+            : { val: 'eqDiscount', mode: 'eqDiscountMode' };
+    },
+
     setEqDiscount: function (val) {
         if (!this.checkAccess('pro', window.event)) {
             this.render();
             return;
         }
+        const f = this.discountFields();
         let num = Math.abs(parseInt(val) || 0);
         if (num > 20) num = 20;
-        let sign = (this.state.eqDiscountMode === 'markup') ? -1 : 1;
-        this.state.eqDiscount = num * sign;
+        let sign = (this.state[f.mode] === 'markup') ? -1 : 1;
+        this.state[f.val] = num * sign;
         this.saveState();
         this.render();
     },
@@ -1099,9 +1117,10 @@ const app = {
             this.render();
             return;
         }
-        this.state.eqDiscountMode = mode;
-        let mag = Math.abs(this.state.eqDiscount || 0);
-        this.state.eqDiscount = mag * (mode === 'markup' ? -1 : 1);
+        const f = this.discountFields();
+        this.state[f.mode] = mode;
+        let mag = Math.abs(this.state[f.val] || 0);
+        this.state[f.val] = mag * (mode === 'markup' ? -1 : 1);
         this.saveState();
         this.render();
     },
@@ -16301,6 +16320,11 @@ const app = {
         if (!this.state.customWorks) this.state.customWorks = {};
         // Очищаем от пробелов и оставляем только цифры
         let num = parseInt(val.replace(/[^\d]/g, ''));
+        // В смете цена работы показана уже со скидкой (наценкой) — её монтажник
+        // и правит. В прайс-лист пишем цену ДО скидки, иначе процент лёг бы на
+        // уже уценённую цифру и она уезжала бы вниз с каждой правкой.
+        const _wd = this.state.worksDiscount || 0;
+        if (!isNaN(num) && _wd) num = Math.round(num / (1 - _wd / 100));
         if (!isNaN(num)) {
             this.state.customWorks[name] = num;
         } else {
@@ -20257,7 +20281,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType,
@@ -21329,24 +21353,45 @@ const app = {
         let matVal = (this.state.mat !== undefined) ? this.state.mat : 1.0;
         return Math.round((this.state.area || 0) * matVal * regVal / 100);
     },
-    isUfhMixTypeCompatible: function (type, area, brand) {
-        let flow = (area * 0.08) / (1.163 * 5);
+    // Проходит ли узел подмеса тёплого пола по площади и расходу.
+    //
+    // Площадей здесь две, и путать их нельзя. Локальный узел ('std') ставится в
+    // смету ОДИН на весь тёплый пол — ему на вход идёт полная площадь. Узлы в
+    // коллекторе (dn20/dn25/dn32) ставятся по одному на каждый коллектор ТП, и
+    // каждый тянет только свои петли — им на вход идёт площадь одного коллектора
+    // (areaPerNode), а не всего дома.
+    //
+    // Раньше во все ветки шла полная площадь. На доме с двумя-тремя коллекторами
+    // (это уже 250+ м² тёплого пола) не проходил ни один тип — потолок самого
+    // старшего 210 м², — и подбор сваливался в фолбэк dn25_servo: группа под
+    // сервопривод плюс сам сервопривод на каждый коллектор, дороже обычного
+    // смесительного узла примерно на 9,4 тыс. ₽ за коллектор. Причём выбирался
+    // узел с МЕНЬШИМ паспортным пределом (153 м² против 200 у dn25), то есть
+    // ошибка была ещё и не в запас.
+    //
+    // areaPerNode необязателен: без него ведём себя как раньше и считаем, что
+    // коллектор один. Так вызовы, которым число коллекторов неоткуда взять,
+    // остаются рабочими.
+    isUfhMixTypeCompatible: function (type, area, brand, areaPerNode) {
         if (type === 'std') {
+            let flowTotal = (area * 0.08) / (1.163 * 5);
             let limitArea = (brand === 'rommer') ? 100 : 120;
             let limitFlow = (brand === 'rommer') ? 1.0 : 1.2;
-            return area <= limitArea && flow <= limitFlow;
+            return area <= limitArea && flowTotal <= limitFlow;
         }
+        let a = (areaPerNode > 0) ? areaPerNode : area;
+        let flow = (a * 0.08) / (1.163 * 5);
         if (brand === 'rommer') {
-            if (type === 'dn20') return area <= 120 && flow <= 1.6;
-            if (type === 'dn20_servo') return area <= 150 && flow <= 1.6;
-            if (type === 'dn25') return area <= 150 && flow <= 1.6;
-            if (type === 'dn25_servo') return area <= 116;
+            if (type === 'dn20') return a <= 120 && flow <= 1.6;
+            if (type === 'dn20_servo') return a <= 150 && flow <= 1.6;
+            if (type === 'dn25') return a <= 150 && flow <= 1.6;
+            if (type === 'dn25_servo') return a <= 116;
         } else { // stout
-            if (type === 'dn20') return area <= 120 && flow <= 0.9;
-            if (type === 'dn20_servo') return area <= 150 && flow <= 0.9;
-            if (type === 'dn25') return area <= 200 && flow <= 2.1;
-            if (type === 'dn25_servo') return area <= 153;
-            if (type === 'dn32_servo') return area <= 210;
+            if (type === 'dn20') return a <= 120 && flow <= 0.9;
+            if (type === 'dn20_servo') return a <= 150 && flow <= 0.9;
+            if (type === 'dn25') return a <= 200 && flow <= 2.1;
+            if (type === 'dn25_servo') return a <= 153;
+            if (type === 'dn32_servo') return a <= 210;
         }
         return false;
     },
@@ -21440,7 +21485,7 @@ const app = {
                 let currIdx = cycle.indexOf(nextType);
                 nextType = cycle[(currIdx + 1) % cycle.length];
 
-                if (this.isUfhMixTypeCompatible(nextType, tpArea, brand)) {
+                if (this.isUfhMixTypeCompatible(nextType, tpArea, brand, this.tpAreaPerMan || tpArea)) {
                     this.state.ufhMixType = nextType;
                     break;
                 }
@@ -23636,7 +23681,7 @@ const app = {
                     // Ручной выбор DN/типа клапана через фильтры модалки отменяет автоподбор по мощности/площади
                     let _manualUfhOverride = (this.state.ufhMixDnFilter && this.state.ufhMixDnFilter !== 'all') || (this.state.ufhMixKindFilter && this.state.ufhMixKindFilter !== 'all');
 
-                    if (!_manualUfhOverride && !this.isUfhMixTypeCompatible(altType, this.tpArea || 0, this.state.brandMode)) {
+                    if (!_manualUfhOverride && !this.isUfhMixTypeCompatible(altType, this.tpArea || 0, this.state.brandMode, this.tpAreaPerMan || this.tpArea || 0)) {
                         return;
                     }
 
@@ -25255,13 +25300,13 @@ const app = {
         if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
             // Сначала проверим суммарную площадь комнат
             let totalRoomArea = this.state.rooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
-            if (totalRoomArea > 300) {
-                let scale = 300 / totalRoomArea;
+            if (totalRoomArea > this.MAX_AREA) {
+                let scale = this.MAX_AREA / totalRoomArea;
                 let runningSum = 0;
                 this.state.rooms.forEach((r, idx) => {
                     let a = parseFloat(r.area) || 0;
                     if (idx === this.state.rooms.length - 1) {
-                        r.area = Math.max(1, Math.round((300 - runningSum) * 10) / 10);
+                        r.area = Math.max(1, Math.round((this.MAX_AREA - runningSum) * 10) / 10);
                     } else {
                         r.area = Math.max(1, Math.round(a * scale * 10) / 10);
                         runningSum += r.area;
@@ -25998,8 +26043,8 @@ const app = {
     addRoom: function () {
         if (!this.state.rooms) this.state.rooms = [];
         let currentTotal = this.state.rooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
-        if (currentTotal + 15 > 300) {
-            alert("Невозможно добавить комнату, так как общая площадь дома превысит 300 м².");
+        if (currentTotal + 15 > this.MAX_AREA) {
+            alert("Невозможно добавить комнату, так как общая площадь дома превысит " + this.MAX_AREA + " м².");
             return;
         }
         let f = 1;
@@ -26015,8 +26060,8 @@ const app = {
         const firstFloorRooms = this.state.rooms.filter(r => r.floor === 1 || !r.floor);
         let totalFloor1 = firstFloorRooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
 
-        if (totalFloor1 >= 300) {
-            alert("Невозможно добавить 2-й этаж, так как площадь 1-го этажа уже равна или превышает 300 м².");
+        if (totalFloor1 >= this.MAX_AREA) {
+            alert("Невозможно добавить 2-й этаж, так как площадь 1-го этажа уже равна или превышает " + this.MAX_AREA + " м².");
             return;
         }
 
@@ -26025,9 +26070,9 @@ const app = {
 
         if (firstFloorRooms.length > 0) {
             let baseId = Date.now();
-            let allowedFloor2 = 300 - totalFloor1;
+            let allowedFloor2 = this.MAX_AREA - totalFloor1;
             let scaleFactor = allowedFloor2 / totalFloor1;
-            let shouldScale = (totalFloor1 * 2 > 300);
+            let shouldScale = (totalFloor1 * 2 > this.MAX_AREA);
             let addedFloor2Rooms = [];
 
             firstFloorRooms.forEach((r, idx) => {
@@ -26047,8 +26092,8 @@ const app = {
 
             if (shouldScale && addedFloor2Rooms.length > 0) {
                 let totalNewSum = totalFloor1 + addedFloor2Rooms.reduce((sum, r) => sum + r.area, 0);
-                if (totalNewSum !== 300) {
-                    let diff = 300 - totalNewSum;
+                if (totalNewSum !== this.MAX_AREA) {
+                    let diff = this.MAX_AREA - totalNewSum;
                     addedFloor2Rooms[addedFloor2Rooms.length - 1].area = Math.max(1, Math.round((addedFloor2Rooms[addedFloor2Rooms.length - 1].area + diff) * 10) / 10);
                 }
             }
@@ -26150,10 +26195,10 @@ const app = {
                 let num = parseFloat(val);
                 if (isNaN(num) || num < 1) num = 1;
                 let otherTotal = this.state.rooms.filter(x => x.id !== id).reduce((sum, x) => sum + (parseFloat(x.area) || 0), 0);
-                if (otherTotal + num > 300) {
-                    num = 300 - otherTotal;
+                if (otherTotal + num > this.MAX_AREA) {
+                    num = this.MAX_AREA - otherTotal;
                     if (num < 1) num = 1;
-                    alert("Максимальная площадь дома не может превышать 300 м².");
+                    alert("Максимальная площадь дома не может превышать " + this.MAX_AREA + " м².");
                 }
                 r.area = num;
             } else {
@@ -26289,7 +26334,7 @@ const app = {
                 let v = parseFloat(chk.getAttribute('data-area'));
                 if (v > 0) picked.push({ id: +chk.getAttribute('data-room-id'), area: v });
             });
-            // Расчёт рассчитан максимум на 300 м², и syncRoomsToState ужимает при
+            // Расчёт рассчитан максимум на MAX_AREA м², и syncRoomsToState ужимает при
             // переборе ВСЕ комнаты пропорционально — тогда применённые площади
             // разошлись бы с планом, поехали бы даже неотмеченные комнаты. Не применяем.
             let total = 0;
@@ -26297,9 +26342,9 @@ const app = {
                 let p = picked.find(x => x.id === r.id);
                 total += p ? p.area : (parseFloat(r.area) || 0);
             });
-            if (total > 300) {
+            if (total > this.MAX_AREA) {
                 this.alert('С площадями по плану сумма по дому выходит ' + fmt(total) +
-                    ' м², а расчёт рассчитан максимум на 300 м². Снимите часть галочек или уменьшите площади вручную.', 'Площади по плану');
+                    ' м², а расчёт рассчитан максимум на ' + this.MAX_AREA + ' м². Снимите часть галочек или уменьшите площади вручную.', 'Площади по плану');
                 return;
             }
             let n = 0;
@@ -26681,9 +26726,9 @@ const app = {
             let otherRooms = this.state.rooms.filter(x => x.id !== roomId);
             let otherTotal = otherRooms.reduce((sum, x) => sum + (parseFloat(x.area) || 0), 0);
 
-            if (otherTotal + num > 300) {
+            if (otherTotal + num > this.MAX_AREA) {
                 // Автоматически уменьшаем другие комнаты пропорционально
-                let available = 300 - num;
+                let available = this.MAX_AREA - num;
                 if (available < otherRooms.length) available = otherRooms.length; // мин 1м² на комнату
                 if (otherTotal > 0) {
                     let scale = available / otherTotal;
@@ -27689,6 +27734,7 @@ const app = {
         this.state.waterZones = this.state.waterZones || [];
         this.state.wallLayers = this.state.wallLayers || [];
 
+        document.getElementById('inp_area').max = this.MAX_AREA;
         document.getElementById('inp_area').value = this.state.area; document.getElementById('val_area').innerText = this.state.area;
         this.renderPlanAreaNote();
         if (document.getElementById('blk_h2_wrapper')) document.getElementById('blk_h2_wrapper').style.display = (this.state.floors === 2) ? 'flex' : 'none';
@@ -28558,7 +28604,7 @@ const app = {
     setArea: function (v) {
         v = parseInt(v);
         if (isNaN(v) || v < 50) v = 50;
-        if (v > 300) v = 300; // Жесткий лимит площади
+        if (v > this.MAX_AREA) v = this.MAX_AREA; // Жесткий лимит площади
         this.state.area = v;
         if (this.state.tp1 > v) this.state.tp1 = v;
         if (this.state.tp1 + this.state.tp2 > v) this.state.tp2 = v - this.state.tp1;
@@ -28596,8 +28642,8 @@ const app = {
             if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
                 const firstFloorRooms = this.state.rooms.filter(r => r.floor === 1 || !r.floor);
                 let totalFloor1 = firstFloorRooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
-                if (totalFloor1 >= 300) {
-                    alert("Невозможно переключить на 2 этажа, так как площадь 1-го этажа уже равна или превышает 300 м².");
+                if (totalFloor1 >= this.MAX_AREA) {
+                    alert("Невозможно переключить на 2 этажа, так как площадь 1-го этажа уже равна или превышает " + this.MAX_AREA + " м².");
                     if (document.getElementById('chk_floors')) document.getElementById('chk_floors').checked = false;
                     return;
                 }
@@ -28615,9 +28661,9 @@ const app = {
                     let totalFloor1 = firstFloorRooms.reduce((sum, r) => sum + (parseFloat(r.area) || 0), 0);
                     let baseId = Date.now();
 
-                    let allowedFloor2 = 300 - totalFloor1;
+                    let allowedFloor2 = this.MAX_AREA - totalFloor1;
                     let scaleFactor = allowedFloor2 / totalFloor1;
-                    let shouldScale = (totalFloor1 * 2 > 300);
+                    let shouldScale = (totalFloor1 * 2 > this.MAX_AREA);
                     let addedFloor2Rooms = [];
 
                     firstFloorRooms.forEach((r, idx) => {
@@ -28637,8 +28683,8 @@ const app = {
 
                     if (shouldScale && addedFloor2Rooms.length > 0) {
                         let totalNewSum = totalFloor1 + addedFloor2Rooms.reduce((sum, r) => sum + r.area, 0);
-                        if (totalNewSum !== 300) {
-                            let diff = 300 - totalNewSum;
+                        if (totalNewSum !== this.MAX_AREA) {
+                            let diff = this.MAX_AREA - totalNewSum;
                             addedFloor2Rooms[addedFloor2Rooms.length - 1].area = Math.max(1, Math.round((addedFloor2Rooms[addedFloor2Rooms.length - 1].area + diff) * 10) / 10);
                         }
                     }
@@ -30255,6 +30301,22 @@ const app = {
                     ? `• Суммарная мощность каскада: ${totalPwrLimit} кВт.<br>`
                     : '';
 
+                // Каскад из трёх и более настенников подбор строит арифметикой
+                // ⌈Q/24⌉, а обвязка вокруг него — нет: коллектор котельной считает
+                // контуры по насосным группам и про число котловых вводов не знает,
+                // дымоход и газовая подводка считаются на один котёл. На объекте
+                // такой мощности обычно ставят один напольный котёл, но в подборе
+                // их нет — поэтому решение остаётся за монтажником, а смета обязана
+                // сказать, чего в ней не хватает, а не молча выдать три котла.
+                let cascadeWarn = qty > 2
+                    ? `<br><b style="color:#F59E0B;">⚠️ Каскад из ${qty} настенных котлов.</b> ` +
+                      `На объект такой мощности (${targetPwr.toFixed(1)} кВт) обычно ставят один напольный котёл — ` +
+                      `в подборе напольных котлов нет, проверьте вариант вручную. ` +
+                      `Если оставляете каскад: нужны каскадный контроллер, ${qty} ${this.plural(qty, 'газовая подводка', 'газовые подводки', 'газовых подводок')} и ` +
+                      `${qty} ${this.plural(qty, 'дымоход', 'дымохода', 'дымоходов')} (либо общая дымовая система), а коллектор котельной в смете подобран ` +
+                      `по числу насосных групп и один котловой ввод — под ${qty} котлов его надо пересмотреть.<br>`
+                    : '';
+
                 return `<span style="${styles}"><span style="${head}">Газовый котёл Haier</span>` +
                     `<b>Зачем:</b> Основной энергоэффективный источник тепла для системы отопления и горячего водоснабжения. ${gvsText}<br><br>` +
                     `<b>Формула подбора:</b> ${formulaStr}<br><br>` +
@@ -30264,6 +30326,7 @@ const app = {
                     `• Мощность подобранного котла: ${singlePower} кВт (${bkText}).<br>` +
                     `${gvsValLine}` +
                     sumPwrLine +
+                    cascadeWarn +
                     `</span>`;
             }
             case 'boiler_el': {
@@ -30727,6 +30790,7 @@ const app = {
         app.lastEqSum = 0;
         app.lastWorksSum = 0;
         app.originalEqSum = 0;
+        app.originalWorksSum = 0;
         this.currentEquipmentList = [];
         this.currentWorksList = [];
         app.tempWarns = []; // Массив для сбора предупреждений о дефиците мощности
@@ -31153,13 +31217,20 @@ const app = {
             // Проверяем, есть ли ручная цена
             let price = (this.state.customWorks && this.state.customWorks[name] !== undefined) ? this.state.customWorks[name] : this.wp(name, basePrice);
             price = Math.round(price || 0);
+            // Цена до скидки нужна строкой «Рекомендованная цена» и остаётся тем,
+            // что монтажник правит в поле цены работы: скидка накладывается сверху,
+            // а не запекается в его прайс-лист.
+            let listPrice = price;
+            if (this.state.worksDiscount) {
+                price = Math.round(listPrice * (1 - this.state.worksDiscount / 100));
+            }
 
             let existing = worksBill.find(x => x.name === name && x.group === group);
             if (existing) {
                 existing.q += qty;
                 existing.sum = Math.round(existing.sum + price * qty);
             } else {
-                worksBill.push({ name: name, q: qty, price: price, sum: Math.round(price * qty), unit: unit, group: group });
+                worksBill.push({ name: name, q: qty, price: price, listPrice: listPrice, sum: Math.round(price * qty), unit: unit, group: group });
             }
         };
 
@@ -31618,7 +31689,10 @@ const app = {
             });
 
             // Считаем сумму работ всегда
-            activeWorksBill.forEach(w => { app.lastWorksSum += w.sum; });
+            activeWorksBill.forEach(w => {
+                app.lastWorksSum += w.sum;
+                app.originalWorksSum = (app.originalWorksSum || 0) + Math.round((w.listPrice !== undefined ? w.listPrice : w.price) * w.q);
+            });
 
             if (this.state.viewMode !== 'works') return; // Рендерим HTML только если выбраны работы
 
@@ -32254,11 +32328,26 @@ const app = {
         const tpF2 = tpFloorCalc(this.state.floors === 2 ? this.state.tp2 : 0, stepVal2, 1);
         this._ufhFloorCalc = [tpF1, tpF2];   // для расшифровки строки трубы (getDesc)
         let estMans = 0;
+        // Площадь, которую тянет ОДИН узел подмеса — по ней подбирается его
+        // типоразмер (см. isUfhMixTypeCompatible). Делить общую площадь на число
+        // коллекторов нельзя: при 200 м² на первом этаже (2 коллектора) и 50 м²
+        // на втором (1 коллектор) среднее даёт 83 м², а самый нагруженный узел
+        // держит 100. Поэтому считаем поэтажно и берём худший этаж — узлы в
+        // смете одинаковые, значит подбирать их надо по тяжёлому.
+        let tpAreaPerMan = 0;
         if (hasTp && tpArea > 0) {
             tpMeters = Math.ceil(tpF1.m + tpF2.m);
-            if (tpF1.loops > 0) estMans += Math.ceil(tpF1.loops / 12);
-            if (tpF2.loops > 0) estMans += Math.ceil(tpF2.loops / 12);
+            const mans1 = tpF1.loops > 0 ? Math.ceil(tpF1.loops / 12) : 0;
+            const mans2 = tpF2.loops > 0 ? Math.ceil(tpF2.loops / 12) : 0;
+            estMans = mans1 + mans2;
+            const _tpA1 = parseFloat(this.state.tp1) || 0;
+            const _tpA2 = (this.state.floors === 2) ? (parseFloat(this.state.tp2) || 0) : 0;
+            tpAreaPerMan = Math.max(mans1 > 0 ? _tpA1 / mans1 : 0, mans2 > 0 ? _tpA2 / mans2 : 0);
+            if (!(tpAreaPerMan > 0)) tpAreaPerMan = tpArea;
         }
+        // Таблице замены и кнопке «Аналог» число коллекторов взять неоткуда —
+        // они работают вне render(), поэтому кладём результат в объект.
+        this.tpAreaPerMan = tpAreaPerMan;
 
         // Автоматически корректируем тип смесительного узла при изменении площади или несовместимости
         if (hasTp && tpArea > 0) {
@@ -32278,7 +32367,7 @@ const app = {
                 }
             }
 
-            let isCompatible = this.isUfhMixTypeCompatible(this.state.ufhMixType, tpArea, brand);
+            let isCompatible = this.isUfhMixTypeCompatible(this.state.ufhMixType, tpArea, brand, tpAreaPerMan);
             let areaChanged = (this.lastTpArea !== undefined && this.lastTpArea !== tpArea);
 
             if (areaChanged || !isCompatible) {
@@ -32297,7 +32386,7 @@ const app = {
 
                 let chosen = null;
                 for (let type of candidates) {
-                    if (this.isUfhMixTypeCompatible(type, tpArea, brand)) {
+                    if (this.isUfhMixTypeCompatible(type, tpArea, brand, tpAreaPerMan)) {
                         chosen = type;
                         break;
                     }
@@ -32361,7 +32450,7 @@ const app = {
             let _radNeedsDn25 = (_brand === 'rommer') || (this.state.manualDnOverride ? (this.state.manualDnOverride !== 'dn20') : ((pwr > 10) || _useAnalogSec2));
             let _candidates = _radNeedsDn25 ? ['dn25', 'dn25_servo'] : ['dn20', 'dn20_servo', 'dn25', 'dn25_servo'];
             for (let _type of _candidates) {
-                if (this.isUfhMixTypeCompatible(_type, tpArea, _brand)) {
+                if (this.isUfhMixTypeCompatible(_type, tpArea, _brand, tpAreaPerMan)) {
                     this.state.ufhMixType = _type;
                     tQ = (estMans > 0 ? estMans : 1);
                     needCollector = (rQ + tQ) >= 1 || tankNeedsPumpGroup;
@@ -34418,6 +34507,7 @@ const app = {
             if ((this.state.snowCtrl || 'sensor') === 'sensor') {
                 const _far = sc.rows.reduce((m, r) => Math.max(m, r.dist || 0), 0);
                 const _cableM = Math.ceil(_far + 10);
+                const _cold = sc.Tn < -20;   // ниже паспортного предела датчика
                 (catalog.snow_auto || []).forEach(item => {
                     if (item.unit === 'м') {
                         addToBill(item, _cableM,
@@ -34426,15 +34516,41 @@ const app = {
                             `<b>Подставленные значения:</b> ${_far} + 10 = ${_cableM} м.<br>` +
                             `<b>Цена:</b> ориентировочная — кабель в прайсе не числится, уточняйте у поставщика.` +
                             `</span>`, grpSnowAuto);
+                    } else if (item.id === 'SNOW-TIMER-RELAY') {
+                        addToBill(item, 1,
+                            `<span style="font-size:11px;line-height:1.5;">` +
+                            `<b>Зачем:</b> Решает сразу две задачи, которых контроллер сам не закрывает.<br>` +
+                            `<b>1. Инверсия сигнала.</b> По техдокументации Thermatic 3001 (п. 7.9) контур запрашивает тепло, когда клеммы «Входа термостата» <b>разомкнуты</b>. У датчика осадков выход нормально разомкнутый: в покое разомкнут, при осадках замыкается. Напрямую вышло бы наоборот — без снега грели бы, а в снегопад выключались. Переключающий контакт реле разворачивает логику.<br>` +
+                            `<b>2. Постпрогрев.</b> Штатный «Выбег ЦН» у контроллера ограничен 120 секундами, а площадку после снегопада надо досушивать часами — иначе талая вода замерзает коркой. Задержка отключения реле держит контур нужное время, рекомендуется 2–8 часов.<br>` +
+                            `<b>Где стоит:</b> в щите автоматики на DIN-рейке, между датчиком и «Входом термостата».<br>` +
+                            `<b>Цена:</b> ориентировочная — позиция вне прайса, уточняйте у поставщика.` +
+                            `</span>`, grpSnowAuto);
                     } else {
                         addToBill(item, 1,
                             `<span style="font-size:11px;line-height:1.5;">` +
-                            `<b>Зачем:</b> Даёт команду «идёт снег и холодно». По одной уличной температуре снеготаяние либо греет всю зиму впустую, либо не успевает к снегопаду.<br>` +
-                            `<b>Как подключается:</b> сухим контактом на «Вход термостата» контроллера — контур переходит в режим «Термостат» и греет, пока контакт разомкнут.<br>` +
-                            `<b>Бренд:</b> ни у STOUT, ни у ROMMER такого датчика нет. Позиция и цена ориентировочные, подбирается у стороннего поставщика.` +
+                            `<b>Зачем:</b> Даёт команду «идёт снег». По одной уличной температуре снеготаяние либо греет всю зиму впустую, либо не успевает к снегопаду.<br>` +
+                            `<b>Как подключается:</b> встроенное реле (сухой контакт, 1 А) через реле времени на «Вход термостата» контроллера. Напрямую нельзя: у датчика контакт нормально разомкнутый, а контур запрашивает тепло при разомкнутых клеммах — логика бы перевернулась. Отдельный блок управления не нужен, реле в самом датчике.<br>` +
+                            `<b>Питание:</b> 10–30 В постоянного тока, 2,5 Вт: 0,5 Вт сам датчик плюс 2 Вт подогрев контактной площадки — он топит на ней снег, иначе детектор залепляет.<br>` +
+                            `<b>Монтаж:</b> под уклоном 10–20°, чтобы с площадки стекали вода и мусор. Заводской хвост около метра — стык с кабелем в распаячной коробке рядом.<br>` +
+                            `<b>Уличную температуру датчик не мерит,</b> и в автономной схеме к нему нужен переключатель «зима/лето». У нас он не нужен: уличный NTC входит в комплект контроллера, и порог по температуре контроллер держит сам.<br>` +
+                            (_cold ? `⚠️ <b>Расчётная зима ${sc.Tn} °C, а нижний предел датчика −20 °C.</b> Снегопады идут в основном при −5…−15, и там он работает, но в сильный мороз показания недостоверны — проверьте по месту.<br>` : ``) +
+                            `<b>RS-485 у датчика — Modbus RTU,</b> к шине контроллера отношения не имеет: интерфейс нужен только для диагностики и настройки с ноутбука.` +
                             `</span>`, grpSnowAuto);
                     }
                 });
+                // Блок питания 12 В на DIN-рейку — тот же, что у блока расширения
+                // EX-77. Датчик питается низковольткой, напрямую от 230 В его не
+                // включить, а отдельная позиция в разделе автоматики котельной
+                // (если там стоит EX-77) обслуживает свой прибор и делиться не может.
+                const _psu = (catalog.boiler_automation || []).find(x => x.id === 'ML13968');
+                if (_psu) {
+                    addToBill({ ..._psu, originalId: 'snow_psu' }, 1,
+                        `<span style="font-size:11px;line-height:1.5;">` +
+                        `<b>Зачем:</b> Датчику осадков нужно 10–30 В постоянного тока, от сети 230 В он не работает.<br>` +
+                        `<b>Запас:</b> 12 Вт блока против 2,5 Вт потребления — пятикратный.<br>` +
+                        `<b>Где стоит:</b> в щите автоматики на DIN-рейке, рядом с контроллером. К датчику от него идёт низковольтная линия.` +
+                        `</span>`, grpSnowAuto);
+                }
             }
 
             // — Работы.
@@ -35931,6 +36047,7 @@ const app = {
             app.lastEqSum = 0;
             app.lastWorksSum = 0;
             app.originalEqSum = 0;
+            app.originalWorksSum = 0;
         }
 
         document.getElementById('tbody').innerHTML = h;
@@ -35947,11 +36064,14 @@ const app = {
         // и цены-то размыты, скидка от них ничего не значит.
         let discountBlock = document.getElementById('discount_block');
         if (discountBlock) {
-            if (this.state.tgUser && this.state.viewMode === 'equipment') {
+            // Тот же блок работает на вкладке «Монтажные работы» — со своим
+            // процентом и своей суммой до скидки (см. discountFields).
+            const _onWorks = this.state.viewMode === 'works';
+            if (this.state.tgUser && (this.state.viewMode === 'equipment' || _onWorks)) {
                 discountBlock.style.display = 'flex';
-                document.getElementById('rec_price_val').innerHTML = app.formatPriceHtml(app.originalEqSum || 0, true);
-                let curDiscount = this.state.eqDiscount || 0;
-                let curMode = curDiscount < 0 ? 'markup' : (this.state.eqDiscountMode || 'discount');
+                document.getElementById('rec_price_val').innerHTML = app.formatPriceHtml((_onWorks ? app.originalWorksSum : app.originalEqSum) || 0, true);
+                let curDiscount = (_onWorks ? this.state.worksDiscount : this.state.eqDiscount) || 0;
+                let curMode = curDiscount < 0 ? 'markup' : ((_onWorks ? this.state.worksDiscountMode : this.state.eqDiscountMode) || 'discount');
                 document.getElementById('eq_discount_slider').value = Math.abs(curDiscount);
                 document.getElementById('eq_discount_val').innerText = Math.abs(curDiscount);
                 let modeDiscountBtn = document.getElementById('eq_discount_mode_discount');
@@ -36167,7 +36287,7 @@ const app = {
             const firstRow = hdrRow.closest('table').querySelector('tr');
             const cols = (firstRow && firstRow.cells.length) || (hdrRow.cells.length) || 8;
             hdrRow.insertAdjacentHTML('beforebegin',
-                `<tr id="${rowId}"><td colspan="${cols}">${html}</td></tr>`);
+                `<tr id="${rowId}" class="scheme-row"><td colspan="${cols}">${html}</td></tr>`);
         });
         this.saveState();
 

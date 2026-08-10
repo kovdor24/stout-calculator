@@ -4437,7 +4437,9 @@ body.dark-mode .header-totals-block {
     }
 
     /* Redefine Table for iPhone 15 widths (Pyaterochka / Perekrestok Flat UI) */
-    .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.empty-state-row):not(.hide-custom-work-btn):not(.hide-custom-eq-btn) {
+    /* .scheme-row — строка со схемой узла, а не карточка товара: колонок
+       «фото/название/цена» у неё нет, и сетка зажимала лист в первую колонку. */
+    .inv-table tr:not(.row-sec):not(.group-header):not(.row-subtotal):not(.empty-state-row):not(.hide-custom-work-btn):not(.hide-custom-eq-btn):not(.scheme-row) {
         display: grid !important;
         grid-template-columns: 64px 1fr auto !important;
         grid-template-rows: auto auto !important;
@@ -8109,6 +8111,20 @@ body.dark-mode .to-top-btn:hover {
 }
 @media print {
     .scheme-svg-wrap, .automation-scheme { max-width: none; }
+}
+/* На телефоне выравнивать схемы по высоте нечем: экран и так узкий, и
+   вытянутый лист получал ширину вдвое меньше принципиальной схемы —
+   читать нечего. Предел по ширине снимаем, все схемы идут во всю ширину. */
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait), screen and (orientation: landscape) and (max-height: 500px) {
+    .scheme-svg-wrap, .automation-scheme { max-width: none; }
+    /* Схемы автоматики, ТП и снеготаяния вставляются строкой таблицы над своим
+       разделом. Мобильная карточка товара раскладывает любую строку в сетку
+       «картинка | название | количество», и лист попадал в первую, узкую
+       колонку — та самая марка в 90 px. Строке со схемой сетка не нужна. */
+    .inv-table tr.scheme-row { display: block !important; }
+    .inv-table tr.scheme-row > td {
+        display: block !important; width: 100% !important; padding: 0 !important;
+    }
 }
 
 /* === СХЕМА ПОДКЛЮЧЕНИЯ АВТОМАТИКИ (над разделом 2.8.1 в смете) === */

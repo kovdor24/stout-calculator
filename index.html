@@ -49,10 +49,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.13">
+    <link rel="stylesheet" href="style.css?v=3.15">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.51" defer></script>
+    <script src="catalog.js?v=2.52" defer></script>
     <!-- Координаты и регионы населённых пунктов: карта проектов в админке и
          адрес объекта. Данные вшиты в файл, наружу никаких запросов. -->
     <script src="cities_geo.js?v=1.0" defer></script>
@@ -60,7 +60,7 @@
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.1" defer></script>
     <script src="gamification.js?v=2.1" defer></script>
-    <script src="app.js?v=4.90" defer></script>
+    <script src="app.js?v=4.92" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
          векторный композитор, что рисует лист схемы в проекте, поэтому нужен
          и движок листов (рамка/штамп из него не берутся, только текст). -->
@@ -209,7 +209,7 @@
                             id="val_area" class="editable-val" contenteditable="true"
                             onblur="app.setArea(this.innerText)"
                             onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">150</span>
-                        м²</span></div><input type="range" id="inp_area" min="50" max="300" step="10" value="150"
+                        м²</span></div><input type="range" id="inp_area" min="50" max="360" step="10" value="150"
                     oninput="app.setArea(this.value)">
                 <!-- Площадь по зонам планов этажей: заполняет app.renderPlanAreaNote(), без зон скрыта -->
                 <div id="plan_area_note" style="display:none; margin-top: 4px; font-size: 11px; line-height: 1.4; color: var(--text-sec);"></div>
