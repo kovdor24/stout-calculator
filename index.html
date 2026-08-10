@@ -49,10 +49,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.11">
+    <link rel="stylesheet" href="style.css?v=3.13">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.50" defer></script>
+    <script src="catalog.js?v=2.51" defer></script>
     <!-- Координаты и регионы населённых пунктов: карта проектов в админке и
          адрес объекта. Данные вшиты в файл, наружу никаких запросов. -->
     <script src="cities_geo.js?v=1.0" defer></script>
@@ -60,12 +60,12 @@
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.1" defer></script>
     <script src="gamification.js?v=2.1" defer></script>
-    <script src="app.js?v=4.87" defer></script>
+    <script src="app.js?v=4.90" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
          векторный композитор, что рисует лист схемы в проекте, поэтому нужен
          и движок листов (рамка/штамп из него не берутся, только текст). -->
-    <script src="project_sheets.js?v=4.14" defer></script>
-    <script src="project_scheme.js?v=4.39" defer></script>
+    <script src="project_sheets.js?v=4.15" defer></script>
+    <script src="project_scheme.js?v=4.41" defer></script>
     <!-- Укладка тёплого пола по планам этажей. В калькуляторе нужна не ради
          листов, а ради сметы: длину трубы и число выходов коллектора берём
          из нарисованных петель (projectPlans.floorLoops). -->
@@ -691,6 +691,67 @@
                             <div class="tab ufh-tab" data-type="electro" onclick="app.setUfhCtrl('electro')">Электронный
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Снеготаяние: уличный контур на гликоле, развязанный с домом насосной
+                 группой с пластинчатым теплообменником. Виден только в подробном
+                 режиме — расчёт опирается на расчётную зимнюю температуру города,
+                 а город выбирается только там (app.syncUI). -->
+            <div class="control-item toggle-item" id="blk_snow_header" style="display:none;">
+                <div class="label-row"><span class="lbl">Снеготаяние</span><label class="switch"><input
+                            type="checkbox" id="chk_snow" onchange="app.toggleSnowMelt(this.checked, event)"><span
+                            class="slider"></span></label></div>
+                <div id="blk_snow_opts"
+                    style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">
+                    <div id="snow_zones_list"></div>
+                    <div style="border-top:1px solid #E5E7EB; padding-top:8px;">
+                        <button
+                            style="margin: 0 auto; display: block; width: fit-content; padding: 5px 16px; font-size: 11px; font-weight: 700; background: var(--primary-light); border: 1px dashed var(--primary); color: var(--primary); border-radius: 20px; cursor: pointer; transition: 0.2s;"
+                            onclick="app.addSnowZone()"
+                            onmouseover="this.style.background='var(--primary)'; this.style.color='#fff';"
+                            onmouseout="this.style.background='var(--primary-light)'; this.style.color='var(--primary)';">+
+                            Добавить участок</button>
+                    </div>
+                    <div id="snow_summary"
+                        style="display:none; border-top:1px solid #E5E7EB; padding-top:4px; font-size:11px; line-height:1.5; color:var(--text-sec);">
+                    </div>
+                    <!-- position:relative обязателен: .tip-panel-wrap снимает позиционирование
+                         с самой обёртки подсказки, чтобы та привязалась к строке и не уезжала
+                         за левый край узкой панели. Без него точкой отсчёта становится
+                         случайный предок, и подсказка не появляется вовсе. -->
+                    <div style="border-top:1px solid #E5E7EB; padding-top:8px; position:relative;">
+                        <span class="lbl"
+                            style="font-size:12px; display:flex; align-items:center; gap:4px; margin-bottom:6px;">Управление<span
+                                class="tooltip-wrapper tip-panel-wrap"><i class="info-icon" tabindex="0"
+                                    role="button" aria-label="Подробнее">i</i>
+                                <div class="tooltip-content tip-panel"><b>Датчик осадков.</b> В смету добавляются
+                                    грунтовый датчик снега и влаги с блоком управления и кабель к нему. Контроллер
+                                    получает от датчика сухой контакт и включает контур сам, как только пошёл снег
+                                    и на улице холодно, а после — держит выбег, пока площадка не просохнет.<br><br>
+                                    <b>Ручной.</b> Датчика и кабеля в смете нет, узел дешевле. Включать приходится
+                                    самому — из приложения контроллера или выключателем.<br><br>
+                                    <b>На что влияет ещё.</b> В обоих режимах контур ведёт контроллер и всю зиму
+                                    держит дежурные +5…+8 °C: остывшую уличную стяжку разогреть с нуля — это часы,
+                                    а не минуты. Разница только в том, кто даёт команду выйти на рабочий режим.
+                                </div>
+                            </span></span>
+                        <div class="tabs" id="snow_ctrl_tabs" style="font-size:11px;">
+                            <div class="tab active" id="snow_ctrl_sensor" onclick="app.setSnowCtrl('sensor')">Датчик
+                                осадков</div>
+                            <div class="tab" id="snow_ctrl_manual" onclick="app.setSnowCtrl('manual')"
+                                title="Датчик осадков в смету не попадает. Снеготаяние включается вручную — из приложения контроллера или выключателем.">Ручной</div>
+                        </div>
+                    </div>
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #E5E7EB; padding-top:8px;">
+                        <span class="lbl" style="font-size:12px;"
+                            title="Снеготаяние — самостоятельная нагрузка, часто больше половины дома. Включено — котёл подбирается с её учётом. Выключено — котёл считается по дому, а контроллер гасит снеготаяние при нехватке мощности.">Учесть
+                            в мощности котла</span><label class="switch"
+                            style="transform:scale(0.8); transform-origin:right;"><input type="checkbox"
+                                id="chk_snow_boiler" onchange="app.toggleSnowBoilerPower(this.checked)"><span
+                                class="slider"></span></label>
                     </div>
                 </div>
             </div>

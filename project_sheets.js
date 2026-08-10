@@ -94,7 +94,13 @@
     if (fam !== FONT) attrs += ' font-family="' + fam + '"';
     // цвет — только инлайн-стилем: у листа есть правило .sheet-a3 text{fill:#000},
     // и обычный атрибут fill оно перебивает
-    if (o.fill) attrs += ' style="fill:' + o.fill + '"';
+    // halo — белая подложка под буквами (обводка рисуется ПОД заливкой):
+    // так подпись читается поверх трубы, как «маскировка» текста в AutoCAD.
+    // Тоже инлайном: правило листа задаёт text{stroke:none} и атрибут перебило бы.
+    var st = (o.fill ? 'fill:' + o.fill + ';' : '') +
+      (o.halo ? 'paint-order:stroke;stroke:#fff;stroke-width:' + o.halo +
+        ';stroke-linejoin:round;stroke-linecap:round;' : '');
+    if (st) attrs += ' style="' + st + '"';
     if (o.fit) attrs += ' textLength="' + n(o.fit) + '" lengthAdjust="spacingAndGlyphs"';
     return '<text' + attrs + '>' + esc(s) + '</text>';
   }

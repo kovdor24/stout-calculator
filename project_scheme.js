@@ -21,7 +21,12 @@
     loadR: '#8282ff',    // обратный загрузки бойлера
     dhw: '#ff8000',      // горячее водоснабжение
     recirc: '#ff00ff',   // рециркуляция ГВС
-    cold: '#00ffff'      // холодное водоснабжение
+    cold: '#00ffff',     // холодное водоснабжение
+    // Вторичный контур снеготаяния залит гликолем — это отдельная среда, и по
+    // ГОСТ 21.205 её линии обязаны отличаться от контура отопления. Пара
+    // «тёмная подача / светлая обратка» — та же, что у загрузки бойлера.
+    snowS: '#7030a0',    // подающий трубопровод снеготаяния
+    snowR: '#b799d8'     // обратный трубопровод снеготаяния
   };
   // Толщины: трубы схемы 0.2, образцы в легенде 0.35, тонкие выноски 0.08
   var LW = { pipe: 0.2, sym: 0.2, thin: 0.08, sample: 0.35 };
@@ -61,6 +66,26 @@
       ';stroke-width:' + (o.w || 0) + '"/>';
   }
   function txt(x, y, s, o) { return window.projectSheets.text(x, y, s, o); }
+  // Подписи на поле схемы (диаметры, резьбы, марки трубопроводов) ложатся
+  // на трубы: стояк, обход-полукруг или магистраль проходят ровно под
+  // строкой. Даём им белую подложку — линия под буквами прерывается, как
+  // при маскировке текста на чертеже, и подпись читается в любом месте.
+  var HALO = 0.55;
+  // Приблизительная ширина строки чертёжным шрифтом (он узкий: знак около
+  // половины кегля, дробные черты и кавычки уже). Нужна там, где под текст
+  // отводится место на поле схемы, — например полке выноски.
+  function textW(s, size) {
+    s = String(s);
+    var w = 0;
+    for (var i = 0; i < s.length; i++) w += /[ "',./|]/.test(s[i]) ? 0.3 : 0.55;
+    return w * size;
+  }
+  function txtM(x, y, s, o) {
+    o = o || {};
+    var c = { halo: HALO };
+    for (var k in o) c[k] = o[k];
+    return window.projectSheets.text(x, y, s, c);
+  }
 
   // ─── УГО. Все размеры обмерены по колонке символов легенды ТМ-2 ───────
 
@@ -239,9 +264,13 @@
   /** Выноска размера: наклонная + полочка + текст. (ax,ay) — точка старта
    *  на арматуре. Геометрия снята с выносок 3/4" листа ТМ-2. */
   function leader(ax, ay, size) {
+    // Полка длиной с саму надпись. Раньше она была всегда 4.32 мм, и длинные
+    // размеры («1 1/4"») вылезали за неё вправо — на стояк, к которому
+    // выноска и относится, а при сжатом шаге отводов и на соседний.
+    var shelf = Math.max(4.32, textW(size, SZ.dia) + 0.5);
     return pline([[ax, ay], [ax - 1.06, ay - 1.06]], { w: LW.thin }) +
-      pline([[ax - 1.06, ay - 1.06], [ax - 4.32, ay - 1.06]], { w: LW.thin }) +
-      txt(ax - 4.18, ay - 1.48, size, { size: SZ.dia });
+      pline([[ax - 1.06, ay - 1.06], [ax - shelf, ay - 1.06]], { w: LW.thin }) +
+      txtM(ax - shelf + 0.14, ay - 1.48, size, { size: SZ.dia });
   }
   /** Выноска у вертикального крана с центром (vx,vy). */
   function leaderValve(vx, vy, size) { return leader(vx - 0.96, vy + 1.6, size); }
@@ -273,6 +302,20 @@
 
   /** Расширительный бак. (x,y) — точка подключения снизу.
    *  Корпус 15.2×21.7, все уровни сняты с бака «18 л.» листа ТМ-2. */
+  /** Пластинчатый теплообменник: прямоугольник с зигзагом внутри.
+   *  Патрубки по углам — первичный контур сверху, вторичный снизу.
+   *  (x0,x1) — оси стояков пары, они же оси патрубков. */
+  function plateHx(x0, x1, yTop, yBot) {
+    var o = [];
+    var pad = 2, L = Math.min(x0, x1) - pad, R = Math.max(x0, x1) + pad;
+    o.push(rrect(L, yTop, R - L, yBot - yTop, 0.4, { f: '#fff', c: '#000', w: LW.sym }));
+    // Зигзаг между патрубками — условное изображение пакета пластин.
+    var m = (yTop + yBot) / 2, q = (yBot - yTop) / 4;
+    o.push(pline([[L + 1.2, m - q], [R - 1.2, m - q * 0.2], [L + 1.2, m + q * 0.2], [R - 1.2, m + q]],
+      { w: LW.sym }));
+    return o.join('');
+  }
+
   function expTank(x, y, color, vol) {
     var o = [];
     var d = 'M' + n(x - 7.62) + ',' + n(y - 17.01) +
@@ -307,8 +350,14 @@
     else o.push(rrect(x + w / 2 - 3.5, y - 2.5, 7, 3.5, 1, { f: GREY.body, c: GREY.edge, w: 0.6 }));
     o.push(rrect(x, y, w, h, 2, { f: GREY.body, c: GREY.edge, w: 0.6 }));
     o.push(pline([[x, y + 2], [x + w, y + 2]], { c: GREY.edge, w: 0.6 }));
-    o.push(txt(x + w / 2, y + 7.9, kind === 'gas' ? 'Газовый котёл' : 'Электрический котёл',
-      kind === 'gas' ? { size: SZ.txt, anchor: 'middle' } : { size: SZ.txt, anchor: 'middle', fit: w - 4 }));
+    // Подпись держим внутри корпуса: у компактного блока каскада (w 27) она
+    // иначе выходит за края и встречается с подписью соседнего котла.
+    // Ужимаем только когда не влезает — на эталонном блоке 33 мм textLength
+    // растянул бы её по всей ширине.
+    var cap = kind === 'gas' ? 'Газовый котёл' : 'Электрический котёл';
+    var capOpt = { size: SZ.txt, anchor: 'middle' };
+    if (textW(cap, SZ.txt) > w - 4) capOpt.fit = w - 4;
+    o.push(txt(x + w / 2, y + 7.9, cap, capOpt));
     var cx = x + w / 2, cy = y + 27;
     o.push(circle(cx, cy, 7.2, { f: GREY.icon }));
     if (kind === 'gas') {
@@ -364,7 +413,7 @@
   /** Цветной патрубок-пилюля на кромке бойлера + марка. */
   function tankPort(x, y, color, mark) {
     return rrect(x - 1.5, y - 1.5, 3, 3, 1.5, { f: color, c: '#000', w: LW.thin }) +
-      (mark ? txt(x + 2.6, y + 1.25, mark, { size: SZ.txt }) : '');
+      (mark ? txtM(x + 2.6, y + 1.25, mark, { size: SZ.txt }) : '');
   }
 
   /** Стрелка-«ласточкин хвост» на трубе. (x,y) — остриё. dir: 'down'|'up'. */
@@ -389,11 +438,11 @@
 
   /** Подпись диаметра вдоль вертикальной трубы (низ текста в (x-1, y)). */
   function diaV(x, y, dia) {
-    return txt(x - 1, y, dia, { size: SZ.dia, rotate: -90 });
+    return txtM(x - 1, y, dia, { size: SZ.dia, rotate: -90 });
   }
   /** Подпись диаметра над горизонтальной трубой, у правого конца. */
   function diaH(xRight, y, dia) {
-    return txt(xRight - 10.6, y - 0.7, dia, { size: SZ.dia });
+    return txtM(xRight - textW(dia, SZ.dia) - 0.4, y - 0.7, dia, { size: SZ.dia });
   }
 
   /** Низ отвода после крана: чёрная линия-указатель, марка, стрелка.
@@ -408,7 +457,7 @@
       o.push(ln(x, 262.28, x, 271.31, { w: LW.pipe }));
       o.push(arrowSym(x, 274.0, 'down'));
     }
-    o.push(txt(x - 2, 270.2, mark, { size: SZ.txt, rotate: -90 }));
+    o.push(txtM(x - 2, 270.2, mark, { size: SZ.txt, rotate: -90 }));
     return o.join('');
   }
 
@@ -442,8 +491,8 @@
     var twoC = !!(cfg.gas && cfg.gas.circuits === 2 && !cfg.indirect);
     var nBoilers = (cfg.gas ? Math.max(1, cfg.gas.count || 1) : 0) +
       (cfg.el ? Math.max(1, cfg.el.count || 1) : 0);
-    var usePump = !!(cfg.tp || cfg.hydro || cfg.recirc || cfg.loadPump || (cfg.el && cfg.el.polis));
-    var useCheck = !!(nBoilers > 1 || cfg.indirect || cfg.tp || cfg.hydro || cfg.recirc);
+    var usePump = !!(cfg.tp || cfg.snow || cfg.hydro || cfg.recirc || cfg.loadPump || (cfg.el && cfg.el.polis));
+    var useCheck = !!(nBoilers > 1 || cfg.indirect || cfg.tp || cfg.snow || cfg.hydro || cfg.recirc);
 
     // При автоматике узел ТП ведёт контроллер: смеситель с сервоприводом
     // вместо термостатического, плюс на схеме появляются датчики NTC
@@ -452,9 +501,9 @@
       ['Шаровый кран', function (c) { return ballValve(cx, c, false); }, true],
       ['Обратный клапан', function (c) { return checkValve(cx, c, 'right'); }, useCheck],
       ['Циркуляционный насос', function (c) { return pump(cx, c, 'left'); }, usePump],
-      ['Термостатический смесительный клапан', function (c) { return valve3(cx + 1.21, c, 'therm', 'udr', 'l'); }, !!cfg.tp && !mixServo],
-      ['Клапан трехходовой с сервоприводом', function (c) { return valve3(cx + 1.21, c, 'servo', 'udr', 'l'); }, !!cfg.tp && mixServo],
-      ['Предохранительный клапан', function (c) { return safetyValve(cx, c, false); }, !!cfg.indirect && cfg.water !== false],
+      ['Термостатический смесительный клапан', function (c) { return valve3(cx + 1.21, c, 'therm', 'udr', 'l'); }, (!!cfg.tp || !!cfg.snow) && !mixServo],
+      ['Клапан трехходовой с сервоприводом', function (c) { return valve3(cx + 1.21, c, 'servo', 'udr', 'l'); }, (!!cfg.tp || !!cfg.snow) && mixServo],
+      ['Предохранительный клапан', function (c) { return safetyValve(cx, c, false); }, (!!cfg.indirect && cfg.water !== false) || !!cfg.snow],
       ['Автоматический воздухоотводчик', function (c) { return airVent(cx, c + 3.77); }, !!cfg.hydro],
       ['Фильтр', function (c) { return filterSym(cx, c); }, true],
       ['Клапан приоритета бойлера', function (c) { return valve3(cx + 1.21, c, 'prio', 'udr', 'l'); }, !!cfg.fugas],
@@ -468,7 +517,9 @@
       ['Т21', 'Обратка напольного отопления', !!cfg.tp],
       ['В1', 'Холодное водоснабжение', twoC || !!cfg.water || !!cfg.indirect],
       ['Т3', 'Горячее водоснабжение', twoC || !!cfg.indirect],
-      ['Т4', 'Рециркуляция горячего водоснабжения', !!cfg.recirc]
+      ['Т4', 'Рециркуляция горячего водоснабжения', !!cfg.recirc],
+      ['Т12', 'Подача на узел снеготаяния', !!cfg.snow],
+      ['Т22', 'Обратка от узла снеготаяния', !!cfg.snow]
     ].filter(function (m) { return m[2]; });
 
     var bottom = 22.35 + rows.length * 10 + (cfg.hydro ? 40 : 0) + marks.length * 6;
@@ -522,7 +573,6 @@
     cfg = cfg || {};
     var o = [];
     var twoC = !!(cfg.gas && cfg.gas.circuits === 2 && !cfg.indirect);
-    o.push(txt(56.3, 253.1, 'Условные обозначения трубопроводов', { size: SZ.head }));
     var rows = [
       [COL.ret, 'обратный трубопровод', true],
       [COL.supply, 'подающий трубопровод', true],
@@ -530,15 +580,184 @@
       [COL.loadS, 'подающий трубопровод загрузки бойлера', !!cfg.indirect],
       [COL.dhw, 'трубопровод горячего водоснабжения', twoC || !!cfg.indirect],
       [COL.recirc, 'трубопровод рециркуляции горячего водоснабжения', !!cfg.recirc],
-      [COL.cold, 'трубопровод холодного водоснабжения', twoC || !!cfg.water || !!cfg.indirect]
+      [COL.cold, 'трубопровод холодного водоснабжения', twoC || !!cfg.water || !!cfg.indirect],
     ].filter(function (r) { return r[2]; });
+    // Штатно легенда занимает семь строк и упирается низом в 288,4 — дальше
+    // внутренняя рамка листа (292). Со снеготаянием строк девять, и блок
+    // поднимается ровно настолько, насколько не влезает: сжимать межстрочный
+    // интервал под высоту шрифта нельзя — подписи слипнутся. Слева под котлами
+    // это поле свободно, полосе отводов блок не мешает (см. TAP_X0_MIN).
+    var top = 253.1 - Math.max(0, 258.4 + (rows.length - 1) * 5 - 290);
+    o.push(txt(56.3, top, 'Условные обозначения трубопроводов', { size: SZ.head }));
+    // Образец линии укоротили с 50 до 25 мм. Полоса отводов упирается влево
+    // ровно в правый край этой таблицы, и полсотни миллиметров на образец
+    // цвета — непозволительная роскошь: за счёт них насосные группы получают
+    // штатный просвет вместо сжатого. Цвет по 25 мм читается так же.
     rows.forEach(function (r, i) {
-      var y = 258.4 + i * 5;
-      o.push(ln(28.2, y, 78.2, y, { c: r[0], w: LW.sample }));
-      o.push(txt(84.7, y + 1.25, '-', { size: SZ.txt }));
-      o.push(txt(87.7, y + 1.25, r[1], { size: SZ.txt }));
+      var y = top + 5.3 + i * 5;
+      o.push(ln(28.2, y, 53.2, y, { c: r[0], w: LW.sample }));
+      o.push(txt(59.7, y + 1.25, '-', { size: SZ.txt }));
+      o.push(txt(62.7, y + 1.25, r[1], { size: SZ.txt }));
     });
     return o.join('');
+  }
+
+  /** Штриховая рамка узла заводской готовности. */
+  function dashBox(x0, y0, x1, y1) {
+    var c = { c: '#64748B', w: 0.35, dash: '1.8 1.4' };
+    return ln(x0, y0, x1, y0, c) + ln(x1, y0, x1, y1, c) +
+      ln(x1, y1, x0, y1, c) + ln(x0, y1, x0, y0, c);
+  }
+
+  /**
+   * Схема узла снеготаяния — самостоятельный лист над разделом 4.4 сметы.
+   *
+   * На принципиальной схеме котельной снеготаяние показано одним смесительным
+   * контуром Т12/Т22 со сноской: в полосе отводов между насосом первички и рядом
+   * кранов 17 мм, и две заводские группы с теплообменником, группой безопасности
+   * и баком туда не встают. Здесь у узла свой холст, и цепочка разворачивается
+   * целиком: вход из котельной → смесительная группа → теплообменник → группа
+   * вторичного контура → уличный коллектор с петлями.
+   *
+   * Состав групп — по паспортным схемам (SDG-0003 и SDG-0038 п. 3.1): со стороны
+   * потребителя каждая группа снабжена шаровыми кранами, совмещёнными со
+   * стрелочными термометрами, на возвратной линии кран совмещён с обратным
+   * клапаном. Поэтому краны с термометрами нарисованы на границах обеих групп, а
+   * не «подразумеваются».
+   *
+   * Раскладка идёт по сетке с явными колонками: подписи символов разведены по
+   * трём уровням (над трубой, под трубой, вынос вверх), чтобы не пересекаться.
+   */
+  function snowScheme(sn) {
+    if (!sn) return null;
+    var o = [], W = 420, H = 214;
+    var ys = 74, yr = 104;                   // оси подачи и обратки
+    var bt = 52, bb = 124;                   // штриховые рамки групп
+    var GL = sn.glycol, INKG = '#64748B', CARD = '#F8FAFC';
+
+    o.push(txt(W / 2, 14, 'Схема узла снеготаяния', { size: 6.2, anchor: 'middle' }));
+    o.push(txt(W / 2, 21.6, sn.kw + ' кВт · площадка ' + sn.area + ' м² · ' + sn.loops +
+      ' петель · вторичный контур — водный раствор пропиленгликоля ' + GL + ' %',
+      { size: 3.1, anchor: 'middle' }));
+
+    /** Шаровой кран, совмещённый со стрелочным термометром (паспорт, поз. 2 и 4). */
+    function valveTherm(x, y, up) {
+      var dy = up ? -6.6 : 6.6;
+      return ballValve(x, y, false) + ln(x, y + (up ? -2.6 : 2.6), x, y + dy * 0.72, { w: LW.thin }) +
+        circle(x, y + dy, 2.5, { f: '#fff', c: '#000', w: 0.4 }) +
+        pline([[x, y + dy], [x + 1.5, y + dy - 1.5]], { w: 0.35 });
+    }
+
+    // ── вход из котельной ───────────────────────────────────────────────
+    var xin = 12, xg1 = 44, xg1e = 150;
+    o.push(hpipe(xin, xg1, ys, COL.supply));
+    o.push(hpipe(xin, xg1, yr, COL.ret));
+    o.push(openArrow(xin + 6, ys, 'right', COL.supply));
+    o.push(openArrow(xin + 6, yr, 'left', COL.ret));
+    o.push(txtM(xin, ys - 4, 'Т12 · подача от коллектора', { size: 2.9 }));
+    o.push(txtM(xin, yr + 7, 'Т22 · обратка в котельную', { size: 2.9 }));
+    o.push(txtM(xin, yr + 12.4, 'см. принципиальную схему', { size: 2.4 }));
+
+    // ── группа 1: смесительная, первичный контур ────────────────────────
+    o.push(dashBox(xg1, bt, xg1e, bb));
+    o.push(txt(xg1, bt - 3, 'Насосная группа со смесителем · первичный контур', { size: 3 }));
+    o.push(hpipe(xg1, xg1e, ys, COL.supply));
+    o.push(hpipe(xg1, xg1e, yr, COL.ret));
+    o.push(valveTherm(xg1 + 12, ys, true));
+    o.push(valveTherm(xg1 + 12, yr, false));
+    var xmix = xg1 + 46;
+    o.push(valve3(xmix, yr, sn.servo ? 'servo' : 'therm', 'lru', 'd'));
+    o.push(ln(xmix, ys, xmix, yr - 2.5, { c: COL.supply, w: LW.pipe }));
+    o.push(pump(xg1 + 84, ys, 'right'));
+    o.push(txtM(xg1 + 74, ys - 8.4, 'насос', { size: 2.7 }));
+    o.push(txtM(xmix - 16, yr + 15, sn.servo ? 'смеситель с сервоприводом' : 'термостатический смеситель', { size: 2.7 }));
+    o.push(txtM(xg1 + 4, bb - 4, 'краны с термометрами', { size: 2.4 }));
+
+    // ── группа 2: с теплообменником, вторичный контур ────────────────────
+    var xg2 = xg1e + 10, xg2e = 296;
+    o.push(dashBox(xg2, bt, xg2e, bb));
+    o.push(txt(xg2, bt - 3, 'Насосная группа с теплообменником' +
+      (sn.plates ? ' ' + sn.plates + ' пластин' : '') + ' · вторичный контур', { size: 3 }));
+    o.push(hpipe(xg1e, xg2, ys, COL.supply));
+    o.push(hpipe(xg1e, xg2, yr, COL.ret));
+
+    // теплообменник: первичка слева, вторичка справа
+    var hx0 = xg2 + 8, hx1 = hx0 + 28;
+    o.push(hpipe(xg2, hx0, ys, COL.supply));
+    o.push(hpipe(xg2, hx0, yr, COL.ret));
+    o.push(rrect(hx0, ys - 10, hx1 - hx0, yr - ys + 20, 0.8, { f: '#fff', c: '#000', w: LW.sym }));
+    var hm = (ys + yr) / 2, hq = (yr - ys) / 3;
+    o.push(pline([[hx0 + 5, hm - hq], [hx1 - 5, hm - hq * 0.2],
+    [hx0 + 5, hm + hq * 0.2], [hx1 - 5, hm + hq]], { w: LW.sym }));
+    o.push(txtM(hx0 - 3, bb - 4, 'теплообменник пластинчатый', { size: 2.4 }));
+
+    // вторичный контур: насос на подаче, кран с обратным клапаном на обратке
+    o.push(hpipe(hx1, xg2e, ys, COL.snowS));
+    o.push(hpipe(hx1, xg2e, yr, COL.snowR));
+    var xp2 = hx1 + 22;
+    o.push(pump(xp2, ys, 'right'));
+    o.push(txtM(xp2 - 10, ys - 8.4, 'насос', { size: 2.7 }));
+    o.push(checkValve(xp2, yr, 'left'));
+    o.push(ballValve(xp2 + 9, yr, false));
+    o.push(txtM(xp2 - 8, yr + 15, 'кран с обратным клапаном', { size: 2.7 }));
+    // Датчик подачи и группа безопасности разведены по высоте: оба вынесены
+    // вверх от подающей линии, но на разные уровни и с разных абсцисс.
+    var xg = xp2 + 24, xsg = xp2 + 46;
+    if (sn.auto) {
+      o.push(ln(xg, ys, xg, ys - 6, { w: LW.thin }));
+      o.push(gauge(xg, ys - 8.6, 'Т'));
+      o.push(txtM(xg - 12, ys - 13.6, 'датчик подачи, ' + sn.supplyT + ' °C', { size: 2.4 }));
+    }
+    o.push(ln(xsg, ys, xsg, ys - 8, { c: COL.snowS, w: LW.pipe }));
+    o.push(safetyValve(xsg, ys - 10.5, false));
+    o.push(txtM(xsg - 14, ys - 20, 'группа безопасности, 3 бар', { size: 2.4 }));
+    // расширительный бак — на обратке, ниже рамки группы
+    if (sn.tank) {
+      o.push(ln(xsg, yr, xsg, yr + 8, { c: COL.snowR, w: LW.pipe }));
+      o.push(expTank(xsg, yr + 32, COL.snowR, sn.tank + ' л.'));
+      o.push(txtM(xsg + 11, yr + 24, 'расширительный бак', { size: 2.4 }));
+      o.push(txtM(xsg + 11, yr + 28.4, 'вторичного контура', { size: 2.4 }));
+    }
+
+    // ── уличный коллектор: карточка с расходомерами и петлями ───────────
+    var mx0 = 306, mx1 = 410, yLoop = 168;
+    o.push(rrect(mx0 - 4, bt, mx1 - mx0 + 8, 96, 3, { f: CARD, c: '#CBD5E1', w: 0.4 }));
+    o.push(txt(mx0 - 2, bt - 3, 'Коллектор снеготаяния с расходомерами', { size: 3 }));
+    o.push(hpipe(xg2e, mx0, ys, COL.snowS));
+    o.push(hpipe(xg2e, mx0, yr, COL.snowR));
+    o.push(rrect(mx0, ys - 3.4, mx1 - mx0, 6.8, 3.4, { f: '#fff', c: COL.snowS, w: 0.7 }));
+    o.push(rrect(mx0, yr - 3.4, mx1 - mx0, 6.8, 3.4, { f: '#fff', c: COL.snowR, w: 0.7 }));
+
+    // Петель рисуем не больше шести — дальше они сливаются в заливку; реальное
+    // число подписано под площадкой.
+    var nDraw = Math.min(sn.loops || 1, 6);
+    var span = (mx1 - mx0 - 10), step = span / nDraw;
+    for (var i = 0; i < nDraw; i++) {
+      var lx = mx0 + 5 + i * step + step * 0.18, rx2 = lx + step * 0.5;
+      // расходомер на подающей гребёнке, запорный клапан на обратной
+      o.push(rrect(lx - 1.6, ys + 3.4, 3.2, 5.2, 0.6, { f: '#fff', c: COL.snowS, w: 0.45 }));
+      o.push(ln(lx, ys + 5, lx, ys + 7, { c: COL.snowS, w: 0.45 }));
+      o.push(ln(lx, ys + 8.6, lx, yLoop - 5, { c: COL.snowS, w: LW.pipe }));
+      o.push(ln(rx2, yr + 3.4, rx2, yLoop - 5, { c: COL.snowR, w: LW.pipe }));
+      o.push(pline([[lx, yLoop - 5], [lx, yLoop], [rx2, yLoop], [rx2, yLoop - 5]], { c: COL.snowS, w: LW.pipe }));
+    }
+    // покрытие площадки
+    o.push(rrect(mx0 - 4, yLoop + 5, mx1 - mx0 + 8, 8, 1, { f: '#EEF2F6', c: INKG, w: 0.4 }));
+    for (var hxx = mx0 - 2; hxx < mx1 + 4; hxx += 7) o.push(ln(hxx, yLoop + 13, hxx + 4, yLoop + 6, { c: INKG, w: 0.3 }));
+    o.push(txtM(mx0 - 4, yLoop + 19, 'петель ' + sn.loops + ' · труба ' + sn.dia + ' · шаг ' + sn.step + ' мм', { size: 2.6 }));
+    if ((sn.loops || 0) > nDraw) o.push(txtM(mx0 - 4, yLoop + 23.4, 'на схеме показано ' + nDraw, { size: 2.4 }));
+
+    // ── легенда сред ────────────────────────────────────────────────────
+    var lg = [[COL.supply, 'подача первичного контура — вода котельной'],
+    [COL.ret, 'обратка первичного контура'],
+    [COL.snowS, 'подача вторичного контура — пропиленгликоль ' + GL + ' %'],
+    [COL.snowR, 'обратка вторичного контура']];
+    lg.forEach(function (L, i) {
+      var col = i % 2, rw = Math.floor(i / 2), xx = 14 + col * 152, yy = H - 16 + rw * 6.4;
+      o.push(ln(xx, yy, xx + 14, yy, { c: L[0], w: 0.8 }));
+      o.push(txt(xx + 17, yy + 1.2, L[1], { size: 2.8 }));
+    });
+    return { svg: o.join(''), w: W, h: H };
   }
 
   // ─── Композитор ────────────────────────────────────────────────────────
@@ -632,6 +851,20 @@
       taps.push({ mark: 'В1', color: COL.cold, from: 'cold', dir: 'up' });
       taps.push({ mark: 'Т3', color: COL.dhw, from: 'dhw', dir: 'down' });
     }
+    // Снеготаяние — САМОЙ ПОСЛЕДНЕЙ парой в полосе: за ней справа встаёт
+    // расширительный бак вторичного контура, а место под него есть только у
+    // края полосы. Порядок стояков тот же, что у всех остальных групп —
+    // обратка со смесителем слева, подача с насосом справа. Разворачивать её
+    // зеркально нельзя: одна группа, собранная наоборот, читается как ошибка
+    // монтажника, даже если геометрически так удобнее.
+    // Снеготаяние на принципиальной схеме котельной — ОДИН смесительный контур,
+    // как тёплый пол: всё, что за ним (теплообменник, вторичный контур на
+    // гликоле, уличный коллектор), живёт на собственной схеме узла над разделом
+    // 4.4 сметы. Здесь остаётся сноска, чтобы связь была видна.
+    if (cfg.snow) {
+      taps.push({ mark: 'Т22', color: COL.ret, from: 'ret', dir: 'up', mix: true, size: thread(cfg.snow.dn) });
+      taps.push({ mark: 'Т12', color: COL.supply, from: 'supply', dir: 'down', pump: true, size: thread(cfg.snow.dn), note: 'узел снеготаяния — см. схему' });
+    }
 
     // Полоса отводов зажата между котлами слева и гидрострелкой справа: за её
     // правым концом встаёт стояк подачи загрузки (hydroX−17.5), сама стрелка и
@@ -647,7 +880,11 @@
     //   • Без стрелки отводы идут от самой котловой гребёнки, вровень со стояками
     //     котлов, — там полоса обязана начинаться правее блоков, и место под неё
     //     освобождается сдвигом самих блоков (не больше 14 мм: левее таблица УГО).
-    var TAP_X0_MIN = cfg.hydro ? 190 : 221.1;
+    // Предел задаёт правый край легенды трубопроводов: полоса отводов идёт
+    // ровно над ней. Со срезанным до 25 мм образцом линии самая длинная строка
+    // («обратный трубопровод рециркуляции горячего водоснабжения») кончается
+    // около x = 148, поэтому полосе теперь можно до 155 вместо прежних 190.
+    var TAP_X0_MIN = cfg.hydro ? 155 : 221.1;
     var TAP_STEP_MIN = 6.2;   // насос Ø5.84 мм + просвет: плотнее символы сливаются
     // Правый предел полосы. Полоса тянет за собой гидрострелку (hydroX =
     // tapsEnd+24), а за ней — весь правый край листа, и там два узких места:
@@ -658,26 +895,33 @@
     // Оба сходятся на tapsEnd ≈ 280: там просветы те же 5–6 мм, что на штатной
     // схеме с тремя парами отводов. Дальше стояки сливаются в один.
     var TAP_RIGHT = 280.1;
-    var tapX0 = TAP_X0_BASE, tapStep = TAP_STEP_BASE, tpDrawn = tpN;
-    if (taps.length > 1 && tapX0 + tapStep * (taps.length - 1) > TAP_RIGHT) {
-      // Сначала РАСШИРЯЕМСЯ ВЛЕВО, штатный шаг 9 мм не трогаем: сжатая полоса
-      // читается хуже, а слева место есть. Ужимаем шаг только когда влево
-      // уходить уже некуда.
-      var need = tapStep * (taps.length - 1);
-      tapX0 = Math.max(TAP_X0_MIN, TAP_RIGHT - need);
-      if (tapX0 + need > TAP_RIGHT) {
-        tapStep = Math.min(TAP_STEP_BASE, (TAP_RIGHT - tapX0) / (taps.length - 1));
+    // РАССТОЯНИЕ ВНУТРИ ГРУППЫ НЕ СЖИМАЕТСЯ. Отводы идут парами «обратка +
+    // подача» одной насосной группы, и между ними всегда штатные 9 мм: там
+    // стоят перемычка подмеса, насос и арматура, и сжатая пара читается как
+    // один узел с четырьмя стояками. Тесно становится — сокращаем ТОЛЬКО
+    // просвет МЕЖДУ группами, до предела GAP_MIN.
+    var PAIR_STEP = TAP_STEP_BASE;
+    var GAP_MIN = 4.6;                 // меньше — арматура соседних групп сливается
+    var nGroups = Math.ceil(taps.length / 2);
+    var tapGap = PAIR_STEP, tapX0 = TAP_X0_BASE, tpDrawn = tpN;
+    // Ширина полосы при заданном просвете: каждая группа занимает PAIR_STEP,
+    // между группами — gap.
+    function bandW(groups, gap) { return groups > 0 ? (groups - 1) * (PAIR_STEP + gap) + PAIR_STEP : 0; }
+    if (nGroups > 0 && tapX0 + bandW(nGroups, tapGap) > TAP_RIGHT) {
+      // Сначала РАСШИРЯЕМСЯ ВЛЕВО, штатный просвет не трогаем: слева место есть.
+      tapX0 = Math.max(TAP_X0_MIN, TAP_RIGHT - bandW(nGroups, tapGap));
+      if (tapX0 + bandW(nGroups, tapGap) > TAP_RIGHT && nGroups > 1) {
+        tapGap = (TAP_RIGHT - tapX0 - PAIR_STEP) / (nGroups - 1) - PAIR_STEP;
       }
-      if (tapStep < TAP_STEP_MIN) {
-        // Не помещается даже в минимальный шаг. Снимаем с картинки лишние
+      if (tapGap < GAP_MIN) {
+        // Не помещается даже с минимальным просветом. Снимаем с картинки лишние
         // ОДИНАКОВЫЕ пары ТП и дописываем их реальное число к последней паре
         // («× N шт.») — так же, как усечённый каскад котлов. Молча терять
         // контуры нельзя: по такой схеме соберут не то.
-        tapStep = TAP_STEP_MIN;
-        var fit = Math.floor((TAP_RIGHT - tapX0) / tapStep) + 1;
-        while (taps.length > fit && tpDrawn > 1) {
+        tapGap = GAP_MIN;
+        while (nGroups > 1 && tapX0 + bandW(nGroups, tapGap) > TAP_RIGHT && tpDrawn > 1) {
           taps.splice(tpFrom + (tpDrawn - 1) * 2, 2);
-          tpDrawn--;
+          tpDrawn--; nGroups--;
         }
         // Нумерацию оставшихся пар сохраняем: две одинаковые безномерные пары
         // читались бы как «контуров два», а подпись «× N шт.» у последней прямо
@@ -688,6 +932,10 @@
         }
       }
     }
+    // Готовые оси стояков: внутри пары — PAIR_STEP, между парами — tapGap.
+    var tapXs = taps.map(function (t, i) {
+      return tapX0 + Math.floor(i / 2) * (PAIR_STEP + tapGap) + (i % 2) * PAIR_STEP;
+    });
     // На сколько уезжают влево блоки котлов, чтобы не перекрыть полосу. При
     // гидрострелке полоса проходит НИЖЕ их стояков — двигать котлы не нужно.
     var boilerShift = cfg.hydro ? 0 : (TAP_X0_BASE - tapX0);
@@ -939,7 +1187,7 @@
     }
 
     // ── потребители ──
-    var tapsEnd = tapX0 + tapStep * Math.max(0, taps.length - 1);
+    var tapsEnd = tapXs.length ? tapXs[tapXs.length - 1] : tapX0;
     var srcY = mY, secPair = null, hydroX = 0, mRight = 0;
 
     if (cfg.hydro) {
@@ -986,7 +1234,9 @@
     var bottomValveY = 256.78;      // центр нижних кранов (обмер: 254.28+2.5)
     var loadRx = null;
     taps.forEach(function (t, i) {
-      var x = tapX0 + i * tapStep;
+      var x = tapXs[i];
+      // Просвет до соседа справа — по нему разводят выноски и датчики.
+      var nextGap = (i + 1 < tapXs.length) ? (tapXs[i + 1] - x) : (PAIR_STEP + tapGap);
       var yStart = srcY[t.from];
       var yTop = bottomValveY - 2.5;
       // Резьба арматуры стояка — по DN насосной группы этого контура
@@ -1026,8 +1276,8 @@
         o.push(vpipe(x, yStart, vy - 2.5, t.color, crossFor(yStart)));
         o.push(valve3(x, vy, (cfg.auto && cfg.auto.mixServo) ? 'servo' : 'therm', 'udr', 'l'));
         o.push(leader(x - 0.96, vy - 2.6, tSize));
-        o.push(hpipe(x + 2.5, x + tapStep, vy, COL.supply));
-        o.push(ln(x, vy + 2.5, x, yTop, { c: t.color, w: LW.pipe }));
+        o.push(hpipe(x + 2.5, x + PAIR_STEP, vy, COL.supply));
+        o.push(ln(x, vy + 2.5, x, t.snow ? HX_TOP : yTop, { c: t.color, w: LW.pipe }));
       } else if (t.pump || t.group) {
         // насосный стояк: обратный клапан + кран + насос. Узел един для
         // радиаторной группы и подачи ТП — без обратного клапана на Т11
@@ -1041,12 +1291,18 @@
         o.push(leaderValve(x, gy + 12.1, tSize));
         o.push(ln(x, gy + 14.6, x, gy + 18.24, { c: t.color, w: LW.pipe }));
         o.push(pump(x, gy + 21.16, 'down'));
-        o.push(ln(x, gy + 24.08, x, yTop, { c: t.color, w: LW.pipe }));
+        o.push(ln(x, gy + 24.08, x, t.snow ? HX_TOP : yTop, { c: t.color, w: LW.pipe }));
         // датчик подачи контура (ТН) — в гильзе после насоса; по нему
-        // контроллер ведёт расчётную температуру контура
-        if (cfg.auto) {
-          o.push(ln(x, gy + 27.6, x + 2.1, gy + 27.6, { w: LW.thin }));
-          o.push(gauge(x + 4.66, gy + 27.6, 'Т'));
+        // контроллер ведёт расчётную температуру контура. У снеготаяния он
+        // стоит не здесь, а на подаче ВТОРИЧНОГО контура: контроллер держит
+        // уставку в уличной стяжке, а не в первичке до теплообменника.
+        if (cfg.auto && !t.snow) {
+          // Кружок датчика прижимаем к своему стояку тем плотнее, чем теснее
+          // стоят отводы: при сжатом шаге он на штатном выносе 4.66 налезал
+          // на подпись диаметра соседнего стояка (она идёт в 2.5 мм левее его).
+          var gOff = Math.max(2.4, Math.min(4.66, nextGap - 4.9));
+          o.push(ln(x, gy + 27.6, x + gOff - 2, gy + 27.6, { w: LW.thin }));
+          o.push(gauge(x + gOff, gy + 27.6, 'Т'));
         }
       } else {
         o.push(vpipe(x, yStart, yTop, t.color, crossFor(yStart)));
@@ -1095,7 +1351,7 @@
       // стояки котла и отводы В1/Т3 обрывались в воздухе.
       o.push(hpipe(mLeft, tapsEnd, mY.dhw, COL.dhw));
       o.push(diaH(tapX0 - 4, mY.dhw, sanDia));
-      o.push(hpipe(mLeft, tapsEnd - tapStep, mY.cold, COL.cold));
+      o.push(hpipe(mLeft, tapsEnd - PAIR_STEP, mY.cold, COL.cold));
       o.push(diaH(tapX0 - 4, mY.cold, sanDia));
     }
     // ── узел загрузки бойлера насосной группой ──
@@ -1197,7 +1453,11 @@
         o.push(openArrow(upR + 2.5, pT2, 'left', COL.loadR));
         // подпись — в просвете между полосами сразу за стояками группы:
         // правее начинаются отметки В1/Т3/Т4, туда её заводить нельзя
-        o.push(txt(loadRx + 4, 268, 'загрузка бойлера', { size: SZ.txt }));
+        // Подпись ставим ВЕРТИКАЛЬНО МЕЖДУ стояками пары: вправо она уходила
+        // на 30 мм и налезала на соседнюю группу, как только справа от загрузки
+        // появились отводы (снеготаяние). Между стояками пары ниже кранов пусто —
+        // марок и стрелок у загрузки нет, там подпись никому не мешает.
+        o.push(txtM(loadRx + PAIR_STEP / 2 - 1, 274, 'загрузка бойлера', { size: SZ.dia, rotate: -90 }));
       } else {
       o.push(hpipe(loadSx !== null ? loadSx : mLeft, lx1, mY.loadS, COL.loadS));
       o.push(hpipe(loadRx !== null ? loadRx : (hasLoad ? jx : mLeft), lx2, mY.loadR, COL.loadR));
@@ -1523,12 +1783,27 @@
     // Двухпозиционные термостаты сидят на «Входах термостатов» сухим
     // контактом — своя пара клемм на каждый контур КО-1…КО-3. Раньше при
     // выборе «Термостат» с сухим контактом на схеме не появлялось ничего.
+    var dryUsed = 0;
     if (tc.airOn && tc.airKind === 'dry' && tc.airQty > 0) {
       var dq = Math.min(tc.airQty, tc.dryInputs || 3);
       for (var q = 0; q < dq; q++) topL.push({
         blk: T.thr, clampOffset: q * 2, wires: [CSIG, '#94A3B8'], clamps: ['1', '2'],
         ico: icoPanel, title: 'Термостат ' + ((tc.circuits || [])[q] ? (tc.circuits[q].name) : ('вход ' + (q + 1))),
         sub: cut(nm.air || 'сухой контакт (ON/OFF)', 30)
+      });
+      dryUsed = dq;
+    }
+    // Датчик осадков снеготаяния приходит на такой же «Вход термостата»: его
+    // блок управления отдаёт беспотенциальный контакт, и контур переходит в
+    // режим «Термостат» — греет, пока контакт разомкнут. Питание блока (230 В)
+    // идёт мимо контроллера, поэтому в выноске указано только сигнальное
+    // подключение. Вход берём следующий за занятыми комнатными термостатами.
+    if (tc.snowSensor && dryUsed < (tc.dryInputs || 3)) {
+      var snowKo = (tc.circuits || []).filter(function (c) { return c.src === 'snow'; })[0];
+      topL.push({
+        blk: T.thr, clampOffset: dryUsed * 2, wires: [CSIG, '#94A3B8'], clamps: ['1', '2'],
+        ico: icoDrop, title: 'Датчик осадков' + (snowKo ? ' — ' + snowKo.name : ''),
+        sub: 'сухой контакт блока управления · режим «Термостат»'
       });
     }
 
@@ -1585,7 +1860,7 @@
     });
 
     (tc.circuits || []).slice(0, 3).forEach(function (c, i) {
-      var mix = c.type === 'mix', kind = c.src === 'ufh' ? 'тёплый пол' : 'радиаторы';
+      var mix = c.type === 'mix', kind = c.src === 'ufh' ? 'тёплый пол' : c.src === 'snow' ? 'снеготаяние' : 'радиаторы';
       var grp = cut(mix ? (nm.mixGroup || 'насосная группа со смесителем') : (nm.dirGroup || 'прямая насосная группа'), 32);
       botL.push({
         blk: B[['ko1p', 'ko2p', 'ko3p'][i]], wires: [CL, CN], clamps: ['L', 'N', '⏚'], pe: true,
@@ -1629,7 +1904,82 @@
     // отдельная система, и в смете её картинка стоит над разделом 4.3.
     // Здесь остаётся только метка «А» — ссылка на неё у клемм термостатов.
     var ufh = items.ufh && (items.ufh.blocks || items.ufh.stats) ? items.ufh : null;
-    var H = CB + 12 + (nBot - 1) * LS + 44;
+    // ── блоки расширения: контуры сверх трёх ──────────────────────────────
+    // У контроллера три пары клеммников КО-1…КО-3, и четвёртый контур на них
+    // уже не садится — он физически сидит на блоке EX-108 или EX-77. Раньше
+    // плакат про такие контуры писал только «на блоке расширения EX»: куда
+    // тянуть провода насоса и привода, монтажник не видел вовсе. Считаем
+    // раскладку ДО расчёта высоты листа — блоки рисуются под нижними
+    // выносками, и лист под них удлиняется.
+    var EX_ROW_H = 30;
+    function planExpansion() {
+      var rest = (tc.circuits || []).slice(3);
+      if (!rest.length) return { units: [], h: 0 };
+      var units = [], k = 0;
+      (tc.expansion || []).forEach(function (e) {
+        for (var q = 0; q < (e.qty || 1) && k < rest.length; q++) {
+          var take = rest.slice(k, k + (e.circuits || 1));
+          k += take.length;
+          if (take.length) units.push({
+            name: 'Блок расширения ' + (e.id === 'ML00007406' ? 'EX-108' : 'EX-77'),
+            no: q + 1, multi: (e.qty || 1) > 1, circuits: take
+          });
+        }
+      });
+      // Контуры без блока в смете (ручная правка количества) не теряем:
+      // показываем их отдельным безымянным модулем, иначе провода повиснут.
+      if (k < rest.length) units.push({ name: 'Блок расширения', no: 1, multi: false, circuits: rest.slice(k) });
+      return { units: units, h: units.length ? EX_ROW_H + 10 : 0 };
+    }
+    var exPlan = planExpansion();
+
+    function drawExpansion(y0) {
+      if (!exPlan.units.length) return;
+      var PADX = 5, COL_MIN = 40, COL_GAP = 6, UNIT_GAP = 9;
+      // Ширина модуля — по числу его контуров; колонка контура не уже подписи.
+      var widths = exPlan.units.map(function (u) {
+        return PADX * 2 + u.circuits.length * COL_MIN + (u.circuits.length - 1) * COL_GAP;
+      });
+      var total = widths.reduce(function (a, b) { return a + b; }, 0) + (widths.length - 1) * UNIT_GAP;
+      var x = Math.max(6, (W - total) / 2);
+      exPlan.units.forEach(function (u, ui) {
+        var uw = widths[ui];
+        o.push(rrect(x, y0, uw, EX_ROW_H, 1.6, { f: FACE2, c: '#94A3B8', w: 0.5 }));
+        o.push(txt(x + PADX, y0 + 5.2, u.name + (u.multi ? ' №' + u.no : ''), { size: 2.6, weight: 'bold' }));
+        // Связь с контроллером — по той же шине RS-485, что и остальная
+        // периферия. Длинную жилу через весь лист не тянем: она перечеркнула бы
+        // выноски, поэтому ставим короткий отвод с подписью.
+        o.push(seg([[x + uw - PADX - 22, y0], [x + uw - PADX - 22, y0 - 5]], CRS[2], 0.6, '1.6 1.2'));
+        o.push(txt(x + uw - PADX - 20, y0 - 2.6, 'RS-485 от контроллера', { size: 2.1, fill: '#475569' }));
+        u.circuits.forEach(function (c, ci) {
+          var cx0 = x + PADX + ci * (COL_MIN + COL_GAP);
+          var mix = c.type === 'mix';
+          var kind = c.src === 'ufh' ? 'Тёплый пол' : c.src === 'snow' ? 'Снеготаяние' : 'Радиаторы';
+          // Клеммы: у насоса L/N/PE, у привода ◄/►/N/PE — те же, что у КО-1…КО-3
+          // на самом контроллере, поэтому и рисуются так же.
+          var ty = y0 + 9.4;
+          function term(tx, cl, col) {
+            o.push(rrect(tx, ty, cl.length * P, 6.4, 0.7, { f: col, c: '#0F172A', w: 0.45 }));
+            cl.forEach(function (L, i) {
+              var ccx = tx + P / 2 + i * P;
+              o.push(circle(ccx, ty + 3.2, 0.95, { f: '#fff', c: '#334155', w: 0.3 }));
+              o.push(txt(ccx, ty + 9.4, L, { size: 2.1, anchor: 'middle' }));
+            });
+            return tx + cl.length * P;
+          }
+          var tx = cx0;
+          tx = term(tx, ['L', 'N', '⏚'], TC_.or);
+          if (mix) term(tx + 3, ['◄', '►', 'N', '⏚'], TC_.bl);
+          o.push(txt(cx0, y0 + 3.4, 'контур ' + (ci + 1), { size: 2.1, fill: '#94A3B8' }));
+          o.push(txt(cx0, y0 + EX_ROW_H - 5.6, c.name + ' · ' + kind, { size: 2.4, weight: 'bold' }));
+          o.push(txt(cx0, y0 + EX_ROW_H - 2.2, mix ? 'насос + сервопривод смесителя' : 'насос контура',
+            { size: 2.1, fill: '#475569' }));
+        });
+        x += uw + UNIT_GAP;
+      });
+    }
+
+    var H = CB + 12 + (nBot - 1) * LS + 44 + exPlan.h;
 
     o.push(txt(W / 2, 8.4, 'Схема подключения автоматики котельной — STOUT Thermatic 3001',
       { size: 4.4, anchor: 'middle', weight: 'bold' }));
@@ -1698,7 +2048,7 @@
     var scrLabel = 'Отопление';
     if ((tc.circuits || []).length) {
       var c0 = tc.circuits[0];
-      scrLabel = c0.name + ' ' + (c0.src === 'ufh' ? 'Тёплый пол' : 'Радиаторы');
+      scrLabel = c0.name + ' ' + (c0.src === 'ufh' ? 'Тёплый пол' : c0.src === 'snow' ? 'Снеготаяние' : 'Радиаторы');
     } else if (tc.dhw === 'boiler' || tc.dhw === 'boiler_ct') scrLabel = 'ГВС';
     o.push(rrect(px(0.02), py(0.845), sw * 0.96, sh * 0.13, 0.5, { f: '#1E6FD9' }));
     o.push(txt(px(0.5), py(0.94), '◄  ' + scrLabel + '  ►', { size: sh * 0.095, anchor: 'middle', fill: '#fff' }));
@@ -1839,9 +2189,22 @@
         var term = c.type === 'mix'
           ? '«' + c.name + ' Насос» + «' + c.name + ' Смеситель»'
           : '«' + c.name + ' Насос»';
-        if (i >= 3) term = 'на блоке расширения EX';
+        if (i >= 3) {
+          // Какому именно модулю достался контур — считает planExpansion,
+          // и таблица обязана говорить то же самое, что нарисовано внизу листа.
+          var host = null, slot = 0;
+          exPlan.units.forEach(function (u) {
+            var k = u.circuits.indexOf(c);
+            if (k >= 0) { host = u; slot = k + 1; }
+          });
+          // Номер контура НА МОДУЛЕ обязателен: у EX-108 их три, и без него
+          // все три строки таблицы читались бы одинаково.
+          term = host ? (host.name + (host.multi ? ' №' + host.no : '') + ' · контур ' + slot +
+            ' · клеммы «Насос»' + (c.type === 'mix' ? ' и «Смеситель»' : ''))
+            : 'на блоке расширения EX';
+        }
         rw.push({
-          t: c.name + ' · ' + (c.src === 'ufh' ? 'Тёплый пол' : 'Радиаторы'),
+          t: c.name + ' · ' + (c.src === 'ufh' ? 'Тёплый пол' : c.src === 'snow' ? 'Снеготаяние' : 'Радиаторы'),
           s: term + ' · ' + (c.byAir ? 'по воздуху' : 'по теплоносителю')
         });
       });
@@ -1906,6 +2269,9 @@
     strip(BOT, CY + CH - 8.6, false);
 
     // ── автоматика тёплого пола (раздел 4.3 сметы) ──
+    // Блоки расширения — под нижними выносками, над легендой жил.
+    drawExpansion(H - 12 - 6 - EX_ROW_H);
+
     // ── легенда жил ──
     var lg = [[CL, 'L — фаза (коммутирует реле контроллера)'], [CN, 'N — нейтраль'],
       [null, 'PE — на шину заземления щита'], [CSIG, 'датчики NTC (пара, полярности нет)'],
@@ -2178,6 +2544,7 @@
 
   window.projectScheme = {
     build: build, sheet: sheetSvg, automation: automation, ufhScheme: ufhScheme,
+    snowScheme: snowScheme,
     // отдельные УГО пригодятся будущим листам узлов обвязки
     sym: {
       ballValve: ballValve, checkValve: checkValve, pump: pump, valve3: valve3,

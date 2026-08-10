@@ -166,6 +166,18 @@ body.dark-mode #blk_boiler_auto_box div {
     border-top-color: #2A2A2A !important;
 }
 
+/* Блок снеготаяния оформлен так же, как блок горячей воды, — и тёмную тему
+   получает по тому же правилу: у рамки свой фон, у разделителей свой цвет.
+   Разделители есть и внутри списка участков, поэтому селектор без «>». */
+body.dark-mode #blk_snow_opts {
+    background: #161616 !important;
+    border-color: #2A2A2A !important;
+}
+
+body.dark-mode #blk_snow_opts div {
+    border-top-color: #2A2A2A !important;
+}
+
 /* === УЗЕЛ ВВОДА ХВС — тёмная тема === */
 body.dark-mode #blk_water_input_opts {
     background: #161616 !important;
@@ -8082,10 +8094,27 @@ body.dark-mode .to-top-btn:hover {
     }
 }
 
+/* === ОБЩИЙ РАЗМЕР СХЕМ НА ЭКРАНЕ ===
+   Принципиальная схема, схема автоматики котельной и схема автоматики
+   тёплого пола показываются в одной рамке — лист целиком, но небольшой;
+   разглядывают его кнопкой «На весь экран», а не мелким шрифтом на месте.
+   Ширину каждой схемы задаёт её же пропорция: --scheme-w приходит инлайном
+   как min(предел по ширине, предел по высоте × отношение сторон листа),
+   поэтому по высоте все схемы получаются примерно одинаковыми.
+   Выравнивание — по левому краю, как у таблицы сметы под схемой. */
+:root { --scheme-max-w: 780px; --scheme-max-h: 560px; }
+.scheme-svg-wrap, .automation-scheme {
+    max-width: var(--scheme-w, var(--scheme-max-w));
+    margin-left: 0; margin-right: auto;
+}
+@media print {
+    .scheme-svg-wrap, .automation-scheme { max-width: none; }
+}
+
 /* === СХЕМА ПОДКЛЮЧЕНИЯ АВТОМАТИКИ (над разделом 2.8.1 в смете) === */
 .automation-scheme {
     position: relative; cursor: zoom-in;
-    margin: 10px 0 14px; max-width: 1100px;
+    margin: 10px auto 14px 0;
 }
 .automation-scheme svg {
     display: block; width: 100%; height: auto;
