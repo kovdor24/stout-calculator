@@ -4651,16 +4651,29 @@ body.dark-mode .header-totals-block {
         padding: 0 !important;
         box-shadow: none !important;
     }
-    .inv-table td.col-img img { 
-        width: 100% !important; 
-        height: 100% !important; 
-        object-fit: contain !important; 
-        border-radius: 0 !important; 
-        background: transparent !important; 
-        padding: 0 !important; 
-        box-sizing: border-box !important; 
+    .inv-table td.col-img img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
     }
-    .inv-table td.col-name { 
+    /* Ночная тема: снимки у товаров разных пропорций — дымоход 600×189,
+       коллектор почти квадратный, — и на тёмной плитке белое поле снимка
+       занимало у каждого свою часть: одни иконки выглядели плитками, другие
+       узкой полоской без подложки. Даём белую подложку самой картинке, во всю
+       плитку: формат у всех один, как на большом экране, где подложка у
+       .prod-thumb есть всегда. */
+    body.dark-mode .inv-table td.col-img .prod-thumb,
+    body.dark-mode .inv-table td.col-img img {
+        background: #fff !important;
+        border-radius: 9px !important;
+        padding: 3px !important;
+        box-sizing: border-box !important;
+    }
+    .inv-table td.col-name {
         grid-area: name !important; 
         font-weight: 600 !important; 
         font-size: 13px !important; 
@@ -8316,11 +8329,12 @@ body.dark-mode .to-top-btn:hover {
     .scheme-svg-wrap, .automation-scheme { width: auto; height: auto; max-width: none; }
     .scheme-svg-wrap > svg, .automation-scheme > svg { height: auto; }
 }
-/* На телефоне выравнивать схемы по высоте нечем: экран и так узкий, и
-   вытянутый лист получал ширину вдвое меньше принципиальной схемы —
-   читать нечего. Общую рамку снимаем, все схемы идут во всю ширину. */
+/* На телефоне общую рамку снимаем: держать одну высоту на узком экране нечем.
+   Лист занимает половину ширины колонки — на месте его всё равно не читают,
+   разглядывают кнопкой «На весь экран», а половина ширины не выталкивает
+   таблицу вниз. Высота идёт от собственной пропорции листа. */
 @media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait), screen and (orientation: landscape) and (max-height: 500px) {
-    .scheme-svg-wrap, .automation-scheme { width: auto; height: auto; max-width: none; }
+    .scheme-svg-wrap, .automation-scheme { width: 50%; height: auto; max-width: none; }
     .scheme-svg-wrap > svg, .automation-scheme > svg { height: auto; }
     /* Схемы автоматики, ТП и снеготаяния вставляются строкой таблицы над своим
        разделом. Мобильная карточка товара раскладывает любую строку в сетку
@@ -8342,6 +8356,22 @@ body.dark-mode .to-top-btn:hover {
     background: #fff; border: 1px solid var(--border); border-radius: 8px;
 }
 body.dark-mode .automation-scheme svg { border-color: #334155; }
+/* === НОЧНАЯ ТЕМА ДЛЯ СХЕМ ===
+   Лист остаётся белым: цвет на нём — часть легенды (подача, обратка, ХВС,
+   ГВС, рециркуляция), и инверсия увела бы её — красная рукоятка крана
+   становится розовой, голубой ХВС уходит в бирюзу. Поэтому гасим яркость,
+   чтобы белое поле не слепило рядом с тёмной таблицей, и подкручиваем
+   контраст: без него приглушённые тонкие линии выносок теряются.
+   На полном экране (#scheme_zoom_overlay) гашения нет — там лист как раз
+   разглядывают, и он должен быть в исходных цветах. */
+body.dark-mode .scheme-svg-wrap > svg,
+body.dark-mode .automation-scheme svg {
+    filter: brightness(0.86) contrast(1.04);
+}
+@media print {
+    body.dark-mode .scheme-svg-wrap > svg,
+    body.dark-mode .automation-scheme svg { filter: none; }
+}
 #automation_scheme_row td { padding: 4px 0 !important; border: none !important; }
 @media print {
     .automation-scheme { break-inside: avoid; page-break-inside: avoid; max-width: none; }
