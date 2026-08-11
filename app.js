@@ -12638,7 +12638,10 @@ const app = {
             `<svg xmlns="http://www.w3.org/2000/svg" class="sheet-a3 scheme-svg" viewBox="0 0 420 297">` +
             `<style>.sheet-a3 text{fill:#000;stroke:none}` +
             `.sheet-a3 line,.sheet-a3 rect{stroke:#000;fill:none}</style>` +
-            `<rect x="0" y="0" width="420" height="297" fill="#fff" stroke="none"/>` +
+            // Подложка листа — инлайн-стилем, а не атрибутами fill/stroke:
+            // правило .sheet-a3 rect{stroke:#000} выше атрибутов по приоритету
+            // и обводило подложку по периметру — это и была «чёрная рамка».
+            `<rect x="0" y="0" width="420" height="297" style="fill:#fff;stroke:none"/>` +
             `<g stroke-linecap="square" font-family="${font}" font-size="3.67">` +
             window.projectScheme.build(cfg) +
             `</g></svg>`;
@@ -12654,19 +12657,17 @@ const app = {
                         position: relative; width: 100%; margin-bottom: 20px;
                         height: auto; min-height: 0; max-height: none; overflow: visible;
                     }
-                    /* Размер на экране общий для всех схем (--scheme-max-* в
-                       style.css): лист ужат до одной рамки, детали смотрят
-                       кнопкой «На весь экран». Ширину даёт пропорция А3. */
-                    #dynamic_scheme.scheme-vector .scheme-svg-wrap {
-                        --scheme-w: min(var(--scheme-max-w), calc(var(--scheme-max-h) * 1.414));
-                    }
-                    #dynamic_scheme.scheme-vector .scheme-svg {
-                        display: block; width: 100%; height: auto;
-                        background: #fff; border: 1px solid #E2E8F0; border-radius: 8px;
-                    }
-                    /* Чертёж остаётся на белом листе и в ночном режиме: инверсия
+                    /* Размер на экране общий для всех схем: рамку считает
+                       app.syncSchemeBox() и кладёт в --scheme-box-* (см.
+                       style.css), лист вписывается в неё по своему viewBox.
+                       Чертёж остаётся на белом и в ночном режиме: инверсия
                        увела бы цвета трубопроводов (красный/синий/оранжевый —
                        часть легенды и читаются по ней). */
+                    #dynamic_scheme.scheme-vector .scheme-svg {
+                        display: block; width: 100%; height: 100%;
+                        background: #fff; border-radius: 8px;
+                        border: 1px solid var(--border);
+                    }
                     body.dark-mode #dynamic_scheme.scheme-vector .scheme-svg {
                         border-color: #334155;
                     }
@@ -12804,7 +12805,7 @@ const app = {
         const a = window.projectScheme.ufhScheme(ufh);
         const font = window.projectSheets.FONT ||
             "'ISOCPEUR','GOST type A','Arial Narrow',sans-serif";
-        return `<div class="automation-scheme" style="--scheme-w:min(var(--scheme-max-w),calc(var(--scheme-max-h) * ${(a.w / a.h).toFixed(3)}))" onclick="app.openSchemeFullscreen(this.querySelector('svg'))" title="Открыть на весь экран">` +
+        return `<div class="automation-scheme" onclick="app.openSchemeFullscreen(this.querySelector('svg'))" title="Открыть на весь экран">` +
             `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${a.w} ${a.h}">` +
             `<rect x="0" y="0" width="${a.w}" height="${a.h}" fill="#fff" stroke="none"/>` +
             `<g stroke-linecap="square" font-family="${font}" font-size="3.67">${a.svg}</g></svg>` +
@@ -12839,10 +12840,193 @@ const app = {
         if (!a) return '';
         const font = (window.projectSheets.FONT) ||
             "'ISOCPEUR','GOST type A','Arial Narrow',sans-serif";
-        return `<div class="automation-scheme" style="--scheme-w:min(var(--scheme-max-w),calc(var(--scheme-max-h) * ${(a.w / a.h).toFixed(3)}))" onclick="app.openSchemeFullscreen(this.querySelector('svg'))" title="Открыть на весь экран">` +
+        return `<div class="automation-scheme" onclick="app.openSchemeFullscreen(this.querySelector('svg'))" title="Открыть на весь экран">` +
             `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${a.w} ${a.h}">` +
             `<rect x="0" y="0" width="${a.w}" height="${a.h}" fill="#fff" stroke="none"/>` +
             `<g stroke-linecap="square" font-family="${font}" font-size="3.67">${a.svg}</g></svg>` +
+            `<button type="button" class="scheme-zoom-btn" aria-label="На весь экран">⛶ На весь экран</button></div>`;
+    },
+    /**
+     * Узел обвязки коллекторов водоснабжения — над разделом «5.1. Внутреннее
+     * водоснабжение». Включается тем же тумблером «Схема», что и
+     * принципиальная схема котельной.
+     *
+     * Это сами листы проектов-образцов, вынутые из PDF скриптом
+     * scratch/extract_water_sheet.py: сняты только рамка ГОСТ и штамп — в смете
+     * лист идёт без них. Перерисовывать узел вектором нельзя: оформление
+     * проектной документации задано жёстко, и «похожий» чертёж ему не отвечает.
+     *
+     * Состав сметы меняет лист двумя способами, и под каждый готов свой кадр:
+     *   рециркуляция ГВС — лист с тремя коллекторами (ХВС, ГВС, РГВС Т4) против
+     *     листа с двумя; коллектор Т4 и его трубы есть на обоих видах, общем и
+     *     объёмном, поэтому вырезать их из кадра нельзя — берётся другой лист;
+     *   незамерзающий кран (раздел 6.2) — с узлом поливочного крана или без.
+     *
+     * Остальное на виде принципиальное: выходов всегда пять, фактическое
+     * количество берут с плана — об этом примечание на самом листе.
+     */
+    // Кадр у всех листов один: это поле листа А3 одного и того же шаблона,
+    // обрезанное по рамке. Поля вокруг чертежа авторские, поэтому масштаб и
+    // композиция на всех листах совпадают.
+    SHEET_SIZE: { w: 3351, h: 2433 },
+    WATER_SHEETS: {
+        // [рециркуляция][поливочный кран]
+        rec: {
+            tap: 'img/nodes/water_manifold_sheet.jpg',
+            no: 'img/nodes/water_manifold_sheet_notap.jpg'
+        },
+        norec: {
+            tap: 'img/nodes/water_manifold_sheet_norec.jpg',
+            no: 'img/nodes/water_manifold_sheet_norec_notap.jpg'
+        }
+    },
+    renderWaterScheme: function () {
+        if (!this.state.water) return '';
+        const tap = this.state.waterInput && (parseInt(this.state.outdoorFaucet) || 0) > 0;
+        return this._renderSheetImage(
+            this.WATER_SHEETS[this.state.recirc ? 'rec' : 'norec'][tap ? 'tap' : 'no']);
+    },
+    /**
+     * Обвязка распределительного узла ХВС — под заголовком раздела
+     * «6. Узел ввода ХВС». Лист берётся тот из трёх редакций образцов, что
+     * ближе к собранному узлу: у них разный состав, и дорисовывать в чужой
+     * чертёж корпус фильтра или второй уличный кран нельзя.
+     *
+     *   plain   — ТМ-12 (2025-191): без Big Blue, один уличный кран, подпитки
+     *             отопления нет — п.7 легенды это загрузка контура ГВС;
+     *   filter  — ТМ-19 (2025-148): Big Blue и кран с электроприводом, один
+     *             уличный кран, подпитка совмещена с бойлером (п.7);
+     *   filter2 — ТМ-17 (2025-1209R): Big Blue, два уличных крана и отдельная
+     *             подпитка системы отопления (п.9).
+     *
+     * Ближайший считается по трём опциям узла: фильтрация весит больше всего
+     * (её видно на листе целым корпусом), затем подпитка, затем число уличных
+     * кранов.
+     */
+    HVS_NODE_SHEETS: [
+        { url: 'img/nodes/hvs_node_sheet_plain.jpg', filter: false, feed: false, taps: 1 },
+        { url: 'img/nodes/hvs_node_sheet_filter.jpg', filter: true, feed: true, taps: 1 },
+        { url: 'img/nodes/hvs_node_sheet_filter2.jpg', filter: true, feed: true, taps: 2 }
+    ],
+    renderHvsNodeScheme: function () {
+        const s = this.state;
+        if (!s.waterInput) return '';
+        // Кранов на листах один или два, поэтому для сравнения приводим смету
+        // к этому же диапазону: узел с тремя кранами всё равно ближе к листу
+        // с двумя, а без крана — к листу с одним.
+        const taps = Math.min(Math.max(parseInt(s.outdoorFaucet) || 0, 1), 2);
+        let best = null, bestScore = -1;
+        this.HVS_NODE_SHEETS.forEach(sh => {
+            const score = (sh.filter === !!s.bigBlueFilter ? 4 : 0) +
+                (sh.feed === !!s.heatingFeed ? 2 : 0) +
+                (2 - Math.abs(sh.taps - taps));
+            if (score > bestScore) { bestScore = score; best = sh; }
+        });
+        return this._renderSheetImage(best && best.url);
+    },
+    /**
+     * Узел обвязки коллектора напольного отопления — над разделом
+     * «4. Водяной тёплый пол». Лист О-11 того же проекта-образца 2025-148,
+     * вынутый тем же скриптом. Отключаемых блоков на нём нет: расходомеры,
+     * краны и сливной штуцер входят в любую гребёнку тёплого пола, поэтому
+     * кадр один. Число выходов принципиальное — примечание об этом на листе.
+     */
+    UFH_SHEET: 'img/nodes/ufh_manifold_sheet.jpg',
+    renderUfhNodeScheme: function () {
+        return (this.state.tp1 > 0 || this.state.tp2 > 0) ? this._renderSheetImage(this.UFH_SHEET) : '';
+    },
+    /**
+     * Узел обвязки панельного радиатора — под заголовком раздела
+     * «3. Приборы отопления», там же, где сами приборы. Лист О-14, две его
+     * редакции по способу подключения прибора:
+     *   bottom — Ventil: клапан в приборе, угловой узел нижнего подключения;
+     *   side   — боковое: осевой термостатический клапан сверху и запорно-
+     *            балансировочный угловой снизу.
+     *
+     * Показывается, когда панельные радиаторы в смете есть: у секционных и
+     * конвекторов обвязка другая. Приборы обоих типов в одной смете бывают
+     * (подмена по отдельным радиаторам) — тогда выводятся оба листа.
+     * Расхождения по мощности, габаритам и расположению выходов оговорены
+     * сноской на самих листах.
+     */
+    RAD_PANEL_SHEETS: {
+        bottom: 'img/nodes/rad_panel_sheet.jpg',
+        side: 'img/nodes/rad_panel_side_sheet.jpg'
+    },
+    renderRadPanelScheme: function () {
+        const spec = this.currentSpec || [];
+        const panels = spec.filter(i => /^\s*3[.\s]/.test(i.group || '') &&
+            /панельн/i.test(String(i.name || '')));
+        if (!panels.length) return '';
+        const isVentil = i => /ventil|вентил/i.test(String(i.name || ''));
+        return (panels.some(isVentil) ? this._renderSheetImage(this.RAD_PANEL_SHEETS.bottom) : '') +
+            (panels.some(i => !isVentil(i)) ? this._renderSheetImage(this.RAD_PANEL_SHEETS.side) : '');
+    },
+    /**
+     * Узел обвязки коллектора радиаторного отопления — над подразделом
+     * «3.3. Трубы отопления»: там лежит и сам коллектор, и лучевая разводка к
+     * приборам, к которой этот узел относится. Лист О-12 того же образца.
+     *
+     * Лист про лучевую разводку, поэтому показывается только когда в смете есть
+     * сам коллектор: при врезке радиаторов в магистраль тройниками коллектора
+     * нет, и узла обвязки к нему тоже.
+     */
+    RAD_SHEET: 'img/nodes/rad_manifold_sheet.jpg',
+    renderRadNodeScheme: function () {
+        // Коллектор радиаторов лежит в подразделе труб («3.3. Трубы отопления»),
+        // а в слитой смете — прямо в разделе «3.». Ищем по обоим исполнениям:
+        // гребёнка «Коллектор радиаторный N вых.» и сборка «Коллекторный блок».
+        const spec = this.currentSpec || [];
+        const has = spec.some(i => /^\s*3[.\s]/.test(i.group || '') &&
+            /коллектор/i.test(String(i.name || '')) && !/шкаф|кронштейн/i.test(String(i.name || '')));
+        return has ? this._renderSheetImage(this.RAD_SHEET) : '';
+    },
+    /**
+     * Обёртка листа-картинки для сметы. Лист завёрнут в <svg>, а не вставлен
+     * <img>: полноэкранный просмотр (openSchemeFullscreen) масштабирует именно
+     * svg, и картинке достаётся тот же зум колесом и перетаскивание, что и
+     * остальным схемам.
+     */
+    /**
+     * Общая рамка под все схемы сметы: ширина — по первым трём колонкам
+     * таблицы («№ | Фото | Наименование»), высота — от неё же по пропорции
+     * листа А3. Схемы приходят с разными пропорциями (лист А3, вытянутые схемы
+     * автоматики), и без общей рамки они шли лесенкой; чертёж внутри рамки
+     * вписывается по viewBox, поэтому не искажается.
+     *
+     * Меряем по факту, а не считаем в CSS: ширина колонок зависит от их
+     * содержимого и от того, показаны ли цены, — заранее её не знает никто.
+     */
+    SCHEME_BOX_SCALE: 0.7,
+    syncSchemeBox: function () {
+        const rows = document.querySelectorAll('#print-area .inv-table tr');
+        let row = null;
+        for (const r of rows) if (r.cells && r.cells.length >= 4) { row = r; break; }
+        if (!row) return;
+        let w = 0;
+        for (let i = 0; i < 3; i++) w += row.cells[i].getBoundingClientRect().width;
+        // Узкая раскладка — мобильная: там схемы идут во всю ширину, рамку не ставим
+        if (w < 320) return;
+        // На экране лист держим меньше расчётной ширины: три колонки — это
+        // ориентир, а не размер, читают схему всё равно на весь экран.
+        w = w * this.SCHEME_BOX_SCALE;
+        const st = document.documentElement.style;
+        st.setProperty('--scheme-box-w', Math.round(w) + 'px');
+        st.setProperty('--scheme-box-h', Math.round(w / 1.414) + 'px');
+        if (this._schemeBoxBound) return;
+        this._schemeBoxBound = true;
+        window.addEventListener('resize', () => {
+            clearTimeout(this._schemeBoxTimer);
+            this._schemeBoxTimer = setTimeout(() => this.syncSchemeBox(), 150);
+        });
+    },
+    _renderSheetImage: function (url) {
+        if (!url) return '';
+        const a = this.SHEET_SIZE;
+        return `<div class="automation-scheme" onclick="app.openSchemeFullscreen(this.querySelector('svg'))" title="Открыть на весь экран">` +
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${a.w} ${a.h}">` +
+            `<rect x="0" y="0" width="${a.w}" height="${a.h}" fill="#fff" stroke="none"/>` +
+            `<image x="0" y="0" width="${a.w}" height="${a.h}" preserveAspectRatio="xMidYMid meet" href="${url}"/></svg>` +
             `<button type="button" class="scheme-zoom-btn" aria-label="На весь экран">⛶ На весь экран</button></div>`;
     },
     renderAutomationScheme: function () {
@@ -12918,7 +13102,7 @@ const app = {
         const a = window.projectScheme.automation(tc, items);
         const font = window.projectSheets.FONT ||
             "'ISOCPEUR','GOST type A','Arial Narrow',sans-serif";
-        return `<div class="automation-scheme" style="--scheme-w:min(var(--scheme-max-w),calc(var(--scheme-max-h) * ${(a.w / a.h).toFixed(3)}))" onclick="app.openSchemeFullscreen(this.querySelector('svg'))" title="Открыть на весь экран">` +
+        return `<div class="automation-scheme" onclick="app.openSchemeFullscreen(this.querySelector('svg'))" title="Открыть на весь экран">` +
             `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${a.w} ${a.h}">` +
             `<rect x="0" y="0" width="${a.w}" height="${a.h}" fill="#fff" stroke="none"/>` +
             `<g stroke-linecap="square" font-family="${font}" font-size="3.67">${a.svg}</g></svg>` +
@@ -38312,20 +38496,43 @@ const app = {
         // появляется свой переключатель — на тех же правах, что и «РАЗДЕЛ»:
         // по умолчанию спрятан, показывается щелчком по заголовку раздела.
         document.querySelectorAll('.sec-scheme-badge').forEach(el => el.remove());
+        // Узел водоснабжения привязан не к подразделу, а к самому разделу
+        // «5.1» (в слитой смете — к «5.»): подраздела-якоря у него нет, схема
+        // относится ко всему водоснабжению. Такие строки помечены atSec —
+        // они встают сразу под заголовком раздела, а не над подразделом.
         [['automation_scheme_row', '2.8.1.', () => this.thermaticConfig && this.renderAutomationScheme()],
          ['ufh_scheme_row', '4.3.', () => this.renderUfhScheme()],
-         ['snow_scheme_row', '4.4.1', () => this.renderSnowScheme()]].forEach(([rowId, marker, build]) => {
+         ['snow_scheme_row', '4.4.1', () => this.renderSnowScheme()],
+         ['rad_panel_scheme_row', '3. Приборы отопления', () => this.renderRadPanelScheme(), true],
+         ['rad_node_scheme_row', '3.3. Трубы отопления', () => this.renderRadNodeScheme()],
+         ['ufh_node_scheme_row', '4. Водяной тёплый пол', () => this.renderUfhNodeScheme(), true],
+         ['water_scheme_row', ['5.1.', '5. Внутреннее водоснабжение'], () => this.renderWaterScheme(), true],
+         ['hvs_node_scheme_row', '6. Узел ввода ХВС', () => this.renderHvsNodeScheme(), true]]
+        .forEach(([rowId, marker, build, atSec]) => {
             const old = document.getElementById(rowId);
             if (old) old.remove();
             if (this.state.viewMode !== 'equipment' || !this.state.showScheme) return;
             const html = build();
             if (!html) return;
-            const hdrRow = Array.from(document.querySelectorAll('#print-area tr'))
-                .find(tr => tr.textContent.includes(marker));
-            if (!hdrRow) return;
-            // заголовок раздела, внутри которого лежит этот подраздел
-            let secRow = hdrRow.previousElementSibling;
-            while (secRow && !secRow.classList.contains('row-sec')) secRow = secRow.previousElementSibling;
+            let hdrRow, secRow;
+            if (atSec) {
+                const prefixes = [].concat(marker);
+                secRow = Array.from(document.querySelectorAll('#print-area tr.row-sec'))
+                    .find(tr => {
+                        if (tr.classList.contains('disabled-section')) return false;
+                        const t = ((tr.querySelector('.row-sec-title') || {}).dataset || {}).title || '';
+                        return prefixes.some(p => t.startsWith(p));
+                    });
+                if (!secRow) return;
+                hdrRow = secRow;
+            } else {
+                hdrRow = Array.from(document.querySelectorAll('#print-area tr'))
+                    .find(tr => tr.textContent.includes(marker));
+                if (!hdrRow) return;
+                // заголовок раздела, внутри которого лежит этот подраздел
+                secRow = hdrRow.previousElementSibling;
+                while (secRow && !secRow.classList.contains('row-sec')) secRow = secRow.previousElementSibling;
+            }
             const secTitle = secRow ? ((secRow.querySelector('.row-sec-title') || {}).dataset || {}).title : null;
             if (secTitle) {
                 const wrap = secRow.querySelector('.row-sec-header-wrap > div');
@@ -38346,9 +38553,12 @@ const app = {
             }
             const firstRow = hdrRow.closest('table').querySelector('tr');
             const cols = (firstRow && firstRow.cells.length) || (hdrRow.cells.length) || 8;
-            hdrRow.insertAdjacentHTML('beforebegin',
+            hdrRow.insertAdjacentHTML(atSec ? 'afterend' : 'beforebegin',
                 `<tr id="${rowId}" class="scheme-row"><td colspan="${cols}">${html}</td></tr>`);
         });
+        // Рамку схем считаем после вставки: до неё колонки таблицы ещё не той
+        // ширины, а схемы уже в документе и подхватят переменные сразу.
+        this.syncSchemeBox();
         this.saveState();
 
         if (this.state.viewMode === '3d') {

@@ -8293,26 +8293,35 @@ body.dark-mode .to-top-btn:hover {
 }
 
 /* === ОБЩИЙ РАЗМЕР СХЕМ НА ЭКРАНЕ ===
-   Принципиальная схема, схема автоматики котельной и схема автоматики
-   тёплого пола показываются в одной рамке — лист целиком, но небольшой;
-   разглядывают его кнопкой «На весь экран», а не мелким шрифтом на месте.
-   Ширину каждой схемы задаёт её же пропорция: --scheme-w приходит инлайном
-   как min(предел по ширине, предел по высоте × отношение сторон листа),
-   поэтому по высоте все схемы получаются примерно одинаковыми.
+   Все схемы в смете — принципиальная, автоматики, узлов обвязки — показываются
+   в одинаковой рамке: лист целиком, но небольшой; разглядывают его кнопкой
+   «На весь экран», а не мелким шрифтом на месте.
+   Размер рамки один на всех: ширина равна первым трём колонкам таблицы сметы
+   («№ | Фото | Наименование»), высота — от неё же по пропорции листа А3.
+   Считает их app.syncSchemeBox() и кладёт в --scheme-box-*; до первого счёта
+   работают запасные значения. Чертёж внутри вписывается по своему viewBox,
+   поэтому пропорции листа не искажаются.
    Выравнивание — по левому краю, как у таблицы сметы под схемой. */
 :root { --scheme-max-w: 780px; --scheme-max-h: 560px; }
 .scheme-svg-wrap, .automation-scheme {
-    max-width: var(--scheme-w, var(--scheme-max-w));
+    width: var(--scheme-box-w, calc(var(--scheme-max-w) * 0.7));
+    height: var(--scheme-box-h, calc(var(--scheme-max-w) * 0.7 / 1.414));
+    max-width: 100%;
     margin-left: 0; margin-right: auto;
 }
+.scheme-svg-wrap > svg, .automation-scheme > svg { width: 100%; height: 100%; }
 @media print {
-    .scheme-svg-wrap, .automation-scheme { max-width: none; }
+    /* На печати общая рамка не нужна: лист занимает страницу целиком и
+       раскладывается по своей пропорции. */
+    .scheme-svg-wrap, .automation-scheme { width: auto; height: auto; max-width: none; }
+    .scheme-svg-wrap > svg, .automation-scheme > svg { height: auto; }
 }
 /* На телефоне выравнивать схемы по высоте нечем: экран и так узкий, и
    вытянутый лист получал ширину вдвое меньше принципиальной схемы —
-   читать нечего. Предел по ширине снимаем, все схемы идут во всю ширину. */
+   читать нечего. Общую рамку снимаем, все схемы идут во всю ширину. */
 @media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait), screen and (orientation: landscape) and (max-height: 500px) {
-    .scheme-svg-wrap, .automation-scheme { max-width: none; }
+    .scheme-svg-wrap, .automation-scheme { width: auto; height: auto; max-width: none; }
+    .scheme-svg-wrap > svg, .automation-scheme > svg { height: auto; }
     /* Схемы автоматики, ТП и снеготаяния вставляются строкой таблицы над своим
        разделом. Мобильная карточка товара раскладывает любую строку в сетку
        «картинка | название | количество», и лист попадал в первую, узкую
@@ -8329,7 +8338,7 @@ body.dark-mode .to-top-btn:hover {
     margin: 10px auto 14px 0;
 }
 .automation-scheme svg {
-    display: block; width: 100%; height: auto;
+    display: block; width: 100%; height: 100%;
     background: #fff; border: 1px solid var(--border); border-radius: 8px;
 }
 body.dark-mode .automation-scheme svg { border-color: #334155; }
