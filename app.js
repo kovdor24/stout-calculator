@@ -18837,7 +18837,8 @@ const app = {
         notes.push({ h: '3. Сведения о температурных параметрах', lines: [
             'В качестве теплоносителя приняты:',
             '-теплоноситель на радиаторное отопление с параметрами: 75-65 °С',
-            '-теплоноситель на напольное отопление с параметрами: 40-35 °С'
+            '-теплоноситель на напольное отопление с параметрами: ' +
+                this.ufhGraph((this._ufhBal && this._ufhBal.dT) || this.UFH_DTS[0]).replace(' / ', '-') + ' °С'
         ]});
         notes.push({ h: '4. Радиаторная система отопления', lines: [
             'Система отопления запроектирована ' + (tee ? 'тройниковая' : 'коллекторная (лучевая)') + '.',
@@ -18848,7 +18849,7 @@ const app = {
         notes.push({ h: '5. Система напольного отопления', lines: [
             'В доме предусмотрена система подогрева полов выбранных помещений. Схема подключения принята ' +
                 'зависимой, теплоноситель единый с системой радиаторного отопления, рабочий график ' +
-                this.UFH_SUPPLY + '–' + (this.UFH_SUPPLY - ((this._ufhBal && this._ufhBal.dT) || this.UFH_DTS[0])) + '°С, ' +
+                this.ufhGraph((this._ufhBal && this._ufhBal.dT) || this.UFH_DTS[0]).replace(' / ', '–') + ' °С, ' +
                 'давление 1.5 бар.',
             'Теплоноситель в коллектор теплого пола подается от самосборной насосной группы, на которой ' +
                 'установлен циркуляционный насос, трехходовой клапан, запорная арматура.',
@@ -18949,7 +18950,8 @@ const app = {
             'В качестве теплоносителя принята ' +
                 ((s.coolant && s.coolant !== 'water') ? 'незамерзающая жидкость на основе пропиленгликоля.' : 'вода.') +
                 (hasRad ? ' График радиаторного отопления 75–65 °С.' : '') +
-                (hasTp ? ' График напольного отопления 40–35 °С.' : ''),
+                (hasTp ? ' График напольного отопления ' +
+                    this.ufhGraph((this._ufhBal && this._ufhBal.dT) || this.UFH_DTS[0]).replace(' / ', '–') + ' °С.' : ''),
             'Расчётная температура наружного воздуха ' + tOut + ' °С' +
                 (s.selectedCity ? ' (' + s.selectedCity.name + ').' : '.') +
                 ' Расчётное давление в системе — 1,5 бар.'
@@ -22631,10 +22633,16 @@ const app = {
             ];
         }
         else if (item.originalId && (item.originalId.startsWith('SMF-0001') || item.originalId === '418318')) {
-            let p_mat = catalog.mats ? catalog.mats[0]?.price || 991 : 991;
+            // В строке может стоять и мат ROMMER (его подставляет «Аналог») — тогда и в
+            // таблице показываем его, иначе она предлагала бы вернуться на STOUT под видом
+            // текущего выбора. Бренд берём из самой строки: посекционный «Аналог» глобальный
+            // brandMode не меняет.
+            let _matCat = catalog.mats ? catalog.mats[0] : null;
+            let _matR = (String(item.brand || '').toUpperCase() === 'ROMMER' && _matCat && _matCat.rommer) ? _matCat.rommer : null;
+            let p_mat = (_matR ? _matR.price : _matCat?.price) || 991;
             let p_xps = catalog.xps_kit ? catalog.xps_kit[0]?.price || 299 : 299;
             customAlts = [
-                { id: 'mat', name: 'Маты с бобышками STOUT', brand: 'STOUT', price: p_mat, imgId: catalog.mats?.[0]?.id },
+                { id: 'mat', name: _matR ? 'Маты с бобышками ROMMER' : 'Маты с бобышками STOUT', brand: _matR ? 'ROMMER' : 'STOUT', price: p_mat, imgId: _matR ? _matR.id : _matCat?.id },
                 { id: 'xps', name: 'Пенополистирол XPS + скобы', brand: 'Technonicol', price: p_xps, imgId: catalog.xps_kit?.[0]?.id }
             ];
         }
@@ -27761,8 +27769,36 @@ const app = {
     // Устроено так же, как снеготаяние (calcSnowMelt): сначала раскладка петель
     // по выбранной трубе, потом проверка напора у выбранного узла и, если не
     // хватает, — перепад пошире и насос посильнее.
-    UFH_DTS: [5, 7, 10],     // перепад коллектора ТП, К — от комфортного к тяжёлому
-    UFH_SUPPLY: 40,          // уставка подачи в петли, °C
+    // Рабочий ряд перепадов, К. Десятки здесь нет намеренно: при 10 К разбег
+    // температуры вдоль петли такой же, и дальний её конец под ногой заметно
+    // холоднее ближнего — для жилого пола это уже перебор. Она остаётся крайней
+    // мерой (UFH_DT_LAST) на случай, когда не помогли ни насос, ни узел крупнее:
+    // неравномерный пол всё же лучше неработающего.
+    UFH_DTS: [5, 7],
+    UFH_DT_LAST: 10,
+    UFH_SUPPLY: 40,          // уставка подачи в петли при штатном перепаде, °C
+    /**
+     * Уставка подачи под выбранный перепад, °C.
+     *
+     * Пол отдаёт тепло не «по расходу», а по средней температуре воды в петле:
+     * она и есть напор над комнатой. Если расширить перепад, оставив подачу
+     * прежней, средняя проседает (40/35 → 37,5 °C, а 40/30 → уже 35 °C) — пол
+     * отдаёт примерно на седьмую часть меньше, хотя расчёт по-прежнему считает
+     * ту же мощность. Поэтому подачу поднимаем на половину прибавки к перепаду:
+     * средняя остаётся 37,5 °C, а вместе с ней и теплоотдача.
+     *
+     * Цена решения не в мощности, а в равномерности: разбег вдоль петли растёт с
+     * 5 до 10 К, и дальний конец заметно холоднее ближнего.
+     */
+    ufhSupply: function (dT) {
+        return this.UFH_SUPPLY + ((dT || this.UFH_DTS[0]) - this.UFH_DTS[0]) / 2;
+    },
+    /** График подачи/обратки строкой: «41 / 34» */
+    ufhGraph: function (dT) {
+        const n = v => (Math.round(v * 10) / 10).toString().replace('.', ',');
+        const sup = this.ufhSupply(dT);
+        return n(sup) + ' / ' + n(sup - dT);
+    },
     UFH_LOOP_DP_MAX: 20,     // предельные потери в петле, кПа
     UFH_V_MAX: 0.5,          // предельная скорость в петле, м/с (шум и износ)
     UFH_V_MIN: 0.15,         // ниже неё воздух из петли не выносится, м/с
@@ -28091,8 +28127,9 @@ const app = {
      * Ни один вариант не прошёл — возвращаем ближайший к проходному и говорим
      * об этом словами: молчать про нехватку напора нельзя.
      */
-    ufhBalance: function (calc, type, brand) {
+    ufhBalance: function (calc, type, brand, dts) {
         if (!calc || !calc.mans.length) return null;
+        const DTS = (dts && dts.length) ? dts : this.UFH_DTS;
         const kvs = this.ufhMixKvs(type, brand);
         const base = (type === 'std') ? this.UFH_PUMPS.mix
             : ((type === 'dn20' || type === 'dn20_servo') ? this.UFH_PUMPS.dn20 : this.UFH_PUMPS.dn25);
@@ -28139,8 +28176,8 @@ const app = {
         const shapes = {};
         for (let pi = 0; pi < pumps.length && !best; pi++) {
             const pump = pumps[pi];
-            for (let di = 0; di < this.UFH_DTS.length; di++) {
-                const dT = this.UFH_DTS[di];
+            for (let di = 0; di < DTS.length; di++) {
+                const dT = DTS[di];
                 const mans = shapes[dT] || (shapes[dT] = shape(dT));
                 let ratio = 0, worst = null;
                 mans.forEach(m => {
@@ -28161,10 +28198,17 @@ const app = {
         // должен знать, а не обнаруживать по составу сметы.
         r.notes = [];
         if (r.dT > this.UFH_DTS[0]) {
-            r.notes.push('Перепад контура принят <b>' + r.dT + ' К</b> (подача ' + this.UFH_SUPPLY +
-                ' / обратка ' + (this.UFH_SUPPLY - r.dT) + ' °C), а не обычные ' + this.UFH_DTS[0] +
-                ': на перепаде ' + this.UFH_DTS[0] + ' К расход выше и напора насосу не хватает. ' +
-                'Расходы на расходомерах ниже той же пропорции — выставлять надо именно их.');
+            r.notes.push('Перепад контура принят <b>' + r.dT + ' К</b> (график ' + this.ufhGraph(r.dT) +
+                ' °C), а не обычные ' + this.UFH_DTS[0] + ' (' + this.ufhGraph(this.UFH_DTS[0]) + '): ' +
+                'на перепаде ' + this.UFH_DTS[0] + ' К расход выше и напора насосу не хватает. ' +
+                'Подача поднята вместе с перепадом, чтобы средняя температура воды осталась ' +
+                String(this.UFH_SUPPLY - this.UFH_DTS[0] / 2).replace('.', ',') + ' °C — иначе пол отдавал бы меньше тепла. ' +
+                'Мощность от этого не теряется, но разбег вдоль петли шире, и дальний её конец холоднее ближнего. ' +
+                (r.dT >= this.UFH_DT_LAST
+                    ? '<b>Это крайняя мера:</b> не помогли ни широкий перепад, ни насос посильнее, ни узел большей пропускной способности. ' +
+                      'Пол получится заметно неравномерным — если это жилые комнаты, лучше разделить коллектор или укоротить петли. '
+                    : '') +
+                'Расходы на расходомерах ниже в той же пропорции — выставлять надо именно их.');
         }
         if (r.strong) {
             r.notes.push('Насос группы тёплого пола — <b>' + r.pump.label + '</b> вместо штатного ' +
@@ -28230,7 +28274,7 @@ const app = {
             `<table style="border-collapse:collapse;margin:4px 0;font-size:11px;">` +
             hdr + body + `</table>` +
             `Итого по коллектору: <b>${n1(sum)} л/мин</b> (${m.flow.toFixed(2)} м³/ч). ` +
-            `Расход считан при перепаде <b>${b.dT} К</b> (подача ${this.UFH_SUPPLY} / обратка ${this.UFH_SUPPLY - b.dT} °C) ` +
+            `Расход считан при перепаде <b>${b.dT} К</b> (график ${this.ufhGraph(b.dT)} °C) ` +
             `по формуле G = Q / (1,163 × ΔT).<br>` +
             `<b>Как выставлять:</b> колпачок расходомера крутят при работающем насосе и открытых сервоприводах, ` +
             `начиная с самой длинной петли — её оставляют полностью открытой, остальные душат до расчётного расхода. ` +
@@ -35187,16 +35231,23 @@ const app = {
             const _at = _order.indexOf(_curType);
             const _cands = (_at < 0) ? [_curType] : _order.slice(_at).filter(t =>
                 t === _curType || this.isUfhMixTypeCompatible(t, tpArea, _brand, tpAreaPerMan));
+            // Два круга: сначала весь ряд узлов на рабочих перепадах (5 и 7 К), и
+            // только если не прошёл ни один — тот же ряд с крайними 10 К. Иначе
+            // расчёт разменивал бы равномерность пола раньше, чем железо, хотя
+            // неравномерный пол монтажник заметит, а лишний насос — нет.
             let _first = null, _ok = null;
-            for (let i = 0; i < _cands.length; i++) {
-                const _b = this.ufhBalance(this._ufhCalc, _cands[i], _brand);
-                if (!_b) break;
-                _b.type = _cands[i];
-                if (!_first) _first = _b;
-                if (_b.ok) { _ok = _b; break; }
-                // Ручной выбор DN не перебиваем: там решение монтажника, и честнее
-                // предупредить его, чем молча поставить другой узел.
-                if (this.state.manualDnOverride) break;
+            const _dtSets = [this.UFH_DTS, this.UFH_DTS.concat(this.UFH_DT_LAST)];
+            for (let d = 0; d < _dtSets.length && !_ok; d++) {
+                for (let i = 0; i < _cands.length; i++) {
+                    const _b = this.ufhBalance(this._ufhCalc, _cands[i], _brand, _dtSets[d]);
+                    if (!_b) break;
+                    _b.type = _cands[i];
+                    if (!_first) _first = _b;
+                    if (_b.ok) { _ok = _b; break; }
+                    // Ручной выбор DN не перебиваем: там решение монтажника, и честнее
+                    // предупредить его, чем молча поставить другой узел.
+                    if (this.state.manualDnOverride) break;
+                }
             }
             const _bal = _ok || _first;
             if (_bal && _bal.type !== _curType) {
@@ -37121,7 +37172,20 @@ const app = {
             addToBill(catalog.protective_sleeves[0], loops, "Втулка красная.", grpPipe); addToBill(catalog.protective_sleeves[1], loops, "Втулка синяя.", grpPipe); addToBill(catalog.label_kits[1], 1, "Наклейки.", grpPipe);
             let grpIns = "4.2. УТЕПЛИТЕЛЬ И КРЕПЁЖ";
 
-            if (this.state.ufhBaseType === 'mat') { let mt = catalog.mats[0]; mt.alts = [catalog.xps_kit[0]]; let mc = Math.ceil((tpArea / mt.area) * 1.05); addToBill(mt, mc, this.getDesc('ufh_mat', tpArea), grpIns); }
+            if (this.state.ufhBaseType === 'mat') {
+                let mt = catalog.mats[0]; mt.alts = [catalog.xps_kit[0]];
+                // Мат ROMMER мельче стаутовского (полезные 0,72 м² против 0,88), поэтому при
+                // включённом «Аналоге» количество считаем по его площади — иначе на пол не хватит.
+                // Решение о замене принимает addToBill, здесь повторяем его условие.
+                let _matSwap = this.state.swaps && this.state.swaps[mt.id];
+                let _matSecAn = (this.state.sectionAnalog || {})[currentSectionTitle];
+                let _matAnalog = _matSwap
+                    ? !!(mt.rommer && _matSwap === mt.rommer.id)
+                    : (_matSecAn !== undefined ? _matSecAn : (this.state.brandMode === 'rommer'));
+                let _matArea = (_matAnalog && mt.rommer && mt.rommer.area) ? mt.rommer.area : mt.area;
+                let mc = Math.ceil((tpArea / _matArea) * 1.05);
+                addToBill(mt, mc, this.getDesc('ufh_mat', tpArea), grpIns);
+            }
             else { let xpsItem = catalog.xps_kit[0]; xpsItem.alts = catalog.mats; let sheets = Math.ceil((tpArea / xpsItem.area) * 1.05); addToBill(xpsItem, sheets, this.getDesc('ufh_xps', tpArea), grpIns); if (catalog.ufh_mat && catalog.ufh_mat[0]) { let matRolls = Math.ceil(tpArea / catalog.ufh_mat[0].pack_m2); addToBill(catalog.ufh_mat[0], matRolls, `Подложка 3 мм, ${tpArea} м² (рулон 30 м²).`, grpIns); } let totalDowels = Math.ceil(tpArea * 5); addToBill(catalog.xps_kit[1], Math.ceil(totalDowels / 100), `Дюбеля.`, grpIns); let totalStaples = Math.ceil(tpMeters * 2.5); addToBill(catalog.xps_kit[2], Math.ceil(totalStaples / 25), `Скобы.`, grpIns); let tapeRolls = Math.ceil((sheets * 1.76 * 1.1) / 50); addToBill(catalog.xps_kit[3], tapeRolls, `Скотч.`, grpIns); }
 
             if (this.state.ufhAuto) {
