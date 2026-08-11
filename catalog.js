@@ -1145,9 +1145,9 @@ const WORK_PRICE_CATALOG = [
 
 const catalog = {
     dhw_pump: [
-        { id: "RCP-0005-152080", name: "Насос ГВС с таймером", price: 12018, brand: "ROMMER", desc: "Насос рециркуляции с таймером.", rommer: { id: "RCP-0005-150480", name: "Насос ГВС", price: 6060, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "RCP-0005-151780", name: "Насос ГВС", price: 10926, brand: "ROMMER", desc: "Насос рециркуляции базовый.", availability: "in_stock", price_date: "2026-08-10" },
-        { id: "RCP-0005-150480", name: "Насос ГВС", price: 6009, brand: "ROMMER", desc: "Бюджетный насос, корпус латунь.", availability: "in_stock", price_date: "2026-08-10" }
+        { id: "RCP-0005-152080", name: "Насос ГВС COMFORT с таймером (80 мм)", price: 12018, brand: "ROMMER", desc: "Насос рециркуляции с таймером.", rommer: { id: "RCP-0005-150480", name: "Насос ГВС COMFORT, корпус латунь (80 мм)", price: 6060, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "RCP-0005-151780", name: "Насос ГВС COMFORT (80 мм)", price: 10926, brand: "ROMMER", desc: "Насос рециркуляции базовый.", availability: "in_stock", price_date: "2026-08-10" },
+        { id: "RCP-0005-150480", name: "Насос ГВС COMFORT, корпус латунь (80 мм)", price: 6009, brand: "ROMMER", desc: "Бюджетный насос, корпус латунь.", availability: "in_stock", price_date: "2026-08-10" }
     ],
     dhw_fittings: [
         { id: "SFT-0041-000001", name: "Американка 1\" ВР/НР (Змеевик бойлера)", price: 1016, availability: "in_stock", price_date: "2026-08-10" },
@@ -1917,9 +1917,9 @@ const catalog = {
     // и цены на них до сих пор приходят в прайсе, но эти группы сняты с производства:
     // в подбор не ставить и в таблицу замены не добавлять.
     heat_exchanger_groups: [
-        { id: "SDG-0038-182501", name: "Группа насосная с теплообменником 18 пластин (без насоса, в теплоизоляции)", price: 57239, plates: 18, maxFlow: 1.578, ua: 1.80, minTemp: 5, brand: "STOUT", rommer: { id: "RDG-1038-182501", name: "Группа насосная с теплообменником 18 пластин (без насоса, в теплоизоляции)", price: 26521, plates: 18, maxFlow: 1.578, ua: 1.80, minTemp: 5, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-07-02" },
-        { id: "SDG-0038-282501", name: "Группа насосная с теплообменником 28 пластин (без насоса, в теплоизоляции)", price: 61498, plates: 28, maxFlow: 2.15, ua: 2.45, minTemp: 5, brand: "STOUT", rommer: { id: "RDG-1038-282501", name: "Группа насосная с теплообменником 28 пластин (без насоса, в теплоизоляции)", price: 28682, plates: 28, maxFlow: 2.15, ua: 2.45, minTemp: 5, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-07-02" },
-        { id: "SDG-0038-342501", name: "Группа насосная с теплообменником 34 пластины (без насоса, в теплоизоляции)", price: 65652, plates: 34, maxFlow: 2.5, ua: 2.85, minTemp: 5, brand: "STOUT", rommer: { id: "RDG-1038-342501", name: "Группа насосная с теплообменником 34 пластины (без насоса, в теплоизоляции)", price: 30879, plates: 34, maxFlow: 2.5, ua: 2.85, minTemp: 5, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-07-02" }
+        { id: "SDG-0038-182501", name: "Группа насосная с теплообменником 18 пластин", price: 57239, plates: 18, maxFlow: 1.578, ua: 1.80, minTemp: 5, brand: "STOUT", rommer: { id: "RDG-1038-182501", name: "Группа насосная с теплообменником 18 пластин", price: 26521, plates: 18, maxFlow: 1.578, ua: 1.80, minTemp: 5, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-07-02" },
+        { id: "SDG-0038-282501", name: "Группа насосная с теплообменником 28 пластин", price: 61498, plates: 28, maxFlow: 2.15, ua: 2.45, minTemp: 5, brand: "STOUT", rommer: { id: "RDG-1038-282501", name: "Группа насосная с теплообменником 28 пластин", price: 28682, plates: 28, maxFlow: 2.15, ua: 2.45, minTemp: 5, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-07-02" },
+        { id: "SDG-0038-342501", name: "Группа насосная с теплообменником 34 пластины", price: 65652, plates: 34, maxFlow: 2.5, ua: 2.85, minTemp: 5, brand: "STOUT", rommer: { id: "RDG-1038-342501", name: "Группа насосная с теплообменником 34 пластины", price: 30879, plates: 34, maxFlow: 2.5, ua: 2.85, minTemp: 5, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-07-02" }
     ],
     // ─── Снеготаяние ─────────────────────────────────────────────────────────
     // Петли уличного контура вяжутся трубой PE-Xa 20x2.8 (rad_pipes_grey), а не
@@ -1934,6 +1934,17 @@ const catalog = {
     snow_axial_20: [
         { id: "SFA-0034-002034", name: "Переходник с накидной гайкой (евроконус) 20xG3/4\" (аксиальный)", price: 563, brand: "STOUT", rommer: { id: "RFA-0034-002034", name: "Переходник с накидной гайкой (евроконус) 20xG3/4\"", price: 263, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-08-10" },
         { id: "SFA-0020-000020", name: "Монтажная гильза 20х2.8 (аксиальная)", price: 95, brand: "STOUT", rommer: { id: "RFA-0020-000020", name: "Монтажная гильза 20х2.8", price: 77, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-08-10" }
+    ],
+    // Петля тонкостенной трубой 20х2.0 садится на тот же евроконус, а гильза у неё
+    // своя: гильза обжимает трубу по стенке, и на 2,0 мм она другая.
+    snow_sleeve_20x20: { id: "SFA-0020-002002", name: "Монтажная гильза 20х2.0 (аксиальная)", price: 113, brand: "STOUT", rommer: { id: "RFA-0020-002002", name: "Монтажная гильза 20х2.0", price: 101, brand: "ROMMER", availability: "on_order", price_date: "2026-08-11" }, availability: "on_order", price_date: "2026-08-11" },
+    // Красная PE-Xa/EVOH 20х2.0 — вторая труба уличного контура и вариант по
+    // умолчанию. Внутренний диаметр 16 мм против 14,4 у серой 20х2.8: потери в
+    // петле ниже примерно на треть, метр дешевле, петля выходит длиннее и узлов
+    // на объект нужно меньше. Плата — теплоносителя в контуре на 15 % больше и
+    // стенка тоньше. Серая 20х2.8 никуда не делась и переключается в панели.
+    snow_pipes_red: [
+        { id: "SPX-0002-002020", name: "Труба PEX-a/EVOH красная 20x2.0 (100м)", len: 100, price: 183, brand: "STOUT", rommer: { id: "RPX-0002-002020", name: "Труба PEX-a 20x2.0", price: 109, brand: "ROMMER", availability: "on_order", price_date: "2026-08-11" }, availability: "on_order", price_date: "2026-08-11" }
     ],
     // Датчик осадков — единственная позиция раздела, которой нет ни у STOUT, ни у
     // ROMMER: в прайсе ТЕРЕМ ничего похожего не числится, поэтому позиция идёт
@@ -2012,17 +2023,30 @@ const catalog = {
         { id: "RCP-0002-1560130", brand: "ROMMER", name: "Насос 15/60-130", price: 3532, availability: "in_stock", price_date: "2026-08-10" }
     ],
     pumps_dn25: [
-        { id: "SPC-0011-2560180", name: "Насос циркуляционный 25/60-180", price: 11669, type: "default", desc: "Базовый насос STOUT 25/60-180.", rommer: { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI", price: 4909, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SPC-0010-2560180", name: "Насос циркуляционный 25/60-180 (Std)", price: 11669, type: "std", desc: "Классический 3-х скоростной насос.", rommer: { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI", price: 4909, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SPC-0011-2560180", name: "Насос циркуляционный 25/60-180", price: 11669, type: "default", desc: "Базовый насос STOUT 25/60-180.", rommer: { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI 25/60-180", price: 4909, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SPC-0010-2560180", name: "Насос циркуляционный 25/60-180 (Std)", price: 11669, type: "std", desc: "Классический 3-х скоростной насос.", rommer: { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI 25/60-180", price: 4909, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SPC-0002-2560180", name: "Насос циркуляционный Mini 25/60-180", price: 21680, type: "mini", desc: "Энергоэффективный (частотный).", rommer: { id: "RCP-0030-2560180", name: "Насос частотный EVO 25/60-180", price: 8930, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SPC-0003-2560180", name: "Насос циркуляционный Mini Pro 25/60-180", price: 30622, type: "pro", desc: "Премиум Smart (дисплей, авто-адаптация).", rommer: { id: "RCP-0030-2560180", name: "Насос частотный EVO 25/60-180", price: 8930, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" }
     ],
+    // Тот же типоразмерный ряд, что pumps_dn25, но на 8 метров напора. Отдельным
+    // массивом, а не строками в pumps_dn25: по этому массиву подбираются насосы
+    // всей котельной поиском по `type`, и лишние строки сломали бы подбор.
+    // Берётся только там, где расчёт показал, что 25/60 не проходит по напору —
+    // сейчас это вторичный контур снеготаяния (SNOW_PUMPS в app.js).
+    // Наличие проставлено «под заказ» осознанно: позиции внесены руками по
+    // прайсу, наличие никто не подтверждал — AutoPrice уточнит его сам.
+    pumps_dn25_80: [
+        { id: "SPC-0011-2580180", name: "Насос циркуляционный 25/80-180", price: 18613, type: "default", desc: "Базовый насос STOUT 25/80-180.", rommer: { id: "RCP-0004-2580180", name: "Насос циркуляционный PROFI RATE 25/80-180", price: 9686, brand: "ROMMER", availability: "on_order", price_date: "2026-08-11" }, availability: "on_order", price_date: "2026-08-11" },
+        { id: "SPC-0010-2580180", name: "Насос циркуляционный 25/80-180 (Std)", price: 29171, type: "std", desc: "Классический 3-х скоростной насос.", rommer: { id: "RCP-0004-2580180", name: "Насос циркуляционный PROFI RATE 25/80-180", price: 9686, brand: "ROMMER", availability: "on_order", price_date: "2026-08-11" }, availability: "on_order", price_date: "2026-08-11" },
+        { id: "SPC-0002-2580180", name: "Насос циркуляционный Mini 25/80-180", price: 24524, type: "mini", desc: "Энергоэффективный (частотный).", rommer: { id: "RCP-0031-2580180", name: "Насос частотный EVO 25/80-180", price: 20670, brand: "ROMMER", availability: "on_order", price_date: "2026-08-11" }, availability: "on_order", price_date: "2026-08-11" },
+        { id: "SPC-0003-2580180", name: "Насос циркуляционный Mini Pro 25/80-180", price: 34415, type: "pro", desc: "Премиум Smart (дисплей, авто-адаптация).", rommer: { id: "RCP-0031-2580180", name: "Насос частотный EVO 25/80-180", price: 20670, brand: "ROMMER", availability: "on_order", price_date: "2026-08-11" }, availability: "on_order", price_date: "2026-08-11" }
+    ],
     rommer_pumps: [
-        { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI", price: 4868, brand: "ROMMER", desc: "Бюджетный насос серии PROFI.", availability: "in_stock", price_date: "2026-08-10" },
-        { id: "RCP-0004-2560130", name: "Насос циркуляционный PROFI", price: 5006, brand: "ROMMER", desc: "Бюджетный насос серии PROFI.", availability: "in_stock", price_date: "2026-08-10" }
+        { id: "RCP-0004-2560180", name: "Насос циркуляционный PROFI 25/60-180", price: 4868, brand: "ROMMER", desc: "Бюджетный насос серии PROFI.", availability: "in_stock", price_date: "2026-08-10" },
+        { id: "RCP-0004-2560130", name: "Насос циркуляционный PROFI 25/60-130", price: 5006, brand: "ROMMER", desc: "Бюджетный насос серии PROFI.", availability: "in_stock", price_date: "2026-08-10" }
     ],
     pumps_mix: [
-        { id: "SPC-0011-2560130", brand: "STOUT", name: "Насос 25/60-130", price: 12666, rommer: { id: "RCP-0004-2560130", name: "Насос циркуляционный PROFI", price: 5048, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" }
+        { id: "SPC-0011-2560130", brand: "STOUT", name: "Насос 25/60-130", price: 12666, rommer: { id: "RCP-0004-2560130", name: "Насос циркуляционный PROFI 25/60-130", price: 5048, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" }
     ],
     hydro_arrow: { id: "SDG-0015-004001", name: "Гидравлическая стрелка 3 м³/ч", price: 22082, rommer: { id: "RDG-0015-004002", name: "Гидравлическая стрелка с накидными гайками 1 1/4″", price: 7329, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
     servo_rotary_sensor: { id: "SVM-0025-230017", name: "Сервопривод с датчиком", price: 40903, rommer: { id: "RVM-0015-230017", name: "Сервопривод с датчиком", price: 15810, brand: "ROMMER" }, availability: "in_stock", price_date: "2026-08-10" },

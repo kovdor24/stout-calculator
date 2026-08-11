@@ -832,7 +832,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
 
     lastSavedStateString: "",
 
@@ -6730,6 +6730,7 @@ const app = {
             let loadedState = data.calc_data;
             delete loadedState.tgUser; delete loadedState.accountType; delete loadedState.demoUsed; delete loadedState.darkMode; delete loadedState.themeMode;
             this.state = { ...this.state, ...loadedState };
+            this.migrateSnowPipeSwap();
             this.adoptPlans(loadedState);
             this.saveState(); this.syncUI(); this.render();
 
@@ -12820,8 +12821,13 @@ const app = {
         if (!window.projectScheme || !window.projectScheme.snowScheme || !window.projectSheets) return '';
         const a = window.projectScheme.snowScheme({
             kw: Math.round(sc.Q * 10) / 10, area: sc.area, loops: sc.loops,
+            // Узлы одинаковые, поэтому чертёж один на все — но с числом узлов и
+            // числом петель именно на этом узле, иначе по схеме соберут половину.
+            nodes: sc.nodes || 1, loopsNode: (sc.loopsPerNode || [])[0] || sc.loops,
             glycol: sc.glycol, plates: sc.hx ? sc.hx.plates : null,
-            tank: sc.tank ? sc.tank.vol : null, dia: 'Ø20х2,8 мм',
+            tank: sc.tank ? sc.tank.vol : null,
+            // Диаметр петли — тот, что выбран в панели (20х2.0 или 20х2.8).
+            dia: 'Ø' + (sc.pipe ? sc.pipe.label.replace('×', 'х') : '20х2,8').replace('.', ',') + ' мм',
             step: (sc.rows && sc.rows[0]) ? sc.rows[0].step : 250,
             supplyT: this.SNOW_SUPPLY,
             // Смеситель ведёт контроллер — значит на схеме сервопривод, а не
@@ -12852,8 +12858,11 @@ const app = {
         const mixG = find(/насосная.*(сервопривод|смесит)/i) || find(/узел подмеса/i);
         const dirG = find(/насосная.*прям/i, /(загрузк|для) бойлера|обвязка котла/i);
         const dhwG = find(/(загрузк[аи]|для) бойлера/i);
+        // На схему идут только котлы, подключённые к контроллеру: iface 'own' —
+        // это котёл на собственной автоматике, проводов к прибору у него нет.
+        const tcBoilers = (tc.boilers || []).filter(b => b.iface !== 'own').slice(0, 2);
         const items = {
-            boilerIds: (tc.boilers || []).slice(0, 2).map(b => b.kind === 'gas' ? idOf(gasB) : idOf(elB)),
+            boilerIds: tcBoilers.map(b => b.kind === 'gas' ? idOf(gasB) : idOf(elB)),
             mixGroupId: idOf(mixG),
             dirGroupId: idOf(dirG),
             dhwPumpId: idOf(dhwG) || idOf(dirG),
@@ -12880,8 +12889,8 @@ const app = {
             panel: nameOfItem(find(/панель управлени/i)),
             air: nameOfItem(find(/датчик температуры комнатн|термостат.*МЛ|радиодатчик/i)),
             radio: nameOfItem(find(/радиомодул/i)),
-            boiler0: nameOfItem((tc.boilers || [])[0] && (tc.boilers[0].kind === 'gas' ? gasB : elB)),
-            boiler1: nameOfItem((tc.boilers || [])[1] && (tc.boilers[1].kind === 'gas' ? gasB : elB))
+            boiler0: nameOfItem(tcBoilers[0] && (tcBoilers[0].kind === 'gas' ? gasB : elB)),
+            boiler1: nameOfItem(tcBoilers[1] && (tcBoilers[1].kind === 'gas' ? gasB : elB))
         };
         // Автоматика тёплого пола (раздел 4.3) — самостоятельная зональная
         // система на 230 В, к клеммам контроллера она не подключается напрямую.
@@ -15490,6 +15499,7 @@ const app = {
             // реальный проект администратора в localStorage/облаке.
             this._suppressSaveState = true;
             this.state = { ...this.state, ...st };
+            this.migrateSnowPipeSwap();
             this.syncUI();
             this.render();
 
@@ -17461,40 +17471,27 @@ const app = {
             </div>`);
         });
 
-        // Сводка и предупреждения — в том же виде, что предупреждения автоматики
-        // котельной (renderBoilerAutoInfo): цветная полоса слева, абзац за абзацем.
-        // Справочное синей полосой, тревожное — жёлтой и со значком, чтобы одно от
-        // другого отличалось с одного взгляда, а не по чтению текста.
+        // В панели остаются ТОЛЬКО предупреждения — жёлтой полосой со значком, как
+        // у автоматики котельной (renderBoilerAutoInfo). Весь разбор расчёта —
+        // нагрузка, теплообменник, насос, петли, гликоль — ушёл под «i» к тем
+        // строкам сметы, о которых он: там цифра читается вместе с позицией,
+        // которую объясняет, а не отдельным столбцом текста над настройками.
+        // Предупреждения остаются здесь потому, что их нельзя ставить в зависимость
+        // от того, откроет монтажник подсказку или нет.
         const sum = document.getElementById('snow_summary');
         if (sum) {
-            const bar = (color, html, sign) =>
-                `<div style="margin-top:8px; padding-left:8px; border-left:3px solid ${color}; color:var(--text-main);">${sign || ''}${html}</div>`;
-            const info = html => bar('#3B82F6', html);
-            const warn = html => bar('#F59E0B', html, '⚠️ ');
+            const warn = html =>
+                `<div style="margin-top:8px; padding-left:8px; border-left:3px solid #F59E0B; color:var(--text-main);">⚠️ ${html}</div>`;
             let html = '';
             if (!calc) {
                 // Участков ещё нет или все с нулевой площадью — показывать нечего.
                 sum.innerHTML = '';
             } else if (calc.impossible) {
-                html = warn(`Нагрузка <b>${Math.round(calc.Q)} кВт</b> — выше всей линейки насосных групп с теплообменником. Разделите снеготаяние на два узла.`);
+                html = warn(`Нагрузка <b>${Math.round(calc.Q)} кВт</b> — выше всей линейки насосных групп с теплообменником даже при делении на четыре узла. Уменьшите площадь снеготаяния.`);
             } else {
-                const tight = calc.head > calc.pumpHead * 0.9;
-                html =
-                    info(`<b>${calc.Q.toFixed(1)} кВт</b> на ${calc.area} м². Теплоноситель — <b>${calc.glycol} %</b> гликоля: не кристаллизуется до ${calc.freeze} °C при расчётной зиме ${calc.Tn} °C.`) +
-                    info(`Контур переживёт зиму <b>без нагрева и без электричества</b>: разрывать трубы такой раствор начинает только при ${calc.burst} °C. Дежурный подогрев нужен для скорости отклика, а не для того, чтобы система не замёрзла.`) +
-                    info(`Теплообменник <b>${calc.hx.plates} пластин</b>, перепад ${calc.dT} К, расход ${calc.V.toFixed(2)} м³/ч. Подача из котельной — от ${Math.ceil(calc.t1)} °C.`) +
-                    info(`Петель <b>${calc.loops}</b>, трубы <b>${calc.meters} м</b>, объём контура ${Math.round(calc.vol)} л.`) +
-                    (tight
-                        ? warn(`Нужен напор <b>${calc.head.toFixed(1)} м</b>, а насос 25/60 на этом расходе даёт ${calc.pumpHead.toFixed(1)} м. Разделите снеготаяние на два узла или уменьшите площадь одного контура.`)
-                        : info(`Напор: нужно ${calc.head.toFixed(1)} м, насос 25/60 даёт ${calc.pumpHead.toFixed(1)} м — проходит.`));
-                // Остальные оговорки расчёта — те же, что уходят в шапку раздела
-                // сметы. Про напор здесь уже сказано отдельной строкой, второй раз
-                // его не повторяем.
-                (calc.warnings || [])
-                    .filter(w => !/напор/i.test(w))
-                    .forEach(w => { html += warn(w); });
+                (calc.warnings || []).forEach(w => { html += warn(w); });
             }
-            if (html) sum.innerHTML = html;
+            sum.innerHTML = html;
             sum.style.display = html ? 'block' : 'none';
         }
 
@@ -19087,6 +19084,9 @@ const app = {
             // позиций не восстанавливаются, а без них схему не подписать.
             snow: (this.snowCalc && !this.snowCalc.impossible) ? {
                 dn: 25,
+                // Узлов может быть несколько — и каждый висит на коллекторе
+                // котельной своей парой отводов, как отдельная насосная группа.
+                nodes: this.snowCalc.nodes || 1,
                 plates: this.snowCalc.hx ? this.snowCalc.hx.plates : null,
                 glycol: this.snowCalc.glycol,
                 kw: Math.round(this.snowCalc.Q * 10) / 10,
@@ -19094,7 +19094,7 @@ const app = {
                 loops: this.snowCalc.loops,
                 // Диаметр уличных петель, а не котловой магистрали: за
                 // теплообменником начинается своя труба PE-Xa 20x2.8.
-                dia: 'Ø20х2,8 мм',
+                dia: 'Ø' + (this.snowCalc.pipe ? this.snowCalc.pipe.label.replace('×', 'х') : '20х2,8').replace('.', ',') + ' мм',
                 // Расширительный бак вторичного контура — тот же, что в смете.
                 tank: this.snowCalc.tank ? this.snowCalc.tank.vol : null
             } : null,
@@ -20537,6 +20537,7 @@ const app = {
                     delete savedState.themeMode;
 
                     this.state = { ...this.state, ...savedState };
+                    this.migrateSnowPipeSwap();
                     this.adoptPlans(savedState);
                     this.syncUI();
                     this.render();
@@ -20568,6 +20569,7 @@ const app = {
                 delete savedState.themeMode;
 
                 this.state = { ...this.state, ...savedState };
+                this.migrateSnowPipeSwap();
                 this.adoptPlans(savedState);
                 this.syncUI();
                 this.render();
@@ -21172,6 +21174,7 @@ const app = {
         if (localStorage.getItem('stout_save')) {
             try { this.state = { ...this.state, ...JSON.parse(localStorage.getItem('stout_save')) }; } catch (e) { console.error("Ошибка загрузки сохранения", e); }
         }
+        this.migrateSnowPipeSwap();
         this.loadInstallerSettingsLocal();
         // Списки доступа к инструментам: приходят с сервера, поэтому интерфейс
         // пересобираем ещё раз, когда они доедут (до этого проектирование
@@ -23977,6 +23980,16 @@ const app = {
                 if (!baseItem) {
                     baseItem = item;
                 }
+                // Название в смете расчёт может дописывать под задачу («- уличный
+                // контур снеготаяния до 23 кВт», «- для снеготаяния до 18 кВт»), а
+                // в каталоге оно общее. В таблице замены строка той же самой позиции
+                // обязана читаться так же, как в смете, иначе выглядит как другая.
+                // Только когда строка сметы — это и есть та позиция: в режиме
+                // «Аналог» id у неё ROMMER-овский, и подставлять его название
+                // STOUT-строке нельзя.
+                if (baseItem && item.id === baseItem.id && item.name && item.name !== baseItem.name) {
+                    baseItem = { ...baseItem, name: item.name };
+                }
                 // Для бойлеров: не добавлять текущий если он не входит в полностью отфильтрованный набор (mount+heat+vol)
                 let _isThermoItem = catalog.ufh_mech.find(x => x.id === item.id) || catalog.ufh_electro.find(x => x.id === item.id) || catalog.thermostats_stout.find(x => x.id === item.id);
                 let _isActuatorItem = catalog.actuators && (item.id === catalog.actuators.id || (catalog.actuators_rommer && catalog.actuators_rommer.find(x => x.id === item.id)));
@@ -24067,7 +24080,16 @@ const app = {
                     if (alt.comfort.article) displayItemComfort.article = alt.comfort.article;
                 }
 
-                let candidates = [displayItemStout, displayItemRommer, displayItemComfort].filter(Boolean);
+                // Замена бренда на ROMMER — эксклюзив ПРОФИ (checkAccess('pro-brand')).
+                // Раньше строки ROMMER стояли в таблице у всех: щелчок упирался в окно
+                // тарифа, но цена — самое ценное в этой таблице — была уже показана.
+                // Своя строка остаётся всегда: если смета собрана на ROMMER, без неё из
+                // таблицы пропала бы текущая позиция. Позиции, у которых ROMMER —
+                // единственное исполнение (rommer_pumps и т. п.), это не трогает: они
+                // приходят сюда как displayItemStout со своим брендом.
+                const _rommerRowOk = this.isPro() || this.state.brandMode === 'rommer' ||
+                    (displayItemRommer && displayItemRommer.id === item.id);
+                let candidates = [displayItemStout, _rommerRowOk ? displayItemRommer : null, displayItemComfort].filter(Boolean);
                 // При фильтре "ТЭН" исключаем GT-серию (без ТЭНа, RWH-2110-0xxx) из результатов
                 if (_isTankItem && this.state.tankSwapHeat === 'comb') {
                     candidates = candidates.filter(d => !(d.id && d.id.startsWith('RWH-2110-0')));
@@ -25255,6 +25277,32 @@ const app = {
             if (_curBrand !== 'ROMMER' && !this.checkAccess('pro-brand')) return;
         }
 
+        // Труба уличной петли — не просто строка сметы: от её стенки считаются
+        // длина петли, их число, объём заливки и монтажная гильза. Поэтому замена
+        // в таблице не подменяет позицию, а переключает сам типоразмер (как
+        // вкладки «Труба петель» в панели) и уходит в пересчёт. Иначе в смете
+        // оказывалась серая 20х2.8 с гильзой под 20х2.0 и петлями, посчитанными
+        // по чужому диаметру.
+        if (originalId === 'snow_pipe') {
+            // Строку можно заменить и на ROMMER-исполнение той же трубы — тогда
+            // типоразмер переключаем так же, а сама замена остаётся: она и есть
+            // выбор бренда для этой строки.
+            const _spOf = id => (this.SNOW_PIPES || []).find(p => {
+                if (p.id === id) return true;
+                const it = (catalog[p.cat] || []).find(x => x.id === p.id);
+                return !!(it && it.rommer && !Array.isArray(it.rommer) && it.rommer.id === id);
+            });
+            const _sp = _spOf(chosenId);
+            if (_sp) {
+                if (_sp.id !== chosenId) this.state.swaps[originalId] = chosenId;
+                else delete this.state.swaps[originalId];
+                this.logEquipmentSwap(originalId, chosenId);
+                this.closeSwapModal();
+                this.setSnowPipe(_sp.key);   // внутри syncUI + render + saveState
+                return;
+            }
+        }
+
         this.state.swaps[originalId] = chosenId;
 
         // Сохраняем коэффициент количества (напр. 1" сепаратор заменяет 2 шт. 3/4")
@@ -25949,6 +25997,8 @@ const app = {
     SNOW_SUPPLY: 40,        // уставка подачи вторичного контура, °C
     SNOW_LOOP_MAX: 100,     // предельная длина петли трубой 20x2.8, м
     SNOW_LOOP_DP_MAX: 20,   // предельные потери в самой длинной петле, кПа
+    // Геометрия петли берётся у выбранного типоразмера трубы (SNOW_PIPES),
+    // здесь остаются только значения по умолчанию для серой 20х2.8.
     SNOW_PIPE_ID: 0.0144,   // внутренний диаметр PE-Xa 20x2.8, м
     SNOW_PIPE_L_M: 0.163,   // литров теплоносителя в метре той же трубы
     SNOW_HX_DP_MAX: 50,     // паспортное сопротивление вторички на предельном расходе, кПа
@@ -26558,11 +26608,75 @@ const app = {
         return { v: v, Re: Re, R: lam / d * f.rho * v * v / 2 };
     },
     /**
-     * Напор насоса 25/60-180 при подаче v (м³/ч), м. Квадратичная аппроксимация
-     * паспортной кривой: 6 м при нулевом расходе, 3,3 м³/ч при нулевом напоре.
+     * Насосы вторичного контура снеготаяния — от слабого к сильному, в порядке
+     * подбора. Кривая задана квадратичной аппроксимацией H = hMax·(1 − (v/qMax)²):
+     * hMax — напор при нулевом расходе, qMax — расход при нулевом напоре.
+     *
+     * 25/60 — 6 м и 3,3 м³/ч, как считалось всегда. 25/80 — 8 м и 5,5 м³/ч:
+     * аппроксимация лежит чуть ниже паспортной кривой в рабочей зоне, и это
+     * намеренно — ошибиться здесь можно только в сторону запаса.
+     *
+     * Оба типоразмера идут в четырёх исполнениях (обычный, Std, Mini, Mini Pro),
+     * выбор исполнения — общий по котельной, state.pumpType.
      */
-    snowPumpHead: function (v) {
-        return Math.max(0, 6 * (1 - Math.pow(v / 3.3, 2)));
+    SNOW_PUMPS: [
+        { label: '25/60', cat: 'pumps_dn25', hMax: 6, qMax: 3.3 },
+        { label: '25/80', cat: 'pumps_dn25_80', hMax: 8, qMax: 5.5 }
+    ],
+    /**
+     * Труба уличной петли. Обе — PE-Xa/EVOH, обе переживают замерзание
+     * теплоносителя (металлопластик в этом месте расслаивается по алюминию),
+     * различаются стенкой:
+     *
+     *   20х2.0 (красная) — внутренний 16 мм. Потери в петле примерно на треть
+     *     ниже, метр дешевле, петля выходит длиннее, узлов на объект нужно
+     *     меньше. Теплоносителя в контуре на 15 % больше.
+     *   20х2.8 (серая) — внутренний 14,4 мм. Толстая стенка: там, где за петлю
+     *     страшно (тяжёлый проезд, стройка поверх готовой стяжки), берут её.
+     *
+     * dIn — внутренний диаметр, м; lm — литров в метре; sleeve — своя монтажная
+     * гильза: она обжимает трубу по стенке, и на 2,0 мм она другая. Евроконус у
+     * обеих один.
+     */
+    SNOW_PIPES: [
+        { key: 'thin', label: '20×2.0', title: 'красная 20×2.0', cat: 'snow_pipes_red', id: 'SPX-0002-002020', dIn: 0.016, lm: 0.201, sleeve: 'SFA-0020-002002' },
+        { key: 'thick', label: '20×2.8', title: 'серая 20×2.8', cat: 'rad_pipes_grey', id: 'SPX-0001-002028', dIn: 0.0144, lm: 0.163, sleeve: 'SFA-0020-000020' }
+    ],
+    /** Выбранный типоразмер петли (по умолчанию тонкостенная 20х2.0). */
+    snowPipe: function () {
+        const key = this.state.snowPipe || 'thin';
+        return this.SNOW_PIPES.find(p => p.key === key) || this.SNOW_PIPES[0];
+    },
+    /**
+     * Труба уличной петли когда-то менялась как обычная позиция (state.swaps), и
+     * в сохранённых сметах эта запись осталась. Она подменяла только строку:
+     * петли, монтажная гильза и объём гликоля продолжали считаться по трубе из
+     * панели, а в таблицу замены строка приносила с собой чужой список аналогов
+     * (у серой 20х2.8 в каталоге он общий с радиаторной разводкой — 16х2.2 в
+     * теплоизоляции). Переносим выбор туда, где он теперь живёт, запись снимаем.
+     * ROMMER-замену не трогаем: она про бренд, а не про типоразмер.
+     */
+    migrateSnowPipeSwap: function () {
+        const sw = this.state.swaps;
+        if (!sw || !sw['snow_pipe']) return;
+        const p = (this.SNOW_PIPES || []).find(x => x.id === sw['snow_pipe']);
+        if (!p) return;
+        this.state.snowPipe = p.key;
+        delete sw['snow_pipe'];
+    },
+    setSnowPipe: function (key) {
+        this.state.snowPipe = key;
+        // syncUI перекрашивает сами вкладки; render() их не трогает — как и у
+        // «Управления» рядом (setSnowCtrl). Без него смета менялась, а вкладка
+        // оставалась на прежней трубе.
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
+    /** Напор насоса при подаче v (м³/ч), м. Без второго аргумента — 25/60. */
+    snowPumpHead: function (v, pump) {
+        const p = pump || this.SNOW_PUMPS[0];
+        return Math.max(0, p.hMax * (1 - Math.pow(v / p.qMax, 2)));
     },
     /**
      * Требуемая температура подачи первичного контура, °C.
@@ -26601,6 +26715,7 @@ const app = {
         const kT = Math.min(1.25, Math.max(0.85, 1 + (-20 - Tn) / 100));
         const c = this.snowGlycolPercent();
         const fluid = this.snowFluid(c);
+        const pipe = this.snowPipe();   // от неё зависят и потери в петле, и объём
         const warnings = [];
 
         // 1. Нагрузка по участкам. Петля идёт от коллектора до участка и обратно
@@ -26619,66 +26734,135 @@ const app = {
             Q += zQ; area += a;
         });
 
-        // 2. Перепад вторички, дробление петель и теплообменник подбираются
-        //    вместе. Стартуем с ΔT = 10 К (подача 40 / обратка 30): при большем
-        //    перепаде дальний конец петли перестаёт таять. Не хватает напора
-        //    штатного насоса — поднимаем до 15 К, выше не идём.
+        // 2. Перепад вторички, дробление петель, насос, теплообменник и ЧИСЛО
+        //    УЗЛОВ подбираются вместе. Расчёт не «считает и жалуется», а
+        //    перебирает способы уложиться в напор — от безобидного к дорогому:
+        //      1. ΔT = 10 К (подача 40 / обратка 30), петли раздроблены ровно до
+        //         предела по длине и по потерям, насос 25/60 — как считалось всегда;
+        //      2. тот же расклад, но насос 25/80: 8 м напора вместо 6. Стоит
+        //         денег и лишних ватт, на работу системы не влияет;
+        //      3. петли короче предела (20 → 5 кПа), и на каждом уровне снова оба
+        //         насоса. Лишняя петля — это подводка к ней и выход коллектора,
+        //         обычный приём проектировщика, а не компромисс;
+        //      4. перепад 15 К и весь перебор заново: расход падает в полтора
+        //         раза, зато дальний конец петли тает хуже. Это уже уступка по
+        //         существу, поэтому после пунктов 2 и 3, а не до них;
+        //      5. второй, третий, четвёртый узел — каждый со своим
+        //         теплообменником, насосами, баком и коллектором. Самое дорогое,
+        //         поэтому последнее.
+        //    Раньше на пунктах 3–5 расчёт останавливался и писал монтажнику
+        //    «разделите снеготаяние на два узла» — делить приходилось руками,
+        //    заводя второй объект. Теперь калькулятор делит сам.
         const list = (catalog.heat_exchanger_groups || []);
-        let best = null, fallback = null;
-        for (const dT of [10, 15]) {
-            const V = Q * 3600 / (fluid.cp * fluid.rho * dT);
-            // Петли дробим, пока и длина, и потери в них не уложатся в предел.
+
+        /**
+         * Раскладка петель при перепаде dT и предельных потерях в петле dpCap.
+         * Петлю дробим, пока и длина, и потери не уложатся в предел; подводка до
+         * участка сидит внутри петли, поэтому каждая лишняя петля добавляет свои
+         * два конца до котельной.
+         */
+        const layout = (dT, dpCap) => {
             let loops = 0, meters = 0, worstDp = 0, worstLen = 0;
-            rows.forEach(r => {
+            const out = rows.map(r => {
                 const zoneFlow = r.Q * 3600 / (fluid.cp * fluid.rho * dT);
                 let n = Math.max(1, Math.ceil(r.lay / this.SNOW_LOOP_MAX));
                 for (let guard = 0; guard < 60; guard++) {
                     const len = (r.lay + n * 2 * r.dist) / n;
-                    const dp = this.snowPipeDrop(zoneFlow / n, this.SNOW_PIPE_ID, fluid).R * len / 1000;
-                    if (len <= this.SNOW_LOOP_MAX && dp <= this.SNOW_LOOP_DP_MAX) break;
+                    const dp = this.snowPipeDrop(zoneFlow / n, pipe.dIn, fluid).R * len / 1000;
+                    if (len <= this.SNOW_LOOP_MAX && dp <= dpCap) break;
                     n++;
                 }
                 const total = r.lay + n * 2 * r.dist;
                 const len = total / n;
-                const dp = this.snowPipeDrop(zoneFlow / n, this.SNOW_PIPE_ID, fluid).R * len / 1000;
-                r._n = n; r._m = total; r._len = len; r._dp = dp;
+                const dp = this.snowPipeDrop(zoneFlow / n, pipe.dIn, fluid).R * len / 1000;
                 loops += n; meters += total;
                 if (dp > worstDp) worstDp = dp;
                 if (len > worstLen) worstLen = len;
+                return { id: r.id, name: r.name, area: r.area, kind: r.kind, q: r.q, step: r.step, dist: r.dist, Q: r.Q, loops: n, m: total, len: len, dp: dp };
             });
+            return { rows: out, loops: loops, meters: meters, worstDp: worstDp, worstLen: worstLen };
+        };
 
-            for (const hx of list) {
-                if (!hx.maxFlow || hx.maxFlow < V * 1.15) continue;
-                const dpHx = this.SNOW_HX_DP_MAX * Math.pow(V / hx.maxFlow, 2);
-                const head = (dpHx + worstDp + this.SNOW_NODE_DP) * 1.15 / 9.81;
-                const cand = {
-                    dT: dT, V: V, hx: hx, dpHx: dpHx, head: head,
-                    pumpHead: this.snowPumpHead(V),
-                    loops: loops, meters: meters, worstDp: worstDp, worstLen: worstLen,
-                    rows: rows.map(r => ({ id: r.id, name: r.name, area: r.area, kind: r.kind, q: r.q, step: r.step, dist: r.dist, Q: r.Q, loops: r._n, m: r._m, len: r._len, dp: r._dp }))
-                };
-                if (!fallback) fallback = cand;
-                if (head <= cand.pumpHead * 0.9) { best = cand; break; }
+        // Ниже 5 кПа в петле опускаться незачем: там уже сам теплообменник и
+        // коллектор съедают почти весь напор, а лишние петли только удлиняют
+        // подводку. Больше четырёх узлов — это не котельная частного дома.
+        const DP_CAPS = [this.SNOW_LOOP_DP_MAX, 14, 10, 7, 5];
+        const MAX_NODES = 4;
+        // Раскладка петель от числа узлов не зависит — узлы делят между собой
+        // готовые петли. Поэтому считаем её один раз на пару «перепад + предел».
+        const shapes = {};
+        const shapeOf = (dT, dpCap) => shapes[dT + ':' + dpCap] || (shapes[dT + ':' + dpCap] = layout(dT, dpCap));
+        let best = null, fallback = null;
+        for (let nodes = 1; nodes <= MAX_NODES && !best; nodes++) {
+            for (const dT of [10, 15]) {
+                const Vtot = Q * 3600 / (fluid.cp * fluid.rho * dT);
+                const V = Vtot / nodes;               // узлы одинаковые: поровну петель и расхода
+                // Дробить петли мельче штатного предела имеет смысл, только пока
+                // это дешевле лишнего узла. Каждая петля сверх нормы — это её
+                // подводка до котельной в обе стороны, выход коллектора и два
+                // фитинга; на объекте с дальней площадкой десяток таких петель
+                // стоит дороже второго теплообменника. Отсюда потолок: не больше
+                // чем в полтора раза против штатного дробления.
+                const baseLoops = shapeOf(dT, this.SNOW_LOOP_DP_MAX).loops;
+                const loopCeil = baseLoops + Math.max(2, Math.round(baseLoops * 0.5));
+                for (const pump of this.SNOW_PUMPS) {
+                    const pumpHead = this.snowPumpHead(V, pump);
+                    for (const dpCap of DP_CAPS) {
+                        const sh = shapeOf(dT, dpCap);
+                        if (sh.loops < nodes) continue;   // на узел должна прийтись хотя бы петля
+                        if (sh.loops > loopCeil) continue;
+                        for (const hx of list) {
+                            if (!hx.maxFlow || hx.maxFlow < V * 1.15) continue;
+                            const dpHx = this.SNOW_HX_DP_MAX * Math.pow(V / hx.maxFlow, 2);
+                            const head = (dpHx + sh.worstDp + this.SNOW_NODE_DP) * 1.15 / 9.81;
+                            const cand = {
+                                nodes: nodes, dT: dT, dpCap: dpCap, V: V, Vtot: Vtot,
+                                hx: hx, dpHx: dpHx, head: head, pump: pump, pumpHead: pumpHead,
+                                loops: sh.loops, meters: sh.meters, worstDp: sh.worstDp, worstLen: sh.worstLen,
+                                rows: sh.rows
+                            };
+                            // Запасной вариант — не первый попавшийся, а самый близкий
+                            // к проходному: если не вышло вообще ничего, показывать
+                            // монтажнику надо то, чему не хватило меньше всех.
+                            if (!fallback || head / Math.max(pumpHead, 0.01) < fallback.head / Math.max(fallback.pumpHead, 0.01)) fallback = cand;
+                            if (head <= pumpHead * 0.9) { best = cand; break; }
+                        }
+                        if (best) break;
+                    }
+                    if (best) break;
+                }
+                if (best) break;
             }
-            if (best) break;
         }
         if (!best) best = fallback;
         if (!best) {
-            // Ни один теплообменник не проходит даже по расходу: нагрузка выше
-            // всей линейки. Считать нечего, но молчать нельзя.
+            // Ни один теплообменник не проходит по расходу даже при четырёх
+            // узлах: нагрузка выше всей линейки. Считать нечего, но молчать нельзя.
             return {
-                impossible: true, Q: Q, area: area, glycol: c, Tn: Tn, rows: [], loops: 0, meters: 0,
-                warnings: ['Нагрузка ' + Math.round(Q) + ' кВт выше предела линейки насосных групп с теплообменником (34 пластины — около 29 кВт при перепаде 10 К). Разделите снеготаяние на два узла.']
+                impossible: true, Q: Q, area: area, glycol: c, Tn: Tn, rows: [], loops: 0, meters: 0, nodes: 0,
+                warnings: ['Нагрузка ' + Math.round(Q) + ' кВт выше предела линейки насосных групп с теплообменником даже при делении на четыре узла (34 пластины — около 29 кВт на узел при перепаде 10 К). Уменьшите площадь снеготаяния или ведите такой объект отдельным проектом.']
             };
+        }
+        // Петли делим между узлами поровну: узлы одинаковые, и разница в одну
+        // петлю уходит первым из них. Какой участок к какому узлу отнести,
+        // монтажник решает по месту — балансировка всё равно по расходомерам.
+        const loopsPerNode = [];
+        for (let i = 0; i < best.nodes; i++) {
+            loopsPerNode.push(Math.floor(best.loops / best.nodes) + (i < best.loops % best.nodes ? 1 : 0));
         }
 
         // 3. Проверка по теплу: хватает ли поверхности при этом расходе и какая
-        //    подача нужна из котельной.
+        //    подача нужна из котельной. Считаем по одному узлу — теплообменник
+        //    у каждого свой и берёт на себя свою долю нагрузки.
         const ua = best.hx.ua * Math.pow(best.V / best.hx.maxFlow, 0.77);
-        const t1 = this.snowPrimaryTemp(Q, ua, best.dT);
+        const t1 = this.snowPrimaryTemp(Q / best.nodes, ua, best.dT);
 
-        // 4. Объём контура, теплоноситель и бак.
-        const vol = best.meters * this.SNOW_PIPE_L_M + this.SNOW_NODE_VOL;
+        // 4. Объём контура, теплоноситель и бак. Труба делится между узлами
+        //    вместе с петлями, а обвязка с теплообменником своя у каждого —
+        //    отсюда и общий объём заливки, и объём, по которому берётся бак.
+        const volPipe = best.meters * pipe.lm;
+        const vol = volPipe + this.SNOW_NODE_VOL * best.nodes;
+        const volNode = volPipe / best.nodes + this.SNOW_NODE_VOL;
         // Готовые теплоносители: Eco 30 — примерно 46 % гликоля, Eco Pro 65 — 63 %.
         // Берём тот, из которого расчётная концентрация получается разбавлением,
         // а не наоборот: долить воду на объекте можно, убрать гликоль — нет.
@@ -26688,14 +26872,57 @@ const app = {
         const baseItem = (catalog.coolants || []).find(x => x.id === base.id) || null;
         const concentrate = vol * c / base.pct;
         const cans = baseItem ? Math.ceil(concentrate / (baseItem.vol || 18)) : 0;
-        const tankNeed = Math.max(5, Math.ceil(vol * 0.1));
+        const tankNeed = Math.max(5, Math.ceil(volNode * 0.1));
         const tankPool = (catalog.exp_heating || []).concat(catalog.exp_heating_alts || []).slice().sort((a, b) => a.vol - b.vol);
         const tank = tankPool.find(x => x.vol >= tankNeed) || tankPool[tankPool.length - 1] || null;
 
-        // 5. Предупреждения — всё, что монтажник обязан увидеть до заказа.
+        // 5. Чем расчёт пожертвовал, чтобы уложиться в напор насоса.
+        //    Это не предупреждения: решения приняты, и смета уже посчитана по
+        //    ним — но появление второго теплообменника в спецификации монтажник
+        //    должен понимать, а не обнаруживать.
+        //
+        //    Каждая заметка адресована своей позиции сметы (`to`) и уходит в её
+        //    подсказку под «i»: про узлы — теплообменнику, про насос — насосу,
+        //    про длину петли — трубе. Общим списком в панели они висели там, где
+        //    оборудования не видно, и монтажник читал их в отрыве от строки.
+        const notes = [];
+        if (best.nodes > 1) {
+            const evenSplit = loopsPerNode.every(x => x === loopsPerNode[0]);
+            notes.push({ to: 'hx', html: 'Снеготаяние разделено на <b>' + best.nodes + ' одинаковых ' +
+                this.plural(best.nodes, 'узел', 'узла', 'узлов') + '</b> — ' +
+                (evenSplit
+                    ? 'по ' + loopsPerNode[0] + ' ' + this.plural(loopsPerNode[0], 'петле', 'петли', 'петель') + ' на узел'
+                    : 'петли поделены ' + loopsPerNode.join(' + ')) +
+                '. Одним узлом объект не проходит по напору: даже насосу 25/80 (самый сильный в ассортименте, 8 м) ' +
+                'на полном расходе ' + best.Vtot.toFixed(2) + ' м³/ч не хватает. ' +
+                'У каждого узла свои теплообменник, насосы, бак и коллектор; первичка каждого идёт от коллектора котельной.' });
+        }
+        if (best.pump !== this.SNOW_PUMPS[0]) {
+            notes.push({ to: 'pump', html: 'Насос вторичного контура — <b>' + best.pump.label + '</b>, а не штатный ' + this.SNOW_PUMPS[0].label +
+                ': на расходе ' + best.V.toFixed(2) + ' м³/ч нужно ' + best.head.toFixed(1) + ' м, а ' + this.SNOW_PUMPS[0].label +
+                ' даёт здесь ' + this.snowPumpHead(best.V, this.SNOW_PUMPS[0]).toFixed(1) + ' м. Насос ' + best.pump.label +
+                ' на этом же расходе даёт ' + best.pumpHead.toFixed(1) + ' м. Дороже, но система от этого ничего не теряет — ' +
+                'дешевле, чем разводить второй узел. На первичном контуре остаётся ' + this.SNOW_PUMPS[0].label +
+                ': там вода, перепад 15 К и нет уличных петель.' });
+        }
+        if (best.dpCap < this.SNOW_LOOP_DP_MAX) {
+            notes.push({ to: 'pipe', html: 'Петли короче предельных: самая длинная <b>' + Math.round(best.worstLen) + ' м</b> при потерях ' +
+                best.worstDp.toFixed(1) + ' кПа вместо допустимых ' + this.SNOW_LOOP_DP_MAX + '. Так сделано намеренно — ' +
+                'короткая петля берёт меньше напора, и объект обходится без ещё одного узла. Цена решения — подводка ' +
+                'к лишним петлям и выходы коллектора, это дешевле второго теплообменника.' });
+        }
+        if (best.dT > 10) {
+            notes.push({ to: 'hx', html: 'Перепад вторичного контура поднят до <b>' + best.dT + ' К</b> (подача ' + this.SNOW_SUPPLY +
+                ' / обратка ' + (this.SNOW_SUPPLY - best.dT) + '): при перепаде 10 К расход выше и напора насоса не хватает. ' +
+                'Дальний конец петли при этом тает медленнее — учитывайте при балансировке.' });
+        }
+
+        // 6. Предупреждения — всё, что монтажник обязан увидеть до заказа.
         if (best.head > best.pumpHead * 0.9) {
             warnings.push('Требуемый напор <b>' + best.head.toFixed(1) + ' м</b> при расходе ' + best.V.toFixed(2) +
-                ' м³/ч больше того, что даёт насос 25/60 (' + best.pumpHead.toFixed(1) + ' м). Нужен 25/80 или 32/80 — в ассортименте их нет. Разделите снеготаяние на два узла со своими теплообменниками либо уменьшите площадь одного контура.');
+                ' м³/ч на узел больше того, что даёт насос ' + best.pump.label + ' (' + best.pumpHead.toFixed(1) + ' м) — ' +
+                'а он самый сильный в ассортименте. Делить объект дальше некуда: уже ' + best.nodes + ' ' +
+                this.plural(best.nodes, 'узел', 'узла', 'узлов') + '. Уменьшите площадь или шаг укладки.');
         }
         if (t1 > 75) {
             warnings.push('Теплообменнику на ' + best.hx.plates + ' пластин при таком расходе нужна подача из котельной <b>' + Math.ceil(t1) +
@@ -26706,14 +26933,18 @@ const app = {
         // электричества он может сколько угодно.
         return {
             Tn: Tn, kT: kT, glycol: c, freeze: this.snowFreezeTemp(c), burst: this.snowBurstTemp(c), fluid: fluid,
-            Q: Q, area: area, dT: best.dT, V: best.V,
+            Q: Q, area: area, dT: best.dT,
+            // V — расход ОДНОГО узла: именно с ним сверяется паспорт
+            // теплообменника и кривая насоса. Общий расход контура — Vtot.
+            V: best.V, Vtot: best.Vtot,
+            nodes: best.nodes, loopsPerNode: loopsPerNode, pipe: pipe,
             hx: best.hx, ua: ua, t1: t1,
-            dpHx: best.dpHx, dpLoop: best.worstDp, head: best.head, pumpHead: best.pumpHead,
+            dpHx: best.dpHx, dpLoop: best.worstDp, head: best.head, pump: best.pump, pumpHead: best.pumpHead,
             loops: best.loops, meters: Math.ceil(best.meters), worstLen: best.worstLen,
             rows: best.rows,
-            vol: vol, coolant: baseItem, coolantPct: base.pct, coolantCans: cans, concentrate: concentrate,
+            vol: vol, volNode: volNode, coolant: baseItem, coolantPct: base.pct, coolantCans: cans, concentrate: concentrate,
             tank: tank, tankNeed: tankNeed,
-            warnings: warnings
+            notes: notes, warnings: warnings
         };
     },
     getHouseHeatLoss: function () {
@@ -28719,6 +28950,11 @@ const app = {
             if (snowChk) snowChk.checked = !!this.state.snowMelt;
             const snowOpts = document.getElementById('blk_snow_opts');
             if (snowOpts) snowOpts.style.display = this.state.snowMelt ? 'flex' : 'none';
+            const pipeKey = this.state.snowPipe || 'thin';
+            ['thin', 'thick'].forEach(k => {
+                const t = document.getElementById('snow_pipe_' + k);
+                if (t) t.className = (pipeKey === k) ? 'tab active' : 'tab';
+            });
             const ctrlMode = this.state.snowCtrl || 'sensor';
             ['sensor', 'manual'].forEach(m => {
                 const t = document.getElementById('snow_ctrl_' + m);
@@ -30526,14 +30762,27 @@ const app = {
     // ===== Полотенцесушитель (#5) =====
     getTowelWarmer: function () {
         if (!this.state.towelWarmer) this.state.towelWarmer = { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' };
-        return this.state.towelWarmer;
+        const tw = this.state.towelWarmer;
+        // count === null означает «считать автоматически». Раньше количество
+        // замораживалось числом в момент включения тумблера, и добавленный потом
+        // санузел в смете не появлялся. Разовая миграция сохранённых смет: отметки
+        // о ручной правке (countTouched) у них нет — возвращаем их в автомат.
+        if (tw.countTouched !== true && tw.count !== null && tw.count !== undefined) tw.count = null;
+        return tw;
+    },
+    // Автоматическое количество — один прибор на санузел. Санузлы берём из зон
+    // водоснабжения: это то же место, откуда считается потребность в ГВС.
+    // Без зон (водоснабжение выключено) оставляем один — включённый тумблер не
+    // должен давать пустой раздел.
+    _towelAutoCount: function () {
+        return Math.max(1, (this.state.waterZones || []).length);
     },
     // Эффективное количество: если не задано вручную — по числу санузлов.
     getTowelWarmerCount: function () {
         const tw = this.getTowelWarmer();
         if (!tw.enabled) return 0;
         if (tw.count !== null && tw.count !== undefined) return Math.max(0, parseInt(tw.count) || 0);
-        return (this.state.waterZones || []).length;
+        return this._towelAutoCount();
     },
     getTowelWarmerModel: function () {
         const tw = this.getTowelWarmer();
@@ -30564,10 +30813,9 @@ const app = {
     toggleTowelWarmer: function (chk) {
         const tw = this.getTowelWarmer();
         tw.enabled = chk;
-        if (chk && (tw.count === null || tw.count === undefined)) {
-            const z = (this.state.waterZones || []).length;
-            tw.count = z > 0 ? z : 1; // стартовое = число санузлов (можно поменять вручную)
-        }
+        // Количество не фиксируем: пока монтажник не поправил его руками, оно
+        // следует за числом санузлов (см. _towelAutoCount).
+        if (chk) { tw.count = null; tw.countTouched = false; }
         if (chk && tw.autoColor !== false) {
             // Цвет по умолчанию — под цвет радиатора (при разных цветах — хром).
             tw.modelId = this._towelDefaultModelId(this._towelColorFromRadiator());
@@ -30584,14 +30832,20 @@ const app = {
         let cur = (tw.count !== null && tw.count !== undefined) ? parseInt(tw.count) : this.getTowelWarmerCount();
         cur = (parseInt(cur) || 0) + delta;
         if (cur < 0) cur = 0; if (cur > 20) cur = 20;
-        tw.count = cur;
-        this.syncUI(); this.render(); this.saveState();
+        this._setTowelCount(cur);
     },
     setTowelWarmerCount: function (val) {
-        const tw = this.getTowelWarmer();
         let n = parseInt(val);
         if (isNaN(n) || n < 0) n = 0; if (n > 20) n = 20;
-        tw.count = n;
+        this._setTowelCount(n);
+    },
+    // Ручная правка количества. Выставленное число, совпавшее с автоматическим,
+    // возвращает поле в автомат — иначе из ручного режима не было выхода и
+    // количество навсегда переставало следовать за санузлами.
+    _setTowelCount: function (n) {
+        const tw = this.getTowelWarmer();
+        if (n === this._towelAutoCount()) { tw.count = null; tw.countTouched = false; }
+        else { tw.count = n; tw.countTouched = true; }
         this.syncUI(); this.render(); this.saveState();
     },
     syncTowelWarmerUI: function () {
@@ -31025,7 +31279,10 @@ const app = {
         // сервопривод смесителя первички, накладной датчик на подаче. Отличается
         // только режимом: датчик осадков заходит сухим контактом на «Вход
         // термостата», и контур греет, пока контакт разомкнут.
-        const snowQ = (c.snow && !c.snow.impossible) ? 1 : 0;
+        // Узлов снеготаяния может быть несколько (расчёт делит контур сам, когда
+        // одному насосу не хватает напора) — и каждый занимает свой контур
+        // контроллера: у него собственный насос вторички и собственный смеситель.
+        const snowQ = (c.snow && !c.snow.impossible) ? Math.max(1, c.snow.nodes || 1) : 0;
         for (let i = 0; i < snowQ; i++) circuits.push({ type: 'mix', src: 'snow' });
         circuits.forEach((x, i) => { x.name = 'КО-' + (i + 1); });
         const circuitCount = circuits.length;
@@ -31042,11 +31299,35 @@ const app = {
         // ведётся только релейно — плату ему покупать не за что.
         const BOARD_ID = 'ML00005842';
         const boardRemoved = !!(s.optItems && s.optItems[BOARD_ID]);
-        // Сколько плат нужно на объект: по одной на котёл С ШИНОЙ, максимум две.
+        /**
+         * Кто вообще попадает под контроллер.
+         *
+         * Котловых каналов у прибора ровно два, и релейный выход — не добавка к
+         * цифровой шине, а тот же самый канал в другом режиме: каждый канал
+         * настраивается либо на плату ЦШ1/ЦШ2, либо на клеммы термостата
+         * («Реле котёл 1» / «Реле котёл 2»). Значит третий источник подключить
+         * некуда ни по шине, ни релейно — блоки расширения добавляют контуры,
+         * но не котлы (документация ZONT CLIMATIC.V2: «количество управляемых
+         * котлов до 2 шт. включительно»).
+         *
+         * Каналы достаются сначала газовым котлам, потом электрическим. Газовые
+         * в такой котельной — основной источник, они и работают в каскаде, а
+         * электрокотёл стоит резервом и без контроллера не пропадает: у него
+         * свой термостат, и когда газовые встанут и теплоноситель остынет, он
+         * включится сам. Лишние котлы помечаются iface: 'own' — «на собственной
+         * автоматике». Раньше они получали 'relay', и подсказка обещала
+         * релейное управление котлом, которому не досталось канала.
+         */
+        const wiredOrder = boilers
+            .map((b, i) => ({ b, i }))
+            .sort((x, y) => ((y.b && y.b.type === 'gas') ? 1 : 0) - ((x.b && x.b.type === 'gas') ? 1 : 0) || x.i - y.i);
+        const wired = wiredOrder.slice(0, MAX_BOILERS);
+        const wiredIdx = new Set(wired.map(x => x.i));
+        // Сколько плат нужно на объект: по одной на подключённый котёл С ШИНОЙ.
         // Считаем по самим котлам, а не по iface: при удалённой плате iface у всех
         // становится 'relay', и счёт обнулился бы — строка исчезла бы из сметы
         // вместо того, чтобы остаться вычеркнутой и позволить себя вернуть.
-        const digitalBoards = Math.min(boilers.filter(b => !(b && b.noBus)).length, MAX_BOILERS);
+        const digitalBoards = wired.filter(x => !(x.b && x.b.noBus)).length;
         /**
          * Сколько плат реально осталось в смете.
          *
@@ -31063,22 +31344,30 @@ const app = {
         /**
          * Кому достаётся оставшаяся плата.
          *
-         * Сначала газовым котлам, потом электрическим: по шине газовый отдаёт
-         * модуляцию горелки, уставку и коды аварий — терять там нечего. У
-         * электрокотла шина даёт заметно меньше, ступени он всё равно набирает
-         * сам, поэтому релейное управление для него — меньшая потеря.
+         * Порядок тот же, что и у каналов: сначала газовым котлам, потом
+         * электрическим. По шине газовый отдаёт модуляцию горелки, уставку и
+         * коды аварий — терять там нечего. У электрокотла шина даёт заметно
+         * меньше, ступени он всё равно набирает сам, поэтому релейное
+         * управление для него — меньшая потеря.
+         *
+         * Делим плату только между котлами с каналом: котлу вне контроллера она
+         * бесполезна, шину подключать не к чему.
          */
-        const busOrder = boilers
-            .map((b, i) => ({ b, i }))
-            .filter(x => !(x.b && x.b.noBus))
-            .sort((x, y) => ((y.b && y.b.type === 'gas') ? 1 : 0) - ((x.b && x.b.type === 'gas') ? 1 : 0) || x.i - y.i);
+        const busOrder = wired.filter(x => !(x.b && x.b.noBus));
         const busIdx = new Set(busOrder.slice(0, boardsUsed).map(x => x.i));
         const boilerList = boilers.map((b, i) => ({
             kind: (b && b.type === 'gas') ? 'gas' : 'el',
-            iface: busIdx.has(i) ? 'digital' : 'relay',
+            // 'digital' — по цифровой шине, 'relay' — сухим контактом на клеммы
+            // термостата, 'own' — канала не досталось, котёл живёт на своей
+            // автоматике и контроллеру не подчиняется.
+            iface: !wiredIdx.has(i) ? 'own' : (busIdx.has(i) ? 'digital' : 'relay'),
             circuits: (b && b.circuits) || 1
         }));
-        const cascade = boilerList.length > 1;
+        // Каскад — про то, что ведёт контроллер. Котёл на собственной автоматике
+        // в каскад не входит: контроллер его не видит и в общем расписании не
+        // участвует, поэтому и в счёт каскада не идёт.
+        const wiredCount = boilerList.filter(b => b.iface !== 'own').length;
+        const cascade = wiredCount > 1;
 
         // --- Контур ГВС (он у контроллера ровно один) ---
         // 'boiler'    — насосом загрузки и датчиком ГВС управляет сам контроллер;
@@ -31232,8 +31521,30 @@ const app = {
                 ' даже с блоками расширения. Часть контуров придётся вести отдельной автоматикой.');
         }
         if (boilerList.length > MAX_BOILERS) {
-            warnings.push('Котлов в смете ' + boilerList.length + ', а контроллер управляет двумя. ' +
-                'Остальные останутся на собственной автоматике и в каскад не войдут.');
+            // Перечисление вида «2 газовых котла и 1 электрический котёл» —
+            // монтажнику важно не число, а какие именно котлы остались снаружи.
+            const _boilerNames = (arr) => {
+                const g = arr.filter(b => b.kind === 'gas').length;
+                const e = arr.length - g;
+                const p = [];
+                if (g) p.push(g + ' ' + this.plural(g, 'газовый', 'газовых', 'газовых') + ' ' +
+                    this.plural(g, 'котёл', 'котла', 'котлов'));
+                if (e) p.push(e + ' ' + this.plural(e, 'электрический', 'электрических', 'электрических') + ' ' +
+                    this.plural(e, 'котёл', 'котла', 'котлов'));
+                return p.join(' и ');
+            };
+            const _own = boilerList.filter(b => b.iface === 'own');
+            const _many = _own.length > 1;
+            warnings.push('Котлов в смете ' + boilerList.length + ', а контроллер управляет двумя: котловых ' +
+                'каналов у него два, и каждый — это либо плата цифровой шины (ЦШ1/ЦШ2), либо клеммы ' +
+                'термостата, а не два разных выхода. Под контроллер уходят ' +
+                _boilerNames(boilerList.filter(b => b.iface !== 'own')) +
+                (cascade ? ' — они работают в каскаде' : '') + '. ' +
+                _boilerNames(_own) + (_many ? ' остаются' : ' остаётся') + ' на собственной автоматике, вне ' +
+                'контроллера. Резервом ' + (_many ? 'они работают' : 'он работает') + ' и так: встанут ' +
+                'основные котлы, теплоноситель остынет — ' + (_many ? 'включатся' : 'включится') +
+                ' по своему термостату. Просто контроллер ' + (_many ? 'их' : 'его') +
+                ' не видит и в каскад не берёт.');
         }
         if (dhw === 'external') {
             warnings.push('Бойлер греется переключающим клапаном от котла, у которого нет цифровой шины, — ' +
@@ -31241,13 +31552,13 @@ const app = {
                 '«Загрузка бойлера насосной группой».');
         }
         // Плату убрали из сметы руками — говорим, чем это обернётся.
-        if (boardRemoved && boilerList.length > 0) {
+        if (boardRemoved && wiredCount > 0) {
             warnings.push('Плата цифровых шин удалена из сметы — ' +
-                (boilerList.length > 1 ? 'котлы перейдут' : 'котёл перейдёт') +
+                (wiredCount > 1 ? 'котлы перейдут' : 'котёл перейдёт') +
                 ' на релейное управление, по перемычке комнатного термостата. Контроллер сможет только ' +
                 'включать и выключать нагрев: уставка, модуляция горелки и коды аварий по перемычке ' +
                 'не передаются. Верните позицию в смету, если это не то, что нужно.');
-        } else if (boardsUsed < digitalBoards && boilerList.length > 0) {
+        } else if (boardsUsed < digitalBoards && wiredCount > 0) {
             // Плат оставили меньше, чем котлов с шиной: одна плата — один котёл,
             // делить её между двумя нельзя. Говорим, кто именно остался без шины.
             const _kindName = k => k === 'gas' ? 'газовый' : 'электрический';
@@ -31278,11 +31589,16 @@ const app = {
         // и считать их надо вместе — иначе на объекте с тремя термостатами и
         // снеготаянием четвёртому устройству просто некуда подключиться, а смета
         // об этом молчала.
-        const snowDry = (snowQ && (s.snowCtrl || 'sensor') === 'sensor') ? 1 : 0;
+        // Датчик осадков один на объект, а вход занимает каждый контур
+        // снеготаяния: в режиме «Термостат» команда заходит в свой контур, и на
+        // два узла контакт реле разводится на два входа.
+        const snowDry = ((s.snowCtrl || 'sensor') === 'sensor') ? snowQ : 0;
         const dryUsed = ((airOn && airKind === 'dry') ? airQty : 0) + snowDry;
         if (dryUsed > DRY_INPUTS) {
             warnings.push('На «Входы термостатов» приходится ' + dryUsed + ' устройств' +
-                (snowDry ? ' (в том числе датчик осадков снеготаяния)' : '') +
+                (snowDry ? (snowDry > 1
+                    ? ' (в том числе ' + snowDry + ' контура снеготаяния — датчик осадков разводится на каждый)'
+                    : ' (в том числе датчик осадков снеготаяния)') : '') +
                 ', а входов у контроллера ' + DRY_INPUTS + ' — по одному на контуры КО-1…КО-3. ' +
                 'Лишние подключить некуда: возьмите комнатные датчики по шине или по радио, ' +
                 'их предел выше, а вход освободите под снеготаяние.');
@@ -31325,7 +31641,9 @@ const app = {
         return {
             circuits, circuitCount,
             mixCount: tQ, directCount: rQ,
-            boilers: boilerList, boilerCount: boilerList.length, cascade, digitalBoards,
+            // boilerCount — сколько котлов в смете, wiredCount — сколько из них
+            // досталось контроллеру. Расходятся, когда котлов больше двух.
+            boilers: boilerList, boilerCount: boilerList.length, wiredCount, cascade, digitalBoards,
             dhw, recirc,
             ntc, ntcUsed: ntc.length,
             expansion, needsPsu: ex77 > 0, boardRemoved, boardsUsed,
@@ -31367,12 +31685,26 @@ const app = {
 
             let boilerText = '';
             if (cfg.boilerCount > 0) {
-                const dig = (cfg.boilers || []).filter(b => b.iface === 'digital').length;
-                const rel = cfg.boilerCount - dig;
+                // Считаем только те котлы, которым достался канал контроллера.
+                // Раньше в счёт шли все, и на объекте с тремя котлами подсказка
+                // обещала релейное управление третьим — а подключать его некуда.
+                const wiredB = (cfg.boilers || []).filter(b => b.iface !== 'own');
+                const ownB = (cfg.boilers || []).filter(b => b.iface === 'own');
+                const dig = wiredB.filter(b => b.iface === 'digital').length;
+                const rel = wiredB.length - dig;
                 const parts = [];
                 if (dig) parts.push(`${dig} по цифровой шине`);
                 if (rel) parts.push(`${rel} релейно (по перемычке термостата)`);
-                boilerText = `${cfg.boilerCount} шт. — ${parts.join(', ')}` + (cfg.cascade ? '; работают в каскаде' : '');
+                if (!ownB.length) {
+                    boilerText = `${cfg.boilerCount} шт. — ${parts.join(', ')}` + (cfg.cascade ? '; работают в каскаде' : '');
+                } else {
+                    const ownKinds = ownB.map(b => b.kind === 'gas' ? 'газовый' : 'электрический').join(' и ');
+                    boilerText = `${cfg.boilerCount} шт. — под контроллером ${wiredB.length} (${parts.join(', ')})` +
+                        (cfg.cascade ? ', работают в каскаде' : '') +
+                        `; ${ownKinds} — вне контроллера: котловых каналов у прибора всего два. ` +
+                        `Резервом ${ownB.length > 1 ? 'котлы работают' : 'котёл работает'} на собственной автоматике — ` +
+                        `${ownB.length > 1 ? 'включатся' : 'включится'} по своему термостату, когда остынет теплоноситель`;
+                }
             } else {
                 boilerText = 'котёл в смете не подобран';
             }
@@ -31478,7 +31810,9 @@ const app = {
                 }
 
                 // Почему это количество контуров
-                let hContWhy = `rQ (радиаторы) = ${hRQ}, tQ (тёплый пол) = ${hTQ}. ` +
+                let hSnowN = hCtx.snowN || 0;
+                let hContWhy = `rQ (радиаторы) = ${hRQ}, tQ (тёплый пол) = ${hTQ}` +
+                    (hSnowN ? `, снеготаяние = ${hSnowN} (по узлу на смесительную группу первички)` : ``) + `. ` +
                     `Итого контуров: ${hCircuits}. ` +
                     (hCircuits > 2 ? '> 2 → 3-контурный коллектор.' : '≤ 2 → 2-контурный коллектор.');
 
@@ -32218,7 +32552,10 @@ const app = {
         const snowCalc = this.calcSnowMelt();
         this.snowCalc = snowCalc;
         const snowQ = (snowCalc && !snowCalc.impossible && this.state.snowInBoilerPower !== false) ? snowCalc.Q : 0;
-        const pwrBoiler = pwr + snowQ;
+        // parseFloat обязателен: getHouseHeatLoss отдаёт строку (toFixed(1)), и без
+        // него "16.4" + 17.325 склеивалось в "16.417.325" — котёл подбирался на
+        // 16.4 кВт, то есть тумблер «Учесть в мощности котла» не делал ничего.
+        const pwrBoiler = parseFloat(pwr) + snowQ;
 
         let regionName = "";
         if (this.state.selectedCity) {
@@ -32232,12 +32569,23 @@ const app = {
             if (this.state.region === 60) regionName = "Юг";
         }
 
+        // Строка «Теплопотери» в шапке. Пока снеготаяние не учитывается в мощности
+        // источника — это просто теплопотери дома. Как только тумблер «Учесть в
+        // мощности котла» включён, в шапке показываем итог: именно на него
+        // подбирается котёл, и без этого тумблер выглядел неработающим.
+        // Вт/м² остаются по дому: уличная площадка к его площади не относится,
+        // и делить сумму на площадь дома было бы враньём.
+        const wPerM2 = this.state.area > 0 ? Math.round((parseFloat(pwr) * 1000) / this.state.area) : 0;
+        const heatLossHtml = snowQ > 0
+            ? `<b>${pwrBoiler.toFixed(1)} кВт</b> (дом ${pwr} · ${wPerM2} Вт/м² + снеготаяние ${snowQ.toFixed(1)})`
+            : `<b>${pwr} кВт</b> (${wPerM2} Вт/м²)`;
+
         // Заголовок спецификации
         document.getElementById('doc_summary').innerHTML = `
             <span class="param-item">🔖 № КП: <b>${this.state.calc_id || '—'}</b></span>
             <span class="param-item">🏠 Объект: <b>${this.state.area} м²</b> (${this.state.floors === 2 ? 2 : 1} эт)</span>
             <span class="param-item">👨‍👩‍👧 Проживающих: <b>${this.state.res}</b></span>
-            <span class="param-item">🔥 Теплопотери: <b>${pwr} кВт</b> (${this.state.area > 0 ? Math.round((parseFloat(pwr) * 1000) / this.state.area) : 0} Вт/м²)</span>
+            <span class="param-item">🔥 Теплопотери: ${heatLossHtml}</span>
             <span class="param-item">📍 Регион: <b>${regionName}</b></span>
             <span class="param-item param-date calculation-date">📅 Дата: <b>${new Date().toLocaleDateString('ru-RU')}</b></span>
         `;
@@ -32329,7 +32677,11 @@ const app = {
                         }
                     }
                     if (foundItem) {
-                        activeItem = { ...foundItem };
+                        // Строка считается бухтами (asCoilPrice): цена в ней — за
+                        // бухту целиком, количество — в бухтах. Замена приходит из
+                        // каталога с ценой за метр, и без пересчёта бухта уходила
+                        // в смету по цене метра — четыре бухты трубы за тысячу рублей.
+                        activeItem = (item.coilPriced && foundItem.len) ? asCoilPrice(foundItem) : { ...foundItem };
                         activeItem.originalId = lookupKey;
                         if ((!activeItem.alts || !activeItem.alts.length) && item.alts && item.alts.length) activeItem.alts = item.alts;
 
@@ -32573,7 +32925,10 @@ const app = {
                         finalItem.instanceKeys = [finalItem.originalId || finalItem.id];
                         finalTip = parts[0] + '<hr style="margin:6px 0; border:none; border-top:1px dashed #4B5563;">' + parts[1];
                     }
-                    bill.push({ ...finalItem, q: finalQty, sum: Math.round(finalItem.price * finalQty), basePrice: originalPrice, displaySku: finalItem.displaySku || finalItem.article || finalItem.id, qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
+                    // sortRank берём у ИСХОДНОЙ позиции, а не у finalItem: после ручной
+                    // замены или подстановки ROMMER-аналога это уже другой объект, и
+                    // дымоход после замены уехал бы из начала раздела вниз по цене.
+                    bill.push({ ...finalItem, sortRank: item.sortRank || 0, q: finalQty, sum: Math.round(finalItem.price * finalQty), basePrice: originalPrice, displaySku: finalItem.displaySku || finalItem.article || finalItem.id, qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
                 }
             });
         };
@@ -32598,9 +32953,11 @@ const app = {
         // перед addToBill цену нужно домножить на длину бухты (item.len) — иначе сумма в смете
         // занижается в 50-500 раз. В таблице замены (openSwapModal) цену НЕ трогаем — там нужна
         // цена за метр как есть.
+        // Метка coilPriced нужна ручной замене: она достаёт позицию из каталога,
+        // где цена стоит за метр, а количество в строке — в бухтах.
         const asCoilPrice = (baseItem) => {
             const L = baseItem.len || 1;
-            let out = { ...baseItem, price: (baseItem.price || 0) * L };
+            let out = { ...baseItem, price: (baseItem.price || 0) * L, coilPriced: true };
             if (Array.isArray(out.rommer)) out.rommer = out.rommer.map(r => ({ ...r, price: (r.price || 0) * L }));
             else if (out.rommer) out.rommer = { ...out.rommer, price: (out.rommer.price || 0) * L };
             return out;
@@ -32761,7 +33118,14 @@ const app = {
                     if (!gA && gB) return -1;
                     if (gA && !gB) return 1;
                     const byGroup = gA.localeCompare(gB, 'ru');
-                    return byGroup !== 0 ? byGroup : _bySumDesc(a, b);
+                    if (byGroup !== 0) return byGroup;
+                    // sortRank перебивает сумму там, где порядок диктует не цена, а
+                    // логика узла: дымоход открывает обвязку котла (-1), насос идёт
+                    // следом за своей насосной группой, а не перед ней (1). Без ранга
+                    // строки становились по цене, и в смете насос оказывался выше
+                    // группы, в которую он ставится.
+                    const byRank = (a.sortRank || 0) - (b.sortRank || 0);
+                    return byRank !== 0 ? byRank : _bySumDesc(a, b);
                 });
             } else {
                 bill.sort(_bySumDesc);
@@ -33217,7 +33581,7 @@ const app = {
                     } else {
                         workPriceHtml = `<span class="price-edit" contenteditable="true" onblur="app.updateWorkPrice('${w.name}', this.innerText)" title="Изменить цену">${w.price.toLocaleString()}</span>`;
                     }
-                    rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td><td class="col-img hidden-col"></td><td class="col-name"><span class="work-del-btn" onclick="event.stopPropagation(); app.deleteWork('${w.name}')" title="Удалить работу">✖</span>${w.name}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">-</td><td class="col-brand hidden-col"></td><td class="col-unit">${w.unit}</td><td class="col-qty"><div class="qty-wrap">${w.q}${tipHtml}</div></td><td class="col-price"><span class="mob-mult" style="display:none;">${w.q}</span>${workPriceHtml}</td><td class="col-sum">${app.formatPriceHtml(w.sum)}</td></tr>`;
+                    rows += `<tr ${rowStyle} onclick="this.classList.toggle('active-row')"><td class="col-idx">${globalIdx++}</td><td class="col-img hidden-col"></td><td class="col-name"><span class="work-del-btn" onclick="event.stopPropagation(); app.deleteWork('${w.name}')" title="Удалить работу">✖</span>${w.name}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">-</td><td class="col-brand hidden-col"></td><td class="col-unit">${w.unit}</td><td class="col-qty"><div class="qty-wrap"><span class="work-qty-num">${w.q}</span>${tipHtml}</div></td><td class="col-price"><span class="mob-mult" style="display:none;">${w.q}</span>${workPriceHtml}</td><td class="col-sum">${app.formatPriceHtml(w.sum)}</td></tr>`;
                 });
 
                 h += rows + `<tr class="row-subtotal"><td colspan="9">Итого: ${app.formatPriceHtml(secTotal, true)}</td></tr>`;
@@ -33408,6 +33772,30 @@ const app = {
         this._elBoilerKw = selBoilers.reduce((a, b) => a + ((b && b.type !== 'gas') ? (b.power || 0) : 0), 0);
         this._gasBoilerKw = selBoilers.reduce((a, b) => a + ((b && b.type === 'gas') ? (b.power || 0) : 0), 0);
 
+        // Каскад: у каждого газового котла своя обвязка — свой дымоход, стабилизатор,
+        // фильтр, американки и краны. Раньше всё это валилось в один подраздел и
+        // складывалось в «2 шт.»: по такой смете не видно, что это два отдельных
+        // комплекта, монтажник не мог свернуть или отключить обвязку одного котла,
+        // а на объекте два дымохода легко читались как один запасной.
+        // Общие для котельной позиции (расширительный бак, узел загрузки бойлера)
+        // остаются в подразделе первого котла — их по-прежнему одна штука на систему.
+        const gasBoilerCnt = selBoilers.filter(b => b && b.type === 'gas').length;
+        const gasBoilerGrp = (idx) => {
+            if (gasBoilerCnt <= 1) return "2.1. Обвязка Газового котла";
+            return idx === 0
+                ? "2.1. Обвязка 1-го Газового котла"
+                : `2.1.${idx} Обвязка ${idx + 1}-го Газового котла`;
+        };
+        // Электрический каскад (два STATUS вместо одного, когда не хватает
+        // типоразмера) делится ровно так же и по той же причине.
+        const elBoilerCnt = selBoilers.filter(b => b && b.type !== 'gas').length;
+        const elBoilerGrp = (idx) => {
+            if (elBoilerCnt <= 1) return "2.2. Обвязка Электрического котла";
+            return idx === 0
+                ? "2.2. Обвязка 1-го Электрического котла"
+                : `2.2.${idx} Обвязка ${idx + 1}-го Электрического котла`;
+        };
+
         if (this.state.hotWater) {
             let hw_fixtures_vol = 0;
             this.state.waterZones = this.state.waterZones || [];
@@ -33535,11 +33923,14 @@ const app = {
             addToBill({ ...catalog.valves[0], originalId: 'SFB-0001-000001_tankload', alts: _tankLoadAlts }, 1, this.getDesc('fugas'), grp);
             addToBill(catalog.nipple_34, 2, "Для фугаса.", grp);
         };
+        let _gasIdx = 0;
         selBoilers.forEach(b => {
             if (b.type === 'gas') {
-                let grp = "2.1. Обвязка Газового котла";
+                let grp = gasBoilerGrp(_gasIdx++);
                 let ch = (this.state.chimneyType === 'basic') ? catalog.chimneys[1] : catalog.chimneys[0];
-                addToBill(ch, 1, this.getDesc('chimney'), grp);
+                // Дымоход всегда открывает обвязку котла: по нему монтажник опознаёт,
+                // чья это обвязка, а по цене он не всегда оказывался наверху.
+                addToBill({ ...ch, sortRank: -1 }, 1, this.getDesc('chimney'), grp);
                 addToBill(catalog.stabs[0], 1, this.getDesc('stab', 'gas', 250, 150), grp);
                 addToBill(catalog.american_34, 2, "Разъемное соед.", grp);
                 addToBill(withRommerAlt(catalog.ball_valve_34), 2, "Запорная арматура.", grp);
@@ -33555,9 +33946,10 @@ const app = {
             { id: 'gbm', name: 'Группа быстрого монтажа DN25 (прямая, в теплоизоляции)', brand: 'STOUT', price: 0 },
             { id: 'parts', name: 'Сборная обвязка: 2 крана шаровых с американкой 1"', brand: 'STOUT', price: 0 }
         ];
+        let _elIdx = 0;
         selBoilers.forEach(b => {
             if (b.type !== 'gas') {
-                let grp = "2.2. Обвязка Электрического котла";
+                let grp = elBoilerGrp(_elIdx++);
                 // Стабилизатор защищает плату котла. У POLIS платы нет: нагрев ведут
                 // капиллярный термостат, реле и контактор — стабилизировать нечего,
                 // поэтому в его обвязку он не идёт.
@@ -33625,8 +34017,8 @@ const app = {
         let hasElSel = selBoilers.some(b => b.type !== 'gas' && !b.noPump);
         let tankNeedsPumpGroup = !!this.state.hotWater && (this.state.tankLoadScheme || 'valve') === 'pump';
         if (!tankNeedsPumpGroup) {
-            if (hasGasSel) addTankLoadingKit("2.1. Обвязка Газового котла");
-            if (hasElSel) addTankLoadingKit("2.2. Обвязка Электрического котла");
+            if (hasGasSel) addTankLoadingKit(gasBoilerGrp(0));
+            if (hasElSel) addTankLoadingKit(elBoilerGrp(0));
         }
         if (this.state.hotWater) {
             let grp = "2.3. Обвязка Водонагревателя";
@@ -34144,9 +34536,16 @@ const app = {
             // коллекторе один и занят газовым котлом, поэтому коллектор берём на контур
             // больше — иначе POLIS оказался бы некуда подключить.
             let polisCircuits = selBoilers.filter(b => b.noPump).length;
-            let circuits = rQ + tQ + (tankNeedsPumpGroup ? 1 : 0) + polisCircuits;
+            // Снеготаяние садится на тот же коллектор: у каждого узла своя
+            // смесительная группа первичного контура, и подключается она парой
+            // патрубков, как контур радиаторов или тёплого пола. Узлов может быть
+            // несколько — значит и выходов столько же. Раньше снеготаяние в счёт
+            // не входило вовсе, и на объекте не хватало выхода под уже
+            // посчитанную группу.
+            let snowCircuits = (snowCalc && !snowCalc.impossible) ? Math.max(1, snowCalc.nodes || 1) : 0;
+            let circuits = rQ + tQ + (tankNeedsPumpGroup ? 1 : 0) + polisCircuits + snowCircuits;
             let idx = (circuits > 2) ? 1 : 0;
-            let hCtx = { rQ, tQ, pwr, tpArea };
+            let hCtx = { rQ, tQ, pwr, tpArea, snowN: snowCircuits };
             if (dn25) {
                 if (circuits > 3 && catalog.collectors_dn25) {
                     const _dn25CollectorByLoops = { 2: 'SDG-0016-004002', 3: 'SDG-0016-004003', 4: 'SDG-0016-004004', 5: 'SDG-0016-004005', 6: 'SDG-0016-004006' };
@@ -34212,7 +34611,9 @@ const app = {
             }
             if (rQ > 0) {
                 addToBill(grps[0], rQ, this.getDesc('pump_group', grps[0], rQ, 'rad', pwr), grpHydro);
-                addToBill(radPump, rQ, this.getDesc('pump_std'), grpHydro);
+                // sortRank: 1 — насос ставится В насосную группу, значит и в смете
+                // стоит под ней. По цене он дороже группы и всплывал выше неё.
+                addToBill({ ...radPump, sortRank: 1 }, rQ, this.getDesc('pump_std'), grpHydro);
 
                 // Паспортная мощность фактически выбранной группы против нагрузки
                 // радиаторного контура. Автоподбор такую проверку делает сам (число групп
@@ -34253,7 +34654,7 @@ const app = {
                     tankPumpGroup.rommer = { ...tankBase.rommer, name: rName.replace(/\s*-\s*для радиаторов.*$/i, '') + ` для бойлера${rCapM ? ` до ${rCapM[1]} кВт` : ''}` };
                 }
                 addToBill(tankPumpGroup, 1, this.getDesc('fugas_pump'), grpHydro);
-                addToBill(pmp, 1, this.getDesc('pump_std'), grpHydro);
+                addToBill({ ...pmp, sortRank: 1 }, 1, this.getDesc('pump_std'), grpHydro);
             }
             if (tQ > 0) {
                 let activeMixType = this.state.ufhMixType || 'std';
@@ -34265,23 +34666,23 @@ const app = {
                     addToBill({ ...ufhGrp, _uiUfhOnly: true }, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
 
                     let ufhPump = catalog.pumps_dn25.find(p => p.type === this.state.pumpType) || catalog.pumps_dn25[0];
-                    addToBill(ufhPump, tQ, this.getDesc('pump_std'), grpHydro);
+                    addToBill({ ...ufhPump, sortRank: 1 }, tQ, this.getDesc('pump_std'), grpHydro);
 
                     let servoItem = (activeServoType === 'sensor') ? catalog.servo_rotary_sensor : catalog.servo_rotary_std;
                     if (servoItem) {
-                        addToBill(servoItem, tQ, "Сервопривод для автоматического управления трехходовым смесительным клапаном группы отопления.", grpHydro);
+                        addToBill({ ...servoItem, sortRank: 1 }, tQ, "Сервопривод для автоматического управления трехходовым смесительным клапаном группы отопления.", grpHydro);
                     }
                 } else if (activeMixType === 'dn25' || activeMixType === 'dn25_servo') {
                     let ufhGrp = (activeMixType === 'dn25_servo') ? catalog.groups_dn25[2] : catalog.groups_dn25[1];
                     addToBill({ ...ufhGrp, _uiUfhOnly: true }, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
 
                     let ufhPump = catalog.pumps_dn25.find(p => p.type === this.state.pumpType) || catalog.pumps_dn25[0];
-                    addToBill(ufhPump, tQ, this.getDesc('pump_std'), grpHydro);
+                    addToBill({ ...ufhPump, sortRank: 1 }, tQ, this.getDesc('pump_std'), grpHydro);
 
                     if (activeMixType === 'dn25_servo') {
                         let servoItem = (activeServoType === 'sensor') ? catalog.servo_rotary_sensor : catalog.servo_rotary_std;
                         if (servoItem) {
-                            addToBill(servoItem, tQ, "Сервопривод для автоматического управления трехходовым смесительным клапаном группы отопления.", grpHydro);
+                            addToBill({ ...servoItem, sortRank: 1 }, tQ, "Сервопривод для автоматического управления трехходовым смесительным клапаном группы отопления.", grpHydro);
                         }
                     }
                 } else if (activeMixType === 'dn20' || activeMixType === 'dn20_servo') {
@@ -34289,12 +34690,12 @@ const app = {
                     addToBill({ ...ufhGrp, _uiUfhOnly: true }, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
 
                     let ufhPump = catalog.pumps_dn20[0];
-                    addToBill(ufhPump, tQ, this.getDesc('pump_std'), grpHydro);
+                    addToBill({ ...ufhPump, sortRank: 1 }, tQ, this.getDesc('pump_std'), grpHydro);
 
                     if (activeMixType === 'dn20_servo') {
                         let servoItem = (activeServoType === 'sensor') ? catalog.servo_rotary_sensor : catalog.servo_rotary_std;
                         if (servoItem) {
-                            addToBill(servoItem, tQ, "Сервопривод для автоматического управления трехходовым смесительным клапаном группы отопления.", grpHydro);
+                            addToBill({ ...servoItem, sortRank: 1 }, tQ, "Сервопривод для автоматического управления трехходовым смесительным клапаном группы отопления.", grpHydro);
                         }
                     }
                 }
@@ -34310,7 +34711,7 @@ const app = {
 
             addToBill(mixItem, 1, desc, grpHydro);
             if (pumpItem) {
-                addToBill(pumpItem, 1, this.getDesc('pump_std'), grpHydro);
+                addToBill({ ...pumpItem, sortRank: 1 }, 1, this.getDesc('pump_std'), grpHydro);
             }
         }
 
@@ -34395,8 +34796,11 @@ const app = {
         };
 
         // 1. Котлы
+        let _gasIdxFit = 0, _elIdxFit = 0;
         selBoilers.forEach(b => {
-            let grp = (b.type === 'gas') ? "2.1. Обвязка Газового котла" : "2.2. Обвязка Электрического котла";
+            // Фитинги подключения тоже свои у каждого котла каскада — идут в тот же
+            // подраздел, что и его дымоход с фильтром (см. gasBoilerGrp).
+            let grp = (b.type === 'gas') ? gasBoilerGrp(_gasIdxFit++) : elBoilerGrp(_elIdxFit++);
             let bName = (b.type === 'gas') ? "Газовый котёл" : "Электрический котёл";
             ss_pipes_demand[ss_diameter].length += 2.0;
             ss_pipes_demand[ss_diameter].components.push(bName === "Газовый котёл" ? "газовый котёл" : "электрический котёл");
@@ -34499,7 +34903,9 @@ const app = {
         let heatingExpNeeded = (def > 0);
         if (heatingExpNeeded) {
             let primaryBoiler = selBoilers[0];
-            let grp = (primaryBoiler && primaryBoiler.type === 'gas') ? "2.1. Обвязка Газового котла" : "2.2. Обвязка Электрического котла";
+            // Бак один на систему, а не на котёл — при каскаде кладём его в подраздел
+            // первого газового котла, а не размножаем по всем.
+            let grp = (primaryBoiler && primaryBoiler.type === 'gas') ? gasBoilerGrp(0) : elBoilerGrp(0);
             let bName = primaryBoiler ? ((primaryBoiler.type === 'gas') ? "газового котла" : "электрического котла") : "котла";
 
             // Трубы для расширительного бака отопления (1.5 м, всегда диаметром 22)
@@ -34573,7 +34979,7 @@ const app = {
                     `<b>Количество:</b> ${cfg.digitalBoards} шт. — одна плата обслуживает ровно один котёл, к одной плате два котла подключать нельзя. Ставится и на газовый, и на электрический: STOUT PLUS и STATUS работают по OpenTherm.`,
                     `<b>Протоколы:</b> определяются автоматически — OpenTherm, E-Bus (Vaillant, Protherm), BridgeNet (Ariston), Navien, BSB (Siemens), WOLF, Kiturami.`,
                     cfg.boardRemoved
-                        ? `⚠️ <b>Плата удалена из сметы.</b> ${cfg.boilerCount > 1 ? 'Котлы переходят' : 'Котёл переходит'} на релейное управление — по перемычке комнатного термостата, только «греет / не греет». Уставка, модуляция горелки и коды аварий по ней не передаются.`
+                        ? `⚠️ <b>Плата удалена из сметы.</b> ${cfg.wiredCount > 1 ? 'Котлы переходят' : 'Котёл переходит'} на релейное управление — по перемычке комнатного термостата, только «греет / не греет». Уставка, модуляция горелки и коды аварий по ней не передаются.`
                         : (cfg.boardsUsed < cfg.digitalBoards
                             ? `⚠️ <b>Плат оставлено ${cfg.boardsUsed} из ${cfg.digitalBoards}.</b> По цифровой шине пойдёт ${cfg.boardsUsed === 1 ? 'только первый котёл' : 'часть котлов'}, остальные — релейно, по перемычке комнатного термостата. На схеме подключения это уже учтено.`
                             : `<b>Если убрать из сметы:</b> останется релейное управление по перемычке комнатного термостата — контроллер сможет лишь включать и выключать нагрев.`)
@@ -35670,6 +36076,9 @@ const app = {
         currentSectionTitle = "4. Водяной тёплый пол";
         if (hasTp && tpMeters > 0) {
             let grpPipe = "4.1. Трубы тёплого пола и коллектор";
+            // Коллектор ТП всегда первой позицией раздела, трубы и транзит — после него.
+            // Поэтому трубы собраны в функцию и вызываются ниже, после проходов proc().
+            const addUfhPipes = () => {
             if (this.state.ufhPipeMaterial === 'metal_plastic') {
                 let q2 = Math.floor(tpMeters / 200); let q1 = Math.ceil((tpMeters % 200) / 100);
                 if (q2) {
@@ -35728,6 +36137,7 @@ const app = {
                         `</span>`, grpPipe);
                 }
             }
+            };
             let loops = 0, mans = 0, mansNoFitting = 0;
             // Насосно-смесительный узел ('std') крепится прямо на коллектор ТП, то есть живёт
             // в его шкафу. В обычные 120 мм глубины он не убирается — нужен ШРН-180. Узел на
@@ -35771,6 +36181,7 @@ const app = {
             };
             proc(this.state.tp1, tpF1, "1 этаж");
             proc(this.state.floors === 2 ? this.state.tp2 : 0, tpF2, "2 этаж");
+            addUfhPipes();
             if (mansNoFitting > 0) addToBill(catalog.parts[0], mansNoFitting * 2, "Концевые фитинги.", grpPipe);
             addEurocone(catalog.parts[3], loops * 2, "Евроконус 16 (ТП).", grpPipe); addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.", grpPipe);
             addToBill(catalog.protective_sleeves[0], loops, "Втулка красная.", grpPipe); addToBill(catalog.protective_sleeves[1], loops, "Втулка синяя.", grpPipe); addToBill(catalog.label_kits[1], 1, "Наклейки.", grpPipe);
@@ -35844,7 +36255,37 @@ const app = {
         currentSectionTitle = "4.4 Снеготаяние";
         if (snowCalc && !snowCalc.impossible) {
             const sc = snowCalc;
-            const grpNode = "4.4.1 Теплообменный узел";
+            // Узлов может быть несколько: один насос 25/60 объект такой площади
+            // не тянет, и расчёт делит контур на одинаковые узлы сам (calcSnowMelt).
+            // Всё, что стоит в узле, идёт в смету с этим количеством.
+            const _snowNodes = Math.max(1, sc.nodes || 1);
+            // Мощность ОДНОГО узла: ею подписываются насосные группы, чтобы в
+            // спецификации не гадать, зачем в котельной вторая такая же.
+            const _snowKw = Math.ceil(sc.Q / _snowNodes);
+            /**
+             * Дописать позиции назначение прямо в название. Подпись нужна и на
+             * ROMMER-исполнении: в режиме «Аналог» имя берётся у него, и без
+             * этого подпись пропадала бы вместе с брендом. Массив .rommer
+             * (позиция собирается из нескольких) не трогаем — там подписывать
+             * нечего.
+             */
+            const _snowLabel = (it, suffix, strip) => {
+                if (!it) return it;
+                const fix = n => (strip ? String(n || '').replace(strip, '') : String(n || '')) +
+                    (typeof suffix === 'function' ? suffix(n) : suffix);
+                const out = { ...it, name: fix(it.name) };
+                if (it.rommer && !Array.isArray(it.rommer)) out.rommer = { ...it.rommer, name: fix(it.rommer.name) };
+                return out;
+            };
+            /**
+             * Заметки расчёта, адресованные этой строке (calcSnowMelt → notes).
+             * Раньше они висели общим списком в панели снеготаяния, в отрыве от
+             * оборудования; теперь читаются под «i» у той позиции, о которой они.
+             */
+            const _snowNote = to => (sc.notes || [])
+                .filter(n => n && n.to === to)
+                .map(n => `<b>Почему так:</b> ${n.html}<br>`).join('');
+            const grpNode = _snowNodes > 1 ? "4.4.1 Теплообменные узлы" : "4.4.1 Теплообменный узел";
             const grpPrim = "4.4.2 Регулирование первичного контура";
             const grpOut = "4.4.3 Уличный контур";
             const grpSnowAuto = "4.4.4 Автоматика снеготаяния";
@@ -35857,39 +36298,67 @@ const app = {
                 // noCheapenAlts: в .alts лежит типоразмерный ряд, и режим «Аналог» не
                 // вправе подменить подобранные 34 пластины на 18 просто потому, что
                 // дешевле. Смену бренда у самой позиции это не трогает.
+                // «до N кВт» у каждого типоразмера — СВОЙ предел при этом перепаде
+                // и этом гликоле, как паспортные «для радиаторов до 24 кВт» у
+                // насосных групп. В таблице замены сразу видно, почему подобран
+                // именно такой теплообменник, а не тот, что дешевле.
+                const _hxKw = hx => Math.max(1, Math.round((hx.maxFlow / 1.15) * sc.fluid.cp * sc.fluid.rho * sc.dT / 3600));
+                const _hxTag = hx => ` - уличный контур снеготаяния до ${_hxKw(hx)} кВт`;
                 addToBill({
-                    ..._hxBase, noCheapenAlts: true,
-                    alts: (catalog.heat_exchanger_groups || []).filter(x => x.id !== _hxBase.id)
-                }, 1,
+                    ..._snowLabel(_hxBase, _hxTag(_hxBase)),
+                    noCheapenAlts: true,
+                    // Подобранный типоразмер тоже кладём в alts — тогда таблица
+                    // замены строит ВСЕ строки, включая его собственную и его
+                    // ROMMER-исполнение, из подписанных позиций, а не из голого
+                    // каталога.
+                    alts: (catalog.heat_exchanger_groups || []).map(x => _snowLabel(x, _hxTag(x)))
+                }, _snowNodes,
                     `<span style="font-size:11px;line-height:1.5;">` +
                     `<b>Зачем:</b> Разделяет воду котельной и гликоль уличного контура. Смешивать их нельзя: заливать антифриз во весь дом дорого, а гликоль снижает теплосъём котла и бойлера.<br>` +
-                    `<b>Подбор:</b> расход вторичного контура ${sc.V.toFixed(2)} м³/ч при перепаде ${sc.dT} К, паспортный предел этого типоразмера ${sc.hx.maxFlow} м³/ч. Запас 15 % — требование самого паспорта к располагаемому перепаду давления.<br>` +
+                    `<b>Нагрузка объекта:</b> ${sc.Q.toFixed(1)} кВт на ${sc.area} м²${_snowNodes > 1 ? `, разделены на ${_snowNodes} ${this.plural(_snowNodes, 'узел', 'узла', 'узлов')} — по ${_snowKw} кВт на узел` : ``}.<br>` +
+                    `<b>Подбор:</b> расход вторичного контура ${sc.V.toFixed(2)} м³/ч${_snowNodes > 1 ? ' на узел' : ''} при перепаде ${sc.dT} К, паспортный предел этого типоразмера ${sc.hx.maxFlow} м³/ч. Запас 15 % — требование самого паспорта к располагаемому перепаду давления.<br>` +
                     `<b>Сопротивление:</b> ${sc.dpHx.toFixed(1)} кПа — 50 кПа паспорта, пересчитанные на фактический расход (квадратично).<br>` +
                     `<b>Первичка:</b> подача из котельной от ${Math.ceil(sc.t1)} °C при перепаде 15 К.<br>` +
-                    `<b>Входит в изделие:</b> предохранительный клапан, манометр, кран заполнения и слива, шаровые краны с термометрами, обратный клапан на обратке — отдельно эти позиции не покупаются.` +
+                    `<b>Входит в изделие:</b> предохранительный клапан, манометр, кран заполнения и слива, шаровые краны с термометрами, обратный клапан на обратке — отдельно эти позиции не покупаются.<br>` +
+                    _snowNote('hx') +
                     `</span>`, grpNode);
             }
-            const _snowPump = (catalog.pumps_dn25 || []).find(x => x.type === (this.state.pumpType || 'default')) || (catalog.pumps_dn25 || [])[0];
+            // Типоразмер насоса вторички подобран расчётом (25/60 или 25/80), а
+            // исполнение — общее по котельной, state.pumpType. В .alts кладём
+            // соседей по своему ряду и обязательно другой типоразмер: монтажник
+            // должен видеть, что выбор был.
+            const _secPumpList = (catalog[(sc.pump && sc.pump.cat) || 'pumps_dn25'] || catalog.pumps_dn25 || []);
+            const _snowPump = _secPumpList.find(x => x.type === (this.state.pumpType || 'default')) || _secPumpList[0];
+            const _primPumpList = (catalog.pumps_dn25 || []);
+            const _primPump = _primPumpList.find(x => x.type === (this.state.pumpType || 'default')) || _primPumpList[0];
             if (_snowPump) {
-                addToBill({ ..._snowPump, originalId: 'snow_pump_sec', alts: (catalog.pumps_dn25 || []).filter(x => x.id !== _snowPump.id) }, 1,
+                const _otherPumps = this.SNOW_PUMPS
+                    .filter(p => p.cat !== ((sc.pump && sc.pump.cat) || 'pumps_dn25'))
+                    .flatMap(p => (catalog[p.cat] || []).filter(x => x.type === (this.state.pumpType || 'default')));
+                addToBill({
+                    ..._snowPump, originalId: 'snow_pump_sec',
+                    alts: _secPumpList.filter(x => x.id !== _snowPump.id).concat(_otherPumps)
+                }, _snowNodes,
                     `<span style="font-size:11px;line-height:1.5;">` +
                     `<b>Зачем:</b> Насосная группа с теплообменником поставляется без насоса — присоединение 1½", строительная длина 180 мм.<br>` +
-                    `<b>Рабочая точка:</b> ${sc.V.toFixed(2)} м³/ч при напоре ${sc.head.toFixed(1)} м. Насос 25/60 на этом расходе даёт ${sc.pumpHead.toFixed(1)} м.<br>` +
+                    (_snowNodes > 1 ? `<b>Кол-во:</b> по одному на каждый из ${_snowNodes} узлов.<br>` : ``) +
+                    `<b>Рабочая точка:</b> ${sc.V.toFixed(2)} м³/ч${_snowNodes > 1 ? ' на узел' : ''} при напоре ${sc.head.toFixed(1)} м. Насос ${sc.pump.label} на этом расходе даёт ${sc.pumpHead.toFixed(1)} м — ${sc.head <= sc.pumpHead * 0.9 ? 'проходит с запасом 10 %' : 'запаса нет, см. оговорки к разделу'}.<br>` +
                     `<b>Из чего складывается напор:</b> теплообменник ${sc.dpHx.toFixed(1)} кПа + самая длинная петля ${sc.dpLoop.toFixed(1)} кПа + коллектор и арматура ${this.SNOW_NODE_DP} кПа, всё это с запасом 15 %.<br>` +
-                    `<b>Почему не как в доме:</b> гликоль ${sc.glycol} % вязче воды, потери в петле выше — считать по воде здесь нельзя.` +
+                    `<b>Почему не как в доме:</b> гликоль ${sc.glycol} % вязче воды, потери в петле выше — считать по воде здесь нельзя.<br>` +
+                    _snowNote('pump') +
                     `</span>`, grpNode);
             }
             if (sc.tank) {
-                addToBill({ ...sc.tank, originalId: 'snow_exp_tank', alts: (catalog.exp_heating || []).concat(catalog.exp_heating_alts || []).filter(x => x.id !== sc.tank.id) }, 1,
+                addToBill({ ...sc.tank, originalId: 'snow_exp_tank', alts: (catalog.exp_heating || []).concat(catalog.exp_heating_alts || []).filter(x => x.id !== sc.tank.id) }, _snowNodes,
                     `<span style="font-size:11px;line-height:1.5;">` +
                     `<b>Зачем:</b> У вторичного контура свой объём и своё давление — бак котельной его не обслуживает.<br>` +
-                    `<b>Формула:</b> 10 % объёма контура.<br>` +
-                    `<b>Подставленные значения:</b> ${Math.round(sc.vol)} л × 0,1 = ${sc.tankNeed} л → ближайший бак ${sc.tank.vol} л.` +
+                    `<b>Формула:</b> 10 % объёма контура${_snowNodes > 1 ? ', и у каждого узла он свой' : ''}.<br>` +
+                    `<b>Подставленные значения:</b> ${Math.round(sc.volNode)} л${_snowNodes > 1 ? ` на узел (всего ${Math.round(sc.vol)} л)` : ''} × 0,1 = ${sc.tankNeed} л → ближайший бак ${sc.tank.vol} л.` +
                     `</span>`, grpNode);
-                if (catalog.tank_kit) addToBill(catalog.tank_kit, 1, `Комплект подключения бака вторичного контура: кран с автоматическим сбросом давления, чтобы бак можно было снять не сливая гликоль.`, grpNode);
+                if (catalog.tank_kit) addToBill(catalog.tank_kit, _snowNodes, `Комплект подключения бака вторичного контура: кран с автоматическим сбросом давления, чтобы бак можно было снять не сливая гликоль.`, grpNode);
             }
             if (catalog.filter_mag) {
-                addToBill({ ...catalog.filter_mag, originalId: 'snow_filter_mag' }, 1,
+                addToBill({ ...catalog.filter_mag, originalId: 'snow_filter_mag' }, _snowNodes,
                     `<span style="font-size:11px;line-height:1.5;">` +
                     `<b>Зачем:</b> Пластины теплообменника — самый узкий канал во всей системе. Окалина и монтажный мусор из уличных петель забивают его первым.` +
                     `</span>`, grpNode);
@@ -35899,66 +36368,120 @@ const app = {
             //   нет: без узла на первичном контуре вторичка догоняет котловую
             //   температуру, а 70 °C в уличной стяжке разрушают и бетон, и покрытие.
             const _primGroup = (catalog.groups_dn25 || []).find(x => x.id === 'SDG-0003-002501');
+            const _primGroupBig = (catalog.groups_dn32 || []).find(x => x.id === 'SDG-0007-003201');
+            /**
+             * Предел группы на первичке снеготаяния, кВт. Пересчитан из
+             * паспортного «для тёплого пола до N кВт»: там перепад 10 К, здесь
+             * 15 К — при том же расходе группа тянет в полтора раза больше.
+             */
+            const _grpKw = n => {
+                const m = /т[её]плого пола до\s*(\d+(?:[.,]\d+)?)/i.exec(String(n || ''));
+                return m ? Math.round(parseFloat(m[1].replace(',', '.')) * 1.5) : 0;
+            };
             if (_primGroup) {
-                addToBill({ ..._primGroup, originalId: 'snow_prim_group' }, 1,
+                // Паспортные «для радиаторов до 24 кВт, для тёплого пола до 12»
+                // в этом разделе только сбивают: группа стоит на первичке
+                // снеготаяния, и предел у неё здесь свой.
+                addToBill({
+                    ..._snowLabel(_primGroup, n => ` - для снеготаяния до ${_grpKw(n) || _snowKw} кВт`, /\s*-\s*для радиаторов.*$/i),
+                    originalId: 'snow_prim_group',
+                    // Узел мощнее предела DN25 — DN32 должен быть под рукой, в
+                    // таблице замены, а не в предупреждении отдельной строкой.
+                    alts: [_primGroupBig ? _snowLabel(_primGroupBig, n => ` - для снеготаяния до ${_grpKw(n) || _snowKw} кВт`, /\s*-\s*для радиаторов.*?кВт(?=\s*\()/i) : null].filter(Boolean)
+                }, _snowNodes,
                     `<span style="font-size:11px;line-height:1.5;">` +
                     `<b>Зачем:</b> Держит подачу в теплообменник на расчётной температуре. У насосной группы с теплообменником своего регулирования нет, и без этого узла вторичный контур нагреется до котловой температуры — уличная стяжка такого не переживает.<br>` +
                     `<b>Управление:</b> сервопривод по команде контроллера, датчик — накладной на подаче вторичного контура, уставка ${this.SNOW_SUPPLY} °C.` +
                     `</span>`, grpPrim);
             }
-            if (_snowPump) {
-                addToBill({ ..._snowPump, originalId: 'snow_pump_prim' }, 1,
-                    `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Насос первичного контура — прокачка от коллектора котельной через теплообменник. Смесительная группа поставляется без насоса.</span>`, grpPrim);
+            if (_primPump) {
+                // На первичке всегда штатный 25/60: там вода, а не гликоль,
+                // перепад 15 К и нет уличных петель — считать её по вторичке
+                // нельзя, а ставить туда 25/80 «за компанию» тем более.
+                addToBill({ ..._primPump, originalId: 'snow_pump_prim', alts: _primPumpList.filter(x => x.id !== _primPump.id) }, _snowNodes,
+                    `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Насос первичного контура — прокачка от коллектора котельной через теплообменник. Смесительная группа поставляется без насоса.${sc.pump !== this.SNOW_PUMPS[0] ? ` <b>Почему ${this.SNOW_PUMPS[0].label}, когда на вторичке ${sc.pump.label}:</b> на первичке вода, перепад 15 К и нет уличных петель — расход и потери там заметно ниже.` : ''}${_snowNodes > 1 ? ` <b>Кол-во:</b> по одному на каждый из ${_snowNodes} узлов — первичка у них раздельная, от общего коллектора котельной.` : ''}</span>`, grpPrim);
             }
             if (catalog.servo_rotary_std) {
-                addToBill({ ...catalog.servo_rotary_std, originalId: 'snow_servo' }, 1,
+                addToBill({ ...catalog.servo_rotary_std, originalId: 'snow_servo' }, _snowNodes,
                     `<span style="font-size:11px;line-height:1.5;"><b>Зачем:</b> Поворачивает трёхходовой смеситель первичного контура по команде контроллера. Без него узел остаётся ручным, а снеготаяние — неуправляемым.</span>`, grpPrim);
             }
 
             // — Уличный контур. Петля цельная от коллектора до участка и обратно:
             //   стыков под улицей быть не должно, поэтому подводка сидит внутри
             //   длины петли, а не идёт отдельной трассой.
-            const _snowPipe = (catalog.rad_pipes_grey || []).find(x => x.id === 'SPX-0001-002028');
+            //   Типоразмер петли выбирается в панели (state.snowPipe): тонкостенная
+            //   20х2.0 по умолчанию, толстостенная 20х2.8 — когда за петлю страшно.
+            //   Гидравлика уже посчитана по выбранной, здесь только позиция.
+            const _pipeSel = sc.pipe || this.SNOW_PIPES[0];
+            const _pipeOther = this.SNOW_PIPES.find(p => p.key !== _pipeSel.key);
+            const _snowPipe = (catalog[_pipeSel.cat] || []).find(x => x.id === _pipeSel.id);
             if (_snowPipe) {
                 const coils = Math.ceil(sc.meters / (_snowPipe.len || 100));
                 const _pipeItem = asCoilPrice({ ..._snowPipe, originalId: 'snow_pipe' });
-                _pipeItem.alts = [
-                    (catalog.rad_pipes_grey || []).find(x => x.id === 'SPX-0001-002535'),
-                    (catalog.stable_pipes || []).find(x => x.id === 'SPS-0002-002029')
-                ].filter(Boolean);
+                // В замене — только вторая труба уличного контура. Стабильную и
+                // 25-ю отсюда убрали: гидравлика петли посчитана под 20 мм PE-Xa
+                // (внутренний диаметр, литры в метре, монтажная гильза), и любая
+                // другая труба сделала бы расчёт неправдой. Цена — за бухту, как
+                // и у самой строки, иначе колонка «изм. цена» показывает −99 %.
+                _pipeItem.alts = [_pipeOther ? (catalog[_pipeOther.cat] || []).find(x => x.id === _pipeOther.id) : null]
+                    .filter(Boolean).map(x => asCoilPrice(x));
                 addToBill(_pipeItem, coils,
                     `<span style="font-size:11px;line-height:1.5;">` +
                     `<b>Зачем:</b> Петли в стяжке площадки. Труба 20 мм, а не петлевая 16: при шаге ${sc.rows[0] ? sc.rows[0].step : 250} мм петля 16-й трубой упёрлась бы в длину раньше, чем в гидравлику. PE-Xa, а не металлопластик — он переживает замерзание теплоносителя, металлопластик расслаивается по алюминию.<br>` +
+                    `<b>Стенка ${_pipeSel.label.slice(-3)}:</b> ` +
+                    (_pipeSel.key === 'thin'
+                        ? `внутренний диаметр 16 мм — потери в петле примерно на треть ниже, чем у 20х2.8, поэтому петля длиннее, а узлов на объект нужно меньше. Толстостенную 20х2.8 берут там, где за петлю страшно: тяжёлый проезд, работы поверх готовой стяжки. Переключается в панели снеготаяния.`
+                        : `толстая стенка — запас на механику под проездом. Платите за это гидравликой: внутренний 14,4 мм против 16 у 20х2.0, потери в петле выше примерно в полтора раза. Переключается в панели снеготаяния.`) + `<br>` +
                     `<b>Формула:</b> площадь / шаг × 1,1 (подрезка и заводка) + подводка до котельной в обе стороны на каждую петлю.<br>` +
-                    `<b>Подставленные значения:</b> ${sc.rows.map(r => `${r.name} ${r.area} м² при шаге ${r.step} мм → ${Math.round(r.m)} м`).join('; ')} = <b>${sc.meters} м</b> → ${coils} бухт(ы) по ${_snowPipe.len || 100} м.` +
+                    `<b>Подставленные значения:</b> ${sc.rows.map(r => `${r.name} ${r.area} м² при шаге ${r.step} мм → ${Math.round(r.m)} м`).join('; ')} = <b>${sc.meters} м</b> → ${coils} бухт(ы) по ${_snowPipe.len || 100} м.<br>` +
+                    `<b>Итого по контуру:</b> петель ${sc.loops}${_snowNodes > 1 ? ` (по ${sc.loopsPerNode.join(' + ')} на узел)` : ''}, самая длинная ${Math.round(sc.worstLen)} м, объём заливки ${Math.round(sc.vol)} л.<br>` +
+                    _snowNote('pipe') +
                     `</span>`, grpOut);
             }
             // Коллектор — обязательно с расходомерами: петли уличного контура всегда
             // разной длины, и без балансировки дальняя половина площадки остаётся
             // под снегом. Больше 12 выходов на гребёнку не ставим — как в ТП.
+            // Гребёнка своя у каждого узла: петли разных узлов сходятся к разным
+            // теплообменникам, и на одну гребёнку их не собрать. Внутри узла —
+            // прежнее правило: больше 12 выходов не ставим.
             let _snowManifolds = 0;
-            const _mCount = Math.ceil(sc.loops / 12);
-            for (let i = 0; i < _mCount; i++) {
-                const sz = Math.floor(sc.loops / _mCount) + (i < (sc.loops % _mCount) ? 1 : 0);
+            const _mSizes = {};
+            (sc.loopsPerNode || [sc.loops]).forEach(nodeLoops => {
+                const cnt = Math.ceil(nodeLoops / 12);
+                for (let i = 0; i < cnt; i++) {
+                    const sz = Math.floor(nodeLoops / cnt) + (i < (nodeLoops % cnt) ? 1 : 0);
+                    _mSizes[sz] = (_mSizes[sz] || 0) + 1;
+                }
+            });
+            Object.keys(_mSizes).map(Number).sort((a, b) => b - a).forEach(sz => {
+                const qty = _mSizes[sz];
                 const _mBase = (catalog.manifolds || []).find(x => x.loops === sz);
                 const _mSel = (catalog.manifolds_full_kit || []).find(x => x.loops === sz) || _mBase;
-                if (!_mSel) continue;
-                addToBill({ ..._mSel, originalId: _mBase ? _mBase.id : _mSel.id, name: `Коллектор снеготаяния ${sz} вых` }, 1,
+                if (!_mSel) return;
+                addToBill({ ..._mSel, originalId: _mBase ? _mBase.id : _mSel.id, name: `Коллектор снеготаяния ${sz} вых` }, qty,
                     `<span style="font-size:11px;line-height:1.5;">` +
                     `<b>Зачем:</b> Раздаёт теплоноситель по петлям и позволяет их сбалансировать. Расходомеры здесь обязательны: петли разной длины, без настройки дальний участок не растает.<br>` +
-                    `<b>Формула:</b> 1 выход на петлю, больше 12 петель — вторая гребёнка.<br>` +
-                    `<b>Подставленные значения:</b> петель всего ${sc.loops} → ${sz} вых.` +
+                    `<b>Формула:</b> 1 выход на петлю, больше 12 петель на узле — вторая гребёнка. Узлы гребёнку не делят: у каждого свой теплообменник.<br>` +
+                    `<b>Подставленные значения:</b> петель всего ${sc.loops}` +
+                    (_snowNodes > 1 ? `, узлов ${_snowNodes} (по ${sc.loopsPerNode.join(' + ')})` : ``) +
+                    ` → ${sz} вых.` +
                     `</span>`, grpOut);
-                _snowManifolds++;
-            }
+                _snowManifolds += qty;
+            });
             if (_snowManifolds > 0 && catalog.parts && catalog.parts[0]) {
                 addToBill({ ...catalog.parts[0], originalId: 'snow_end_fitting' }, _snowManifolds * 2,
                     `Концевые группы коллектора снеготаяния: воздухоотводчик и слив на подающей и обратной гребёнке.`, grpOut);
             }
+            // Гильза обжимает трубу по стенке, поэтому идёт от выбранного
+            // типоразмера петли; евроконус у обеих труб один.
             (catalog.snow_axial_20 || []).forEach(part => {
-                addToBill({ ...part, originalId: 'snow_' + part.id }, sc.loops * 2,
+                const _isSleeve = /гильза/i.test(part.name || '');
+                const _part = (_isSleeve && part.id !== _pipeSel.sleeve && catalog.snow_sleeve_20x20 && catalog.snow_sleeve_20x20.id === _pipeSel.sleeve)
+                    ? catalog.snow_sleeve_20x20 : part;
+                addToBill({ ..._part, originalId: 'snow_' + _part.id }, sc.loops * 2,
                     `<span style="font-size:11px;line-height:1.5;">` +
                     `<b>Зачем:</b> Подключение петли к коллектору. Соединение аксиальное — надвижная гильза вместо накидной гайки: под улицей подтянуть его будет нечем.<br>` +
+                    (_isSleeve ? `<b>Типоразмер:</b> по стенке трубы петли — ${_pipeSel.label}.<br>` : ``) +
                     `<b>Кол-во:</b> 2 шт на петлю (подача и обратка), петель ${sc.loops}.` +
                     `</span>`, grpOut);
             });
@@ -36028,14 +36551,29 @@ const app = {
             // — Работы.
             const grpSnowWork = "1.6 Монтаж снеготаяния";
             addToWorks("Укладка трубы снеготаяния с креплением к армированию", sc.meters, 190, "м", grpSnowWork);
-            addToWorks("Монтаж узла с теплообменником (первичка, вторичка, бак, обвязка)", 1, 24000, "компл", grpSnowWork);
+            // Узел собирается целиком, поэтому и работа считается узлами: два
+            // теплообменника — две обвязки, а не одна подорожавшая.
+            addToWorks("Монтаж узла с теплообменником (первичка, вторичка, бак, обвязка)", _snowNodes, 24000, "компл", grpSnowWork);
             addToWorks("Монтаж и балансировка коллектора снеготаяния", _snowManifolds, 9000, "шт", grpSnowWork);
-            addToWorks("Заполнение гликолем, опрессовка и пусконаладка контура", 1, 12000, "компл", grpSnowWork);
+            addToWorks("Заполнение гликолем, опрессовка и пусконаладка контура", _snowNodes, 12000, "компл", grpSnowWork);
 
-            const _snowWarn = (sc.warnings || []).length
-                ? `⚠️ <b>Снеготаяние — на что смотреть:</b><br>` + sc.warnings.map(w => '• ' + w).join('<br>')
-                : null;
-            flushBill("4.4 Снеготаяние", _snowWarn);
+            // Как посчитано — под «i» у самих строк (_snowNote), в шапке раздела
+            // остаются только оговорки: их монтажник обязан увидеть, даже если
+            // ни одну подсказку не открыл.
+            // Предел группы первички считает уже смета: в calcSnowMelt каталога
+            // нет, а цифра «до 12 кВт» живёт в названии позиции.
+            const _snowWarnAll = (sc.warnings || []).slice();
+            const _primKw = _grpKw(_primGroup && _primGroup.name);
+            const _primKwBig = _grpKw(_primGroupBig && _primGroupBig.name);
+            if (_primKw && _snowKw > _primKw) {
+                _snowWarnAll.push(`Узел на <b>${_snowKw} кВт</b>, а группа первичного контура DN25 рассчитана до ${_primKw} кВт ` +
+                    `(паспортные «для тёплого пола до 12 кВт» — это тот же расход при перепаде 10 К, на первичке снеготаяния перепад 15 К). ` +
+                    (_primKwBig ? `В таблице замены есть DN32 — до ${_primKwBig} кВт. Насос к ней подбирается отдельно: 25/60-180 с присоединением 1½" в неё не встанет.` : ``));
+            }
+            const _snowWarn = _snowWarnAll.length
+                ? `⚠️ <b>Снеготаяние — на что смотреть:</b><br>` + _snowWarnAll.map(w => '• ' + w).join('<br>')
+                : '';
+            flushBill("4.4 Снеготаяние", _snowWarn || null);
         } else if (snowCalc && snowCalc.impossible) {
             flushBill("4.4 Снеготаяние", `⚠️ <b>Снеготаяние не подобрано.</b><br>` + (snowCalc.warnings || []).map(w => '• ' + w).join('<br>'));
         }

@@ -635,10 +635,21 @@
     var bt = 52, bb = 124;                   // штриховые рамки групп
     var GL = sn.glycol, INKG = '#64748B', CARD = '#F8FAFC';
 
-    o.push(txt(W / 2, 14, 'Схема узла снеготаяния', { size: 6.2, anchor: 'middle' }));
+    // Узлов на объекте может быть несколько (расчёт делит контур, когда одному
+    // насосу не хватает напора). Узлы одинаковые, поэтому чертёж один — но
+    // подпись обязана сказать, что он один из нескольких, иначе по схеме
+    // соберут половину системы.
+    var NODES = Math.max(1, sn.nodes || 1);
+    o.push(txt(W / 2, 14, NODES > 1 ? 'Схема узла снеготаяния (один из ' + NODES + ')' : 'Схема узла снеготаяния',
+      { size: 6.2, anchor: 'middle' }));
     o.push(txt(W / 2, 21.6, sn.kw + ' кВт · площадка ' + sn.area + ' м² · ' + sn.loops +
       ' петель · вторичный контур — водный раствор пропиленгликоля ' + GL + ' %',
       { size: 3.1, anchor: 'middle' }));
+    if (NODES > 1) {
+      o.push(txt(W / 2, 26.4, 'узлов ' + NODES + ', узлы одинаковые' +
+        (sn.loopsNode ? ' · на этом узле ' + sn.loopsNode + ' петель из ' + sn.loops : ''),
+        { size: 3.1, anchor: 'middle' }));
+    }
 
     /** Шаровой кран, совмещённый со стрелочным термометром (паспорт, поз. 2 и 4). */
     function valveTherm(x, y, up) {
@@ -730,7 +741,9 @@
 
     // Петель рисуем не больше шести — дальше они сливаются в заливку; реальное
     // число подписано под площадкой.
-    var nDraw = Math.min(sn.loops || 1, 6);
+    // Гребёнка здесь одного узла — значит и петли на ней его, а не всего объекта.
+    var loopsNode = sn.loopsNode || sn.loops || 1;
+    var nDraw = Math.min(loopsNode, 6);
     var span = (mx1 - mx0 - 10), step = span / nDraw;
     for (var i = 0; i < nDraw; i++) {
       var lx = mx0 + 5 + i * step + step * 0.18, rx2 = lx + step * 0.5;
@@ -744,8 +757,9 @@
     // покрытие площадки
     o.push(rrect(mx0 - 4, yLoop + 5, mx1 - mx0 + 8, 8, 1, { f: '#EEF2F6', c: INKG, w: 0.4 }));
     for (var hxx = mx0 - 2; hxx < mx1 + 4; hxx += 7) o.push(ln(hxx, yLoop + 13, hxx + 4, yLoop + 6, { c: INKG, w: 0.3 }));
-    o.push(txtM(mx0 - 4, yLoop + 19, 'петель ' + sn.loops + ' · труба ' + sn.dia + ' · шаг ' + sn.step + ' мм', { size: 2.6 }));
-    if ((sn.loops || 0) > nDraw) o.push(txtM(mx0 - 4, yLoop + 23.4, 'на схеме показано ' + nDraw, { size: 2.4 }));
+    o.push(txtM(mx0 - 4, yLoop + 19, 'петель ' + loopsNode + (NODES > 1 ? ' (на этом узле)' : '') +
+      ' · труба ' + sn.dia + ' · шаг ' + sn.step + ' мм', { size: 2.6 }));
+    if (loopsNode > nDraw) o.push(txtM(mx0 - 4, yLoop + 23.4, 'на схеме показано ' + nDraw, { size: 2.4 }));
 
     // ── легенда сред ────────────────────────────────────────────────────
     var lg = [[COL.supply, 'подача первичного контура — вода котельной'],
@@ -861,9 +875,18 @@
     // как тёплый пол: всё, что за ним (теплообменник, вторичный контур на
     // гликоле, уличный коллектор), живёт на собственной схеме узла над разделом
     // 4.4 сметы. Здесь остаётся сноска, чтобы связь была видна.
+    // Узлов снеготаяния может быть несколько: расчёт делит контур, когда одному
+    // насосу не хватает напора. Первичка у них раздельная, значит и пар отводов
+    // столько же — как у нескольких групп тёплого пола.
     if (cfg.snow) {
-      taps.push({ mark: 'Т22', color: COL.ret, from: 'ret', dir: 'up', mix: true, size: thread(cfg.snow.dn) });
-      taps.push({ mark: 'Т12', color: COL.supply, from: 'supply', dir: 'down', pump: true, size: thread(cfg.snow.dn), note: 'узел снеготаяния — см. схему' });
+      var snowN = Math.max(1, cfg.snow.nodes || 1);
+      for (var si = 0; si < snowN; si++) {
+        taps.push({ mark: mk('Т22', si, snowN), color: COL.ret, from: 'ret', dir: 'up', mix: true, size: thread(cfg.snow.dn) });
+        taps.push({
+          mark: mk('Т12', si, snowN), color: COL.supply, from: 'supply', dir: 'down', pump: true, size: thread(cfg.snow.dn),
+          note: snowN > 1 ? 'узел снеготаяния ' + (si + 1) + ' — см. схему' : 'узел снеготаяния — см. схему'
+        });
+      }
     }
 
     // Полоса отводов зажата между котлами слева и гидрострелкой справа: за её
@@ -1874,7 +1897,10 @@
       });
     }
 
-    var boilers = (tc.boilers || []).slice(0, 2);
+    // Котлов в смете может быть больше двух, а котловых каналов у контроллера
+    // ровно два. Тот, кому канала не досталось (iface 'own'), живёт на своей
+    // автоматике — проводов к прибору у него нет, и на схеме его быть не должно.
+    var boilers = (tc.boilers || []).filter(function (b) { return b.iface !== 'own'; }).slice(0, 2);
     boilers.forEach(function (b, i) {
       var gas = b.kind === 'gas';
       var dev = {
@@ -2249,7 +2275,7 @@
       if (tc.dhw === 'boiler') rw.push({ t: 'ГВС · загрузка бойлера', s: '«ГВС РЦ» · по датчику «Бойлер»' });
       else if (tc.dhw === 'boiler_ct') rw.push({ t: 'ГВС · через котёл', s: 'уставку котлу задаёт цифровая шина' });
       if (tc.recirc) rw.push({ t: 'ГВС · рециркуляция', s: '«ГВС ЦН» · по режиму «Комфорт»' });
-      (tc.boilers || []).slice(0, 2).forEach(function (b, i) {
+      (tc.boilers || []).filter(function (b) { return b.iface !== 'own'; }).slice(0, 2).forEach(function (b, i) {
         rw.push({
           t: 'Котёл ' + (i + 1) + ' · ' + (b.kind === 'gas' ? 'газовый' : 'электрический'),
           s: b.iface === 'digital' ? '«ЦШ' + (i + 1) + '» · цифровая шина' : '«Реле котёл ' + (i + 1) + '» · сухой контакт'

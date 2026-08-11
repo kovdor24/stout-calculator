@@ -49,10 +49,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.21">
+    <link rel="stylesheet" href="style.css?v=3.24">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.55" defer></script>
+    <script src="catalog.js?v=2.60" defer></script>
     <!-- Координаты и регионы населённых пунктов: карта проектов в админке и
          адрес объекта. Данные вшиты в файл, наружу никаких запросов. -->
     <script src="cities_geo.js?v=1.0" defer></script>
@@ -68,12 +68,12 @@
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.1" defer></script>
     <script src="gamification.js?v=2.1" defer></script>
-    <script src="app.js?v=5.09" defer></script>
+    <script src="app.js?v=5.22" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
          векторный композитор, что рисует лист схемы в проекте, поэтому нужен
          и движок листов (рамка/штамп из него не берутся, только текст). -->
     <script src="project_sheets.js?v=4.15" defer></script>
-    <script src="project_scheme.js?v=4.42" defer></script>
+    <script src="project_scheme.js?v=4.44" defer></script>
     <!-- Укладка тёплого пола по планам этажей. В калькуляторе нужна не ради
          листов, а ради сметы: длину трубы и число выходов коллектора берём
          из нарисованных петель (projectPlans.floorLoops). -->
@@ -1156,6 +1156,33 @@
                                 title="Датчик осадков в смету не попадает. Снеготаяние включается вручную — из приложения контроллера или выключателем.">Ручной</div>
                         </div>
                     </div>
+                    <div style="border-top:1px solid #E5E7EB; padding-top:8px; position:relative;">
+                        <span class="lbl"
+                            style="font-size:12px; display:flex; align-items:center; gap:4px; margin-bottom:6px;">Труба
+                            петель<span class="tooltip-wrapper tip-panel-wrap"><i class="info-icon" tabindex="0"
+                                    role="button" aria-label="Подробнее">i</i>
+                                <div class="tooltip-content tip-panel"><b>20х2.0 (красная).</b> Внутренний диаметр
+                                    16 мм. Потери в петле примерно на треть ниже, метр дешевле, петля выходит
+                                    длиннее — а значит меньше петель, меньше выходов коллектора и реже приходится
+                                    делить снеготаяние на два узла. Теплоносителя в контуре на 15 % больше.<br><br>
+                                    <b>20х2.8 (серая).</b> Внутренний 14,4 мм. Толстая стенка — запас на механику
+                                    там, где за петлю страшно: тяжёлый проезд, работы поверх готовой стяжки. За это
+                                    платите гидравликой: петля короче, петель больше, узлов может понадобиться
+                                    больше.<br><br>
+                                    <b>Общее у обеих.</b> PE-Xa/EVOH, обе переживают замерзание теплоносителя
+                                    (металлопластик в этом месте расслаивается по алюминию), обе на аксиальном
+                                    соединении. Различается только монтажная гильза — она обжимает трубу по стенке.
+                                </div>
+                            </span></span>
+                        <div class="tabs" id="snow_pipe_tabs" style="font-size:11px;">
+                            <div class="tab active" id="snow_pipe_thin" onclick="app.setSnowPipe('thin')"
+                                title="PE-Xa/EVOH 20х2.0, внутренний 16 мм. Потери в петле ниже — петель и узлов нужно меньше.">
+                                20×2.0</div>
+                            <div class="tab" id="snow_pipe_thick" onclick="app.setSnowPipe('thick')"
+                                title="PE-Xa/EVOH 20х2.8, внутренний 14,4 мм. Толстая стенка под тяжёлый проезд, но петля короче.">
+                                20×2.8</div>
+                        </div>
+                    </div>
                     <div
                         style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #E5E7EB; padding-top:8px;">
                         <span class="lbl" style="font-size:12px;"
@@ -1243,22 +1270,28 @@
                         </div>
                     </div>
                 </div>
-                <div class="doc-summary" id="doc_summary">...</div>
-                <div class="sticky-tabs-container no-print">
-                    <div class="tabs main-view-tabs" style="height: 40px;">
-                        <div id="tab_equipment" class="tab active" style="font-size: 14px; font-weight: 700;"
-                            onclick="app.setViewMode('equipment')">1. Оборудование</div>
-                        <div id="tab_works" class="tab" style="font-size: 14px; font-weight: 700;"
-                            onclick="app.setViewMode('works')">2. Монтажные работы</div>
-                        <!-- Распознавание рукописных смет. Скрыта по умолчанию,
-                             показывается только админам из RecognizeUI.syncButton(). -->
-                        <div id="tab_recognize" class="tab" style="font-size: 14px; font-weight: 700; display: none;"
-                            onclick="app.setViewMode('recognize')">3. Распознать смету <span class="rec-beta">beta</span></div>
-                        <div id="tab_3d" class="tab" style="font-size: 14px; font-weight: 700; display: none;"
-                            onclick="app.setViewMode('3d')">4. 3D Котельная</div>
-                    </div>
+            </div>
+            <!-- Строка параметров объекта вынесена из .doc-header: липкой она может быть
+                 только внутри высокого родителя, а .doc-header кончается сразу под вкладками
+                 и утаскивал бы её за собой. Теперь родитель — вся колонка сметы. -->
+            <div class="doc-summary" id="doc_summary">...</div>
+            <div class="sticky-tabs-container no-print">
+                <div class="tabs main-view-tabs" style="height: 40px;">
+                    <div id="tab_equipment" class="tab active" style="font-size: 14px; font-weight: 700;"
+                        onclick="app.setViewMode('equipment')">1. Оборудование</div>
+                    <div id="tab_works" class="tab" style="font-size: 14px; font-weight: 700;"
+                        onclick="app.setViewMode('works')">2. Монтажные работы</div>
+                    <!-- Распознавание рукописных смет. Скрыта по умолчанию,
+                         показывается только админам из RecognizeUI.syncButton(). -->
+                    <div id="tab_recognize" class="tab" style="font-size: 14px; font-weight: 700; display: none;"
+                        onclick="app.setViewMode('recognize')">3. Распознать смету <span class="rec-beta">beta</span></div>
+                    <div id="tab_3d" class="tab" style="font-size: 14px; font-weight: 700; display: none;"
+                        onclick="app.setViewMode('3d')">4. 3D Котельная</div>
                 </div>
             </div>
+            <!-- Чёрная черта, которой раньше заканчивался .doc-header. Осталась на прежнем
+                 месте — под вкладками, а на печати (вкладки скрыты) сразу под параметрами. -->
+            <div class="doc-header-rule"></div>
             <!-- Панель распознавания: заполняется из RecognizeUI.mountInline() -->
             <div id="panel_recognize" style="display:none; margin-top: 15px;" class="no-print"></div>
             <div id="panel_3d" style="display:none; height: 600px; background: #0f172a; border-radius: 12px; margin-top: 15px; position: relative; overflow: hidden; border: 1px solid #334155; box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);" class="no-print"></div>
@@ -2116,6 +2149,13 @@
                     } else {
                         header.classList.remove('scrolled');
                     }
+                    // Под шапкой липнет строка параметров объекта (.doc-summary).
+                    // Шапка при прокрутке сжимается, поэтому её высоту отдаём в CSS
+                    // переменной, а не константой. offsetHeight, а не getBoundingClientRect:
+                    // страница отмасштабирована zoom: 0.8, и липкому элементу нужна
+                    // высота в тех же немасштабированных пикселях.
+                    document.documentElement.style.setProperty(
+                        '--sticky-header-h', header.offsetHeight + 'px');
                 }
 
                 // Кнопка «вниз» появляется, когда до низа ещё далеко, — и прячется
@@ -2158,7 +2198,10 @@
                 const grows = [
                     document.getElementById('page_scale_wrapper'),
                     document.querySelector('.output-panel'),
-                    inputTarget
+                    inputTarget,
+                    // Шапка меняет высоту плавно (transition на padding), и по одному
+                    // событию прокрутки --sticky-header-h успевает устареть.
+                    header
                 ].filter(Boolean);
                 grows.forEach(el => ro.observe(el));
             }
