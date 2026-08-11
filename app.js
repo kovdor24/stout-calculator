@@ -27804,23 +27804,26 @@ const app = {
      * общие, — а вот стенка разная, и именно она решает, сколько метров
      * возьмёт петля.
      *
-     * dIn — внутренний диаметр, м; lm — литров в метре; euro — евроконус под
-     * эту стенку (компрессионное кольцо у 2,0 и 2,2 мм разное); coils —
-     * бухты от большой к малой, метраж берётся из каталога.
+     * dIn — внутренний диаметр, м; lm — литров в метре; coils — бухты от большой
+     * к малой, метраж берётся из каталога.
+     *
+     * conn — чем петля садится на коллектор: компрессионный евроконус под свою
+     * стенку, кольцо у 2,0 и 2,2 мм разное. Стабильная 16,2х2.6 собирается так
+     * же, как серая PE-Xa 16х2.2, и идёт на её евроконус.
      */
     UFH_PIPES: [
         { key: 'pex16', material: 'pex', label: 'PE-Xa 16×2.0', short: '16×2.0',
-            dIn: 0.012, lm: 0.113, euro: 'SFC-0020-001620',
+            dIn: 0.012, lm: 0.113, conn: 'SFC-0020-001620', connName: 'евроконус 16×2.0',
             coils: ['SPX-0002-501620', 'SPX-0002-101620'],
             note: 'Сшитый полиэтилен с кислородным барьером и памятью формы — основная труба тёплого пола.' },
         { key: 'mp16', material: 'metal_plastic', label: 'Металлопластик 16×2.0', short: 'МП 16×2.0',
-            dIn: 0.012, lm: 0.113, euro: 'SFC-0020-001620',
+            dIn: 0.012, lm: 0.113, conn: 'SFC-0020-001620', connName: 'евроконус 16×2.0',
             coils: ['SPM-0001-201620', 'SPM-0001-101620'],
             note: 'PE-Xb/Al/PE-Xb. Держит форму руками, но алюминиевый слой не прощает перегиба и замерзания.' },
         { key: 'stable16', material: 'stable', label: 'Стабильная 16,2×2.6', short: '16,2×2.6',
-            dIn: 0.011, lm: 0.095, euro: 'SFC-0020-001622',
+            dIn: 0.011, lm: 0.095, conn: 'SFC-0020-001622', connName: 'евроконус 16×2.2',
             coils: ['SPS-0002-001626'],
-            note: 'PE-Xa/Al/PE-RT. Стенка толще на 0,6 мм: внутренний диаметр 11 мм вместо 12 — петля короче.' }
+            note: 'PE-Xa/Al/PE-RT. Стенка толще на 0,6 мм: внутренний диаметр 11 мм вместо 12 — петля короче. Собирается на те же фитинги, что серая PE-Xa.' }
     ],
     /** Выбранный типоразмер петли ТП (по умолчанию PE-Xa 16х2.0). */
     ufhPipe: function () {
@@ -27935,6 +27938,13 @@ const app = {
     },
     ufhPumpHead: function (v, pump) {
         return Math.max(0, pump.hMax * (1 - Math.pow(v / pump.qMax, 2)));
+    },
+    /** Человеческое имя узла тёплого пола для заметок расчёта */
+    _ufhMixLabel: function (type) {
+        if (type === 'std') return 'узла подмеса';
+        if (type === 'dn20' || type === 'dn20_servo') return 'насосной группы DN20';
+        if (type === 'dn32_servo') return 'насосной группы DN32';
+        return 'насосной группы DN25';
     },
     /** Пропускная способность смесительного клапана узла, м³/ч при перепаде 1 бар */
     ufhMixKvs: function (type, brand) {
@@ -35153,13 +35163,58 @@ const app = {
             }
         }
 
-        // Тип узла тёплого пола окончательно выбран — можно считать балансировку:
-        // перепад, расход каждой петли и хватает ли насосу узла напора на самый
-        // тяжёлый коллектор. Отсюда же берётся насос для строки сметы и таблица
+        // Балансировка: перепад, расход каждой петли и хватает ли напора самому
+        // тяжёлому коллектору. Отсюда же берётся насос для строки сметы и таблица
         // настройки расходомеров в подсказках.
-        this._ufhBal = (hasTp && tpArea > 0 && this._ufhCalc)
-            ? this.ufhBalance(this._ufhCalc, this.state.ufhMixType || 'std', this.state.brandMode)
-            : null;
+        //
+        // Узел подбирается по площади и расходу (isUfhMixTypeCompatible), но
+        // паспортный расход — не весь ответ: смесительный клапан съедает напора
+        // больше, чем сами петли ((G/Kvs)² — это десятки кПа), и узел, проходящий
+        // по расходу, может не протолкнуть контур. Поэтому если напора не хватило
+        // ни при одном перепаде и ни с одним насосом, поднимаем узел на следующий
+        // по пропускной способности: Kvs 2,1 → 2,5 → 4,0 → 6,3. Шаг по Kvs даёт
+        // больше, чем более сильный насос, и заодно открывает 25/80 узлам, у
+        // которых своего запасного насоса нет (компактный узел подмеса и DN20).
+        this._ufhBal = null;
+        if (hasTp && tpArea > 0 && this._ufhCalc) {
+            const _brand = this.state.brandMode;
+            const _curType = this.state.ufhMixType || 'std';
+            // Исполнение (обычный / под сервопривод) сохраняем: оно про управление,
+            // а не про гидравлику — Kvs у пары одинаковый.
+            const _servo = /_servo$/.test(_curType);
+            const _order = ['std', _servo ? 'dn20_servo' : 'dn20', _servo ? 'dn25_servo' : 'dn25']
+                .concat(_brand === 'rommer' ? [] : ['dn32_servo']);   // DN32 у ROMMER нет
+            const _at = _order.indexOf(_curType);
+            const _cands = (_at < 0) ? [_curType] : _order.slice(_at).filter(t =>
+                t === _curType || this.isUfhMixTypeCompatible(t, tpArea, _brand, tpAreaPerMan));
+            let _first = null, _ok = null;
+            for (let i = 0; i < _cands.length; i++) {
+                const _b = this.ufhBalance(this._ufhCalc, _cands[i], _brand);
+                if (!_b) break;
+                _b.type = _cands[i];
+                if (!_first) _first = _b;
+                if (_b.ok) { _ok = _b; break; }
+                // Ручной выбор DN не перебиваем: там решение монтажника, и честнее
+                // предупредить его, чем молча поставить другой узел.
+                if (this.state.manualDnOverride) break;
+            }
+            const _bal = _ok || _first;
+            if (_bal && _bal.type !== _curType) {
+                const _dpOld = _first.worst.dpValve, _needOld = _first.worst.need, _haveOld = _first.worst.have;
+                _bal.notes.unshift('Узел тёплого пола поднят до <b>' + this._ufhMixLabel(_bal.type) +
+                    '</b> (Kvs ' + String(_bal.kvs).replace('.', ',') + ') вместо ' + this._ufhMixLabel(_curType) +
+                    ' (Kvs ' + String(_first.kvs).replace('.', ',') + '): по площади и расходу тот проходил, а по напору нет — ' +
+                    'его смесительный клапан на расходе ' + _first.worst.flow.toFixed(2) + ' м³/ч съедал ' +
+                    _dpOld.toFixed(1).replace('.', ',') + ' кПа, и коллектору «' + _first.worst.label + '» требовалось ' +
+                    _needOld.toFixed(1).replace('.', ',') + ' м против ' + _haveOld.toFixed(1).replace('.', ',') + ' м у насоса.');
+                this.state.ufhMixType = _bal.type;
+                // Пересчитываем то же, что и переход с локального узла на группу выше:
+                // групп ставится по одной на коллектор, а от их числа зависит коллектор котельной.
+                tQ = (estMans > 0 ? estMans : 1);
+                needCollector = (rQ + tQ) >= 1 || tankNeedsPumpGroup;
+            }
+            this._ufhBal = _bal;
+        }
 
         // Смесительным контуром при включённой автоматике котельной управляет
         // контроллер. Поворотный привод с накладным датчиком держит температуру
@@ -37057,8 +37112,12 @@ const app = {
             addUfhPipes();
             if (mansNoFitting > 0) addToBill(catalog.parts[0], mansNoFitting * 2, "Концевые фитинги.", grpPipe);
             // Евроконус идёт под стенку трубы: обжимное кольцо у 2,0 и 2,2 мм разное.
-            const _ufhEuro = catalog.parts.find(x => x.id === this.ufhPipe().euro) || catalog.parts[3];
-            addEurocone(_ufhEuro, loops * 2, `Евроконус под трубу ${this.ufhPipe().short} (ТП). По два на петлю — подача и обратка.`, grpPipe); addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.", grpPipe);
+            const _upConn = this.ufhPipe();
+            const _ufhEuro = (catalog.parts || []).find(x => x.id === _upConn.conn) || catalog.parts[3];
+            addEurocone(_ufhEuro, loops * 2,
+                `Присоединение петли к коллектору — ${_upConn.connName} под трубу ${_upConn.short}. По два на петлю: подача и обратка.`,
+                grpPipe);
+            addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.", grpPipe);
             addToBill(catalog.protective_sleeves[0], loops, "Втулка красная.", grpPipe); addToBill(catalog.protective_sleeves[1], loops, "Втулка синяя.", grpPipe); addToBill(catalog.label_kits[1], 1, "Наклейки.", grpPipe);
             let grpIns = "4.2. УТЕПЛИТЕЛЬ И КРЕПЁЖ";
 
@@ -37123,25 +37182,23 @@ const app = {
             // петли забирают весь расход, дальние стоят холодные. Полная таблица
             // по петлям висит в подсказке своего коллектора, здесь — итог, чтобы
             // монтажник увидел цифры, не открывая подсказок.
+            //
+            // Идёт отдельной синей плашкой, а не вместе с предупреждениями: это
+            // не ошибка расчёта, а уставки для пусконаладки, и в красной рамке
+            // их читали как «в смете что-то не так».
+            // Расходы петель для расходомеров лежат в подсказке «i» строки
+            // коллектора — целиком, с номерами и метрами. Дублировать их итогом
+            // под заголовком незачем. Сюда выносим только то, что действительно
+            // предупреждение: расчёту не хватило напора ни при одном перепаде.
             const _bal = this._ufhBal;
-            if (_bal && _bal.mans.length) {
-                const _n1 = v => v.toFixed(1).replace('.', ',');
-                const _lines = _bal.mans.map(m => {
-                    const lo = Math.min.apply(null, m.rows.map(r => r.flow));
-                    const hi = Math.max.apply(null, m.rows.map(r => r.flow));
-                    const per = (hi - lo < 0.05)
-                        ? `по <b>${_n1(hi)} л/мин</b> на каждую`
-                        : `от <b>${_n1(lo)}</b> до <b>${_n1(hi)} л/мин</b>`;
-                    return `• ${m.label}: ${m.outlets} ${this.plural(m.outlets, 'петля', 'петли', 'петель')}, ${per}, ` +
-                        `итого ${_n1(m.rows.reduce((a, r) => a + r.flow, 0))} л/мин (${m.flow.toFixed(2)} м³/ч).`;
-                }).join('<br>');
+            if (_bal && !_bal.ok && _bal.worst) {
                 warn = (warn ? warn + '<br><br>' : '') +
-                    `🔧 <b>Настройка расходомеров (балансировка).</b><br>` + _lines +
-                    `<br><span style="font-weight:500;">Расход считан при перепаде ${_bal.dT} К ` +
-                    `(подача ${this.UFH_SUPPLY} / обратка ${this.UFH_SUPPLY - _bal.dT} °C), ` +
-                    `труба ${this.ufhPipe().label} — внутренний Ø ${String(this.ufhPipe().dIn * 1000).replace('.', ',')} мм. ` +
-                    `Петля с петлёй по номерам и метрам — в подсказке «i» строки коллектора.</span>` +
-                    (_bal.notes.length ? `<br><span style="font-weight:500;">` + _bal.notes.map(x => '• ' + x).join('<br>') + `</span>` : '');
+                    `⚠️ <b>Насосу узла тёплого пола не хватает напора.</b><br>` +
+                    `Коллектору «${_bal.worst.label}» нужно ${_bal.worst.need.toFixed(1).replace('.', ',')} м, ` +
+                    `а насос ${_bal.pump.label} на расходе ${_bal.worst.flow.toFixed(2).replace('.', ',')} м³/ч ` +
+                    `даёт ${_bal.worst.have.toFixed(1).replace('.', ',')} м. ` +
+                    `<span style="font-weight:500;">Разделите этот коллектор на два или укоротите петли, увеличив их число. ` +
+                    `Разбор по слагаемым — в подсказке «i» насосной группы тёплого пола.</span>`;
             }
             flushBill("4. Водяной тёплый пол", warn);
         }
