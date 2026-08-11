@@ -8329,13 +8329,17 @@ body.dark-mode .to-top-btn:hover {
     .scheme-svg-wrap, .automation-scheme { width: auto; height: auto; max-width: none; }
     .scheme-svg-wrap > svg, .automation-scheme > svg { height: auto; }
 }
-/* На телефоне общую рамку снимаем: держать одну высоту на узком экране нечем.
-   Лист занимает половину ширины колонки — на месте его всё равно не читают,
-   разглядывают кнопкой «На весь экран», а половина ширины не выталкивает
-   таблицу вниз. Высота идёт от собственной пропорции листа. */
+/* На телефоне рамку меряем не по колонкам таблицы (карточке товара колонок не
+   досталось), а прямо от ширины экрана: лист идёт во всю ширину, высота — по
+   пропорции А3, как на большом экране. Пропорцию держим обязательно: схемы
+   автоматики, ТП и снеготаяния приходят вытянутыми по вертикали, и без рамки
+   такой лист разворачивался на весь экран вниз, выталкивая смету. Чертёж
+   внутри вписывается по своему viewBox, поэтому не искажается. */
 @media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait), screen and (orientation: landscape) and (max-height: 500px) {
-    .scheme-svg-wrap, .automation-scheme { width: 50%; height: auto; max-width: none; }
-    .scheme-svg-wrap > svg, .automation-scheme > svg { height: auto; }
+    .scheme-svg-wrap, .automation-scheme {
+        width: 100%; height: auto; max-width: none; aspect-ratio: 1.414;
+    }
+    .scheme-svg-wrap > svg, .automation-scheme > svg { width: 100%; height: 100%; }
     /* Схемы автоматики, ТП и снеготаяния вставляются строкой таблицы над своим
        разделом. Мобильная карточка товара раскладывает любую строку в сетку
        «картинка | название | количество», и лист попадал в первую, узкую
