@@ -2883,14 +2883,16 @@ const app = {
         return 'ai_fab_collapsed_' + uid;
     },
     // Единое место, откуда решается, показывать ли плавающую кнопку ИИ-заполнения:
-    // гостю её не даём вовсе (см. render), а на вкладке распознавания сметы она не
-    // при делах — там параметры объекта не заполняют. На мобильной вёрстке кнопка
-    // живёт только на экране «Дом» — на «Смете» и «Профиле» заполнять нечего.
+    // гостю её не даём вовсе (см. render), а из вкладок она живёт только на
+    // «1. Оборудование». Заполняют ею параметры объекта, а на «Работах», «3D» и
+    // «Распознавании» заполнять нечего — там она только занимает место.
+    // На мобильной вёрстке кнопка живёт только на экране «Дом» — на «Смете»
+    // и «Профиле» заполнять тоже нечего.
     syncAiFabVisibility: function () {
         const btn = document.getElementById('ai_parse_fab_btn');
         if (!btn) return;
         const mobHide = this.isMobileLayout() && (this.state.mobTab || 'inputs') !== 'inputs';
-        const hide = !this.state.tgUser || this.state.viewMode === 'recognize' || mobHide;
+        const hide = !this.state.tgUser || (this.state.viewMode || 'equipment') !== 'equipment' || mobHide;
         btn.style.display = hide ? 'none' : 'flex';
         if (!hide) this.applyAiFabCollapsedState();
     },
