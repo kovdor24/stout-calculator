@@ -8448,9 +8448,12 @@ body.dark-mode #printed_dynamic_scheme img {
 
 /* === СХЕМА И ТАБЛИЦА ТЕПЛОПОТЕРЬ (ПЕЧАТНЫЕ СТИЛИ) === */
 @media print {
+    /* Поля те же, что в блоке схемы (app.js, _renderSchemeVector): правило
+       @page с тем же именем объявлено в двух местах и склеивается — расхождение
+       в полях давало бы разный размер поля у растровой и векторной схемы. */
     @page scheme-page { 
         size: A4 landscape; 
-        margin: 10mm; 
+        margin: 8mm; 
     }
     #printed_dynamic_scheme {
         page: scheme-page !important;

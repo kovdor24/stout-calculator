@@ -12672,26 +12672,39 @@ const app = {
                         border-color: #334155;
                     }
                     @media print {
-                        @page scheme-page { size: A4 landscape; margin: 10mm; }
+                        /* Схема печатается на своём листе — А4 альбомный: у неё
+                           пропорции А3 (420×297 = 1.414), и это ровно пропорции
+                           альбомного листа, поэтому чертёж ложится в поле без
+                           полей по бокам. */
+                        @page scheme-page { size: A4 landscape; margin: 8mm; }
                         #dynamic_scheme .scheme-zoom-btn { display: none !important; }
-                        /* Разрыв страницы — только если перед схемой уже что-то
-                           напечатано (класс навешивает prepareForPrint), иначе
-                           схема первым разделом форсировала бы пустой лист. */
+                        /* Разрыв даёт сама смена именованной страницы: свой
+                           page-break-before добавлял к нему ещё один и печатал
+                           перед схемой пустой лист. Правило .print-page-break
+                           (его вешает prepareForPrint) здесь гасим по той же
+                           причине — на первом разделе оно дало бы пустую
+                           первую страницу. */
+                        #dynamic_scheme.scheme-vector,
                         #dynamic_scheme.scheme-vector.print-page-break {
-                            page-break-before: always !important;
-                            break-before: page !important;
-                        }
-                        #dynamic_scheme.scheme-vector {
                             page: scheme-page !important;
+                            page-break-before: auto !important;
+                            break-before: auto !important;
                             page-break-after: avoid !important;
                             break-after: avoid !important;
                             margin: 0 !important; padding: 0 !important;
+                            width: 100% !important; height: auto !important;
                         }
-                        /* Поле листа А4 альбомного с полями 10 мм — 277×190 мм.
-                           Отдаём чертежу 150 мм по высоте (212 мм по ширине),
-                           остальное — таблице подобранного оборудования. */
+                        /* Поле листа А4 альбомного с полями 8 мм — 281×194 мм.
+                           Чертёж вписываем по высоте, но не впритык: на 193.8 мм
+                           он переползал на второй лист и печатался пустой хвост,
+                           на 190 мм печатается одной страницей (проверено
+                           печатью в PDF). Ширина — по пропорции А3, 190×1.414. */
+                        #dynamic_scheme.scheme-vector .scheme-svg-wrap {
+                            width: 100% !important; height: auto !important;
+                            max-width: none !important;
+                        }
                         #dynamic_scheme.scheme-vector .scheme-svg {
-                            width: 212mm !important; height: 150mm !important;
+                            width: 268.7mm !important; height: 190mm !important;
                             max-width: none !important; max-height: none !important;
                             margin: 0 auto !important; border: none !important;
                             -webkit-print-color-adjust: exact !important;
@@ -18834,14 +18847,15 @@ const app = {
         ]});
         notes.push({ h: '5. Система напольного отопления', lines: [
             'В доме предусмотрена система подогрева полов выбранных помещений. Схема подключения принята ' +
-                'зависимой, теплоноситель единый с системой радиаторного отопления, рабочий график 40–35°С, ' +
+                'зависимой, теплоноситель единый с системой радиаторного отопления, рабочий график ' +
+                this.UFH_SUPPLY + '–' + (this.UFH_SUPPLY - ((this._ufhBal && this._ufhBal.dT) || this.UFH_DTS[0])) + '°С, ' +
                 'давление 1.5 бар.',
             'Теплоноситель в коллектор теплого пола подается от самосборной насосной группы, на которой ' +
                 'установлен циркуляционный насос, трехходовой клапан, запорная арматура.',
             'Коллектор рекомендуется устанавливать в помещении котельной, либо на равноудаленном расстоянии ' +
                 'до контуров теплого пола, коллектор монтируется открытым способом в помещении котельной ' +
                 'или в специальном монтажном шкафу (по умолчанию).',
-            'Для разводки контуров системы теплого пола используется труба из сшитого полиэтилена ∅16х2.0 ' +
+            'Для разводки контуров системы теплого пола используется труба ' + this.ufhPipe().label.replace('×', 'х') + ' ' +
                 'на резьбозажимных присоединениях к коллектору. Для распределения и регулирования расхода ' +
                 'теплоносителя используются гребенки со встроенными регулирующими вставками, ротаметрами, ' +
                 'воздухоудалителями для выпуска воздуха из системы и запорно-сливными кранами для ' +
@@ -19147,12 +19161,25 @@ const app = {
         const nameOf = i => (i && i.name ? String(i.name) : '');
         const has = re => spec.some(i => re.test(nameOf(i)));
         const s = this.state;
-        const isBoiler = i => /котел|котёл/i.test(nameOf(i));
+        // Тип, мощность и контурность котла берём из каталога по id, разбор
+        // названия — только запасной вариант (распознанные и свои позиции).
+        // «Котёл газовый …» в названии есть лишь у Haier, BAXI зовутся по модели
+        // («ECO Nova 18F»), и в режиме «Аналог» газовый котёл переставал
+        // опознаваться: схема рисовала котельную как чисто электрическую.
+        // Поле type у стабилизаторов значит совсем другое, поэтому смотрим его
+        // только у позиций, найденных в котловых массивах каталога.
+        const _boilerById = {};
+        ['boilers_gas', 'boilers_baxi', 'boilers_plus', 'boilers_status', 'boilers_polis']
+            .forEach(k => (catalog[k] || []).forEach(x => { _boilerById[x.id] = x; }));
+        const catB = i => (i && (_boilerById[i.id] || _boilerById[i.originalId])) || null;
+        const isBoiler = i => !!catB(i) || /котел|котёл/i.test(nameOf(i));
+        const isGasB = i => { const c = catB(i); return c ? c.type === 'gas' : /газов/i.test(nameOf(i)); };
+        const isElB = i => { const c = catB(i); return c ? c.type === 'el' : /электрическ/i.test(nameOf(i)); };
         // количество котлов каждого типа — по позициям сметы (каскад = qty > 1)
-        const cntBoilers = re => spec.filter(i => isBoiler(i) && re.test(nameOf(i)))
+        const cntBoilers = fn => spec.filter(i => isBoiler(i) && fn(i))
             .reduce((a, i) => a + Math.max(1, Math.round(+i.q) || 1), 0);
-        const gasCount = cntBoilers(/газов/i);
-        const elCount = cntBoilers(/электрическ/i);
+        const gasCount = cntBoilers(isGasB);
+        const elCount = cntBoilers(isElB);
         const gas = gasCount > 0, el = elCount > 0;
         if (!gas && !el) return null;
         // POLIS — единственный электрокотёл без встроенного насоса: под ним на схеме
@@ -19209,8 +19236,11 @@ const app = {
         // Контурность газового котла — из названия подобранной позиции,
         // запасной вариант — по правилу подбора (бойлер ⇒ одноконтурный)
         let gasCircuits = indirect ? 1 : 2;
-        const gasIt = spec.find(i => isBoiler(i) && /газов/i.test(nameOf(i)));
-        if (gasIt && /одноконтурн/i.test(nameOf(gasIt))) gasCircuits = 1;
+        const gasIt = spec.find(i => isBoiler(i) && isGasB(i));
+        const elIt = spec.find(i => isBoiler(i) && isElB(i));
+        const gasCat = catB(gasIt);
+        if (gasCat && gasCat.circuits) gasCircuits = gasCat.circuits;
+        else if (gasIt && /одноконтурн/i.test(nameOf(gasIt))) gasCircuits = 1;
         else if (gasIt && /двухконтурн/i.test(nameOf(gasIt))) gasCircuits = 2;
 
         // Суммарная мощность котлов — из названий позиций «(NN кВт)»;
@@ -19224,10 +19254,15 @@ const app = {
         let boilerGasKw = 0, boilerElKw = 0;
         spec.forEach(i => {
             if (!isBoiler(i)) return;
+            // У BAXI мощность в названии не пишется («ECO Nova 18F») — берём
+            // паспортную из каталога, иначе диаметр магистралей считался бы
+            // по одному электрокотлу.
+            const c = catB(i);
             const m = nameOf(i).match(/(\d{1,3})\s*кВт/i);
-            if (!m) return;
-            const kw = (+m[1]) * (i.q || 1);
-            if (/газов/i.test(nameOf(i))) boilerGasKw += kw;
+            const one = (c && c.power) ? +c.power : (m ? +m[1] : 0);
+            if (!one) return;
+            const kw = one * (i.q || 1);
+            if (isGasB(i)) boilerGasKw += kw;
             else boilerElKw += kw;
         });
         let boilerKw = Math.max(boilerGasKw, boilerElKw);
@@ -19250,8 +19285,11 @@ const app = {
         if (fugas && !gas && elPolis) { fugas = false; loadPump = true; }
 
         return {
-            gas: gas ? { circuits: gasCircuits, count: gasCount } : null,
-            el: el ? { count: elCount, status: s.boilerSeries === 'status', polis: elPolis, gbm: elPolisGbm } : null,
+            // name — название подобранной позиции: лист компоновки подписывает им
+            // оборудование и сам искал котёл по названию в смете, а «ECO Nova 18F»
+            // по слову «котёл» не находится.
+            gas: gas ? { circuits: gasCircuits, count: gasCount, name: nameOf(gasIt) || undefined } : null,
+            el: el ? { count: elCount, status: s.boilerSeries === 'status', polis: elPolis, gbm: elPolisGbm, name: nameOf(elIt) || undefined } : null,
             indirect: indirect ? { vol: tankVol || undefined, wall: s.tankMount === 'wall' } : null,
             fugas: fugas,
             loadPump: loadPump,
@@ -21964,7 +22002,13 @@ const app = {
         }
         else if (originalId.startsWith('SAC-0020-2000') || (originalId.startsWith('SAC-0020-0000') && (originalId.endsWith('_cw') || originalId.endsWith('_hw') || originalId.endsWith('_recirc'))) || (originalId.startsWith('SMF-0003') && (originalId.endsWith('_cw') || originalId.endsWith('_hw') || originalId.endsWith('_recirc')))) { if (this.state.pipeMountType === 'hidden') this.state.pipeMountType = 'double'; else if (this.state.pipeMountType === 'double') this.state.pipeMountType = 'single'; else this.state.pipeMountType = 'hidden'; }
         else if (originalId.endsWith('_rad') || originalId.startsWith('SPI-0003-')) { this.state.pipeType = (this.state.pipeType === 'insulated') ? 'split' : (this.state.pipeType === 'split') ? 'insulated_mp' : (this.state.pipeType === 'insulated_mp') ? 'split_mp' : 'insulated'; }
-        else if (originalId.endsWith('_ufh') || originalId.startsWith('SPX-0002-') || originalId.startsWith('SPM-0001-')) { this.state.ufhPipeMaterial = (this.state.ufhPipeMaterial === 'pex') ? 'metal_plastic' : 'pex'; }
+        else if (originalId.endsWith('_ufh') || originalId.startsWith('SPX-0002-') || originalId.startsWith('SPM-0001-') || originalId.startsWith('SPS-0002-')) {
+            const _cur = this.UFH_PIPES.findIndex(x => x.key === this.ufhPipe().key);
+            const _nxt = this.UFH_PIPES[(_cur + 1) % this.UFH_PIPES.length];
+            this.state.ufhPipe = _nxt.key;
+            this.state.ufhPipeMaterial = _nxt.material;
+            this._ufhGeomCache = null;
+        }
         else if (originalId.endsWith('_water') || (originalId.startsWith('SPX-0001-') && !originalId.endsWith('_rad'))) { this.state.waterPipeMaterial = (this.state.waterPipeMaterial === 'pex') ? 'metal_plastic' : 'pex'; }
         else if (originalId.startsWith('SMF-0001') || originalId === '418318') { this.state.ufhBaseType = (this.state.ufhBaseType === 'mat') ? 'xps' : 'mat'; }
         else if (originalId.startsWith('SCS-0001')) { if (this.state.wellAutoType === 'sirio') this.state.wellAutoType = 'top'; else if (this.state.wellAutoType === 'top') this.state.wellAutoType = 'base'; else this.state.wellAutoType = 'sirio'; }
@@ -22556,9 +22600,14 @@ const app = {
             let mpItem = catalog.metal_plastic_pipes ? catalog.metal_plastic_pipes[0] : null;
             p_mp = mpItem?.price || 15151;
 
+            // Стабильная — единственный из трёх вариантов, который меняет не только
+            // цену: стенка на 0,6 мм толще, внутренний диаметр 11 мм вместо 12, и
+            // петля по гидравлике выходит короче (см. ufhLoopMax).
+            let stbItem = catalog.stable_pipes ? catalog.stable_pipes[0] : null;
             customAlts = [
-                { id: 'pex', name: 'Труба PEX-a (полиэтилен)', brand: b_pex, price: p_pex, imgId: isRommer ? pexItem?.rommer?.id : pexItem?.id },
-                { id: 'metal_plastic', name: 'Труба металлопластиковая', brand: b_mp, price: p_mp, imgId: mpItem?.id }
+                { id: 'pex', name: 'Труба PEX-a 16x2.0 (полиэтилен)', brand: b_pex, price: p_pex, imgId: isRommer ? pexItem?.rommer?.id : pexItem?.id },
+                { id: 'metal_plastic', name: 'Труба металлопластиковая 16x2.0', brand: b_mp, price: p_mp, imgId: mpItem?.id },
+                ...(stbItem ? [{ id: 'stable', name: 'Труба стабильная PE-Xa/Al/PE-RT 16.2x2.6', brand: isRommer ? 'ROMMER' : 'STOUT', price: (isRommer && stbItem.rommer ? stbItem.rommer.price : stbItem.price), imgId: stbItem.id }] : [])
             ];
         }
         else if (item.originalId && (item.originalId.endsWith('_water') || (item.originalId.startsWith('SPX-0001-') && !item.originalId.endsWith('_rad'))) && !item.originalId.startsWith('SMB-') && !item.originalId.startsWith('RMS-')) {
@@ -24050,9 +24099,9 @@ const app = {
                 else if (alt.id === 'insulated' || alt.id === 'split' || alt.id === 'insulated_mp' || alt.id === 'split_mp' || alt.id === 'stable_16' || alt.id === 'stable_16_r') {
                     isActive = (alt.id === this.state.pipeType);
                 }
-                else if (alt.id === 'pex' || alt.id === 'metal_plastic') {
-                    if (item.originalId.endsWith('_ufh') || item.originalId.startsWith('SPX-0002-') || item.originalId.startsWith('SPM-0001-')) {
-                        isActive = (alt.id === this.state.ufhPipeMaterial);
+                else if (alt.id === 'pex' || alt.id === 'metal_plastic' || alt.id === 'stable') {
+                    if (item.originalId.endsWith('_ufh') || item.originalId.startsWith('SPX-0002-') || item.originalId.startsWith('SPM-0001-') || item.originalId.startsWith('SPS-0002-')) {
+                        isActive = (alt.id === this.ufhPipe().material);
                     } else {
                         isActive = (alt.id === this.state.waterPipeMaterial);
                     }
@@ -25771,9 +25820,22 @@ const app = {
                 Object.keys(this.state.swaps).forEach(k => { if (k.startsWith('tee_pipe_d')) delete this.state.swaps[k]; });
             }
         }
-        else if (originalId.endsWith('_ufh') || originalId.startsWith('SPX-0002-') || originalId.startsWith('SPM-0001-')) {
-            if (chosenId.includes("SPX") || chosenId === 'pex') this.state.ufhPipeMaterial = 'pex';
-            else this.state.ufhPipeMaterial = 'metal_plastic';
+        else if (originalId.endsWith('_ufh') || originalId.startsWith('SPX-0002-') || originalId.startsWith('SPM-0001-') || originalId.startsWith('SPS-0002-')) {
+            // Типоразмер петли, а не только материал: от стенки зависят предельная
+            // длина петли, число выходов коллектора и напор, который нужен насосу.
+            const _pp = this.UFH_PIPES.find(x => x.material === chosenId)
+                || this.UFH_PIPES.find(x => x.coils.indexOf(chosenId) >= 0)
+                || this.UFH_PIPES.find(x => x.key === (chosenId.indexOf('SPS') >= 0 ? 'stable16'
+                    : (chosenId.indexOf('SPM') >= 0 ? 'mp16' : 'pex16')));
+            if (_pp) {
+                this.state.ufhPipe = _pp.key;
+                this.state.ufhPipeMaterial = _pp.material;
+                this._ufhGeomCache = null;
+                // Выбор типоразмера — не подмена строки: строку принесёт сам расчёт
+                // под новую трубу. Запись о замене оставляем только за настоящим
+                // каталожным id (это выбор бренда), псевдоключ типоразмера снимаем.
+                if (chosenId === _pp.material) delete this.state.swaps[originalId];
+            }
         }
         else if (originalId.endsWith('_water') || (originalId.startsWith('SPX-0001-') && !originalId.endsWith('_rad'))) {
             if (chosenId.includes("SPX") || chosenId === 'pex') this.state.waterPipeMaterial = 'pex';
@@ -27687,6 +27749,486 @@ const app = {
         };
     },
 
+    // ─── Гидравлика водяного тёплого пола ────────────────────────────────
+    // Петлю тёплого пола нельзя мерить одним числом «восемьдесят метров, и
+    // хватит»: сколько трубы возьмёт петля, решают внутренний диаметр, шаг
+    // укладки и допустимые потери. Труба 16х2.0 (внутри 12,0 мм) и стабильная
+    // 16,2х2.6 (внутри 11,0 мм) снаружи одинаковые, а по гидравлике расходятся
+    // почти на треть: у второй петля короче, петель больше, выходов у
+    // коллектора больше и напора насосу нужно больше. Раньше калькулятор этого
+    // не видел вовсе — петель было ceil(метры / 80) при любой трубе.
+    //
+    // Устроено так же, как снеготаяние (calcSnowMelt): сначала раскладка петель
+    // по выбранной трубе, потом проверка напора у выбранного узла и, если не
+    // хватает, — перепад пошире и насос посильнее.
+    UFH_DTS: [5, 7, 10],     // перепад коллектора ТП, К — от комфортного к тяжёлому
+    UFH_SUPPLY: 40,          // уставка подачи в петли, °C
+    UFH_LOOP_DP_MAX: 20,     // предельные потери в петле, кПа
+    UFH_V_MAX: 0.5,          // предельная скорость в петле, м/с (шум и износ)
+    UFH_V_MIN: 0.15,         // ниже неё воздух из петли не выносится, м/с
+    UFH_LOOP_MAX_M: 120,     // монтажный предел длины петли, м
+    UFH_LOCAL_K: 1.25,       // местные сопротивления петли (развороты улитки)
+    UFH_MAN_DP: 10,          // коллектор: расходомер, кран, сервопривод — кПа
+    UFH_TRANSIT_V_MAX: 1.2,  // предельная скорость в транзите, м/с (СП 60.13330.2020)
+    /**
+     * Транзит от котельной до коллектора 2-го этажа. Диаметр не назначен раз и
+     * навсегда: трасса несёт расход всего этажа, и на большой площади 25х3.5
+     * даёт полтора метра в секунду — шум в перекрытии и лишние метры напора у
+     * насоса. Берём наименьший типоразмер, укладывающийся в предел скорости.
+     */
+    UFH_TRANSITS: {
+        pex: [
+            { id: 'SPX-0001-002028', label: '20×2.8', dIn: 0.0144 },
+            { id: 'SPX-0001-002535', label: '25×3.5', dIn: 0.018 },
+            { id: 'SPX-0001-003244', label: '32×4.4', dIn: 0.0232 }
+        ],
+        mp: [
+            { id: 'SPM-0001-102020', label: '20×2.0', dIn: 0.016 },
+            { id: 'SPM-0001-052630', label: '26×3.0', dIn: 0.020 },
+            { id: 'SPM-0001-053230', label: '32×3.0', dIn: 0.026 }
+        ]
+    },
+    /** Типоразмер транзита под расход этажа, м³/ч */
+    ufhTransitPick: function (flow) {
+        const pool = (this.ufhPipe().material === 'metal_plastic') ? this.UFH_TRANSITS.mp : this.UFH_TRANSITS.pex;
+        const fit = pool.find(t => {
+            const A = Math.PI * t.dIn * t.dIn / 4;
+            return (flow / 3600) / A <= this.UFH_TRANSIT_V_MAX;
+        });
+        return fit || pool[pool.length - 1];
+    },
+    UFH_FLUID: { rho: 992, cp: 4.174, mu: 6.53e-4 },   // вода 40 °C
+    /**
+     * Трубы, которыми делают петли тёплого пола. Наружный размер у всех
+     * шестнадцатый — мат с бобышками, евроконус и фиксатор поворота у них
+     * общие, — а вот стенка разная, и именно она решает, сколько метров
+     * возьмёт петля.
+     *
+     * dIn — внутренний диаметр, м; lm — литров в метре; euro — евроконус под
+     * эту стенку (компрессионное кольцо у 2,0 и 2,2 мм разное); coils —
+     * бухты от большой к малой, метраж берётся из каталога.
+     */
+    UFH_PIPES: [
+        { key: 'pex16', material: 'pex', label: 'PE-Xa 16×2.0', short: '16×2.0',
+            dIn: 0.012, lm: 0.113, euro: 'SFC-0020-001620',
+            coils: ['SPX-0002-501620', 'SPX-0002-101620'],
+            note: 'Сшитый полиэтилен с кислородным барьером и памятью формы — основная труба тёплого пола.' },
+        { key: 'mp16', material: 'metal_plastic', label: 'Металлопластик 16×2.0', short: 'МП 16×2.0',
+            dIn: 0.012, lm: 0.113, euro: 'SFC-0020-001620',
+            coils: ['SPM-0001-201620', 'SPM-0001-101620'],
+            note: 'PE-Xb/Al/PE-Xb. Держит форму руками, но алюминиевый слой не прощает перегиба и замерзания.' },
+        { key: 'stable16', material: 'stable', label: 'Стабильная 16,2×2.6', short: '16,2×2.6',
+            dIn: 0.011, lm: 0.095, euro: 'SFC-0020-001622',
+            coils: ['SPS-0002-001626'],
+            note: 'PE-Xa/Al/PE-RT. Стенка толще на 0,6 мм: внутренний диаметр 11 мм вместо 12 — петля короче.' }
+    ],
+    /** Выбранный типоразмер петли ТП (по умолчанию PE-Xa 16х2.0). */
+    ufhPipe: function () {
+        const key = this.state.ufhPipe
+            || (this.UFH_PIPES.find(p => p.material === this.state.ufhPipeMaterial) || {}).key
+            || 'pex16';
+        return this.UFH_PIPES.find(p => p.key === key) || this.UFH_PIPES[0];
+    },
+    /**
+     * Смена трубы петли. Старое поле ufhPipeMaterial держим в синхроне: по нему
+     * работают тексты проекта, распознавание и кнопка «Аналог». Кэш раскладки
+     * сбрасываем — от трубы зависит предельная длина петли, а значит и укладка.
+     */
+    setUfhPipe: function (key) {
+        const p = this.UFH_PIPES.find(x => x.key === key);
+        if (!p) return;
+        this.state.ufhPipe = p.key;
+        this.state.ufhPipeMaterial = p.material;
+        this._ufhGeomCache = null;
+        this.render();
+        this.saveState();
+    },
+    /** Бухта по id: трубы тёплого пола лежат в трёх разных массивах каталога */
+    _ufhCoil: function (id) {
+        const pools = [catalog.pipes, catalog.metal_plastic_pipes, catalog.stable_pipes];
+        for (let i = 0; i < pools.length; i++) {
+            const it = (pools[i] || []).find(x => x.id === id);
+            if (it) return it;
+        }
+        return null;
+    },
+    /** Остальные типоразмеры петли — для кнопки замены на строке трубы */
+    _ufhPipeAlts: function (cur) {
+        const key = (cur || this.ufhPipe()).key;
+        return this.UFH_PIPES.filter(p => p.key !== key)
+            .map(p => this._ufhCoil(p.coils[p.coils.length - 1]))
+            .filter(Boolean);
+    },
+    /**
+     * Из чего складывается требуемый напор узла тёплого пола. Монтажник должен
+     * видеть смету не как приговор, а как расчёт, который можно проверить на
+     * бумаге, — поэтому раскладываем по слагаемым, а не даём итог.
+     */
+    ufhHeadHtml: function () {
+        const b = this._ufhBal;
+        if (!b || !b.worst) return '';
+        const w = b.worst;
+        const n1 = v => v.toFixed(1).replace('.', ',');
+        return `<br><br><b>Проверка по напору (самый тяжёлый коллектор — ${w.label}):</b><br>` +
+            `• Расход через узел: G = Q / (1,163 × ΔT) = <b>${w.flow.toFixed(2)} м³/ч</b> при перепаде ${b.dT} К.<br>` +
+            `• Самая длинная петля: ${n1(w.worstDp)} кПа.<br>` +
+            `• Коллектор (расходомер, кран, сервопривод): ${this.UFH_MAN_DP} кПа.<br>` +
+            `• Смесительный клапан узла: (G / Kvs)² = (${w.flow.toFixed(2)} / ${b.kvs})² = ${n1(w.dpValve)} кПа.<br>` +
+            (w.trDp > 0 ? `• Транзит до коллектора ${w.floor}-го этажа ${w.tr ? w.tr.label : ''}: ${n1(w.trDp)} кПа.<br>` : '') +
+            `• Итого с запасом 15 %: <b>${n1(w.need)} м</b>. Насос ${b.pump.label} на этом расходе даёт ` +
+            `<b>${n1(w.have)} м</b> — ${b.ok ? 'проходит' : '<b style="color:#EF4444;">не проходит</b>'}.` +
+            (b.notes && b.notes.length ? '<br>' + b.notes.map(x => '• ' + x).join('<br>') : '');
+    },
+    /** Предельный тепловой поток пола при шаге укладки, Вт/м² (СП 60.13330.2020) */
+    ufhQud: function (step) {
+        const st = parseInt(step, 10) || 150;
+        return st <= 100 ? 90 : (st >= 200 ? 50 : 70);
+    },
+    /**
+     * Потери участка: расход м³/ч, длина м → скорость и кПа. Формула та же, что
+     * у снеготаяния (snowPipeDrop), — она общая для любой трубы и жидкости;
+     * меняются только диаметр и свойства теплоносителя.
+     */
+    ufhFlowDrop: function (flow, L, pipe, dIn) {
+        const p = pipe || this.ufhPipe();
+        const d = this.snowPipeDrop(flow, dIn || p.dIn, this.UFH_FLUID);
+        return { v: d.v, Re: d.Re, R: d.R, dp: d.R * L * this.UFH_LOCAL_K / 1000 };
+    },
+    /**
+     * Предельная длина одной петли, м. Петля длиннее — это и метры, и расход
+     * сразу (она закрывает больше площади), поэтому потери растут по кубу
+     * длины: искать аналитически нечего, перебираем метр за метром до первого
+     * нарушения — по скорости или по потерям.
+     *
+     * Раскладку считаем по самому тяжёлому режиму (перепад 5 К): если пуск
+     * потом примет перепад пошире, петля окажется только в запасе.
+     */
+    ufhLoopMax: function (step, pipe) {
+        const p = pipe || this.ufhPipe();
+        const st = parseInt(step, 10) || 150;
+        const key = st + ':' + p.key;
+        this._ufhLoopMaxCache = this._ufhLoopMaxCache || {};
+        if (this._ufhLoopMaxCache[key]) return this._ufhLoopMaxCache[key];
+        const qUd = this.ufhQud(st);
+        let best = 20;
+        for (let L = 20; L <= this.UFH_LOOP_MAX_M; L++) {
+            // Площадь под петлёй: метраж без коэффициента запаса, делённый на шаг
+            const area = L * (st / 1000) / 1.1;
+            const flow = area * qUd / (1.163 * this.UFH_DTS[0]) / 1000;   // м³/ч
+            const d = this.ufhFlowDrop(flow, L, p);
+            if (d.v > this.UFH_V_MAX || d.dp > this.UFH_LOOP_DP_MAX) break;
+            best = L;
+        }
+        this._ufhLoopMaxCache[key] = best;
+        return best;
+    },
+    /**
+     * Насос узла тёплого пола. Кривая задана так же, как в снеготаянии:
+     * H = hMax·(1 − (v/qMax)²), аппроксимация чуть ниже паспортной — ошибиться
+     * здесь можно только в сторону запаса.
+     */
+    UFH_PUMPS: {
+        mix: { label: '25/60-130', hMax: 6, qMax: 3.0 },
+        dn20: { label: '15/60-130', hMax: 6, qMax: 2.5 },
+        dn25: { label: '25/60-180', hMax: 6, qMax: 3.3 },
+        dn25_80: { label: '25/80-180', hMax: 8, qMax: 5.5 }
+    },
+    ufhPumpHead: function (v, pump) {
+        return Math.max(0, pump.hMax * (1 - Math.pow(v / pump.qMax, 2)));
+    },
+    /** Пропускная способность смесительного клапана узла, м³/ч при перепаде 1 бар */
+    ufhMixKvs: function (type, brand) {
+        if (type === 'std') return (brand === 'rommer') ? 1.8 : 2.1;
+        if (type === 'dn20' || type === 'dn20_servo') return 2.5;
+        if (type === 'dn32_servo') return 6.3;
+        return 4.0;   // DN25
+    },
+    /**
+     * Раскладка петель тёплого пола: сколько петель, какой длины и какую
+     * площадь каждая закрывает. Расходов здесь ещё нет — они зависят от
+     * перепада, а его выбирает ufhBalance() уже под конкретный узел.
+     *
+     * Источник геометрии, по убыванию точности:
+     *   1. планы этажей — длины петель нарисованные, те же, что на листе
+     *      «Тёплый пол» (projectPlans.loopRows);
+     *   2. помещения расчёта — зона на комнату, мощность по её теплопотерям,
+     *      но не выше предельного потока пола;
+     *   3. быстрый режим — весь этаж одной зоной.
+     */
+    ufhCalc: function () {
+        const s = this.state;
+        if (!(s.systems || []).includes('tp')) return null;
+        const a1 = parseFloat(s.tp1) || 0;
+        const a2 = (s.floors === 2) ? (parseFloat(s.tp2) || 0) : 0;
+        if (!(a1 + a2 > 0)) return null;
+
+        const pipe = this.ufhPipe();
+        const geo = this.ufhGeom();
+        const detailed = !!(s.detailedRooms && Array.isArray(s.rooms) && s.rooms.length);
+        const floors = [], mans = [];
+        let no = 0;
+
+        [[1, a1, parseInt(s.ufhStep1, 10) || 150], [2, a2, parseInt(s.ufhStep2, 10) || 150]].forEach(pair => {
+            const fl = pair[0], area = pair[1], step = pair[2];
+            if (!(area > 0)) return;
+            const qUd = this.ufhQud(step);
+            const lMax = this.ufhLoopMax(step, pipe);
+            const g = geo && geo.floors[fl - 1];
+            const rows = [];
+
+            if (g && g.rows && g.rows.length) {
+                // Мощность зоны — по теплопотерям одноимённого помещения, но не выше
+                // предельного потока пола: остаток в такой комнате берут радиаторы.
+                // Ровно так же делит нагрузку лист «Тёплый пол» (zoneHeat).
+                const rms = (detailed ? s.rooms : [])
+                    .filter(r => (parseInt(r.floor, 10) || 1) === fl);
+                const roomQ = (name) => {
+                    const key = String(name || '').trim().toLowerCase();
+                    if (!key) return 0;
+                    const r = rms.find(x => String(x.name || '').trim().toLowerCase() === key);
+                    return r ? this.getRoomHeatLoss(r).Q_total : 0;
+                };
+                // Зона может быть поделена на несколько петель — мощность комнаты
+                // делим между ними поровну, как и её площадь.
+                const kOf = {};
+                g.rows.forEach(r => { kOf[r.zone] = (kOf[r.zone] || 0) + 1; });
+                // 1,05 — подрезка и подъём концов петель к гребёнке, как в смете
+                g.rows.forEach(r => {
+                    const cap = r.area * qUd;
+                    const q = roomQ(r.zone);
+                    rows.push({ name: r.name, area: r.area, m: r.m * 1.05,
+                        Q: q > 0 ? Math.min(q / (kOf[r.zone] || 1), cap) : cap });
+                });
+            }
+            if (!rows.length) {
+                let zones = detailed
+                    ? s.rooms.filter(r => (parseInt(r.floor, 10) || 1) === fl
+                        && (!r.sys || r.sys.includes('tp')) && (parseFloat(r.area) || 0) > 0)
+                        .map(r => {
+                            const a = parseFloat(r.area) || 0;
+                            return { name: r.name || 'Помещение', area: a,
+                                Q: Math.min(this.getRoomHeatLoss(r).Q_total, a * qUd) };
+                        })
+                    : [];
+                // Площадь ТП этажа задаётся ползунком отдельно от комнат. Если суммы
+                // разошлись, тянем зоны на заданную площадь: метры трубы и деньги
+                // должны остаться теми же, что показывает раздел сметы.
+                const zSum = zones.reduce((a, z) => a + z.area, 0);
+                if (!zones.length || !(zSum > 0)) zones = [{ name: fl + ' этаж', area: area, Q: area * qUd }];
+                else if (Math.abs(zSum - area) / area > 0.02) {
+                    const k = area / zSum;
+                    zones = zones.map(z => ({ name: z.name, area: z.area * k, Q: z.Q * k }));
+                }
+                zones.forEach(z => {
+                    const total = (z.area / (step / 1000)) * 1.1;
+                    const n = Math.max(1, Math.ceil(total / lMax));
+                    for (let i = 0; i < n; i++) {
+                        rows.push({ name: z.name + (n > 1 ? ' ' + (i + 1) + '/' + n : ''),
+                            area: z.area / n, m: total / n, Q: z.Q / n });
+                    }
+                });
+            }
+            rows.forEach(r => { r.no = ++no; r.floor = fl; });
+            const meters = (g && g.loops > 0) ? g.meters * 1.05 : (area / (step / 1000)) * 1.1;
+            floors.push({ fl: fl, area: area, step: step, qUd: qUd, lMax: lMax,
+                loops: rows.length, meters: meters, geo: (g && g.loops > 0) ? g : null, rows: rows });
+        });
+        if (!floors.length) return null;
+
+        // Выходов у коллектора столько, сколько на этаже петель; больше двенадцати
+        // на одну гребёнку не сажают — дальше второй коллектор. Ровно так же
+        // делит петли смета (proc в render), иначе таблица расходомеров разъехалась
+        // бы с составом.
+        floors.forEach(f => {
+            const n = Math.max(1, Math.ceil(f.loops / 12));
+            let idx = 0;
+            for (let i = 0; i < n; i++) {
+                const sz = Math.floor(f.loops / n) + (i < (f.loops % n) ? 1 : 0);
+                const rows = f.rows.slice(idx, idx + sz);
+                idx += sz;
+                // Транзит до коллектора 2-го этажа его напор тоже съедает.
+                // У коллектора 1-го этажа транзита нет — он рядом с котельной.
+                let trM = 0;
+                if (f.fl === 2) {
+                    trM = Math.ceil(((parseFloat(this.state.h1) || 2.7) + 1
+                        + Math.sqrt(Math.max(1, f.area))) * 2 * 1.1);
+                }
+                mans.push({ label: f.fl + ' этаж' + (n > 1 ? ', коллектор ' + (i + 1) + ' из ' + n : ''),
+                    floor: f.fl, outlets: sz, rows: rows, trM: trM });
+            }
+        });
+
+        return {
+            pipe: pipe, floors: floors, mans: mans,
+            loops: floors.reduce((a, f) => a + f.loops, 0),
+            meters: floors.reduce((a, f) => a + f.meters, 0),
+            area: floors.reduce((a, f) => a + f.area, 0),
+            Q: floors.reduce((a, f) => a + f.rows.reduce((b, r) => b + r.Q, 0), 0),
+            byPlan: floors.some(f => f.geo)
+        };
+    },
+    /**
+     * Балансировка: перепад, расходы петель и проверка напора у выбранного узла.
+     *
+     * Перебор идёт от безобидного к дорогому:
+     *   1. штатный насос узла и перепад 5 К — самый ровный пол;
+     *   2. тот же насос, перепад 7 К, затем 10 К. Шире перепад — ниже расход и
+     *      потери; дальний конец петли при этом холоднее, но 5–10 К для тёплого
+     *      пола — обычный рабочий диапазон (EN 1264), а не компромисс. В
+     *      снеготаянии порядок обратный: там дальний конец обязан растопить снег;
+     *   3. и только потом насос 25/80 — он стоит денег и лишних ватт, а на
+     *      работу системы, в отличие от перепада, не влияет вовсе.
+     * Ни один вариант не прошёл — возвращаем ближайший к проходному и говорим
+     * об этом словами: молчать про нехватку напора нельзя.
+     */
+    ufhBalance: function (calc, type, brand) {
+        if (!calc || !calc.mans.length) return null;
+        const kvs = this.ufhMixKvs(type, brand);
+        const base = (type === 'std') ? this.UFH_PUMPS.mix
+            : ((type === 'dn20' || type === 'dn20_servo') ? this.UFH_PUMPS.dn20 : this.UFH_PUMPS.dn25);
+        // Насос 25/80 подходит только группам DN25/DN32: у компактного узла
+        // подмеса и у DN20 посадочное место под свой типоразмер.
+        const pumps = (base === this.UFH_PUMPS.dn25) ? [base, this.UFH_PUMPS.dn25_80] : [base];
+
+        const shape = (dT) => {
+            const mans = calc.mans.map(m => {
+                const rows = m.rows.map(r => {
+                    const flow = r.Q / (1.163 * dT) / 60;            // л/мин
+                    const d = this.ufhFlowDrop(flow * 0.06, r.m, calc.pipe);
+                    return Object.assign({}, r, { flow: flow, v: d.v, dp: d.dp });
+                });
+                const flow = rows.reduce((a, r) => a + r.flow, 0) * 0.06;   // м³/ч
+                const worstDp = rows.reduce((a, r) => Math.max(a, r.dp), 0);
+                const dpValve = Math.pow(flow / kvs, 2) * 100;              // кПа
+                return Object.assign({}, m, { rows: rows, flow: flow, worstDp: worstDp, dpValve: dpValve });
+            });
+            // Транзит на 2-й этаж один на этаж, а не на каждый коллектор: его
+            // диаметр и потери считаем по сумме расходов всех его гребёнок.
+            //
+            // Типоразмер берём по самому тяжёлому режиму (перепад 5 К) и дальше не
+            // меняем. Иначе расчёт сам с собой воюет: шире перепад — меньше расход —
+            // тоньше труба — и потери возвращаются на место. Труба в перекрытии
+            // закладывается один раз, а перепад на узле потом крутят как угодно.
+            const flr2 = mans.filter(m => m.trM > 0);
+            const trFlow = flr2.reduce((a, m) => a + m.flow, 0);
+            const trFlowMax = trFlow * dT / this.UFH_DTS[0];
+            const tr = flr2.length ? this.ufhTransitPick(trFlowMax) : null;
+            if (tr) {
+                const d = this.ufhFlowDrop(trFlow, flr2[0].trM, calc.pipe, tr.dIn);
+                flr2.forEach(m => { m.tr = tr; m.trV = d.v; m.trFlow = trFlow; m.trDp = d.dp; });
+            }
+            mans.forEach(m => {
+                m.trDp = m.trDp || 0;
+                // Запас 15 % — на грязь в петлях и на разброс паспортной кривой
+                m.need = (m.worstDp + this.UFH_MAN_DP + m.dpValve + m.trDp) * 1.15 / 9.81;   // м
+            });
+            return mans;
+        };
+
+        let best = null, fallback = null;
+        const shapes = {};
+        for (let pi = 0; pi < pumps.length && !best; pi++) {
+            const pump = pumps[pi];
+            for (let di = 0; di < this.UFH_DTS.length; di++) {
+                const dT = this.UFH_DTS[di];
+                const mans = shapes[dT] || (shapes[dT] = shape(dT));
+                let ratio = 0, worst = null;
+                mans.forEach(m => {
+                    const have = this.ufhPumpHead(m.flow, pump);
+                    const k = m.need / Math.max(have, 0.01);
+                    if (k > ratio) { ratio = k; worst = Object.assign({}, m, { have: have }); }
+                });
+                const cand = { dT: dT, pump: pump, kvs: kvs, mans: mans, worst: worst,
+                    ratio: ratio, ok: ratio <= 1, strong: pump === this.UFH_PUMPS.dn25_80 };
+                if (!fallback || ratio < fallback.ratio) fallback = cand;
+                if (cand.ok) { best = cand; break; }
+            }
+        }
+        const r = best || fallback;
+        if (!r) return null;
+
+        // Чем расчёт пожертвовал, чтобы уложиться в напор, и что монтажник
+        // должен знать, а не обнаруживать по составу сметы.
+        r.notes = [];
+        if (r.dT > this.UFH_DTS[0]) {
+            r.notes.push('Перепад контура принят <b>' + r.dT + ' К</b> (подача ' + this.UFH_SUPPLY +
+                ' / обратка ' + (this.UFH_SUPPLY - r.dT) + ' °C), а не обычные ' + this.UFH_DTS[0] +
+                ': на перепаде ' + this.UFH_DTS[0] + ' К расход выше и напора насосу не хватает. ' +
+                'Расходы на расходомерах ниже той же пропорции — выставлять надо именно их.');
+        }
+        if (r.strong) {
+            r.notes.push('Насос группы тёплого пола — <b>' + r.pump.label + '</b> вместо штатного ' +
+                this.UFH_PUMPS.dn25.label + ': на расходе ' + r.worst.flow.toFixed(2) + ' м³/ч нужно ' +
+                r.worst.need.toFixed(1) + ' м напора.');
+        }
+        if (!r.ok) {
+            r.notes.push('<b style="color:#EF4444;">Напора не хватает:</b> худшему коллектору (' +
+                r.worst.label + ') нужно ' + r.worst.need.toFixed(1) + ' м, а насос ' + r.pump.label +
+                ' на расходе ' + r.worst.flow.toFixed(2) + ' м³/ч даёт ' + r.worst.have.toFixed(1) + ' м. ' +
+                'Разделите этот коллектор на два (меньше петель на гребёнку — меньше расход) ' +
+                'или укоротите петли, увеличив их число.');
+        }
+        const slow = [];
+        r.mans.forEach(m => m.rows.forEach(x => { if (x.v > 0 && x.v < this.UFH_V_MIN) slow.push(x); }));
+        if (slow.length) {
+            r.notes.push('Тихие петли (' + slow.length + ' шт): скорость ниже ' +
+                String(this.UFH_V_MIN).replace('.', ',') + ' м/с — воздух из такой петли сам не выходит. ' +
+                'Заполняйте и развоздушивайте их по одной, закрыв остальные расходомеры.');
+        }
+        return r;
+    },
+    /**
+     * Таблица настройки расходомеров коллектора — то, что монтажник выставляет
+     * колпачками на подающей гребёнке при пусконаладке. manIdx — порядковый
+     * номер коллектора в смете, он же индекс в ufhCalc().mans.
+     */
+    ufhFlowTableHtml: function (manIdx) {
+        const b = this._ufhBal;
+        if (!b || !b.mans) return '';
+        // Два одинаковых коллектора этажа сливаются в смете в одну строку с
+        // количеством 2 — тогда сюда приходит список их номеров, и таблица
+        // раскладывается по коллекторам, чтобы не потерялись петли второго.
+        const idxs = (Array.isArray(manIdx) ? manIdx : [manIdx]).filter(i => b.mans[i]);
+        if (!idxs.length) return '';
+        const n1 = v => v.toFixed(1).replace('.', ',');
+        const m = b.mans[idxs[0]];
+        const hdr = `<tr style="font-weight:700;"><td style="padding:1px 8px 1px 0;">№</td>` +
+            `<td style="padding:1px 8px 1px 0;">Петля</td>` +
+            `<td style="padding:1px 8px 1px 0;text-align:right;">S, м²</td>` +
+            `<td style="padding:1px 8px 1px 0;text-align:right;">L, м</td>` +
+            `<td style="padding:1px 8px 1px 0;text-align:right;">л/мин</td>` +
+            `<td style="padding:1px 0;text-align:right;">кПа</td></tr>`;
+        const body = idxs.map(i => {
+            const mm = b.mans[i];
+            const head = (idxs.length > 1)
+                ? `<tr><td colspan="6" style="padding:5px 0 1px 0;font-weight:700;">${mm.label}</td></tr>`
+                : '';
+            return head + mm.rows.map(r =>
+                `<tr><td style="padding:1px 8px 1px 0;">${r.no}</td>` +
+                `<td style="padding:1px 8px 1px 0;">${r.name}</td>` +
+                `<td style="padding:1px 8px 1px 0;text-align:right;">${Math.round(r.area * 10) / 10}</td>` +
+                `<td style="padding:1px 8px 1px 0;text-align:right;">${Math.round(r.m)}</td>` +
+                `<td style="padding:1px 8px 1px 0;text-align:right;"><b>${n1(r.flow)}</b></td>` +
+                `<td style="padding:1px 0;text-align:right;">${n1(r.dp)}</td></tr>`).join('');
+        }).join('');
+        const sum = idxs.reduce((a, i) => a + b.mans[i].rows.reduce((x, r) => x + r.flow, 0), 0) / idxs.length;
+        const title = (idxs.length > 1)
+            ? `Настройка расходомеров (${b.mans[idxs[0]].floor} этаж, ${idxs.length} одинаковых коллектора)`
+            : `Настройка расходомеров (${m.label})`;
+        return `<span style="font-size:11px;line-height:1.5;display:block;margin-top:8px;">` +
+            `<b>${title}:</b><br>` +
+            `<table style="border-collapse:collapse;margin:4px 0;font-size:11px;">` +
+            hdr + body + `</table>` +
+            `Итого по коллектору: <b>${n1(sum)} л/мин</b> (${m.flow.toFixed(2)} м³/ч). ` +
+            `Расход считан при перепаде <b>${b.dT} К</b> (подача ${this.UFH_SUPPLY} / обратка ${this.UFH_SUPPLY - b.dT} °C) ` +
+            `по формуле G = Q / (1,163 × ΔT).<br>` +
+            `<b>Как выставлять:</b> колпачок расходомера крутят при работающем насосе и открытых сервоприводах, ` +
+            `начиная с самой длинной петли — её оставляют полностью открытой, остальные душат до расчётного расхода. ` +
+            `После настройки всех петель круг повторяют: закрытие одной поднимает расход у соседних.` +
+            (b.notes && b.notes.length ? '<br>' + b.notes.map(x => '• ' + x).join('<br>') : '') +
+            `</span>`;
+    },
+
     // ─── Петли тёплого пола по планам ────────────────────────────────────
     // Пока петель нет, метраж трубы ТП в смете оценочный (площадь / шаг), а на
     // листе «Тёплый пол» рисуется настоящая укладка со своей длиной. Монтажник
@@ -27708,24 +28250,38 @@ const app = {
         const plans = this.currentPlans();
         if (!plans || !Array.isArray(plans.floors) || !plans.floors.length) return null;
         const st1 = this.state.ufhStep1 || 150, st2 = this.state.ufhStep2 || 150;
-        const key = this._plansRev + '|' + st1 + '|' + st2;
+        // Предел длины петли зависит от трубы, поэтому он же и в ключе кэша:
+        // сменили трубу — укладка пересчитывается, а не достаётся из старой.
+        const pipeKey = this.ufhPipe().key;
+        const key = this._plansRev + '|' + st1 + '|' + st2 + '|' + pipeKey;
         if (this._ufhGeomCache && this._ufhGeomCache.key === key) return this._ufhGeomCache.val;
         let any = false;
         const floors = plans.floors.map((f, i) => {
             if (!f || !f.pxPerM) return null;
+            const _st = i === 1 ? st2 : st1;
             let zones;
-            try { zones = PP.floorLoops(f, i === 1 ? st2 : st1, PP.MAX_LOOP_M); }
+            try { zones = PP.floorLoops(f, _st, this.ufhLoopMax(_st)); }
             catch (e) { console.warn('[планы] петли ТП не посчитались:', e.message); return null; }
             if (!zones.length) return null;
-            let loops = 0, meters = 0, area = 0;
+            let loops = 0, meters = 0, area = 0, zno = 0;
+            // rows — строка на петлю: имя, площадь и длина. Те же имена и тот же
+            // порядок, что у projectPlans.loopRows на листе «Тёплый пол», — по ним
+            // смета считает расход каждой петли для расходомеров.
+            const rows = [];
             zones.forEach(z => {
-                loops += z.loops.length;
-                z.loops.forEach(l => { meters += l.m; });
+                const k = z.loops.length;
+                const zName = z.name || 'зона ' + (++zno);
+                z.loops.forEach((l, li) => {
+                    meters += l.m;
+                    rows.push({ name: zName + (k > 1 ? ' ' + (li + 1) + '/' + k : ''),
+                        zone: z.name || '', area: z.area / k, m: l.m });
+                });
+                loops += k;
                 area += z.area;
             });
             any = true;
             return { loops: loops, meters: Math.round(meters),
-                area: Math.round(area * 10) / 10, zones: zones.length };
+                area: Math.round(area * 10) / 10, zones: zones.length, rows: rows };
         });
         const val = any ? { floors: floors, any: true } : null;
         this._ufhGeomCache = { key: key, val: val };
@@ -31986,13 +32542,22 @@ const app = {
             } else if (val2 === 'rad') {
                 formula = `<b>Тип:</b> Радиаторное отопление.<br><b>Формула:</b> 1 пара выходов на 1 радиатор.<br><b>Радиаторов:</b> ${val1} шт.`;
             } else if (val2 === 'ufh') {
-                // С планами этажей выходов ровно столько, сколько петель нарисовано
-                // (петля длиннее 100 м делится) — иначе прежняя оценка по метражу.
+                // Выходов ровно столько, сколько петель, а длину петли задаёт не
+                // круглое число, а гидравлика выбранной трубы (ufhLoopMax).
                 const _fc = this._ufhFloorCalc || [];
                 const _byPlan = (_fc[0] && _fc[0].geo) || (_fc[1] && _fc[1].geo);
+                const _up = this.ufhPipe();
+                const _lm1 = this.ufhLoopMax(this.state.ufhStep1 || 150, _up);
+                const _lm2 = this.ufhLoopMax(this.state.ufhStep2 || 150, _up);
+                const _lmStr = (this.state.floors === 2 && this.state.tp2 > 0 && _lm1 !== _lm2)
+                    ? `${_lm1} м на 1 этаже и ${_lm2} м на 2-м` : `${_lm1} м`;
                 formula = `<b>Тип:</b> Тёплый пол.<br><b>Формула:</b> ` +
-                    (_byPlan ? `1 выход на каждую петлю с планов этажей (петля длиннее 100 м делится надвое).`
-                             : `Длина трубы L / 80 м (длина одной петли).`) +
+                    (_byPlan ? `1 выход на каждую петлю с планов этажей (петля длиннее предельной делится).`
+                             : `Длина трубы L / предельная длина петли.`) +
+                    `<br><b>Предел длины петли:</b> ${_lmStr} — считан по трубе ${_up.short} ` +
+                    `(внутренний Ø ${String(_up.dIn * 1000).replace('.', ',')} мм) при шаге укладки: ` +
+                    `потери не выше ${this.UFH_LOOP_DP_MAX} кПа и скорость не выше ${String(this.UFH_V_MAX).replace('.', ',')} м/с. ` +
+                    `Сменится труба — сменится и число выходов.` +
                     `<br><b>Контуров:</b> ${val1} шт.`;
             }
             let minWarn = (val1 === 1) ? "<br><br><i>*Выбран блок на 2 выхода (заводской минимум). 1 выход — резерв.</i>" : "";
@@ -32173,7 +32738,7 @@ const app = {
                     }
                 }
 
-                return `<span style="${styles}"><span style="${head}">${title}</span><b>Зачем:</b> ${why}<br><br>${calc}<br><br>${capacity}</span>`;
+                return `<span style="${styles}"><span style="${head}">${title}</span><b>Зачем:</b> ${why}<br><br>${calc}<br><br>${capacity}${purpose === 'ufh' ? this.ufhHeadHtml() : ''}</span>`;
             }
             case 'ufh_mix': {
                 let isRommer = (this.state.brandMode === 'rommer');
@@ -32209,7 +32774,7 @@ const app = {
                         `• Максимальный расход: <b>до 1.2 м³/ч</b> (Kvs = 2.1)`;
                 }
 
-                return `<span style="${styles}"><span style="${head}">${title}</span><b>Зачем:</b> ${why}<br><br>${calc}<br><br>${capacity}</span>`;
+                return `<span style="${styles}"><span style="${head}">${title}</span><b>Зачем:</b> ${why}<br><br>${calc}<br><br>${capacity}${this.ufhHeadHtml()}</span>`;
             }
             // === 1. КОТЕЛЬНАЯ ===
             case 'boiler_gas': {
@@ -32545,7 +33110,20 @@ const app = {
                     details = `(${S} м² / ${step / 1000} м) × 1.1 = ${L.toFixed(1)} м.`;
                 }
 
-                return `<span style="${styles}"><span style="${head}">Труба водяного тёплого пола 16x2.0</span>` +
+                // Гидравлика петли: от стенки трубы зависит и длина петли, и число
+                // выходов коллектора, и напор насоса — поэтому расшифровываем всё
+                // в одной строке, а не только метраж.
+                const _pp = this.ufhPipe();
+                const _dmm = String(_pp.dIn * 1000).replace('.', ',');
+                const _lmax1 = this.ufhLoopMax(stepVal1, _pp);
+                const _lmax2 = this.ufhLoopMax(stepVal2, _pp);
+                const _lmaxStr = (this.state.floors === 2 && this.state.tp2 > 0 && _lmax1 !== _lmax2)
+                    ? `${_lmax1} м (1 этаж) и ${_lmax2} м (2 этаж)` : `${_lmax1} м`;
+                const _bal2 = this._ufhBal;
+                const _cmp = this.UFH_PIPES.filter(x => x.key !== _pp.key)
+                    .map(x => `${x.label} — внутренний Ø ${String(x.dIn * 1000).replace('.', ',')} мм, петля до ${this.ufhLoopMax(stepVal1, x)} м`)
+                    .join('; ');
+                return `<span style="${styles}"><span style="${head}">Труба водяного тёплого пола ${_pp.short}</span>` +
                     `<b>Зачем:</b> Труба укладывается змейкой или улиткой в бетонную стяжку и служит нагревательным элементом, обеспечивая комфортный обогрев помещения.<br><br>` +
                     (byPlan ? `<b>Откуда длина:</b> из укладки, нарисованной на планах этажей — ровно те же метры и петли показывает лист «Тёплый пол».<br><br>` : ``) +
                     `<b>Формула подбора:</b> ${fStr}.<br><br>` +
@@ -32553,7 +33131,14 @@ const app = {
                     `• Площадь тёплого пола: ${tpArea} м².<br>` +
                     `• Шаг укладки: ${stepStr}.<br>` +
                     `• Расчёт:<br>${details}<br>` +
-                    `• Общая длина: ${val1} м.</span>`;
+                    `• Общая длина: ${val1} м.<br><br>` +
+                    `<b>Гидравлика петли (от неё — число петель и выходов коллектора):</b><br>` +
+                    `• Труба ${_pp.label}, внутренний Ø <b>${_dmm} мм</b>, ${String(_pp.lm).replace('.', ',')} л в метре. ${_pp.note}<br>` +
+                    `• Предел длины петли: <b>${_lmaxStr}</b>. Он не назначен, а посчитан: длиннее петля — больше и метры, и расход (она закрывает больше площади), поэтому потери растут по кубу длины. Останавливаемся на первом из двух: потери ${this.UFH_LOOP_DP_MAX} кПа или скорость ${String(this.UFH_V_MAX).replace('.', ',')} м/с.<br>` +
+                    `• Петель в расчёте: <b>${(this._ufhCalc && this._ufhCalc.loops) || 0}</b> — столько же выходов у коллекторов.<br>` +
+                    (_bal2 ? `• Самая нагруженная петля: ${Math.round(_bal2.worst.rows.reduce((a, r) => Math.max(a, r.m), 0))} м, потери ${_bal2.worst.worstDp.toFixed(1).replace('.', ',')} кПа при расходе ${_bal2.worst.rows.reduce((a, r) => Math.max(a, r.flow), 0).toFixed(1).replace('.', ',')} л/мин.<br>` : '') +
+                    (_cmp ? `• Для сравнения: ${_cmp}. Сменить трубу — «Заменить» на этой строке; петли, коллекторы и насос пересчитаются.<br>` : '') +
+                    `</span>`;
             }
             case 'ufh_mat':
                 return `<span style="${styles}"><span style="${head}">Мат с бобышками</span><b>Зачем:</b> Быстрый монтаж и фиксация трубы.<br><b>Расчет:</b> Чистая площадь ТП (${val1} м²) + 5% запас на подрезку.</span>`;
@@ -33975,7 +34560,11 @@ const app = {
                     }
                     if (haierBoiler) {
                         const _gbCircStr = haierBoiler.circuits === 1 ? 'одноконтурный' : 'двухконтурный';
-                        haierBoiler = { ...haierBoiler, name: `Котёл газовый, ${_gbCircStr} (${haierBoiler.power} кВт)`, originalId: 'gas_boiler_auto', alts: [...catalog.boilers_gas, ...(catalog.boilers_baxi || [])] };
+                        // sortRank: -1 — газовый котёл открывает раздел независимо от суммы.
+                        // Он основной источник тепла, электрический при нём стоит резервом,
+                        // а по цене бывает и дороже (STATUS 27 кВт против Haier 24 кВт) —
+                        // без ранга резервный котёл вставал в смете выше основного.
+                        haierBoiler = { ...haierBoiler, sortRank: -1, name: `Котёл газовый, ${_gbCircStr} (${haierBoiler.power} кВт)`, originalId: 'gas_boiler_auto', alts: [...catalog.boilers_gas, ...(catalog.boilers_baxi || [])] };
                         addToBill(haierBoiler, qty, this.getDesc('boiler_gas', parseFloat(pwrBoiler), haierBoiler.power, qty));
                         for (let k = 0; k < qty; k++) selBoilers.push(haierBoiler);
                     }
@@ -34414,13 +35003,20 @@ const app = {
         // плане укладка плоская, высоты в ней нет).
         // Растр петель считается не мгновенно, поэтому не трогаем его вовсе,
         // пока тёплого пола в расчёте нет.
+        //
+        // Число петель даёт гидравлика (ufhCalc): предельная длина петли своя у
+        // каждой трубы и каждого шага, и раньше вместо неё стояло глухое «80 м».
         const _ufhGeom = (hasTp && tpArea > 0) ? this.ufhGeom() : null;
+        const _ufhCalc = (hasTp && tpArea > 0) ? this.ufhCalc() : null;
+        this._ufhCalc = _ufhCalc;
         const tpFloorCalc = (area, step, gi) => {
             if (!(area > 0)) return { m: 0, loops: 0, geo: null };
+            const fc = _ufhCalc && _ufhCalc.floors.find(f => f.fl === gi + 1);
+            if (fc) return { m: fc.meters, loops: fc.loops, geo: fc.geo };
             const g = _ufhGeom && _ufhGeom.floors[gi];
             if (g && g.loops > 0) return { m: g.meters * 1.05, loops: g.loops, geo: g };
             const L = (area / (step / 1000)) * 1.1;
-            return { m: L, loops: Math.ceil(L / 80), geo: null };
+            return { m: L, loops: Math.ceil(L / this.ufhLoopMax(step)), geo: null };
         };
         const tpF1 = tpFloorCalc(this.state.tp1, stepVal1, 0);
         const tpF2 = tpFloorCalc(this.state.floors === 2 ? this.state.tp2 : 0, stepVal2, 1);
@@ -34556,6 +35152,14 @@ const app = {
                 }
             }
         }
+
+        // Тип узла тёплого пола окончательно выбран — можно считать балансировку:
+        // перепад, расход каждой петли и хватает ли насосу узла напора на самый
+        // тяжёлый коллектор. Отсюда же берётся насос для строки сметы и таблица
+        // настройки расходомеров в подсказках.
+        this._ufhBal = (hasTp && tpArea > 0 && this._ufhCalc)
+            ? this.ufhBalance(this._ufhCalc, this.state.ufhMixType || 'std', this.state.brandMode)
+            : null;
 
         // Смесительным контуром при включённой автоматике котельной управляет
         // контроллер. Поворотный привод с накладным датчиком держит температуру
@@ -34894,13 +35498,21 @@ const app = {
                 let activeMixType = this.state.ufhMixType || 'std';
                 let defaultServoType = (tQ > 1) ? 'std' : 'sensor';
                 let activeServoType = this.state.servoType || defaultServoType;
+                // Насос группы тёплого пола: штатный 25/60 или 25/80, если
+                // расчёту не хватило напора на самый тяжёлый коллектор (ufhBalance).
+                const _ufhStrong = !!(this._ufhBal && this._ufhBal.strong);
+                const _ufhPumpPool = _ufhStrong ? catalog.pumps_dn25_80 : catalog.pumps_dn25;
+                const _ufhPumpDesc = () => this.getDesc('pump_std') +
+                    (_ufhStrong ? `<span style="font-size:11px;line-height:1.5;display:block;margin-top:6px;">` +
+                        `<b>Почему 25/80, а не 25/60:</b> ${this._ufhBal.notes.find(n => n.indexOf('25/80') >= 0) || ''}` +
+                        `</span>` : '');
 
                 if (activeMixType === 'dn32_servo') {
                     let ufhGrp = catalog.groups_dn32.find(g => g.id === 'SDG-0007-003201');
                     addToBill({ ...ufhGrp, _uiUfhOnly: true }, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
 
-                    let ufhPump = catalog.pumps_dn25.find(p => p.type === this.state.pumpType) || catalog.pumps_dn25[0];
-                    addToBill({ ...ufhPump, sortRank: 1 }, tQ, this.getDesc('pump_std'), grpHydro);
+                    let ufhPump = _ufhPumpPool.find(p => p.type === this.state.pumpType) || _ufhPumpPool[0];
+                    addToBill({ ...ufhPump, sortRank: 1 }, tQ, _ufhPumpDesc(), grpHydro);
 
                     let servoItem = (activeServoType === 'sensor') ? catalog.servo_rotary_sensor : catalog.servo_rotary_std;
                     if (servoItem) {
@@ -34910,8 +35522,8 @@ const app = {
                     let ufhGrp = (activeMixType === 'dn25_servo') ? catalog.groups_dn25[2] : catalog.groups_dn25[1];
                     addToBill({ ...ufhGrp, _uiUfhOnly: true }, tQ, this.getDesc('pump_group', ufhGrp, tQ, 'ufh', tpArea), grpHydro);
 
-                    let ufhPump = catalog.pumps_dn25.find(p => p.type === this.state.pumpType) || catalog.pumps_dn25[0];
-                    addToBill({ ...ufhPump, sortRank: 1 }, tQ, this.getDesc('pump_std'), grpHydro);
+                    let ufhPump = _ufhPumpPool.find(p => p.type === this.state.pumpType) || _ufhPumpPool[0];
+                    addToBill({ ...ufhPump, sortRank: 1 }, tQ, _ufhPumpDesc(), grpHydro);
 
                     if (activeMixType === 'dn25_servo') {
                         let servoItem = (activeServoType === 'sensor') ? catalog.servo_rotary_sensor : catalog.servo_rotary_std;
@@ -36213,7 +36825,10 @@ const app = {
 
                 if (radManifoldMode === 'standard') {
                     if (m) {
-                        addToBill(m, manifoldsCount, this.getDesc('manifold', totalDevicesCount, 'rad'), pipeGrp);
+                        // sortRank: -1 — коллектор открывает подраздел независимо от суммы:
+                        // бухты трубы почти всегда дороже, и без ранга главная позиция узла
+                        // уезжала вниз, под трубу и шкаф.
+                        addToBill({ ...m, sortRank: -1 }, manifoldsCount, this.getDesc('manifold', totalDevicesCount, 'rad'), pipeGrp);
                     }
                 }
                 else {
@@ -36229,7 +36844,9 @@ const app = {
                         delete this.state.swaps[b2.id];
                     }
                     let multiplier = manifoldsCount * 2;
-                    if (plan[0] > 0) addToBill(b4, plan[0] * multiplier, `Блок 4 вых.`, pipeGrp); if (plan[1] > 0) addToBill(b3, plan[1] * multiplier, `Блок 3 вых.`, pipeGrp); if (plan[2] > 0) addToBill(b2, plan[2] * multiplier, `Блок 2 вых.`, pipeGrp); addToBill(catalog.manifold_brackets, manifoldsCount, "Кронштейны.", pipeGrp);
+                    // sortRank: -1 — сборка из блоков это тот же радиаторный коллектор,
+                    // поэтому и в хромированном исполнении он открывает подраздел.
+                    if (plan[0] > 0) addToBill({ ...b4, sortRank: -1 }, plan[0] * multiplier, `Блок 4 вых.`, pipeGrp); if (plan[1] > 0) addToBill({ ...b3, sortRank: -1 }, plan[1] * multiplier, `Блок 3 вых.`, pipeGrp); if (plan[2] > 0) addToBill({ ...b2, sortRank: -1 }, plan[2] * multiplier, `Блок 2 вых.`, pipeGrp); addToBill(catalog.manifold_brackets, manifoldsCount, "Кронштейны.", pipeGrp);
                 }
 
                 // Шкаф под радиаторный коллектор. Узла подмеса тут не бывает, поэтому
@@ -36313,31 +36930,23 @@ const app = {
             // Коллектор ТП всегда первой позицией раздела, трубы и транзит — после него.
             // Поэтому трубы собраны в функцию и вызываются ниже, после проходов proc().
             const addUfhPipes = () => {
-            if (this.state.ufhPipeMaterial === 'metal_plastic') {
-                let q2 = Math.floor(tpMeters / 200); let q1 = Math.ceil((tpMeters % 200) / 100);
-                if (q2) {
-                    let pipe2 = asCoilPrice({ ...catalog.metal_plastic_pipes[1], originalId: catalog.metal_plastic_pipes[1].id + "_ufh" });
-                    pipe2.alts = [catalog.pipes[0]];
-                    addToBill(pipe2, q2, this.getDesc('ufh_pipe', tpMeters), grpPipe);
-                }
-                if (q1) {
-                    let pipe1 = asCoilPrice({ ...catalog.metal_plastic_pipes[0], originalId: catalog.metal_plastic_pipes[0].id + "_ufh" });
-                    pipe1.alts = [catalog.pipes[0]];
-                    addToBill(pipe1, q1, this.getDesc('ufh_pipe', tpMeters), grpPipe);
-                }
-            } else {
-                let q5 = Math.floor(tpMeters / 500); let q1 = Math.ceil((tpMeters % 500) / 100);
-                if (q5) {
-                    let pipe5 = asCoilPrice({ ...catalog.pipes[1], originalId: catalog.pipes[1].id + "_ufh" });
-                    pipe5.alts = [catalog.metal_plastic_pipes[0]];
-                    addToBill(pipe5, q5, this.getDesc('ufh_pipe', tpMeters), grpPipe);
-                }
-                if (q1) {
-                    let pipe1 = asCoilPrice({ ...catalog.pipes[0], originalId: catalog.pipes[0].id + "_ufh" });
-                    pipe1.alts = [catalog.metal_plastic_pipes[0]];
-                    addToBill(pipe1, q1, this.getDesc('ufh_pipe', tpMeters), grpPipe);
-                }
-            }
+            // Труба петли: типоразмер выбран в таблице замены, бухты тянутся за ним.
+            // Набираем длинными бухтами, остаток — сотнями; у стабильной бухта одна.
+            const _up = this.ufhPipe();
+            const _coils = _up.coils.map(id => this._ufhCoil(id)).filter(Boolean)
+                .sort((a, b) => (b.len || 100) - (a.len || 100));
+            const _upAlts = this._ufhPipeAlts(_up);
+            let _left = tpMeters;
+            _coils.forEach((c, ci) => {
+                const _len = c.len || 100;
+                const _last = (ci === _coils.length - 1);
+                const _q = _last ? Math.ceil(_left / _len) : Math.floor(_left / _len);
+                if (!(_q > 0)) return;
+                _left -= _q * _len;
+                const _it = asCoilPrice({ ...c, originalId: c.id + "_ufh" });
+                _it.alts = _upAlts;
+                addToBill(_it, _q, this.getDesc('ufh_pipe', tpMeters), grpPipe);
+            });
             // #18: ТРАНЗИТНАЯ ТРАССА до коллектора тёплого пола 2-го этажа.
             // Петли ТП (выше) считаются только по площади обогрева и не включают подводку от
             // котельной к самому коллектору. У коллектора 1-го этажа он рядом с котельной, а вот
@@ -36349,10 +36958,16 @@ const app = {
                 const _transitM = Math.ceil(_oneWay * 2 * 1.1);        // подача+обратка, +10% запас
                 this._ufhTransitMeters = _transitM;                    // для монтажных работ (см. блок 1.4)
                 const _isMpUfh = (this.state.ufhPipeMaterial === 'metal_plastic');
-                // Транзит несёт нагрузку всего этажа, поэтому диаметр больше петлевого 16-го.
-                const _trBase = _isMpUfh
-                    ? (catalog.metal_plastic_pipes || []).find(x => x.id === 'SPM-0001-052630')
-                    : (catalog.rad_pipes_grey || []).find(x => x.id === 'SPX-0001-002535');
+                // Транзит несёт нагрузку всего этажа, поэтому диаметр больше петлевого
+                // 16-го и подобран по скорости (ufhTransitPick), а не назначен раз и
+                // навсегда: на большой площади 25х3.5 даёт полтора метра в секунду.
+                const _trMan = (this._ufhBal && this._ufhBal.mans.find(m => m.tr)) || null;
+                const _trPick = _trMan ? _trMan.tr : null;
+                const _trPool = _isMpUfh ? (catalog.metal_plastic_pipes || []) : (catalog.rad_pipes_grey || []);
+                const _trBase = (_trPick && _trPool.find(x => x.id === _trPick.id))
+                    || (_isMpUfh
+                        ? _trPool.find(x => x.id === 'SPM-0001-052630')
+                        : _trPool.find(x => x.id === 'SPX-0001-002535'));
                 if (_trBase && _transitM > 0) {
                     const _trCoils = Math.ceil(_transitM / (_trBase.len || 50));
                     const _trItem = asCoilPrice({ ..._trBase, originalId: 'ufh_transit_f2' });
@@ -36367,12 +36982,19 @@ const app = {
                         `<b>Зачем:</b> Транзитная трасса от котельной (насосной группы) до коллектора тёплого пола 2-го этажа. Петли ТП считаются отдельно (по площади обогрева либо по укладке с планов) и подъём на этаж в себя не включают.<br>` +
                         `<b>Формула:</b> (высота 1-го этажа + 1 м на обвязку + √площади ТП 2-го этажа) × 2 (подача и обратка) × 1,1 (запас).<br>` +
                         `<b>Подставленные значения:</b> (${_h1} + 1 + ${_horiz.toFixed(1)}) × 2 × 1,1 ≈ <b>${_transitM} м</b> → ${_trCoils} бухт(ы) по ${_trBase.len || 50} м.<br>` +
-                        `<b>Диаметр:</b> больше петлевого 16 мм — трасса несёт нагрузку всего этажа.` +
+                        `<b>Диаметр:</b> трасса несёт расход всего этажа, поэтому он больше петлевого 16-го и подбирается по скорости.` +
+                        (_trMan
+                            ? `<br><b>Проверка:</b> расход этажа ${_trMan.trFlow.toFixed(2)} м³/ч, внутренний Ø ${String(_trPick.dIn * 1000).replace('.', ',')} мм → скорость <b>${_trMan.trV.toFixed(2)} м/с</b> (предел ${String(this.UFH_TRANSIT_V_MAX).replace('.', ',')} м/с для жилых зданий, СП 60.13330.2020), потери на трассе ${_trMan.trDp.toFixed(1).replace('.', ',')} кПа — они входят в напор насоса группы.`
+                            : '') +
                         `</span>`, grpPipe);
                 }
             }
             };
             let loops = 0, mans = 0, mansNoFitting = 0;
+            // Сквозной номер коллектора ТП: тот же порядок, в котором их считает
+            // ufhCalc (сначала 1-й этаж, потом 2-й), — по нему к строке коллектора
+            // подцепляется его таблица настройки расходомеров.
+            let _ufhManIdx = 0;
             // Насосно-смесительный узел ('std') крепится прямо на коллектор ТП, то есть живёт
             // в его шкафу. В обычные 120 мм глубины он не убирается — нужен ШРН-180. Узел на
             // систему один, поэтому углубляем только первый шкаф.
@@ -36386,15 +37008,29 @@ const app = {
                 if (l <= 0) return;
                 loops += l;
                 let n = Math.ceil(l / 12);
+                // Размеры гребёнок этажа. Одинаковые сливаются в смете в одну строку
+                // с количеством, поэтому таблицу расходомеров за всю такую группу
+                // отдаём её первой строке — иначе петли второго коллектора негде
+                // посмотреть. Размеры идут по убыванию, группа всегда подряд.
+                const _szs = [];
+                for (let i = 0; i < n; i++) _szs.push(Math.floor(l / n) + (i < (l % n) ? 1 : 0));
+                const _manBase = _ufhManIdx;
                 for (let i = 0; i < n; i++) {
-                    let sz = Math.floor(l / n) + (i < (l % n) ? 1 : 0);
+                    let sz = _szs[i];
                     let stdM = catalog.manifolds.find(x => x.loops === sz);
                     if (stdM) {
                         let swapVal = this.state.swaps && this.state.swaps[stdM.id];
                         let defaultM = catalog.manifolds_full_kit.find(x => x.loops === sz) || catalog.manifolds_full_kit[catalog.manifolds_full_kit.length - 1];
                         let mSel = (swapVal && this.findManifoldVariant(swapVal)) || defaultM || stdM;
                         let dispLoops = mSel.loops || sz;
-                        addToBill({ ...mSel, originalId: stdM.id, name: `Коллектор ТП ${dispLoops} вых (${lbl})` }, 1, this.getDesc('manifold', dispLoops, 'ufh'), grpPipe);
+                        // Первая гребёнка своей группы одинаковых несёт таблицу за всю группу
+                        const _same = (i > 0 && _szs[i - 1] === sz) ? null
+                            : _szs.map((x, j) => (x === sz ? _manBase + j : -1)).filter(j => j >= 0);
+                        // sortRank: -1 — коллектор открывает подраздел независимо от суммы:
+                        // бухты трубы почти всегда дороже, и без ранга главная позиция узла
+                        // уезжала вниз, под трубу и шкаф.
+                        addToBill({ ...mSel, originalId: stdM.id, sortRank: -1, name: `Коллектор ТП ${dispLoops} вых (${lbl})` }, 1,
+                            this.getDesc('manifold', dispLoops, 'ufh') + (_same ? this.ufhFlowTableHtml(_same) : ''), grpPipe);
                         mans++;
 
                         _ufhCabIdx++;
@@ -36411,13 +37047,18 @@ const app = {
                         let mAttrs = this.manifoldAttrsFor(mSel.id);
                         if (mAttrs.airVent === 'none' && !mAttrs.drainValve) mansNoFitting++;
                     }
+                    // Счётчик двигаем и тогда, когда гребёнки такого размера в каталоге
+                    // не нашлось: иначе следующий коллектор получил бы чужую таблицу.
+                    _ufhManIdx++;
                 }
             };
             proc(this.state.tp1, tpF1, "1 этаж");
             proc(this.state.floors === 2 ? this.state.tp2 : 0, tpF2, "2 этаж");
             addUfhPipes();
             if (mansNoFitting > 0) addToBill(catalog.parts[0], mansNoFitting * 2, "Концевые фитинги.", grpPipe);
-            addEurocone(catalog.parts[3], loops * 2, "Евроконус 16 (ТП).", grpPipe); addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.", grpPipe);
+            // Евроконус идёт под стенку трубы: обжимное кольцо у 2,0 и 2,2 мм разное.
+            const _ufhEuro = catalog.parts.find(x => x.id === this.ufhPipe().euro) || catalog.parts[3];
+            addEurocone(_ufhEuro, loops * 2, `Евроконус под трубу ${this.ufhPipe().short} (ТП). По два на петлю — подача и обратка.`, grpPipe); addToBill(catalog.parts[2], loops * 2, "Фиксатор 90°.", grpPipe);
             addToBill(catalog.protective_sleeves[0], loops, "Втулка красная.", grpPipe); addToBill(catalog.protective_sleeves[1], loops, "Втулка синяя.", grpPipe); addToBill(catalog.label_kits[1], 1, "Наклейки.", grpPipe);
             let grpIns = "4.2. УТЕПЛИТЕЛЬ И КРЕПЁЖ";
 
@@ -36477,6 +37118,30 @@ const app = {
                 warn = (warn ? warn + '<br><br>' : '') +
                     `📐 <b>Труба и коллектор — по планам этажей.</b><br>` + _planNote.join('<br>') +
                     `<br><span style="font-weight:500;">Те же длины и номера петель стоят в таблице на листе «Тёплый пол».</span>`;
+            }
+            // Балансировка: без неё смонтированный пол греет как попало — ближние
+            // петли забирают весь расход, дальние стоят холодные. Полная таблица
+            // по петлям висит в подсказке своего коллектора, здесь — итог, чтобы
+            // монтажник увидел цифры, не открывая подсказок.
+            const _bal = this._ufhBal;
+            if (_bal && _bal.mans.length) {
+                const _n1 = v => v.toFixed(1).replace('.', ',');
+                const _lines = _bal.mans.map(m => {
+                    const lo = Math.min.apply(null, m.rows.map(r => r.flow));
+                    const hi = Math.max.apply(null, m.rows.map(r => r.flow));
+                    const per = (hi - lo < 0.05)
+                        ? `по <b>${_n1(hi)} л/мин</b> на каждую`
+                        : `от <b>${_n1(lo)}</b> до <b>${_n1(hi)} л/мин</b>`;
+                    return `• ${m.label}: ${m.outlets} ${this.plural(m.outlets, 'петля', 'петли', 'петель')}, ${per}, ` +
+                        `итого ${_n1(m.rows.reduce((a, r) => a + r.flow, 0))} л/мин (${m.flow.toFixed(2)} м³/ч).`;
+                }).join('<br>');
+                warn = (warn ? warn + '<br><br>' : '') +
+                    `🔧 <b>Настройка расходомеров (балансировка).</b><br>` + _lines +
+                    `<br><span style="font-weight:500;">Расход считан при перепаде ${_bal.dT} К ` +
+                    `(подача ${this.UFH_SUPPLY} / обратка ${this.UFH_SUPPLY - _bal.dT} °C), ` +
+                    `труба ${this.ufhPipe().label} — внутренний Ø ${String(this.ufhPipe().dIn * 1000).replace('.', ',')} мм. ` +
+                    `Петля с петлёй по номерам и метрам — в подсказке «i» строки коллектора.</span>` +
+                    (_bal.notes.length ? `<br><span style="font-weight:500;">` + _bal.notes.map(x => '• ' + x).join('<br>') + `</span>` : '');
             }
             flushBill("4. Водяной тёплый пол", warn);
         }
@@ -36993,9 +37658,13 @@ const app = {
                 let needed = totalHotPoints, q4 = Math.floor(needed / 4), rem = needed % 4, q3 = 0, q2 = 0;
                 if (rem === 3) q3 = 1; else if (rem === 2) q2 = 1; else if (rem === 1) { if (q4 > 0) { q4--; q3 = 1; q2 = 1 } else { q2 = 1 } }
                 let descColl = this.getDesc('manifold', totalHotPoints, recirc ? 'hw_recirc' : 'hw_std');
-                if (q4) addToBill(getWaterManifold(catalog.water_manifolds_hot[2]), q4, descColl, grpHot);
-                if (q3) addToBill(getWaterManifold(catalog.water_manifolds_hot[1]), q3, descColl, grpHot);
-                if (q2) addToBill(getWaterManifold(catalog.water_manifolds_hot[0]), q2, descColl, grpHot);
+                // sortRank: -1 — коллектор открывает подраздел независимо от суммы: трубы,
+                // изоляция и крепёж набегают дороже гребёнки, и без ранга главная позиция
+                // узла уезжала вниз. Гребёнок на ГВС бывает несколько (4+3+2 выхода) —
+                // ранг у всех, между собой они встают по сумме и идут подряд.
+                if (q4) addToBill({ ...getWaterManifold(catalog.water_manifolds_hot[2]), sortRank: -1 }, q4, descColl, grpHot);
+                if (q3) addToBill({ ...getWaterManifold(catalog.water_manifolds_hot[1]), sortRank: -1 }, q3, descColl, grpHot);
+                if (q2) addToBill({ ...getWaterManifold(catalog.water_manifolds_hot[0]), sortRank: -1 }, q2, descColl, grpHot);
                 addEurocone(waterEurocone, totalHotPoints, this.getDesc('eurocone_water', totalHotPoints), grpHot);
                 _addManifoldEnd('ГВС', 'hw', grpHot);
                 // Крепление коллектора ГВС

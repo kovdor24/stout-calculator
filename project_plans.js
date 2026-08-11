@@ -181,7 +181,19 @@
   // помещение и обратно, без стыков и обрывов.
 
   var CELL_DIV = 2;         // клетка растра = шаг/2
-  var MAX_LOOP_M = 100;     // предел длины одной петли 16×2,0 мм
+  var MAX_LOOP_M = 100;     // предел длины одной петли 16×2,0 мм — запасное значение
+
+  /**
+   * Предел длины петли, м. Считает его смета (app.ufhLoopMax) — там известны и
+   * труба, и шаг, и допустимые потери. Лист и смета обязаны показывать одну и
+   * ту же укладку, поэтому предел у них общий, а не свой у каждого.
+   */
+  function loopLimit(stepMm) {
+    try {
+      if (window.app && typeof app.ufhLoopMax === 'function') return app.ufhLoopMax(stepMm);
+    } catch (e) { /* расчёт ещё не поднялся — работаем по запасному значению */ }
+    return MAX_LOOP_M;
+  }
 
   /** Маска зоны на растре: клетки, чей центр внутри полигона */
   function zoneMask(z, stepPx) {
@@ -460,7 +472,7 @@
   function floorLoops(f, stepMm, maxLenM) {
     var out = [];
     if (!f || !f.pxPerM) return out;
-    var lim = maxLenM || MAX_LOOP_M, leads = f.leads || [];
+    var lim = maxLenM || loopLimit(stepMm), leads = f.leads || [];
     (f.zones || []).forEach(function (z, i) {
       if (z.type !== 'tp' || !z.pts || z.pts.length < 3) return;
       var lead = null;
@@ -604,9 +616,17 @@
   // ═══ Расход теплоносителя по петлям ═════════════════════════════════════
   // По расходу балансируют коллектор (расходомеры на подающей гребёнке),
   // поэтому в таблице петель он стоит рядом с шагом и длиной.
-  //   G = Q / (c × ΔT),  c = 1,163 Вт·ч/(кг·°C),  ΔT = 5 °C — тот же перепад,
-  // по которому смета проверяет насосную группу и узел подмеса.
+  //   G = Q / (c × ΔT),  c = 1,163 Вт·ч/(кг·°C).
+  // Перепад ΔT берём у сметы: обычно это 5 К, но если насосу узла на таком
+  // расходе не хватает напора, расчёт принимает 7 или 10 К (app.ufhBalance).
+  // Числа на листе и в смете обязаны быть одни и те же.
   var UFH_DT = 5, UFH_C = 1.163;
+  function ufhDt() {
+    try {
+      if (window.app && app._ufhBal && app._ufhBal.dT > 0) return app._ufhBal.dT;
+    } catch (e) { /* расчёт ещё не поднялся — работаем по обычным 5 К */ }
+    return UFH_DT;
+  }
 
   /** Предельная теплоотдача пола при шаге укладки, Вт/м² (СП 60.13330.2020) */
   function qUdeFor(stepMm) {
@@ -615,7 +635,7 @@
 
   /** Расход петли, л/мин: Q в ваттах → кг/ч → литры в минуту */
   function flowLmin(qW) {
-    return qW / (UFH_C * UFH_DT) / 60;
+    return qW / (UFH_C * ufhDt()) / 60;
   }
 
   /** Число с одним знаком и запятой — как принято на чертежах */
@@ -676,7 +696,7 @@
    */
   function loopRows(f, stepMm, rooms) {
     var out = [], no = 0, zno = 0;
-    floorLoops(f, stepMm, MAX_LOOP_M).forEach(function (Z) {
+    floorLoops(f, stepMm, loopLimit(stepMm)).forEach(function (Z) {
       var k = Z.loops.length;
       var zName = Z.name || 'зона ' + (++zno);
       // мощность зоны делится между её петлями поровну — как и площадь
@@ -986,11 +1006,11 @@
     var ny = Ty + all.length * rh + 5;
     o.push(txt(Lx, ny, 'Длины петель — по нарисованной укладке (подача и обратка' +
       (anyLead ? ', подводки' : '') + ');', { size: 3.0 }));
-    o.push(txt(Lx, ny + 4, 'петля длиннее ' + MAX_LOOP_M +
+    o.push(txt(Lx, ny + 4, 'петля длиннее ' + loopLimit(stepMm) +
       ' м разделена; эти же длины и число петель — в смете.', { size: 3.0 }));
     // Расход: по нему выставляют расходомеры на подающей гребёнке, поэтому
     // рядом с таблицей объясняем, из чего он получен, и даём сумму по этажу.
-    o.push(txt(Lx, ny + 8, 'Расход G = Q / (c × ΔT) при ΔT = ' + UFH_DT + ' °C, ' +
+    o.push(txt(Lx, ny + 8, 'Расход G = Q / (c × ΔT) при ΔT = ' + ufhDt() + ' °C, ' +
       'c = ' + String(UFH_C).replace('.', ',') + ' Вт·ч/(кг·°C);', { size: 3.0 }));
     o.push(txt(Lx, ny + 12, 'Q — ' + (byLoss ? 'теплопотери помещения, но не выше' : 'по площади зоны и') +
       ' ' + qUdeFor(stepMm) + ' Вт/м² (шаг ' + stepMm + ' мм).', { size: 3.0 }));
@@ -1310,7 +1330,7 @@
     if (vec) o.push(axesBody(f, t, SUM_PLAN));       // оси и размеры — по контурам стен
 
     // 1) тёплый пол — та же укладка, что на профильном листе, но тоньше
-    floorLoops(f, stepMm, MAX_LOOP_M).forEach(function (Z) {
+    floorLoops(f, stepMm, loopLimit(stepMm)).forEach(function (Z) {
       Z.loops.forEach(function (lp) {
         if (!lp.sup) return;
         var rr2 = stepMm / 1000 * (f.pxPerM || 100) * t.s * 0.5;
@@ -1501,5 +1521,6 @@
   window.projectPlans = { sheets: sheets, waterSheets: waterSheets, iso3dSheets: iso3dSheets,
     boilerRoom: boilerRoom, layZone: layZone, layZoneLoops: layZoneLoops,
     floorLoops: floorLoops, loopRows: loopRows, num1: num1,
-    UFH_DT: UFH_DT, UFH_C: UFH_C, MAX_LOOP_M: MAX_LOOP_M };
+    UFH_DT: UFH_DT, ufhDt: ufhDt, UFH_C: UFH_C,
+    MAX_LOOP_M: MAX_LOOP_M, loopLimit: loopLimit };
 })();
