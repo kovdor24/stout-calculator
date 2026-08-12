@@ -4147,6 +4147,16 @@ const app = {
         return !(u.lastName && u.givenName && u.middleName && u.phone && u.birthDate && u.region && u.city && u.activityTypes && u.activityTypes.length);
     },
 
+    // Телефон в профиле заполнен? Считаем цифры, а не длину строки: из формы номер
+    // приходит с маской («+7 (953) 004-43-33», 18 символов), а из базы и от Яндекс ID /
+    // Google / Telegram — без неё («+79530044333», 12 символов). Проверка на длину строки
+    // отправляла таких пользователей в круг: печать/счёт/ссылка просили дозаполнить анкету,
+    // а сохранение анкеты ничего не меняло — номер и так был корректным.
+    // 11 цифр — номер с кодом страны, 10 — без него (старые записи).
+    isPhoneFilled: function (phone) {
+        return String(phone || '').replace(/\D/g, '').length >= 10;
+    },
+
     // История жизненного цикла сметы для админки (вкладка со статусами, как в CRM):
     // расчитано → сохранено → отправлено → распечатано → запрошен счёт → одобрено/отклонено.
     // Пишем в фоне, не блокируя основной поток и не показывая пользователю ошибок,
@@ -7459,7 +7469,13 @@ const app = {
         // его целиком в поле "Имя", чтобы не оставлять форму пустой для уже существующих аккаунтов
         document.getElementById('profile_first_name_input').value = tgUser.givenName || tgUser.first_name || tgUser.username || '';
         document.getElementById('profile_middle_name_input').value = tgUser.middleName || '';
-        document.getElementById('profile_phone_input').value = tgUser.phone || '';
+        const profilePhoneEl = document.getElementById('profile_phone_input');
+        profilePhoneEl.value = tgUser.phone || '';
+        // Номер от Яндекс ID / Google / Telegram приходит без маски («+79530044333»).
+        // Маска вешается на ввод, поэтому нетронутое поле сохранялось бы как есть и в
+        // печатной смете телефон выглядел бы иначе, чем у введённых вручную. Приводим
+        // к общему виду сразу при открытии анкеты (только российские 11-значные номера).
+        if (/^[78]\d{10}$/.test(profilePhoneEl.value.replace(/\D/g, ''))) this.maskPhone(profilePhoneEl);
         document.getElementById('profile_birth_date_input').value = tgUser.birthDate || '';
         this.setBirthDateRange(document.getElementById('profile_birth_date_input'));
         document.getElementById('profile_region_input').value = tgUser.region || '';
@@ -8747,8 +8763,16 @@ const app = {
                     // хранения (90 дней), и на первом заходе список утонул бы в старых ответах.
                     if (isAdmin) {
                         const replyCutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
+                        // Наблюдателю — только ответы на его собственные письма: чужая
+                        // переписка монтажника с администрацией его не касается, а
+                        // раньше она приходила ему уведомлениями (сообщения с
+                        // recipient_id = null видит любой сотрудник).
+                        const onlyMine = uRow.account_type === 'viewer'
+                            && !this.SUPER_ADMIN_EMAILS.includes((uRow.email || '').toLowerCase());
+                        const myMsgIds = new Set(parentMessages.filter(m => m.sender_id === uRow.id).map(m => m.id));
                         const freshReplies = replies.filter(r => r.sender_id && r.sender_id !== uRow.id
-                            && new Date(r.created_at).getTime() > replyCutoff);
+                            && new Date(r.created_at).getTime() > replyCutoff
+                            && (!onlyMine || (r.parent_id && myMsgIds.has(r.parent_id))));
                         if (freshReplies.length) {
                             // Имена отправителей запрашиваем один раз за сеанс и держим в памяти:
                             // опрос уведомлений идёт часто, дёргать за ними базу каждый раз незачем
@@ -9760,6 +9784,9 @@ const app = {
         this.closeNotificationsModal();
         this._adminTab = 'messages';
         this._adminChatId = userId;
+        // Ответ может лежать не в вашей переписке, а в переписке наблюдателя с этим
+        // же монтажником — нужную нить найдёт по id сообщения сама renderAdminMessages
+        this._adminChatFindMsg = notifId || null;
         this._adminChatOpen = true;
         this.showAdminModal();
         this.fetchNotifications();
@@ -10627,8 +10654,10 @@ const app = {
                 // Это одна короткая строка-адрес на человека (сотня байт), картинки
                 // лежат не в Supabase, а на стороне Google/Яндекса/Telegram, поэтому
                 // на расход трафика базы это практически не влияет.
+                // account_type — чтобы отличить письмо наблюдателя от письма
+                // администрации и развести их по разным перепискам (renderAdminMessages).
                 let { data } = await supabaseClient.from('users')
-                    .select('id, username, email, phone, region, city, avatar_url')
+                    .select('id, username, email, phone, region, city, avatar_url, account_type')
                     .order('username', { ascending: true });
                 allUsersDropdown = data || [];
                 this.autoCleanupDatabaseUsers(allUsersDropdown);
@@ -11808,6 +11837,16 @@ const app = {
     // показываются по очереди (класс chat-open, см. .admin-chat-* в style.css).
     renderAdminMessages: function () {
         const isViewer = this.getAdminRole() === 'viewer';
+        // Свой id в таблице пользователей: по нему отделяем свои переписки от чужих.
+        // Обычно его уже заполнил опрос уведомлений, но если нет — спрашиваем базу
+        // и рисуем вкладку заново (один раз, иначе при неудаче получился бы цикл).
+        const meId = (this._meRow && this._meRow.id) || (this._currentUserRow && this._currentUserRow.id) || null;
+        if (!meId && !this._adminSelfAsked) {
+            this._adminSelfAsked = true;
+            this.resolveMeRow().then(row => {
+                if (row && row.id && this._adminTab === 'messages') this.renderAdminMessages();
+            });
+        }
         const dropdownUsers = this.adminData.allUsersDropdown || [];
         const messages = this.adminData.messages || [];
         const receipts = this.adminData.messageReceipts || [];
@@ -11905,7 +11944,7 @@ const app = {
         };
 
         // Раскладываем сообщения по диалогам: объявления — отдельная «нить», личные
-        // письма и ответы монтажника — нить на каждого человека
+        // письма и ответы монтажника — нить на каждую пару «монтажник ⇄ наш сотрудник».
         const parentMsgs = messages.filter(m => m.type !== 'reply');
         const replies = messages.filter(m => m.type === 'reply');
         const findUser = (id) => dropdownUsers.find(u => u.id === id);
@@ -11914,16 +11953,49 @@ const app = {
             .map(m => Object.assign({ __from: 'admin' }, m))
             .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
+        // Кто из наших ведёт переписку. Владелец и администраторы — одна сторона
+        // ('adm'): их письма монтажнику лежат в общей переписке, как и раньше.
+        // У каждого наблюдателя сторона своя — его переписка с монтажником это
+        // отдельный диалог. Раньше все письма сваливались в одну нить и чужой ответ
+        // выглядел как своё сообщение: синий пузырь справа, будто переписку ведёте вы.
+        const staffSide = (senderId, senderName) => {
+            const u = findUser(senderId);
+            const email = ((u && u.email) || '').toLowerCase();
+            if (email && this.SUPER_ADMIN_EMAILS.includes(email)) return 'adm';
+            if (u && u.account_type) return u.account_type === 'viewer' ? 'v:' + senderId : 'adm';
+            // Строки пользователя нет (например, аккаунт удалён) — судим по подписи:
+            // её проставляют только письмам наблюдателя (см. sendAdminMessage)
+            return senderName ? 'v:' + senderId : 'adm';
+        };
+        const mySide = isViewer && meId ? 'v:' + meId : 'adm';
+
         const groups = {};
-        parentMsgs.filter(m => m.type === 'private').forEach(m => {
-            const uid = m.recipient_id;
-            if (!groups[uid]) groups[uid] = { userId: uid, user: findUser(uid), items: [] };
-            groups[uid].items.push(Object.assign({ __from: 'admin' }, m));
-        });
+        const groupFor = (installerId, side) => {
+            const key = installerId + '|' + side;
+            if (!groups[key]) groups[key] = { key, userId: installerId, side, user: findUser(installerId), items: [] };
+            return groups[key];
+        };
+        const msgSide = {};      // id письма -> сторона отправителя (для привязки ответов)
+        const sentToUser = {};   // монтажник -> [{ t, side }] по времени, для ответов без родителя
+        parentMsgs.filter(m => m.type === 'private')
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+            .forEach(m => {
+                const side = staffSide(m.sender_id, m.sender_name);
+                msgSide[m.id] = side;
+                (sentToUser[m.recipient_id] = sentToUser[m.recipient_id] || []).push({ t: new Date(m.created_at).getTime(), side });
+                groupFor(m.recipient_id, side).items.push(Object.assign({ __from: 'admin', __side: side }, m));
+            });
         replies.forEach(r => {
-            const uid = r.sender_id;
-            if (!groups[uid]) groups[uid] = { userId: uid, user: findUser(uid), items: [] };
-            groups[uid].items.push(Object.assign({ __from: 'user' }, r));
+            // Ответ монтажника адресован тому, кому он отвечает: сторону берём у
+            // письма-родителя. Родителя могли удалить — тогда parent_id пустой
+            // (см. sendUserReply), и ответ достаётся тому, кто писал последним.
+            let side = r.parent_id ? msgSide[r.parent_id] : null;
+            if (!side) {
+                const t = new Date(r.created_at).getTime();
+                const before = (sentToUser[r.sender_id] || []).filter(x => x.t <= t);
+                side = before.length ? before[before.length - 1].side : 'adm';
+            }
+            groupFor(r.sender_id, side).items.push(Object.assign({ __from: 'user', __side: side }, r));
         });
         Object.values(groups).forEach(g => g.items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
 
@@ -11932,21 +12004,42 @@ const app = {
         // В базе для этого ничего нет: сообщения монтажников читает только админ,
         // и заводить ради счётчика ещё одну таблицу с квитанциями незачем.
         const seenMap = this.adminChatSeen();
-        const adminThreads = Object.values(groups).map(g => {
+        // Наблюдателю показываем только его собственные переписки. Пока свой id не
+        // определился, чужие нити не показываем вовсе: лучше пустой список на секунду,
+        // чем чужая переписка на экране.
+        const adminThreads = Object.values(groups).filter(g => {
+            if (!isViewer) return true;
+            return !!meId && g.side === mySide;
+        }).map(g => {
+            const mine = g.side === mySide;
             const name = userName(g.user, g.userId);
             const last = g.items[g.items.length - 1];
+            // Подпись автора чужой нити берём из самого письма (её ставит sendAdminMessage),
+            // а если подписи нет — из справочника пользователей по id стороны
+            const staffId = g.side.indexOf('v:') === 0 ? g.side.slice(2) : null;
+            const signed = g.items.find(i => i.__from === 'admin' && i.sender_name);
+            const staffName = staffId
+                ? ((signed && signed.sender_name) || userName(findUser(staffId), staffId))
+                : 'Администрация';
             // Зелёный кружок в списке — сообщения монтажника, которых вы ещё не читали.
             // Раньше считались все подряд идущие сообщения без вашего ответа, поэтому
             // счётчик висел и на открытом, уже прочитанном диалоге — пока не ответишь.
+            // В чужой нити счётчика нет: отвечать в неё всё равно нельзя.
             const seenAt = seenMap[g.userId] ? new Date(seenMap[g.userId]).getTime() : 0;
             let pending = 0;
-            for (let i = g.items.length - 1; i >= 0 && g.items[i].__from === 'user'; i--) {
-                if (new Date(g.items[i].created_at).getTime() > seenAt) pending++;
+            if (mine) {
+                for (let i = g.items.length - 1; i >= 0 && g.items[i].__from === 'user'; i--) {
+                    if (new Date(g.items[i].created_at).getTime() > seenAt) pending++;
+                }
             }
             return {
-                id: g.userId, kind: 'admin', name, user: g.user, items: g.items, last, pending,
-                awaiting: !!last && last.__from === 'user',
-                search: ([name, g.user && g.user.email, g.user && g.user.phone, g.user && g.user.region, g.user && g.user.city]
+                id: mine ? g.userId : 'staff:' + g.userId + ':' + g.side,
+                kind: mine ? 'admin' : 'staff',
+                installerId: g.userId, instName: name, mgrName: staffName,
+                name: mine ? name : `${name} ⇄ ${staffName}`,
+                user: g.user, items: g.items, last, pending,
+                awaiting: mine && !!last && last.__from === 'user',
+                search: ([name, mine ? '' : staffName, g.user && g.user.email, g.user && g.user.phone, g.user && g.user.region, g.user && g.user.city]
                     .filter(Boolean).join(' ') + ' ' + g.items.map(i => i.text || '').join(' ')).toLowerCase()
             };
         });
@@ -11955,7 +12048,12 @@ const app = {
         // RLS (20260712_add_manager_chat_messages.sql) разрешает ему только чтение, поэтому
         // такая нить открывается на просмотр, без поля ввода. Ключ нити — 'mgr:монтажник:менеджер'.
         const mgrGroups = {};
-        (this.adminData.managerChats || []).forEach(m => {
+        (this.adminData.managerChats || []).filter(m => {
+            // Наблюдателю — только те, где он сам и есть менеджер (или монтажник):
+            // чужая переписка дистрибьютора с монтажником его не касается
+            if (!isViewer) return true;
+            return !!meId && (m.manager_user_id === meId || m.installer_user_id === meId);
+        }).forEach(m => {
             const key = 'mgr:' + m.installer_user_id + ':' + m.manager_user_id;
             if (!mgrGroups[key]) mgrGroups[key] = { id: key, installerId: m.installer_user_id, managerId: m.manager_user_id, items: [] };
             mgrGroups[key].items.push(Object.assign({ __from: m.sender_user_id === m.manager_user_id ? 'manager' : 'installer' }, m));
@@ -11981,6 +12079,15 @@ const app = {
         // В допустимые id входят и люди без переписки: их выбирают в блоке «Написать впервые»,
         // и без этого выбор тут же сбрасывался на первый диалог — клик по найденному человеку
         // выглядел так, будто он ничего не делает.
+        // Пришли из уведомления «Ответ монтажника»: открываем ту нить, где это
+        // сообщение и лежит — оно может оказаться в переписке наблюдателя
+        if (this._adminChatFindMsg) {
+            const want = String(this._adminChatFindMsg);
+            const holder = threads.find(t => t.items.some(i => String(i.id) === want));
+            if (holder) this._adminChatId = holder.id;
+            this._adminChatFindMsg = null;
+        }
+
         const allIds = ['broadcast', 'notifications'].concat(threads.map(t => t.id)).concat(dropdownUsers.map(u => u.id));
         if (!this._adminChatId || allIds.indexOf(this._adminChatId) === -1) {
             this._adminChatId = threads.length ? threads[0].id : 'broadcast';
@@ -12028,18 +12135,20 @@ const app = {
             </div>
         `;
         threads.forEach(t => {
-            const isMgr = t.kind === 'manager';
+            // Чужая переписка — и с менеджером дистрибьютора, и наблюдателя с монтажником:
+            // отмечена серым значком ⇄, а в строке видно, кто именно её ведёт
+            const isForeign = t.kind === 'manager' || t.kind === 'staff';
             let prev = '';
             if (t.last) {
-                const who = isMgr
-                    ? (t.last.__from === 'manager' ? t.mgrName : t.instName) + ': '
+                const who = isForeign
+                    ? (t.last.__from === 'manager' || t.last.__from === 'admin' ? t.mgrName : t.instName) + ': '
                     : (t.last.__from === 'admin' ? 'Вы: ' : '');
                 prev = who + (t.last.text || '').replace(/\s+/g, ' ');
             }
             listHtml += `
                 <div class="admin-chat-item ${activeId === t.id ? 'active' : ''}" data-search="${esc(t.search)}" onclick="app.openAdminChat('${t.id}')">
-                    ${isMgr
-                    ? `<div class="admin-chat-ava" style="background:#64748B;" title="Переписка монтажника с менеджером">⇄</div>`
+                    ${isForeign
+                    ? `<div class="admin-chat-ava" style="background:#64748B;" title="${t.kind === 'staff' ? 'Переписка наблюдателя с монтажником' : 'Переписка монтажника с менеджером'}">⇄</div>`
                     : avaHtml(t.user, t.name)}
                     <div class="admin-chat-item-body">
                         <div class="admin-chat-item-row"><span class="admin-chat-name">${esc(t.name)}</span><span class="admin-chat-time">${t.last ? listTime(t.last.created_at) : ''}</span></div>
@@ -12073,17 +12182,27 @@ const app = {
         const isBroadcastChat = activeId === 'broadcast';
         const activeThread = threads.find(t => t.id === activeId);
         const isMgrChat = !!activeThread && activeThread.kind === 'manager';
-        const activeUser = activeThread && !isMgrChat && !isNotifChat ? activeThread.user : ((isMgrChat || isNotifChat) ? null : findUser(activeId));
+        // Переписка наблюдателя с монтажником: админу видна, но только на чтение —
+        // писать в чужой диалог нельзя, иначе монтажник получает ответ «от того же
+        // человека», а на деле отвечают двое разных
+        const isStaffChat = !!activeThread && activeThread.kind === 'staff';
+        const isForeignChat = isMgrChat || isStaffChat;
+        const activeUser = activeThread && !isForeignChat && !isNotifChat ? activeThread.user : ((isForeignChat || isNotifChat) ? null : findUser(activeId));
         const chatName = isNotifChat ? 'Уведомления и статусы смет'
-            : (isBroadcastChat ? 'Объявления для всех' : (isMgrChat ? activeThread.name : userName(activeUser, activeId)));
+            : (isBroadcastChat ? 'Объявления для всех' : (isForeignChat ? activeThread.name : userName(activeUser, activeId)));
         const chatSub = isNotifChat
             ? (notifUnread ? `${notifUnread} непрочитанных из ${notifItems.length}` : (notifItems.length ? 'Все прочитаны' : 'Пока пусто'))
             : (isBroadcastChat
                 ? `${dropdownUsers.length} получателей`
                 : (isMgrChat
                     ? 'Переписка монтажника с менеджером — только просмотр'
-                    : ([activeUser && activeUser.region, activeUser && activeUser.city].filter(Boolean).join(', ') || (activeUser && (activeUser.email || activeUser.phone)) || '')));
+                    : (isStaffChat
+                        ? `Переписку ведёт ${activeThread.mgrName} — только просмотр`
+                        : ([activeUser && activeUser.region, activeUser && activeUser.city].filter(Boolean).join(', ') || (activeUser && (activeUser.email || activeUser.phone)) || ''))));
         const chatItems = isBroadcastChat ? broadcastItems : (activeThread ? activeThread.items : []);
+        // Что именно сейчас на экране — по этому списку кнопка «Удалить эту переписку»
+        // сносит ровно открытый диалог (см. deleteUserMessages)
+        this._adminChatIds = (isNotifChat || isForeignChat) ? [] : chatItems.map(m => m.id);
 
         let bodyHtml = '';
         if (isNotifChat) {
@@ -12137,15 +12256,17 @@ const app = {
                 // Кто из своих написал: письма наблюдателей подписаны именем, чтобы
                 // в общей переписке было видно, кто ответил монтажнику. Письма
                 // владельца и администраторов подписи не несут и выглядят как раньше.
-                const byName = !isUser && m.sender_name && !sameAsPrev
-                    ? `<div class="admin-chat-sender">${esc(m.sender_name)}</div>` : '';
+                // В чужой переписке подпись стоит всегда — иначе синий пузырь справа
+                // читается как своё сообщение.
+                const byName = !isUser && !sameAsPrev && (m.sender_name || isStaffChat)
+                    ? `<div class="admin-chat-sender">${esc(m.sender_name || activeThread.mgrName)}</div>` : '';
                 bodyHtml += `
                     <div class="admin-chat-bubble ${isUser ? 'from-user' : 'from-admin'}${serieCls}">
                         ${byName}
                         <div class="admin-chat-text">${esc(m.text)}<span class="admin-chat-meta">
                             <span class="admin-chat-metatime">${clockTime(m.created_at)}</span>
                             ${isUser ? '' : ticks(m, isBroadcastChat)}
-                            ${isViewer ? '' : `<span onclick="event.stopPropagation(); app.deleteAdminMessage('${m.id}')" title="Удалить сообщение" class="admin-chat-del">🗑</span>`}
+                            ${isViewer || isStaffChat ? '' : `<span onclick="event.stopPropagation(); app.deleteAdminMessage('${m.id}')" title="Удалить сообщение" class="admin-chat-del">🗑</span>`}
                         </span></div>
                     </div>
                 `;
@@ -12218,14 +12339,14 @@ const app = {
                 ? `<div class="admin-chat-ava" style="background:#3B82F6;">🔔</div>`
                 : (isBroadcastChat
                     ? `<div class="admin-chat-ava" style="background:#D97706;">📢</div>`
-                    : (isMgrChat
+                    : (isForeignChat
                         ? `<div class="admin-chat-ava" style="background:#64748B;">⇄</div>`
                         : avaHtml(activeUser, chatName)))}
                         <div style="min-width:0; flex:1;">
-                            <div class="admin-chat-headname" ${isBroadcastChat || isNotifChat ? '' : `onclick="app.openAdminUserFromMessages('${isMgrChat ? activeThread.installerId : activeId}')" title="Открыть карточку монтажника"`}>${esc(chatName)}</div>
+                            <div class="admin-chat-headname" ${isBroadcastChat || isNotifChat ? '' : `onclick="app.openAdminUserFromMessages('${isForeignChat ? activeThread.installerId : activeId}')" title="Открыть карточку монтажника"`}>${esc(chatName)}</div>
                             <div class="admin-chat-headsub" ${isBroadcastChat ? `onclick="app.toggleBroadcastRecipients()" title="Показать, кто получает объявления"` : ''}>${esc(chatSub)}${isBroadcastChat ? ` <span style="opacity:.8;">${recipientsOpen ? '▲' : '▼'}</span>` : ''}</div>
                         </div>
-                        ${isBroadcastChat || isMgrChat || isNotifChat || isViewer ? '' : `<button class="admin-chat-clear" title="Удалить эту переписку" onclick="app.deleteUserMessages('${activeId}')">🗑</button>`}
+                        ${isBroadcastChat || isForeignChat || isNotifChat || isViewer ? '' : `<button class="admin-chat-clear" title="Удалить эту переписку" onclick="app.deleteUserMessages('${activeId}')">🗑</button>`}
                     </div>
                     ${recipientsOpen ? recipientsHtml : `<div class="admin-chat-body" id="admin_chat_body">${bodyHtml}</div>`}
                     ${isNotifChat ? `
@@ -12235,8 +12356,15 @@ const app = {
                         <button class="auth-btn-base btn-email-submit" style="margin:0; max-width:150px; height:32px; font-size:12px;" onclick="app.markAllNotificationsRead()">Прочитать все</button>
                         <button class="auth-btn-base" style="margin:0; max-width:130px; height:32px; font-size:12px; background:var(--surface-light); color:var(--text-sec); border:1px solid var(--border);" onclick="app.clearAllNotifications()">Очистить всё</button>
                     </div>
-                    ` : (isMgrChat ? `
-                    <div class="admin-chat-readonly">👁 Вы смотрите чужую переписку. Написать в неё нельзя — чтобы связаться с монтажником, откройте его диалог в списке слева.</div>
+                    ` : (isForeignChat ? `
+                    <!-- Чужая переписка открыта только на чтение: писать в неё нельзя,
+                         иначе монтажнику приходят ответы «от одного человека», а на деле
+                         отвечают двое. Кнопка рядом открывает свой диалог с этим же
+                         монтажником — туда и надо писать. -->
+                    <div class="admin-chat-readonly">
+                        👁 ${isStaffChat ? `Это переписка монтажника с наблюдателем (${esc(activeThread.mgrName)})` : 'Вы смотрите чужую переписку'}. Написать в неё нельзя.
+                        <button class="admin-btn" style="height:26px; font-size:11px; margin-left:8px;" onclick="app.openAdminChat('${activeThread.installerId}')">✉️ Написать монтажнику от себя</button>
+                    </div>
                     ` : `
                     <!-- Наблюдателю переписка открыта на запись, в отличие от остальной
                          панели: смотреть на вопрос монтажника и не иметь возможности
@@ -12390,13 +12518,17 @@ const app = {
             app.alert('Режим просмотра. Удаление сообщений запрещено.');
             return;
         }
-        if (!await app.confirm('Удалить всю переписку с этим пользователем? Это необратимо.')) return;
+        // Удаляем только открытый диалог, а не всё подряд с этим монтажником: у него
+        // может быть отдельная переписка с наблюдателем, и чистить её отсюда нельзя
+        // (кнопки удаления в чужой нити нет намеренно).
+        const ids = (this._adminChatIds || []).filter(Boolean);
+        if (!ids.length) { app.alert('В этой переписке нечего удалять.'); return; }
+        if (!await app.confirm('Удалить эту переписку целиком? Это необратимо.')) return;
         try {
-            const { error } = await supabaseClient.from('messages').delete().or(`recipient_id.eq.${userId},sender_id.eq.${userId}`).neq('type', 'broadcast');
+            const { error } = await supabaseClient.from('messages').delete().in('id', ids);
             if (error) throw error;
-            this.adminData.messages = (this.adminData.messages || []).filter(m =>
-                m.type === 'broadcast' || (String(m.recipient_id) !== String(userId) && String(m.sender_id) !== String(userId))
-            );
+            const gone = new Set(ids.map(String));
+            this.adminData.messages = (this.adminData.messages || []).filter(m => !gone.has(String(m.id)));
             this.renderAdminMessages();
         } catch (e) {
             app.alert('Не удалось удалить переписку: ' + e.message);
@@ -12445,6 +12577,10 @@ const app = {
         }
         if (String(recipientVal).indexOf('mgr:') === 0) {
             app.alert('Это чужая переписка монтажника с менеджером — она открыта только на просмотр.');
+            return;
+        }
+        if (String(recipientVal).indexOf('staff:') === 0) {
+            app.alert('Это чужая переписка: её ведёт другой сотрудник, писать в неё нельзя. Откройте свой диалог с этим монтажником — кнопка «Написать монтажнику от себя».');
             return;
         }
 
@@ -19593,7 +19729,7 @@ const app = {
 
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        if (isLocal && (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16)) {
+        if (isLocal && (!tgUser || !tgUser.first_name || !this.isPhoneFilled(tgUser.phone))) {
             tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99", email: "test@installer.ru" };
         }
 
@@ -19603,7 +19739,7 @@ const app = {
             return;
         }
 
-        if (!tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16 || !tgUser.email || !tgUser.email.includes('@') || !tgUser.city) {
+        if (!tgUser.first_name || !this.isPhoneFilled(tgUser.phone) || !tgUser.email || !tgUser.email.includes('@') || !tgUser.city) {
             app.alert("Пожалуйста, укажите Ваше Имя, Телефон, Город и Email в профиле. Они необходимы для формирования ссылки для клиента.");
             this.showProfileModal();
             return;
@@ -19627,7 +19763,7 @@ const app = {
     executeShareInvoice: async function (showEq, showWorks) {
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        if (isLocal && (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16)) {
+        if (isLocal && (!tgUser || !tgUser.first_name || !this.isPhoneFilled(tgUser.phone))) {
             tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99", email: "test@installer.ru" };
         }
 
@@ -19818,11 +19954,11 @@ const app = {
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
 
         const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        if (isLocal && (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16)) {
+        if (isLocal && (!tgUser || !tgUser.first_name || !this.isPhoneFilled(tgUser.phone))) {
             tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99" };
         }
 
-        if (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16 || !tgUser.city) {
+        if (!tgUser || !tgUser.first_name || !this.isPhoneFilled(tgUser.phone) || !tgUser.city) {
             app.alert("Пожалуйста, укажите Ваше Имя, Телефон и Город в профиле. Они необходимы для формирования красивой печатной сметы.");
             this.showProfileModal();
             return;
@@ -19870,7 +20006,7 @@ const app = {
 
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        if (isLocal && (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16)) {
+        if (isLocal && (!tgUser || !tgUser.first_name || !this.isPhoneFilled(tgUser.phone))) {
             tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99" };
         }
 
@@ -20306,7 +20442,7 @@ const app = {
         console.log("[sendEmail] Функция запущенна.");
         let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
         const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        if (isLocal && (!tgUser || !tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16)) {
+        if (isLocal && (!tgUser || !tgUser.first_name || !this.isPhoneFilled(tgUser.phone))) {
             tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99", email: "test@installer.ru" };
         }
 
@@ -20317,7 +20453,7 @@ const app = {
             return;
         }
 
-        if (!tgUser.first_name || !tgUser.phone || tgUser.phone.length < 16 || !tgUser.email || !tgUser.email.includes('@') || !tgUser.city) {
+        if (!tgUser.first_name || !this.isPhoneFilled(tgUser.phone) || !tgUser.email || !tgUser.email.includes('@') || !tgUser.city) {
             console.log("[sendEmail] Неполный профиль пользователя.");
             app.alert("Пожалуйста, укажите Ваше Имя, Телефон, Город и Email в профиле. Они необходимы для отправки сметы.");
             this.showProfileModal();
