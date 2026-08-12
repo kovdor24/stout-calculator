@@ -4105,6 +4105,14 @@ const app = {
         this.render();
     },
 
+    // Показывать ли схемы. Сам переключатель у гостя спрятан (syncUI), но
+    // state.showScheme приезжает и извне — из клиентской ссылки, из сохранённого
+    // проекта, из localStorage чужого сеанса, — и тогда схемы рисовались
+    // неавторизованному. Проверяем не только флаг, но и вход.
+    schemeOn: function () {
+        return !!this.state.showScheme && !!this.state.tgUser;
+    },
+
     isPro: function () {
         let trialUntil = parseInt(localStorage.getItem('pro_trial_until')) || 0;
         let isTrialActive = trialUntil > Date.now();
@@ -16909,6 +16917,11 @@ const app = {
             if (discountBlock) discountBlock.style.display = 'none';
             if (footerBtns) footerBtns.style.display = 'none';
             if (panel3d) panel3d.style.display = 'none';
+            // Принципиальная схема лежит не внутри таблицы, а перед ней, поэтому
+            // от display:none таблицы не исчезает. Полного render() тут нет
+            // (он ниже, для 3D, и там схему снимает сам) — убираем явно.
+            const scheme = document.getElementById('dynamic_scheme');
+            if (scheme) scheme.remove();
             if (panelRec) {
                 panelRec.style.display = 'block';
                 if (typeof RecognizeUI !== 'undefined') RecognizeUI.mountInline(panelRec);
@@ -18614,7 +18627,7 @@ const app = {
         const cardScheme = document.getElementById('card_opt_scheme');
         const isPrint = actionType === 'print';
         const heatLossReady = isPrint && !!this.state.detailedRooms && !!this.state.showDetailedRoomsPanel;
-        const schemeReady = isPrint && !!this.state.showScheme;
+        const schemeReady = isPrint && this.schemeOn();
         if (cardHeatLoss) cardHeatLoss.style.display = heatLossReady ? 'flex' : 'none';
         if (cardScheme) cardScheme.style.display = schemeReady ? 'flex' : 'none';
 
@@ -33752,7 +33765,7 @@ const app = {
                 // артикула только когда она показывается — при включённой схеме. Иначе
                 // слитая строка «4 шт.» несла бы подпись первого из четырёх кранов.
                 // Схема выключена — строки схлопываются как раньше, подписи всё равно нет.
-                const _portSplit = !!(this.state.showScheme && (finalItem.portTag || undefined));
+                const _portSplit = !!(this.schemeOn() && (finalItem.portTag || undefined));
                 let existing = bill.find(x => x.id === finalItem.id &&
                     (_portSplit ? (x.group === itemGroup && x.portTag === finalItem.portTag) : (forceMerge ? true : (x.group === itemGroup && x.name === finalItem.name))));
                 if (existing) {
@@ -34258,7 +34271,7 @@ const app = {
                 // Пометка «куда какой патрубок» (обвязка бойлера). Нужна, когда
                 // монтажник сверяет смету с принципиальной схемой, поэтому видна
                 // только при включённой схеме и снимается в печати (.port-tag).
-                const portTagHtml = (i.portTag && this.state.showScheme)
+                const portTagHtml = (i.portTag && this.schemeOn())
                     ? ` <span class="port-tag no-print">(${i.portTag})</span>`
                     : '';
                 rows += `<tr ${rowStyle}${rowClass} onclick="${rowClick}"><td class="col-idx">${recSelHtml}${globalIdx++}</td>${imgCellHtml}<td class="${nameClass}" ${nameClick}>${i.name}${portTagHtml}${nameBtnHtml}${eqBadgeHtml}${swapInlineHtml}</td><td class="col-sku col-art ${showSku ? '' : 'hidden-col'}">${i.displaySku}</td><td class="col-brand">${i.brand || 'STOUT'}</td><td class="col-unit">${i.unit || 'шт'}</td><td class="col-qty">${qHtml}</td>${priceCell}${sumCell}</tr>` + locsRows;
@@ -39269,7 +39282,7 @@ const app = {
         // Очищаем старую схему и вставляем новую ПЕРЕД таблицей спецификации
         let oldScheme = document.getElementById('dynamic_scheme');
         if (oldScheme) oldScheme.remove();
-        if (this.state.viewMode === 'equipment' && this.state.showScheme) {
+        if (this.state.viewMode === 'equipment' && this.schemeOn()) {
             let tableWrapper = document.querySelector('.table-responsive');
             let schemeHtml = tableWrapper ? this.renderScheme() : '';
             if (tableWrapper && schemeHtml) {
@@ -39301,7 +39314,7 @@ const app = {
         .forEach(([rowId, marker, build, atSec]) => {
             const old = document.getElementById(rowId);
             if (old) old.remove();
-            if (this.state.viewMode !== 'equipment' || !this.state.showScheme) return;
+            if (this.state.viewMode !== 'equipment' || !this.schemeOn()) return;
             const html = build();
             if (!html) return;
             let hdrRow, secRow;
@@ -40336,7 +40349,7 @@ function prepareForPrint() {
 
         // --- ШАГ 3: СХЕМА (На отдельном листе, независимо от раздела ОБОРУДОВАНИЕ/РАБОТЫ —
         // управляется отдельным чекбоксом в окне печати) ---
-        if (showSchemeOpt && app.state.showScheme) {
+        if (showSchemeOpt && app.schemeOn()) {
             app.state.viewMode = 'equipment'; // Схема генерится только на этой вкладке
             app.render();
             let currentScheme = document.getElementById('dynamic_scheme');
