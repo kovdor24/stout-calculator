@@ -2069,7 +2069,9 @@ const catalog = {
     ball_valve_34: { id: "SVB-0004-000020", name: "Кран шаровой ВР/НР, 3/4\"", price: 1090, rommer: { id: "RBV-0004-2210220", name: "Кран шаровой ВР/НР бабочка 3/4\"", price: 497, brand: "ROMMER", availability: "on_order", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
     check_valve_34: { id: "SVC-0011-000020", name: "Клапан обратный пружинный 3/4\"", price: 1547, rommer: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 535, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-06" },
     rommer_check_valve_34: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 530, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" },
-    filter_mag: { id: "SFW-0072-000020", name: "Фильтр-шламоотделитель магнитный 3/4\"", price: 3711, rommer: { id: "RFW-0080-256620", name: "Фильтр-шламоотделитель магнитный 3/4\"", price: 2598, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" }, availability: "in_stock", price_date: "2026-06-27" },
+    // STOUT SFW-0072-000020 снят с производства: из подбора и из списка замен убран,
+    // по умолчанию ставим аналогичный ROMMER.
+    filter_mag: { id: "RFW-0080-256620", name: "Фильтр-шламоотделитель магнитный 3/4\"", price: 2598, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-29" },
     filter_mag_alts: [
         { id: "RFW-0081-000820", name: "Сепаратор шлама поворотный ВР 3/4\"",      price: 6317,  brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" },
         { id: "RFW-0081-000825", name: "Сепаратор шлама поворотный ВР 1\"",         price: 6800,  brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" },

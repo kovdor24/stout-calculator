@@ -13747,7 +13747,12 @@ const app = {
                 `;
         if (userEstimates.length > 0) {
             userEstimates.forEach((e, i) => {
-                let edate = e.created_at ? new Date(e.created_at).toLocaleDateString() : '—';
+                // С часами и минутами: за один день пользователь сохраняет несколько смет
+                // подряд, и по одной дате не понять, какая из них последняя.
+                let edate = e.created_at
+                    ? new Date(e.created_at).toLocaleDateString() + ' ' +
+                      new Date(e.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : '—';
                 let esum = e.total_sum ? e.total_sum.toLocaleString() + ' ₽' : '0 ₽';
                 let projName = e.project_name || e.name || 'Без названия';
                 h += `<tr class="active-row" style="cursor: pointer; transition: 0.2s;" onclick="app.viewAdminEstimate('${e.id}')" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">
@@ -19848,17 +19853,32 @@ const app = {
             }, 3000);
         }
 
-        // Ставим сохранение в облако (для поиска по номеру КП через "Загрузить код") в фоновую
-        // очередь с повторами безусловно, до любых попыток создать PRO-ссылку с кнопками
-        // согласования — так номер остаётся гарантированно доступен для поиска даже если
-        // именно в этот момент не удастся создать shared_invoices (сеть/сессия/VPN).
-        this.queueCloudSave(JSON.parse(JSON.stringify(this.state)), app.lastEqSum || 0, app.lastWorksSum || 0);
+        // Сохранение в облако (для поиска по номеру КП через "Загрузить код") уходит в фоновую
+        // очередь с повторами безусловно — так номер остаётся гарантированно доступен для поиска
+        // даже если именно в этот момент не удастся создать shared_invoices (сеть/сессия/VPN).
+        //
+        // Но ставим его в очередь НЕ здесь, а сразу после попытки быстрого сохранения ссылки:
+        // queue.addJob() тут же дёргает processNext(), и заливка всего состояния сметы в estimates
+        // пошла бы параллельно с быстрым сохранением, у которого всего несколько секунд бюджета.
+        // На мобильном канале два тяжёлых запроса душат друг друга, быстрое сохранение не
+        // укладывалось в таймаут — и клиенту уходила длинная офлайн-ссылка. Снимок состояния
+        // делаем сразу (как раньше), а отправку в очередь откладываем.
+        const cloudSaveSnapshot = JSON.parse(JSON.stringify(this.state));
+        const cloudSaveEqSum = app.lastEqSum || 0;
+        const cloudSaveWorksSum = app.lastWorksSum || 0;
+        let cloudSaveQueued = false;
+        const flushCloudSave = () => {
+            if (cloudSaveQueued) return;
+            cloudSaveQueued = true;
+            this.queueCloudSave(cloudSaveSnapshot, cloudSaveEqSum, cloudSaveWorksSum);
+        };
 
         // id для строки в shared_invoices генерируется на клиенте заранее (переиспользуем,
         // если он уже был создан для этого объекта раньше, чтобы ссылка при повторной
         // генерации не менялась).
         try {
-            const shareId = (this.state.shared_invoice_id && this.isValidUUID(this.state.shared_invoice_id))
+            const hasExistingShareId = !!(this.state.shared_invoice_id && this.isValidUUID(this.state.shared_invoice_id));
+            const shareId = hasExistingShareId
                 ? this.state.shared_invoice_id
                 : this.generateCustomInvoiceId();
             this.state.shared_invoice_id = shareId;
@@ -19873,16 +19893,26 @@ const app = {
             // Сначала пробуем синхронно сохранить смету в shared_invoices — тогда ссылка
             // получится короткой (?id=...) и надёжно откроется в любом мессенджере: длинные
             // ссылки с данными во фрагменте (#data=, несколько тысяч символов) Telegram и
-            // другие мессенджеры иногда обрезают или не распознают как ссылку. Ждём не
-            // больше 10с (как и фоновая очередь для той же операции): если сеть недоступна
-            // (например, у монтажника заблокирован Supabase без VPN), не задерживаем его
-            // дольше и отдаём офлайн-ссылку с данными во фрагменте — как раньше.
+            // другие мессенджеры иногда обрезают или не распознают как ссылку. Если сеть
+            // недоступна (например, у монтажника заблокирован Supabase без VPN), не
+            // задерживаем его дольше таймаута и отдаём офлайн-ссылку с данными во фрагменте.
+            //
+            // На телефоне бюджет вдвое больше: 10с хватает на Wi-Fi, но на мобильном интернете
+            // заливка сметы впритык не укладывалась, и клиенту уходила длинная ссылка.
             let shareUrl = null;
             let fastSaveReason = '';
+            const fastSaveTimeout = this.isMobileOrTablet() ? 20000 : 10000;
             try {
                 const isSaved = await withTimeout(
-                    this.saveSharedInvoiceJobToCloud({ shareId, object_info, manager_info, items, totals, tgUser: this.state.tgUser }),
-                    10000
+                    this.saveSharedInvoiceJobToCloud({
+                        shareId, object_info, manager_info, items, totals,
+                        tgUser: this.state.tgUser,
+                        // Ссылка для этого объекта создаётся впервые — записи в shared_invoices
+                        // ещё нет и статус согласования подтягивать неоткуда. Пропускаем чтение,
+                        // это минус один сетевой запрос из двух в самом узком месте.
+                        skipExistingLookup: !hasExistingShareId
+                    }),
+                    fastSaveTimeout
                 );
                 if (isSaved) {
                     shareUrl = `${baseOrigin}/invoice.html?id=${shareId}`;
@@ -19893,6 +19923,9 @@ const app = {
                 console.warn('[executeShareInvoice] Быстрое сохранение в облако не удалось, используем офлайн-ссылку:', fastSaveErr);
                 fastSaveReason = String((fastSaveErr && fastSaveErr.message) || fastSaveErr || 'Неизвестная ошибка').slice(0, 300);
             }
+
+            // Канал освободился — теперь можно ставить фоновое сохранение сметы в очередь.
+            flushCloudSave();
 
             if (!shareUrl) {
                 const localUrl = await this.generateLocalShareLink(object_info, manager_info, items, totals);
@@ -19922,6 +19955,9 @@ const app = {
             console.error('[shareInvoice] Ошибка генерации ссылки:', err);
             app.alert("Произошла ошибка при создании ссылки: " + err.message);
         } finally {
+            // Страховка: если что-то упало до строки с flushCloudSave(), смета всё равно уйдёт
+            // в фоновую очередь — номер КП должен оставаться доступным для "Загрузить код".
+            flushCloudSave();
             if (shareStatusInterval) clearInterval(shareStatusInterval);
             if (btn) {
                 btn.innerHTML = origHtml;
@@ -20037,11 +20073,34 @@ const app = {
             </div>`;
             document.body.appendChild(overlay);
             setTimeout(() => overlay.classList.add('active'), 10);
+            // .html2pdf-printing ниже гасит все .calc-dialog-overlay (чтобы модалки не попали
+            // в PDF), а это как раз наш индикатор «Формируем PDF...». Инлайновый !important
+            // бьёт !important из таблицы стилей — индикатор остаётся видимым монтажнику.
+            overlay.style.setProperty('display', 'flex', 'important');
 
             prepareForPrint();
+            // Набор правил для выгрузки с телефона: разворачивает смету в десктопную ширину и
+            // сбрасывает мобильный zoom: 0.8 у .table-responsive. Без класса html2canvas
+            // захватывал мобильную вёрстку вместе с zoom, а он ломает расчёт координат —
+            // содержимое уезжало вниз на несколько листов (сверху пустые страницы, снизу
+            // обрезанный хвост сметы). Тот же приём, что в invoice.html/downloadPDFOffline.
+            document.body.classList.add('html2pdf-printing');
+
             const printCssStyle = document.createElement('style');
             printCssStyle.textContent = this.buildPrintCssAsScreenOverride();
             document.head.appendChild(printCssStyle);
+
+            const printBin = document.getElementById('print_bin');
+            // Ширину контейнера задаём явно и до паузы на перерисовку. Инжектированное правило
+            // #print_eq_clone { width: 100% } растянуло бы клоны по ширине телефона (375px), а
+            // html2pdf рендерит содержимое в виртуальном окне windowWidth (ниже) — в десктопной
+            // раскладке оно ниже, чем намеренная мобильная. Из этого расхождения html2canvas
+            // берёт высоту холста по живому элементу, а рисует более короткое содержимое: в конце
+            // документа оставались пустые листы. 800px совпадают с шириной, на которую рассчитан
+            // блок .html2pdf-printing в style.css. Инлайновый !important бьёт !important из
+            // таблицы стилей — иначе правило width:100% побеждает по порядку в каскаде.
+            printBin.style.setProperty('width', '800px', 'important');
+            printBin.style.setProperty('max-width', '800px', 'important');
 
             try {
                 // Даём браузеру такт на применение инжектированных стилей перед захватом.
@@ -20049,13 +20108,16 @@ const app = {
                 // может не сработать вовсе и захват зависнет — setTimeout срабатывает всегда.
                 await new Promise(resolve => setTimeout(resolve, 50));
 
-                const printBin = document.getElementById('print_bin');
                 const safeName = (this.state.projectName || 'Смета').replace(/[\\\/:\*\?"<>\|]/g, '');
                 const opt = {
                     margin: 10,
                     filename: `${safeName}.pdf`,
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, logging: false },
+                    // windowWidth форсирует html2canvas рендерить в виртуальном окне шириной с
+                    // десктоп: медиазапросы @media (max-width: 768px) внутри него не срабатывают,
+                    // поэтому смета собирается обычной таблицей, а не мобильными карточками с
+                    // зажатыми колонками. Тот же параметр стоит в invoice.html.
+                    html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 900 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                     pagebreak: { mode: ['css', 'legacy'] }
                 };
@@ -20067,6 +20129,9 @@ const app = {
                 app.alert('Не удалось сформировать PDF: ' + err.message);
             } finally {
                 printCssStyle.remove();
+                document.body.classList.remove('html2pdf-printing');
+                printBin.style.removeProperty('width');
+                printBin.style.removeProperty('max-width');
                 cleanupAfterPrint();
                 overlay.classList.remove('active');
                 setTimeout(() => overlay.remove(), 200);
@@ -20246,18 +20311,25 @@ const app = {
             const dbUserId = (tgUser && tgUser.authUserId) || null;
 
             let objectInfo = job.object_info;
-            try {
-                const { data: existing } = await supabaseClient.from('shared_invoices').select('object_info').eq('id', job.shareId).maybeSingle();
-                if (existing && existing.object_info) {
-                    objectInfo = {
-                        ...job.object_info,
-                        status: existing.object_info.status || job.object_info.status,
-                        client_comment: existing.object_info.client_comment || null,
-                        status_updated_at: existing.object_info.status_updated_at || null
-                    };
+            // job.skipExistingLookup ставит только быстрое сохранение при первой генерации ссылки:
+            // id только что создан локально, записи с ним в базе заведомо нет, читать нечего.
+            // Для задач из очереди флаг не ставится никогда — там между попытками проходит время,
+            // и клиент мог успеть нажать кнопку согласования (updateInvoiceStatus сам создаёт
+            // строку). Пропуск чтения затёр бы его статус.
+            if (!job.skipExistingLookup) {
+                try {
+                    const { data: existing } = await supabaseClient.from('shared_invoices').select('object_info').eq('id', job.shareId).maybeSingle();
+                    if (existing && existing.object_info) {
+                        objectInfo = {
+                            ...job.object_info,
+                            status: existing.object_info.status || job.object_info.status,
+                            client_comment: existing.object_info.client_comment || null,
+                            status_updated_at: existing.object_info.status_updated_at || null
+                        };
+                    }
+                } catch (e) {
+                    console.warn('[saveSharedInvoiceJobToCloud] Ошибка чтения существующей записи:', e);
                 }
-            } catch (e) {
-                console.warn('[saveSharedInvoiceJobToCloud] Ошибка чтения существующей записи:', e);
             }
 
             const { error } = await supabaseClient
@@ -22427,7 +22499,7 @@ const app = {
             if (!_lkId.startsWith('SEB-')) {
                 this.state.swapBoilerPower = null;
             }
-            if (_lkId !== 'SFW-0072-000020') {
+            if (_lkId !== 'RFW-0080-256620') {
                 this.state.filterMagSize = null;
             }
             if (_lkId !== 'well_pump_auto') {
@@ -23095,15 +23167,15 @@ const app = {
                 this.state.wellPumpHeadFilter = _mHead   ? _mHead[1]   : 'all';
             }
         }
-        else if (_origId0 === 'SFW-0072-000020') {
+        else if (_origId0 === 'RFW-0080-256620') {
             if (isFirstOpen) {
                 this.state.filterMagSize = '34';
             }
             const _fm = catalog.filter_mag;
-            const _curSwap = this.state.swaps && this.state.swaps['SFW-0072-000020'];
+            const _curSwap = this.state.swaps && this.state.swaps['RFW-0080-256620'];
+            // STOUT SFW-0072-000020 снят с производства — в списке замен его больше нет.
             customAlts = [
-                { id: _fm.id,        name: _fm.name,        brand: 'STOUT',  price: _fm.price },
-                { id: _fm.rommer.id, name: _fm.rommer.name, brand: 'ROMMER', price: _fm.rommer.price },
+                { id: _fm.id, name: _fm.name, brand: 'ROMMER', price: _fm.price },
                 ...(catalog.filter_mag_alts || [])
             ];
             customAlts.forEach(alt => {
@@ -23228,7 +23300,7 @@ const app = {
                     </div>
                 </div>
             `;
-        } else if (_origId0 === 'SFW-0072-000020') {
+        } else if (_origId0 === 'RFW-0080-256620') {
             title.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:4px; gap:16px; flex-wrap:wrap;">
                     <div>
@@ -23552,7 +23624,7 @@ const app = {
                 _powerHtml +
                 `</div>` +
                 `</div>`;
-        } else if (_origId0 === 'SFW-0072-000020') {
+        } else if (_origId0 === 'RFW-0080-256620') {
             const _sz = this.state.filterMagSize || 'all';
             const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
             _tankFiltersHtml =
@@ -24193,7 +24265,7 @@ const app = {
         const _priceArrow = _tsSortField === 'price' ? (_tsSortOrder === 'asc' ? ' ▲' : ' ▼') : '';
         const _coilArrow = _tsSortField === 'coil' ? (_tsSortOrder === 'asc' ? ' ▲' : ' ▼') : '';
         const _sortStyle = 'cursor:pointer;user-select:none;text-decoration:underline dotted;';
-        const _isFmag = _origId0 === 'SFW-0072-000020';
+        const _isFmag = _origId0 === 'RFW-0080-256620';
         const _ssf = this.state.swapSortField;
         const _ssd = this.state.swapSortDir || 'asc';
         const _ssA = (f) => _ssf === f ? (_ssd === 'asc' ? ' ▲' : ' ▼') : '';
