@@ -1,0 +1,83 @@
+# robots.txt — heatcalc.ru
+#
+# Служебные и технические HTML-страницы (start24, invoice, plan_editor,
+# sheet_demo, stout_search) здесь НЕ закрыты намеренно. Они скрыты тегом
+# <meta name="robots" content="noindex"> в самих файлах. Запрет обхода
+# в robots.txt в этом случае вреден: робот не сможет зайти на страницу,
+# не прочитает noindex и оставит её в выдаче как ссылку без описания.
+
+User-agent: *
+Allow: /
+Disallow: /scratch/
+Disallow: /bench/
+Disallow: /models/
+Disallow: /vendor/
+Disallow: /supabase/
+Disallow: /mobile-android/
+Disallow: /*.json$
+Disallow: /*.php$
+
+# Яндекс. Главное зеркало задаётся не здесь (директива Host устарела),
+# а тегом canonical на страницах и подтверждением прав в Вебмастере.
+User-agent: Yandex
+Allow: /
+Disallow: /scratch/
+Disallow: /bench/
+Disallow: /models/
+Disallow: /vendor/
+Disallow: /supabase/
+Disallow: /mobile-android/
+Disallow: /*.json$
+Disallow: /*.php$
+Clean-param: share&p&utm_source&utm_medium&utm_campaign&utm_term&utm_content&yclid&gclid
+
+# --- Роботы ИИ-поиска ---
+# Пускаем осознанно: именно они формируют ответы в Яндекс Нейро,
+# Google AI Overviews, ChatGPT Search и Perplexity.
+
+User-agent: YandexAdditional
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+Sitemap: https://heatcalc.ru/sitemap.xml

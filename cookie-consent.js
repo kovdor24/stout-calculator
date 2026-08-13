@@ -155,7 +155,7 @@
                 <span>🍪</span> Использование файлов Cookie & Аналитика
             </div>
             <div class="hc-cookie-text">
-                Используем cookie и Яндекс.Метрику. Подробнее в <a href="privacy-policy.html" target="_blank">Политике конфиденциальности</a>.
+                Используем cookie и Яндекс.Метрику. Подробнее в <a href="/privacy-policy.html" target="_blank">Политике конфиденциальности</a>.
             </div>
             <div class="hc-cookie-buttons">
                 <button class="hc-cookie-btn hc-cookie-btn-accept" id="hc-cookie-accept">Принять</button>

@@ -4,7 +4,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HeatCalc.ru - Калькулятор Монтажника</title>
+    <title>Калькулятор отопления частного дома — расчёт и смета онлайн | HeatCalc.ru</title>
+    <meta name="description" content="Онлайн-калькулятор отопления частного дома: расчёт теплопотерь по СП, подбор котла, радиаторов и труб STOUT, ROMMER, Haier, готовая смета и КП в PDF. Бесплатно, без установки.">
+    <link rel="canonical" href="https://heatcalc.ru/">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="format-detection" content="telephone=no">
+
+    <!-- Открытый граф: превью ссылки в Telegram, ВКонтакте, WhatsApp, Viber -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="HeatCalc.ru">
+    <meta property="og:locale" content="ru_RU">
+    <meta property="og:url" content="https://heatcalc.ru/">
+    <meta property="og:title" content="Калькулятор отопления частного дома — расчёт и смета онлайн">
+    <meta property="og:description" content="Расчёт теплопотерь, подбор котла и оборудования STOUT, ROMMER, Haier, готовая смета и коммерческое предложение в PDF. Для монтажников и инженеров.">
+    <meta property="og:image" content="https://heatcalc.ru/logo_hc_new.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Калькулятор отопления частного дома — расчёт и смета онлайн">
+    <meta name="twitter:description" content="Расчёт теплопотерь, подбор котла и оборудования, смета и КП в PDF. Для монтажников и инженеров.">
+    <meta name="twitter:image" content="https://heatcalc.ru/logo_hc_new.png">
+
+    <!-- Подтверждение прав в панелях вебмастеров. Коды взять в Яндекс.Вебмастере
+         и Google Search Console и подставить вместо ЗАГЛУШКА, иначе строки
+         оставить закомментированными — пустой content хуже отсутствия тега.
+    <meta name="yandex-verification" content="ЗАГЛУШКА">
+    <meta name="google-site-verification" content="ЗАГЛУШКА">
+    -->
+
+    <!-- Микроразметка. Читают Яндекс, Google и роботы ИИ-поиска: из неё берётся
+         карточка сервиса в выдаче и факты для ответов нейропоиска. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://heatcalc.ru/#website",
+          "url": "https://heatcalc.ru/",
+          "name": "HeatCalc.ru",
+          "description": "Инженерный калькулятор систем отопления, водоснабжения и канализации",
+          "inLanguage": "ru-RU",
+          "publisher": { "@id": "https://heatcalc.ru/#organization" }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://heatcalc.ru/#organization",
+          "name": "HeatCalc.ru",
+          "url": "https://heatcalc.ru/",
+          "logo": "https://heatcalc.ru/logo_hc_new.png",
+          "areaServed": [
+            { "@type": "Country", "name": "Россия" },
+            { "@type": "City", "name": "Москва" },
+            { "@type": "City", "name": "Санкт-Петербург" }
+          ],
+          "sameAs": [ "https://t.me/heatcalc" ]
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://heatcalc.ru/#app",
+          "name": "HeatCalc.ru — калькулятор отопления",
+          "url": "https://heatcalc.ru/",
+          "applicationCategory": "BusinessApplication",
+          "applicationSubCategory": "Инженерный калькулятор отопления и водоснабжения",
+          "operatingSystem": "Веб-браузер, Windows, macOS, Android, iOS",
+          "browserRequirements": "Требуется JavaScript",
+          "inLanguage": "ru-RU",
+          "isAccessibleForFree": true,
+          "publisher": { "@id": "https://heatcalc.ru/#organization" },
+          "description": "Онлайн-калькулятор для монтажников и инженеров ОВиК: расчёт теплопотерь дома, подбор котла, радиаторов, насосов и труб по каталогам STOUT, ROMMER и Haier, формирование сметы и коммерческого предложения в PDF.",
+          "featureList": [
+            "Расчёт теплопотерь дома по площади, региону и составу стен",
+            "Подбор мощности газового и электрического котла",
+            "Гидравлический расчёт: диаметры труб, насосы, расширительный бак",
+            "Расчёт тёплого пола: длина и число петель, коллектор, узел подмеса",
+            "Смета на оборудование и монтажные работы",
+            "Коммерческое предложение в PDF с логотипом монтажной организации",
+            "Распознавание чужих смет из PDF, Excel, Word и фотографии",
+            "Актуальные цены и наличие STOUT и ROMMER"
+          ],
+          "offers": [
+            {
+              "@type": "Offer",
+              "name": "Базовый",
+              "price": "0",
+              "priceCurrency": "RUB",
+              "description": "Бесплатный бессрочный тариф: расчёт, подбор оборудования и смета"
+            },
+            {
+              "@type": "Offer",
+              "name": "Профи",
+              "price": "1490",
+              "priceCurrency": "RUB",
+              "description": "Брендирование документов, свой прайс на работы, автосохранение проектов, распознавание смет. 1 490 ₽ в месяц или 11 900 ₽ в год."
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+
     <link rel="icon" type="image/png" href="img/logo_HC.png">
     <link rel="manifest" href="manifest.json?v=2">
     <meta name="theme-color" content="#2563EB">
@@ -52,7 +149,7 @@
     <link rel="stylesheet" href="style.css?v=3.28">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.61" defer></script>
+    <script src="catalog.js?v=2.62" defer></script>
     <!-- Координаты и регионы населённых пунктов: карта проектов в админке и
          адрес объекта. Данные вшиты в файл, наружу никаких запросов. -->
     <script src="cities_geo.js?v=1.0" defer></script>
@@ -68,7 +165,7 @@
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.1" defer></script>
     <script src="gamification.js?v=2.1" defer></script>
-    <script src="app.js?v=5.35" defer></script>
+    <script src="app.js?v=5.38" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
          векторный композитор, что рисует лист схемы в проекте, поэтому нужен
          и движок листов (рамка/штамп из него не берутся, только текст). -->
@@ -97,6 +194,80 @@
 
 <body
     onclick="if(event.target.id === 'auth_modal_overlay') app.closeAuthModal(); if(event.target.id === 'profile_modal_overlay') app.closeProfileModal(); if(event.target.id === 'email_success_modal_overlay') app.closeEmailSuccessModal();">
+
+    <!-- ================== ТЕКСТ ДЛЯ ПОИСКОВЫХ И ИИ-РОБОТОВ ==================
+         Весь интерфейс калькулятора строит JavaScript, поэтому в исходном HTML
+         страницы текста нет. Роботы ИИ-поиска (GPTBot, PerplexityBot, ClaudeBot,
+         OAI-SearchBot) JavaScript не выполняют и без этого блока не видят на
+         странице вообще ничего.
+
+         Это не скрытый текст: <noscript> — штатный запасной вариант страницы,
+         его же увидит живой человек с выключенным JavaScript. Прятать сюда
+         ключевые слова нельзя — Яндекс считает это скрытым текстом и понижает
+         сайт. Держать содержимое правдивым и совпадающим с тем, что делает
+         калькулятор.
+    ====================================================================== -->
+    <noscript>
+        <div style="max-width: 820px; margin: 0 auto; padding: 32px 20px; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; line-height: 1.65; color: #1f2937;">
+            <h1 style="font-size: 30px; font-weight: 800; line-height: 1.25; margin: 0 0 16px;">
+                Калькулятор отопления частного дома онлайн
+            </h1>
+            <p style="font-size: 17px; margin: 0 0 24px;">
+                <strong>HeatCalc.ru</strong> — инженерный калькулятор систем отопления,
+                водоснабжения и канализации для монтажников и инженеров ОВиК. Сервис считает
+                теплопотери дома, подбирает котёл и оборудование по каталогам STOUT, ROMMER
+                и Haier и формирует готовую смету с коммерческим предложением в PDF.
+                Работает в браузере, устанавливать ничего не нужно.
+            </p>
+
+            <h2 style="font-size: 21px; font-weight: 700; margin: 28px 0 12px;">Что считает сервис</h2>
+            <ul style="margin: 0 0 24px; padding-left: 22px;">
+                <li><strong>Теплопотери дома</strong> — по площади, региону и составу ограждающих
+                    конструкций: материал и толщина слоёв стен, крыша, пол, тип остекления.
+                    Расчётная зимняя температура берётся из справочника по городу: для Москвы
+                    −25 °C, для Санкт-Петербурга −24 °C. В базе около 900 населённых пунктов
+                    России, Казахстана и Беларуси.</li>
+                <li><strong>Мощность котла</strong> — газового, электрического или комбинированного,
+                    с запасом на горячее водоснабжение.</li>
+                <li><strong>Гидравлику</strong> — диаметры труб, напор и подачу циркуляционных
+                    насосов, объём расширительного бака.</li>
+                <li><strong>Тёплый пол</strong> — длину и число петель по плану этажа, подбор
+                    коллектора и коллекторного шкафа, узел подмеса, настройку расходомеров.</li>
+                <li><strong>Смету</strong> — оборудование и монтажные работы в одном документе,
+                    с разделами, скидками и выгрузкой в PDF под логотипом монтажной организации.</li>
+            </ul>
+
+            <h2 style="font-size: 21px; font-weight: 700; margin: 28px 0 12px;">Цены и наличие</h2>
+            <p style="margin: 0 0 24px;">
+                В расчёте используются официальные рекомендованные розничные цены STOUT и ROMMER,
+                они обновляются автоматически. Рядом с каждой позицией показано наличие на складе,
+                поэтому смета собирается сразу из того, что можно купить.
+            </p>
+
+            <h2 style="font-size: 21px; font-weight: 700; margin: 28px 0 12px;">Сколько стоит</h2>
+            <p style="margin: 0 0 24px;">
+                Тариф <strong>«Базовый»</strong> бесплатный и бессрочный: расчёт, подбор
+                оборудования и смета. Тариф <strong>«Профи»</strong> — 1 490 ₽ в месяц или
+                11 900 ₽ в год — добавляет логотип и реквизиты компании в документах, собственный
+                прайс-лист на монтажные работы, автосохранение проектов и распознавание чужих смет.
+                Автоматических списаний нет, оплата производится вручную.
+            </p>
+
+            <h2 style="font-size: 21px; font-weight: 700; margin: 28px 0 12px;">Расчёт по городам</h2>
+            <ul style="margin: 0 0 24px; padding-left: 22px;">
+                <li><a href="/moskva/">Расчёт отопления частного дома в Москве и Московской области</a>
+                    — расчётная температура −25 °C, газ 8,68 ₽/м³</li>
+                <li><a href="/spb/">Расчёт отопления частного дома в Санкт-Петербурге и Ленинградской
+                    области</a> — расчётная температура −24 °C, газ 9,18 ₽/м³</li>
+            </ul>
+
+            <p style="margin: 32px 0 0; padding: 16px 18px; background: #fef3c7; border-radius: 10px; font-size: 15px;">
+                Для работы калькулятора нужен включённый JavaScript. Включите его в настройках
+                браузера и обновите страницу.
+            </p>
+        </div>
+    </noscript>
+
     <div id="stout_preloader"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111827; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease, visibility 0.5s ease;">
         <div
