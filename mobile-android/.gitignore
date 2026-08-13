@@ -1,4 +1,7 @@
 node_modules/
+# Копии сайта — собираются скриптом build-www.ps1, в истории git не нужны
+www/
+android/app/src/main/assets/public/
 android/app/build/
 android/.gradle/
 android/build/

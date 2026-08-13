@@ -1,0 +1,57 @@
+name: Android — сборка APK
+
+# Собирает установочный файл приложения на серверах GitHub.
+# Запуск вручную: вкладка Actions → «Android — сборка APK» → Run workflow.
+# Готовый APK лежит внизу страницы запуска, в разделе Artifacts.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'mobile-android/**'
+      - '.github/workflows/android-build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Забрать исходники
+        uses: actions/checkout@v4
+
+      - name: Поставить Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Поставить Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Поставить Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Собрать www из файлов сайта
+        shell: pwsh
+        run: ./mobile-android/build-www.ps1
+
+      - name: Перенести www в Android-проект
+        working-directory: mobile-android
+        run: |
+          npm ci
+          npx cap sync android
+
+      - name: Собрать APK
+        working-directory: mobile-android/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Выложить APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: heatcalc-debug-apk
+          path: mobile-android/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
