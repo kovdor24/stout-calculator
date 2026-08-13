@@ -17888,69 +17888,36 @@ const app = {
     // чтобы было видно, что именно прибор получит на управление, не открывая
     // смету. Заполняется из render(), где конфигурация уже посчитана.
     /**
-     * Серая рамка открывается вместе с самой автоматикой.
+     * Серая рамка показывается, только если внутри что-то есть.
      *
-     * Когда-то её открывало только содержимое: сводку состава из панели убрали
-     * (она дублировала подсказку строки автоматики в смете), подпункты живут
-     * лишь в подробном режиме, и на пустом объекте рамка оставалась пустым
-     * серым прямоугольником — читалось как ошибка. С появлением выбора уровня
-     * автоматики внутри всегда есть что показать: вкладки «Базовая / Полная»
-     * нужны и до расчёта.
+     * Сводку состава из панели убрали (она дублировала подсказку строки
+     * автоматики в смете), подпункты живут лишь в подробном режиме. В быстром
+     * режиме на пустом объекте не остаётся ни того, ни другого — и включённый
+     * тумблер оставлял пустой серый прямоугольник, который читался как ошибка.
+     * Поэтому рамку открывает только то, что в ней реально видно.
      */
     updateBoilerAutoBox: function () {
         const box = document.getElementById('blk_boiler_auto_box');
         if (!box) return;
-        box.style.display = this.state.boilerAuto ? 'flex' : 'none';
+        const cfg = this.thermaticConfig;
+        const hasWarnings = !!(cfg && (cfg.warnings || []).length);
+        const hasOpts = !!this.state.detailedRooms;
+        box.style.display = (this.state.boilerAuto && (hasWarnings || hasOpts)) ? 'flex' : 'none';
     },
 
     /**
-     * Вкладки «Уровень автоматики» и подсказка под ними.
+     * Выносная панель управления — только у старшего прибора.
      *
-     * Зовётся дважды: из syncUI (чтобы вкладка подсветилась сразу по щелчку) и
-     * из renderBoilerAutoInfo после расчёта — там уже известно, какой прибор
-     * выбрался. Модель считаем не по thermaticConfig, а по состоянию: syncUI
-     * работает и до первого расчёта, когда конфигурации ещё нет.
+     * У Thermatic 1002 нет ни разъёма под неё, ни самой панели в линейке,
+     * поэтому подпункт прячется. Модель считаем по состоянию, а не по
+     * thermaticConfig: syncUI работает и до первого расчёта, когда
+     * конфигурации ещё нет.
      */
-    syncBoilerAutoLevel: function () {
-        const lvl = this.state.boilerAutoLevel || 'auto';
-        document.querySelectorAll('.auto-level-tab').forEach(t => {
-            t.className = (t.dataset.alevel === lvl) ? 'tab auto-level-tab active' : 'tab auto-level-tab';
-        });
-        const blk = document.getElementById('blk_boiler_auto_level');
-        if (blk) blk.style.display = this.state.boilerAuto ? 'block' : 'none';
-
-        const model = this.boilerAutoModel({ tQ: this.tQ_val, snow: this.snowCalc });
-        // Выносная панель управления есть только у старшего прибора: у 1002 нет
-        // ни разъёма под неё, ни самой панели в линейке.
+    syncBoilerAutoPanelRow: function () {
         const panelRow = document.getElementById('blk_ctrl_panel_row');
-        if (panelRow) panelRow.style.display = (model === 'full') ? 'flex' : 'none';
-
-        const hint = document.getElementById('boiler_auto_level_hint');
-        if (!hint) return;
-        const dev = this.BOILER_AUTO_MODELS[model];
-        const item = (catalog.boiler_automation || []).find(x => x.id === dev.id);
-        const price = item ? Math.round(item.price).toLocaleString('ru-RU') + ' ₽' : '';
-        const mix = Math.max(0, this.tQ_val || 0) +
-            ((this.snowCalc && !this.snowCalc.impossible) ? Math.max(1, this.snowCalc.nodes || 1) : 0);
-        let why;
-        if (lvl === 'auto') {
-            why = mix > 0
-                ? `В смете есть смесительные узлы — ими управляет только 3001: выходов на привод смесителя у 1002 нет.`
-                : `Смесительных узлов в смете нет, а котёл, бойлер и погодную кривую 1002 ведёт не хуже старшего прибора.`;
-        } else {
-            why = `Выбрано вручную — подбор по составу сметы отключён. ` +
-                `<a href="#" onclick="event.preventDefault();app.setBoilerAutoLevel('auto');" style="color:var(--primary);">вернуть по расчёту</a>`;
-        }
-        const tip =
-            `<div class="tip-p"><b>Базовая — ${this.BOILER_AUTO_MODELS.basic.short}.</b> Ведёт котёл по цифровой шине (до двух, каскад с ротацией), ` +
-            `контур ГВС с бойлером и погодную кривую по уличному датчику. Смесительными узлами не управляет вовсе, ` +
-            `реле у него одно, проводных входов под датчики два.</div>` +
-            `<div class="tip-p"><b>Полная — ${this.BOILER_AUTO_MODELS.full.short}.</b> До 16 контуров с блоками расширения: у каждого свой насос, ` +
-            `привод смесителя и своя кривая. Нужен там, где есть смесительные узлы — тёплый пол на насосной группе ` +
-            `со смесительным клапаном или снеготаяние.</div>` +
-            `<div class="tip-p">«По расчёту» смотрит на смесительные узлы в смете и ставит подходящий прибор сам.</div>`;
-        hint.innerHTML = `<div style="position:relative; display:flex; align-items:flex-start; justify-content:space-between; gap:6px;">` +
-            `<span>В смете: <b>${dev.short}</b>${price ? ', ' + price : ''}. ${why}</span>` + this.tipHtml(tip) + `</div>`;
+        if (!panelRow) return;
+        const model = this.boilerAutoModel({ tQ: this.tQ_val, snow: this.snowCalc });
+        panelRow.style.display = (model === 'full') ? 'flex' : 'none';
     },
 
     // Короткая сводка конфигурации контроллера под самим переключателем —
@@ -17959,7 +17926,7 @@ const app = {
     renderBoilerAutoInfo: function () {
         this.initPanelTips();
         this.updateBoilerAutoBox();
-        this.syncBoilerAutoLevel();
+        this.syncBoilerAutoPanelRow();
         const box = document.getElementById('blk_boiler_auto_info');
         if (!box) return;
         const cfg = this.thermaticConfig;
@@ -18056,9 +18023,10 @@ const app = {
      * Уровень автоматики: 'auto' — по расчёту, 'basic' — Thermatic 1002,
      * 'full' — Thermatic 3001.
      *
-     * Ручной выбор снимает подбор прибора: калькулятор больше не переключает
-     * контроллер сам, даже если состав сметы изменился. Вернуть подбор можно
-     * вкладкой «По расчёту» — она же и стоит по умолчанию у новых смет.
+     * Своего переключателя в панели у этого выбора нет: контроллер всегда
+     * подбирается по составу сметы, а поменять его можно заменой позиции —
+     * щелчком по самой строке автоматики (см. selectSwapAlternative). Метод
+     * зовут оттуда и из миграции старых смет.
      */
     setBoilerAutoLevel: function (level) {
         if (!['auto', 'basic', 'full'].includes(level)) return;
@@ -25900,6 +25868,30 @@ const app = {
             }
         }
 
+        /**
+         * Контроллер котельной — тоже не просто строка сметы.
+         *
+         * От модели зависит весь раздел 2.8: адаптеры шины, датчики, реле,
+         * блоки расширения, кабель и работы. Поэтому замена не подменяет
+         * позицию через state.swaps, а переключает уровень автоматики и уходит
+         * в полный пересчёт — иначе в смете стоял бы 3001, а вокруг него
+         * лежала обвязка 1002.
+         *
+         * Выбрали то же, что подобрал бы расчёт, — возвращаем автоматический
+         * выбор: прибор не должен застыть на этой модели после того, как в
+         * смете появятся или исчезнут смесительные узлы.
+         */
+        const _autoIds = Object.keys(this.BOILER_AUTO_MODELS).map(k => this.BOILER_AUTO_MODELS[k].id);
+        if (_autoIds.includes(originalId) && _autoIds.includes(chosenId)) {
+            const _lvl = (chosenId === this.BOILER_AUTO_MODELS.basic.id) ? 'basic' : 'full';
+            const _byBill = this.boilerAutoModel({ tQ: this.tQ_val, snow: this.snowCalc }, true);
+            delete this.state.swaps[originalId];
+            this.logEquipmentSwap(originalId, chosenId);
+            this.closeSwapModal();
+            this.setBoilerAutoLevel(_lvl === _byBill ? 'auto' : _lvl);   // внутри syncUI + render + saveState
+            return;
+        }
+
         this.state.swaps[originalId] = chosenId;
 
         // Сохраняем коэффициент количества (напр. 1" сепаратор заменяет 2 шт. 3/4")
@@ -30656,7 +30648,7 @@ const app = {
         this.updateBoilerAutoBox();
         if (!this.state.boilerAuto) this.renderBoilerAutoInfo();
 
-        this.syncBoilerAutoLevel();
+        this.syncBoilerAutoPanelRow();
 
         // Защита от протечки, регулирование по воздуху и выносная панель:
         // нужен и контроллер, и подробный режим расчёта.
@@ -32457,9 +32449,11 @@ const app = {
      * а температуру в доме ведёт сам котёл по погодной кривой — это 1002 умеет.
      *
      * @param {{tQ:number, snow:object}} ctx — то же, что уходит в getThermaticConfig.
+     * @param {boolean} [byBillOnly] — не смотреть на ручной выбор, ответить так,
+     *        как ответил бы подбор на чистой смете.
      */
-    boilerAutoModel: function (ctx) {
-        const lvl = this.state.boilerAutoLevel || 'auto';
+    boilerAutoModel: function (ctx, byBillOnly) {
+        const lvl = byBillOnly ? 'auto' : (this.state.boilerAutoLevel || 'auto');
         if (lvl === 'basic' || lvl === 'full') return lvl;
         const c = ctx || {};
         const tQ = Math.max(0, (c.tQ !== undefined ? c.tQ : this.tQ_val) || 0);
@@ -32700,8 +32694,8 @@ const app = {
             warnings.push('В смете ' + what.join(' и ') + ', а Thermatic 1002 смесительными узлами не управляет: ' +
                 'выходов на привод смесителя у него нет вовсе. ' + (tQ > 0 ? 'Тёплый пол останется на своей ' +
                 'термостатической головке или на автоматике раздела 4.3, ' : '') + 'погодная кривая достанется ' +
-                'только котлу. Чтобы вести смесительные контуры по погоде, переключите уровень автоматики на ' +
-                '«Полная — Thermatic 3001».');
+                'только котлу. Чтобы вести смесительные контуры по погоде, замените контроллер в смете ' +
+                'на Thermatic 3001 — переключается прямо на самой позиции.');
         }
         if (dhw === 'external') {
             warnings.push('Бойлер греется переключающим клапаном от котла, у которого нет цифровой шины, — ' +
@@ -33147,7 +33141,7 @@ const app = {
             notes.push('Смесительных узлов в смете нет, а 3001 нужен прежде всего ради них. С этой котельной ' +
                 'справится ' + _basic.short + (_bItem ? ' за ' + Math.round(_bItem.price).toLocaleString('ru-RU') + ' ₽' : '') +
                 ': котёл по цифровой шине, каскад, бойлер ГВС и погодная кривая у него те же. Переключается ' +
-                'в панели, «Уровень автоматики».');
+                'заменой позиции — прямо на строке контроллера.');
         }
 
         return {
@@ -36676,7 +36670,13 @@ const app = {
             // берётся из конфигурации, а она уже посчитана под свой контроллер.
             const _model = (cfg.model === 'basic') ? 'basic' : 'full';
             let ctrlItem = catalog.boiler_automation.find(x => x.id === this.BOILER_AUTO_MODELS[_model].id);
-            if (ctrlItem) addToBill(ctrlItem, 1, this.getDesc('thermatic', cfg), grpAuto);
+            // Второй прибор идёт аналогом: контроллер подбирается по составу
+            // котельной, но выбор всегда можно переиграть заменой позиции —
+            // она переключает уровень целиком (см. selectSwapAlternative).
+            let ctrlAlt = catalog.boiler_automation.find(
+                x => x.id === this.BOILER_AUTO_MODELS[_model === 'basic' ? 'full' : 'basic'].id);
+            if (ctrlItem) addToBill({ ...ctrlItem, alts: ctrlAlt ? [ctrlAlt] : undefined }, 1,
+                this.getDesc('thermatic', cfg), grpAuto);
 
             // Адаптер цифровой шины базового уровня: шина первого котла встроена
             // в прибор, поэтому покупается он только второму.

@@ -168,7 +168,7 @@
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.1" defer></script>
     <script src="gamification.js?v=2.1" defer></script>
-    <script src="app.js?v=5.40" defer></script>
+    <script src="app.js?v=5.41" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
          векторный композитор, что рисует лист схемы в проекте, поэтому нужен
          и движок листов (рамка/штамп из него не берутся, только текст). -->
@@ -929,22 +929,6 @@
                      включённый контроллер показывает всё своё хозяйство одним куском. -->
                 <div id="blk_boiler_auto_box"
                     style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">
-                    <!-- Уровень автоматики. «По расчёту» смотрит на смесительные
-                         узлы в смете: их ведёт только 3001, а на котельной без них
-                         тот же результат даёт 1002 вчетверо дешевле. Ручной выбор
-                         подбор отключает — см. app.setBoilerAutoLevel. -->
-                    <div id="blk_boiler_auto_level" style="display:none;">
-                        <span class="lbl-sub" style="margin-bottom:6px; display:block;">Уровень автоматики</span>
-                        <div class="tabs" style="font-size:11px;">
-                            <div class="tab auto-level-tab" data-alevel="auto" onclick="app.setBoilerAutoLevel('auto')"
-                                title="Прибор подбирается по составу сметы: есть смесительные узлы — 3001, нет — 1002.">По расчёту</div>
-                            <div class="tab auto-level-tab" data-alevel="basic" onclick="app.setBoilerAutoLevel('basic')"
-                                title="STOUT Thermatic 1002: котёл по цифровой шине, каскад из двух котлов, бойлер ГВС и погодная кривая. Смесительными узлами не управляет.">Базовая</div>
-                            <div class="tab auto-level-tab" data-alevel="full" onclick="app.setBoilerAutoLevel('full')"
-                                title="STOUT Thermatic 3001: до 16 контуров с блоками расширения, у каждого свой насос, привод смесителя и своя кривая ПЗА.">Полная</div>
-                        </div>
-                        <div id="boiler_auto_level_hint" style="margin-top:8px; font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
-                    </div>
                     <div id="blk_boiler_auto_info" style="font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
 
                     <!-- Защита от протечки, регулирование по воздуху и выносная панель —
