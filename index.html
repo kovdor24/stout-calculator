@@ -152,7 +152,7 @@
     <link rel="stylesheet" href="style.css?v=3.28">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.62" defer></script>
+    <script src="catalog.js?v=2.64" defer></script>
     <!-- Координаты и регионы населённых пунктов: карта проектов в админке и
          адрес объекта. Данные вшиты в файл, наружу никаких запросов. -->
     <script src="cities_geo.js?v=1.0" defer></script>
@@ -168,7 +168,7 @@
          раз в месяц целиком переписывает автообновление цен Терем-онлайн. -->
     <script src="dist_prices.js?v=1.1" defer></script>
     <script src="gamification.js?v=2.1" defer></script>
-    <script src="app.js?v=5.38" defer></script>
+    <script src="app.js?v=5.40" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
          векторный композитор, что рисует лист схемы в проекте, поэтому нужен
          и движок листов (рамка/штамп из него не берутся, только текст). -->
@@ -919,7 +919,7 @@
                 style="border-bottom:1px dashed var(--border); padding-bottom:16px; margin-bottom:16px;">
                 <div class="label-row">
                     <span class="lbl"
-                        title="Контроллер STOUT Thermatic 3001: держит температуру в каждом контуре по погоде, управляет котлами, бойлером и рециркуляцией, доступен с телефона через интернет.">Автоматика
+                        title="Контроллер STOUT Thermatic: держит температуру по погоде, управляет котлами, бойлером и рециркуляцией, доступен с телефона через интернет. Прибор — 1002 или 3001 — выбирается ниже, по составу котельной.">Автоматика
                         котельной</span>
                     <label class="switch"><input type="checkbox" id="chk_boiler_auto"
                             onchange="app.toggleBoilerAuto(this.checked, event)"><span class="slider"></span></label>
@@ -929,6 +929,22 @@
                      включённый контроллер показывает всё своё хозяйство одним куском. -->
                 <div id="blk_boiler_auto_box"
                     style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">
+                    <!-- Уровень автоматики. «По расчёту» смотрит на смесительные
+                         узлы в смете: их ведёт только 3001, а на котельной без них
+                         тот же результат даёт 1002 вчетверо дешевле. Ручной выбор
+                         подбор отключает — см. app.setBoilerAutoLevel. -->
+                    <div id="blk_boiler_auto_level" style="display:none;">
+                        <span class="lbl-sub" style="margin-bottom:6px; display:block;">Уровень автоматики</span>
+                        <div class="tabs" style="font-size:11px;">
+                            <div class="tab auto-level-tab" data-alevel="auto" onclick="app.setBoilerAutoLevel('auto')"
+                                title="Прибор подбирается по составу сметы: есть смесительные узлы — 3001, нет — 1002.">По расчёту</div>
+                            <div class="tab auto-level-tab" data-alevel="basic" onclick="app.setBoilerAutoLevel('basic')"
+                                title="STOUT Thermatic 1002: котёл по цифровой шине, каскад из двух котлов, бойлер ГВС и погодная кривая. Смесительными узлами не управляет.">Базовая</div>
+                            <div class="tab auto-level-tab" data-alevel="full" onclick="app.setBoilerAutoLevel('full')"
+                                title="STOUT Thermatic 3001: до 16 контуров с блоками расширения, у каждого свой насос, привод смесителя и своя кривая ПЗА.">Полная</div>
+                        </div>
+                        <div id="boiler_auto_level_hint" style="margin-top:8px; font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
+                    </div>
                     <div id="blk_boiler_auto_info" style="font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
 
                     <!-- Защита от протечки, регулирование по воздуху и выносная панель —
@@ -998,7 +1014,10 @@
                         </div>
                         <div id="air_hint" style="margin-top:8px; font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
                         </div>
-                        <div style="border-top:1px solid #E5E7EB; padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <!-- Панели нет в линейке базового уровня: у Thermatic 1002
+                             нет ни разъёма под неё, ни самой панели. Прячется в
+                             app.syncBoilerAutoLevel. -->
+                        <div id="blk_ctrl_panel_row" style="border-top:1px solid #E5E7EB; padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
                             <span class="lbl" style="font-size:12px;"
                                 title="Панель с экраном в жилой зоне: сменить режим или температуру, не спускаясь в котельную.">Выносная панель управления</span>
                             <label class="switch" style="transform:scale(0.8); transform-origin:right;">

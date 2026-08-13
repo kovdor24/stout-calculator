@@ -50,7 +50,7 @@ const CONTEST_CATS_2026 = [
     { key: 'tank_exp',       label: 'Бак мембранный',      pts: 4,  emoji: '🛢️', test: (id)       => id.startsWith('STH-') || id.startsWith('STW-') },
     { key: 'manifold_water', label: 'Коллектор воды',      pts: 3,  emoji: '🚿', test: (id, name, item) => (id.startsWith('SMB-6851-') || name.includes('3/4')) && (item && (item.group === '5.1. Внутреннее водоснабжение' || (item.group === '5. Внутреннее водоснабжение' && item.desc && (item.desc.includes('ХВС') || item.desc.includes('Холодная вода'))))) },
     { key: 'flex_conn',      label: 'Гибкая подводка',     pts: 3,  emoji: '🔗', test: (id, name) => name.includes('гибк') },
-    { key: 'valve',          label: 'Арматура',            pts: 2,  emoji: '🔧', test: (id)       => id.startsWith('SVT-') || id.startsWith('SVL-') || id.startsWith('SFB-') || id.startsWith('SBV-') },
+    { key: 'valve',          label: 'Арматура',            pts: 2,  emoji: '🔧', test: (id)       => id.startsWith('SVT-') || id.startsWith('SVL-') || id.startsWith('SFB-') || id.startsWith('SBV-') || id === 'BX4991100069' },
     { key: 'pipes_fittings', label: 'Трубы и фитинги',     pts: 1,  emoji: '➿', test: (id, name, item) => (name.includes('труб') && (item.q || 1) >= 20) || name.includes('фитинг') || id.startsWith('SFP-') || id.startsWith('SFA-') || id.startsWith('SFC-') || id.startsWith('SFH-') || id.startsWith('SPX-') },
     { key: 'mats',           label: 'Маты',                pts: 1,  emoji: '🧱', test: (id, name) => (name.includes('мат') && !name.includes('матов')) || id.startsWith('SPM-') },
 ];
@@ -832,7 +832,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
 
     lastSavedStateString: "",
 
@@ -6751,6 +6751,7 @@ const app = {
             delete loadedState.tgUser; delete loadedState.accountType; delete loadedState.demoUsed; delete loadedState.darkMode; delete loadedState.themeMode;
             this.state = { ...this.state, ...loadedState };
             this.migrateSnowPipeSwap();
+            this.migrateBoilerAutoLevel(loadedState);
             this.adoptPlans(loadedState);
             this.saveState(); this.syncUI(); this.render();
 
@@ -12955,8 +12956,9 @@ const app = {
             ko: koUfh ? koUfh.name : null,
             // Автоматика котельной в смете. Без неё контроллера Thermatic нет, и
             // ссылаться на его клеммы (метка А, «вход контура …») лист не должен:
-            // связывать сухой контакт не с чем.
-            auto: !!tc
+            // связывать сухой контакт не с чем. Базовый уровень сюда не входит —
+            // клемм «Входы термостатов» у Thermatic 1002 нет вовсе.
+            auto: this.thermaticFull()
         };
         if (!ufh.blocks && !ufh.stats) return '';
         const a = window.projectScheme.ufhScheme(ufh);
@@ -12991,8 +12993,9 @@ const app = {
             step: (sc.rows && sc.rows[0]) ? sc.rows[0].step : 250,
             supplyT: this.SNOW_SUPPLY,
             // Смеситель ведёт контроллер — значит на схеме сервопривод, а не
-            // термоголовка. Без автоматики котельной узел регулируется вручную.
-            auto: !!this.thermaticConfig, servo: !!this.thermaticConfig
+            // термоголовка. Без автоматики котельной узел регулируется вручную;
+            // базовый уровень смесителем тоже не управляет.
+            auto: this.thermaticFull(), servo: this.thermaticFull()
         });
         if (!a) return '';
         const font = (window.projectSheets.FONT) ||
@@ -13314,7 +13317,10 @@ const app = {
             // на схеме нет — узел виден в текстовой панели подобранного оборудования)
             // POLIS бойлер не загружает (нет автоматики под клапан) — его фугаса в смете нет,
             // и слой у электрокотла рисовать нельзя, иначе схема покажет несуществующий узел.
-            if ((s.tankLoadScheme || 'valve') === 'valve' && (hasItem("Fugas") || hasItem("fugas") || hasItem("фугас"))) {
+            // «Fugas»/«фугас» — прежнее название комплекта STOUT (снят с производства);
+            // «3-х ход. клапана» — нынешний комплект BAXI. Ищем оба, иначе слой пропадёт
+            // и на старых сметах, и на новых.
+            if ((s.tankLoadScheme || 'valve') === 'valve' && (hasItem("fugas") || hasItem("фугас") || hasItem("3-х ход. клапана"))) {
                 if (hasGasBoiler) layers.push('fugas_gas.png');
                 if (hasElBoiler && !hasItem("POLIS")) layers.push('fugas_el.png');
             }
@@ -13450,7 +13456,7 @@ const app = {
 
         // Схема загрузки бойлера от одноконтурного котла: клапан Fugas или насосная группа
         if (find(/(загрузка|для) бойлера/i).length) push('Загрузка бойлера', 'Насосная группа');
-        else if (find(/fugas|фугас/i).length) push('Загрузка бойлера', 'Клапан Fugas');
+        else if (find(/fugas|фугас|3-х ход\. клапана/i).length) push('Загрузка бойлера', 'Трёхходовой клапан');
 
         // Расширительные баки: отопления и ГВС. Исключаем обвязку/крепёж бака (комплект
         // подключения, кронштейн, хомут) — это не сам бак и в подписи не нужно.
@@ -15848,6 +15854,7 @@ const app = {
             this._suppressSaveState = true;
             this.state = { ...this.state, ...st };
             this.migrateSnowPipeSwap();
+            this.migrateBoilerAutoLevel(st);
             this.syncUI();
             this.render();
 
@@ -17881,26 +17888,69 @@ const app = {
     // чтобы было видно, что именно прибор получит на управление, не открывая
     // смету. Заполняется из render(), где конфигурация уже посчитана.
     /**
-     * Серая рамка показывается, только если внутри что-то есть.
+     * Серая рамка открывается вместе с самой автоматикой.
      *
-     * Сводка появляется после расчёта, а он не идёт, пока не задана площадь;
-     * подпункты живут лишь в подробном режиме. В быстром режиме на пустом
-     * объекте не было ни того, ни другого — и включённый тумблер оставлял на
-     * панели пустую рамку.
+     * Когда-то её открывало только содержимое: сводку состава из панели убрали
+     * (она дублировала подсказку строки автоматики в смете), подпункты живут
+     * лишь в подробном режиме, и на пустом объекте рамка оставалась пустым
+     * серым прямоугольником — читалось как ошибка. С появлением выбора уровня
+     * автоматики внутри всегда есть что показать: вкладки «Базовая / Полная»
+     * нужны и до расчёта.
      */
     updateBoilerAutoBox: function () {
         const box = document.getElementById('blk_boiler_auto_box');
         if (!box) return;
-        // Раньше рамку открывала сама конфигурация контроллера — она есть всегда, когда
-        // тумблер включён. С тех пор как сводку состава из панели убрали (она дублировала
-        // подсказку строки автоматики в смете), внутри рамки в быстром режиме не остаётся
-        // ничего: подпункты показываются только в подробном. Пустая рамка с паддингом
-        // читалась как серый прямоугольник-ошибка. Теперь её открывает только то, что
-        // в ней реально видно, — предупреждения.
-        const cfg = this.thermaticConfig;
-        const hasWarnings = !!(cfg && (cfg.warnings || []).length);
-        const hasOpts = !!this.state.detailedRooms;
-        box.style.display = (this.state.boilerAuto && (hasWarnings || hasOpts)) ? 'flex' : 'none';
+        box.style.display = this.state.boilerAuto ? 'flex' : 'none';
+    },
+
+    /**
+     * Вкладки «Уровень автоматики» и подсказка под ними.
+     *
+     * Зовётся дважды: из syncUI (чтобы вкладка подсветилась сразу по щелчку) и
+     * из renderBoilerAutoInfo после расчёта — там уже известно, какой прибор
+     * выбрался. Модель считаем не по thermaticConfig, а по состоянию: syncUI
+     * работает и до первого расчёта, когда конфигурации ещё нет.
+     */
+    syncBoilerAutoLevel: function () {
+        const lvl = this.state.boilerAutoLevel || 'auto';
+        document.querySelectorAll('.auto-level-tab').forEach(t => {
+            t.className = (t.dataset.alevel === lvl) ? 'tab auto-level-tab active' : 'tab auto-level-tab';
+        });
+        const blk = document.getElementById('blk_boiler_auto_level');
+        if (blk) blk.style.display = this.state.boilerAuto ? 'block' : 'none';
+
+        const model = this.boilerAutoModel({ tQ: this.tQ_val, snow: this.snowCalc });
+        // Выносная панель управления есть только у старшего прибора: у 1002 нет
+        // ни разъёма под неё, ни самой панели в линейке.
+        const panelRow = document.getElementById('blk_ctrl_panel_row');
+        if (panelRow) panelRow.style.display = (model === 'full') ? 'flex' : 'none';
+
+        const hint = document.getElementById('boiler_auto_level_hint');
+        if (!hint) return;
+        const dev = this.BOILER_AUTO_MODELS[model];
+        const item = (catalog.boiler_automation || []).find(x => x.id === dev.id);
+        const price = item ? Math.round(item.price).toLocaleString('ru-RU') + ' ₽' : '';
+        const mix = Math.max(0, this.tQ_val || 0) +
+            ((this.snowCalc && !this.snowCalc.impossible) ? Math.max(1, this.snowCalc.nodes || 1) : 0);
+        let why;
+        if (lvl === 'auto') {
+            why = mix > 0
+                ? `В смете есть смесительные узлы — ими управляет только 3001: выходов на привод смесителя у 1002 нет.`
+                : `Смесительных узлов в смете нет, а котёл, бойлер и погодную кривую 1002 ведёт не хуже старшего прибора.`;
+        } else {
+            why = `Выбрано вручную — подбор по составу сметы отключён. ` +
+                `<a href="#" onclick="event.preventDefault();app.setBoilerAutoLevel('auto');" style="color:var(--primary);">вернуть по расчёту</a>`;
+        }
+        const tip =
+            `<div class="tip-p"><b>Базовая — ${this.BOILER_AUTO_MODELS.basic.short}.</b> Ведёт котёл по цифровой шине (до двух, каскад с ротацией), ` +
+            `контур ГВС с бойлером и погодную кривую по уличному датчику. Смесительными узлами не управляет вовсе, ` +
+            `реле у него одно, проводных входов под датчики два.</div>` +
+            `<div class="tip-p"><b>Полная — ${this.BOILER_AUTO_MODELS.full.short}.</b> До 16 контуров с блоками расширения: у каждого свой насос, ` +
+            `привод смесителя и своя кривая. Нужен там, где есть смесительные узлы — тёплый пол на насосной группе ` +
+            `со смесительным клапаном или снеготаяние.</div>` +
+            `<div class="tip-p">«По расчёту» смотрит на смесительные узлы в смете и ставит подходящий прибор сам.</div>`;
+        hint.innerHTML = `<div style="position:relative; display:flex; align-items:flex-start; justify-content:space-between; gap:6px;">` +
+            `<span>В смете: <b>${dev.short}</b>${price ? ', ' + price : ''}. ${why}</span>` + this.tipHtml(tip) + `</div>`;
     },
 
     // Короткая сводка конфигурации контроллера под самим переключателем —
@@ -17909,6 +17959,7 @@ const app = {
     renderBoilerAutoInfo: function () {
         this.initPanelTips();
         this.updateBoilerAutoBox();
+        this.syncBoilerAutoLevel();
         const box = document.getElementById('blk_boiler_auto_info');
         if (!box) return;
         const cfg = this.thermaticConfig;
@@ -17987,14 +18038,38 @@ const app = {
         });
     },
 
-    // Автоматика котельной — контроллер отопления STOUT Thermatic 3001.
-    // Что именно он получит на управление, считает getThermaticConfig().
+    // Автоматика котельной — контроллер отопления STOUT Thermatic (3001 или
+    // 1002, см. boilerAutoModel). Что именно он получит на управление, считает
+    // getThermaticConfig().
     toggleBoilerAuto: function (chk, event) {
         if (!this.checkAccess('pro', event)) {
             if (document.getElementById('chk_boiler_auto')) document.getElementById('chk_boiler_auto').checked = this.state.boilerAuto;
             return;
         }
         this.state.boilerAuto = chk;
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
+
+    /**
+     * Уровень автоматики: 'auto' — по расчёту, 'basic' — Thermatic 1002,
+     * 'full' — Thermatic 3001.
+     *
+     * Ручной выбор снимает подбор прибора: калькулятор больше не переключает
+     * контроллер сам, даже если состав сметы изменился. Вернуть подбор можно
+     * вкладкой «По расчёту» — она же и стоит по умолчанию у новых смет.
+     */
+    setBoilerAutoLevel: function (level) {
+        if (!['auto', 'basic', 'full'].includes(level)) return;
+        this.state.boilerAutoLevel = level;
+        // Комнатные приборы у контроллеров разные (у 1002 своя линейка по
+        // RS-485 и LoRa), поэтому ручной выбор артикула и замены в смете при
+        // смене уровня сбрасываем — иначе addToBill подставлял бы прибор от
+        // чужого контроллера. Заодно снимаем сухой контакт: у 1002 входов
+        // термостатов нет.
+        this.clearAirSwaps();
+        if (this.state.airDeviceType === 'dry') this.state.airDeviceType = 'sensor';
         this.syncUI();
         this.render();
         this.saveState();
@@ -18010,11 +18085,20 @@ const app = {
     // Больше десяти в шлейф на один аналоговый вход не вешаем — предел принят
     // как рабочий: документация числа не называет, а вход у контроллера один.
     LEAK_SENSORS_MAX: 10,
+    // У Thermatic 1002 предел назван прямо: до 15 датчиков на вход Д1 через
+    // разветвители (инструкция, п. 1.4).
+    LEAK_SENSORS_BASIC_MAX: 15,
+
+    /** Предел шлейфа у того контроллера, который сейчас идёт в смету. */
+    leakSensorsMax: function () {
+        return (this.boilerAutoModel({ tQ: this.tQ_val, snow: this.snowCalc }) === 'basic')
+            ? this.LEAK_SENSORS_BASIC_MAX : this.LEAK_SENSORS_MAX;
+    },
 
     autoLeakSensorCount: function () {
         const zones = (this.state.water && Array.isArray(this.state.waterZones))
             ? this.state.waterZones.length : 0;
-        return Math.min(zones + 1, this.LEAK_SENSORS_MAX);
+        return Math.min(zones + 1, this.leakSensorsMax());
     },
 
     /** Действующее число датчиков: ручное, если его задали, иначе расчётное. */
@@ -18038,15 +18122,17 @@ const app = {
     },
 
     updLeakSensors: function (d) {
+        const max = this.leakSensorsMax();
         let n = this.leakSensorCount() + d;
-        if (n < 1) n = 1; if (n > this.LEAK_SENSORS_MAX) n = this.LEAK_SENSORS_MAX;
+        if (n < 1) n = 1; if (n > max) n = max;
         this.state.leakSensors = n;
         this.syncUI(); this.render(); this.saveState();
     },
 
     setLeakSensors: function (v) {
+        const max = this.leakSensorsMax();
         let n = parseInt(v);
-        if (isNaN(n) || n < 1) n = 1; if (n > this.LEAK_SENSORS_MAX) n = this.LEAK_SENSORS_MAX;
+        if (isNaN(n) || n < 1) n = 1; if (n > max) n = max;
         this.state.leakSensors = n;
         this.syncUI(); this.render(); this.saveState();
     },
@@ -18128,30 +18214,59 @@ const app = {
             if (it && qty > 0) out.push({ item: it, qty: Math.ceil(qty), group, desc: `<span style="font-size:11px;line-height:1.5;">${desc}${note}</span>` });
         };
         const exp = (cfg.expansion || []).reduce((a, e) => a + e.qty, 0);
-
-        const pumps = (cfg.circuitCount || 0) + (cfg.dhw === 'boiler' ? 1 : 0) + (cfg.recirc ? 1 : 0);
-        const mixers = cfg.mixCount || 0;
-        const solenoid = cfg.leakQty > 0 && cfg.leakSolenoid;
+        // У базового уровня контуров нет: силовые линии идут только к тем
+        // нагрузкам, которыми он действительно управляет через реле (список
+        // посчитан в getBasicAutoConfig). Кран протечки в этот счёт не входит —
+        // к нему идёт свой четырёхжильный кабель, он ниже.
+        const isBasic = cfg.model === 'basic';
+        const pumps = isBasic
+            ? (cfg.loads || []).filter(l => l.need !== 'switch').length
+            : (cfg.circuitCount || 0) + (cfg.dhw === 'boiler' ? 1 : 0) + (cfg.recirc ? 1 : 0);
+        const mixers = isBasic ? 0 : (cfg.mixCount || 0);
+        // Соленоид у базового уровня уже посчитан в списке нагрузок.
+        const solenoid = !isBasic && cfg.leakQty > 0 && cfg.leakSolenoid;
         const powerM = 10 + 3 * (pumps + mixers) + (solenoid ? 3 : 0);
+        const powerParts = ['10 м до щита'];
+        if (pumps > 0) powerParts.push(`${pumps} ${isBasic ? 'нагруз.' : 'насос.'} × 3 м`);
+        if (mixers > 0) powerParts.push(`${mixers} смеситель. × 3 м`);
+        if (solenoid) powerParts.push('3 м на соленоидный клапан');
         add('CBL-VVG-3X15-AUTO', powerM,
-            `<b>Куда:</b> питание контроллера от отдельного автомата и линии на насосы и смесители контуров — всё в пределах котельной.` +
-            `<br><b>Расчёт:</b> 10 м до щита + ${pumps} насос. × 3 м + ${mixers} смеситель. × 3 м${solenoid ? ' + 3 м на соленоидный клапан' : ''} = ${Math.ceil(powerM)} м.`,
+            `<b>Куда:</b> питание контроллера от отдельного автомата и линии на ` +
+            (isBasic ? 'управляемые им нагрузки' : 'насосы и смесители контуров') + ` — всё в пределах котельной.` +
+            `<br><b>Расчёт:</b> ${powerParts.join(' + ')} = ${Math.ceil(powerM)} м.`,
             groups.auto);
 
-        const ntcIn = Math.max(0, (cfg.ntcUsed || 0) - 1), ntcM = ntcIn * 2 + ((cfg.ntcUsed || 0) > 0 ? 10 : 0);
+        // Датчики по шине RS-485 идут не этим кабелем, а витой парой — считаем
+        // их ниже, вместе с самой шиной.
+        const ntcAll = isBasic
+            ? (cfg.sensors || []).filter(n => n.src !== 'bus').length
+            : (cfg.ntcUsed || 0);
+        const ntcIn = Math.max(0, ntcAll - 1), ntcM = ntcIn * 2 + (ntcAll > 0 ? 10 : 0);
         add('CBL-MKESH-2X05-NTC', ntcM,
-            `<b>Куда:</b> штатные NTC контроллера — теплоноситель контуров и бойлер по котельной, уличный на северную стену.` +
-            `<br><b>Расчёт:</b> ${ntcIn} датч. × 2 м + уличный 10 м = ${Math.ceil(ntcM)} м. Вести отдельно от силовых линий, пересекать под 90° (паспорт Thermatic 3001).`,
+            `<b>Куда:</b> проводные датчики температуры — теплоноситель и бойлер по котельной, уличный на северную стену.` +
+            `<br><b>Расчёт:</b> ${ntcIn} датч. × 2 м + уличный 10 м = ${Math.ceil(ntcM)} м. Вести отдельно от силовых линий, пересекать под 90°.`,
             groups.auto);
 
         const panelM = cfg.panel ? span + h1 + 3 : 0;
         // Кабель шины считаем по платам, которые реально остались в смете:
         // убрали плату — тянуть шину к этому котлу не к чему, он идёт релейно.
         const _boards = (cfg.boardsUsed !== undefined ? cfg.boardsUsed : cfg.digitalBoards) || 0;
-        const busM = 3 * _boards + 3 * exp + panelM + 10;
+        // У базового уровня по этой же витой паре живут датчики на RS-485 и
+        // адресный разветвитель шлейфа.
+        const busDev = isBasic
+            ? (cfg.sensors || []).filter(n => n.src === 'bus').length + ((cfg.splitter && cfg.splitter.addressed) ? 1 : 0)
+            : 0;
+        const busM = 3 * _boards + 3 * exp + 3 * busDev + panelM + 10;
+        const busParts = [];
+        if (_boards > 0) busParts.push(`${_boards} × 3 м (котёл)`);
+        if (exp > 0) busParts.push(`${exp} × 3 м (блоки)`);
+        if (busDev > 0) busParts.push(`${busDev} × 3 м (устройства RS-485)`);
+        if (cfg.panel) busParts.push(`${panelM.toFixed(1)} м (панель)`);
+        busParts.push('10 м (интернет)');
         add('CBL-UTP-BUS', busM,
-            `<b>Куда:</b> ${_boards > 0 ? 'цифровая шина от платы ЦШ до котла, ' : ''}RS-485 на блоки расширения${cfg.panel ? ' и выносную панель' : ''}, интернет от роутера.` +
-            `<br><b>Расчёт:</b> ${_boards} × 3 м (котёл) + ${exp} × 3 м (блоки)${cfg.panel ? ` + ${panelM.toFixed(1)} м (панель)` : ''} + 10 м (интернет) = ${Math.ceil(busM)} м.`,
+            `<b>Куда:</b> ${_boards > 0 ? (isBasic ? 'цифровая шина от адаптера до котла, ' : 'цифровая шина от платы ЦШ до котла, ') : ''}` +
+            (isBasic ? 'RS-485 на датчики и разветвитель' : `RS-485 на блоки расширения${cfg.panel ? ' и выносную панель' : ''}`) + `, интернет от роутера.` +
+            `<br><b>Расчёт:</b> ${busParts.join(' + ')} = ${Math.ceil(busM)} м.`,
             groups.auto);
 
         if (cfg.airOn && cfg.airDevice && cfg.airQty > 0 && cfg.airDevice.link !== 'radio') {
@@ -18268,19 +18383,27 @@ const app = {
                 ? `Задано вручную — <b>${this.state.airSensors}</b> шт. (по расчёту ${cfg.airAuto}). ` +
                   `<a href="#" onclick="event.preventDefault();app.resetAirSensors();" style="color:var(--primary);">вернуть по расчёту</a><br>`
                 : `По расчёту <b>${cfg.airAuto}</b> шт.` +
-                  (cfg.airCapped
+                  (cfg.model === 'basic'
+                      ? ` — контур отопления у прибора один, значит и прибор в помещении нужен один.`
+                      : cfg.airCapped
                       ? ` — по числу подходящих комнат (контуров ${cfg.airByCircuits}, но датчик живёт в комнате).`
                       : (this.state.ufhAuto && cfg.mixCount > 0
                           ? ` — только на радиаторные контуры: комнаты с тёплым полом уже держат температуру своими термостатами.`
                           : ` — по одному на контур.`)) + `<br>`;
         }
-        if (kind === 'dry') {
+        const basic = !!(cfg && cfg.model === 'basic');
+        if (kind === 'dry' && !basic) {
             s += `Подключается сухим контактом на «Входы термостатов» — их у контроллера <b>${(cfg && cfg.dryInputs) || 3}</b>. ` +
                  `Контур переходит в режим «Термостат»: греет, пока термостат разомкнут, расчётную температуру подачи контроллер уже не ведёт.`;
         } else if (link === 'radio') {
-            s += 'Радиоканал 868 МГц. Радиомодуль добавится сам — один на объект, до 40 устройств.';
+            // У базового уровня радиосеть LoRa встроена, отдельный модуль не нужен.
+            s += basic
+                ? 'Радиоканал LoRa 868 МГц, до 100 м в прямой видимости. Радиосеть у контроллера встроенная — отдельный модуль не нужен.'
+                : 'Радиоканал 868 МГц. Радиомодуль добавится сам — один на объект, до 40 устройств.';
         } else {
-            s += 'Связь по шине RS-485 (витая пара, до 200 м).';
+            s += basic
+                ? 'Связь по шине RS-485 (витая пара, до 100 м).'
+                : 'Связь по шине RS-485 (витая пара, до 200 м).';
         }
         // Разница между вариантами нужна ровно в момент выбора, поэтому держим
         // её здесь же, а не в отдельной справке.
@@ -18288,9 +18411,13 @@ const app = {
             `<b>Датчик</b> — только меряет воздух, уставка задаётся в приложении. Контроллер сам считает температуру подачи.<br>` +
             `<b>Термостат</b> — то же самое плюс экран в комнате: температуру можно поменять, не доставая телефон.` +
             `</div>`;
-        s += kind === 'dry'
-            ? `<div class="tip-p"><b>Сейчас выбран термостат STOUT</b> — заменой позиции в смете. Чтобы вернуться к цифровому датчику, нажмите «Датчик» или «Термостат» выше.</div>`
-            : `<div class="tip-p"><b>Есть и третий вариант:</b> двухпозиционный термостат STOUT — дешевле, но контур переходит в режим «Термостат», плавного расчёта подачи уже нет, и таких входов у контроллера всего ${(cfg && cfg.dryInputs) || 3}. Выбирается заменой позиции в смете.</div>`;
+        // Двухпозиционный термостат — только для старшего прибора: у 1002 нет
+        // клемм «Входы термостатов», и предлагать его там нечего.
+        if (!basic) {
+            s += kind === 'dry'
+                ? `<div class="tip-p"><b>Сейчас выбран термостат STOUT</b> — заменой позиции в смете. Чтобы вернуться к цифровому датчику, нажмите «Датчик» или «Термостат» выше.</div>`
+                : `<div class="tip-p"><b>Есть и третий вариант:</b> двухпозиционный термостат STOUT — дешевле, но контур переходит в режим «Термостат», плавного расчёта подачи уже нет, и таких входов у контроллера всего ${(cfg && cfg.dryInputs) || 3}. Выбирается заменой позиции в смете.</div>`;
+        }
         // Само описание прячем под иконку, в панели остаётся только счёт.
         box.innerHTML = `<div style="position:relative; display:flex; align-items:center; justify-content:space-between; gap:6px;">` +
             `<span>${dev ? dev.name.slice(0, 34) : 'Прибор не подобран'}</span>` + this.tipHtml(s) + `</div>`;
@@ -20985,6 +21112,7 @@ const app = {
 
                     this.state = { ...this.state, ...savedState };
                     this.migrateSnowPipeSwap();
+                    this.migrateBoilerAutoLevel(savedState);
                     this.adoptPlans(savedState);
                     this.syncUI();
                     this.render();
@@ -21017,6 +21145,7 @@ const app = {
 
                 this.state = { ...this.state, ...savedState };
                 this.migrateSnowPipeSwap();
+                this.migrateBoilerAutoLevel(savedState);
                 this.adoptPlans(savedState);
                 this.syncUI();
                 this.render();
@@ -21050,7 +21179,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: currentShowScheme, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: currentShowScheme, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType,
@@ -21619,7 +21748,11 @@ const app = {
         this.captureUTM();
         this.applyPricingCurrencyDisplay();
         if (localStorage.getItem('stout_save')) {
-            try { this.state = { ...this.state, ...JSON.parse(localStorage.getItem('stout_save')) }; } catch (e) { console.error("Ошибка загрузки сохранения", e); }
+            try {
+                const _saved = JSON.parse(localStorage.getItem('stout_save'));
+                this.state = { ...this.state, ..._saved };
+                this.migrateBoilerAutoLevel(_saved);
+            } catch (e) { console.error("Ошибка загрузки сохранения", e); }
         }
         this.migrateSnowPipeSwap();
         this.loadInstallerSettingsLocal();
@@ -22725,7 +22858,7 @@ const app = {
             const _tlk = this._tankLoadKitInfo || {};
             const _pumpKitP = _tlk.price || (((catalog.groups_dn20[0] || {}).price || 0) + ((catalog.pumps_dn20[0] || {}).price || 0));
             customAlts = [
-                { id: 'fugas', name: 'Клапан Fugas: на время нагрева бойлера отопление отключается', brand: 'STOUT', price: _fugasKitP, imgId: (catalog.valves[0] || {}).id },
+                { id: 'fugas', name: 'Трёхходовой клапан: на время нагрева бойлера отопление отключается', brand: 'BAXI', price: _fugasKitP, imgId: (catalog.valves[0] || {}).id },
                 { id: 'tankpump', name: 'Насосная группа: бойлер греется параллельно с отоплением', brand: 'STOUT', price: _pumpKitP, imgId: _tlk.imgId || (catalog.groups_dn20[0] || {}).id }
             ];
             // Цену в шапке модалки берут у активного варианта ДО построчной простановки
@@ -26898,7 +27031,10 @@ const app = {
         if (!this.state.boilerAuto) return null;
         const cfg = this.thermaticConfig;
         // Контуров нет — контроллеру нечем управлять, и экономить не на чем.
-        if (!cfg || !cfg.circuitCount) return null;
+        // У базового уровня контуров не бывает вовсе, а экономия есть: он ведёт
+        // сам котёл — погодная кривая, расписание и каскад работают через него.
+        if (!cfg || (cfg.model !== 'basic' && !cfg.circuitCount)) return null;
+        if (cfg.model === 'basic' && !cfg.boilerCount) return null;
         const s = this.state;
         const K = this.BOILER_AUTO_SAVE;
 
@@ -26934,7 +27070,11 @@ const app = {
         });
         // Контуры, которые ведутся по воздуху комнаты, а не по теплоносителю:
         // зона не греется, когда в ней и так тепло от солнца, камина или людей.
-        const byAir = (cfg.circuits || []).filter(x => x.byAir).length;
+        // У базового уровня такой контур один — сам контур отопления, и ведётся
+        // он по воздуху, как только в смете появился комнатный прибор.
+        const byAir = (cfg.model === 'basic')
+            ? (cfg.airQty > 0 ? 1 : 0)
+            : (cfg.circuits || []).filter(x => x.byAir).length;
         if (byAir > 0) {
             parts.push({
                 label: `Регулирование по воздуху, контуров: ${byAir}`,
@@ -27133,6 +27273,26 @@ const app = {
      * теплоизоляции). Переносим выбор туда, где он теперь живёт, запись снимаем.
      * ROMMER-замену не трогаем: она про бренд, а не про типоразмер.
      */
+    /**
+     * Смета, сохранённая до появления базового уровня автоматики, остаётся на
+     * Thermatic 3001.
+     *
+     * Поля boilerAutoLevel в ней нет, и при загрузке оно берётся из значения по
+     * умолчанию — 'auto'. Для сметы с включённой автоматикой это означало бы
+     * молчаливую замену прибора: радиаторный объект, посчитанный с 3001,
+     * открылся бы с 1002 и подешевел на пятьдесят тысяч. Человек, который
+     * отправил клиенту ссылку, узнал бы об этом от клиента.
+     *
+     * Поэтому старым сметам уровень проставляем явно: автоматика была включена —
+     * значит 3001, как и считали. Автовыбор достаётся только новым расчётам.
+     *
+     * @param {object} saved — состояние, как оно пришло из сохранения (до слияния
+     *        с состоянием по умолчанию, иначе отличить «не было поля» нельзя).
+     */
+    migrateBoilerAutoLevel: function (saved) {
+        if (!saved || typeof saved !== 'object' || saved.boilerAutoLevel) return;
+        this.state.boilerAutoLevel = saved.boilerAuto ? 'full' : 'auto';
+    },
     migrateSnowPipeSwap: function () {
         const sw = this.state.swaps;
         if (!sw || !sw['snow_pipe']) return;
@@ -30496,6 +30656,8 @@ const app = {
         this.updateBoilerAutoBox();
         if (!this.state.boilerAuto) this.renderBoilerAutoInfo();
 
+        this.syncBoilerAutoLevel();
+
         // Защита от протечки, регулирование по воздуху и выносная панель:
         // нужен и контроллер, и подробный режим расчёта.
         const _advOpts = this.state.boilerAuto && this.state.detailedRooms;
@@ -30516,9 +30678,10 @@ const app = {
             let s = `По расчёту <b>${auto}</b>: по одному на каждую мокрую зону (${zones}) плюс один в котельную.`;
             // Счёт упёрся в предел шлейфа — об этом надо сказать прямо, иначе
             // выглядит как ошибка расчёта: зон больше, а датчиков меньше.
-            if (zones + 1 > this.LEAK_SENSORS_MAX) {
+            const _lmax = this.leakSensorsMax();
+            if (zones + 1 > _lmax) {
                 s = `Зон с водой ${zones}, и с котельной вышло бы ${zones + 1} датчиков — но на один вход ` +
-                    `контроллера ставим не больше <b>${this.LEAK_SENSORS_MAX}</b> в шлейфе. Взято ${this.LEAK_SENSORS_MAX}: ` +
+                    `контроллера ставим не больше <b>${_lmax}</b> в шлейфе. Взято ${_lmax}: ` +
                     `прикройте самые опасные места, остальное — отдельной системой защиты.`;
             }
             if (manual) {
@@ -32265,6 +32428,52 @@ const app = {
     THERMATIC_MAX_BOILERS: 2,
 
     /**
+     * Два уровня автоматики котельной.
+     *
+     * full  — Thermatic 3001: ведёт смесительные контуры, до 16 штук с блоками
+     *         расширения, у каждого свой насос, привод смесителя и своя кривая.
+     * basic — Thermatic 1002: смесительными узлами не управляет вовсе. Его дело —
+     *         котёл (до двух, каскад с ротацией), бойлер ГВС и погодная кривая.
+     *         На котельной без смесительных узлов делает ровно то же, что и
+     *         старший прибор, но стоит вчетверо меньше.
+     */
+    BOILER_AUTO_MODELS: {
+        full: { id: 'SMH-3001-104212', name: 'STOUT Thermatic 3001', short: 'Thermatic 3001' },
+        basic: { id: 'SMH-1002-105210', name: 'STOUT Thermatic 1002', short: 'Thermatic 1002' }
+    },
+
+    /**
+     * Какой контроллер идёт в смету.
+     *
+     * Ручной выбор в панели («Базовая» / «Полная») сильнее расчёта — монтажник
+     * может знать про объект то, чего не знает калькулятор. При выборе «По
+     * расчёту» смотрим на смесительные узлы: если их нет, управлять контурами
+     * нечем, и старший прибор в котельной просто дороже. Появился хоть один
+     * смесительный контур — тёплый пол на насосной группе со смесительным
+     * клапаном или узел снеготаяния — нужен 3001: у 1002 нет ни одного выхода
+     * на привод смесителя.
+     *
+     * Радиаторные группы к выбору не относятся: их насосы работают постоянно,
+     * а температуру в доме ведёт сам котёл по погодной кривой — это 1002 умеет.
+     *
+     * @param {{tQ:number, snow:object}} ctx — то же, что уходит в getThermaticConfig.
+     */
+    boilerAutoModel: function (ctx) {
+        const lvl = this.state.boilerAutoLevel || 'auto';
+        if (lvl === 'basic' || lvl === 'full') return lvl;
+        const c = ctx || {};
+        const tQ = Math.max(0, (c.tQ !== undefined ? c.tQ : this.tQ_val) || 0);
+        const snowQ = (c.snow && !c.snow.impossible) ? Math.max(1, c.snow.nodes || 1) : 0;
+        return (tQ + snowQ) > 0 ? 'full' : 'basic';
+    },
+
+    /** В смете стоит старший контроллер: только он ведёт смесительные узлы. */
+    thermaticFull: function () {
+        const cfg = this.thermaticConfig;
+        return !!(cfg && cfg.model !== 'basic');
+    },
+
+    /**
      * Очередь котлов на каналы контроллера: сначала газовые, потом электрические,
      * внутри группы — в порядке подбора. Возвращает [{ b, i }] с исходным индексом.
      *
@@ -32317,7 +32526,247 @@ const app = {
             ' не видит и в каскад не берёт.';
     },
 
+    /**
+     * Конфигурация базового уровня — Thermatic 1002.
+     *
+     * Возвращает объект той же формы, что и старший брат (см. getThermaticConfig):
+     * смета, работы, кабели и подсказки читают одни и те же поля и о разнице
+     * между приборами знать не обязаны. Что действительно другое:
+     *
+     *   контуров у прибора нет вовсе — circuitCount всегда 0, а потребителей
+     *     ровно два, отопление и ГВС (инструкция, п. 4.7);
+     *   первый котёл идёт по встроенной шине, адаптер покупается только второму;
+     *   проводных входов под датчики два, и один датчик уже лежит в коробке;
+     *   реле одно, поэтому всё, что надо включать и выключать, считается
+     *     поимённо — иначе на объекте выяснится, что подключать некуда.
+     */
+    getBasicAutoConfig: function (ctx) {
+        const s = this.state;
+        const c = ctx || {};
+        const rQ = Math.max(0, c.rQ || 0);
+        const tQ = Math.max(0, (c.tQ !== undefined ? c.tQ : this.tQ_val) || 0);
+        const dhwPump = !!c.dhwPump;
+        const boilers = c.boilers || [];
+        const snowQ = (c.snow && !c.snow.impossible) ? Math.max(1, c.snow.nodes || 1) : 0;
+
+        const MAX_BOILERS = this.THERMATIC_MAX_BOILERS;
+        const MAX_LEAK_SENSORS = this.LEAK_SENSORS_BASIC_MAX;
+        const WIRED_SLOTS = 2;      // входы Т1 и Т2 для проводных датчиков
+        const BUILT_IN_RELAYS = 1;  // одно встроенное реле, 250 В / 3 А
+        const ADAPTER_ID = 'SMH-0002-010570';
+
+        // --- Котлы ---
+        // Каналов по-прежнему два, очередь та же (сначала газовые): третий котёл
+        // остаётся на собственной автоматике, объяснение — в boilerScopeNote().
+        const wiredOrder = this._boilerChannelOrder(boilers);
+        const wired = wiredOrder.slice(0, MAX_BOILERS);
+        const wiredIdx = new Set(wired.map(x => x.i));
+        const busCapable = wired.filter(x => !(x.b && x.b.noBus));
+        // Адаптер нужен только второму котлу: шина первого встроена в прибор.
+        const adaptersNeeded = Math.max(0, busCapable.length - 1);
+        const adapterRemoved = !!(s.optItems && s.optItems[ADAPTER_ID]);
+        const adapterOverride = (s.qtyOverrides && s.qtyOverrides[ADAPTER_ID] !== undefined)
+            ? Math.max(0, parseInt(s.qtyOverrides[ADAPTER_ID], 10) || 0) : null;
+        const adaptersUsed = adapterRemoved ? 0
+            : (adapterOverride === null ? adaptersNeeded : Math.min(adapterOverride, adaptersNeeded));
+        // Сколько котлов реально идёт по цифровой шине: встроенная плюс купленные
+        // адаптеры, но не больше, чем котлов с шиной вообще.
+        const busCount = Math.min(busCapable.length, BUILT_IN_RELAYS + adaptersUsed);
+        const busIdx = new Set(busCapable.slice(0, busCount).map(x => x.i));
+        const boilerList = boilers.map((b, i) => ({
+            kind: (b && b.type === 'gas') ? 'gas' : 'el',
+            iface: !wiredIdx.has(i) ? 'own' : (busIdx.has(i) ? 'digital' : 'relay'),
+            circuits: (b && b.circuits) || 1
+        }));
+        const wiredCount = boilerList.filter(b => b.iface !== 'own').length;
+        const cascade = wiredCount > 1;
+        const relayBoilers = boilerList.filter(b => b.iface === 'relay').length;
+        const hasDigital = busCount > 0;
+
+        // --- ГВС ---
+        // Режимы те же, что и у старшего прибора: контур ГВС у 1002 полноценный,
+        // с насосом загрузки, датчиком бойлера и антилегионеллой.
+        let dhw = 'off';
+        if (s.hotWater) dhw = dhwPump ? 'boiler' : (hasDigital ? 'boiler_ct' : 'external');
+        else if (boilerList.some(b => b.kind === 'gas' && b.circuits === 2)) dhw = 'ct';
+        const recirc = !!(s.hotWater && s.recirc);
+
+        /**
+         * --- Датчики температуры ---
+         *
+         * Входов под проводные датчики два (Т1, Т2), и один датчик в гильзе уже
+         * лежит в коробке — он и закрывает первую потребность, которой нужна
+         * гильза. Что не влезло в два входа, идёт по шине RS-485: тот же датчик,
+         * но вдвое дороже, поэтому порядок здесь не случайный.
+         *
+         * Отдельного датчика теплоносителя при цифровой шине не нужно —
+         * температуру котла контроллер читает по ней же.
+         */
+        const needs = [];
+        if (dhw === 'boiler') needs.push({
+            role: 'dhw', label: 'Бойлер — температура ГВС', probe: true,
+            wired: 'SMH-0002-010030', bus: 'SMH-0002-010040'
+        });
+        needs.push({
+            role: 'out', label: 'Улица — для погодозависимого регулирования', probe: false,
+            wired: 'SMH-0002-010010', bus: 'SMH-0002-010020'
+        });
+        if (!hasDigital && wiredCount > 0) needs.push({
+            role: 'flow', label: 'Теплоноситель — подача котла', probe: true,
+            wired: 'SMH-0002-010030', bus: 'SMH-0002-010040'
+        });
+        let kitProbes = 1, slots = WIRED_SLOTS;
+        needs.forEach(n => {
+            if (n.probe && kitProbes > 0) { kitProbes--; slots--; n.src = 'kit'; return; }
+            if (slots > 0) { slots--; n.src = 'wired'; n.id = n.wired; }
+            else { n.src = 'bus'; n.id = n.bus; }
+        });
+
+        // --- Аксессуары ---
+        const advanced = !!s.detailedRooms;
+        const leakQty = (advanced && s.leakProtect && s.boilerAuto) ? this.leakSensorCount() : 0;
+        const leakValveBase = this.leakValveBase();
+        const leakSwapId = leakValveBase && s.swaps && s.swaps[leakValveBase.id];
+        const leakValve = (leakSwapId && (catalog.leak_valves || []).find(v => v.id === leakSwapId)) || leakValveBase;
+        const leakSolenoid = !!(leakValve && leakValve.solenoid);
+        const pressureOn = !!(s.heatingFeed && this.isAutoFeed());
+
+        /**
+         * --- Выходы 230 В ---
+         *
+         * Реле у прибора одно, и порядок в этом списке — это порядок на него:
+         * первым идёт тот, кому встроенное реле нужнее всех.
+         *
+         * Кран защиты от протечки стоит первым не по важности, а по физике: у
+         * четырёхполюсного привода отдельные провода «открыть» и «закрыть», и
+         * ему нужен переключающий контакт (общий / НЗ / НР). Он есть только у
+         * встроенного реле; выносные модули умеют лишь «включить-выключить».
+         *
+         * Всё остальное — обычная нагрузка, и на неё берётся дополнительный
+         * модуль. Насосы контуров отопления в список не входят: контроллер ими
+         * не управляет, они работают постоянно, а температуру ведёт котёл.
+         */
+        const loads = [];
+        if (leakQty > 0 && !leakSolenoid) loads.push({ label: 'Кран защиты от протечки (привод 230 В)', need: 'switch' });
+        for (let i = 0; i < relayBoilers; i++) loads.push({ label: 'Котёл на релейном управлении', need: 'onoff' });
+        if (dhw === 'boiler') loads.push({ label: 'Насос загрузки бойлера ГВС', need: 'onoff' });
+        if (recirc) loads.push({ label: 'Насос рециркуляции ГВС', need: 'onoff' });
+        if (leakQty > 0 && leakSolenoid) loads.push({ label: 'Соленоидный клапан на вводе ХВС', need: 'onoff' });
+        loads.forEach((l, i) => { l.out = (i < BUILT_IN_RELAYS) ? 'built' : 'extra'; });
+        const relayExtra = Math.max(0, loads.length - BUILT_IN_RELAYS);
+
+        /**
+         * --- Шлейф контактных датчиков (вход Д1) ---
+         *
+         * Вход один, поэтому со второго датчика нужен разветвитель. Безадресный
+         * дешевле, но датчики на нём неразличимы: контроллер видит «сработал
+         * кто-то в шлейфе». Пока это только извещатели протечки, разницы нет —
+         * реакция у них общая. Как только рядом встаёт манометр, нужен адресный:
+         * иначе падение давления перекроет воду в доме.
+         */
+        const dryDevices = leakQty + (pressureOn ? 1 : 0);
+        const dryMixed = leakQty > 0 && pressureOn;
+        const splitter = (dryDevices > 1)
+            ? { id: dryMixed ? 'SMH-0002-010550' : 'SMH-0002-010320', addressed: dryMixed, qty: 1 }
+            : null;
+
+        // --- Регулирование по воздуху ---
+        // Контур-потребитель отопления у прибора один, значит и прибор в
+        // помещении нужен один: второй привязывать не к чему. Сухой контакт
+        // недоступен — клемм «Входы термостатов» у 1002 нет.
+        const airOn = advanced && !!s.airControl;
+        const airKind = (s.airDeviceType === 'thermostat') ? 'thermostat' : 'sensor';
+        const airLink = (s.airLink === 'radio') ? 'radio' : 'wired';
+        const airPool = (catalog.air_sensors || []).filter(x => (x.sys || 'full') === 'basic');
+        const airDevice = airOn
+            ? ((s.airDeviceId && airPool.find(x => x.id === s.airDeviceId && x.kind === airKind && x.link === airLink))
+                || airPool.find(x => x.kind === airKind && x.link === airLink) || null)
+            : null;
+        const airAuto = 1;
+        const airManual = (s.airSensors === null || s.airSensors === undefined) ? null : s.airSensors;
+        const airQty = airOn ? Math.max(0, airManual === null ? airAuto : airManual) : 0;
+
+        // --- Что не сходится ---
+        const warnings = [];
+        const notes = [];
+        if (boilerList.length === 0) {
+            warnings.push('Котёл в смете не подобран — управлять контроллеру нечем. Задайте параметры объекта, ' +
+                'чтобы расчёт подобрал котёл.');
+        }
+        if (tQ + snowQ > 0) {
+            const what = [];
+            if (tQ > 0) what.push(tQ > 1 ? tQ + ' смесительных узла тёплого пола' : 'смесительный узел тёплого пола');
+            if (snowQ > 0) what.push(snowQ > 1 ? snowQ + ' узла снеготаяния' : 'узел снеготаяния');
+            warnings.push('В смете ' + what.join(' и ') + ', а Thermatic 1002 смесительными узлами не управляет: ' +
+                'выходов на привод смесителя у него нет вовсе. ' + (tQ > 0 ? 'Тёплый пол останется на своей ' +
+                'термостатической головке или на автоматике раздела 4.3, ' : '') + 'погодная кривая достанется ' +
+                'только котлу. Чтобы вести смесительные контуры по погоде, переключите уровень автоматики на ' +
+                '«Полная — Thermatic 3001».');
+        }
+        if (dhw === 'external') {
+            warnings.push('Бойлер греется переключающим клапаном от котла, у которого нет цифровой шины, — ' +
+                'контуром ГВС контроллер управлять не сможет. Чтобы ГВС попало под него, включите ' +
+                '«Загрузка бойлера насосной группой».');
+        }
+        if (adapterRemoved && busCapable.length > 1) {
+            warnings.push('Адаптер цифровой шины удалён из сметы — второй котёл перейдёт на релейное управление, ' +
+                'по перемычке комнатного термостата, и займёт собой ещё один выход. Уставка, модуляция горелки ' +
+                'и коды аварий по перемычке не передаются.');
+        }
+        if (leakQty > MAX_LEAK_SENSORS) {
+            warnings.push('Датчиков протечки ' + leakQty + ', а в шлейф входа Д1 их помещается не больше ' +
+                MAX_LEAK_SENSORS + ' (документация, п. 1.4). Лишние вешать некуда — уменьшите количество ' +
+                'или разнесите защиту на отдельный прибор.');
+        }
+        if (airQty > 1) {
+            warnings.push('Комнатных приборов ' + airQty + ', а контур отопления у прибора один — привязать ' +
+                'к контуру можно только первый. Остальные будут показывать температуру, но в регулировании ' +
+                'не участвовать.');
+        }
+        if (relayExtra > 0) {
+            // Строчная только первая буква: целиком в нижний регистр уходило бы
+            // и «230 В» в подписи привода.
+            const lc = t => t.charAt(0).toLowerCase() + t.slice(1);
+            notes.push('Встроенное реле одно, а включать надо ' + loads.length + ': ' +
+                loads.map(l => lc(l.label)).join(', ') + '. Под ' +
+                (relayExtra > 1 ? 'лишние нагрузки в смету добавлены выносные реле' : 'лишнюю нагрузку в смету добавлено выносное реле') +
+                ' — они и дают недостающие выходы.');
+        }
+        if (needs.some(n => n.src === 'bus')) {
+            notes.push('Часть датчиков подключена по шине RS-485: проводных входов у контроллера два, и один ' +
+                'из них уже занят датчиком из комплекта. Датчики по шине те же самые, просто дороже.');
+        }
+
+        return {
+            model: 'basic',
+            // Контуров у прибора нет: он ведёт котёл, а не насосные группы.
+            // Поля оставлены ради общей формы — их читают смета, работы и кабели.
+            circuits: [], circuitCount: 0, mixCount: 0, directCount: rQ,
+            consumers: ['Отопление', dhw !== 'off' ? 'ГВС' : null].filter(Boolean),
+            boilers: boilerList, boilerCount: boilerList.length, wiredCount, cascade,
+            // digitalBoards здесь — адаптеры к покупке, busCount — котлы по шине.
+            // У старшего прибора эти числа совпадают, здесь расходятся на единицу:
+            // шина первого котла встроена.
+            digitalBoards: adaptersNeeded, boardsUsed: adaptersUsed, boardRemoved: adapterRemoved, busCount,
+            dhw, recirc,
+            sensors: needs, ntc: needs.map(n => n.label), ntcUsed: needs.length,
+            expansion: [], needsPsu: false,
+            loads, relays: loads.length, relaysMax: BUILT_IN_RELAYS, relayExtra,
+            powerLoads: loads.length,
+            splitter, dryDevices,
+            airOn, airDevice, airQty, airAuto, airManual, airKind, airCapped: false,
+            airByCircuits: 1, roomsFit: 1,
+            snowSensor: false, dryInputs: 0, needRadio: false,
+            leakQty, leakValve, leakSolenoid,
+            advanced, panel: false, slotsFree: 0,
+            warnings, notes
+        };
+    },
+
     getThermaticConfig: function (ctx) {
+        // Базовый уровень считается отдельно: у приборов расходится всё, кроме
+        // очереди котлов, — контуры, входы, реле и состав комплекта.
+        if (this.boilerAutoModel(ctx) === 'basic') return this.getBasicAutoConfig(ctx);
         const s = this.state;
         const c = ctx || {};
         const rQ = Math.max(0, c.rQ || 0);
@@ -32517,7 +32966,9 @@ const app = {
         // Проверку по виду и связи оставляем: если после ручного выбора
         // переключили «Датчик/Термостат» или «Проводом/По радио», старый
         // артикул не подойдёт и подбор сам вернётся к первому подходящему.
-        const airPool = catalog.air_sensors || [];
+        // Приборы базового уровня сюда не попадают: они говорят по своей шине с
+        // Thermatic 1002, и к 3001 их не подключить.
+        const airPool = (catalog.air_sensors || []).filter(x => (x.sys || 'full') === 'full');
         const airDevice = airOn
             ? ((s.airDeviceId && airPool.find(x => x.id === s.airDeviceId && x.kind === airKind && x.link === airLink))
                 || airPool.find(x => x.kind === airKind && x.link === airLink) || null)
@@ -32687,8 +33138,26 @@ const app = {
             notes.push('Сервопривод смесителя заменён на обычный: вариант с накладным датчиком держит ' +
                 'температуру сам, и вместе с контроллером получилось бы два регулятора на одном клапане.');
         }
+        // Старший прибор на котельной, где ему нечего вести. Сюда попадают только
+        // по ручному выбору: расчёт в такой конфигурации сам предложил бы 1002
+        // (см. boilerAutoModel). Молчать нельзя — разница в цене вчетверо.
+        if (circuits.every(x => x.type !== 'mix')) {
+            const _basic = this.BOILER_AUTO_MODELS.basic;
+            const _bItem = (catalog.boiler_automation || []).find(x => x.id === _basic.id);
+            notes.push('Смесительных узлов в смете нет, а 3001 нужен прежде всего ради них. С этой котельной ' +
+                'справится ' + _basic.short + (_bItem ? ' за ' + Math.round(_bItem.price).toLocaleString('ru-RU') + ' ₽' : '') +
+                ': котёл по цифровой шине, каскад, бойлер ГВС и погодная кривая у него те же. Переключается ' +
+                'в панели, «Уровень автоматики».');
+        }
 
         return {
+            model: 'full',
+            // Котлы по цифровой шине: у старшего прибора их ровно столько, сколько
+            // плат осталось в смете — своей встроенной шины у него нет.
+            busCount: boardsUsed,
+            // Нагрузки 230 В для расчёта силового кабеля: насосы контуров, насос
+            // загрузки бойлера и рециркуляция.
+            powerLoads: circuitCount + (dhw === 'boiler' ? 1 : 0) + (recirc ? 1 : 0),
             circuits, circuitCount,
             mixCount: tQ, directCount: rQ,
             // boilerCount — сколько котлов в смете, wiredCount — сколько из них
@@ -32709,6 +33178,92 @@ const app = {
         };
     },
 
+    /**
+     * Как подключены котлы — строка для подсказки контроллера.
+     *
+     * Общая для обоих приборов: каналов у них поровну (два), и котёл, которому
+     * канала не досталось, ведёт себя одинаково. Разница только в том, откуда
+     * берётся цифровая шина, и о ней говорит уже сама строка адаптера.
+     */
+    thermaticBoilerText: function (cfg) {
+        if (!cfg.boilerCount) return 'котёл в смете не подобран';
+        const wiredB = (cfg.boilers || []).filter(b => b.iface !== 'own');
+        const ownB = (cfg.boilers || []).filter(b => b.iface === 'own');
+        const dig = wiredB.filter(b => b.iface === 'digital').length;
+        const rel = wiredB.length - dig;
+        const parts = [];
+        if (dig) parts.push(`${dig} по цифровой шине`);
+        if (rel) parts.push(`${rel} релейно (по перемычке термостата)`);
+        if (!ownB.length) {
+            return `${cfg.boilerCount} шт. — ${parts.join(', ')}` + (cfg.cascade ? '; работают в каскаде' : '');
+        }
+        const ownKinds = ownB.map(b => b.kind === 'gas' ? 'газовый' : 'электрический').join(' и ');
+        return `${cfg.boilerCount} шт. — под контроллером ${wiredB.length} (${parts.join(', ')})` +
+            (cfg.cascade ? ', работают в каскаде' : '') +
+            `; ${ownKinds} — вне контроллера: котловых каналов у прибора всего два. ` +
+            `Резервом ${ownB.length > 1 ? 'котлы работают' : 'котёл работает'} на собственной автоматике — ` +
+            `${ownB.length > 1 ? 'включатся' : 'включится'} по своему термостату, когда остынет теплоноситель`;
+    },
+    /** Режим приготовления горячей воды — тот же у обоих контроллеров. */
+    thermaticDhwText: function (cfg) {
+        return {
+            boiler: 'Бойлер — контроллер сам управляет насосом загрузки и следит за датчиком ГВС (доступна антилегионелла)',
+            boiler_ct: 'Котёл+Бойлер — БКН на переключающем клапане котла, контроллер передаёт котлу целевую температуру по цифровой шине',
+            ct: 'Котловой — горячую воду готовит проточный теплообменник двухконтурного котла',
+            external: 'Мимо контроллера — бойлер греется переключающим клапаном от котла без цифровой шины',
+            off: 'Отключён — горячего водоснабжения в смете нет'
+        }[cfg.dhw] || '—';
+    },
+    /**
+     * Подсказка строки контроллера базового уровня.
+     *
+     * Тот же разбор, что и у 3001, но по другим осям: у 1002 нет контуров, зато
+     * есть то, чего у старшего прибора не бывает узким местом, — два проводных
+     * входа под датчики и одно-единственное реле. Монтажник должен видеть,
+     * кому это реле досталось, ещё до выезда на объект.
+     */
+    getBasicAutoDesc: function (cfg) {
+        const styles = "font-size:11px; line-height:1.4;";
+        const head = "font-weight:700; color:#93C5FD; display:block; margin-bottom:9px; padding-bottom:7px; border-bottom:1px solid rgba(255,255,255,0.15);";
+
+        const srcName = { kit: 'из комплекта, вход Т1/Т2', wired: 'проводом, вход Т1/Т2', bus: 'по шине RS-485' };
+        let sensors = '';
+        (cfg.sensors || []).forEach(n => {
+            sensors += `<br>&nbsp;&nbsp;• ${n.label} — ${srcName[n.src] || ''}`;
+        });
+        if (!sensors) sensors = '<br>&nbsp;&nbsp;• датчиков не требуется';
+
+        let loads = '';
+        (cfg.loads || []).forEach(l => {
+            loads += `<br>&nbsp;&nbsp;• ${l.label} — ${l.out === 'built' ? 'встроенное реле' : 'выносное реле'}`;
+        });
+        if (!loads) loads = '<br>&nbsp;&nbsp;• управляемых нагрузок нет — реле остаётся свободным';
+
+        let warnText = '';
+        (cfg.notes || []).forEach(n => { warnText += `<div class="tip-p">ℹ️ ${n}</div>`; });
+        (cfg.warnings || []).forEach(w => { warnText += `<div class="tip-p">⚠️ ${w}</div>`; });
+
+        return `<span style="${styles}"><span style="${head}">Контроллер отопления STOUT Thermatic 1002</span>` +
+            `<div class="tip-p"><b>Зачем:</b> Ведёт котёл по его же цифровой шине — задаёт уставку, читает ` +
+            `модуляцию горелки и коды аварий, — держит погодную кривую по уличному датчику и готовит горячую ` +
+            `воду. Всё видно и настраивается с телефона: GSM, Wi-Fi, а когда интернета нет — SMS-командами.</div>` +
+            `<div class="tip-p">` +
+            `<b>Контуры-потребители:</b> ${(cfg.consumers || []).join(' и ').toLowerCase() || '—'} — больше у прибора нет. ` +
+            `Насосы контуров отопления работают постоянно, температуру ведёт котёл.<br>` +
+            `<b>Котлы:</b> ${this.thermaticBoilerText(cfg)}.<br>` +
+            `<b>ГВС:</b> ${this.thermaticDhwText(cfg)}.<br>` +
+            `<b>Датчики:</b>${sensors}<br>` +
+            `<b>Выходы 230 В:</b>${loads}<br>` +
+            `<b>Связь:</b> GSM (две SIM-карты и аккумуляторы в комплекте), Wi-Fi и радиосеть LoRa — ` +
+            `радиомодуль докупать не нужно, антенны идут с прибором.` +
+            (cfg.leakQty > 0 ? `<br><b>Шлейф Д1:</b> ${cfg.dryDevices} ${this.plural(cfg.dryDevices, 'датчик', 'датчика', 'датчиков')}` +
+                (cfg.splitter ? ` через ${cfg.splitter.addressed ? 'адресный' : 'безадресный'} разветвитель` : ' напрямую') +
+                `, предел шлейфа — ${this.LEAK_SENSORS_BASIC_MAX}.` : '') +
+            `</div>` +
+            warnText +
+            `</span>`;
+    },
+
     getDesc: function (type, val1, val2, val3, val4, val5) {
         const styles = "font-size:11px; line-height:1.4;";
         const head = "font-weight:700; color:#93C5FD; display:block; margin-bottom:9px; padding-bottom:7px; border-bottom:1px solid rgba(255,255,255,0.15);";
@@ -32718,13 +33273,10 @@ const app = {
         // какого типа, как подключены котлы, что с ГВС и хватает ли клемм.
         if (type === 'thermatic') {
             const cfg = val1 || {};
-            const dhwText = {
-                boiler: 'Бойлер — контроллер сам управляет насосом загрузки и следит за датчиком ГВС (доступна антилегионелла)',
-                boiler_ct: 'Котёл+Бойлер — БКН на переключающем клапане котла, контроллер передаёт котлу целевую температуру по цифровой шине',
-                ct: 'Котловой — горячую воду готовит проточный теплообменник двухконтурного котла',
-                external: 'Мимо контроллера — бойлер греется переключающим клапаном от котла без цифровой шины',
-                off: 'Отключён — горячего водоснабжения в смете нет'
-            }[cfg.dhw] || '—';
+            // Базовый уровень разбирается по своим осям — у него нет ни контуров,
+            // ни блоков расширения, зато узкое место в реле и входах датчиков.
+            if (cfg.model === 'basic') return this.getBasicAutoDesc(cfg);
+            const dhwText = this.thermaticDhwText(cfg);
 
             let rows = '';
             (cfg.circuits || []).forEach(x => {
@@ -32733,31 +33285,10 @@ const app = {
             });
             if (!rows) rows = '<br>&nbsp;&nbsp;• контуров с насосными группами нет';
 
-            let boilerText = '';
-            if (cfg.boilerCount > 0) {
-                // Считаем только те котлы, которым достался канал контроллера.
-                // Раньше в счёт шли все, и на объекте с тремя котлами подсказка
-                // обещала релейное управление третьим — а подключать его некуда.
-                const wiredB = (cfg.boilers || []).filter(b => b.iface !== 'own');
-                const ownB = (cfg.boilers || []).filter(b => b.iface === 'own');
-                const dig = wiredB.filter(b => b.iface === 'digital').length;
-                const rel = wiredB.length - dig;
-                const parts = [];
-                if (dig) parts.push(`${dig} по цифровой шине`);
-                if (rel) parts.push(`${rel} релейно (по перемычке термостата)`);
-                if (!ownB.length) {
-                    boilerText = `${cfg.boilerCount} шт. — ${parts.join(', ')}` + (cfg.cascade ? '; работают в каскаде' : '');
-                } else {
-                    const ownKinds = ownB.map(b => b.kind === 'gas' ? 'газовый' : 'электрический').join(' и ');
-                    boilerText = `${cfg.boilerCount} шт. — под контроллером ${wiredB.length} (${parts.join(', ')})` +
-                        (cfg.cascade ? ', работают в каскаде' : '') +
-                        `; ${ownKinds} — вне контроллера: котловых каналов у прибора всего два. ` +
-                        `Резервом ${ownB.length > 1 ? 'котлы работают' : 'котёл работает'} на собственной автоматике — ` +
-                        `${ownB.length > 1 ? 'включатся' : 'включится'} по своему термостату, когда остынет теплоноситель`;
-                }
-            } else {
-                boilerText = 'котёл в смете не подобран';
-            }
+            // Считаем только те котлы, которым достался канал контроллера: на
+            // объекте с тремя котлами подсказка не должна обещать управление
+            // третьим — подключать его некуда.
+            const boilerText = this.thermaticBoilerText(cfg);
 
             let expText = '';
             (cfg.expansion || []).forEach(e => {
@@ -33336,9 +33867,9 @@ const app = {
             case 'exp_d':
                 return `<span style="${styles}"><span style="${head}">Расширительный бак (ГВС)</span><b>Зачем:</b> Компенсация давления при нагреве бойлера.<br><b>Формула:</b> 10% от объема бойлера (${val1} л).<br><b>Расчет:</b> ${val2} л.</span>`;
             case 'fugas':
-                return `<span style="${styles}"><span style="${head}">Комплект Fugas</span><b>Зачем:</b> Трехходовой клапан для подключения бойлера к одноконтурному котлу.<br><b>Функция:</b> Переключает поток на нагрев воды по датчику.</span>`;
+                return `<span style="${styles}"><span style="${head}">Комплект 3-х ходового клапана</span><b>Зачем:</b> Трехходовой клапан для подключения бойлера к одноконтурному котлу.<br><b>Функция:</b> Переключает поток на нагрев воды по датчику.<br><b>Состав:</b> Клапан, датчик NTC 2 м, датчик LM335 2 м.</span>`;
             case 'fugas_pump':
-                return `<span style="${styles}"><span style="${head}">Насосная группа (загрузка бойлера)</span><b>Зачем:</b> Альтернатива клапану Fugas для подключения бойлера к одноконтурному котлу.<br><b>Функция:</b> Отдельный насос по сигналу термостата бойлера подкачивает контур загрузки, не отключая при этом отопление дома (в отличие от переключающего 3-х ходового клапана).</span>`;
+                return `<span style="${styles}"><span style="${head}">Насосная группа (загрузка бойлера)</span><b>Зачем:</b> Альтернатива трёхходовому клапану для подключения бойлера к одноконтурному котлу.<br><b>Функция:</b> Отдельный насос по сигналу термостата бойлера подкачивает контур загрузки, не отключая при этом отопление дома (в отличие от переключающего 3-х ходового клапана).</span>`;
             case 'pump_std':
                 return `<span style="${styles}"><span style="${head}">Насос циркуляционный</span><b>Зачем:</b> Прокачка теплоносителя по системе.<br><b>Параметры:</b> 25/60 (Напор 6м).<br><b>Подбор:</b> По гидравлическому сопротивлению самой длинной петли.</span>`;
 
@@ -35009,7 +35540,7 @@ const app = {
         // с price <= 0 — иначе в режиме «Аналог» он подменил бы узел этим списком.
         // Непустой .alts при этом обязателен: именно он зажигает кнопку замены.
         const _tankLoadAlts = [
-            { id: 'fugas', name: 'Комплект 3-х ход. клапана Fugas', brand: 'STOUT', price: 0 },
+            { id: 'fugas', name: 'Комплект 3-х ход. клапана', brand: 'BAXI', price: 0 },
             { id: 'tankpump', name: 'Насосная группа загрузки бойлера', brand: 'STOUT', price: 0 }
         ];
         // Цену варианта «насосная группа» для модалки считает 2.4 (там известно, DN20 или
@@ -35498,7 +36029,9 @@ const app = {
         // сама замена происходит ровно один раз, а объяснить её надо всё время,
         // пока автоматика включена. Иначе пояснение мелькало на той единственной
         // перерисовке, где сработала подмена, и пользователь его не видел.
-        if (this.state.boilerAuto && tQ > 0) {
+        // Базовый уровень смесителем не управляет — привод с накладным датчиком
+        // остаётся единственным регулятором узла, и подменять его нечем.
+        if (this.state.boilerAuto && tQ > 0 && this.state.boilerAutoLevel !== 'basic') {
             const _servoDefault = (tQ > 1) ? 'std' : 'sensor';
             if ((this.state.servoType || _servoDefault) === 'sensor') {
                 this.state.servoType = 'std';
@@ -36139,13 +36672,53 @@ const app = {
             // будущие листы проекта, не пересчитывая её заново.
             this.thermaticConfig = cfg;
 
-            let ctrlItem = catalog.boiler_automation.find(x => x.id === "SMH-3001-104212");
+            // Прибор — по выбранному уровню автоматики. Всё остальное в разделе
+            // берётся из конфигурации, а она уже посчитана под свой контроллер.
+            const _model = (cfg.model === 'basic') ? 'basic' : 'full';
+            let ctrlItem = catalog.boiler_automation.find(x => x.id === this.BOILER_AUTO_MODELS[_model].id);
             if (ctrlItem) addToBill(ctrlItem, 1, this.getDesc('thermatic', cfg), grpAuto);
+
+            // Адаптер цифровой шины базового уровня: шина первого котла встроена
+            // в прибор, поэтому покупается он только второму.
+            if (_model === 'basic' && cfg.digitalBoards > 0) {
+                let ad = catalog.boiler_automation.find(x => x.id === "SMH-0002-010570");
+                if (ad) addToBill(ad, cfg.digitalBoards, this.autoTip(ad.name, [
+                    `<b>Зачем:</b> Второй котёл в каскаде. Цифровая шина первого котла встроена в контроллер, а на второй нужен отдельный адаптер — он ставится на DIN-рейку и связывается с прибором по RS-485.`,
+                    `<b>Количество:</b> ${cfg.digitalBoards} шт. — один адаптер на один котёл. Всего котлов под контроллером ${cfg.wiredCount}, по шине идёт ${cfg.busCount}.`,
+                    `<b>Протоколы:</b> OpenTherm, eBus, Navien, Rinnai, BSB — как у встроенной шины. Для Arderia, Lemax, Kiturami и EMS+ есть свои адаптеры того же формата, они меняются заменой позиции у поставщика.`,
+                    cfg.boardRemoved
+                        ? `⚠️ <b>Адаптер удалён из сметы.</b> Второй котёл перейдёт на релейное управление — по перемычке комнатного термостата, только «греет / не греет», — и займёт собой выход реле.`
+                        : `<b>Если убрать из сметы:</b> второй котёл останется на релейном управлении и займёт один из выходов; уставка, модуляция горелки и коды аварий по перемычке не передаются.`
+                ]), grpAuto);
+            }
+
+            // Датчики температуры базового уровня. Проводных входов два, один
+            // датчик в гильзе лежит в комплекте — покупаем только то, чего не
+            // хватило; что не влезло в два входа, идёт по шине RS-485.
+            if (_model === 'basic') {
+                const _sensBuy = new Map();
+                (cfg.sensors || []).filter(n => n.src !== 'kit' && n.id).forEach(n => {
+                    const cur = _sensBuy.get(n.id) || { qty: 0, roles: [], src: n.src };
+                    cur.qty++; cur.roles.push(n.label);
+                    _sensBuy.set(n.id, cur);
+                });
+                _sensBuy.forEach((v, id) => {
+                    const it = catalog.boiler_automation.find(x => x.id === id);
+                    if (!it) return;
+                    addToBill(it, v.qty, this.autoTip(it.name, [
+                        `<b>Куда:</b> ${v.roles.join('; ')}.`,
+                        v.src === 'bus'
+                            ? `<b>Подключение:</b> шина RS-485 (витая пара, до 100 м). Проводные входы Т1 и Т2 уже заняты, поэтому датчик берётся в исполнении для шины — он дороже, но подключить его больше некуда.`
+                            : `<b>Подключение:</b> проводной вход Т1/Т2 контроллера, кабель 5 м в комплекте с датчиком.`,
+                        `<b>Комплект:</b> один датчик температуры в гильзе идёт с контроллером — в смете его нет, он уже закрыл свою точку.`
+                    ]), grpAuto);
+                });
+            }
 
             // Плата цифровой шины: одна на котёл, максимум две. Разъёмы ЦШ1 и
             // ЦШ2 из коробки пустые, без платы газовый котёл ведётся только
             // релейно — без модуляции горелки и без кодов ошибок.
-            if (cfg.digitalBoards > 0) {
+            if (_model === 'full' && cfg.digitalBoards > 0) {
                 let board = catalog.boiler_automation.find(x => x.id === "ML00005842");
                 if (board) addToBill(board, cfg.digitalBoards, this.autoTip('Плата цифровых шин универсальная', [
                     `<b>Зачем:</b> Через неё контроллер говорит с котлом на его языке: задаёт уставку, читает модуляцию горелки и коды аварий.`,
@@ -36162,11 +36735,16 @@ const app = {
             // Датчики воздуха: по одному на контур, каждый привязывается к
             // своему — без привязки регулировать по воздуху нельзя.
             if (cfg.airOn && cfg.airDevice && cfg.airQty > 0) {
-                let airAlts = (catalog.air_sensors || []).filter(x => x.id !== cfg.airDevice.id);
+                // Аналоги — только приборы своего контроллера: у 1002 и 3001
+                // разные шины и разные линейки, и подменить один другим нельзя.
+                let airAlts = (catalog.air_sensors || [])
+                    .filter(x => (x.sys || 'full') === _model && x.id !== cfg.airDevice.id);
                 const _dry = (cfg.airKind === 'dry');
                 const _qtyWhy = (cfg.airManual !== null)
                     ? `${cfg.airQty} шт. — задано вручную (по расчёту ${cfg.airAuto}).`
-                    : (this.state.ufhAuto && cfg.mixCount > 0
+                    : (_model === 'basic'
+                        ? `${cfg.airQty} шт. — контур отопления у прибора один, значит и прибор в помещении нужен один.`
+                        : this.state.ufhAuto && cfg.mixCount > 0
                         ? `${cfg.airQty} шт. — по одному на радиаторный контур. Контуры тёплого пола сюда не входят: их комнаты уже держат температуру своими термостатами через сервоприводы петель, и второй прибор в тех же помещениях не нужен.`
                         : `${cfg.airQty} шт. — по одному на контур.`);
                 addToBill({ ...cfg.airDevice, alts: airAlts }, cfg.airQty, this.autoTip(cfg.airDevice.name, [
@@ -36219,6 +36797,21 @@ const app = {
                 ]), grpAuto);
             }
 
+            // Дополнительные выходы базового уровня: встроенное реле одно, и
+            // всё, что не поместилось, получает свой модуль.
+            if (cfg.relayExtra > 0) {
+                let rel = catalog.boiler_automation.find(x => x.id === "SMH-0002-010790");
+                let relAlt = catalog.boiler_automation.find(x => x.id === "SMH-0002-010210");
+                const _lc = t => t.charAt(0).toLowerCase() + t.slice(1);
+                const _extraLoads = (cfg.loads || []).filter(l => l.out === 'extra').map(l => _lc(l.label));
+                if (rel) addToBill({ ...rel, alts: relAlt ? [relAlt] : undefined }, cfg.relayExtra, this.autoTip(rel.name, [
+                    `<b>Зачем:</b> Реле у контроллера одно, а включать нужно ${cfg.loads.length}: ${cfg.loads.map(l => _lc(l.label)).join(', ')}. Модуль даёт недостающий выход и ставится прямо у нагрузки.`,
+                    `<b>Количество:</b> ${cfg.relayExtra} шт. — по одному на каждую нагрузку сверх встроенного реле (${_extraLoads.join(', ')}).`,
+                    `<b>Связь:</b> радиоканал LoRa, до 100 м в прямой видимости. Радиосеть у контроллера встроенная, отдельный модуль для неё не нужен.`,
+                    `<b>Замена:</b> вместо радиореле можно взять блок управления двумя розетками по шине RS-485 — он дешевле в пересчёте на выход, но нагрузка должна включаться вилкой.`
+                ]), grpAuto);
+            }
+
             // Защита от протечки. Кран физически стоит на вводе ХВС, но живёт
             // в этом разделе: без контроллера он мёртвый — командует им
             // релейный выход 1, выделенный под это жёстко.
@@ -36226,8 +36819,11 @@ const app = {
                 let sensors = cfg.leakQty;
                 let zonesCnt = (this.state.water && Array.isArray(this.state.waterZones)) ? this.state.waterZones.length : 0;
                 let manualCnt = (this.state.leakSensors !== null && this.state.leakSensors !== undefined);
+                // Извещатель — из линейки своего контроллера: шлейф у приборов
+                // разный, и разветвители к нему идут из того же комплекта.
+                let leakSensor = (catalog.leak_sensors || []).find(x => (x.sys || 'full') === _model) || catalog.leak_sensors[0];
 
-                addToBill(catalog.leak_sensors[0], sensors, this.autoTip(catalog.leak_sensors[0].name, [
+                addToBill(leakSensor, sensors, this.autoTip(leakSensor.name, [
                     `<b>Зачем:</b> Извещатель утечки на полу в мокрых зонах. По его сработке контроллер закрывает ввод воды и шлёт оповещение.`,
                     `<b>Количество:</b> ${manualCnt ? `${sensors} шт. — задано вручную.` : `${sensors} шт. — по одному на каждую мокрую зону (${zonesCnt}) плюс один в котельную.`}`,
                     `<b>Важно:</b> при подключении соблюдать полярность — иначе датчик постоянно показывает сработку.`
@@ -36259,6 +36855,23 @@ const app = {
                 }
             }
 
+            // Разветвитель шлейфа Д1 базового уровня: контактный вход у прибора
+            // один, а датчиков в смете больше.
+            if (cfg.splitter) {
+                let spl = catalog.boiler_automation.find(x => x.id === cfg.splitter.id);
+                if (spl) addToBill(spl, cfg.splitter.qty, this.autoTip(spl.name, cfg.splitter.addressed
+                    ? [
+                        `<b>Зачем:</b> Контактный вход Д1 у контроллера один, а датчиков в смете ${cfg.dryDevices}: извещатели протечки и манометр.`,
+                        `<b>Почему адресный:</b> на безадресном разветвителе все датчики сливаются в один шлейф, и контроллер видит только «сработал кто-то». Реакция «перекрыть воду» тогда сработала бы и от падения давления. Адресный разветвитель различает датчики: у каждого своя тревога и своё оповещение.`,
+                        `<b>Подключение:</b> шина RS-485. Предел шлейфа — ${this.LEAK_SENSORS_BASIC_MAX} датчиков; если входов разветвителя не хватит, добавьте второй.`
+                    ]
+                    : [
+                        `<b>Зачем:</b> Контактный вход Д1 у контроллера один, а извещателей протечки ${cfg.leakQty}. Разветвитель собирает их в общий шлейф.`,
+                        `<b>Тревога общая:</b> датчики на безадресном разветвителе неразличимы — контроллер знает, что сработал кто-то в шлейфе, но не кто именно. Для защиты от протечки этого достаточно: реакция у всех одна, вода перекрывается.`,
+                        `<b>Предел:</b> ${this.LEAK_SENSORS_BASIC_MAX} датчиков в шлейфе (документация, п. 1.4). Если входов разветвителя не хватит на все датчики, добавьте второй — они соединяются последовательно.`
+                    ]), grpLeak);
+            }
+
             // Датчик давления: сам по себе он ничем не управляет, его дело —
             // следить за порогами и оповещать. Нужен только в режиме подпитки
             // «Авто + контроль».
@@ -36267,11 +36880,17 @@ const app = {
             // контроллер, — вешать датчик больше не на что, а при живом
             // контроллере не поставить его было бы упущением.
             if (this.state.heatingFeed && this.isAutoFeed()) {
-                let pSensor = catalog.boiler_automation.find(x => x.id === "ML00005517");
-                if (pSensor) addToBill(pSensor, 1, this.autoTip(pSensor.name, [
-                    `<b>Зачем:</b> Автоподпитка доливает воду молча, и медленная утечка может идти месяцами незамеченной. Датчик давления на аналоговом входе контроллера её вскрывает: пороги заданы, при отклонении приходит оповещение.`,
-                    `<b>Важно:</b> контроллер только следит и оповещает — открывать подпитку он не умеет, это делает механический клапан.`
-                ]), grpPress);
+                let pSensor = catalog.boiler_automation.find(x => x.id === (_model === 'basic' ? "SMH-0002-010100" : "ML00005517"));
+                if (pSensor) addToBill(pSensor, 1, this.autoTip(pSensor.name, _model === 'basic'
+                    ? [
+                        `<b>Зачем:</b> Автоподпитка доливает воду молча, и медленная утечка может идти месяцами незамеченной. Манометр с электроконтактной приставкой её вскрывает: стрелки порогов выставляются на корпусе, и при выходе за них приходит оповещение.`,
+                        `<b>Подключение:</b> шлейф контактных датчиков Д1 — он даёт не число, а «норма / тревога» (инструкция, п. 6.4). График давления по нему не построить, для этого нужен старший контроллер.`,
+                        `<b>Важно:</b> контроллер только следит и оповещает — открывать подпитку он не умеет, это делает механический клапан.`
+                    ]
+                    : [
+                        `<b>Зачем:</b> Автоподпитка доливает воду молча, и медленная утечка может идти месяцами незамеченной. Датчик давления на аналоговом входе контроллера её вскрывает: пороги заданы, при отклонении приходит оповещение.`,
+                        `<b>Важно:</b> контроллер только следит и оповещает — открывать подпитку он не умеет, это делает механический клапан.`
+                    ]), grpPress);
             }
 
             // Кабель к автоматике: в комплекты он не входит, а без него раздел
@@ -37426,7 +38045,9 @@ const app = {
                 // Экранированный МКЭШ идёт от сухого контакта планки к контроллеру
                 // котельной. Нет контроллера в смете — некуда его вести, и в смете
                 // его быть не должно (лист ТП про эту связь тоже молчит, см. ufhScheme).
-                const _noBoilerCtrl = !this.thermaticConfig;
+                // Базовый уровень автоматики сюда не подходит: у Thermatic 1002
+                // нет входов термостатов, и вести к нему сухой контакт некуда.
+                const _noBoilerCtrl = !this.thermaticFull();
                 (catalog.ufh_cables || []).forEach(c => {
                     if (_noBoilerCtrl && c.id === 'CBL-MKESH-2X05') return;
                     const m = _cab.qty[c.id] || 0;
@@ -38947,7 +39568,9 @@ const app = {
         // Подсчет и монтаж клапанов Fugas (Монтаж котла и бойлера). Секция "2. Обвязка
         // котельной" уже отфлашена (bill к этому месту пуст) — считаем по
         // this.currentEquipmentList, куда flushBill складывает все прошедшие разделы.
-        let fugasCount = this.currentEquipmentList.filter(x => (x.name || '').toLowerCase().includes("fugas")).reduce((sum, x) => sum + x.q, 0);
+        // Комплект STOUT назывался «Fugas», нынешний BAXI — «Комплект 3-х ход. клапана»:
+        // ищем оба, иначе монтаж комплекта молча выпадет из работ.
+        let fugasCount = this.currentEquipmentList.filter(x => /fugas|3-х ход\. клапана/i.test(x.name || '')).reduce((sum, x) => sum + x.q, 0);
         if (fugasCount > 0) {
             addToWorks("Монтаж комплекта 3-х ходового клапана Fugas", fugasCount, 4500, "компл", boilerGroup);
         }
@@ -39188,11 +39811,16 @@ const app = {
         if (this.state.boilerAuto && _cfgW) {
             let ctrlGroup = "1.5 Автоматика котельной";
 
+            const _wBasic = (_cfgW.model === 'basic');
+
             addToWorks("Монтаж контроллера отопления", 1, 6000, "шт", ctrlGroup);
 
             // Работа по факту: платы в смете нет — котёл подключается релейно,
-            // и настраивать протокол цифровой шины не на чем.
-            const _wBoards = (_cfgW.boardsUsed !== undefined ? _cfgW.boardsUsed : _cfgW.digitalBoards) || 0;
+            // и настраивать протокол цифровой шины не на чем. У базового уровня
+            // шина первого котла встроена, поэтому работа считается по котлам,
+            // а не по купленным адаптерам.
+            const _wBoards = (_cfgW.busCount !== undefined ? _cfgW.busCount
+                : (_cfgW.boardsUsed !== undefined ? _cfgW.boardsUsed : _cfgW.digitalBoards)) || 0;
             if (_wBoards > 0) {
                 addToWorks("Подключение котла к контроллеру по цифровой шине", _wBoards, 3500, "шт", ctrlGroup);
             }
@@ -39200,6 +39828,14 @@ const app = {
 
             if (_cfgW.circuitCount > 0) {
                 addToWorks("Подключение исполнительных устройств контура (насос, сервопривод)", _cfgW.circuitCount, 2500, "контур", ctrlGroup);
+            }
+            // Базовый уровень: контуров нет, зато есть выносные реле под
+            // нагрузки, которым не хватило встроенного, и разветвитель шлейфа.
+            if (_wBasic && _cfgW.relayExtra > 0) {
+                addToWorks("Монтаж дополнительного релейного модуля", _cfgW.relayExtra, 2000, "шт", ctrlGroup);
+            }
+            if (_wBasic && _cfgW.splitter) {
+                addToWorks("Монтаж разветвителя контактных датчиков", _cfgW.splitter.qty, 1500, "шт", ctrlGroup);
             }
 
             let _blocks = (_cfgW.expansion || []).reduce((s, e) => s + e.qty, 0);
@@ -39225,7 +39861,13 @@ const app = {
                 addToWorks("Монтаж датчика давления", 1, 2000, "шт", ctrlGroup);
             }
 
-            addToWorks("Пусконаладка автоматики отопления (контуры, ПЗА, каскад, сервис)", 1, 9000, "компл", ctrlGroup);
+            // У базового уровня настраивать нечего сверх котла, ГВС и погодной
+            // кривой: контуров с их кривыми и ротацией каскада по узлам у него нет.
+            if (_wBasic) {
+                addToWorks("Пусконаладка автоматики отопления (котёл, ГВС, ПЗА)", 1, 5000, "компл", ctrlGroup);
+            } else {
+                addToWorks("Пусконаладка автоматики отопления (контуры, ПЗА, каскад, сервис)", 1, 9000, "компл", ctrlGroup);
+            }
         }
 
         // Узел подпитки монтируется независимо от контроллера — клапан
@@ -39511,7 +40153,11 @@ const app = {
         // «5.1» (в слитой смете — к «5.»): подраздела-якоря у него нет, схема
         // относится ко всему водоснабжению. Такие строки помечены atSec —
         // они встают сразу под заголовком раздела, а не над подразделом.
-        [['automation_scheme_row', '2.8.1.', () => this.thermaticConfig && this.renderAutomationScheme()],
+        // Схема подключения нарисована по карте клемм Thermatic 3001. У 1002
+        // клеммы другие, и «похожий» чертёж здесь хуже, чем никакого: монтажник
+        // разведёт провода не туда. До своего листа схему базового уровня не
+        // показываем — состав раздела и подсказки к позициям остаются.
+        [['automation_scheme_row', '2.8.1.', () => this.thermaticFull() && this.renderAutomationScheme()],
          ['ufh_scheme_row', '4.3.', () => this.renderUfhScheme()],
          ['snow_scheme_row', '4.4.1', () => this.renderSnowScheme()],
          ['rad_panel_scheme_row', '3. Приборы отопления', () => this.renderRadPanelScheme(), true],
