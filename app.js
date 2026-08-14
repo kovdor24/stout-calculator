@@ -5260,6 +5260,11 @@ const app = {
 
     // Вставка одного сообщения в нить
     sendChatMessageRow: async function (installerId, installerAuthId, managerId, managerAuthId, senderUserId, senderName, text) {
+        // id придумываем здесь, а не полагаемся на default в базе: он нужен сразу
+        // после вставки, чтобы попросить сервер разбудить телефон собеседника.
+        // Читать строку обратно через .select() было бы лишним походом в базу, и
+        // при осечке прав он «провалил» бы уже отправленное сообщение.
+        const rowId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : null;
         const row = {
             installer_user_id: installerId,
             installer_auth_user_id: installerAuthId,
@@ -5269,8 +5274,14 @@ const app = {
             sender_name: senderName || null,
             text: (text || '').trim() || null
         };
+        if (rowId) row.id = rowId;
+
         const { error } = await supabaseClient.from('manager_chat_messages').insert([row]);
         if (error) throw error;
+
+        // Пуш собеседнику. Ответ не ждём: уведомление — дополнение к сообщению,
+        // а не его условие (см. appPush.notify).
+        if (rowId && typeof appPush !== 'undefined') appPush.notify('manager_chat', rowId);
     },
 
     // Открывает конкретную нить: подгружает и рисует сообщения, помечает прочитанным то,
@@ -7404,6 +7415,10 @@ const app = {
         this._profileForceComplete = false;
         const profileOverlay = document.getElementById('profile_modal_overlay');
         if (profileOverlay) profileOverlay.style.display = 'none';
+        // Адрес устройства снимаем ДО выхода: удалять свою строку в push_tokens
+        // разрешено только по действующей сессии. Иначе следующий, кто войдёт на
+        // этом телефоне, получал бы уведомления предыдущего.
+        if (typeof appPush !== 'undefined') await appPush.forgetToken();
         await supabaseClient.auth.signOut();
         delete this.state.tgUser; this.state.accountType = 'base';
         // Поля формы профиля хранят ФИО/телефон вышедшего аккаунта — если их не сбросить,
@@ -12618,20 +12633,30 @@ const app = {
                 row.sender_name = this.getAdminUserDisplayName(uRow);
             }
 
-            let { error } = await supabaseClient.from('messages').insert(row);
+            // .select('id') — id нужен, чтобы попросить сервер разослать пуш по этой
+            // строке. Своё сообщение отправителю читать разрешено (та же политика, по
+            // которой оно потом видно в переписке), так что вставку это не ломает.
+            let { data: inserted, error } = await supabaseClient.from('messages').insert(row).select('id').maybeSingle();
             // Колонки может не быть, если миграция 20260804_add_message_sender_name.sql
             // ещё не выполнена — тогда отправляем как раньше, без подписи, лишь бы
             // сообщение дошло (код 42703 — «нет такой колонки»).
             if (error && (error.code === '42703' || /sender_name/i.test(error.message || ''))) {
                 console.warn('[сообщения] колонки sender_name нет — письмо уйдёт без подписи');
                 delete row.sender_name;
-                ({ error } = await supabaseClient.from('messages').insert(row));
+                ({ data: inserted, error } = await supabaseClient.from('messages').insert(row).select('id').maybeSingle());
             }
 
             if (error) throw error;
 
             // Alert'а нет намеренно: отправленное сообщение само появляется в переписке
             if (textEl) textEl.value = '';
+
+            // Пуш получателю (или всем, если объявление). На почту объявления
+            // намеренно не уходят — см. комментарий ниже, — так что для закрытого
+            // приложения это единственный способ узнать о новости.
+            if (inserted && inserted.id && typeof appPush !== 'undefined') {
+                appPush.notify('broadcast', inserted.id);
+            }
 
             // Email Дублирование получателям в фоне.
             // Объявления для всех на почту не уходят: письмо каждому пользователю за раз
@@ -22114,6 +22139,11 @@ const app = {
         pollNotifications(true);
         setInterval(() => pollNotifications(true), 120000);
         document.addEventListener('visibilitychange', () => pollNotifications(false));
+
+        // Пуш-уведомления Android-приложения. Опрос выше намеренно молчит при
+        // скрытой вкладке, поэтому закрытое приложение узнаёт о новостях только так.
+        // В браузере вызов ничего не делает (см. push.js).
+        if (typeof appPush !== 'undefined') appPush.init();
 
         // Initialize mobile UI state and listeners
         this.syncMobileUI();

@@ -3624,6 +3624,10 @@
                 // Send email notification to manager
                 sendStatusEmailNotification(status, comment);
 
+                // И пуш на телефон монтажника: письмо доходит не всегда и не сразу,
+                // а закрытое приложение об ответе клиента иначе не узнает вовсе.
+                sendStatusPushNotification();
+
                 // Show success
                 if (status === 'confirmed') {
                     alert("Коммерческое предложение успешно подтверждено! Менеджер уведомлен.");
@@ -3640,6 +3644,30 @@
                 if (btnConfirm) btnConfirm.disabled = false;
                 const btnSubmit = document.getElementById('btn_submit_revision');
                 if (btnSubmit) btnSubmit.disabled = false;
+            }
+        }
+
+        // Просьба разбудить телефон монтажника после ответа клиента.
+        //
+        // Эту страницу открывают по ссылке, без входа в аккаунт, поэтому токена сессии
+        // здесь нет и быть не может. Серверу передаём только идентификатор ссылки —
+        // ни адресата, ни текста: и статус, и получателя он берёт из базы сам
+        // (см. ветку shared_invoice в supabase/functions/send-push/index.ts).
+        async function sendStatusPushNotification() {
+            if (!invoiceId) return;
+            try {
+                await supabaseProxyFetch('https://ahanbwugsmcyvrwbmtlx.supabase.co/functions/v1/send-push', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        apikey: 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p'
+                    },
+                    body: JSON.stringify({ reason: 'shared_invoice', id: String(invoiceId) })
+                });
+            } catch (e) {
+                // Наружу не показываем: клиент не виноват и ничего сделать не может,
+                // а статус уже сохранён — монтажник увидит его при открытии сметы.
+                console.warn('[push] уведомление монтажнику не отправлено:', e);
             }
         }
 

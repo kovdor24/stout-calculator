@@ -36,6 +36,7 @@ $files = @(
     'el_tariffs.js',
     'gas_tariffs.js',
     'gamification.js',
+    'push.js',
     'email.min.js',
     'qrcode.min.js',
     'supabase-js.js',

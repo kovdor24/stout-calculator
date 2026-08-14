@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "289712498009",
+    "project_id": "heatcalc-61df8",
+    "storage_bucket": "heatcalc-61df8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:289712498009:android:a0b9eeba7fd91287eb9848",
+        "android_client_info": {
+          "package_name": "ru.heatcalc.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBs8VHqu0FDpHcS8EMEgPXY5UnGVNNg4Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

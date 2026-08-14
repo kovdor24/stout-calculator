@@ -38,4 +38,10 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Показ уведомлений. Начиная с Android 13 разрешение спрашивается у человека,
+         и без этой строки система отклоняет запрос молча — окна с вопросом он не
+         увидит вообще. Плагин push-notifications её не приносит: в его манифесте
+         объявлена только служба приёма сообщений. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>
