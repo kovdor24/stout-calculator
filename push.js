@@ -69,6 +69,18 @@ const appPush = {
                 this.openFor();
             });
 
+            // Firebase выдаёт адрес устройства при запуске приложения, то есть ДО
+            // входа в аккаунт: на свежей установке сессии в этот момент ещё нет, и
+            // saveToken молча выходит. Без этой подписки адрес не сохранился бы
+            // никогда — человек вошёл бы и не получал уведомлений вовсе, причём без
+            // единой ошибки в логах. Повторный вызов безопасен: запись идёт upsert'ом
+            // по самому адресу.
+            supabaseClient.auth.onAuthStateChange((event) => {
+                if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+                    if (this._lastToken) this.saveToken(this._lastToken);
+                }
+            });
+
             await push.register();
             this._ready = true;
         } catch (e) {
