@@ -4285,6 +4285,31 @@ body.dark-mode .header-totals-block {
         padding: 0 !important;
     }
 
+    /* Общий масштаб печатной сметы: 0.85 — шрифт 11px превращается в ~9.4px (около 7пт),
+       на бумаге это ещё уверенно читается, а листов уходит примерно на 15% меньше.
+       Три тонкости, из-за которых правило написано именно так:
+       1. Ширину задаём не в процентах, а в мм с обратным коэффициентом: 190mm — это
+          рабочая ширина A4 при полях @page 10mm по бокам, 190 / 0.85 = 223.5mm. После
+          сжатия получается ровно 190mm. Проценты здесь не годятся — разные версии
+          браузеров по-разному считают их относительно zoom, и вылезала бы то белая
+          полоса справа, то обрезанный край.
+       2. Только клоны сметы и работ. #print_bin целиком трогать нельзя: в нём же лежит
+          лист схемы на альбомной странице, и он ужался бы вместе с текстом.
+       3. body:not(.html2pdf-printing) — при выгрузке PDF с телефона эти же правила
+          подмешиваются как @media screen (buildPrintCssAsScreenOverride), а html2canvas
+          на zoom считает координаты неверно и роняет содержимое на лишние листы.
+       @supports — страховка для браузеров без zoom (Firefox до 126): без сжатия ширина
+       223.5mm просто не влезла бы в лист. */
+    @supports (zoom: 0.85) {
+        body:not(.html2pdf-printing) #print_eq_clone,
+        body:not(.html2pdf-printing) #print_works_clone {
+            zoom: 0.85;
+            width: 223.5mm !important;
+            max-width: 223.5mm !important;
+            min-width: 0 !important;
+        }
+    }
+
     .print-page-break {
         page-break-before: always !important;
         break-before: page !important;
@@ -5095,13 +5120,29 @@ body.dark-mode .header-totals-block {
     .inv-table th:not(.hidden-col) {
         display: table-cell; /* Без !important, чтобы JS мог скрыть колонки в работах */
         grid-area: unset !important;
-        padding: 5px 6px !important;
+        /* По вертикали 2px вместо 5px: на смете в полтораста строк каждый лишний
+           пиксель поля — это ещё пол-листа бумаги. По горизонтали оставляем 6px,
+           колонки не должны слипаться. */
+        padding: 2px 6px !important;
         border-bottom: 1px solid #E5E7EB !important;
         white-space: normal !important;
         font-size: 11px !important;
         background: transparent !important;
         border-radius: 0 !important;
         height: auto !important;
+        vertical-align: middle !important;
+    }
+
+    /* Высоту печатной строки задаёт не текст, а фото: 38px + подложка + рамка давали
+       ~55px против ~30px у строки без картинки. На бумаге снимок работает как
+       опознавательный значок, а не как иллюстрация, — 24px для этого достаточно. */
+    .inv-table td.col-img .prod-thumb {
+        width: 24px !important;
+        height: 24px !important;
+        padding: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        vertical-align: middle !important;
     }
 
     /* hidden-col остаётся скрытым (бренд и фото у монтажных работ) */
@@ -5112,15 +5153,60 @@ body.dark-mode .header-totals-block {
         display: none !important;
     }
 
-    /* Ширины колонок в нормальном виде */
-    .inv-table td.col-idx  { width: 25px !important; text-align: center !important; color: #9CA3AF !important; }
-    .inv-table td.col-img:not(.hidden-col) { width: 40px !important; text-align: center !important; }
-    .inv-table td.col-name { width: auto !important; font-weight: 600 !important; color: #000 !important; white-space: normal !important; text-align: left !important; }
-    .inv-table td.col-brand:not(.hidden-col) { width: 65px !important; text-align: center !important; }
-    .inv-table td.col-unit { width: 35px !important; text-align: center !important; }
-    .inv-table td.col-qty  { width: 45px !important; text-align: center !important; font-weight: 700 !important; }
-    .inv-table td.col-price { width: 80px !important; text-align: right !important; white-space: nowrap !important; color: #000 !important; font-weight: 400 !important; }
-    .inv-table td.col-sum  { width: 90px !important; text-align: right !important; font-weight: 800 !important; white-space: nowrap !important; }
+    /* Ширины колонок в нормальном виде.
+       На бумаге таблица считается по table-layout: auto, поэтому заданная ширина —
+       лишь пожелание: колонки с nowrap (артикул, цена, сумма, бренд) всё равно возьмут
+       столько, сколько нужно содержимому, и не обрежутся. Значит, узкие цифры можно
+       смело просить сжаться — освободившееся место достаётся наименованию.
+       У .col-name обязательно снимаем max-width: 0 — экранный трюк для table-layout:
+       fixed, который в печати сжимал графу до самого длинного слова. */
+    .inv-table th.col-idx,
+    .inv-table td.col-idx  { width: 20px !important; min-width: 0 !important; text-align: center !important; }
+    .inv-table th.col-img:not(.hidden-col),
+    .inv-table td.col-img:not(.hidden-col) { width: 30px !important; min-width: 0 !important; text-align: center !important; }
+    .inv-table th.col-name,
+    .inv-table td.col-name { width: 46% !important; max-width: none !important; min-width: 0 !important; white-space: normal !important; text-align: left !important; }
+    .inv-table th.col-sku:not(.hidden-col),
+    .inv-table td.col-sku:not(.hidden-col) { width: 90px !important; min-width: 0 !important; }
+    .inv-table th.col-brand:not(.hidden-col),
+    .inv-table td.col-brand:not(.hidden-col) { width: 50px !important; min-width: 0 !important; text-align: left !important; }
+    .inv-table th.col-unit,
+    .inv-table td.col-unit { width: 26px !important; min-width: 0 !important; text-align: center !important; }
+    .inv-table th.col-qty,
+    .inv-table td.col-qty  { width: 34px !important; min-width: 0 !important; text-align: center !important; }
+    .inv-table th.col-price,
+    .inv-table td.col-price { width: 62px !important; min-width: 0 !important; text-align: right !important; white-space: nowrap !important; }
+    .inv-table th.col-sum,
+    .inv-table td.col-sum  { width: 72px !important; min-width: 0 !important; text-align: right !important; white-space: nowrap !important; }
+
+    /* Насыщенность и цвет — только у ячеек строк. Раньше это стояло в общих правилах выше,
+       вместе с шириной, и доставалось заодно шапке: подписи выходили кто серым, кто чёрным,
+       кто моноширинным (артикул), кто жирнее соседа. */
+    .inv-table td.col-idx   { color: #9CA3AF !important; }
+    .inv-table td.col-name  { font-weight: 600 !important; color: #000 !important; }
+    .inv-table td.col-sku:not(.hidden-col) { font-size: 10px !important; }
+    .inv-table td.col-qty   { font-weight: 700 !important; }
+    .inv-table td.col-price { color: #000 !important; font-weight: 400 !important; }
+    .inv-table td.col-sum   { font-weight: 800 !important; }
+
+    /* Шапка таблицы — один шрифт, один вес, один цвет у всех подписей. Выравнивание не
+       трогаем: оно задано по колонкам выше и должно совпадать с их содержимым.
+       :not(.hidden-col) здесь не для фильтрации, а ради веса селектора — иначе общее
+       правило ячеек (font-size: 11px) перебивало бы размер подписей. */
+    .inv-table thead th:not(.hidden-col) {
+        font-family: inherit !important;
+        font-size: 10px !important;
+        font-weight: 700 !important;
+        color: #000 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.02em !important;
+    }
+
+    /* Заголовкам разделов оставляем воздух: их на смету полтора десятка, на объёме
+       это не сказывается, а именно они делят таблицу на читаемые части. */
+    .inv-table tr.row-sec td,
+    .inv-table tr.group-header td { padding: 4px 6px !important; }
+    .inv-table tr.row-subtotal td { padding-bottom: 4px !important; }
 
     /* Псевдо-элементы мобильной темы убираем */
     .col-price::after { content: "" !important; }
@@ -5146,12 +5232,14 @@ body.dark-mode .header-totals-block {
         display: none !important;
     }
 
-    /* Разрыв страницы перед монтажными работами */
+    /* Разрыв страницы перед монтажными работами. Отступа сверху здесь быть не должно:
+       страница и так начинается заново, а 20mm просто съедали четыре строки на каждом
+       разделе и иногда выталкивали хвост таблицы на лишний лист. */
     .print-page-break {
         display: block !important;
         page-break-before: always !important;
         break-before: page !important;
-        margin-top: 20mm !important;
+        margin-top: 0 !important;
     }
 }
 
@@ -6845,7 +6933,7 @@ body.html2pdf-printing .inv-table td,
 body.html2pdf-printing .inv-table th {
     display: table-cell !important;
     grid-area: unset !important;
-    padding: 5px 6px !important;
+    padding: 2px 6px !important;
     border-bottom: 1px solid #E5E7EB !important;
     white-space: normal !important;
     font-size: 11px !important;
@@ -6862,15 +6950,36 @@ body.html2pdf-printing .hidden-col {
     display: none !important;
 }
 
-/* Column widths in desktop layout for printing */
-body.html2pdf-printing .inv-table td.col-idx  { display: table-cell !important; width: 25px !important; text-align: center !important; color: #9CA3AF !important; }
-body.html2pdf-printing .inv-table td.col-img:not(.hidden-col) { display: table-cell !important; width: 40px !important; text-align: center !important; }
-body.html2pdf-printing .inv-table td.col-name { display: table-cell !important; width: auto !important; font-weight: 600 !important; color: #000 !important; white-space: normal !important; text-align: left !important; }
-body.html2pdf-printing .inv-table td.col-brand:not(.hidden-col) { display: table-cell !important; width: 65px !important; text-align: center !important; }
-body.html2pdf-printing .inv-table td.col-unit { display: table-cell !important; width: 35px !important; text-align: center !important; }
-body.html2pdf-printing .inv-table td.col-qty  { display: table-cell !important; width: 45px !important; text-align: center !important; font-weight: 700 !important; }
-body.html2pdf-printing .inv-table td.col-price { display: table-cell !important; width: 80px !important; text-align: right !important; white-space: nowrap !important; color: #000 !important; font-weight: 400 !important; }
-body.html2pdf-printing .inv-table td.col-sum  { display: table-cell !important; width: 90px !important; text-align: right !important; font-weight: 800 !important; white-space: nowrap !important; }
+/* Column widths in desktop layout for printing — те же пропорции, что в @media print выше */
+body.html2pdf-printing .inv-table td.col-idx  { display: table-cell !important; width: 20px !important; min-width: 0 !important; text-align: center !important; color: #9CA3AF !important; }
+body.html2pdf-printing .inv-table td.col-img:not(.hidden-col) { display: table-cell !important; width: 30px !important; min-width: 0 !important; text-align: center !important; }
+/* Тот же размер снимка, что в @media print: высоту строки задаёт именно он */
+body.html2pdf-printing .inv-table td.col-img .prod-thumb { width: 24px !important; height: 24px !important; padding: 0 !important; border: none !important; border-radius: 0 !important; vertical-align: middle !important; }
+body.html2pdf-printing .inv-table th.col-name,
+body.html2pdf-printing .inv-table td.col-name { display: table-cell !important; width: 46% !important; max-width: none !important; min-width: 0 !important; white-space: normal !important; text-align: left !important; }
+body.html2pdf-printing .inv-table td.col-name { font-weight: 600 !important; color: #000 !important; }
+body.html2pdf-printing .inv-table td.col-sku:not(.hidden-col) { display: table-cell !important; width: 90px !important; min-width: 0 !important; font-size: 10px !important; }
+body.html2pdf-printing .inv-table td.col-brand:not(.hidden-col) { display: table-cell !important; width: 50px !important; min-width: 0 !important; text-align: left !important; }
+body.html2pdf-printing .inv-table td.col-unit { display: table-cell !important; width: 26px !important; min-width: 0 !important; text-align: center !important; }
+body.html2pdf-printing .inv-table td.col-qty  { display: table-cell !important; width: 34px !important; min-width: 0 !important; text-align: center !important; font-weight: 700 !important; }
+body.html2pdf-printing .inv-table td.col-price { display: table-cell !important; width: 62px !important; min-width: 0 !important; text-align: right !important; white-space: nowrap !important; color: #000 !important; font-weight: 400 !important; }
+body.html2pdf-printing .inv-table td.col-sum  { display: table-cell !important; width: 72px !important; min-width: 0 !important; text-align: right !important; font-weight: 800 !important; white-space: nowrap !important; }
+
+/* Шапка таблицы — один шрифт, вес и цвет у всех подписей, как в @media print.
+   Выравнивание задано по колонкам выше и здесь не переопределяется. */
+body.html2pdf-printing .inv-table thead th {
+    font-family: inherit !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: #000 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+}
+
+/* Заголовкам разделов — тот же воздух, что в @media print */
+body.html2pdf-printing .inv-table tr.row-sec td,
+body.html2pdf-printing .inv-table tr.group-header td { padding: 4px 6px !important; }
+body.html2pdf-printing .inv-table tr.row-subtotal td { padding-bottom: 4px !important; }
 
 /* Clear pseudo-elements from mobile responsive styles */
 body.html2pdf-printing .col-price::after { content: "" !important; }

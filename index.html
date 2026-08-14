@@ -149,10 +149,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.28">
+    <link rel="stylesheet" href="style.css?v=3.29">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.68" defer></script>
+    <script src="catalog.js?v=2.70" defer></script>
     <!-- Координаты и регионы населённых пунктов: карта проектов в админке и
          адрес объекта. Данные вшиты в файл, наружу никаких запросов. -->
     <script src="cities_geo.js?v=1.0" defer></script>
@@ -172,12 +172,12 @@
          плагина Capacitor нет, все методы тихо выходят. Подключать до app.js —
          app.init() дёргает appPush.init(). -->
     <script src="push.js?v=1.0" defer></script>
-    <script src="app.js?v=5.48" defer></script>
+    <script src="app.js?v=5.60" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
          векторный композитор, что рисует лист схемы в проекте, поэтому нужен
          и движок листов (рамка/штамп из него не берутся, только текст). -->
     <script src="project_sheets.js?v=4.15" defer></script>
-    <script src="project_scheme.js?v=4.44" defer></script>
+    <script src="project_scheme.js?v=4.47" defer></script>
     <!-- Укладка тёплого пола по планам этажей. В калькуляторе нужна не ради
          листов, а ради сметы: длину трубы и число выходов коллектора берём
          из нарисованных петель (projectPlans.floorLoops). -->
@@ -691,6 +691,26 @@
                  этот потолок и каскад в нём не собирает. Показывается только в
                  подробном режиме и только при включённом электрокотле
                  (app.syncUI). -->
+            <!-- Сеть на объекте. Условия показа те же, что у ограничения мощности:
+                 подробный режим и включённый электрокотёл (app.syncUI). В быстром
+                 режиме выбор не применяется — сеть там считается трёхфазной,
+                 см. app.elPhase(). Переключение обрабатывает app.setElPhase(). -->
+            <div class="control-item" id="blk_el_phase" style="display:none;">
+                <div class="label-row">
+                    <span class="lbl"
+                        title="Сколько фаз заведено на объект. На одной фазе котёл берёт втрое больший ток — сечение силового кабеля считается по нему, а котлы мощнее 9 кВт однофазными не бывают.">Сеть
+                        на объекте ⚡</span>
+                    <div class="tabs" style="font-size:11px; flex:0 0 auto;">
+                        <div class="tab el-phase-tab" data-phase="380" onclick="app.setElPhase('380')"
+                            style="min-width:58px;"
+                            title="Три фазы, 380 В. Штатное подключение для всей линейки электрокотлов.">380 В</div>
+                        <div class="tab el-phase-tab" data-phase="220" onclick="app.setElPhase('220')"
+                            style="min-width:58px;"
+                            title="Одна фаза, 220 В. Так подключаются только котлы до 9 кВт.">220 В</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="control-item" id="blk_el_power_limit" style="display:none;">
                 <!-- position:relative обязателен: tip-panel-wrap снимает позиционирование
                      с обёртки подсказки, и якорем становится эта строка. Без него
