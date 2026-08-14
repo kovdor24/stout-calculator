@@ -10,6 +10,12 @@ on:
     paths:
       - 'mobile-android/**'
       - '.github/workflows/android-build.yml'
+      # Файлы сайта едут внутрь APK — их собирает build-www.ps1. Без этих строк
+      # правка в app.js или push.js уходила на GitHub, а приложение с ней никто
+      # не собирал: конвейер молчал, и это выглядело как «сборка прошла раньше».
+      - '*.js'
+      - '*.html'
+      - '*.css'
 
 jobs:
   build:
