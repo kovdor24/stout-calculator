@@ -521,7 +521,7 @@
       ['Шаровый кран', function (c) { return ballValve(cx, c, false); }, true],
       ['Обратный клапан', function (c) { return checkValve(cx, c, 'right'); }, useCheck],
       ['Циркуляционный насос', function (c) { return pump(cx, c, 'left'); }, usePump],
-      ['Термостатический смесительный клапан', function (c) { return valve3(cx + 1.21, c, 'therm', 'udr', 'l'); }, (!!cfg.tp || !!cfg.snow) && !mixServo],
+      ['Термостатический смесительный клапан', function (c) { return valve3(cx + 1.21, c, 'therm', 'udr', 'l'); }, (!!cfg.tp || !!cfg.snow || !!cfg.dhwMix) && !mixServo],
       ['Клапан трехходовой с сервоприводом', function (c) { return valve3(cx + 1.21, c, 'servo', 'udr', 'l'); }, (!!cfg.tp || !!cfg.snow) && mixServo],
       ['Предохранительный клапан', function (c) { return safetyValve(cx, c, false); }, (!!cfg.indirect && cfg.water !== false) || !!cfg.snow],
       ['Автоматический воздухоотводчик', function (c) { return airVent(cx, c + 3.77); }, !!cfg.hydro || !!cfg.airSep],
@@ -1647,6 +1647,21 @@
       o.push(leaderValve(bx2, bottomValveY, dhwThread));
       o.push(diaV(bx2, bottomValveY - 7.2, sanDia));
       o.push(bottomMark(bx2, 'Т3', 'down'));
+      // Термостатический смесительный клапан ГВС на вертикали Т3: держит на разборе
+      // 45–50 °C, подмешивая холодную, а бойлер остаётся на 60 °C против легионеллы.
+      // Высота 200 выбрана по свободному коридору между стояками В1 и Т3 (177–229).
+      // Линию подмеса от В1 тянуть через весь коридор нельзя — при рециркуляции она
+      // пересекла бы стояк Т4, а перескоков у горизонталей здесь нет. Поэтому подвод
+      // показан коротким отводом с подписью, как и узел подпитки на этом листе.
+      if (cfg.dhwMix) {
+        var mvY = 200;
+        o.push(hpipe(bx2 - 9, bx2 - 3.13, mvY, COL.cold));
+        o.push(valve3(bx2, mvY, 'therm', 'udl', 'r'));
+        // Подпись левее стояка рециркуляции: при cfg.recirc он проходит по bx3,
+        // и на -20,5 текст вставал к нему вплотную.
+        o.push(txtM(bx2 - 22.5, mvY - 1.4, 'от В1', { size: SZ.txt }));
+        o.push(leader(bx2 - 0.96, mvY - 4.4, cfg.dhwMix));
+      }
       // Т4: рециркуляция — кран у бойлера (иначе замена насоса требует
       // слива бойлера), насос, обратный клапан, кран внизу
       if (cfg.recirc) {
