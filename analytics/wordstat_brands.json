@@ -3219,5 +3219,5800 @@
       }
     }
   },
+  "regions": {
+    "2026-08": {
+      "boylery_kn": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 4,
+              "place": 7
+            }
+          },
+          "ranking": [
+            [
+              "aquatec",
+              35
+            ],
+            [
+              "baxi",
+              21
+            ],
+            [
+              "drazice",
+              18
+            ],
+            [
+              "royal thermo",
+              13
+            ],
+            [
+              "termica",
+              12
+            ],
+            [
+              "thermex",
+              7
+            ],
+            [
+              "stout",
+              4
+            ]
+          ],
+          "total": 262
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 12,
+              "place": 9
+            },
+            "stout": {
+              "count": 25,
+              "place": 6
+            }
+          },
+          "ranking": [
+            [
+              "aquatec",
+              121
+            ],
+            [
+              "thermex",
+              62
+            ],
+            [
+              "royal thermo",
+              46
+            ],
+            [
+              "bosch",
+              35
+            ],
+            [
+              "buderus",
+              26
+            ],
+            [
+              "stout",
+              25
+            ],
+            [
+              "drazice",
+              24
+            ],
+            [
+              "baxi",
+              18
+            ],
+            [
+              "rommer",
+              12
+            ],
+            [
+              "acv",
+              2
+            ],
+            [
+              "termica",
+              1
+            ]
+          ],
+          "total": 779
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 26,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "aquatec",
+              129
+            ],
+            [
+              "royal thermo",
+              40
+            ],
+            [
+              "thermex",
+              33
+            ],
+            [
+              "stout",
+              26
+            ],
+            [
+              "baxi",
+              13
+            ],
+            [
+              "drazice",
+              5
+            ],
+            [
+              "ferroli",
+              2
+            ]
+          ],
+          "total": 282
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 3,
+              "place": 8
+            }
+          },
+          "ranking": [
+            [
+              "aquatec",
+              199
+            ],
+            [
+              "termica",
+              125
+            ],
+            [
+              "royal thermo",
+              99
+            ],
+            [
+              "baxi",
+              93
+            ],
+            [
+              "thermex",
+              63
+            ],
+            [
+              "ballu",
+              26
+            ],
+            [
+              "vgr",
+              3
+            ],
+            [
+              "stout",
+              3
+            ],
+            [
+              "bosch",
+              2
+            ],
+            [
+              "acv",
+              1
+            ]
+          ],
+          "total": 511
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 38,
+              "place": 12
+            },
+            "stout": {
+              "count": 1078,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "aquatec",
+              1730
+            ],
+            [
+              "termica",
+              1288
+            ],
+            [
+              "stout",
+              1078
+            ],
+            [
+              "thermex",
+              884
+            ],
+            [
+              "royal thermo",
+              670
+            ],
+            [
+              "baxi",
+              611
+            ],
+            [
+              "hajdu",
+              410
+            ],
+            [
+              "drazice",
+              241
+            ],
+            [
+              "viessmann",
+              110
+            ],
+            [
+              "buderus",
+              82
+            ],
+            [
+              "acv",
+              74
+            ],
+            [
+              "rommer",
+              38
+            ],
+            [
+              "bosch",
+              24
+            ],
+            [
+              "ferroli",
+              22
+            ],
+            [
+              "ballu",
+              20
+            ]
+          ],
+          "total": 10620
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 68,
+              "place": 13
+            },
+            "stout": {
+              "count": 2111,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "aquatec",
+              3292
+            ],
+            [
+              "baxi",
+              2216
+            ],
+            [
+              "stout",
+              2111
+            ],
+            [
+              "royal thermo",
+              1263
+            ],
+            [
+              "drazice",
+              995
+            ],
+            [
+              "thermex",
+              743
+            ],
+            [
+              "acv",
+              444
+            ],
+            [
+              "hajdu",
+              301
+            ],
+            [
+              "ferroli",
+              192
+            ],
+            [
+              "ballu",
+              131
+            ],
+            [
+              "termica",
+              128
+            ],
+            [
+              "buderus",
+              115
+            ],
+            [
+              "rommer",
+              68
+            ],
+            [
+              "viessmann",
+              30
+            ]
+          ],
+          "total": 13439
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 242,
+              "place": 13
+            },
+            "stout": {
+              "count": 5923,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "aquatec",
+              6619
+            ],
+            [
+              "stout",
+              5923
+            ],
+            [
+              "baxi",
+              5265
+            ],
+            [
+              "drazice",
+              2971
+            ],
+            [
+              "royal thermo",
+              2889
+            ],
+            [
+              "thermex",
+              1482
+            ],
+            [
+              "termica",
+              1088
+            ],
+            [
+              "acv",
+              1017
+            ],
+            [
+              "hajdu",
+              840
+            ],
+            [
+              "ferroli",
+              569
+            ],
+            [
+              "buderus",
+              381
+            ],
+            [
+              "ballu",
+              306
+            ],
+            [
+              "rommer",
+              242
+            ],
+            [
+              "reflex",
+              129
+            ],
+            [
+              "viessmann",
+              102
+            ]
+          ],
+          "total": 37458
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "aquatec",
+              52
+            ],
+            [
+              "baxi",
+              15
+            ],
+            [
+              "drazice",
+              7
+            ],
+            [
+              "reflex",
+              3
+            ],
+            [
+              "acv",
+              1
+            ]
+          ],
+          "total": 243
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 45,
+              "place": 10
+            },
+            "stout": {
+              "count": 556,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "aquatec",
+              1070
+            ],
+            [
+              "termica",
+              814
+            ],
+            [
+              "stout",
+              556
+            ],
+            [
+              "thermex",
+              437
+            ],
+            [
+              "baxi",
+              339
+            ],
+            [
+              "royal thermo",
+              321
+            ],
+            [
+              "hajdu",
+              223
+            ],
+            [
+              "viessmann",
+              107
+            ],
+            [
+              "drazice",
+              100
+            ],
+            [
+              "rommer",
+              45
+            ],
+            [
+              "acv",
+              43
+            ],
+            [
+              "buderus",
+              14
+            ]
+          ],
+          "total": 5555
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 235,
+              "place": 5
+            }
+          },
+          "ranking": [
+            [
+              "aquatec",
+              827
+            ],
+            [
+              "royal thermo",
+              532
+            ],
+            [
+              "thermex",
+              268
+            ],
+            [
+              "baxi",
+              253
+            ],
+            [
+              "stout",
+              235
+            ],
+            [
+              "acv",
+              180
+            ],
+            [
+              "drazice",
+              114
+            ],
+            [
+              "bosch",
+              63
+            ],
+            [
+              "ballu",
+              42
+            ],
+            [
+              "termica",
+              14
+            ],
+            [
+              "ferroli",
+              10
+            ],
+            [
+              "hajdu",
+              8
+            ]
+          ],
+          "total": 4315
+        }
+      },
+      "dymohody": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 4,
+              "place": 2
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "baxi",
+              11
+            ],
+            [
+              "rommer",
+              4
+            ]
+          ],
+          "total": 70
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 207
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 32
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "baxi",
+              40
+            ],
+            [
+              "navien",
+              1
+            ]
+          ],
+          "total": 166
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 60,
+              "place": 2
+            },
+            "stout": {
+              "count": 18,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "baxi",
+              523
+            ],
+            [
+              "rommer",
+              60
+            ],
+            [
+              "stout",
+              18
+            ],
+            [
+              "navien",
+              8
+            ],
+            [
+              "termica",
+              2
+            ]
+          ],
+          "total": 2519
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 31,
+              "place": 4
+            },
+            "stout": {
+              "count": 43,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "baxi",
+              611
+            ],
+            [
+              "navien",
+              86
+            ],
+            [
+              "stout",
+              43
+            ],
+            [
+              "rommer",
+              31
+            ],
+            [
+              "termica",
+              11
+            ]
+          ],
+          "total": 2954
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 36,
+              "place": 4
+            },
+            "stout": {
+              "count": 106,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "baxi",
+              2181
+            ],
+            [
+              "navien",
+              163
+            ],
+            [
+              "stout",
+              106
+            ],
+            [
+              "rommer",
+              36
+            ],
+            [
+              "termica",
+              16
+            ]
+          ],
+          "total": 7967
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 35
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 17,
+              "place": 2
+            },
+            "stout": {
+              "count": 9,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "baxi",
+              174
+            ],
+            [
+              "rommer",
+              17
+            ],
+            [
+              "stout",
+              9
+            ],
+            [
+              "navien",
+              9
+            ]
+          ],
+          "total": 1294
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 10,
+              "place": 3
+            },
+            "stout": {
+              "count": 5,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "baxi",
+              107
+            ],
+            [
+              "navien",
+              55
+            ],
+            [
+              "rommer",
+              10
+            ],
+            [
+              "stout",
+              5
+            ],
+            [
+              "termica",
+              5
+            ]
+          ],
+          "total": 1251
+        }
+      },
+      "fitingi_ax": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 6,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              14
+            ],
+            [
+              "stout",
+              6
+            ]
+          ],
+          "total": 49
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 16
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 9,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              9
+            ]
+          ],
+          "total": 45
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 41
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 8,
+              "place": 5
+            },
+            "stout": {
+              "count": 45,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              52
+            ],
+            [
+              "stout",
+              45
+            ],
+            [
+              "rehau",
+              33
+            ],
+            [
+              "tim",
+              15
+            ],
+            [
+              "rommer",
+              8
+            ]
+          ],
+          "total": 910
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 12,
+              "place": 5
+            },
+            "stout": {
+              "count": 50,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "rehau",
+              204
+            ],
+            [
+              "tim",
+              110
+            ],
+            [
+              "valtec",
+              55
+            ],
+            [
+              "stout",
+              50
+            ],
+            [
+              "rommer",
+              12
+            ],
+            [
+              "usystems",
+              5
+            ],
+            [
+              "tece",
+              2
+            ]
+          ],
+          "total": 1211
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 23,
+              "place": 5
+            },
+            "stout": {
+              "count": 89,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "rehau",
+              401
+            ],
+            [
+              "tim",
+              238
+            ],
+            [
+              "valtec",
+              94
+            ],
+            [
+              "stout",
+              89
+            ],
+            [
+              "rommer",
+              23
+            ],
+            [
+              "usystems",
+              5
+            ],
+            [
+              "tece",
+              3
+            ]
+          ],
+          "total": 2380
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 29
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 8,
+              "place": 5
+            },
+            "stout": {
+              "count": 41,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              41
+            ],
+            [
+              "valtec",
+              38
+            ],
+            [
+              "rehau",
+              15
+            ],
+            [
+              "tim",
+              10
+            ],
+            [
+              "rommer",
+              8
+            ]
+          ],
+          "total": 656
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 13,
+              "place": 4
+            },
+            "stout": {
+              "count": 12,
+              "place": 5
+            }
+          },
+          "ranking": [
+            [
+              "rehau",
+              52
+            ],
+            [
+              "tece",
+              51
+            ],
+            [
+              "valtec",
+              17
+            ],
+            [
+              "rommer",
+              13
+            ],
+            [
+              "stout",
+              12
+            ],
+            [
+              "tim",
+              8
+            ]
+          ],
+          "total": 433
+        }
+      },
+      "fitingi_compress": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 26
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 19
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 27
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 24
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 70,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              70
+            ],
+            [
+              "valtec",
+              2
+            ]
+          ],
+          "total": 724
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 267,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              267
+            ]
+          ],
+          "total": 1035
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 516,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              516
+            ],
+            [
+              "hoobs",
+              13
+            ]
+          ],
+          "total": 2175
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 18
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 52,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              52
+            ],
+            [
+              "valtec",
+              2
+            ]
+          ],
+          "total": 510
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 34,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              34
+            ]
+          ],
+          "total": 297
+        }
+      },
+      "gidrostrelki": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "gidruss",
+              12
+            ],
+            [
+              "valtec",
+              2
+            ]
+          ],
+          "total": 207
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "gidruss",
+              12
+            ]
+          ],
+          "total": 136
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "gidruss",
+              8
+            ],
+            [
+              "elsen",
+              3
+            ],
+            [
+              "meibes",
+              1
+            ]
+          ],
+          "total": 47
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "gidruss",
+              2
+            ]
+          ],
+          "total": 177
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 13,
+              "place": 4
+            },
+            "stout": {
+              "count": 27,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "gidruss",
+              605
+            ],
+            [
+              "meibes",
+              49
+            ],
+            [
+              "stout",
+              27
+            ],
+            [
+              "rommer",
+              13
+            ],
+            [
+              "valtec",
+              2
+            ]
+          ],
+          "total": 1874
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 16,
+              "place": 5
+            },
+            "stout": {
+              "count": 40,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "gidruss",
+              513
+            ],
+            [
+              "meibes",
+              48
+            ],
+            [
+              "stout",
+              40
+            ],
+            [
+              "elsen",
+              40
+            ],
+            [
+              "rommer",
+              16
+            ],
+            [
+              "valtec",
+              10
+            ]
+          ],
+          "total": 2472
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 54,
+              "place": 5
+            },
+            "stout": {
+              "count": 109,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "gidruss",
+              1113
+            ],
+            [
+              "meibes",
+              192
+            ],
+            [
+              "stout",
+              109
+            ],
+            [
+              "elsen",
+              80
+            ],
+            [
+              "rommer",
+              54
+            ],
+            [
+              "valtec",
+              42
+            ]
+          ],
+          "total": 7225
+        }
+      },
+      "kanalizaciya": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 3
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "ostendorf",
+              1
+            ]
+          ],
+          "total": 12
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 0
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "ostendorf",
+              2
+            ]
+          ],
+          "total": 7
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 1,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "ostendorf",
+              64
+            ],
+            [
+              "politek",
+              7
+            ],
+            [
+              "stout",
+              1
+            ]
+          ],
+          "total": 116
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 28,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "ostendorf",
+              175
+            ],
+            [
+              "politek",
+              36
+            ],
+            [
+              "stout",
+              28
+            ],
+            [
+              "sinikon",
+              14
+            ],
+            [
+              "rehau",
+              6
+            ]
+          ],
+          "total": 333
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 50,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "ostendorf",
+              253
+            ],
+            [
+              "stout",
+              50
+            ],
+            [
+              "politek",
+              46
+            ],
+            [
+              "sinikon",
+              16
+            ],
+            [
+              "rehau",
+              8
+            ]
+          ],
+          "total": 481
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 0
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 1,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "ostendorf",
+              38
+            ],
+            [
+              "politek",
+              7
+            ],
+            [
+              "stout",
+              1
+            ]
+          ],
+          "total": 85
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "politek",
+              15
+            ]
+          ],
+          "total": 29
+        }
+      },
+      "kollektor_tp": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "tim",
+              11
+            ],
+            [
+              "valtec",
+              2
+            ]
+          ],
+          "total": 136
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "tim",
+              8
+            ]
+          ],
+          "total": 192
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "tim",
+              28
+            ],
+            [
+              "valtec",
+              6
+            ]
+          ],
+          "total": 132
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              28
+            ],
+            [
+              "tim",
+              11
+            ],
+            [
+              "vieir",
+              1
+            ]
+          ],
+          "total": 294
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 6,
+              "place": 4
+            },
+            "stout": {
+              "count": 49,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              100
+            ],
+            [
+              "tim",
+              86
+            ],
+            [
+              "stout",
+              49
+            ],
+            [
+              "rommer",
+              6
+            ],
+            [
+              "vieir",
+              5
+            ],
+            [
+              "rehau",
+              4
+            ],
+            [
+              "tece",
+              2
+            ]
+          ],
+          "total": 2459
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 2,
+              "place": 8
+            },
+            "stout": {
+              "count": 124,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              124
+            ],
+            [
+              "valtec",
+              93
+            ],
+            [
+              "tim",
+              55
+            ],
+            [
+              "vieir",
+              23
+            ],
+            [
+              "rehau",
+              11
+            ],
+            [
+              "far",
+              3
+            ],
+            [
+              "tece",
+              2
+            ],
+            [
+              "rommer",
+              2
+            ]
+          ],
+          "total": 2183
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 11,
+              "place": 7
+            },
+            "stout": {
+              "count": 344,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              344
+            ],
+            [
+              "tim",
+              203
+            ],
+            [
+              "valtec",
+              161
+            ],
+            [
+              "rehau",
+              43
+            ],
+            [
+              "vieir",
+              42
+            ],
+            [
+              "far",
+              11
+            ],
+            [
+              "rommer",
+              11
+            ],
+            [
+              "tece",
+              3
+            ]
+          ],
+          "total": 6040
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 1,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "rehau",
+              2
+            ],
+            [
+              "stout",
+              1
+            ]
+          ],
+          "total": 76
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 4,
+              "place": 5
+            },
+            "stout": {
+              "count": 34,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              55
+            ],
+            [
+              "tim",
+              52
+            ],
+            [
+              "stout",
+              34
+            ],
+            [
+              "vieir",
+              5
+            ],
+            [
+              "rommer",
+              4
+            ],
+            [
+              "rehau",
+              2
+            ],
+            [
+              "tece",
+              2
+            ]
+          ],
+          "total": 1252
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 2,
+              "place": 5
+            },
+            "stout": {
+              "count": 14,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "tim",
+              51
+            ],
+            [
+              "valtec",
+              44
+            ],
+            [
+              "rehau",
+              22
+            ],
+            [
+              "stout",
+              14
+            ],
+            [
+              "rommer",
+              2
+            ]
+          ],
+          "total": 1468
+        }
+      },
+      "krany_sharovye": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "bugatti",
+              1044
+            ],
+            [
+              "valtec",
+              211
+            ],
+            [
+              "pride",
+              133
+            ]
+          ],
+          "total": 2653
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "pride",
+              32
+            ],
+            [
+              "valtec",
+              30
+            ],
+            [
+              "bugatti",
+              21
+            ]
+          ],
+          "total": 1460
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              141
+            ],
+            [
+              "pride",
+              102
+            ],
+            [
+              "bugatti",
+              7
+            ]
+          ],
+          "total": 1236
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "pride",
+              125
+            ],
+            [
+              "bugatti",
+              34
+            ],
+            [
+              "valtec",
+              19
+            ]
+          ],
+          "total": 1482
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 676,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              5623
+            ],
+            [
+              "pride",
+              1640
+            ],
+            [
+              "bugatti",
+              1545
+            ],
+            [
+              "stout",
+              676
+            ],
+            [
+              "tim",
+              371
+            ],
+            [
+              "itap",
+              180
+            ]
+          ],
+          "total": 34927
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 858,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "bugatti",
+              12006
+            ],
+            [
+              "valtec",
+              4252
+            ],
+            [
+              "pride",
+              2587
+            ],
+            [
+              "stout",
+              858
+            ],
+            [
+              "itap",
+              348
+            ]
+          ],
+          "total": 61295
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 1920,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "bugatti",
+              17592
+            ],
+            [
+              "valtec",
+              6657
+            ],
+            [
+              "pride",
+              4152
+            ],
+            [
+              "stout",
+              1920
+            ],
+            [
+              "itap",
+              526
+            ]
+          ],
+          "total": 105157
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              74
+            ],
+            [
+              "pride",
+              74
+            ],
+            [
+              "vieir",
+              57
+            ]
+          ],
+          "total": 1484
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 381,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              4167
+            ],
+            [
+              "bugatti",
+              1299
+            ],
+            [
+              "pride",
+              1267
+            ],
+            [
+              "stout",
+              381
+            ],
+            [
+              "itap",
+              119
+            ]
+          ],
+          "total": 25714
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 72,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              1602
+            ],
+            [
+              "pride",
+              1279
+            ],
+            [
+              "bugatti",
+              468
+            ],
+            [
+              "stout",
+              72
+            ]
+          ],
+          "total": 16685
+        }
+      },
+      "maty_tp": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              1
+            ]
+          ],
+          "total": 58
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 73
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 26
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 4,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              4
+            ]
+          ],
+          "total": 81
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 155,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              155
+            ],
+            [
+              "rehau",
+              9
+            ],
+            [
+              "технониколь",
+              4
+            ],
+            [
+              "valtec",
+              2
+            ]
+          ],
+          "total": 1251
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 1,
+              "place": 5
+            },
+            "stout": {
+              "count": 375,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              375
+            ],
+            [
+              "rehau",
+              44
+            ],
+            [
+              "valtec",
+              19
+            ],
+            [
+              "технониколь",
+              11
+            ],
+            [
+              "rommer",
+              1
+            ]
+          ],
+          "total": 1965
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 7,
+              "place": 5
+            },
+            "stout": {
+              "count": 876,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              876
+            ],
+            [
+              "rehau",
+              81
+            ],
+            [
+              "valtec",
+              64
+            ],
+            [
+              "технониколь",
+              13
+            ],
+            [
+              "rommer",
+              7
+            ]
+          ],
+          "total": 5103
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 8,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              8
+            ]
+          ],
+          "total": 51
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 72,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              72
+            ],
+            [
+              "rehau",
+              3
+            ],
+            [
+              "технониколь",
+              2
+            ],
+            [
+              "valtec",
+              2
+            ]
+          ],
+          "total": 602
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 5,
+              "place": 2
+            },
+            "stout": {
+              "count": 55,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              55
+            ],
+            [
+              "rommer",
+              5
+            ]
+          ],
+          "total": 549
+        }
+      },
+      "nasosnye_gruppy": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 16
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 42
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "elsen",
+              14
+            ]
+          ],
+          "total": 18
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 10
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 78,
+              "place": 3
+            },
+            "stout": {
+              "count": 139,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "meibes",
+              366
+            ],
+            [
+              "stout",
+              139
+            ],
+            [
+              "rommer",
+              78
+            ],
+            [
+              "astrex",
+              25
+            ],
+            [
+              "gidruss",
+              17
+            ],
+            [
+              "oventrop",
+              14
+            ],
+            [
+              "valtec",
+              11
+            ],
+            [
+              "elsen",
+              7
+            ],
+            [
+              "huch",
+              6
+            ],
+            [
+              "solomix",
+              5
+            ],
+            [
+              "watts",
+              3
+            ]
+          ],
+          "total": 1171
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 149,
+              "place": 3
+            },
+            "stout": {
+              "count": 640,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              640
+            ],
+            [
+              "meibes",
+              545
+            ],
+            [
+              "rommer",
+              149
+            ],
+            [
+              "astrex",
+              89
+            ],
+            [
+              "elsen",
+              58
+            ],
+            [
+              "oventrop",
+              19
+            ],
+            [
+              "gidruss",
+              15
+            ],
+            [
+              "valtec",
+              10
+            ],
+            [
+              "solomix",
+              4
+            ]
+          ],
+          "total": 1973
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 421,
+              "place": 3
+            },
+            "stout": {
+              "count": 1447,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              1447
+            ],
+            [
+              "meibes",
+              1061
+            ],
+            [
+              "rommer",
+              421
+            ],
+            [
+              "astrex",
+              126
+            ],
+            [
+              "elsen",
+              95
+            ],
+            [
+              "gidruss",
+              36
+            ],
+            [
+              "oventrop",
+              29
+            ],
+            [
+              "huch",
+              24
+            ],
+            [
+              "valtec",
+              17
+            ],
+            [
+              "solomix",
+              9
+            ],
+            [
+              "hoobs",
+              1
+            ]
+          ],
+          "total": 4682
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "astrex",
+              5
+            ]
+          ],
+          "total": 19
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 55,
+              "place": 3
+            },
+            "stout": {
+              "count": 96,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "meibes",
+              242
+            ],
+            [
+              "stout",
+              96
+            ],
+            [
+              "rommer",
+              55
+            ],
+            [
+              "astrex",
+              20
+            ],
+            [
+              "oventrop",
+              14
+            ],
+            [
+              "gidruss",
+              12
+            ],
+            [
+              "valtec",
+              9
+            ],
+            [
+              "elsen",
+              7
+            ],
+            [
+              "huch",
+              6
+            ],
+            [
+              "solomix",
+              5
+            ],
+            [
+              "watts",
+              3
+            ]
+          ],
+          "total": 768
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 15,
+              "place": 4
+            },
+            "stout": {
+              "count": 86,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              86
+            ],
+            [
+              "meibes",
+              32
+            ],
+            [
+              "astrex",
+              17
+            ],
+            [
+              "rommer",
+              15
+            ],
+            [
+              "solomix",
+              12
+            ],
+            [
+              "valtec",
+              9
+            ],
+            [
+              "gidruss",
+              3
+            ],
+            [
+              "elsen",
+              3
+            ],
+            [
+              "hoobs",
+              1
+            ]
+          ],
+          "total": 392
+        }
+      },
+      "radiatory": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "royal thermo",
+              95
+            ],
+            [
+              "rifar",
+              26
+            ]
+          ],
+          "total": 2654
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "royal thermo",
+              72
+            ],
+            [
+              "purmo",
+              29
+            ]
+          ],
+          "total": 2416
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "purmo",
+              16
+            ],
+            [
+              "lemax",
+              14
+            ],
+            [
+              "rifar",
+              13
+            ],
+            [
+              "royal thermo",
+              9
+            ]
+          ],
+          "total": 1655
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "rifar",
+              41
+            ],
+            [
+              "royal thermo",
+              29
+            ]
+          ],
+          "total": 2130
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 46,
+              "place": 8
+            },
+            "stout": {
+              "count": 68,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "rifar",
+              715
+            ],
+            [
+              "royal thermo",
+              660
+            ],
+            [
+              "оазис",
+              76
+            ],
+            [
+              "stout",
+              68
+            ],
+            [
+              "purmo",
+              54
+            ],
+            [
+              "kermi",
+              54
+            ],
+            [
+              "кзто",
+              51
+            ],
+            [
+              "rommer",
+              46
+            ]
+          ],
+          "total": 29370
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 73,
+              "place": 7
+            },
+            "stout": {
+              "count": 109,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "rifar",
+              4567
+            ],
+            [
+              "royal thermo",
+              491
+            ],
+            [
+              "кзто",
+              180
+            ],
+            [
+              "stout",
+              109
+            ],
+            [
+              "kermi",
+              91
+            ],
+            [
+              "prado",
+              81
+            ],
+            [
+              "rommer",
+              73
+            ]
+          ],
+          "total": 45592
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 174,
+              "place": 6
+            },
+            "stout": {
+              "count": 221,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "rifar",
+              8416
+            ],
+            [
+              "royal thermo",
+              1303
+            ],
+            [
+              "кзто",
+              291
+            ],
+            [
+              "stout",
+              221
+            ],
+            [
+              "kermi",
+              212
+            ],
+            [
+              "rommer",
+              174
+            ],
+            [
+              "prado",
+              167
+            ],
+            [
+              "прадо",
+              137
+            ]
+          ],
+          "total": 89377
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "rifar",
+              56
+            ],
+            [
+              "prado",
+              36
+            ],
+            [
+              "royal thermo",
+              12
+            ]
+          ],
+          "total": 1480
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 45,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "rifar",
+              777
+            ],
+            [
+              "royal thermo",
+              300
+            ],
+            [
+              "оазис",
+              58
+            ],
+            [
+              "stout",
+              45
+            ],
+            [
+              "purmo",
+              43
+            ],
+            [
+              "kermi",
+              39
+            ],
+            [
+              "прадо",
+              39
+            ],
+            [
+              "кзто",
+              35
+            ]
+          ],
+          "total": 20144
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 35,
+              "place": 5
+            },
+            "stout": {
+              "count": 85,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "royal thermo",
+              140
+            ],
+            [
+              "rifar",
+              123
+            ],
+            [
+              "stout",
+              85
+            ],
+            [
+              "оазис",
+              37
+            ],
+            [
+              "rommer",
+              35
+            ],
+            [
+              "buderus",
+              29
+            ]
+          ],
+          "total": 16211
+        }
+      },
+      "radiatory_panel": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 24,
+              "place": 1
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "rommer",
+              24
+            ],
+            [
+              "kermi",
+              13
+            ],
+            [
+              "lemax",
+              2
+            ]
+          ],
+          "total": 182
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 9,
+              "place": 2
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "purmo",
+              14
+            ],
+            [
+              "rommer",
+              9
+            ],
+            [
+              "axis",
+              2
+            ]
+          ],
+          "total": 118
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 10,
+              "place": 1
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "rommer",
+              10
+            ],
+            [
+              "axis",
+              5
+            ],
+            [
+              "lemax",
+              4
+            ]
+          ],
+          "total": 61
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 4,
+              "place": 1
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "rommer",
+              4
+            ],
+            [
+              "lemax",
+              1
+            ]
+          ],
+          "total": 88
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 484,
+              "place": 1
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "rommer",
+              484
+            ],
+            [
+              "prado",
+              293
+            ],
+            [
+              "axis",
+              243
+            ],
+            [
+              "kermi",
+              235
+            ],
+            [
+              "purmo",
+              95
+            ],
+            [
+              "buderus",
+              59
+            ],
+            [
+              "лидея",
+              26
+            ],
+            [
+              "lemax",
+              15
+            ]
+          ],
+          "total": 2759
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 1111,
+              "place": 2
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "prado",
+              1297
+            ],
+            [
+              "rommer",
+              1111
+            ],
+            [
+              "kermi",
+              696
+            ],
+            [
+              "axis",
+              240
+            ],
+            [
+              "buderus",
+              202
+            ],
+            [
+              "purmo",
+              88
+            ],
+            [
+              "lemax",
+              26
+            ]
+          ],
+          "total": 4079
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 2412,
+              "place": 1
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "rommer",
+              2412
+            ],
+            [
+              "prado",
+              1853
+            ],
+            [
+              "kermi",
+              1417
+            ],
+            [
+              "axis",
+              349
+            ],
+            [
+              "buderus",
+              243
+            ],
+            [
+              "purmo",
+              163
+            ],
+            [
+              "lemax",
+              65
+            ]
+          ],
+          "total": 7342
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "prado",
+              32
+            ],
+            [
+              "axis",
+              5
+            ]
+          ],
+          "total": 87
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 345,
+              "place": 1
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "rommer",
+              345
+            ],
+            [
+              "prado",
+              257
+            ],
+            [
+              "axis",
+              235
+            ],
+            [
+              "kermi",
+              183
+            ],
+            [
+              "purmo",
+              74
+            ],
+            [
+              "buderus",
+              37
+            ],
+            [
+              "лидея",
+              18
+            ],
+            [
+              "lemax",
+              13
+            ]
+          ],
+          "total": 1978
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 388,
+              "place": 1
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "rommer",
+              388
+            ],
+            [
+              "prado",
+              78
+            ],
+            [
+              "kermi",
+              42
+            ],
+            [
+              "lemax",
+              26
+            ],
+            [
+              "buderus",
+              6
+            ],
+            [
+              "purmo",
+              2
+            ],
+            [
+              "лидея",
+              1
+            ]
+          ],
+          "total": 1042
+        }
+      },
+      "rasshir_baki": {
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 21,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "wester",
+              86
+            ],
+            [
+              "reflex",
+              59
+            ],
+            [
+              "valtec",
+              22
+            ],
+            [
+              "stout",
+              21
+            ],
+            [
+              "flamco",
+              9
+            ],
+            [
+              "джилекс",
+              2
+            ]
+          ],
+          "total": 1152
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 36,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "reflex",
+              278
+            ],
+            [
+              "wester",
+              108
+            ],
+            [
+              "stout",
+              36
+            ],
+            [
+              "flamco",
+              33
+            ],
+            [
+              "valtec",
+              31
+            ],
+            [
+              "джилекс",
+              27
+            ]
+          ],
+          "total": 2055
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 106,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "reflex",
+              471
+            ],
+            [
+              "wester",
+              216
+            ],
+            [
+              "stout",
+              106
+            ],
+            [
+              "valtec",
+              73
+            ],
+            [
+              "flamco",
+              66
+            ],
+            [
+              "джилекс",
+              48
+            ]
+          ],
+          "total": 5127
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              5
+            ]
+          ],
+          "total": 58
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 19,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "wester",
+              66
+            ],
+            [
+              "reflex",
+              42
+            ],
+            [
+              "stout",
+              19
+            ],
+            [
+              "valtec",
+              9
+            ],
+            [
+              "flamco",
+              5
+            ]
+          ],
+          "total": 629
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 5,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "wester",
+              20
+            ],
+            [
+              "valtec",
+              7
+            ],
+            [
+              "stout",
+              5
+            ],
+            [
+              "flamco",
+              2
+            ],
+            [
+              "джилекс",
+              1
+            ]
+          ],
+          "total": 746
+        }
+      },
+      "shkaf_kollekt": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              8
+            ]
+          ],
+          "total": 22
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              7
+            ]
+          ],
+          "total": 14
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              21
+            ]
+          ],
+          "total": 37
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              6
+            ]
+          ],
+          "total": 7
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 15,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              448
+            ],
+            [
+              "stout",
+              15
+            ],
+            [
+              "grota",
+              5
+            ],
+            [
+              "elsen",
+              1
+            ]
+          ],
+          "total": 604
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 113,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              534
+            ],
+            [
+              "stout",
+              113
+            ],
+            [
+              "grota",
+              28
+            ],
+            [
+              "elsen",
+              1
+            ]
+          ],
+          "total": 1433
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 181,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              1017
+            ],
+            [
+              "stout",
+              181
+            ],
+            [
+              "grota",
+              41
+            ],
+            [
+              "elsen",
+              6
+            ]
+          ],
+          "total": 2694
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              2
+            ]
+          ],
+          "total": 15
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 4,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              349
+            ],
+            [
+              "stout",
+              4
+            ],
+            [
+              "grota",
+              2
+            ],
+            [
+              "elsen",
+              1
+            ]
+          ],
+          "total": 450
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 13,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              85
+            ],
+            [
+              "stout",
+              13
+            ]
+          ],
+          "total": 309
+        }
+      },
+      "smesit_klapany": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 10,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              10
+            ]
+          ],
+          "total": 28
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 11
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 2,
+              "place": 1
+            },
+            "stout": {
+              "count": 1,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "rommer",
+              2
+            ],
+            [
+              "stout",
+              1
+            ]
+          ],
+          "total": 7
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 1
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 6,
+              "place": 5
+            },
+            "stout": {
+              "count": 82,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              82
+            ],
+            [
+              "esbe",
+              67
+            ],
+            [
+              "watts",
+              35
+            ],
+            [
+              "valtec",
+              18
+            ],
+            [
+              "rommer",
+              6
+            ]
+          ],
+          "total": 367
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 28,
+              "place": 4
+            },
+            "stout": {
+              "count": 175,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              175
+            ],
+            [
+              "esbe",
+              49
+            ],
+            [
+              "valtec",
+              29
+            ],
+            [
+              "rommer",
+              28
+            ],
+            [
+              "watts",
+              10
+            ]
+          ],
+          "total": 581
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 49,
+              "place": 3
+            },
+            "stout": {
+              "count": 316,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              316
+            ],
+            [
+              "esbe",
+              91
+            ],
+            [
+              "rommer",
+              49
+            ],
+            [
+              "valtec",
+              44
+            ],
+            [
+              "watts",
+              11
+            ]
+          ],
+          "total": 1100
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 11
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 6,
+              "place": 5
+            },
+            "stout": {
+              "count": 69,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              69
+            ],
+            [
+              "esbe",
+              65
+            ],
+            [
+              "watts",
+              35
+            ],
+            [
+              "valtec",
+              12
+            ],
+            [
+              "rommer",
+              6
+            ]
+          ],
+          "total": 258
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 12,
+              "place": 4
+            },
+            "stout": {
+              "count": 39,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              39
+            ],
+            [
+              "watts",
+              30
+            ],
+            [
+              "esbe",
+              22
+            ],
+            [
+              "rommer",
+              12
+            ]
+          ],
+          "total": 167
+        }
+      },
+      "termogolovki": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "heizen",
+              1
+            ],
+            [
+              "sanext",
+              1
+            ],
+            [
+              "valtec",
+              1
+            ]
+          ],
+          "total": 24
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "icma",
+              20
+            ],
+            [
+              "giacomini",
+              6
+            ],
+            [
+              "vieir",
+              5
+            ],
+            [
+              "ridan",
+              1
+            ],
+            [
+              "mvi",
+              1
+            ]
+          ],
+          "total": 84
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "giacomini",
+              4
+            ]
+          ],
+          "total": 35
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "oventrop",
+              3
+            ],
+            [
+              "valtec",
+              2
+            ]
+          ],
+          "total": 50
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 22,
+              "place": 4
+            }
+          },
+          "ranking": [
+            [
+              "weser",
+              59
+            ],
+            [
+              "heizen",
+              56
+            ],
+            [
+              "ridan",
+              34
+            ],
+            [
+              "stout",
+              22
+            ],
+            [
+              "danfoss",
+              16
+            ],
+            [
+              "oventrop",
+              12
+            ],
+            [
+              "herz",
+              11
+            ],
+            [
+              "giacomini",
+              11
+            ],
+            [
+              "mvi",
+              10
+            ],
+            [
+              "sanext",
+              10
+            ],
+            [
+              "far",
+              8
+            ],
+            [
+              "valtec",
+              8
+            ],
+            [
+              "tim",
+              5
+            ],
+            [
+              "sti",
+              4
+            ]
+          ],
+          "total": 766
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 81,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "sanext",
+              95
+            ],
+            [
+              "stout",
+              81
+            ],
+            [
+              "ridan",
+              75
+            ],
+            [
+              "oventrop",
+              69
+            ],
+            [
+              "danfoss",
+              67
+            ],
+            [
+              "giacomini",
+              49
+            ],
+            [
+              "valtec",
+              38
+            ],
+            [
+              "luxor",
+              25
+            ],
+            [
+              "heizen",
+              18
+            ],
+            [
+              "mvi",
+              16
+            ],
+            [
+              "far",
+              14
+            ],
+            [
+              "herz",
+              9
+            ],
+            [
+              "weser",
+              8
+            ],
+            [
+              "tim",
+              1
+            ]
+          ],
+          "total": 1334
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 172,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              172
+            ],
+            [
+              "oventrop",
+              103
+            ],
+            [
+              "sanext",
+              103
+            ],
+            [
+              "ridan",
+              99
+            ],
+            [
+              "valtec",
+              90
+            ],
+            [
+              "danfoss",
+              89
+            ],
+            [
+              "giacomini",
+              72
+            ],
+            [
+              "heizen",
+              33
+            ],
+            [
+              "mvi",
+              27
+            ],
+            [
+              "luxor",
+              25
+            ],
+            [
+              "far",
+              20
+            ],
+            [
+              "weser",
+              16
+            ],
+            [
+              "herz",
+              11
+            ],
+            [
+              "tim",
+              8
+            ],
+            [
+              "icma",
+              1
+            ]
+          ],
+          "total": 2065
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "danfoss",
+              2
+            ],
+            [
+              "ridan",
+              1
+            ],
+            [
+              "herz",
+              1
+            ]
+          ],
+          "total": 13
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 12,
+              "place": 5
+            }
+          },
+          "ranking": [
+            [
+              "heizen",
+              54
+            ],
+            [
+              "weser",
+              50
+            ],
+            [
+              "ridan",
+              26
+            ],
+            [
+              "oventrop",
+              12
+            ],
+            [
+              "stout",
+              12
+            ],
+            [
+              "herz",
+              11
+            ],
+            [
+              "sanext",
+              10
+            ],
+            [
+              "danfoss",
+              7
+            ],
+            [
+              "giacomini",
+              6
+            ],
+            [
+              "mvi",
+              5
+            ],
+            [
+              "sti",
+              4
+            ],
+            [
+              "tim",
+              3
+            ],
+            [
+              "far",
+              3
+            ],
+            [
+              "valtec",
+              2
+            ]
+          ],
+          "total": 535
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 1,
+              "place": 10
+            }
+          },
+          "ranking": [
+            [
+              "ridan",
+              33
+            ],
+            [
+              "valtec",
+              19
+            ],
+            [
+              "sanext",
+              18
+            ],
+            [
+              "heizen",
+              13
+            ],
+            [
+              "sti",
+              6
+            ],
+            [
+              "oventrop",
+              6
+            ],
+            [
+              "giacomini",
+              4
+            ],
+            [
+              "vieir",
+              2
+            ],
+            [
+              "far",
+              2
+            ],
+            [
+              "stout",
+              1
+            ]
+          ],
+          "total": 264
+        }
+      },
+      "truba_mp": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              24
+            ],
+            [
+              "henco",
+              4
+            ]
+          ],
+          "total": 570
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 20,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              95
+            ],
+            [
+              "stout",
+              20
+            ],
+            [
+              "tim",
+              6
+            ],
+            [
+              "henco",
+              2
+            ]
+          ],
+          "total": 426
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "henco",
+              10
+            ],
+            [
+              "valtec",
+              10
+            ]
+          ],
+          "total": 261
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              8
+            ],
+            [
+              "vieir",
+              2
+            ],
+            [
+              "henco",
+              1
+            ]
+          ],
+          "total": 352
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 72,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "henco",
+              457
+            ],
+            [
+              "valtec",
+              430
+            ],
+            [
+              "stout",
+              72
+            ]
+          ],
+          "total": 9016
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 109,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              398
+            ],
+            [
+              "stout",
+              109
+            ],
+            [
+              "henco",
+              90
+            ],
+            [
+              "tim",
+              35
+            ],
+            [
+              "vieir",
+              22
+            ]
+          ],
+          "total": 8137
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 126,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              620
+            ],
+            [
+              "henco",
+              360
+            ],
+            [
+              "stout",
+              126
+            ],
+            [
+              "tim",
+              90
+            ],
+            [
+              "vieir",
+              60
+            ]
+          ],
+          "total": 16185
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 3,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "henco",
+              10
+            ],
+            [
+              "stout",
+              3
+            ]
+          ],
+          "total": 290
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 66,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "henco",
+              418
+            ],
+            [
+              "valtec",
+              309
+            ],
+            [
+              "stout",
+              66
+            ]
+          ],
+          "total": 5869
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 31,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              235
+            ],
+            [
+              "tim",
+              69
+            ],
+            [
+              "stout",
+              31
+            ],
+            [
+              "henco",
+              22
+            ],
+            [
+              "vieir",
+              19
+            ]
+          ],
+          "total": 4344
+        }
+      },
+      "truba_pex": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 1,
+              "place": 5
+            },
+            "stout": {
+              "count": 6,
+              "place": 3
+            }
+          },
+          "ranking": [
+            [
+              "rtp",
+              22
+            ],
+            [
+              "rehau",
+              10
+            ],
+            [
+              "stout",
+              6
+            ],
+            [
+              "valtec",
+              5
+            ],
+            [
+              "rommer",
+              1
+            ],
+            [
+              "tim",
+              1
+            ]
+          ],
+          "total": 131
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 4,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              4
+            ],
+            [
+              "valtec",
+              3
+            ],
+            [
+              "sanext",
+              3
+            ],
+            [
+              "usystems",
+              3
+            ]
+          ],
+          "total": 104
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 4,
+              "place": 1
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "rommer",
+              4
+            ],
+            [
+              "rehau",
+              3
+            ],
+            [
+              "valtec",
+              1
+            ]
+          ],
+          "total": 67
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 14,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              14
+            ],
+            [
+              "rehau",
+              1
+            ],
+            [
+              "valtec",
+              1
+            ]
+          ],
+          "total": 69
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 56,
+              "place": 4
+            },
+            "stout": {
+              "count": 497,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              497
+            ],
+            [
+              "rehau",
+              242
+            ],
+            [
+              "valtec",
+              146
+            ],
+            [
+              "rommer",
+              56
+            ],
+            [
+              "rtp",
+              14
+            ],
+            [
+              "sanext",
+              13
+            ],
+            [
+              "usystems",
+              11
+            ],
+            [
+              "uponor",
+              6
+            ],
+            [
+              "tim",
+              2
+            ]
+          ],
+          "total": 2620
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 66,
+              "place": 4
+            },
+            "stout": {
+              "count": 872,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "rehau",
+              1341
+            ],
+            [
+              "stout",
+              872
+            ],
+            [
+              "valtec",
+              124
+            ],
+            [
+              "rommer",
+              66
+            ],
+            [
+              "tim",
+              55
+            ],
+            [
+              "sanext",
+              51
+            ],
+            [
+              "uponor",
+              28
+            ],
+            [
+              "usystems",
+              15
+            ],
+            [
+              "rtp",
+              7
+            ],
+            [
+              "hoobs",
+              2
+            ]
+          ],
+          "total": 5395
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 164,
+              "place": 4
+            },
+            "stout": {
+              "count": 1705,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "rehau",
+              2505
+            ],
+            [
+              "stout",
+              1705
+            ],
+            [
+              "valtec",
+              280
+            ],
+            [
+              "rommer",
+              164
+            ],
+            [
+              "tim",
+              103
+            ],
+            [
+              "sanext",
+              94
+            ],
+            [
+              "uponor",
+              52
+            ],
+            [
+              "usystems",
+              31
+            ],
+            [
+              "hoobs",
+              12
+            ],
+            [
+              "rtp",
+              11
+            ]
+          ],
+          "total": 10112
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 20
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 33,
+              "place": 4
+            },
+            "stout": {
+              "count": 368,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              368
+            ],
+            [
+              "rehau",
+              185
+            ],
+            [
+              "valtec",
+              124
+            ],
+            [
+              "rommer",
+              33
+            ],
+            [
+              "rtp",
+              14
+            ],
+            [
+              "sanext",
+              12
+            ],
+            [
+              "usystems",
+              7
+            ],
+            [
+              "uponor",
+              2
+            ],
+            [
+              "tim",
+              2
+            ]
+          ],
+          "total": 1822
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 50,
+              "place": 2
+            },
+            "stout": {
+              "count": 115,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              115
+            ],
+            [
+              "rommer",
+              50
+            ],
+            [
+              "rehau",
+              21
+            ],
+            [
+              "valtec",
+              19
+            ],
+            [
+              "uponor",
+              16
+            ],
+            [
+              "sanext",
+              8
+            ],
+            [
+              "tim",
+              5
+            ],
+            [
+              "usystems",
+              3
+            ],
+            [
+              "rtp",
+              1
+            ]
+          ],
+          "total": 1202
+        }
+      },
+      "uzel_podmesa": {
+        "Архангельская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 1,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              37
+            ],
+            [
+              "stout",
+              1
+            ]
+          ],
+          "total": 49
+        },
+        "Калининградская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              6
+            ]
+          ],
+          "total": 74
+        },
+        "Карелия": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 5,
+              "place": 1
+            }
+          },
+          "ranking": [
+            [
+              "stout",
+              5
+            ],
+            [
+              "valtec",
+              1
+            ]
+          ],
+          "total": 41
+        },
+        "Костромская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              7
+            ]
+          ],
+          "total": 51
+        },
+        "Ленинградская область": {
+          "own": {
+            "rommer": {
+              "count": 2,
+              "place": 3
+            },
+            "stout": {
+              "count": 20,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              129
+            ],
+            [
+              "stout",
+              20
+            ],
+            [
+              "rommer",
+              2
+            ]
+          ],
+          "total": 731
+        },
+        "Москва": {
+          "own": {
+            "rommer": {
+              "count": 6,
+              "place": 3
+            },
+            "stout": {
+              "count": 33,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              72
+            ],
+            [
+              "stout",
+              33
+            ],
+            [
+              "rommer",
+              6
+            ]
+          ],
+          "total": 825
+        },
+        "Московская область": {
+          "own": {
+            "rommer": {
+              "count": 22,
+              "place": 3
+            },
+            "stout": {
+              "count": 128,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              229
+            ],
+            [
+              "stout",
+              128
+            ],
+            [
+              "rommer",
+              22
+            ]
+          ],
+          "total": 2351
+        },
+        "Мурманская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 0,
+              "place": null
+            }
+          },
+          "ranking": [],
+          "total": 14
+        },
+        "Санкт-Петербург": {
+          "own": {
+            "rommer": {
+              "count": 2,
+              "place": 3
+            },
+            "stout": {
+              "count": 10,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              51
+            ],
+            [
+              "stout",
+              10
+            ],
+            [
+              "rommer",
+              2
+            ]
+          ],
+          "total": 355
+        },
+        "Свердловская область": {
+          "own": {
+            "rommer": {
+              "count": 0,
+              "place": null
+            },
+            "stout": {
+              "count": 3,
+              "place": 2
+            }
+          },
+          "ranking": [
+            [
+              "valtec",
+              62
+            ],
+            [
+              "stout",
+              3
+            ]
+          ],
+          "total": 412
+        }
+      }
+    }
+  },
   "updated": "2026-08-15"
 }
