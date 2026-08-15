@@ -15,8 +15,10 @@ name: Wordstat Analytics
 # Yandex Cloud. Локально их нет и быть не должно.
 on:
   schedule:
-    - cron: '0 5 3 * *'
-    - cron: '0 5 * * 1'
+    - cron: '0 5 3 * *'      # monthly — снимок спроса, 3-го числа
+    - cron: '0 5 * * 1'      # pulse — недельный пульс, по понедельникам
+    - cron: '0 5 5 * *'      # brands — рейтинги марок, 5-го числа
+    - cron: '0 5 7 1,4,7,10 *'  # brands-regional — раз в квартал, 7-го
   workflow_dispatch:
     inputs:
       mode:
@@ -48,10 +50,13 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             MODE="${{ github.event.inputs.mode }}"
-          elif [ "${{ github.event.schedule }}" = "0 5 * * 1" ]; then
-            MODE="pulse"
           else
-            MODE="monthly"
+            case "${{ github.event.schedule }}" in
+              "0 5 * * 1")        MODE="pulse" ;;
+              "0 5 5 * *")        MODE="brands" ;;
+              "0 5 7 1,4,7,10 *") MODE="brands-regional" ;;
+              *)                  MODE="monthly" ;;
+            esac
           fi
           echo "Режим: $MODE"
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
