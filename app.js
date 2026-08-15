@@ -11868,11 +11868,17 @@ const app = {
             return `<span title="${d.nowM}: ${num(d.now)} против ${d.baseM}: ${num(d.base)}" style="color:${color}; font-weight:700;">${sign}${d.pct}%</span>`;
         };
 
+        // Без истории категорий проценты посчитать не из чего, и кнопки базы
+        // сравнения нажимались бы вхолостую — молча, будто интерфейс сломан.
+        // Поэтому либо кнопки, либо прямое объяснение, почему их нет.
+        const hasHistory = Object.keys(catMonthly).length > 0;
         const cmpBtn = (m, label) => `<button class="admin-btn" style="${backMonths === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsCompare(${m})">${label}</button>`;
         h += `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 8px;">
                 <h4 style="margin:0; color:var(--text-main);">Наши места по категориям${region ? ` — ${esc(region)}` : ''}</h4>
-                <span style="font-size:12px; color:var(--text-sec); margin-left:6px;">спрос к:</span>
-                ${cmpBtn(1, 'прошлому месяцу')}${cmpBtn(3, 'кварталу')}${cmpBtn(12, 'году назад')}
+                ${hasHistory
+                    ? `<span style="font-size:12px; color:var(--text-sec); margin-left:6px;">спрос к:</span>
+                       ${cmpBtn(1, 'прошлому месяцу')}${cmpBtn(3, 'кварталу')}${cmpBtn(12, 'году назад')}`
+                    : `<span style="font-size:12px; color:#F97316; margin-left:6px;">История по категориям ещё не собрана — запустите Actions → Wordstat Analytics → brands. Тогда появятся проценты изменения и графики по каждой группе.</span>`}
               </div>
             <div style="overflow-x:auto;"><table class="inv-table">
                 <thead><tr>
@@ -12182,8 +12188,15 @@ const app = {
         if (monthly && monthly.length > 1) {
             const months = this._analyticsMonths || 36;
             const pts = monthly.slice(months > 0 ? -months : 0);
-            inner += `<div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">Спрос на «${esc(r.phrase)}» по месяцам</div>`
+            const first = pts[0], last = pts[pts.length - 1];
+            const growth = (first && first[1]) ? Math.round((last[1] - first[1]) / first[1] * 100) : null;
+            inner += `<div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">
+                    Спрос на «${esc(r.phrase)}» по месяцам, ${esc(first[0])} → ${esc(last[0])}
+                    ${growth === null ? '' : `<b style="color:${growth > 0 ? '#10B981' : '#EF4444'};">${growth > 0 ? '+' : ''}${growth}%</b> за период`}
+                </div>`
                 + this.buildAnalyticsLineChart([{ name: r.phrase, points: pts }], 'cat_' + r.id);
+        } else {
+            inner += `<div style="font-size:12px; color:var(--text-sec);">Помесячной истории по этой группе пока нет: её собирает режим <b>brands</b>.</div>`;
         }
 
         return `<tr><td colspan="5" style="background:var(--surface-light); padding:12px 14px;">${inner}</td></tr>`;
@@ -29608,6 +29621,67 @@ const app = {
     },
 
     /**
+     * Сколько насосных групп нужно радиаторам по гидравлике.
+     *
+     * Одна группа тянет кольцо не всегда: на большом доме расход упирается в
+     * кривую насоса, и дальние приборы недополучают. Тогда систему делят на
+     * ветки — каждая со своей группой на распределительном коллекторе
+     * котельной: расход через ветку падает во столько же раз, а потери в её
+     * подводке — вчетверо. Луч до прибора при этом не меняется, он и так свой
+     * у каждого прибора.
+     *
+     * Считается до подбора приборов, по нагрузке контура: точные мощности к
+     * этому моменту ещё не известны, а число групп нужно знать раньше — от него
+     * зависит и коллектор котельной, и обвязка.
+     *
+     * Больше четырёх веток не берём: столько отводов не даёт ни один коллектор
+     * котельной из каталога, и дальше вопрос решается не насосами, а диаметром.
+     */
+    radBranchesByHydraulics: function (loadKw, devicesCount) {
+        const kw = parseFloat(loadKw) || 0;
+        if (!(kw > 0)) return 1;
+        const s = this.state;
+        const area = parseFloat(s.area) || 100;
+        const avgRun = Math.sqrt(area / (s.floors === 2 ? 2 : 1)) + 3;
+        const n = Math.max(1, parseInt(devicesCount, 10) || Math.ceil(area / 18));
+        const flowAll = this.radFlowOf(kw * 1000);
+        // Кольцо считается по самому мощному прибору, а не по среднему: именно он
+        // задаёт потери в луче и клапане. Пока приборы не подобраны, берём
+        // полуторный средний — примерно так гостиная относится к спальне.
+        const flowDev = flowAll / n * 1.5;
+
+        // Потери делятся на две части. Общая — подводка, коллектор, группа, котёл —
+        // от числа веток зависит: расход через ветку падает. Лучевая — сам луч и
+        // клапан прибора — не зависит вовсе: сколько групп ни ставь, через прибор
+        // идёт его собственный расход.
+        const trLen = 2 * (0.5 * Math.sqrt(area) + 1 + (s.floors === 2 ? (s.h1 || 2.7) : 0));
+        const dpLoop = this.radPipeDrop(flowDev, 16, 2 * avgRun * 1.1).dp
+            + Math.pow(flowDev / this.RAD_VALVE_KV, 2) * 100;
+
+        const headAt = (br) => {
+            const flowBr = flowAll / br, kwBr = kw / br;
+            const dTr = kwBr <= 8 ? 20 : kwBr <= 16 ? 25 : 32;
+            const dp = this.radPipeDrop(flowBr, dTr, trLen).dp + this.RAD_MAN_DP
+                + dpLoop + this.RAD_GROUP_DP + this.RAD_BOILER_DP;
+            return { head: dp / 9.81, flowBr: flowBr };
+        };
+        const fitsAt = (br) => {
+            const r = headAt(br);
+            return this.RAD_PUMPS.some(pm => pm.hMax * (1 - Math.pow(r.flowBr / pm.qMax, 2)) >= r.head);
+        };
+
+        for (let br = 1; br <= 4; br++) {
+            if (fitsAt(br)) return br;
+            // Следующая ветка почти не снимает напор — значит держит не подводка,
+            // а луч с клапаном. Ставить лишние группы бессмысленно: они стоят
+            // денег и ничего не решают, а монтажнику нужно другое решение
+            // (второй прибор в помещении или луч большего диаметра).
+            if (br < 4 && headAt(br).head - headAt(br + 1).head < 0.1 * headAt(br).head) return br;
+        }
+        return 4;
+    },
+
+    /**
      * Гидравлический расчёт радиаторной части: расход системы, потери в самом
      * неблагоприятном кольце и требуемый напор насоса.
      *
@@ -29631,6 +29705,10 @@ const app = {
         if (!(totalW > 0)) return null;
 
         const flowTotal = this.radFlowOf(totalW);
+        // Система поделена на ветки (по группе на каждую) — через подводку ветки
+        // идёт своя доля расхода, и кольцо считается по ней.
+        const branches = Math.max(1, parseInt(this._radGroupsCount, 10) || 1);
+        const flowBranch = flowTotal / branches;
         const tee = s.radConnectionScheme === 'tee';
         const avgRun = this.avgRun || (Math.sqrt((s.area || 100) / (s.floors === 2 ? 2 : 1)) + 3);
 
@@ -29649,18 +29727,19 @@ const app = {
             const dNear = totalW / 1000 <= 4 ? 16 : totalW / 1000 <= 8 ? 20 : totalW / 1000 <= 16 ? 25 : 32;
             const dFar = totalW / 2000 <= 4 ? 16 : totalW / 2000 <= 8 ? 20 : totalW / 2000 <= 16 ? 25 : 32;
             const trunk = 0.75 * Math.sqrt(devices.length * ((s.area || 100) / (s.floors === 2 ? 2 : 1))) + 3;
-            const near = this.radPipeDrop(flowTotal, dNear, trunk);
-            const far = this.radPipeDrop(flowTotal / 2, dFar, trunk);
+            const near = this.radPipeDrop(flowBranch, dNear, trunk);
+            const far = this.radPipeDrop(flowBranch / 2, dFar, trunk);
             add('Магистраль Ø' + dNear + ', ' + trunk.toFixed(0) + ' м', near.dp, { v: near.v });
             add('Магистраль Ø' + dFar + ', ' + trunk.toFixed(0) + ' м', far.dp, { v: far.v });
             const br = this.radPipeDrop(flowWorst, 16, 2 * 1.5);
             add('Отвод к прибору Ø16', br.dp, { v: br.v });
         } else {
             // Коллекторная: подводка к шкафу несёт всё, дальше лучи Ø16.
-            const dTr = totalW / 1000 <= 8 ? 20 : totalW / 1000 <= 16 ? 25 : 32;
+            const dTr = totalW / branches / 1000 <= 8 ? 20 : totalW / branches / 1000 <= 16 ? 25 : 32;
             const trLen = 2 * (0.5 * Math.sqrt(s.area || 100) + 1 + (s.floors === 2 ? (s.h1 || 2.7) : 0));
-            const tr = this.radPipeDrop(flowTotal, dTr, trLen);
-            add('Подводка к коллектору Ø' + dTr + ', ' + trLen.toFixed(0) + ' м', tr.dp, { v: tr.v });
+            const tr = this.radPipeDrop(flowBranch, dTr, trLen);
+            add('Подводка к коллектору Ø' + dTr + (branches > 1 ? ' (ветка ' + branches + '-я часть)' : '') +
+                ', ' + trLen.toFixed(0) + ' м', tr.dp, { v: tr.v });
             add('Коллектор', this.RAD_MAN_DP);
             const loop = this.radPipeDrop(flowWorst, 16, 2 * avgRun * 1.1);
             add('Луч Ø16 до прибора «' + (worst.room || 'самый дальний') + '», ' + (2 * avgRun * 1.1).toFixed(0) + ' м', loop.dp, { v: loop.v });
@@ -29677,14 +29756,16 @@ const app = {
         // Какой из насосов тянет посчитанное кольцо на рабочем расходе.
         const pump = this.RAD_PUMPS.map(pm => ({
             label: pm.label,
-            avail: pm.hMax * (1 - Math.pow(flowTotal / pm.qMax, 2))
+            avail: pm.hMax * (1 - Math.pow(flowBranch / pm.qMax, 2))
         }));
         const fit = pump.find(pm => pm.avail >= head) || null;
 
         return {
             pumps: pump,
             pump: fit,                 // подходящий насос или null, если не тянет ни один
-            flow: flowTotal,           // м³/ч через насос
+            flow: flowTotal,           // м³/ч по системе
+            flowBranch: flowBranch,    // м³/ч через одну группу
+            branches: branches,
             flowWorst: flowWorst,      // м³/ч через самый мощный прибор
             worst: worst,
             head: head,                // требуемый напор, м вод. ст.
@@ -38281,12 +38362,19 @@ const app = {
                 this._radGroupCapacityKw = _capKw;
                 this._radGroupLoadKw = _radLoadKw;
                 const _needByPower = Math.max(1, Math.ceil(_radLoadKw / _capKw));
-                // Одной группы хватает на радиаторы всех этажей — оставляем одну.
-                // Не хватает по мощности — ставим столько, сколько нужно по нагрузке.
-                if (_needByPower < rQ) rQ = _needByPower;
-                else if (_needByPower > rQ) rQ = _needByPower;
+                // Групп нужно столько, сколько требует худшее из двух: паспортная
+                // мощность группы и гидравлика кольца. Раньше смотрели только на
+                // киловатты, и на большом доме одна группа честно «тянула» 24 кВт,
+                // но не продавливала воду до дальних приборов.
+                const _needByHydro = this.radBranchesByHydraulics(_radLoadKw, this.totalDevicesCount);
+                this._radGroupsByHydro = _needByHydro;
+                rQ = Math.max(1, _needByPower, _needByHydro);
             }
         }
+
+        // Число групп радиаторного контура — его же гидравлика считает числом
+        // веток: через каждую идёт своя доля расхода.
+        this._radGroupsCount = rQ;
 
         // Предупреждение по разделу «2. Обвязка котельной» (см. flushBill ниже):
         // ручная замена насосной группы отопления на меньший типоразмер.
@@ -40440,10 +40528,28 @@ const app = {
         if (this.radHydro) {
             const h = this.radHydro;
             if (!h.pump) {
-                app.tempWarns.push('• <b>Гидравлика:</b> расчётное кольцо требует ' +
-                    h.head.toFixed(1) + ' м напора при расходе ' + h.flow.toFixed(2) +
-                    ' м³/ч — этого не даёт даже насос 25/80. Укрупните магистраль, ' +
-                    'разделите систему на две ветки или увеличьте перепад температур.');
+                // Ветки уже посчитаны и стоят в смете (см. radBranchesByHydraulics);
+                // если и на четырёх кольцо не проходит, дальше помогает не насос,
+                // а диаметр — об этом и говорим.
+                // Что именно держит кольцо: пока это подводка, помогает ещё одна
+                // ветка; когда упирается луч или клапан прибора, ветки бесполезны —
+                // расход через прибор от них не меняется, нужен другой прибор или
+                // вторая точка подключения в помещении.
+                const top = h.parts.slice().sort((a, b) => b.dp - a.dp)[0];
+                const inLoop = /Луч|Клапан|Отвод/.test(top.name);
+                app.tempWarns.push('• <b>Гидравлика:</b> кольцо требует ' +
+                    h.head.toFixed(1) + ' м напора при расходе ' + h.flowBranch.toFixed(2) +
+                    ' м³/ч через группу' + (h.branches > 1 ? ' (система уже разбита на ' + h.branches + ' ветки)' : '') +
+                    ' — этого не даёт даже насос 25/80. Больше всего теряет: ' +
+                    top.name.replace(/,.*$/, '') + ' — ' + top.dp.toFixed(0) + ' кПа. ' +
+                    (inLoop
+                        ? 'Ветки здесь не помогут: расход через прибор от них не меняется. Разбейте нагрузку помещения на два прибора или ведите луч большим диаметром.'
+                        : 'Укрупните подводку к коллекторам или переведите систему на перепад 20 K (режим 80/60).'));
+            } else if (h.branches > 1) {
+                app.tempWarns.push('• <b>Гидравлика:</b> одна насосная группа не продавливает ' +
+                    'кольцо, система разбита на ' + h.branches + ' ветки — в смете ' + h.branches +
+                    ' группы на коллекторе котельной, по ' + (h.flow / h.branches).toFixed(2) +
+                    ' м³/ч на каждую. Приборы делятся между ветками поровну по мощности.');
             }
             if (h.noisy) {
                 const loud = h.parts.filter(p => p.v > this.RAD_V_MAX)
