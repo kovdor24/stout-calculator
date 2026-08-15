@@ -11916,7 +11916,10 @@ const app = {
                 <td style="text-align:center;">${r.ownIn.includes('stout') || r.stout ? badge(r.stout, r.ownCount.stout, r.brandTotal) : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
                 <td style="text-align:center;">${r.ownIn.includes('rommer') || r.rommer ? badge(r.rommer, r.ownCount.rommer, r.brandTotal) : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
             </tr>`;
-            if (open) h += this.buildAnalyticsCategoryDetail(r, rankOf(r.id), catMonthly[r.id], region, esc, num);
+            if (open) h += this.buildAnalyticsCategoryDetail(
+                r, rankOf(r.id), catMonthly[r.id],
+                ((brands && brands.cat_brand_monthly) || {})[r.id] || null,
+                region, esc, num);
         });
         h += `</tbody></table></div>`;
 
@@ -12184,6 +12187,22 @@ const app = {
     buildAnalyticsLineChart: function (series, id) {
         const W = 720, H = 210, PAD_L = 30, PAD_R = 12, PAD_T = 10, PAD_B = 26;
         const COLORS = ['#2563EB', '#10B981', '#F97316', '#8B5CF6', '#EF4444', '#0EA5E9'];
+
+        // Спрятанные ряды помним по графику: на графике из шести линий
+        // разглядеть одну невозможно, а выключать хочется именно лишние.
+        // Цвет закрепляем за рядом до фильтрации, иначе при выключении первой
+        // линии все остальные перекрашивались бы — и глаз терял бы, где кто.
+        this._chartHidden = this._chartHidden || {};
+        const hidden = this._chartHidden[id] || {};
+        const all = series.map((s, i) => Object.assign({}, s, {
+            color: COLORS[i % COLORS.length], hidden: !!hidden[String(s.name)]
+        }));
+        const legendAll = all;
+        series = all.filter(s => !s.hidden);
+        if (!series.length) {                     // всё выключили — показываем первый
+            series = [all[0]];
+            legendAll[0].hidden = false;
+        }
         const n = Math.max(...series.map(s => s.points.length));
         const x = i => PAD_L + (W - PAD_L - PAD_R) * (n > 1 ? i / (n - 1) : 0.5);
         const yOf = (v, max) => (H - PAD_B - (H - PAD_B - PAD_T) * ((Number(v) || 0) / max));
@@ -12191,26 +12210,38 @@ const app = {
         this._charts = this._charts || {};
         this._charts[id] = {
             labels: series[0].points.map(p => String(p[0])),
-            series: series.map((s, si) => ({
+            series: series.map(s => ({
                 name: String(s.name),
-                color: COLORS[si % COLORS.length],
+                color: s.color,
                 values: s.points.map(p => Number(p[1]) || 0)
             })),
             geom: { W: W, H: H, padL: PAD_L, padR: PAD_R, n: n }
         };
 
-        let paths = '', legend = '';
-        series.forEach((s, si) => {
+        let paths = '';
+        series.forEach(s => {
             const max = Math.max(1, ...s.points.map(p => Number(p[1]) || 0));
             const d = s.points.map((p, i) =>
                 `${i ? 'L' : 'M'}${x(i).toFixed(1)},${yOf(p[1], max).toFixed(1)}`
             ).join(' ');
-            paths += `<path d="${d}" fill="none" stroke="${COLORS[si % COLORS.length]}" stroke-width="2" stroke-linejoin="round"/>`;
+            paths += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round"/>`;
+        });
+
+        // Легенда — она же переключатели: показываем и выключенные ряды,
+        // иначе включить их обратно будет нечем.
+        let legend = '';
+        legendAll.forEach(s => {
             const last = s.points[s.points.length - 1];
-            legend += `<span style="display:inline-flex; align-items:center; gap:5px; margin-right:14px; font-size:12px; color:var(--text-sec);">
-                <i style="width:10px; height:10px; border-radius:2px; background:${COLORS[si % COLORS.length]}; display:inline-block;"></i>
-                ${String(s.name).replace(/[&<>"]/g, '')} <b style="color:var(--text-main);">${Number(last[1] || 0).toLocaleString('ru-RU')}</b>
-            </span>`;
+            const esc2 = String(s.name).replace(/[&<>"]/g, '');
+            legend += `<button onclick="app.toggleChartSeries('${id}', '${esc2.replace(/'/g, "\\'")}')"
+                    title="${s.hidden ? 'показать' : 'скрыть'} ряд"
+                    style="display:inline-flex; align-items:center; gap:5px; margin:0 12px 4px 0; padding:2px 6px;
+                           background:none; border:1px solid ${s.hidden ? 'var(--border)' : 'transparent'}; border-radius:6px;
+                           cursor:pointer; font-size:12px; color:var(--text-sec); opacity:${s.hidden ? 0.45 : 1};">
+                <i style="width:10px; height:10px; border-radius:2px; display:inline-block;
+                          background:${s.hidden ? 'transparent' : s.color}; border:2px solid ${s.color};"></i>
+                ${esc2} <b style="color:var(--text-main);">${Number((last && last[1]) || 0).toLocaleString('ru-RU')}</b>
+            </button>`;
         });
 
         // Подписи дат — обычной разметкой под картинкой, а не текстом внутри
@@ -12301,6 +12332,13 @@ const app = {
     },
 
     // Пустая строка — «все регионы дистрибьютора», иначе один выбранный
+    toggleChartSeries: function (chartId, name) {
+        this._chartHidden = this._chartHidden || {};
+        const map = this._chartHidden[chartId] = this._chartHidden[chartId] || {};
+        map[name] = !map[name];
+        this.renderAdminMain();
+    },
+
     setDistRegion: function (distId, region) {
         this._distRegion = this._distRegion || {};
         this._distRegion[distId] = region || null;
@@ -12312,7 +12350,7 @@ const app = {
      * Рисуется внутри таблицы, сразу под нажатой строкой — иначе непонятно,
      * что вообще произошло от нажатия.
      */
-    buildAnalyticsCategoryDetail: function (r, rank, monthly, region, esc, num) {
+    buildAnalyticsCategoryDetail: function (r, rank, monthly, brandMonthly, region, esc, num) {
         let inner = '';
 
         const list = (rank && rank.ranking) || [];
@@ -12353,11 +12391,21 @@ const app = {
             const pts = monthly.slice(months > 0 ? -months : 0);
             const first = pts[0], last = pts[pts.length - 1];
             const growth = (first && first[1]) ? Math.round((last[1] - first[1]) / first[1] * 100) : null;
+            // Кроме общего спроса на группу кладём свои марки внутри неё:
+            // «дымоход коаксиальный stout». Ряды нормируются каждый по своему
+            // максимуму, поэтому маленькая марка не ляжет в ноль рядом с
+            // общей кривой — сравнивается форма, а не абсолютные величины.
+            const chartSeries = [{ name: r.phrase, points: pts }];
+            Object.keys(brandMonthly || {}).forEach(brand => {
+                const bp = (brandMonthly[brand] || []).slice(months > 0 ? -months : 0);
+                if (bp.length > 1) chartSeries.push({ name: brand, points: bp });
+            });
             inner += `<div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">
                     Спрос на «${esc(r.phrase)}» по месяцам, ${esc(first[0])} → ${esc(last[0])}
                     ${growth === null ? '' : `<b style="color:${growth > 0 ? '#10B981' : '#EF4444'};">${growth > 0 ? '+' : ''}${growth}%</b> за период`}
+                    ${chartSeries.length > 1 ? '<span style="margin-left:6px;">— нажмите на подпись под графиком, чтобы включить или выключить кривую</span>' : ''}
                 </div>`
-                + this.buildAnalyticsLineChart([{ name: r.phrase, points: pts }], 'cat_' + r.id);
+                + this.buildAnalyticsLineChart(chartSeries, 'cat_' + r.id);
         } else {
             inner += `<div style="font-size:12px; color:var(--text-sec);">Помесячной истории по этой группе пока нет: её собирает режим <b>brands</b>.</div>`;
         }
@@ -36544,6 +36592,8 @@ const app = {
         // Подобранные приборы отопления с их фактической мощностью — из них
         // гидравлика берёт расходы (см. radHydraulics).
         app.radDevices = [];
+        // Замечания, адресованные подразделам сметы (см. рендер group-header).
+        app.groupWarns = {};
         // Паспортные патрубки подобранного бойлера (см. блок подбора бака ниже).
         // Сбрасываем на каждой отрисовке: без этого при выключении ГВС обвязка
         // считалась бы по патрубкам бака из прошлого расчёта.
@@ -37248,6 +37298,17 @@ const app = {
                     let titleColSpan = showSku ? 5 : 4;
                     rows += `<tr class="group-header" ${headStyle} onclick="app.toggleGroup('${i.group}')" title="Свернуть/Развернуть"><td colspan="${titleColSpan}" style="text-align:left; padding-left:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><b>${arrow} ${icon} ${i.group}</b></td><td class="col-unit" style="color:#9CA3AF; font-size:10px;">${txtUnit}</td><td class="col-qty" style="font-weight:700;">${txtQty}</td><td class="col-price"></td><td class="col-sum">${txtSum}</td></tr>`;
                     lastGroup = i.group;
+                    // Замечание, адресованное самому подразделу, — сразу под его
+                    // заголовком. Раньше предупреждения умели показываться только
+                    // у разделов верхнего уровня, и совет про диаметр трассы
+                    // висел в шапке «3. Приборы отопления», за десяток строк от
+                    // трубы, к которой относится.
+                    const _gw = (this.groupWarns || {})[i.group];
+                    if (_gw) {
+                        rows += `<tr class="group-warn-row"><td colspan="${titleColSpan + 4}" style="padding:6px 10px;">` +
+                            `<div style="background:var(--warn-bg); border:1px solid var(--warn-border); color:var(--warn-text); border-radius:6px; padding:7px 9px; font-size:11px; line-height:1.5; text-align:left;">${_gw}</div>` +
+                            `</td></tr>`;
+                    }
                 }
                 let rowStyle = "";
                 if (isCollapsed) { rowStyle = 'style="display:none;"'; }
@@ -40908,6 +40969,17 @@ const app = {
             if (h.noisy) {
                 const loud = h.parts.filter(p => p.v > this.RAD_V_MAX)
                     .map(p => p.name.replace(/,.*$/, '')).join(', ');
+                // Замечание про скорость относится к конкретной трубе, поэтому
+                // адресуем его подразделу, где она лежит: у трассы своя строка,
+                // у стояка своя. Общий блок раздела остаётся для мощности.
+                const _grpName = /Стояк/.test(loud) ? '3.4. Стояк на второй этаж' : '3.4. Трасса до коллектора';
+                this.groupWarns = this.groupWarns || {};
+                this.groupWarns[_grpName] = '⚠️ Скорость воды ' + h.vMax.toFixed(2) +
+                    ' м/с выше 1,0 м/с — труба будет слышна.' +
+                    (this.radPipeFamily() !== 'mp'
+                        ? ' У металлопластика внутренний проход шире при том же наружном размере.' +
+                          ' <button onclick="app.widenRadTrunk()" style="margin-left:4px; padding:2px 8px; border:1px solid var(--primary); background:var(--primary); color:#fff; border-radius:4px; font-size:11px; font-weight:700; cursor:pointer;">Заменить трубу</button>'
+                        : ' Ø32 — крупнейшая труба каталога: разделите разводку на две трассы или переведите систему на режим 80/60.');
                 // Ø32 — последний в каталоге, «взять следующий» не всегда есть куда.
                 // Зато внутренний диаметр у семейств разный: на тридцать второй
                 // металлопластик даёт 26 мм против 22,6 у стабильной, и одна смена
@@ -40915,14 +40987,8 @@ const app = {
                 // предупреждении — кнопкой, а не советом «подберите сами».
                 const fam = this.radPipeFamily();
                 const canWiden = (fam !== 'mp');
-                app.tempWarns.push('• <b>Гидравлика:</b> скорость воды ' + h.vMax.toFixed(2) +
-                    ' м/с (' + loud + ') выше 1,0 м/с — труба будет слышна.' +
-                    (canWiden
-                        ? ' У металлопластика при том же наружном размере внутренний диаметр больше' +
-                          ' (26 мм против ' + Math.round(this.radPipeId(32) * 1000) + ' мм на Ø32).' +
-                          ' <button onclick="app.widenRadTrunk()" style="margin-left:4px; padding:2px 8px; border:1px solid var(--primary); background:var(--primary); color:#fff; border-radius:4px; font-size:11px; font-weight:700; cursor:pointer;">Заменить трубу</button>'
-                        : ' Дальше по диаметру идти некуда: Ø32 — крупнейшая труба каталога.' +
-                          ' Разделите разводку на две трассы или переведите систему на режим 80/60.'));
+                // В общий блок раздела это замечание больше не дублируется:
+                // оно стоит у самой трубы, в своём подразделе.
             }
         }
 

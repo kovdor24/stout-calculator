@@ -887,6 +887,31 @@ def run_brands(client, regional=False):
                 cat_monthly[cat["id"]] = series
         data["cat_monthly"] = cat_monthly
         log("История по категориям: %d рядов" % len(cat_monthly))
+
+        # И то же самое по своим брендам внутри категории: «дымоход
+        # коаксиальный stout». Нужно, чтобы во вкладке накладывать свою кривую
+        # на общий спрос группы и видеть, растём мы вместе с рынком или
+        # отстаём. Только свои марки: по всем конкурентам это были бы сотни
+        # запросов в месяц, а вопрос стоит про нас.
+        cat_brand = data.get("cat_brand_monthly", {})
+        for cat in categories:
+            for brand in own_canon:
+                resp = client.call("dynamics", {
+                    "phrase": "%s %s" % (cat["phrase"], brand),
+                    "period": "PERIOD_MONTHLY",
+                    "fromDate": from_date, "toDate": to_date,
+                })
+                if resp is None:
+                    continue
+                series = [[month_key(r["date"]), to_int(r.get("count"))]
+                          for r in resp.get("results", [])]
+                series.sort(key=lambda x: x[0])
+                # Пустой ряд (марку с этой группой не ищут вовсе) не храним:
+                # плоская линия по нулям только мусорит график.
+                if any(v for _m, v in series):
+                    cat_brand.setdefault(cat["id"], {})[brand] = series
+        data["cat_brand_monthly"] = cat_brand
+        log("История по своим маркам внутри категорий: %d групп" % len(cat_brand))
         # order и section_title нужны вкладке: она строит таблицу в порядке
         # подбора сметы, а не по занятому месту. Без них порядок разъезжается,
         # и это незаметно — таблица просто рисуется как попало.
