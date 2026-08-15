@@ -59,6 +59,7 @@ APP_JS_FILE = "app.js"
 
 RATE_PER_SECOND = 8            # запас от официальных 10/с
 RATE_PER_HOUR = 90              # запас от официальных 100/ч
+QUOTA_WAIT = 20 * 60            # сколько ждать, поймав отказ по часовой квоте
 MIN_SUCCESS_RATIO = 0.8         # ниже — файлы не переписываем, это сбой
 SNAPSHOT_MONTHS_KEEP = 6        # region_snapshots — только последние месяцы,
                                  # полная история и так есть в region_monthly
@@ -159,6 +160,12 @@ class RateLimiter:
     def __init__(self):
         self._calls = []  # timestamps
 
+    def reset(self):
+        """После ожидания часовой квоты прежние отметки бессмысленны: окно
+        открылось заново, и держать паузу по старым меткам значит простаивать
+        второй час подряд."""
+        self._calls = []
+
     def wait(self):
         now = time.time()
         self._calls = [t for t in self._calls if now - t < 3600]
@@ -194,7 +201,7 @@ class WordstatClient:
         self.attempted = 0
         self.succeeded = 0
 
-    def call(self, method, body, tries=3):
+    def call(self, method, body, tries=5):
         """POST на .../v2/wordstat/<method> с ключом и folderId. Три попытки
         на 429/503 с растущей паузой — квота часовая, лишний запрос при сбое
         стоит реальных денег и минут, поэтому не долбим чаще необходимого."""
@@ -218,9 +225,21 @@ class WordstatClient:
                     pass
                 last_err = "HTTP %s: %s" % (e.code, body_txt)
                 if e.code in (429, 503) and attempt < tries - 1:
-                    pause = 5 * (attempt + 1)
-                    log("  %s: %s, повтор через %ds" % (method, last_err, pause))
+                    # Часовая квота у Яндекса общая на аккаунт, а наш счётчик
+                    # живёт внутри процесса: два прогона подряд — и второй
+                    # стартует с нулём в счётчике, но с уже выбранной квотой.
+                    # Ждать в таком случае надо не секунды, а до открытия
+                    # следующего часового окна. Прогон, потерявший на этом
+                    # 29 запросов из 47, и заставил переписать эту ветку.
+                    quota = "RequestsPerHour" in body_txt or "quota" in body_txt.lower()
+                    pause = QUOTA_WAIT if quota else 5 * (attempt + 1)
+                    log("  %s: %s%s, повтор через %d с" % (
+                        method, "исчерпана часовая квота" if quota else last_err,
+                        "" if quota else "", pause))
                     time.sleep(pause)
+                    if quota:
+                        # Окно открылось — прежние отметки уже не считаются.
+                        self.limiter.reset()
                     continue
                 break
             except Exception as e:  # noqa: BLE001 — причина уходит в лог
