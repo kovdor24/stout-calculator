@@ -1,12 +1,5 @@
 {
   "candidates": {
-    "alligator": {
-      "cats": [
-        "instrument_ruchnoy"
-      ],
-      "hits": 4,
-      "latin": true
-    },
     "amet": {
       "cats": [
         "boylery_kn"
@@ -33,13 +26,6 @@
         "krany_nezamerz"
       ],
       "hits": 8,
-      "latin": true
-    },
-    "ballu": {
-      "cats": [
-        "nasosy_drenazh"
-      ],
-      "hits": 11,
       "latin": true
     },
     "base": {
@@ -77,76 +63,6 @@
       "hits": 12,
       "latin": true
     },
-    "condipump": {
-      "cats": [
-        "nasosy_drenazh"
-      ],
-      "hits": 9,
-      "latin": true
-    },
-    "d110": {
-      "cats": [
-        "truba_pnd_gofr"
-      ],
-      "hits": 9,
-      "latin": true
-    },
-    "d16": {
-      "cats": [
-        "truba_pnd_gofr"
-      ],
-      "hits": 4,
-      "latin": true
-    },
-    "d20": {
-      "cats": [
-        "truba_pnd_gofr"
-      ],
-      "hits": 6,
-      "latin": true
-    },
-    "d25": {
-      "cats": [
-        "truba_pnd_gofr"
-      ],
-      "hits": 3,
-      "latin": true
-    },
-    "d315": {
-      "cats": [
-        "truba_pnd_gofr"
-      ],
-      "hits": 3,
-      "latin": true
-    },
-    "d32": {
-      "cats": [
-        "truba_pnd_gofr"
-      ],
-      "hits": 7,
-      "latin": true
-    },
-    "d400": {
-      "cats": [
-        "truba_pnd_gofr"
-      ],
-      "hits": 3,
-      "latin": true
-    },
-    "d50": {
-      "cats": [
-        "truba_pnd_gofr"
-      ],
-      "hits": 8,
-      "latin": true
-    },
-    "d63": {
-      "cats": [
-        "truba_pnd_gofr"
-      ],
-      "hits": 5,
-      "latin": true
-    },
     "delta": {
       "cats": [
         "radiatory_tube"
@@ -166,13 +82,6 @@
         "homuty"
       ],
       "hits": 4,
-      "latin": true
-    },
-    "dkc": {
-      "cats": [
-        "truba_pnd_gofr"
-      ],
-      "hits": 6,
       "latin": true
     },
     "dline": {
@@ -196,25 +105,11 @@
       "hits": 3,
       "latin": true
     },
-    "dwp": {
-      "cats": [
-        "nasosy_drenazh"
-      ],
-      "hits": 4,
-      "latin": true
-    },
     "evoh": {
       "cats": [
         "truba_pex"
       ],
       "hits": 8,
-      "latin": true
-    },
-    "expert": {
-      "cats": [
-        "instrument_ruchnoy"
-      ],
-      "hits": 7,
       "latin": true
     },
     "extra": {
@@ -287,13 +182,6 @@
       "hits": 3,
       "latin": true
     },
-    "grohe": {
-      "cats": [
-        "podvodka"
-      ],
-      "hits": 3,
-      "latin": true
-    },
     "gsk": {
       "cats": [
         "gidrostrelki"
@@ -308,6 +196,13 @@
       "hits": 12,
       "latin": true
     },
+    "heiz": {
+      "cats": [
+        "radiatory_tube"
+      ],
+      "hits": 3,
+      "latin": true
+    },
     "hilti": {
       "cats": [
         "homuty"
@@ -315,11 +210,25 @@
       "hits": 4,
       "latin": true
     },
-    "iek": {
+    "hts": {
       "cats": [
-        "truba_pnd_gofr"
+        "konvektory"
       ],
-      "hits": 4,
+      "hits": 3,
+      "latin": true
+    },
+    "humalt": {
+      "cats": [
+        "homuty"
+      ],
+      "hits": 3,
+      "latin": true
+    },
+    "ideal": {
+      "cats": [
+        "installyacii"
+      ],
+      "hits": 3,
       "latin": true
     },
     "inox": {
@@ -343,13 +252,6 @@
       "hits": 4,
       "latin": true
     },
-    "jet": {
-      "cats": [
-        "nasosy_poverh"
-      ],
-      "hits": 6,
-      "latin": true
-    },
     "kohr": {
       "cats": [
         "radiatory_tube"
@@ -357,11 +259,11 @@
       "hits": 4,
       "latin": true
     },
-    "kraftool": {
+    "lcp": {
       "cats": [
-        "instrument_ruchnoy"
+        "homuty"
       ],
-      "hits": 18,
+      "hits": 3,
       "latin": true
     },
     "lemax": {
@@ -371,30 +273,37 @@
       "hits": 9,
       "latin": true
     },
-    "leo": {
+    "m30": {
       "cats": [
-        "nasosy_poverh"
+        "termogolovki"
       ],
-      "hits": 4,
+      "hits": 3,
       "latin": true
     },
-    "machine": {
+    "m30x": {
       "cats": [
-        "nasosy_drenazh"
+        "termogolovki"
       ],
-      "hits": 5,
+      "hits": 3,
+      "latin": true
+    },
+    "meiflow": {
+      "cats": [
+        "nasosnye_gruppy"
+      ],
+      "hits": 3,
+      "latin": true
+    },
+    "metronex": {
+      "cats": [
+        "radiatory_panel"
+      ],
+      "hits": 3,
       "latin": true
     },
     "mpn": {
       "cats": [
         "homuty"
-      ],
-      "hits": 5,
-      "latin": true
-    },
-    "nebulizer": {
-      "cats": [
-        "nasosy_drenazh"
       ],
       "hits": 5,
       "latin": true
@@ -406,11 +315,46 @@
       "hits": 6,
       "latin": true
     },
+    "okc": {
+      "cats": [
+        "boylery_kn"
+      ],
+      "hits": 3,
+      "latin": true
+    },
+    "oras": {
+      "cats": [
+        "krany_nezamerz"
+      ],
+      "hits": 3,
+      "latin": true
+    },
+    "pert": {
+      "cats": [
+        "truba_mp"
+      ],
+      "hits": 3,
+      "latin": true
+    },
     "pilon": {
       "cats": [
         "radiatory_tube"
       ],
       "hits": 5,
+      "latin": true
+    },
+    "pn16": {
+      "cats": [
+        "krany_sharovye"
+      ],
+      "hits": 3,
+      "latin": true
+    },
+    "ppr": {
+      "cats": [
+        "radiatornaya_armatura"
+      ],
+      "hits": 3,
       "latin": true
     },
     "prado": {
@@ -420,25 +364,18 @@
       "hits": 4,
       "latin": true
     },
+    "premium": {
+      "cats": [
+        "radiatory_panel"
+      ],
+      "hits": 3,
+      "latin": true
+    },
     "profil": {
       "cats": [
         "radiatory_panel"
       ],
       "hits": 4,
-      "latin": true
-    },
-    "profline": {
-      "cats": [
-        "nasosy_poverh"
-      ],
-      "hits": 5,
-      "latin": true
-    },
-    "pump": {
-      "cats": [
-        "nasosy_drenazh"
-      ],
-      "hits": 5,
       "latin": true
     },
     "rapid": {
@@ -455,6 +392,20 @@
       "hits": 4,
       "latin": true
     },
+    "rcva": {
+      "cats": [
+        "klapany_3h"
+      ],
+      "hits": 3,
+      "latin": true
+    },
+    "rtr": {
+      "cats": [
+        "termogolovki"
+      ],
+      "hits": 3,
+      "latin": true
+    },
     "rtwx": {
       "cats": [
         "boylery_kn"
@@ -462,18 +413,18 @@
       "hits": 6,
       "latin": true
     },
-    "sanivort": {
+    "rubinetterie": {
       "cats": [
-        "kanaliz_stancii"
+        "termogolovki"
       ],
-      "hits": 18,
+      "hits": 3,
       "latin": true
     },
-    "security": {
+    "shift": {
       "cats": [
-        "predohranit"
+        "radiatory_tube"
       ],
-      "hits": 4,
+      "hits": 3,
       "latin": true
     },
     "shuft": {
@@ -483,11 +434,25 @@
       "hits": 4,
       "latin": true
     },
+    "sigma": {
+      "cats": [
+        "installyacii"
+      ],
+      "hits": 3,
+      "latin": true
+    },
     "siluet": {
       "cats": [
         "radiatory_tube"
       ],
       "hits": 5,
+      "latin": true
+    },
+    "skolan": {
+      "cats": [
+        "kanalizaciya"
+      ],
+      "hits": 3,
       "latin": true
     },
     "sl10": {
@@ -504,11 +469,46 @@
       "hits": 9,
       "latin": true
     },
-    "terminus": {
+    "stalmax": {
       "cats": [
-        "polotencesushiteli"
+        "homuty"
       ],
-      "hits": 9,
+      "hits": 3,
+      "latin": true
+    },
+    "steel": {
+      "cats": [
+        "radiatory_panel"
+      ],
+      "hits": 3,
+      "latin": true
+    },
+    "steelion": {
+      "cats": [
+        "radiatory_tube"
+      ],
+      "hits": 3,
+      "latin": true
+    },
+    "swh": {
+      "cats": [
+        "boylery_kn"
+      ],
+      "hits": 3,
+      "latin": true
+    },
+    "teceprofil": {
+      "cats": [
+        "installyacii"
+      ],
+      "hits": 3,
+      "latin": true
+    },
+    "termica": {
+      "cats": [
+        "nasosy_skv"
+      ],
+      "hits": 3,
       "latin": true
     },
     "tesi": {
@@ -532,6 +532,13 @@
       "hits": 7,
       "latin": true
     },
+    "unipump": {
+      "cats": [
+        "krany_nezamerz"
+      ],
+      "hits": 6,
+      "latin": true
+    },
     "ups": {
       "cats": [
         "nasosy_cirk"
@@ -552,329 +559,490 @@
       ],
       "hits": 6,
       "latin": true
-    },
-    "zenten": {
-      "cats": [
-        "instrument_ruchnoy"
-      ],
-      "hits": 4,
-      "latin": true
     }
   },
   "categories": {
     "aksessuary_rad": {
       "cat": "rad_kits",
+      "own_in_group": [
+        "rommer"
+      ],
       "phrase": "кронштейн для радиатора",
+      "price_group": "Аксессуары и комплектующие для радиаторов",
+      "regional": false,
       "section": 3
     },
     "avtomatika": {
       "cat": "boiler_automation",
+      "own_in_group": [
+        "stout"
+      ],
       "phrase": "gsm модуль для котла",
+      "price_group": "Управляющая автоматика и электроника",
+      "regional": false,
       "section": 7
     },
     "boylery_kn": {
       "cat": "tanks_standard",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "бойлер косвенного нагрева",
+      "price_group": "Бойлеры косвенного и комбинированного нагрева",
+      "regional": true,
       "section": 1
     },
     "dymohody": {
       "cat": "chimneys",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "дымоход коаксиальный",
+      "price_group": "Дымоходы",
+      "regional": true,
       "section": 1
     },
     "fitingi_ax": {
       "cat": "axial_fittings_pex",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "аксиальный фитинг",
-      "section": 6
-    },
-    "fitingi_compress": {
-      "cat": null,
-      "phrase": "компрессионный фитинг",
-      "section": 6
-    },
-    "fitingi_latun": {
-      "cat": null,
-      "phrase": "латунный резьбовой фитинг",
+      "price_group": "Аксиальные фитинги",
+      "regional": true,
       "section": 6
     },
     "fitingi_pnd": {
       "cat": "well_parts",
+      "own_in_group": [
+        "stout"
+      ],
       "phrase": "фитинги для пнд труб",
+      "price_group": "Латунные фитинги для ПНД труб",
+      "regional": false,
       "section": 11
     },
     "fitingi_press": {
       "cat": "water_fittings_press_mp",
+      "own_in_group": [
+        "stout"
+      ],
       "phrase": "пресс фитинг для металлопластиковой трубы",
-      "section": 6
-    },
-    "fitingi_vint": {
-      "cat": null,
-      "phrase": "винтовой фитинг",
+      "price_group": "Пресс-фитинги",
+      "regional": false,
       "section": 6
     },
     "gidrostrelki": {
       "cat": "hydro_separators",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "гидрострелка",
+      "price_group": "Гидравлические разделители",
+      "regional": true,
       "section": 2
     },
     "homuty": {
       "cat": "mounting_system",
+      "own_in_group": [
+        "stout"
+      ],
       "phrase": "хомут трубный",
+      "price_group": "Аксессуары и комплектующие, хомуты трубные",
+      "regional": false,
       "section": 8
     },
     "installyacii": {
       "cat": "installations",
+      "own_in_group": null,
       "phrase": "инсталляция для унитаза",
-      "section": 6
-    },
-    "instrument_pex": {
-      "cat": null,
-      "phrase": "экспандер для труб pex",
-      "section": 6
-    },
-    "instrument_ruchnoy": {
-      "cat": null,
-      "phrase": "труборез",
-      "section": 6
-    },
-    "kanaliz_stancii": {
-      "cat": null,
-      "phrase": "канализационная насосная станция",
+      "price_group": null,
+      "regional": false,
       "section": 6
     },
     "kanalizaciya": {
       "cat": "sewer_silent",
+      "own_in_group": [
+        "stout"
+      ],
       "phrase": "бесшумная канализация",
+      "price_group": "Бесшумная канализация",
+      "regional": true,
       "section": 6
     },
     "kip": {
       "cat": "hydro_thermometer_alts",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "манометр для отопления",
+      "price_group": "Контрольно-измерительные приборы",
+      "regional": false,
       "section": 2
     },
     "klapany_3h": {
       "cat": "valves",
+      "own_in_group": [
+        "rommer"
+      ],
       "phrase": "трехходовой клапан",
+      "price_group": "Трехходовые клапаны и сервоприводы",
+      "regional": false,
       "section": 2
     },
     "klapany_elmagn": {
       "cat": "leak_valves",
+      "own_in_group": [
+        "stout"
+      ],
       "phrase": "электромагнитный клапан",
+      "price_group": "Электромагнитные клапаны",
+      "regional": false,
       "section": 8
     },
     "kollektor_tp": {
       "cat": "manifolds",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "коллектор теплого пола",
+      "price_group": "Коллекторы",
+      "regional": true,
       "section": 4
     },
     "kollektor_vodo": {
       "cat": "water_manifolds_stout",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "коллектор для водоснабжения",
+      "price_group": "Коллекторы для систем водоснабжения",
+      "regional": false,
       "section": 6
     },
     "komplekt_tp": {
       "cat": "damper_tape",
+      "own_in_group": [
+        "stout"
+      ],
       "phrase": "демпферная лента для теплого пола",
+      "price_group": "Комплектующие для теплого пола",
+      "regional": false,
       "section": 4
     },
     "konvektory": {
       "cat": "convectors_scn",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "внутрипольный конвектор",
+      "price_group": "Конвекторы отопления водяные внутрипольные",
+      "regional": false,
       "section": 3
     },
     "kotly_el": {
       "cat": "boilers_plus",
+      "own_in_group": [
+        "stout"
+      ],
       "phrase": "электрический котел отопления",
+      "price_group": "Котлы электрические",
+      "regional": false,
       "section": 1
     },
     "kotly_gaz": {
       "cat": "boilers_gas",
+      "own_in_group": [],
       "phrase": "газовый котел",
+      "price_group": "Котлы газовые (сопутствующий спрос, своих позиций нет)",
+      "regional": false,
       "section": 1
     },
     "krany_nezamerz": {
       "cat": "outdoor_faucets",
+      "own_in_group": [
+        "rommer"
+      ],
       "phrase": "незамерзающий кран",
+      "price_group": "Незамерзающие краны",
+      "regional": false,
       "section": 6
     },
     "krany_sharovye": {
       "cat": "ball_valves",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "шаровой кран",
+      "price_group": "Шаровые краны",
+      "regional": true,
       "section": 8
     },
     "maty_tp": {
       "cat": "mats",
+      "own_in_group": [
+        "stout"
+      ],
       "phrase": "мат для теплого пола",
+      "price_group": "Маты для теплого пола",
+      "regional": true,
       "section": 4
     },
     "nasosnaya_avtomatika": {
       "cat": "well_relays",
+      "own_in_group": [
+        "rommer"
+      ],
       "phrase": "реле давления воды",
+      "price_group": "Насосная автоматика",
+      "regional": false,
       "section": 11
     },
     "nasosnye_gruppy": {
       "cat": "groups_dn25",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "насосная группа",
+      "price_group": "Группы быстрого монтажа",
+      "regional": true,
       "section": 2
     },
     "nasosy_cirk": {
       "cat": "pumps_dn25",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "циркуляционный насос",
+      "price_group": "Циркуляционные насосы",
+      "regional": true,
       "section": 2
-    },
-    "nasosy_drenazh": {
-      "cat": null,
-      "phrase": "дренажный насос",
-      "section": 11
-    },
-    "nasosy_flanec": {
-      "cat": null,
-      "phrase": "фланцевый циркуляционный насос",
-      "section": 2
-    },
-    "nasosy_poverh": {
-      "cat": null,
-      "phrase": "поверхностный насос",
-      "section": 11
     },
     "nasosy_skv": {
       "cat": "well_pumps",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "скважинный насос",
+      "price_group": "Погружные скважинные насосы",
+      "regional": false,
       "section": 11
     },
     "nerzh_press": {
       "cat": "ss_pipe_4m",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "нержавеющая труба пресс",
+      "price_group": "Трубы и фитинги из нержавеющей стали",
+      "regional": false,
       "section": 6
-    },
-    "paneli_otopit": {
-      "cat": null,
-      "phrase": "отопительная панель",
-      "section": 3
-    },
-    "payka": {
-      "cat": null,
-      "phrase": "паяльник для труб",
-      "section": 6
-    },
-    "podvodka": {
-      "cat": null,
-      "phrase": "гибкая подводка для воды",
-      "section": 6
-    },
-    "polotencesushiteli": {
-      "cat": null,
-      "phrase": "полотенцесушитель",
-      "section": 5
-    },
-    "predohranit": {
-      "cat": null,
-      "phrase": "группа безопасности котла",
-      "section": 2
     },
     "radiatornaya_armatura": {
       "cat": "h_valves",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "кран для радиатора",
+      "price_group": "Радиаторная арматура",
+      "regional": false,
       "section": 3
     },
     "radiatory": {
       "cat": "rads",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "радиатор отопления",
+      "price_group": "Радиаторы отопления секционные",
+      "regional": true,
       "section": 3
     },
     "radiatory_panel": {
       "cat": "rads",
+      "own_in_group": [
+        "rommer"
+      ],
       "phrase": "стальной панельный радиатор",
+      "price_group": "Стальные панельные радиаторы",
+      "regional": true,
       "section": 3
     },
     "radiatory_tube": {
       "cat": "rads",
+      "own_in_group": [
+        "rommer"
+      ],
       "phrase": "трубчатый радиатор",
+      "price_group": "Стальные трубчатые радиаторы",
+      "regional": false,
       "section": 3
     },
     "rasshir_baki": {
       "cat": "exp_heating",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "расширительный бак для отопления",
+      "price_group": "Мембранные расширительные баки",
+      "regional": true,
       "section": 2
     },
     "separatory": {
       "cat": "filter_mag_alts",
+      "own_in_group": [
+        "rommer"
+      ],
       "phrase": "сепаратор шлама",
+      "price_group": "Сепараторы воздуха и шлама",
+      "regional": false,
       "section": 2
     },
     "shkaf_kollekt": {
       "cat": "cabinets_shrn",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "коллекторный шкаф",
+      "price_group": "Шкафы распределительные",
+      "regional": true,
       "section": 4
     },
     "smesit_klapany": {
       "cat": "dhw_mix_valves",
+      "own_in_group": [
+        "rommer"
+      ],
       "phrase": "термостатический смесительный клапан",
+      "price_group": "Термостатические смесительные клапаны",
+      "regional": true,
       "section": 5
     },
     "stabilizatory": {
       "cat": "stabs",
+      "own_in_group": [
+        "stout"
+      ],
       "phrase": "стабилизатор напряжения для котла",
+      "price_group": "Стабилизаторы сетевого напряжения",
+      "regional": false,
       "section": 2
-    },
-    "stancii_vodosnab": {
-      "cat": null,
-      "phrase": "насосная станция водоснабжения",
-      "section": 11
     },
     "teploizolyaciya": {
       "cat": "insulation",
+      "own_in_group": [
+        "rommer"
+      ],
       "phrase": "теплоизоляция для труб",
+      "price_group": "Теплоизоляция",
+      "regional": false,
       "section": 9
     },
     "teplonositel": {
       "cat": "coolants",
+      "own_in_group": [],
       "phrase": "теплоноситель для отопления",
+      "price_group": "Теплоноситель (сопутствующий спрос, своих позиций нет)",
+      "regional": false,
       "section": 9
     },
     "termogolovki": {
       "cat": "heads",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "термостатическая головка",
+      "price_group": "Радиаторная арматура, термоголовки",
+      "regional": true,
       "section": 3
     },
     "termostaty_nakl": {
       "cat": "air_sensors",
+      "own_in_group": [
+        "stout"
+      ],
       "phrase": "накладной термостат",
+      "price_group": "Погружные и накладные термостаты",
+      "regional": false,
       "section": 7
     },
     "termostaty_tp": {
       "cat": "thermostats_stout",
+      "own_in_group": [
+        "stout"
+      ],
       "phrase": "термостат теплого пола",
+      "price_group": "Автоматика для теплого пола",
+      "regional": false,
       "section": 4
     },
     "truba_mp": {
       "cat": "metal_plastic_pipes",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "металлопластиковая труба",
+      "price_group": "Трубы металлопластиковые",
+      "regional": true,
       "section": 6
     },
     "truba_pex": {
       "cat": "pipes",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "труба из сшитого полиэтилена",
+      "price_group": "Трубы PE-Xa, PE-Xa/EVOH",
+      "regional": true,
       "section": 6
-    },
-    "truba_pnd_gofr": {
-      "cat": null,
-      "phrase": "гофрированная труба пнд",
-      "section": 8
     },
     "umnye_golovki": {
       "cat": "heads",
+      "own_in_group": [
+        "stout"
+      ],
       "phrase": "умная термостатическая головка",
+      "price_group": "Умные термостатические головки",
+      "regional": false,
       "section": 7
     },
     "uzel_podmesa": {
       "cat": "mixing_units",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
       "phrase": "смесительный узел теплого пола",
+      "price_group": "Насосно-смесительные узлы",
+      "regional": true,
       "section": 4
     },
     "vodoochistka": {
       "cat": "filter_big_blue",
+      "own_in_group": [],
       "phrase": "фильтр для воды магистральный",
+      "price_group": "Водоочистка (сопутствующий спрос, своих позиций нет)",
+      "regional": false,
       "section": 10
     }
   },
@@ -933,7 +1101,7 @@
         "ranking": [
           [
             "zota",
-            7228
+            7291
           ],
           [
             "baxi",
@@ -1103,52 +1271,6 @@
         ],
         "total": 9762
       },
-      "fitingi_compress": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 1202,
-            "place": 1
-          }
-        },
-        "ranking": [
-          [
-            "stout",
-            1202
-          ],
-          [
-            "hoobs",
-            13
-          ],
-          [
-            "valtec",
-            11
-          ]
-        ],
-        "total": 8535
-      },
-      "fitingi_latun": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 0,
-            "place": null
-          }
-        },
-        "ranking": [
-          [
-            "valtec",
-            36
-          ]
-        ],
-        "total": 355
-      },
       "fitingi_pnd": {
         "own": {
           "rommer": {
@@ -1187,20 +1309,6 @@
         ],
         "total": 1522
       },
-      "fitingi_vint": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 0,
-            "place": null
-          }
-        },
-        "ranking": [],
-        "total": 231
-      },
       "gidrostrelki": {
         "own": {
           "rommer": {
@@ -1215,7 +1323,7 @@
         "ranking": [
           [
             "gidruss",
-            4335
+            4354
           ],
           [
             "stout",
@@ -1321,86 +1429,6 @@
           ]
         ],
         "total": 63349
-      },
-      "instrument_pex": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 0,
-            "place": null
-          }
-        },
-        "ranking": [],
-        "total": 3
-      },
-      "instrument_ruchnoy": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 0,
-            "place": null
-          }
-        },
-        "ranking": [
-          [
-            "зубр",
-            1058
-          ],
-          [
-            "ridgid",
-            966
-          ],
-          [
-            "rothenberger",
-            186
-          ],
-          [
-            "stayer",
-            116
-          ],
-          [
-            "virax",
-            54
-          ]
-        ],
-        "total": 47354
-      },
-      "kanaliz_stancii": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 0,
-            "place": null
-          }
-        },
-        "ranking": [
-          [
-            "unipump",
-            1635
-          ],
-          [
-            "grundfos",
-            433
-          ],
-          [
-            "sfa",
-            388
-          ],
-          [
-            "belamos",
-            27
-          ]
-        ],
-        "total": 9208
       },
       "kanalizaciya": {
         "own": {
@@ -2024,7 +2052,7 @@
           ],
           [
             "wilo",
-            21912
+            21935
           ],
           [
             "unipump",
@@ -2092,111 +2120,6 @@
           ]
         ],
         "total": 206662
-      },
-      "nasosy_drenazh": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 0,
-            "place": null
-          }
-        },
-        "ranking": [
-          [
-            "вихрь",
-            49269
-          ],
-          [
-            "джилекс",
-            10569
-          ],
-          [
-            "belamos",
-            5293
-          ],
-          [
-            "grundfos",
-            3624
-          ],
-          [
-            "unipump",
-            1715
-          ],
-          [
-            "aquario",
-            1664
-          ]
-        ],
-        "total": 264522
-      },
-      "nasosy_flanec": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 0,
-            "place": null
-          }
-        },
-        "ranking": [
-          [
-            "wilo",
-            2131
-          ],
-          [
-            "grundfos",
-            32
-          ],
-          [
-            "pumpman",
-            14
-          ]
-        ],
-        "total": 1967
-      },
-      "nasosy_poverh": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 0,
-            "place": null
-          }
-        },
-        "ranking": [
-          [
-            "вихрь",
-            12186
-          ],
-          [
-            "джилекс",
-            7371
-          ],
-          [
-            "unipump",
-            6980
-          ],
-          [
-            "aquario",
-            1219
-          ],
-          [
-            "belamos",
-            787
-          ],
-          [
-            "pedrollo",
-            261
-          ]
-        ],
-        "total": 76798
       },
       "nasosy_skv": {
         "own": {
@@ -2271,165 +2194,6 @@
           ]
         ],
         "total": 2362
-      },
-      "paneli_otopit": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 92,
-            "place": 1
-          }
-        },
-        "ranking": [
-          [
-            "stout",
-            92
-          ]
-        ],
-        "total": 1703
-      },
-      "payka": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 0,
-            "place": null
-          }
-        },
-        "ranking": [
-          [
-            "resanta",
-            1946
-          ],
-          [
-            "candan",
-            1384
-          ],
-          [
-            "dytron",
-            300
-          ],
-          [
-            "sturm",
-            81
-          ]
-        ],
-        "total": 46547
-      },
-      "podvodka": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 287,
-            "place": 2
-          }
-        },
-        "ranking": [
-          [
-            "valtec",
-            506
-          ],
-          [
-            "stout",
-            287
-          ],
-          [
-            "tim",
-            50
-          ],
-          [
-            "vieir",
-            20
-          ]
-        ],
-        "total": 28507
-      },
-      "polotencesushiteli": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 0,
-            "place": null
-          }
-        },
-        "ranking": [
-          [
-            "сунержа",
-            25359
-          ],
-          [
-            "терминус",
-            12254
-          ],
-          [
-            "двин",
-            4543
-          ],
-          [
-            "indigo",
-            3408
-          ],
-          [
-            "ника",
-            3050
-          ],
-          [
-            "тругор",
-            2047
-          ],
-          [
-            "margaroli",
-            912
-          ]
-        ],
-        "total": 464695
-      },
-      "predohranit": {
-        "own": {
-          "rommer": {
-            "count": 47,
-            "place": 5
-          },
-          "stout": {
-            "count": 174,
-            "place": 3
-          }
-        },
-        "ranking": [
-          [
-            "tim",
-            348
-          ],
-          [
-            "valtec",
-            234
-          ],
-          [
-            "stout",
-            174
-          ],
-          [
-            "watts",
-            71
-          ],
-          [
-            "rommer",
-            47
-          ]
-        ],
-        "total": 8114
       },
       "radiatornaya_armatura": {
         "own": {
@@ -2745,7 +2509,7 @@
         "ranking": [
           [
             "энергия",
-            15685
+            15749
           ],
           [
             "teplocom",
@@ -2765,41 +2529,6 @@
           ]
         ],
         "total": 18611
-      },
-      "stancii_vodosnab": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 0,
-            "place": null
-          }
-        },
-        "ranking": [
-          [
-            "grundfos",
-            48
-          ],
-          [
-            "джилекс",
-            37
-          ],
-          [
-            "wilo",
-            19
-          ],
-          [
-            "aquario",
-            14
-          ],
-          [
-            "belamos",
-            13
-          ]
-        ],
-        "total": 6558
       },
       "teploizolyaciya": {
         "own": {
@@ -3093,41 +2822,6 @@
           ]
         ],
         "total": 29865
-      },
-      "truba_pnd_gofr": {
-        "own": {
-          "rommer": {
-            "count": 0,
-            "place": null
-          },
-          "stout": {
-            "count": 114,
-            "place": 5
-          }
-        },
-        "ranking": [
-          [
-            "промрукав",
-            5107
-          ],
-          [
-            "экопласт",
-            403
-          ],
-          [
-            "иэк",
-            192
-          ],
-          [
-            "rexant",
-            187
-          ],
-          [
-            "stout",
-            114
-          ]
-        ],
-        "total": 33865
       },
       "umnye_golovki": {
         "own": {
