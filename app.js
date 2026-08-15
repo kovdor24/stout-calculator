@@ -10849,8 +10849,25 @@ const app = {
         { id: 'equipment', icon: '🧰', label: 'Своё оборудование', hint: 'Добавленное, удалённое, замены' },
         { id: 'recognition', icon: '🔍', label: 'Распознавание', hint: 'Архив смет и месячные лимиты' },
         { id: 'plans', icon: '📐', label: 'Планы этажей', hint: 'Подложки планов на сервере' },
-        { id: 'projects', icon: '📁', label: 'Проекты', hint: 'Выпущенные комплекты листов' }
+        { id: 'projects', icon: '📁', label: 'Проекты', hint: 'Выпущенные комплекты листов' },
+        { id: 'analytics', icon: '📈', label: 'Аналитика', hint: 'Спрос и конкуренты по регионам' }
     ],
+
+    // Вкладка «Аналитика» — только для владельца: там конкурентная разведка,
+    // которой незачем светиться даже перед наблюдателями с доступом в админку.
+    // Добавить второго — дописать адрес в этот список.
+    ANALYTICS_OWNERS: ['dima24ba@gmail.com'],
+
+    isAnalyticsOwner: function () {
+        const mail = (this._currentUserRow && this._currentUserRow.email || '').toLowerCase();
+        return !!mail && this.ANALYTICS_OWNERS.includes(mail);
+    },
+
+    // Вкладки, доступные текущему админу. Фильтр в одном месте: список строится
+    // и в ряду вкладок на десктопе, и в меню разделов на телефоне.
+    adminTabDefs: function () {
+        return this.ADMIN_TAB_DEFS.filter(t => t.id !== 'analytics' || this.isAnalyticsOwner());
+    },
 
     // Ниже этой ширины админка живёт по-мобильному: вместо ряда вкладок — меню
     // разделов, вместо таблиц — карточки (см. «АДМИНКА НА ТЕЛЕФОНЕ» в style.css).
@@ -10887,7 +10904,7 @@ const app = {
                 <div class="control-card" style="background: rgba(249, 115, 22, 0.1); border-color: #F97316; padding: 15px;"><span class="lbl" style="color: var(--text-sec);">Работы</span><span style="font-size: 20px; font-weight: 800; color: #F97316;">${n(d.totalWorks)} ₽</span></div>
             </div>`;
 
-        const items = this.ADMIN_TAB_DEFS.map(t => `
+        const items = this.adminTabDefs().map(t => `
             <div class="admin-mob-item" onclick="app.switchAdminTab('${t.id}')">
                 <span class="admin-mob-ico">${t.icon}</span>
                 <span class="admin-mob-body"><b>${t.label}</b><small>${t.hint || ''}</small></span>
@@ -10988,7 +11005,7 @@ const app = {
 
         const { users, userEstimates, recentEstimates, totalUsers, totalEstimates, totalEq, totalWorks } = this.adminData;
 
-        const ADMIN_TAB_DEFS = this.ADMIN_TAB_DEFS;
+        const ADMIN_TAB_DEFS = this.adminTabDefs();
 
         let navHtml;
         if (mobile) {
@@ -11065,6 +11082,12 @@ const app = {
         if (this._adminTab === 'projects') {
             content.innerHTML = navHtml;
             this.renderAdminProjects();
+            return;
+        }
+
+        if (this._adminTab === 'analytics') {
+            content.innerHTML = navHtml;
+            this.renderAdminAnalytics();
             return;
         }
 
@@ -11631,6 +11654,9 @@ const app = {
     },
 
     switchAdminTab: function (tab) {
+        // Кнопки «Аналитика» у остальных админов нет, но вызов из консоли или
+        // старой ссылки обязан упереться в ту же проверку, что и вёрстка.
+        if (tab === 'analytics' && !this.isAnalyticsOwner()) return;
         this._adminTab = tab;
         this.renderAdminMain();
         // Переход из меню разделов — всегда к началу раздела, а не туда, где
@@ -11675,6 +11701,270 @@ const app = {
      * Список тянем лениво, только при открытии вкладки: в loadAdminData ему
      * делать нечего — это лишний трафик для тех, кто зашёл за статистикой.
      */
+    /**
+     * Вкладка «Аналитика»: поисковый спрос и позиции наших брендов.
+     *
+     * Данные лежат статикой в analytics/*.json — их собирает AutoWordstat.py
+     * через GitHub Actions (см. ANALYTICS_PLAN.md). Supabase здесь не при чём:
+     * файлы раздаются с Pages, а лимит egress у нас уже был узким местом.
+     *
+     * Графики рисуем своим SVG. Chart.js весит впятеро больше всей этой
+     * вкладки, а нужны нам полоски и ломаная, которые в SVG пишутся за
+     * полсотни строк и сами подхватывают цвета темы через var(--…).
+     */
+    renderAdminAnalytics: function () {
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+
+        const wrap = document.createElement('div');
+        wrap.id = 'admin-analytics-body';
+        content.appendChild(wrap);
+
+        if (!this._analytics) {
+            wrap.innerHTML = `<div style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка данных аналитики…</div>`;
+            if (!this._loadingAnalytics) {
+                this._loadingAnalytics = true;
+                (async () => {
+                    // ?ts= и no-store — иначе Service Worker отдаст вчерашний
+                    // файл: не-навигационные запросы он кэширует
+                    // stale-while-revalidate, и свежий снимок доедет только
+                    // со второго захода.
+                    const ts = new Date().toISOString().slice(0, 10);
+                    const get = async (name) => {
+                        try {
+                            const r = await fetch(`analytics/${name}.json?ts=${ts}`, { cache: 'no-store' });
+                            return r.ok ? await r.json() : null;
+                        } catch (e) {
+                            console.warn('[analytics] не удалось загрузить', name, e.message || e);
+                            return null;
+                        }
+                    };
+                    const [brands, wordstat, pulse] = await Promise.all([
+                        get('wordstat_brands'), get('wordstat'), get('wordstat_pulse')
+                    ]);
+                    this._analytics = { brands, wordstat, pulse };
+                    this._loadingAnalytics = false;
+                    if (this._adminTab === 'analytics') this.renderAdminMain();
+                })();
+            }
+            return;
+        }
+
+        const { brands, wordstat, pulse } = this._analytics;
+        if (!brands && !wordstat) {
+            wrap.innerHTML = `<div style="padding:30px 0; text-align:center; color:var(--text-sec);">
+                Данных пока нет. Их собирает GitHub Actions → Wordstat Analytics: сначала режим <b>brands</b>, затем <b>monthly</b>.
+            </div>`;
+            return;
+        }
+
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const num = n => Number(n || 0).toLocaleString('ru-RU');
+
+        const months = (brands && brands.months) ? Object.keys(brands.months).sort() : [];
+        const lastMonth = months[months.length - 1];
+        const cats = (brands && brands.categories) || {};
+        const regionsData = (brands && brands.regions && brands.regions[lastMonth]) || {};
+
+        // Список регионов берём из самих данных: там ровно те, где мы есть
+        const regionNames = new Set();
+        Object.values(regionsData).forEach(byRegion => Object.keys(byRegion).forEach(r => regionNames.add(r)));
+        const regionList = Array.from(regionNames).sort();
+        const region = this._analyticsRegion || '';        // '' = вся Россия
+
+        const rankOf = (catId) => region
+            ? ((regionsData[catId] || {})[region] || null)
+            : ((brands && brands.months && brands.months[lastMonth] || {})[catId] || null);
+
+        let h = `<div style="margin-bottom:20px;">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:6px;">
+                <h3 style="margin:0; color:var(--text-main);">📈 Аналитика</h3>
+                <span style="font-size:12.5px; color:var(--text-sec);">данные на <b>${esc((brands && brands.updated) || (wordstat && wordstat.updated) || '—')}</b></span>
+                <button class="admin-btn" style="margin-left:auto;" onclick="app._analytics = null; app.renderAdminMain()">Обновить</button>
+            </div>
+            <div style="font-size:12px; color:var(--text-sec); margin-bottom:14px;">
+                Спрос по Яндексу: сколько раз искали за месяц. Это интерес, а не продажи — профессиональные позиции берут у дистрибьютора, не заходя в поиск.
+            </div>`;
+
+        // ── Фильтр по региону ───────────────────────────────────────────────
+        if (regionList.length) {
+            h += `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px;">
+                <button class="admin-btn" style="${!region ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsRegion('')">Вся Россия</button>
+                ${regionList.map(r => `<button class="admin-btn" style="${region === r ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsRegion('${esc(r).replace(/'/g, "\\'")}')">${esc(r)}</button>`).join('')}
+            </div>`;
+        }
+
+        // ── Сводка: где мы первые, где нас нет ──────────────────────────────
+        const rows = [];
+        Object.keys(cats).forEach(id => {
+            const r = rankOf(id);
+            if (!r) return;
+            const own = r.own || {};
+            const place = (b) => (own[b] && own[b].place) || null;
+            rows.push({
+                id,
+                title: cats[id].price_group || cats[id].phrase || id,
+                phrase: cats[id].phrase || '',
+                leader: (r.ranking && r.ranking[0]) || null,
+                stout: place('stout'),
+                rommer: place('rommer'),
+                ownIn: cats[id].own_in_group || []
+            });
+        });
+        const best = p => p || 99;
+        rows.sort((a, b) => Math.min(best(a.stout), best(a.rommer)) - Math.min(best(b.stout), best(b.rommer)));
+
+        const badge = (p, brand) => {
+            if (!p) return `<span style="color:var(--text-sec);">—</span>`;
+            const color = p === 1 ? '#10B981' : (p <= 3 ? 'var(--primary)' : (p <= 10 ? '#F97316' : 'var(--text-sec)'));
+            return `<span style="color:${color}; font-weight:700;">${p}</span>`;
+        };
+
+        h += `<h4 style="margin:0 0 8px; color:var(--text-main);">Наши места по категориям${region ? ` — ${esc(region)}` : ''}</h4>
+            <div style="overflow-x:auto;"><table class="inv-table">
+                <thead><tr>
+                    <th>Группа прайса</th><th>Лидер спроса</th>
+                    <th style="text-align:center; width:70px;">STOUT</th>
+                    <th style="text-align:center; width:70px;">ROMMER</th>
+                </tr></thead><tbody>`;
+        rows.forEach(r => {
+            const lead = r.leader ? `${esc(r.leader[0])} <span style="color:var(--text-sec);">${num(r.leader[1])}</span>` : '<span style="color:var(--text-sec);">нет данных</span>';
+            // Пока в данных нет названий групп прайса (появятся со следующим
+            // прогоном brands), заголовок падает на поисковую фразу — и тогда
+            // подпись под ним повторяла бы её слово в слово.
+            const sub = (r.phrase && r.phrase !== r.title)
+                ? `<br><small style="color:var(--text-sec);">${esc(r.phrase)}</small>` : '';
+            h += `<tr style="cursor:pointer;" onclick="app.setAnalyticsCategory('${esc(r.id)}')">
+                <td><b>${esc(r.title)}</b>${sub}</td>
+                <td>${lead}</td>
+                <td style="text-align:center;">${r.ownIn.includes('stout') || r.stout ? badge(r.stout, 'stout') : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
+                <td style="text-align:center;">${r.ownIn.includes('rommer') || r.rommer ? badge(r.rommer, 'rommer') : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
+            </tr>`;
+        });
+        h += `</tbody></table></div>`;
+
+        // ── Рейтинг марок выбранной категории ───────────────────────────────
+        const curCat = this._analyticsCategory && cats[this._analyticsCategory]
+            ? this._analyticsCategory
+            : (rows[0] && rows[0].id);
+        const curRank = curCat ? rankOf(curCat) : null;
+        if (curRank && curRank.ranking && curRank.ranking.length) {
+            const top = curRank.ranking.slice(0, 15);
+            const max = top[0][1] || 1;
+            h += `<h4 style="margin:22px 0 8px; color:var(--text-main);">Кто лидирует: ${esc(cats[curCat].price_group || cats[curCat].phrase || curCat)}${region ? ` — ${esc(region)}` : ''}</h4>
+                <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:6px;">`;
+            top.forEach(([brand, count]) => {
+                const mine = brand === 'stout' || brand === 'rommer';
+                const w = Math.max(2, Math.round(count / max * 100));
+                h += `<div style="display:flex; align-items:center; gap:8px;">
+                    <div style="width:130px; flex-shrink:0; font-size:12.5px; ${mine ? 'font-weight:800; color:var(--primary);' : 'color:var(--text-main);'}">${esc(brand)}</div>
+                    <div style="flex:1; background:var(--surface-light); border-radius:4px; overflow:hidden;">
+                        <div style="width:${w}%; height:16px; background:${mine ? 'var(--primary)' : 'var(--border)'};"></div>
+                    </div>
+                    <div style="width:70px; text-align:right; font-size:12px; color:var(--text-sec);">${num(count)}</div>
+                </div>`;
+            });
+            h += `</div><div style="font-size:11.5px; color:var(--text-sec); margin-bottom:4px;">Нажмите строку в таблице выше, чтобы посмотреть другую группу.</div>`;
+        }
+
+        // ── Спрос по России помесячно ───────────────────────────────────────
+        if (wordstat && wordstat.ru_monthly) {
+            const phrases = wordstat.phrases || {};
+            const coreIds = Object.keys(phrases).filter(id => phrases[id].core).slice(0, 6);
+            const series = coreIds.map(id => ({
+                name: phrases[id].text || id,
+                points: (wordstat.ru_monthly[id] || []).slice(-36)
+            })).filter(s => s.points.length > 1);
+            if (series.length) {
+                h += `<h4 style="margin:22px 0 8px; color:var(--text-main);">Спрос по России, три года</h4>${this.buildAnalyticsLineChart(series)}`;
+            }
+        }
+
+        // ── Недельный пульс ─────────────────────────────────────────────────
+        if (pulse && pulse.ru && pulse.weeks && pulse.weeks.length > 1) {
+            const phrases = (wordstat && wordstat.phrases) || {};
+            const series = Object.keys(pulse.ru).slice(0, 6).map(id => ({
+                name: (phrases[id] && phrases[id].text) || id,
+                points: pulse.weeks.map((w, i) => [w.slice(5), pulse.ru[id][i] || 0])
+            })).filter(s => s.points.length > 1);
+            if (series.length) {
+                h += `<h4 style="margin:22px 0 8px; color:var(--text-main);">Пульс: последние 12 недель</h4>${this.buildAnalyticsLineChart(series)}`;
+            }
+        }
+
+        // ── Кандидаты в бренды ──────────────────────────────────────────────
+        const cand = (brands && brands.candidates) || {};
+        const candKeys = Object.keys(cand).filter(w => cand[w].latin).slice(0, 30);
+        if (candKeys.length) {
+            h += `<h4 style="margin:22px 0 8px; color:var(--text-main);">Возможно, новые марки</h4>
+                <div style="font-size:12px; color:var(--text-sec); margin-bottom:8px;">Слова из запросов, которых нет в словаре. Настоящие марки отсюда переносятся в analytics/wordstat_categories.json — так список конкурентов дополняется данными, а не памятью.</div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px;">`;
+            candKeys.forEach(w => {
+                const c = cand[w];
+                h += `<span title="${esc((c.cats || []).join(', '))}" style="padding:3px 9px; border:1px solid var(--border); border-radius:12px; font-size:12px; color:var(--text-main);">${esc(w)} <b style="color:var(--text-sec);">${c.hits}</b></span>`;
+            });
+            h += `</div>`;
+        }
+
+        h += `</div>`;
+        wrap.innerHTML = h;
+    },
+
+    setAnalyticsRegion: function (r) {
+        this._analyticsRegion = r;
+        this.renderAdminMain();
+    },
+
+    setAnalyticsCategory: function (id) {
+        this._analyticsCategory = id;
+        this.renderAdminMain();
+    },
+
+    /**
+     * Ломаная на несколько рядов в чистом SVG.
+     *
+     * Ряды нормируем каждый по своему максимуму: у «газового котла» сотни тысяч
+     * запросов, у «коллектора тёплого пола» — сотни, и в общем масштабе второй
+     * лёг бы в ноль. Нас интересует форма кривой (сезон, рост), а не сравнение
+     * абсолютных величин между фразами.
+     */
+    buildAnalyticsLineChart: function (series) {
+        const W = 720, H = 200, PAD = 26;
+        const COLORS = ['#2563EB', '#10B981', '#F97316', '#8B5CF6', '#EF4444', '#0EA5E9'];
+        const n = Math.max(...series.map(s => s.points.length));
+        const x = i => PAD + (W - PAD * 2) * (n > 1 ? i / (n - 1) : 0.5);
+
+        let paths = '', legend = '';
+        series.forEach((s, si) => {
+            const max = Math.max(1, ...s.points.map(p => Number(p[1]) || 0));
+            const d = s.points.map((p, i) =>
+                `${i ? 'L' : 'M'}${x(i).toFixed(1)},${(H - PAD - (H - PAD * 2) * ((Number(p[1]) || 0) / max)).toFixed(1)}`
+            ).join(' ');
+            paths += `<path d="${d}" fill="none" stroke="${COLORS[si % COLORS.length]}" stroke-width="2" stroke-linejoin="round"/>`;
+            const last = s.points[s.points.length - 1];
+            legend += `<span style="display:inline-flex; align-items:center; gap:5px; margin-right:14px; font-size:12px; color:var(--text-sec);">
+                <i style="width:10px; height:10px; border-radius:2px; background:${COLORS[si % COLORS.length]}; display:inline-block;"></i>
+                ${String(s.name).replace(/[&<>"]/g, '')} <b style="color:var(--text-main);">${Number(last[1] || 0).toLocaleString('ru-RU')}</b>
+            </span>`;
+        });
+
+        const first = series[0].points;
+        const ticks = [0, Math.floor(first.length / 2), first.length - 1].filter((v, i, a) => a.indexOf(v) === i);
+        let labels = '';
+        ticks.forEach(i => {
+            if (!first[i]) return;
+            labels += `<text x="${x(i).toFixed(1)}" y="${H - 6}" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.6">${String(first[i][0])}</text>`;
+        });
+
+        return `<div style="overflow-x:auto; color:var(--text-sec);">
+            <svg viewBox="0 0 ${W} ${H}" style="width:100%; min-width:520px; height:auto; display:block;">
+                <line x1="${PAD}" y1="${H - PAD}" x2="${W - PAD}" y2="${H - PAD}" stroke="currentColor" opacity="0.25"/>
+                ${paths}${labels}
+            </svg>
+            <div style="margin-top:6px;">${legend}</div>
+        </div>`;
+    },
+
     renderAdminProjects: function () {
         const content = document.getElementById('admin_content');
         if (!content) return;
