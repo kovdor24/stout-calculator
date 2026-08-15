@@ -11883,39 +11883,22 @@ const app = {
             // подпись под ним повторяла бы её слово в слово.
             const sub = (r.phrase && r.phrase !== r.title)
                 ? `<br><small style="color:var(--text-sec);">${esc(r.phrase)}</small>` : '';
-            h += `<tr style="cursor:pointer;" onclick="app.setAnalyticsCategory('${esc(r.id)}')">
-                <td><b>${esc(r.title)}</b>${sub}</td>
+            // Раскрытая строка подсвечена, и данные по ней разворачиваются
+            // прямо под ней. Раньше рейтинг рисовался единым блоком под всей
+            // таблицей: нажимаешь строку в конце списка — а меняется что-то
+            // далеко за пределами экрана, и кажется, что нажатие не сработало.
+            const open = (this._analyticsCategory === r.id);
+            h += `<tr style="cursor:pointer; ${open ? 'background:var(--surface-light);' : ''}"
+                      onclick="app.setAnalyticsCategory('${esc(r.id)}')">
+                <td><b style="${open ? 'color:var(--primary);' : ''}">${open ? '▾ ' : ''}${esc(r.title)}</b>${sub}</td>
                 <td>${lead}</td>
                 <td style="text-align:center;">${deltaCell(deltaOf(r.id))}</td>
                 <td style="text-align:center;">${r.ownIn.includes('stout') || r.stout ? badge(r.stout, 'stout') : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
                 <td style="text-align:center;">${r.ownIn.includes('rommer') || r.rommer ? badge(r.rommer, 'rommer') : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
             </tr>`;
+            if (open) h += this.buildAnalyticsCategoryDetail(r, rankOf(r.id), catMonthly[r.id], region, esc, num);
         });
         h += `</tbody></table></div>`;
-
-        // ── Рейтинг марок выбранной категории ───────────────────────────────
-        const curCat = this._analyticsCategory && cats[this._analyticsCategory]
-            ? this._analyticsCategory
-            : (rows[0] && rows[0].id);
-        const curRank = curCat ? rankOf(curCat) : null;
-        if (curRank && curRank.ranking && curRank.ranking.length) {
-            const top = curRank.ranking.slice(0, 15);
-            const max = top[0][1] || 1;
-            h += `<h4 style="margin:22px 0 8px; color:var(--text-main);">Кто лидирует: ${esc(cats[curCat].price_group || cats[curCat].phrase || curCat)}${region ? ` — ${esc(region)}` : ''}</h4>
-                <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:6px;">`;
-            top.forEach(([brand, count]) => {
-                const mine = brand === 'stout' || brand === 'rommer';
-                const w = Math.max(2, Math.round(count / max * 100));
-                h += `<div style="display:flex; align-items:center; gap:8px;">
-                    <div style="width:130px; flex-shrink:0; font-size:12.5px; ${mine ? 'font-weight:800; color:var(--primary);' : 'color:var(--text-main);'}">${esc(brand)}</div>
-                    <div style="flex:1; background:var(--surface-light); border-radius:4px; overflow:hidden;">
-                        <div style="width:${w}%; height:16px; background:${mine ? 'var(--primary)' : 'var(--border)'};"></div>
-                    </div>
-                    <div style="width:70px; text-align:right; font-size:12px; color:var(--text-sec);">${num(count)}</div>
-                </div>`;
-            });
-            h += `</div><div style="font-size:11.5px; color:var(--text-sec); margin-bottom:4px;">Нажмите строку в таблице выше, чтобы посмотреть другую группу.</div>`;
-        }
 
         // ── Спрос по России помесячно ───────────────────────────────────────
         if (wordstat && wordstat.ru_monthly) {
@@ -12054,22 +12037,28 @@ const app = {
             </span>`;
         });
 
+        // Подписи дат — обычной разметкой под картинкой, а не текстом внутри
+        // SVG. Картинка растягивается по ширине непропорционально (иначе на
+        // широком экране график вырастал бы в полстраницы высотой), и текст
+        // внутри неё растягивался вместе с ней — буквы разъезжались.
         const first = series[0].points;
-        const step = Math.max(1, Math.ceil(first.length / 8));
+        const step = Math.max(1, Math.ceil(first.length / 7));
         let labels = '';
         for (let i = 0; i < first.length; i += step) {
-            labels += `<text x="${x(i).toFixed(1)}" y="${H - 8}" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.6">${String(first[i][0])}</text>`;
+            const left = (x(i) / W * 100).toFixed(2);
+            labels += `<span style="position:absolute; left:${left}%; transform:translateX(-50%); font-size:11px; color:var(--text-sec); white-space:nowrap;">${String(first[i][0])}</span>`;
         }
 
         return `<div id="chartwrap_${id}" style="position:relative; color:var(--text-sec);">
-            <svg id="chart_${id}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"
-                 style="width:100%; height:${H}px; display:block; touch-action:none;"
+            <svg id="chart_${id}" viewBox="0 0 ${W} ${H - PAD_B}" preserveAspectRatio="none"
+                 style="width:100%; height:${H - PAD_B}px; display:block; touch-action:none;"
                  onmousemove="app.analyticsChartHover(event, '${id}')"
                  onmouseleave="app.analyticsChartLeave('${id}')">
-                <line x1="${PAD_L}" y1="${H - PAD_B}" x2="${W - PAD_R}" y2="${H - PAD_B}" stroke="currentColor" opacity="0.25"/>
+                <line x1="${PAD_L}" y1="${H - PAD_B - 1}" x2="${W - PAD_R}" y2="${H - PAD_B - 1}" stroke="currentColor" opacity="0.25"/>
                 <line id="guide_${id}" x1="0" y1="${PAD_T}" x2="0" y2="${H - PAD_B}" stroke="currentColor" opacity="0" stroke-width="1" stroke-dasharray="3 3"/>
-                ${paths}${labels}
+                ${paths}
             </svg>
+            <div style="position:relative; height:18px; margin-top:2px;">${labels}</div>
             <div id="tip_${id}" style="position:absolute; display:none; pointer-events:none; z-index:5;
                  background:var(--surface); border:1px solid var(--border); border-radius:8px;
                  padding:7px 9px; font-size:12px; color:var(--text-main); box-shadow:0 4px 14px rgba(0,0,0,.25); white-space:nowrap;"></div>
@@ -12133,6 +12122,46 @@ const app = {
     setAnalyticsCompare: function (m) {
         this._analyticsCompare = m;
         this.renderAdminMain();
+    },
+
+    /**
+     * Раскрытая строка категории: кто лидирует и как менялся спрос.
+     * Рисуется внутри таблицы, сразу под нажатой строкой — иначе непонятно,
+     * что вообще произошло от нажатия.
+     */
+    buildAnalyticsCategoryDetail: function (r, rank, monthly, region, esc, num) {
+        let inner = '';
+
+        const list = (rank && rank.ranking) || [];
+        if (list.length) {
+            const top = list.slice(0, 12);
+            const max = top[0][1] || 1;
+            inner += `<div style="font-size:12px; color:var(--text-sec); margin-bottom:6px;">Кто лидирует по спросу${region ? ` — ${esc(region)}` : ' по России'}</div>
+                <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:12px;">`;
+            top.forEach(([brand, count]) => {
+                const mine = brand === 'stout' || brand === 'rommer';
+                const w = Math.max(2, Math.round(count / max * 100));
+                inner += `<div style="display:flex; align-items:center; gap:8px;">
+                    <div style="width:140px; flex-shrink:0; font-size:12.5px; ${mine ? 'font-weight:800; color:var(--primary);' : 'color:var(--text-main);'}">${esc(brand)}</div>
+                    <div style="flex:1; background:var(--bg); border-radius:4px; overflow:hidden;">
+                        <div style="width:${w}%; height:15px; background:${mine ? 'var(--primary)' : 'var(--border)'};"></div>
+                    </div>
+                    <div style="width:70px; text-align:right; font-size:12px; color:var(--text-sec);">${num(count)}</div>
+                </div>`;
+            });
+            inner += `</div>`;
+        } else {
+            inner += `<div style="font-size:12.5px; color:var(--text-sec); margin-bottom:10px;">Марок в запросах этой группы не нашлось — её спрашивают без указания бренда.</div>`;
+        }
+
+        if (monthly && monthly.length > 1) {
+            const months = this._analyticsMonths || 36;
+            const pts = monthly.slice(months > 0 ? -months : 0);
+            inner += `<div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">Спрос на «${esc(r.phrase)}» по месяцам</div>`
+                + this.buildAnalyticsLineChart([{ name: r.phrase, points: pts }], 'cat_' + r.id);
+        }
+
+        return `<tr><td colspan="5" style="background:var(--surface-light); padding:12px 14px;">${inner}</td></tr>`;
     },
 
     renderAdminProjects: function () {
@@ -29489,6 +29518,154 @@ const app = {
         return fit || pool[pool.length - 1];
     },
     UFH_FLUID: { rho: 992, cp: 4.174, mu: 6.53e-4 },   // вода 40 °C
+
+    // ─── Гидравлика радиаторной части ────────────────────────────────────────
+    // Тёплый пол считается по гидравлике давно (длина петли, напор узла, уставки
+    // расходомеров), а радиаторы подбирались только по мощности: насос брался
+    // «до 24 кВт», диаметр — по таблице, преднастройки клапанов не считались
+    // вовсе. Теперь мощность каждого прибора честная (см. getRoomHeatLoss), а из
+    // неё следует расход — и дальше вся цепочка обычного гидравлического расчёта.
+    RAD_FLUID: { rho: 977, cp: 4.19, mu: 4.04e-4 },    // вода 70 °C
+    // Расчётный перепад подача/обратка. Приборы подобраны на ΔT=50 по EN 442, а
+    // ему отвечают обе привычные схемы — 75/65/20 и 80/60/20. Берём вторую:
+    // перепад 20 K вдвое сокращает расход при той же мощности, и именно на него
+    // считают радиаторную систему с котлом. При 10 K расход выходил такой, что
+    // подводка к коллектору «шумела» на любом объекте крупнее ста метров.
+    RAD_DT: 20,
+    RAD_LOCAL_K: 1.3,        // местные сопротивления луча: отводы, переходы, узел подключения
+    RAD_VALVE_KV: 0.6,       // Kv термостатического клапана на средней преднастройке, м³/ч
+    RAD_MAN_DP: 8,           // коллектор радиаторов: кран, расходомер — кПа
+    RAD_GROUP_DP: 12,        // насосная группа и обвязка котельной — кПа
+    RAD_BOILER_DP: 15,       // теплообменник котла — кПа
+    // Предельная скорость. СП 60.13330 разрешает до 1,5 м/с, но по шуму в жилом
+    // доме держат до 1,0: выше труба в стяжке и стене начинает слышаться.
+    RAD_V_MAX: 1.0,
+    // Насосы радиаторного контура: кривая задана так же, как у снеготаяния —
+    // H = hMax·(1 − (Q/qMax)²). В насосных группах STOUT стоит 25/60, в мощных
+    // сборках 25/80; ими и проверяем, тянет ли группа посчитанное кольцо.
+    RAD_PUMPS: [
+        { label: '25/60', hMax: 6, qMax: 3.3 },
+        { label: '25/80', hMax: 8, qMax: 5.5 }
+    ],
+
+    /**
+     * Расход теплоносителя через прибор, м³/ч. G = Q / (c·ρ·ΔT).
+     */
+    radFlowOf: function (watt) {
+        const f = this.RAD_FLUID;
+        const q = Math.max(0, parseFloat(watt) || 0);
+        return q / (f.cp * 1000 * f.rho * this.RAD_DT) * 3600;
+    },
+
+    /**
+     * Внутренний диаметр трубы по её наружному размеру, м. Стенки — как у серии,
+     * которой считается разводка: 16×2.2, 20×2.8, 25×3.5, 32×4.4.
+     */
+    RAD_PIPE_ID: { 16: 0.0116, 20: 0.0144, 25: 0.018, 32: 0.0232 },
+    radPipeId: function (d) {
+        return this.RAD_PIPE_ID[parseInt(d, 10)] || 0.0116;
+    },
+
+    /**
+     * Потери участка трубы, кПа. Длина в метрах — в обе стороны, если участок
+     * идёт парой (подача и обратка).
+     */
+    radPipeDrop: function (flow, d, len) {
+        const dr = this.snowPipeDrop(flow, this.radPipeId(d), this.RAD_FLUID);
+        return { v: dr.v, dp: dr.R * len * this.RAD_LOCAL_K / 1000 };
+    },
+
+    /**
+     * Гидравлический расчёт радиаторной части: расход системы, потери в самом
+     * неблагоприятном кольце и требуемый напор насоса.
+     *
+     * Считается кольцо «насос → магистраль (или стояк и трасса) → коллектор →
+     * самый длинный луч → прибор → обратно»: по нему подбирают насос, остальные
+     * кольца заведомо легче и уравниваются преднастройкой клапанов.
+     *
+     * Длины берём те же, которыми смета считает трубу (avgRun, neededPipe), —
+     * иначе расчёт разошёлся бы с тем, что монтажник покупает. Точность здесь
+     * ограничена тем же, чем и метраж: плана дома с координатами приборов нет,
+     * и трассировка остаётся оценкой.
+     *
+     * Возвращает null, если приборов нет.
+     */
+    radHydraulics: function () {
+        const s = this.state;
+        const devices = this.radDevices || [];
+        if (!devices.length) return null;
+
+        const totalW = devices.reduce((a, d) => a + (d.watt || 0), 0);
+        if (!(totalW > 0)) return null;
+
+        const flowTotal = this.radFlowOf(totalW);
+        const tee = s.radConnectionScheme === 'tee';
+        const avgRun = this.avgRun || (Math.sqrt((s.area || 100) / (s.floors === 2 ? 2 : 1)) + 3);
+
+        // Самый мощный прибор задаёт худший луч: у него наибольший расход, а
+        // длина луча одна на всех — реальной трассировки у нас нет.
+        const worst = devices.reduce((a, d) => (d.watt > (a.watt || 0) ? d : a), devices[0]);
+        const flowWorst = this.radFlowOf(worst.watt);
+
+        const parts = [];
+        let dp = 0;
+        const add = (name, val, extra) => { parts.push(Object.assign({ name: name, dp: val }, extra || {})); dp += val; };
+
+        if (tee) {
+            // Тройниковая: магистраль несёт всю мощность у котла и половину на
+            // дальнем конце — так же, как выбирается её диаметр в смете.
+            const dNear = totalW / 1000 <= 4 ? 16 : totalW / 1000 <= 8 ? 20 : totalW / 1000 <= 16 ? 25 : 32;
+            const dFar = totalW / 2000 <= 4 ? 16 : totalW / 2000 <= 8 ? 20 : totalW / 2000 <= 16 ? 25 : 32;
+            const trunk = 0.75 * Math.sqrt(devices.length * ((s.area || 100) / (s.floors === 2 ? 2 : 1))) + 3;
+            const near = this.radPipeDrop(flowTotal, dNear, trunk);
+            const far = this.radPipeDrop(flowTotal / 2, dFar, trunk);
+            add('Магистраль Ø' + dNear + ', ' + trunk.toFixed(0) + ' м', near.dp, { v: near.v });
+            add('Магистраль Ø' + dFar + ', ' + trunk.toFixed(0) + ' м', far.dp, { v: far.v });
+            const br = this.radPipeDrop(flowWorst, 16, 2 * 1.5);
+            add('Отвод к прибору Ø16', br.dp, { v: br.v });
+        } else {
+            // Коллекторная: подводка к шкафу несёт всё, дальше лучи Ø16.
+            const dTr = totalW / 1000 <= 8 ? 20 : totalW / 1000 <= 16 ? 25 : 32;
+            const trLen = 2 * (0.5 * Math.sqrt(s.area || 100) + 1 + (s.floors === 2 ? (s.h1 || 2.7) : 0));
+            const tr = this.radPipeDrop(flowTotal, dTr, trLen);
+            add('Подводка к коллектору Ø' + dTr + ', ' + trLen.toFixed(0) + ' м', tr.dp, { v: tr.v });
+            add('Коллектор', this.RAD_MAN_DP);
+            const loop = this.radPipeDrop(flowWorst, 16, 2 * avgRun * 1.1);
+            add('Луч Ø16 до прибора «' + (worst.room || 'самый дальний') + '», ' + (2 * avgRun * 1.1).toFixed(0) + ' м', loop.dp, { v: loop.v });
+        }
+
+        // Клапан прибора на средней преднастройке: dp = (G/Kv)² · 100 кПа.
+        const valveDp = Math.pow(flowWorst / this.RAD_VALVE_KV, 2) * 100;
+        add('Клапан прибора', valveDp);
+        add('Насосная группа и обвязка', this.RAD_GROUP_DP);
+        add('Теплообменник котла', this.RAD_BOILER_DP);
+
+        const vMax = parts.reduce((a, p) => Math.max(a, p.v || 0), 0);
+        const head = dp / 9.81;
+        // Какой из насосов тянет посчитанное кольцо на рабочем расходе.
+        const pump = this.RAD_PUMPS.map(pm => ({
+            label: pm.label,
+            avail: pm.hMax * (1 - Math.pow(flowTotal / pm.qMax, 2))
+        }));
+        const fit = pump.find(pm => pm.avail >= head) || null;
+
+        return {
+            pumps: pump,
+            pump: fit,                 // подходящий насос или null, если не тянет ни один
+            flow: flowTotal,           // м³/ч через насос
+            flowWorst: flowWorst,      // м³/ч через самый мощный прибор
+            worst: worst,
+            head: head,                // требуемый напор, м вод. ст.
+            dp: dp,                    // то же в кПа
+            parts: parts,
+            vMax: vMax,
+            noisy: vMax > this.RAD_V_MAX,
+            scheme: tee ? 'tee' : 'manifold',
+            devices: devices.length,
+            watt: totalW
+        };
+    },
+
     /**
      * Трубы, которыми делают петли тёплого пола. Наружный размер у всех
      * шестнадцатый — мат с бобышками, евроконус и фиксатор поворота у них
@@ -35909,6 +36086,9 @@ const app = {
         this.currentEquipmentList = [];
         this.currentWorksList = [];
         app.tempWarns = []; // Массив для сбора предупреждений о дефиците мощности
+        // Подобранные приборы отопления с их фактической мощностью — из них
+        // гидравлика берёт расходы (см. radHydraulics).
+        app.radDevices = [];
         // Паспортные патрубки подобранного бойлера (см. блок подбора бака ниже).
         // Сбрасываем на каждой отрисовке: без этого при выключении ГВС обвязка
         // считалась бы по патрубкам бака из прошлого расчёта.
@@ -39120,6 +39300,7 @@ const app = {
                             totalConvCount++;
                             if (this.state.convectorType === 'scq') roomSCQCount++;
                             roomFactPowerSum += factPower; // учитываем мощность конвектора по помещению
+                            app.radDevices.push({ room: r.name, watt: factPower, kind: 'conv' });
                         } else if (roomHasRad) {
                             let isRommer = (this.state.brandMode === 'rommer');
                             let reqPwr = Math.round(wLoad);
@@ -39404,6 +39585,7 @@ const app = {
                             addToBill(activeItem, 1, wDesc, "3. Приборы отопления");
                             totalRadCount++;
                             roomFactPowerSum += factPower; // учитываем мощность радиатора по помещению
+                            app.radDevices.push({ room: r.name, watt: factPower, kind: 'rad' });
                         }
                     });
                     // === Проверка покрытия теплопотерь помещения ===
@@ -39418,6 +39600,10 @@ const app = {
                 let p50_space = (isRommer && catalog.rads[0].rommer) ? (catalog.rads[0].rommer.power50 || 117) : 117;
                 let p50_titan = (isRommer && titanRads[0].rommer) ? (titanRads[0].rommer.power50 || 128) : 128;
                 let loadPerWindow = heatLoadTotal / win;
+                // Быстрый режим: помещений нет, приборы одинаковые — гидравлике
+                // хватает их числа и доли нагрузки на каждый.
+                for (let _i = 0; _i < win; _i++)
+                    app.radDevices.push({ room: 'Прибор ' + (_i + 1), watt: loadPerWindow, kind: 'rad' });
 
                 let totalSecSpace = Math.ceil(heatLoadTotal / p50_space);
                 let maxSecs = isRommer ? 12 : 14;
@@ -40188,16 +40374,47 @@ const app = {
             }
         }
 
+        // Гидравлика радиаторной части: считается после того, как приборы
+        // подобраны, — из их фактических мощностей берутся расходы. Кольцо
+        // тяжелее насоса группы означает, что дальние приборы не прогреются,
+        // и молчать об этом нельзя: в смете насос выбран по киловаттам.
+        this.radHydro = this.radHydraulics();
+        if (this.radHydro) {
+            const h = this.radHydro;
+            if (!h.pump) {
+                app.tempWarns.push('• <b>Гидравлика:</b> расчётное кольцо требует ' +
+                    h.head.toFixed(1) + ' м напора при расходе ' + h.flow.toFixed(2) +
+                    ' м³/ч — этого не даёт даже насос 25/80. Укрупните магистраль, ' +
+                    'разделите систему на две ветки или увеличьте перепад температур.');
+            }
+            if (h.noisy) {
+                const loud = h.parts.filter(p => p.v > this.RAD_V_MAX)
+                    .map(p => p.name.replace(/,.*$/, '')).join(', ');
+                app.tempWarns.push('• <b>Гидравлика:</b> скорость воды ' + h.vMax.toFixed(2) +
+                    ' м/с (' + loud + ') выше 1,0 м/с — труба будет слышна. ' +
+                    'Возьмите следующий диаметр.');
+            }
+        }
+
         let heatWarnHtml = null;
         if (app.tempWarns && app.tempWarns.length > 0) {
-            let hasConvWarn = app.tempWarns.some(w => w.includes('конвектора'));
-            let hasRadWarn = app.tempWarns.some(w => w.includes('радиатора'));
+            // Гидравлические замечания живут в том же списке, но говорят о другом:
+            // мощности хватает, не проходит вода. Заголовок и совет — по составу.
+            const hydroWarns = app.tempWarns.filter(w => w.includes('Гидравлика'));
+            const powerWarns = app.tempWarns.filter(w => !w.includes('Гидравлика'));
+            let hasConvWarn = powerWarns.some(w => w.includes('конвектора'));
+            let hasRadWarn = powerWarns.some(w => w.includes('радиатора'));
             let advice = "";
-            if (hasConvWarn && !hasRadWarn) advice = "Для компенсации теплопотерь измените тип приборов (например, нажмите 🔄 для переключения конвектора SCN на вентиляторный SCQ).";
+            if (!powerWarns.length) advice = "";
+            else if (hasConvWarn && !hasRadWarn) advice = "Для компенсации теплопотерь измените тип приборов (например, нажмите 🔄 для переключения конвектора SCN на вентиляторный SCQ).";
             else if (!hasConvWarn && hasRadWarn) advice = "Для компенсации теплопотерь добавьте дополнительные радиаторы в проблемные помещения.";
             else advice = "Для компенсации теплопотерь измените тип конвекторов (SCN на SCQ) или добавьте дополнительные радиаторы в проблемные помещения.";
 
-            heatWarnHtml = `⚠️ <b>ВНИМАНИЕ: Нехватка мощности отопления!</b><br>` + app.tempWarns.join('<br>') + `<br><span style="font-weight: 500; display:block; margin-top:6px;">${advice}</span>`;
+            const title = powerWarns.length
+                ? (hydroWarns.length ? 'ВНИМАНИЕ: мощность и гидравлика' : 'ВНИМАНИЕ: Нехватка мощности отопления!')
+                : 'ВНИМАНИЕ: гидравлика системы';
+            heatWarnHtml = `⚠️ <b>${title}</b><br>` + app.tempWarns.join('<br>') +
+                (advice ? `<br><span style="font-weight: 500; display:block; margin-top:6px;">${advice}</span>` : '');
         }
         // === 3.5. Полотенцесушители (#5) ===
         {
