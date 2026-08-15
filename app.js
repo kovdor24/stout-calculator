@@ -29805,6 +29805,19 @@ const app = {
      * идёт парой (подача и обратка).
      */
     /**
+     * Присоединения магистрального участка: переходник с наружной резьбой на
+     * каждый конец и монтажная гильза под него. Трасса и стояк уходили в смету
+     * голой трубой с хомутами — чем она стыкуется с насосной группой и с
+     * коллектором, монтажник докупал сам. У металлопластика соединение
+     * пресс-фитингом, гильза в нём не нужна.
+     */
+    RAD_ADAPTER_EXT: {
+        grey: { 16: 'SFA-0001-001612', 20: 'SFA-0001-002012', 25: 'SFA-0001-002534', 32: 'SFA-0001-003234' },
+        mp:   { 16: 'SFP-0001-001216', 20: 'SFP-0001-001220', 25: 'SFP-0001-003426', 26: 'SFP-0001-003426', 32: 'SFP-0001-000132' }
+    },
+    RAD_SLEEVE: { 16: 'SFA-0020-000016', 20: 'SFA-0020-000020', 25: 'SFA-0020-000025', 32: 'SFA-0020-000032' },
+
+    /**
      * Диаметр участка радиаторной магистрали: больший из двух — по мощности
      * (таблица, посчитанная для 80/60) и по скорости воды. На 75/65 расход через
      * ту же мощность вдвое выше, и проверка по скорости сама поднимает участок на
@@ -40607,6 +40620,19 @@ const app = {
                             if (_riserStud) addToBill({ ..._riserStud, originalId: 'SAC-0020-400100_riser' }, _riserMeters,
                                 `Шпилька-шуруп с дюбелем под хомуты стояка. Требуется: ${_riserMeters} шт.`, riserGrp);
                         }
+                        // Присоединения стояка — та же недостача, что и у трассы:
+                        // внизу к насосной группе, наверху к коллектору второго этажа.
+                        const _rsFam = _isMpPipe ? 'mp' : 'grey';
+                        const _rsAdId = (this.RAD_ADAPTER_EXT[_rsFam] || {})[_riserD];
+                        const _rsAd = _rsAdId && this.findCatalogItemById(_rsAdId);
+                        if (_rsAd) addToBill({ ..._rsAd, originalId: _rsAdId + '_riser' }, 4,
+                            `Переходник стояка Ø${_riserD} — присоединение внизу к насосной группе и наверху к коллектору второго этажа: два конца × подача и обратка = 4 шт.`, riserGrp);
+                        if (!_isMpPipe) {
+                            const _rsSlId = this.RAD_SLEEVE[_riserD];
+                            const _rsSl = _rsSlId && this.findCatalogItemById(_rsSlId);
+                            if (_rsSl) addToBill({ ..._rsSl, originalId: _rsSlId + '_riser' }, 4,
+                                `Монтажная гильза Ø${_riserD} — надвижная, обжимает трубу в аксиальном переходнике: по одной на каждый переходник.`, riserGrp);
+                        }
                     }
                 }
 
@@ -40689,6 +40715,20 @@ const app = {
                             const _trStud = catalog.mounting_system.find(x => x.id === 'SAC-0020-400100');
                             if (_trStud) addToBill({ ..._trStud, originalId: 'SAC-0020-400100_rad_trunk' }, _trMeters,
                                 `Шпилька-шуруп с дюбелем под хомуты трассы. Требуется: ${_trMeters} шт.`, trunkGrp);
+                        }
+                        // Присоединения трассы. Раньше в подраздел уходила голая труба
+                        // с хомутами, а чем она стыкуется с насосной группой и с
+                        // коллектором — монтажник докупал сам.
+                        const _trFamA = _isMpPipe ? 'mp' : 'grey';
+                        const _trAdId = (this.RAD_ADAPTER_EXT[_trFamA] || {})[_trPick];
+                        const _trAd = _trAdId && this.findCatalogItemById(_trAdId);
+                        if (_trAd) addToBill({ ..._trAd, originalId: _trAdId + '_rad_trunk' }, 4,
+                            `Переходник трассы Ø${_trPick} — присоединение к насосной группе и к радиаторному коллектору: два конца × подача и обратка = 4 шт.`, trunkGrp);
+                        if (!_isMpPipe) {
+                            const _trSlId = this.RAD_SLEEVE[_trPick];
+                            const _trSl = _trSlId && this.findCatalogItemById(_trSlId);
+                            if (_trSl) addToBill({ ..._trSl, originalId: _trSlId + '_rad_trunk' }, 4,
+                                `Монтажная гильза Ø${_trPick} — надвижная, обжимает трубу в аксиальном переходнике: по одной на каждый переходник.`, trunkGrp);
                         }
                     }
                 }
