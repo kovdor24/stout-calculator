@@ -11834,6 +11834,12 @@ const app = {
         // мы первые, но искать нужную группу в таком списке невозможно.
         rows.sort((a, b) => (a.section - b.section) || (a.order - b.order));
 
+        // Щелчок по заголовку марки перебирает три состояния: где мы первые,
+        // где продаём, но не первые, и снова все группы. Второе состояние —
+        // самое полезное: это и есть список, куда идти отвоёвывать. Поэтому
+        // «не лидер» показывает только группы, где позиции у нас есть; там,
+        // где мы вообще не продаём, отвоёвывать нечего.
+        const ownFilter = this._analyticsOwnFilter || null;
         const totalRows = rows.length;
         if (ownFilter) {
             rows = rows.filter(r => {
@@ -11883,12 +11889,6 @@ const app = {
         // сравнения нажимались бы вхолостую — молча, будто интерфейс сломан.
         // Поэтому либо кнопки, либо прямое объяснение, почему их нет.
         const hasHistory = Object.keys(catMonthly).length > 0;
-        // Щелчок по заголовку марки перебирает три состояния: где мы первые,
-        // где продаём, но не первые, и снова все группы. Второе состояние —
-        // самое полезное: это и есть список, куда идти отвоёвывать. Поэтому
-        // «не лидер» показывает только группы, где позиции у нас есть; там,
-        // где мы вообще не продаём, отвоёвывать нечего.
-        const ownFilter = this._analyticsOwnFilter || null;
         const ownHeader = (brand, label) => {
             const active = ownFilter && ownFilter.brand === brand ? ownFilter.mode : null;
             const mark = active === 'leader' ? ' ①' : (active === 'weak' ? ' ↓' : '');
@@ -12002,22 +12002,54 @@ const app = {
             }
         }
 
-        // ── Спрос по России помесячно ───────────────────────────────────────
+        // ── Спрос помесячно: по группам фраз и по регионам ──────────────────
+        // Раньше на одном графике висели вперемешку марки и запросы услуг —
+        // «stout» рядом с «монтажом отопления». Это разные вопросы, и вместе
+        // они не читаются. Теперь группа выбирается явно, а рядом — регион:
+        // история по регионам собрана и лежала без дела.
         if (wordstat && wordstat.ru_monthly) {
             const phrases = wordstat.phrases || {};
-            const coreIds = Object.keys(phrases).filter(id => phrases[id].core).slice(0, 6);
+            const GROUPS = [
+                ['demand', 'Спрос на работы'],
+                ['brands', 'Торговые марки'],
+                ['materials', 'Материалы'],
+                ['equipment', 'Оборудование'],
+                ['service', 'Сервис'],
+                ['calc', 'Подбор и проект']
+            ].filter(([g]) => Object.keys(phrases).some(id => phrases[id].group === g));
+
+            const curGroup = (GROUPS.some(([g]) => g === this._analyticsGroup) ? this._analyticsGroup : (GROUPS[0] && GROUPS[0][0]));
+            const trendRegion = this._analyticsTrendRegion || '';
+            const rmAll = (wordstat.region_monthly || {});
             const months = this._analyticsMonths || 36;
-            const series = coreIds.map(id => ({
-                name: phrases[id].text || id,
-                points: (wordstat.ru_monthly[id] || []).slice(months > 0 ? -months : 0)
-            })).filter(s => s.points.length > 1);
-            if (series.length) {
-                const btn = (m, label) => `<button class="admin-btn" style="${(this._analyticsMonths || 36) === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsMonths(${m})">${label}</button>`;
-                h += `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:22px 0 8px;">
-                        <h4 style="margin:0; color:var(--text-main);">Спрос по России</h4>
-                        ${btn(12, '12 месяцев')}${btn(36, '3 года')}${btn(0, 'всё')}
-                      </div>${this.buildAnalyticsLineChart(series, 'ru')}`;
-            }
+
+            const ids = Object.keys(phrases).filter(id => phrases[id].group === curGroup);
+            const series = ids.map(id => {
+                const src = trendRegion ? ((rmAll[id] || {})[trendRegion] || []) : (wordstat.ru_monthly[id] || []);
+                return { name: phrases[id].text || id, points: src.slice(months > 0 ? -months : 0) };
+            }).filter(s => s.points.length > 1)
+              .sort((a, b) => (b.points[b.points.length - 1][1] || 0) - (a.points[a.points.length - 1][1] || 0))
+              .slice(0, 8);
+
+            // Регионы предлагаем только те, по которым история действительно
+            // есть: у остальных график был бы пустым, и непонятно почему.
+            const trendRegions = Array.from(new Set(
+                ids.reduce((acc, id) => acc.concat(Object.keys(rmAll[id] || {})), [])
+            )).sort();
+
+            const btn = (m, label) => `<button class="admin-btn" style="${months === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsMonths(${m})">${label}</button>`;
+            const gBtn = (g, label) => `<button class="admin-btn" style="${curGroup === g ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsGroup('${g}')">${label}</button>`;
+            const rBtn = (rg, label) => `<button class="admin-btn" style="${trendRegion === rg ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsTrendRegion('${esc(rg).replace(/'/g, "\\'")}')">${label}</button>`;
+
+            h += `<div style="margin:26px 0 8px;">
+                    <h4 style="margin:0 0 6px; color:var(--text-main);">Спрос по месяцам${trendRegion ? ` — ${esc(trendRegion)}` : ' — вся Россия'}</h4>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">${GROUPS.map(([g, l]) => gBtn(g, l)).join('')}</div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">${rBtn('', 'вся Россия')}${trendRegions.map(rg => rBtn(rg, rg)).join('')}</div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">${btn(12, '12 месяцев')}${btn(36, '3 года')}${btn(0, 'всё')}</div>
+                  </div>`;
+            h += series.length
+                ? this.buildAnalyticsLineChart(series, 'ru')
+                : `<div style="font-size:12.5px; color:var(--text-sec);">По этой группе${trendRegion ? ` в регионе «${esc(trendRegion)}»` : ''} истории пока нет — она появится после ближайшего ежемесячного прогона.</div>`;
         }
 
         // ── Недельный пульс ─────────────────────────────────────────────────
@@ -12028,7 +12060,11 @@ const app = {
                 points: pulse.weeks.map((w, i) => [w.slice(5), pulse.ru[id][i] || 0])
             })).filter(s => s.points.length > 1);
             if (series.length) {
-                h += `<h4 style="margin:22px 0 8px; color:var(--text-main);">Пульс: последние 12 недель</h4>${this.buildAnalyticsLineChart(series, 'pulse')}`;
+                const w = pulse.weeks || [];
+                h += `<h4 style="margin:26px 0 4px; color:var(--text-main);">Пульс: ${w.length} недель по России</h4>
+                    <div style="font-size:12px; color:var(--text-sec); margin-bottom:6px;">
+                        Те же запросы, но с недельным шагом — чтобы увидеть начало сезона не с месячным опозданием. Показаны ${series.length} основных запросов, каждая точка — сумма за неделю с понедельника по воскресенье, ${w.length ? `с ${esc(w[0])} по ${esc(w[w.length - 1])}` : ''}. Текущая неполная неделя не берётся: она всегда выглядела бы провалом. Глубина ${w.length} недель — это последние три месяца; больше Wordstat на недельном шаге отдаёт неустойчиво, а меньше не даёт увидеть перелом.
+                    </div>${this.buildAnalyticsLineChart(series, 'pulse')}`;
             }
         }
 
@@ -12106,7 +12142,12 @@ const app = {
                     if (prev) dBase += prev[1] || 0;
                 });
                 const demand = (haveDemand && dBase) ? Math.round((dCur - dBase) / dBase * 100) : null;
-                return { id: d.id, name: d.company || d.code || ('#' + d.id), users: mine.length,
+                // Поля таблицы — company_name и promo_code (не company/code,
+                // как я предположил сначала: в таблице показывались одни
+                // идентификаторы). Запасной вариант с id оставлен на случай
+                // записи без названия, но подписан понятнее.
+                const dName = d.company_name || d.promo_code || ('без названия, id ' + String(d.id).slice(0, 8));
+                return { id: d.id, name: dName, users: mine.length,
                           cur, base, total, demand,
                           regions: d.regions || [], known: known, picked: picked || null,
                           demandCur: dCur,
@@ -12373,6 +12414,16 @@ const app = {
 
     setAnalyticsMonths: function (m) {
         this._analyticsMonths = m;
+        this.renderAdminMain();
+    },
+
+    setAnalyticsGroup: function (g) {
+        this._analyticsGroup = g;
+        this.renderAdminMain();
+    },
+
+    setAnalyticsTrendRegion: function (r) {
+        this._analyticsTrendRegion = r;
         this.renderAdminMain();
     },
 
