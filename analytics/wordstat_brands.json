@@ -1,26 +1,5 @@
 {
   "candidates": {
-    "abber": {
-      "cats": [
-        "installyacii"
-      ],
-      "hits": 4,
-      "latin": true
-    },
-    "ac0105": {
-      "cats": [
-        "installyacii"
-      ],
-      "hits": 2,
-      "latin": true
-    },
-    "alterm": {
-      "cats": [
-        "kotly_el"
-      ],
-      "hits": 2,
-      "latin": true
-    },
     "amet": {
       "cats": [
         "boylery_kn"
@@ -28,46 +7,11 @@
       "hits": 3,
       "latin": true
     },
-    "aqara": {
-      "cats": [
-        "termostaty_tp"
-      ],
-      "hits": 4,
-      "latin": true
-    },
     "aqua": {
       "cats": [
         "fitingi_ax"
       ],
       "hits": 4,
-      "latin": true
-    },
-    "aquario": {
-      "cats": [
-        "nasosy_cirk"
-      ],
-      "hits": 2,
-      "latin": true
-    },
-    "aquatec": {
-      "cats": [
-        "boylery_kn"
-      ],
-      "hits": 16,
-      "latin": true
-    },
-    "aquatek": {
-      "cats": [
-        "installyacii"
-      ],
-      "hits": 3,
-      "latin": true
-    },
-    "arderia": {
-      "cats": [
-        "kotly_el"
-      ],
-      "hits": 2,
       "latin": true
     },
     "aria": {
@@ -84,13 +28,6 @@
       "hits": 2,
       "latin": true
     },
-    "askon": {
-      "cats": [
-        "konvektory"
-      ],
-      "hits": 3,
-      "latin": true
-    },
     "asp1e": {
       "cats": [
         "nasosy_skv"
@@ -98,51 +35,9 @@
       "hits": 2,
       "latin": true
     },
-    "astrex": {
-      "cats": [
-        "nasosnye_gruppy"
-      ],
-      "hits": 4,
-      "latin": true
-    },
-    "atlas": {
-      "cats": [
-        "termostaty_tp"
-      ],
-      "hits": 2,
-      "latin": true
-    },
-    "atlasdesign": {
-      "cats": [
-        "termostaty_tp"
-      ],
-      "hits": 4,
-      "latin": true
-    },
-    "atrium": {
-      "cats": [
-        "konvektory"
-      ],
-      "hits": 7,
-      "latin": true
-    },
     "axis": {
       "cats": [
         "shkaf_kollekt"
-      ],
-      "hits": 2,
-      "latin": true
-    },
-    "azario": {
-      "cats": [
-        "installyacii"
-      ],
-      "hits": 2,
-      "latin": true
-    },
-    "ballu": {
-      "cats": [
-        "boylery_kn"
       ],
       "hits": 2,
       "latin": true
@@ -168,11 +63,95 @@
       "hits": 3,
       "latin": true
     },
+    "belbagno": {
+      "cats": [
+        "installyacii"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "big": {
+      "cats": [
+        "vodoochistka"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "blue": {
+      "cats": [
+        "vodoochistka"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "boheme": {
+      "cats": [
+        "installyacii"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "boxbot": {
+      "cats": [
+        "nasosy_skv"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "buderus": {
+      "cats": [
+        "nasosnye_gruppy"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "bugatti": {
+      "cats": [
+        "boylery_kn"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "bvr": {
+      "cats": [
+        "krany_sharovye"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "charus": {
+      "cats": [
+        "installyacii"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "delafon": {
+      "cats": [
+        "installyacii"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "dn15": {
+      "cats": [
+        "krany_sharovye"
+      ],
+      "hits": 2,
+      "latin": true
+    },
     "dn25": {
       "cats": [
         "nasosnye_gruppy"
       ],
-      "hits": 6,
+      "hits": 4,
+      "latin": true
+    },
+    "dn50": {
+      "cats": [
+        "krany_sharovye"
+      ],
+      "hits": 2,
       "latin": true
     },
     "duofix": {
@@ -182,18 +161,18 @@
       "hits": 3,
       "latin": true
     },
-    "ecounit": {
-      "cats": [
-        "boylery_kn"
-      ],
-      "hits": 3,
-      "latin": true
-    },
-    "electric": {
+    "ekf": {
       "cats": [
         "termostaty_tp"
       ],
-      "hits": 6,
+      "hits": 2,
+      "latin": true
+    },
+    "elsen": {
+      "cats": [
+        "boylery_kn"
+      ],
+      "hits": 2,
       "latin": true
     },
     "evoh": {
@@ -203,11 +182,25 @@
       "hits": 8,
       "latin": true
     },
-    "ferroli": {
+    "evon": {
+      "cats": [
+        "truba_pex"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "federica": {
       "cats": [
         "boylery_kn"
       ],
-      "hits": 3,
+      "hits": 2,
+      "latin": true
+    },
+    "flamco": {
+      "cats": [
+        "nasosnye_gruppy"
+      ],
+      "hits": 2,
       "latin": true
     },
     "flm": {
@@ -217,11 +210,18 @@
       "hits": 3,
       "latin": true
     },
-    "gekon": {
+    "four": {
       "cats": [
-        "konvektory"
+        "kotly_gaz"
       ],
-      "hits": 5,
+      "hits": 2,
+      "latin": true
+    },
+    "gappo": {
+      "cats": [
+        "uzel_podmesa"
+      ],
+      "hits": 2,
       "latin": true
     },
     "grand": {
@@ -231,18 +231,18 @@
       "hits": 3,
       "latin": true
     },
+    "grundfos": {
+      "cats": [
+        "nasosnye_gruppy"
+      ],
+      "hits": 2,
+      "latin": true
+    },
     "gsk": {
       "cats": [
         "gidrostrelki"
       ],
       "hits": 7,
-      "latin": true
-    },
-    "heizen": {
-      "cats": [
-        "termogolovki"
-      ],
-      "hits": 4,
       "latin": true
     },
     "hts": {
@@ -252,11 +252,25 @@
       "hits": 3,
       "latin": true
     },
-    "huch": {
+    "hugard": {
       "cats": [
-        "nasosnye_gruppy"
+        "boylery_kn"
       ],
-      "hits": 4,
+      "hits": 2,
+      "latin": true
+    },
+    "huter": {
+      "cats": [
+        "stabilizatory"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "i012704": {
+      "cats": [
+        "installyacii"
+      ],
+      "hits": 2,
       "latin": true
     },
     "ideal": {
@@ -266,32 +280,53 @@
       "hits": 3,
       "latin": true
     },
+    "inc": {
+      "cats": [
+        "konvektory"
+      ],
+      "hits": 2,
+      "latin": true
+    },
     "inox": {
       "cats": [
         "boylery_kn"
       ],
-      "hits": 22,
+      "hits": 11,
       "latin": true
     },
-    "instyle": {
+    "krats": {
+      "cats": [
+        "dymohody"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "kzto": {
       "cats": [
         "konvektory"
       ],
-      "hits": 4,
+      "hits": 2,
       "latin": true
     },
-    "kvz": {
+    "link": {
       "cats": [
-        "konvektory"
+        "installyacii"
       ],
-      "hits": 5,
+      "hits": 2,
+      "latin": true
+    },
+    "luna": {
+      "cats": [
+        "kotly_gaz"
+      ],
+      "hits": 2,
       "latin": true
     },
     "m30": {
       "cats": [
         "termogolovki"
       ],
-      "hits": 5,
+      "hits": 3,
       "latin": true
     },
     "m30x": {
@@ -301,6 +336,13 @@
       "hits": 3,
       "latin": true
     },
+    "m30x1": {
+      "cats": [
+        "termogolovki"
+      ],
+      "hits": 2,
+      "latin": true
+    },
     "meiflow": {
       "cats": [
         "nasosnye_gruppy"
@@ -308,11 +350,18 @@
       "hits": 3,
       "latin": true
     },
-    "mvi": {
+    "navien": {
       "cats": [
-        "termogolovki"
+        "stabilizatory"
       ],
-      "hits": 4,
+      "hits": 2,
+      "latin": true
+    },
+    "nixen": {
+      "cats": [
+        "boylery_kn"
+      ],
+      "hits": 2,
       "latin": true
     },
     "okc": {
@@ -320,6 +369,13 @@
         "boylery_kn"
       ],
       "hits": 3,
+      "latin": true
+    },
+    "oli": {
+      "cats": [
+        "installyacii"
+      ],
+      "hits": 2,
       "latin": true
     },
     "pert": {
@@ -336,20 +392,6 @@
       "hits": 3,
       "latin": true
     },
-    "pride": {
-      "cats": [
-        "krany_sharovye"
-      ],
-      "hits": 5,
-      "latin": true
-    },
-    "prio": {
-      "cats": [
-        "vodoochistka"
-      ],
-      "hits": 4,
-      "latin": true
-    },
     "rapid": {
       "cats": [
         "installyacii"
@@ -364,6 +406,34 @@
       "hits": 4,
       "latin": true
     },
+    "rifar": {
+      "cats": [
+        "termogolovki"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "ritable": {
+      "cats": [
+        "fitingi_ax"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "romer": {
+      "cats": [
+        "truba_pex"
+      ],
+      "hits": 2,
+      "latin": true
+    },
+    "royalthermo": {
+      "cats": [
+        "boylery_kn"
+      ],
+      "hits": 2,
+      "latin": true
+    },
     "rtr": {
       "cats": [
         "termogolovki"
@@ -375,7 +445,7 @@
       "cats": [
         "boylery_kn"
       ],
-      "hits": 10,
+      "hits": 6,
       "latin": true
     },
     "rubinetterie": {
@@ -385,18 +455,18 @@
       "hits": 3,
       "latin": true
     },
-    "sanext": {
+    "safe": {
       "cats": [
-        "termogolovki"
+        "kanalizaciya"
       ],
-      "hits": 7,
+      "hits": 2,
       "latin": true
     },
-    "schneider": {
+    "sibio": {
       "cats": [
-        "termostaty_tp"
+        "teplonositel"
       ],
-      "hits": 3,
+      "hits": 2,
       "latin": true
     },
     "sigma": {
@@ -420,25 +490,32 @@
       "hits": 4,
       "latin": true
     },
-    "solomix": {
+    "slim": {
       "cats": [
-        "nasosnye_gruppy"
+        "vodoochistka"
       ],
-      "hits": 4,
+      "hits": 2,
       "latin": true
     },
     "spl": {
       "cats": [
         "konvektory"
       ],
-      "hits": 8,
+      "hits": 5,
       "latin": true
     },
-    "sti": {
+    "stabil": {
       "cats": [
-        "termogolovki"
+        "truba_pex"
       ],
-      "hits": 3,
+      "hits": 2,
+      "latin": true
+    },
+    "star": {
+      "cats": [
+        "nasosy_cirk"
+      ],
+      "hits": 2,
       "latin": true
     },
     "swh": {
@@ -448,20 +525,6 @@
       "hits": 3,
       "latin": true
     },
-    "systeme": {
-      "cats": [
-        "termostaty_tp"
-      ],
-      "hits": 3,
-      "latin": true
-    },
-    "tece": {
-      "cats": [
-        "fitingi_ax"
-      ],
-      "hits": 4,
-      "latin": true
-    },
     "teceprofil": {
       "cats": [
         "installyacii"
@@ -469,23 +532,9 @@
       "hits": 3,
       "latin": true
     },
-    "teplocom": {
-      "cats": [
-        "stabilizatory"
-      ],
-      "hits": 8,
-      "latin": true
-    },
     "termica": {
       "cats": [
         "nasosy_skv"
-      ],
-      "hits": 3,
-      "latin": true
-    },
-    "termoline": {
-      "cats": [
-        "teplonositel"
       ],
       "hits": 3,
       "latin": true
@@ -497,34 +546,6 @@
       "hits": 5,
       "latin": true
     },
-    "turbo": {
-      "cats": [
-        "konvektory"
-      ],
-      "hits": 3,
-      "latin": true
-    },
-    "tuya": {
-      "cats": [
-        "termostaty_tp"
-      ],
-      "hits": 4,
-      "latin": true
-    },
-    "unicorn": {
-      "cats": [
-        "vodoochistka"
-      ],
-      "hits": 5,
-      "latin": true
-    },
-    "uno": {
-      "cats": [
-        "termogolovki"
-      ],
-      "hits": 3,
-      "latin": true
-    },
     "ups": {
       "cats": [
         "nasosy_cirk"
@@ -532,32 +553,11 @@
       "hits": 8,
       "latin": true
     },
-    "vitron": {
-      "cats": [
-        "konvektory"
-      ],
-      "hits": 11,
-      "latin": true
-    },
-    "weser": {
-      "cats": [
-        "termogolovki"
-      ],
-      "hits": 7,
-      "latin": true
-    },
     "wifi": {
       "cats": [
         "termostaty_tp"
       ],
-      "hits": 7,
-      "latin": true
-    },
-    "zota": {
-      "cats": [
-        "avtomatika"
-      ],
-      "hits": 3,
+      "hits": 6,
       "latin": true
     }
   },
@@ -713,6 +713,10 @@
         },
         "ranking": [
           [
+            "zota",
+            7228
+          ],
+          [
             "baxi",
             118
           ],
@@ -727,14 +731,18 @@
         "own": {
           "rommer": {
             "count": 404,
-            "place": 9
+            "place": 13
           },
           "stout": {
             "count": 11621,
-            "place": 3
+            "place": 4
           }
         },
         "ranking": [
+          [
+            "aquatec",
+            22859
+          ],
           [
             "baxi",
             12641
@@ -753,7 +761,7 @@
           ],
           [
             "drazice",
-            4282
+            4778
           ],
           [
             "termica",
@@ -768,15 +776,23 @@
             1649
           ],
           [
+            "ferroli",
+            1347
+          ],
+          [
+            "ballu",
+            929
+          ],
+          [
+            "buderus",
+            678
+          ],
+          [
             "rommer",
             404
           ],
           [
-            "buderus",
-            299
-          ],
-          [
-            "лемакс",
+            "lemax",
             224
           ],
           [
@@ -804,7 +820,7 @@
           ],
           [
             "navien",
-            3003
+            955
           ],
           [
             "stout",
@@ -854,6 +870,10 @@
             91
           ],
           [
+            "tece",
+            76
+          ],
+          [
             "usystems",
             5
           ],
@@ -878,7 +898,7 @@
         "ranking": [
           [
             "gidruss",
-            2551
+            4335
           ],
           [
             "stout",
@@ -929,7 +949,11 @@
           ],
           [
             "cersanit",
-            1134
+            3954
+          ],
+          [
+            "aquatek",
+            664
           ],
           [
             "vitra",
@@ -940,12 +964,20 @@
             597
           ],
           [
+            "abber",
+            458
+          ],
+          [
             "alcaplast",
             412
           ],
           [
             "roca",
             250
+          ],
+          [
+            "azario",
+            221
           ],
           [
             "berges",
@@ -1036,25 +1068,49 @@
         "own": {
           "rommer": {
             "count": 142,
-            "place": 5
+            "place": 11
           },
           "stout": {
             "count": 390,
-            "place": 4
+            "place": 10
           }
         },
         "ranking": [
           [
+            "atrium",
+            2075
+          ],
+          [
             "techno",
-            1494
+            1617
+          ],
+          [
+            "kvz",
+            1100
+          ],
+          [
+            "vitron",
+            1083
           ],
           [
             "varmann",
-            947
+            965
+          ],
+          [
+            "gekon",
+            732
+          ],
+          [
+            "instyle",
+            541
+          ],
+          [
+            "askon",
+            519
           ],
           [
             "itermic",
-            402
+            455
           ],
           [
             "stout",
@@ -1091,7 +1147,7 @@
           },
           "stout": {
             "count": 79,
-            "place": 3
+            "place": 6
           }
         },
         "ranking": [
@@ -1100,16 +1156,28 @@
             7601
           ],
           [
+            "protherm",
+            643
+          ],
+          [
             "evan",
             370
+          ],
+          [
+            "alterm",
+            328
+          ],
+          [
+            "arderia",
+            247
           ],
           [
             "stout",
             79
           ],
           [
-            "protherm",
-            70
+            "kospel",
+            54
           ],
           [
             "галан",
@@ -1136,15 +1204,35 @@
           ],
           [
             "navien",
-            143127
+            72612
           ],
           [
-            "лемакс",
+            "lemax",
             68601
+          ],
+          [
+            "ariston",
+            30227
+          ],
+          [
+            "bosch",
+            29426
+          ],
+          [
+            "vaillant",
+            28328
+          ],
+          [
+            "protherm",
+            27309
           ],
           [
             "конорд",
             20764
+          ],
+          [
+            "buderus",
+            15013
           ],
           [
             "очаг",
@@ -1155,28 +1243,8 @@
             11196
           ],
           [
-            "ariston",
-            10838
-          ],
-          [
             "haier",
             10423
-          ],
-          [
-            "vaillant",
-            7684
-          ],
-          [
-            "protherm",
-            6648
-          ],
-          [
-            "bosch",
-            6154
-          ],
-          [
-            "buderus",
-            5089
           ],
           [
             "мимакс",
@@ -1193,7 +1261,7 @@
           },
           "stout": {
             "count": 2555,
-            "place": 3
+            "place": 4
           }
         },
         "ranking": [
@@ -1202,8 +1270,12 @@
             31003
           ],
           [
+            "pride",
+            19417
+          ],
+          [
             "bugatti",
-            11435
+            18084
           ],
           [
             "stout",
@@ -1241,20 +1313,32 @@
             842
           ],
           [
+            "astrex",
+            343
+          ],
+          [
             "elsen",
             305
+          ],
+          [
+            "gidruss",
+            143
           ],
           [
             "valtec",
             138
           ],
           [
-            "gidruss",
-            129
+            "huch",
+            100
+          ],
+          [
+            "solomix",
+            91
           ],
           [
             "oventrop",
-            44
+            53
           ],
           [
             "watts",
@@ -1275,7 +1359,7 @@
           },
           "stout": {
             "count": 563,
-            "place": 16
+            "place": 17
           }
         },
         "ranking": [
@@ -1318,6 +1402,10 @@
           [
             "джилекс",
             1829
+          ],
+          [
+            "aquario",
+            1598
           ],
           [
             "oasis",
@@ -1473,11 +1561,11 @@
         "ranking": [
           [
             "reflex",
-            745
+            802
           ],
           [
             "wester",
-            721
+            761
           ],
           [
             "stout",
@@ -1520,7 +1608,7 @@
           ],
           [
             "grota",
-            50
+            75
           ],
           [
             "elsen",
@@ -1544,6 +1632,10 @@
           [
             "энергия",
             15685
+          ],
+          [
+            "teplocom",
+            3602
           ],
           [
             "штиль",
@@ -1585,6 +1677,10 @@
             508
           ],
           [
+            "termoline",
+            261
+          ],
+          [
             "primoclima",
             10
           ],
@@ -1612,6 +1708,10 @@
             494
           ],
           [
+            "sanext",
+            311
+          ],
+          [
             "valtec",
             303
           ],
@@ -1620,7 +1720,11 @@
             234
           ],
           [
-            "ридан",
+            "heizen",
+            230
+          ],
+          [
+            "ridan",
             217
           ],
           [
@@ -1630,6 +1734,18 @@
           [
             "oventrop",
             172
+          ],
+          [
+            "mvi",
+            168
+          ],
+          [
+            "weser",
+            146
+          ],
+          [
+            "sti",
+            145
           ],
           [
             "luxor",
@@ -1669,7 +1785,20 @@
             "place": null
           }
         },
-        "ranking": [],
+        "ranking": [
+          [
+            "schneider",
+            1277
+          ],
+          [
+            "tuya",
+            232
+          ],
+          [
+            "aqara",
+            169
+          ]
+        ],
         "total": 6407
       },
       "truba_mp": {
@@ -1690,7 +1819,7 @@
           ],
           [
             "henco",
-            777
+            890
           ],
           [
             "stout",
@@ -1814,8 +1943,16 @@
             2951
           ],
           [
+            "unicorn",
+            702
+          ],
+          [
             "барьер",
             688
+          ],
+          [
+            "prio",
+            185
           ],
           [
             "джилекс",
