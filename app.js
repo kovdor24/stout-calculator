@@ -29660,6 +29660,25 @@ const app = {
      * Потери участка трубы, кПа. Длина в метрах — в обе стороны, если участок
      * идёт парой (подача и обратка).
      */
+    /**
+     * Диаметр участка радиаторной магистрали: больший из двух — по мощности
+     * (таблица, посчитанная для 80/60) и по скорости воды. На 75/65 расход через
+     * ту же мощность вдвое выше, и проверка по скорости сама поднимает участок на
+     * типоразмер. Тем же правилом пользуется смета (pickDiam в render).
+     */
+    radPickDiam: function (kw) {
+        const k = parseFloat(kw) || 0;
+        const byPower = k <= 4 ? 16 : k <= 8 ? 20 : k <= 16 ? 25 : 32;
+        const flow = this.radFlowOf(k * 1000);
+        const row = [16, 20, 25, 32];
+        let bySpeed = 32;
+        for (let i = 0; i < row.length; i++) {
+            const dIn = this.radPipeId(row[i]);
+            const v = (flow / 3600) / (Math.PI * dIn * dIn / 4);
+            if (v <= this.RAD_V_MAX) { bySpeed = row[i]; break; }
+        }
+        return Math.max(byPower, bySpeed);
+    },
     radPipeDrop: function (flow, d, len) {
         const dr = this.snowPipeDrop(flow, this.radPipeId(d), this.RAD_FLUID);
         return { v: dr.v, dp: dr.R * len * this.RAD_LOCAL_K / 1000 };
@@ -29705,7 +29724,7 @@ const app = {
 
         const headAt = (br) => {
             const flowBr = flowAll / br, kwBr = kw / br;
-            const dTr = kwBr <= 8 ? 20 : kwBr <= 16 ? 25 : 32;
+            const dTr = this.radPickDiam(kwBr);
             const dp = this.radPipeDrop(flowBr, dTr, trLen).dp + this.RAD_MAN_DP
                 + dpLoop + this.RAD_GROUP_DP + this.RAD_BOILER_DP;
             return { head: dp / 9.81, flowBr: flowBr };
@@ -29769,8 +29788,8 @@ const app = {
         if (tee) {
             // Тройниковая: магистраль несёт всю мощность у котла и половину на
             // дальнем конце — так же, как выбирается её диаметр в смете.
-            const dNear = totalW / 1000 <= 4 ? 16 : totalW / 1000 <= 8 ? 20 : totalW / 1000 <= 16 ? 25 : 32;
-            const dFar = totalW / 2000 <= 4 ? 16 : totalW / 2000 <= 8 ? 20 : totalW / 2000 <= 16 ? 25 : 32;
+            const dNear = this.radPickDiam(totalW / branches / 1000);
+            const dFar = this.radPickDiam(totalW / branches / 2000);
             const trunk = 0.75 * Math.sqrt(devices.length * ((s.area || 100) / (s.floors === 2 ? 2 : 1))) + 3;
             const near = this.radPipeDrop(flowBranch, dNear, trunk);
             const far = this.radPipeDrop(flowBranch / 2, dFar, trunk);
@@ -29780,7 +29799,7 @@ const app = {
             add('Отвод к прибору Ø16', br.dp, { v: br.v });
         } else {
             // Коллекторная: подводка к шкафу несёт всё, дальше лучи Ø16.
-            const dTr = totalW / branches / 1000 <= 8 ? 20 : totalW / branches / 1000 <= 16 ? 25 : 32;
+            const dTr = this._radTrunkD || this.radPickDiam(totalW / branches / 1000);
             const trLen = 2 * (0.5 * Math.sqrt(s.area || 100) + 1 + (s.floors === 2 ? (s.h1 || 2.7) : 0));
             const tr = this.radPipeDrop(flowBranch, dTr, trLen);
             add('Подводка к коллектору Ø' + dTr + (branches > 1 ? ' (ветка ' + branches + '-я часть)' : '') +
@@ -40049,7 +40068,13 @@ const app = {
             // Ряд диаметров магистралей — общий для двух мест, где труба несёт мощность
             // группы приборов, а не одного радиатора: магистраль тройниковой схемы и
             // стояк на второй этаж в коллекторной. Объявлены здесь, до обеих веток.
-            const pickDiam = (kw) => kw <= 4 ? 16 : kw <= 8 ? 20 : kw <= 16 ? 25 : 32;
+            // Диаметр магистрали: по мощности участка и по скорости воды в нём —
+            // берётся больший. Таблица по киловаттам посчитана для режима 80/60;
+            // на 75/65 через ту же мощность идёт вдвое больший расход, и Ø25 на
+            // подводке разгонялся до 1,5 м/с — труба слышна, а напора не хватало
+            // ни одному насосу группы. Проверка по скорости поднимает такой
+            // участок на типоразмер выше сама, без отдельного правила под режим.
+            const pickDiam = (kw) => this.radPickDiam(kw);
             const mpDiamOf = (d) => d === 25 ? 26 : d; // у металлопластика средний шаг 26мм, у серой PEX-a и стабильной — 25мм
             const GREY_PIPE_IDS = { 16: 'SPX-0001-001622', 20: 'SPX-0001-002028', 25: 'SPX-0001-002535', 32: 'SPX-0001-003244' };
             const MP_PIPE_IDS = { 16: 'SPM-0001-101620', 20: 'SPM-0001-102020', 26: 'SPM-0001-052630', 32: 'SPM-0001-053230' };
@@ -40275,6 +40300,7 @@ const app = {
                     // тройниковой схеме, поэтому и таблицы диаметров общие.
                     const _riserKw = (heatLoadTotal / 1000) / 2;
                     const _riserD0 = pickDiam(_riserKw);
+                    this._radTrunkD = _riserD0;   // на двух этажах кольцо идёт через стояк
                     const _riserD = _isMpPipe ? mpDiamOf(_riserD0) : _riserD0;
                     // Метраж на одну трубу: вертикаль 3,2 м (этаж плюс перекрытие) и
                     // подход по этажу к месту шкафа — 0,4·√S, это примерно путь от
@@ -40357,6 +40383,10 @@ const app = {
                     // Дом одноэтажный, коллектор один — трасса несёт мощность всех приборов.
                     const _trKw = heatLoadTotal / 1000;
                     const _trD0 = pickDiam(_trKw);
+                    // Тот же диаметр возьмёт гидравлика: считать кольцо по трубе,
+                    // отличной от лежащей в смете, — верный способ разойтись с
+                    // тем, что монтажник купит.
+                    this._radTrunkD = _trD0;
                     const _trD = _isMpPipe ? mpDiamOf(_trD0) : _trD0;
                     // Ход по этажу от котельной до шкафа — 0,5·√S (котельная обычно у стены,
                     // шкаф ближе к середине плана) плюс 1 м на обвязку у самого коллектора.
