@@ -10855,12 +10855,21 @@ const app = {
 
     // Вкладка «Аналитика» — только для владельца: там конкурентная разведка,
     // которой незачем светиться даже перед наблюдателями с доступом в админку.
-    // Добавить второго — дописать адрес в этот список.
-    ANALYTICS_OWNERS: ['dima24ba@gmail.com'],
-
+    // Права даёт isAdminEmail (три личных адреса владельца), а НЕ account_type:
+    // 'admin' и 'viewer' раздаются дистрибьюторам и наблюдателям, им сюда не надо.
+    //
+    // Почту берём из всех источников, какими входят в приложение: строка
+    // пользователя из базы, сессия Supabase, Telegram WebApp, запомненный адрес.
+    // Первая версия смотрела только на _currentUserRow — и вкладка не появилась
+    // у самого владельца, потому что вошёл он под другим своим адресом.
     isAnalyticsOwner: function () {
-        const mail = (this._currentUserRow && this._currentUserRow.email || '').toLowerCase();
-        return !!mail && this.ANALYTICS_OWNERS.includes(mail);
+        const candidates = [
+            this._currentUserRow && this._currentUserRow.email,
+            this.state && this.state.user && this.state.user.email,
+            this.state && this.state.tgUser && this.state.tgUser.email,
+            (() => { try { return localStorage.getItem('user_email'); } catch (e) { return null; } })()
+        ];
+        return candidates.some(m => this.isAdminEmail(m));
     },
 
     // Вкладки, доступные текущему админу. Фильтр в одном месте: список строится
