@@ -433,11 +433,12 @@ def get_live_canonical_regions():
 # Карта регионов Яндекса (yid) — строится один раз, дальше только читается
 # ──────────────────────────────────────────────────────────────────────────
 
-def flatten_region_tree(nodes, out):
+def flatten_region_tree(nodes, out, path=()):
     for n in nodes or []:
-        if n.get("id") and n.get("label"):
-            out.append((str(n["id"]), n["label"]))
-        flatten_region_tree(n.get("children"), out)
+        label = n.get("label")
+        if n.get("id") and label:
+            out.append((str(n["id"]), label, " / ".join(path)))
+        flatten_region_tree(n.get("children"), out, path + ((label or "?"),))
 
 
 NORM_STRIP_WORDS = ("республика", "область", "край", "автономный", "округ", "ао")
@@ -456,7 +457,7 @@ def build_region_lookup(flat):
     остальные в лог: сталкиваться не должны, но если да — лучше видеть."""
     lookup = {}
     dupes = []
-    for rid, label in flat:
+    for rid, label, _path in flat:
         k = norm_key(label)
         if not k:
             continue
@@ -467,6 +468,23 @@ def build_region_lookup(flat):
     if dupes:
         log("  сталкивающиеся названия регионов Яндекса (оставлен первый): %s" % dupes[:10])
     return lookup
+
+
+def suggest_candidates(name, flat, limit=8):
+    """Похожие ярлыки для несопоставленного региона — чтобы в логе сразу было
+    видно, ЧТО есть у Яндекса вместо ожидаемого. Ищем по самому длинному слову
+    названия («московская», «ленинградская»): оно и есть отличительное."""
+    words = [w for w in norm_key(name).split() if len(w) > 4]
+    if not words:
+        return []
+    stem = max(words, key=len)[:6]
+    hits = []
+    for rid, label, path in flat:
+        if stem in label.lower().replace("ё", "е"):
+            hits.append("%s = %s%s" % (rid, label, (" [в %s]" % path) if path else ""))
+        if len(hits) >= limit:
+            break
+    return hits
 
 
 def ensure_region_map(canonical_names, client):
@@ -510,9 +528,38 @@ def ensure_region_map(canonical_names, client):
     if still_missing:
         log("  НЕ сопоставлено (проверить/дописать руками в %s): %s" % (
             REGIONS_MAP_FILE, ", ".join(still_missing)))
+        # Показываем, что у Яндекса есть похожего: подставлять «на глаз» нельзя
+        # (у него есть, например, отдельный регион «Москва и Московская
+        # область» — взять его вместо области значит подмешать московский
+        # спрос в подмосковный и молча получить неверные цифры).
+        for name in still_missing:
+            hits = suggest_candidates(name, flat)
+            log("    похожее у Яндекса для «%s»: %s" % (
+                name, "; ".join(hits) if hits else "ничего не нашлось"))
 
     save_json_file(REGIONS_MAP_FILE, region_map)
     return region_map
+
+
+def run_dump_regions(client):
+    """Диагностика: печатает дерево регионов Яндекса в лог. Метод
+    GetRegionsTree бесплатный, так что режим ничего не стоит. Нужен, когда
+    регион не сопоставился и надо глазами увидеть, под каким именем он живёт
+    у Яндекса и живёт ли вообще."""
+    tree_resp = client.call("getRegionsTree", {})
+    if not tree_resp:
+        log("GetRegionsTree не ответил")
+        return 1
+    flat = []
+    flatten_region_tree(tree_resp.get("regions"), flat)
+    log("Всего узлов в дереве: %d" % len(flat))
+
+    # Верхние два уровня — это Россия и федеральные округа, дальше субъекты.
+    log("--- узлы верхних уровней (страна / округа / субъекты) ---")
+    for rid, label, path in flat:
+        if path.count("/") <= 1:
+            log("  %-8s %-45s [в %s]" % (rid, label, path or "-"))
+    return 0
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -843,6 +890,8 @@ def main():
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--pulse", action="store_true", help="недельный пульс по России")
     g.add_argument("--backfill", action="store_true", help="разовый сбор истории по регионам")
+    g.add_argument("--dump-regions", action="store_true",
+                   help="диагностика: показать дерево регионов Яндекса (бесплатно)")
     args = ap.parse_args()
 
     api_key = os.environ.get("WORDSTAT_API_KEY")
@@ -853,6 +902,8 @@ def main():
 
     client = WordstatClient(api_key, folder_id, RateLimiter())
 
+    if args.dump_regions:
+        return run_dump_regions(client)
     if args.pulse:
         return run_pulse(client)
     if args.backfill:

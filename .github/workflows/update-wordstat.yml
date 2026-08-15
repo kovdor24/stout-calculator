@@ -27,6 +27,7 @@ on:
           - monthly
           - pulse
           - backfill
+          - dump-regions
 
 jobs:
   scrape:
@@ -60,6 +61,7 @@ jobs:
           case "${{ steps.mode.outputs.mode }}" in
             pulse) python AutoWordstat.py --pulse ;;
             backfill) python AutoWordstat.py --backfill ;;
+            dump-regions) python AutoWordstat.py --dump-regions ;;
             *) python AutoWordstat.py ;;
           esac
       # if: always() — если backfill прервётся по таймауту или его отменят
