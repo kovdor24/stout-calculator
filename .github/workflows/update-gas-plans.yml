@@ -1,0 +1,56 @@
+name: Gas Plans
+
+# Планы газификации по регионам присутствия — analytics/gas.json.
+# Программа развития газоснабжения рассчитана на 2026–2030 и меняется редко,
+# поэтому раз в месяц с запасом хватает. 15-е выбрано, чтобы не сталкиваться
+# с парсерами цен (10-е), тарифов (12-е) и Wordstat (3-е и 5-е).
+#
+# Ключей не требует: источник открытый (gazprommap.ru).
+on:
+  schedule:
+    - cron: '0 4 15 * *'
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: 'Какие регионы обходить'
+        type: choice
+        default: live
+        options:
+          - live
+          - all
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      # Зависимостей нет: скрипт обходится стандартной библиотекой.
+      - name: Run gas plans parser
+        run: |
+          if [ "${{ github.event.inputs.scope }}" = "all" ]; then
+            python AutoGasPlans.py --all
+          else
+            python AutoGasPlans.py
+          fi
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add analytics/gas.json analytics/gas_region_slugs.json
+          if git diff --staged --quiet; then
+            echo "Планы газификации не изменились."
+          else
+            git commit -m "Автообновление планов газификации"
+            for i in {1..5}; do
+              git pull --rebase origin main && git push origin main && exit 0
+              git rebase --abort || true
+              sleep 5
+            done
+            exit 1
+          fi

@@ -11748,10 +11748,10 @@ const app = {
                             return null;
                         }
                     };
-                    const [brands, wordstat, pulse] = await Promise.all([
-                        get('wordstat_brands'), get('wordstat'), get('wordstat_pulse')
+                    const [brands, wordstat, pulse, gas] = await Promise.all([
+                        get('wordstat_brands'), get('wordstat'), get('wordstat_pulse'), get('gas')
                     ]);
-                    this._analytics = { brands, wordstat, pulse };
+                    this._analytics = { brands, wordstat, pulse, gas };
                     this._loadingAnalytics = false;
                     if (this._adminTab === 'analytics') this.renderAdminMain();
                 })();
@@ -11759,8 +11759,8 @@ const app = {
             return;
         }
 
-        const { brands, wordstat, pulse } = this._analytics;
-        if (!brands && !wordstat) {
+        const { brands, wordstat, pulse, gas } = this._analytics;
+        if (!brands && !wordstat && !gas) {
             wrap.innerHTML = `<div style="padding:30px 0; text-align:center; color:var(--text-sec);">
                 Данных пока нет. Их собирает GitHub Actions → Wordstat Analytics: сначала режим <b>brands</b>, затем <b>monthly</b>.
             </div>`;
@@ -11913,6 +11913,40 @@ const app = {
                 h += `<span title="${esc((c.cats || []).join(', '))}" style="padding:3px 9px; border:1px solid var(--border); border-radius:12px; font-size:12px; color:var(--text-main);">${esc(w)} <b style="color:var(--text-sec);">${c.hits}</b></span>`;
             });
             h += `</div>`;
+        }
+
+        // ── Догазификация ───────────────────────────────────────────────────
+        // Единственный блок вкладки, полезный не владельцу, а монтажнику:
+        // куда в ближайшие годы приходит газ. Собирает AutoGasPlans.py.
+        const gasRegions = (gas && gas.regions) || {};
+        const gasNames = Object.keys(gasRegions).sort();
+        if (gasNames.length) {
+            const shown = region && gasRegions[region] ? [region] : gasNames;
+            h += `<h4 style="margin:26px 0 8px; color:var(--text-main);">🔥 Догазификация, программа ${esc(gas.program || '')}</h4>
+                <div style="font-size:12px; color:var(--text-sec); margin-bottom:10px;">
+                    Пришёл газ в посёлок — в ближайшие год-полтора там меняют электрические и твердотопливные котлы на газовые. Источник: ${esc(gas.source || '')}, обновлено ${esc(gas.updated || '')}.
+                </div>`;
+            shown.forEach(name => {
+                const g = gasRegions[name];
+                const s = g.summary || {};
+                const parts = [];
+                if (s.households) parts.push(`${num(s.households)} домовладений`);
+                if (s.pipelines_km) parts.push(`${num(s.pipelines_km)} км газопроводов`);
+                if (s.objects) parts.push(`${num(s.objects)} котельных и предприятий`);
+                const sets = g.settlements || [];
+                h += `<div style="border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:8px;">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:baseline;">
+                        <b style="color:var(--text-main);">${esc(name)}</b>
+                        <span style="font-size:12.5px; color:var(--text-sec);">${parts.join(' · ') || 'сводки нет'}</span>
+                        <span style="margin-left:auto; font-size:12px; color:var(--text-sec);">объектов ${(g.objects || []).length}, посёлков ${sets.length}</span>
+                    </div>
+                    ${g.note ? `<div style="font-size:12px; color:#F97316; margin-top:4px;">${esc(g.note)}</div>` : ''}
+                    ${sets.length ? `<div style="margin-top:6px; font-size:12.5px; color:var(--text-main); line-height:1.6;">${sets.map(x => esc(x)).join(' · ')}</div>` : ''}
+                </div>`;
+            });
+            if (region && !gasRegions[region]) {
+                h += `<div style="font-size:12.5px; color:var(--text-sec);">По региону «${esc(region)}» программы на gazprommap нет — так бывает у городов федерального значения.</div>`;
+            }
         }
 
         h += `</div>`;
