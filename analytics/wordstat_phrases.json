@@ -23,7 +23,32 @@
     {"id":"nasos_cirk","text":"циркуляционный насос","group":"equipment","core":false},
     {"id":"remont_kotla","text":"ремонт котла","group":"service","core":true},
     {"id":"zamena_kotla","text":"замена котла","group":"service","core":false},
-    {"id":"to_kotla","text":"обслуживание котла","group":"service","core":false}
+    {"id":"to_kotla","text":"обслуживание котла","group":"service","core":false},
+
+    {"id":"calc_teplopoteri","text":"расчет теплопотерь дома","group":"calc","core":true},
+    {"id":"calc_moshnost_kotla","text":"расчет мощности котла","group":"calc","core":true},
+    {"id":"calc_kalkulyator","text":"калькулятор отопления","group":"calc","core":true},
+    {"id":"calc_proekt_otopl","text":"проект отопления частного дома","group":"calc","core":true},
+    {"id":"calc_raschet_otopl","text":"расчет отопления частного дома","group":"calc","core":false},
+    {"id":"calc_proekt_kotelnoy","text":"проект котельной частного дома","group":"calc","core":false},
+    {"id":"calc_smeta_otopl","text":"смета на отопление частного дома","group":"calc","core":false},
+    {"id":"calc_raschet_tp","text":"расчет теплого пола","group":"calc","core":false},
+    {"id":"calc_podbor_radiatorov","text":"подбор радиаторов отопления по площади","group":"calc","core":false},
+    {"id":"calc_proekt_vodosnab","text":"проект водоснабжения частного дома","group":"calc","core":false},
+    {"id":"calc_shema_otopl","text":"схема отопления частного дома","group":"calc","core":false}
+  ],
+  "_calc_comment": [
+    "Группа calc — спрос не на товар, а на саму услугу калькулятора: подбор и",
+    "расчёт инженерки для частного дома. По ней видно, растёт ли рынок, ради",
+    "которого всё сделано.",
+    "",
+    "Промышленность отсекаем формулировкой, а не операторами: у Wordstat при",
+    "месячной детализации из операторов работает только +, минус-слов нет.",
+    "Поэтому почти везде стоит «частного дома» — без него «проектирование",
+    "системы отопления» собирает заводские котельные и теплосети, а это чужой",
+    "рынок. Исключения намеренные: «расчет теплопотерь дома», «расчет мощности",
+    "котла», «калькулятор отопления» и «расчет теплого пола» промышленными",
+    "почти не бывают, зато без уточнения их частота выше и тренд устойчивее."
   ],
   "top_requests_for": ["montazh_otopleniya","montazh_tp","truba_pex","kotel_gaz_kupit","remont_kotla"]
 }

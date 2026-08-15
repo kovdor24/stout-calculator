@@ -11920,6 +11920,51 @@ const app = {
         });
         h += `</tbody></table></div>`;
 
+        // ── Спрос на саму услугу подбора (ИЖС) ──────────────────────────────
+        // Отдельно от товарных групп: это спрос не на оборудование, а на то,
+        // что делает калькулятор — расчёт и подбор инженерки для частного
+        // дома. По нему видно, растёт ли рынок, ради которого он сделан.
+        const wsPhrases = (wordstat && wordstat.phrases) || {};
+        const calcIds = Object.keys(wsPhrases).filter(id => wsPhrases[id].group === 'calc');
+        if (calcIds.length && wordstat.ru_monthly) {
+            const withData = calcIds
+                .map(id => ({ id, text: wsPhrases[id].text || id, pts: wordstat.ru_monthly[id] || [] }))
+                .filter(x => x.pts.length > 1)
+                .sort((a, b) => (b.pts[b.pts.length - 1][1] || 0) - (a.pts[a.pts.length - 1][1] || 0));
+            if (withData.length) {
+                h += `<h4 style="margin:26px 0 4px; color:var(--text-main);">🧮 Спрос на подбор и проектирование, частные дома</h4>
+                    <div style="font-size:12px; color:var(--text-sec); margin-bottom:8px;">
+                        Это спрос на саму работу калькулятора, а не на товар. Промышленные котельные и теплосети отсечены формулировками: у Wordstat при месячной детализации минус-слов нет, поэтому почти везде стоит «частного дома».
+                    </div>
+                    <div style="overflow-x:auto;"><table class="inv-table"><thead><tr>
+                        <th>Запрос</th>
+                        <th style="text-align:right; width:110px;">Запросов в месяц</th>
+                        <th style="text-align:center; width:90px;">Изменение</th>
+                    </tr></thead><tbody>`;
+                withData.forEach(x => {
+                    const last = x.pts[x.pts.length - 1];
+                    const base = x.pts[x.pts.length - 1 - backMonths];
+                    let d = null;
+                    if (base && base[1]) {
+                        d = { pct: Math.round((last[1] - base[1]) / base[1] * 100),
+                              now: last[1], nowM: last[0], base: base[1], baseM: base[0] };
+                    }
+                    h += `<tr>
+                        <td>${esc(x.text)}</td>
+                        <td style="text-align:right;"><b>${num(last[1])}</b></td>
+                        <td style="text-align:center;">${deltaCell(d)}</td>
+                    </tr>`;
+                });
+                h += `</tbody></table></div>`;
+
+                const months = this._analyticsMonths || 36;
+                const series = withData.slice(0, 6).map(x => ({
+                    name: x.text, points: x.pts.slice(months > 0 ? -months : 0)
+                }));
+                h += this.buildAnalyticsLineChart(series, 'calc');
+            }
+        }
+
         // ── Спрос по России помесячно ───────────────────────────────────────
         if (wordstat && wordstat.ru_monthly) {
             const phrases = wordstat.phrases || {};
