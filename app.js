@@ -12310,10 +12310,16 @@ const app = {
         };
 
         let paths = '';
+        // Шкала одна на все ряды. Раньше максимум считался внутри цикла, у
+        // каждой линии свой: любая упиралась в верх рамки на собственном пике,
+        // и линии нельзя было сравнивать между собой — марка с 29 тысячами
+        // запросов шла выше марки со 110 тысячами. Подписей по оси Y нет,
+        // так что подмена шкалы ничем себя не выдавала.
+        const maxAll = Math.max(1, ...series.map(s =>
+            Math.max(0, ...s.points.map(p => Number(p[1]) || 0))));
         series.forEach(s => {
-            const max = Math.max(1, ...s.points.map(p => Number(p[1]) || 0));
             const d = s.points.map((p, i) =>
-                `${i ? 'L' : 'M'}${x(i).toFixed(1)},${yOf(p[1], max).toFixed(1)}`
+                `${i ? 'L' : 'M'}${x(i).toFixed(1)},${yOf(p[1], maxAll).toFixed(1)}`
             ).join(' ');
             paths += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.own ? 3 : 2}" stroke-linejoin="round"/>`;
         });
