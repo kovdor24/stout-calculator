@@ -1,0 +1,29 @@
+{
+  "phrases": [
+    {"id":"montazh_otopleniya","text":"монтаж отопления в частном доме","group":"demand","core":true},
+    {"id":"otoplenie_pod_klyuch","text":"отопление частного дома под ключ","group":"demand","core":true},
+    {"id":"montazh_tp","text":"монтаж теплого пола","group":"demand","core":true},
+    {"id":"vodosnabzhenie_doma","text":"водоснабжение частного дома","group":"demand","core":false},
+    {"id":"kotelnaya_pod_klyuch","text":"котельная под ключ","group":"demand","core":false},
+    {"id":"truba_pex","text":"труба сшитый полиэтилен","group":"materials","core":true},
+    {"id":"truba_mp","text":"металлопластиковая труба","group":"materials","core":true},
+    {"id":"truba_pp","text":"полипропиленовая труба","group":"materials","core":true},
+    {"id":"kollektor_tp","text":"коллектор теплого пола","group":"materials","core":false},
+    {"id":"radiator_bimetall","text":"биметаллический радиатор","group":"materials","core":false},
+    {"id":"brand_stout","text":"stout","group":"brands","core":true},
+    {"id":"brand_rommer","text":"rommer","group":"brands","core":false},
+    {"id":"brand_valtec","text":"valtec","group":"brands","core":true},
+    {"id":"brand_rehau","text":"rehau","group":"brands","core":false},
+    {"id":"brand_uponor","text":"uponor","group":"brands","core":false},
+    {"id":"brand_oventrop","text":"oventrop","group":"brands","core":false},
+    {"id":"kotel_gaz_kupit","text":"газовый котел купить","group":"equipment","core":true},
+    {"id":"elektrokotel","text":"электрокотел","group":"equipment","core":false},
+    {"id":"teplovoy_nasos","text":"тепловой насос","group":"equipment","core":false},
+    {"id":"boyler_kn","text":"бойлер косвенного нагрева","group":"equipment","core":false},
+    {"id":"nasos_cirk","text":"циркуляционный насос","group":"equipment","core":false},
+    {"id":"remont_kotla","text":"ремонт котла","group":"service","core":true},
+    {"id":"zamena_kotla","text":"замена котла","group":"service","core":false},
+    {"id":"to_kotla","text":"обслуживание котла","group":"service","core":false}
+  ],
+  "top_requests_for": ["montazh_otopleniya","montazh_tp","truba_pex","kotel_gaz_kupit","remont_kotla"]
+}

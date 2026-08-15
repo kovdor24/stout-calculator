@@ -1,0 +1,84 @@
+name: Wordstat Analytics
+
+# Спрос по Яндекс.Wordstat для вкладки «Аналитика» в админке (только для
+# владельца). Три режима, см. ANALYTICS_PLAN.md, раздел 3:
+#   monthly  — 3-го числа, снимок по регионам + динамика по России + топ
+#   pulse    — по понедельникам, короткий недельный пульс по России
+#   backfill — вручную, разовый сбор истории по регионам с 2018 года
+#
+# timeout-minutes: 300 — backfill растягивается на час-полтора из-за часовой
+# квоты Wordstat (100 запросов/час), обычный monthly/pulse укладывается
+# в несколько минут.
+#
+# Ключ и folderId — в секретах репозитория (WORDSTAT_API_KEY,
+# WORDSTAT_FOLDER_ID), выданы сервисному аккаунту wordstat-parser в
+# Yandex Cloud. Локально их нет и быть не должно.
+on:
+  schedule:
+    - cron: '0 5 3 * *'
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Режим запуска'
+        type: choice
+        default: monthly
+        options:
+          - monthly
+          - pulse
+          - backfill
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      # Зависимостей нет: скрипт ходит в Yandex Search API через urllib.
+      - name: Determine run mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            MODE="${{ github.event.inputs.mode }}"
+          elif [ "${{ github.event.schedule }}" = "0 5 * * 1" ]; then
+            MODE="pulse"
+          else
+            MODE="monthly"
+          fi
+          echo "Режим: $MODE"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+      - name: Run Wordstat parser
+        env:
+          WORDSTAT_API_KEY: ${{ secrets.WORDSTAT_API_KEY }}
+          WORDSTAT_FOLDER_ID: ${{ secrets.WORDSTAT_FOLDER_ID }}
+        run: |
+          case "${{ steps.mode.outputs.mode }}" in
+            pulse) python AutoWordstat.py --pulse ;;
+            backfill) python AutoWordstat.py --backfill ;;
+            *) python AutoWordstat.py ;;
+          esac
+      # if: always() — если backfill прервётся по таймауту или его отменят
+      # руками, прогресс из analytics/.wordstat_state.json всё равно должен
+      # уйти в коммит, иначе следующий запуск начнёт собирать историю заново.
+      - name: Commit and push changes
+        if: always()
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add analytics
+          if git diff --staged --quiet; then
+            echo "Данные Wordstat не изменились."
+          else
+            git commit -m "Автообновление данных Wordstat (${{ steps.mode.outputs.mode }})"
+            for i in {1..5}; do
+              git pull --rebase origin main && git push origin main && exit 0
+              git rebase --abort || true
+              sleep 5
+            done
+            exit 1
+          fi
