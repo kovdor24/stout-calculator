@@ -19,11 +19,11 @@
     },
     {
       "id": "kotly_el", "phrase": "электрический котел отопления", "section": 1, "cat": "boilers_plus",
-      "known_brands": ["zota", "эван", "evan", "руснит", "галан", "элвин", "теплодар", "protherm", "bosch", "kospel", "wattek", "vaillant", "stout", "rommer"]
+      "known_brands": ["zota", "эван", "evan", "руснит", "галан", "элвин", "теплодар", "protherm", "bosch", "kospel", "wattek", "vaillant", "arderia", "alterm", "stout", "rommer"]
     },
     {
       "id": "boylery_kn", "phrase": "бойлер косвенного нагрева", "section": 1, "cat": "tanks_standard",
-      "known_brands": ["termica", "thermex", "термекс", "vgr", "rommer", "hajdu", "drazice", "royal thermo", "baxi", "buderus", "bosch", "viessmann", "acv", "reflex", "wester", "lemax", "лемакс", "stout"]
+      "known_brands": ["termica", "thermex", "термекс", "vgr", "rommer", "hajdu", "drazice", "royal thermo", "baxi", "buderus", "bosch", "viessmann", "acv", "reflex", "wester", "lemax", "лемакс", "aquatec", "ballu", "ferroli", "stout"]
     },
     {
       "id": "dymohody", "phrase": "дымоход коаксиальный", "section": 1, "cat": "chimneys",
@@ -31,7 +31,7 @@
     },
     {
       "id": "nasosnye_gruppy", "phrase": "насосная группа", "section": 2, "cat": "groups_dn25",
-      "known_brands": ["meibes", "майбес", "gidruss", "гидрусс", "hoobs", "uni-fitt", "unifit", "elsen", "oventrop", "watts", "afriso", "stout", "rommer", "valtec"]
+      "known_brands": ["meibes", "майбес", "gidruss", "гидрусс", "hoobs", "uni-fitt", "unifit", "elsen", "oventrop", "watts", "afriso", "astrex", "huch", "solomix", "stout", "rommer", "valtec"]
     },
     {
       "id": "gidrostrelki", "phrase": "гидрострелка", "section": 2, "cat": "hydro_separators",
@@ -39,8 +39,8 @@
     },
     {
       "id": "nasosy_cirk", "phrase": "циркуляционный насос", "section": 2, "cat": "pumps_dn25",
-      "known_brands": ["unipump", "юнипамп", "oasis", "valtec", "valfex", "rommer", "aquatim", "акватим", "shinhoo", "pumpman", "imp pumps", "grundfos", "wilo", "dab", "vieir", "hoobs", "jemix", "wester", "sti", "вихрь", "джилекс", "stout"],
-      "ambiguous": ["oasis", "tim"]
+      "known_brands": ["unipump", "юнипамп", "oasis", "valtec", "valfex", "rommer", "aquatim", "акватим", "shinhoo", "pumpman", "imp pumps", "grundfos", "wilo", "dab", "vieir", "hoobs", "jemix", "wester", "sti", "вихрь", "джилекс", "aquario", "stout"],
+      "ambiguous": ["oasis", "tim", "sti"]
     },
     {
       "id": "nasosy_skv", "phrase": "скважинный насос", "section": 11, "cat": "well_pumps",
@@ -58,13 +58,13 @@
     },
     {
       "id": "konvektory", "phrase": "внутрипольный конвектор", "section": 3, "cat": "convectors_scn",
-      "known_brands": ["techno", "varmann", "jaga", "minib", "itermic", "eva", "mohlenhoff", "kampmann", "stout", "rommer"],
-      "ambiguous": ["eva", "techno"]
+      "known_brands": ["techno", "varmann", "jaga", "minib", "itermic", "eva", "mohlenhoff", "kampmann", "vitron", "gekon", "askon", "atrium", "instyle", "kvz", "stout", "rommer"],
+      "ambiguous": ["eva", "techno", "atrium", "instyle"]
     },
     {
       "id": "termogolovki", "phrase": "термостатическая головка", "section": 3, "cat": "heads",
-      "known_brands": ["ридан", "ridan", "danfoss", "hoobs", "vieir", "tim", "icma", "far", "luxor", "giacomini", "caleffi", "oventrop", "herz", "stout", "rommer", "valtec"],
-      "ambiguous": ["tim", "far"]
+      "known_brands": ["ридан", "ridan", "danfoss", "hoobs", "vieir", "tim", "icma", "far", "luxor", "giacomini", "caleffi", "oventrop", "herz", "heizen", "weser", "mvi", "sanext", "sti", "stout", "rommer", "valtec"],
+      "ambiguous": ["tim", "far", "sti"]
     },
     {
       "id": "truba_pex", "phrase": "труба из сшитого полиэтилена", "section": 6, "cat": "pipes",
@@ -78,7 +78,7 @@
     },
     {
       "id": "fitingi_ax", "phrase": "аксиальный фитинг", "section": 6, "cat": "axial_fittings_pex",
-      "known_brands": ["hoobs", "рехау", "rehau", "usystems", "uponor", "sanext", "tim", "valtec", "stout", "rommer"],
+      "known_brands": ["hoobs", "рехау", "rehau", "usystems", "uponor", "sanext", "tim", "valtec", "tece", "stout", "rommer"],
       "ambiguous": ["tim"]
     },
     {
@@ -97,12 +97,13 @@
     },
     {
       "id": "termostaty_tp", "phrase": "термостат теплого пола", "section": 4, "cat": "thermostats_stout",
-      "known_brands": ["ридан", "ridan", "danfoss", "astrex", "salus", "computherm", "terneo", "thermoreg", "caleo", "devi", "tim", "vieir", "stout", "rommer"],
+      "_note": "Первый прогон дал по этой категории пустой рейтинг: рынок термостатов ушёл в умный дом, и ни одного отопительного бренда в топе запросов нет. Лидеры — Aqara, Tuya, Schneider AtlasDesign, Systeme Electric; они и есть реальные конкуренты, хотя формально к отоплению отношения не имеют.",
+      "known_brands": ["ридан", "ridan", "danfoss", "astrex", "salus", "computherm", "terneo", "thermoreg", "caleo", "devi", "tim", "vieir", "aqara", "tuya", "schneider", "atlasdesign", "systeme electric", "stout", "rommer"],
       "ambiguous": ["tim"]
     },
     {
       "id": "avtomatika", "phrase": "gsm модуль для котла", "section": 7, "cat": "boiler_automation",
-      "known_brands": ["zont", "зонт", "ectocontrol", "эктоконтрол", "teplocom", "теплоком", "ридан", "ridan", "computherm", "baxi", "stout", "rommer"]
+      "known_brands": ["zont", "зонт", "ectocontrol", "эктоконтрол", "teplocom", "теплоком", "ридан", "ridan", "computherm", "baxi", "zota", "tuya", "stout", "rommer"]
     },
     {
       "id": "nerzh_press", "phrase": "нержавеющая труба пресс", "section": 6, "cat": "ss_pipe_4m",
@@ -115,25 +116,25 @@
     },
     {
       "id": "installyacii", "phrase": "инсталляция для унитаза", "section": 6, "cat": "installations",
-      "known_brands": ["iddis", "vitra", "cersanit", "alcaplast", "алкапласт", "tece", "geberit", "grohe", "berges", "point", "am.pm", "roca", "wisa", "stout", "rommer"],
+      "known_brands": ["iddis", "vitra", "cersanit", "alcaplast", "алкапласт", "tece", "geberit", "grohe", "berges", "point", "am.pm", "roca", "wisa", "abber", "azario", "aquatek", "stout", "rommer"],
       "ambiguous": ["point"]
     },
     {
       "id": "krany_sharovye", "phrase": "шаровой кран", "section": 8, "cat": "ball_valves",
-      "known_brands": ["vieir", "tim", "hoobs", "valtec", "mvi", "uni-fitt", "itap", "bugatti", "royal thermo", "stout", "rommer"],
-      "ambiguous": ["tim"]
+      "known_brands": ["vieir", "tim", "hoobs", "valtec", "mvi", "uni-fitt", "itap", "bugatti", "royal thermo", "pride", "stout", "rommer"],
+      "ambiguous": ["tim", "pride"]
     },
     {
       "id": "vodoochistka", "phrase": "фильтр для воды магистральный", "section": 10, "cat": "filter_big_blue",
-      "known_brands": ["аквафор", "aquaphor", "гейзер", "geizer", "барьер", "atoll", "ecosoft", "bwt", "райфил", "джилекс", "stout", "rommer"]
+      "known_brands": ["аквафор", "aquaphor", "гейзер", "geizer", "барьер", "atoll", "ecosoft", "bwt", "райфил", "джилекс", "prio", "unicorn", "stout", "rommer"]
     },
     {
       "id": "teplonositel", "phrase": "теплоноситель для отопления", "section": 9, "cat": "coolants",
-      "known_brands": ["dixis", "диксис", "thermagent", "термагент", "теплый дом", "hot blood", "primoclima", "аквалюкс", "stout", "rommer"]
+      "known_brands": ["dixis", "диксис", "thermagent", "термагент", "теплый дом", "hot blood", "primoclima", "аквалюкс", "termoline", "stout", "rommer"]
     },
     {
       "id": "stabilizatory", "phrase": "стабилизатор напряжения для котла", "section": 2, "cat": "stabs",
-      "known_brands": ["ресанта", "resanta", "штиль", "энергия", "rucelf", "powerman", "suntek", "stout", "rommer"]
+      "known_brands": ["ресанта", "resanta", "штиль", "энергия", "rucelf", "powerman", "suntek", "teplocom", "теплоком", "stout", "rommer"]
     }
   ],
   "own_brands": ["stout", "стаут", "rommer", "роммер"],
@@ -176,7 +177,86 @@
     "aquaphor": ["аквафор"],
     "geizer": ["гейзер"],
     "dixis": ["диксис"],
-    "thermagent": ["термагент"]
+    "thermagent": ["термагент"],
+    "aqara": ["акара"],
+    "tuya": ["туя"],
+    "schneider": ["шнайдер", "atlasdesign", "systeme electric", "систем электрик"],
+    "arderia": ["ардерия"],
+    "ferroli": ["ферроли"],
+    "ballu": ["баллу"],
+    "abber": ["аббер"],
+    "azario": ["азарио"],
+    "aquatek": ["акватек"],
+    "aquatec": ["акватэк"],
+    "vitron": ["витрон"],
+    "gekon": ["гекон"],
+    "askon": ["аскон"],
+    "heizen": ["хайзен"],
+    "weser": ["везер"],
+    "mvi": ["мви"],
+    "huch": ["хуч"],
+    "pride": ["прайд"],
+    "prio": ["прио"],
+    "teplocom": ["теплоком"],
+    "solomix": ["соломикс"],
+    "ridan": ["ридан"],
+    "alcaplast": ["алкапласт"],
+    "lemax": ["лемакс"],
+    "rtp": ["ростурпласт"],
+    "uni-fitt": ["unifit", "юнифит"],
+    "ectocontrol": ["эктоконтрол"],
+    "vitra": ["витра"],
+    "cersanit": ["церсанит"],
+    "iddis": ["иддис"],
+    "vgr": ["вгр"],
+    "hajdu": ["хайду"],
+    "drazice": ["дражице"],
+    "buderus": ["будерус"],
+    "bosch": ["бош"],
+    "protherm": ["протерм"],
+    "vaillant": ["вайлант"],
+    "kospel": ["коспел"],
+    "wester": ["вестер"],
+    "reflex": ["рефлекс"],
+    "zilmet": ["зилмет"],
+    "elsen": ["эльзен"],
+    "watts": ["ваттс"],
+    "oventrop": ["овентроп"],
+    "giacomini": ["джакомини"],
+    "caleffi": ["калеффи"],
+    "icma": ["икма"],
+    "luxor": ["люксор"],
+    "herz": ["херц"],
+    "henco": ["хенко"],
+    "heisskraft": ["хайскрафт"],
+    "techno": ["техно"],
+    "varmann": ["варманн"],
+    "itermic": ["итермик"],
+    "minib": ["миниб"],
+    "jaga": ["яга"],
+    "bwt": ["бвт"],
+    "atoll": ["атолл"],
+    "ecosoft": ["экософт"],
+    "bugatti": ["бугатти"],
+    "itap": ["итап"],
+    "pumpman": ["пампман"],
+    "shinhoo": ["шинху"],
+    "valfex": ["валфекс"],
+    "jemix": ["джемикс"],
+    "grota": ["грота"],
+    "berges": ["бергес"],
+    "roca": ["рока"],
+    "am.pm": ["ампм"],
+    "navien": ["навиен"],
+    "kentatsu": ["кентатсу"],
+    "beretta": ["беретта"],
+    "ariston": ["аристон"],
+    "viessmann": ["виссманн"],
+    "craft": ["крафт"],
+    "ferrum": ["феррум"],
+    "schiedel": ["шидель"],
+    "okseler": ["окселер"],
+    "gidruss": ["гидрусс", "гидрус"]
   },
   "stop_words": [
     "купить", "цена", "цены", "стоимость", "недорого", "дешево", "отзывы", "москва",
