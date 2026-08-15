@@ -48,10 +48,12 @@ SUPABASE_RPC_PATH = "/rest/v1/rpc/analytics_live_regions"
 UA = "Mozilla/5.0 (compatible; HeatCalcAnalyticsBot/1.0; +https://heatcalc.ru)"
 
 PHRASES_FILE = "analytics/wordstat_phrases.json"
+CATEGORIES_FILE = "analytics/wordstat_categories.json"
 REGIONS_MAP_FILE = "analytics/wordstat_regions_map.json"
 STATE_FILE = "analytics/.wordstat_state.json"
 OUT_FILE = "analytics/wordstat.json"
 PULSE_FILE = "analytics/wordstat_pulse.json"
+BRANDS_FILE = "analytics/wordstat_brands.json"
 CITIES_GEO_FILE = "cities_geo.js"
 APP_JS_FILE = "app.js"
 
@@ -61,6 +63,8 @@ MIN_SUCCESS_RATIO = 0.8         # ниже — файлы не переписы�
 SNAPSHOT_MONTHS_KEEP = 6        # region_snapshots — только последние месяцы,
                                  # полная история и так есть в region_monthly
 TOP_MONTHS_KEEP = 2             # «последний снимок и предыдущий», см. план
+BRAND_MONTHS_KEEP = 24          # рейтинги марок по России — два года истории
+BRAND_REGION_KEEP = 8           # региональные срезы делаем раз в квартал
 
 # ──────────────────────────────────────────────────────────────────────────
 # Канонические имена регионов — как в el_tariffs.js / cities_geo.js.
@@ -594,6 +598,179 @@ def load_phrases():
     return cfg["phrases"], by_id, core_ids, top_ids
 
 
+def load_categories():
+    cfg = load_json_file(CATEGORIES_FILE, None)
+    if not cfg or not cfg.get("categories"):
+        raise RuntimeError("%s не найден или пуст" % CATEGORIES_FILE)
+    return cfg
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Обнаружение брендов: кто лидирует в категории — по данным, а не по памяти
+# ──────────────────────────────────────────────────────────────────────────
+
+# Слово из запроса засчитываем в бренд, если оно не служебное и не часть
+# самой категории. Числа и размеры («16х2.0», «200») отбрасываем: это
+# типоразмеры, а не марки.
+NUM_TOKEN_RE = re.compile(r"^[\d.,x×/\-]+$")
+WORD_RE = re.compile(r"[a-zA-Zа-яА-ЯёЁ][\w.\-]*", re.UNICODE)
+
+
+def phrase_tokens(phrase):
+    return [w.lower().replace("ё", "е") for w in WORD_RE.findall(phrase)]
+
+
+def build_brand_matcher(cat, own_brands):
+    """Словарь распознавания для категории: известные марки + свои бренды.
+    Многословные марки («royal thermo», «метеор термо») ищем как подстроку,
+    однословные — по токенам."""
+    known = [b.lower().replace("ё", "е") for b in cat.get("known_brands", [])]
+    known += [b.lower().replace("ё", "е") for b in own_brands]
+    multi = sorted([b for b in known if " " in b], key=len, reverse=True)
+    single = set(b for b in known if " " not in b)
+    ambiguous = set(b.lower() for b in cat.get("ambiguous", []))
+    return multi, single, ambiguous
+
+
+def extract_brands(phrase, cat_tokens, multi, single, ambiguous, stop_words):
+    """Марки, упомянутые в запросе. Неоднозначные («tim», «oasis», «point»)
+    засчитываем только здесь — внутри запроса про эту категорию, — потому что
+    само по себе такое слово ничего не значит."""
+    low = phrase.lower().replace("ё", "е")
+    found = set()
+    for m in multi:
+        if m in low:
+            found.add(m)
+    for t in phrase_tokens(phrase):
+        if t in cat_tokens or t in stop_words or NUM_TOKEN_RE.match(t) or len(t) < 3:
+            continue
+        if t in single:
+            found.add(t)
+    return found
+
+
+def collect_unknown_tokens(phrase, cat_tokens, single, multi, stop_words, counter):
+    """Кандидаты в бренды: слова, которых нет ни в словаре, ни в стоп-листе.
+    Именно отсюда всплывают локальные игроки, которых никто не назвал."""
+    low = phrase.lower().replace("ё", "е")
+    if any(m in low for m in multi):
+        return
+    for t in phrase_tokens(phrase):
+        if (t in cat_tokens or t in stop_words or t in single
+                or NUM_TOKEN_RE.match(t) or len(t) < 3):
+            continue
+        counter[t] = counter.get(t, 0) + 1
+
+
+def run_brands(client, regional=False):
+    """Рейтинг марок внутри каждой товарной категории — из топа запросов
+    Wordstat (GetTop). Смысл: список конкурентов не сочиняется вручную,
+    а измеряется; свои бренды всегда в этом же рейтинге, даже если далеко
+    внизу — «не входит в топ» тоже ответ."""
+    cfg = load_categories()
+    categories = cfg["categories"]
+    own_brands = cfg.get("own_brands", [])
+    stop_words = set(w.lower() for w in cfg.get("stop_words", []))
+
+    region_ids = {}
+    if regional:
+        live = get_live_canonical_regions()
+        region_map = ensure_region_map(live, client)
+        region_ids = {n: region_map[n]["yid"] for n in live if n in region_map}
+        log("Региональный срез по %d регионам" % len(region_ids))
+
+    data = load_json_file(BRANDS_FILE, {})
+    this_month = datetime.date.today().strftime("%Y-%m")
+    result_ru = {}
+    result_reg = {}
+    candidates_all = {}
+
+    for cat in categories:
+        cat_tokens = set(phrase_tokens(cat["phrase"]))
+        multi, single, ambiguous = build_brand_matcher(cat, own_brands)
+
+        targets = [(None, None)]
+        if regional:
+            targets += [(name, yid) for name, yid in sorted(region_ids.items())]
+
+        for region_name, yid in targets:
+            body = {"phrase": cat["phrase"], "numPhrases": "500"}
+            if yid:
+                body["regions"] = [yid]
+            resp = client.call("topRequests", body)
+            if resp is None:
+                continue
+
+            rows = list(resp.get("results", [])) + list(resp.get("associations", []))
+            totals = {}
+            cand = {}
+            for r in rows:
+                phrase = r.get("phrase", "")
+                count = to_int(r.get("count"))
+                if not phrase or count <= 0:
+                    continue
+                brands = extract_brands(phrase, cat_tokens, multi, single,
+                                        ambiguous, stop_words)
+                for b in brands:
+                    totals[b] = totals.get(b, 0) + count
+                if not brands:
+                    collect_unknown_tokens(phrase, cat_tokens, single, multi,
+                                            stop_words, cand)
+
+            ranking = sorted(totals.items(), key=lambda kv: -kv[1])
+            entry = {
+                "total": to_int(resp.get("totalCount")),
+                "ranking": [[b, c] for b, c in ranking],
+                "own": {b: {"count": totals.get(b, 0),
+                            "place": next((i + 1 for i, (n, _) in enumerate(ranking)
+                                            if n == b), None)}
+                         for b in own_brands},
+            }
+            if region_name:
+                result_reg.setdefault(cat["id"], {})[region_name] = entry
+            else:
+                result_ru[cat["id"]] = entry
+                # Кандидаты копим только по России: в регионах те же слова,
+                # но частоты мельче — на общий список это ничего не добавит.
+                for t, n in cand.items():
+                    if n >= 2:      # разовое слово — почти всегда опечатка
+                        candidates_all.setdefault(t, {"hits": 0, "cats": []})
+                        candidates_all[t]["hits"] += n
+                        if cat["id"] not in candidates_all[t]["cats"]:
+                            candidates_all[t]["cats"].append(cat["id"])
+
+            top3 = ", ".join("%s %d" % (b, c) for b, c in ranking[:3]) or "—"
+            own_note = ", ".join(
+                "%s %s" % (b, ("%d место" % entry["own"][b]["place"])
+                            if entry["own"][b]["place"] else "не в топе")
+                for b in ("stout", "rommer") if b in entry["own"])
+            log("  %-18s %-22s лидеры: %-45s | %s" % (
+                cat["id"], region_name or "Россия", top3, own_note))
+
+    ratio = client.success_ratio
+    log("Запросов: %d, успешно: %d (%.0f%%)" % (client.attempted, client.succeeded, ratio * 100))
+    if ratio < MIN_SUCCESS_RATIO:
+        log("Меньше %.0f%% запросов удалось — файл не переписываю, это сбой" % (MIN_SUCCESS_RATIO * 100))
+        return 1
+
+    data.setdefault("months", {})[this_month] = result_ru
+    for m in sorted(data["months"])[:-BRAND_MONTHS_KEEP]:
+        del data["months"][m]
+    if regional:
+        data.setdefault("regions", {})[this_month] = result_reg
+        for m in sorted(data["regions"])[:-BRAND_REGION_KEEP]:
+            del data["regions"][m]
+    data["updated"] = datetime.date.today().isoformat()
+    data["categories"] = {c["id"]: {"phrase": c["phrase"], "section": c.get("section"),
+                                     "cat": c.get("cat")} for c in categories}
+    data["candidates"] = dict(sorted(candidates_all.items(),
+                                      key=lambda kv: -kv[1]["hits"])[:200])
+    save_json_file(BRANDS_FILE, data)
+    log("Готово: %s обновлён. Кандидатов в бренды на проверку: %d" % (
+        BRANDS_FILE, len(data["candidates"])))
+    return 0
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # Backfill / докатка нового региона: GetDynamics по одному региону за раз
 # ──────────────────────────────────────────────────────────────────────────
@@ -609,6 +786,43 @@ def save_state(state):
 def clear_state():
     if os.path.exists(STATE_FILE):
         os.remove(STATE_FILE)
+
+
+def fetch_region_series(client, phrase_text, region_entry, from_date, to_date):
+    """Месячный ряд запросов по региону. У «Московской» и «Ленинградской»
+    областей в дереве Wordstat своего узла нет — есть «Москва и область» и
+    «Санкт-Петербург и Ленинградская область», внутри которых сидит сам
+    город. Поэтому для них в карте регионов стоит minus_yid, и область
+    получается вычитанием города из пары: два запроса вместо одного.
+    Возвращает None, если хоть один запрос не удался (частичные данные тут
+    хуже отсутствия: разница с недобранным вычитаемым завысит область)."""
+    def series_of(yid):
+        resp = client.call("dynamics", {
+            "phrase": phrase_text,
+            "period": "PERIOD_MONTHLY",
+            "fromDate": from_date,
+            "toDate": to_date,
+            "regions": [yid],
+        })
+        if resp is None:
+            return None
+        return {month_key(r["date"]): to_int(r.get("count"))
+                for r in resp.get("results", [])}
+
+    whole = series_of(region_entry["yid"])
+    if whole is None:
+        return None
+
+    minus_yid = region_entry.get("minus_yid")
+    if minus_yid:
+        part = series_of(minus_yid)
+        if part is None:
+            return None
+        # Отрицательного быть не должно, но если Яндекс округлит по-разному —
+        # обрезаем по нулю, а не тащим минус в график.
+        whole = {m: max(0, v - part.get(m, 0)) for m, v in whole.items()}
+
+    return sorted([[m, v] for m, v in whole.items()], key=lambda x: x[0])
 
 
 def run_dynamics_backfill(pairs, phrases_by_id, region_map, client):
@@ -637,20 +851,12 @@ def run_dynamics_backfill(pairs, phrases_by_id, region_map, client):
             log("  [%d/%d] %s / %s: нет yid в карте регионов, пропуск" % (
                 i, len(todo), phrase_id, region_name))
             continue
-        resp = client.call("dynamics", {
-            "phrase": phrase["text"],
-            "period": "PERIOD_MONTHLY",
-            "fromDate": from_date,
-            "toDate": to_date,
-            "regions": [yid],
-        })
-        if resp is None:
+        series = fetch_region_series(client, phrase["text"], region_map[region_name],
+                                      from_date, to_date)
+        if series is None:
             log("  [%d/%d] %s / %s: сбой запроса, попробуем в следующий раз" % (
                 i, len(todo), phrase_id, region_name))
             continue
-        series = [[month_key(r["date"]), to_int(r.get("count"))]
-                  for r in resp.get("results", [])]
-        series.sort(key=lambda x: x[0])
         acc.setdefault(phrase_id, {})[region_name] = series
         done.add((phrase_id, region_name))
         state["done"] = [list(x) for x in done]
@@ -735,18 +941,39 @@ def run_monthly(client):
         resp = client.call("regions", {"phrase": p["text"], "region": "REGION_REGIONS"})
         if resp is None:
             continue
-        by_region = {}
+        # Ответ разбираем по id: он нужен и сам по себе, и как вычитаемое
+        # для областей, у которых своего узла в дереве Wordstat нет.
+        raw = {}
         for r in resp.get("results", []):
-            name = yid_to_name.get(str(r.get("region")))
-            if not name or name not in mapped_live:
-                continue  # не наш живой регион — не считаем и не храним
-            by_region[name] = {
+            raw[str(r.get("region"))] = {
                 "count": to_int(r.get("count")),
                 "affinity": to_float(r.get("affinityIndex")),
             }
+
+        by_region = {}
+        for name in mapped_live:
+            entry = region_map[name]
+            whole = raw.get(str(entry["yid"]))
+            if whole is None:
+                continue
+            count = whole["count"]
+            affinity = whole["affinity"]
+            minus_yid = entry.get("minus_yid")
+            if minus_yid:
+                part = raw.get(str(minus_yid))
+                if part is None:
+                    # Города в разрезе REGION_REGIONS может не оказаться —
+                    # тогда честнее пропустить месяц, чем записать область
+                    # вместе с городом и выдать это за область.
+                    log("  %s: нет данных по вычитаемому id %s, месяц пропущен"
+                        % (name, minus_yid))
+                    continue
+                count = max(0, count - part["count"])
+                affinity = None      # индекс у разности не определён
+            by_region[name] = {"count": count, "affinity": affinity}
             series = region_monthly.setdefault(p["id"], {}).setdefault(name, [])
             series[:] = [pt for pt in series if pt[0] != this_month]
-            series.append([this_month, by_region[name]["count"]])
+            series.append([this_month, count])
             series.sort(key=lambda x: x[0])
         if by_region:
             this_month_snap[p["id"]] = by_region
@@ -893,6 +1120,10 @@ def main():
     g.add_argument("--backfill", action="store_true", help="разовый сбор истории по регионам")
     g.add_argument("--dump-regions", action="store_true",
                    help="диагностика: показать дерево регионов Яндекса (бесплатно)")
+    g.add_argument("--brands", action="store_true",
+                   help="рейтинг марок по категориям из топа запросов (по России)")
+    g.add_argument("--brands-regional", action="store_true",
+                   help="то же с разбивкой по живым регионам (раз в квартал)")
     args = ap.parse_args()
 
     api_key = os.environ.get("WORDSTAT_API_KEY")
@@ -905,6 +1136,10 @@ def main():
 
     if args.dump_regions:
         return run_dump_regions(client)
+    if args.brands:
+        return run_brands(client, regional=False)
+    if args.brands_regional:
+        return run_brands(client, regional=True)
     if args.pulse:
         return run_pulse(client)
     if args.backfill:

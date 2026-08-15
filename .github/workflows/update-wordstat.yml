@@ -27,6 +27,8 @@ on:
           - monthly
           - pulse
           - backfill
+          - brands
+          - brands-regional
           - dump-regions
 
 jobs:
@@ -61,6 +63,8 @@ jobs:
           case "${{ steps.mode.outputs.mode }}" in
             pulse) python AutoWordstat.py --pulse ;;
             backfill) python AutoWordstat.py --backfill ;;
+            brands) python AutoWordstat.py --brands ;;
+            brands-regional) python AutoWordstat.py --brands-regional ;;
             dump-regions) python AutoWordstat.py --dump-regions ;;
             *) python AutoWordstat.py ;;
           esac
