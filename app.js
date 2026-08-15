@@ -932,7 +932,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', radRegime: 'r8060', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin', radRegime: 'r8060' },
 
     lastSavedStateString: "",
 
@@ -11815,6 +11815,11 @@ const app = {
                 title: cats[id].price_group || cats[id].phrase || id,
                 phrase: cats[id].phrase || '',
                 leader: (r.ranking && r.ranking[0]) || null,
+                brandTotal: (r.ranking || []).reduce((a, x) => a + (x[1] || 0), 0),
+                ownCount: {
+                    stout: (own.stout && own.stout.count) || 0,
+                    rommer: (own.rommer && own.rommer.count) || 0
+                },
                 stout: place('stout'),
                 rommer: place('rommer'),
                 ownIn: cats[id].own_in_group || [],
@@ -11829,10 +11834,15 @@ const app = {
         // мы первые, но искать нужную группу в таком списке невозможно.
         rows.sort((a, b) => (a.section - b.section) || (a.order - b.order));
 
-        const badge = (p, brand) => {
+        // Место само по себе мало значит: третье место с долей 30 % и третье
+        // с долей 2 % — разные положения. Поэтому под номером показываем долю
+        // среди запросов, где марку называют.
+        const badge = (p, count, total) => {
             if (!p) return `<span style="color:var(--text-sec);">—</span>`;
             const color = p === 1 ? '#10B981' : (p <= 3 ? 'var(--primary)' : (p <= 10 ? '#F97316' : 'var(--text-sec)'));
-            return `<span style="color:${color}; font-weight:700;">${p}</span>`;
+            const share = total ? (count / total * 100) : 0;
+            return `<span style="color:${color}; font-weight:700;">${p}</span>`
+                + `<br><small style="color:var(--text-sec);">${share.toFixed(share < 10 ? 1 : 0)}%</small>`;
         };
 
         // Изменение спроса на категорию: последний полный месяц против того же
@@ -11877,7 +11887,11 @@ const app = {
                 lastSection = r.section;
                 h += `<tr><td colspan="5" style="background:var(--surface-light); font-weight:700; color:var(--text-sec); font-size:12px; padding:6px 8px;">${r.section}. ${esc(r.sectionTitle)}</td></tr>`;
             }
-            const lead = r.leader ? `${esc(r.leader[0])} <span style="color:var(--text-sec);">${num(r.leader[1])}</span>` : '<span style="color:var(--text-sec);">нет данных</span>';
+            const leadShare = r.brandTotal ? (r.leader[1] / r.brandTotal * 100) : 0;
+            const lead = r.leader
+                ? `${esc(r.leader[0])} <b style="color:var(--text-main);">${leadShare.toFixed(0)}%</b>`
+                  + ` <span style="color:var(--text-sec); font-size:11.5px;">${num(r.leader[1])}</span>`
+                : '<span style="color:var(--text-sec);">нет данных</span>';
             // Пока в данных нет названий групп прайса (появятся со следующим
             // прогоном brands), заголовок падает на поисковую фразу — и тогда
             // подпись под ним повторяла бы её слово в слово.
@@ -11893,8 +11907,8 @@ const app = {
                 <td><b style="${open ? 'color:var(--primary);' : ''}">${open ? '▾ ' : ''}${esc(r.title)}</b>${sub}</td>
                 <td>${lead}</td>
                 <td style="text-align:center;">${deltaCell(deltaOf(r.id))}</td>
-                <td style="text-align:center;">${r.ownIn.includes('stout') || r.stout ? badge(r.stout, 'stout') : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
-                <td style="text-align:center;">${r.ownIn.includes('rommer') || r.rommer ? badge(r.rommer, 'rommer') : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
+                <td style="text-align:center;">${r.ownIn.includes('stout') || r.stout ? badge(r.stout, r.ownCount.stout, r.brandTotal) : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
+                <td style="text-align:center;">${r.ownIn.includes('rommer') || r.rommer ? badge(r.rommer, r.ownCount.rommer, r.brandTotal) : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
             </tr>`;
             if (open) h += this.buildAnalyticsCategoryDetail(r, rankOf(r.id), catMonthly[r.id], region, esc, num);
         });
@@ -12136,17 +12150,28 @@ const app = {
         if (list.length) {
             const top = list.slice(0, 12);
             const max = top[0][1] || 1;
-            inner += `<div style="font-size:12px; color:var(--text-sec); margin-bottom:6px;">Кто лидирует по спросу${region ? ` — ${esc(region)}` : ' по России'}</div>
+            // Доля считается от всех брендовых запросов группы, а не от общего
+            // числа запросов: большинство спрашивают категорию вообще без марки
+            // («коллектор теплого пола»), и доля от них была бы у всех около
+            // нуля. Вопрос, на который отвечаем: кому достаётся спрос тех, кто
+            // марку всё-таки называет.
+            const totalBrand = list.reduce((a, x) => a + (x[1] || 0), 0) || 1;
+            inner += `<div style="font-size:12px; color:var(--text-sec); margin-bottom:6px;">
+                    Кто лидирует по спросу${region ? ` — ${esc(region)}` : ' по России'}
+                    <span style="margin-left:6px;">доля среди запросов с указанием марки, всего ${num(totalBrand)}</span>
+                </div>
                 <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:12px;">`;
             top.forEach(([brand, count]) => {
                 const mine = brand === 'stout' || brand === 'rommer';
                 const w = Math.max(2, Math.round(count / max * 100));
+                const share = (count / totalBrand * 100);
                 inner += `<div style="display:flex; align-items:center; gap:8px;">
                     <div style="width:140px; flex-shrink:0; font-size:12.5px; ${mine ? 'font-weight:800; color:var(--primary);' : 'color:var(--text-main);'}">${esc(brand)}</div>
-                    <div style="flex:1; background:var(--bg); border-radius:4px; overflow:hidden;">
-                        <div style="width:${w}%; height:15px; background:${mine ? 'var(--primary)' : 'var(--border)'};"></div>
+                    <div style="flex:1; background:rgba(127,127,127,.18); border-radius:4px; overflow:hidden;">
+                        <div style="width:${w}%; height:15px; background:${mine ? 'var(--primary)' : 'rgba(127,127,127,.75)'};"></div>
                     </div>
-                    <div style="width:70px; text-align:right; font-size:12px; color:var(--text-sec);">${num(count)}</div>
+                    <div style="width:52px; text-align:right; font-size:12.5px; font-weight:700; ${mine ? 'color:var(--primary);' : 'color:var(--text-main);'}">${share.toFixed(1)}%</div>
+                    <div style="width:62px; text-align:right; font-size:11.5px; color:var(--text-sec);">${num(count)}</div>
                 </div>`;
             });
             inner += `</div>`;
@@ -29531,7 +29556,14 @@ const app = {
     // перепад 20 K вдвое сокращает расход при той же мощности, и именно на него
     // считают радиаторную систему с котлом. При 10 K расход выходил такой, что
     // подводка к коллектору «шумела» на любом объекте крупнее ста метров.
-    RAD_DT: 20,
+    RAD_REGIMES: {
+        r8060: { label: '80/60', dt: 20, note: 'Перепад 20 K. Классическая схема с котлом: расход вдвое меньше, диаметры и насос скромнее.' },
+        r7565: { label: '75/65', dt: 10, note: 'Перепад 10 K — режим, в котором заявлена паспортная мощность радиаторов. Расход вдвое выше, расчёт идёт с запасом: калькулятор будет требовать больший диаметр подводки.' }
+    },
+    radRegime: function () {
+        return this.RAD_REGIMES[this.state.radRegime] || this.RAD_REGIMES.r8060;
+    },
+    radDT: function () { return this.radRegime().dt; },
     RAD_LOCAL_K: 1.3,        // местные сопротивления луча: отводы, переходы, узел подключения
     RAD_VALVE_KV: 0.6,       // Kv термостатического клапана на средней преднастройке, м³/ч
     RAD_MAN_DP: 8,           // коллектор радиаторов: кран, расходомер — кПа
@@ -29554,7 +29586,7 @@ const app = {
     radFlowOf: function (watt) {
         const f = this.RAD_FLUID;
         const q = Math.max(0, parseFloat(watt) || 0);
-        return q / (f.cp * 1000 * f.rho * this.RAD_DT) * 3600;
+        return q / (f.cp * 1000 * f.rho * this.radDT()) * 3600;
     },
 
     /**
@@ -31647,6 +31679,19 @@ const app = {
         this.render();
         this.saveState();
     },
+    /**
+     * Режим системы: 80/60 (перепад 20 K) или 75/65 (10 K). Мощность приборов от
+     * него не зависит — обоим отвечает ΔT=50 по EN 442, — а расход зависит вдвое,
+     * и через него диаметры, напор и подбор насоса. Гидравлику считают на
+     * невыгодный режим, поэтому 75/65 честнее; по умолчанию оставлен 80/60,
+     * чтобы сохранённые сметы не поехали от появления настройки.
+     */
+    setRadRegime: function (key) {
+        this.state.radRegime = (key === 'r7565') ? 'r7565' : 'r8060';
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
     setRadConnectionScheme: function (scheme) {
         this.state.radConnectionScheme = (scheme === 'tee') ? 'tee' : 'manifold';
         // Держим в синхроне с меткой активного варианта в свап-модалке коллектора (там же можно
@@ -31897,6 +31942,19 @@ const app = {
         const radSchemeTeeTab = document.getElementById('rad_scheme_tee');
         if (radSchemeManifoldTab) radSchemeManifoldTab.className = isTeeScheme ? 'tab' : 'tab active';
         if (radSchemeTeeTab) radSchemeTeeTab.className = isTeeScheme ? 'tab active' : 'tab';
+
+        // Режим системы — рядом со схемой разводки: обе настройки про то, как
+        // система устроена, и обе нужны только когда радиаторы есть.
+        const radRegBlock = document.getElementById('blk_rad_regime');
+        const radRegLbl = document.getElementById('lbl_rad_regime');
+        if (radRegBlock) radRegBlock.style.display = radSchemeOn ? 'block' : 'none';
+        if (radRegLbl) radRegLbl.style.display = radSchemeOn ? 'block' : 'none';
+        const _rg = this.state.radRegime === 'r7565' ? 'r7565' : 'r8060';
+        const _rgTab = (id, on) => { const e = document.getElementById(id); if (e) e.className = on ? 'tab active' : 'tab'; };
+        _rgTab('rad_regime_8060', _rg === 'r8060');
+        _rgTab('rad_regime_7565', _rg === 'r7565');
+        const _rgNote = document.getElementById('lbl_rad_regime_note');
+        if (_rgNote) _rgNote.textContent = this.RAD_REGIMES[_rg].note;
         if (hasTp) {
             const step1Block = document.getElementById('blk_step_floor1');
             if (step1Block) {

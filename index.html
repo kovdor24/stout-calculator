@@ -172,7 +172,7 @@
          плагина Capacitor нет, все методы тихо выходят. Подключать до app.js —
          app.init() дёргает appPush.init(). -->
     <script src="push.js?v=1.0" defer></script>
-    <script src="app.js?v=5.78" defer></script>
+    <script src="app.js?v=5.79" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
          векторный композитор, что рисует лист схемы в проекте, поэтому нужен
          и движок листов (рамка/штамп из него не берутся, только текст). -->
@@ -1057,6 +1057,20 @@
                 <div class="tabs" id="rad_scheme_tabs">
                     <div class="tab" id="rad_scheme_tee" onclick="app.setRadConnectionScheme('tee')">Тройниковая</div>
                     <div class="tab active" id="rad_scheme_manifold" onclick="app.setRadConnectionScheme('manifold')">Коллекторная</div>
+                </div>
+            </div>
+
+            <!-- Режим системы: от него зависит расход, а значит диаметры, напор и
+                 подбор насоса. Мощность приборов одинакова в обоих (ΔT=50 по
+                 EN 442), поэтому выбор влияет только на гидравлику. -->
+            <h4 id="lbl_rad_regime" style="display:none; margin-bottom: 6px; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal; color: var(--text-main);">Режим системы</h4>
+            <div class="control-item" id="blk_rad_regime" style="display:none;">
+                <div class="tabs" id="rad_regime_tabs">
+                    <div class="tab active" id="rad_regime_8060" onclick="app.setRadRegime('r8060')" title="Подача 80 °C, обратка 60 °C. Перепад 20 K — классическая схема с котлом: расход вдвое меньше, трубы и насос скромнее.">80/60</div>
+                    <div class="tab" id="rad_regime_7565" onclick="app.setRadRegime('r7565')" title="Подача 75 °C, обратка 65 °C. Перепад 10 K — тот режим, в котором заявлена паспортная мощность радиаторов; расход вдвое выше, расчёт с запасом. Погодозависимая автоматика и конденсационный котёл работают ближе к нему.">75/65</div>
+                </div>
+                <div class="info-card" id="desc_rad_regime" style="margin-top: 6px; font-size: 11px; line-height: 1.4;">
+                    <span id="lbl_rad_regime_note">Перепад 20 K. Расход и напор считаются по нему.</span>
                 </div>
             </div>
 
