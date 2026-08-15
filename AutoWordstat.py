@@ -845,7 +845,12 @@ def run_brands(client, regional=False):
         data.setdefault("months", {})[this_month] = result_ru
         for m in sorted(data["months"])[:-BRAND_MONTHS_KEEP]:
             del data["months"][m]
+        # order и section_title нужны вкладке: она строит таблицу в порядке
+        # подбора сметы, а не по занятому месту. Без них порядок разъезжается,
+        # и это незаметно — таблица просто рисуется как попало.
         data["categories"] = {c["id"]: {"phrase": c["phrase"], "section": c.get("section"),
+                                         "section_title": c.get("section_title"),
+                                         "order": c.get("order"),
                                          "cat": c.get("cat"), "price_group": c.get("price_group"),
                                          "own_in_group": c.get("own_in_group"),
                                          "regional": bool(c.get("regional"))}
