@@ -27296,6 +27296,88 @@ const app = {
         return val;
     },
 
+    /**
+     * Расчётные температуры помещений жилого дома.
+     *
+     * Значения — оптимальные для холодного периода по ГОСТ 30494-2011 (табл. 1),
+     * дополненные там, где жилой ГОСТ помещение не описывает: гараж по
+     * СП 113.13330 (отапливаемая стоянка +5), котельная по СП 402.1325800,
+     * бассейн — на 1–2 °C выше воды по СП 31-113.
+     *
+     * В скобках у каждого типа диапазон нормы: подобрано верхнее значение
+     * диапазона либо привычное монтажнику, потому что расчёт ведётся на
+     * холодную пятидневку и запас тут уместнее экономии.
+     *
+     * re — по каким словам в названии помещение узнаётся само. Раньше таких
+     * правил было четыре прямо в расчёте, и коридор с прихожей получали 16 °C
+     * как лестничная клетка, хотя в частном доме это жилая зона.
+     */
+    ROOM_KINDS: [
+        { id: 'living', name: 'Жилая комната', t: 22, tp: true, tpRank: 2, norm: 'ГОСТ 30494-2011: 20–22 °C',
+          re: /комнат|гостин|спальн|детск|кабинет|столов|зал|бильярд|библиотек/ },
+        { id: 'kitchen', name: 'Кухня', t: 20, tp: true, tpRank: 2, norm: 'ГОСТ 30494-2011: 19–21 °C',
+          re: /кухн/ },
+        { id: 'bath', name: 'Ванная, совмещённый санузел', t: 25, tp: true, tpRank: 1, norm: 'ГОСТ 30494-2011: 24–26 °C',
+          re: /ванн|душев|совмещ/ },
+        { id: 'wc', name: 'Санузел, туалет', t: 20, tp: true, tpRank: 1, norm: 'ГОСТ 30494-2011: 19–21 °C',
+          re: /санузел|туалет|уборн|с\/у/ },
+        { id: 'hall', name: 'Коридор, холл', t: 20, tp: true, tpRank: 3, norm: 'ГОСТ 30494-2011: 18–20 °C',
+          re: /коридор|холл|прихож|лестни|галере/ },
+        { id: 'entry', name: 'Тамбур, вестибюль', t: 16, tp: false, norm: 'ГОСТ 30494-2011: 16–18 °C',
+          re: /тамбур|вестибюл|крыльц|веранд/ },
+        { id: 'storage', name: 'Кладовая, гардеробная', t: 18, tp: false, norm: 'ГОСТ 30494-2011: 16–18 °C',
+          re: /кладов|гардероб|подсоб|склад|постиро/ },
+        { id: 'boiler', name: 'Котельная, техническая', t: 16, tp: false, norm: 'СП 402.1325800: не ниже 5 °C, обычно 16',
+          re: /котельн|техничес|топочн|насосн/ },
+        { id: 'garage', name: 'Гараж, стоянка', t: 5, tp: false, norm: 'СП 113.13330: отапливаемая стоянка +5 °C',
+          re: /гараж|стоянк|машиноместо|мастерск/ },
+        { id: 'pool', name: 'Бассейн', t: 30, tp: true, tpRank: 2, norm: 'СП 31-113: на 1–2 °C выше воды',
+          re: /бассейн|сауна|хамам/ }
+    ],
+
+    /**
+     * Уместен ли тёплый пол в этом помещении при включённом в настройках поле.
+     *
+     * Раньше пол раздавался всем комнатам подряд, и площадь набегала котельной,
+     * кладовыми и гардеробными: греть их полом никто не станет, а метры трубы,
+     * петли и термостаты за них считались.
+     *
+     * Порядок tpRank задаёт, кого класть в первую очередь, когда площади пола
+     * на весь дом не хватает: 1 — санузлы и ванные (там плитка, и пол в них
+     * делают всегда), 2 — жилые комнаты и кухня, 3 — холл и коридор.
+     * Технические помещения не берут пол ни в какую очередь.
+     */
+    roomWantsUfh: function (r) {
+        const k = this.ROOM_KINDS.find(x => x.id === ((r && r.roomKind) || this.detectRoomKind(r && r.name)));
+        return k ? !!k.tp : true;   // тип не узнали — считаем жилым
+    },
+    roomUfhRank: function (r) {
+        const k = this.ROOM_KINDS.find(x => x.id === ((r && r.roomKind) || this.detectRoomKind(r && r.name)));
+        return (k && k.tpRank) ? k.tpRank : 1;
+    },
+
+    /** Тип помещения по его названию; null — ничего не узнали. */
+    detectRoomKind: function (name) {
+        const n = String(name || '').trim().toLowerCase();
+        if (!n) return null;
+        for (let i = 0; i < this.ROOM_KINDS.length; i++)
+            if (this.ROOM_KINDS[i].re.test(n)) return this.ROOM_KINDS[i].id;
+        return null;
+    },
+
+    /**
+     * Температура помещения и откуда она взялась. Приоритет: заданная руками →
+     * выбранный тип → тип, узнанный по названию → 22 °C жилой комнаты.
+     */
+    roomTempInfo: function (r) {
+        const manual = parseFloat(r && r.tempC);
+        const kindId = (r && r.roomKind) || this.detectRoomKind(r && r.name);
+        const kind = this.ROOM_KINDS.find(k => k.id === kindId) || null;
+        if (manual >= -20 && manual <= 40 && !isNaN(manual))
+            return { t: manual, kind: kind, manual: true };
+        return { t: kind ? kind.t : 22, kind: kind, manual: false };
+    },
+
     getRoomHeatLoss: function (r) {
         const s = this.state;
         // Без города — ступень по региону. Ступени согласованы с обратной
@@ -27340,12 +27422,11 @@ const app = {
 
         var n_wall = 1.0, n_glz = 1.0, n_roof = 1.0, n_floor = 0.85;
 
-        var Tv = 22;
-        var rName = (r.name || '').toLowerCase();
-        if (/ванн/.test(rName)) Tv = 25;
-        else if (/котельн/.test(rName)) Tv = 16;
-        else if (/коридор|прихожая|тамбур/.test(rName)) Tv = 16;
-        else if (/санузел|туалет|с\/у/.test(rName)) Tv = 20;
+        // Расчётная температура помещения: заданная в карточке либо нормативная
+        // по его типу (см. ROOM_KINDS). Гараж на +5 и жилая комната на +22 дают
+        // разницу теплопотерь втрое, и подбирать им приборы одинаково нельзя.
+        var tInfo = this.roomTempInfo(r);
+        var Tv = tInfo.t;
 
         var dT = Tv - Tn;
         var rFloorNum = parseInt(r.floor) || 1;
@@ -27451,6 +27532,7 @@ const app = {
             R_wall: R_wall, R_glz: R_glz, R_roof: R_roof, R_floor: R_floor,
             wallArea: wallArea, totalWinArea: totalWinArea,
             vol: vol, n_vent: n_eff, kOrient: kOrient, orient: orient,
+            tKind: tInfo.kind, tManual: tInfo.manual,
             orientAuto: !r.orient && !!(pgRoom && pgRoom.orient),
             perim: perim, outerPerim: outerPerim, geoSrc: geoSrc,
             Tv: Tv, Tn: Tn, dT: dT,
@@ -28703,7 +28785,9 @@ const app = {
         let f = 1;
         if (this.state.rooms.length > 0) f = this.state.rooms[this.state.rooms.length - 1].floor || 1;
         const wWidth = this.getDefaultWindowWidth(15);
-        this.state.rooms.push({ id: Date.now(), name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: f, sys: [...new Set([...(this.state.systems || []), 'rad'])], windows: [{ id: Date.now() + 1, width: wWidth, isPan: false }] });
+        const _newId = Date.now();
+        this.state.rooms.push({ id: _newId, name: "Комната " + (this.state.rooms.length + 1), area: 15, floor: f, sys: [...new Set([...(this.state.systems || []), 'rad'])], windows: [{ id: _newId + 1, width: wWidth, isPan: false }] });
+        this._openRoomId = _newId;   // добавили — значит будут заполнять
         this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
     },
     addFloor: function () {
@@ -28868,11 +28952,48 @@ const app = {
      * Отдельно от updRoom, потому что после смены признака нужно пересобрать
      * карточки: в них показана мощность помещения, и она сразу меняется.
      */
+    // Какая комната раскрыта и у каких открыты уточнения. Живёт только в
+    // текущей вкладке: в state этому делать нечего — в облако и в клиентскую
+    // ссылку не должно уезжать, какую карточку монтажник держал открытой.
+    _openRoomId: null,
+    _roomDetails: null,
+
+    /** Раскрыть комнату (повторный клик — свернуть). Открыта всегда одна. */
+    openRoomCard: function (id) {
+        this._openRoomId = (this._openRoomId === id) ? null : id;
+        this.renderRoomsUI();
+    },
+    /**
+     * Показать или спрятать уточнения помещения. Перерисовку не зовём: в
+     * карточке есть поля с фокусом, и полная пересборка списка увела бы курсор
+     * из того, что монтажник печатает.
+     */
+    toggleRoomDetails: function (id) {
+        this._roomDetails = this._roomDetails || {};
+        this._roomDetails[id] = !this._roomDetails[id];
+        const box = document.getElementById('room_details_' + id);
+        if (box) box.style.display = this._roomDetails[id] ? 'flex' : 'none';
+    },
     updRoomEnv: function (id, field, val) {
         const r = this.state.rooms.find(x => x.id === id);
         if (!r) return;
-        if (!val) delete r[field];
-        else r[field] = (field === 'outerWalls') ? parseInt(val, 10) : val;
+        if (val === '' || val === null || val === undefined) delete r[field];
+        else if (field === 'outerWalls') r[field] = parseInt(val, 10);
+        else if (field === 'roomKind') {
+            // Выбрали тип — значит хотят его норматив. Ручную температуру от
+            // прежнего типа снимаем, иначе она молча перебивала бы выбор.
+            r.roomKind = val;
+            delete r.tempC;
+        }
+        else if (field === 'tempC') {
+            // Пустое поле — вернуться к нормативной температуре типа. Границы
+            // те же, что у поля ввода: ниже −20 помещение уже не отапливают,
+            // выше +40 это не жилой дом.
+            const t = parseFloat(val);
+            if (isNaN(t)) delete r.tempC;
+            else r.tempC = Math.min(40, Math.max(-20, Math.round(t)));
+        }
+        else r[field] = val;
         this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
         this.saveState();
     },
@@ -29288,6 +29409,32 @@ const app = {
         return st <= 100 ? 90 : (st >= 200 ? 50 : 70);
     },
     /**
+     * Тот же предельный поток пола, но для помещения со своей температурой.
+     *
+     * Предел упирается в температуру поверхности (26 °C в жилых, 31 °C в
+     * ванных и краевых зонах), а отдаёт пол тем больше, чем холоднее воздух:
+     * q ~ (t_пов − t_возд)^1,1. Табличные 70 Вт/м² посчитаны для комнаты +22,
+     * и в гараже на +5 они занижают пол втрое — расчёт объявлял бы «тёплого
+     * пола недостаточно» там, где его с запасом хватает.
+     *
+     * Рост ограничен тройкой: выше упирается уже не поверхность, а подача и
+     * конструкция стяжки, которых эта формула не знает.
+     */
+    ufhQudForRoom: function (step, tv) {
+        const base = this.ufhQud(step);
+        const t = parseFloat(tv);
+        if (!(t > -30) || t === 22) return base;
+        // Предел температуры поверхности: 26 °C в жилых зонах и 31 °C во влажных.
+        // Влажную узнаём и по шагу 100, и по самой температуре — выше +24 держат
+        // только ванные и бассейны. Без второго признака ванная с шагом 150
+        // получала предел в 15 Вт/м² и объявлялась необогреваемой.
+        const surf = ((parseInt(step, 10) || 150) <= 100 || t >= 24) ? 31 : 26;
+        const dNow = surf - t, dBase = surf - 22;
+        if (!(dNow > 0) || !(dBase > 0)) return base;
+        const k = Math.min(3, Math.max(0.2, Math.pow(dNow / dBase, 1.1)));
+        return Math.round(base * k);
+    },
+    /**
      * Потери участка: расход м³/ч, длина м → скорость и кПа. Формула та же, что
      * у снеготаяния (snowPipeDrop), — она общая для любой трубы и жидкости;
      * меняются только диаметр и свойства теплоносителя.
@@ -29392,11 +29539,18 @@ const app = {
                 // Ровно так же делит нагрузку лист «Тёплый пол» (zoneHeat).
                 const rms = (detailed ? s.rooms : [])
                     .filter(r => (parseInt(r.floor, 10) || 1) === fl);
+                // Нагрузка помещения и его собственный предел потока пола: в
+                // прохладном помещении пол отдаёт больше при той же поверхности.
                 const roomQ = (name) => {
                     const key = String(name || '').trim().toLowerCase();
                     if (!key) return 0;
                     const r = rms.find(x => String(x.name || '').trim().toLowerCase() === key);
                     return r ? this.getRoomHeatLoss(r).Q_sum : 0;
+                };
+                const roomQud = (name) => {
+                    const key = String(name || '').trim().toLowerCase();
+                    const r = key ? rms.find(x => String(x.name || '').trim().toLowerCase() === key) : null;
+                    return r ? this.ufhQudForRoom(step, this.roomTempInfo(r).t) : qUd;
                 };
                 // Зона может быть поделена на несколько петель — мощность комнаты
                 // делим между ними поровну, как и её площадь.
@@ -29404,7 +29558,7 @@ const app = {
                 g.rows.forEach(r => { kOf[r.zone] = (kOf[r.zone] || 0) + 1; });
                 // 1,05 — подрезка и подъём концов петель к гребёнке, как в смете
                 g.rows.forEach(r => {
-                    const cap = r.area * qUd;
+                    const cap = r.area * roomQud(r.zone);
                     const q = roomQ(r.zone);
                     rows.push({ name: r.name, area: r.area, m: r.m * 1.05,
                         Q: q > 0 ? Math.min(q / (kOf[r.zone] || 1), cap) : cap });
@@ -29416,8 +29570,9 @@ const app = {
                         && (!r.sys || r.sys.includes('tp')) && (parseFloat(r.area) || 0) > 0)
                         .map(r => {
                             const a = parseFloat(r.area) || 0;
+                            const qUdR = this.ufhQudForRoom(step, this.roomTempInfo(r).t);
                             return { name: r.name || 'Помещение', area: a,
-                                Q: Math.min(this.getRoomHeatLoss(r).Q_sum, a * qUd) };
+                                Q: Math.min(this.getRoomHeatLoss(r).Q_sum, a * qUdR) };
                         })
                     : [];
                 // Площадь ТП этажа задаётся ползунком отдельно от комнат. Если суммы
@@ -29425,7 +29580,32 @@ const app = {
                 // должны остаться теми же, что показывает раздел сметы.
                 const zSum = zones.reduce((a, z) => a + z.area, 0);
                 if (!zones.length || !(zSum > 0)) zones = [{ name: fl + ' этаж', area: area, Q: area * qUd }];
+                else if (area < zSum * 0.98) {
+                    // Пола заказано меньше, чем комнат под него. Раньше нехватку
+                    // размазывали по всем поровну, и каждая комната получала
+                    // недогретый кусок пола. Теперь набираем по очереди: сперва
+                    // санузлы и ванные, затем жилые с кухней, последними коридор
+                    // и холл. Комната, на которую площади не осталось,
+                    // обходится радиаторами.
+                    const ranked = zones.slice().sort((a, b) => {
+                        const ra = this.roomUfhRank({ name: a.name }), rb = this.roomUfhRank({ name: b.name });
+                        return ra !== rb ? ra - rb : b.area - a.area;
+                    });
+                    let left = area;
+                    const picked = [];
+                    ranked.forEach(z => {
+                        if (left <= 0.5) return;
+                        const take = Math.min(z.area, left);
+                        left -= take;
+                        picked.push(take >= z.area - 0.01
+                            ? z
+                            : { name: z.name, area: take, Q: z.Q * (take / z.area) });
+                    });
+                    zones = picked.length ? picked : zones;
+                }
                 else if (Math.abs(zSum - area) / area > 0.02) {
+                    // Пола заказано больше, чем набрали комнаты, — разницу
+                    // раскидываем пропорционально: лишние метры где-то лежат.
                     const k = area / zSum;
                     zones = zones.map(z => ({ name: z.name, area: z.area * k, Q: z.Q * k }));
                 }
@@ -30347,12 +30527,19 @@ const app = {
             let roomArea = Math.floor(totalA * tpl.weight / totalWeight);
             if (roomArea < 1) roomArea = 1;
 
+            // Радиаторы ставим всем, тёплый пол — только там, где он уместен:
+            // в котельной и кладовой его не делают, а площадь и петли за них
+            // считались.
+            const sys = ['rad'];
+            if ((this.state.systems || []).includes('tp')
+                && this.roomWantsUfh({ name: roomName })) sys.push('tp');
+
             return {
                 id: Date.now() + i * 100,
                 name: roomName,
                 area: roomArea,
                 floor: tpl.floor,
-                sys: [...new Set([...(this.state.systems || []), 'rad'])],
+                sys: sys,
                 windows: []
             };
         });
@@ -30451,6 +30638,14 @@ const app = {
         generatedRooms.sort((a, b) => b.area - a.area);
         this.state.rooms = generatedRooms;
     },
+    /**
+     * Подпись места установки прибора в смете и предупреждениях. У помещения без
+     * окон номера окна нет — пишем само помещение, иначе в счёте появлялось бы
+     * «Гардеробная (Окно 1)» там, где окна и в природе не было.
+     */
+    spotLabel: function (r, w, wIdx) {
+        return (w && w.noWin) ? r.name : (r.name + ' (Окно ' + (wIdx + 1) + ')');
+    },
     // Кликабельная подпись помещения в предупреждении о нехватке мощности (#9) — ведёт к карточке.
     _warnRoomLabel: function (roomId, text) {
         return `<b style="cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px;" title="Перейти к помещению" onclick="event.stopPropagation(); app.jumpToRoom(${roomId})">${text}</b>`;
@@ -30464,6 +30659,13 @@ const app = {
             const chk = document.getElementById('chk_detailed_rooms_toggle');
             if (chk) chk.checked = true;
             this.syncUI();
+        }
+        // Предупреждение ведёт к помещению, чтобы там что-то поправили, —
+        // раскрываем его, иначе монтажник попадёт на свёрнутую строку.
+        if (this._openRoomId !== roomId) {
+            this._openRoomId = roomId;
+            this.renderRoomsUI();
+        } else {
             this.renderRoomsUI();
         }
         // На мобильной раскладке параметры объекта лежат на отдельной вкладке — переключаем.
@@ -30509,42 +30711,6 @@ const app = {
         this.state.rooms.forEach((r, idx) => {
             let hasRad = !r.sys || r.sys.includes('rad');
             let hasTp = r.sys && r.sys.includes('tp');
-            let winsHtml = "";
-            r.windows.forEach((w, wIdx) => {
-                winsHtml += `<div class="room-window-row" style="display:inline-flex; align-items:center; background:var(--surface); border:1px solid var(--border); padding:2px 4px; border-radius:4px; gap:4px; font-size:10px; flex-shrink:0;">
-                            <span class="win-lbl-text" style="font-weight:600; color:var(--text-sec);">Окно</span>
-                            <span class="win-lbl-icon" style="display:none; font-size:11px;">🪟</span>
-                            
-                            <div style="position: relative; display:inline-flex; align-items:center; gap:2px;">
-                                <input type="number" class="room-num-input" id="win_width_input_${w.id}" style="width:38px; border:1px solid var(--border); border-radius:3px; padding:2px; text-align:center; font-size:12px; background:var(--bg); color:var(--primary); font-weight:600; cursor:pointer;" value="${w.width}" step="0.1" onfocus="app.showWindowWidthSlider(${r.id}, ${w.id}, event)" onclick="app.showWindowWidthSlider(${r.id}, ${w.id}, event)" onchange="app.updWindowWidthManual(${r.id}, ${w.id}, this.value, false)">
-                                
-                                <div class="win-width-slider-container" id="win_width_slider_container_${w.id}" style="display: none; position: absolute; z-index: 1000; bottom: 28px; left: 0; align-items: center; flex-direction: column; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 150px;" onclick="event.stopPropagation();">
-                                    <div style="display: flex; gap: 4px; width: 100%; justify-content: space-between;">
-                                        <button style="font-size: 9px; padding: 2px 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--text-main); font-weight:700;" onclick="document.getElementById('win_width_input_${w.id}').value = 1.2; app.updWindowWidthManual(${r.id}, ${w.id}, 1.2, false); event.stopPropagation();">1.2 м</button>
-                                        <button style="font-size: 9px; padding: 2px 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--text-main); font-weight:700;" onclick="document.getElementById('win_width_input_${w.id}').value = 1.5; app.updWindowWidthManual(${r.id}, ${w.id}, 1.5, false); event.stopPropagation();">1.5 м</button>
-                                        <button style="font-size: 9px; padding: 2px 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--text-main); font-weight:700;" onclick="document.getElementById('win_width_input_${w.id}').value = 1.8; app.updWindowWidthManual(${r.id}, ${w.id}, 1.8, false); event.stopPropagation();">1.8 м</button>
-                                    </div>
-                                    <input type="range" id="win_width_slider_${w.id}" min="0.5" max="3.0" step="0.1" value="${w.width}" oninput="document.getElementById('win_width_input_${w.id}').value = this.value; app.updWindowWidthManual(${r.id}, ${w.id}, this.value, true)" onchange="app.updWindowWidthManual(${r.id}, ${w.id}, this.value, false)" style="width: 130px; accent-color: var(--primary); height: 6px; cursor: pointer;">
-                                    <div style="display:flex; align-items:center; gap:6px; width:100%; border-top:1px dashed var(--border); padding-top:6px;">
-                                        <span style="font-size:10px; color:var(--text-sec); font-weight:600;">Высота</span>
-                                        <input type="range" id="win_height_slider_${w.id}" min="0.6" max="3.0" step="0.1" value="${this.winHeight(w)}" oninput="document.getElementById('win_height_val_${w.id}').innerText = (+this.value).toFixed(1); app.updWindowHeight(${r.id}, ${w.id}, this.value, true)" onchange="app.updWindowHeight(${r.id}, ${w.id}, this.value, false)" style="flex:1; accent-color: var(--primary); height: 6px; cursor: pointer;">
-                                        <span id="win_height_val_${w.id}" style="font-size:10px; color:var(--primary); font-weight:700; min-width:22px; text-align:right;">${this.winHeight(w).toFixed(1)}</span>
-                                        <span style="font-size:10px; color:var(--text-sec);">м</span>
-                                    </div>
-                                    <span style="font-size: 10px; color: var(--primary); font-weight: 700; cursor: pointer; user-select: none; padding: 2px 6px; background: var(--primary-light); border-radius: 4px; align-self: flex-end;" onclick="document.getElementById('win_width_slider_container_${w.id}').style.display = 'none'; event.stopPropagation();">OK</span>
-                                </div>
-                            </div>
-                            
-                            <span style="color:var(--text-sec);">м</span>
-                            <label style="display:flex; align-items:center; gap:2px; cursor:pointer; color:var(--text-main); font-size:10px; margin-left:2px;">
-                                <input type="checkbox" ${w.isPan ? 'checked' : ''} onchange="app.updWindow(${r.id}, ${w.id}, 'isPan', this.checked)" style="margin:0; width:12px; height:12px;"> 
-                                <span class="pan-lbl-text">Панорамное</span>
-                                <span class="pan-lbl-short" style="display:none;">Пан.</span>
-                            </label>
-                            <span style="color:#EF4444; cursor:pointer; font-weight:bold; margin-left:2px; font-size:14px; line-height:1;" onclick="app.removeWindow(${r.id}, ${w.id})">×</span>
-                        </div>`;
-            });
-
             // Теплопотери помещения — тот же расчёт, что уходит в лист «Расчёт
             // теплопотерь» и в подбор котла. С вентиляцией: по этой же цифре
             // подбирается прибор в помещение.
@@ -30554,7 +30720,8 @@ const app = {
             // наружу и куда смотрит комната. Пока стоит «авто», расчёт работает как
             // раньше (0,6 периметра наружу, без надбавки на румб) — сохранённые
             // сметы от появления этих полей не двигаются.
-            const chipCss = "font-size:10px; padding:2px 4px; height:24px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); border-radius:4px; font-weight:600; outline:none; cursor:pointer;";
+            // Все списки карточки — одной высоты и одного вида с полями ввода.
+            const selCss = "height:28px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text-main); font-size:12px; font-weight:600; padding:0 4px; outline:none; cursor:pointer; width:100%; box-sizing:border-box;";
             const outerOpt = (v, t) => `<option value="${v}" ${String(r.outerWalls || '') === v ? 'selected' : ''}>${t}</option>`;
             const orientOpt = (v, t) => `<option value="${v}" ${String(r.orient || '') === v ? 'selected' : ''}>${t}</option>`;
             // Первый пункт списка подписывается по факту: сторону света дал план —
@@ -30564,33 +30731,41 @@ const app = {
             const RUMB_NAME = { N: 'север', NE: 'северо-восток', E: 'восток', SE: 'юго-восток',
                 S: 'юг', SW: 'юго-запад', W: 'запад', NW: 'северо-запад' };
             const autoOrient = roomLossCard.orientAuto
-                ? '🧭 Сторона: ' + RUMB_NAME[roomLossCard.orient] + ' (по плану)'
-                : '🧭 Сторона: не указана';
-            let envSel = `<select style="${chipCss}" title="Сколько стен помещения выходит на улицу. Влияет на площадь наружных стен в расчёте теплопотерь." onchange="app.updRoomEnv(${r.id}, 'outerWalls', this.value)">
-                            ${outerOpt('', '🧱 Стен: авто')}${outerOpt('1', '🧱 1 наружу')}${outerOpt('2', '🧱 2 наружу (угловая)')}${outerOpt('3', '🧱 3 наружу')}
-                        </select>
-                        <select style="${chipCss}" title="Куда выходят окна и наружные стены. На север и восток по СНиП 41-01-2003 добавляется 10 %, на юго-восток и запад — 5 %." onchange="app.updRoomEnv(${r.id}, 'orient', this.value)">
-                            ${orientOpt('', autoOrient)}${orientOpt('N', '🧭 Север +10 %')}${orientOpt('NE', '🧭 Северо-восток +10 %')}${orientOpt('E', '🧭 Восток +10 %')}${orientOpt('SE', '🧭 Юго-восток +5 %')}${orientOpt('S', '🧭 Юг')}${orientOpt('SW', '🧭 Юго-запад')}${orientOpt('W', '🧭 Запад +5 %')}${orientOpt('NW', '🧭 Северо-запад +10 %')}
+                ? RUMB_NAME[roomLossCard.orient] + ' (по плану)'
+                : 'Не указана';
+            // Тип помещения задаёт нормативную температуру, а поле рядом позволяет
+            // отступить от неё: в гараже держат +5, но кто-то топит его до +12.
+            const kindOpt = (k) => `<option value="${k.id}" ${String(r.roomKind || '') === k.id ? 'selected' : ''}>${k.name} — ${k.t} °C</option>`;
+            const autoKind = !r.roomKind && roomLossCard.tKind
+                ? `${roomLossCard.tKind.name} — ${roomLossCard.tKind.t} °C (по названию)`
+                : 'Не указан — 22 °C';
+            let tempSel = `<select style="${selCss}" title="Тип помещения — из него берётся расчётная температура по ГОСТ 30494-2011. Определяется по названию комнаты, если не выбрать вручную." onchange="app.updRoomEnv(${r.id}, 'roomKind', this.value)">
+                            <option value="" ${!r.roomKind ? 'selected' : ''}>${autoKind}</option>
+                            ${this.ROOM_KINDS.map(kindOpt).join('')}
+                        </select>`;
+
+
+            // Тип помещения, число наружных стен и сторона света трогают редко:
+            // тип берётся из названия, остальное из плана либо остаётся «авто».
+            // Держать три списка всегда на виду — половина высоты карточки ради
+            // того, к чему возвращаются раз за объект. Прячем под переключатель,
+            // а на самом переключателе показываем, что уже уточнено.
+            const envSet = [];
+            if (r.roomKind || r.tempC) envSet.push('режим');
+            if (r.outerWalls) envSet.push('стены');
+            if (r.orient) envSet.push('сторона');
+            const envOpen = !!(this._roomDetails && this._roomDetails[r.id]);
+            const envBtn = `<button id="room_det_btn_${r.id}" onclick="app.toggleRoomDetails(${r.id})" title="Тип помещения, число наружных стен и сторона света" style="background:${envSet.length ? 'var(--primary-light)' : 'transparent'}; border:1px dashed ${envSet.length ? 'var(--primary)' : '#9CA3AF'}; color:${envSet.length ? 'var(--primary)' : '#6B7280'}; padding:2px 6px; height:24px; border-radius:4px; font-size:10px; font-weight:600; cursor:pointer; white-space:nowrap;">⚙ ${envSet.length ? 'уточнено: ' + envSet.join(', ') : 'уточнить'}</button>`;
+
+            let envWallsSel = `<select style="${selCss}" title="Сколько стен помещения выходит на улицу. Влияет на площадь наружных стен в расчёте теплопотерь." onchange="app.updRoomEnv(${r.id}, 'outerWalls', this.value)">
+                            ${outerOpt('', 'Авто (0,6 периметра)')}${outerOpt('1', '1 наружу')}${outerOpt('2', '2 наружу (угловая)')}${outerOpt('3', '3 наружу')}
+                        </select>`;
+            let envOrientSel = `<select style="${selCss}" title="Куда выходят окна и наружные стены. На север и восток по СНиП 41-01-2003 добавляется 10 %, на юго-восток и запад — 5 %." onchange="app.updRoomEnv(${r.id}, 'orient', this.value)">
+                            ${orientOpt('', autoOrient)}${orientOpt('N', 'Север +10 %')}${orientOpt('NE', 'Северо-восток +10 %')}${orientOpt('E', 'Восток +10 %')}${orientOpt('SE', 'Юго-восток +5 %')}${orientOpt('S', 'Юг')}${orientOpt('SW', 'Юго-запад')}${orientOpt('W', 'Запад +5 %')}${orientOpt('NW', 'Северо-запад +10 %')}
                         </select>`;
 
             let floorSel = this.state.floors === 2 ? `<select style="font-size:10px; padding:0 2px 0 0; border:none; border-right:1px solid #D1D5DB; background:transparent; color:var(--text-sec); font-weight:600; margin-right:2px; outline:none; cursor:pointer;" onchange="app.updRoom(${r.id}, 'floor', parseInt(this.value))"><option value="1" ${r.floor === 1 ? 'selected' : ''}>1 Эт</option><option value="2" ${r.floor === 2 ? 'selected' : ''}>2 Эт</option></select>` : '';
             let accentColor = r.floor === 2 ? '#10B981' : 'var(--primary)';
-
-            let hBounds = this.getRoomHeightBounds(r);
-            let customH = Math.min(hBounds.hMax, Math.max(hBounds.hMin, r.customHeight || Math.round(hBounds.normalH * 2 * 10) / 10));
-            let heightRow = r.doubleHeight ? `<div style="display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; margin-top:6px; padding:4px 6px; background:var(--bg); border:1px solid var(--border); border-radius:6px; font-size:11px;">
-                            <span style="color:var(--text-sec); font-weight:600; white-space:nowrap;">🏛️ Высота потолка:</span>
-                            <div style="position:relative; display:inline-flex; align-items:center; gap:2px;">
-                                <input type="number" class="room-num-input" id="room_h_input_${r.id}" style="width:44px; border:1px solid var(--border); border-radius:3px; padding:2px; text-align:center; font-size:12px; background:var(--surface); color:var(--primary); font-weight:600; cursor:pointer;" value="${customH}" step="0.1" onfocus="app.showRoomHeightSlider(${r.id}, event)" onclick="app.showRoomHeightSlider(${r.id}, event)" onchange="app.updRoomHeight(${r.id}, this.value, false)">
-                                <span style="color:var(--text-sec);">м</span>
-                                <div class="room-h-slider-container" id="room_h_slider_container_${r.id}" style="display:none; position:absolute; z-index:1000; top:26px; left:0; align-items:center; padding:6px 12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; gap:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);" onclick="event.stopPropagation();">
-                                    <input type="range" id="room_h_slider_${r.id}" min="${hBounds.hMin}" max="${hBounds.hMax}" step="0.1" value="${customH}" oninput="document.getElementById('room_h_input_${r.id}').value = this.value; app.updRoomHeight(${r.id}, this.value, true)" onchange="app.updRoomHeight(${r.id}, this.value, false)" style="width:140px; accent-color:var(--primary); height:6px; cursor:pointer;">
-                                    <span style="font-size:11px; color:var(--primary); font-weight:700; cursor:pointer; user-select:none; padding:2px 6px; background:var(--primary-light); border-radius:4px;" onclick="document.getElementById('room_h_slider_container_${r.id}').style.display='none'; event.stopPropagation();">OK</span>
-                                </div>
-                            </div>
-                            <span style="color:var(--text-sec); font-size:10px;">(обычно ${hBounds.normalH} м)</span>
-                            <span style="color:#EF4444; cursor:pointer; font-weight:bold; font-size:14px; line-height:1; margin-left:auto; padding:0 2px;" onclick="app.toggleRoomDoubleHeight(${r.id})" title="Выключить второй свет">×</span>
-                        </div>` : '';
 
             let cardBg = this.state.darkMode ? 'var(--surface-light)' : '#fff';
             let cardShadow = this.state.darkMode ? 'none' : '0 1px 2px rgba(0,0,0,0.02)';
@@ -30605,42 +30780,130 @@ const app = {
             }
 
             let roomQ = Math.round(roomLossCard.Q_sum);
-            let roomQTip = `Теплопотери помещения: ограждения ${Math.round(roomLossCard.Q_total)} Вт + нагрев приточного воздуха ${Math.round(roomLossCard.Q_vent)} Вт.`
+            let roomQTip = `Расчёт на ${Math.round(roomLossCard.Tv)} °C в помещении`
+                + (roomLossCard.tManual ? ' (задано вручную)' : (roomLossCard.tKind ? ` (${roomLossCard.tKind.norm})` : ''))
+                + `. Теплопотери: ограждения ${Math.round(roomLossCard.Q_total)} Вт + нагрев приточного воздуха ${Math.round(roomLossCard.Q_vent)} Вт.`
                 + ` Наружные стены — ${roomLossCard.outerPerim.toFixed(1)} м из ${roomLossCard.perim.toFixed(1)} м периметра (${roomLossCard.geoSrc}).`
                 + (roomLossCard.kOrient > 1 ? ` Надбавка на ориентацию +${Math.round((roomLossCard.kOrient - 1) * 100)} %.` : '');
 
-            let html = `<div class="zone-card" id="room_card_${r.id}" style="padding:8px; margin-bottom:0; border:1px solid var(--border); border-left:4px solid ${accentColor}; border-radius:6px; background:${cardBg}; box-shadow: ${cardShadow};">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
-                            <div style="display:flex; align-items:center; flex:1; min-width:120px;">
-                                <span style="font-weight:700; color:var(--text-sec); font-size:12px; margin-right:4px; user-select:none;">${roomIndex}.</span>
-                                <span contenteditable="true" style="font-weight:700; color:var(--text-main); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; outline:none; padding-right:2px;" onblur="app.updRoom(${r.id}, 'name', this.innerText)">${r.name}</span>
-                            </div>
-                            
-                            <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                                <span style="font-size:10px; font-weight:700; color:var(--text-sec); background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:2px 6px; white-space:nowrap;" title="${roomQTip}">${roomQ} Вт</span>
-                                <div style="position: relative; display:flex; align-items:center; gap:2px; background:var(--bg); padding:2px 6px; border-radius:6px; border:1px solid var(--border);">
-                                    ${floorSel}
-                                    <input type="number" class="room-num-input" id="room_area_input_${r.id}" style="width:40px; border:none; background:transparent; font-weight:600; font-size:12px; text-align:center; padding:0; outline:none; color:var(--primary); cursor:pointer;" value="${r.area}" onfocus="app.showRoomAreaSlider(${r.id}, event)" onclick="app.showRoomAreaSlider(${r.id}, event)" onchange="app.updRoomArea(${r.id}, this.value, false)">
-                                    <span style="font-size:10px; color:var(--text-sec); font-weight:600; cursor:pointer;" onclick="app.showRoomAreaSlider(${r.id}, event)">м²</span>
-                                    
-                                    <div class="room-area-slider-container" id="room_area_slider_container_${r.id}" style="display: none; position: absolute; z-index: 1000; bottom: 36px; right: 0; align-items: center; padding: 6px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 2px;">
-                                        <input type="range" id="room_area_slider_${r.id}" min="1" max="150" step="1" value="${r.area}" oninput="document.getElementById('room_area_input_${r.id}').value = this.value; app.updRoomArea(${r.id}, this.value, true)" onchange="app.updRoomArea(${r.id}, this.value, false)" style="width: 140px; accent-color: var(--primary); height: 6px; cursor: pointer;">
-                                        <span style="font-size: 11px; color: var(--primary); font-weight: 700; cursor: pointer; user-select: none; padding: 2px 6px; background: var(--primary-light); border-radius: 4px;" onclick="document.getElementById('room_area_slider_container_${r.id}').style.display = 'none'; event.stopPropagation();">OK</span>
-                                    </div>
-                                </div>
-                                
-                                <button onclick="app.toggleRoomSys(${r.id}, 'rad')" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:${hasRad ? 'var(--primary-light)' : 'var(--bg)'}; border:1px solid ${hasRad ? 'var(--primary)' : 'var(--border)'}; border-radius:6px; cursor:pointer; font-size:16px; filter: ${hasRad ? 'none' : 'grayscale(1) opacity(0.3)'}; transition:0.2s;" title="Радиаторы">🌡️</button>
-                                <button onclick="app.toggleRoomSys(${r.id}, 'tp')" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:${hasTp ? '#ECFDF5' : 'var(--bg)'}; border:1px solid ${hasTp ? '#10B981' : 'var(--border)'}; border-radius:6px; cursor:pointer; font-size:16px; filter: ${hasTp ? 'none' : 'grayscale(1) opacity(0.3)'}; transition:0.2s;" title="Тёплый пол">♨️</button>
+            // Комнат бывает под полтора десятка, и раскрытые карточки дают
+            // простыню на три экрана. Открыта всегда одна — та, которую правят;
+            // остальные показывают строку со сводкой и мощностью, по которой
+            // список читается сверху вниз.
+            const isOpen = (this._openRoomId === r.id);
+            const winsCount = (r.windows || []).length;
+            const sumTxt = [
+                r.area + ' м²',
+                Math.round(roomLossCard.Tv) + ' °C',
+                winsCount ? winsCount + (winsCount === 1 ? ' окно' : (winsCount < 5 ? ' окна' : ' окон')) : 'без окон'
+            ].join(' · ');
 
-                                <span style="color:#EF4444; cursor:pointer; font-size:18px; line-height:1; opacity:0.6; padding:0 2px;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6" onclick="app.removeRoom(${r.id})">×</span>
+            if (!isOpen) {
+                let rowHtml = `<div class="zone-card" id="room_card_${r.id}" onclick="app.openRoomCard(${r.id})" style="padding:6px 8px; margin-bottom:0; border:1px solid var(--border); border-left:4px solid ${accentColor}; border-radius:6px; background:${cardBg}; box-shadow:${cardShadow}; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                            <span style="color:var(--text-sec); font-size:11px; user-select:none;">▸</span>
+                            <div style="min-width:0; flex:1;">
+                                <div style="font-weight:700; color:var(--text-main); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${roomIndex}. ${r.name}</div>
+                                <div style="font-size:10px; color:var(--text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${sumTxt}</div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+                                <span style="font-size:11px; opacity:${hasRad ? 1 : 0.25};" title="Радиаторы">🌡️</span>
+                                <span style="font-size:11px; opacity:${hasTp ? 1 : 0.25};" title="Тёплый пол">♨️</span>
+                                <span style="font-size:11px; font-weight:700; color:var(--text-main); white-space:nowrap;" title="${roomQTip}">${roomQ} Вт</span>
+                            </div>
+                        </div>`;
+                if (r.floor === 2 && c2) c2.insertAdjacentHTML('beforeend', rowHtml);
+                else c1.insertAdjacentHTML('beforeend', rowHtml);
+                return;
+            }
+
+            // Раскрытая карточка: подписанные поля в две колонки, отопление
+            // сегментом, окна списком с реальными размерами. Всплывающие
+            // ползунки площади, высоты и ширины окна убраны — четыре разные
+            // механики ввода в одной карточке и давали ощущение самоделки.
+            const fLbl = 'display:flex; flex-direction:column; gap:2px; font-size:10px; color:var(--text-sec); font-weight:600; min-width:0;';
+            const fInp = 'height:28px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text-main); font-size:12px; font-weight:600; padding:0 6px; outline:none; width:100%; box-sizing:border-box;';
+            const segOn = 'flex:1; height:28px; border:1px solid var(--primary); background:var(--primary-light); color:var(--primary); font-size:11px; font-weight:700; cursor:pointer;';
+            const segOff = 'flex:1; height:28px; border:1px solid var(--border); background:var(--surface); color:var(--text-sec); font-size:11px; font-weight:600; cursor:pointer;';
+
+            const hB = this.getRoomHeightBounds(r);
+            const curH = Math.min(hB.hMax, Math.max(hB.hMin, r.customHeight || Math.round(hB.normalH * 2 * 10) / 10));
+
+            let winRows = (r.windows || []).map((w, i) => `
+                        <div style="display:flex; align-items:center; gap:5px; padding:3px 0; border-bottom:1px dashed var(--border); font-size:11px;">
+                            <span style="color:var(--text-sec); width:10px;">${i + 1}</span>
+                            <input type="number" class="room-num-input" style="${fInp} width:52px; height:24px;" step="0.1" min="0.3" max="6" value="${w.width}"
+                                onchange="app.updWindowWidthManual(${r.id}, ${w.id}, this.value, false)" title="Ширина окна, м">
+                            <span style="color:var(--text-sec);">×</span>
+                            <input type="number" class="room-num-input" style="${fInp} width:52px; height:24px;" step="0.1" min="0.6" max="3" value="${this.winHeight(w)}"
+                                onchange="app.updWindowHeight(${r.id}, ${w.id}, this.value, false)" title="Высота окна, м">
+                            <span style="color:var(--text-sec);">м</span>
+                            <label style="display:flex; align-items:center; gap:3px; cursor:pointer; color:var(--text-sec); margin-left:auto; white-space:nowrap;">
+                                <input type="checkbox" ${w.isPan ? 'checked' : ''} onchange="app.updWindow(${r.id}, ${w.id}, 'isPan', this.checked)" style="margin:0; width:12px; height:12px;">
+                                панорамное
+                            </label>
+                            <span style="color:#EF4444; cursor:pointer; font-weight:700; padding:0 2px;" onclick="app.removeWindow(${r.id}, ${w.id})">✕</span>
+                        </div>`).join('');
+
+            let html = `<div class="zone-card" id="room_card_${r.id}" style="padding:9px 10px; margin-bottom:0; border:1px solid var(--border); border-left:4px solid ${accentColor}; border-radius:6px; background:${cardBg}; box-shadow:${cardShadow};">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span onclick="app.openRoomCard(${r.id})" title="Свернуть" style="color:var(--text-sec); font-size:11px; cursor:pointer; user-select:none;">▾</span>
+                            <span style="font-weight:700; color:var(--text-sec); font-size:12px; user-select:none;">${roomIndex}.</span>
+                            <span contenteditable="true" style="font-weight:700; color:var(--text-main); font-size:12px; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; outline:none;" onblur="app.updRoom(${r.id}, 'name', this.innerText)">${r.name}</span>
+                            <span style="font-size:12px; font-weight:700; color:var(--text-main); white-space:nowrap;" title="${roomQTip}">${roomQ} Вт</span>
+                            <span style="color:#EF4444; cursor:pointer; font-size:16px; line-height:1; opacity:0.6; padding:0 2px;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6" onclick="app.removeRoom(${r.id})">×</span>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 8px; margin-top:8px;">
+                            <label style="${fLbl}">Площадь, м²
+                                <input type="number" class="room-num-input" id="room_area_input_${r.id}" style="${fInp}" step="0.5" min="1" max="150" value="${r.area}"
+                                    onchange="app.updRoomArea(${r.id}, this.value, false)">
+                            </label>
+                            <label style="${fLbl}" title="${roomLossCard.tKind ? roomLossCard.tKind.norm + '. ' : ''}Нормативную задаёт тип помещения в «Уточнить».">Температура, °C
+                                <input type="number" class="room-num-input" style="${fInp} color:${roomLossCard.tManual ? 'var(--primary)' : 'var(--text-main)'};" step="1" min="-20" max="40" value="${Math.round(roomLossCard.Tv)}"
+                                    onchange="app.updRoomEnv(${r.id}, 'tempC', this.value)">
+                            </label>
+                            ${this.state.floors === 2 ? `<label style="${fLbl}">Этаж
+                                <select style="${fInp}" onchange="app.updRoom(${r.id}, 'floor', parseInt(this.value))">
+                                    <option value="1" ${r.floor === 1 ? 'selected' : ''}>1 этаж</option>
+                                    <option value="2" ${r.floor === 2 ? 'selected' : ''}>2 этаж</option>
+                                </select>
+                            </label>` : ''}
+                            ${r.doubleHeight ? `<label style="${fLbl}">Высота потолка, м
+                                <input type="number" class="room-num-input" style="${fInp}" step="0.1" min="${hB.hMin}" max="${hB.hMax}" value="${curH}"
+                                    onchange="app.updRoomHeight(${r.id}, this.value, false)">
+                            </label>` : ''}
+                        </div>
+
+                        <div style="margin-top:8px;">
+                            <div style="font-size:10px; color:var(--text-sec); font-weight:600; margin-bottom:3px;">Отопление</div>
+                            <div style="display:flex;">
+                                <button onclick="app.toggleRoomSys(${r.id}, 'rad')" style="${hasRad ? segOn : segOff} border-radius:6px 0 0 6px;">🌡️ Радиаторы</button>
+                                <button onclick="app.toggleRoomSys(${r.id}, 'tp')" style="${hasTp ? segOn : segOff} border-left:0; border-radius:0 6px 6px 0;">♨️ Тёплый пол</button>
                             </div>
                         </div>
-                        ${heightRow}
-                        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:4px; margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
-                            ${envSel}
-                            ${winsHtml}
-                            <button style="background:transparent; border:1px dashed #9CA3AF; color:#6B7280; padding:2px 6px; height:24px; border-radius:4px; font-size:10px; font-weight:600; cursor:pointer; transition:0.2s; white-space:nowrap;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" onclick="app.addWindow(${r.id})">+ Окно</button>
-                            ${!r.doubleHeight ? `<button style="background:transparent; border:1px dashed #9CA3AF; color:#6B7280; padding:2px 6px; height:24px; border-radius:4px; font-size:10px; font-weight:600; cursor:pointer; transition:0.2s; white-space:nowrap;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" onclick="app.toggleRoomDoubleHeight(${r.id})" title="Второй свет — увеличенная высота потолка">🏛️ Второй свет</button>` : ''}
+
+                        <div style="margin-top:8px;">
+                            <div style="font-size:10px; color:var(--text-sec); font-weight:600; margin-bottom:2px;">Окна</div>
+                            ${winRows || '<div style="font-size:11px; color:var(--text-sec); font-style:italic; padding:3px 0;">без окон — прибор подбирается по нагрузке помещения</div>'}
+                            <div style="display:flex; gap:10px; margin-top:6px; font-size:11px; font-weight:600;">
+                                <span style="color:var(--primary); cursor:pointer;" onclick="app.addWindow(${r.id})">+ окно</span>
+                                <span style="color:var(--text-sec); cursor:pointer;" onclick="app.toggleRoomDoubleHeight(${r.id})" title="Второй свет — увеличенная высота потолка">${r.doubleHeight ? 'убрать второй свет' : 'второй свет'}</span>
+                                <span style="margin-left:auto;">${envBtn}</span>
+                            </div>
+                        </div>
+
+                        <div id="room_details_${r.id}" style="display:${envOpen ? 'grid' : 'none'}; grid-template-columns:1fr; gap:6px; margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
+                            <label style="${fLbl}">Тип помещения
+                                ${tempSel}
+                            </label>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                                <label style="${fLbl}">Наружных стен
+                                    ${envWallsSel}
+                                </label>
+                                <label style="${fLbl}">Сторона света
+                                    ${envOrientSel}
+                                </label>
+                            </div>
                         </div>
                     </div>`;
 
@@ -33047,10 +33310,33 @@ const app = {
         if ((s === 'tp' || s === 'rad') && !this.checkAccess('pro', event)) return;
         setTimeout(() => {
             let i = this.state.systems.indexOf(s);
+            const on = !(i > -1);
             if (i > -1) {
                 if (this.state.systems.length > 1) this.state.systems.splice(i, 1);
+                else { this.syncUI(); this.render(); return; }
             } else this.state.systems.push(s);
-            this.syncUI(); this.render();
+
+            // В подробном расчёте система живёт у каждого помещения, и тумблер
+            // обязан до них дойти: раньше он менял только общий список, а
+            // комнаты оставались с прежним набором — включённый пол не попадал
+            // никуда, выключенный продолжал считаться.
+            if (this.state.detailedRooms && (this.state.rooms || []).length) {
+                this.state.rooms.forEach(r => {
+                    r.sys = r.sys || [];
+                    const has = r.sys.includes(s);
+                    if (on) {
+                        // Пол кладём туда, где он уместен: жилые и влажные
+                        // помещения, а не котельная с кладовой.
+                        if (!has && (s !== 'tp' || this.roomWantsUfh(r))) r.sys.push(s);
+                    } else if (has) {
+                        r.sys = r.sys.filter(x => x !== s);
+                        if (!r.sys.length) r.sys.push(s === 'tp' ? 'rad' : 'tp');
+                    }
+                });
+                this.syncRoomsToState();
+                this.renderRoomsUI();
+            }
+            this.syncUI(); this.render(); this.saveState();
         }, 50);
     },
     toggleHW: function (chk, event) {
@@ -38572,18 +38858,31 @@ const app = {
                     let roomHasTp = r.sys && r.sys.includes('tp');
                     let roomHasRad = !r.sys || r.sys.includes('rad');
 
-                    // 2. Физический лимит теплоотдачи теплого пола по СП 60.13330.2020 (п. 6.4.8)
+                    // 2. Физический лимит теплоотдачи теплого пола по СП 60.13330.2020 (п. 6.4.8).
+                    // Предел считается на температуру этого помещения: в прохладном
+                    // пол отдаёт больше при той же поверхности (см. ufhQudForRoom).
                     let ufhStepVal = (r.floor === 2) ? (this.state.ufhStep2 || 150) : (this.state.ufhStep1 || 150);
-                    let qUdeUfh = 70; // Рекомендуемый предел 150мм для жилых комнат (поверхность <= 26°C) -> 70 Вт/м²
-                    if (ufhStepVal === 100) qUdeUfh = 90; // Максимум для ванных комнат (поверхность <= 31°C) -> 90 Вт/м²
-                    else if (ufhStepVal === 200) qUdeUfh = 50; // Краевые/крайние зоны -> 50 Вт/м²
+                    let qUdeUfh = this.ufhQudForRoom(ufhStepVal, roomLoss.Tv);
 
                     let qUfhMax = r.area * qUdeUfh; // Физический предел тепловой мощности теплого пола в этой комнате
 
-                    r.windows.forEach((w, wIdx) => {
-                        // Теплопотери через площадь конкретного стекла
+                    // Прибор ставится под окно, но помещение без окон отапливать
+                    // тоже нужно: гардеробная, кладовая, котельная. Раньше цикл по
+                    // окнам просто не запускался — нагрузка такой комнаты сидела в
+                    // мощности котла, а греть её было нечем. Даём одно место
+                    // установки на помещение: стекла у него нет, поэтому вся
+                    // нагрузка приходит долей ограждений и вентиляции, а правило
+                    // ширины «50–90 % окна» к нему не применяется.
+                    const spots = (r.windows && r.windows.length)
+                        ? r.windows
+                        : [{ id: 'noWin_' + r.id, width: 0, isPan: false, noWin: true }];
+                    spots.forEach((w, wIdx) => {
+                        // Теплопотери через площадь конкретного стекла. У места
+                        // установки в помещении без окон стекла нет: ширину 0
+                        // нельзя пропускать через «|| 1», иначе комната получила бы
+                        // потери через окно метровой ширины, которого не существует.
                         let wHeight = this.winHeight(w);
-                        let wArea = parseFloat(w.width || 1) * wHeight;
+                        let wArea = w.noWin ? 0 : parseFloat(w.width || 1) * wHeight;
                         // kOrient — та же надбавка на румб, что учтена в теплопотерях
                         // помещения. Без неё окно недобирало бы то, что комната уже
                         // потеряла, и сумма приборов расходилась бы с её итогом.
@@ -38593,7 +38892,7 @@ const app = {
                         // приточного воздуха поровну между окнами. Вентиляция сюда попадает по
                         // той же причине, по которой она есть в мощности котла: прибор греет
                         // помещение целиком, а не только его ограждения.
-                        let wShare = (roomLoss.Q_wall + roomLoss.Q_roof + roomLoss.Q_floor + roomLoss.Q_vent) / r.windows.length;
+                        let wShare = (roomLoss.Q_wall + roomLoss.Q_roof + roomLoss.Q_floor + roomLoss.Q_vent) / spots.length;
 
                         // Итоговая базовая теплопотребность этого оконного участка
                         let totalWindowLoss = wLoss + wShare;
@@ -38601,14 +38900,14 @@ const app = {
 
                         if (roomHasTp && roomHasRad) {
                             // Совместный режим: радиатор покрывает только дефицит мощности пола
-                            let portionUfh = qUfhMax / r.windows.length; // доля мощности пола на это окно
+                            let portionUfh = qUfhMax / spots.length; // доля мощности пола на это место
                             let deficit = totalWindowLoss - portionUfh;
-                            let minSanitary = (r.area * 30) / r.windows.length; // минимум 30 Вт/м² на окно для отсечки сквозняков по СНиП
+                            let minSanitary = (r.area * 30) / spots.length; // минимум 30 Вт/м² на окно для отсечки сквозняков по СНиП
                             wLoad = Math.max(deficit, minSanitary);
                         } else if (roomHasTp && !roomHasRad) {
                             // Режим "Только тёплый пол" (радиаторов под окнами нет)
                             wLoad = 0;
-                            let roomLossTotal = totalWindowLoss * r.windows.length;
+                            let roomLossTotal = totalWindowLoss * spots.length;
                             if (roomLossTotal > qUfhMax) {
                                 let deficitTotal = Math.round(roomLossTotal - qUfhMax);
                                 app.tempWarns = app.tempWarns || [];
@@ -38637,12 +38936,12 @@ const app = {
                             let factPower = Math.round(item.power70 * 0.65);
 
                             if (factPower < Math.round(wLoad)) {
-                                app.tempWarns.push(`• ${app._warnRoomLabel(r.id, r.name + ' (Окно ' + (wIdx + 1) + '):')} дефицит конвектора ~${Math.round(wLoad) - factPower} Вт. Переключите на вентиляторную модель (SCQ).`);
+                                app.tempWarns.push(`• ${app._warnRoomLabel(r.id, app.spotLabel(r, w, wIdx) + ':')} дефицит конвектора ~${Math.round(wLoad) - factPower} Вт. Переключите на вентиляторную модель (SCQ).`);
                             }
 
                             let margin = Math.round(((factPower - wLoad) / wLoad) * 100);
                             let marginColor = margin >= 0 ? '#10B981' : '#ef4444';
-                            let locInfo = `<span style="font-size:11px; line-height:1.2;">• <b>${r.name} (Окно ${wIdx + 1})</b>: ${w.width}м | Требуются: <b>${Math.round(wLoad)} Вт</b>, подобран: <b>${factPower} Вт</b>, запас: <b style="color:${marginColor};">${margin}%</b></span>`;
+                            let locInfo = `<span style="font-size:11px; line-height:1.2;">• <b>${app.spotLabel(r, w, wIdx)}</b>: ${w.noWin ? r.area + " м²" : w.width + "м"} | Требуются: <b>${Math.round(wLoad)} Вт</b>, подобран: <b>${factPower} Вт</b>, запас: <b style="color:${marginColor};">${margin}%</b></span>`;
 
                             let devInfo = this.getDesc('convector', item.power70, factPower);
                             let cDesc = locInfo + "|||" + devInfo;
@@ -38914,7 +39213,7 @@ const app = {
                             activeItem = { ...activeItem, originalId: instanceKey, noMerge: true };
 
                             if (factPower < reqPwr) {
-                                app.tempWarns.push(`• ${app._warnRoomLabel(r.id, r.name + ' (Окно ' + (wIdx + 1) + '):')} дефицит мощности радиатора ~${reqPwr - factPower} Вт.`);
+                                app.tempWarns.push(`• ${app._warnRoomLabel(r.id, app.spotLabel(r, w, wIdx) + ':')} дефицит мощности радиатора ~${reqPwr - factPower} Вт.`);
                             }
 
                             let devInfo = app.getDesc('rad_tooltip', {
@@ -38929,7 +39228,7 @@ const app = {
 
                             let margin = Math.round(((factPower - reqPwr) / reqPwr) * 100);
                             let marginColor = margin >= 0 ? '#10B981' : '#ef4444';
-                            let locInfo = `<span style="font-size:11px; line-height:1.2;">• <b>${r.name} (Окно ${wIdx + 1})</b>: ${w.width}м | Требуются: <b>${reqPwr} Вт</b>, подобран: <b>${factPower} Вт</b>, запас: <b style="color:${marginColor};">${margin}%</b></span>`;
+                            let locInfo = `<span style="font-size:11px; line-height:1.2;">• <b>${app.spotLabel(r, w, wIdx)}</b>: ${w.noWin ? r.area + " м²" : w.width + "м"} | Требуются: <b>${reqPwr} Вт</b>, подобран: <b>${factPower} Вт</b>, запас: <b style="color:${marginColor};">${margin}%</b></span>`;
 
                             let wDesc = locInfo + "|||" + devInfo;
                             addToBill(activeItem, 1, wDesc, "3. Приборы отопления");
