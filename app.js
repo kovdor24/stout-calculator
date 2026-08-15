@@ -11835,10 +11835,39 @@ const app = {
             return `<span style="color:${color}; font-weight:700;">${p}</span>`;
         };
 
-        h += `<h4 style="margin:0 0 8px; color:var(--text-main);">Наши места по категориям${region ? ` — ${esc(region)}` : ''}</h4>
+        // Изменение спроса на категорию: последний полный месяц против того же
+        // месяца выбранной базы. Сравниваем именно месяц с месяцем, а не с
+        // средним: спрос на отопление сезонный, и «к прошлому месяцу» в августе
+        // всегда покажет рост просто потому, что начинается сезон.
+        const catMonthly = (brands && brands.cat_monthly) || {};
+        const backMonths = this._analyticsCompare || 12;
+        const deltaOf = (catId) => {
+            const s = catMonthly[catId];
+            if (!s || s.length < backMonths + 1) return null;
+            const now = s[s.length - 1], base = s[s.length - 1 - backMonths];
+            if (!base || !base[1]) return null;
+            return {
+                pct: Math.round((now[1] - base[1]) / base[1] * 100),
+                now: now[1], nowM: now[0], base: base[1], baseM: base[0]
+            };
+        };
+        const deltaCell = (d) => {
+            if (!d) return `<span style="color:var(--text-sec);">—</span>`;
+            const color = d.pct > 4 ? '#10B981' : (d.pct < -4 ? '#EF4444' : 'var(--text-sec)');
+            const sign = d.pct > 0 ? '+' : '';
+            return `<span title="${d.nowM}: ${num(d.now)} против ${d.baseM}: ${num(d.base)}" style="color:${color}; font-weight:700;">${sign}${d.pct}%</span>`;
+        };
+
+        const cmpBtn = (m, label) => `<button class="admin-btn" style="${backMonths === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsCompare(${m})">${label}</button>`;
+        h += `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 8px;">
+                <h4 style="margin:0; color:var(--text-main);">Наши места по категориям${region ? ` — ${esc(region)}` : ''}</h4>
+                <span style="font-size:12px; color:var(--text-sec); margin-left:6px;">спрос к:</span>
+                ${cmpBtn(1, 'прошлому месяцу')}${cmpBtn(3, 'кварталу')}${cmpBtn(12, 'году назад')}
+              </div>
             <div style="overflow-x:auto;"><table class="inv-table">
                 <thead><tr>
                     <th>Группа прайса</th><th>Лидер спроса</th>
+                    <th style="text-align:center; width:80px;">Спрос</th>
                     <th style="text-align:center; width:70px;">STOUT</th>
                     <th style="text-align:center; width:70px;">ROMMER</th>
                 </tr></thead><tbody>`;
@@ -11846,7 +11875,7 @@ const app = {
         rows.forEach(r => {
             if (r.section !== lastSection) {
                 lastSection = r.section;
-                h += `<tr><td colspan="4" style="background:var(--surface-light); font-weight:700; color:var(--text-sec); font-size:12px; padding:6px 8px;">${r.section}. ${esc(r.sectionTitle)}</td></tr>`;
+                h += `<tr><td colspan="5" style="background:var(--surface-light); font-weight:700; color:var(--text-sec); font-size:12px; padding:6px 8px;">${r.section}. ${esc(r.sectionTitle)}</td></tr>`;
             }
             const lead = r.leader ? `${esc(r.leader[0])} <span style="color:var(--text-sec);">${num(r.leader[1])}</span>` : '<span style="color:var(--text-sec);">нет данных</span>';
             // Пока в данных нет названий групп прайса (появятся со следующим
@@ -11857,6 +11886,7 @@ const app = {
             h += `<tr style="cursor:pointer;" onclick="app.setAnalyticsCategory('${esc(r.id)}')">
                 <td><b>${esc(r.title)}</b>${sub}</td>
                 <td>${lead}</td>
+                <td style="text-align:center;">${deltaCell(deltaOf(r.id))}</td>
                 <td style="text-align:center;">${r.ownIn.includes('stout') || r.stout ? badge(r.stout, 'stout') : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
                 <td style="text-align:center;">${r.ownIn.includes('rommer') || r.rommer ? badge(r.rommer, 'rommer') : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
             </tr>`;
@@ -12097,6 +12127,11 @@ const app = {
 
     setAnalyticsMonths: function (m) {
         this._analyticsMonths = m;
+        this.renderAdminMain();
+    },
+
+    setAnalyticsCompare: function (m) {
+        this._analyticsCompare = m;
         this.renderAdminMain();
     },
 

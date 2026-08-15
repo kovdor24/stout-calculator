@@ -845,6 +845,29 @@ def run_brands(client, regional=False):
         data.setdefault("months", {})[this_month] = result_ru
         for m in sorted(data["months"])[:-BRAND_MONTHS_KEEP]:
             del data["months"][m]
+
+        # Помесячная история спроса на саму категорию — чтобы во вкладке
+        # считать «плюс-минус процентов» к прошлому месяцу, кварталу и году.
+        # Копить её из ежемесячных снимков нельзя: первый процент появился бы
+        # только через год. Один запрос на категорию отдаёт ряд с 2018 года
+        # сразу — 47 запросов, около рубля.
+        from_date = rfc3339(datetime.date(2018, 1, 1))
+        to_date = rfc3339(month_end(datetime.date.today()))
+        cat_monthly = data.get("cat_monthly", {})
+        for cat in categories:
+            resp = client.call("dynamics", {
+                "phrase": cat["phrase"], "period": "PERIOD_MONTHLY",
+                "fromDate": from_date, "toDate": to_date,
+            })
+            if resp is None:
+                continue
+            series = [[month_key(r["date"]), to_int(r.get("count"))]
+                      for r in resp.get("results", [])]
+            series.sort(key=lambda x: x[0])
+            if series:
+                cat_monthly[cat["id"]] = series
+        data["cat_monthly"] = cat_monthly
+        log("История по категориям: %d рядов" % len(cat_monthly))
         # order и section_title нужны вкладке: она строит таблицу в порядке
         # подбора сметы, а не по занятому месту. Без них порядок разъезжается,
         # и это незаметно — таблица просто рисуется как попало.
