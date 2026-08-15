@@ -45,7 +45,9 @@
         "termica"
       ],
       "price_group": "Котлы газовые (сопутствующий спрос, своих позиций нет)",
-      "own_in_group": []
+      "own_in_group": [],
+      "order": 1,
+      "section_title": "Котёл + водонагреватель"
     },
     {
       "id": "kotly_el",
@@ -73,7 +75,9 @@
       "price_group": "Котлы электрические",
       "own_in_group": [
         "stout"
-      ]
+      ],
+      "order": 2,
+      "section_title": "Котёл + водонагреватель"
     },
     {
       "id": "boylery_kn",
@@ -108,7 +112,9 @@
         "stout",
         "rommer"
       ],
-      "regional": true
+      "regional": true,
+      "order": 3,
+      "section_title": "Котёл + водонагреватель"
     },
     {
       "id": "dymohody",
@@ -133,7 +139,9 @@
         "stout",
         "rommer"
       ],
-      "regional": true
+      "regional": true,
+      "order": 4,
+      "section_title": "Котёл + водонагреватель"
     },
     {
       "id": "nasosnye_gruppy",
@@ -164,7 +172,9 @@
         "stout",
         "rommer"
       ],
-      "regional": true
+      "regional": true,
+      "order": 1,
+      "section_title": "Обвязка котельной"
     },
     {
       "id": "gidrostrelki",
@@ -188,7 +198,9 @@
         "stout",
         "rommer"
       ],
-      "regional": true
+      "regional": true,
+      "order": 2,
+      "section_title": "Обвязка котельной"
     },
     {
       "id": "nasosy_cirk",
@@ -230,39 +242,9 @@
         "stout",
         "rommer"
       ],
-      "regional": true
-    },
-    {
-      "id": "nasosy_skv",
-      "phrase": "скважинный насос",
-      "section": 11,
-      "cat": "well_pumps",
-      "known_brands": [
-        "джилекс",
-        "unipump",
-        "belamos",
-        "беламос",
-        "aquario",
-        "акварио",
-        "tim",
-        "aquatim",
-        "водолей",
-        "вихрь",
-        "grundfos",
-        "pedrollo",
-        "speroni",
-        "vodotok",
-        "stout",
-        "rommer"
-      ],
-      "ambiguous": [
-        "tim"
-      ],
-      "price_group": "Погружные скважинные насосы",
-      "own_in_group": [
-        "stout",
-        "rommer"
-      ]
+      "regional": true,
+      "order": 3,
+      "section_title": "Обвязка котельной"
     },
     {
       "id": "rasshir_baki",
@@ -288,7 +270,114 @@
         "stout",
         "rommer"
       ],
-      "regional": true
+      "regional": true,
+      "order": 4,
+      "section_title": "Обвязка котельной"
+    },
+    {
+      "id": "separatory",
+      "phrase": "сепаратор шлама",
+      "section": 2,
+      "cat": "filter_mag_alts",
+      "price_group": "Сепараторы воздуха и шлама",
+      "own_in_group": [
+        "rommer"
+      ],
+      "known_brands": [
+        "rommer",
+        "stout",
+        "spirotech",
+        "caleffi",
+        "flamco",
+        "watts",
+        "reflex",
+        "valtec",
+        "tim"
+      ],
+      "ambiguous": [
+        "tim"
+      ],
+      "order": 5,
+      "section_title": "Обвязка котельной"
+    },
+    {
+      "id": "klapany_3h",
+      "phrase": "трехходовой клапан",
+      "section": 2,
+      "cat": "valves",
+      "price_group": "Трехходовые клапаны и сервоприводы",
+      "own_in_group": [
+        "rommer"
+      ],
+      "known_brands": [
+        "rommer",
+        "stout",
+        "esbe",
+        "valtec",
+        "watts",
+        "honeywell",
+        "ридан",
+        "tim",
+        "icma",
+        "vieir"
+      ],
+      "ambiguous": [
+        "tim"
+      ],
+      "order": 6,
+      "section_title": "Обвязка котельной"
+    },
+    {
+      "id": "kip",
+      "phrase": "манометр для отопления",
+      "section": 2,
+      "cat": "hydro_thermometer_alts",
+      "price_group": "Контрольно-измерительные приборы",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
+      "known_brands": [
+        "stout",
+        "rommer",
+        "watts",
+        "valtec",
+        "росма",
+        "tim",
+        "icma",
+        "vieir",
+        "wika"
+      ],
+      "ambiguous": [
+        "tim"
+      ],
+      "order": 7,
+      "section_title": "Обвязка котельной"
+    },
+    {
+      "id": "stabilizatory",
+      "phrase": "стабилизатор напряжения для котла",
+      "section": 2,
+      "cat": "stabs",
+      "known_brands": [
+        "ресанта",
+        "resanta",
+        "штиль",
+        "энергия",
+        "rucelf",
+        "powerman",
+        "suntek",
+        "teplocom",
+        "теплоком",
+        "stout",
+        "rommer"
+      ],
+      "price_group": "Стабилизаторы сетевого напряжения",
+      "own_in_group": [
+        "stout"
+      ],
+      "order": 8,
+      "section_title": "Обвязка котельной"
     },
     {
       "id": "radiatory",
@@ -336,7 +425,60 @@
         "stout",
         "rommer"
       ],
-      "regional": true
+      "regional": true,
+      "order": 1,
+      "section_title": "Радиаторное отопление"
+    },
+    {
+      "id": "radiatory_panel",
+      "phrase": "стальной панельный радиатор",
+      "section": 3,
+      "cat": "rads",
+      "price_group": "Стальные панельные радиаторы",
+      "own_in_group": [
+        "rommer"
+      ],
+      "known_brands": [
+        "rommer",
+        "prado",
+        "лидея",
+        "axis",
+        "kermi",
+        "purmo",
+        "buderus",
+        "лемакс",
+        "теплоприбор",
+        "elsen",
+        "stout"
+      ],
+      "ambiguous": [
+        "axis"
+      ],
+      "regional": true,
+      "order": 2,
+      "section_title": "Радиаторное отопление"
+    },
+    {
+      "id": "radiatory_tube",
+      "phrase": "трубчатый радиатор",
+      "section": 3,
+      "cat": "rads",
+      "price_group": "Стальные трубчатые радиаторы",
+      "own_in_group": [
+        "rommer"
+      ],
+      "known_brands": [
+        "rommer",
+        "кзто",
+        "rifar",
+        "arbonia",
+        "zehnder",
+        "сунержа",
+        "loten",
+        "stout"
+      ],
+      "order": 3,
+      "section_title": "Радиаторное отопление"
     },
     {
       "id": "konvektory",
@@ -371,7 +513,9 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "order": 4,
+      "section_title": "Радиаторное отопление"
     },
     {
       "id": "termogolovki",
@@ -411,94 +555,64 @@
         "stout",
         "rommer"
       ],
-      "regional": true
+      "regional": true,
+      "order": 5,
+      "section_title": "Радиаторное отопление"
     },
     {
-      "id": "truba_pex",
-      "phrase": "труба из сшитого полиэтилена",
-      "section": 6,
-      "cat": "pipes",
-      "known_brands": [
-        "sanext",
-        "санекст",
-        "valtec",
-        "рехау",
-        "rehau",
-        "usystems",
-        "uponor",
-        "tim",
-        "hoobs",
-        "rtp",
-        "ростурпласт",
-        "heisskraft",
-        "stout",
-        "rommer"
-      ],
-      "ambiguous": [
-        "tim"
-      ],
-      "price_group": "Трубы PE-Xa, PE-Xa/EVOH",
+      "id": "radiatornaya_armatura",
+      "phrase": "кран для радиатора",
+      "section": 3,
+      "cat": "h_valves",
+      "price_group": "Радиаторная арматура",
       "own_in_group": [
         "stout",
         "rommer"
       ],
-      "regional": true
-    },
-    {
-      "id": "truba_mp",
-      "phrase": "металлопластиковая труба",
-      "section": 6,
-      "cat": "metal_plastic_pipes",
       "known_brands": [
+        "stout",
+        "rommer",
+        "ридан",
         "valtec",
+        "icma",
+        "far",
+        "luxor",
+        "giacomini",
+        "oventrop",
         "tim",
-        "hoobs",
-        "rtp",
-        "ростурпласт",
         "vieir",
-        "uni-fitt",
-        "henco",
-        "comisa",
-        "stout",
-        "rommer"
+        "herz"
       ],
       "ambiguous": [
-        "tim"
+        "tim",
+        "far"
       ],
-      "price_group": "Трубы металлопластиковые",
-      "own_in_group": [
-        "stout",
-        "rommer"
-      ],
-      "regional": true
+      "order": 6,
+      "section_title": "Радиаторное отопление"
     },
     {
-      "id": "fitingi_ax",
-      "phrase": "аксиальный фитинг",
-      "section": 6,
-      "cat": "axial_fittings_pex",
-      "known_brands": [
-        "hoobs",
-        "рехау",
-        "rehau",
-        "usystems",
-        "uponor",
-        "sanext",
-        "tim",
-        "valtec",
-        "tece",
-        "stout",
+      "id": "aksessuary_rad",
+      "phrase": "кронштейн для радиатора",
+      "section": 3,
+      "cat": "rad_kits",
+      "price_group": "Аксессуары и комплектующие для радиаторов",
+      "own_in_group": [
         "rommer"
+      ],
+      "known_brands": [
+        "rommer",
+        "stout",
+        "valtec",
+        "tim",
+        "vieir",
+        "rifar",
+        "royal thermo"
       ],
       "ambiguous": [
         "tim"
       ],
-      "price_group": "Аксиальные фитинги",
-      "own_in_group": [
-        "stout",
-        "rommer"
-      ],
-      "regional": true
+      "order": 7,
+      "section_title": "Радиаторное отопление"
     },
     {
       "id": "kollektor_tp",
@@ -530,7 +644,9 @@
         "stout",
         "rommer"
       ],
-      "regional": true
+      "regional": true,
+      "order": 1,
+      "section_title": "Водяной тёплый пол"
     },
     {
       "id": "shkaf_kollekt",
@@ -556,7 +672,9 @@
         "stout",
         "rommer"
       ],
-      "regional": true
+      "regional": true,
+      "order": 2,
+      "section_title": "Водяной тёплый пол"
     },
     {
       "id": "uzel_podmesa",
@@ -580,7 +698,58 @@
         "stout",
         "rommer"
       ],
-      "regional": true
+      "regional": true,
+      "order": 3,
+      "section_title": "Водяной тёплый пол"
+    },
+    {
+      "id": "maty_tp",
+      "phrase": "мат для теплого пола",
+      "section": 4,
+      "cat": "mats",
+      "price_group": "Маты для теплого пола",
+      "own_in_group": [
+        "stout"
+      ],
+      "known_brands": [
+        "stout",
+        "rehau",
+        "usystems",
+        "energofloor",
+        "технониколь",
+        "valtec",
+        "tim",
+        "hoobs"
+      ],
+      "ambiguous": [
+        "tim"
+      ],
+      "regional": true,
+      "order": 4,
+      "section_title": "Водяной тёплый пол"
+    },
+    {
+      "id": "komplekt_tp",
+      "phrase": "демпферная лента для теплого пола",
+      "section": 4,
+      "cat": "damper_tape",
+      "price_group": "Комплектующие для теплого пола",
+      "own_in_group": [
+        "stout"
+      ],
+      "known_brands": [
+        "stout",
+        "valtec",
+        "технониколь",
+        "energofloor",
+        "tim",
+        "hoobs"
+      ],
+      "ambiguous": [
+        "tim"
+      ],
+      "order": 5,
+      "section_title": "Водяной тёплый пол"
     },
     {
       "id": "termostaty_tp",
@@ -615,33 +784,152 @@
       "price_group": "Автоматика для теплого пола",
       "own_in_group": [
         "stout"
-      ]
+      ],
+      "order": 6,
+      "section_title": "Водяной тёплый пол"
     },
     {
-      "id": "avtomatika",
-      "phrase": "gsm модуль для котла",
-      "section": 7,
-      "cat": "boiler_automation",
+      "id": "smesit_klapany",
+      "phrase": "термостатический смесительный клапан",
+      "section": 5,
+      "cat": "dhw_mix_valves",
+      "price_group": "Термостатические смесительные клапаны",
+      "own_in_group": [
+        "rommer"
+      ],
       "known_brands": [
-        "zont",
-        "зонт",
-        "ectocontrol",
-        "эктоконтрол",
-        "teplocom",
-        "теплоком",
+        "rommer",
+        "stout",
+        "esbe",
+        "watts",
+        "herz",
+        "caleffi",
         "ридан",
-        "ridan",
-        "computherm",
-        "baxi",
-        "zota",
-        "tuya",
+        "valtec",
+        "icma"
+      ],
+      "regional": true,
+      "order": 1,
+      "section_title": "Горячее водоснабжение"
+    },
+    {
+      "id": "truba_pex",
+      "phrase": "труба из сшитого полиэтилена",
+      "section": 6,
+      "cat": "pipes",
+      "known_brands": [
+        "sanext",
+        "санекст",
+        "valtec",
+        "рехау",
+        "rehau",
+        "usystems",
+        "uponor",
+        "tim",
+        "hoobs",
+        "rtp",
+        "ростурпласт",
+        "heisskraft",
         "stout",
         "rommer"
       ],
-      "price_group": "Управляющая автоматика и электроника",
+      "ambiguous": [
+        "tim"
+      ],
+      "price_group": "Трубы PE-Xa, PE-Xa/EVOH",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
+      "regional": true,
+      "order": 1,
+      "section_title": "Водопровод и канализация"
+    },
+    {
+      "id": "truba_mp",
+      "phrase": "металлопластиковая труба",
+      "section": 6,
+      "cat": "metal_plastic_pipes",
+      "known_brands": [
+        "valtec",
+        "tim",
+        "hoobs",
+        "rtp",
+        "ростурпласт",
+        "vieir",
+        "uni-fitt",
+        "henco",
+        "comisa",
+        "stout",
+        "rommer"
+      ],
+      "ambiguous": [
+        "tim"
+      ],
+      "price_group": "Трубы металлопластиковые",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
+      "regional": true,
+      "order": 2,
+      "section_title": "Водопровод и канализация"
+    },
+    {
+      "id": "fitingi_ax",
+      "phrase": "аксиальный фитинг",
+      "section": 6,
+      "cat": "axial_fittings_pex",
+      "known_brands": [
+        "hoobs",
+        "рехау",
+        "rehau",
+        "usystems",
+        "uponor",
+        "sanext",
+        "tim",
+        "valtec",
+        "tece",
+        "stout",
+        "rommer"
+      ],
+      "ambiguous": [
+        "tim"
+      ],
+      "price_group": "Аксиальные фитинги",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
+      "regional": true,
+      "order": 3,
+      "section_title": "Водопровод и канализация"
+    },
+    {
+      "id": "fitingi_press",
+      "phrase": "пресс фитинг для металлопластиковой трубы",
+      "section": 6,
+      "cat": "water_fittings_press_mp",
+      "price_group": "Пресс-фитинги",
       "own_in_group": [
         "stout"
-      ]
+      ],
+      "known_brands": [
+        "stout",
+        "valtec",
+        "tim",
+        "henco",
+        "comisa",
+        "rehau",
+        "usystems",
+        "vieir",
+        "hoobs"
+      ],
+      "ambiguous": [
+        "tim"
+      ],
+      "order": 4,
+      "section_title": "Водопровод и канализация"
     },
     {
       "id": "nerzh_press",
@@ -668,7 +956,60 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "order": 5,
+      "section_title": "Водопровод и канализация"
+    },
+    {
+      "id": "kollektor_vodo",
+      "phrase": "коллектор для водоснабжения",
+      "section": 6,
+      "cat": "water_manifolds_stout",
+      "price_group": "Коллекторы для систем водоснабжения",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
+      "known_brands": [
+        "stout",
+        "rommer",
+        "valtec",
+        "tim",
+        "vieir",
+        "far",
+        "icma",
+        "uni-fitt",
+        "hoobs"
+      ],
+      "ambiguous": [
+        "tim",
+        "far"
+      ],
+      "order": 6,
+      "section_title": "Водопровод и канализация"
+    },
+    {
+      "id": "krany_nezamerz",
+      "phrase": "незамерзающий кран",
+      "section": 6,
+      "cat": "outdoor_faucets",
+      "price_group": "Незамерзающие краны",
+      "own_in_group": [
+        "rommer"
+      ],
+      "known_brands": [
+        "rommer",
+        "stout",
+        "merrill",
+        "vieir",
+        "tim",
+        "valtec"
+      ],
+      "ambiguous": [
+        "tim"
+      ],
+      "order": 7,
+      "section_title": "Водопровод и канализация"
     },
     {
       "id": "kanalizaciya",
@@ -696,7 +1037,9 @@
       "own_in_group": [
         "stout"
       ],
-      "regional": true
+      "regional": true,
+      "order": 8,
+      "section_title": "Водопровод и канализация"
     },
     {
       "id": "installyacii",
@@ -725,7 +1068,86 @@
       ],
       "ambiguous": [
         "point"
-      ]
+      ],
+      "order": 9,
+      "section_title": "Водопровод и канализация"
+    },
+    {
+      "id": "avtomatika",
+      "phrase": "gsm модуль для котла",
+      "section": 7,
+      "cat": "boiler_automation",
+      "known_brands": [
+        "zont",
+        "зонт",
+        "ectocontrol",
+        "эктоконтрол",
+        "teplocom",
+        "теплоком",
+        "ридан",
+        "ridan",
+        "computherm",
+        "baxi",
+        "zota",
+        "tuya",
+        "stout",
+        "rommer"
+      ],
+      "price_group": "Управляющая автоматика и электроника",
+      "own_in_group": [
+        "stout"
+      ],
+      "order": 1,
+      "section_title": "Управление отоплением"
+    },
+    {
+      "id": "termostaty_nakl",
+      "phrase": "накладной термостат",
+      "section": 7,
+      "cat": "air_sensors",
+      "price_group": "Погружные и накладные термостаты",
+      "own_in_group": [
+        "stout"
+      ],
+      "known_brands": [
+        "stout",
+        "ридан",
+        "watts",
+        "imit",
+        "regulus",
+        "tim",
+        "icma"
+      ],
+      "ambiguous": [
+        "tim"
+      ],
+      "order": 2,
+      "section_title": "Управление отоплением"
+    },
+    {
+      "id": "umnye_golovki",
+      "phrase": "умная термостатическая головка",
+      "section": 7,
+      "cat": "heads",
+      "price_group": "Умные термостатические головки",
+      "own_in_group": [
+        "stout"
+      ],
+      "known_brands": [
+        "stout",
+        "ридан",
+        "tuya",
+        "aqara",
+        "sonoff",
+        "zont",
+        "equation",
+        "netatmo"
+      ],
+      "ambiguous": [
+        "equation"
+      ],
+      "order": 3,
+      "section_title": "Управление отоплением"
     },
     {
       "id": "krany_sharovye",
@@ -755,7 +1177,103 @@
         "stout",
         "rommer"
       ],
-      "regional": true
+      "regional": true,
+      "order": 1,
+      "section_title": "Монтажные элементы"
+    },
+    {
+      "id": "klapany_elmagn",
+      "phrase": "электромагнитный клапан",
+      "section": 8,
+      "cat": "leak_valves",
+      "price_group": "Электромагнитные клапаны",
+      "own_in_group": [
+        "stout"
+      ],
+      "known_brands": [
+        "stout",
+        "ридан",
+        "burkert",
+        "tim",
+        "vieir",
+        "нептун",
+        "гидролок",
+        "аквасторож"
+      ],
+      "ambiguous": [
+        "tim"
+      ],
+      "order": 2,
+      "section_title": "Монтажные элементы"
+    },
+    {
+      "id": "homuty",
+      "phrase": "хомут трубный",
+      "section": 8,
+      "cat": "mounting_system",
+      "price_group": "Аксессуары и комплектующие, хомуты трубные",
+      "own_in_group": [
+        "stout"
+      ],
+      "known_brands": [
+        "stout",
+        "walraven",
+        "sormat",
+        "tim",
+        "valtec",
+        "hoobs",
+        "fischer",
+        "sikla"
+      ],
+      "ambiguous": [
+        "tim"
+      ],
+      "order": 3,
+      "section_title": "Монтажные элементы"
+    },
+    {
+      "id": "teplonositel",
+      "phrase": "теплоноситель для отопления",
+      "section": 9,
+      "cat": "coolants",
+      "known_brands": [
+        "dixis",
+        "диксис",
+        "thermagent",
+        "термагент",
+        "теплый дом",
+        "hot blood",
+        "primoclima",
+        "аквалюкс",
+        "termoline",
+        "stout",
+        "rommer"
+      ],
+      "price_group": "Теплоноситель (сопутствующий спрос, своих позиций нет)",
+      "own_in_group": [],
+      "order": 1,
+      "section_title": "Дополнительные материалы"
+    },
+    {
+      "id": "teploizolyaciya",
+      "phrase": "теплоизоляция для труб",
+      "section": 9,
+      "cat": "insulation",
+      "price_group": "Теплоизоляция",
+      "own_in_group": [
+        "rommer"
+      ],
+      "known_brands": [
+        "rommer",
+        "stout",
+        "энергофлекс",
+        "energoflex",
+        "k-flex",
+        "armacell",
+        "термафлекс"
+      ],
+      "order": 2,
+      "section_title": "Дополнительные материалы"
     },
     {
       "id": "vodoochistka",
@@ -779,530 +1297,43 @@
         "rommer"
       ],
       "price_group": "Водоочистка (сопутствующий спрос, своих позиций нет)",
-      "own_in_group": []
+      "own_in_group": [],
+      "order": 1,
+      "section_title": "Ввод ХВС и водоочистка"
     },
     {
-      "id": "teplonositel",
-      "phrase": "теплоноситель для отопления",
-      "section": 9,
-      "cat": "coolants",
-      "known_brands": [
-        "dixis",
-        "диксис",
-        "thermagent",
-        "термагент",
-        "теплый дом",
-        "hot blood",
-        "primoclima",
-        "аквалюкс",
-        "termoline",
-        "stout",
-        "rommer"
-      ],
-      "price_group": "Теплоноситель (сопутствующий спрос, своих позиций нет)",
-      "own_in_group": []
-    },
-    {
-      "id": "stabilizatory",
-      "phrase": "стабилизатор напряжения для котла",
-      "section": 2,
-      "cat": "stabs",
-      "known_brands": [
-        "ресанта",
-        "resanta",
-        "штиль",
-        "энергия",
-        "rucelf",
-        "powerman",
-        "suntek",
-        "teplocom",
-        "теплоком",
-        "stout",
-        "rommer"
-      ],
-      "price_group": "Стабилизаторы сетевого напряжения",
-      "own_in_group": [
-        "stout"
-      ]
-    },
-    {
-      "id": "radiatory_panel",
-      "phrase": "стальной панельный радиатор",
-      "section": 3,
-      "cat": "rads",
-      "price_group": "Стальные панельные радиаторы",
-      "own_in_group": [
-        "rommer"
-      ],
-      "known_brands": [
-        "rommer",
-        "prado",
-        "лидея",
-        "axis",
-        "kermi",
-        "purmo",
-        "buderus",
-        "лемакс",
-        "теплоприбор",
-        "elsen",
-        "stout"
-      ],
-      "ambiguous": [
-        "axis"
-      ],
-      "regional": true
-    },
-    {
-      "id": "radiatory_tube",
-      "phrase": "трубчатый радиатор",
-      "section": 3,
-      "cat": "rads",
-      "price_group": "Стальные трубчатые радиаторы",
-      "own_in_group": [
-        "rommer"
-      ],
-      "known_brands": [
-        "rommer",
-        "кзто",
-        "rifar",
-        "arbonia",
-        "zehnder",
-        "сунержа",
-        "loten",
-        "stout"
-      ]
-    },
-    {
-      "id": "polotencesushiteli",
-      "phrase": "полотенцесушитель",
-      "section": 5,
-      "price_group": "Полотенцесушители",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "сунержа",
-        "ника",
-        "терминус",
-        "margaroli",
-        "indigo",
-        "двин",
-        "тругор"
-      ],
-      "ambiguous": [
-        "ника",
-        "двин",
-        "indigo"
-      ]
-    },
-    {
-      "id": "paneli_otopit",
-      "phrase": "отопительная панель",
-      "section": 3,
-      "price_group": "Безынерционные отопительные панели",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout"
-      ]
-    },
-    {
-      "id": "truba_pnd_gofr",
-      "phrase": "гофрированная труба пнд",
-      "section": 8,
-      "price_group": "Трубы гофрированные ПНД",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "dks",
-        "экопласт",
-        "промрукав",
-        "иэк",
-        "rexant"
-      ]
-    },
-    {
-      "id": "fitingi_compress",
-      "phrase": "компрессионный фитинг",
-      "section": 6,
-      "price_group": "Компрессионные фитинги",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "valtec",
-        "tim",
-        "vieir",
-        "hoobs",
-        "uni-fitt",
-        "mvi"
-      ],
-      "ambiguous": [
-        "tim"
-      ],
-      "regional": true
-    },
-    {
-      "id": "fitingi_vint",
-      "phrase": "винтовой фитинг",
-      "section": 6,
-      "price_group": "Винтовые фитинги",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "valtec",
-        "tim",
-        "vieir"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
-    },
-    {
-      "id": "fitingi_press",
-      "phrase": "пресс фитинг для металлопластиковой трубы",
-      "section": 6,
-      "cat": "water_fittings_press_mp",
-      "price_group": "Пресс-фитинги",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "valtec",
-        "tim",
-        "henco",
-        "comisa",
-        "rehau",
-        "usystems",
-        "vieir",
-        "hoobs"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
-    },
-    {
-      "id": "fitingi_latun",
-      "phrase": "латунный резьбовой фитинг",
-      "section": 6,
-      "price_group": "Латунные резьбовые фитинги",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "valtec",
-        "vieir",
-        "tim",
-        "mvi",
-        "uni-fitt",
-        "itap",
-        "hoobs"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
-    },
-    {
-      "id": "fitingi_pnd",
-      "phrase": "фитинги для пнд труб",
+      "id": "nasosy_skv",
+      "phrase": "скважинный насос",
       "section": 11,
-      "cat": "well_parts",
-      "price_group": "Латунные фитинги для ПНД труб",
-      "own_in_group": [
-        "stout"
-      ],
+      "cat": "well_pumps",
       "known_brands": [
-        "stout",
-        "valtec",
-        "tim",
         "джилекс",
         "unipump",
-        "vieir"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
-    },
-    {
-      "id": "instrument_pex",
-      "phrase": "экспандер для труб pex",
-      "section": 6,
-      "price_group": "Инструмент для аксиальных фитингов",
-      "own_in_group": [
-        "stout",
-        "rommer"
-      ],
-      "known_brands": [
-        "stout",
-        "rommer",
-        "rehau",
-        "usystems",
-        "tim",
-        "valtec",
-        "virax",
-        "rothenberger",
-        "zenten"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
-    },
-    {
-      "id": "instrument_ruchnoy",
-      "phrase": "труборез",
-      "section": 6,
-      "price_group": "Ручной механический инструмент",
-      "own_in_group": [
-        "rommer"
-      ],
-      "known_brands": [
-        "rommer",
-        "stout",
-        "rothenberger",
-        "virax",
-        "ridgid",
-        "зубр",
-        "stayer"
-      ]
-    },
-    {
-      "id": "payka",
-      "phrase": "паяльник для труб",
-      "section": 6,
-      "price_group": "Принадлежности для пайки",
-      "own_in_group": [
-        "rommer"
-      ],
-      "known_brands": [
-        "rommer",
-        "stout",
-        "candan",
-        "dytron",
-        "sturm",
-        "ресанта",
-        "вихрь"
-      ]
-    },
-    {
-      "id": "maty_tp",
-      "phrase": "мат для теплого пола",
-      "section": 4,
-      "cat": "mats",
-      "price_group": "Маты для теплого пола",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "rehau",
-        "usystems",
-        "energofloor",
-        "технониколь",
-        "valtec",
-        "tim",
-        "hoobs"
-      ],
-      "ambiguous": [
-        "tim"
-      ],
-      "regional": true
-    },
-    {
-      "id": "komplekt_tp",
-      "phrase": "демпферная лента для теплого пола",
-      "section": 4,
-      "cat": "damper_tape",
-      "price_group": "Комплектующие для теплого пола",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "valtec",
-        "технониколь",
-        "energofloor",
-        "tim",
-        "hoobs"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
-    },
-    {
-      "id": "podvodka",
-      "phrase": "гибкая подводка для воды",
-      "section": 6,
-      "price_group": "Гибкая подводка",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "tim",
-        "vieir",
-        "valtec",
-        "mvi",
-        "монолит"
-      ],
-      "ambiguous": [
-        "tim",
-        "монолит"
-      ]
-    },
-    {
-      "id": "kollektor_vodo",
-      "phrase": "коллектор для водоснабжения",
-      "section": 6,
-      "cat": "water_manifolds_stout",
-      "price_group": "Коллекторы для систем водоснабжения",
-      "own_in_group": [
-        "stout",
-        "rommer"
-      ],
-      "known_brands": [
-        "stout",
-        "rommer",
-        "valtec",
-        "tim",
-        "vieir",
-        "far",
-        "icma",
-        "uni-fitt",
-        "hoobs"
-      ],
-      "ambiguous": [
-        "tim",
-        "far"
-      ]
-    },
-    {
-      "id": "krany_nezamerz",
-      "phrase": "незамерзающий кран",
-      "section": 6,
-      "cat": "outdoor_faucets",
-      "price_group": "Незамерзающие краны",
-      "own_in_group": [
-        "rommer"
-      ],
-      "known_brands": [
-        "rommer",
-        "stout",
-        "merrill",
-        "vieir",
-        "tim",
-        "valtec"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
-    },
-    {
-      "id": "stancii_vodosnab",
-      "phrase": "насосная станция водоснабжения",
-      "section": 11,
-      "price_group": "Установки водоснабжения HYDROLIFT",
-      "own_in_group": [
-        "rommer"
-      ],
-      "known_brands": [
-        "rommer",
-        "джилекс",
-        "unipump",
-        "grundfos",
-        "wilo",
         "belamos",
+        "беламос",
         "aquario",
-        "marina",
-        "pedrollo"
-      ],
-      "ambiguous": [
-        "marina"
-      ]
-    },
-    {
-      "id": "kanaliz_stancii",
-      "phrase": "канализационная насосная станция",
-      "section": 6,
-      "price_group": "Канализационные станции BIOLIFT",
-      "own_in_group": [
-        "rommer"
-      ],
-      "known_brands": [
-        "rommer",
-        "sfa",
+        "акварио",
+        "tim",
+        "aquatim",
+        "водолей",
+        "вихрь",
         "grundfos",
-        "unipump",
-        "джилекс",
-        "belamos"
-      ]
-    },
-    {
-      "id": "nasosy_flanec",
-      "phrase": "фланцевый циркуляционный насос",
-      "section": 2,
-      "price_group": "Фланцевые циркуляционные насосы",
-      "own_in_group": [
-        "rommer"
-      ],
-      "known_brands": [
-        "rommer",
-        "grundfos",
-        "wilo",
-        "imp pumps",
-        "dab",
-        "shinhoo",
-        "pumpman"
-      ]
-    },
-    {
-      "id": "nasosy_poverh",
-      "phrase": "поверхностный насос",
-      "section": 11,
-      "price_group": "Поверхностные насосы",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "джилекс",
-        "unipump",
-        "belamos",
         "pedrollo",
-        "вихрь",
-        "marina",
-        "aquario"
-      ],
-      "ambiguous": [
-        "marina"
-      ]
-    },
-    {
-      "id": "nasosy_drenazh",
-      "phrase": "дренажный насос",
-      "section": 11,
-      "price_group": "Дренажные насосы",
-      "own_in_group": [
+        "speroni",
+        "vodotok",
+        "stout",
         "rommer"
       ],
-      "known_brands": [
-        "rommer",
-        "джилекс",
-        "unipump",
-        "belamos",
-        "grundfos",
-        "вихрь",
-        "aquario",
-        "sfa"
-      ]
+      "ambiguous": [
+        "tim"
+      ],
+      "price_group": "Погружные скважинные насосы",
+      "own_in_group": [
+        "stout",
+        "rommer"
+      ],
+      "order": 1,
+      "section_title": "Скважина / колодец"
     },
     {
       "id": "nasosnaya_avtomatika",
@@ -1325,289 +1356,32 @@
       ],
       "ambiguous": [
         "extra"
-      ]
+      ],
+      "order": 2,
+      "section_title": "Скважина / колодец"
     },
     {
-      "id": "predohranit",
-      "phrase": "группа безопасности котла",
-      "section": 2,
-      "price_group": "Предохранительная арматура",
+      "id": "fitingi_pnd",
+      "phrase": "фитинги для пнд труб",
+      "section": 11,
+      "cat": "well_parts",
+      "price_group": "Латунные фитинги для ПНД труб",
       "own_in_group": [
-        "stout",
-        "rommer"
+        "stout"
       ],
       "known_brands": [
         "stout",
-        "rommer",
-        "watts",
         "valtec",
-        "meibes",
-        "flamco",
-        "reflex",
         "tim",
-        "hoobs",
-        "icma"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
-    },
-    {
-      "id": "separatory",
-      "phrase": "сепаратор шлама",
-      "section": 2,
-      "cat": "filter_mag_alts",
-      "price_group": "Сепараторы воздуха и шлама",
-      "own_in_group": [
-        "rommer"
-      ],
-      "known_brands": [
-        "rommer",
-        "stout",
-        "spirotech",
-        "caleffi",
-        "flamco",
-        "watts",
-        "reflex",
-        "valtec",
-        "tim"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
-    },
-    {
-      "id": "klapany_3h",
-      "phrase": "трехходовой клапан",
-      "section": 2,
-      "cat": "valves",
-      "price_group": "Трехходовые клапаны и сервоприводы",
-      "own_in_group": [
-        "rommer"
-      ],
-      "known_brands": [
-        "rommer",
-        "stout",
-        "esbe",
-        "valtec",
-        "watts",
-        "honeywell",
-        "ридан",
-        "tim",
-        "icma",
+        "джилекс",
+        "unipump",
         "vieir"
       ],
       "ambiguous": [
         "tim"
-      ]
-    },
-    {
-      "id": "smesit_klapany",
-      "phrase": "термостатический смесительный клапан",
-      "section": 5,
-      "cat": "dhw_mix_valves",
-      "price_group": "Термостатические смесительные клапаны",
-      "own_in_group": [
-        "rommer"
       ],
-      "known_brands": [
-        "rommer",
-        "stout",
-        "esbe",
-        "watts",
-        "herz",
-        "caleffi",
-        "ридан",
-        "valtec",
-        "icma"
-      ],
-      "regional": true
-    },
-    {
-      "id": "kip",
-      "phrase": "манометр для отопления",
-      "section": 2,
-      "cat": "hydro_thermometer_alts",
-      "price_group": "Контрольно-измерительные приборы",
-      "own_in_group": [
-        "stout",
-        "rommer"
-      ],
-      "known_brands": [
-        "stout",
-        "rommer",
-        "watts",
-        "valtec",
-        "росма",
-        "tim",
-        "icma",
-        "vieir",
-        "wika"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
-    },
-    {
-      "id": "umnye_golovki",
-      "phrase": "умная термостатическая головка",
-      "section": 7,
-      "cat": "heads",
-      "price_group": "Умные термостатические головки",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "ридан",
-        "tuya",
-        "aqara",
-        "sonoff",
-        "zont",
-        "equation",
-        "netatmo"
-      ],
-      "ambiguous": [
-        "equation"
-      ]
-    },
-    {
-      "id": "termostaty_nakl",
-      "phrase": "накладной термостат",
-      "section": 7,
-      "cat": "air_sensors",
-      "price_group": "Погружные и накладные термостаты",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "ридан",
-        "watts",
-        "imit",
-        "regulus",
-        "tim",
-        "icma"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
-    },
-    {
-      "id": "klapany_elmagn",
-      "phrase": "электромагнитный клапан",
-      "section": 8,
-      "cat": "leak_valves",
-      "price_group": "Электромагнитные клапаны",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "ридан",
-        "burkert",
-        "tim",
-        "vieir",
-        "нептун",
-        "гидролок",
-        "аквасторож"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
-    },
-    {
-      "id": "homuty",
-      "phrase": "хомут трубный",
-      "section": 8,
-      "cat": "mounting_system",
-      "price_group": "Аксессуары и комплектующие, хомуты трубные",
-      "own_in_group": [
-        "stout"
-      ],
-      "known_brands": [
-        "stout",
-        "walraven",
-        "sormat",
-        "tim",
-        "valtec",
-        "hoobs",
-        "fischer",
-        "sikla"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
-    },
-    {
-      "id": "teploizolyaciya",
-      "phrase": "теплоизоляция для труб",
-      "section": 9,
-      "cat": "insulation",
-      "price_group": "Теплоизоляция",
-      "own_in_group": [
-        "rommer"
-      ],
-      "known_brands": [
-        "rommer",
-        "stout",
-        "энергофлекс",
-        "energoflex",
-        "k-flex",
-        "armacell",
-        "термафлекс"
-      ]
-    },
-    {
-      "id": "radiatornaya_armatura",
-      "phrase": "кран для радиатора",
-      "section": 3,
-      "cat": "h_valves",
-      "price_group": "Радиаторная арматура",
-      "own_in_group": [
-        "stout",
-        "rommer"
-      ],
-      "known_brands": [
-        "stout",
-        "rommer",
-        "ридан",
-        "valtec",
-        "icma",
-        "far",
-        "luxor",
-        "giacomini",
-        "oventrop",
-        "tim",
-        "vieir",
-        "herz"
-      ],
-      "ambiguous": [
-        "tim",
-        "far"
-      ]
-    },
-    {
-      "id": "aksessuary_rad",
-      "phrase": "кронштейн для радиатора",
-      "section": 3,
-      "cat": "rad_kits",
-      "price_group": "Аксессуары и комплектующие для радиаторов",
-      "own_in_group": [
-        "rommer"
-      ],
-      "known_brands": [
-        "rommer",
-        "stout",
-        "valtec",
-        "tim",
-        "vieir",
-        "rifar",
-        "royal thermo"
-      ],
-      "ambiguous": [
-        "tim"
-      ]
+      "order": 3,
+      "section_title": "Скважина / колодец"
     }
   ],
   "own_brands": [
@@ -2003,5 +1777,18 @@
     "квт",
     "кв",
     "шт"
-  ]
+  ],
+  "_sections": {
+    "1": "Котёл + водонагреватель",
+    "2": "Обвязка котельной",
+    "3": "Радиаторное отопление",
+    "4": "Водяной тёплый пол",
+    "5": "Горячее водоснабжение",
+    "6": "Водопровод и канализация",
+    "7": "Управление отоплением",
+    "8": "Монтажные элементы",
+    "9": "Дополнительные материалы",
+    "10": "Ввод ХВС и водоочистка",
+    "11": "Скважина / колодец"
+  }
 }

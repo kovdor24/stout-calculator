@@ -11817,11 +11817,17 @@ const app = {
                 leader: (r.ranking && r.ranking[0]) || null,
                 stout: place('stout'),
                 rommer: place('rommer'),
-                ownIn: cats[id].own_in_group || []
+                ownIn: cats[id].own_in_group || [],
+                section: cats[id].section || 99,
+                sectionTitle: cats[id].section_title || '',
+                order: cats[id].order || 99
             });
         });
-        const best = p => p || 99;
-        rows.sort((a, b) => Math.min(best(a.stout), best(a.rommer)) - Math.min(best(b.stout), best(b.rommer)));
+        // Порядок — как в смете: раздел за разделом, внутри раздела в той же
+        // последовательности, в какой идёт подбор (котёл, потом бойлер, потом
+        // обвязка). Сортировка по занятому месту показывала бы сначала то, где
+        // мы первые, но искать нужную группу в таком списке невозможно.
+        rows.sort((a, b) => (a.section - b.section) || (a.order - b.order));
 
         const badge = (p, brand) => {
             if (!p) return `<span style="color:var(--text-sec);">—</span>`;
@@ -11836,7 +11842,12 @@ const app = {
                     <th style="text-align:center; width:70px;">STOUT</th>
                     <th style="text-align:center; width:70px;">ROMMER</th>
                 </tr></thead><tbody>`;
+        let lastSection = null;
         rows.forEach(r => {
+            if (r.section !== lastSection) {
+                lastSection = r.section;
+                h += `<tr><td colspan="4" style="background:var(--surface-light); font-weight:700; color:var(--text-sec); font-size:12px; padding:6px 8px;">${r.section}. ${esc(r.sectionTitle)}</td></tr>`;
+            }
             const lead = r.leader ? `${esc(r.leader[0])} <span style="color:var(--text-sec);">${num(r.leader[1])}</span>` : '<span style="color:var(--text-sec);">нет данных</span>';
             // Пока в данных нет названий групп прайса (появятся со следующим
             // прогоном brands), заголовок падает на поисковую фразу — и тогда
@@ -11880,12 +11891,17 @@ const app = {
         if (wordstat && wordstat.ru_monthly) {
             const phrases = wordstat.phrases || {};
             const coreIds = Object.keys(phrases).filter(id => phrases[id].core).slice(0, 6);
+            const months = this._analyticsMonths || 36;
             const series = coreIds.map(id => ({
                 name: phrases[id].text || id,
-                points: (wordstat.ru_monthly[id] || []).slice(-36)
+                points: (wordstat.ru_monthly[id] || []).slice(months > 0 ? -months : 0)
             })).filter(s => s.points.length > 1);
             if (series.length) {
-                h += `<h4 style="margin:22px 0 8px; color:var(--text-main);">Спрос по России, три года</h4>${this.buildAnalyticsLineChart(series)}`;
+                const btn = (m, label) => `<button class="admin-btn" style="${(this._analyticsMonths || 36) === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsMonths(${m})">${label}</button>`;
+                h += `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:22px 0 8px;">
+                        <h4 style="margin:0; color:var(--text-main);">Спрос по России</h4>
+                        ${btn(12, '12 месяцев')}${btn(36, '3 года')}${btn(0, 'всё')}
+                      </div>${this.buildAnalyticsLineChart(series, 'ru')}`;
             }
         }
 
@@ -11897,7 +11913,7 @@ const app = {
                 points: pulse.weeks.map((w, i) => [w.slice(5), pulse.ru[id][i] || 0])
             })).filter(s => s.points.length > 1);
             if (series.length) {
-                h += `<h4 style="margin:22px 0 8px; color:var(--text-main);">Пульс: последние 12 недель</h4>${this.buildAnalyticsLineChart(series)}`;
+                h += `<h4 style="margin:22px 0 8px; color:var(--text-main);">Пульс: последние 12 недель</h4>${this.buildAnalyticsLineChart(series, 'pulse')}`;
             }
         }
 
@@ -11964,24 +11980,41 @@ const app = {
     },
 
     /**
-     * Ломаная на несколько рядов в чистом SVG.
+     * Ломаная на несколько рядов в чистом SVG, с подсказкой при наведении.
      *
      * Ряды нормируем каждый по своему максимуму: у «газового котла» сотни тысяч
      * запросов, у «коллектора тёплого пола» — сотни, и в общем масштабе второй
      * лёг бы в ноль. Нас интересует форма кривой (сезон, рост), а не сравнение
-     * абсолютных величин между фразами.
+     * абсолютных величин между фразами. Именно поэтому подсказка при наведении
+     * обязательна: по одной картинке величины не прочитать, их надо показать
+     * числом.
+     *
+     * Данные ряда кладём в app._charts[id] — обработчику наведения нужны сами
+     * числа, а не координаты, иначе пришлось бы разбирать обратно разметку.
      */
-    buildAnalyticsLineChart: function (series) {
-        const W = 720, H = 200, PAD = 26;
+    buildAnalyticsLineChart: function (series, id) {
+        const W = 720, H = 210, PAD_L = 30, PAD_R = 12, PAD_T = 10, PAD_B = 26;
         const COLORS = ['#2563EB', '#10B981', '#F97316', '#8B5CF6', '#EF4444', '#0EA5E9'];
         const n = Math.max(...series.map(s => s.points.length));
-        const x = i => PAD + (W - PAD * 2) * (n > 1 ? i / (n - 1) : 0.5);
+        const x = i => PAD_L + (W - PAD_L - PAD_R) * (n > 1 ? i / (n - 1) : 0.5);
+        const yOf = (v, max) => (H - PAD_B - (H - PAD_B - PAD_T) * ((Number(v) || 0) / max));
+
+        this._charts = this._charts || {};
+        this._charts[id] = {
+            labels: series[0].points.map(p => String(p[0])),
+            series: series.map((s, si) => ({
+                name: String(s.name),
+                color: COLORS[si % COLORS.length],
+                values: s.points.map(p => Number(p[1]) || 0)
+            })),
+            geom: { W: W, H: H, padL: PAD_L, padR: PAD_R, n: n }
+        };
 
         let paths = '', legend = '';
         series.forEach((s, si) => {
             const max = Math.max(1, ...s.points.map(p => Number(p[1]) || 0));
             const d = s.points.map((p, i) =>
-                `${i ? 'L' : 'M'}${x(i).toFixed(1)},${(H - PAD - (H - PAD * 2) * ((Number(p[1]) || 0) / max)).toFixed(1)}`
+                `${i ? 'L' : 'M'}${x(i).toFixed(1)},${yOf(p[1], max).toFixed(1)}`
             ).join(' ');
             paths += `<path d="${d}" fill="none" stroke="${COLORS[si % COLORS.length]}" stroke-width="2" stroke-linejoin="round"/>`;
             const last = s.points[s.points.length - 1];
@@ -11992,20 +12025,79 @@ const app = {
         });
 
         const first = series[0].points;
-        const ticks = [0, Math.floor(first.length / 2), first.length - 1].filter((v, i, a) => a.indexOf(v) === i);
+        const step = Math.max(1, Math.ceil(first.length / 8));
         let labels = '';
-        ticks.forEach(i => {
-            if (!first[i]) return;
-            labels += `<text x="${x(i).toFixed(1)}" y="${H - 6}" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.6">${String(first[i][0])}</text>`;
-        });
+        for (let i = 0; i < first.length; i += step) {
+            labels += `<text x="${x(i).toFixed(1)}" y="${H - 8}" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.6">${String(first[i][0])}</text>`;
+        }
 
-        return `<div style="overflow-x:auto; color:var(--text-sec);">
-            <svg viewBox="0 0 ${W} ${H}" style="width:100%; min-width:520px; height:auto; display:block;">
-                <line x1="${PAD}" y1="${H - PAD}" x2="${W - PAD}" y2="${H - PAD}" stroke="currentColor" opacity="0.25"/>
+        return `<div id="chartwrap_${id}" style="position:relative; color:var(--text-sec);">
+            <svg id="chart_${id}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"
+                 style="width:100%; height:${H}px; display:block; touch-action:none;"
+                 onmousemove="app.analyticsChartHover(event, '${id}')"
+                 onmouseleave="app.analyticsChartLeave('${id}')">
+                <line x1="${PAD_L}" y1="${H - PAD_B}" x2="${W - PAD_R}" y2="${H - PAD_B}" stroke="currentColor" opacity="0.25"/>
+                <line id="guide_${id}" x1="0" y1="${PAD_T}" x2="0" y2="${H - PAD_B}" stroke="currentColor" opacity="0" stroke-width="1" stroke-dasharray="3 3"/>
                 ${paths}${labels}
             </svg>
+            <div id="tip_${id}" style="position:absolute; display:none; pointer-events:none; z-index:5;
+                 background:var(--surface); border:1px solid var(--border); border-radius:8px;
+                 padding:7px 9px; font-size:12px; color:var(--text-main); box-shadow:0 4px 14px rgba(0,0,0,.25); white-space:nowrap;"></div>
             <div style="margin-top:6px;">${legend}</div>
         </div>`;
+    },
+
+    analyticsChartHover: function (e, id) {
+        const c = (this._charts || {})[id];
+        const svg = document.getElementById('chart_' + id);
+        const tip = document.getElementById('tip_' + id);
+        const guide = document.getElementById('guide_' + id);
+        if (!c || !svg || !tip) return;
+
+        // Ширина картинки резиновая, а координаты внутри — в единицах viewBox,
+        // поэтому положение курсора переводим из пикселей в эти единицы.
+        const box = svg.getBoundingClientRect();
+        const g = c.geom;
+        const vx = (e.clientX - box.left) / box.width * g.W;
+        const usable = g.W - g.padL - g.padR;
+        let i = Math.round((vx - g.padL) / (usable || 1) * (g.n - 1));
+        i = Math.max(0, Math.min(c.labels.length - 1, i));
+
+        const gx = g.padL + usable * (g.n > 1 ? i / (g.n - 1) : 0.5);
+        if (guide) {
+            guide.setAttribute('x1', gx);
+            guide.setAttribute('x2', gx);
+            guide.setAttribute('opacity', '0.45');
+        }
+
+        const rows = c.series.map(s =>
+            `<div style="display:flex; align-items:center; gap:6px;">
+                <i style="width:8px;height:8px;border-radius:2px;background:${s.color};display:inline-block;"></i>
+                <span style="color:var(--text-sec);">${s.name.replace(/[&<>"]/g, '')}</span>
+                <b style="margin-left:auto;">${(s.values[i] || 0).toLocaleString('ru-RU')}</b>
+            </div>`).join('');
+        tip.innerHTML = `<div style="font-weight:700; margin-bottom:4px;">${c.labels[i]}</div>${rows}`;
+        tip.style.display = 'block';
+
+        // Подсказку держим внутри картинки: у правого края разворачиваем влево,
+        // иначе она уезжает за границу панели и обрезается.
+        const wrapW = box.width;
+        const px = gx / g.W * wrapW;
+        const tw = tip.offsetWidth || 160;
+        tip.style.left = Math.max(0, Math.min(wrapW - tw, px + 12)) + 'px';
+        tip.style.top = '4px';
+    },
+
+    analyticsChartLeave: function (id) {
+        const tip = document.getElementById('tip_' + id);
+        const guide = document.getElementById('guide_' + id);
+        if (tip) tip.style.display = 'none';
+        if (guide) guide.setAttribute('opacity', '0');
+    },
+
+    setAnalyticsMonths: function (m) {
+        this._analyticsMonths = m;
+        this.renderAdminMain();
     },
 
     renderAdminProjects: function () {

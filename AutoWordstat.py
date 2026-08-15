@@ -1019,11 +1019,17 @@ def run_monthly(client):
         # любой докатки, поэтому очищать state имеет право только он сам,
         # когда закрыт целиком (см. run_backfill).
 
-    # Снимок по регионам — все фразы, одним запросом на всю страну каждая.
+    # Снимок по регионам. Запросов на фразу два, и второй обязателен: в разрезе
+    # REGION_REGIONS городов нет вовсе, поэтому без него выпадают Москва и
+    # Санкт-Петербург, а вместе с ними Московская и Ленинградская области —
+    # они считаются вычитанием города из пары «город и область». Это четыре
+    # региона из десяти, причём самые крупные рынки; первый прогон именно так
+    # их и потерял, написав в лог «нет данных по вычитаемому id».
     region_snapshots = data.get("region_snapshots", {})
     region_monthly = data.get("region_monthly", {})
-    yid_to_name = {v["yid"]: k for k, v in region_map.items()}
     this_month_snap = {}
+    needs_cities = any(region_map[n].get("minus_yid") for n in mapped_live) or \
+        any(str(region_map[n]["yid"]) in ("213", "2") for n in mapped_live)
     for p in phrases:
         resp = client.call("regions", {"phrase": p["text"], "region": "REGION_REGIONS"})
         if resp is None:
@@ -1036,6 +1042,13 @@ def run_monthly(client):
                 "count": to_int(r.get("count")),
                 "affinity": to_float(r.get("affinityIndex")),
             }
+        if needs_cities:
+            cresp = client.call("regions", {"phrase": p["text"], "region": "REGION_CITIES"})
+            for r in (cresp or {}).get("results", []):
+                raw.setdefault(str(r.get("region")), {
+                    "count": to_int(r.get("count")),
+                    "affinity": to_float(r.get("affinityIndex")),
+                })
 
         by_region = {}
         for name in mapped_live:
