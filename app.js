@@ -12050,25 +12050,29 @@ const app = {
                     base += byM[baseM] || 0;
                     Object.keys(byM).forEach(k => { total += byM[k]; });
                 });
-                // Спрос по региону дистрибьютора — берём первый из его списка,
-                // по которому у нас вообще есть история.
-                const regs = (d.regions || []).map(x => x);
-                let demand = null, demandRegion = null;
+                // Спрос суммируем по всем регионам дистрибьютора, а не берём
+                // первый попавшийся: у работающего в двух областях половина
+                // рынка иначе просто не считалась бы. Складываем сами запросы
+                // и только потом берём процент — среднее из процентов дало бы
+                // маленькому региону тот же вес, что и большому.
                 const rm = (wordstat && wordstat.region_monthly) || {};
                 const demandPhrase = 'montazh_otopleniya';
-                for (const rg of regs) {
-                    const series = (rm[demandPhrase] || {})[rg];
-                    if (series && series.length) {
-                        const last = series[series.length - 1];
-                        const prev = series[series.length - 1 - backMonths];
-                        demandRegion = rg;
-                        demand = (prev && prev[1])
-                            ? Math.round((last[1] - prev[1]) / prev[1] * 100) : null;
-                        break;
-                    }
-                }
-                return { name: d.company || d.code || ('#' + d.id), users: mine.length,
-                          cur, base, total, demand, demandRegion,
+                const known = (d.regions || []).filter(rg => ((rm[demandPhrase] || {})[rg] || []).length);
+                const picked = this._distRegion && this._distRegion[d.id];
+                const useRegs = (picked && known.indexOf(picked) >= 0) ? [picked] : known;
+                let dCur = 0, dBase = 0, haveDemand = false;
+                useRegs.forEach(rg => {
+                    const series = rm[demandPhrase][rg];
+                    const last = series[series.length - 1];
+                    const prev = series[series.length - 1 - backMonths];
+                    if (last) { dCur += last[1] || 0; haveDemand = true; }
+                    if (prev) dBase += prev[1] || 0;
+                });
+                const demand = (haveDemand && dBase) ? Math.round((dCur - dBase) / dBase * 100) : null;
+                return { id: d.id, name: d.company || d.code || ('#' + d.id), users: mine.length,
+                          cur, base, total, demand,
+                          regions: d.regions || [], known: known, picked: picked || null,
+                          demandCur: dCur,
                           estPct: base ? Math.round((cur - base) / base * 100) : null };
             }).filter(x => x.users > 0 || x.total > 0)
               .sort((a, b) => b.total - a.total);
@@ -12089,10 +12093,25 @@ const app = {
                     const pctCell = (p, title) => p === null
                         ? `<span style="color:var(--text-sec);" title="${title}">—</span>`
                         : `<span style="color:${p > 4 ? '#10B981' : (p < -4 ? '#EF4444' : 'var(--text-sec)')}; font-weight:700;" title="${title}">${p > 0 ? '+' : ''}${p}%</span>`;
+                    // Переключатель регионов показываем, только когда их
+                    // несколько: у местного дистрибьютора с одним регионом
+                    // кнопка «все» рядом с единственной областью — мусор.
+                    let chips = '';
+                    if (x.known.length > 1) {
+                        const chip = (val, label) => `<button class="admin-btn" style="padding:0 7px; height:22px; font-size:11px; margin:2px 3px 0 0; ${((x.picked || '') === val) ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="event.stopPropagation(); app.setDistRegion('${esc(String(x.id))}', '${esc(val).replace(/'/g, "\\'")}')">${esc(label)}</button>`;
+                        chips = `<div style="margin-top:3px;">${chip('', 'все регионы')}${x.known.map(rg => chip(rg, rg)).join('')}</div>`;
+                    } else if (x.known.length === 1) {
+                        chips = `<br><small style="color:var(--text-sec);">${esc(x.known[0])}</small>`;
+                    } else if (x.regions.length) {
+                        chips = `<br><small style="color:var(--text-sec);">${esc(x.regions.join(', '))} — истории спроса нет</small>`;
+                    }
+                    const demandTitle = x.known.length
+                        ? `${x.picked ? x.picked : 'все регионы: ' + x.known.join(', ')}; запросов в ${curM}: ${num(x.demandCur)}`
+                        : 'по регионам дистрибьютора истории спроса нет';
                     h += `<tr>
-                        <td><b>${esc(x.name)}</b>${x.demandRegion ? `<br><small style="color:var(--text-sec);">${esc(x.demandRegion)}</small>` : ''}</td>
+                        <td><b>${esc(x.name)}</b>${chips}</td>
                         <td style="text-align:center;">${x.users}</td>
-                        <td style="text-align:center;">${pctCell(x.demand, 'изменение поискового спроса на монтаж отопления')}</td>
+                        <td style="text-align:center;">${pctCell(x.demand, demandTitle)}</td>
                         <td style="text-align:center;">${x.cur} ${pctCell(x.estPct, `${curM}: ${x.cur} против ${baseM}: ${x.base}`)}</td>
                         <td style="text-align:center; color:var(--text-sec);">${x.total}</td>
                     </tr>`;
@@ -12278,6 +12297,13 @@ const app = {
 
     setAnalyticsCompare: function (m) {
         this._analyticsCompare = m;
+        this.renderAdminMain();
+    },
+
+    // Пустая строка — «все регионы дистрибьютора», иначе один выбранный
+    setDistRegion: function (distId, region) {
+        this._distRegion = this._distRegion || {};
+        this._distRegion[distId] = region || null;
         this.renderAdminMain();
     },
 
