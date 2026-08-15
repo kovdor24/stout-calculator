@@ -12009,6 +12009,98 @@ const app = {
             h += `</div>`;
         }
 
+        // ── Дистрибьюторы: спрос против наших смет ──────────────────────────
+        // Вопрос владельца: растёт спрос в регионе — доходит ли это до
+        // дистрибьютора. Годовая выручка из отчётности отвечает на него с
+        // опозданием до полутора лет, а свои сметы — помесячно и сразу.
+        // Считаем прямо здесь из данных админки: лишних запросов не нужно,
+        // и монтажники уже привязаны к дистрибьюторам полем distributor_id.
+        const dists = (this.adminData && this.adminData.distributors) || [];
+        const allUsers = (this.adminData && this.adminData.users) || [];
+        const allEsts = (this.adminData && this.adminData.userEstimates) || [];
+        if (dists.length && allEsts.length) {
+            // Месяц считаем по UTC. По местному времени смета от 31 декабря
+            // 23:00 попадала бы в январь, причём у разных смотрящих по-разному —
+            // раскладка по месяцам должна быть одна и та же всегда.
+            const monthKey = (d) => {
+                const t = new Date(d);
+                return isNaN(t) ? null : t.getUTCFullYear() + '-' + ('0' + (t.getUTCMonth() + 1)).slice(-2);
+            };
+            const estByUser = {};
+            allEsts.forEach(e => {
+                const m = monthKey(e.created_at);
+                if (!m) return;
+                (estByUser[String(e.user_id)] = estByUser[String(e.user_id)] || {});
+                estByUser[String(e.user_id)][m] = (estByUser[String(e.user_id)][m] || 0) + 1;
+            });
+
+            const nowM = new Date();
+            const shift = (k) => {
+                const d = new Date(Date.UTC(nowM.getUTCFullYear(), nowM.getUTCMonth() - k, 1));
+                return d.getUTCFullYear() + '-' + ('0' + (d.getUTCMonth() + 1)).slice(-2);
+            };
+            const curM = shift(0), baseM = shift(backMonths);
+
+            const rowsD = dists.map(d => {
+                const mine = allUsers.filter(u => String(u.distributor_id) === String(d.id));
+                let cur = 0, base = 0, total = 0;
+                mine.forEach(u => {
+                    const byM = estByUser[String(u.id)] || {};
+                    cur += byM[curM] || 0;
+                    base += byM[baseM] || 0;
+                    Object.keys(byM).forEach(k => { total += byM[k]; });
+                });
+                // Спрос по региону дистрибьютора — берём первый из его списка,
+                // по которому у нас вообще есть история.
+                const regs = (d.regions || []).map(x => x);
+                let demand = null, demandRegion = null;
+                const rm = (wordstat && wordstat.region_monthly) || {};
+                const demandPhrase = 'montazh_otopleniya';
+                for (const rg of regs) {
+                    const series = (rm[demandPhrase] || {})[rg];
+                    if (series && series.length) {
+                        const last = series[series.length - 1];
+                        const prev = series[series.length - 1 - backMonths];
+                        demandRegion = rg;
+                        demand = (prev && prev[1])
+                            ? Math.round((last[1] - prev[1]) / prev[1] * 100) : null;
+                        break;
+                    }
+                }
+                return { name: d.company || d.code || ('#' + d.id), users: mine.length,
+                          cur, base, total, demand, demandRegion,
+                          estPct: base ? Math.round((cur - base) / base * 100) : null };
+            }).filter(x => x.users > 0 || x.total > 0)
+              .sort((a, b) => b.total - a.total);
+
+            if (rowsD.length) {
+                h += `<h4 style="margin:26px 0 4px; color:var(--text-main);">🏢 Дистрибьюторы: спрос и наши сметы</h4>
+                    <div style="font-size:12px; color:var(--text-sec); margin-bottom:8px;">
+                        Слева — как менялся поисковый спрос в регионе дистрибьютора, справа — сколько смет за тот же период сделали привязанные к нему монтажники. Расхождение и есть ответ на вопрос, доходит ли рост рынка до него.
+                    </div>
+                    <div style="overflow-x:auto;"><table class="inv-table"><thead><tr>
+                        <th>Дистрибьютор</th>
+                        <th style="text-align:center; width:90px;">Монтажников</th>
+                        <th style="text-align:center; width:110px;">Спрос в регионе</th>
+                        <th style="text-align:center; width:110px;">Смет за месяц</th>
+                        <th style="text-align:center; width:90px;">Смет всего</th>
+                    </tr></thead><tbody>`;
+                rowsD.forEach(x => {
+                    const pctCell = (p, title) => p === null
+                        ? `<span style="color:var(--text-sec);" title="${title}">—</span>`
+                        : `<span style="color:${p > 4 ? '#10B981' : (p < -4 ? '#EF4444' : 'var(--text-sec)')}; font-weight:700;" title="${title}">${p > 0 ? '+' : ''}${p}%</span>`;
+                    h += `<tr>
+                        <td><b>${esc(x.name)}</b>${x.demandRegion ? `<br><small style="color:var(--text-sec);">${esc(x.demandRegion)}</small>` : ''}</td>
+                        <td style="text-align:center;">${x.users}</td>
+                        <td style="text-align:center;">${pctCell(x.demand, 'изменение поискового спроса на монтаж отопления')}</td>
+                        <td style="text-align:center;">${x.cur} ${pctCell(x.estPct, `${curM}: ${x.cur} против ${baseM}: ${x.base}`)}</td>
+                        <td style="text-align:center; color:var(--text-sec);">${x.total}</td>
+                    </tr>`;
+                });
+                h += `</tbody></table></div>`;
+            }
+        }
+
         // ── Догазификация ───────────────────────────────────────────────────
         // Единственный блок вкладки, полезный не владельцу, а монтажнику:
         // куда в ближайшие годы приходит газ. Собирает AutoGasPlans.py.
@@ -29651,9 +29743,35 @@ const app = {
      * Внутренний диаметр трубы по её наружному размеру, м. Стенки — как у серии,
      * которой считается разводка: 16×2.2, 20×2.8, 25×3.5, 32×4.4.
      */
-    RAD_PIPE_ID: { 16: 0.0116, 20: 0.0144, 25: 0.018, 32: 0.0232 },
-    radPipeId: function (d) {
-        return this.RAD_PIPE_ID[parseInt(d, 10)] || 0.0116;
+    /**
+     * Внутренний диаметр трубы, м — по её семейству, а не по наружному размеру.
+     *
+     * Наружный размер один, а стенка у каждой линейки своя, и в гидравлике это
+     * решает: потери меняются как пятая степень диаметра. На «двадцатой»
+     * металлопластик даёт 16,0 мм, стабильная — 14,2, и потери между ними
+     * отличаются в 1,8 раза. Считать всё по серой PE-Xa, как было сначала,
+     * значит ошибаться вдвое на половине объектов.
+     *
+     * Размеры взяты у тех самых артикулов, которыми смета кладёт магистраль:
+     * серая PE-Xa 16×2.2, 20×2.8, 25×3.5, 32×4.4; металлопластик 16×2.0,
+     * 20×2.0, 26×3.0, 32×3.0 (у него вместо 25-й идёт 26-я); стабильная
+     * PE-Xa/Al/PE-RT 16×2.6, 20×2.9, 25×3.7, 32×4.7.
+     */
+    RAD_PIPE_ID: {
+        grey:   { 16: 0.0116, 20: 0.0144, 25: 0.0180, 26: 0.0180, 32: 0.0232 },
+        mp:     { 16: 0.0120, 20: 0.0160, 25: 0.0200, 26: 0.0200, 32: 0.0260 },
+        stable: { 16: 0.0108, 20: 0.0142, 25: 0.0176, 26: 0.0176, 32: 0.0226 }
+    },
+    /** Семейство трубы радиаторной разводки по выбору в настройках. */
+    radPipeFamily: function () {
+        const t = this.state.pipeType;
+        if (t === 'split_mp' || t === 'insulated_mp') return 'mp';
+        if (t === 'stable_16' || t === 'stable_16_r') return 'stable';
+        return 'grey';   // серая PE-Xa и труба в теплоизоляции 16×2.2
+    },
+    radPipeId: function (d, family) {
+        const fam = this.RAD_PIPE_ID[family || this.radPipeFamily()] || this.RAD_PIPE_ID.grey;
+        return fam[parseInt(d, 10)] || fam[16];
     },
 
     /**
