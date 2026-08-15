@@ -11804,7 +11804,7 @@ const app = {
         }
 
         // ── Сводка: где мы первые, где нас нет ──────────────────────────────
-        const rows = [];
+        let rows = [];
         Object.keys(cats).forEach(id => {
             const r = rankOf(id);
             if (!r) return;
@@ -11833,6 +11833,17 @@ const app = {
         // обвязка). Сортировка по занятому месту показывала бы сначала то, где
         // мы первые, но искать нужную группу в таком списке невозможно.
         rows.sort((a, b) => (a.section - b.section) || (a.order - b.order));
+
+        const totalRows = rows.length;
+        if (ownFilter) {
+            rows = rows.filter(r => {
+                const place = ownFilter.brand === 'stout' ? r.stout : r.rommer;
+                if (ownFilter.mode === 'leader') return place === 1;
+                // «Не лидер» — только там, где позиции у нас есть: где марка
+                // вообще не продаётся, отвоёвывать нечего.
+                return r.ownIn.indexOf(ownFilter.brand) >= 0 && place !== 1;
+            });
+        }
 
         // Место само по себе мало значит: третье место с долей 30 % и третье
         // с долей 2 % — разные положения. Поэтому под номером показываем долю
@@ -11872,6 +11883,22 @@ const app = {
         // сравнения нажимались бы вхолостую — молча, будто интерфейс сломан.
         // Поэтому либо кнопки, либо прямое объяснение, почему их нет.
         const hasHistory = Object.keys(catMonthly).length > 0;
+        // Щелчок по заголовку марки перебирает три состояния: где мы первые,
+        // где продаём, но не первые, и снова все группы. Второе состояние —
+        // самое полезное: это и есть список, куда идти отвоёвывать. Поэтому
+        // «не лидер» показывает только группы, где позиции у нас есть; там,
+        // где мы вообще не продаём, отвоёвывать нечего.
+        const ownFilter = this._analyticsOwnFilter || null;
+        const ownHeader = (brand, label) => {
+            const active = ownFilter && ownFilter.brand === brand ? ownFilter.mode : null;
+            const mark = active === 'leader' ? ' ①' : (active === 'weak' ? ' ↓' : '');
+            const title = active === 'leader' ? 'показаны группы, где марка первая — нажмите ещё раз'
+                : (active === 'weak' ? 'показаны группы, где продаём, но не первые — нажмите ещё раз, чтобы снять'
+                    : 'нажмите: сначала где первые, потом где не первые');
+            return `<th style="text-align:center; width:70px; cursor:pointer; ${active ? 'color:var(--primary);' : ''}"
+                        title="${title}" onclick="app.cycleAnalyticsOwnFilter('${brand}')">${label}${mark}</th>`;
+        };
+
         const cmpBtn = (m, label) => `<button class="admin-btn" style="${backMonths === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsCompare(${m})">${label}</button>`;
         h += `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 8px;">
                 <h4 style="margin:0; color:var(--text-main);">Наши места по категориям${region ? ` — ${esc(region)}` : ''}</h4>
@@ -11880,12 +11907,19 @@ const app = {
                        ${cmpBtn(1, 'прошлому месяцу')}${cmpBtn(3, 'кварталу')}${cmpBtn(12, 'году назад')}`
                     : `<span style="font-size:12px; color:#F97316; margin-left:6px;">История по категориям ещё не собрана — запустите Actions → Wordstat Analytics → brands. Тогда появятся проценты изменения и графики по каждой группе.</span>`}
               </div>
+            ${ownFilter ? `<div style="font-size:12px; color:var(--primary); margin:0 0 6px;">
+                    ${ownFilter.mode === 'leader'
+                        ? `Показаны группы, где <b>${ownFilter.brand.toUpperCase()}</b> первый по спросу`
+                        : `Показаны группы, где <b>${ownFilter.brand.toUpperCase()}</b> продаётся, но не первый — это и есть список, куда идти отвоёвывать`}
+                    — ${rows.length} из ${totalRows}.
+                    <button class="admin-btn" style="height:22px; padding:0 8px; font-size:11px; margin-left:6px;" onclick="app.cycleAnalyticsOwnFilter('${ownFilter.brand}')">${ownFilter.mode === 'leader' ? 'показать, где не первые' : 'снять фильтр'}</button>
+                </div>` : ''}
             <div style="overflow-x:auto;"><table class="inv-table">
                 <thead><tr>
                     <th>Группа прайса</th><th>Лидер спроса</th>
                     <th style="text-align:center; width:80px;">Спрос</th>
-                    <th style="text-align:center; width:70px;">STOUT</th>
-                    <th style="text-align:center; width:70px;">ROMMER</th>
+                    ${ownHeader('stout', 'STOUT')}
+                    ${ownHeader('rommer', 'ROMMER')}
                 </tr></thead><tbody>`;
         let lastSection = null;
         rows.forEach(r => {
@@ -12194,9 +12228,25 @@ const app = {
         // линии все остальные перекрашивались бы — и глаз терял бы, где кто.
         this._chartHidden = this._chartHidden || {};
         const hidden = this._chartHidden[id] || {};
-        const all = series.map((s, i) => Object.assign({}, s, {
-            color: COLORS[i % COLORS.length], hidden: !!hidden[String(s.name)]
-        }));
+        // Свои марки всегда своим цветом, в каком бы порядке ни шли: синий
+        // STOUT и красный ROMMER с логотипов. На тёмной теме фирменный синий
+        // почти сливается с фоном, поэтому там его подсвечиваем — оттенок тот
+        // же, просто светлее.
+        const dark = this.isDarkBackground();
+        const BRAND = {
+            stout: dark ? '#4E7FBF' : '#1E3A63',
+            rommer: dark ? '#E05252' : '#B01E1E'
+        };
+        let palette = 0;
+        const all = series.map((s) => {
+            const key = String(s.name).toLowerCase().trim();
+            const own = BRAND[key];
+            return Object.assign({}, s, {
+                color: own || COLORS[palette++ % COLORS.length],
+                own: !!own,
+                hidden: !!hidden[String(s.name)]
+            });
+        });
         const legendAll = all;
         series = all.filter(s => !s.hidden);
         if (!series.length) {                     // всё выключили — показываем первый
@@ -12224,7 +12274,7 @@ const app = {
             const d = s.points.map((p, i) =>
                 `${i ? 'L' : 'M'}${x(i).toFixed(1)},${yOf(p[1], max).toFixed(1)}`
             ).join(' ');
-            paths += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round"/>`;
+            paths += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.own ? 3 : 2}" stroke-linejoin="round"/>`;
         });
 
         // Легенда — она же переключатели: показываем и выключенные ряды,
@@ -12332,6 +12382,26 @@ const app = {
     },
 
     // Пустая строка — «все регионы дистрибьютора», иначе один выбранный
+    // Тема берётся не из настройки, а из фактического цвета фона: панель
+    // может открыться и в системной тёмной, где атрибута темы нет.
+    isDarkBackground: function () {
+        try {
+            const bg = getComputedStyle(document.body).backgroundColor || '';
+            const m = bg.match(/(\d+),\s*(\d+),\s*(\d+)/);
+            if (!m) return false;
+            const lum = 0.2126 * (+m[1]) + 0.7152 * (+m[2]) + 0.0722 * (+m[3]);
+            return lum < 128;
+        } catch (e) { return false; }
+    },
+
+    cycleAnalyticsOwnFilter: function (brand) {
+        const cur = this._analyticsOwnFilter;
+        if (!cur || cur.brand !== brand) this._analyticsOwnFilter = { brand: brand, mode: 'leader' };
+        else if (cur.mode === 'leader') this._analyticsOwnFilter = { brand: brand, mode: 'weak' };
+        else this._analyticsOwnFilter = null;
+        this.renderAdminMain();
+    },
+
     toggleChartSeries: function (chartId, name) {
         this._chartHidden = this._chartHidden || {};
         const map = this._chartHidden[chartId] = this._chartHidden[chartId] || {};
