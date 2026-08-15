@@ -1,0 +1,3444 @@
+{
+  "candidates": {
+    "aquatec": {
+      "cats": [
+        "boylery_kn"
+      ],
+      "hits": 16
+    },
+    "eco": {
+      "cats": [
+        "kotly_gaz",
+        "nasosy_skv",
+        "konvektory",
+        "termogolovki"
+      ],
+      "hits": 23
+    },
+    "inox": {
+      "cats": [
+        "boylery_kn"
+      ],
+      "hits": 22
+    },
+    "pex": {
+      "cats": [
+        "truba_pex",
+        "truba_mp",
+        "fitingi_ax"
+      ],
+      "hits": 18
+    },
+    "zeissler": {
+      "cats": [
+        "nasosnye_gruppy",
+        "termogolovki",
+        "uzel_podmesa",
+        "vodoochistka"
+      ],
+      "hits": 19
+    },
+    "аксиальные": {
+      "cats": [
+        "truba_pex",
+        "fitingi_ax"
+      ],
+      "hits": 75
+    },
+    "аксиальных": {
+      "cats": [
+        "fitingi_ax"
+      ],
+      "hits": 97
+    },
+    "бака": {
+      "cats": [
+        "rasshir_baki"
+      ],
+      "hits": 75
+    },
+    "баки": {
+      "cats": [
+        "kotly_gaz",
+        "rasshir_baki"
+      ],
+      "hits": 17
+    },
+    "бакси": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "dymohody",
+        "nasosy_cirk",
+        "rasshir_baki",
+        "stabilizatory"
+      ],
+      "hits": 51
+    },
+    "без": {
+      "cats": [
+        "kotly_el",
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "nasosy_skv",
+        "radiatory",
+        "konvektory",
+        "termogolovki",
+        "fitingi_ax",
+        "kollektor_tp",
+        "uzel_podmesa",
+        "termostaty_tp",
+        "kanalizaciya",
+        "installyacii"
+      ],
+      "hits": 69
+    },
+    "биметаллические": {
+      "cats": [
+        "radiatory"
+      ],
+      "hits": 21
+    },
+    "бойлера": {
+      "cats": [
+        "boylery_kn",
+        "gidrostrelki"
+      ],
+      "hits": 64
+    },
+    "быстрого": {
+      "cats": [
+        "nasosnye_gruppy",
+        "gidrostrelki"
+      ],
+      "hits": 22
+    },
+    "валтек": {
+      "cats": [
+        "nasosnye_gruppy",
+        "rasshir_baki",
+        "truba_pex",
+        "truba_mp",
+        "kollektor_tp",
+        "shkaf_kollekt",
+        "uzel_podmesa",
+        "krany_sharovye"
+      ],
+      "hits": 23
+    },
+    "вентилятором": {
+      "cats": [
+        "konvektory"
+      ],
+      "hits": 25
+    },
+    "вертикальный": {
+      "cats": [
+        "dymohody",
+        "rasshir_baki",
+        "radiatory"
+      ],
+      "hits": 22
+    },
+    "внутрипольного": {
+      "cats": [
+        "konvektory"
+      ],
+      "hits": 61
+    },
+    "внутрипольные": {
+      "cats": [
+        "konvektory"
+      ],
+      "hits": 110
+    },
+    "внутрипольных": {
+      "cats": [
+        "konvektory"
+      ],
+      "hits": 29
+    },
+    "водоснабжения": {
+      "cats": [
+        "kotly_el",
+        "nasosy_skv",
+        "rasshir_baki",
+        "truba_pex",
+        "truba_mp",
+        "shkaf_kollekt"
+      ],
+      "hits": 23
+    },
+    "воды": {
+      "cats": [
+        "kotly_el",
+        "boylery_kn",
+        "nasosnye_gruppy",
+        "nasosy_cirk",
+        "nasosy_skv",
+        "rasshir_baki",
+        "truba_pex",
+        "truba_mp",
+        "kollektor_tp",
+        "krany_sharovye"
+      ],
+      "hits": 41
+    },
+    "водяного": {
+      "cats": [
+        "kollektor_tp",
+        "uzel_podmesa",
+        "termostaty_tp"
+      ],
+      "hits": 28
+    },
+    "водяной": {
+      "cats": [
+        "kotly_el",
+        "konvektory",
+        "kollektor_tp",
+        "uzel_podmesa",
+        "vodoochistka"
+      ],
+      "hits": 50
+    },
+    "встраиваемый": {
+      "cats": [
+        "konvektory",
+        "shkaf_kollekt"
+      ],
+      "hits": 20
+    },
+    "выбрать": {
+      "cats": [
+        "kotly_el",
+        "boylery_kn",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "nasosy_skv",
+        "rasshir_baki",
+        "radiatory",
+        "konvektory",
+        "truba_pex",
+        "kollektor_tp",
+        "uzel_podmesa",
+        "installyacii",
+        "vodoochistka",
+        "teplonositel",
+        "stabilizatory"
+      ],
+      "hits": 76
+    },
+    "высота": {
+      "cats": [
+        "nasosy_skv",
+        "radiatory",
+        "konvektory",
+        "kollektor_tp",
+        "termostaty_tp",
+        "installyacii"
+      ],
+      "hits": 20
+    },
+    "выходов": {
+      "cats": [
+        "gidrostrelki",
+        "kollektor_tp",
+        "shkaf_kollekt"
+      ],
+      "hits": 18
+    },
+    "газового": {
+      "cats": [
+        "kotly_gaz",
+        "boylery_kn",
+        "dymohody",
+        "gidrostrelki",
+        "radiatory",
+        "shkaf_kollekt",
+        "termostaty_tp",
+        "avtomatika",
+        "teplonositel",
+        "stabilizatory"
+      ],
+      "hits": 287
+    },
+    "газовые": {
+      "cats": [
+        "kotly_gaz",
+        "boylery_kn",
+        "dymohody"
+      ],
+      "hits": 46
+    },
+    "газовый": {
+      "cats": [
+        "kotly_el",
+        "boylery_kn",
+        "dymohody",
+        "radiatory",
+        "krany_sharovye"
+      ],
+      "hits": 33
+    },
+    "газовых": {
+      "cats": [
+        "kotly_gaz",
+        "dymohody",
+        "stabilizatory"
+      ],
+      "hits": 173
+    },
+    "гидравлический": {
+      "cats": [
+        "gidrostrelki",
+        "truba_mp",
+        "fitingi_ax",
+        "nerzh_press"
+      ],
+      "hits": 18
+    },
+    "гидрострелки": {
+      "cats": [
+        "gidrostrelki"
+      ],
+      "hits": 98
+    },
+    "гидрострелкой": {
+      "cats": [
+        "gidrostrelki"
+      ],
+      "hits": 56
+    },
+    "гидрострелку": {
+      "cats": [
+        "gidrostrelki"
+      ],
+      "hits": 33
+    },
+    "головки": {
+      "cats": [
+        "termogolovki"
+      ],
+      "hits": 27
+    },
+    "горячей": {
+      "cats": [
+        "boylery_kn",
+        "vodoochistka"
+      ],
+      "hits": 27
+    },
+    "группы": {
+      "cats": [
+        "nasosnye_gruppy"
+      ],
+      "hits": 64
+    },
+    "давление": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "rasshir_baki",
+        "truba_pex",
+        "truba_mp",
+        "krany_sharovye"
+      ],
+      "hits": 22
+    },
+    "датчиком": {
+      "cats": [
+        "termogolovki",
+        "termostaty_tp"
+      ],
+      "hits": 22
+    },
+    "двухконтурный": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "termostaty_tp"
+      ],
+      "hits": 39
+    },
+    "диаметр": {
+      "cats": [
+        "dymohody",
+        "gidrostrelki",
+        "truba_pex",
+        "truba_mp",
+        "kollektor_tp",
+        "krany_sharovye"
+      ],
+      "hits": 41
+    },
+    "доме": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "dymohody",
+        "gidrostrelki",
+        "radiatory",
+        "konvektory"
+      ],
+      "hits": 35
+    },
+    "дымохода": {
+      "cats": [
+        "dymohody"
+      ],
+      "hits": 133
+    },
+    "дымоходы": {
+      "cats": [
+        "kotly_gaz",
+        "dymohody"
+      ],
+      "hits": 43
+    },
+    "жидкостная": {
+      "cats": [
+        "termogolovki"
+      ],
+      "hits": 17
+    },
+    "закрытого": {
+      "cats": [
+        "rasshir_baki"
+      ],
+      "hits": 28
+    },
+    "замена": {
+      "cats": [
+        "kotly_gaz",
+        "radiatory",
+        "konvektory",
+        "kollektor_tp",
+        "krany_sharovye",
+        "vodoochistka"
+      ],
+      "hits": 16
+    },
+    "зачем": {
+      "cats": [
+        "gidrostrelki",
+        "rasshir_baki",
+        "vodoochistka",
+        "stabilizatory"
+      ],
+      "hits": 16
+    },
+    "или": {
+      "cats": [
+        "kotly_el",
+        "gidrostrelki",
+        "nasosy_skv",
+        "radiatory",
+        "konvektory",
+        "truba_pex",
+        "truba_mp",
+        "fitingi_ax",
+        "teplonositel"
+      ],
+      "hits": 24
+    },
+    "инсталляции": {
+      "cats": [
+        "installyacii"
+      ],
+      "hits": 157
+    },
+    "инсталляцию": {
+      "cats": [
+        "installyacii"
+      ],
+      "hits": 23
+    },
+    "инструкция": {
+      "cats": [
+        "kotly_gaz",
+        "boylery_kn",
+        "dymohody",
+        "konvektory",
+        "kollektor_tp",
+        "uzel_podmesa",
+        "termostaty_tp",
+        "installyacii"
+      ],
+      "hits": 28
+    },
+    "инструмент": {
+      "cats": [
+        "truba_pex",
+        "truba_mp",
+        "fitingi_ax",
+        "nerzh_press"
+      ],
+      "hits": 60
+    },
+    "как": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "dymohody",
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "nasosy_skv",
+        "rasshir_baki",
+        "radiatory",
+        "konvektory",
+        "termogolovki",
+        "truba_pex",
+        "truba_mp",
+        "fitingi_ax",
+        "kollektor_tp",
+        "shkaf_kollekt",
+        "uzel_podmesa",
+        "termostaty_tp",
+        "nerzh_press",
+        "installyacii",
+        "krany_sharovye",
+        "vodoochistka",
+        "teplonositel",
+        "stabilizatory"
+      ],
+      "hits": 398
+    },
+    "какие": {
+      "cats": [
+        "kotly_gaz",
+        "dymohody",
+        "nasosy_skv",
+        "rasshir_baki",
+        "radiatory",
+        "konvektory",
+        "truba_pex",
+        "truba_mp",
+        "nerzh_press",
+        "installyacii",
+        "vodoochistka",
+        "teplonositel",
+        "stabilizatory"
+      ],
+      "hits": 67
+    },
+    "канализации": {
+      "cats": [
+        "shkaf_kollekt",
+        "kanalizaciya"
+      ],
+      "hits": 19
+    },
+    "квартире": {
+      "cats": [
+        "radiatory",
+        "konvektory",
+        "truba_mp",
+        "shkaf_kollekt",
+        "vodoochistka"
+      ],
+      "hits": 18
+    },
+    "квартиру": {
+      "cats": [
+        "radiatory",
+        "vodoochistka"
+      ],
+      "hits": 19
+    },
+    "клапан": {
+      "cats": [
+        "boylery_kn",
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "konvektory",
+        "termogolovki",
+        "kollektor_tp",
+        "uzel_podmesa",
+        "installyacii",
+        "krany_sharovye"
+      ],
+      "hits": 37
+    },
+    "клещи": {
+      "cats": [
+        "truba_pex",
+        "truba_mp",
+        "fitingi_ax",
+        "nerzh_press"
+      ],
+      "hits": 30
+    },
+    "коаксиального": {
+      "cats": [
+        "dymohody"
+      ],
+      "hits": 120
+    },
+    "коаксиальные": {
+      "cats": [
+        "dymohody"
+      ],
+      "hits": 38
+    },
+    "коллектор": {
+      "cats": [
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "termogolovki",
+        "shkaf_kollekt",
+        "uzel_podmesa",
+        "termostaty_tp"
+      ],
+      "hits": 59
+    },
+    "коллектора": {
+      "cats": [
+        "gidrostrelki",
+        "kollektor_tp",
+        "shkaf_kollekt",
+        "uzel_podmesa"
+      ],
+      "hits": 140
+    },
+    "коллекторного": {
+      "cats": [
+        "shkaf_kollekt"
+      ],
+      "hits": 17
+    },
+    "комплект": {
+      "cats": [
+        "dymohody",
+        "nasosnye_gruppy",
+        "radiatory",
+        "konvektory",
+        "termogolovki",
+        "fitingi_ax",
+        "kollektor_tp",
+        "uzel_podmesa",
+        "installyacii"
+      ],
+      "hits": 48
+    },
+    "конвектора": {
+      "cats": [
+        "konvektory"
+      ],
+      "hits": 64
+    },
+    "конвекторов": {
+      "cats": [
+        "konvektory"
+      ],
+      "hits": 29
+    },
+    "конвекторы": {
+      "cats": [
+        "konvektory"
+      ],
+      "hits": 104
+    },
+    "контура": {
+      "cats": [
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "kollektor_tp",
+        "uzel_podmesa"
+      ],
+      "hits": 44
+    },
+    "контуров": {
+      "cats": [
+        "gidrostrelki",
+        "kollektor_tp"
+      ],
+      "hits": 28
+    },
+    "котел": {
+      "cats": [
+        "boylery_kn",
+        "dymohody",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "radiatory",
+        "avtomatika",
+        "stabilizatory"
+      ],
+      "hits": 44
+    },
+    "котла": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "dymohody",
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "rasshir_baki",
+        "kollektor_tp",
+        "shkaf_kollekt",
+        "termostaty_tp",
+        "teplonositel"
+      ],
+      "hits": 242
+    },
+    "котлов": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "dymohody",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "radiatory",
+        "avtomatika",
+        "teplonositel",
+        "stabilizatory"
+      ],
+      "hits": 298
+    },
+    "котлом": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn"
+      ],
+      "hits": 44
+    },
+    "котлу": {
+      "cats": [
+        "boylery_kn",
+        "dymohody",
+        "gidrostrelki",
+        "kollektor_tp"
+      ],
+      "hits": 18
+    },
+    "котлы": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "dymohody"
+      ],
+      "hits": 94
+    },
+    "кран": {
+      "cats": [
+        "nasosnye_gruppy",
+        "radiatory",
+        "truba_mp",
+        "kollektor_tp",
+        "vodoochistka"
+      ],
+      "hits": 22
+    },
+    "крана": {
+      "cats": [
+        "krany_sharovye"
+      ],
+      "hits": 25
+    },
+    "кранов": {
+      "cats": [
+        "krany_sharovye"
+      ],
+      "hits": 17
+    },
+    "краны": {
+      "cats": [
+        "radiatory",
+        "krany_sharovye"
+      ],
+      "hits": 39
+    },
+    "латунный": {
+      "cats": [
+        "krany_sharovye"
+      ],
+      "hits": 17
+    },
+    "лучшие": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "dymohody",
+        "nasosy_cirk",
+        "nasosy_skv",
+        "radiatory",
+        "konvektory",
+        "truba_pex",
+        "truba_mp",
+        "installyacii",
+        "vodoochistka",
+        "stabilizatory"
+      ],
+      "hits": 57
+    },
+    "лучший": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "radiatory",
+        "kollektor_tp",
+        "vodoochistka",
+        "teplonositel",
+        "stabilizatory"
+      ],
+      "hits": 21
+    },
+    "магистрального": {
+      "cats": [
+        "vodoochistka"
+      ],
+      "hits": 53
+    },
+    "магистральные": {
+      "cats": [
+        "vodoochistka"
+      ],
+      "hits": 51
+    },
+    "магистральных": {
+      "cats": [
+        "vodoochistka"
+      ],
+      "hits": 23
+    },
+    "металлопластиковой": {
+      "cats": [
+        "truba_mp"
+      ],
+      "hits": 36
+    },
+    "металлопластиковую": {
+      "cats": [
+        "truba_mp"
+      ],
+      "hits": 38
+    },
+    "металлопластиковые": {
+      "cats": [
+        "truba_mp"
+      ],
+      "hits": 93
+    },
+    "металлопластиковых": {
+      "cats": [
+        "truba_mp",
+        "fitingi_ax"
+      ],
+      "hits": 190
+    },
+    "можно": {
+      "cats": [
+        "kotly_gaz",
+        "dymohody",
+        "konvektory",
+        "teplonositel"
+      ],
+      "hits": 16
+    },
+    "монтажа": {
+      "cats": [
+        "dymohody",
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "konvektory",
+        "truba_pex",
+        "fitingi_ax",
+        "kollektor_tp",
+        "shkaf_kollekt",
+        "installyacii"
+      ],
+      "hits": 58
+    },
+    "мощность": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "konvektory",
+        "teplonositel"
+      ],
+      "hits": 19
+    },
+    "навьен": {
+      "cats": [
+        "kotly_gaz",
+        "dymohody",
+        "stabilizatory"
+      ],
+      "hits": 25
+    },
+    "напольный": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "dymohody",
+        "rasshir_baki",
+        "konvektory"
+      ],
+      "hits": 52
+    },
+    "наружный": {
+      "cats": [
+        "dymohody",
+        "shkaf_kollekt",
+        "krany_sharovye"
+      ],
+      "hits": 29
+    },
+    "насос": {
+      "cats": [
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "rasshir_baki",
+        "kollektor_tp",
+        "uzel_podmesa",
+        "teplonositel"
+      ],
+      "hits": 31
+    },
+    "насоса": {
+      "cats": [
+        "nasosnye_gruppy",
+        "nasosy_cirk",
+        "nasosy_skv",
+        "kollektor_tp",
+        "uzel_podmesa"
+      ],
+      "hits": 165
+    },
+    "насосно": {
+      "cats": [
+        "nasosnye_gruppy",
+        "termogolovki",
+        "kollektor_tp",
+        "uzel_podmesa"
+      ],
+      "hits": 66
+    },
+    "насосной": {
+      "cats": [
+        "nasosnye_gruppy"
+      ],
+      "hits": 42
+    },
+    "насосные": {
+      "cats": [
+        "nasosnye_gruppy",
+        "nasosy_skv"
+      ],
+      "hits": 25
+    },
+    "насосов": {
+      "cats": [
+        "gidrostrelki",
+        "nasosy_cirk",
+        "nasosy_skv"
+      ],
+      "hits": 19
+    },
+    "насосом": {
+      "cats": [
+        "nasosnye_gruppy",
+        "nasosy_skv",
+        "kollektor_tp"
+      ],
+      "hits": 26
+    },
+    "насосы": {
+      "cats": [
+        "gidrostrelki",
+        "nasosy_cirk",
+        "nasosy_skv"
+      ],
+      "hits": 84
+    },
+    "настенный": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "dymohody",
+        "rasshir_baki",
+        "radiatory"
+      ],
+      "hits": 52
+    },
+    "настенных": {
+      "cats": [
+        "kotly_gaz",
+        "dymohody",
+        "stabilizatory"
+      ],
+      "hits": 18
+    },
+    "нержавейка": {
+      "cats": [
+        "boylery_kn",
+        "gidrostrelki",
+        "nerzh_press",
+        "vodoochistka"
+      ],
+      "hits": 17
+    },
+    "нержавеющих": {
+      "cats": [
+        "nerzh_press"
+      ],
+      "hits": 50
+    },
+    "нужен": {
+      "cats": [
+        "boylery_kn",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "rasshir_baki",
+        "konvektory",
+        "kollektor_tp",
+        "vodoochistka",
+        "teplonositel",
+        "stabilizatory"
+      ],
+      "hits": 33
+    },
+    "нужна": {
+      "cats": [
+        "dymohody",
+        "gidrostrelki",
+        "termogolovki"
+      ],
+      "hits": 18
+    },
+    "обвязка": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "kollektor_tp",
+        "stabilizatory"
+      ],
+      "hits": 30
+    },
+    "объем": {
+      "cats": [
+        "boylery_kn",
+        "rasshir_baki",
+        "teplonositel"
+      ],
+      "hits": 23
+    },
+    "одноконтурный": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn"
+      ],
+      "hits": 19
+    },
+    "отопление": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "radiatory",
+        "teplonositel"
+      ],
+      "hits": 75
+    },
+    "отопления": {
+      "cats": [
+        "kotly_gaz",
+        "boylery_kn",
+        "dymohody",
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "konvektory",
+        "termogolovki",
+        "truba_pex",
+        "truba_mp",
+        "kollektor_tp",
+        "shkaf_kollekt",
+        "uzel_podmesa",
+        "termostaty_tp",
+        "avtomatika",
+        "nerzh_press",
+        "krany_sharovye",
+        "stabilizatory"
+      ],
+      "hits": 355
+    },
+    "официальный": {
+      "cats": [
+        "kotly_gaz",
+        "gidrostrelki",
+        "konvektory",
+        "krany_sharovye"
+      ],
+      "hits": 20
+    },
+    "очистки": {
+      "cats": [
+        "vodoochistka"
+      ],
+      "hits": 45
+    },
+    "погружной": {
+      "cats": [
+        "nasosy_skv"
+      ],
+      "hits": 21
+    },
+    "под": {
+      "cats": [
+        "kotly_el",
+        "dymohody",
+        "radiatory",
+        "konvektory",
+        "termogolovki",
+        "truba_mp",
+        "fitingi_ax",
+        "kollektor_tp",
+        "shkaf_kollekt",
+        "nerzh_press",
+        "krany_sharovye",
+        "vodoochistka"
+      ],
+      "hits": 45
+    },
+    "подвесного": {
+      "cats": [
+        "installyacii"
+      ],
+      "hits": 45
+    },
+    "подключение": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "dymohody",
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "nasosy_skv",
+        "rasshir_baki",
+        "radiatory",
+        "konvektory",
+        "truba_pex",
+        "truba_mp",
+        "kollektor_tp",
+        "uzel_podmesa",
+        "termostaty_tp",
+        "vodoochistka"
+      ],
+      "hits": 116
+    },
+    "подключения": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "nasosy_skv",
+        "radiatory",
+        "konvektory",
+        "kollektor_tp",
+        "uzel_podmesa"
+      ],
+      "hits": 59
+    },
+    "подключить": {
+      "cats": [
+        "boylery_kn",
+        "dymohody",
+        "gidrostrelki",
+        "nasosy_skv",
+        "radiatory",
+        "konvektory",
+        "kollektor_tp",
+        "termostaty_tp"
+      ],
+      "hits": 35
+    },
+    "подобрать": {
+      "cats": [
+        "kotly_el",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "rasshir_baki",
+        "teplonositel",
+        "stabilizatory"
+      ],
+      "hits": 21
+    },
+    "пол": {
+      "cats": [
+        "boylery_kn",
+        "gidrostrelki",
+        "radiatory",
+        "konvektory",
+        "truba_mp",
+        "kollektor_tp",
+        "uzel_podmesa",
+        "termostaty_tp",
+        "teplonositel"
+      ],
+      "hits": 84
+    },
+    "пола": {
+      "cats": [
+        "kotly_el",
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "konvektory",
+        "termogolovki",
+        "truba_pex",
+        "truba_mp",
+        "shkaf_kollekt",
+        "installyacii"
+      ],
+      "hits": 51
+    },
+    "полиэтилена": {
+      "cats": [
+        "fitingi_ax"
+      ],
+      "hits": 19
+    },
+    "полов": {
+      "cats": [
+        "kollektor_tp",
+        "uzel_podmesa",
+        "termostaty_tp"
+      ],
+      "hits": 26
+    },
+    "правильно": {
+      "cats": [
+        "dymohody",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "rasshir_baki",
+        "radiatory",
+        "fitingi_ax",
+        "kollektor_tp",
+        "installyacii",
+        "krany_sharovye",
+        "vodoochistka"
+      ],
+      "hits": 29
+    },
+    "пресс": {
+      "cats": [
+        "truba_pex",
+        "truba_mp",
+        "fitingi_ax"
+      ],
+      "hits": 70
+    },
+    "принцип": {
+      "cats": [
+        "kotly_el",
+        "boylery_kn",
+        "dymohody",
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "rasshir_baki",
+        "termogolovki",
+        "uzel_podmesa"
+      ],
+      "hits": 32
+    },
+    "пропиленгликоль": {
+      "cats": [
+        "teplonositel"
+      ],
+      "hits": 20
+    },
+    "проточный": {
+      "cats": [
+        "vodoochistka"
+      ],
+      "hits": 24
+    },
+    "работает": {
+      "cats": [
+        "kotly_el",
+        "gidrostrelki",
+        "rasshir_baki",
+        "termogolovki",
+        "kollektor_tp",
+        "uzel_podmesa"
+      ],
+      "hits": 19
+    },
+    "работы": {
+      "cats": [
+        "kotly_el",
+        "boylery_kn",
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "rasshir_baki",
+        "termogolovki",
+        "uzel_podmesa"
+      ],
+      "hits": 24
+    },
+    "радиатора": {
+      "cats": [
+        "radiatory",
+        "termogolovki",
+        "fitingi_ax",
+        "krany_sharovye"
+      ],
+      "hits": 81
+    },
+    "радиаторов": {
+      "cats": [
+        "radiatory",
+        "termogolovki",
+        "truba_pex",
+        "kollektor_tp",
+        "termostaty_tp"
+      ],
+      "hits": 93
+    },
+    "радиаторы": {
+      "cats": [
+        "radiatory",
+        "konvektory",
+        "kollektor_tp",
+        "teplonositel"
+      ],
+      "hits": 227
+    },
+    "размеры": {
+      "cats": [
+        "kotly_gaz",
+        "dymohody",
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "rasshir_baki",
+        "radiatory",
+        "konvektory",
+        "truba_pex",
+        "truba_mp",
+        "fitingi_ax",
+        "kollektor_tp",
+        "shkaf_kollekt",
+        "installyacii",
+        "krany_sharovye",
+        "vodoochistka"
+      ],
+      "hits": 69
+    },
+    "расширительного": {
+      "cats": [
+        "rasshir_baki"
+      ],
+      "hits": 76
+    },
+    "рейтинг": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "boylery_kn",
+        "nasosy_cirk",
+        "rasshir_baki",
+        "radiatory",
+        "konvektory",
+        "truba_pex",
+        "kollektor_tp",
+        "installyacii",
+        "vodoochistka",
+        "teplonositel",
+        "stabilizatory"
+      ],
+      "hits": 64
+    },
+    "сайт": {
+      "cats": [
+        "kotly_gaz",
+        "gidrostrelki",
+        "radiatory",
+        "konvektory",
+        "krany_sharovye"
+      ],
+      "hits": 22
+    },
+    "север": {
+      "cats": [
+        "nasosnye_gruppy",
+        "gidrostrelki"
+      ],
+      "hits": 36
+    },
+    "систем": {
+      "cats": [
+        "rasshir_baki",
+        "teplonositel"
+      ],
+      "hits": 34
+    },
+    "система": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "dymohody",
+        "nasosy_skv",
+        "radiatory",
+        "kollektor_tp",
+        "installyacii",
+        "vodoochistka"
+      ],
+      "hits": 35
+    },
+    "системе": {
+      "cats": [
+        "kotly_el",
+        "gidrostrelki",
+        "kollektor_tp",
+        "teplonositel"
+      ],
+      "hits": 29
+    },
+    "системы": {
+      "cats": [
+        "kotly_el",
+        "nasosnye_gruppy",
+        "nasosy_cirk",
+        "rasshir_baki",
+        "radiatory",
+        "truba_mp",
+        "teplonositel"
+      ],
+      "hits": 133
+    },
+    "скважинного": {
+      "cats": [
+        "nasosy_skv"
+      ],
+      "hits": 86
+    },
+    "скважинные": {
+      "cats": [
+        "nasosy_skv"
+      ],
+      "hits": 44
+    },
+    "сколько": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "dymohody",
+        "nasosy_cirk",
+        "nasosy_skv",
+        "rasshir_baki",
+        "radiatory",
+        "truba_mp",
+        "installyacii",
+        "vodoochistka",
+        "teplonositel"
+      ],
+      "hits": 50
+    },
+    "смесительная": {
+      "cats": [
+        "nasosnye_gruppy"
+      ],
+      "hits": 30
+    },
+    "смесительного": {
+      "cats": [
+        "kollektor_tp",
+        "uzel_podmesa"
+      ],
+      "hits": 49
+    },
+    "смесительным": {
+      "cats": [
+        "nasosnye_gruppy",
+        "kollektor_tp",
+        "uzel_podmesa"
+      ],
+      "hits": 18
+    },
+    "стабилизаторы": {
+      "cats": [
+        "stabilizatory"
+      ],
+      "hits": 34
+    },
+    "стоит": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "gidrostrelki",
+        "radiatory",
+        "konvektory",
+        "truba_mp",
+        "teplonositel"
+      ],
+      "hits": 20
+    },
+    "сшитого": {
+      "cats": [
+        "fitingi_ax"
+      ],
+      "hits": 22
+    },
+    "теплого": {
+      "cats": [
+        "nasosnye_gruppy",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "konvektory",
+        "termogolovki",
+        "truba_pex",
+        "truba_mp",
+        "shkaf_kollekt"
+      ],
+      "hits": 54
+    },
+    "теплоносителя": {
+      "cats": [
+        "teplonositel"
+      ],
+      "hits": 51
+    },
+    "теплый": {
+      "cats": [
+        "boylery_kn",
+        "gidrostrelki",
+        "radiatory",
+        "konvektory",
+        "truba_mp",
+        "kollektor_tp",
+        "uzel_podmesa",
+        "termostaty_tp",
+        "teplonositel"
+      ],
+      "hits": 82
+    },
+    "теплых": {
+      "cats": [
+        "kollektor_tp",
+        "uzel_podmesa",
+        "termostaty_tp"
+      ],
+      "hits": 26
+    },
+    "терморегулятор": {
+      "cats": [
+        "kotly_el",
+        "rasshir_baki",
+        "radiatory",
+        "konvektory",
+        "termostaty_tp"
+      ],
+      "hits": 23
+    },
+    "термостатической": {
+      "cats": [
+        "termogolovki"
+      ],
+      "hits": 27
+    },
+    "тим": {
+      "cats": [
+        "nasosnye_gruppy",
+        "fitingi_ax",
+        "kollektor_tp",
+        "uzel_podmesa"
+      ],
+      "hits": 26
+    },
+    "типа": {
+      "cats": [
+        "rasshir_baki"
+      ],
+      "hits": 28
+    },
+    "топ": {
+      "cats": [
+        "kotly_el",
+        "installyacii",
+        "vodoochistka",
+        "stabilizatory"
+      ],
+      "hits": 18
+    },
+    "труб": {
+      "cats": [
+        "dymohody",
+        "truba_pex",
+        "truba_mp",
+        "fitingi_ax",
+        "kollektor_tp",
+        "nerzh_press"
+      ],
+      "hits": 400
+    },
+    "труба": {
+      "cats": [
+        "kotly_gaz",
+        "dymohody",
+        "kanalizaciya"
+      ],
+      "hits": 21
+    },
+    "трубу": {
+      "cats": [
+        "dymohody",
+        "truba_pex",
+        "truba_mp",
+        "fitingi_ax",
+        "kanalizaciya"
+      ],
+      "hits": 62
+    },
+    "трубы": {
+      "cats": [
+        "dymohody",
+        "gidrostrelki",
+        "truba_pex",
+        "truba_mp",
+        "fitingi_ax",
+        "kollektor_tp",
+        "nerzh_press",
+        "kanalizaciya"
+      ],
+      "hits": 272
+    },
+    "узла": {
+      "cats": [
+        "termogolovki",
+        "kollektor_tp",
+        "uzel_podmesa"
+      ],
+      "hits": 50
+    },
+    "унитазов": {
+      "cats": [
+        "installyacii"
+      ],
+      "hits": 22
+    },
+    "установить": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "dymohody",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "rasshir_baki",
+        "radiatory",
+        "konvektory",
+        "termogolovki",
+        "kollektor_tp",
+        "installyacii",
+        "vodoochistka"
+      ],
+      "hits": 43
+    },
+    "установки": {
+      "cats": [
+        "kotly_el",
+        "dymohody",
+        "rasshir_baki",
+        "konvektory",
+        "installyacii"
+      ],
+      "hits": 17
+    },
+    "устройство": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "gidrostrelki",
+        "nasosy_skv",
+        "rasshir_baki",
+        "kollektor_tp",
+        "uzel_podmesa"
+      ],
+      "hits": 17
+    },
+    "фильтра": {
+      "cats": [
+        "vodoochistka"
+      ],
+      "hits": 60
+    },
+    "фильтров": {
+      "cats": [
+        "vodoochistka"
+      ],
+      "hits": 22
+    },
+    "фильтры": {
+      "cats": [
+        "vodoochistka"
+      ],
+      "hits": 54
+    },
+    "фитинги": {
+      "cats": [
+        "truba_pex",
+        "truba_mp",
+        "fitingi_ax",
+        "nerzh_press"
+      ],
+      "hits": 112
+    },
+    "фитингов": {
+      "cats": [
+        "truba_pex",
+        "truba_mp",
+        "fitingi_ax"
+      ],
+      "hits": 111
+    },
+    "холодной": {
+      "cats": [
+        "vodoochistka"
+      ],
+      "hits": 63
+    },
+    "циркуляционного": {
+      "cats": [
+        "nasosy_cirk"
+      ],
+      "hits": 58
+    },
+    "циркуляционные": {
+      "cats": [
+        "nasosy_cirk"
+      ],
+      "hits": 35
+    },
+    "частном": {
+      "cats": [
+        "kotly_gaz",
+        "kotly_el",
+        "dymohody",
+        "gidrostrelki",
+        "nasosy_cirk",
+        "radiatory"
+      ],
+      "hits": 34
+    },
+    "через": {
+      "cats": [
+        "dymohody",
+        "gidrostrelki",
+        "kollektor_tp"
+      ],
+      "hits": 33
+    },
+    "что": {
+      "cats": [
+        "kotly_el",
+        "dymohody",
+        "nasosy_cirk",
+        "termogolovki",
+        "fitingi_ax",
+        "installyacii",
+        "teplonositel"
+      ],
+      "hits": 24
+    },
+    "шарового": {
+      "cats": [
+        "krany_sharovye"
+      ],
+      "hits": 25
+    },
+    "шаровые": {
+      "cats": [
+        "krany_sharovye"
+      ],
+      "hits": 36
+    },
+    "шаровый": {
+      "cats": [
+        "krany_sharovye"
+      ],
+      "hits": 169
+    },
+    "шаровых": {
+      "cats": [
+        "krany_sharovye"
+      ],
+      "hits": 17
+    },
+    "шрв": {
+      "cats": [
+        "shkaf_kollekt"
+      ],
+      "hits": 35
+    },
+    "шрн": {
+      "cats": [
+        "shkaf_kollekt"
+      ],
+      "hits": 34
+    },
+    "электрические": {
+      "cats": [
+        "kotly_el",
+        "konvektory",
+        "nerzh_press"
+      ],
+      "hits": 57
+    },
+    "электрический": {
+      "cats": [
+        "boylery_kn",
+        "radiatory",
+        "konvektory",
+        "termostaty_tp",
+        "nerzh_press"
+      ],
+      "hits": 23
+    },
+    "электрическим": {
+      "cats": [
+        "kotly_el"
+      ],
+      "hits": 37
+    },
+    "электрических": {
+      "cats": [
+        "kotly_el"
+      ],
+      "hits": 47
+    },
+    "электрического": {
+      "cats": [
+        "kotly_el",
+        "termostaty_tp",
+        "stabilizatory"
+      ],
+      "hits": 67
+    },
+    "это": {
+      "cats": [
+        "kotly_el",
+        "nasosy_cirk",
+        "termogolovki",
+        "teplonositel"
+      ],
+      "hits": 18
+    }
+  },
+  "categories": {
+    "avtomatika": {
+      "cat": "boiler_automation",
+      "phrase": "gsm модуль для котла",
+      "section": 7
+    },
+    "boylery_kn": {
+      "cat": "tanks_standard",
+      "phrase": "бойлер косвенного нагрева",
+      "section": 1
+    },
+    "dymohody": {
+      "cat": "chimneys",
+      "phrase": "дымоход коаксиальный",
+      "section": 1
+    },
+    "fitingi_ax": {
+      "cat": "axial_fittings_pex",
+      "phrase": "аксиальный фитинг",
+      "section": 6
+    },
+    "gidrostrelki": {
+      "cat": "hydro_separators",
+      "phrase": "гидрострелка",
+      "section": 2
+    },
+    "installyacii": {
+      "cat": "installations",
+      "phrase": "инсталляция для унитаза",
+      "section": 6
+    },
+    "kanalizaciya": {
+      "cat": "sewer_silent",
+      "phrase": "бесшумная канализация",
+      "section": 6
+    },
+    "kollektor_tp": {
+      "cat": "manifolds",
+      "phrase": "коллектор теплого пола",
+      "section": 4
+    },
+    "konvektory": {
+      "cat": "convectors_scn",
+      "phrase": "внутрипольный конвектор",
+      "section": 3
+    },
+    "kotly_el": {
+      "cat": "boilers_plus",
+      "phrase": "электрический котел отопления",
+      "section": 1
+    },
+    "kotly_gaz": {
+      "cat": "boilers_gas",
+      "phrase": "газовый котел",
+      "section": 1
+    },
+    "krany_sharovye": {
+      "cat": "ball_valves",
+      "phrase": "шаровой кран",
+      "section": 8
+    },
+    "nasosnye_gruppy": {
+      "cat": "groups_dn25",
+      "phrase": "насосная группа",
+      "section": 2
+    },
+    "nasosy_cirk": {
+      "cat": "pumps_dn25",
+      "phrase": "циркуляционный насос",
+      "section": 2
+    },
+    "nasosy_skv": {
+      "cat": "well_pumps",
+      "phrase": "скважинный насос",
+      "section": 11
+    },
+    "nerzh_press": {
+      "cat": "ss_pipe_4m",
+      "phrase": "нержавеющая труба пресс",
+      "section": 6
+    },
+    "radiatory": {
+      "cat": "rads",
+      "phrase": "радиатор отопления",
+      "section": 3
+    },
+    "rasshir_baki": {
+      "cat": "exp_heating",
+      "phrase": "расширительный бак для отопления",
+      "section": 2
+    },
+    "shkaf_kollekt": {
+      "cat": "cabinets_shrn",
+      "phrase": "коллекторный шкаф",
+      "section": 4
+    },
+    "stabilizatory": {
+      "cat": "stabs",
+      "phrase": "стабилизатор напряжения для котла",
+      "section": 2
+    },
+    "teplonositel": {
+      "cat": "coolants",
+      "phrase": "теплоноситель для отопления",
+      "section": 9
+    },
+    "termogolovki": {
+      "cat": "heads",
+      "phrase": "термостатическая головка",
+      "section": 3
+    },
+    "termostaty_tp": {
+      "cat": "thermostats_stout",
+      "phrase": "термостат теплого пола",
+      "section": 4
+    },
+    "truba_mp": {
+      "cat": "metal_plastic_pipes",
+      "phrase": "металлопластиковая труба",
+      "section": 6
+    },
+    "truba_pex": {
+      "cat": "pipes",
+      "phrase": "труба из сшитого полиэтилена",
+      "section": 6
+    },
+    "uzel_podmesa": {
+      "cat": "mixing_units",
+      "phrase": "смесительный узел теплого пола",
+      "section": 4
+    },
+    "vodoochistka": {
+      "cat": "filter_big_blue",
+      "phrase": "фильтр для воды магистральный",
+      "section": 10
+    }
+  },
+  "months": {
+    "2026-08": {
+      "avtomatika": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 0,
+            "place": null
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "baxi",
+            118
+          ],
+          [
+            "зонт",
+            54
+          ],
+          [
+            "zont",
+            22
+          ]
+        ],
+        "total": 695
+      },
+      "boylery_kn": {
+        "own": {
+          "rommer": {
+            "count": 404,
+            "place": 11
+          },
+          "stout": {
+            "count": 10637,
+            "place": 1
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 599,
+            "place": 10
+          }
+        },
+        "ranking": [
+          [
+            "stout",
+            10637
+          ],
+          [
+            "royal thermo",
+            9431
+          ],
+          [
+            "baxi",
+            7921
+          ],
+          [
+            "drazice",
+            4282
+          ],
+          [
+            "thermex",
+            3101
+          ],
+          [
+            "termica",
+            2963
+          ],
+          [
+            "термекс",
+            2437
+          ],
+          [
+            "hajdu",
+            1729
+          ],
+          [
+            "acv",
+            1649
+          ],
+          [
+            "стаут",
+            599
+          ],
+          [
+            "rommer",
+            404
+          ],
+          [
+            "buderus",
+            299
+          ],
+          [
+            "лемакс",
+            224
+          ],
+          [
+            "viessmann",
+            218
+          ]
+        ],
+        "total": 126001
+      },
+      "dymohody": {
+        "own": {
+          "rommer": {
+            "count": 159,
+            "place": 4
+          },
+          "stout": {
+            "count": 183,
+            "place": 3
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "baxi",
+            4209
+          ],
+          [
+            "navien",
+            955
+          ],
+          [
+            "stout",
+            183
+          ],
+          [
+            "rommer",
+            159
+          ],
+          [
+            "termica",
+            82
+          ]
+        ],
+        "total": 38069
+      },
+      "fitingi_ax": {
+        "own": {
+          "rommer": {
+            "count": 74,
+            "place": 6
+          },
+          "stout": {
+            "count": 294,
+            "place": 3
+          },
+          "роммер": {
+            "count": 17,
+            "place": 8
+          },
+          "стаут": {
+            "count": 36,
+            "place": 7
+          }
+        },
+        "ranking": [
+          [
+            "rehau",
+            573
+          ],
+          [
+            "tim",
+            419
+          ],
+          [
+            "stout",
+            294
+          ],
+          [
+            "valtec",
+            229
+          ],
+          [
+            "рехау",
+            228
+          ],
+          [
+            "rommer",
+            74
+          ],
+          [
+            "стаут",
+            36
+          ],
+          [
+            "роммер",
+            17
+          ]
+        ],
+        "total": 9762
+      },
+      "gidrostrelki": {
+        "own": {
+          "rommer": {
+            "count": 86,
+            "place": 4
+          },
+          "stout": {
+            "count": 83,
+            "place": 6
+          },
+          "роммер": {
+            "count": 43,
+            "place": 8
+          },
+          "стаут": {
+            "count": 83,
+            "place": 5
+          }
+        },
+        "ranking": [
+          [
+            "gidruss",
+            2551
+          ],
+          [
+            "meibes",
+            155
+          ],
+          [
+            "elsen",
+            112
+          ],
+          [
+            "rommer",
+            86
+          ],
+          [
+            "стаут",
+            83
+          ],
+          [
+            "stout",
+            83
+          ],
+          [
+            "valtec",
+            71
+          ],
+          [
+            "роммер",
+            43
+          ]
+        ],
+        "total": 35660
+      },
+      "installyacii": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 0,
+            "place": null
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "grohe",
+            44396
+          ],
+          [
+            "geberit",
+            24714
+          ],
+          [
+            "tece",
+            22778
+          ],
+          [
+            "cersanit",
+            1134
+          ],
+          [
+            "vitra",
+            638
+          ],
+          [
+            "iddis",
+            597
+          ],
+          [
+            "alcaplast",
+            412
+          ],
+          [
+            "roca",
+            250
+          ],
+          [
+            "berges",
+            172
+          ]
+        ],
+        "total": 63349
+      },
+      "kanalizaciya": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 25,
+            "place": 5
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 33,
+            "place": 4
+          }
+        },
+        "ranking": [
+          [
+            "ostendorf",
+            390
+          ],
+          [
+            "остендорф",
+            167
+          ],
+          [
+            "политэк",
+            137
+          ],
+          [
+            "стаут",
+            33
+          ],
+          [
+            "stout",
+            25
+          ],
+          [
+            "sinikon",
+            19
+          ],
+          [
+            "рехау",
+            13
+          ],
+          [
+            "синикон",
+            8
+          ]
+        ],
+        "total": 1347
+      },
+      "kollektor_tp": {
+        "own": {
+          "rommer": {
+            "count": 37,
+            "place": 7
+          },
+          "stout": {
+            "count": 434,
+            "place": 2
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 102,
+            "place": 5
+          }
+        },
+        "ranking": [
+          [
+            "tim",
+            1107
+          ],
+          [
+            "stout",
+            434
+          ],
+          [
+            "valtec",
+            311
+          ],
+          [
+            "vieir",
+            156
+          ],
+          [
+            "стаут",
+            102
+          ],
+          [
+            "рехау",
+            89
+          ],
+          [
+            "rommer",
+            37
+          ],
+          [
+            "far",
+            24
+          ]
+        ],
+        "total": 41477
+      },
+      "konvektory": {
+        "own": {
+          "rommer": {
+            "count": 132,
+            "place": 5
+          },
+          "stout": {
+            "count": 344,
+            "place": 4
+          },
+          "роммер": {
+            "count": 10,
+            "place": 11
+          },
+          "стаут": {
+            "count": 33,
+            "place": 8
+          }
+        },
+        "ranking": [
+          [
+            "techno",
+            1494
+          ],
+          [
+            "varmann",
+            947
+          ],
+          [
+            "itermic",
+            402
+          ],
+          [
+            "stout",
+            344
+          ],
+          [
+            "rommer",
+            132
+          ],
+          [
+            "mohlenhoff",
+            105
+          ],
+          [
+            "jaga",
+            99
+          ],
+          [
+            "стаут",
+            33
+          ],
+          [
+            "kampmann",
+            32
+          ],
+          [
+            "eva",
+            22
+          ],
+          [
+            "роммер",
+            10
+          ]
+        ],
+        "total": 26668
+      },
+      "kotly_el": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 79,
+            "place": 3
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "эван",
+            370
+          ],
+          [
+            "zota",
+            234
+          ],
+          [
+            "stout",
+            79
+          ],
+          [
+            "protherm",
+            70
+          ],
+          [
+            "галан",
+            41
+          ]
+        ],
+        "total": 34355
+      },
+      "kotly_gaz": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 0,
+            "place": null
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "baxi",
+            182617
+          ],
+          [
+            "navien",
+            72612
+          ],
+          [
+            "лемакс",
+            68601
+          ],
+          [
+            "конорд",
+            20764
+          ],
+          [
+            "очаг",
+            11807
+          ],
+          [
+            "сигнал",
+            11196
+          ],
+          [
+            "ariston",
+            10838
+          ],
+          [
+            "haier",
+            10423
+          ],
+          [
+            "vaillant",
+            7684
+          ],
+          [
+            "protherm",
+            6648
+          ],
+          [
+            "bosch",
+            6154
+          ],
+          [
+            "buderus",
+            5089
+          ],
+          [
+            "мимакс",
+            4574
+          ]
+        ],
+        "total": 1602031
+      },
+      "krany_sharovye": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 2555,
+            "place": 3
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "valtec",
+            26323
+          ],
+          [
+            "bugatti",
+            11435
+          ],
+          [
+            "stout",
+            2555
+          ],
+          [
+            "itap",
+            1764
+          ]
+        ],
+        "total": 445233
+      },
+      "nasosnye_gruppy": {
+        "own": {
+          "rommer": {
+            "count": 777,
+            "place": 3
+          },
+          "stout": {
+            "count": 2686,
+            "place": 1
+          },
+          "роммер": {
+            "count": 65,
+            "place": 9
+          },
+          "стаут": {
+            "count": 259,
+            "place": 5
+          }
+        },
+        "ranking": [
+          [
+            "stout",
+            2686
+          ],
+          [
+            "meibes",
+            2185
+          ],
+          [
+            "rommer",
+            777
+          ],
+          [
+            "elsen",
+            305
+          ],
+          [
+            "стаут",
+            259
+          ],
+          [
+            "gidruss",
+            120
+          ],
+          [
+            "майбес",
+            97
+          ],
+          [
+            "valtec",
+            84
+          ],
+          [
+            "роммер",
+            65
+          ],
+          [
+            "oventrop",
+            44
+          ],
+          [
+            "watts",
+            19
+          ],
+          [
+            "гидрусс",
+            9
+          ],
+          [
+            "hoobs",
+            5
+          ]
+        ],
+        "total": 12155
+      },
+      "nasosy_cirk": {
+        "own": {
+          "rommer": {
+            "count": 2246,
+            "place": 7
+          },
+          "stout": {
+            "count": 563,
+            "place": 16
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "grundfos",
+            24012
+          ],
+          [
+            "wilo",
+            20732
+          ],
+          [
+            "unipump",
+            4121
+          ],
+          [
+            "вихрь",
+            3121
+          ],
+          [
+            "shinhoo",
+            3027
+          ],
+          [
+            "valtec",
+            2520
+          ],
+          [
+            "rommer",
+            2246
+          ],
+          [
+            "dab",
+            2162
+          ],
+          [
+            "wester",
+            1893
+          ],
+          [
+            "джилекс",
+            1829
+          ],
+          [
+            "oasis",
+            1534
+          ],
+          [
+            "pumpman",
+            1394
+          ],
+          [
+            "valfex",
+            1220
+          ],
+          [
+            "jemix",
+            1176
+          ],
+          [
+            "imp pumps",
+            585
+          ],
+          [
+            "stout",
+            563
+          ],
+          [
+            "sti",
+            402
+          ]
+        ],
+        "total": 206662
+      },
+      "nasosy_skv": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 0,
+            "place": null
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "вихрь",
+            16047
+          ],
+          [
+            "джилекс",
+            9042
+          ],
+          [
+            "беламос",
+            8939
+          ],
+          [
+            "belamos",
+            7793
+          ],
+          [
+            "unipump",
+            7687
+          ],
+          [
+            "aquario",
+            5128
+          ],
+          [
+            "grundfos",
+            3229
+          ],
+          [
+            "vodotok",
+            2819
+          ],
+          [
+            "водолей",
+            2783
+          ],
+          [
+            "pedrollo",
+            1495
+          ],
+          [
+            "акварио",
+            1203
+          ]
+        ],
+        "total": 136079
+      },
+      "nerzh_press": {
+        "own": {
+          "rommer": {
+            "count": 6,
+            "place": 3
+          },
+          "stout": {
+            "count": 0,
+            "place": null
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "valtec",
+            88
+          ],
+          [
+            "валтек",
+            49
+          ],
+          [
+            "rommer",
+            6
+          ]
+        ],
+        "total": 2362
+      },
+      "radiatory": {
+        "own": {
+          "rommer": {
+            "count": 856,
+            "place": 6
+          },
+          "stout": {
+            "count": 0,
+            "place": null
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "рифар",
+            7329
+          ],
+          [
+            "rifar",
+            4380
+          ],
+          [
+            "royal thermo",
+            2870
+          ],
+          [
+            "оазис",
+            1510
+          ],
+          [
+            "прадо",
+            912
+          ],
+          [
+            "rommer",
+            856
+          ]
+        ],
+        "total": 458466
+      },
+      "rasshir_baki": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 200,
+            "place": 3
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "reflex",
+            745
+          ],
+          [
+            "wester",
+            721
+          ],
+          [
+            "stout",
+            200
+          ],
+          [
+            "flamco",
+            179
+          ],
+          [
+            "valtec",
+            155
+          ],
+          [
+            "джилекс",
+            153
+          ]
+        ],
+        "total": 25315
+      },
+      "shkaf_kollekt": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 285,
+            "place": 2
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 28,
+            "place": 4
+          }
+        },
+        "ranking": [
+          [
+            "valtec",
+            2795
+          ],
+          [
+            "stout",
+            285
+          ],
+          [
+            "grota",
+            50
+          ],
+          [
+            "стаут",
+            28
+          ],
+          [
+            "elsen",
+            10
+          ]
+        ],
+        "total": 7912
+      },
+      "stabilizatory": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 0,
+            "place": null
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "энергия",
+            15685
+          ],
+          [
+            "штиль",
+            3317
+          ],
+          [
+            "ресанта",
+            1718
+          ],
+          [
+            "rucelf",
+            119
+          ]
+        ],
+        "total": 18611
+      },
+      "teplonositel": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 0,
+            "place": null
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "теплый дом",
+            735
+          ],
+          [
+            "термагент",
+            558
+          ],
+          [
+            "dixis",
+            387
+          ],
+          [
+            "thermagent",
+            284
+          ],
+          [
+            "диксис",
+            121
+          ],
+          [
+            "primoclima",
+            10
+          ],
+          [
+            "hot blood",
+            6
+          ]
+        ],
+        "total": 14479
+      },
+      "termogolovki": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 494,
+            "place": 1
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "stout",
+            494
+          ],
+          [
+            "valtec",
+            284
+          ],
+          [
+            "giacomini",
+            234
+          ],
+          [
+            "ридан",
+            217
+          ],
+          [
+            "danfoss",
+            203
+          ],
+          [
+            "oventrop",
+            172
+          ],
+          [
+            "luxor",
+            57
+          ],
+          [
+            "herz",
+            53
+          ],
+          [
+            "far",
+            50
+          ],
+          [
+            "tim",
+            47
+          ],
+          [
+            "icma",
+            43
+          ],
+          [
+            "vieir",
+            29
+          ]
+        ],
+        "total": 7604
+      },
+      "termostaty_tp": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 0,
+            "place": null
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [],
+        "total": 6407
+      },
+      "truba_mp": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 447,
+            "place": 3
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "valtec",
+            2542
+          ],
+          [
+            "henco",
+            777
+          ],
+          [
+            "stout",
+            447
+          ],
+          [
+            "tim",
+            199
+          ],
+          [
+            "vieir",
+            138
+          ]
+        ],
+        "total": 84535
+      },
+      "truba_pex": {
+        "own": {
+          "rommer": {
+            "count": 595,
+            "place": 5
+          },
+          "stout": {
+            "count": 3908,
+            "place": 1
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 73,
+            "place": 11
+          }
+        },
+        "ranking": [
+          [
+            "stout",
+            3908
+          ],
+          [
+            "рехау",
+            2002
+          ],
+          [
+            "rehau",
+            1604
+          ],
+          [
+            "valtec",
+            1196
+          ],
+          [
+            "rommer",
+            595
+          ],
+          [
+            "tim",
+            204
+          ],
+          [
+            "sanext",
+            194
+          ],
+          [
+            "uponor",
+            110
+          ],
+          [
+            "usystems",
+            95
+          ],
+          [
+            "rtp",
+            84
+          ],
+          [
+            "стаут",
+            73
+          ],
+          [
+            "hoobs",
+            25
+          ]
+        ],
+        "total": 29865
+      },
+      "uzel_podmesa": {
+        "own": {
+          "rommer": {
+            "count": 37,
+            "place": 3
+          },
+          "stout": {
+            "count": 169,
+            "place": 2
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 36,
+            "place": 4
+          }
+        },
+        "ranking": [
+          [
+            "valtec",
+            818
+          ],
+          [
+            "stout",
+            169
+          ],
+          [
+            "rommer",
+            37
+          ],
+          [
+            "стаут",
+            36
+          ]
+        ],
+        "total": 11963
+      },
+      "vodoochistka": {
+        "own": {
+          "rommer": {
+            "count": 0,
+            "place": null
+          },
+          "stout": {
+            "count": 0,
+            "place": null
+          },
+          "роммер": {
+            "count": 0,
+            "place": null
+          },
+          "стаут": {
+            "count": 0,
+            "place": null
+          }
+        },
+        "ranking": [
+          [
+            "гейзер",
+            106643
+          ],
+          [
+            "bwt",
+            3466
+          ],
+          [
+            "аквафор",
+            2951
+          ],
+          [
+            "барьер",
+            688
+          ],
+          [
+            "джилекс",
+            104
+          ],
+          [
+            "atoll",
+            27
+          ]
+        ],
+        "total": 34952
+      }
+    }
+  },
+  "updated": "2026-08-15"
+}
