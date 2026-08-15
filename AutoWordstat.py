@@ -620,32 +620,55 @@ def phrase_tokens(phrase):
     return [w.lower().replace("ё", "е") for w in WORD_RE.findall(phrase)]
 
 
-def build_brand_matcher(cat, own_brands):
-    """Словарь распознавания для категории: известные марки + свои бренды.
-    Многословные марки («royal thermo», «метеор термо») ищем как подстроку,
-    однословные — по токенам."""
+def build_alias_index(cfg):
+    """написание -> как показываем. Кириллица и латиница у Wordstat — разные
+    запросы, и без сведения один бренд идёт в рейтинге двумя строками с
+    половинным счётом каждая."""
+    idx = {}
+    for canon, variants in (cfg.get("brand_aliases") or {}).items():
+        c = canon.lower().replace("ё", "е")
+        idx[c] = c
+        for v in variants:
+            idx[v.lower().replace("ё", "е")] = c
+    return idx
+
+
+def canon_brand(name, aliases):
+    return aliases.get(name, name)
+
+
+def build_brand_matcher(cat, own_brands, aliases):
+    """Словарь распознавания для категории: известные марки, свои бренды и
+    все их написания. Многословные («royal thermo», «метеор термо») ищем
+    подстрокой, однословные — по токенам."""
     known = [b.lower().replace("ё", "е") for b in cat.get("known_brands", [])]
     known += [b.lower().replace("ё", "е") for b in own_brands]
-    multi = sorted([b for b in known if " " in b], key=len, reverse=True)
+    # Написания из таблицы синонимов тоже должны узнаваться: в конфиге
+    # категории может стоять только латиница, а ищут кириллицей.
+    for variant, canon in aliases.items():
+        if canon in known or variant in known:
+            known.append(variant)
+    multi = sorted(set(b for b in known if " " in b), key=len, reverse=True)
     single = set(b for b in known if " " not in b)
     ambiguous = set(b.lower() for b in cat.get("ambiguous", []))
     return multi, single, ambiguous
 
 
-def extract_brands(phrase, cat_tokens, multi, single, ambiguous, stop_words):
-    """Марки, упомянутые в запросе. Неоднозначные («tim», «oasis», «point»)
-    засчитываем только здесь — внутри запроса про эту категорию, — потому что
-    само по себе такое слово ничего не значит."""
+def extract_brands(phrase, cat_tokens, multi, single, ambiguous, stop_words, aliases):
+    """Марки, упомянутые в запросе, сведённые к одному написанию.
+    Неоднозначные («tim», «oasis», «point») засчитываем только здесь —
+    внутри запроса про эту категорию, — потому что само по себе такое
+    слово ничего не значит."""
     low = phrase.lower().replace("ё", "е")
     found = set()
     for m in multi:
         if m in low:
-            found.add(m)
+            found.add(canon_brand(m, aliases))
     for t in phrase_tokens(phrase):
         if t in cat_tokens or t in stop_words or NUM_TOKEN_RE.match(t) or len(t) < 3:
             continue
         if t in single:
-            found.add(t)
+            found.add(canon_brand(t, aliases))
     return found
 
 
@@ -662,6 +685,47 @@ def collect_unknown_tokens(phrase, cat_tokens, single, multi, stop_words, counte
         counter[t] = counter.get(t, 0) + 1
 
 
+LATIN_RE = re.compile(r"^[a-z][a-z0-9.\-]*$")
+
+
+def rank_candidates(candidates, categories, limit=80):
+    """Отбор кандидатов в бренды. Первый прогон показал, чего стоит наивная
+    сортировка по частоте: сверху оказались «как», «выбрать», «газового» —
+    обычные слова, а настоящие находки (aquatec, zeissler) утонули.
+
+    Признак марки — узость: бренд живёт в одной-двух категориях, а служебное
+    слово встречается всюду. Плюс латиница почти всегда бренд, а падежные
+    формы слов самой категории («гидрострелкой», «внутрипольных») отсекаются
+    по общему началу с её словами."""
+    cat_stems = set()
+    for c in categories:
+        for t in phrase_tokens(c["phrase"]):
+            if len(t) >= 5:
+                cat_stems.add(t[:5])
+
+    scored = []
+    for word, info in candidates.items():
+        n_cats = len(info["cats"])
+        if len(word) >= 5 and word[:5] in cat_stems:
+            continue                      # форма слова из названия категории
+        latin = bool(LATIN_RE.match(word))
+        if latin:
+            # Латиница почти всегда марка, и порог по числу категорий тут
+            # мягче нарочно: самые интересные конкуренты — сквозные, они
+            # встречаются во многих группах сразу (так в первом прогоне
+            # едва не потерялся zeissler, найденный в трёх).
+            if n_cats > 6:
+                continue
+        else:
+            if n_cats > 2 or info["hits"] < 5:
+                continue                  # русское слово из многих групп — не бренд
+        scored.append((0 if latin else 1, n_cats, -info["hits"], word, info))
+
+    scored.sort()
+    return {w: {"hits": i["hits"], "cats": i["cats"], "latin": bool(LATIN_RE.match(w))}
+            for _, _, _, w, i in scored[:limit]}
+
+
 def run_brands(client, regional=False):
     """Рейтинг марок внутри каждой товарной категории — из топа запросов
     Wordstat (GetTop). Смысл: список конкурентов не сочиняется вручную,
@@ -671,6 +735,12 @@ def run_brands(client, regional=False):
     categories = cfg["categories"]
     own_brands = cfg.get("own_brands", [])
     stop_words = set(w.lower() for w in cfg.get("stop_words", []))
+    aliases = build_alias_index(cfg)
+    own_canon = []
+    for b in own_brands:
+        c = canon_brand(b.lower().replace("ё", "е"), aliases)
+        if c not in own_canon:
+            own_canon.append(c)
 
     region_ids = {}
     if regional:
@@ -687,7 +757,7 @@ def run_brands(client, regional=False):
 
     for cat in categories:
         cat_tokens = set(phrase_tokens(cat["phrase"]))
-        multi, single, ambiguous = build_brand_matcher(cat, own_brands)
+        multi, single, ambiguous = build_brand_matcher(cat, own_brands, aliases)
 
         targets = [(None, None)]
         if regional:
@@ -710,7 +780,7 @@ def run_brands(client, regional=False):
                 if not phrase or count <= 0:
                     continue
                 brands = extract_brands(phrase, cat_tokens, multi, single,
-                                        ambiguous, stop_words)
+                                        ambiguous, stop_words, aliases)
                 for b in brands:
                     totals[b] = totals.get(b, 0) + count
                 if not brands:
@@ -724,7 +794,7 @@ def run_brands(client, regional=False):
                 "own": {b: {"count": totals.get(b, 0),
                             "place": next((i + 1 for i, (n, _) in enumerate(ranking)
                                             if n == b), None)}
-                         for b in own_brands},
+                         for b in own_canon},
             }
             if region_name:
                 result_reg.setdefault(cat["id"], {})[region_name] = entry
@@ -763,8 +833,7 @@ def run_brands(client, regional=False):
     data["updated"] = datetime.date.today().isoformat()
     data["categories"] = {c["id"]: {"phrase": c["phrase"], "section": c.get("section"),
                                      "cat": c.get("cat")} for c in categories}
-    data["candidates"] = dict(sorted(candidates_all.items(),
-                                      key=lambda kv: -kv[1]["hits"])[:200])
+    data["candidates"] = rank_candidates(candidates_all, categories)
     save_json_file(BRANDS_FILE, data)
     log("Готово: %s обновлён. Кандидатов в бренды на проверку: %d" % (
         BRANDS_FILE, len(data["candidates"])))
