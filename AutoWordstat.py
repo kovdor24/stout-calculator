@@ -747,7 +747,15 @@ def run_brands(client, regional=False):
         live = get_live_canonical_regions()
         region_map = ensure_region_map(live, client)
         region_ids = {n: region_map[n]["yid"] for n in live if n in region_map}
-        log("Региональный срез по %d регионам" % len(region_ids))
+        # Регионы гоняем только по помеченным категориям: все 63 × 10 регионов
+        # это 630 запросов, семь часов при квоте 100 в час — в таймаут задачи
+        # не влезает. Да и смысла нет: у категорий вроде КИП по стране девять
+        # запросов, делить их на десять регионов бессмысленно.
+        categories = [c for c in categories if c.get("regional")]
+        # Знак умножения тут писать нельзя: в консоли с кириллической
+        # кодировкой он не кодируется и роняет скрипт на ровном месте.
+        log("Региональный срез: %d категорий x %d регионов = %d запросов"
+            % (len(categories), len(region_ids), len(categories) * len(region_ids)))
 
     data = load_json_file(BRANDS_FILE, {})
     this_month = datetime.date.today().strftime("%Y-%m")
@@ -759,9 +767,12 @@ def run_brands(client, regional=False):
         cat_tokens = set(phrase_tokens(cat["phrase"]))
         multi, single, ambiguous = build_brand_matcher(cat, own_brands, aliases)
 
-        targets = [(None, None)]
+        # В региональном режиме по России не переспрашиваем: этот рейтинг уже
+        # собран обычным --brands, а лишний запрос стоит денег и квоты.
         if regional:
-            targets += [(name, yid) for name, yid in sorted(region_ids.items())]
+            targets = [(name, yid) for name, yid in sorted(region_ids.items())]
+        else:
+            targets = [(None, None)]
 
         for region_name, yid in targets:
             body = {"phrase": cat["phrase"], "numPhrases": "500"}
@@ -823,17 +834,24 @@ def run_brands(client, regional=False):
         log("Меньше %.0f%% запросов удалось — файл не переписываю, это сбой" % (MIN_SUCCESS_RATIO * 100))
         return 1
 
-    data.setdefault("months", {})[this_month] = result_ru
-    for m in sorted(data["months"])[:-BRAND_MONTHS_KEEP]:
-        del data["months"][m]
     if regional:
+        # Рейтинги по России в этом режиме не собирались — трогать их нельзя,
+        # иначе региональный прогон затрёт месяц пустышкой. По той же причине
+        # не переписываем список категорий и кандидатов: здесь их подмножество.
         data.setdefault("regions", {})[this_month] = result_reg
         for m in sorted(data["regions"])[:-BRAND_REGION_KEEP]:
             del data["regions"][m]
+    else:
+        data.setdefault("months", {})[this_month] = result_ru
+        for m in sorted(data["months"])[:-BRAND_MONTHS_KEEP]:
+            del data["months"][m]
+        data["categories"] = {c["id"]: {"phrase": c["phrase"], "section": c.get("section"),
+                                         "cat": c.get("cat"), "price_group": c.get("price_group"),
+                                         "own_in_group": c.get("own_in_group"),
+                                         "regional": bool(c.get("regional"))}
+                               for c in categories}
+        data["candidates"] = rank_candidates(candidates_all, categories)
     data["updated"] = datetime.date.today().isoformat()
-    data["categories"] = {c["id"]: {"phrase": c["phrase"], "section": c.get("section"),
-                                     "cat": c.get("cat")} for c in categories}
-    data["candidates"] = rank_candidates(candidates_all, categories)
     save_json_file(BRANDS_FILE, data)
     log("Готово: %s обновлён. Кандидатов в бренды на проверку: %d" % (
         BRANDS_FILE, len(data["candidates"])))

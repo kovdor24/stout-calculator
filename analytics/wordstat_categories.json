@@ -107,7 +107,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "dymohody",
@@ -131,7 +132,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "nasosnye_gruppy",
@@ -161,7 +163,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "gidrostrelki",
@@ -184,7 +187,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "nasosy_cirk",
@@ -225,7 +229,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "nasosy_skv",
@@ -282,7 +287,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "radiatory",
@@ -329,7 +335,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "konvektory",
@@ -403,7 +410,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "truba_pex",
@@ -433,7 +441,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "truba_mp",
@@ -460,7 +469,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "fitingi_ax",
@@ -487,7 +497,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "kollektor_tp",
@@ -518,7 +529,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "shkaf_kollekt",
@@ -543,7 +555,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "uzel_podmesa",
@@ -566,7 +579,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "termostaty_tp",
@@ -681,7 +695,8 @@
       "price_group": "Бесшумная канализация",
       "own_in_group": [
         "stout"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "installyacii",
@@ -739,7 +754,8 @@
       "own_in_group": [
         "stout",
         "rommer"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "vodoochistka",
@@ -833,7 +849,8 @@
       ],
       "ambiguous": [
         "axis"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "radiatory_tube",
@@ -927,7 +944,8 @@
       ],
       "ambiguous": [
         "tim"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "fitingi_vint",
@@ -1095,7 +1113,8 @@
       ],
       "ambiguous": [
         "tim"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "komplekt_tp",
@@ -1401,7 +1420,8 @@
         "ридан",
         "valtec",
         "icma"
-      ]
+      ],
+      "regional": true
     },
     {
       "id": "kip",
