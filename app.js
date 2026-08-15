@@ -932,7 +932,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', radRegime: 'r8060', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin', radRegime: 'r8060' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', radRegime: 'r8060', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
 
     lastSavedStateString: "",
 
@@ -29889,6 +29889,71 @@ const app = {
         return 4;
     },
 
+    // Радиаторный запорно-балансировочный клапан 1/2" (SVL): полностью открытый
+    // пропускает Kvs, и настройка идёт оборотами шпинделя от закрытого. Точной
+    // паспортной характеристики у нас нет, поэтому берём типовую для этого
+    // класса клапанов: Kvs 1,5 при четырёх оборотах, зависимость близка к
+    // линейной. Отсюда и оговорка в подсказке — числа расчётные, финальную
+    // настройку монтажник доводит по факту.
+    // Паспорт STOUT «Клапан радиаторный SVR/SVRS/SVL» от 17.05.2021, п. 3.2:
+    // у SVL 1/2" пропускная способность регулируется в пределах Kv 0,22–1,34
+    // (у 3/4" — 0,19–1,75). Нижняя граница отвечает почти закрытому клапану,
+    // верхняя — полностью открытому.
+    RAD_BAL_KV_MIN: 0.22,
+    RAD_BAL_KVS: 1.34,
+    RAD_BAL_TURNS: 4,
+
+    /**
+     * Преднастройки балансировочных клапанов: на сколько зажать обратку каждого
+     * прибора, чтобы кольца уравнялись.
+     *
+     * Без балансировки вода идёт коротким путём: ближний и маломощный прибор
+     * забирает свой расход первым, дальний недополучает. Уравнивают клапаном на
+     * обратке — самому тяжёлому кольцу оставляют открытый, остальным добавляют
+     * ровно ту разницу, которой им не хватает до него.
+     *
+     * Разница колец у нас только по расходу: длина луча одна на все приборы,
+     * пока плана с трассировкой нет. Поэтому чем прибор мощнее, тем больше его
+     * кольцо и тем меньше нужно зажимать.
+     */
+    radBalance: function () {
+        const devices = this.radDevices || [];
+        if (!devices.length) return null;
+        const s = this.state;
+        const avgRun = this.avgRun || (Math.sqrt((s.area || 100) / (s.floors === 2 ? 2 : 1)) + 3);
+        const len = 2 * avgRun * 1.1;
+
+        const rows = devices.map(d => {
+            const flow = this.radFlowOf(d.watt);
+            // Кольцо прибора: луч в обе стороны и его клапан на средней настройке.
+            const dp = this.radPipeDrop(flow, 16, len).dp
+                + Math.pow(flow / this.RAD_VALVE_KV, 2) * 100;
+            return { room: d.room, watt: Math.round(d.watt), flow: flow, dp: dp };
+        });
+
+        const dpMax = rows.reduce((a, r) => Math.max(a, r.dp), 0);
+        rows.forEach(r => {
+            const extra = Math.max(0, dpMax - r.dp);          // кПа, добавить клапаном
+            if (extra < 0.5 || !(r.flow > 0)) {
+                r.kv = null; r.turns = this.RAD_BAL_TURNS;    // самое тяжёлое кольцо — открыт
+                r.full = true;
+                return;
+            }
+            r.kv = r.flow / Math.sqrt(extra / 100);           // Kv = G / √ΔP(бар)
+            // Обороты — по паспортному диапазону клапана: от Kv_min почти
+            // закрытого до Kvs открытого. Требуемое Kv ниже минимального
+            // означает, что клапан надо зажать сильнее, чем он умеет, — тогда
+            // ставим минимальные полоборота и полагаемся на термоголовку.
+            const span = Math.max(0.01, this.RAD_BAL_KVS - this.RAD_BAL_KV_MIN);
+            const rel = (Math.min(r.kv, this.RAD_BAL_KVS) - this.RAD_BAL_KV_MIN) / span;
+            const t = this.RAD_BAL_TURNS * Math.max(0, rel);
+            r.turns = Math.max(0.5, Math.round(t * 2) / 2);   // округляем до половины оборота
+            r.full = false;
+        });
+        rows.sort((a, b) => a.turns - b.turns);
+        return { rows: rows, dpMax: dpMax };
+    },
+
     /**
      * Гидравлический расчёт радиаторной части: расход системы, потери в самом
      * неблагоприятном кольце и требуемый напор насоса.
@@ -31975,6 +32040,23 @@ const app = {
      * невыгодный режим, поэтому 75/65 честнее; по умолчанию оставлен 80/60,
      * чтобы сохранённые сметы не поехали от появления настройки.
      */
+    /**
+     * Переводит разводку на трубу с большим внутренним диаметром — по кнопке в
+     * предупреждении о скорости. Наружный размер тот же, меняется семейство:
+     * металлопластик 32×3.0 даёт 26 мм внутри против 22,6 у стабильной
+     * PE-Xa/Al/PE-RT, и скорость падает примерно на четверть.
+     *
+     * Трубу в теплоизоляции меняем на её же металлопластиковый вариант, чтобы не
+     * потерять изоляцию там, где она была выбрана осознанно.
+     */
+    widenRadTrunk: function () {
+        const t = this.state.pipeType;
+        this.state.pipeType = (t === 'split' || t === 'stable_16' || t === 'stable_16_r')
+            ? 'split_mp' : 'insulated_mp';
+        this.syncUI();
+        this.render();
+        this.saveState();
+    },
     setRadRegime: function (key) {
         this.state.radRegime = (key === 'r7565') ? 'r7565' : 'r8060';
         this.syncUI();
@@ -36163,7 +36245,20 @@ const app = {
             case 'rad_item':
                 return `<span style="${styles}"><span style="${head}">Радиатор отопления</span><b>Зачем:</b> Компенсация теплопотерь через окна/стены.<br><b>Формула:</b> Теплопотери помещения / Теплоотдача секции.<br><b>Мощность:</b> ${val1} Вт.<br><b>Норматив:</b> ГОСТ 31311-2005.</span>`;
             case 'rad_valves':
-                return `<span style="${styles}"><span style="${head}">Узел нижнего подключения</span><b>Зачем:</b> Эстетичное подключение труб из стены/пола.<br><b>Функция:</b> Позволяет перекрыть и снять радиатор без слива системы.</span>`;
+                // Преднастройки: без них вода идёт коротким путём, ближние приборы
+                // разбирают расход, дальние стоят прохладными. Числа расчётные —
+                // паспортной характеристики клапана у нас нет, поэтому доводить
+                // всё равно придётся по факту, но начинать с них, а не с «на глаз».
+                const _bal = app.radBalance();
+                let _balTxt = '';
+                if (_bal && _bal.rows.length > 1) {
+                    const _list = _bal.rows.slice(0, 6).map(r =>
+                        `${r.room} — ${r.full ? 'открыт полностью' : r.turns.toFixed(1) + ' об.'}`).join('; ');
+                    _balTxt = `<br><b>Преднастройка обратки:</b> ${_list}` +
+                        (_bal.rows.length > 6 ? ` и ещё ${_bal.rows.length - 6}` : '') +
+                        `.<br><span style="opacity:.75;">Обороты от закрытого. Самому мощному прибору клапан оставляют открытым, остальные зажимают на разницу колец. Значения расчётные — уточните по манометру при пусконаладке.</span>`;
+                }
+                return `<span style="${styles}"><span style="${head}">Узел нижнего подключения</span><b>Зачем:</b> Эстетичное подключение труб из стены/пола.<br><b>Функция:</b> Позволяет перекрыть и снять радиатор без слива системы.${_balTxt}</span>`;
             case 'rad_head':
                 return `<span style="${styles}"><span style="${head}">Термоголовка</span><b>Зачем:</b> Климат-контроль в каждой комнате.<br><b>Экономия:</b> Снижает расход газа/электричества на 15-20% за счет отсутствия перетопа.</span>`;
             case 'rad_pipe':
@@ -40773,9 +40868,21 @@ const app = {
             if (h.noisy) {
                 const loud = h.parts.filter(p => p.v > this.RAD_V_MAX)
                     .map(p => p.name.replace(/,.*$/, '')).join(', ');
+                // Ø32 — последний в каталоге, «взять следующий» не всегда есть куда.
+                // Зато внутренний диаметр у семейств разный: на тридцать второй
+                // металлопластик даёт 26 мм против 22,6 у стабильной, и одна смена
+                // трубы снимает четверть скорости. Предлагаем это прямо в
+                // предупреждении — кнопкой, а не советом «подберите сами».
+                const fam = this.radPipeFamily();
+                const canWiden = (fam !== 'mp');
                 app.tempWarns.push('• <b>Гидравлика:</b> скорость воды ' + h.vMax.toFixed(2) +
-                    ' м/с (' + loud + ') выше 1,0 м/с — труба будет слышна. ' +
-                    'Возьмите следующий диаметр.');
+                    ' м/с (' + loud + ') выше 1,0 м/с — труба будет слышна.' +
+                    (canWiden
+                        ? ' У металлопластика при том же наружном размере внутренний диаметр больше' +
+                          ' (26 мм против ' + Math.round(this.radPipeId(32) * 1000) + ' мм на Ø32).' +
+                          ' <button onclick="app.widenRadTrunk()" style="margin-left:4px; padding:2px 8px; border:1px solid var(--primary); background:var(--primary); color:#fff; border-radius:4px; font-size:11px; font-weight:700; cursor:pointer;">Заменить трубу</button>'
+                        : ' Дальше по диаметру идти некуда: Ø32 — крупнейшая труба каталога.' +
+                          ' Разделите разводку на две трассы или переведите систему на режим 80/60.'));
             }
         }
 
