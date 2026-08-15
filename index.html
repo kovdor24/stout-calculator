@@ -152,7 +152,7 @@
     <link rel="stylesheet" href="style.css?v=3.29">
 
     <script src="supabase-js.js" defer></script>
-    <script src="catalog.js?v=2.72" defer></script>
+    <script src="catalog.js?v=2.78" defer></script>
     <!-- Координаты и регионы населённых пунктов: карта проектов в админке и
          адрес объекта. Данные вшиты в файл, наружу никаких запросов. -->
     <script src="cities_geo.js?v=1.0" defer></script>
@@ -172,16 +172,16 @@
          плагина Capacitor нет, все методы тихо выходят. Подключать до app.js —
          app.init() дёргает appPush.init(). -->
     <script src="push.js?v=1.0" defer></script>
-    <script src="app.js?v=5.65" defer></script>
+    <script src="app.js?v=5.70" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
          векторный композитор, что рисует лист схемы в проекте, поэтому нужен
          и движок листов (рамка/штамп из него не берутся, только текст). -->
-    <script src="project_sheets.js?v=4.15" defer></script>
+    <script src="project_sheets.js?v=4.16" defer></script>
     <script src="project_scheme.js?v=4.49" defer></script>
     <!-- Укладка тёплого пола по планам этажей. В калькуляторе нужна не ради
          листов, а ради сметы: длину трубы и число выходов коллектора берём
          из нарисованных петель (projectPlans.floorLoops). -->
-    <script src="project_plans.js?v=1.6" defer></script>
+    <script src="project_plans.js?v=1.7" defer></script>
     <!-- Распознавание смет: подбор по каталогу и интерфейс мастера.
          Порядок важен — recognize.js обращается к RecognizeMatch. -->
     <script src="recognize_match.js?v=4.8" defer></script>
@@ -648,25 +648,27 @@
 
                 <div class="control-item toggle-item" id="blk_ventilation_wrapper" style="display: none; margin-top: 15px;">
                     <div class="label-row">
-                        <span class="lbl">💨 Учитывать вентиляцию</span>
+                        <span class="lbl" title="Воздухообмен учитывается всегда: без него дом недогреется. По умолчанию — естественный приток 0,35 ч⁻¹, норма для жилых помещений. Переключатель нужен, чтобы задать другой тип: принудительный или с рекуператором.">💨 Тип вентиляции</span>
                         <label class="switch">
                             <input type="checkbox" id="chk_vent" onchange="app.toggleVentilation(this.checked, event)">
                             <span class="slider"></span>
                         </label>
                     </div>
                     <div id="blk_vent_opts" style="display: none; flex-direction: column; gap: 8px; margin-top: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-light);">
-                        <span class="lbl-sub" style="margin-bottom: 4px;">Тип вентиляции</span>
-                        <div class="tabs" id="vent_tabs" style="margin-bottom: 6px;">
-                            <div class="tab active" id="vent_tab_natural" onclick="app.setVentilationType('natural', event)">Естеств.</div>
-                            <div class="tab" id="vent_tab_forced" onclick="app.setVentilationType('forced', event)">Принуд.</div>
-                            <div class="tab" id="vent_tab_recuperator" onclick="app.setVentilationType('recuperator', event)">Рекупер.</div>
+                        <div id="blk_vent_type" style="display: none; flex-direction: column;">
+                            <span class="lbl-sub" style="margin-bottom: 4px;">Тип вентиляции</span>
+                            <div class="tabs" id="vent_tabs" style="margin-bottom: 6px;">
+                                <div class="tab active" id="vent_tab_natural" onclick="app.setVentilationType('natural', event)">Естеств.</div>
+                                <div class="tab" id="vent_tab_forced" onclick="app.setVentilationType('forced', event)">Принуд.</div>
+                                <div class="tab" id="vent_tab_recuperator" onclick="app.setVentilationType('recuperator', event)">Рекупер.</div>
+                            </div>
                         </div>
                         <div class="info-card" id="desc_vent" style="margin-top: 4px; display: flex; flex-direction: column; gap: 3px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span>На вентиляцию:</span>
                                 <span><span id="lbl_vent_loss">0.00 кВт</span> <span style="opacity: 0.9;">(<span id="lbl_vent_flow">0</span> м³/ч)</span></span>
                             </div>
-                            <div style="font-size: 9.5px; opacity: 0.6; border-top: 1px dashed var(--border); padding-top: 3px; margin-top: 1px; line-height: 1.4; display: flex; flex-direction: column; gap: 2px; text-align: left;">
+                            <div id="vent_note" style="font-size: 9.5px; opacity: 0.6; border-top: 1px dashed var(--border); padding-top: 3px; margin-top: 1px; line-height: 1.4; display: flex; flex-direction: column; gap: 2px; text-align: left;">
                                 <div id="lbl_vent_tooltip_desc">Естественный воздухообмен кратностью 0.35 ч⁻¹.</div>
                                 <div>
                                     Расчет: <span id="lbl_vent_tooltip_calc">0 м³ * 0.35 ч⁻¹ * удельный нагрев</span>.

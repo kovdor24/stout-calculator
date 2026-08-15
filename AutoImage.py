@@ -5,6 +5,7 @@ import os
 import json
 import urllib3
 import urllib.request
+import urllib.error
 import traceback
 from bs4 import BeautifulSoup
 from PIL import Image, ImageChops
@@ -283,37 +284,54 @@ def optimize_and_save_image(temp_file_path, sku):
         return False
 
 def save_image(url, sku):
+    """
+    Возвращает "OK", "NOT_FOUND" или "FAILED".
+
+    NOT_FOUND — сайт ответил на картинку 404/410: файла у Терема просто нет (так у
+    R09048215508…R09114215508 карточка ссылалась на несуществующий RG008M1UNGOOK0_1.jpg).
+    Это не сбой сети и не блокировка, поэтому такой артикул уходит в «не найдено»,
+    а не в ошибки: раньше шесть таких подряд срабатывали как стоп-кран «похоже на
+    блокировку», и с 07.08.2026 каждый прогон умирал на первых шести артикулах очереди.
+    """
     if url.startswith('//'):
         url = 'https:' + url
     elif url.startswith('/'):
         url = 'https://www.teremonline.ru' + url
-        
+
     temp_file = os.path.join(IMAGE_DIR, f"temp_{sku}")
     os.makedirs(IMAGE_DIR, exist_ok=True)
-    
+
     try:
         # Download raw image
         req = urllib.request.Request(
-            url, 
+            url,
             headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
         )
         with urllib.request.urlopen(req, timeout=15) as response:
             with open(temp_file, 'wb') as f:
                 f.write(response.read())
-        
+
         # Optimize and crop image
         success = optimize_and_save_image(temp_file, sku)
-        
+
         # Delete temp file
         if os.path.exists(temp_file):
             os.remove(temp_file)
-            
-        return success
+
+        return "OK" if success else "FAILED"
+    except urllib.error.HTTPError as e:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+        if e.code in (404, 410):
+            print(f"-> Картинки нет на сайте (HTTP {e.code}): {url}")
+            return "NOT_FOUND"
+        print(f"-> Error downloading {url}: {e}")
+        return "FAILED"
     except Exception as e:
         print(f"-> Error downloading {url}: {e}")
         if os.path.exists(temp_file):
             os.remove(temp_file)
-        return False
+        return "FAILED"
 
 # Уценка на teremonline.ru лежит отдельными карточками с тем же артикулом:
 # «Уценённый товар (мятый / нетоварный вид упаковки, скол краски) …». В выдаче
@@ -448,11 +466,14 @@ def process_sku_image(driver, item):
                 continue
         if not img_url:
             return "NOT_FOUND"
-            
-        success = save_image(img_url, save_filename)
-        if success:
+
+        saved = save_image(img_url, save_filename)
+        if saved == "OK":
             return "DOWNLOADED"
-            
+        if saved == "NOT_FOUND":
+            # 404 на самой картинке: у Терема её нет — «не найдено», а не ошибка
+            return "NOT_FOUND"
+
         return "DOWNLOAD_FAILED"
     except Exception as e:
         return f"ERR: {str(e)[:25]}"

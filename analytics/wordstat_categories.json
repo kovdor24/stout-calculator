@@ -1,0 +1,146 @@
+{
+  "_comment": [
+    "Товарные категории, где есть STOUT или ROMMER, для режима --brands.",
+    "По каждой категории парсер спрашивает у Wordstat топ запросов (метод GetTop)",
+    "и вытаскивает из ответа марки — рейтинг лидеров получается ИЗМЕРЕННЫМ, а не",
+    "составленным вручную. known_brands — только стартовый словарь распознавания;",
+    "незнакомые слова попадают в раздел 'кандидаты' файла wordstat_brands.json,",
+    "владелец их подтверждает, и словарь растёт сам.",
+    "",
+    "cat — ключ группы в catalog.js, section — номер раздела сметы (SECTION_MAP в app.js).",
+    "ambiguous — марки, чьё имя совпадает с обычным словом ('tim', 'oasis', 'point'):",
+    "их засчитываем ТОЛЬКО в связке с категорией, иначе поймаем мусор.",
+    "Полипропилен сознательно не отслеживаем — у STOUT этой группы нет."
+  ],
+  "categories": [
+    {
+      "id": "kotly_gaz", "phrase": "газовый котел", "section": 1, "cat": "boilers_gas",
+      "known_brands": ["лемакс", "navien", "baxi", "vgr", "vaillant", "метеор термо", "meteor", "очаг", "сигнал", "мимакс", "конорд", "protherm", "bosch", "buderus", "ariston", "kentatsu", "beretta", "rinnai", "haier", "de dietrich", "fondital", "immergas", "zota", "termica"]
+    },
+    {
+      "id": "kotly_el", "phrase": "электрический котел отопления", "section": 1, "cat": "boilers_plus",
+      "known_brands": ["zota", "эван", "evan", "руснит", "галан", "элвин", "теплодар", "protherm", "bosch", "kospel", "wattek", "vaillant", "stout", "rommer"]
+    },
+    {
+      "id": "boylery_kn", "phrase": "бойлер косвенного нагрева", "section": 1, "cat": "tanks_standard",
+      "known_brands": ["termica", "thermex", "термекс", "vgr", "rommer", "hajdu", "drazice", "royal thermo", "baxi", "buderus", "bosch", "viessmann", "acv", "reflex", "wester", "lemax", "лемакс", "stout"]
+    },
+    {
+      "id": "dymohody", "phrase": "дымоход коаксиальный", "section": 1, "cat": "chimneys",
+      "known_brands": ["okseler", "hoobs", "termica", "craft", "ferrum", "вулкан", "schiedel", "baxi", "navien", "stout", "rommer"]
+    },
+    {
+      "id": "nasosnye_gruppy", "phrase": "насосная группа", "section": 2, "cat": "groups_dn25",
+      "known_brands": ["meibes", "майбес", "gidruss", "гидрусс", "hoobs", "uni-fitt", "unifit", "elsen", "oventrop", "watts", "afriso", "stout", "rommer", "valtec"]
+    },
+    {
+      "id": "gidrostrelki", "phrase": "гидрострелка", "section": 2, "cat": "hydro_separators",
+      "known_brands": ["gidruss", "гидрусс", "meibes", "hoobs", "uni-fitt", "elsen", "watts", "stout", "rommer", "valtec"]
+    },
+    {
+      "id": "nasosy_cirk", "phrase": "циркуляционный насос", "section": 2, "cat": "pumps_dn25",
+      "known_brands": ["unipump", "юнипамп", "oasis", "valtec", "valfex", "rommer", "aquatim", "акватим", "shinhoo", "pumpman", "imp pumps", "grundfos", "wilo", "dab", "vieir", "hoobs", "jemix", "wester", "sti", "вихрь", "джилекс", "stout"],
+      "ambiguous": ["oasis", "tim"]
+    },
+    {
+      "id": "nasosy_skv", "phrase": "скважинный насос", "section": 11, "cat": "well_pumps",
+      "known_brands": ["джилекс", "unipump", "belamos", "беламос", "aquario", "акварио", "tim", "aquatim", "водолей", "вихрь", "grundfos", "pedrollo", "speroni", "vodotok", "stout", "rommer"],
+      "ambiguous": ["tim"]
+    },
+    {
+      "id": "rasshir_baki", "phrase": "расширительный бак для отопления", "section": 2, "cat": "exp_heating",
+      "known_brands": ["wester", "джилекс", "aquasystem", "zilmet", "reflex", "flamco", "astrex", "elbi", "varem", "stout", "rommer", "valtec"]
+    },
+    {
+      "id": "radiatory", "phrase": "радиатор отопления", "section": 3, "cat": "rads",
+      "known_brands": ["rifar", "рифар", "royal thermo", "кзто", "prado", "прадо", "axis", "аксис", "лемакс", "теплоприбор", "halsen", "loten", "steel hot", "термал", "брэм", "анкор", "alberg", "лидея", "vieir", "global", "sira", "kermi", "purmo", "buderus", "оазис", "сунержа", "stout", "rommer"],
+      "ambiguous": ["axis", "global", "oasis", "оазис"]
+    },
+    {
+      "id": "konvektory", "phrase": "внутрипольный конвектор", "section": 3, "cat": "convectors_scn",
+      "known_brands": ["techno", "varmann", "jaga", "minib", "itermic", "eva", "mohlenhoff", "kampmann", "stout", "rommer"],
+      "ambiguous": ["eva", "techno"]
+    },
+    {
+      "id": "termogolovki", "phrase": "термостатическая головка", "section": 3, "cat": "heads",
+      "known_brands": ["ридан", "ridan", "danfoss", "hoobs", "vieir", "tim", "icma", "far", "luxor", "giacomini", "caleffi", "oventrop", "herz", "stout", "rommer", "valtec"],
+      "ambiguous": ["tim", "far"]
+    },
+    {
+      "id": "truba_pex", "phrase": "труба из сшитого полиэтилена", "section": 6, "cat": "pipes",
+      "known_brands": ["sanext", "санекст", "valtec", "рехау", "rehau", "usystems", "uponor", "tim", "hoobs", "rtp", "ростурпласт", "heisskraft", "stout", "rommer"],
+      "ambiguous": ["tim"]
+    },
+    {
+      "id": "truba_mp", "phrase": "металлопластиковая труба", "section": 6, "cat": "metal_plastic_pipes",
+      "known_brands": ["valtec", "tim", "hoobs", "rtp", "ростурпласт", "vieir", "uni-fitt", "henco", "comisa", "stout", "rommer"],
+      "ambiguous": ["tim"]
+    },
+    {
+      "id": "fitingi_ax", "phrase": "аксиальный фитинг", "section": 6, "cat": "axial_fittings_pex",
+      "known_brands": ["hoobs", "рехау", "rehau", "usystems", "uponor", "sanext", "tim", "valtec", "stout", "rommer"],
+      "ambiguous": ["tim"]
+    },
+    {
+      "id": "kollektor_tp", "phrase": "коллектор теплого пола", "section": 4, "cat": "manifolds",
+      "known_brands": ["valtec", "tim", "hoobs", "vieir", "рехау", "rehau", "usystems", "icma", "far", "uni-fitt", "giacomini", "tece", "stout", "rommer"],
+      "ambiguous": ["tim", "far"]
+    },
+    {
+      "id": "shkaf_kollekt", "phrase": "коллекторный шкаф", "section": 4, "cat": "cabinets_shrn",
+      "known_brands": ["hoobs", "valtec", "tim", "vieir", "elsen", "grota", "гроте", "stout", "rommer"],
+      "ambiguous": ["tim"]
+    },
+    {
+      "id": "uzel_podmesa", "phrase": "смесительный узел теплого пола", "section": 4, "cat": "mixing_units",
+      "known_brands": ["hoobs", "valtec", "meibes", "gidruss", "uni-fitt", "elsen", "astrex", "watts", "stout", "rommer"]
+    },
+    {
+      "id": "termostaty_tp", "phrase": "термостат теплого пола", "section": 4, "cat": "thermostats_stout",
+      "known_brands": ["ридан", "ridan", "danfoss", "astrex", "salus", "computherm", "terneo", "thermoreg", "caleo", "devi", "tim", "vieir", "stout", "rommer"],
+      "ambiguous": ["tim"]
+    },
+    {
+      "id": "avtomatika", "phrase": "gsm модуль для котла", "section": 7, "cat": "boiler_automation",
+      "known_brands": ["zont", "зонт", "ectocontrol", "эктоконтрол", "teplocom", "теплоком", "ридан", "ridan", "computherm", "baxi", "stout", "rommer"]
+    },
+    {
+      "id": "nerzh_press", "phrase": "нержавеющая труба пресс", "section": 6, "cat": "ss_pipe_4m",
+      "known_brands": ["valtec", "валтек", "mvi", "рехау", "rehau", "tim", "sanha", "viega", "geberit", "stout", "rommer"],
+      "ambiguous": ["tim"]
+    },
+    {
+      "id": "kanalizaciya", "phrase": "бесшумная канализация", "section": 6, "cat": "sewer_silent",
+      "known_brands": ["sinikon", "синикон", "политэк", "politek", "rtp", "ростурпласт", "ostendorf", "остендорф", "rehau", "рехау", "raupiano", "valsir", "pipelife", "stout", "rommer"]
+    },
+    {
+      "id": "installyacii", "phrase": "инсталляция для унитаза", "section": 6, "cat": "installations",
+      "known_brands": ["iddis", "vitra", "cersanit", "alcaplast", "алкапласт", "tece", "geberit", "grohe", "berges", "point", "am.pm", "roca", "wisa", "stout", "rommer"],
+      "ambiguous": ["point"]
+    },
+    {
+      "id": "krany_sharovye", "phrase": "шаровой кран", "section": 8, "cat": "ball_valves",
+      "known_brands": ["vieir", "tim", "hoobs", "valtec", "mvi", "uni-fitt", "itap", "bugatti", "royal thermo", "stout", "rommer"],
+      "ambiguous": ["tim"]
+    },
+    {
+      "id": "vodoochistka", "phrase": "фильтр для воды магистральный", "section": 10, "cat": "filter_big_blue",
+      "known_brands": ["аквафор", "aquaphor", "гейзер", "geizer", "барьер", "atoll", "ecosoft", "bwt", "райфил", "джилекс", "stout", "rommer"]
+    },
+    {
+      "id": "teplonositel", "phrase": "теплоноситель для отопления", "section": 9, "cat": "coolants",
+      "known_brands": ["dixis", "диксис", "thermagent", "термагент", "теплый дом", "hot blood", "primoclima", "аквалюкс", "stout", "rommer"]
+    },
+    {
+      "id": "stabilizatory", "phrase": "стабилизатор напряжения для котла", "section": 2, "cat": "stabs",
+      "known_brands": ["ресанта", "resanta", "штиль", "энергия", "rucelf", "powerman", "suntek", "stout", "rommer"]
+    }
+  ],
+  "own_brands": ["stout", "стаут", "rommer", "роммер"],
+  "stop_words": [
+    "купить", "цена", "цены", "стоимость", "недорого", "дешево", "отзывы", "москва",
+    "спб", "интернет", "магазин", "доставка", "каталог", "фото", "видео", "своими",
+    "руками", "монтаж", "установка", "схема", "расчет", "какой", "лучше", "для",
+    "дома", "квартиры", "частного", "мм", "см", "литров", "квт", "кв", "шт"
+  ]
+}

@@ -7,66 +7,155 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Планы этажей — подложка и зоны</title>
 <style>
-  body { margin: 0; font: 14px/1.4 system-ui, sans-serif; background: #565656; color: #222; }
+  /* Оформление — как в проектных САПР (Revit): графитовые панели, плоские
+     элементы почти без скруглений, синий акцент Autodesk, светлый чертёж на
+     тёмном поле. Тема всегда тёмная и от калькулятора не зависит: редактор —
+     рабочее место с чертежом, а не страница сметы, и белый фон вокруг подложки
+     засвечивает сам план. Шрифт системный, как во всех САПР. */
+  :root {
+    --primary: #0696D7;          /* акцент Autodesk */
+    --primary-dim: #0b7cb0;
+    --primary-light: rgba(6, 150, 215, .18);
+    --bg: #2c2c2c;               /* поле вокруг чертежа */
+    --surface: #3c3c3c;          /* панели и лента */
+    --surface-light: #454545;    /* карточки внутри панелей */
+    --surface-hi: #4f4f4f;       /* наведение */
+    --text-main: #e6e6e6;
+    --text-sec: #a0a0a0;
+    --border: #5a5a5a;
+    --border-soft: #4a4a4a;
+    --ok: #4c9a2a;
+    --ok-bg: rgba(76, 154, 42, .18);
+    --warn-bg: #4a2a2a;
+    --warn-text: #ff9b8a;
+    --warn-border: #7a3b3b;
+    --rad: 3px;                  /* САПР почти не скругляет */
+  }
+  body { margin: 0; font: 13px/1.4 'Segoe UI', system-ui, -apple-system, sans-serif;
+         background: var(--bg); color: var(--text-main); }
   .topbar { position: sticky; top: 0; z-index: 5; }
-  .bar { background: #2b2b2b; color: #fff; padding: 8px 12px; display: flex; gap: 10px;
-         align-items: center; flex-wrap: wrap; }
-  .bar b { font-weight: 600; }
+  /* лента инструментов */
+  .bar { background: var(--surface); color: var(--text-main); padding: 7px 10px; display: flex;
+         gap: 5px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid #222; }
+  .bar b { font-weight: 600; letter-spacing: .2px; }
   /* полоска «что осталось»: единственное место, где видны все шаги сразу */
-  .steps { background: #3a3a3a; color: #ddd; padding: 6px 12px; display: flex; gap: 7px;
-           align-items: center; flex-wrap: wrap; font-size: 13px;
-           border-top: 1px solid #4d4d4d; }
-  .steps .lbl { color: #9a9a9a; }
-  .steps .st { padding: 3px 9px; border-radius: 12px; border: 1px solid #6a6a6a;
-               background: #4a4a4a; color: #fff; cursor: pointer; white-space: nowrap; }
-  .steps .st:hover { background: #5d5d5d; }
-  .steps .st.next { background: #ff6b35; border-color: #ff6b35; font-weight: 600; }
-  .steps .st.done { background: #2f4a35; border-color: #3d6b46; color: #a9d4b4;
+  .steps { background: #343434; color: var(--text-sec); padding: 6px 10px; display: flex;
+           gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px;
+           border-bottom: 1px solid #222; }
+  .steps .lbl { color: var(--text-sec); }
+  .steps .st { padding: 3px 9px; border-radius: var(--rad); border: 1px solid var(--border-soft);
+               background: var(--surface-light); color: var(--text-main); cursor: pointer;
+               white-space: nowrap; font-weight: 500; }
+  .steps .st:hover { background: var(--surface-hi); border-color: var(--primary); }
+  .steps .st.next { background: var(--primary); border-color: var(--primary); color: #fff;
+                    font-weight: 600; }
+  .steps .st.done { background: transparent; border-color: var(--border-soft); color: #7ec95a;
                     cursor: default; }
-  .steps .st.done:hover { background: #2f4a35; }
-  .steps .st.save { background: #0a7b28; border-color: #0a7b28; font-weight: 600; }
-  .steps .up { color: #ffd08a; }
-  .steps .up.bad { color: #ff9b8a; }
+  .steps .st.done:hover { background: transparent; border-color: var(--border-soft); }
+  .steps .st.save { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 600; }
+  .steps .up { color: #d8b26a; }
+  .steps .up.bad { color: var(--warn-text); }
   .steps .up b { cursor: pointer; text-decoration: underline; }
-  button, select, input[type=text] { font: inherit; padding: 5px 10px; border-radius: 6px;
-         border: 1px solid #999; background: #f4f4f4; cursor: pointer; }
-  button.on { background: #ff6b35; color: #fff; border-color: #ff6b35; }
-  button.ghost { background: #444; color: #eee; border-color: #666; }
-  .tab { padding: 5px 10px; border-radius: 6px; background: #444; color: #ddd; cursor: pointer; }
-  .tab.on { background: #ff6b35; color: #fff; }
-  .wrap { display: flex; gap: 12px; padding: 12px; align-items: flex-start; }
-  .cvbox { background: #777; border-radius: 8px; padding: 8px; flex: 1 1 auto; min-width: 0; }
-  canvas { display: block; max-width: 100%; background: #fff; border-radius: 4px;
+  button, select, input[type=text] { font: inherit; font-size: 12.5px; padding: 5px 10px;
+         border-radius: var(--rad); border: 1px solid var(--border-soft);
+         background: var(--surface-light); color: var(--text-main); cursor: pointer;
+         transition: background .12s, border-color .12s; }
+  button:hover, select:hover { background: var(--surface-hi); border-color: var(--primary); }
+  button.on { background: var(--primary); color: #fff; border-color: var(--primary-dim); }
+  button.on:hover { background: var(--primary-dim); }
+  button.ghost { background: transparent; color: var(--text-sec); border-color: var(--border-soft); }
+  button.ghost:hover { background: var(--surface-light); color: var(--text-main); }
+  input[type=text] { background: #2a2a2a; border-color: #222; cursor: text; }
+  input[type=text]:focus { outline: none; border-color: var(--primary); }
+  /* Инструмент, не нужный на текущем шаге: гаснет, но остаётся на своём месте и
+     нажимается. Прятался — и соседние кнопки прыгали под курсором. */
+  .dim { opacity: .4; }
+  .dim:hover { opacity: 1; }
+  .tab { padding: 5px 10px; border-radius: var(--rad); background: var(--surface-light);
+         color: var(--text-sec); cursor: pointer; }
+  .tab.on { background: var(--primary); color: #fff; }
+  .wrap { display: flex; gap: 10px; padding: 10px; align-items: flex-start; }
+  /* рабочее поле: чертёж лежит на графите, как вид в САПР */
+  .cvbox { background: #262626; border: 1px solid #1c1c1c; border-radius: var(--rad);
+           padding: 8px; flex: 1 1 auto; min-width: 0; overflow: auto; }
+  canvas { display: block; max-width: 100%; background: #1e1e1e; border-radius: 2px;
            cursor: crosshair; touch-action: none; }
-  .side { flex: 0 0 300px; background: #f2f2f2; border-radius: 8px; padding: 10px; }
-  .side h3 { margin: 4px 0 8px; font-size: 15px; }
-  .zone { border: 1px solid #ccc; border-radius: 6px; padding: 6px 8px; margin-bottom: 6px;
-          background: #fff; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-  .zone .sw { width: 14px; height: 14px; border-radius: 3px; flex: 0 0 auto; }
-  .zone input[type=text] { flex: 1 1 90px; padding: 3px 6px; }
-  .zone .ar { color: #555; font-size: 12px; white-space: nowrap; }
-  .zone .del { color: #b00; cursor: pointer; font-weight: 700; padding: 0 4px; }
-  .hint { background: #fff7e6; border: 1px solid #f2c46d; border-radius: 6px;
-          padding: 7px 9px; font-size: 13px; margin-bottom: 8px; }
-  .ok { color: #0a7b28; font-weight: 600; }
+  /* Палитра свойств: секции с заголовками и строки «параметр — значение»,
+     как в окне свойств САПР. До этого панель была сплошным абзацем текста,
+     в котором сводка этажа, статусы и список комнат сливались в кучу. */
+  .side { flex: 0 0 320px; background: var(--surface); border: 1px solid #2a2a2a;
+          border-radius: var(--rad); padding: 0; overflow: hidden; }
+  .side .pad { padding: 10px 10px 12px; }
+  .pgroup { border-top: 1px solid #2a2a2a; }
+  .pgroup:first-of-type { border-top: 0; }
+  .phead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+           background: #454545; border-bottom: 1px solid #2a2a2a; padding: 5px 10px;
+           font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+           color: #cfcfcf; }
+  .phead .note { font-size: 10px; font-weight: 400; letter-spacing: 0; text-transform: none;
+                 color: var(--text-sec); white-space: nowrap; }
+  .pbody { padding: 4px 0; }
+  /* строка свойства: имя слева, значение прижато вправо */
+  .prow { display: flex; align-items: baseline; gap: 10px; padding: 3px 10px; font-size: 12px; }
+  .prow:nth-child(even) { background: rgba(255,255,255,.025); }
+  .prow .k { color: var(--text-sec); flex: 1 1 auto; }
+  .prow .v { color: var(--text-main); text-align: right; white-space: nowrap; flex: 0 0 auto; }
+  .prow .v.warn { color: var(--warn-text); }
+  .prow .v.good { color: #7ec95a; }
+  .pempty { padding: 7px 10px; font-size: 12px; color: var(--text-sec); font-style: italic; }
+  /* зона: цветная метка, тип, поле имени, площадь, удаление — по колонкам */
+  .zone { border: 0; border-bottom: 1px solid #333; border-radius: 0; padding: 4px 10px;
+          margin: 0; background: transparent; display: flex; gap: 7px;
+          align-items: center; flex-wrap: nowrap; }
+  .zone:nth-child(even) { background: rgba(255,255,255,.025); }
+  .zone:hover { background: rgba(6,150,215,.10); }
+  .zone .sw { width: 9px; height: 9px; border-radius: 1px; flex: 0 0 auto; }
+  .zone .zt { color: var(--text-sec); font-size: 11px; flex: 0 0 auto; white-space: nowrap; }
+  .zone input[type=text] { flex: 1 1 60px; min-width: 0; padding: 2px 5px; font-size: 12px; }
+  .zone .ar { color: var(--text-main); font-size: 11.5px; white-space: nowrap; flex: 0 0 auto;
+              font-variant-numeric: tabular-nums; }
+  .zone .del { color: var(--text-sec); cursor: pointer; font-weight: 700; padding: 0 2px;
+               flex: 0 0 auto; }
+  .zone .del:hover { color: #e06c5f; }
+  /* строка комнаты расчёта: имя слева, свойства справа */
+  .croom { display: flex; align-items: baseline; gap: 8px; padding: 3px 10px; font-size: 12px;
+           cursor: pointer; border-bottom: 1px solid #333; }
+  .croom:nth-child(even) { background: rgba(255,255,255,.025); }
+  .croom:hover { background: rgba(6,150,215,.12); }
+  .croom .nm { flex: 1 1 auto; color: var(--text-main); }
+  .croom .mt { flex: 0 0 auto; color: var(--text-sec); font-size: 11px; white-space: nowrap;
+               font-variant-numeric: tabular-nums; }
+  .hint { background: #343434; border: 1px solid var(--border-soft);
+          border-left: 3px solid var(--primary); border-radius: var(--rad); padding: 8px 10px;
+          font-size: 12.5px; margin-bottom: 9px; color: var(--text-main); }
+  .ok { color: #7ec95a; font-weight: 600; }
   /* пошаговые подсказки */
-  .guide { position: fixed; z-index: 50; max-width: 320px; background: #fff;
-           border: 2px solid #ff6b35; border-radius: 10px; padding: 10px 12px;
-           box-shadow: 0 6px 24px rgba(0,0,0,.35); font-size: 13.5px; color: #222;
+  .guide { position: fixed; z-index: 50; max-width: 320px; background: var(--surface);
+           border: 1px solid var(--primary); border-radius: var(--rad); padding: 10px 12px;
+           box-shadow: 0 8px 28px rgba(0,0,0,.5); font-size: 13px; color: var(--text-main);
            cursor: move; user-select: none; touch-action: none; }
-  .guide .step { font-size: 11px; color: #ff6b35; font-weight: 700;
-                 text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
-  .guide .grip { color: #ccc; font-size: 12px; margin-right: 5px; }
-  .guide .close { float: right; color: #999; cursor: pointer; font-size: 12px;
+  .guide .step { font-size: 10.5px; color: var(--primary); font-weight: 700;
+                 text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+  .guide .grip { color: var(--text-sec); font-size: 12px; margin-right: 5px; }
+  .guide .close { float: right; color: var(--text-sec); cursor: pointer; font-size: 12px;
                   margin: -2px -4px 4px 8px; }
-  .guide .close:hover { color: #b00; }
-  .guide .demo { margin-top: 7px; border: 1px solid #eee; border-radius: 6px;
-                 overflow: hidden; background: #fcfcfc; }
+  .guide .close:hover { color: #e06c5f; }
+  .guide .demo { margin-top: 7px; border: 1px solid var(--border-soft); border-radius: 2px;
+                 overflow: hidden; background: #fff; }
   .guide .demo svg { display: block; width: 100%; height: auto; }
-  @keyframes pulseG { 0% { box-shadow: 0 0 0 0 rgba(255,107,53,.75); }
-                      70% { box-shadow: 0 0 0 11px rgba(255,107,53,0); }
-                      100% { box-shadow: 0 0 0 0 rgba(255,107,53,0); } }
-  .pulse { animation: pulseG 1.6s infinite; border-radius: 6px; }
+  @keyframes pulseG { 0% { box-shadow: 0 0 0 0 rgba(6,150,215,.7); }
+                      70% { box-shadow: 0 0 0 11px rgba(6,150,215,0); }
+                      100% { box-shadow: 0 0 0 0 rgba(6,150,215,0); } }
+  .pulse { animation: pulseG 1.6s infinite; border-radius: var(--rad); }
+  /* масштаб подложки */
+  .zoombox { display: inline-flex; align-items: center; gap: 0; }
+  .zoombox button { border-radius: 0; margin: 0; }
+  .zoombox button:first-child { border-radius: var(--rad) 0 0 var(--rad); }
+  .zoombox button:last-child { border-radius: 0 var(--rad) var(--rad) 0; }
+  .zoombox .val { min-width: 46px; text-align: center; font-size: 11.5px; font-weight: 600;
+                  color: var(--text-sec); border-top: 1px solid var(--border-soft);
+                  border-bottom: 1px solid var(--border-soft); background: #2a2a2a;
+                  padding: 5px 4px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -77,7 +166,7 @@
   <span id="tabs"></span>
   <button class="ghost" onclick="addFloor()">+ этаж</button>
   <span style="flex:1"></span>
-  <label class="ghost" id="b_upload" style="padding:5px 10px;border-radius:6px;background:#444;cursor:pointer">
+  <label class="ghost" id="b_upload" style="padding:6px 12px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">
     Загрузить план <input type="file" multiple accept="image/*,.pdf,application/pdf" style="display:none" onchange="loadImage(this)">
   </label>
   <button id="b_scale" onclick="setMode('scale')">Масштаб</button>
@@ -104,8 +193,25 @@
     <option value="boiler">Котельная</option>
     <option value="wc">Санузел</option>
   </select>
+  <select id="northsel" onchange="setNorth(this.value)" title="Куда на этом плане смотрит север. По нему расчёт сам определяет, на какую сторону выходит каждая комната: на север и восток теплопотери выше.">
+    <option value="">Север: не указан</option>
+    <option value="0">Север: ↑ вверх</option>
+    <option value="45">Север: ↗ вверх-вправо</option>
+    <option value="90">Север: → вправо</option>
+    <option value="135">Север: ↘ вниз-вправо</option>
+    <option value="180">Север: ↓ вниз</option>
+    <option value="225">Север: ↙ вниз-влево</option>
+    <option value="270">Север: ← влево</option>
+    <option value="315">Север: ↖ вверх-влево</option>
+  </select>
+  <span class="zoombox" title="Масштаб подложки на экране. На расчёт не влияет — только на то, как крупно виден план.">
+    <button onclick="zoomStep(-1)">−</button>
+    <span class="val" id="zoom_val" onclick="setZoom(1)" title="Вернуть 100 %">100 %</span>
+    <button onclick="zoomStep(1)">+</button>
+  </span>
+  <button id="b_darkplan" class="on" onclick="toggleDarkPlan()" title="Тёмный вид подложки: чертёж светлыми линиями по тёмному, как в САПР. Для фотографии плана удобнее выключить и смотреть оригинал.">◐ Тёмный план</button>
   <button class="ghost" onclick="doUndo()" title="Ctrl+Z">↶ Шаг назад</button>
-  <button onclick="saveAll()" id="b_save" style="background:#0a7b28;color:#fff;border-color:#0a7b28">Сохранить</button>
+  <button onclick="saveAll()" id="b_save" style="background:var(--ok);color:#fff;border-color:var(--ok)">Сохранить</button>
   <button class="ghost" onclick="openSheets()" title="Комплект собирается по смете калькулятора вместе с планами">Проект →</button>
   <button class="ghost" id="b_alltools" onclick="toggleAllTools()" title="Показать все инструменты сразу, а не только нужные текущему шагу">Все инструменты</button>
   <button class="ghost" id="b_hints" onclick="toggleHints()">💡 Подсказки: вкл</button>
@@ -116,10 +222,13 @@
 <div class="wrap">
   <div class="cvbox"><canvas id="cv" width="1200" height="850"></canvas></div>
   <div class="side">
-    <div class="hint" id="hint">Загрузите фото или скан плана этажа, затем задайте масштаб:
-      кнопка «Масштаб» → две точки на плане → длина отрезка в метрах.</div>
-    <h3>Зоны <span id="scale_note" style="font-weight:400;font-size:12px;color:#555"></span></h3>
-    <div id="zlist"></div>
+    <div class="pad"><div class="hint" id="hint">Загрузите фото или скан плана этажа, затем задайте масштаб:
+      кнопка «Масштаб» → две точки на плане → длина отрезка в метрах.</div></div>
+    <div class="pgroup">
+      <div class="phead">Зоны этажа <span class="note" id="scale_note"></span></div>
+      <div id="zlist"></div>
+    </div>
+    <div id="zsummary"></div>
   </div>
 </div>
 
@@ -134,15 +243,16 @@
   try { ok = localStorage.getItem('heatcalc_design_access') === '1'; } catch (e) {}
   if (ok) return;
   document.body.innerHTML =
-    '<div style="max-width:520px;margin:80px auto;background:#fff;border-radius:12px;padding:28px 32px;' +
-    'font:15px/1.5 system-ui,sans-serif;color:#222;box-shadow:0 8px 30px rgba(0,0,0,.25)">' +
+    '<div style="max-width:520px;margin:80px auto;background:var(--surface);border-radius:3px;padding:28px 32px;' +
+    'font:15px/1.5 system-ui,sans-serif;color:var(--text-main);border:1px solid var(--border-soft);'  +
+    'box-shadow:0 8px 30px rgba(0,0,0,.45)">' +
     '<h2 style="margin:0 0 10px;font-size:19px">Раздел проектирования не открыт</h2>' +
-    '<p style="margin:0 0 14px;color:#555">Планы этажей и проект включает администратор. ' +
+    '<p style="margin:0 0 14px;color:var(--text-sec)">Планы этажей и проект включает администратор. ' +
     'Если доступ вам уже дали — откройте калькулятор heatcalc.ru, войдите в свою учётную запись ' +
     'и перейдите в редактор оттуда.</p>' +
     '<a href="index.html" style="display:inline-block;padding:9px 18px;border-radius:8px;' +
-    'background:#ff6b35;color:#fff;text-decoration:none;font-weight:600">К калькулятору</a></div>';
-  document.body.style.background = '#565656';
+    'background:var(--primary);color:#fff;text-decoration:none;font-weight:600">К калькулятору</a></div>';
+  document.body.style.background = 'var(--bg)';
   throw new Error('design access denied');
 })();
 
@@ -393,9 +503,39 @@ function renderTabs() {
     var s = document.createElement('span');
     s.className = 'tab' + (i === cur ? ' on' : '');
     s.textContent = (i + 1) + ' этаж';
-    s.onclick = function () { cur = i; renderTabs(); draw(); renderZones(); };
+    s.onclick = function () { cur = i; renderTabs(); draw(); renderZones(); syncNorth(); };
     t.appendChild(s);
   });
+  syncNorth();
+}
+
+/**
+ * Направление севера на плане: на сколько градусов по часовой стрелке он
+ * повёрнут относительно направления «вверх листа». Север вверх — 0, вправо —
+ * 90. Расчёт по нему определяет, на какую сторону света выходит каждая
+ * комната: на север и восток теплопотери по СНиП 41-01-2003 выше на 10 %.
+ *
+ * Хранится у этажа, а не у всего дома: подложки этажей сканируют по-разному, и
+ * второй этаж вполне может лежать повёрнутым. Но задают север обычно один раз,
+ * поэтому первое указание расходится на все этажи, где его ещё нет.
+ */
+function setNorth(v) {
+  var f = F();
+  if (v === '' || v === null) delete f.north;
+  else {
+    f.north = parseInt(v, 10) || 0;
+    DATA.floors.forEach(function (g) { if (g && g.north === undefined) g.north = f.north; });
+  }
+  draw();
+  hint(f.north === undefined
+    ? 'Север не указан — надбавка на сторону света не начисляется, её можно задать вручную в карточке помещения.'
+    : '<span class=ok>Север задан.</span> Расчёт сам определит, куда выходит каждая комната.');
+}
+function syncNorth() {
+  var s = document.getElementById('northsel');
+  if (!s) return;
+  var n = F() ? F().north : undefined;
+  s.value = (n === undefined || n === null) ? '' : String(n);
 }
 
 // pdf.js — лениво и с того же CDN, что использует распознавание накладных
@@ -1557,6 +1697,89 @@ function loadImage(inp) {
 
 function cs() { return F().w ? cv.width / F().w : 1; }  // канвас-пиксели на пиксель изображения
 
+/**
+ * Масштаб подложки на экране. Меняется только CSS-ширина канвы: сама она всегда
+ * рисуется в 1200 точек, а клики пересчитываются через getBoundingClientRect
+ * (см. evPt), поэтому от увеличения ничего не съезжает — ни зоны, ни радиаторы.
+ * Плана мелкого чертежа иначе не разглядеть: обвести комнату по стенам, которые
+ * в палец толщиной, невозможно.
+ */
+/**
+ * Координатная сетка рабочего поля: точки с мелким шагом и крестики на каждом
+ * пятом узле — так размечено поле в САПР. Пустой холст перестаёт быть просто
+ * серым прямоугольником, а у подложки с полями видно, где кончается лист.
+ *
+ * Рисуется одним заполнением по образцу (createPattern): точек на холсте
+ * больше семи тысяч, и класть их поштучно на каждую перерисовку — заметная
+ * задержка при перетаскивании зон. Образец пересобирается только при смене
+ * темы, ключ кэша — она же.
+ */
+var GRID_DOT = 12, GRID_CROSS = 5;   // шаг точек и через сколько точек крестик
+var _gridPat = null, _gridKey = '';
+function gridPattern() {
+  var key = darkPlan ? 'd' : 'l';
+  if (_gridPat && _gridKey === key) return _gridPat;
+  var side = GRID_DOT * GRID_CROSS;
+  var t = document.createElement('canvas');
+  t.width = side; t.height = side;
+  var g = t.getContext('2d');
+  g.fillStyle = darkPlan ? '#343434' : '#d7d7d7';
+  for (var y = 0; y < side; y += GRID_DOT)
+    for (var x = 0; x < side; x += GRID_DOT) g.fillRect(x, y, 1, 1);
+  // крестик в узле образца — он и повторится каждые пять точек
+  g.strokeStyle = darkPlan ? '#4a4a4a' : '#b4b4b4';
+  g.lineWidth = 1;
+  g.beginPath();
+  g.moveTo(0.5 - 3, 0.5); g.lineTo(0.5 + 3, 0.5);
+  g.moveTo(0.5, 0.5 - 3); g.lineTo(0.5, 0.5 + 3);
+  g.stroke();
+  _gridPat = cx.createPattern(t, 'repeat');
+  _gridKey = key;
+  return _gridPat;
+}
+function drawGrid() {
+  var p = gridPattern();
+  if (!p) return;
+  cx.save();
+  cx.fillStyle = p;
+  cx.fillRect(0, 0, cv.width, cv.height);
+  cx.restore();
+}
+
+/**
+ * Тёмный вид подложки. Сканы и чертежи белые, и на графитовой ленте лист светит
+ * прожектором — в САПР его показывают наоборот, светлыми линиями по тёмному.
+ * Переключатель нужен для фотографий плана: снимок с телефона в инверсии
+ * выглядит негативом, и разобрать на нём стены труднее, чем в оригинале.
+ */
+var darkPlan = true;
+try { darkPlan = localStorage.getItem('plan_editor_darkplan') !== '0'; } catch (e) {}
+function toggleDarkPlan() {
+  darkPlan = !darkPlan;
+  _gridPat = null;   // сетка своя у каждой темы — образец пересоберётся
+  try { localStorage.setItem('plan_editor_darkplan', darkPlan ? '1' : '0'); } catch (e) {}
+  var b = document.getElementById('b_darkplan');
+  if (b) b.className = darkPlan ? 'on' : 'ghost';
+  draw();
+}
+
+// Меньше 100 % — чтобы увидеть высокий план целиком: по ширине холст вписан в
+// поле всегда, а по высоте вытянутый этаж уходит под экран.
+var ZOOM_MIN = 0.25, ZOOM_MAX = 4, viewZoom = 1;
+try { viewZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, parseFloat(localStorage.getItem('plan_editor_zoom')) || 1)); } catch (e) {}
+function applyZoom() {
+  if (viewZoom === 1) { cv.style.width = ''; cv.style.maxWidth = ''; }
+  else { cv.style.width = (viewZoom * 100) + '%'; cv.style.maxWidth = 'none'; }
+  var v = document.getElementById('zoom_val');
+  if (v) v.textContent = Math.round(viewZoom * 100) + ' %';
+}
+function setZoom(z) {
+  viewZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+  try { localStorage.setItem('plan_editor_zoom', String(viewZoom)); } catch (e) {}
+  applyZoom();
+}
+function zoomStep(dir) { setZoom(Math.round((viewZoom + dir * 0.25) * 100) / 100); }
+
 // ─── Петли тёплого пола в редакторе ───────────────────────────────────
 // Зона показывается не заливкой, а самой укладкой: те же змейки, что уйдут
 // на лист, — красная подача, синяя обратка. Раскладку считает project_plans.js,
@@ -1648,9 +1871,21 @@ function draw() {
   if (im2) {
     cv.width = 1200; cv.height = Math.round(1200 * f.h / f.w);
   } else { cv.width = 1200; cv.height = 850; }
-  cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
-  if (im2) cx.drawImage(im2, 0, 0, cv.width, cv.height);
-  else {
+  cx.fillStyle = darkPlan ? '#1e1e1e' : '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+  drawGrid();
+  if (im2) {
+    // Подложка в тёмном виде: белый лист становится графитовым, а линии
+    // чертежа — светлыми, как вид в САПР. hue-rotate возвращает оттенки,
+    // которые перевернула инверсия: подписи площадей на планах красные, и без
+    // него они становились бы голубыми.
+    // Инвертируется только то, что видно на экране. Распознавание стен и окон
+    // читает пиксели со своей отдельной канвы из оригинала (см. maskOf), и
+    // подмена цветов до него не доходит.
+    cx.save();
+    if (darkPlan) cx.filter = 'invert(1) hue-rotate(180deg)';
+    cx.drawImage(im2, 0, 0, cv.width, cv.height);
+    cx.restore();
+  } else {
     cx.fillStyle = '#999'; cx.font = '20px system-ui'; cx.textAlign = 'center';
     cx.fillText('Загрузите план этажа (фото или скан)', cv.width / 2, cv.height / 2);
   }
@@ -1752,7 +1987,7 @@ function draw() {
       var tp = dragZ.last;
       cx.fillStyle = 'rgba(255,255,255,.85)';
       cx.fillRect(tp[0] * k + 8, tp[1] * k - 20, tw + 8, 16);
-      cx.fillStyle = dragZ.free ? '#b35900' : '#0a7b28';
+      cx.fillStyle = dragZ.free ? '#b35900' : '#059669';
       cx.fillText(tip, tp[0] * k + 12, tp[1] * k - 8);
     }
     var dp = zoneDelPt(actZ);
@@ -1817,7 +2052,7 @@ function draw() {
   });
 
   // текущий ввод
-  cx.lineWidth = 2; cx.strokeStyle = '#ff6b35';
+  cx.lineWidth = 2; cx.strokeStyle = '#0696D7';
   if (mode === 'poly' && tmp.length) {
     cx.beginPath();
     tmp.forEach(function (p, j) { j ? cx.lineTo(p[0] * k, p[1] * k) : cx.moveTo(p[0] * k, p[1] * k); });
@@ -1867,8 +2102,40 @@ function draw() {
     cx.fillStyle = scaleFree ? '#b35900' : '#08c';
     cx.fillText(lbl, scaleCur[0] * k + 12, scaleCur[1] * k - 8);
   }
+  drawCompass(f);
+  applyZoom();
   document.getElementById('scale_note').textContent =
-    f.pxPerM ? '· масштаб задан (' + f.pxPerM.toFixed(1) + ' px/м)' : '· масштаб не задан';
+    f.pxPerM ? f.pxPerM.toFixed(1) + ' px/м' : 'масштаб не задан';
+}
+
+/**
+ * Стрелка севера в углу плана. Нужна не для красоты: указанный север молча
+ * меняет теплопотери комнат, и монтажник должен видеть, куда он смотрит, не
+ * открывая список.
+ */
+function drawCompass(f) {
+  if (!f || f.north === undefined || f.north === null) return;
+  var R = 26, cxx = cv.width - R - 18, cyy = R + 18;
+  var a = (f.north || 0) * Math.PI / 180;          // по часовой от «вверх»
+  var dx = Math.sin(a), dy = -Math.cos(a);
+  cx.save();
+  cx.beginPath(); cx.arc(cxx, cyy, R, 0, Math.PI * 2);
+  cx.fillStyle = 'rgba(255,255,255,.86)'; cx.fill();
+  cx.lineWidth = 1.2; cx.strokeStyle = '#888'; cx.stroke();
+  cx.beginPath();
+  cx.moveTo(cxx + dx * (R - 6), cyy + dy * (R - 6));
+  cx.lineTo(cxx - dy * 6 - dx * 4, cyy + dx * 6 - dy * 4);
+  cx.lineTo(cxx + dy * 6 - dx * 4, cyy - dx * 6 - dy * 4);
+  cx.closePath();
+  cx.fillStyle = '#c0392b'; cx.fill();
+  cx.beginPath();
+  cx.moveTo(cxx - dx * (R - 8), cyy - dy * (R - 8));
+  cx.lineTo(cxx - dx * 4, cyy - dy * 4);
+  cx.lineWidth = 2; cx.strokeStyle = '#555'; cx.stroke();
+  cx.fillStyle = '#c0392b'; cx.font = 'bold 11px system-ui';
+  cx.textAlign = 'center'; cx.textBaseline = 'middle';
+  cx.fillText('С', cxx + dx * (R + 8), cyy + dy * (R + 8));
+  cx.restore();
 }
 
 function evPt(e) {
@@ -2374,7 +2641,8 @@ function renderZones() {
     var d = document.createElement('div'); d.className = 'zone';
     var sw = document.createElement('span'); sw.className = 'sw';
     sw.style.background = TYPES[z.type][1]; d.appendChild(sw);
-    var lb = document.createElement('span'); lb.textContent = TYPES[z.type][0]; d.appendChild(lb);
+    var lb = document.createElement('span'); lb.className = 'zt';
+    lb.textContent = TYPES[z.type][0]; d.appendChild(lb);
     var inp = document.createElement('input'); inp.type = 'text';
     inp.placeholder = 'помещение…'; inp.value = z.name;
     if (roomNames.length) inp.setAttribute('list', 'roomNames');
@@ -2391,7 +2659,7 @@ function renderZones() {
       var cnt = 0;
       if (card) Object.keys(card.fixtures || {}).forEach(function (k) { cnt += +card.fixtures[k] || 0; });
       ar.textContent = card ? (cnt + ' приб.') : 'имя не найдено';
-      ar.style.color = card ? '#0a7b28' : '#b00';
+      ar.style.color = card ? 'var(--ok)' : '#EF4444';
       ar.title = card ? 'Приборы взяты из карточки санузла в расчёте'
         : 'Впишите имя санузла так же, как в расчёте — приборы подставятся сами';
     } else {
@@ -2404,54 +2672,82 @@ function renderZones() {
     box.appendChild(d);
   });
   var rc = (F().rads || []).length;
+  if (!F().zones.length && !rc) {
+    var em = document.createElement('div'); em.className = 'pempty';
+    em.textContent = F().pxPerM ? 'Зоны ещё не обведены' : 'Задайте масштаб, затем обведите зоны';
+    box.appendChild(em);
+  }
   if (rc) {
     var rd = document.createElement('div'); rd.className = 'zone';
     rd.innerHTML = '<span class="sw" style="background:#d22222"></span>' +
-      '<span>Радиаторы: ' + rc + ' шт.</span>' +
-      '<span class="ar">убрать — клик по значку в режиме «Радиаторы»</span>';
+      '<span class="zt">Радиаторы</span>' +
+      '<span style="flex:1 1 auto"></span>' +
+      '<span class="ar">' + rc + ' шт.</span>';
+    rd.title = 'Убрать радиатор — клик по значку в режиме «Радиаторы»';
     box.appendChild(rd);
   }
-  // сводка этажа и статус котельной
+
+  // ── Сводка этажа и статусы: секция «параметр — значение» ─────────────────
+  var sum = document.getElementById('zsummary');
+  if (!sum) return;
+  sum.innerHTML = '';
   var tpS = 0, tpN = 0;
   F().zones.forEach(function (z) { if (z.type === 'tp') { tpS += area(z.pts); tpN++; } });
   var hasB = DATA.floors.some(function (fl) {
     return (fl.zones || []).some(function (z) { return z.type === 'boiler'; });
   });
-  var sm = document.createElement('div');
-  sm.style.cssText = 'margin-top:8px;padding-top:8px;border-top:1px solid #ccc;font-size:13px;line-height:1.5';
-  sm.innerHTML = '<b>Этаж:</b> тёплый пол — ' + tpN + ' зон, ' + tpS.toFixed(1) + ' м²; радиаторов — ' +
-    rc + ' шт.<br><b>Котельная на планах:</b> ' +
-    (hasB ? 'отмечена ✓' : '<span style="color:#b00">не отмечена</span>') +
-    (tpN ? '<br><b>Коллектор ТП:</b> ' + (F().coll ? 'отмечен ✓'
-      : '<span style="color:#b00">не отмечен — подводки петель не нарисуются</span>') : '');
+
+  // Строка палитры: слева имя, справа значение. cls — good/warn, когда значение
+  // само по себе статус, а не число.
+  var rows = function (title, list) {
+    var g = document.createElement('div'); g.className = 'pgroup';
+    var h = '<div class="phead">' + title + '</div><div class="pbody">';
+    list.forEach(function (r) {
+      h += '<div class="prow"><span class="k">' + r[0] + '</span>' +
+        '<span class="v' + (r[2] ? ' ' + r[2] : '') + '">' + r[1] + '</span></div>';
+    });
+    g.innerHTML = h + '</div>';
+    sum.appendChild(g);
+    return g;
+  };
+
+  var fl = [
+    ['Тёплый пол', tpN ? tpN + ' зон · ' + tpS.toFixed(1) + ' м²' : '—'],
+    ['Радиаторы', rc ? rc + ' шт.' : '—'],
+    ['Котельная', hasB ? 'отмечена' : 'не отмечена', hasB ? 'good' : 'warn']
+  ];
+  if (tpN) fl.push(['Коллектор ТП', F().coll ? 'отмечен' : 'не отмечен',
+    F().coll ? 'good' : 'warn']);
+
   // санузлы и приборы: видно, что уйдёт на листы водоснабжения и канализации
   var fxs = F().fixtures || [];
   var wcz = F().zones.filter(function (z) { return z.type === 'wc'; });
   if (wcz.length || fxs.length || calcWc.length) {
     var noName = wcz.filter(function (z) { return !wcCardOf(z.name); }).length;
     var risers = fxs.filter(function (q) { return q.t === 'riser'; }).length;
-    sm.innerHTML += '<br><b>Санузлы:</b> зон — ' + wcz.length +
-      (noName ? ', <span style="color:#b00">без имени из расчёта — ' + noName + '</span>' : '') +
-      '; приборов — ' + fxs.filter(function (q) { return q.t !== 'riser'; }).length +
-      '; стояков — ' + (risers ? risers + ' ✓' : '<span style="color:#b00">нет</span>');
+    fl.push(['Санузлы', wcz.length ? wcz.length + ' зон' : '—']);
+    if (noName) fl.push(['· без имени из расчёта', noName, 'warn']);
+    fl.push(['Приборы санузлов', fxs.filter(function (q) { return q.t !== 'riser'; }).length || '—']);
+    fl.push(['Стояк канализации', risers ? risers + ' шт.' : 'нет', risers ? 'good' : 'warn']);
   }
-  box.appendChild(sm);
-  // комнаты подробного расчёта: клик подписывает первую безымянную зону
+  rows('Этаж ' + (cur + 1), fl);
+
+  // ── Комнаты расчёта: клик подписывает первую безымянную зону ─────────────
   if (calcRooms.length) {
-    var cr = document.createElement('div');
-    cr.style.cssText = 'margin-top:8px;font-size:13px';
-    var h = '<b>Комнаты из расчёта</b> <span style="color:#777">(клик — подписать первую безымянную зону)</span>';
+    var g = document.createElement('div'); g.className = 'pgroup';
+    var h = '<div class="phead">Комнаты из расчёта <span class="note">клик — подписать зону</span></div>';
     calcRooms.forEach(function (r, idx) {
-      h += '<div class="croom" data-i="' + idx +
-        '" style="cursor:pointer;padding:2px 4px;border-radius:4px;background:#fff;margin-top:3px;border:1px solid #ddd">' +
-        r.name + (r.area ? ' — ' + r.area + ' м²' : '') +
-        '<span style="color:#888"> · эт.' + r.floor +
-        (r.sys.indexOf('tp') >= 0 ? ' · ТП' : '') +
-        (r.sys.indexOf('rad') >= 0 ? ' · рад.' : '') +
-        (r.win ? ' · окон: ' + r.win : '') + '</span></div>';
+      var mt = [];
+      mt.push('эт.' + r.floor);
+      if (r.sys.indexOf('tp') >= 0) mt.push('ТП');
+      if (r.sys.indexOf('rad') >= 0) mt.push('рад.');
+      if (r.win) mt.push(r.win + ' ок.');
+      h += '<div class="croom" data-i="' + idx + '">' +
+        '<span class="nm">' + r.name + '</span>' +
+        '<span class="mt">' + (r.area ? r.area + ' м² · ' : '') + mt.join(' · ') + '</span></div>';
     });
-    cr.innerHTML = h;
-    cr.onclick = function (e) {
+    g.innerHTML = h;
+    g.onclick = function (e) {
       var t = e.target && e.target.closest ? e.target.closest('.croom') : null;
       if (!t) return;
       var r = calcRooms[+t.getAttribute('data-i')];
@@ -2462,7 +2758,7 @@ function renderZones() {
       z.name = r.name;
       renderZones(); draw();
     };
-    box.appendChild(cr);
+    sum.appendChild(g);
   }
 }
 
@@ -2606,7 +2902,7 @@ var DEMOS = {
     '<line x1="150" y1="19" x2="150" y2="97" style="stroke:#8a8a8a;stroke-width:4"/>' +
     '<rect x="46" y="22" width="101" height="72" fill="#ff8000" fill-opacity="0.3" stroke="#ff8000" stroke-width="2">' +
     '<animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.42;0.5;1" dur="3.5s" repeatCount="indefinite"/></rect>' +
-    '<circle cx="96" cy="58" fill="none" stroke="#ff6b35" stroke-width="1.6">' +
+    '<circle cx="96" cy="58" fill="none" stroke="#0696D7" stroke-width="1.6">' +
     '<animate attributeName="r" values="3;3;13;13" keyTimes="0;0.3;0.42;1" dur="3.5s" repeatCount="indefinite"/>' +
     '<animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.29;0.31;0.42;1" dur="3.5s" repeatCount="indefinite"/></circle>' +
     '<text x="196" y="60" font-size="9.5" fill="#999" text-anchor="middle">один клик — вся комната</text>' +
@@ -2620,7 +2916,7 @@ var DEMOS = {
     '<animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.8;0.87;1" dur="5.5s" repeatCount="indefinite"/></polygon>' +
     '<path d="M55,30 L225,30 L225,52 L142,52 L142,90 L55,90 Z" pathLength="100" fill="none" stroke="#ff8000" stroke-width="2" stroke-dasharray="100">' +
     '<animate attributeName="stroke-dashoffset" values="100;100;0;0" keyTimes="0;0.06;0.68;1" dur="5.5s" repeatCount="indefinite"/></path>' +
-    '<circle cx="55" cy="90" fill="none" stroke="#ff6b35" stroke-width="1.6"><animate attributeName="r" values="3;3;12;12;3;12;12" keyTimes="0;0.68;0.73;0.74;0.75;0.8;1" dur="5.5s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;0.9;0;0.9;0;0" keyTimes="0;0.67;0.7;0.74;0.76;0.8;1" dur="5.5s" repeatCount="indefinite"/></circle>' +
+    '<circle cx="55" cy="90" fill="none" stroke="#0696D7" stroke-width="1.6"><animate attributeName="r" values="3;3;12;12;3;12;12" keyTimes="0;0.68;0.73;0.74;0.75;0.8;1" dur="5.5s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;0.9;0;0.9;0;0" keyTimes="0;0.67;0.7;0.74;0.76;0.8;1" dur="5.5s" repeatCount="indefinite"/></circle>' +
     '<text x="192" y="80" font-size="9.5" fill="#999" text-anchor="middle">по углам, 2×клик — замкнуть</text>' +
     '<g><animateMotion path="M55,30 L225,30 L225,52 L142,52 L142,90 L55,90 L55,30" keyPoints="0;0;1;1" keyTimes="0;0.06;0.68;1" calcMode="linear" dur="5.5s" repeatCount="indefinite"/>' + DEMO_CUR + '</g></svg>'
 };
@@ -2685,7 +2981,7 @@ function guideStep() {
     nx = '<br><br><b>Дальше — шаг ' + (L.indexOf(act) + 1) + ' из ' + L.length + ': ' +
       act.t.toLowerCase() + '.</b> ' +
       '<button onclick="goStep(\'' + act.id + '\')" style="margin-top:6px;font:inherit;' +
-      'padding:4px 11px;border-radius:6px;border:1px solid #ff6b35;background:#ff6b35;' +
+      'padding:5px 12px;border-radius:8px;border:1px solid var(--primary);background:var(--primary);' +
       'color:#fff;cursor:pointer">Перейти</button>';
   } else if (!act) {
     nx = '<br><br><b>Все шаги пройдены</b> — жмите зелёную «Сохранить».';
@@ -2720,7 +3016,7 @@ function guideStep() {
   if (savedOnce) return { t: 'b_save', s: 'Готово',
     txt: 'Сохранено! Планы попадут в комплект проекта вместе со сметой.' +
       '<br><button onclick="openSheets()" style="margin-top:7px;font:inherit;padding:5px 12px;' +
-      'border-radius:6px;border:1px solid #ff6b35;background:#ff6b35;color:#fff;cursor:pointer">' +
+      'border-radius:8px;border:1px solid var(--primary);background:var(--primary);color:#fff;cursor:pointer">' +
       'Открыть проект</button><br>Есть ещё этажи — переключите вкладку сверху и повторите шаги.' };
   return { t: 'b_save', s: 'Всё отмечено',
     txt: 'Этаж размечен полностью. Нажмите зелёную «Сохранить» — подложка уедет на сервер фоном, ждать её не нужно.' };
@@ -2855,7 +3151,11 @@ function applyBar(step) {
     var el = document.getElementById(id);
     if (!el) return;
     var show = !need || need.indexOf(id) >= 0;
-    el.style.display = show ? '' : 'none';
+    // Не прячем: кнопка остаётся на месте и нажимается, но гаснет. Раньше
+    // ненужные на шаге кнопки уходили в display:none, и вся шапка на каждом
+    // шаге перестраивалась — соседние кнопки уезжали из-под курсора.
+    el.style.display = '';
+    el.classList.toggle('dim', !show);
   });
   var b = document.getElementById('b_alltools');
   if (b) {
@@ -2969,6 +3269,12 @@ document.getElementById('b_hints').textContent = '💡 Подсказки: ' + (
 
 syncFixAutoBtn();
 refreshAutoFixtures();   // приборы санузлов из расчёта — сразу при открытии
+// Кнопка тёмного плана в разметке нажата; если в прошлый раз её выключили,
+// снимаем нажатие до первой отрисовки.
+(function () {
+  var b = document.getElementById('b_darkplan');
+  if (b) b.className = darkPlan ? 'on' : 'ghost';
+})();
 renderTabs(); draw(); renderZones();
 </script>
 </body>

@@ -676,10 +676,14 @@
       var rows = [];
       (fl.rooms || []).forEach(function (r) {
         (r.items || []).forEach(function (it) {
-          var formula = it.count + ' х ' + f1(it.area) + ' м² х (' + it.Tv +
-            ' °C - (' + it.Tn + ' °C)) / ' + f2(it.R) + ' (м²·K)/Вт х ' + it.n;
-          rows.push([r.id, it.type, it.count, f2(it.area) + ' м²', it.Tv + ' °C',
-            it.Tn + ' °C', f2(it.R) + ' (м²·K)/Вт', it.n, formula,
+          // У вентиляции нет сопротивления: строка приносит свою формулу и
+          // объём вместо площади, в колонке R — прочерк.
+          var isVent = (it.R === null || it.R === undefined);
+          var formula = it.formula || (it.count + ' х ' + f1(it.area) + ' м² х (' + it.Tv +
+            ' °C - (' + it.Tn + ' °C)) / ' + f2(it.R) + ' (м²·K)/Вт х ' + it.n);
+          rows.push([r.id, it.type, it.count,
+            f2(it.area) + (isVent ? ' м³' : ' м²'), it.Tv + ' °C',
+            it.Tn + ' °C', isVent ? '—' : f2(it.R) + ' (м²·K)/Вт', it.n, formula,
             Math.round(it.Q) + ' Вт']);
         });
         var sub = [r.id, '', '', '', '', '', '', '', '', Math.round(r.total) + ' Вт'];

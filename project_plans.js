@@ -60,6 +60,16 @@
     }
     return Math.abs(s / 2) / (m * m);
   }
+  // Периметр зоны в метрах — по нему смета считает демпферную ленту, так же
+  // как длину трубы по укладке: контур нарисован, гадать по площади незачем.
+  function perimM(z, f) {
+    var s = 0, m = f.pxPerM || 1;
+    for (var i = 0; i < z.pts.length; i++) {
+      var a = z.pts[i], b = z.pts[(i + 1) % z.pts.length];
+      s += Math.sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]));
+    }
+    return s / m;
+  }
   function bbox(pts) {
     var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
     pts.forEach(function (p) {
@@ -488,7 +498,7 @@
         lp = [];
         for (var j = 0; j < k; j++) lp.push({ lenM: est / k, m: Math.max(5, Math.round(est / k)) });
       }
-      out.push({ i: i, name: z.name || '', area: S, est: !lp[0].sup, loops: lp });
+      out.push({ i: i, name: z.name || '', area: S, perim: perimM(z, f), est: !lp[0].sup, loops: lp });
     });
     return out;
   }

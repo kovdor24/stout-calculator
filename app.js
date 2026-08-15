@@ -342,6 +342,14 @@ const ANALOG_MAP = {
     "SFW-0073-000025": "RFW-0081-000825"
 };
 
+// Защитные втулки ставятся парой — красная на подачу, синяя на обратку. Замена одной
+// из них тянет за собой вторую (см. selectSwapAlternative и resetEquipmentSwap):
+// чёрное исполнение цвета не различает, и половинчатая пара смысла не имеет.
+const SLEEVE_PAIR = {
+    "SFA-0035-200016": "SFA-0035-100016",
+    "SFA-0035-100016": "SFA-0035-200016"
+};
+
 // Снятые с производства артикулы. Из catalog.js они удалены, поэтому в подбор не
 // попадают; список нужен ручному поиску позиции. Поиск ищет ещё и по прайс-листам
 // (price_extra.json, price_index.json), а те пересобираются автообновлением из
@@ -7627,6 +7635,10 @@ const app = {
         // держим только в пределах одного сеанса работы с формой
         const regionEl = document.getElementById('profile_region_input');
         if (regionEl) delete regionEl.dataset.userEdited;
+        // Город из сохранённой анкеты подставляется программно, события input при этом
+        // нет — у тех, кто указал город раньше, регион так и оставался пустым. Досчитываем
+        // его при открытии формы, но только если поле пустое: уже введённый регион не трогаем.
+        if (regionEl && !regionEl.value.trim()) this.autofillRegionByCity('profile_city_input', 'profile_region_input');
         this.renderProfilePromoField();
         this.renderProfileLoginMethod();
         this.renderProfileNavHeader(tgUser);
@@ -7664,15 +7676,19 @@ const app = {
         if (el) el.dataset.userEdited = '1';
     },
 
+    regionByCityName: function (city) {
+        if (typeof CITY_REGION_MAP === 'undefined') return '';
+        const key = String(city || '').trim().toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ');
+        return CITY_REGION_MAP[key] || '';
+    },
+
     autofillRegionByCity: function (cityInputId, regionInputId) {
         const cityEl = document.getElementById(cityInputId);
         const regionEl = document.getElementById(regionInputId);
         if (!cityEl || !regionEl) return;
         if (regionEl.dataset.userEdited === '1' && regionEl.value.trim()) return;
-        if (typeof CITY_REGION_MAP === 'undefined') return;
 
-        const key = cityEl.value.trim().toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ');
-        const region = CITY_REGION_MAP[key];
+        const region = this.regionByCityName(cityEl.value);
         if (region) regionEl.value = region;
     },
 
@@ -16935,6 +16951,10 @@ const app = {
         let city = document.getElementById('profile_city_input').value.trim();
         let email = document.getElementById('profile_email_input') ? document.getElementById('profile_email_input').value.trim() : '';
 
+        // Последняя попытка достать регион из справочника городов: если поле осталось
+        // пустым, не заставляем заполнять руками то, что известно по городу
+        if (!region && city) region = this.regionByCityName(city);
+
         let normalized;
         try {
             normalized = this.normalizeUserRegionAndCity(region, city);
@@ -19222,12 +19242,20 @@ const app = {
                 if (L.Q_wall > 0) items.push({ type: 'Наружная стена', count: 1, area: L.wallArea, Tv: L.Tv, Tn: L.Tn, R: L.R_wall, n: L.n_wall, Q: L.Q_wall });
                 if (L.Q_glz > 0) items.push({ type: 'Окно', count: 1, area: L.totalWinArea, Tv: L.Tv, Tn: L.Tn, R: L.R_glz, n: L.n_glz, Q: L.Q_glz });
                 if (L.Q_floor > 0) items.push({ type: 'Пол', count: 1, area: parseFloat(r.area) || 0, Tv: L.Tv, Tn: L.Tn, R: L.R_floor, n: L.n_floor, Q: L.Q_floor });
-                floorTotal += L.Q_total;
+                // Нагрев приточного воздуха. Сопротивления у него нет, поэтому
+                // формула к строке приложена своя, а вместо R на листе прочерк.
+                if (L.Q_vent > 0) items.push({
+                    type: 'Вентиляция', count: 1, area: L.vol, Tv: L.Tv, Tn: L.Tn,
+                    R: null, n: L.n_vent, Q: L.Q_vent,
+                    formula: L.vol.toFixed(1) + ' м³ х ' + L.n_vent + ' 1/ч х 0,34 Вт·ч/(м³·K) х ' +
+                        Math.round(L.dT) + ' K'
+                });
+                floorTotal += L.Q_sum;
                 return {
                     id: f + '.' + String(idx + 1).padStart(2, '0'),
                     name: r.name || 'Помещение ' + (idx + 1),
                     area: parseFloat(r.area) || 0,
-                    items: items, total: L.Q_total
+                    items: items, total: L.Q_sum
                 };
             });
             return { label: f + ' этаж', rooms: rooms, total: floorTotal };
@@ -22282,6 +22310,32 @@ const app = {
         }
         let xpsAlt = catalog.xps_kit[0]; catalog.mats.forEach(m => { m.alts = [xpsAlt]; }); catalog.xps_kit[0].alts = catalog.mats;
         if (catalog.well_auto) { let waAlts = catalog.well_auto; catalog.well_auto.forEach(a => { a.alts = waAlts; }); }
+        // Демпферная лента: 100х8 дешевле 150х10, но это не «та же лента подешевле» —
+        // узкая не перекрывает высоту пирога с 50 мм утеплителя и 70 мм стяжки.
+        // Выбор оставляем монтажнику, автоудешевлению позицию не отдаём.
+        if (catalog.damper_tape) {
+            let dtAlts = catalog.damper_tape;
+            catalog.damper_tape.forEach(t => { t.alts = dtAlts; t.noCheapenAlts = true; });
+        }
+        // Защитная втулка: у красной и синей в замене стоит чёрное исполнение (16, 20 и
+        // универсальная 16-20). Цветные втулки лежат в каталоге дважды (protective_sleeves
+        // и water_parts), поэтому список вешаем на все копии артикула — иначе кнопка замены
+        // была бы только у одной из них. Самим чёрным .alts не даём: после замены строка
+        // наследует список исходной позиции (см. addToBill), и вернуться к цвету можно из
+        // той же таблицы. Автоудешевлению список не отдаём: чёрная 16-20 дешевле цветной,
+        // но это другой товар, а не та же втулка подешевле — цвет выбирает монтажник.
+        if (catalog.protective_sleeves_black && catalog.protective_sleeves_black.length) {
+            const _slvBlack = catalog.protective_sleeves_black;
+            const _slvColoredIds = ['SFA-0035-200016', 'SFA-0035-100016'];
+            for (const _ck in catalog) {
+                if (!Array.isArray(catalog[_ck])) continue;
+                catalog[_ck].forEach(it => {
+                    if (!it || !_slvColoredIds.includes(it.id)) return;
+                    it.alts = [it, ..._slvBlack];
+                    it.noCheapenAlts = true;
+                });
+            }
+        }
         if (catalog.ufh_mech && catalog.ufh_electro && catalog.thermostats_stout) {
             let statAlts = [...catalog.ufh_mech, ...catalog.ufh_electro, ...catalog.thermostats_stout];
             statAlts.forEach(s => { s.alts = statAlts; });
@@ -22638,12 +22692,55 @@ const app = {
         }
         return null;
     },
+    /**
+     * Что уже входит в коробку с коллектором. По этим признакам смета решает, чего
+     * не докупать: концевые группы (airVent/drainValve) и обвязку со стороны
+     * трассы (inletValves).
+     *
+     * inletValves — шаровые краны на входе подающей и обратной гребёнок.
+     *
+     * Состав сверен по паспортам:
+     *   SMS-0917 / RMS-1200 — только гребёнки и кронштейны. Ни концевых групп,
+     *     ни кранов (ROMMER, п. 5.1.1; STOUT, ред. 1 от 23.04.2015, модель 3);
+     *   SMS-0907 / RMS-1210 — «с комплектом шаровых кранов и термометрами»:
+     *     2 перекрывающих шаровых крана, 2 фитинга с термометром и 2 концевых
+     *     фитинга с автоматическим воздухоотводчиком и сливным краном
+     *     (ROMMER, п. 5.4.1; STOUT, модель 1). Отсюда inletValves;
+     *   SMS-0927 / RMS-1201 — ручной воздухоотводчик (кран Маевского), спускной
+     *     кран и заглушка; кранов на входе нет (ROMMER, п. 5.2.1). Воздух здесь
+     *     стравливают руками, поэтому airVent 'manual', а не 'auto';
+     *   RMS-1202 — то же, но воздухоотводчик автоматический, плюс ЖК-термометр
+     *     (ROMMER, п. 5.3.1).
+     */
     manifoldAttrsFor: function (id) {
-        if (catalog.manifolds.some(x => x.id === id || (x.rommer && x.rommer.id === id))) return { valveType: 'none', airVent: 'none', drainValve: false };
-        if (catalog.manifolds_full_kit.some(x => x.id === id || (x.rommer && x.rommer.id === id))) return { valveType: 'thermo', airVent: 'auto', drainValve: true };
-        if (catalog.manifolds_shutoff.some(x => x.id === id || (x.rommer && x.rommer.id === id))) return { valveType: 'none', airVent: 'auto', drainValve: true };
-        if (catalog.manifolds_shutoff_auto.some(x => x.id === id)) return { valveType: 'none', airVent: 'auto', drainValve: true };
-        return { valveType: 'none', airVent: 'none', drainValve: false };
+        if (catalog.manifolds.some(x => x.id === id || (x.rommer && x.rommer.id === id))) return { valveType: 'none', airVent: 'none', drainValve: false, inletValves: false };
+        if (catalog.manifolds_full_kit.some(x => x.id === id || (x.rommer && x.rommer.id === id))) return { valveType: 'thermo', airVent: 'auto', drainValve: true, inletValves: true };
+        if (catalog.manifolds_shutoff.some(x => x.id === id || (x.rommer && x.rommer.id === id))) return { valveType: 'none', airVent: 'manual', drainValve: true, inletValves: false };
+        if (catalog.manifolds_shutoff_auto.some(x => x.id === id)) return { valveType: 'none', airVent: 'auto', drainValve: true, inletValves: false };
+        return { valveType: 'none', airVent: 'none', drainValve: false, inletValves: false };
+    },
+    /**
+     * Присоединительные размеры радиаторной гребёнки — по её собственным полям
+     * (inSize / outSize / connType), а не по допущению внутри узла обвязки. Ищем
+     * и по основному id, и по id аналога ROMMER: у аналога присоединения те же,
+     * иначе он не был бы аналогом.
+     *
+     * Полей нет — возвращаем null, и узел обвязкой не комплектуется. Это
+     * намеренно: раньше «дюйм на торце, евроконус 3/4 на выходе» жило прямо в
+     * коде узла, и гребёнка любой другой серии молча получила бы чужой ниппель.
+     * Пустое место в смете заметят, тихо неправильный фитинг — нет.
+     */
+    radManifoldConnFor: function (id) {
+        if (!id) return null;
+        const pools = [catalog.manifolds_rad, catalog.manifolds_chrome_blocks];
+        for (const pool of pools) {
+            for (const mf of (pool || [])) {
+                if (mf.id === id || (mf.rommer && mf.rommer.id === id)) {
+                    return mf.inSize ? { inSize: mf.inSize, outSize: mf.outSize, connType: mf.connType } : null;
+                }
+            }
+        }
+        return null;
     },
     // === КОЛЛЕКТОРНЫЕ ШКАФЫ ===
     // Длина коллекторного блока в сборе, мм (паспорт STOUT SMS, ред. 3 от 17.05.2021, п. 5.9:
@@ -23511,22 +23608,20 @@ const app = {
 
             const _byLoops = (arr) => _mLoopsF === 'all' ? arr : arr.filter(x => x.loops === _mLoopsF);
 
+            // Признаки комплектации берём из manifoldAttrsFor, а не переписываем
+            // здесь заново: по ним же смета решает, чего не докупать, и разъехавшись,
+            // таблица начала бы обещать не то, что попадёт в строки.
             customAlts = [];
-            _byLoops(catalog.manifolds).forEach(m => {
-                customAlts.push({ id: m.id, name: `Коллектор с расходомерами (${m.loops} вых.)`, brand: 'STOUT', price: m.price, valveType: 'none', airVent: 'none', drainValve: false });
-                if (m.rommer) customAlts.push({ id: m.rommer.id, name: `Коллектор с расходомерами (${m.loops} вых.)`, brand: 'ROMMER', price: m.rommer.price, valveType: 'none', airVent: 'none', drainValve: false });
-            });
-            _byLoops(catalog.manifolds_full_kit).forEach(m => {
-                customAlts.push({ id: m.id, name: `Коллектор с расходомерами, полный комплект (${m.loops} вых.)`, brand: 'STOUT', price: m.price, valveType: 'thermo', airVent: 'auto', drainValve: true });
-                if (m.rommer) customAlts.push({ id: m.rommer.id, name: `Коллектор с расходомерами, полный комплект (${m.loops} вых.)`, brand: 'ROMMER', price: m.rommer.price, valveType: 'thermo', airVent: 'auto', drainValve: true });
-            });
-            _byLoops(catalog.manifolds_shutoff).forEach(m => {
-                customAlts.push({ id: m.id, name: `Коллектор с запорными клапанами (${m.loops} вых.)`, brand: 'STOUT', price: m.price, valveType: 'none', airVent: 'auto', drainValve: true });
-                if (m.rommer) customAlts.push({ id: m.rommer.id, name: `Коллектор с запорными клапанами (${m.loops} вых.)`, brand: 'ROMMER', price: m.rommer.price, valveType: 'none', airVent: 'auto', drainValve: true });
-            });
-            _byLoops(catalog.manifolds_shutoff_auto).forEach(m => {
-                customAlts.push({ id: m.id, name: `Коллектор с запорными клапанами, раздвижные кронштейны (${m.loops} вых.)`, brand: 'ROMMER', price: m.price, valveType: 'none', airVent: 'auto', drainValve: true });
-            });
+            const _mAttrs = (m) => this.manifoldAttrsFor(m.id);
+            const _pushMan = (m, label) => {
+                const a = _mAttrs(m);
+                customAlts.push({ id: m.id, name: `${label} (${m.loops} вых.)`, brand: m.brand || 'STOUT', price: m.price, valveType: a.valveType, airVent: a.airVent, drainValve: a.drainValve });
+                if (m.rommer) customAlts.push({ id: m.rommer.id, name: `${label} (${m.loops} вых.)`, brand: 'ROMMER', price: m.rommer.price, valveType: a.valveType, airVent: a.airVent, drainValve: a.drainValve });
+            };
+            _byLoops(catalog.manifolds).forEach(m => _pushMan(m, 'Коллектор с расходомерами'));
+            _byLoops(catalog.manifolds_full_kit).forEach(m => _pushMan(m, 'Коллектор с расходомерами, полный комплект'));
+            _byLoops(catalog.manifolds_shutoff).forEach(m => _pushMan(m, 'Коллектор с запорными клапанами'));
+            _byLoops(catalog.manifolds_shutoff_auto).forEach(m => _pushMan(m, 'Коллектор с запорными клапанами, раздвижные кронштейны'));
 
             if (_mValveF !== 'all') customAlts = customAlts.filter(a => a.valveType === _mValveF);
             if (_mAirF !== 'all') customAlts = customAlts.filter(a => a.airVent === _mAirF);
@@ -26060,6 +26155,14 @@ const app = {
                 delete this.state.swaps[originalId];
                 changed = true;
             }
+            // Защитные втулки меняются парой (см. SLEEVE_PAIR) — сброс одной строки
+            // должен возвращать цвет и второй, иначе в смете осталась бы чёрная втулка
+            // напротив цветной.
+            const _slvMate = originalId && SLEEVE_PAIR[originalId];
+            if (_slvMate && this.state.swaps[_slvMate] !== undefined) {
+                delete this.state.swaps[_slvMate];
+                changed = true;
+            }
             // Электрокотёл живёт не в swaps, а в boilerSeries + elBoilerPower — сброс
             // позиции должен снимать и их, иначе выбранный руками типоразмер пережил бы
             // возврат к умолчанию и котёл остался бы прежним.
@@ -26231,6 +26334,20 @@ const app = {
                 this.state.swaps[redId] = chosenId.replace('SPI-0002-', 'SPI-0001-');
             } else {
                 this.state.swaps[redId] = chosenId;
+            }
+        }
+
+        // Защитные втулки идут парой: красная на подачу, синяя на обратку. Цвет — это
+        // и есть их маркировка, поэтому наполовину чёрная пара смысла не имеет: заменили
+        // одну на чёрную — вторая уходит в тот же артикул, вернули цвет — возвращаются обе.
+        const _slvMate = SLEEVE_PAIR[originalId];
+        if (_slvMate) {
+            if (SLEEVE_PAIR[chosenId] === undefined) {
+                this.state.swaps[_slvMate] = chosenId;
+            } else {
+                // Выбрали цветную втулку — это возврат к умолчанию, снимаем замену с обеих.
+                delete this.state.swaps[_slvMate];
+                delete this.state.swaps[originalId];
             }
         }
 
@@ -26752,6 +26869,143 @@ const app = {
         this.render();
         this.saveState();
     },
+    /**
+     * Геометрия помещений с плана этажа: настоящий периметр зоны и та его часть,
+     * что выходит на улицу. До этого и то и другое оценивалось по площади —
+     * периметр как 4·√S, а наружу всегда 0,6 от него, — и угловая гостиная с
+     * двумя наружными стенами считалась наравне с внутренней спальней.
+     *
+     * Наружным считается сегмент зоны, легший на контур дома. Контур — самый
+     * большой из распознанных редактором контуров стен; если стены не
+     * распозналось, берём габаритный прямоугольник этажа по всем зонам. Допуск
+     * WALL_TOL_M — толщина стены с запасом: зону обводят по внутренней грани,
+     * контур идёт по наружной.
+     *
+     * Возвращает { имя зоны в нижнем регистре → { perim, outer } }, метры.
+     * Ключ кэша — ревизия планов: разметку правят в соседней вкладке, и по
+     * приходу новой геометрия должна пересобраться.
+     */
+    ROOM_WALL_TOL_M: 0.6,
+    roomsPlanGeom: function () {
+        const plans = this.currentPlans();
+        if (!plans || !Array.isArray(plans.floors) || !plans.floors.length) return null;
+        const key = String(this._plansRev || 0);
+        if (this._roomGeomCache && this._roomGeomCache.key === key) return this._roomGeomCache.val;
+
+        // расстояние от точки до отрезка, в пикселях плана
+        const distToSeg = function (p, a, b) {
+            const vx = b[0] - a[0], vy = b[1] - a[1];
+            const wx = p[0] - a[0], wy = p[1] - a[1];
+            const len2 = vx * vx + vy * vy;
+            let t = len2 > 0 ? (wx * vx + wy * vy) / len2 : 0;
+            t = Math.max(0, Math.min(1, t));
+            const dx = wx - t * vx, dy = wy - t * vy;
+            return Math.sqrt(dx * dx + dy * dy);
+        };
+
+        const out = {};
+        let any = false;
+        plans.floors.forEach(f => {
+            if (!f || !f.pxPerM) return;
+            const ppm = f.pxPerM;
+            const zones = (f.zones || []).filter(z => Array.isArray(z.pts) && z.pts.length >= 3
+                && String(z.name || '').trim());
+            if (!zones.length) return;
+
+            // Контур дома: самый большой контур стен, иначе габарит всех зон.
+            const polyArea = pts => {
+                let s = 0;
+                for (let i = 0; i < pts.length; i++) {
+                    const a = pts[i], b = pts[(i + 1) % pts.length];
+                    s += a[0] * b[1] - b[0] * a[1];
+                }
+                return Math.abs(s / 2);
+            };
+            let contour = null;
+            const walls = (f.geom && Array.isArray(f.geom.walls)) ? f.geom.walls : [];
+            walls.forEach(pl => {
+                if (!Array.isArray(pl) || pl.length < 3) return;
+                if (!contour || polyArea(pl) > polyArea(contour)) contour = pl;
+            });
+            if (!contour) {
+                let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+                zones.forEach(z => z.pts.forEach(p => {
+                    x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]);
+                    x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]);
+                }));
+                contour = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+            }
+
+            const tol = this.ROOM_WALL_TOL_M * ppm;
+            // Север этажа: на сколько градусов по часовой он повёрнут от «вверх
+            // листа» (задаётся компасом в редакторе планов). Не указан — сторону
+            // света не выводим: повернуть план можно как угодно, и «вверх» само
+            // по себе не значит «на север».
+            const north = (f.north === undefined || f.north === null) ? null : (parseFloat(f.north) || 0);
+            zones.forEach(z => {
+                let perim = 0, outer = 0;
+                // Куда смотрит помещение: сумма направлений наружных стен,
+                // взвешенная их длиной. Считается сразу в сторонах света
+                // (ax — на восток, ay — на север), потому что север у каждого
+                // этажа может быть свой и складывать экранные углы нельзя.
+                let ax = 0, ay = 0;
+                let cx = 0, cy = 0;
+                z.pts.forEach(p => { cx += p[0]; cy += p[1]; });
+                cx /= z.pts.length; cy /= z.pts.length;
+                for (let i = 0; i < z.pts.length; i++) {
+                    const a = z.pts[i], b = z.pts[(i + 1) % z.pts.length];
+                    const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+                    if (!(L > 0)) continue;
+                    perim += L;
+                    // По середине сегмента: концы лежат в углах и цепляют контур
+                    // даже у внутренних стен, упирающихся в наружную.
+                    const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+                    let d = 1e9;
+                    for (let j = 0; j < contour.length; j++) {
+                        d = Math.min(d, distToSeg(mid, contour[j], contour[(j + 1) % contour.length]));
+                        if (d <= tol) break;
+                    }
+                    if (d > tol) continue;
+                    outer += L;
+                    if (north === null) continue;
+                    // Наружу — от середины помещения к этой стене. Экранный угол
+                    // от «вверх», по часовой; вычитая поворот севера, получаем азимут.
+                    const vx = mid[0] - cx, vy = mid[1] - cy;
+                    if (!vx && !vy) continue;
+                    const scr = Math.atan2(vx, -vy) * 180 / Math.PI;
+                    const az = ((scr - north) % 360 + 360) % 360;
+                    ax += L * Math.sin(az * Math.PI / 180);
+                    ay += L * Math.cos(az * Math.PI / 180);
+                }
+                if (!(perim > 0)) return;
+                const nm = String(z.name || '').trim().toLowerCase();
+                const rec = out[nm] || (out[nm] = { perim: 0, outer: 0, ax: 0, ay: 0 });
+                rec.perim += perim / ppm;
+                rec.outer += outer / ppm;
+                rec.ax += ax / ppm; rec.ay += ay / ppm;
+                any = true;
+            });
+        });
+
+        // Равнодействующая наружных стен — в сторону света. Если она вырождена
+        // (помещение выходит наружу сразу на противоположные стороны, как в
+        // маленьком доме на одну комнату), румб не выводим: надбавка по СНиП
+        // назначается на ограждение, а одного преобладающего направления здесь
+        // нет и придумывать его нечестно.
+        const RUMB = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+        Object.keys(out).forEach(nm => {
+            const rec = out[nm];
+            const len = Math.hypot(rec.ax, rec.ay);
+            if (!(rec.outer > 0) || len < 0.15 * rec.outer) return;
+            const az = ((Math.atan2(rec.ax, rec.ay) * 180 / Math.PI) % 360 + 360) % 360;
+            rec.orient = RUMB[Math.round(az / 45) % 8];
+        });
+
+        const val = any ? out : null;
+        this._roomGeomCache = { key: key, val: val };
+        return val;
+    },
+
     getRoomHeatLoss: function (r) {
         const s = this.state;
         // Без города — ступень по региону. Ступени согласованы с обратной
@@ -26810,25 +27064,68 @@ const app = {
         var rHeight = isDoubleHeight ? r.customHeight : normalHeight;
         var area = parseFloat(r.area) || 1;
 
+        // Периметр и его наружная часть — по трём источникам, в порядке убывания
+        // достоверности:
+        //   1. указано в карточке помещения — доля периметра по числу стен;
+        //   2. нарисован план этажа — обмер зоны и её примыканий к контуру дома;
+        //   3. ничего нет — прежняя оценка: периметр 4·√S, наружу 0,6 от него.
+        // Ручной признак стоит выше плана намеренно: обводя зоны, монтажник о
+        // теплопотерях не думает, а выбирая «2 наружу» — думает именно о них.
+        // Уточнённые доли — для прямоугольника со сторонами 1:1,4: одна стена это
+        // от четверти до трети периметра, две смежные — чуть больше половины.
+        var OUTER_SHARE = { 1: 0.30, 2: 0.55, 3: 0.75 };
         var perim = 4 * Math.sqrt(area);
         var outerPerim = perim * 0.6;
+        var geoSrc = 'оценка по площади';
+        var pg = this.roomsPlanGeom();
+        var pgRoom = pg ? pg[String(r.name || '').trim().toLowerCase()] : null;
+        if (OUTER_SHARE[r.outerWalls]) {
+            if (pgRoom && pgRoom.perim > 0) { perim = pgRoom.perim; geoSrc = 'план этажа и карточка помещения'; }
+            else geoSrc = 'карточка помещения';
+            outerPerim = perim * OUTER_SHARE[r.outerWalls];
+        } else if (pgRoom && pgRoom.perim > 0
+            && (pgRoom.outer > 0 || !(r.windows || []).length)) {
+            // Ноль наружных стен при живом окне означает, что зона обведена с
+            // отступом от стен и до контура дома не достала. Верить такому обмеру
+            // нельзя — помещение осталось бы без наружной стены и получило бы
+            // радиатор в половину нужного; возвращаемся к оценке по площади.
+            perim = pgRoom.perim;
+            outerPerim = pgRoom.outer;
+            geoSrc = 'план этажа';
+        }
 
         var totalWinArea = 0;
+        var self = this;
         (r.windows || []).forEach(function (w) {
             var wH;
             if (isDoubleHeight) {
+                // Во втором свете окно тянется за потолком, поэтому здесь высота
+                // считается от высоты помещения, а не берётся из окна.
                 wH = w.isPan ? (rHeight - 0.3) : Math.min(1.5 * rHeight / normalHeight, rHeight - 0.9);
                 wH = Math.max(0.5, wH);
             } else {
-                wH = w.isPan ? 2.5 : 1.5;
+                wH = self.winHeight(w);
             }
             totalWinArea += parseFloat(w.width || 1) * wH;
         });
 
         var wallArea = Math.max(0, outerPerim * rHeight - totalWinArea);
 
-        var Q_wall = R_wall > 0 ? wallArea * dT / R_wall * n_wall : 0;
-        var Q_glz = R_glz > 0 ? totalWinArea * dT / R_glz * n_glz : 0;
+        // Надбавка на ориентацию по сторонам света (СНиП 41-01-2003, прил.):
+        // на север, северо-восток, восток и северо-запад +10 %, на юго-восток и
+        // запад +5 %, на юг и юго-запад ничего. Начисляется только на наружные
+        // вертикальные ограждения — стену и окна; пол и кровля от румба не зависят.
+        // Помещение без указанной ориентации надбавки не получает: угадывать румб
+        // не по чему, а поднимать всем подряд — то же самое, что накрутить запас.
+        // Румб берём указанный в карточке, а если там «авто» — определённый по
+        // плану: куда смотрят наружные стены помещения при заданном компасом
+        // севере. Указанное руками всегда сильнее плана.
+        var ORIENT_K = { N: 1.10, NE: 1.10, E: 1.10, NW: 1.10, SE: 1.05, W: 1.05, S: 1.0, SW: 1.0 };
+        var orient = r.orient || (pgRoom && pgRoom.orient) || null;
+        var kOrient = ORIENT_K[orient] || 1.0;
+
+        var Q_wall = R_wall > 0 ? wallArea * dT / R_wall * n_wall * kOrient : 0;
+        var Q_glz = R_glz > 0 ? totalWinArea * dT / R_glz * n_glz * kOrient : 0;
 
         var totalFloors = parseInt(s.floors || 1);
         var isTopFloor = (rFloorNum === totalFloors) || (isDoubleHeight && rFloorNum === 1);
@@ -26836,11 +27133,36 @@ const app = {
         var Q_roof = (isTopFloor && R_roof > 0) ? area * dT / R_roof * n_roof : 0;
         var Q_floor = (isBottomFloor && R_floor > 0) ? area * dT / R_floor * n_floor : 0;
 
+        // Нагрев приточного воздуха. Раньше эта составляющая считалась разом на
+        // весь дом в getHouseHeatLoss и добавлялась только к мощности котла, а в
+        // помещение не попадала — из-за чего радиаторы подбирались по одним
+        // ограждениям и суммарно недобирали до котла те самые 20–30 %.
+        // Формула та же, что была на дом, применённая к объёму помещения:
+        // сумма по всем комнатам совпадает с прежней домовой до копейки, и
+        // подбор котла от этой правки не сдвигается.
+        var vol = area * rHeight;
+        var n_eff = 0.35;
+        if (s.ventilationEnabled) {
+            n_eff = (s.ventilationType === 'forced') ? 1.0
+                : (s.ventilationType === 'recuperator' ? 0.25 : 0.35);
+        }
+        var Q_vent = vol * n_eff * 15.3 * ((s.region || 100) / 100);
+
+        var Q_env = Q_wall + Q_glz + Q_roof + Q_floor;
+
         return {
             Q_wall: Q_wall, Q_glz: Q_glz, Q_roof: Q_roof, Q_floor: Q_floor,
-            Q_total: Q_wall + Q_glz + Q_roof + Q_floor,
+            Q_vent: Q_vent,
+            // Q_total — только ограждения: по нему построены лист теплопотерь и
+            // проверки, где вентиляция стоит отдельной строкой. Полная нагрузка
+            // помещения, по которой подбираются приборы, — Q_sum.
+            Q_total: Q_env,
+            Q_sum: Q_env + Q_vent,
             R_wall: R_wall, R_glz: R_glz, R_roof: R_roof, R_floor: R_floor,
             wallArea: wallArea, totalWinArea: totalWinArea,
+            vol: vol, n_vent: n_eff, kOrient: kOrient, orient: orient,
+            orientAuto: !r.orient && !!(pgRoom && pgRoom.orient),
+            perim: perim, outerPerim: outerPerim, geoSrc: geoSrc,
             Tv: Tv, Tn: Tn, dT: dT,
             n_wall: n_wall, n_glz: n_glz, n_roof: n_roof, n_floor: n_floor
         };
@@ -27912,24 +28234,14 @@ const app = {
         let avgH = (this.state.floors === 2) ? (h1 + h2) / 2 : h1;
 
         if (this.state.detailedRooms && this.state.rooms && this.state.rooms.length > 0) {
+            // Вентиляция сидит внутри Q_sum каждого помещения (см. getRoomHeatLoss).
+            // Отдельным домовым слагаемым она была до того, как её разложили по
+            // комнатам; сумма от перестановки не изменилась.
             let totalLoadW = 0;
             this.state.rooms.forEach(r => {
                 let roomLoss = this.getRoomHeatLoss(r);
-                totalLoadW += roomLoss.Q_total;
+                totalLoadW += roomLoss.Q_sum;
             });
-
-            let houseVol = 0;
-            this.state.rooms.forEach(r => {
-                let normalHeight = (r.floor === 2) ? h2 : h1;
-                let rHeight = (r.doubleHeight && r.customHeight && r.customHeight > normalHeight) ? r.customHeight : normalHeight;
-                houseVol += parseFloat(r.area || 0) * rHeight;
-            });
-            let n_eff = 0.35;
-            if (this.state.ventilationEnabled) {
-                n_eff = (this.state.ventilationType === 'forced') ? 1.0 : (this.state.ventilationType === 'recuperator' ? 0.25 : 0.35);
-            }
-            let q_vent_w = houseVol * n_eff * 15.3 * (this.state.region / 100);
-            totalLoadW += q_vent_w;
 
             pwr = (totalLoadW / 1000).toFixed(1);
         } else {
@@ -27958,7 +28270,8 @@ const app = {
 
         var allRows = '';
         var self = this;
-        var grandTotalExact = 0;
+        var grandTotalExact = 0;   // ограждения по всему дому
+        var grandVentExact = 0;    // нагрев приточного воздуха по всему дому
 
         floorNums.forEach(function (floorNum) {
             var floorRooms = s.rooms.filter(function (r) { return (parseInt(r.floor) || 1) === floorNum; });
@@ -27988,13 +28301,19 @@ const app = {
 
             floorRooms.forEach(function (r, idx) {
                 var L = self.getRoomHeatLoss(r);
-                floorSumExact += L.Q_total;
+                floorSumExact += L.Q_sum;
+                grandVentExact += L.Q_vent;
 
                 var items = [];
                 if (L.Q_wall > 0) items.push({ name: 'Стена', area: L.wallArea, R: L.R_wall, n: L.n_wall, Q: L.Q_wall });
                 if (L.Q_glz > 0) items.push({ name: 'Остекление', area: L.totalWinArea, R: L.R_glz, n: L.n_glz, Q: L.Q_glz });
                 if (L.Q_roof > 0) items.push({ name: 'Кровля/чердак', area: r.area, R: L.R_roof, n: L.n_roof, Q: L.Q_roof });
                 if (L.Q_floor > 0) items.push({ name: 'Пол', area: r.area, R: L.R_floor, n: L.n_floor, Q: L.Q_floor });
+                // Вентиляция — отдельной строкой помещения, а не общим числом в
+                // конце отчёта: прибор подбирается по итогу помещения, и итог
+                // обязан этот воздух включать. Сопротивления у воздухообмена нет,
+                // в колонке площади стоит объём помещения, в колонке n — кратность.
+                if (L.Q_vent > 0) items.push({ name: 'Вентиляция', area: L.vol, R: null, n: L.n_vent, Q: L.Q_vent });
 
                 if (items.length === 0) return;
 
@@ -28008,13 +28327,13 @@ const app = {
                         tr += `<td style="${TD}" rowspan="${items.length}">${L.Tv}</td>`;
                     }
                     tr += `<td style="${TD}">${item.name}</td>`;
-                    tr += `<td style="${TD}">${fmt2(item.area)}</td>`;
-                    tr += `<td style="${TD}">${fmt2(item.R)}</td>`;
+                    tr += `<td style="${TD}">${fmt2(item.area)}${item.R === null ? ' м³' : ''}</td>`;
+                    tr += `<td style="${TD}">${item.R === null ? '—' : fmt2(item.R)}</td>`;
                     tr += `<td style="${TD}">${L.dT}</td>`;
                     tr += `<td style="${TD}">${item.n}</td>`;
                     tr += `<td style="${TD}">${Math.round(item.Q)}</td>`;
                     if (isFirst) {
-                        tr += `<td style="${TD} font-weight:700;" rowspan="${items.length}">${Math.round(L.Q_total)}</td>`;
+                        tr += `<td style="${TD} font-weight:700;" rowspan="${items.length}">${Math.round(L.Q_sum)}</td>`;
                     }
                     tr += `</tr>`;
                     allRows += tr;
@@ -28034,19 +28353,13 @@ const app = {
             allRows += `</tbody></table></div>`;
         });
 
-        let houseVol = 0;
-        let h1 = s.h1 || 2.7, h2 = s.h2 || 2.7;
-        s.rooms.forEach(r => {
-            let rHeight = (r.floor === 2) ? h2 : h1;
-            houseVol += parseFloat(r.area || 0) * rHeight;
-        });
-        let n_eff = 0.35;
-        if (s.ventilationEnabled) {
-            n_eff = (s.ventilationType === 'forced') ? 1.0 : (s.ventilationType === 'recuperator' ? 0.25 : 0.35);
-        }
-        let ventLoss = houseVol * n_eff * 15.3 * (s.region / 100);
+        // Обе составляющие набраны по помещениям выше. Отдельного домового счёта
+        // вентиляции здесь больше нет: он повторял формулу третьим экземпляром и
+        // расходился с итогами помещений, как только у комнаты своя высота.
+        let ventLoss = grandVentExact;
+        let envLoss = grandTotalExact - grandVentExact;
 
-        let totalHeatLoss = grandTotalExact + ventLoss;
+        let totalHeatLoss = grandTotalExact;
         let totalHeatLossKW = (totalHeatLoss / 1000).toFixed(1);
 
         // Сводная таблица в конце отчета
@@ -28055,7 +28368,7 @@ const app = {
                 <table style="width: 45%; border-collapse: collapse; border: 1px solid #e5e7eb;">
                     <tr>
                         <td style="${TD} text-align: left; font-weight: 600; background: #f9fafb; width: 65%;">Ограждающие конструкции (стены, окна, пол, кровля)</td>
-                        <td style="${TD} font-weight: 700; width: 35%; background: #f9fafb;">${Math.round(grandTotalExact)} Вт</td>
+                        <td style="${TD} font-weight: 700; width: 35%; background: #f9fafb;">${Math.round(envLoss)} Вт</td>
                     </tr>
         `;
 
@@ -28256,6 +28569,22 @@ const app = {
             }
             this.syncRoomsToState(); this.syncUI(); this.render();
         }
+    },
+    /**
+     * Признаки помещения, влияющие на теплопотери: число наружных стен и
+     * ориентация. Пустое значение — «авто», поле тогда снимается совсем, чтобы
+     * не таскать его в облако и в ссылку.
+     *
+     * Отдельно от updRoom, потому что после смены признака нужно пересобрать
+     * карточки: в них показана мощность помещения, и она сразу меняется.
+     */
+    updRoomEnv: function (id, field, val) {
+        const r = this.state.rooms.find(x => x.id === id);
+        if (!r) return;
+        if (!val) delete r[field];
+        else r[field] = (field === 'outerWalls') ? parseInt(val, 10) : val;
+        this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
+        this.saveState();
     },
     // ─── Уточнение площадей комнат по планам этажей ────────────────────
     // Зоны редактора планов (plan_editor.html, разметка живёт в смете)
@@ -28537,8 +28866,34 @@ const app = {
      */
     UFH_NODE_CONN: {
         'SPX-0001-002028': { pool: 'axial_fittings_pex', adapter: 'SFA-0001-002034', elbow: 'SFA-0007-000020' },
-        'SPX-0001-002535': { pool: 'axial_fittings_pex', adapter: 'SFA-0001-002534', elbow: 'SFA-0007-000025' },
-        'SPX-0001-003244': { pool: 'axial_fittings_pex', adapter: 'SFA-0001-003234', elbow: 'SFA-0007-000032' },
+        'SPX-0001-002535': { pool: 'axial_fittings_pex', adapter: 'SFA-0001-002534', elbow: 'SFA-0007-000025', adapter1: 'SFA-0001-002510' },
+        'SPX-0001-003244': { pool: 'axial_fittings_pex', adapter: 'SFA-0001-003234', elbow: 'SFA-0007-000032', adapter1: 'SFA-0001-003210' },
+        'SPM-0001-102020': { pool: 'water_fittings_press_mp', adapter: 'SFP-0001-003420', elbow: 'SFP-0009-002020' },
+        'SPM-0001-052630': { pool: 'water_fittings_press_mp', adapter: 'SFP-0001-003426', elbow: 'SFP-0009-002626', adapter1: 'SFP-0001-000126' },
+        'SPM-0001-053230': { pool: 'water_fittings_press_mp', adapter: 'SFP-0001-000132', elbow: 'SFP-0009-003232', thread1: true, adapter1: 'SFP-0001-000132' }
+    },
+    /**
+     * Переходник с 3/4" на 1" — им добираем присоединение, когда трасса двадцатая:
+     * прямого переходника с трубы 20 на дюймовую резьбу ни в аксиальной линейке,
+     * ни в пресс-фитингах нет.
+     */
+    UFH_NODE_BUSHING: 'SFT-0029-000134',
+    /**
+     * То же самое для радиаторного коллектора (лист «Узел обвязки коллектора
+     * радиаторного отопления»). Отдельная таблица, потому что подводка сюда
+     * приходит другой трубой: стояком на второй этаж или трассой от котельной,
+     * а их считают в стабильной PE-Xa/Al/PE-RT (SPS-) либо в металлопластике.
+     *
+     * Стабильная труба собирается на тех же аксиальных фитингах SFA, что и серая
+     * PEX-a, — по тому же допущению, что и вся тройниковая схема (см. комментарий
+     * у STABLE_PIPE_IDS в render).
+     */
+    RAD_NODE_CONN: {
+        'SPS-0002-001626': { pool: 'axial_fittings_pex', adapter: 'SFA-0001-001634', elbow: 'SFA-0007-000016' },
+        'SPS-0002-002029': { pool: 'axial_fittings_pex', adapter: 'SFA-0001-002034', elbow: 'SFA-0007-000020' },
+        'SPS-0002-002537': { pool: 'axial_fittings_pex', adapter: 'SFA-0001-002534', elbow: 'SFA-0007-000025' },
+        'SPS-0002-003247': { pool: 'axial_fittings_pex', adapter: 'SFA-0001-003234', elbow: 'SFA-0007-000032' },
+        'SPM-0001-101620': { pool: 'water_fittings_press_mp', adapter: 'SFP-0001-003416', elbow: 'SFP-0009-001616' },
         'SPM-0001-102020': { pool: 'water_fittings_press_mp', adapter: 'SFP-0001-003420', elbow: 'SFP-0009-002020' },
         'SPM-0001-052630': { pool: 'water_fittings_press_mp', adapter: 'SFP-0001-003426', elbow: 'SFP-0009-002626' },
         'SPM-0001-053230': { pool: 'water_fittings_press_mp', adapter: 'SFP-0001-000132', elbow: 'SFP-0009-003232', thread1: true }
@@ -28751,7 +29106,7 @@ const app = {
                     const key = String(name || '').trim().toLowerCase();
                     if (!key) return 0;
                     const r = rms.find(x => String(x.name || '').trim().toLowerCase() === key);
-                    return r ? this.getRoomHeatLoss(r).Q_total : 0;
+                    return r ? this.getRoomHeatLoss(r).Q_sum : 0;
                 };
                 // Зона может быть поделена на несколько петель — мощность комнаты
                 // делим между ними поровну, как и её площадь.
@@ -28772,7 +29127,7 @@ const app = {
                         .map(r => {
                             const a = parseFloat(r.area) || 0;
                             return { name: r.name || 'Помещение', area: a,
-                                Q: Math.min(this.getRoomHeatLoss(r).Q_total, a * qUd) };
+                                Q: Math.min(this.getRoomHeatLoss(r).Q_sum, a * qUd) };
                         })
                     : [];
                 // Площадь ТП этажа задаётся ползунком отдельно от комнат. Если суммы
@@ -29039,7 +29394,7 @@ const app = {
             try { zones = PP.floorLoops(f, _st, this.ufhLoopMax(_st)); }
             catch (e) { console.warn('[планы] петли ТП не посчитались:', e.message); return null; }
             if (!zones.length) return null;
-            let loops = 0, meters = 0, area = 0, zno = 0;
+            let loops = 0, meters = 0, area = 0, zno = 0, perim = 0;
             // rows — строка на петлю: имя, площадь и длина. Те же имена и тот же
             // порядок, что у projectPlans.loopRows на листе «Тёплый пол», — по ним
             // смета считает расход каждой петли для расходомеров.
@@ -29054,14 +29409,83 @@ const app = {
                 });
                 loops += k;
                 area += z.area;
+                // Периметр зон — под демпферную ленту в смете (см. ufhTapeCalc)
+                perim += z.perim || 0;
             });
             any = true;
             return { loops: loops, meters: Math.round(meters),
-                area: Math.round(area * 10) / 10, zones: zones.length, rows: rows };
+                area: Math.round(area * 10) / 10, zones: zones.length,
+                perim: Math.round(perim * 10) / 10, rows: rows };
         });
         const val = any ? { floors: floors, any: true } : null;
         this._ufhGeomCache = { key: key, val: val };
         return val;
+    },
+
+    // Средняя комната, на которые делится площадь этажа, когда планов и
+    // помещений нет, и коэффициент периметра: у прямоугольника со сторонами
+    // 1:1,4 P ≈ 4,2·√S (у квадрата было бы 4·√S).
+    UFH_TAPE_ROOM_M2: 18,
+    UFH_TAPE_K: 4.2,
+    // Больше этой площади поле стяжки режут деформационным швом
+    UFH_TAPE_SEAM_M2: 30,
+    /**
+     * Демпферная лента по периметру помещений тёплого пола. Источник геометрии
+     * тот же, что у трубы, по убыванию точности:
+     *   1. планы этажей — периметр нарисованных зон;
+     *   2. помещения расчёта — периметр каждой комнаты с ТП оценкой по площади;
+     *   3. быстрый режим — площадь этажа разбита на комнаты среднего размера.
+     * Считать этаж одной коробкой нельзя: 100 м² одним прямоугольником — это
+     * 42 м ленты, а те же 100 м² шестью комнатами — уже около сотни.
+     */
+    ufhTapeCalc: function (f1, f2) {
+        const s = this.state;
+        const est = a => (a > 0) ? this.UFH_TAPE_K * Math.sqrt(a) : 0;
+        // Поле больше 30 м² режут деформационными швами на карты, лента идёт и по
+        // шву. В жилых комнатах по 15–20 м² швов нет вовсе, и закладывать их туда —
+        // переплата, поэтому шов считается по площади конкретного помещения.
+        const seamOf = a => (a > this.UFH_TAPE_SEAM_M2)
+            ? (Math.ceil(a / this.UFH_TAPE_SEAM_M2) - 1) * Math.sqrt(a) : 0;
+        let perim = 0, seam = 0, rooms = 0, byPlan = false, byRooms = false;
+        [[1, parseFloat(s.tp1) || 0, f1], [2, (s.floors === 2 ? parseFloat(s.tp2) : 0) || 0, f2]].forEach(pair => {
+            const fl = pair[0], area = pair[1], fc = pair[2];
+            if (!(area > 0)) return;
+            let n = 0;
+            if (fc && fc.geo && fc.geo.perim > 0) {
+                perim += fc.geo.perim;
+                n = fc.geo.zones || 1;
+                // Площадь каждой зоны по отдельности сюда не доезжает, поэтому шов —
+                // по средней зоне этажа.
+                seam += n * seamOf((fc.geo.area || area) / n);
+                byPlan = true;
+            } else {
+                const rms = (s.detailedRooms && Array.isArray(s.rooms) ? s.rooms : [])
+                    .filter(r => (parseInt(r.floor, 10) || 1) === fl
+                        && (!r.sys || r.sys.includes('tp')) && (parseFloat(r.area) || 0) > 0);
+                const zSum = rms.reduce((a, r) => a + (parseFloat(r.area) || 0), 0);
+                if (rms.length && zSum > 0) {
+                    // Площадь ТП этажа задаётся ползунком отдельно от комнат: разошлись —
+                    // тянем комнаты на заданную площадь, как это делает ufhCalc.
+                    const k = area / zSum;
+                    rms.forEach(r => {
+                        const a = (parseFloat(r.area) || 0) * k;
+                        perim += est(a);
+                        seam += seamOf(a);
+                    });
+                    n = rms.length;
+                    byRooms = true;
+                } else {
+                    n = Math.max(1, Math.round(area / this.UFH_TAPE_ROOM_M2));
+                    perim += n * est(area / n);
+                    seam += n * seamOf(area / n);
+                }
+            }
+            rooms += n;
+        });
+        if (!(perim > 0)) return null;
+        // 5 % — подрезка и нахлёсты в углах.
+        return { m: (perim + seam) * 1.05, perim: perim, seam: seam, rooms: rooms,
+            byPlan: byPlan, byRooms: byRooms };
     },
 
     // Предупреждения о расхождениях в #rooms_plan_checks: тёплый пол комнат против
@@ -29323,6 +29747,35 @@ const app = {
                     this.render();
                 }
             }
+        }
+    },
+    /**
+     * Высота окна, м. Пока её не трогали, действуют прежние умолчания: обычное
+     * окно 1,5 м, панорамное 2,5 м. Заданная руками высота выше галочки
+     * «панорамное»: раз указали 2,2 — значит окно такое и есть.
+     * Помещения со вторым светом считает getRoomHeatLoss по своей высоте.
+     */
+    winHeight: function (w) {
+        const h = parseFloat(w && w.height);
+        if (h > 0) return h;
+        return (w && w.isPan) ? 2.5 : 1.5;
+    },
+    updWindowHeight: function (roomId, winId, val, skipRender) {
+        let r = this.state.rooms.find(x => x.id === roomId);
+        if (!r) return;
+        let w = r.windows.find(x => x.id === winId);
+        if (!w) return;
+        let h = parseFloat(val);
+        if (!(h > 0)) h = this.winHeight(w);
+        w.height = Math.round(h * 10) / 10;
+        this.syncRoomsToState();
+        if (skipRender) {
+            this.render();
+        } else {
+            this.renderRoomsUI();
+            this.syncUI();
+            this.render();
+            this.saveState();
         }
     },
     updRoomArea: function (roomId, val, skipRender) {
@@ -29782,6 +30235,12 @@ const app = {
                                         <button style="font-size: 9px; padding: 2px 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--text-main); font-weight:700;" onclick="document.getElementById('win_width_input_${w.id}').value = 1.8; app.updWindowWidthManual(${r.id}, ${w.id}, 1.8, false); event.stopPropagation();">1.8 м</button>
                                     </div>
                                     <input type="range" id="win_width_slider_${w.id}" min="0.5" max="3.0" step="0.1" value="${w.width}" oninput="document.getElementById('win_width_input_${w.id}').value = this.value; app.updWindowWidthManual(${r.id}, ${w.id}, this.value, true)" onchange="app.updWindowWidthManual(${r.id}, ${w.id}, this.value, false)" style="width: 130px; accent-color: var(--primary); height: 6px; cursor: pointer;">
+                                    <div style="display:flex; align-items:center; gap:6px; width:100%; border-top:1px dashed var(--border); padding-top:6px;">
+                                        <span style="font-size:10px; color:var(--text-sec); font-weight:600;">Высота</span>
+                                        <input type="range" id="win_height_slider_${w.id}" min="0.6" max="3.0" step="0.1" value="${this.winHeight(w)}" oninput="document.getElementById('win_height_val_${w.id}').innerText = (+this.value).toFixed(1); app.updWindowHeight(${r.id}, ${w.id}, this.value, true)" onchange="app.updWindowHeight(${r.id}, ${w.id}, this.value, false)" style="flex:1; accent-color: var(--primary); height: 6px; cursor: pointer;">
+                                        <span id="win_height_val_${w.id}" style="font-size:10px; color:var(--primary); font-weight:700; min-width:22px; text-align:right;">${this.winHeight(w).toFixed(1)}</span>
+                                        <span style="font-size:10px; color:var(--text-sec);">м</span>
+                                    </div>
                                     <span style="font-size: 10px; color: var(--primary); font-weight: 700; cursor: pointer; user-select: none; padding: 2px 6px; background: var(--primary-light); border-radius: 4px; align-self: flex-end;" onclick="document.getElementById('win_width_slider_container_${w.id}').style.display = 'none'; event.stopPropagation();">OK</span>
                                 </div>
                             </div>
@@ -29795,6 +30254,34 @@ const app = {
                             <span style="color:#EF4444; cursor:pointer; font-weight:bold; margin-left:2px; font-size:14px; line-height:1;" onclick="app.removeWindow(${r.id}, ${w.id})">×</span>
                         </div>`;
             });
+
+            // Теплопотери помещения — тот же расчёт, что уходит в лист «Расчёт
+            // теплопотерь» и в подбор котла. С вентиляцией: по этой же цифре
+            // подбирается прибор в помещение.
+            let roomLossCard = this.getRoomHeatLoss(r);
+
+            // Признаки помещения, которых не видно из площади: сколько стен выходит
+            // наружу и куда смотрит комната. Пока стоит «авто», расчёт работает как
+            // раньше (0,6 периметра наружу, без надбавки на румб) — сохранённые
+            // сметы от появления этих полей не двигаются.
+            const chipCss = "font-size:10px; padding:2px 4px; height:24px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); border-radius:4px; font-weight:600; outline:none; cursor:pointer;";
+            const outerOpt = (v, t) => `<option value="${v}" ${String(r.outerWalls || '') === v ? 'selected' : ''}>${t}</option>`;
+            const orientOpt = (v, t) => `<option value="${v}" ${String(r.orient || '') === v ? 'selected' : ''}>${t}</option>`;
+            // Первый пункт списка подписывается по факту: сторону света дал план —
+            // так и пишем, какую именно. Не дал (плана нет или на нём не указан
+            // север) — «не указана», потому что вывести румб из площади и числа
+            // окон нечем, и никакой автоматики за этим пунктом не стоит.
+            const RUMB_NAME = { N: 'север', NE: 'северо-восток', E: 'восток', SE: 'юго-восток',
+                S: 'юг', SW: 'юго-запад', W: 'запад', NW: 'северо-запад' };
+            const autoOrient = roomLossCard.orientAuto
+                ? '🧭 Сторона: ' + RUMB_NAME[roomLossCard.orient] + ' (по плану)'
+                : '🧭 Сторона: не указана';
+            let envSel = `<select style="${chipCss}" title="Сколько стен помещения выходит на улицу. Влияет на площадь наружных стен в расчёте теплопотерь." onchange="app.updRoomEnv(${r.id}, 'outerWalls', this.value)">
+                            ${outerOpt('', '🧱 Стен: авто')}${outerOpt('1', '🧱 1 наружу')}${outerOpt('2', '🧱 2 наружу (угловая)')}${outerOpt('3', '🧱 3 наружу')}
+                        </select>
+                        <select style="${chipCss}" title="Куда выходят окна и наружные стены. На север и восток по СНиП 41-01-2003 добавляется 10 %, на юго-восток и запад — 5 %." onchange="app.updRoomEnv(${r.id}, 'orient', this.value)">
+                            ${orientOpt('', autoOrient)}${orientOpt('N', '🧭 Север +10 %')}${orientOpt('NE', '🧭 Северо-восток +10 %')}${orientOpt('E', '🧭 Восток +10 %')}${orientOpt('SE', '🧭 Юго-восток +5 %')}${orientOpt('S', '🧭 Юг')}${orientOpt('SW', '🧭 Юго-запад')}${orientOpt('W', '🧭 Запад +5 %')}${orientOpt('NW', '🧭 Северо-запад +10 %')}
+                        </select>`;
 
             let floorSel = this.state.floors === 2 ? `<select style="font-size:10px; padding:0 2px 0 0; border:none; border-right:1px solid #D1D5DB; background:transparent; color:var(--text-sec); font-weight:600; margin-right:2px; outline:none; cursor:pointer;" onchange="app.updRoom(${r.id}, 'floor', parseInt(this.value))"><option value="1" ${r.floor === 1 ? 'selected' : ''}>1 Эт</option><option value="2" ${r.floor === 2 ? 'selected' : ''}>2 Эт</option></select>` : '';
             let accentColor = r.floor === 2 ? '#10B981' : 'var(--primary)';
@@ -29827,9 +30314,10 @@ const app = {
                 roomIndex = countFloor1;
             }
 
-            // Теплопотери помещения — тот же расчёт, что уходит в лист
-            // «Расчёт теплопотерь» и в подбор котла
-            let roomQ = Math.round(this.getRoomHeatLoss(r).Q_total);
+            let roomQ = Math.round(roomLossCard.Q_sum);
+            let roomQTip = `Теплопотери помещения: ограждения ${Math.round(roomLossCard.Q_total)} Вт + нагрев приточного воздуха ${Math.round(roomLossCard.Q_vent)} Вт.`
+                + ` Наружные стены — ${roomLossCard.outerPerim.toFixed(1)} м из ${roomLossCard.perim.toFixed(1)} м периметра (${roomLossCard.geoSrc}).`
+                + (roomLossCard.kOrient > 1 ? ` Надбавка на ориентацию +${Math.round((roomLossCard.kOrient - 1) * 100)} %.` : '');
 
             let html = `<div class="zone-card" id="room_card_${r.id}" style="padding:8px; margin-bottom:0; border:1px solid var(--border); border-left:4px solid ${accentColor}; border-radius:6px; background:${cardBg}; box-shadow: ${cardShadow};">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
@@ -29839,7 +30327,7 @@ const app = {
                             </div>
                             
                             <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                                <span style="font-size:10px; font-weight:700; color:var(--text-sec); background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:2px 6px; white-space:nowrap;" title="Теплопотери помещения через ограждения">${roomQ} Вт</span>
+                                <span style="font-size:10px; font-weight:700; color:var(--text-sec); background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:2px 6px; white-space:nowrap;" title="${roomQTip}">${roomQ} Вт</span>
                                 <div style="position: relative; display:flex; align-items:center; gap:2px; background:var(--bg); padding:2px 6px; border-radius:6px; border:1px solid var(--border);">
                                     ${floorSel}
                                     <input type="number" class="room-num-input" id="room_area_input_${r.id}" style="width:40px; border:none; background:transparent; font-weight:600; font-size:12px; text-align:center; padding:0; outline:none; color:var(--primary); cursor:pointer;" value="${r.area}" onfocus="app.showRoomAreaSlider(${r.id}, event)" onclick="app.showRoomAreaSlider(${r.id}, event)" onchange="app.updRoomArea(${r.id}, this.value, false)">
@@ -29859,6 +30347,7 @@ const app = {
                         </div>
                         ${heightRow}
                         <div style="display:flex; flex-wrap:wrap; align-items:center; gap:4px; margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
+                            ${envSel}
                             ${winsHtml}
                             <button style="background:transparent; border:1px dashed #9CA3AF; color:#6B7280; padding:2px 6px; height:24px; border-radius:4px; font-size:10px; font-weight:600; cursor:pointer; transition:0.2s; white-space:nowrap;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" onclick="app.addWindow(${r.id})">+ Окно</button>
                             ${!r.doubleHeight ? `<button style="background:transparent; border:1px dashed #9CA3AF; color:#6B7280; padding:2px 6px; height:24px; border-radius:4px; font-size:10px; font-weight:600; cursor:pointer; transition:0.2s; white-space:nowrap;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" onclick="app.toggleRoomDoubleHeight(${r.id})" title="Второй свет — увеличенная высота потолка">🏛️ Второй свет</button>` : ''}
@@ -29872,15 +30361,16 @@ const app = {
             }
         });
 
-        // Сводка теплопотерь по помещениям. Это только ограждения — вентиляция
-        // добавляется отдельно при подборе котла (getHouseHeatLoss), поэтому
-        // итог здесь меньше мощности котла; приписка об этом обязательна.
+        // Сводка теплопотерь по помещениям — ограждения вместе с нагревом
+        // приточного воздуха, то есть ровно та нагрузка, из которой набирается
+        // мощность котла. Пока вентиляция считалась отдельно на дом, итог здесь
+        // был меньше котла и требовал оговорки; теперь они сходятся.
         if (hs) {
             if (this.state.rooms.length) {
                 const fmtW = v => Math.round(v).toLocaleString('ru-RU');
                 let q1 = 0, q2 = 0;
                 this.state.rooms.forEach(r => {
-                    const q = this.getRoomHeatLoss(r).Q_total;
+                    const q = this.getRoomHeatLoss(r).Q_sum;
                     if ((parseInt(r.floor) || 1) === 2) q2 += q; else q1 += q;
                 });
                 let parts = [];
@@ -29891,7 +30381,7 @@ const app = {
                 hs.innerHTML = '🔥 Теплопотери помещений: ' +
                     (parts.length ? parts.join(' · ') + ' · итого ' : '') +
                     '<b style="color:var(--text-main);">' + fmtW(q1 + q2) + ' Вт</b> ' +
-                    '<span style="opacity:0.7;">(ограждения, без вентиляции)</span>';
+                    '<span style="opacity:0.7;">(ограждения и вентиляция)</span>';
                 hs.style.display = 'block';
             } else {
                 hs.style.display = 'none';
@@ -30704,9 +31194,20 @@ const app = {
             if (chkVent) {
                 chkVent.checked = !!this.state.ventilationEnabled;
             }
+            // Цифра воздухообмена видна всегда — она в мощности котла независимо
+            // от тумблера. Прячется только выбор типа: пока его не включили,
+            // работает естественный приток.
             const blkVentOpts = document.getElementById('blk_vent_opts');
-            if (blkVentOpts) {
-                blkVentOpts.style.display = this.state.ventilationEnabled ? 'flex' : 'none';
+            if (blkVentOpts) blkVentOpts.style.display = 'flex';
+            const blkVentType = document.getElementById('blk_vent_type');
+            if (blkVentType) {
+                blkVentType.style.display = this.state.ventilationEnabled ? 'flex' : 'none';
+            }
+            // Пояснение под цифрой — только когда тип задан руками. Пока работает
+            // естественный приток, объяснять нечего: цифры достаточно.
+            const ventNote = document.getElementById('vent_note');
+            if (ventNote) {
+                ventNote.style.display = this.state.ventilationEnabled ? 'flex' : 'none';
             }
 
             let houseVol = 0;
@@ -30721,38 +31222,41 @@ const app = {
                 houseVol = parseFloat(this.state.area || 0) * avgH;
             }
 
+            // Выключенный тумблер — это не «дом без воздухообмена», а естественный
+            // приток 0,35 ч⁻¹: расчёт всегда считал именно так, включение лишь
+            // позволяет задать другой тип. Панель при этом показывала «0.00 кВт»
+            // и противоречила и мощности котла, и размеру приборов.
             let n_eff = 0;
             let tooltipDesc = '';
             let tooltipCalc = '';
 
-            if (this.state.ventilationEnabled) {
-                const vType = this.state.ventilationType || 'natural';
-                ['natural', 'forced', 'recuperator'].forEach(t => {
-                    const tabEl = document.getElementById(`vent_tab_${t}`);
-                    if (tabEl) {
-                        if (t === vType) tabEl.classList.add('active');
-                        else tabEl.classList.remove('active');
-                    }
-                });
-
-                if (vType === 'natural') {
-                    n_eff = 0.35;
-                    tooltipDesc = 'Естественный приток 0.35 ч⁻¹.';
-                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 0.35 ч⁻¹ * уд. нагрев`;
-                } else if (vType === 'forced') {
-                    n_eff = 1.0;
-                    tooltipDesc = 'Принудительный приток 1.0 ч⁻¹.';
-                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 1.0 ч⁻¹ * уд. нагрев`;
-                } else if (vType === 'recuperator') {
-                    n_eff = 0.25;
-                    tooltipDesc = 'Рекуперация 75% (эфф. кратность 0.25 ч⁻¹).';
-                    tooltipCalc = `${houseVol.toFixed(0)} м³ * 0.25 ч⁻¹ * уд. нагрев`;
+            const vType = this.state.ventilationEnabled
+                ? (this.state.ventilationType || 'natural') : 'natural';
+            ['natural', 'forced', 'recuperator'].forEach(t => {
+                const tabEl = document.getElementById(`vent_tab_${t}`);
+                if (tabEl) {
+                    if (t === vType) tabEl.classList.add('active');
+                    else tabEl.classList.remove('active');
                 }
+            });
+
+            if (vType === 'natural') {
+                n_eff = 0.35;
+                tooltipDesc = 'Естественный приток 0.35 ч⁻¹.';
+                tooltipCalc = `${houseVol.toFixed(0)} м³ * 0.35 ч⁻¹ * уд. нагрев`;
+            } else if (vType === 'forced') {
+                n_eff = 1.0;
+                tooltipDesc = 'Принудительный приток 1.0 ч⁻¹.';
+                tooltipCalc = `${houseVol.toFixed(0)} м³ * 1.0 ч⁻¹ * уд. нагрев`;
+            } else if (vType === 'recuperator') {
+                n_eff = 0.25;
+                tooltipDesc = 'Рекуперация 75% (эфф. кратность 0.25 ч⁻¹).';
+                tooltipCalc = `${houseVol.toFixed(0)} м³ * 0.25 ч⁻¹ * уд. нагрев`;
             }
 
-            let q_vent_w = this.state.ventilationEnabled ? (houseVol * n_eff * 15.3 * (this.state.region / 100)) : 0;
+            let q_vent_w = houseVol * n_eff * 15.3 * (this.state.region / 100);
             let q_vent_kw = q_vent_w / 1000;
-            let airFlow = this.state.ventilationEnabled ? (houseVol * ((this.state.ventilationType || 'natural') === 'natural' ? 0.35 : 1.0)) : 0;
+            let airFlow = houseVol * (vType === 'forced' ? 1.0 : 0.35);
 
             const lblVentLoss = document.getElementById('lbl_vent_loss');
             if (lblVentLoss) {
@@ -34462,6 +34966,20 @@ const app = {
                 return `<span style="${styles}"><span style="${head}">Мат с бобышками</span><b>Зачем:</b> Быстрый монтаж и фиксация трубы.<br><b>Расчет:</b> Чистая площадь ТП (${val1} м²) + 5% запас на подрезку.</span>`;
             case 'ufh_xps':
                 return `<span style="${styles}"><span style="${head}">Пенополистирол (XPS)</span><b>Зачем:</b> Теплоизоляция от перекрытия/грунта.<br><b>Толщина:</b> 50 мм (стандарт для 1 этажа).<br><b>Расчет:</b> Площадь ТП + 5% запас.</span>`;
+            case 'ufh_damper': {
+                // val1 — результат ufhTapeCalc, val2 — метраж рулона
+                const t = val1 || {}, roll = val2 || 25;
+                // Родительный падеж: «периметр 1 помещения», «периметр 6 помещений»
+                const _n = t.rooms || 0, _d = _n % 10, _dd = _n % 100;
+                const _rw = (_d === 1 && _dd !== 11) ? 'помещения' : 'помещений';
+                const src = t.byPlan
+                    ? `периметр зон тёплого пола по планам этажей`
+                    : (t.byRooms
+                        ? `периметр ${_n} ${_rw} с тёплым полом, по их площадям`
+                        : `площадь ТП поделена на помещения среднего размера (${_n} шт.), периметр каждого — по его площади`);
+                const seam = (t.seam > 0.5) ? `, деформационные швы крупных полей — ещё ${Math.round(t.seam)} м` : '';
+                return `<span style="${styles}"><span style="${head}">Лента демпферная (краевая)</span><b>Зачем:</b> Принимает тепловое расширение стяжки и отделяет её от стен: без ленты прогретая плита упирается в стену и трескается. Фартук из плёнки закрывает стык стены с утеплителем, чтобы раствор не затёк под него.<br><b>Расчёт:</b> ${src}: <b>${Math.round(t.perim || 0)} м</b>${seam}, плюс 5 % на подрезку и нахлёсты = <b>${Math.round(t.m || 0)} м</b>.<br><b>Кол-во:</b> рулон ${roll} м.</span>`;
+            }
             case 'actuator':
                 return `<span style="${styles}"><span style="${head}">Сервопривод</span><b>Зачем:</b> Автоматическое открывание петель.<br><b>Управление:</b> По команде от комнатного термостата.<br><b>Кол-во:</b> 1 шт на каждую петлю коллектора.</span>`;
             case 'thermostat':
@@ -37774,12 +38292,18 @@ const app = {
 
                     r.windows.forEach((w, wIdx) => {
                         // Теплопотери через площадь конкретного стекла
-                        let wHeight = w.isPan ? 2.5 : 1.5;
+                        let wHeight = this.winHeight(w);
                         let wArea = parseFloat(w.width || 1) * wHeight;
-                        let wLoss = roomLoss.R_glz > 0 ? wArea * roomLoss.dT / roomLoss.R_glz * roomLoss.n_glz : 0;
+                        // kOrient — та же надбавка на румб, что учтена в теплопотерях
+                        // помещения. Без неё окно недобирало бы то, что комната уже
+                        // потеряла, и сумма приборов расходилась бы с её итогом.
+                        let wLoss = roomLoss.R_glz > 0 ? wArea * roomLoss.dT / roomLoss.R_glz * roomLoss.n_glz * roomLoss.kOrient : 0;
 
-                        // Распределяем остальные потери комнаты (стены, кровля, пол) поровну между окнами
-                        let wShare = (roomLoss.Q_wall + roomLoss.Q_roof + roomLoss.Q_floor) / r.windows.length;
+                        // Распределяем остальные потери комнаты (стены, кровля, пол) и нагрев
+                        // приточного воздуха поровну между окнами. Вентиляция сюда попадает по
+                        // той же причине, по которой она есть в мощности котла: прибор греет
+                        // помещение целиком, а не только его ограждения.
+                        let wShare = (roomLoss.Q_wall + roomLoss.Q_roof + roomLoss.Q_floor + roomLoss.Q_vent) / r.windows.length;
 
                         // Итоговая базовая теплопотребность этого оконного участка
                         let totalWindowLoss = wLoss + wShare;
@@ -38592,6 +39116,12 @@ const app = {
                     addToBill(catalog.water_fittings[8], neededPipe, this.getDesc('double_clip', neededPipe, 'radiators'), pipeGrp);
                 }
 
+                // Подводка к радиаторному коллектору: стояк при двух этажах, трасса от
+                // котельной при одном. Отсюда же узел обвязки коллектора берёт свой
+                // типоразмер — присоединять пресс-фитинг наугад к «двадцать пятой»
+                // нельзя, на малой площади подводка выходит двадцатой.
+                let _radConnPipe = null;
+
                 // Стояк на второй этаж. Раньше при двух этажах в смету шли два
                 // радиаторных коллектора, а трубы между ними — ноль: neededPipe выше
                 // считает только участки «коллектор → прибор», каждый со своего этажа.
@@ -38652,6 +39182,7 @@ const app = {
                     }
                     const _riserBase = _riserPool.find(x => x.id === _riserIds[_riserPick]) || _riserPool.find(x => x.id === _riserIds[_riserD]);
                     if (_riserBase) {
+                        _radConnPipe = { pick: _riserPick, base: _riserBase };
                         const _riserCoils = Math.ceil(_riserMeters / _riserBase.len);
                         // Типоразмерный ряд того же материала — в ручную замену. noCheapenAlts:
                         // режим «Аналог» иначе подставил бы Ø16 вместо Ø25, потому что бухта
@@ -38674,6 +39205,85 @@ const app = {
                             const _riserStud = catalog.mounting_system.find(x => x.id === 'SAC-0020-400100');
                             if (_riserStud) addToBill({ ..._riserStud, originalId: 'SAC-0020-400100_riser' }, _riserMeters,
                                 `Шпилька-шуруп с дюбелем под хомуты стояка. Требуется: ${_riserMeters} шт.`, riserGrp);
+                        }
+                    }
+                }
+
+                // Трасса от насосной группы котельной до радиаторного коллектора при одном
+                // этаже. При двух этажах её роль играет стояк выше, а при одном она не
+                // считалась вовсе: коллектор в смете был, лучи от него к приборам были,
+                // а чем сам коллектор подключён к котельной — нечем.
+                if (this.state.floors === 1 && totalDevicesCount > 0) {
+                    // Свой подраздел ровно по той же причине, что и у стояка: Ø25 трассы
+                    // терялась среди Ø16 лучевой разводки, а её хомуты — среди дюбель-крюков.
+                    // Номер 3.4 свободен: стояк и трасса взаимоисключающие.
+                    const trunkGrp = "3.4. Трасса до коллектора";
+                    // Дом одноэтажный, коллектор один — трасса несёт мощность всех приборов.
+                    const _trKw = heatLoadTotal / 1000;
+                    const _trD0 = pickDiam(_trKw);
+                    const _trD = _isMpPipe ? mpDiamOf(_trD0) : _trD0;
+                    // Ход по этажу от котельной до шкафа — 0,5·√S (котельная обычно у стены,
+                    // шкаф ближе к середине плана) плюс 1 м на обвязку у самого коллектора.
+                    // Пара подача+обратка, +10% на подрезку и обходы. Оценка грубая, как и
+                    // вся трассировка: плана дома с координатами котельной и шкафа нет.
+                    const _trOneWay = 1 + 0.5 * Math.sqrt(floorArea);
+                    const _trMeters = Math.ceil(_trOneWay * 2 * 1.1);
+                    // Материал — как у стояка: серую PE-Xa на длинный магистральный участок
+                    // не ставим (линейное расширение ~0,18 мм/(м·К)), подставляем стабильную
+                    // PE-Xa/Al/PE-RT. Металлопластик оставляем как есть — у него тот же
+                    // алюминиевый слой.
+                    const _trPool = _isMpPipe ? catalog.metal_plastic_pipes : catalog.stable_pipes;
+                    const _trIds = _isMpPipe ? MP_PIPE_IDS : STABLE_PIPE_IDS;
+                    const _trSwapped = !_isMpPipe && !_isStablePipe;
+                    // Подобранный по мощности типоразмер проверяем по фактическому проходу
+                    // трубы и, если скорость вылезает за 1,2 м/с (СП 60.13330.2020, по шуму
+                    // и износу), берём следующий из ряда — та же проверка, что у стояка.
+                    const _trBore = (nm) => {
+                        const _mm = /(\d+(?:[.,]\d+)?)\s*[хx]\s*(\d+(?:[.,]\d+)?)/i.exec(nm || '');
+                        if (!_mm) return 0;
+                        return parseFloat(_mm[1].replace(',', '.')) - 2 * parseFloat(_mm[2].replace(',', '.'));
+                    };
+                    const _trFlow = _trKw / (1.163 * 20);           // м³/ч при Δt = 20 °C
+                    const _trSpeed = (bore) => bore > 0
+                        ? (_trFlow / 3600) / (Math.PI * Math.pow(bore / 1000, 2) / 4)
+                        : 0;
+                    const _trOrder = [16, 20, 25, 26, 32];
+                    let _trPick = _trD;
+                    for (let _i = _trOrder.indexOf(_trD); _i < _trOrder.length; _i++) {
+                        const _cand = _trPool.find(x => x.id === _trIds[_trOrder[_i]]);
+                        if (!_cand) continue;
+                        if (_trSpeed(_trBore(_cand.name)) <= 1.2) { _trPick = _trOrder[_i]; break; }
+                    }
+                    const _trBase = _trPool.find(x => x.id === _trIds[_trPick]) || _trPool.find(x => x.id === _trIds[_trD]);
+                    if (_trBase) {
+                        _radConnPipe = { pick: _trPick, base: _trBase };
+                        const _trCoils = Math.ceil(_trMeters / _trBase.len);
+                        // Типоразмерный ряд того же материала — в ручную замену. noCheapenAlts:
+                        // «Аналог» иначе подставил бы Ø16 вместо Ø25, потому что бухта дешевле,
+                        // и трасса перестала бы проходить по расходу.
+                        const _trAlts = Object.values(_trIds)
+                            .filter(id => id !== _trBase.id)
+                            .map(id => _trPool.find(x => x.id === id))
+                            .filter(Boolean);
+                        const _trDesc = `<span style="font-size:11px;line-height:1.5;">` +
+                            `<b>Зачем:</b> Трасса от насосной группы котельной до радиаторного коллектора: лучи Ø16 считаются только от коллектора к приборам, а сама подводка к шкафу — это отдельный участок, который несёт расход всех приборов дома сразу.<br>` +
+                            `<b>Формула метража:</b> (1 м на обвязку у коллектора + 0,5·√площади этажа) × 2 (подача и обратка) × 1,1 (запас на подрезку и обходы).<br>` +
+                            `<b>Формула диаметра:</b> по мощности — до 4 кВт → 16 мм, до 8 кВт → 20 мм, до 16 кВт → 25 (26 у металлопластика) мм, свыше → 32 мм; затем проверка по фактическому внутреннему проходу трубы на скорость не выше 1,2 м/с.<br>` +
+                            `<b>Расчёт:</b> ${_trKw.toFixed(1)} кВт, площадь ${floorArea.toFixed(0)} м² → в одну сторону ${_trOneWay.toFixed(1)} м → ${_trMeters} м трубы → ${_trCoils} ${_trCoils === 1 ? 'бухта' : 'бухт(ы)'} по ${_trBase.len} м.` +
+                            (_trPick !== _trD ? `<br><b>Поправка:</b> по таблице выходил Ø${_trD} мм, но по фактическому проходу трубы скорость превышала 1,2 м/с — взят следующий типоразмер Ø${_trPick} мм.` : ``) +
+                            (_trSwapped ? `<br><b>Материал:</b> вместо серой PE-Xa подставлена стабильная PE-Xa/Al/PE-RT: у серой линейное расширение примерно в семь раз выше, и на длинной магистрали её выгибает между креплениями.` : ``) +
+                            `</span>`;
+                        addToBill(asCoilPrice({ ..._trBase, originalId: 'rad_trunk_pipe_d' + _trD, alts: _trAlts, noCheapenAlts: true }), _trCoils, _trDesc, trunkGrp);
+                        // Крепление: полимерная труба провисает, поэтому хомут на каждый метр
+                        // каждой из двух труб. Типоразмер — по наружному диаметру трассы.
+                        const _trClampId = { 16: 'SAC-0020-000012', 20: 'SAC-0020-000012', 25: 'SAC-0020-000034', 26: 'SAC-0020-000034', 32: 'SAC-0020-000001' }[_trPick];
+                        const _trClamp = _trClampId && catalog.mounting_system.find(x => x.id === _trClampId);
+                        if (_trClamp) {
+                            addToBill({ ..._trClamp, originalId: _trClampId + '_rad_trunk' }, _trMeters,
+                                `Хомут крепления трассы до коллектора — по одному на метр каждой трубы: полимерная труба без частого крепежа провисает. Требуется: ${_trMeters} шт.`, trunkGrp);
+                            const _trStud = catalog.mounting_system.find(x => x.id === 'SAC-0020-400100');
+                            if (_trStud) addToBill({ ..._trStud, originalId: 'SAC-0020-400100_rad_trunk' }, _trMeters,
+                                `Шпилька-шуруп с дюбелем под хомуты трассы. Требуется: ${_trMeters} шт.`, trunkGrp);
                         }
                     }
                 }
@@ -38721,6 +39331,96 @@ const app = {
                         this._cabinetCtx['cabinet_radiators'] = { loops: reqLoops, manifoldId: m.id, deep: false };
                         addToBill(_radCab, manifoldsCount, this.cabinetDesc(_radCab, m.id, reqLoops, false), pipeGrp);
                     }
+                }
+
+                // Узел обвязки коллектора со стороны подводки — лист «Узел обвязки
+                // коллектора радиаторного отопления». Ни в одну комплектацию гребёнки это
+                // не входит: у коллектора торец 1", подводка приходит трубой, и между ними
+                // нужны переход на резьбу крана, сами отсечные краны, повороты и
+                // присоединение трубы. Без кранов перебрать один клапан означает слить всю
+                // систему. Раньше от всего узла в смете не было ни одной позиции.
+                if (manifoldsCount > 0 && totalDevicesCount > 0) {
+                    const _conn = _radConnPipe && this.RAD_NODE_CONN[_radConnPipe.base.id];
+                    const _nodeWhere = `<span style="font-size:11px;line-height:1.5;"><b>Куда:</b> обвязка радиаторного коллектора со стороны подводки` +
+                        (manifoldsCount > 1 ? ` (на оба коллектора)` : ``) +
+                        `, лист «Узел обвязки коллектора радиаторного отопления».<br>`;
+                    const _np = id => (catalog.ufh_node_parts || []).find(x => x.id === id);
+                    // Концевая группа — торец гребёнки, воздухоотводчик и слив одним узлом.
+                    // Спрашиваем не каталожную гребёнку, а ту, что реально стоит в смете
+                    // после ручной замены: у гребёнки с концевыми группами в комплекте
+                    // вторая пара оказалась бы лишней. Замена на «регулировочные блоки»
+                    // (chrome) — это набор голых блоков, у него концевых групп тем более нет.
+                    const _mSwap = m && this.state.swaps && this.state.swaps[m.id];
+                    const _mSelId = (radManifoldMode === 'chrome')
+                        ? ((catalog.manifolds_chrome_blocks[2] || {}).id)
+                        : ((_mSwap && _mSwap !== 'chrome' && _mSwap !== 'chrome_rommer') ? _mSwap : (m && m.id));
+                    const _mConn = this.radManifoldConnFor(_mSelId);
+                    const _mAttrs = _mSelId ? this.manifoldAttrsFor(_mSelId) : { airVent: 'none', drainValve: false };
+                    // Концевая группа садится на торец гребёнки, поэтому её резьба обязана
+                    // совпасть: вся текущая линейка дюймовая, но проверяем по полю, а не по
+                    // памяти.
+                    // По листу воздухоотводчик здесь РУЧНОЙ — кран Маевского, поэтому берём
+                    // концевую группу с ним. Автоматический вариант той же серии уходит в
+                    // замену: он дороже, но не требует, чтобы кто-то дошёл до шкафа с ключом.
+                    const _endFit = catalog.end_fitting_manual;
+                    if (_mAttrs.airVent === 'none' && !_mAttrs.drainValve && _endFit && _mConn && _mConn.inSize === '1') {
+                        addToBill({ ..._endFit, originalId: 'rad_end_fitting', alts: [catalog.parts[0]].filter(Boolean) }, manifoldsCount * 2, _nodeWhere +
+                            `<b>Зачем:</b> Концевая группа на торец гребёнки со стороны подводки — стравливает воздух ручным краном Маевского и даёт слив. По одной на подающий и обратный коллектор: иначе коллектор нечем развоздушить и нечем слить.<br>` +
+                            `<b>Замена:</b> та же группа с автоматическим воздухоотводчиком — дороже, зато воздух стравливается сам.</span>`, pipeGrp);
+                    }
+                    // Противоположный, глухой торец каждой гребёнки. Резьба та же дюймовая,
+                    // поэтому и условие то же, что у концевой группы.
+                    if (catalog.plug_1 && _mConn && _mConn.inSize === '1') {
+                        addToBill({ ...catalog.plug_1, originalId: 'rad_manifold_plug' }, manifoldsCount * 2, _nodeWhere +
+                            `<b>Зачем:</b> Закрывает дальний торец гребёнки — тот, с которого не заходит подводка. По одной на подающий и обратный коллектор.</span>`, pipeGrp);
+                    }
+                    // Резьба, на которой собран узел, задаётся не гребёнкой, а трубой: под
+                    // металлопластик Ø32 переходника на 3/4" в линейке нет, и там всё идёт
+                    // на дюйм (thread1). Гребёнка говорит свой торец сама — расхождение
+                    // закрывается переходным ниппелем, а если такого ниппеля в наборе нет,
+                    // узел не собираем вовсе.
+                    const _nodeThread = (_conn && _conn.thread1) ? '1' : '3/4';
+                    const _nipId = (_mConn && _mConn.inSize === '1' && _nodeThread === '3/4') ? 'SFT-0004-000134' : null;
+                    const _threadOk = !!_mConn && (_mConn.inSize === _nodeThread || !!_nipId);
+                    if (_conn && _threadOk) {
+                        const _sz = _nodeThread === '1' ? '1"' : '3/4"';
+                        const _fit = id => (catalog[_conn.pool] || []).find(x => x.id === id);
+                        const _valve = _np(_nodeThread === '1' ? 'SVB-0007-000025' : 'SVB-0007-000020');
+                        if (_valve) addToBill({ ..._valve, originalId: _valve.id + '_rad_node' }, manifoldsCount * 2, _nodeWhere +
+                            `<b>Зачем:</b> Отсечь коллектор от подводки. По одному крану на подачу и обратку; американка нужна, чтобы снять коллектор целиком, не разрезая трубу.</span>`, pipeGrp);
+                        // Переход нужен, только когда торец гребёнки и резьба узла разошлись.
+                        if (_nipId) {
+                            const _nip = _np(_nipId);
+                            if (_nip) addToBill({ ..._nip, originalId: _nip.id + '_rad_node' }, manifoldsCount * 2, _nodeWhere +
+                                `<b>Зачем:</b> Переход с торца гребёнки ${_mConn.inSize}" на резьбу крана ${_nodeThread}". По одному на подачу и обратку.</span>`, pipeGrp);
+                        }
+                        const _elb = _np(_nodeThread === '1' ? 'SFT-0014-000001' : 'SFT-0014-000034');
+                        if (_elb) addToBill({ ..._elb, originalId: _elb.id + '_rad_node' }, manifoldsCount * 2, _nodeWhere +
+                            `<b>Зачем:</b> Поворот подводки ${_sz} на гребёнку: труба подходит к шкафу снизу, а торцы коллекторов смотрят в сторону. По одному на подачу и обратку.</span>`, pipeGrp);
+                        const _ad = _fit(_conn.adapter);
+                        if (_ad) addToBill({ ..._ad, originalId: _ad.id + '_rad_node' }, manifoldsCount * 2, _nodeWhere +
+                            `<b>Зачем:</b> Присоединение трубы подводки к кранам узла. Типоразмер — по фактической подводке (${_radConnPipe.base.name}), а не «двадцать пятая» наугад.</span>`, pipeGrp);
+                        const _elT = _fit(_conn.elbow);
+                        if (_elT) addToBill({ ..._elT, originalId: _elT.id + '_rad_node' }, manifoldsCount * 2, _nodeWhere +
+                            `<b>Зачем:</b> Поворот трубы подводки у коллектора, тем же типоразмером, что и сама подводка.</span>`, pipeGrp);
+                    }
+                    // Евроконусы на выходы гребёнки. Их не было вовсе: единственная строка
+                    // евроконусов лежит в «3.1. Обвязка радиаторов» и считает два на прибор —
+                    // это концы луча У РАДИАТОРА. У луча их четыре: вторая пара садится на
+                    // коллектор, по одному на подачу и обратку. У тёплого пола эта пара
+                    // считается отдельной строкой ровно так же. Артикул общий с обвязкой
+                    // приборов намеренно: замена на аксиальный переходник должна менять
+                    // присоединение на обоих концах луча, а не на одном.
+                    //
+                    // Ставим только гребёнке с выходами под евроконус 3/4": у неё это
+                    // написано полем connType/outSize. Выходы под обжим или на 1/2" — там
+                    // нужен другой присоединитель, и подсовывать евроконус нельзя.
+                    const _radEuro = (this.state.pipeType === 'insulated_mp' || this.state.pipeType === 'split_mp') ? catalog.parts[3] : catalog.parts[1];
+                    const _radEuroQty = reqLoops * 2 * manifoldsCount;
+                    const _euroFits = !!_mConn && _mConn.connType === 'ek' && _mConn.outSize === '3/4';
+                    if (_radEuro && _euroFits) addEurocone(_radEuro, _radEuroQty, _nodeWhere +
+                        `<b>Зачем:</b> Присоединение луча к коллектору — по два на выход (подача и обратка). Вторая пара, у самого прибора, посчитана отдельной строкой в «3.1. Обвязка радиаторов».<br>` +
+                        `<b>Расчёт:</b> ${reqLoops} вых. × 2` + (manifoldsCount > 1 ? ` × ${manifoldsCount} коллектора` : ``) + ` = ${_radEuroQty} шт.</span>`, pipeGrp);
                 }
 
                 addToWorks("Монтаж радиатора отопления", totalRadCount, workPrices.rad_point, "точка", "1.3 Монтаж радиаторного отопления");
@@ -38926,30 +39626,52 @@ const app = {
             //
             // Типоразмер присоединения тянется за трассой этого этажа: назначать 25-й
             // наугад нельзя, на малой площади трасса выходит двадцатой.
-            const _ufhNode = (fl, lbl) => {
+            const _ufhNode = (fl, lbl, mAttrs) => {
                 const t = _ufhTransits.find(x => x.fl === fl);
                 const conn = t && this.UFH_NODE_CONN[t.base.id];
                 if (!conn) return;
                 const _part = id => (catalog.ufh_node_parts || []).find(x => x.id === id);
                 const _fit = id => (catalog[conn.pool] || []).find(x => x.id === id);
-                const _sz = conn.thread1 ? '1"' : '3/4"';
                 const _where = `<span style="font-size:11px;line-height:1.5;"><b>Куда:</b> ${lbl}, обвязка коллектора ТП со стороны трассы (лист «Узел обвязки коллектора напольного отопления»).<br>`;
-                const _valve = _part(conn.thread1 ? 'SVB-0007-000025' : 'SVB-0007-000020');
-                if (_valve) addToBill(_valve, 2, _where +
-                    `<b>Зачем:</b> Отсечь коллектор от трассы: без кранов даже замена расходомера означает слив всего контура. По одному на подачу и обратку.</span>`, grpPipe);
-                // Присоединение гребёнки — 1". Кран на 3/4" садится на неё через переходной
-                // ниппель; когда узел собран целиком на дюйм, переходить нечему.
-                if (!conn.thread1) {
-                    const _nip = _part('SFT-0004-000134');
-                    if (_nip) addToBill(_nip, 2, _where +
-                        `<b>Зачем:</b> Переход с присоединения гребёнки 1" на резьбу крана 3/4". По одному на подачу и обратку.</span>`, grpPipe);
+                // Краны на входе гребёнок могут прийти вместе с коллектором — тогда
+                // ни их, ни переходных ниппелей, ни углового сгона докупать не нужно,
+                // остаётся только присоединить к ним трубу трассы. Резьба у штатных
+                // кранов дюймовая, поэтому и переходник берётся дюймовый.
+                const _own = !!(mAttrs && mAttrs.inletValves);
+                if (_own) {
+                    const _ad1 = conn.adapter1 && _fit(conn.adapter1);
+                    if (_ad1) {
+                        addToBill(_ad1, 2, _where +
+                            `<b>Зачем:</b> Присоединение транзитной трубы к шаровым кранам коллектора. Краны с термометрами входят в комплект гребёнки, докупать их не нужно — отсюда переход сразу на дюймовую резьбу.</span>`, grpPipe);
+                    } else {
+                        // Трасса двадцатая: прямого переходника на дюйм под неё нет,
+                        // собираем через 3/4" и переходник ВР-НР.
+                        const _ad = _fit(conn.adapter);
+                        const _bush = (catalog.water_input_node || []).find(x => x.id === this.UFH_NODE_BUSHING);
+                        if (_ad) addToBill(_ad, 2, _where +
+                            `<b>Зачем:</b> Присоединение транзитной трубы ${t.base.name} к шаровым кранам коллектора. Краны входят в комплект гребёнки.</span>`, grpPipe);
+                        if (_bush) addToBill({ ..._bush, originalId: _bush.id + '_ufhnode' }, 2, _where +
+                            `<b>Зачем:</b> Добор с 3/4" на дюймовую резьбу крана: прямого переходника с трубы 20 на дюйм в линейке нет.</span>`, grpPipe);
+                    }
+                } else {
+                    const _sz = conn.thread1 ? '1"' : '3/4"';
+                    const _valve = _part(conn.thread1 ? 'SVB-0007-000025' : 'SVB-0007-000020');
+                    if (_valve) addToBill(_valve, 2, _where +
+                        `<b>Зачем:</b> Отсечь коллектор от трассы: без кранов даже замена расходомера означает слив всего контура. По одному на подачу и обратку. У этой гребёнки кранов в комплекте нет — в отличие от «полностью укомплектован».</span>`, grpPipe);
+                    // Присоединение гребёнки — 1". Кран на 3/4" садится на неё через переходной
+                    // ниппель; когда узел собран целиком на дюйм, переходить нечему.
+                    if (!conn.thread1) {
+                        const _nip = _part('SFT-0004-000134');
+                        if (_nip) addToBill(_nip, 2, _where +
+                            `<b>Зачем:</b> Переход с присоединения гребёнки 1" на резьбу крана 3/4". По одному на подачу и обратку.</span>`, grpPipe);
+                    }
+                    const _elb = _part(conn.thread1 ? 'SFT-0014-000001' : 'SFT-0014-000034');
+                    if (_elb) addToBill(_elb, 1, _where +
+                        `<b>Зачем:</b> Поворот подводки ${_sz} на гребёнку: трасса подходит к шкафу снизу, а патрубки коллектора смотрят в сторону.</span>`, grpPipe);
+                    const _ad = _fit(conn.adapter);
+                    if (_ad) addToBill(_ad, 2, _where +
+                        `<b>Зачем:</b> Присоединение транзитной трубы к кранам узла. Типоразмер — по трассе этого этажа (${t.base.name}).</span>`, grpPipe);
                 }
-                const _elb = _part(conn.thread1 ? 'SFT-0014-000001' : 'SFT-0014-000034');
-                if (_elb) addToBill(_elb, 1, _where +
-                    `<b>Зачем:</b> Поворот подводки ${_sz} на гребёнку: трасса подходит к шкафу снизу, а патрубки коллектора смотрят в сторону.</span>`, grpPipe);
-                const _ad = _fit(conn.adapter);
-                if (_ad) addToBill(_ad, 2, _where +
-                    `<b>Зачем:</b> Присоединение транзитной трубы к кранам узла. Типоразмер — по трассе этого этажа (${t.base.name}).</span>`, grpPipe);
                 const _elT = _fit(conn.elbow);
                 if (_elT) addToBill(_elT, 1, _where +
                     `<b>Зачем:</b> Поворот транзитной трубы у коллектора, тем же типоразмером, что и трасса.</span>`, grpPipe);
@@ -38998,12 +39720,13 @@ const app = {
                                 this.cabinetDesc(_ufhCab, mSel.id, dispLoops, _cabDeep), grpPipe);
                         }
 
+                        let mAttrs = this.manifoldAttrsFor(mSel.id);
                         // Коллектор, на котором сидит насосно-смесительный узел, обвязкой
                         // не комплектуем: узел прикручивается к гребёнке напрямую своими
                         // накидными гайками, а отсечные краны стоят уже перед ним.
-                        if (!_cabDeep) _ufhNode(fl, lbl);
+                        // Состав обвязки зависит от комплектации гребёнки — см. mAttrs.
+                        if (!_cabDeep) _ufhNode(fl, lbl, mAttrs);
 
-                        let mAttrs = this.manifoldAttrsFor(mSel.id);
                         if (mAttrs.airVent === 'none' && !mAttrs.drainValve) mansNoFitting++;
                     }
                     // Счётчик двигаем и тогда, когда гребёнки такого размера в каталоге
@@ -39040,6 +39763,16 @@ const app = {
                 addToBill(mt, mc, this.getDesc('ufh_mat', tpArea), grpIns);
             }
             else { let xpsItem = catalog.xps_kit[0]; xpsItem.alts = catalog.mats; let sheets = Math.ceil((tpArea / xpsItem.area) * 1.05); addToBill(xpsItem, sheets, this.getDesc('ufh_xps', tpArea), grpIns); if (catalog.ufh_mat && catalog.ufh_mat[0]) { let matRolls = Math.ceil(tpArea / catalog.ufh_mat[0].pack_m2); addToBill(catalog.ufh_mat[0], matRolls, `Подложка 3 мм, ${tpArea} м² (рулон 30 м²).`, grpIns); } let totalDowels = Math.ceil(tpArea * 5); addToBill(catalog.xps_kit[1], Math.ceil(totalDowels / 100), `Дюбеля.`, grpIns); let totalStaples = Math.ceil(tpMeters * 2.5); addToBill(catalog.xps_kit[2], Math.ceil(totalStaples / 25), `Скобы.`, grpIns); let tapeRolls = Math.ceil((sheets * 1.76 * 1.1) / 50); addToBill(catalog.xps_kit[3], tapeRolls, `Скотч.`, grpIns); }
+
+            // Демпферная лента идёт при любом основании: она развязывает стяжку со
+            // стенами, а не утепляет пол. Скотчу из набора XPS не замена — тот
+            // проклеивает швы листов, а не периметр.
+            const _tape = this.ufhTapeCalc(tpF1, tpF2);
+            if (_tape && catalog.damper_tape && catalog.damper_tape.length) {
+                const _tapeIt = catalog.damper_tape[0];
+                const _tapeRolls = Math.ceil(_tape.m / (_tapeIt.len || 25));
+                addToBill(_tapeIt, _tapeRolls, this.getDesc('ufh_damper', _tape, _tapeIt.len || 25), grpIns);
+            }
 
             if (this.state.ufhAuto) {
                 let grpAuto = "4.3. АВТОМАТИКА ТЁПЛОГО ПОЛА";
@@ -39783,7 +40516,7 @@ const app = {
                     `• Выбрано бухт (по 100 м): ${totalWaterCoils} шт. (всего ${qtyWaterPipe} м).`;
                 addToBill(waterPipe, qtyWaterPipe, pipeTip, grpGen);
             }
-            addToBill(catalog.water_parts.find(x => x.id === "SFA-0037-300000"), 1, "Наклейки", grpGen);
+            addToBill(catalog.water_parts.find(x => x.id === "SFA-0038-300000"), 1, "Наклейки", grpGen);
             let tToilet = 0, tWash = 0, tDish = 0, tBasin = 0, tBath = 0, tShower = 0;
             this.state.waterZones.forEach(z => {
                 if (z && z.fixtures) {
