@@ -13359,8 +13359,11 @@ const app = {
         quarters:      { t: 'Кварталы',                           icon: '🗓️', sec: 'demand' },
         gas:           { t: 'Догазификация',                      icon: '🔥', sec: 'demand' },
         share_groups:  { t: 'Наша доля в спросе на группу',       icon: '🥇', sec: 'demand' },
-        regions:       { t: 'Регионы: спрос на монтаж',           icon: '🗺️', sec: 'demand' },
-        white_spots:   { t: 'Белые пятна',                        icon: '⚪', sec: 'demand' },
+        // Белые пятна отдельным блоком больше не живут: это строки с нулём
+        // монтажников в общей таблице регионов. У кого он стоял в сохранённой
+        // раскладке — просто исчезнет: неизвестные идентификаторы dashLayout
+        // выбрасывает, ронять из-за них дашборд нельзя.
+        regions:       { t: 'Регионы: спрос и наше присутствие',  icon: '🗺️', sec: 'demand' },
         pulse:         { t: 'Пульс по неделям',                   icon: '💓', sec: 'demand' },
         top_requests:  { t: 'Что именно спрашивают',              icon: '💬', sec: 'demand' }
     },
@@ -13405,8 +13408,7 @@ const app = {
                 { id: 'demand', title: 'Спрос', items: [
                     { id: 'demand_chart', span: 3 }, { id: 'gas', span: 1 },
                     { id: 'quarters', span: 4 },
-                    { id: 'share_groups', span: 2 }, { id: 'regions', span: 2 },
-                    { id: 'white_spots', span: 4 },
+                    { id: 'share_groups', span: 2 }, { id: 'regions', span: 4 },
                     { id: 'pulse', span: 2 }, { id: 'top_requests', span: 2 }
                 ] }
             ]
@@ -15253,7 +15255,141 @@ const app = {
                     </div>`).join('') : `<div style="font-size:12.5px; color:var(--text-sec);">Данных о марках в запросах пока нет.</div>`)
                 + `</div>`);
 
-        B.regions = card(head('Регионы: спрос на монтаж', demandId ? esc((phrases[demandId] && phrases[demandId].text) || demandId) : '')
+        // ── Регионы: спрос, наши люди и проникновение ───────────────────────
+        //
+        // Раньше регионы жили тремя блоками, и все три показывали одно и то же
+        // с разных сторон: кнопки фильтра сверху, «Регионы: спрос на монтаж»
+        // (только там, где мы есть) и «Белые пятна» (только там, где нас нет).
+        // Читателю приходилось держать в голове два списка и вычитать один из
+        // другого, а главного вопроса не отвечал ни один: сколько спроса мы
+        // забираем там, где работаем.
+        //
+        // Здесь страна одной таблицей: спрос, наши монтажники, наши сметы и
+        // смет на 1000 запросов. Белые пятна — просто строки с нулём
+        // монтажников, они никуда не делись, но встали в общий ряд и сразу
+        // сравнимы с обжитыми рынками. Заодно видно недообслуженные: регион с
+        // московским спросом и одним человеком в белые пятна не попадал
+        // никогда, хотя это такая же точка роста.
+        const allDemand = (wordstat && wordstat.region_all) || null;
+        const normRegion = (s) => String(s || '').toLowerCase().replace(/ё/g, 'е')
+            .replace(/республика|область|обл\.|край|автономный округ|автономная область|-кузбасс/g, '')
+            .replace(/[^a-zа-я0-9]/g, '').trim();
+
+        if (allDemand && demandId && allDemand[demandId]) {
+            const ownRows = (this._dashOwn && this._dashOwn.users) || (this.adminData && this.adminData.allUsersDropdown) || [];
+            // Свои по нормализованному имени региона: и люди, и сметы за 90
+            // дней. Регион у сметы авторский — своего у неё нет.
+            const usersByReg = {}, estsByReg = {}, regOfUser = {};
+            ownRows.forEach(u => {
+                const k = normRegion(u.region || '');
+                regOfUser[String(u.id)] = k;
+                if (k) usersByReg[k] = (usersByReg[k] || 0) + 1;
+            });
+            const since90 = Date.now() - 90 * 86400000;
+            ((this._dashOwn && this._dashOwn.estimates) || []).forEach(e => {
+                const t = new Date(e.created_at).getTime();
+                if (!t || t < since90) return;
+                const k = regOfUser[String(e.user_id)];
+                if (k) estsByReg[k] = (estsByReg[k] || 0) + 1;
+            });
+            // Месячные ряды есть только по нашим регионам (region_monthly), и
+            // только из них считается изменение спроса. У остальных в снимке
+            // одно число — честно показываем прочерк вместо стрелки.
+            const seriesByNorm = {};
+            Object.keys((regM[demandId] || {})).forEach(rg => {
+                seriesByNorm[normRegion(rg)] = { name: rg, pts: full(regM[demandId][rg]) };
+            });
+            // Плюс присутствие из самой аналитики: regionList берётся из
+            // квартального среза марок и в тихий месяц пустеет, а
+            // wordstat.regions пишет каждый месячный прогон.
+            const presence = new Set();
+            regionList.forEach(r => presence.add(normRegion(r)));
+            Object.keys((wordstat && wordstat.regions) || {}).forEach(r => presence.add(normRegion(r)));
+
+            // У Wordstat нет отдельных Москвы и Подмосковья: есть один узел
+            // «Москва и область», так же склеены Петербург с Ленинградской.
+            // Поэтому составное имя разбираем по «и» и складываем своих по
+            // каждой части — иначе два наших крупнейших рынка выглядели бы
+            // пустыми.
+            const partsOf = (name) => {
+                const parts = String(name).split(/\s+и\s+/).map(normRegion).filter(Boolean);
+                return parts.length ? parts : [normRegion(name)];
+            };
+
+            const regList = Object.keys(allDemand[demandId]).map(name => {
+                const keys = partsOf(name);
+                const val = Number(allDemand[demandId][name]) || 0;
+                const users = keys.reduce((s, k) => s + (usersByReg[k] || 0), 0);
+                const ests = keys.reduce((s, k) => s + (estsByReg[k] || 0), 0);
+                let pct = null, ourName = null;
+                keys.forEach(k => {
+                    const s = seriesByNorm[k];
+                    if (!s || ourName) return;
+                    ourName = s.name;
+                    const nowP = s.pts[s.pts.length - 1], baseP = s.pts[s.pts.length - 1 - back];
+                    if (baseP && baseP[1] && nowP) pct = Math.round((nowP[1] - baseP[1]) / baseP[1] * 100);
+                });
+                if (!ourName && keys.some(k => presence.has(k))) ourName = name;
+                return { name, val, users, ests, pct, ourName, per1000: val ? ests / val * 1000 : null };
+            }).filter(x => x.val > 0).sort((a, b) => b.val - a.val);
+
+            // Верх списка — по спросу, но свои регионы дописываем в любом
+            // случае. Иначе Карелия с Мурманской, где спрос на порядок ниже
+            // московского, не попадали бы в срез вовсе — и владелец потерял бы
+            // из виду ровно те рынки, где у него люди.
+            const regLimit = rows('regions', 6, 12, 20);
+            const regTop = regList.slice(0, regLimit);
+            const regOursTail = regList.filter(x => x.users > 0 && regTop.indexOf(x) < 0);
+            const regTable = regTop.concat(regOursTail);
+            const regTableMax = regTable.length ? regTable[0].val : 1;
+            const wide = sp('regions') >= 2;
+
+            // Проникновение — единственное число здесь, сравнимое между
+            // регионами: спрос в Москве и в Карелии отличается на порядки, а
+            // «сколько смет на тысячу запросов» ставит их рядом.
+            const per1000 = (v) => v === null ? '—' : (v >= 10 ? Math.round(v) : v.toFixed(1).replace('.', ','));
+            const regHtml = regTable.map(x => {
+                const white = x.users === 0;
+                return `<div style="display:flex; align-items:center; gap:9px; margin-bottom:9px; ${x.ourName ? 'cursor:pointer;' : ''}"
+                             ${x.ourName ? `onclick="app.setAnalyticsRegion('${q(x.ourName)}')" title="показать дашборд по региону"` : 'title="нас там нет ни одним человеком"'}>
+                        <span style="flex:0 0 7px; width:7px; height:7px; border-radius:50%; background:${white ? '#F97316' : '#10B981'};"></span>
+                        <div style="flex:1 1 34%; min-width:0; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+                                    color:${region && region === x.ourName ? 'var(--primary)' : 'var(--text-main)'}; font-weight:${region && region === x.ourName ? 700 : 400};">${esc(x.name)}</div>
+                        ${wide ? `<div style="flex:1 1 20%; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
+                            <div style="width:${Math.max(2, Math.round(x.val / regTableMax * 100))}%; height:8px; border-radius:999px; background:${white ? '#F97316' : 'var(--primary)'};"></div>
+                        </div>` : ''}
+                        <div style="width:56px; text-align:right; font-size:12px; font-weight:700; color:var(--text-main);" title="запросов за месяц">${num(x.val)}</div>
+                        ${wide ? `<div style="width:44px; text-align:right; font-size:11.5px;" title="изменение спроса, ${esc(backLabel)}">${trend(x.pct)}</div>` : ''}
+                        <div style="width:34px; text-align:right; font-size:11.5px; color:${white ? '#F97316' : 'var(--text-sec)'};" title="монтажников">${num(x.users)}</div>
+                        ${wide ? `<div style="width:34px; text-align:right; font-size:11.5px; color:var(--text-sec);" title="смет за 90 дней">${num(x.ests)}</div>` : ''}
+                        <div style="width:44px; text-align:right; font-size:11.5px; font-weight:700; color:var(--text-main);" title="смет на 1000 запросов">${per1000(x.per1000)}</div>
+                    </div>`;
+            }).join('');
+
+            B.regions = card(head('Регионы: спрос и наше присутствие',
+                    `${esc((phrases[demandId] && phrases[demandId].text) || demandId)} · вся страна · оранжевым — где нас нет`)
+                + `<div style="display:flex; align-items:center; gap:9px; margin:12px 0 6px; font-size:10.5px; color:var(--text-sec); text-transform:uppercase; letter-spacing:.3px;">
+                        <span style="flex:0 0 7px;"></span>
+                        <div style="flex:1 1 34%;">регион</div>
+                        ${wide ? `<div style="flex:1 1 20%;"></div>` : ''}
+                        <div style="width:56px; text-align:right;">спрос</div>
+                        ${wide ? `<div style="width:44px; text-align:right;">Δ</div>` : ''}
+                        <div style="width:34px; text-align:right;">чел.</div>
+                        ${wide ? `<div style="width:34px; text-align:right;">смет</div>` : ''}
+                        <div style="width:44px; text-align:right;">/1000</div>
+                   </div>`
+                + regHtml
+                + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.55;">
+                    «/1000» — смет за 90 дней на тысячу запросов: единственное число, сравнимое между регионами, — спрос в Москве и в Карелии отличается на порядки.
+                    Изменение спроса известно только там, где мы работаем: по остальным парсер хранит один снимок, а не ряд.
+                    Показаны ${regLimit} крупнейших рынков${regOursTail.length
+                        ? ` плюс ещё ${regOursTail.length} ${this.plural(regOursTail.length, 'наш регион', 'наших региона', 'наших регионов')}, куда спрос не дотянул до этой планки`
+                        : ''}.
+                   </div>`);
+        } else {
+            // Страновой снимок ещё не собран — показываем то, что есть:
+            // прежний список по нашим регионам.
+            B.regions = card(head('Регионы: спрос на монтаж', demandId ? esc((phrases[demandId] && phrases[demandId].text) || demandId) : '')
                 + `<div style="margin-top:12px;">` + (regRows.length ? regRows.map(x => `
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:9px; cursor:pointer;"
                          onclick="app.setAnalyticsRegion('${q(x.name)}')" title="показать дашборд по региону">
@@ -15265,69 +15401,9 @@ const app = {
                         <div style="width:52px; text-align:right; font-size:12px; font-weight:700; color:var(--text-main);">${num(x.val)}</div>
                         <div style="width:52px; text-align:right; font-size:11.5px;">${trend(x.pct)}</div>
                     </div>`).join('') : `<div style="font-size:12.5px; color:var(--text-sec);">Истории по регионам пока нет.</div>`)
-                + `</div>`);
-
-        // ── Белые пятна: спрос есть, монтажников нет ────────────────────────
-        // Все блоки выше показывают только «живые» регионы — те, где мы уже
-        // работаем. Здесь наоборот: страна целиком минус наши регионы. Это
-        // единственное место дашборда, которое отвечает на вопрос «куда расти».
-        const allDemand = (wordstat && wordstat.region_all) || null;
-        const normRegion = (s) => String(s || '').toLowerCase().replace(/ё/g, 'е')
-            .replace(/республика|область|обл\.|край|автономный округ|автономная область|-кузбасс/g, '')
-            .replace(/[^a-zа-я0-9]/g, '').trim();
-
-        if (allDemand && demandId && allDemand[demandId]) {
-            // Свои регионы: где есть хоть один монтажник. Полный список
-            // пользователей у админки уже есть (он же кормит выпадающий список
-            // в сообщениях), отдельного запроса не нужно.
-            const ourRegions = new Set();
-            ((this._dashOwn && this._dashOwn.users) || (this.adminData && this.adminData.allUsersDropdown) || [])
-                .forEach(u => { if (u.region) ourRegions.add(normRegion(u.region)); });
-            regionList.forEach(r => ourRegions.add(normRegion(r)));
-            // Плюс список присутствия из самой аналитики. Он важнее, чем
-            // кажется: regionList выше берётся из регионального среза марок, а
-            // тот собирается раз в квартал и обычным месячным прогоном
-            // затирается. Останься мы на нём одном — в тихий месяц список
-            // «наших» опустел бы, и Москва с Петербургом уехали бы в белые
-            // пятна как чужие рынки. wordstat.regions пишет каждый месячный
-            // прогон, поэтому пустым он не бывает.
-            Object.keys((wordstat && wordstat.regions) || {})
-                .forEach(r => ourRegions.add(normRegion(r)));
-
-            // У Wordstat нет отдельных Москвы и Подмосковья: есть один узел
-            // «Москва и область», и так же склеены Петербург с Ленинградской.
-            // По имени целиком такой узел не совпадёт ни с одним нашим
-            // регионом и уехал бы в белые пятна — то есть в список «нас там
-            // нет» попали бы два рынка, где мы как раз есть. Поэтому
-            // составное имя разбираем по «и» и проверяем каждую часть.
-            const isOurs = (name) => {
-                if (ourRegions.has(normRegion(name))) return true;
-                return String(name).split(/\s+и\s+/)
-                    .map(normRegion).filter(Boolean)
-                    .some(part => ourRegions.has(part));
-            };
-            const white = Object.keys(allDemand[demandId])
-                .map(r => ({ name: r, val: Number(allDemand[demandId][r]) || 0 }))
-                .filter(x => x.val > 0 && !isOurs(x.name))
-                .sort((a, b) => b.val - a.val).slice(0, rows('white_spots', 5, 10, 16));
-            const whiteMax = white.length ? white[0].val : 1;
-
-            B.white_spots = card(head('Белые пятна: спрос есть, монтажников нет',
-                    `${esc((phrases[demandId] && phrases[demandId].text) || demandId)} · регионы, где нас нет ни одним человеком`)
-                + `<div style="margin-top:12px;">` + (white.length ? white.map(x => `
-                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:9px;">
-                        <div style="flex:1 1 44%; min-width:0; font-size:12.5px; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(x.name)}</div>
-                        <div style="flex:1 1 40%; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
-                            <div style="width:${Math.max(2, Math.round(x.val / whiteMax * 100))}%; height:8px; border-radius:999px; background:#F97316;"></div>
-                        </div>
-                        <div style="width:62px; text-align:right; font-size:12px; font-weight:700; color:var(--text-main);">${num(x.val)}</div>
-                    </div>`).join('')
-                    : `<div style="font-size:12.5px; color:var(--text-sec);">Регионов со спросом, где у нас никого нет, не нашлось.</div>`)
-                + `</div>`);
-        } else {
-            B.white_spots = card(head('Белые пятна: спрос есть, монтажников нет', 'регионы, где нас нет ни одним человеком')
-                + `<div style="font-size:12.5px; color:var(--text-sec); margin-top:8px;">
-                    Появится после ближайшего прогона Actions → Wordstat Analytics в режиме <b>monthly</b>: до сих пор парсер выбрасывал всё, кроме наших регионов, а теперь сохраняет спрос по стране целиком.
+                + `</div>`
+                + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px;">
+                    Спрос по стране целиком (и белые пятна вместе с ним) появится после ближайшего прогона Actions → Wordstat Analytics в режиме <b>monthly</b>.
                    </div>`);
         }
 
