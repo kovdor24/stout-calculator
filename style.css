@@ -9396,33 +9396,32 @@ body.dark-mode .cw-status-promo {
     }
 }
 
-/* --- СТИЛИ ДЛЯ ЛИЧНОГО КАБИНЕТА (ОДИНАКОВАЯ ШИРИНА И ВЫСОТА НА ПК И ПЛАНШЕТАХ) --- */
-@media screen and (min-width: 1025px), screen and (min-width: 769px) and (orientation: landscape) and (min-height: 501px) {
+/* --- ЛИЧНЫЙ КАБИНЕТ НА ПК И ПЛАНШЕТАХ: ВО ВЕСЬ ЭКРАН ---
+   Раньше окно было 1120px × 94vh по центру, и самый длинный раздел («Сводка»:
+   три плитки, список висящих смет, подорожание и воронка из семи ступеней) в
+   него не помещался. Кабинет — рабочее место, а не диалог: разворачиваем его
+   на весь экран тем же приёмом, что и админку (см. #admin_modal_overlay). */
+/* min-height здесь не лишний: телефон в альбоме проходит по ширине, но кабинет
+   ему нужен прежней «шторкой» снизу — она объявлена выше по файлу. */
+@media screen and (min-width: 769px) and (min-height: 501px) {
     #profile_modal_overlay .auth-modal-content {
-        /* Кабинет вырос из четырёх вкладок в девять разделов: реквизиты компании и
-           таблица объектов в прежние 60vw × 78vh уже не помещались по высоте */
-        width: min(1120px, 82vw) !important;
-        max-width: min(1120px, 82vw) !important;
-        height: 88vh !important;
-        max-height: 88vh !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+        width: 100vw !important;
+        max-width: none !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        max-height: none !important;
+        border-radius: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
         display: flex !important;
         flex-direction: column !important;
         box-sizing: border-box !important;
-        padding: 20px 24px !important;
-    }
-}
-
-/* На планшетах в портрете и средних экранах (ширина от 769px до 1024px) */
-@media screen and (min-width: 769px) and (max-width: 1024px) {
-    #profile_modal_overlay .auth-modal-content {
-        width: 90vw !important;
-        max-width: 90vw !important;
-        height: 88vh !important;
-        max-height: 88vh !important;
-        display: flex !important;
-        flex-direction: column !important;
-        box-sizing: border-box !important;
-        padding: 20px 24px !important;
+        padding: 20px 28px !important;
+        overflow: hidden !important;
     }
 }
 
@@ -9431,6 +9430,7 @@ body.dark-mode .cw-status-promo {
 #profile_tab_company,
 #profile_tab_subscription,
 #profile_tab_objects,
+#profile_tab_summary,
 #profile_tab_orders,
 #profile_tab_manager,
 #profile_tab_installers,
@@ -9441,6 +9441,45 @@ body.dark-mode .cw-status-promo {
     min-height: 0 !important;
     margin-bottom: 12px !important;
     padding-right: 6px !important;
+}
+
+/* ── «Реквизиты компании» на полном экране ─────────────────────────────────
+   Адрес и банковские реквизиты — 4–6 строк, а поля им заданы в 44px, и текст
+   лежал под внутренней прокруткой. Место на полном экране есть, поэтому поле
+   растёт по содержимому (field-sizing). Размеры шрифта и однострочных полей
+   не трогаем — они прежние.
+
+   Раздел при этом не должен получать вторую, внешнюю прокрутку: карточка и оба
+   поля сделаны сжимаемыми (flex-shrink), поэтому не хватило высоты — ужимается
+   поле, а не уезжает вся страница раздела. Пока содержимое помещается —
+   полосы прокрутки нет вовсе. */
+@media screen and (min-width: 769px) and (min-height: 501px) {
+    #profile_tab_company {
+        display: flex;
+        flex-direction: column;
+    }
+
+    #profile_tab_company .lk-card {
+        flex: 0 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 0;
+    }
+
+    #profile_tab_company textarea.auth-input {
+        field-sizing: content;
+        height: auto !important;
+        min-height: 44px !important;
+        max-height: 45vh !important;
+        flex: 0 1 auto;
+    }
+
+    /* В колонке-флексе кнопка растянулась бы во всю ширину экрана */
+    #profile_tab_company .lk-card > .lk-btn-sm {
+        align-self: flex-start;
+        flex: 0 0 auto;
+    }
 }
 
 /* ═══════════════ ЛИЧНЫЙ КАБИНЕТ: КОЛОНКА РАЗДЕЛОВ ═══════════════
