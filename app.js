@@ -4955,6 +4955,21 @@ const app = {
         if (!key) return true;
 
         const prices = (DIST_PRICES[key] && DIST_PRICES[key].items) || {};
+        // Нержавейка лежит в каталоге под ROMMER-овским артикулом
+        // (RSS-1021-002234), а в прайсах поставщика — под прайсовым
+        // (RSS-0021-002234). Это одна и та же позиция: на сайте она находится по
+        // обоим кодам и стоит одинаково. Различаются только две цифры после
+        // «RSS-», остальной артикул совпадает символ в символ.
+        //
+        // Без подстановки цена дистрибьютора не доставалась НИ ОДНОЙ позиции
+        // нержавейки: прямых совпадений между каталогом и прайсом ноль, а после
+        // замены совпадают все 227 — вся нержавеющая труба и пресс-фитинги.
+        // Монтажник со своим прайсом считал их по ценам Терем-онлайн.
+        const priceOf = (id) => {
+            const own = prices[id];
+            if (own !== undefined) return own;
+            return id.indexOf('RSS-10') === 0 ? prices['RSS-00' + id.slice(6)] : undefined;
+        };
         const backup = new Map();
         const seen = new Set();
         // Обход рекурсивный: цены есть и во вложенных .rommer / .comfort, а одна
@@ -4963,9 +4978,12 @@ const app = {
         const walk = (node) => {
             if (!node || typeof node !== 'object' || seen.has(node)) return;
             seen.add(node);
-            if (typeof node.id === 'string' && typeof node.price === 'number' && prices[node.id] !== undefined) {
-                backup.set(node, node.price);
-                node.price = prices[node.id];
+            if (typeof node.id === 'string' && typeof node.price === 'number') {
+                const own = priceOf(node.id);
+                if (own !== undefined) {
+                    backup.set(node, node.price);
+                    node.price = own;
+                }
             }
             for (const k in node) walk(node[k]);
         };
