@@ -12853,8 +12853,20 @@ const app = {
                     { name: 'Поисковый спрос на монтаж', points: pairs.map(p => [p[0], p[1]]) },
                     { name: 'Наши сметы', points: pairs.map(p => [p[0], p[2]]) }
                 ];
+                // Форму кривых глаз читает, а насколько выросла каждая — нет:
+                // шкалы-то разные. Поэтому рост от первого общего месяца к
+                // последнему считаем числом и пишем словами под графиком.
+                const grow = (a, b) => a ? Math.round((b - a) / a * 100) : null;
+                const first = pairs[0], last = pairs[pairs.length - 1];
+                const demGrow = grow(first[1], last[1]);
+                const estGrow = grow(first[2], last[2]);
                 h += card(head('Наши сметы против спроса', `${region ? esc(region) : 'вся Россия'} · ${pairs.length} общих месяцев · ${word}`)
                     + `<div style="margin-top:10px;">${this.buildAnalyticsLineChart(cmpSeries, 'dashvs', true)}</div>
+                       <div style="font-size:12px; color:var(--text-sec); margin-top:8px; display:flex; gap:14px; flex-wrap:wrap;">
+                          <span>С ${esc(first[0])} по ${esc(last[0])}:</span>
+                          <span>спрос ${trend(demGrow)}</span>
+                          <span>наши сметы ${trend(estGrow)}</span>
+                       </div>
                        <div style="font-size:11.5px; color:var(--text-sec); margin-top:4px;">
                           У каждой линии своя шкала — сравнивается форма, а не величина; точные числа показывает подсказка при наведении.
                        </div>`, 'margin-bottom:14px;');
@@ -13154,13 +13166,40 @@ const app = {
             const yrs = years.slice(-3);
             const BAR_H = 132;
 
-            const qCell = (val, color, label, hint, partial) => {
+            // Плечо сравнения выбирает пользователь. Жёсткая пара «свежий год к
+            // предыдущему» отвечает только на вопрос «как год назад», а нужно
+            // бывает и «как до газификации» — 2026 к 2023. Столбцы показываем и
+            // за обычные три года, и за выбранные, чтобы история не пропадала.
+            const allYears = [];
+            Object.keys(mMap).sort().forEach(m => {
+                const y = m.slice(0, 4);
+                if (allYears.indexOf(y) < 0) allYears.push(y);
+            });
+            const pickY = (v, def) => (v && allYears.indexOf(String(v)) >= 0) ? String(v) : def;
+            const qNewY = pickY(this._dashQYearNew, allYears[allYears.length - 1] || '');
+            let qOldY = pickY(this._dashQYearOld, allYears[allYears.length - 2] || allYears[0] || '');
+            if (qOldY === qNewY) qOldY = allYears[allYears.indexOf(qNewY) - 1] || qNewY;
+
+            const yrsShown = yrs.slice();
+            [qOldY, qNewY].forEach(y => { if (y && yrsShown.indexOf(y) < 0) yrsShown.push(y); });
+            yrsShown.sort();
+            // Лестница оттенков от старого года к свежему: годов может быть и
+            // три, и пять, поэтому цвет берём не по индексу, а по доле.
+            const RAMP = ['#CBD5E1', '#93C5FD', '#60A5FA', '#3B82F6', '#2563EB'];
+            const yColor = (y) => {
+                const n = yrsShown.length;
+                if (n < 2) return RAMP[RAMP.length - 1];
+                const i = Math.max(0, yrsShown.indexOf(y));
+                return RAMP[Math.min(RAMP.length - 1, Math.floor(i * (RAMP.length - 1) / (n - 1)))];
+            };
+
+            const qCell = (val, color, label, hint, partial, strong) => {
                 const hp = Math.max(2, Math.round(val / qMax * BAR_H));
                 return `<div title="${esc(hint)}" style="flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;">
                         <div style="font-size:10.5px; color:var(--text-sec); margin-bottom:3px; white-space:nowrap;">${num(val)}</div>
                         <div style="width:100%; max-width:34px; height:${hp}px; border-radius:5px 5px 0 0; background:${color};
                                     opacity:${partial ? 0.55 : 1}; ${partial ? 'border:1px dashed var(--border); border-bottom:none;' : ''}"></div>
-                        ${label ? `<div style="font-size:10.5px; color:var(--text-sec); margin-top:4px; white-space:nowrap;">${label}</div>` : ''}
+                        ${label ? `<div style="font-size:10.5px; margin-top:4px; white-space:nowrap; ${strong ? 'font-weight:800; color:var(--text-main);' : 'color:var(--text-sec);'}">${label}</div>` : ''}
                     </div>`;
             };
 
@@ -13168,37 +13207,38 @@ const app = {
             let anyPartial = false;
 
             if (qMode === 'yoy') {
-                yrs.forEach(y => {
+                yrsShown.forEach(y => {
                     for (let qn = 1; qn <= 4; qn++) if (qMonths(y, qn).length) qMax = Math.max(qMax, qSum(y, qn));
                 });
                 let cols = '';
                 for (let qn = 1; qn <= 4; qn++) {
-                    const live = yrs.filter(y => qMonths(y, qn).length);
+                    const live = yrsShown.filter(y => qMonths(y, qn).length);
                     if (!live.length) continue;
-                    // Процент считаем по свежему году к предыдущему и только по
-                    // тем месяцам, что есть в обоих: неполный квартал иначе
-                    // всегда выглядел бы провалом.
-                    const yNew = live[live.length - 1], yOld = String(Number(yNew) - 1);
-                    const only = qMonths(yNew, qn);
-                    const oldSum = qSum(yOld, qn, only);
-                    const pct = oldSum ? Math.round((qSum(yNew, qn, only) - oldSum) / oldSum * 100) : null;
+                    // Процент считаем по выбранной паре лет и только по тем
+                    // месяцам, что есть в обоих: неполный квартал иначе всегда
+                    // выглядел бы провалом.
+                    const mNew = qMonths(qNewY, qn), mOld = qMonths(qOldY, qn);
+                    const only = mNew.filter(mo => mOld.indexOf(mo) >= 0);
+                    const oldSum = only.length ? qSum(qOldY, qn, only) : 0;
+                    const pct = oldSum ? Math.round((qSum(qNewY, qn, only) - oldSum) / oldSum * 100) : null;
                     const bars = live.map(y => {
                         const part = qMonths(y, qn).length < 3;
                         if (part) anyPartial = true;
-                        return qCell(qSum(y, qn), Y_COLORS[yrs.indexOf(y) + Y_COLORS.length - yrs.length] || Y_COLORS[2], y,
-                            `${ROM[qn - 1]} квартал ${y}: ${num(qSum(y, qn))}${part ? ' (неполный, ' + qMonths(y, qn).length + ' мес.)' : ''}`, part);
+                        return qCell(qSum(y, qn), yColor(y), y,
+                            `${ROM[qn - 1]} квартал ${y}: ${num(qSum(y, qn))}${part ? ' (неполный, ' + qMonths(y, qn).length + ' мес.)' : ''}`,
+                            part, y === qNewY || y === qOldY);
                     }).join('');
                     cols += `<div style="min-width:0;">
                             <div style="display:flex; align-items:flex-end; justify-content:center; gap:6px; height:${BAR_H + 18}px;">${bars}</div>
                             <div style="text-align:center; font-size:12px; font-weight:700; color:var(--text-main); margin-top:6px;">${ROM[qn - 1]} квартал</div>
-                            <div style="text-align:center; font-size:11.5px; margin-top:2px;">${trend(pct)}<small style="color:var(--text-sec);"> к ${esc(String(Number(live[live.length - 1]) - 1))}</small></div>
+                            <div style="text-align:center; font-size:11.5px; margin-top:2px;">${trend(pct)}<small style="color:var(--text-sec);"> ${esc(qNewY)} к ${esc(qOldY)}</small></div>
                         </div>`;
                 }
                 // На телефоне сетка выпрямляется в одну колонку (общее правило
                 // админки), и четыре квартала встают друг под друга — тот же
                 // отступ работает уже как вертикальный, поэтому не ужимаем.
                 qBody = `<div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:18px; margin-top:12px;">${cols}</div>`;
-                qNote = 'Столбцы внутри квартала — годы. Процент под кварталом сравнивает свежий год с предыдущим по одним и тем же месяцам, так что сезон из него уже вычтен.';
+                qNote = `Столбцы внутри квартала — годы, выбранная пара выделена жирным. Процент под кварталом сравнивает ${esc(qNewY)} с ${esc(qOldY)} по одним и тем же месяцам, так что сезон из него уже вычтен.`;
             } else {
                 qLast.forEach(k => { qMax = Math.max(qMax, qSum(k.slice(0, 4), Number(k.slice(5)))); });
                 const bars = qLast.map(k => {
@@ -13245,10 +13285,19 @@ const app = {
 
             const qBtn = (m, label) => `<button class="admin-btn" style="height:26px; padding:0 9px; font-size:11.5px; ${qMode === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setDashQuarters('${m}')">${label}</button>`;
             const curGroupLabel = (GROUPS.find(([g]) => g === curGroup) || [null, ''])[1];
+            const ySel = (which, val) => `<select onchange="app.setDashQYear('${which}', this.value)"
+                    style="background:var(--surface); color:var(--text-main); border:1px solid var(--border); border-radius:8px;
+                           height:26px; padding:0 6px; font-size:11.5px; outline:none; cursor:pointer;">
+                    ${allYears.map(y => `<option value="${y}" ${y === val ? 'selected' : ''}>${y}</option>`).join('')}
+                </select>`;
+            const yPick = (qMode === 'yoy' && allYears.length > 2)
+                ? `<span style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; color:var(--text-sec);">
+                       сравнить ${ySel('new', qNewY)} с ${ySel('old', qOldY)}</span>`
+                : '';
 
             h += card(`<div style="display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap;">
-                        <div>${head('Кварталы за три года', `${esc(curGroupLabel)} · ${region ? esc(region) : 'вся Россия'}`)}</div>
-                        <div style="margin-left:auto; display:flex; gap:5px; flex-wrap:wrap;">${qBtn('yoy', 'год к году')}${qBtn('qoq', 'квартал к кварталу')}</div>
+                        <div>${head(qMode === 'yoy' ? 'Кварталы по годам' : 'Кварталы за три года', `${esc(curGroupLabel)} · ${region ? esc(region) : 'вся Россия'}`)}</div>
+                        <div style="margin-left:auto; display:flex; gap:5px; flex-wrap:wrap; align-items:center;">${yPick}${qBtn('yoy', 'год к году')}${qBtn('qoq', 'квартал к кварталу')}</div>
                     </div>
                     ${qBody}
                     <div style="font-size:11.5px; color:var(--text-sec); margin-top:10px;">${qNote}${anyPartial ? ' Штриховкой отмечен квартал, у которого закрыты не все три месяца.' : ''}</div>`,
@@ -13344,9 +13393,21 @@ const app = {
                 .forEach(u => { if (u.region) ourRegions.add(normRegion(u.region)); });
             regionList.forEach(r => ourRegions.add(normRegion(r)));
 
+            // У Wordstat нет отдельных Москвы и Подмосковья: есть один узел
+            // «Москва и область», и так же склеены Петербург с Ленинградской.
+            // По имени целиком такой узел не совпадёт ни с одним нашим
+            // регионом и уехал бы в белые пятна — то есть в список «нас там
+            // нет» попали бы два рынка, где мы как раз есть. Поэтому
+            // составное имя разбираем по «и» и проверяем каждую часть.
+            const isOurs = (name) => {
+                if (ourRegions.has(normRegion(name))) return true;
+                return String(name).split(/\s+и\s+/)
+                    .map(normRegion).filter(Boolean)
+                    .some(part => ourRegions.has(part));
+            };
             const white = Object.keys(allDemand[demandId])
                 .map(r => ({ name: r, val: Number(allDemand[demandId][r]) || 0 }))
-                .filter(x => x.val > 0 && !ourRegions.has(normRegion(x.name)))
+                .filter(x => x.val > 0 && !isOurs(x.name))
                 .sort((a, b) => b.val - a.val).slice(0, 10);
             const whiteMax = white.length ? white[0].val : 1;
 
@@ -13879,6 +13940,20 @@ const app = {
 
     setDashMonths: function (m) {
         this._dashMonths = Math.max(0, Math.min(36, Number(m) || 0));
+        this.renderAdminMain();
+    },
+
+    // Пара лет для режима «год к году». Если выбрали один и тот же год с обеих
+    // сторон — двигаем второй на соседний, сравнивать год с самим собой смысла нет.
+    setDashQYear: function (which, y) {
+        const v = String(y || '');
+        if (which === 'new') {
+            this._dashQYearNew = v;
+            if (this._dashQYearOld === v) this._dashQYearOld = String(Number(v) - 1);
+        } else {
+            this._dashQYearOld = v;
+            if (this._dashQYearNew === v) this._dashQYearNew = String(Number(v) + 1);
+        }
         this.renderAdminMain();
     },
 
