@@ -5813,18 +5813,27 @@ const app = {
         rejected: { label: 'Отклонен', color: '#EF4444' },
         invoice_reminder_sent: { label: 'Напоминание: выставить счёт?', color: '#F59E0B' },
         invoice_reminder_declined: { label: 'Монтажник отказался от счёта', color: '#94A3B8' },
-        // Техническая отметка, не статус — в колонки канбана не попадает, видна только в истории
+        paid: { label: 'Оплачено', color: '#059669' },
+        // Технические отметки, не статусы — в колонки канбана не попадают, видны только в истории
         offline_link: { label: 'Облако не ответило — длинная ссылка', color: '#94A3B8' },
+        opened: { label: 'Клиент открыл смету', color: '#0EA5E9' },
     },
     // Технические отметки: пишутся в ту же таблицу invoice_events, но воронкой не являются.
     // Карточка канбана живёт в колонке своего ПОСЛЕДНЕГО события, а событие, не входящее ни в
     // одну колонку, выкинуло бы карточку из канбана целиком — поэтому такие события при выборе
     // колонки пропускаем. В истории самой карточки они остаются.
-    ADMIN_KANBAN_TECH_EVENTS: ['offline_link'],
+    // «Клиент открыл смету» здесь именно техническая отметка, а не статус, хотя
+    // по смыслу это шаг воронки. Карточка канбана живёт в колонке своего
+    // ПОСЛЕДНЕГО статусного события, а ссылку клиент открывает когда угодно —
+    // в том числе после выставленного счёта. Будь это статусом, карточка
+    // прыгала бы из «В оплату» обратно «На согласование» при каждом открытии.
+    // В воронке дашборда шаг всё равно учитывается: она считает по INVOICE_FLOW,
+    // а не по колонкам канбана.
+    ADMIN_KANBAN_TECH_EVENTS: ['offline_link', 'opened'],
     ADMIN_KANBAN_STAGES: [
         { key: 'draft', label: 'Расчёты', color: '#60A5FA', events: ['calculated', 'saved'] },
         { key: 'review', label: 'На согласовании', color: '#818CF8', events: ['sent', 'printed', 'confirmed', 'needs_revision', 'invoice_reminder_sent', 'invoice_reminder_declined'] },
-        { key: 'payment', label: 'В оплату', color: '#F59E0B', events: ['invoice_requested', 'invoice_issued', 'rejected'] },
+        { key: 'payment', label: 'В оплату', color: '#F59E0B', events: ['invoice_requested', 'invoice_issued', 'rejected', 'paid'] },
     ],
 
     /**
@@ -6284,21 +6293,29 @@ const app = {
         const canManage = isSuperAdmin || isAssignedManager;
 
         let actionsHtml = '';
-        if (last.event === 'invoice_requested') {
+        // Оплату система не видит: платёжной интеграции нет, и единственный, кто
+        // знает о деньгах, — менеджер. Поэтому «Оплачено» — такая же ручная
+        // отметка, как «Счёт выставлен», и предлагается сразу после него.
+        const canPay = last.event === 'invoice_issued';
+        if (last.event === 'invoice_requested' || canPay) {
             if (canManage) {
+                const buttons = canPay
+                    ? `<button class="auth-btn-base btn-header-blue" style="margin:0; background:#059669; color:#fff; border:none; height:34px; padding:0 16px; width:auto;" onclick="app.setInvoiceStatus('${calcId}', 'paid')">💰 Оплачено</button>`
+                    : `<button class="auth-btn-base btn-header-blue" style="margin:0; background:#10B981; color:#fff; border:none; height:34px; padding:0 16px; width:auto;" onclick="app.setInvoiceStatus('${calcId}', 'invoice_issued')">✓ Счёт выставлен</button>
+                       <button class="auth-btn-base" style="margin:0; background:#EF4444; color:#fff; border:none; height:34px; padding:0 16px; width:auto;" onclick="app.setInvoiceStatus('${calcId}', 'rejected')">✕ Отклонить запрос</button>`;
                 actionsHtml = `
                     <div style="background: var(--surface-light); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; text-align: left;">
                         <h4 style="margin-top:0; margin-bottom:12px; color:var(--text-main); font-size:14px;">🛠 Действия менеджера</h4>
-                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                            <button class="auth-btn-base btn-header-blue" style="margin:0; background:#10B981; color:#fff; border:none; height:34px; padding:0 16px; width:auto;" onclick="app.setInvoiceStatus('${calcId}', 'invoice_issued')">✓ Счёт выставлен</button>
-                            <button class="auth-btn-base" style="margin:0; background:#EF4444; color:#fff; border:none; height:34px; padding:0 16px; width:auto;" onclick="app.setInvoiceStatus('${calcId}', 'rejected')">✕ Отклонить запрос</button>
-                        </div>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap;">${buttons}</div>
+                        ${canPay ? `<div style="font-size:12px; color:var(--text-sec); margin-top:10px;">
+                            Отметка об оплате ставится руками — по ней дашборд считает деньги, а не предложения.
+                        </div>` : ''}
                     </div>
                 `;
             } else {
                 actionsHtml = `
                     <div style="background: var(--surface-light); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; text-align: left; font-size: 13px; color: var(--text-sec);">
-                        🔒 Менять статус (выставить счёт / отклонить) может только менеджер, закрепленный за данным монтажником (${distributorLabel}).
+                        🔒 Менять статус (${canPay ? 'отметить оплату' : 'выставить счёт / отклонить'}) может только менеджер, закрепленный за данным монтажником (${distributorLabel}).
                     </div>
                 `;
             }
@@ -6368,6 +6385,11 @@ const app = {
                 const promptVal = await app.prompt("Введите комментарий к статусу (необязательно, например номер счета):", "", "Счёт выставлен");
                 if (promptVal === null) return; // cancel clicked
                 commentText = promptVal.trim();
+            } else if (status === 'paid') {
+                if (!await app.confirm("Отметить смету как оплаченную?", "Подтверждение")) return;
+                const promptVal = await app.prompt("Комментарий (необязательно): дата платежа, сумма, номер поручения.", "", "Оплачено");
+                if (promptVal === null) return; // cancel clicked
+                commentText = promptVal.trim();
             } else if (status === 'rejected') {
                 const promptVal = await app.prompt("Укажите причину отклонения запроса (обязательно):", "", "Отклонить запрос");
                 if (promptVal === null) return; // cancel clicked
@@ -6391,7 +6413,8 @@ const app = {
 
             if (error) throw error;
 
-            app.alert(status === 'invoice_issued' ? "✅ Статус изменен: Счёт выставлен" : "❌ Статус изменен: Отклонен");
+            app.alert(status === 'invoice_issued' ? "✅ Статус изменен: Счёт выставлен"
+                : (status === 'paid' ? "💰 Статус изменен: Оплачено" : "❌ Статус изменен: Отклонен"));
 
             // Перезагружаем данные канбана и карточки
             this._kanbanEvents = null; // сбросить кэш, чтобы загрузить свежие данные
@@ -8021,7 +8044,9 @@ const app = {
     // общий билдер, чтобы два места не разъезжались.
     // События, после которых смета считается «заказом»: она ушла клиенту или по ней
     // запрошен счёт. Черновики (calculated/saved) сюда не попадают — они в «Мои объекты».
-    ORDER_EVENT_KEYS: ['sent', 'printed', 'invoice_requested', 'confirmed', 'needs_revision', 'invoice_issued', 'rejected', 'invoice_reminder_sent', 'invoice_reminder_declined'],
+    // «Клиент открыл» сюда намеренно не входит: монтажник открывает свою же
+    // ссылку, чтобы проверить смету, и черновик уезжал бы в заказы сам собой.
+    ORDER_EVENT_KEYS: ['sent', 'printed', 'invoice_requested', 'confirmed', 'needs_revision', 'invoice_issued', 'rejected', 'invoice_reminder_sent', 'invoice_reminder_declined', 'paid'],
 
     renderOrdersTab: async function () {
         const container = document.getElementById('profile_tab_orders');
@@ -15607,9 +15632,15 @@ const app = {
     INVOICE_FLOW: [
         { key: 'draft', label: 'расчёт сохранён', events: ['calculated', 'saved'] },
         { key: 'sent', label: 'отправлена клиенту', events: ['sent', 'printed'] },
+        // Открытие ссылки — единственный шаг, который видно и тогда, когда
+        // смету переслали мимо кнопки «Отправить»: в WhatsApp, Telegram или
+        // голосом. Без него «отправлена клиенту» недосчитывала реальные
+        // отправки, а срок согласования было не из чего считать.
+        { key: 'opened', label: 'клиент открыл', events: ['opened'] },
         { key: 'confirmed', label: 'клиент одобрил', events: ['confirmed'] },
         { key: 'requested', label: 'запрошен счёт', events: ['invoice_requested'] },
-        { key: 'issued', label: 'счёт выставлен', events: ['invoice_issued'], manual: true }
+        { key: 'issued', label: 'счёт выставлен', events: ['invoice_issued'], manual: true },
+        { key: 'paid', label: 'оплачено', events: ['paid'], manual: true }
     ],
 
     DASH_FUNNEL_COHORT_DAYS: 90,
@@ -15714,9 +15745,11 @@ const app = {
             return { days: median(vals), n: vals.length };
         };
         const speeds = [
+            { label: 'отправлено → клиент открыл', v: span(['sent', 'printed'], ['opened']) },
             { label: 'отправлено → одобрено', v: span(['sent', 'printed'], ['confirmed']) },
             { label: 'одобрено → запрошен счёт', v: span(['confirmed'], ['invoice_requested']) },
-            { label: 'запрошен счёт → выставлен', v: span(['invoice_requested'], ['invoice_issued']) }
+            { label: 'запрошен счёт → выставлен', v: span(['invoice_requested'], ['invoice_issued']) },
+            { label: 'выставлен → оплачено', v: span(['invoice_issued'], ['paid']) }
         ];
 
         const issuedIn = (fromDays, toDays) => list.filter(c => {

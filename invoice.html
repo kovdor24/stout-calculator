@@ -3053,6 +3053,7 @@
                         preloader.style.visibility = 'hidden';
                     }, 300);
                     maybeAutoPrint(urlParams);
+                    logInvoiceOpened();
                     return;
                 } catch (decodeErr) {
                     console.error('[LoadSharedInvoice] Local payload decode error:', decodeErr);
@@ -3118,6 +3119,7 @@
                     preloader.style.visibility = 'hidden';
                 }, 300);
                 maybeAutoPrint(urlParams);
+                logInvoiceOpened();
 
             } catch (err) {
                 console.error('[LoadSharedInvoice] Error:', err);
@@ -3591,6 +3593,43 @@
                 if (error) console.error('[logInvoiceEventDirect] Ошибка записи:', error);
             } catch (e) {
                 console.error('[logInvoiceEventDirect] Исключение:', e);
+            }
+        }
+
+        // Отметка «клиент открыл смету».
+        //
+        // Зачем: до сих пор единственным следом отправки была кнопка «Отправить»
+        // в калькуляторе, а ссылку чаще пересылают руками — в WhatsApp, Telegram
+        // или голосом. Монтажник не знал, смотрели смету вообще или нет, и
+        // отличить «не открывал» от «открыл и молчит» было нельзя.
+        //
+        // Кого не считаем:
+        //  · печать из админки (?print=1) — это не клиент, а мы сами;
+        //  · просмотр менеджером (?manager / ?view=manager) — тоже не клиент;
+        //  · повторные заходы с этого же устройства — иначе каждое обновление
+        //    страницы писало бы новую строку, а в истории карточки была бы каша.
+        //    Метка живёт в localStorage, поэтому открытие с другого устройства
+        //    отметится снова — это и правда другое открытие.
+        //
+        // Чего эта отметка НЕ различает: смету открыл заказчик или сам
+        // монтажник, проверяя ссылку. Разделить их нечем — страницу отдают без
+        // входа в аккаунт. Поэтому в канбане это техническая отметка, а не
+        // статус: карточку она не двигает.
+        function logInvoiceOpened() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('print') === '1') return;
+                if (params.has('manager') || params.get('view') === 'manager') return;
+                const calcId = invoiceData?.object_info?.sequence_id;
+                if (!calcId) return;
+                const key = 'invoice_opened_' + calcId;
+                if (localStorage.getItem(key)) return;
+                localStorage.setItem(key, String(Date.now()));
+                logInvoiceEventDirect('opened');
+            } catch (e) {
+                // Приватный режим блокирует localStorage — отметка не критична,
+                // страница клиента из-за неё падать не должна.
+                console.warn('[logInvoiceOpened] пропущено:', e && e.message);
             }
         }
 
