@@ -2536,6 +2536,11 @@
         let invoiceId;
         let invoiceData;
 
+        // Предпросмотр из админки (?preview=1): смету открыл сотрудник, а не клиент. Смотреть
+        // и печатать можно всё, а согласование запрещено — иначе клик сотрудника записал бы
+        // клиенту статус в shared_invoices и событие в канбан от его имени.
+        const IS_PREVIEW = new URLSearchParams(window.location.search).get('preview') === '1';
+
         // Human-readable explanations for "What is this for?" tooltips
         const itemExplanations = {
             // Котлы и дымоходы
@@ -3558,6 +3563,15 @@
                     if (btnGetInvoice) btnGetInvoice.style.display = 'none';
                 }
             }
+
+            // Прячем в самом конце: ветка "статус ещё не выставлен" выше сама возвращает
+            // кнопки согласования на место, и проверка в начале функции ничего бы не дала.
+            if (IS_PREVIEW) {
+                if (confirmBtn) confirmBtn.style.display = 'none';
+                if (reviseBtn) reviseBtn.style.display = 'none';
+                if (getInvoiceContainer) getInvoiceContainer.style.display = 'none';
+                if (btnGetInvoice) btnGetInvoice.style.display = 'none';
+            }
         }
 
         // Пишет событие в историю статусов (invoice_events) напрямую из браузера клиента,
@@ -3581,6 +3595,10 @@
         }
 
         async function updateInvoiceStatus(status, comment = null) {
+            if (IS_PREVIEW) {
+                alert('Это предпросмотр сметы. Согласовать её может только клиент по своей ссылке.');
+                return;
+            }
             if (!invoiceId || !supabaseClient || !invoiceData) {
                 alert("Ошибка: данные сметы не загружены.");
                 return;
@@ -3817,6 +3835,11 @@
         async function requestInvoice() {
             const btnFloat = document.getElementById('btn_get_invoice');
             const btnClient = document.querySelector('.btn-get-invoice-client');
+
+            if (IS_PREVIEW) {
+                alert('Это предпросмотр сметы. Счёт по ней запрашивает клиент со своей ссылки.');
+                return;
+            }
 
             if (!invoiceId || !supabaseClient || !invoiceData) {
                 alert("Ошибка: данные сметы не загружены.");
