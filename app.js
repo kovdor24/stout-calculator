@@ -13194,7 +13194,10 @@ const app = {
                             <div style="text-align:center; font-size:11.5px; margin-top:2px;">${trend(pct)}<small style="color:var(--text-sec);"> к ${esc(String(Number(live[live.length - 1]) - 1))}</small></div>
                         </div>`;
                 }
-                qBody = `<div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:${mobile ? 8 : 18}px; margin-top:12px;">${cols}</div>`;
+                // На телефоне сетка выпрямляется в одну колонку (общее правило
+                // админки), и четыре квартала встают друг под друга — тот же
+                // отступ работает уже как вертикальный, поэтому не ужимаем.
+                qBody = `<div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:18px; margin-top:12px;">${cols}</div>`;
                 qNote = 'Столбцы внутри квартала — годы. Процент под кварталом сравнивает свежий год с предыдущим по одним и тем же месяцам, так что сезон из него уже вычтен.';
             } else {
                 qLast.forEach(k => { qMax = Math.max(qMax, qSum(k.slice(0, 4), Number(k.slice(5)))); });
@@ -13207,17 +13210,36 @@ const app = {
                     const prevK = idx > 0 ? qKeys[idx - 1] : null;
                     const prevV = prevK ? qSum(prevK.slice(0, 4), Number(prevK.slice(5))) : 0;
                     const pct = prevV ? Math.round((val - prevV) / prevV * 100) : null;
+                    const color = Y_COLORS[Math.max(0, yrs.indexOf(y) + Y_COLORS.length - yrs.length)] || Y_COLORS[2];
+                    const hint = `${ROM[qn - 1]} квартал ${y}: ${num(val)}${part ? ' (неполный, ' + qMonths(y, qn).length + ' мес.)' : ''}`;
+                    // На телефоне двенадцать столбиков не помещаются: на колонку
+                    // остаётся 24 пикселя, а подпись под ней шире сорока — числа
+                    // налезали друг на друга. Кладём те же кварталы строками,
+                    // как соседний блок регионов.
+                    if (mobile) {
+                        return `<div style="display:flex; align-items:center; gap:8px; margin-bottom:7px;" title="${hint}">
+                                <div style="width:46px; flex:0 0 auto; font-size:11.5px; color:var(--text-sec);">${ROM[qn - 1]}·${y.slice(2)}</div>
+                                <div style="flex:1 1 auto; min-width:0; height:9px; background:rgba(127,127,127,.18); border-radius:999px;">
+                                    <div style="width:${Math.max(2, Math.round(val / qMax * 100))}%; height:9px; border-radius:999px;
+                                                background:${color}; opacity:${part ? 0.55 : 1}; ${part ? 'border:1px dashed var(--border);' : ''}"></div>
+                                </div>
+                                <div style="width:54px; flex:0 0 auto; text-align:right; font-size:12px; font-weight:700; color:var(--text-main);">${num(val)}</div>
+                                <div style="width:50px; flex:0 0 auto; text-align:right; font-size:11px;">${trend(pct)}</div>
+                            </div>`;
+                    }
                     return `<div style="flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;"
-                                 title="${ROM[qn - 1]} квартал ${y}: ${num(val)}${part ? ' (неполный, ' + qMonths(y, qn).length + ' мес.)' : ''}">
+                                 title="${hint}">
                             <div style="font-size:10.5px; color:var(--text-sec); margin-bottom:3px; white-space:nowrap;">${num(val)}</div>
                             <div style="width:100%; max-width:40px; height:${Math.max(2, Math.round(val / qMax * BAR_H))}px; border-radius:5px 5px 0 0;
-                                        background:${Y_COLORS[Math.max(0, yrs.indexOf(y) + Y_COLORS.length - yrs.length)] || Y_COLORS[2]};
+                                        background:${color};
                                         opacity:${part ? 0.55 : 1}; ${part ? 'border:1px dashed var(--border); border-bottom:none;' : ''}"></div>
                             <div style="font-size:10.5px; color:var(--text-sec); margin-top:4px; white-space:nowrap;">${ROM[qn - 1]}·${y.slice(2)}</div>
                             <div style="font-size:10.5px; margin-top:1px; white-space:nowrap;">${trend(pct)}</div>
                         </div>`;
                 }).join('');
-                qBody = `<div style="display:flex; align-items:flex-end; gap:${mobile ? 3 : 7}px; height:${BAR_H + 60}px; margin-top:12px;">${bars}</div>`;
+                qBody = mobile
+                    ? `<div style="margin-top:12px;">${bars}</div>`
+                    : `<div style="display:flex; align-items:flex-end; gap:7px; height:${BAR_H + 60}px; margin-top:12px;">${bars}</div>`;
                 qNote = 'Кварталы подряд, процент — к предыдущему. Здесь виден сезон: у монтажа он всегда падает к первому кварталу, и это не спад спроса.';
             }
 
