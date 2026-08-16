@@ -13099,6 +13099,48 @@ const app = {
             .filter(s => s.points.length > 0)
             .sort((a, b) => (b.points[b.points.length - 1][1] || 0) - (a.points[a.points.length - 1][1] || 0))
             .slice(0, 6);
+        // ── Изменение спроса за периоды ─────────────────────────────────────
+        // По линиям видно форму, но не величину: «выросло или упало и на
+        // сколько» приходилось считать глазами по точкам. Полоса под графиком
+        // отвечает на это числом — по группе целиком (сумма её запросов), а не
+        // по отдельной фразе, иначе цифру не к чему отнести.
+        const groupPts = groupSeries(curGroup).points;
+        const pctFmt = (v) => (v > 0 ? '+' : '') + v.toFixed(2).replace('.', ',') + '%';
+        const pctBack = (back) => {
+            if (groupPts.length <= back) return null;
+            const last = groupPts[groupPts.length - 1], base = groupPts[groupPts.length - 1 - back];
+            if (!base || !base[1]) return null;
+            return { pct: (last[1] - base[1]) / base[1] * 100, from: base[0], to: last[0] };
+        };
+        const PERIODS = [[1, '1 месяц'], [3, '3 месяца'], [6, '6 месяцев'], [12, '1 год'],
+                         [36, '3 года'], [60, '5 лет'], [groupPts.length - 1, 'Макс.']];
+        const strip = PERIODS
+            .map(([back, label]) => ({ label, d: pctBack(back) }))
+            .filter(x => x.d)
+            // «Макс.» совпал бы с «5 лет», если истории ровно столько
+            .filter((x, i, arr) => i === 0 || !arr.slice(0, i).some(y => y.d.from === x.d.from));
+        const demandStrip = strip.length
+            ? `<div style="display:flex; flex-wrap:wrap; border:1px solid var(--border); border-radius:10px;
+                        overflow:hidden; margin-top:10px;">
+                ${strip.map((x, i) => `
+                    <div title="${esc(x.d.from)} → ${esc(x.d.to)}"
+                         style="flex:1 1 88px; text-align:center; padding:8px 6px;
+                                ${i ? 'border-left:1px solid var(--border);' : ''}">
+                        <div style="font-size:11.5px; color:var(--text-sec); white-space:nowrap;">${x.label}</div>
+                        <div style="font-size:13px; font-weight:800; white-space:nowrap;
+                                    color:${x.d.pct > 0 ? '#10B981' : (x.d.pct < 0 ? '#EF4444' : 'var(--text-sec)')};">${pctFmt(x.d.pct)}</div>
+                    </div>`).join('')}
+               </div>`
+            : '';
+
+        // Изменение за то окно, которое сейчас на графике: начало → конец.
+        const visible = groupPts.slice(mns > 0 ? -mns : 0);
+        const spanPct = (visible.length > 1 && visible[0][1])
+            ? (visible[visible.length - 1][1] - visible[0][1]) / visible[0][1] * 100 : null;
+        const spanNote = visible.length > 1
+            ? `${visible[0][0]} → ${visible[visible.length - 1][0]}` + (spanPct === null ? '' : ` · ${pctFmt(spanPct)}`)
+            : '';
+
         const gBtn = (g, label) => `<button class="admin-btn" style="height:26px; padding:0 9px; font-size:11.5px; ${curGroup === g ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsGroup('${g}')">${label}</button>`;
         const monthsLabel = (m) => this.dashMonthsLabel(m);
 
@@ -13114,7 +13156,7 @@ const app = {
 
         h += `<div style="display:grid; ${gWide} gap:14px; margin-bottom:14px;">
             ${card(`<div style="display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
-                        <div>${head('Спрос по месяцам', region ? esc(region) : 'вся Россия')}</div>
+                        <div>${head('Спрос по месяцам', (region ? esc(region) : 'вся Россия') + (spanNote ? ' · ' + spanNote : ''))}</div>
                         <div style="margin-left:auto; display:flex; gap:5px; flex-wrap:wrap;">${GROUPS.map(([g, l]) => gBtn(g, l)).join('')}</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
@@ -13127,7 +13169,8 @@ const app = {
                     </div>
                     ${chartSeries.length
                         ? this.buildAnalyticsLineChart(chartSeries, 'dash')
-                        : `<div style="font-size:12.5px; color:var(--text-sec); padding:20px 0;">По этой группе${region ? ` в регионе «${esc(region)}»` : ''} истории пока нет.</div>`}`)}
+                        : `<div style="font-size:12.5px; color:var(--text-sec); padding:20px 0;">По этой группе${region ? ` в регионе «${esc(region)}»` : ''} истории пока нет.</div>`}
+                    ${demandStrip}`)}
             ${card(head('🔥 Догазификация', gasRows.length
                     ? `программа ${esc((gas && gas.program) || '')} · ${num(gasTotal)} домовладений`
                     : 'данных пока нет')
@@ -13201,9 +13244,13 @@ const app = {
             let qOldY = pickY(this._dashQYearOld, allYears[allYears.length - 2] || allYears[0] || '');
             if (qOldY === qNewY) qOldY = allYears[allYears.indexOf(qNewY) - 1] || qNewY;
 
-            const yrsShown = yrs.slice();
-            [qOldY, qNewY].forEach(y => { if (y && yrsShown.indexOf(y) < 0) yrsShown.push(y); });
-            yrsShown.sort();
+            // «Год к году» показывает ровно выбранную пару лет. Раньше рядом
+            // стояли ещё и три последних года «для контекста»: подпись гласила
+            // «2026 к 2025», а в квартале торчал столбец 2024-го, и глаз каждый
+            // раз спотыкался — какие два числа, собственно, сравниваются.
+            // История никуда не делась: она видна в режиме «квартал к кварталу»
+            // и выбирается парой лет в заголовке.
+            const yrsShown = Array.from(new Set([qOldY, qNewY].filter(Boolean))).sort();
             // Лестница оттенков от старого года к свежему: годов может быть и
             // три, и пять, поэтому цвет берём не по индексу, а по доле.
             const RAMP = ['#CBD5E1', '#93C5FD', '#60A5FA', '#3B82F6', '#2563EB'];
