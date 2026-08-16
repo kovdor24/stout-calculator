@@ -14662,26 +14662,36 @@ const app = {
                 own.estSeries.forEach(p => { estMap[p[0]] = p[1]; });
                 const pairs = dem.points.filter(p => estMap[p[0]] !== undefined)
                     .map(p => [p[0], p[1], estMap[p[0]]]);
-                // Связь считаем по Пирсону на общих месяцах. Это грубая мера, и
-                // подписываем её словами, а не числом: «0,62» читатель всё равно
-                // переведёт в «связь заметная», только с лишним шагом.
-                let r = null;
-                if (pairs.length >= 6) {
-                    const n = pairs.length;
-                    const ax = pairs.reduce((a, p) => a + p[1], 0) / n;
-                    const ay = pairs.reduce((a, p) => a + p[2], 0) / n;
-                    let sxy = 0, sxx = 0, syy = 0;
-                    pairs.forEach(p => {
-                        const dx = p[1] - ax, dy = p[2] - ay;
-                        sxy += dx * dy; sxx += dx * dx; syy += dy * dy;
-                    });
-                    if (sxx > 0 && syy > 0) r = sxy / Math.sqrt(sxx * syy);
-                }
-                const word = r === null ? 'общих месяцев пока мало — связь считать не из чего'
-                    : (r > 0.6 ? 'кривые идут вместе: спрос работает как опережающий признак'
-                    : (r > 0.3 ? 'связь слабая: спрос объясняет лишь часть наших смет'
-                    : (r < -0.3 ? 'кривые расходятся: наши сметы живут своей жизнью'
-                    : 'связи не видно: рост рынка до нас не доходит')));
+                // Раньше связь считалась по Пирсону и подписывалась словами.
+                // Мера оказалась пустой: обе кривые сезонные — и спрос, и наши
+                // сметы падают к весне и растут к осени, — поэтому корреляция
+                // почти всегда выходила «заметной». Блок мерил зиму, а не то,
+                // доходит ли рост рынка до нас.
+                //
+                // Считаем проникновение: сколько смет приходится на тысячу
+                // запросов. Сезон в нём сокращается сам — он есть и в
+                // числителе, и в знаменателе, — и остаётся ровно тот вопрос,
+                // ради которого блок и нужен: забираем ли мы больше спроса,
+                // чем раньше.
+                const penOf = (p) => p[1] > 0 ? p[2] / p[1] * 1000 : null;
+                const avgPen = (arr) => {
+                    const v = arr.map(penOf).filter(x => x !== null);
+                    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+                };
+                // Сравниваем среднее за три последних месяца с тем же кварталом
+                // год назад: год назад — потому что даже у проникновения
+                // остаётся своя сезонность (зимой считают охотнее, чем ищут).
+                // Не хватает истории на год — берём начало ряда.
+                const penNow = avgPen(pairs.slice(-3));
+                const yearAgo = pairs.length >= 15 ? pairs.slice(-15, -12) : pairs.slice(0, 3);
+                const penBase = avgPen(yearAgo);
+                const penPct = (penNow !== null && penBase) ? Math.round((penNow - penBase) / penBase * 100) : null;
+                const word = penNow === null ? 'общих месяцев пока мало — считать не из чего'
+                    : (penPct === null ? 'сравнивать пока не с чем'
+                    : (penPct > 10 ? 'мы забираем больше спроса, чем раньше'
+                    : (penPct < -10 ? 'рынок растёт быстрее нас: до смет доходит меньшая доля спроса'
+                    : 'идём вровень с рынком: доля дошедшего спроса держится')));
+                const penFmt = (v) => v === null ? '—' : (v >= 10 ? Math.round(v) : v.toFixed(1).replace('.', ','));
                 const cmpSeries = [
                     { name: 'Поисковый спрос на монтаж', points: pairs.map(p => [p[0], p[1]]) },
                     { name: 'Наши сметы', points: pairs.map(p => [p[0], p[2]]) }
@@ -14695,13 +14705,23 @@ const app = {
                 const estGrow = grow(first[2], last[2]);
                 B.est_vs_demand = card(head('Наши сметы против спроса', `${region ? esc(region) : 'вся Россия'} · ${pairs.length} общих месяцев · ${word}`)
                     + `<div style="margin-top:10px;">${this.buildAnalyticsLineChart(cmpSeries, 'dashvs', true)}</div>
+                       <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:baseline; margin-top:10px;">
+                          <div>
+                            <span style="font-size:22px; font-weight:800; color:var(--text-main);">${penFmt(penNow)}</span>
+                            <span style="font-size:12px; color:var(--text-sec);"> смет на 1000 запросов</span>
+                          </div>
+                          <div style="font-size:12px; color:var(--text-sec);">
+                            ${penBase === null ? '' : `было ${penFmt(penBase)} (${esc(yearAgo[0] ? yearAgo[0][0] : '')}) · ${trend(penPct)}`}
+                          </div>
+                       </div>
                        <div style="font-size:12px; color:var(--text-sec); margin-top:8px; display:flex; gap:14px; flex-wrap:wrap;">
                           <span>С ${esc(first[0])} по ${esc(last[0])}:</span>
                           <span>спрос ${trend(demGrow)}</span>
                           <span>наши сметы ${trend(estGrow)}</span>
                        </div>
-                       <div style="font-size:11.5px; color:var(--text-sec); margin-top:4px;">
-                          У каждой линии своя шкала — сравнивается форма, а не величина; точные числа показывает подсказка при наведении.
+                       <div style="font-size:11.5px; color:var(--text-sec); margin-top:6px; line-height:1.55;">
+                          У линий своя шкала — сравнивается форма, а не величина; числа показывает подсказка при наведении.
+                          Проникновение считается по трём последним месяцам против того же квартала годом раньше: сезон есть и в спросе, и в сметах, и в этом отношении он сокращается сам.
                        </div>`);
             }
 
