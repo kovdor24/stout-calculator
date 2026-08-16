@@ -15032,6 +15032,9 @@ const app = {
         // своих: без ownReady считать её не из чего.
         const evReady = this.ensureDashboardEvents();
         const inv = (evReady && ownReady) ? this.dashboardInvoiceFunnel(region) : null;
+        // История тарифа — своя таблица и свой запрос: её может не быть вовсе,
+        // и ждать её ради остальных чисел незачем.
+        this.ensureTariffEvents();
         // Короткие рубли для своих сумм. У дистрибьюторов ниже свой формат:
         // там миллиарды выручки из отчётности, здесь — сотни тысяч по счёту.
         const moneyShort = (rub) => {
@@ -15184,6 +15187,41 @@ const app = {
                         <b>${num(P[x[0]])}</b> ${x[1]}
                     </div>`).join('')
                 + `</div>`
+                + (() => {
+                    // Движение за 30 дней. Строка появляется только когда
+                    // история действительно ведётся: до миграции честнее
+                    // сказать, что её нет, чем показать нули.
+                    const H = P.history || {};
+                    if (H.missing) {
+                        return `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.55;">
+                            Продления не считаются: история тарифа не ведётся. Появится после выполнения миграции
+                            <b>20260816_add_tariff_history.sql</b> — с этого дня и начнёт копиться.
+                           </div>`;
+                    }
+                    if (H.error) {
+                        return `<div style="font-size:11.5px; color:#EF4444; margin-top:10px;">История тарифа не прочиталась: ${esc(H.error)}</div>`;
+                    }
+                    if (!H.has) return '';
+                    const moves = [
+                        ['extended', 'продлили', '#10B981'],
+                        ['converted', 'впервые оплатили', '#10B981'],
+                        ['granted', 'выдали Профи', 'var(--text-main)'],
+                        ['returned', 'вернулись', '#10B981'],
+                        ['revoked', 'сняли', '#EF4444']
+                    ].filter(m => H[m[0]] > 0);
+                    const sinceStr = H.since ? new Date(H.since).toLocaleDateString('ru-RU') : null;
+                    if (!moves.length) {
+                        return `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.55;">
+                            За 30 дней тариф никому не меняли${sinceStr ? `. История ведётся с ${esc(sinceStr)}` : ''}.
+                           </div>`;
+                    }
+                    return `<div style="font-size:12px; color:var(--text-main); margin-top:12px; display:flex; gap:12px; flex-wrap:wrap;">
+                            ${moves.map(m => `<span><b style="color:${m[2]};">${num(H[m[0]])}</b> ${m[1]}</span>`).join('')}
+                        </div>
+                        <div style="font-size:11.5px; color:var(--text-sec); margin-top:6px;">
+                            За 30 дней${sinceStr ? ` · история ведётся с ${esc(sinceStr)}` : ''}.
+                        </div>`;
+                })()
                 + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.55;">
                     ${P.forever ? `Из них ${num(P.forever)} бессрочных. ` : ''}Платит ${P.active ? Math.round(P.paid / P.active * 100) : 0}% тех, у кого Профи.
                     Промокод даёт дистрибьютор, пробный кончается сам — деньги приносит только первая доля.
@@ -16249,6 +16287,16 @@ const app = {
                         own.pro.lapsed.length ? `истёк и не вернулся у <b style="color:#EF4444;">${own.pro.lapsed.length}</b>` : ''
                     ].filter(Boolean).join(', ') + ` <small style="color:var(--text-sec);">блок «Профи: сроки и отток»</small>` });
             }
+            // Продления — единственная строка сводки про живые деньги, поэтому
+            // показываем её, даже когда движения нет: ноль продлений за месяц
+            // при истекающих подписках — сам по себе сигнал.
+            const PH = own.pro.history || {};
+            if (PH.has) {
+                const paidMoves = (PH.extended || 0) + (PH.converted || 0) + (PH.returned || 0);
+                digest.push({ tone: paidMoves ? 'up' : (own.pro.expiring.length ? 'down' : 'flat'),
+                    html: `Профи за 30 дней: продлили <b>${num(PH.extended || 0)}</b>, впервые оплатили <b>${num(PH.converted || 0)}</b>`
+                        + (PH.revoked ? `, сняли <b style="color:#EF4444;">${num(PH.revoked)}</b>` : '') });
+            }
             if (inv && !inv.error) {
                 const f0 = inv.funnel[0].n;
                 const fAuto = inv.funnel[inv.autoLast || 0];
@@ -16416,6 +16464,47 @@ const app = {
             this._dashOwn = res;
             this._dashStats = null;
             this._loadingDashOwn = false;
+            if (this._adminTab === 'dashboard') this.renderAdminMain();
+        })();
+        return false;
+    },
+
+    /**
+     * История тарифа: продления, первые оплаты, возвраты и снятия.
+     *
+     * Пишет её триггер в базе (миграция 20260816_add_tariff_history.sql), а не
+     * приложение: тариф меняют и в карточке монтажника, и активацией демо, и
+     * руками в Supabase Studio — из браузера последнее не увидеть.
+     *
+     * Таблицы может не быть: миграции здесь накатываются вручную. Это не
+     * ошибка, а «ещё не сделано» — блок Профи в таком случае говорит, что
+     * история не ведётся, и не показывает ноль как факт.
+     */
+    TARIFF_DAYS: 400,
+
+    ensureTariffEvents: function () {
+        if (this._tariffEv) return true;
+        if (this._loadingTariffEv) return false;
+        if (typeof supabaseClient === 'undefined' || !supabaseClient) return false;
+        this._loadingTariffEv = true;
+        (async () => {
+            const out = { rows: [], missing: false, error: null };
+            try {
+                const since = new Date(Date.now() - this.TARIFF_DAYS * 86400000).toISOString();
+                const res = await this.fetchAllRows('tariff_events',
+                    'user_id, changed_at, kind, source, paid, was_until, now_until',
+                    { order: 'changed_at', build: (qy) => qy.gte('changed_at', since) });
+                out.rows = res.rows;
+            } catch (e) {
+                const msg = (e && e.message) || String(e);
+                // Нет таблицы — миграцию ещё не выполняли. Отличаем от отказа
+                // в правах: сообщения разные, и делать с ними надо разное.
+                if (/does not exist|not find the table|schema cache/i.test(msg)) out.missing = true;
+                else out.error = msg;
+            }
+            this._tariffEv = out;
+            this._dashStats = null;
+            this._loadingTariffEv = false;
             if (this._adminTab === 'dashboard') this.renderAdminMain();
         })();
         return false;
@@ -17003,6 +17092,41 @@ const app = {
         });
         pro.expiring.sort((a, b) => a.days - b.days);
         pro.lapsed.sort((a, b) => b.days - a.days);
+
+        // ── Движение тарифа: продления, первые оплаты, возвраты ─────────────
+        //
+        // Считается по истории (tariff_events), которую ведёт триггер в базе.
+        // Пока миграцию не выполнили, таблицы нет — и это не ноль, а «не
+        // ведётся»: блок скажет об этом словами, а не покажет прочерк как
+        // факт.
+        //
+        // Регион у события тарифа свой не хранится — берём от монтажника, как
+        // и везде в своих числах.
+        const tev = this._tariffEv;
+        pro.history = { has: false, missing: false, error: null, since: null,
+            extended: 0, converted: 0, granted: 0, returned: 0, revoked: 0 };
+        if (tev) {
+            pro.history.missing = !!tev.missing;
+            pro.history.error = tev.error || null;
+            if (!tev.missing && !tev.error) {
+                const mine = {};
+                myUsers.forEach(u => { mine[String(u.id)] = 1; });
+                let earliest = null;
+                (tev.rows || []).forEach(r => {
+                    const t = time(r.changed_at);
+                    if (!t) return;
+                    if (earliest === null || t < earliest) earliest = t;
+                    if (region && !mine[String(r.user_id)]) return;
+                    if (t < now - 30 * DAY) return;
+                    if (pro.history[r.kind] !== undefined) pro.history[r.kind]++;
+                });
+                // «Есть история» — это не «есть строки»: таблица могла быть
+                // создана вчера и быть пустой, и тогда честнее сказать, с
+                // какого дня мы вообще смотрим.
+                pro.history.has = true;
+                pro.history.since = earliest;
+            }
+        }
         const perUser = {}, lastEst = {};
         ests.forEach(e => {
             const k = String(e.user_id);
