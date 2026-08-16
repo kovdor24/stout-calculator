@@ -1,0 +1,44 @@
+name: Price Index History
+
+# История цен прайса для дашборда админки: раз в месяц берём price_index.php
+# и считаем, на сколько изменились цены по одним и тем же артикулам
+# (см. AutoPriceIndex.py). Сам прайс на Beget пересобирается отдельно и
+# старую версию затирает — если не копить снимки, истории не будет вовсе.
+#
+# 20-е число: к этому дню месячная пересборка прайса на Beget уже прошла.
+# Секретов не нужно — price_index.php открыт, его качает и сам калькулятор.
+on:
+  schedule:
+    - cron: '0 6 20 * *'
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      # Зависимостей нет: скрипт ходит за прайсом через urllib.
+      - name: Collect price index
+        run: python AutoPriceIndex.py
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add analytics
+          if git diff --staged --quiet; then
+            echo "Цены не изменились."
+          else
+            git commit -m "Автообновление истории цен"
+            for i in {1..5}; do
+              git pull --rebase origin main && git push origin main && exit 0
+              git rebase --abort || true
+              sleep 5
+            done
+            exit 1
+          fi

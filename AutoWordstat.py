@@ -574,6 +574,33 @@ def ensure_region_map(canonical_names, client):
     return region_map
 
 
+def build_subject_labels(client):
+    """id → название субъекта РФ, для снимка спроса по всей стране.
+
+    Обычный снимок (region_snapshots) оставляет только «живые» регионы — те,
+    где мы уже работаем. Но ответ GetRegionsDistribution приходит по всей
+    стране, и вопрос «где спрос есть, а нас нет» отвечается ровно этими
+    выброшенными строками. Дерево регионов бесплатное, лишних запросов к
+    платным методам этот снимок не добавляет вовсе.
+    """
+    resp = client.call("getRegionsTree", {})
+    if not resp:
+        log("  GetRegionsTree не ответил — снимок по стране в этом запуске не собираем")
+        return {}
+    flat = []
+    flatten_region_tree(resp.get("regions"), flat)
+    out = {}
+    for rid, label, path in flat:
+        parts = [p.strip() for p in path.split(" / ") if p.strip()]
+        # Субъект — это узел, лежащий непосредственно в федеральном округе.
+        # Города и районы внутри субъектов лежат глубже и в снимок не идут:
+        # иначе «Сочи» встал бы в один список с «Краснодарским краем».
+        if parts and "федеральн" in parts[-1].lower():
+            out[str(rid)] = label
+    log("  субъектов РФ в дереве Wordstat: %d" % len(out))
+    return out
+
+
 def run_dump_regions(client):
     """Диагностика: печатает дерево регионов Яндекса в лог. Метод
     GetRegionsTree бесплатный, так что режим ничего не стоит. Нужен, когда
@@ -1160,6 +1187,13 @@ def run_monthly(client):
     region_snapshots = data.get("region_snapshots", {})
     region_monthly = data.get("region_monthly", {})
     this_month_snap = {}
+    # Снимок по стране целиком — только для группы «спрос на работы»: по нему
+    # во вкладке считаются «белые пятна». Расширить на другие группы — дописать
+    # сюда их имена; каждая добавляет примерно по 85 чисел на фразу.
+    region_all_groups = ("demand",)
+    region_all = {}
+    subject_labels = build_subject_labels(client) \
+        if any(p.get("group") in region_all_groups for p in phrases) else {}
     needs_cities = any(region_map[n].get("minus_yid") for n in mapped_live) or \
         any(str(region_map[n]["yid"]) in ("213", "2") for n in mapped_live)
     for p in phrases:
@@ -1209,6 +1243,20 @@ def run_monthly(client):
             series.sort(key=lambda x: x[0])
         if by_region:
             this_month_snap[p["id"]] = by_region
+
+        # Тот же ответ, но по всей стране и без вычитаний: города федерального
+        # значения и области здесь идут как отдельные узлы Wordstat, то есть
+        # «Москва и область» лежит одной строкой. Для вопроса «куда расти» это
+        # годится: точность до области там не нужна, нужен порядок величины.
+        if subject_labels and p.get("group") in region_all_groups:
+            by_name = {}
+            for rid, val in raw.items():
+                name = subject_labels.get(str(rid))
+                if name and val.get("count"):
+                    by_name[name] = val["count"]
+            if by_name:
+                region_all[p["id"]] = by_name
+
     if this_month_snap:
         region_snapshots[this_month] = this_month_snap
         for old_month in sorted(region_snapshots)[:-SNAPSHOT_MONTHS_KEEP]:
@@ -1260,6 +1308,11 @@ def run_monthly(client):
                         for p in phrases}
     data["region_monthly"] = region_monthly
     data["region_snapshots"] = region_snapshots
+    # Снимок по стране держим только последний: история по чужим регионам не
+    # нужна (мы там ничего не меряем), а файл она растила бы каждый месяц.
+    if region_all:
+        data["region_all"] = region_all
+        data["region_all_month"] = this_month
     data["ru_monthly"] = ru_monthly
     data["top_requests"] = top_requests
     save_json_file(OUT_FILE, data)

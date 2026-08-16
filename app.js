@@ -12338,6 +12338,78 @@ const app = {
      * уже нарисовала сама, вызывающему остаётся только выйти.
      */
     /**
+     * Дистрибьюторы в деньгах: официальная выручка компании против того, что
+     * через неё прошло у нас.
+     *
+     * Считаем по ИНН, а не по строке дистрибьютора: у крупного поставщика
+     * промокод заведён на каждого менеджера, и по строкам одна компания
+     * распалась бы на несколько, каждая со своей копией той же выручки.
+     *
+     * Сметы берём за 12 месяцев — тот же горизонт, что у годовой отчётности.
+     * Совпадение всё равно неполное (отчётность за прошлый год, сметы за
+     * последний), и в подписи это сказано: доля показывает масштаб канала,
+     * а не выполнение плана.
+     */
+    dashboardDistributorMoney: function () {
+        const d = this._dashOwn;
+        const dists = (this.adminData && this.adminData.distributors) || [];
+        const companies = (((this._analytics || {}).companies) || {}).companies || {};
+        if (!d || !dists.length) return [];
+
+        const users = d.users || [];
+        const usersByDist = {}, distOfUser = {};
+        users.forEach(u => {
+            const id = String(u.distributor_id || '');
+            distOfUser[String(u.id)] = id;
+            if (id) usersByDist[id] = (usersByDist[id] || 0) + 1;
+        });
+
+        const since = Date.now() - 365 * 24 * 3600 * 1000;
+        const agg = {};
+        (d.estimates || []).forEach(e => {
+            const t = new Date(e.created_at).getTime();
+            if (!(t >= since)) return;
+            const id = distOfUser[String(e.user_id)];
+            if (!id) return;
+            const a = agg[id] = agg[id] || { n: 0, sum: 0 };
+            a.n += 1;
+            a.sum += Number(e.total_sum) || 0;
+        });
+
+        const byInn = {};
+        dists.forEach(x => {
+            const inn = String(x.inn || '').replace(/\D/g, '');
+            if (!inn) return;
+            const co = companies[inn] || null;
+            const rec = byInn[inn] = byInn[inn] || {
+                inn: inn, co: co, name: (co && co.name) || x.company_name || '',
+                users: 0, n: 0, sum: 0, revenue: null, year: null, pct: null
+            };
+            rec.users += usersByDist[String(x.id)] || 0;
+            const a = agg[String(x.id)];
+            if (a) { rec.n += a.n; rec.sum += a.sum; }
+        });
+
+        return Object.keys(byInn).map(inn => {
+            const r = byInn[inn];
+            const years = Object.keys((r.co && r.co.years) || {}).sort();
+            const last = years[years.length - 1];
+            const prev = years[years.length - 2];
+            if (last) {
+                r.year = last;
+                r.revenue = r.co.years[last].revenue;
+                const before = prev ? r.co.years[prev].revenue : null;
+                r.growth = (before && r.revenue) ? Math.round((r.revenue - before) / before * 100) : null;
+                // Выручка в тысячах рублей, суммы смет — в рублях. Приводим
+                // к одному порядку здесь: ошибка ровно в тысячу раз выглядит
+                // правдоподобно, и поймать её потом глазами нельзя.
+                r.pct = r.revenue ? (r.sum / (r.revenue * 1000) * 100) : null;
+            }
+            return r;
+        }).sort((a, b) => (b.revenue || 0) - (a.revenue || 0));
+    },
+
+    /**
      * Ячейка «Выручка» в таблице дистрибьюторов: последний год из
      * бухгалтерской отчётности ФНС, под ним — рост к предыдущему году.
      *
@@ -12483,11 +12555,11 @@ const app = {
                     return {};
                 }
             })();
-            const [brands, wordstat, pulse, gas, companies] = await Promise.all([
-                get('wordstat_brands'), get('wordstat'), get('wordstat_pulse'), get('gas'), get('companies')
+            const [brands, wordstat, pulse, gas, companies, prices] = await Promise.all([
+                get('wordstat_brands'), get('wordstat'), get('wordstat_pulse'), get('gas'), get('companies'), get('prices')
             ]);
             this._analyticsTerms = await terms;
-            this._analytics = { brands, wordstat, pulse, gas, companies };
+            this._analytics = { brands, wordstat, pulse, gas, companies, prices };
             this._loadingAnalytics = false;
             if (this.OWNER_ONLY_TABS.indexOf(this._adminTab) >= 0) this.renderAdminMain();
         })();
@@ -12518,7 +12590,7 @@ const app = {
 
         if (!this.ensureAnalyticsData(wrap)) return;
 
-        const { brands, wordstat, pulse, gas } = this._analytics;
+        const { brands, wordstat, pulse, gas, prices } = this._analytics;
         if (!brands && !wordstat && !gas) {
             wrap.innerHTML = `<div style="padding:30px 0; text-align:center; color:var(--text-sec);">
                 Данных пока нет. Их собирает GitHub Actions → Wordstat Analytics: сначала режим <b>brands</b>, затем <b>monthly</b>.
@@ -12560,17 +12632,21 @@ const app = {
         // Спрос по группе фраз: суммируем сами запросы по месяцам и только
         // потом берём процент. Среднее из процентов дало бы редкой фразе тот
         // же вес, что и основной.
-        const kpi = (group) => {
+        const groupSeries = (group) => {
             const ids = Object.keys(phrases).filter(id => phrases[id].group === group);
             const acc = {};
             ids.forEach(id => seriesOf(id).forEach(p => { acc[p[0]] = (acc[p[0]] || 0) + (Number(p[1]) || 0); }));
-            const ms = Object.keys(acc).sort();
-            if (!ms.length) return null;
-            const nowM = ms[ms.length - 1], baseM = ms[ms.length - 1 - back];
+            return { ids: ids, points: Object.keys(acc).sort().map(m => [m, acc[m]]) };
+        };
+        const kpi = (group) => {
+            const g = groupSeries(group);
+            const pts = g.points;
+            if (!pts.length) return null;
+            const nowP = pts[pts.length - 1], baseP = pts[pts.length - 1 - back];
             return {
-                month: nowM, now: acc[nowM], baseM: baseM || null,
-                pct: (baseM && acc[baseM]) ? Math.round((acc[nowM] - acc[baseM]) / acc[baseM] * 100) : null,
-                count: ids.length
+                month: nowP[0], now: nowP[1], baseM: baseP ? baseP[0] : null,
+                pct: (baseP && baseP[1]) ? Math.round((nowP[1] - baseP[1]) / baseP[1] * 100) : null,
+                count: g.ids.length, points: pts
             };
         };
 
@@ -12630,7 +12706,7 @@ const app = {
 
         // ── Верхний ряд: наши места и два показателя спроса ──────────────────
         const idsWithRank = Object.keys(cats).filter(id => rankOf(id));
-        const own = { stout: { present: 0, first: 0, top3: 0 }, rommer: { present: 0, first: 0, top3: 0 } };
+        const ownPos = { stout: { present: 0, first: 0, top3: 0 }, rommer: { present: 0, first: 0, top3: 0 } };
         idsWithRank.forEach(id => {
             const r = rankOf(id), o = (r && r.own) || {};
             ['stout', 'rommer'].forEach(b => {
@@ -12638,13 +12714,13 @@ const app = {
                 // Группа считается нашей, если в ней есть наши позиции — даже
                 // когда спроса на них в этом месяце не было вовсе.
                 if ((cats[id].own_in_group || []).indexOf(b) < 0 && !place) return;
-                own[b].present++;
-                if (place === 1) own[b].first++;
-                if (place && place <= 3) own[b].top3++;
+                ownPos[b].present++;
+                if (place === 1) ownPos[b].first++;
+                if (place && place <= 3) ownPos[b].top3++;
             });
         });
         const ring = (b, label, color) => {
-            const s = own[b];
+            const s = ownPos[b];
             const pct = s.present ? Math.round(s.top3 / s.present * 100) : 0;
             const C = 2 * Math.PI * 26;
             return `<div style="display:flex; align-items:center; gap:11px; flex:1 1 150px; min-width:0;">
@@ -12695,6 +12771,265 @@ const app = {
                     ${src('🔥', 'Догазификация', gas && gas.updated)}
                 </div>
             </div>`, 'margin-bottom:14px;');
+
+        // ── Свои показатели ─────────────────────────────────────────────────
+        // Всё выше — чужой рынок. Дальше — мы сами: сметы, монтажники,
+        // проекты. Без этой части дашборд отвечал только на вопрос «что там
+        // снаружи», а самый нужный вопрос — доходит ли это до нас.
+        const ownReady = this.ensureDashboardOwn();
+        const own = ownReady ? this.dashboardOwnStats(region) : null;
+
+        if (!own) {
+            h += card(head('Мы', 'сметы, монтажники, проекты')
+                + `<div style="padding:16px 0; color:var(--text-sec); font-size:12.5px;">Считаем свои сметы и монтажников…</div>`,
+                'margin-bottom:14px;');
+        } else {
+            const m = own.month;
+            const dPct = (a, b) => b ? Math.round((a - b) / b * 100) : null;
+            const miniTile = (label, value, prevPct, sub) => card(
+                `<div style="font-size:12px; color:var(--text-sec); font-weight:700;">${label}</div>
+                 <div style="display:flex; align-items:baseline; gap:8px; margin-top:6px; flex-wrap:wrap;">
+                    <span style="font-size:26px; font-weight:800; color:var(--text-main); line-height:1;">${value}</span>
+                    <span style="font-size:12px;">${trend(prevPct)}</span>
+                 </div>
+                 <div style="font-size:11px; color:var(--text-sec); margin-top:4px;">${sub}</div>`);
+
+            h += `<div style="display:grid; ${mobile ? 'grid-template-columns:1fr;' : 'grid-template-columns:repeat(auto-fit, minmax(190px,1fr));'} gap:14px; margin-bottom:14px;">
+                ${miniTile('Смет за 30 дней', num(m.ests), dPct(m.ests, m.estsPrev), `всего ${num(own.totalEst)} · к предыдущим 30 дням`)}
+                ${miniTile('Новых монтажников', num(m.users), dPct(m.users, m.usersPrev), `всего ${num(own.users)}${region ? ' в регионе' : ''}`)}
+                ${miniTile('Проектов выпущено', num(m.projects), dPct(m.projects, m.projectsPrev), 'комплекты листов за 30 дней')}
+                ${miniTile('Распознано смет', m.rec === null ? '—' : num(m.rec), m.rec === null ? null : dPct(m.rec, m.recPrev),
+                    m.rec === null ? 'архив на сервере не ответил' : 'накладные и сметы за 30 дней')}
+            </div>`;
+
+            // 1. Свои сметы против поискового спроса — форма кривой, не величина.
+            // Ряды нормируем каждый по своему максимуму (ownScale): тысячи
+            // запросов и десятки смет на одной шкале несравнимы.
+            const dem = kpi('demand');
+            if (dem && dem.points.length > 2 && own.estSeries.length > 2) {
+                const estMap = {};
+                own.estSeries.forEach(p => { estMap[p[0]] = p[1]; });
+                const pairs = dem.points.filter(p => estMap[p[0]] !== undefined)
+                    .map(p => [p[0], p[1], estMap[p[0]]]);
+                // Связь считаем по Пирсону на общих месяцах. Это грубая мера, и
+                // подписываем её словами, а не числом: «0,62» читатель всё равно
+                // переведёт в «связь заметная», только с лишним шагом.
+                let r = null;
+                if (pairs.length >= 6) {
+                    const n = pairs.length;
+                    const ax = pairs.reduce((a, p) => a + p[1], 0) / n;
+                    const ay = pairs.reduce((a, p) => a + p[2], 0) / n;
+                    let sxy = 0, sxx = 0, syy = 0;
+                    pairs.forEach(p => {
+                        const dx = p[1] - ax, dy = p[2] - ay;
+                        sxy += dx * dy; sxx += dx * dx; syy += dy * dy;
+                    });
+                    if (sxx > 0 && syy > 0) r = sxy / Math.sqrt(sxx * syy);
+                }
+                const word = r === null ? 'общих месяцев пока мало — связь считать не из чего'
+                    : (r > 0.6 ? 'кривые идут вместе: спрос работает как опережающий признак'
+                    : (r > 0.3 ? 'связь слабая: спрос объясняет лишь часть наших смет'
+                    : (r < -0.3 ? 'кривые расходятся: наши сметы живут своей жизнью'
+                    : 'связи не видно: рост рынка до нас не доходит')));
+                const cmpSeries = [
+                    { name: 'Поисковый спрос на монтаж', points: pairs.map(p => [p[0], p[1]]) },
+                    { name: 'Наши сметы', points: pairs.map(p => [p[0], p[2]]) }
+                ];
+                h += card(head('Наши сметы против спроса', `${region ? esc(region) : 'вся Россия'} · ${pairs.length} общих месяцев · ${word}`)
+                    + `<div style="margin-top:10px;">${this.buildAnalyticsLineChart(cmpSeries, 'dashvs', true)}</div>
+                       <div style="font-size:11.5px; color:var(--text-sec); margin-top:4px;">
+                          У каждой линии своя шкала — сравнивается форма, а не величина; точные числа показывает подсказка при наведении.
+                       </div>`, 'margin-bottom:14px;');
+            }
+
+            // 4 и 3: воронка когорты и демо, которые вот-вот кончатся
+            const fMax = own.funnel[0].n || 1;
+            const funnelHtml = own.funnel.map((f, i) => `
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                    <div style="flex:1 1 42%; min-width:0; font-size:12.5px; color:var(--text-main);">${f.label}</div>
+                    <div style="flex:1 1 38%; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
+                        <div style="width:${Math.max(2, Math.round(f.n / fMax * 100))}%; height:8px; border-radius:999px; background:${i === 0 ? 'var(--primary)' : (f.n ? '#10B981' : '#EF4444')};"></div>
+                    </div>
+                    <div style="width:38px; text-align:right; font-size:12.5px; font-weight:700; color:var(--text-main);">${f.n}</div>
+                    <div style="width:44px; text-align:right; font-size:11.5px; color:var(--text-sec);">${fMax ? Math.round(f.n / fMax * 100) : 0}%</div>
+                </div>`).join('');
+
+            const demoHtml = own.demoSoon.length
+                ? own.demoSoon.slice(0, 8).map(x => `
+                    <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+                        <div style="min-width:0; flex:1;">
+                            <b style="font-size:12.5px; color:var(--text-main);">${esc(x.name)}</b>
+                            <br><small style="color:var(--text-sec);">${x.ests} смет${x.region ? ' · ' + esc(x.region) : ''}</small>
+                        </div>
+                        <div style="flex:0 0 auto; text-align:right;">
+                            <b style="font-size:12.5px; color:${x.days <= 3 ? '#EF4444' : (x.days <= 7 ? '#F97316' : 'var(--text-main)')};">${x.days === 0 ? 'сегодня' : 'через ' + x.days + ' дн.'}</b>
+                            <br><button class="admin-btn" style="height:22px; padding:0 8px; font-size:11px; margin-top:3px;"
+                                        onclick="app.adminMessageUser('${esc(String(x.id))}', '${q(x.name)}')">написать</button>
+                        </div>
+                    </div>`).join('')
+                : `<div style="font-size:12.5px; color:var(--text-sec); padding:8px 0;">В ближайшие две недели демо ни у кого не заканчивается.</div>`;
+
+            h += `<div style="display:grid; ${gHalf} gap:14px; margin-bottom:14px;">
+                ${card(head('Воронка новичков', 'кто зарегистрировался за 90 дней и докуда дошёл; месячная воронка всегда показывала бы ноль на проектах — до них доходят позже')
+                    + `<div style="margin-top:12px;">${funnelHtml}</div>`)}
+                ${card(head('Демо на исходе', 'заканчивается в ближайшие 14 дней')
+                    + `<div style="margin-top:8px;">${demoHtml}</div>`)}
+            </div>`;
+
+            // 5 и 6: чек с площадью по месяцам и свои марки в сметах против поиска
+            const chekMax = Math.max(1, ...own.monthRows.map(x => x.avg));
+            // Свои сметы, в отличие от Wordstat, показываем и за текущий месяц:
+            // это не оценка спроса, а факт. Но помечаем — иначе последняя
+            // строка каждый раз читается как провал по числу смет.
+            const chekHtml = own.monthRows.length ? own.monthRows.map(x => `
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;"
+                     ${x.m === CUR_M ? 'title="месяц ещё не кончился"' : ''}>
+                    <div style="width:60px; flex:0 0 auto; font-size:12px; color:var(--text-sec);">${esc(x.m)}${x.m === CUR_M ? ' •' : ''}</div>
+                    <div style="flex:1; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
+                        <div style="width:${Math.max(2, Math.round(x.avg / chekMax * 100))}%; height:8px; border-radius:999px; background:var(--primary);"></div>
+                    </div>
+                    <div style="width:78px; text-align:right; font-size:12.5px; font-weight:700; color:var(--text-main);">${num(x.avg)} ₽</div>
+                    <div style="width:62px; text-align:right; font-size:11.5px; color:var(--text-sec);">${x.area ? x.area + ' м²' : '—'}</div>
+                    <div style="width:34px; text-align:right; font-size:11.5px; color:var(--text-sec);">${x.n}</div>
+                </div>`).join('') : `<div style="font-size:12.5px; color:var(--text-sec);">Смет за последние месяцы нет.</div>`;
+
+            // Поисковая доля своих марок — сумма их запросов по всем группам
+            // против всех запросов с указанием марки. Считается по тем же
+            // данным, что и таблица «Наши места», просто одним числом.
+            let searchOwn = { stout: 0, rommer: 0, all: 0 };
+            idsWithRank.forEach(id => {
+                const rk = rankOf(id), o = (rk && rk.own) || {};
+                searchOwn.stout += (o.stout && o.stout.count) || 0;
+                searchOwn.rommer += (o.rommer && o.rommer.count) || 0;
+                searchOwn.all += (rk.ranking || []).reduce((a, x) => a + (x[1] || 0), 0);
+            });
+            const pairBar = (label, a, b, total, cA, cB) => {
+                const pa = total ? a / total * 100 : 0, pb = total ? b / total * 100 : 0;
+                return `<div style="margin-bottom:12px;">
+                    <div style="display:flex; font-size:12px; color:var(--text-sec); margin-bottom:4px;">
+                        <span>${label}</span>
+                        <span style="margin-left:auto; color:var(--text-main); font-weight:700;">STOUT ${pa.toFixed(pa < 10 ? 1 : 0)}% · ROMMER ${pb.toFixed(pb < 10 ? 1 : 0)}%</span>
+                    </div>
+                    <div style="display:flex; height:10px; border-radius:999px; overflow:hidden; background:rgba(127,127,127,.18);">
+                        <div style="width:${pa}%; background:${cA};"></div>
+                        <div style="width:${pb}%; background:${cB};"></div>
+                    </div>
+                </div>`;
+            };
+
+            h += `<div style="display:grid; ${gHalf} gap:14px; margin-bottom:14px;">
+                ${card(head('Средний чек и площадь', 'по месяцам: чек, средняя площадь объекта, число смет; точкой помечен текущий, ещё не законченный месяц')
+                    + `<div style="margin-top:12px;">${chekHtml}</div>`)}
+                ${card(head('Наши марки: сметы против поиска', 'слева доля в наших сметах, ниже — доля в поисковых запросах с маркой')
+                    + `<div style="margin-top:12px;">
+                        ${pairBar('В наших сметах', own.brands.stout, own.brands.rommer, own.brands.total || 1, '#2563EB', '#EF4444')}
+                        ${pairBar('В поиске по стране', searchOwn.stout, searchOwn.rommer, searchOwn.all || 1, '#93C5FD', '#FCA5A5')}
+                        <div style="font-size:11.5px; color:var(--text-sec);">
+                            Смет всего ${num(own.brands.total)}. Расхождение долей — это и есть работа дистрибьютора: в поиске марку спрашивают одни, а в сметах выбирают другие.
+                        </div>
+                       </div>`)}
+            </div>`;
+
+            if (own.errors && own.errors.length) {
+                h += `<div style="font-size:11.5px; color:#F97316; margin:-4px 0 14px;">Часть своих данных не загрузилась: ${esc(own.errors.join('; '))}</div>`;
+            }
+
+            // ── Дистрибьюторы в деньгах ─────────────────────────────────────
+            // Выручка компании из отчётности ФНС против того, что через неё
+            // прошло у нас. Отвечает на вопрос, который по числу смет не
+            // решается: крупный это партнёр с тонким ручейком через нас или
+            // мелкий, у которого мы уже заметная часть оборота.
+            const distMoney = this.dashboardDistributorMoney().filter(x => x.co);
+            if (distMoney.length) {
+                const money = (rub) => {
+                    if (!rub) return '—';
+                    if (rub >= 1e9) return (rub / 1e9).toFixed(1).replace('.', ',') + ' млрд ₽';
+                    if (rub >= 1e6) return (rub / 1e6).toFixed(1).replace('.', ',') + ' млн ₽';
+                    return Math.round(rub / 1e3).toLocaleString('ru-RU') + ' тыс ₽';
+                };
+                // Доля почти всегда доли процента: у дистрибьютора обороты
+                // миллиардные, а через калькулятор идёт часть розницы. Ноль
+                // вместо «меньше сотой» был бы неправдой — это не отсутствие
+                // канала, а его размер.
+                const share = (p) => p === null ? '—'
+                    : (p < 0.01 ? '<0,01 %' : p.toFixed(p < 1 ? 2 : 1).replace('.', ',') + ' %');
+                const rows = distMoney.map(x => {
+                    const dead = x.co.status && x.co.status !== 'ACTIVE';
+                    return `<tr>
+                        <td style="padding:7px 6px;"><b style="color:var(--text-main);">${esc(x.name)}</b>
+                            <div style="font-size:11px; color:var(--text-sec);">ИНН ${esc(x.inn)}${x.co.region ? ' · ' + esc(x.co.region) : ''}${dead ? ' · <span style="color:#EF4444; font-weight:700;">не действует</span>' : ''}</div></td>
+                        <td style="padding:7px 6px; text-align:right; white-space:nowrap;">
+                            <b style="color:var(--text-main);">${money((x.revenue || 0) * 1000)}</b>
+                            <div style="font-size:11px; color:var(--text-sec);">за ${esc(x.year || '—')} · ${trend(x.growth)}</div></td>
+                        <td style="padding:7px 6px; text-align:right; white-space:nowrap;">
+                            <b style="color:var(--text-main);">${money(x.sum)}</b>
+                            <div style="font-size:11px; color:var(--text-sec);">${num(x.n)} смет · ${num(x.users)} монтажников</div></td>
+                        <td style="padding:7px 6px; text-align:right; white-space:nowrap;">
+                            <b style="color:var(--text-main);">${share(x.pct)}</b></td>
+                    </tr>`;
+                }).join('');
+                h += card(head('Дистрибьюторы: выручка и наш канал',
+                        'выручка — из отчётности ФНС по ИНН, наши сметы — за 12 месяцев')
+                    + `<div style="overflow-x:auto; margin-top:10px;"><table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+                        <thead><tr style="font-size:11px; color:var(--text-sec); text-align:right;">
+                            <th style="text-align:left; padding:0 6px 6px;">Компания</th>
+                            <th style="padding:0 6px 6px;">Выручка</th>
+                            <th style="padding:0 6px 6px;">Наши сметы</th>
+                            <th style="padding:0 6px 6px;">Доля</th>
+                        </tr></thead><tbody>${rows}</tbody></table></div>
+                       <div style="font-size:11.5px; color:var(--text-sec); margin-top:8px;">
+                            Смета — это предложение, а не отгрузка, и годы разные: отчётность за прошлый год, сметы за последние двенадцать месяцев. Доля показывает масштаб канала, а не выполнение плана.
+                       </div>`, 'margin-bottom:14px;');
+            }
+        }
+
+        // ── Цены прайса ─────────────────────────────────────────────────────
+        // Отвечает на вопрос, который средний чек сам по себе не решает: чек
+        // вырос — это больше работы или просто подорожало железо. Индекс
+        // считается по одним и тем же артикулам (AutoPriceIndex.py), поэтому
+        // смена ассортимента его не двигает.
+        const priceMonths = (prices && prices.months) || {};
+        const priceKeys = Object.keys(priceMonths).sort();
+        const lastPrice = priceKeys.length ? priceMonths[priceKeys[priceKeys.length - 1]] : null;
+        if (lastPrice && lastPrice.index !== null && lastPrice.index !== undefined) {
+            const gr = Object.keys(lastPrice.groups || {})
+                .map(g => ({ name: g, pct: lastPrice.groups[g].pct, n: lastPrice.groups[g].n }))
+                .sort((a, b) => b.pct - a.pct);
+            const grTop = gr.slice(0, 5), grDown = gr.slice(-5).reverse().filter(x => x.pct < 0);
+            const priceLine = (x) => `<div style="display:flex; gap:8px; align-items:baseline; padding:3px 0;">
+                    <span style="flex:1; min-width:0; font-size:12.5px; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(x.name)}</span>
+                    <b style="font-size:12px; color:${x.pct > 0 ? '#EF4444' : '#10B981'};">${x.pct > 0 ? '+' : ''}${Number(x.pct).toFixed(1)}%</b>
+                    <small style="color:var(--text-sec); width:52px; text-align:right;">${x.n} поз.</small>
+                </div>`;
+            // Сравнение с чеком: если чек обогнал прайс, выросли объёмы, а не
+            // цены. Пишем только когда есть оба соседних месяца — иначе
+            // сравнивать не с чем.
+            let verdict = '';
+            if (own && own.monthRows.length > 1) {
+                const a = own.monthRows[own.monthRows.length - 2], b = own.monthRows[own.monthRows.length - 1];
+                if (a.avg > 0) {
+                    const chekPct = (b.avg - a.avg) / a.avg * 100;
+                    const diff = chekPct - lastPrice.index;
+                    verdict = `Средний чек за месяц ${chekPct > 0 ? 'вырос' : 'снизился'} на ${Math.abs(chekPct).toFixed(1)}%, цены — на ${Math.abs(lastPrice.index).toFixed(1)}%. `
+                        + (Math.abs(diff) < 2 ? 'Это одно движение: объём работ в смете не изменился.'
+                            : (diff > 0 ? 'Разницу дал объём: сметы стали крупнее, а не только дороже.'
+                                : 'Чек отстал от прайса: сметы стали мельче.'));
+                }
+            }
+            h += card(head(`Цены прайса: ${lastPrice.index > 0 ? '+' : ''}${Number(lastPrice.index).toFixed(1)}% за месяц`,
+                    `${esc(priceKeys[priceKeys.length - 1])} к ${esc(lastPrice.base_month || 'прошлому снимку')} · по ${num(lastPrice.common)} одинаковым артикулам из ${num(lastPrice.positions)}`)
+                + `<div style="display:grid; ${gHalf} gap:18px; margin-top:12px;">
+                    <div><div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">Подорожало сильнее всего</div>${grTop.map(priceLine).join('') || '<small style="color:var(--text-sec);">нет</small>'}</div>
+                    <div><div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">Подешевело</div>${grDown.map(priceLine).join('') || '<small style="color:var(--text-sec);">ничего не подешевело</small>'}</div>
+                   </div>`
+                + (verdict ? `<div style="font-size:12px; color:var(--text-sec); margin-top:10px;">${verdict}</div>` : ''),
+                'margin-bottom:14px;');
+        } else if (prices) {
+            h += card(head('Цены прайса', 'история копится с первого прогона')
+                + `<div style="font-size:12.5px; color:var(--text-sec); margin-top:8px;">
+                    Первый снимок цен снят, сравнивать пока не с чем — индекс появится после следующего прогона Actions → Price Index History.
+                   </div>`, 'margin-bottom:14px;');
+        }
 
         // ── График спроса и догазификация ───────────────────────────────────
         const GROUPS = [
@@ -12818,6 +13153,49 @@ const app = {
                 + `</div>`)}
         </div>`;
 
+        // ── Белые пятна: спрос есть, монтажников нет ────────────────────────
+        // Все блоки выше показывают только «живые» регионы — те, где мы уже
+        // работаем. Здесь наоборот: страна целиком минус наши регионы. Это
+        // единственное место дашборда, которое отвечает на вопрос «куда расти».
+        const allDemand = (wordstat && wordstat.region_all) || null;
+        const normRegion = (s) => String(s || '').toLowerCase().replace(/ё/g, 'е')
+            .replace(/республика|область|обл\.|край|автономный округ|автономная область|-кузбасс/g, '')
+            .replace(/[^a-zа-я0-9]/g, '').trim();
+
+        if (allDemand && demandId && allDemand[demandId]) {
+            // Свои регионы: где есть хоть один монтажник. Полный список
+            // пользователей у админки уже есть (он же кормит выпадающий список
+            // в сообщениях), отдельного запроса не нужно.
+            const ourRegions = new Set();
+            ((this._dashOwn && this._dashOwn.users) || (this.adminData && this.adminData.allUsersDropdown) || [])
+                .forEach(u => { if (u.region) ourRegions.add(normRegion(u.region)); });
+            regionList.forEach(r => ourRegions.add(normRegion(r)));
+
+            const white = Object.keys(allDemand[demandId])
+                .map(r => ({ name: r, val: Number(allDemand[demandId][r]) || 0 }))
+                .filter(x => x.val > 0 && !ourRegions.has(normRegion(x.name)))
+                .sort((a, b) => b.val - a.val).slice(0, 10);
+            const whiteMax = white.length ? white[0].val : 1;
+
+            h += card(head('Белые пятна: спрос есть, монтажников нет',
+                    `${esc((phrases[demandId] && phrases[demandId].text) || demandId)} · регионы, где нас нет ни одним человеком`)
+                + `<div style="margin-top:12px;">` + (white.length ? white.map(x => `
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:9px;">
+                        <div style="flex:1 1 44%; min-width:0; font-size:12.5px; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(x.name)}</div>
+                        <div style="flex:1 1 40%; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
+                            <div style="width:${Math.max(2, Math.round(x.val / whiteMax * 100))}%; height:8px; border-radius:999px; background:#F97316;"></div>
+                        </div>
+                        <div style="width:62px; text-align:right; font-size:12px; font-weight:700; color:var(--text-main);">${num(x.val)}</div>
+                    </div>`).join('')
+                    : `<div style="font-size:12.5px; color:var(--text-sec);">Регионов со спросом, где у нас никого нет, не нашлось.</div>`)
+                + `</div>`, 'margin-bottom:14px;');
+        } else {
+            h += card(head('Белые пятна: спрос есть, монтажников нет', 'регионы, где нас нет ни одним человеком')
+                + `<div style="font-size:12.5px; color:var(--text-sec); margin-top:8px;">
+                    Появится после ближайшего прогона Actions → Wordstat Analytics в режиме <b>monthly</b>: до сих пор парсер выбрасывал всё, кроме наших регионов, а теперь сохраняет спрос по стране целиком.
+                   </div>`, 'margin-bottom:14px;');
+        }
+
         // ── Пульс и топ-запросы ─────────────────────────────────────────────
         let pulseCard = '';
         if (pulse && pulse.ru && pulse.weeks && pulse.weeks.length > 1) {
@@ -12861,6 +13239,207 @@ const app = {
 
         h += `</div>`;
         wrap.innerHTML = h;
+    },
+
+    /**
+     * Свои данные для дашборда: сметы, монтажники, проекты, распознавания.
+     *
+     * Обычная загрузка админки тянет пользователей ПОСТРАНИЧНО (adminData.users
+     * — это одна страница таблицы, а userEstimates — сметы только этой
+     * страницы). Для сводных чисел этого мало: «смет за месяц» по одной
+     * странице — не показатель, а случайная величина. Поэтому здесь свой
+     * запрос, узкий по столбцам и полный по строкам.
+     *
+     * Тянем лениво, один раз за сеанс и только на дашборде: egress Supabase
+     * уже был узким местом (см. лимит 5 ГБ/мес), а тут несколько тысяч строк
+     * по несколько полей — сотни килобайт.
+     */
+    DASH_PAGE: 1000,
+    DASH_ROW_CAP: 40000,
+
+    ensureDashboardOwn: function () {
+        if (this._dashOwn) return true;
+        if (this._loadingDashOwn) return false;
+        this._loadingDashOwn = true;
+        (async () => {
+            // PostgREST отдаёт максимум тысячу строк за запрос и молча
+            // обрезает остальное — поэтому читаем страницами, пока приходит
+            // полная тысяча. Верхний предел на случай, если таблица вырастет
+            // до неожиданного: лучше неполные данные с честной пометкой, чем
+            // повисшая вкладка.
+            const page = async (table, columns, order) => {
+                const out = [];
+                for (let from = 0; from < this.DASH_ROW_CAP; from += this.DASH_PAGE) {
+                    const { data, error } = await supabaseClient.from(table)
+                        .select(columns).order(order, { ascending: true })
+                        .range(from, from + this.DASH_PAGE - 1);
+                    if (error) throw error;
+                    out.push(...(data || []));
+                    if (!data || data.length < this.DASH_PAGE) break;
+                }
+                return out;
+            };
+
+            const res = { estimates: [], users: [], projects: [], recognition: null, errors: [] };
+            try {
+                res.estimates = await page('estimates',
+                    'id, user_id, created_at, total_sum, eq_sum, works_sum, area:calc_data->>area, brand:calc_data->>brandMode',
+                    'created_at');
+            } catch (e) { res.errors.push('сметы: ' + (e.message || e)); }
+            try {
+                res.users = await page('users',
+                    'id, email, username, created_at, last_visited, region, account_type, demo_ends_at, distributor_id',
+                    'created_at');
+            } catch (e) { res.errors.push('монтажники: ' + (e.message || e)); }
+            try {
+                // Таблицы может не быть: миграцию 20260801_add_projects.sql
+                // выполняли отдельно (см. вкладку «Проекты»).
+                res.projects = await page('projects', 'id, user_email, issued_at, area', 'issued_at');
+            } catch (e) { res.projects = []; }
+            try {
+                // Архив распознаваний лежит на Beget, а не в Supabase. Если
+                // вкладка «Распознавание» уже открывалась — берём загруженное,
+                // второй раз сервер не дёргаем.
+                if (this._adminRecognitionRows) res.recognition = this._adminRecognitionRows;
+                else {
+                    const headers = await this.recognitionAuthHeaders();
+                    if (headers) {
+                        const r = await fetch(`${this.RECOGNIZE_ARCHIVE}?list=1&days=180&limit=1000`, { headers });
+                        const data = await r.json();
+                        if (data.ok) res.recognition = data.rows || [];
+                    }
+                }
+            } catch (e) { res.recognition = null; }
+
+            this._dashOwn = res;
+            this._dashStats = null;
+            this._loadingDashOwn = false;
+            if (this._adminTab === 'dashboard') this.renderAdminMain();
+        })();
+        return false;
+    },
+
+    /**
+     * Сводные показатели по своим данным. Считается один раз на регион и
+     * держится в памяти: при каждом нажатии кнопки фильтра дашборд
+     * перерисовывается целиком, а перебирать тысячи смет на каждый щелчок
+     * незачем.
+     *
+     * Регион у сметы берём от её автора (users.region): у самой сметы региона
+     * нет, есть город объекта в shared_invoices — это другая таблица и другой
+     * запрос.
+     */
+    dashboardOwnStats: function (region) {
+        const d = this._dashOwn;
+        if (!d) return null;
+        const key = region || '*';
+        this._dashStats = this._dashStats || {};
+        if (this._dashStats[key]) return this._dashStats[key];
+
+        const mkey = (iso) => {
+            const t = new Date(iso);
+            // Месяц считаем по UTC: иначе смета от 31 декабря 23:00 попадала бы
+            // в январь, причём у разных смотрящих по-разному.
+            return isNaN(t) ? null : t.getUTCFullYear() + '-' + ('0' + (t.getUTCMonth() + 1)).slice(-2);
+        };
+        const time = (iso) => { const t = new Date(iso).getTime(); return isNaN(t) ? 0 : t; };
+
+        const users = d.users || [];
+        const regOf = {};
+        users.forEach(u => { regOf[String(u.id)] = u.region || ''; });
+        const myUsers = region ? users.filter(u => (u.region || '') === region) : users;
+        const ests = region
+            ? (d.estimates || []).filter(e => regOf[String(e.user_id)] === region)
+            : (d.estimates || []);
+
+        // Сметы, чек и площадь по месяцам — одним проходом
+        const cnt = {}, sum = {}, areaSum = {}, areaCnt = {};
+        ests.forEach(e => {
+            const m = mkey(e.created_at);
+            if (!m) return;
+            cnt[m] = (cnt[m] || 0) + 1;
+            sum[m] = (sum[m] || 0) + (Number(e.total_sum) || 0);
+            const a = parseFloat(e.area);
+            if (a > 0 && a < 100000) { areaSum[m] = (areaSum[m] || 0) + a; areaCnt[m] = (areaCnt[m] || 0) + 1; }
+        });
+        const months = Object.keys(cnt).sort();
+        const estSeries = months.map(m => [m, cnt[m]]);
+        const monthRows = months.slice(-6).map(m => ({
+            m, n: cnt[m],
+            avg: cnt[m] ? Math.round(sum[m] / cnt[m]) : 0,
+            area: areaCnt[m] ? Math.round(areaSum[m] / areaCnt[m]) : null
+        }));
+
+        // Бренд сметы: поля может не быть у старых записей — там всегда был STOUT
+        let bStout = 0, bRommer = 0;
+        ests.forEach(e => {
+            if (String(e.brand || '').toLowerCase() === 'rommer') bRommer++; else bStout++;
+        });
+
+        const now = Date.now(), DAY = 86400000;
+        const inWin = (arr, field, fromDays, toDays) => arr.filter(x => {
+            const t = time(x[field]);
+            return t && t >= now - fromDays * DAY && t < now - toDays * DAY;
+        }).length;
+
+        const recRows = (d.recognition || []).filter(r => !region || (r.region || '') === region);
+        const projRows = (d.projects || []).filter(p => {
+            if (!region) return true;
+            const u = users.find(x => (x.email || '').toLowerCase() === String(p.user_email || '').toLowerCase());
+            return u && (u.region || '') === region;
+        });
+
+        // Демо, которые вот-вот закончатся. Уже истёкшие не берём: писать
+        // «продлить» человеку, у которого демо кончилось неделю назад, поздно —
+        // это другой разговор и другой список.
+        const demoSoon = myUsers.filter(u => {
+            const t = u.demo_ends_at ? time(u.demo_ends_at) : 0;
+            return t && t >= now && t <= now + 14 * DAY;
+        }).sort((a, b) => time(a.demo_ends_at) - time(b.demo_ends_at))
+          .map(u => ({
+              id: u.id, name: u.username || u.email || 'без имени',
+              email: u.email || '', region: u.region || '',
+              days: Math.max(0, Math.round((time(u.demo_ends_at) - now) / DAY)),
+              ests: 0
+          }));
+        const perUser = {};
+        ests.forEach(e => { perUser[String(e.user_id)] = (perUser[String(e.user_id)] || 0) + 1; });
+        demoSoon.forEach(x => { x.ests = perUser[String(x.id)] || 0; });
+
+        // Воронка по когорте: берём тех, кто зарегистрировался за последние
+        // 90 дней, и смотрим, докуда они дошли. Считать «за месяц» нельзя —
+        // человек регистрируется сегодня, а проект выпускает через полтора,
+        // и такая воронка всегда показывала бы ноль на последней ступени.
+        const cohort = myUsers.filter(u => time(u.created_at) >= now - 90 * DAY);
+        const projEmails = {};
+        projRows.forEach(p => { if (p.user_email) projEmails[String(p.user_email).toLowerCase()] = true; });
+        const funnel = [
+            { label: 'зарегистрировались', n: cohort.length },
+            { label: 'сделали смету', n: cohort.filter(u => (perUser[String(u.id)] || 0) >= 1).length },
+            { label: 'сделали три и больше', n: cohort.filter(u => (perUser[String(u.id)] || 0) >= 3).length },
+            { label: 'выпустили проект', n: cohort.filter(u => projEmails[(u.email || '').toLowerCase()]).length },
+            { label: 'на Профи', n: cohort.filter(u => u.account_type === 'pro').length }
+        ];
+
+        const out = {
+            estSeries, monthRows, funnel, demoSoon,
+            brands: { stout: bStout, rommer: bRommer, total: bStout + bRommer },
+            users: myUsers.length,
+            totalEst: ests.length,
+            month: {
+                ests: inWin(ests, 'created_at', 30, 0),
+                estsPrev: inWin(ests, 'created_at', 60, 30),
+                users: inWin(myUsers, 'created_at', 30, 0),
+                usersPrev: inWin(myUsers, 'created_at', 60, 30),
+                projects: inWin(projRows, 'issued_at', 30, 0),
+                projectsPrev: inWin(projRows, 'issued_at', 60, 30),
+                rec: d.recognition ? inWin(recRows, 'savedAt', 30, 0) : null,
+                recPrev: d.recognition ? inWin(recRows, 'savedAt', 60, 30) : null
+            },
+            errors: d.errors || []
+        };
+        this._dashStats[key] = out;
+        return out;
     },
 
     // Со строки дашборда — сразу в развёрнутую категорию «Аналитики»: сам
@@ -20882,6 +21461,68 @@ const app = {
     },
 
     /**
+     * Данные для листа «Гидравлический расчёт напольного отопления».
+     *
+     * Как и у радиаторного листа, своего расчёта здесь нет: ufhCalc и
+     * ufhBalance уже посчитаны рендером сметы — по ним выбраны шаг укладки,
+     * длины петель, узел подмеса и его насос. Лист раскладывает их по графам.
+     *
+     * Возвращает null, если тёплого пола в смете нет.
+     */
+    buildUfhHydraulicsData: function () {
+        const b = this._ufhBal, c = this._ufhCalc;
+        if (!b || !c || !b.mans || !b.mans.length) return null;
+        const pipe = this.ufhPipe();
+        // Напор насоса на рабочей точке считаем каждому коллектору: в самом
+        // балансе он сохранён только у худшего, а в таблицу идут все.
+        const mans = b.mans.map(m => {
+            const have = this.ufhPumpHead(m.flow, b.pump);
+            return {
+                label: m.label, floor: m.floor, outlets: m.outlets,
+                flow: m.flow,
+                worstDp: m.worstDp,                 // самая тяжёлая петля коллектора
+                manDp: this.UFH_MAN_DP,             // гребёнка: расходомер, кран, привод
+                dpValve: m.dpValve,                 // смесительный клапан узла
+                trDp: m.trDp || 0,                  // транзит до коллектора
+                trM: m.trM || 0,
+                tr: m.tr ? (m.tr.label || m.tr.name || '') : '',
+                trV: m.trV || 0,
+                need: m.need, have: have,
+                ok: have >= m.need,
+                worst: !!(b.worst && b.worst.label === m.label)
+            };
+        });
+        // Петли всех коллекторов подряд — по ним выставляют расходомеры.
+        const loops = [];
+        b.mans.forEach(m => (m.rows || []).forEach(r => {
+            loops.push({
+                man: m.label, name: r.name, area: r.area, m: r.m, Q: r.Q,
+                flow: r.flow,                        // л/мин, как на расходомере
+                v: r.v, dp: r.dp
+            });
+        }));
+        return {
+            graph: this.ufhGraph(b.dT),
+            dT: b.dT,
+            pipe: pipe.label,
+            node: this._ufhMixLabel(b.type).replace(/^узла /, 'узел ').replace(/^насосной группы /, 'насосная группа '),
+            kvs: b.kvs,
+            pump: b.pump.label,
+            ok: !!b.ok,
+            area: c.area, meters: c.meters, Q: Math.round(c.Q),
+            loopCount: c.loops, manCount: mans.length,
+            flowTotal: mans.reduce((a, m) => a + m.flow, 0),
+            vMax: loops.reduce((a, r) => Math.max(a, r.v || 0), 0),
+            vLimit: this.UFH_V_MAX, vMin: this.UFH_V_MIN,
+            loopDpMax: this.UFH_LOOP_DP_MAX,
+            mans: mans, loops: loops,
+            // Заметки расчёта идут в подсказку сметы с разметкой — на лист
+            // отдаём их текстом.
+            notes: (b.notes || []).map(t => String(t).replace(/<[^>]*>/g, '').trim()).filter(Boolean)
+        };
+    },
+
+    /**
      * Лист «Общие данные»: показатели по этажам, состав пола и технические
      * указания. Всё берётся из состояния расчёта и состава сметы — руками
      * вводить нечего, как и на остальных листах комплекта.
@@ -21577,6 +22218,9 @@ const app = {
             // Гидравлика радиаторной части: расчётное кольцо и преднастройки
             // клапанов приборов — лист раздела «О» рядом с теплопотерями.
             hydro: this.buildHydraulicsData(),
+            // Гидравлика напольного отопления: коллекторы, требуемый напор и
+            // уставки расходомеров — соседний лист того же раздела «О».
+            ufhHydro: this.buildUfhHydraulicsData(),
             scheme: this.buildSchemeConfig(),
             // Данные для листа «Общие данные»: показатели по этажам и
             // технические указания собираются по тем же параметрам, по каким

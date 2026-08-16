@@ -888,6 +888,164 @@
     return sheets;
   }
 
+  // ─── Лист «Гидравлический расчёт напольного отопления» ─────────────────
+  // Устроен так же, как радиаторный: своего расчёта нет, цифры приходят из
+  // buildUfhHydraulicsData (ufhCalc + ufhBalance калькулятора). Разница в
+  // предмете: у радиаторов кольцо одно и его уравнивают клапанами приборов,
+  // у пола каждый коллектор — свой узел со своим напором, а уравнивают
+  // расходомерами гребёнки.
+  var UH_MAN_COLS = [
+    { w: 15, title: '№' },
+    { w: 85, title: 'Коллектор', align: 'left' },
+    { w: 22, title: 'Вых.' },
+    { w: 40, title: 'G, м³/ч' },
+    { w: 40, title: 'Петля, кПа' },
+    { w: 40, title: 'Гребенка' },
+    { w: 40, title: 'Клапан' },
+    { w: 40, title: 'Транзит' },
+    { w: 38, title: 'Треб., м', fill: '#edffff' },
+    { w: 35, title: 'Насос, м' }
+  ];
+  var UH_LOOP_COLS = [
+    { w: 12, title: '№' },
+    { w: 65, title: 'Коллектор', align: 'left' },
+    { w: 100, title: 'Помещение (петля)', align: 'left' },
+    { w: 38, title: 'S, м²' },
+    { w: 36, title: 'L, м' },
+    { w: 38, title: 'Q, Вт' },
+    { w: 45, title: 'Расход, л/мин', fill: '#edffff' },
+    { w: 28, title: 'v, м/с' },
+    { w: 33, title: 'Потери, кПа' }
+  ];
+
+  /**
+   * d — объект app.buildUfhHydraulicsData():
+   *   { graph, dT, pipe, node, kvs, pump, ok, area, meters, Q, loopCount,
+   *     manCount, flowTotal, vMax, vLimit, vMin, loopDpMax, notes,
+   *     mans:  [{label, outlets, flow, worstDp, manDp, dpValve, trDp, trM, tr,
+   *              need, have, ok, worst}],
+   *     loops: [{man, name, area, m, Q, flow, v, dp}] }
+   * opts: { code, sheetStart, num }
+   */
+  function ufhHydraulicsSheets(d, opts) {
+    if (!d || !d.mans || !d.mans.length) return [];
+    opts = opts || {};
+    var f1 = function (v) { return (Math.round(v * 10) / 10).toFixed(1).replace('.', ','); };
+    var f2 = function (v) { return (Math.round(v * 100) / 100).toFixed(2).replace('.', ','); };
+    var sheets = [], start = opts.sheetStart || 1;
+    var fmtNo = opts.num || function (v) { return String(v); };
+    var worst = d.mans.filter(function (m) { return m.worst; })[0] || d.mans[0];
+
+    // ── шапка ───────────────────────────────────────────────────────────
+    var colA = [
+      ['Температурный график', d.graph + ' °C, перепад ' + d.dT + ' K'],
+      ['Труба петель', d.pipe],
+      ['Площадь пола', f1(d.area) + ' м², петель ' + d.loopCount + ' шт.'],
+      ['Трубы уложено', Math.round(d.meters) + ' м'],
+      ['Тепловая нагрузка', d.Q + ' Вт'],
+      ['Коллекторов', d.manCount + ' шт., расход ' + f2(d.flowTotal) + ' м³/ч']
+    ];
+    var colB = [
+      ['Узел подмеса', d.node + ', Kvs ' + String(d.kvs).replace('.', ',')],
+      ['Насос узла', d.pump],
+      ['Расчетный коллектор', worst.label],
+      ['Расход через него', f2(worst.flow) + ' м³/ч'],
+      ['Требуемый напор', f1(worst.need) + ' м вод. ст.'],
+      ['Насос дает', f1(worst.have) + ' м' + (worst.have > 0 && worst.need > 0
+        ? ' — запас ' + Math.round((worst.have / worst.need - 1) * 100) + ' %' : '')]
+    ];
+
+    var LH = 4.75;
+    var boxH = Math.max(colA.length, colB.length) * LH + 2.4;
+    var body = [];
+    body.push(rect(FR.l, BODY_TOP, FR.r - FR.l, boxH, LW.thin));
+    var putCol = function (list, x) {
+      var y = BODY_TOP + 4.0;
+      list.forEach(function (r) {
+        body.push(text(x, y, r[0] + ':', { weight: 'bold' }));
+        body.push(text(x + 54, y, r[1]));
+        y += LH;
+      });
+    };
+    putCol(colA, FR.l + 2.5);
+    putCol(colB, FR.l + 200);
+
+    // ── таблица 1: коллекторы ───────────────────────────────────────────
+    var ty = BODY_TOP + boxH + 8.5;
+    body.push(text(FR.l, ty - 2.4,
+      'Таблица 1. Требуемый напор по коллекторам напольного отопления', { weight: 'bold' }));
+    var manRows = d.mans.map(function (m, i) {
+      return [i + 1, m.label + (m.worst ? ' — расчетный' : ''), m.outlets, f2(m.flow),
+        f1(m.worstDp), f1(m.manDp), f1(m.dpValve), m.trDp > 0 ? f1(m.trDp) : '—',
+        f1(m.need), f1(m.have) + (m.ok ? '' : ' !')];
+    });
+    var t1 = table(FR.l, ty, UH_MAN_COLS, manRows, {});
+
+    // ── примечания ──────────────────────────────────────────────────────
+    var notes = [
+      'Требуемый напор коллектора = (самая тяжелая петля + гребенка + смесительный клапан узла + ' +
+        'транзит) х 1,15. Запас 15 % — на загрязнение петель и разброс паспортной кривой насоса.',
+      'Гребенка (расходомер, шаровой кран, сервопривод) принята ' + f1(d.mans[0].manDp) + ' кПа. ' +
+        'Смесительный клапан узла: (G / Kvs)² х 100 кПа при Kvs ' + String(d.kvs).replace('.', ',') + '.',
+      'Расход петли: G = Q / (1,163 х ' + d.dT + '), л/мин — это и есть значение, которое ' +
+        'выставляется на расходомере гребенки (таблица 2).',
+      'Скорость в петле держится в пределах ' + f1(d.vMin) + '…' + f1(d.vLimit) + ' м/с: ниже нижней ' +
+        'границы петля не выносит воздух, выше верхней — шумит. Потери петли не выше ' +
+        d.loopDpMax + ' кПа.'
+    ];
+    (d.notes || []).forEach(function (t) { notes.push(t); });
+    if (!d.ok) notes.push('Внимание: напора насоса на расчетный коллектор не хватает — ' +
+      'разделите его на два или укоротите петли.');
+    if (d.vMax > d.vLimit) notes.push('Внимание: скорость в петле ' + f2(d.vMax) +
+      ' м/с выше предела ' + f1(d.vLimit) + ' м/с — петлю следует укоротить.');
+    var ny = t1.bottom + 6.5;
+    notes.forEach(function (ln) {
+      // Заметки расчёта бывают длинными — переносим по словам на ширину листа
+      wrap(ln, Math.floor((FR.r - FR.l) / (SZ.body * 0.46))).forEach(function (s) {
+        body.push(text(FR.l, ny, s)); ny += LH;
+      });
+    });
+
+    sheets.push(sheet({
+      title: 'Гидравлический расчет напольного отопления',
+      titleSize: 5.19, titleY: 11.2,
+      code: opts.code, sheet: fmtNo(start), body: body.join('') + t1.svg
+    }));
+
+    // ── таблица 2: петли и настройка расходомеров ───────────────────────
+    var loopRows = d.loops.map(function (r, i) {
+      return [i + 1, r.man, r.name, f1(r.area), Math.round(r.m), Math.round(r.Q),
+        f2(r.flow), f2(r.v), f1(r.dp)];
+    });
+    if (loopRows.length) {
+      var perSheet = Math.floor((275 - BODY_TOP - 5.5 - 14) / ROW_H);
+      var pages = [], page = [];
+      loopRows.forEach(function (r) {
+        if (page.length >= perSheet) { pages.push(page); page = []; }
+        page.push(r);
+      });
+      if (page.length) pages.push(page);
+      pages.forEach(function (pageRows, idx) {
+        var t2 = table(FR.l, BODY_TOP, UH_LOOP_COLS, pageRows, {});
+        var tail = '';
+        if (idx === pages.length - 1) {
+          var ly = t2.bottom + 6.5;
+          [
+            'Расход — уставка расходомера гребенки, л/мин. Длина петли дана с учетом подъема концов ' +
+              'к коллектору.',
+            'Петли одного помещения, разделенные на несколько контуров, обозначены дробью (1/2, 2/2).'
+          ].forEach(function (ln) { tail += text(FR.l, ly, ln); ly += LH; });
+        }
+        sheets.push(sheet({
+          title: 'Настройка расходомеров напольного отопления',
+          titleSize: 5.19, titleY: 11.2,
+          code: opts.code, sheet: fmtNo(start + sheets.length), body: t2.svg + tail
+        }));
+      });
+    }
+    return sheets;
+  }
+
   // ─── Спецификация из сметы калькулятора ────────────────────────────────
   /**
    * items — currentEquipmentList из app.js (или его срез): нужны поля
@@ -949,6 +1107,7 @@
     titleSheet: titleSheet, generalData: generalData, stampBig: stampBig,
     heatLossSheets: heatLossSheets,
     hydraulicsSheets: hydraulicsSheets,
+    ufhHydraulicsSheets: ufhHydraulicsSheets,
     text: text, cellText: cellText, cellLines: cellLines, line: line, rect: rect,
     // Подбор семейства оставлен для модулей листов: шрифты теперь полные,
     // подменять нечего, но вызовы у них сохранены.
