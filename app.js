@@ -12260,7 +12260,9 @@ const app = {
      * числа, а не координаты, иначе пришлось бы разбирать обратно разметку.
      */
     buildAnalyticsLineChart: function (series, id) {
-        const W = 720, H = 210, PAD_L = 30, PAD_R = 12, PAD_T = 10, PAD_B = 26;
+        // Отступ слева держит подписи шкалы: 30 хватало на пустое поле, но не
+        // на «110 тыс».
+        const W = 720, H = 210, PAD_L = 44, PAD_R = 12, PAD_T = 10, PAD_B = 26;
         const COLORS = ['#2563EB', '#10B981', '#F97316', '#8B5CF6', '#EF4444', '#0EA5E9'];
 
         // Спрятанные ряды помним по графику: на графике из шести линий
@@ -12313,10 +12315,35 @@ const app = {
         // Шкала одна на все ряды. Раньше максимум считался внутри цикла, у
         // каждой линии свой: любая упиралась в верх рамки на собственном пике,
         // и линии нельзя было сравнивать между собой — марка с 29 тысячами
-        // запросов шла выше марки со 110 тысячами. Подписей по оси Y нет,
-        // так что подмена шкалы ничем себя не выдавала.
-        const maxAll = Math.max(1, ...series.map(s =>
+        // запросов шла выше марки со 110 тысячами. Подписей по оси Y тогда не
+        // было, так что подмена шкалы ничем себя не выдавала.
+        const rawMax = Math.max(1, ...series.map(s =>
             Math.max(0, ...s.points.map(p => Number(p[1]) || 0))));
+        // Верх шкалы поднимаем до круглого числа: подписи должны читаться как
+        // «120 тыс», а не как «109 634» — сколько там ровно, показывает
+        // подсказка при наведении, шкала же нужна только чтобы прикинуть.
+        const pw = Math.pow(10, Math.floor(Math.log10(rawMax / 4)));
+        // Шагов много и они частые: на грубом ряду 1-2-5 максимум 110 тысяч
+        // округлился бы до двухсот, и график занимал бы половину высоты.
+        const gridStep = ([1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(k => k * pw >= rawMax / 4) || 10) * pw;
+        const maxAll = gridStep * 4;
+        const fmtY = (v) => v >= 1e6 ? (v / 1e6).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) + ' млн'
+                          : v >= 1000 ? (v / 1000).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) + ' тыс'
+                          : v.toLocaleString('ru-RU', { maximumFractionDigits: 2 });
+
+        // Сетка и подписи к ней. Сами линии — в SVG, а подписи разметкой
+        // слева от картинки: по той же причине, что и даты внизу — картинка
+        // тянется по ширине, и текст внутри неё разъезжается вместе с ней.
+        // По вертикали растяжения нет, высота задана в пикселях, поэтому
+        // координата y из viewBox и есть отступ сверху в пикселях.
+        let grid = '', yLabels = '';
+        for (let k = 0; k <= 4; k++) {
+            const gy = yOf(gridStep * k, maxAll);
+            if (k) grid += `<line x1="${PAD_L}" y1="${gy.toFixed(1)}" x2="${W - PAD_R}" y2="${gy.toFixed(1)}" stroke="currentColor" opacity="0.12"/>`;
+            yLabels += `<span style="position:absolute; top:${(gy - 7).toFixed(1)}px; right:${((W - PAD_L + 4) / W * 100).toFixed(2)}%;
+                        font-size:10.5px; line-height:14px; white-space:nowrap; color:var(--text-sec);">${fmtY(gridStep * k)}</span>`;
+        }
+
         series.forEach(s => {
             const d = s.points.map((p, i) =>
                 `${i ? 'L' : 'M'}${x(i).toFixed(1)},${yOf(p[1], maxAll).toFixed(1)}`
@@ -12360,8 +12387,10 @@ const app = {
                  onmouseleave="app.analyticsChartLeave('${id}')">
                 <line x1="${PAD_L}" y1="${H - PAD_B - 1}" x2="${W - PAD_R}" y2="${H - PAD_B - 1}" stroke="currentColor" opacity="0.25"/>
                 <line id="guide_${id}" x1="0" y1="${PAD_T}" x2="0" y2="${H - PAD_B}" stroke="currentColor" opacity="0" stroke-width="1" stroke-dasharray="3 3"/>
+                ${grid}
                 ${paths}
             </svg>
+            ${yLabels}
             <div style="position:relative; height:18px; margin-top:2px;">${labels}</div>
             <div id="tip_${id}" style="position:absolute; display:none; pointer-events:none; z-index:5;
                  background:var(--surface); border:1px solid var(--border); border-radius:8px;
