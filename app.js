@@ -8484,6 +8484,42 @@ const app = {
     },
 
     /**
+     * Артикул → наличие на сегодня, с тем же правилом 31 дня, что применяет
+     * render() калькулятора (см. actualAvail в отрисовке строки сметы):
+     * позиция «в наличии», у которой price_date старше месяца, фактически уже
+     * «под заказ» — прайс мог обновиться, а мы этого не знаем. Без этого
+     * правила блок доверял бы отметке, которая сама устарела.
+     *
+     * Значений в каталоге всего два: 'in_stock' и 'on_order'. Позиции без
+     * поля availability не попадают в индекс вовсе — калькулятор для них тоже
+     * не показывает бейджа, и здесь их считать ни туда ни сюда не за что.
+     */
+    catalogAvailabilityIndex: function () {
+        if (this._catAvailIdx) return this._catAvailIdx;
+        const idx = {};
+        if (typeof catalog === 'undefined' || !catalog) return idx;
+        const seen = new Set();
+        const now = Date.now(), DAY = 86400000;
+        const walk = (node) => {
+            if (!node || typeof node !== 'object' || seen.has(node)) return;
+            seen.add(node);
+            if (typeof node.id === 'string' && node.availability) {
+                let avail = node.availability;
+                if (avail === 'in_stock' && node.price_date) {
+                    const uDate = new Date(node.price_date);
+                    if (!isNaN(uDate.getTime()) && (now - uDate.getTime()) / DAY > 31) avail = 'on_order';
+                }
+                if (idx[node.id] === undefined) idx[node.id] = avail;
+                if (typeof node.article === 'string' && idx[node.article] === undefined) idx[node.article] = avail;
+            }
+            for (const k in node) walk(node[k]);
+        };
+        (typeof CATALOG_PRICE_ROOTS !== 'undefined' ? CATALOG_PRICE_ROOTS : [catalog]).forEach(walk);
+        this._catAvailIdx = idx;
+        return idx;
+    },
+
+    /**
      * Полная история смет по списку почт: сначала находим ЧЬИ это сметы, потом
      * забираем по ним всё.
      *
@@ -8638,6 +8674,7 @@ const app = {
             + `<div class="lk-section-head" style="margin-top:4px;"><h4>⏳ Ждут вашего звонка</h4></div>`
             + staleHtml
             + `<div id="installer_reprice"></div>`
+            + `<div id="installer_avail"></div>`
             + `<div class="lk-section-head" style="margin-top:18px;"><h4>📈 Путь ваших смет</h4></div>`
             + funnelHtml
             + `<p class="lk-hint" style="margin-top:10px;">
@@ -8645,9 +8682,37 @@ const app = {
                 «Клиент открыл» отмечается, когда заказчик открывает вашу ссылку, — по ней видно, дошла смета до него или нет.
                </p>`;
 
-        // Подорожание считаем отдельно и после: это ещё запрос за составом
-        // счетов, а числа выше должны появиться сразу.
-        this.renderInstallerRepricing((inv.cards || []).map(c => c.id));
+        // Цены и наличие считаются отдельно и после: это запрос за составом
+        // счетов, а числа выше должны появиться сразу. Запрос один на оба
+        // блока — и цене, и наличию нужен один и тот же состав счетов.
+        this.loadInstallerInvoiceExtras((inv.cards || []).map(c => c.id));
+    },
+
+    /**
+     * Состав счетов монтажника — один запрос на два блока сразу (цены и
+     * наличие). Раньше это была своя выборка внутри renderInstallerRepricing;
+     * когда понадобился ещё и разбор наличия по тем же счетам, тянуть
+     * shared_invoices второй раз ради тех же данных не было смысла — это
+     * ровно тот egress, которого стараемся избегать (см. лимит Supabase).
+     */
+    loadInstallerInvoiceExtras: async function (calcIds) {
+        if (!calcIds || !calcIds.length) return;
+        let rows = [];
+        try {
+            const CHUNK = 80;
+            for (let i = 0; i < calcIds.length; i += CHUNK) {
+                const part = calcIds.slice(i, i + CHUNK);
+                const { data, error } = await supabaseClient.from('shared_invoices')
+                    .select('id, created_at, pn:object_info->>projectName, eq:items->equipment').in('id', part);
+                if (error) throw error;
+                rows.push(...(data || []));
+            }
+        } catch (e) {
+            return;   // оба блока вспомогательные, ломать ими вкладку незачем
+        }
+        if (!rows.length) return;
+        this.renderInstallerRepricing(rows);
+        this.renderInstallerAvailability(rows);
     },
 
     /**
@@ -8663,10 +8728,13 @@ const app = {
      *
      * Работы не трогаем: их расценки монтажник ставит сам, и рынок их не
      * двигает.
+     *
+     * Принимает уже загруженный состав счетов (rows) — сам он ничего не
+     * запрашивает, см. loadInstallerInvoiceExtras.
      */
-    renderInstallerRepricing: async function (calcIds) {
+    renderInstallerRepricing: function (rows) {
         const host = document.getElementById('installer_reprice');
-        if (!host || !calcIds || !calcIds.length) return;
+        if (!host || !rows || !rows.length) return;
         const esc = (s) => String(s == null ? '' : s).replace(/</g, '&lt;');
         const num = n => Number(n || 0).toLocaleString('ru-RU');
         // Знак ставим только при реальном движении: «+0 ₽» читается как ошибка.
@@ -8675,21 +8743,6 @@ const app = {
             return (r === 0 ? '' : (r > 0 ? '+' : '−')) + num(Math.abs(r)) + ' ₽';
         };
         const pctStr = (p) => (Math.abs(p) < 0.05 ? '' : (p > 0 ? '+' : '−')) + Math.abs(p).toFixed(1).replace('.', ',') + '%';
-
-        let rows = [];
-        try {
-            const CHUNK = 80;
-            for (let i = 0; i < calcIds.length; i += CHUNK) {
-                const part = calcIds.slice(i, i + CHUNK);
-                const { data, error } = await supabaseClient.from('shared_invoices')
-                    .select('id, created_at, pn:object_info->>projectName, eq:items->equipment').in('id', part);
-                if (error) throw error;
-                rows.push(...(data || []));
-            }
-        } catch (e) {
-            return;   // молча: блок вспомогательный, ломать им вкладку незачем
-        }
-        if (!rows.length) return;
 
         const price = this.catalogPriceIndex();
         let oldAll = 0, newAll = 0, matched = 0, skipped = 0;
@@ -8757,6 +8810,91 @@ const app = {
                 Сравниваются цены, записанные в самой смете, с сегодняшними — теми, что действуют для вас${this.activeDistPriceKey() ? ' (прайс вашего дистрибьютора)' : ''}.
                 Считается только оборудование: расценки на работы вы ставите сами.
                 Учтено ${num(matched)} ${this.plural(matched, 'позиция', 'позиции', 'позиций')}${skipped ? `, ${num(skipped)} пропущено — их нет в каталоге (своё и распознанное оборудование)` : ''}.
+               </p>`;
+    },
+
+    // Сколько последних счетов разбираем на риск сроков — не всю историю:
+    // важны те объекты, по которым разговор с клиентом ещё идёт, а не то, что
+    // было полгода назад.
+    INSTALLER_ORDER_RECENT: 8,
+
+    /**
+     * «Под заказ»: сколько позиций в недавних счетах монтажника сейчас не в
+     * наличии. О такой позиции он до сих пор узнавал от поставщика — уже
+     * после того, как назвал клиенту сроки.
+     *
+     * Принимает уже загруженный состав счетов (те же rows, что и
+     * renderInstallerRepricing) — второй запрос за тем же самым не нужен.
+     */
+    renderInstallerAvailability: function (rows) {
+        const host = document.getElementById('installer_avail');
+        if (!host || !rows || !rows.length) return;
+        const esc = (s) => String(s == null ? '' : s).replace(/</g, '&lt;');
+        const num = n => Number(n || 0).toLocaleString('ru-RU');
+        const avail = this.catalogAvailabilityIndex();
+
+        const recent = rows.slice()
+            .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+            .slice(0, this.INSTALLER_ORDER_RECENT);
+
+        const risky = {};
+        let checked = 0, invoicesWithGap = 0;
+        recent.forEach(r => {
+            const eq = Array.isArray(r.eq) ? r.eq : [];
+            const once = {};
+            let hit = false;
+            eq.forEach(it => {
+                if (!it) return;
+                const art = String(it.originalId || it.id || '');
+                if (!art || art.indexOf('custom_collapsed_') === 0) return;
+                const a = avail[art];
+                if (a === undefined) return;   // неизвестно калькулятору — не считаем ни туда, ни сюда
+                checked++;
+                if (a !== 'on_order') return;
+                hit = true;
+                if (!once[art]) {
+                    const g = risky[art] || (risky[art] = { art, name: it.name || art, invoices: 0 });
+                    g.invoices++;
+                    once[art] = 1;
+                }
+            });
+            if (hit) invoicesWithGap++;
+        });
+        // Ни одной позиции с известным наличием не нашлось — например, счета
+        // целиком из своего оборудования. Говорить в такой ситуации нечего.
+        if (!checked) return;
+
+        const head = `<div class="lk-section-head" style="margin-top:18px;"><h4>📦 Под заказ</h4></div>`;
+        const tile = (label, value, sub, accent) => `
+            <div style="flex:1 1 150px; min-width:0; background:var(--surface-light); border:1px solid var(--border);
+                        border-radius:12px; padding:12px 14px;">
+                <div style="font-size:11.5px; color:var(--text-sec); font-weight:700;">${label}</div>
+                <div style="font-size:24px; font-weight:800; line-height:1.1; margin-top:4px; color:${accent || 'var(--text-main)'};">${value}</div>
+                <div style="font-size:11px; color:var(--text-sec); margin-top:3px;">${sub}</div>
+            </div>`;
+        const tiles = `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                ${tile('Проверено счетов', num(recent.length), 'последних по дате')}
+                ${tile('С позициями под заказ', num(invoicesWithGap), 'сроки стоит уточнить', invoicesWithGap ? '#EAB308' : null)}
+            </div>`;
+
+        const list = Object.values(risky).sort((a, b) => b.invoices - a.invoices);
+        if (!list.length) {
+            host.innerHTML = head + tiles + `<p class="lk-hint">Всё, что проверилось, — в наличии.</p>`;
+            return;
+        }
+        host.innerHTML = head + tiles
+            + list.slice(0, 6).map(g => `
+                <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+                    <div style="min-width:0; flex:1;">
+                        <b style="font-size:12.5px; color:var(--text-main);">${esc(g.name)}</b>
+                        <br><small style="color:var(--text-sec);">${esc(g.art)}</small>
+                    </div>
+                    <b style="flex:0 0 auto; font-size:12.5px; color:#EAB308;">${num(g.invoices)} ${this.plural(g.invoices, 'счёт', 'счёта', 'счетов')}</b>
+                </div>`).join('')
+            + (list.length > 6 ? `<p class="lk-hint" style="margin-top:6px;">и ещё ${num(list.length - 6)} позиций</p>` : '')
+            + `<p class="lk-hint" style="margin-top:8px;">
+                Наличие в каталоге может смениться и обратно, но пока стоит «под заказ» — сроки лучше уточнить у поставщика, прежде чем называть дату клиенту.
+                Своё и распознанное оборудование сюда не входит — калькулятор не знает его наличия.
                </p>`;
     },
 
