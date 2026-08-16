@@ -12539,6 +12539,148 @@ const app = {
         }
     },
 
+    /**
+     * Марки для графика «Спрос по месяцам» в нормальном виде.
+     *
+     * Основной источник — таблица analytics_chart_brands в Supabase: её правят
+     * кнопками на дашборде, по ней же AutoWordstat.py решает, какие слова
+     * спрашивать у Wordstat. База не ответила или таблицы ещё нет — берём то,
+     * что уже собрано в файле, то есть ровно прежнее поведение: график не
+     * должен пустеть из-за настройки, которой могло и не быть.
+     */
+    chartBrandList: function (phrases) {
+        const rows = this._chartBrands;
+        // Раздел списка — только для группировки в настройке. Незнакомое
+        // значение кладём к конкурентам STOUT, а не прячем: марка, которой нет
+        // ни в одном разделе, пропала бы из настройки совсем.
+        const seg = r => (['own', 'stout', 'rommer'].indexOf(r) >= 0 ? r : 'stout');
+        if (rows && rows.length) {
+            return rows.map(r => ({
+                word: String(r.word || '').trim().toLowerCase(),
+                label: String(r.label || r.word || '').trim(),
+                rival: seg(r.rival_of),
+                enabled: r.enabled !== false,
+                mergeInto: String(r.merge_into || '').trim().toLowerCase() || null,
+                sort: Number(r.sort) || 0
+            })).filter(b => b.word)
+                .sort((a, b) => a.sort - b.sort || a.word.localeCompare(b.word));
+        }
+        const ph = phrases || {};
+        return Object.keys(ph).filter(id => ph[id].group === 'brands').map(id => {
+            const w = String(ph[id].text || id).toLowerCase();
+            return {
+                word: w, label: w, enabled: true, mergeInto: null, sort: 0,
+                rival: (w === 'stout' || w === 'rommer') ? 'own' : 'stout'
+            };
+        });
+    },
+
+    toggleBrandEditor: function () {
+        this._brandEditorOpen = !this._brandEditorOpen;
+        this.renderAdminMain();
+    },
+
+    /**
+     * Показывать марку на графике или нет. Строку не удаляем: спрос по ней
+     * продолжает собираться, и обратное включение рисует линию сразу, со всей
+     * историей, а не с месяца включения.
+     */
+    toggleChartBrand: async function (word) {
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Менять список марок запрещено.');
+            return;
+        }
+        const row = (this._chartBrands || []).find(r => String(r.word).toLowerCase() === word);
+        if (!row) {
+            app.alert('Список марок пока не читается из базы — правку сохранить некуда. '
+                + 'Нужно создать таблицу analytics_chart_brands (файл миграции лежит в supabase/migrations).');
+            return;
+        }
+        const next = !(row.enabled !== false);
+        try {
+            const { error } = await supabaseClient.from('analytics_chart_brands')
+                .update({ enabled: next, updated_at: new Date().toISOString() }).eq('word', row.word);
+            if (error) throw error;
+            row.enabled = next;
+            this.renderAdminMain();
+        } catch (e) {
+            app.alert('Не удалось сохранить. Попробуйте ещё раз.');
+            console.warn('[analytics_chart_brands] update:', e.message || e);
+        }
+    },
+
+    /**
+     * Добавить марку в список графика.
+     *
+     * Слово уходит в Wordstat как есть, поэтому приводим его к нижнему
+     * регистру и не пускаем в него ничего, кроме букв, цифр, пробела и дефиса:
+     * «Valtec» и «valtec» для Wordstat одно и то же, а вот кавычки и плюсы там
+     * значат операторы и молча испортят запрос.
+     */
+    addChartBrand: async function () {
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Менять список марок запрещено.');
+            return;
+        }
+        const inp = document.getElementById('dash_brand_word');
+        const sel = document.getElementById('dash_brand_seg');
+        const word = String((inp && inp.value) || '').trim().toLowerCase();
+        if (!word) return;
+        if (!/^[a-zа-яё0-9][a-zа-яё0-9 \-]{0,39}$/.test(word)) {
+            app.alert('В названии марки допустимы только буквы, цифры, пробел и дефис.');
+            return;
+        }
+        const rows = this._chartBrands || [];
+        if (rows.some(r => String(r.word).toLowerCase() === word)) {
+            app.alert('Такая марка в списке уже есть.');
+            return;
+        }
+        const mergeSel = document.getElementById('dash_brand_merge');
+        const mergeInto = String((mergeSel && mergeSel.value) || '').trim().toLowerCase() || null;
+        const sort = rows.reduce((m, r) => Math.max(m, Number(r.sort) || 0), 0) + 1;
+        // Написание живёт в том же разделе, что и сама марка: держать «рехау»
+        // среди конкурентов ROMMER, пока rehau стоит у STOUT, — верный способ
+        // потом не понять этот список.
+        const parent = mergeInto ? rows.find(r => String(r.word).toLowerCase() === mergeInto) : null;
+        const row = {
+            word: word, label: word, enabled: true, sort: sort, merge_into: mergeInto,
+            rival_of: (parent && parent.rival_of) || (sel && sel.value) || 'stout'
+        };
+        try {
+            const { error } = await supabaseClient.from('analytics_chart_brands').insert(row);
+            if (error) throw error;
+            this._chartBrands = rows.concat([row]);
+            if (inp) inp.value = '';
+            this.renderAdminMain();
+        } catch (e) {
+            app.alert('Не удалось добавить марку. Попробуйте ещё раз.');
+            console.warn('[analytics_chart_brands] insert:', e.message || e);
+        }
+    },
+
+    /**
+     * Убрать марку из списка совсем — вместе со сбором спроса по ней. Просто
+     * спрятать линию умеет галочка; это действие про экономию запросов к
+     * Wordstat, их сотня в час на весь прогон.
+     */
+    removeChartBrand: async function (word) {
+        if (this.getAdminRole() === 'viewer') {
+            app.alert('Режим просмотра. Менять список марок запрещено.');
+            return;
+        }
+        if (!await app.confirm('Убрать марку из списка? Спрос по ней перестанет собираться. '
+            + 'Чтобы просто спрятать линию, снимите галочку — тогда история продолжит копиться.')) return;
+        try {
+            const { error } = await supabaseClient.from('analytics_chart_brands').delete().eq('word', word);
+            if (error) throw error;
+            this._chartBrands = (this._chartBrands || []).filter(r => String(r.word).toLowerCase() !== word);
+            this.renderAdminMain();
+        } catch (e) {
+            app.alert('Не удалось убрать марку. Попробуйте ещё раз.');
+            console.warn('[analytics_chart_brands] delete:', e.message || e);
+        }
+    },
+
     ensureAnalyticsData: function (wrap) {
         if (this._analytics) return true;
         wrap.innerHTML = `<div style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка данных аналитики…</div>`;
@@ -12573,10 +12715,25 @@ const app = {
                     return {};
                 }
             })();
+            // Марки графика «Спрос по месяцам» — тоже из базы: их список
+            // правят кнопками на дашборде, а собирает по нему историю
+            // AutoWordstat.py. Не ответила — ниже подставим марки из
+            // собранного файла, то есть ровно то, что было до настройки.
+            const chartBrands = (async () => {
+                try {
+                    const { data } = await supabaseClient.from('analytics_chart_brands')
+                        .select('word, label, rival_of, enabled, merge_into, sort');
+                    return data || null;
+                } catch (e) {
+                    console.warn('[analytics] список марок графика не загрузился:', e.message || e);
+                    return null;
+                }
+            })();
             const [brands, wordstat, pulse, gas, companies, prices] = await Promise.all([
                 get('wordstat_brands'), get('wordstat'), get('wordstat_pulse'), get('gas'), get('companies'), get('prices')
             ]);
             this._analyticsTerms = await terms;
+            this._chartBrands = await chartBrands;
             this._analytics = { brands, wordstat, pulse, gas, companies, prices };
             this._loadingAnalytics = false;
             if (this.OWNER_ONLY_TABS.indexOf(this._adminTab) >= 0) this.renderAdminMain();
@@ -12647,11 +12804,42 @@ const app = {
         // Выбран регион — считаем по нему; иначе по России целиком.
         const seriesOf = id => full(region ? ((regM[id] || {})[region] || []) : (ruM[id] || []));
 
+        // ── Марки: какие линии рисуем ───────────────────────────────────────
+        // Список марок — настройка, а не код: он лежит в Supabase и правится
+        // кнопкой «Список марок» под графиком. Собирает по нему историю
+        // AutoWordstat.py, поэтому выключенные марки продолжают собираться:
+        // галочка тогда переключает линию сразу, а не «через месяц».
+        const brandList = this.chartBrandList(phrases);
+        const idByWord = {};
+        Object.keys(phrases).forEach(id => {
+            if (phrases[id].group === 'brands') idByWord[String(phrases[id].text || '').toLowerCase()] = id;
+        });
+        // Склейка написаний: «рехау» прибавляется к «rehau», usystems — к
+        // uponor, своей линии такая строка не получает. Кириллица и латиница у
+        // Wordstat — разные запросы, и без склейки марка недосчитывается той
+        // доли, которую ищут по-русски; со сменой юрлица то же самое — падение
+        // одной марки и взлёт другой, хотя на рынке это одни и те же люди.
+        const brandByWord = {};
+        brandList.forEach(b => { brandByWord[b.word] = b; });
+        const brandTarget = (b) => {
+            let t = b, guard = 0;
+            while (t.mergeInto && brandByWord[t.mergeInto] && guard++ < 5) t = brandByWord[t.mergeInto];
+            return t;
+        };
+        // Ряды, которые реально попадают на график. Их же суммируем в проценты
+        // под графиком: выключенная марка не должна двигать цифру, которой на
+        // картинке не видно. Галочка у написания тоже работает — им можно
+        // выключить одну кириллицу, оставив саму марку.
+        const brandActiveIds = brandList
+            .filter(b => b.enabled && brandTarget(b).enabled && idByWord[b.word])
+            .map(b => idByWord[b.word]);
+
         // Спрос по группе фраз: суммируем сами запросы по месяцам и только
         // потом берём процент. Среднее из процентов дало бы редкой фразе тот
         // же вес, что и основной.
         const groupSeries = (group) => {
-            const ids = Object.keys(phrases).filter(id => phrases[id].group === group);
+            const ids = group === 'brands' ? brandActiveIds
+                : Object.keys(phrases).filter(id => phrases[id].group === group);
             const acc = {};
             ids.forEach(id => seriesOf(id).forEach(p => { acc[p[0]] = (acc[p[0]] || 0) + (Number(p[1]) || 0); }));
             return { ids: ids, points: Object.keys(acc).sort().map(m => [m, acc[m]]) };
@@ -13092,13 +13280,40 @@ const app = {
         // целиком, здесь — свежий год. Поэтому по умолчанию 12 месяцев, а
         // ползунок ходит от одного месяца до трёх лет с шагом в месяц.
         const mns = (this._dashMonths === undefined || this._dashMonths === null) ? 12 : this._dashMonths;
-        const chartSeries = Object.keys(phrases).filter(id => phrases[id].group === curGroup)
-            .map(id => ({ name: phrases[id].text || id, points: seriesOf(id).slice(mns > 0 ? -mns : 0) }))
+        const isBrands = curGroup === 'brands';
+        const brandLines = () => {
+            const acc = {};
+            brandList.forEach(b => {
+                const id = idByWord[b.word];
+                if (!id) return;                       // марку завели, спрос ещё не собран
+                const target = brandTarget(b);
+                if (!b.enabled || !target.enabled) return;
+                const dst = acc[target.word] || (acc[target.word] = { label: target.label, add: [], m: {} });
+                // В подпись линии выносим только чужое имя (uponor + usystems).
+                // Кириллическое написание той же марки в подписи не нужно:
+                // «rehau + рехау» ничего не добавляет, а место в легенде занимает.
+                const cyr = s => /[а-яё]/i.test(s);
+                if (target.word !== b.word && cyr(b.word) === cyr(target.word)) dst.add.push(b.label);
+                seriesOf(id).forEach(p => { dst.m[p[0]] = (dst.m[p[0]] || 0) + (Number(p[1]) || 0); });
+            });
+            return Object.keys(acc).map(w => ({
+                name: acc[w].label + (acc[w].add.length ? ' + ' + acc[w].add.join(' + ') : ''),
+                points: Object.keys(acc[w].m).sort().map(m => [m, acc[w].m[m]])
+            }));
+        };
+        const chartSeries = (isBrands
+                ? brandLines()
+                : Object.keys(phrases).filter(id => phrases[id].group === curGroup)
+                    .map(id => ({ name: phrases[id].text || id, points: seriesOf(id) })))
+            .map(s => ({ name: s.name, points: s.points.slice(mns > 0 ? -mns : 0) }))
             // Одну точку раньше отбрасывали — но ползунок теперь доходит до
             // одного месяца, и на этом делении график оказывался пустым.
             .filter(s => s.points.length > 0)
             .sort((a, b) => (b.points[b.points.length - 1][1] || 0) - (a.points[a.points.length - 1][1] || 0))
-            .slice(0, 6);
+            // У марок предел выше: свои две линии на графике постоянно, и при
+            // шести — «три конкурента STOUT и три ROMMER» — не осталось бы
+            // места ни для одной из них.
+            .slice(0, isBrands ? 8 : 6);
         // ── Изменение спроса за периоды ─────────────────────────────────────
         // По линиям видно форму, но не величину: «выросло или упало и на
         // сколько» приходилось считать глазами по точкам. Полоса под графиком
@@ -13144,6 +13359,82 @@ const app = {
         const gBtn = (g, label) => `<button class="admin-btn" style="height:26px; padding:0 9px; font-size:11.5px; ${curGroup === g ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsGroup('${g}')">${label}</button>`;
         const monthsLabel = (m) => this.dashMonthsLabel(m);
 
+        // ── Настройка списка марок ──────────────────────────────────────────
+        // Кто на графике — вопрос к рынку, а не к коду: конкуренты меняются
+        // чаще, чем выкладывается сайт. Поэтому список правится прямо здесь и
+        // хранится в базе; сюда же вынесена склейка двух написаний одной марки.
+        //
+        // Новая марка появляется линией не сразу: историю по слову спрашивает
+        // у Wordstat ежемесячный прогон, из браузера этого не сделать. Пишем
+        // это прямо в подсказке, иначе выглядит как поломка.
+        const brandsViewer = this.getAdminRole() === 'viewer';
+        const brandEditor = () => {
+            if (!isBrands || !this._brandEditorOpen) return '';
+            const shown = chartSeries.length;
+            const SEGS = [['own', 'Наши марки'], ['stout', 'Конкуренты STOUT'], ['rommer', 'Конкуренты ROMMER']];
+            const chip = (b) => {
+                const merged = b.mergeInto ? ` → ${esc(b.mergeInto)}` : '';
+                const off = !b.enabled;
+                return `<span style="display:inline-flex; align-items:center; gap:6px; padding:3px 5px 3px 10px;
+                             border:1px ${off ? 'dashed' : 'solid'} var(--border); border-radius:12px; font-size:12px;
+                             color:${off ? 'var(--text-sec)' : 'var(--text-main)'};">
+                        ${esc(b.label)}${merged}
+                        <button class="admin-btn" ${brandsViewer ? 'disabled' : ''}
+                                title="${off ? 'Показать на графике' : 'Убрать с графика (спрос собирать не перестанем)'}"
+                                style="height:19px; min-width:19px; padding:0 5px; font-size:11px; line-height:1; color:${off ? 'var(--text-sec)' : '#10B981'};"
+                                onclick="app.toggleChartBrand('${q(b.word)}')">${off ? '○' : '✓'}</button>
+                        <button class="admin-btn" ${brandsViewer ? 'disabled' : ''}
+                                title="Удалить марку из списка совсем"
+                                style="height:19px; min-width:19px; padding:0 5px; font-size:11px; line-height:1; color:#EF4444;"
+                                onclick="app.removeChartBrand('${q(b.word)}')">✕</button>
+                    </span>`;
+            };
+            const seg = ([key, title]) => {
+                const items = brandList.filter(b => b.rival === key);
+                return `<div style="margin-bottom:10px;">
+                        <div style="font-size:11.5px; color:var(--text-sec); margin-bottom:5px;">${title}</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">${items.map(chip).join('') || '<small style="color:var(--text-sec);">пусто</small>'}</div>
+                    </div>`;
+            };
+            // Второе написание заводится тем же полем: слово плюс выбор «это то
+            // же, что…». Отдельного окна не нужно, а без выбора пришлось бы
+            // лезть в базу — ровно то, от чего эта настройка и избавляет.
+            const inpStyle = 'height:26px; font-size:12px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text-main);';
+            const mergeOpts = brandList.filter(b => !b.mergeInto)
+                .map(b => `<option value="${q(b.word)}">то же, что ${esc(b.label)}</option>`).join('');
+            const addForm = brandsViewer ? '' : `<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:4px;">
+                    <input id="dash_brand_word" placeholder="марка или её написание, как ищут" maxlength="40"
+                           style="flex:1 1 160px; padding:0 8px; ${inpStyle}">
+                    <select id="dash_brand_seg" style="${inpStyle}">
+                        <option value="stout">конкурент STOUT</option>
+                        <option value="rommer">конкурент ROMMER</option>
+                        <option value="own">наша марка</option>
+                    </select>
+                    <select id="dash_brand_merge" style="${inpStyle}">
+                        <option value="">своя линия</option>
+                        ${mergeOpts}
+                    </select>
+                    <button class="admin-btn" style="height:26px; padding:0 10px; font-size:11.5px;" onclick="app.addChartBrand()">Добавить</button>
+                </div>`;
+            return `<div style="margin-top:12px; padding:12px; border:1px solid var(--border); border-radius:10px; background:var(--surface-light);">
+                    ${SEGS.map(seg).join('')}
+                    ${addForm}
+                    <div style="font-size:11.5px; color:var(--text-sec); margin-top:8px;">
+                        Линий на графике: ${shown} из восьми возможных — если отмеченных марок больше, лишние отсекаются по спросу за последний месяц.
+                        Новая марка встанет на график после ближайшего прогона Wordstat (3-го числа или вручную через GitHub Actions): историю по слову спрашивает он, из браузера её не получить.
+                        Снятая галочка убирает линию сразу, но спрос по марке продолжает собираться — вернуть её можно одним нажатием.
+                        Проценты под графиком считаются по отмеченным маркам, поэтому список их меняет.
+                        Стрелка «→» значит, что это второе написание той же марки и своей линии у него нет: кириллица и латиница для Wordstat — разные запросы, и без склейки марка недосчитывается всего, что ищут по-русски.
+                        ${(this._chartBrands && this._chartBrands.length) ? '' : '<br><b>Список пока не из базы:</b> таблица analytics_chart_brands ещё не создана, сохранить правки не получится.'}
+                    </div>
+                </div>`;
+        };
+        const brandBtn = isBrands
+            ? `<button class="admin-btn" title="Какие марки показывать на графике"
+                    style="height:26px; padding:0 9px; font-size:11.5px; ${this._brandEditorOpen ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}"
+                    onclick="app.toggleBrandEditor()">Список марок</button>`
+            : '';
+
         const gasRegions = (gas && gas.regions) || {};
         const gasRows = Object.keys(gasRegions).map(name => {
             const g = gasRegions[name], s = g.summary || {};
@@ -13157,7 +13448,7 @@ const app = {
         h += `<div style="display:grid; ${gWide} gap:14px; margin-bottom:14px;">
             ${card(`<div style="display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
                         <div>${head('Спрос по месяцам', (region ? esc(region) : 'вся Россия') + (spanNote ? ' · ' + spanNote : ''))}</div>
-                        <div style="margin-left:auto; display:flex; gap:5px; flex-wrap:wrap;">${GROUPS.map(([g, l]) => gBtn(g, l)).join('')}</div>
+                        <div style="margin-left:auto; display:flex; gap:5px; flex-wrap:wrap;">${GROUPS.map(([g, l]) => gBtn(g, l)).join('')}${brandBtn}</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
                         <input type="range" min="1" max="36" step="1" value="${mns > 0 ? mns : 36}" id="dash_months_range"
@@ -13170,7 +13461,8 @@ const app = {
                     ${chartSeries.length
                         ? this.buildAnalyticsLineChart(chartSeries, 'dash')
                         : `<div style="font-size:12.5px; color:var(--text-sec); padding:20px 0;">По этой группе${region ? ` в регионе «${esc(region)}»` : ''} истории пока нет.</div>`}
-                    ${demandStrip}`)}
+                    ${demandStrip}
+                    ${brandEditor()}`)}
             ${card(head('🔥 Догазификация', gasRows.length
                     ? `программа ${esc((gas && gas.program) || '')} · ${num(gasTotal)} домовладений`
                     : 'данных пока нет')

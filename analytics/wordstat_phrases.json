@@ -13,9 +13,11 @@
     {"id":"brand_stout","text":"stout","group":"brands","core":true},
     {"id":"brand_rommer","text":"rommer","group":"brands","core":false},
     {"id":"brand_valtec","text":"valtec","group":"brands","core":true},
+    {"id":"brand_elsen","text":"elsen","group":"brands","core":false},
     {"id":"brand_rehau","text":"rehau","group":"brands","core":false},
-    {"id":"brand_uponor","text":"uponor","group":"brands","core":false},
-    {"id":"brand_oventrop","text":"oventrop","group":"brands","core":false},
+    {"id":"brand_tim","text":"tim","group":"brands","core":false},
+    {"id":"brand_valfex","text":"valfex","group":"brands","core":false},
+    {"id":"brand_vieir","text":"vieir","group":"brands","core":false},
     {"id":"kotel_gaz_kupit","text":"газовый котел купить","group":"equipment","core":true},
     {"id":"elektrokotel","text":"электрокотел","group":"equipment","core":false},
     {"id":"teplovoy_nasos","text":"тепловой насос","group":"equipment","core":false},
@@ -36,6 +38,15 @@
     {"id":"calc_podbor_radiatorov","text":"подбор радиаторов отопления по площади","group":"calc","core":false},
     {"id":"calc_proekt_vodosnab","text":"проект водоснабжения частного дома","group":"calc","core":false},
     {"id":"calc_shema_otopl","text":"схема отопления частного дома","group":"calc","core":false}
+  ],
+  "_brands_comment": [
+    "Список марок графика правится в админке: Дашборд -> Спрос по месяцам ->",
+    "кнопка «Список марок». Хранится он в Supabase, таблица analytics_chart_brands,",
+    "оттуда же его берёт AutoWordstat.py. Здешний список — запасной: по нему идём,",
+    "только если база не ответила, поэтому вторых написаний («рехау» к «rehau») тут",
+    "нет — без таблицы склеивать их всё равно нечем.",
+    "",
+    "Признак core у марки значит сбор истории ещё и по регионам. Он только здесь: это про стоимость прогона, а не про оформление графика."
   ],
   "_calc_comment": [
     "Группа calc — спрос не на товар, а на саму услугу калькулятора: подбор и",

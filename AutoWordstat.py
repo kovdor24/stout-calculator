@@ -46,6 +46,8 @@ import urllib.request
 API_BASE = "https://searchapi.api.cloud.yandex.net/v2/wordstat"
 SUPABASE_RPC_PATH = "/rest/v1/rpc/analytics_live_regions"
 SUPABASE_TERMS_PATH = "/rest/v1/analytics_terms?select=word,decision,cats"
+SUPABASE_CHART_BRANDS_PATH = ("/rest/v1/analytics_chart_brands"
+                              "?select=word,label,rival_of,enabled,merge_into,sort")
 UA = "Mozilla/5.0 (compatible; HeatCalcAnalyticsBot/1.0; +https://heatcalc.ru)"
 
 PHRASES_FILE = "analytics/wordstat_phrases.json"
@@ -656,10 +658,78 @@ def load_phrases():
     cfg = load_json_file(PHRASES_FILE, None)
     if not cfg or not cfg.get("phrases"):
         raise RuntimeError("%s не найден или пуст" % PHRASES_FILE)
-    by_id = {p["id"]: p for p in cfg["phrases"]}
-    core_ids = [p["id"] for p in cfg["phrases"] if p.get("core")]
+    phrases = apply_chart_brands(cfg["phrases"])
+    by_id = {p["id"]: p for p in phrases}
+    core_ids = [p["id"] for p in phrases if p.get("core")]
     top_ids = cfg.get("top_requests_for", [])
-    return cfg["phrases"], by_id, core_ids, top_ids
+    return phrases, by_id, core_ids, top_ids
+
+
+def brand_phrase_id(word):
+    """Идентификатор ряда для марки. Список марок правят из админки, а в id
+    попадают только буквы и цифры: пробел или дефис в ключе JSON ничему не
+    мешает, но ключ этот ещё и уходит в разметку графика."""
+    return "brand_" + re.sub(r"[^0-9a-zа-яё]+", "_", word.lower().replace("ё", "е")).strip("_")
+
+
+def fetch_chart_brands():
+    """Марки для графика «Спрос по месяцам», как их выставили в админке.
+
+    Живут в Supabase (analytics_chart_brands), а не в файле: список правят
+    кнопками из браузера, а запрашивает историю этот скрипт. База не ответила —
+    идём со списком из файла и пишем в лог: прогон стоит квоты, ронять его
+    из-за списка марок нельзя.
+
+    Выключенные марки тоже возвращаем: спрос по ним собираем всё равно, иначе
+    после включения галочки линия появилась бы только через месяц."""
+    try:
+        supabase_url, supabase_key = load_supabase_credentials()
+        rows = http_get_json(supabase_url.rstrip("/") + SUPABASE_CHART_BRANDS_PATH, {
+            "apikey": supabase_key,
+            "Authorization": "Bearer %s" % supabase_key,
+        })
+    except Exception as e:  # noqa: BLE001
+        log("Список марок графика не прочитался (%s) — идём со списком из файла" % e)
+        return []
+
+    out = []
+    seen = set()
+    for r in sorted(rows or [], key=lambda x: (x.get("sort") or 0, x.get("word") or "")):
+        word = (r.get("word") or "").strip().lower()
+        if not word or word in seen:
+            continue
+        seen.add(word)
+        out.append({"id": brand_phrase_id(word), "text": word, "group": "brands",
+                    "core": False})
+    return out
+
+
+def apply_chart_brands(phrases):
+    """Подменяет группу brands списком из админки. Остальные группы не трогаем:
+    их состав — это смысл вкладки, а не настройка.
+
+    Каждая строка списка — это два-три запроса к Wordstat в каждом прогоне при
+    часовом лимите в сотню, а строк там не только марки, но и вторые написания
+    («рехау» к «rehau»). Длинный список отмечаем в логе: упереться в часовую
+    паузу не страшно, но знать об этом лучше здесь, чем по времени прогона."""
+    brands = fetch_chart_brands()
+    if not brands:
+        return phrases
+    kept = [p for p in phrases if p.get("group") != "brands"]
+    # «Основная» марка (core) — та, по которой историю тянут ещё и в разрезе
+    # регионов. Признак этот про стоимость прогона, а не про оформление
+    # графика, поэтому в админку он не вынесен и берётся из файла.
+    core_words = {p["text"].strip().lower() for p in phrases
+                  if p.get("group") == "brands" and p.get("core")}
+    for b in brands:
+        if b["text"] in core_words:
+            b["core"] = True
+    log("Марки графика из админки: %d (%s)" % (len(brands),
+                                               ", ".join(b["text"] for b in brands)))
+    if len(brands) > 24:
+        log("В списке марок %d строк — прогон упрётся в часовую паузу; "
+            "проверьте список в дашборде" % len(brands))
+    return kept + brands
 
 
 def load_categories():
