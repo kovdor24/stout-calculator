@@ -55,7 +55,7 @@
 
 <div class="wrap" id="out"></div>
 
-<script src="project_sheets.js?v=4.15"></script>
+<script src="project_sheets.js?v=4.17"></script>
 <script src="project_scheme.js?v=4.41"></script>
 <script src="project_layout.js?v=4.15"></script>
 <script src="project_plans.js?v=4.19"></script>
@@ -321,7 +321,15 @@ if (payload && payload.items && payload.items.length) {
     ? [projectNodeSheets.radiator({ code: MARK.o.code, sheet: numOf('o')(oRadStart),
         photo: payload.node3d.radiator, items: itemsBy.o })].filter(Boolean)
     : [];
-  var oSpecStart = oRadStart + oRad.length;
+  // Гидравлический расчёт радиаторной части: итоги и расчётное кольцо, за
+  // ними преднастройки клапанов приборов. Данные готовит калькулятор
+  // (payload.hydro) — у смет, отправленных на листы раньше, их нет.
+  var oHydroStart = oRadStart + oRad.length;
+  var oHydro = (payload.hydro && projectSheets.hydraulicsSheets)
+    ? projectSheets.hydraulicsSheets(payload.hydro,
+        { code: MARK.o.code, sheetStart: oHydroStart, num: numOf('o') })
+    : [];
+  var oSpecStart = oHydroStart + oHydro.length;
   var oSpec = itemsBy.o.length ? projectSheets.fromEquipment(itemsBy.o, {
     title: 'Спецификация материалов и оборудования отопления',
     code: MARK.o.code, sheetStart: oSpecStart, num: specNumOf('o')
@@ -456,8 +464,8 @@ if (payload && payload.items && payload.items.length) {
   var tmTotal = (tmScheme.length + tmNodes.length + tmSpec.length)
     ? 1 + tmScheme.length + tmLayout.length + tmNodes.length + tmPipe.length +
       tmSpec.length : 0;
-  var oTotal = (oBody.length + oMan.length + oRad.length + oSpec.length)
-    ? 1 + oBody.length + oMan.length + oRad.length + oSpec.length : 0;
+  var oTotal = (oBody.length + oMan.length + oRad.length + oHydro.length + oSpec.length)
+    ? 1 + oBody.length + oMan.length + oRad.length + oHydro.length + oSpec.length : 0;
   var vTotal = (vBody.length + vNodes.length + vSpec.length)
     ? 1 + vBody.length + vNodes.length + vPipe.length + vSpec.length : 0;
   var kTotal = (kBody.length + kSpec.length)
@@ -536,6 +544,13 @@ if (payload && payload.items && payload.items.length) {
     oSlots.forEach(function (r) { oRows.push(r); });
     oMan.forEach(function (p, i) { oRows.push([numOf('o')(oManStart + i), p.title]); });
     oRad.forEach(function (p, i) { oRows.push([numOf('o')(oRadStart + i), p.title]); });
+    // Листы гидравлики приходят готовыми SVG, без названия в объекте: первый —
+    // сам расчёт, следующие — продолжение таблицы преднастроек.
+    oHydro.forEach(function (_, i) {
+      oRows.push([numOf('o')(oHydroStart + i), i === 0
+        ? 'Гидравлический расчет системы отопления'
+        : 'Настройка клапанов приборов отопления']);
+    });
     oSpec.forEach(function (_, i) {
       oRows.push([specNumOf('o')(oSpecStart + i), 'Спецификация материалов и оборудования отопления']);
     });
@@ -545,6 +560,7 @@ if (payload && payload.items && payload.items.length) {
           (oBody.length ? ', планы этажей (' + oBody.length + ' л.)' : '') +
           (oMan.length ? ', узел коллектора тёплого пола' : '') +
           (oRad.length ? ', узел обвязки радиатора' : '') +
+          (oHydro.length ? ', гидравлический расчёт' : '') +
           ' и спецификация', oTotal);
     svgs.push(titleOf('o'));
     svgs.push(gdOf('o', listOf('o', oRows), oNotes, oTotal,
@@ -552,6 +568,7 @@ if (payload && payload.items && payload.items.length) {
     oBody.forEach(function (p) { svgs.push(p.svg); });
     oMan.forEach(function (p) { svgs.push(p.svg); });
     oRad.forEach(function (p) { svgs.push(p.svg); });
+    oHydro.forEach(function (s) { svgs.push(s); });
     oSpec.forEach(function (s) { svgs.push(s); });
     made.push({ mk: 'o', total: oTotal });
   }

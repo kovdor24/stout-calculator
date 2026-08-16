@@ -45,6 +45,7 @@ import urllib.request
 
 API_BASE = "https://searchapi.api.cloud.yandex.net/v2/wordstat"
 SUPABASE_RPC_PATH = "/rest/v1/rpc/analytics_live_regions"
+SUPABASE_TERMS_PATH = "/rest/v1/analytics_terms?select=word,decision,cats"
 UA = "Mozilla/5.0 (compatible; HeatCalcAnalyticsBot/1.0; +https://heatcalc.ru)"
 
 PHRASES_FILE = "analytics/wordstat_phrases.json"
@@ -180,6 +181,15 @@ class RateLimiter:
             time.sleep(1)
             now = time.time()
         self._calls.append(now)
+
+
+def http_get_json(url, headers, timeout=30):
+    req = urllib.request.Request(url, method="GET")
+    req.add_header("User-Agent", UA)
+    for k, v in headers.items():
+        req.add_header(k, v)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8"))
 
 
 def http_post_json(url, headers, payload, timeout=30):
@@ -624,6 +634,55 @@ def load_categories():
     return cfg
 
 
+def fetch_brand_terms():
+    """Решения по словам-кандидатам, принятые во вкладке «Аналитика»:
+    слово -> {"decision": "brand"|"stop", "cats": [...]}.
+
+    Живут в Supabase, а не в файле конфигурации: отмечают их из браузера, а
+    файлы аналитики собираются здесь, на сервере — записать в репозиторий из
+    админки нечем. База не ответила — работаем со словарём из файла и говорим
+    об этом в лог: прогон стоит квоты, ронять его из-за списка слов нельзя."""
+    try:
+        supabase_url, supabase_key = load_supabase_credentials()
+        rows = http_get_json(supabase_url.rstrip("/") + SUPABASE_TERMS_PATH, {
+            "apikey": supabase_key,
+            "Authorization": "Bearer %s" % supabase_key,
+        })
+    except Exception as e:  # noqa: BLE001
+        log("Решения по кандидатам не прочитались (%s) — идём со словарём из файла" % e)
+        return {}
+
+    out = {}
+    for r in (rows or []):
+        word = (r.get("word") or "").strip().lower().replace("ё", "е")
+        if word and r.get("decision") in ("brand", "stop"):
+            out[word] = {"decision": r["decision"], "cats": r.get("cats") or []}
+    return out
+
+
+def apply_brand_terms(categories, stop_words):
+    """Подмешивает решения из админки в словарь категорий: подтверждённое
+    слово становится известной маркой своих групп, отклонённое — стоп-словом.
+
+    Марку дописываем только в те группы, где её и нашли: «guardo» из фильтров
+    в котлах ничего не значит, а попав туда, начало бы отбирать счёт у
+    настоящих котельных марок. Групп в решении нет (слово отметили по старым
+    данным) — считаем маркой везде."""
+    terms = fetch_brand_terms()
+    if not terms:
+        return
+    stops = [w for w, t in terms.items() if t["decision"] == "stop"]
+    stop_words.update(stops)
+    added = 0
+    for cat in categories:
+        extra = [w for w, t in terms.items()
+                 if t["decision"] == "brand" and (not t["cats"] or cat["id"] in t["cats"])]
+        if extra:
+            cat["known_brands"] = list(cat.get("known_brands", [])) + extra
+            added += len(extra)
+    log("Решения из админки: марок дописано %d, стоп-слов %d" % (added, len(stops)))
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # Обнаружение брендов: кто лидирует в категории — по данным, а не по памяти
 # ──────────────────────────────────────────────────────────────────────────
@@ -754,6 +813,7 @@ def run_brands(client, regional=False):
     categories = cfg["categories"]
     own_brands = cfg.get("own_brands", [])
     stop_words = set(w.lower() for w in cfg.get("stop_words", []))
+    apply_brand_terms(categories, stop_words)
     aliases = build_alias_index(cfg)
     own_canon = []
     for b in own_brands:

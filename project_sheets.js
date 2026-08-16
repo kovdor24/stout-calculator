@@ -715,6 +715,164 @@
     return sheets;
   }
 
+  // ─── Лист «Гидравлический расчёт» ──────────────────────────────────────
+  // Своего расчёта у листа нет: цифры приходят готовыми из калькулятора
+  // (buildHydraulicsData в app.js собирает их из radHydraulics и radBalance —
+  // тех же, по которым смета выбирает диаметры и насосную группу). Лист
+  // раскладывает их по двум таблицам: участки расчётного кольца и
+  // преднастройки клапанов приборов.
+  var HY_RING_COLS = [
+    { w: 20, title: '№' },
+    { w: 195, title: 'Участок расчетного кольца', align: 'left' },
+    { w: 50, title: 'v, м/с' },
+    // Предел скорости у магистрали и у луча разный (таблица И.1 СП 60.13330.2020),
+    // поэтому он стоит в таблице рядом со скоростью, а не одной сноской внизу.
+    { w: 40, title: 'предел' },
+    { w: 50, title: 'Потери, кПа', fill: '#edffff' },
+    { w: 40, title: 'Доля, %' }
+  ];
+  var HY_DEV_COLS = [
+    { w: 20, title: '№' },
+    { w: 150, title: 'Помещение', align: 'left' },
+    { w: 50, title: 'Q, Вт' },
+    { w: 50, title: 'G, м³/ч' },
+    { w: 55, title: 'Потери кольца, кПа' },
+    { w: 35, title: 'Kv, м³/ч' },
+    { w: 35, title: 'Настройка', fill: '#edffff' }
+  ];
+
+  /**
+   * d — объект app.buildHydraulicsData():
+   *   { regime, dT, scheme, devices, watt, flow, branches, flowBranch, dp, head,
+   *     vMax, vLimit, noisy, worst: {room, watt}, flowWorst,
+   *     pump: {label, avail, reserve} | null,
+   *     parts: [{name, dp, v}], balance: [{room, watt, flow, dp, kv, turns, full}] }
+   * opts: { code, sheetStart, num }
+   * Возвращает массив SVG-листов: итоги и кольцо на первом, преднастройки —
+   * следующими (длинный список режется на листы, как спецификация).
+   */
+  function hydraulicsSheets(d, opts) {
+    if (!d) return [];
+    opts = opts || {};
+    var f1 = function (v) { return (Math.round(v * 10) / 10).toFixed(1).replace('.', ','); };
+    var f2 = function (v) { return (Math.round(v * 100) / 100).toFixed(2).replace('.', ','); };
+    var sheets = [], start = opts.sheetStart || 1;
+    var fmtNo = opts.num || function (v) { return String(v); };
+
+    // ── шапка с итогами: два столбца «показатель — значение» ─────────────
+    var colA = [
+      ['Схема разводки', d.scheme],
+      ['Температурный режим', d.regime + ' °C, перепад ' + d.dT + ' K'],
+      ['Приборов отопления', d.devices + ' шт., суммарно ' + d.watt + ' Вт'],
+      ['Расход системы', f2(d.flow) + ' м³/ч'],
+      ['Веток (насосных групп)', String(d.branches)],
+      ['Расход через одну ветку', f2(d.flowBranch) + ' м³/ч']
+    ];
+    var colB = [
+      ['Расчетный прибор', d.worst ? (d.worst.room + ', ' + d.worst.watt + ' Вт') : '—'],
+      ['Расход через него', f2(d.flowWorst) + ' м³/ч'],
+      ['Потери кольца', Math.round(d.dp) + ' кПа'],
+      ['Требуемый напор', f1(d.head) + ' м вод. ст.'],
+      ['Насос группы', d.pump
+        ? (d.pump.label + ' — ' + f1(d.pump.avail) + ' м на рабочем расходе, запас ' +
+           Math.round((d.pump.reserve - 1) * 100) + ' %')
+        : 'кольцо тяжелее насоса 25/80'],
+      ['Наибольшая скорость', f2(d.vMax) + ' м/с' +
+        (d.noisy ? ' — выше предела ' + f1(d.vLimit) + ' м/с' : ' (предел ' + f1(d.vLimit) + ' м/с)')]
+    ];
+
+    var LH = 4.75;
+    var boxH = Math.max(colA.length, colB.length) * LH + 2.4;
+    var body = [];
+    body.push(rect(FR.l, BODY_TOP, FR.r - FR.l, boxH, LW.thin));
+    var putCol = function (list, x) {
+      var y = BODY_TOP + 4.0;
+      list.forEach(function (r) {
+        body.push(text(x, y, r[0] + ':', { weight: 'bold' }));
+        body.push(text(x + 54, y, r[1]));
+        y += LH;
+      });
+    };
+    putCol(colA, FR.l + 2.5);
+    putCol(colB, FR.l + 200);
+
+    // ── таблица 1: участки расчётного кольца ────────────────────────────
+    var ty = BODY_TOP + boxH + 8.5;
+    body.push(text(FR.l, ty - 2.4,
+      'Таблица 1. Потери давления по участкам расчетного (самого неблагоприятного) кольца',
+      { weight: 'bold' }));
+    var ringRows = (d.parts || []).map(function (p, i) {
+      return [i + 1, p.name, p.v > 0 ? f2(p.v) : '—',
+        (p.v > 0 && p.vLim) ? f1(p.vLim) : '—', f1(p.dp),
+        d.dp > 0 ? Math.round(p.dp / d.dp * 100) : 0];
+    });
+    var totRow = ['', 'Итого по кольцу', '', '', f1(d.dp), 100];
+    totRow.nofill = true;
+    ringRows.push(totRow);
+    var t1 = table(FR.l, ty, HY_RING_COLS, ringRows, {});
+
+    // ── примечания под таблицей ─────────────────────────────────────────
+    var notes = [
+      'Расчет ведется по самому неблагоприятному кольцу: ' + (d.scheme === 'тройниковая'
+        ? 'насос — магистраль — отвод к самому мощному прибору — прибор — обратно.'
+        : 'насос — подводка к коллектору — луч до самого мощного прибора — прибор — обратно.'),
+      'Остальные кольца легче расчетного и уравниваются преднастройкой клапанов приборов (таблица 2).',
+      'Расход: G = Q / (1,163 х ' + d.dT + ') м³/ч. Потери клапана прибора: (G / Kv)² х 100 кПа.',
+      'Длины участков приняты те же, по которым сметой считался метраж трубы.',
+      'Предел скорости — по СП 60.13330.2020, п. 6.3.6 и таблице И.1: для жилой комнаты ночью (30 дБА) ' +
+        'магистраль с шаровыми кранами при сумме КМС до 10 допускает 1,5 м/с, узел прибора с ' +
+        'регулирующей арматурой при сумме КМС до 20 — 0,8 м/с. Приняты 1,2 и 1,0 м/с соответственно.'
+    ];
+    if (d.noisy) notes.push('Внимание: превышен предел скорости на участке — ' +
+      (d.loud || []).join(', ') + ' (' + f2(d.vMax) + ' м/с при пределе ' +
+      f1(d.vLimit) + ' м/с). Требуется больший внутренний диаметр.');
+    if (!d.pump) notes.push('Внимание: требуемый напор не обеспечивает ни один насос насосной группы — ' +
+      'необходимо увеличить диаметр разводки или число веток.');
+    var ny = t1.bottom + 6.5;
+    notes.forEach(function (ln) { body.push(text(FR.l, ny, ln)); ny += LH; });
+
+    sheets.push(sheet({
+      title: 'Гидравлический расчет системы отопления',
+      titleSize: 5.19, titleY: 11.2,
+      code: opts.code, sheet: fmtNo(start), body: body.join('') + t1.svg
+    }));
+
+    // ── таблица 2: преднастройки клапанов приборов ──────────────────────
+    var devRows = (d.balance || []).map(function (r, i) {
+      return [i + 1, r.room || 'Прибор ' + (i + 1), Math.round(r.watt), f2(r.flow),
+        f1(r.dp), r.kv ? f2(r.kv) : '—',
+        r.full ? 'открыт' : f1(r.turns).replace(',0', '') + ' об.'];
+    });
+    if (devRows.length) {
+      var perSheet = Math.floor((275 - BODY_TOP - 5.5 - 14) / ROW_H);
+      var pages = [], page = [];
+      devRows.forEach(function (r) {
+        if (page.length >= perSheet) { pages.push(page); page = []; }
+        page.push(r);
+      });
+      if (page.length) pages.push(page);
+      pages.forEach(function (pageRows, idx) {
+        var t2 = table(FR.l, BODY_TOP, HY_DEV_COLS, pageRows, {});
+        var tail = '';
+        if (idx === pages.length - 1) {
+          var ly = t2.bottom + 6.5;
+          [
+            'Настройка — обороты маховичка клапана от закрытого положения; «открыт» — клапан самого ' +
+              'тяжелого кольца, его не зажимают.',
+            'Kv — требуемая пропускная способность клапана, м³/ч: Kv = G х (100 / dP)^0,5, где dP — ' +
+              'разница потерь этого кольца с самым тяжелым, кПа.'
+          ].forEach(function (ln) { tail += text(FR.l, ly, ln); ly += LH; });
+        }
+        sheets.push(sheet({
+          title: 'Настройка клапанов приборов отопления',
+          titleSize: 5.19, titleY: 11.2,
+          code: opts.code, sheet: fmtNo(start + sheets.length), body: t2.svg + tail
+        }));
+      });
+    }
+    return sheets;
+  }
+
   // ─── Спецификация из сметы калькулятора ────────────────────────────────
   /**
    * items — currentEquipmentList из app.js (или его срез): нужны поля
@@ -775,6 +933,7 @@
     fromEquipment: fromEquipment,
     titleSheet: titleSheet, generalData: generalData, stampBig: stampBig,
     heatLossSheets: heatLossSheets,
+    hydraulicsSheets: hydraulicsSheets,
     text: text, cellText: cellText, cellLines: cellLines, line: line, rect: rect,
     // Подбор семейства оставлен для модулей листов: шрифты теперь полные,
     // подменять нечего, но вызовы у них сохранены.
