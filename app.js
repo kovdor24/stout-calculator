@@ -11978,7 +11978,20 @@ const app = {
                         <th style="text-align:right; width:110px;">Запросов в месяц</th>
                         <th style="text-align:center; width:90px;">Изменение</th>
                     </tr></thead><tbody>`;
-                withData.forEach(x => {
+                // Строка таблицы — тот же выключатель линии, что и подпись под
+                // графиком: искать запрос глазами удобнее здесь, где рядом
+                // проценты, а не в легенде. Работает у первых шести строк —
+                // на графике только они и есть.
+                const onChart = withData.slice(0, 6);
+                const hidCalc = (this._chartHidden && this._chartHidden['calc']) || {};
+                // Ключ ряда — ровно тот, которым его помечает легенда графика,
+                // иначе кнопка и строка гасили бы разные записи.
+                const keyOf = (t) => String(t).replace(/[&<>"]/g, '');
+                // Когда выключены все шесть, график всё равно рисует первую
+                // линию — иначе смотреть было бы не на что. Строку в таблице
+                // держим в том же состоянии, чтобы они не расходились.
+                const allOff = onChart.length && onChart.every(x => hidCalc[keyOf(x.text)]);
+                withData.forEach((x, i) => {
                     const last = x.pts[x.pts.length - 1];
                     const base = x.pts[x.pts.length - 1 - backMonths];
                     let d = null;
@@ -11986,7 +11999,13 @@ const app = {
                         d = { pct: Math.round((last[1] - base[1]) / base[1] * 100),
                               now: last[1], nowM: last[0], base: base[1], baseM: base[0] };
                     }
-                    h += `<tr>
+                    const inChart = i < onChart.length;
+                    const off = inChart && !!hidCalc[keyOf(x.text)] && !(allOff && i === 0);
+                    const nm = keyOf(x.text).replace(/'/g, "\\'");
+                    h += `<tr ${inChart
+                            ? `onclick="app.toggleChartSeries('calc', '${nm}')" title="${off ? 'показать' : 'скрыть'} линию на графике"
+                               style="cursor:pointer; opacity:${off ? 0.45 : 1};"`
+                            : `title="на графике только шесть самых частых запросов"`}>
                         <td>${esc(x.text)}</td>
                         <td style="text-align:right;"><b>${num(last[1])}</b></td>
                         <td style="text-align:center;">${deltaCell(d)}</td>
@@ -11995,7 +12014,7 @@ const app = {
                 h += `</tbody></table></div>`;
 
                 const months = this._analyticsMonths || 36;
-                const series = withData.slice(0, 6).map(x => ({
+                const series = onChart.map(x => ({
                     name: x.text, points: x.pts.slice(months > 0 ? -months : 0)
                 }));
                 h += this.buildAnalyticsLineChart(series, 'calc');
