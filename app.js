@@ -13037,14 +13037,17 @@ const app = {
             ['equipment', 'Оборудование'], ['service', 'Сервис'], ['calc', 'Подбор и проект']
         ].filter(([g]) => Object.keys(phrases).some(id => phrases[id].group === g));
         const curGroup = (GROUPS.some(([g]) => g === this._analyticsGroup) ? this._analyticsGroup : (GROUPS[0] && GROUPS[0][0]));
-        const mns = this._analyticsMonths || 36;
+        // Период у дашборда свой, отдельный от «Аналитики»: там смотрят историю
+        // целиком, здесь — свежий год. Поэтому по умолчанию 12 месяцев, а
+        // ползунок ходит от одного месяца до трёх лет с шагом в месяц.
+        const mns = (this._dashMonths === undefined || this._dashMonths === null) ? 12 : this._dashMonths;
         const chartSeries = Object.keys(phrases).filter(id => phrases[id].group === curGroup)
             .map(id => ({ name: phrases[id].text || id, points: seriesOf(id).slice(mns > 0 ? -mns : 0) }))
             .filter(s => s.points.length > 1)
             .sort((a, b) => (b.points[b.points.length - 1][1] || 0) - (a.points[a.points.length - 1][1] || 0))
             .slice(0, 6);
         const gBtn = (g, label) => `<button class="admin-btn" style="height:26px; padding:0 9px; font-size:11.5px; ${curGroup === g ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsGroup('${g}')">${label}</button>`;
-        const mBtn = (m, label) => `<button class="admin-btn" style="height:26px; padding:0 9px; font-size:11.5px; ${mns === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsMonths(${m})">${label}</button>`;
+        const monthsLabel = (m) => this.dashMonthsLabel(m);
 
         const gasRegions = (gas && gas.regions) || {};
         const gasRows = Object.keys(gasRegions).map(name => {
@@ -13061,7 +13064,14 @@ const app = {
                         <div>${head('Спрос по месяцам', region ? esc(region) : 'вся Россия')}</div>
                         <div style="margin-left:auto; display:flex; gap:5px; flex-wrap:wrap;">${GROUPS.map(([g, l]) => gBtn(g, l)).join('')}</div>
                     </div>
-                    <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">${mBtn(12, '12 месяцев')}${mBtn(36, '3 года')}${mBtn(0, 'всё')}</div>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+                        <input type="range" min="1" max="36" step="1" value="${mns > 0 ? mns : 36}" id="dash_months_range"
+                               title="период графика: от месяца до трёх лет"
+                               style="flex:1 1 180px; max-width:300px; accent-color:var(--primary);"
+                               oninput="app.previewDashMonths(this.value)" onchange="app.setDashMonths(this.value)">
+                        <b id="dash_months_label" style="font-size:12px; color:var(--text-main); white-space:nowrap;">${monthsLabel(mns)}</b>
+                        <button class="admin-btn" style="height:26px; padding:0 9px; font-size:11.5px; ${mns === 0 ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setDashMonths(0)">всё</button>
+                    </div>
                     ${chartSeries.length
                         ? this.buildAnalyticsLineChart(chartSeries, 'dash')
                         : `<div style="font-size:12.5px; color:var(--text-sec); padding:20px 0;">По этой группе${region ? ` в регионе «${esc(region)}»` : ''} истории пока нет.</div>`}`)}
@@ -13081,6 +13091,127 @@ const app = {
                         </div>`).join('')
                     + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:8px;">Пришёл газ в посёлок — в ближайший год-полтора там меняют электрические и твердотопливные котлы на газовые.</div></div>` : ''))}
         </div>`;
+
+        // ── Кварталы за три года ────────────────────────────────────────────
+        // Месячный график показывает сезон, но не отвечает на вопрос «мы растём
+        // или это просто зима». Квартал сглаживает месячный шум, а сравнение с
+        // тем же кварталом год назад убирает и сезон.
+        //
+        // Считаем по той же группе фраз, что выбрана для графика выше, и по
+        // тому же региону: иначе два блока рядом отвечали бы про разное.
+        const qMode = this._dashQuarters === 'qoq' ? 'qoq' : 'yoy';
+        const qPoints = groupSeries(curGroup).points;
+        if (qPoints.length > 3) {
+            const mMap = {};
+            qPoints.forEach(p => { mMap[String(p[0])] = Number(p[1]) || 0; });
+            const mKey = (y, mo) => y + '-' + (mo < 10 ? '0' : '') + mo;
+            // Месяцы квартала, за которые данные вообще есть. Текущий квартал
+            // почти всегда неполон (последний месяц ещё не закрыт), и сравнивать
+            // его целиком с полным кварталом года назад — врать себе.
+            const qMonths = (y, qn) => [0, 1, 2].map(k => (qn - 1) * 3 + 1 + k)
+                .filter(mo => mMap[mKey(y, mo)] !== undefined);
+            const qSum = (y, qn, only) => {
+                let sum = 0;
+                [0, 1, 2].map(k => (qn - 1) * 3 + 1 + k).forEach(mo => {
+                    if (only && only.indexOf(mo) < 0) return;
+                    const v = mMap[mKey(y, mo)];
+                    if (v !== undefined) sum += v;
+                });
+                return sum;
+            };
+
+            const qKeys = [];
+            Object.keys(mMap).sort().forEach(m => {
+                const k = m.slice(0, 4) + '-' + Math.ceil(Number(m.slice(5, 7)) / 3);
+                if (qKeys.indexOf(k) < 0) qKeys.push(k);
+            });
+            const qLast = qKeys.slice(-12);            // ровно три года
+            const ROM = ['I', 'II', 'III', 'IV'];
+            const Y_COLORS = ['#CBD5E1', '#60A5FA', '#2563EB'];   // от старого года к свежему
+
+            const years = [];
+            qLast.forEach(k => { const y = k.slice(0, 4); if (years.indexOf(y) < 0) years.push(y); });
+            const yrs = years.slice(-3);
+            const BAR_H = 132;
+
+            const qCell = (val, color, label, hint, partial) => {
+                const hp = Math.max(2, Math.round(val / qMax * BAR_H));
+                return `<div title="${esc(hint)}" style="flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;">
+                        <div style="font-size:10.5px; color:var(--text-sec); margin-bottom:3px; white-space:nowrap;">${num(val)}</div>
+                        <div style="width:100%; max-width:34px; height:${hp}px; border-radius:5px 5px 0 0; background:${color};
+                                    opacity:${partial ? 0.55 : 1}; ${partial ? 'border:1px dashed var(--border); border-bottom:none;' : ''}"></div>
+                        ${label ? `<div style="font-size:10.5px; color:var(--text-sec); margin-top:4px; white-space:nowrap;">${label}</div>` : ''}
+                    </div>`;
+            };
+
+            let qMax = 1, qBody = '', qNote = '';
+            let anyPartial = false;
+
+            if (qMode === 'yoy') {
+                yrs.forEach(y => {
+                    for (let qn = 1; qn <= 4; qn++) if (qMonths(y, qn).length) qMax = Math.max(qMax, qSum(y, qn));
+                });
+                let cols = '';
+                for (let qn = 1; qn <= 4; qn++) {
+                    const live = yrs.filter(y => qMonths(y, qn).length);
+                    if (!live.length) continue;
+                    // Процент считаем по свежему году к предыдущему и только по
+                    // тем месяцам, что есть в обоих: неполный квартал иначе
+                    // всегда выглядел бы провалом.
+                    const yNew = live[live.length - 1], yOld = String(Number(yNew) - 1);
+                    const only = qMonths(yNew, qn);
+                    const oldSum = qSum(yOld, qn, only);
+                    const pct = oldSum ? Math.round((qSum(yNew, qn, only) - oldSum) / oldSum * 100) : null;
+                    const bars = live.map(y => {
+                        const part = qMonths(y, qn).length < 3;
+                        if (part) anyPartial = true;
+                        return qCell(qSum(y, qn), Y_COLORS[yrs.indexOf(y) + Y_COLORS.length - yrs.length] || Y_COLORS[2], y,
+                            `${ROM[qn - 1]} квартал ${y}: ${num(qSum(y, qn))}${part ? ' (неполный, ' + qMonths(y, qn).length + ' мес.)' : ''}`, part);
+                    }).join('');
+                    cols += `<div style="min-width:0;">
+                            <div style="display:flex; align-items:flex-end; justify-content:center; gap:6px; height:${BAR_H + 18}px;">${bars}</div>
+                            <div style="text-align:center; font-size:12px; font-weight:700; color:var(--text-main); margin-top:6px;">${ROM[qn - 1]} квартал</div>
+                            <div style="text-align:center; font-size:11.5px; margin-top:2px;">${trend(pct)}<small style="color:var(--text-sec);"> к ${esc(String(Number(live[live.length - 1]) - 1))}</small></div>
+                        </div>`;
+                }
+                qBody = `<div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:${mobile ? 8 : 18}px; margin-top:12px;">${cols}</div>`;
+                qNote = 'Столбцы внутри квартала — годы. Процент под кварталом сравнивает свежий год с предыдущим по одним и тем же месяцам, так что сезон из него уже вычтен.';
+            } else {
+                qLast.forEach(k => { qMax = Math.max(qMax, qSum(k.slice(0, 4), Number(k.slice(5)))); });
+                const bars = qLast.map(k => {
+                    const y = k.slice(0, 4), qn = Number(k.slice(5));
+                    const val = qSum(y, qn);
+                    const part = qMonths(y, qn).length < 3;
+                    if (part) anyPartial = true;
+                    const idx = qKeys.indexOf(k);
+                    const prevK = idx > 0 ? qKeys[idx - 1] : null;
+                    const prevV = prevK ? qSum(prevK.slice(0, 4), Number(prevK.slice(5))) : 0;
+                    const pct = prevV ? Math.round((val - prevV) / prevV * 100) : null;
+                    return `<div style="flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;"
+                                 title="${ROM[qn - 1]} квартал ${y}: ${num(val)}${part ? ' (неполный, ' + qMonths(y, qn).length + ' мес.)' : ''}">
+                            <div style="font-size:10.5px; color:var(--text-sec); margin-bottom:3px; white-space:nowrap;">${num(val)}</div>
+                            <div style="width:100%; max-width:40px; height:${Math.max(2, Math.round(val / qMax * BAR_H))}px; border-radius:5px 5px 0 0;
+                                        background:${Y_COLORS[Math.max(0, yrs.indexOf(y) + Y_COLORS.length - yrs.length)] || Y_COLORS[2]};
+                                        opacity:${part ? 0.55 : 1}; ${part ? 'border:1px dashed var(--border); border-bottom:none;' : ''}"></div>
+                            <div style="font-size:10.5px; color:var(--text-sec); margin-top:4px; white-space:nowrap;">${ROM[qn - 1]}·${y.slice(2)}</div>
+                            <div style="font-size:10.5px; margin-top:1px; white-space:nowrap;">${trend(pct)}</div>
+                        </div>`;
+                }).join('');
+                qBody = `<div style="display:flex; align-items:flex-end; gap:${mobile ? 3 : 7}px; height:${BAR_H + 60}px; margin-top:12px;">${bars}</div>`;
+                qNote = 'Кварталы подряд, процент — к предыдущему. Здесь виден сезон: у монтажа он всегда падает к первому кварталу, и это не спад спроса.';
+            }
+
+            const qBtn = (m, label) => `<button class="admin-btn" style="height:26px; padding:0 9px; font-size:11.5px; ${qMode === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setDashQuarters('${m}')">${label}</button>`;
+            const curGroupLabel = (GROUPS.find(([g]) => g === curGroup) || [null, ''])[1];
+
+            h += card(`<div style="display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+                        <div>${head('Кварталы за три года', `${esc(curGroupLabel)} · ${region ? esc(region) : 'вся Россия'}`)}</div>
+                        <div style="margin-left:auto; display:flex; gap:5px; flex-wrap:wrap;">${qBtn('yoy', 'год к году')}${qBtn('qoq', 'квартал к кварталу')}</div>
+                    </div>
+                    ${qBody}
+                    <div style="font-size:11.5px; color:var(--text-sec); margin-top:10px;">${qNote}${anyPartial ? ' Штриховкой отмечен квартал, у которого закрыты не все три месяца.' : ''}</div>`,
+                'margin-bottom:14px;');
+        }
 
         // ── Наша доля по группам и регионы ──────────────────────────────────
         const catMonthly = (brands && brands.cat_monthly) || {};
@@ -13671,6 +13802,37 @@ const app = {
 
     setAnalyticsMonths: function (m) {
         this._analyticsMonths = m;
+        this.renderAdminMain();
+    },
+
+    // Период графика на дашборде. 0 — вся история, иначе число месяцев.
+    dashMonthsLabel: function (m) {
+        const n = Number(m) || 0;
+        if (!n) return 'вся история';
+        const t = n % 100, o = n % 10;
+        const word = (t > 10 && t < 15) ? 'месяцев' : (o === 1 ? 'месяц' : (o >= 2 && o <= 4 ? 'месяца' : 'месяцев'));
+        let tail = '';
+        if (n === 12) tail = ' · год';
+        else if (n === 24) tail = ' · 2 года';
+        else if (n === 36) tail = ' · 3 года';
+        return n + ' ' + word + tail;
+    },
+
+    // Ползунок перерисовывает подпись на каждом движении, а сам график — только
+    // когда его отпустили: перерисовка панели на каждый пиксель и тормозит, и
+    // отбирает у ползунка фокус прямо посреди перетаскивания.
+    previewDashMonths: function (m) {
+        const el = document.getElementById('dash_months_label');
+        if (el) el.textContent = this.dashMonthsLabel(m);
+    },
+
+    setDashMonths: function (m) {
+        this._dashMonths = Math.max(0, Math.min(36, Number(m) || 0));
+        this.renderAdminMain();
+    },
+
+    setDashQuarters: function (m) {
+        this._dashQuarters = m;
         this.renderAdminMain();
     },
 
