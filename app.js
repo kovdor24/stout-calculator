@@ -5582,11 +5582,9 @@ const app = {
 
         let rows = null, failed = '';
         try {
-            const since = new Date(Date.now() - this.MANAGER_SUMMARY_DAYS * 86400000).toISOString();
-            const res = await this.fetchAllRows('invoice_events',
-                'calc_id, event, created_at, user_email, user_name, project_name',
-                { order: 'created_at', cap: 20000, build: (qy) => qy.in('user_email', emails).gte('created_at', since) });
-            rows = res.rows;
+            // Вся история смет его монтажников, включая строки, написанные не
+            // ими: «клиент открыл» и его собственные «счёт выставлен».
+            rows = await this.fetchInvoiceHistoryByEmails(emails, this.MANAGER_SUMMARY_DAYS);
         } catch (e) {
             failed = (e && e.message) || String(e);
         }
@@ -8342,6 +8340,41 @@ const app = {
     INSTALLER_SUMMARY_DAYS: 120,
     INSTALLER_STALE_DAYS: 5,
 
+    /**
+     * Полная история смет по списку почт: сначала находим ЧЬИ это сметы, потом
+     * забираем по ним всё.
+     *
+     * Одним запросом по user_email не обойтись, и это выяснилось только на
+     * живой базе: половина событий сметы написана не её автором.
+     *  · «клиент открыл» пишет анонимная страница сметы — user_email там пустой;
+     *  · «счёт выставлен» и «оплачено» ставит менеджер под СВОИМ адресом.
+     * Отбор по почте выбрасывал ровно те ступени, ради которых воронку и
+     * делали: у монтажника она обрывалась бы на «запрошен счёт», а отметки
+     * «клиент открыл» он не увидел бы никогда.
+     */
+    fetchInvoiceHistoryByEmails: async function (emails, days) {
+        const list = (emails || []).map(e => String(e || '').toLowerCase()).filter(Boolean);
+        if (!list.length) return [];
+        const since = new Date(Date.now() - days * 86400000).toISOString();
+        // Шаг 1: свои сметы — те, где есть хоть одно событие от этих людей.
+        const mine = await this.fetchAllRows('invoice_events', 'calc_id',
+            { order: 'created_at', cap: 20000, build: (qy) => qy.in('user_email', list).gte('created_at', since) });
+        const ids = [...new Set((mine.rows || []).map(r => String(r.calc_id)).filter(Boolean))];
+        if (!ids.length) return [];
+        // Шаг 2: вся история этих смет, кто бы её ни писал. Список
+        // идентификаторов уходит в строку запроса, поэтому режем на пачки.
+        const CHUNK = 80;
+        const out = [];
+        for (let i = 0; i < ids.length; i += CHUNK) {
+            const part = ids.slice(i, i + CHUNK);
+            const res = await this.fetchAllRows('invoice_events',
+                'calc_id, event, created_at, user_email, user_name, project_name',
+                { order: 'created_at', cap: 20000, build: (qy) => qy.in('calc_id', part) });
+            out.push(...res.rows);
+        }
+        return out;
+    },
+
     renderInstallerSummaryTab: async function () {
         const container = document.getElementById('profile_tab_summary');
         if (!container) return;
@@ -8361,14 +8394,10 @@ const app = {
                 return;
             }
             // Здесь, в отличие от «Заказов», нужны и черновики: воронка
-            // начинается с сохранённого расчёта. Поэтому фильтруем не по видам
-            // событий, а по времени — у одного человека за четыре месяца строк
-            // немного.
-            const since = new Date(Date.now() - this.INSTALLER_SUMMARY_DAYS * 86400000).toISOString();
-            const res = await this.fetchAllRows('invoice_events',
-                'calc_id, event, created_at, user_email, user_name, project_name',
-                { order: 'created_at', cap: 4000, build: (qy) => qy.eq('user_email', email).gte('created_at', since) });
-            rows = res.rows;
+            // начинается с сохранённого расчёта. И нужна ВСЯ история сметы, а
+            // не только свои строки — иначе выпадут «клиент открыл» (пишет
+            // анонимная страница) и «счёт выставлен» (пишет менеджер).
+            rows = await this.fetchInvoiceHistoryByEmails([email], this.INSTALLER_SUMMARY_DAYS);
         } catch (e) {
             failed = (e && e.message) || String(e);
         }
