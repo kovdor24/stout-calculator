@@ -12488,6 +12488,322 @@ const app = {
     },
 
     /**
+     * Раскрыть карточку дистрибьютора в блоке «Дистрибьюторы: выручка и наш
+     * канал». Открыт всегда один: развёрнутая отчётность занимает экран
+     * целиком, и две рядом всё равно не сравнить.
+     */
+    toggleDashCompany: function (inn) {
+        this._dashCompany = (this._dashCompany === inn) ? null : String(inn);
+        this.renderAdminMain();
+    },
+
+    /**
+     * Отчётность дистрибьютора по годам: графики, таблица показателей и
+     * короткий разбор словами.
+     *
+     * Данные собирает AutoCompanyInfo.py из ГИР БО — это полные формы
+     * бухгалтерской отчётности, а не одна выручка: баланс, финрезультат и
+     * движение денег. Отсюда и содержание карточки — по ней видно не только
+     * размер компании, но и как она устроена: сколько держит на складе, чем
+     * этот склад оплачен (своими деньгами или кредитом) и сколько остаётся
+     * после всех расходов.
+     *
+     * Малые предприятия сдают упрощённые формы, и половины строк у них нет.
+     * Пустые строки не печатаем совсем: частокол прочерков читается как сбой
+     * сборщика, хотя это законное право компании отчитываться коротко.
+     */
+    buildCompanyPanel: function (row, mobile) {
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const co = (row && row.co) || {};
+        const all = Object.keys(co.years || {}).sort();
+        if (!all.length) return `<div style="font-size:12px; color:var(--text-sec); padding:10px 0;">Отчётности по этой компании в ГИР БО нет.</div>`;
+        // На телефоне пять лет в ряд дают колонку в 55 пикселей — в неё не
+        // помещается даже «26,4 млрд». Три года историю всё ещё показывают.
+        const years = mobile ? all.slice(-3) : all;
+        const last = all[all.length - 1];
+
+        // Суммы в отчётности — в тысячах рублей (см. AutoCompanyInfo.py).
+        const raw = (y, k) => {
+            const r = (co.years || {})[y] || {};
+            return (r[k] === null || r[k] === undefined) ? null : Number(r[k]);
+        };
+        // Валовая прибыль и обязательства в упрощённых формах не заполняются,
+        // но считаются из соседних строк — иначе у половины компаний график
+        // остался бы об одной линии.
+        const val = (y, k) => {
+            if (k === 'gross') {
+                const g = raw(y, 'gross');
+                if (g !== null) return g;
+                const r = raw(y, 'revenue'), c = raw(y, 'cost');
+                return (r === null || c === null) ? null : r - c;
+            }
+            if (k === 'liab') {
+                const a = raw(y, 'liab_long'), b = raw(y, 'liab_short');
+                if (a !== null || b !== null) return (a || 0) + (b || 0);
+                // Обязательств в упрощённом балансе может не быть отдельной
+                // строкой, но баланс на то и баланс: всё, что не оплачено
+                // собственным капиталом, оплачено чужими деньгами.
+                const as = raw(y, 'assets'), eq = raw(y, 'equity');
+                return (as === null || eq === null) ? null : as - eq;
+            }
+            return raw(y, k);
+        };
+        const mon = (k) => {
+            if (k === null || k === undefined) return '—';
+            const r = k * 1000, s = r < 0 ? '−' : '', a = Math.abs(r);
+            if (a >= 1e9) return s + (a / 1e9).toFixed(1).replace('.', ',') + ' млрд';
+            if (a >= 1e6) return s + (a / 1e6).toFixed(1).replace('.', ',') + ' млн';
+            if (a >= 1e3) return s + Math.round(a / 1e3).toLocaleString('ru-RU') + ' тыс';
+            return s + Math.round(a).toLocaleString('ru-RU');
+        };
+        const ratio = (a, b) => (a === null || !b) ? null : a / b * 100;
+        const pctStr = (p) => p === null ? '—' : (p > 0 ? '' : (p < 0 ? '−' : '')) + Math.abs(p).toFixed(1).replace('.', ',') + ' %';
+
+        // ── Реквизиты ───────────────────────────────────────────────────────
+        const chip = (label, value) => value ? `<span style="display:inline-block; margin:0 14px 4px 0;">
+                <span style="color:var(--text-sec);">${label}</span> <b style="color:var(--text-main);">${esc(value)}</b></span>` : '';
+        const req = chip('ОГРН', co.ogrn)
+            + chip('ОКВЭД', co.okved ? co.okved + (co.okved_name ? ' — ' + co.okved_name : '') : '')
+            + chip('в реестре с', String(co.registered || '').slice(0, 10).split('-').reverse().join('.'))
+            + chip('уставный капитал', co.capital ? Number(co.capital).toLocaleString('ru-RU') + ' ₽' : '')
+            + chip('статус', co.status && co.status !== 'ACTIVE' ? co.status : '');
+
+        // ── Графики ─────────────────────────────────────────────────────────
+        const seriesOf = (defs) => defs.map(d => ({
+            name: d[0], color: d[2], values: years.map(y => val(y, d[1]))
+        }));
+        const bars = (title, defs) => {
+            const svg = this.buildCompanyBars(years, seriesOf(defs), mon);
+            return svg ? `<div style="flex:1 1 320px; min-width:0;">
+                    <div style="font-size:12px; font-weight:700; color:var(--text-main); margin-bottom:4px;">${title}</div>${svg}
+                </div>` : '';
+        };
+        const charts = bars('Выручка и прибыль, ₽', [
+                ['Выручка', 'revenue', '#2563EB'],
+                ['Валовая прибыль', 'gross', '#0EA5E9'],
+                ['Чистая прибыль', 'profit', '#10B981']
+            ])
+            + bars('Склад, долги и деньги, ₽', [
+                ['Запасы', 'stock', '#F97316'],
+                ['Дебиторка', 'receivable', '#8B5CF6'],
+                ['Деньги', 'cash', '#10B981'],
+                ['Обязательства', 'liab', '#EF4444']
+            ]);
+
+        // ── Показатели по годам ─────────────────────────────────────────────
+        // Флексом, а не таблицей и не гридом: и то и другое мобильный CSS
+        // админки перестраивает под себя — таблицу в карточки, инлайновый грид
+        // в одну колонку (см. «АДМИНКА НА ТЕЛЕФОНЕ» в style.css).
+        const LINES = [
+            ['h', 'Финансовый результат'],
+            ['m', 'Выручка', 'revenue'],
+            ['m', 'Себестоимость продаж', 'cost'],
+            ['m', 'Валовая прибыль', 'gross'],
+            ['m', 'Коммерческие расходы', 'commercial'],
+            ['m', 'Управленческие расходы', 'management'],
+            ['m', 'Прибыль от продаж', 'sales_profit'],
+            ['m', 'Проценты к уплате', 'interest'],
+            ['m', 'Налог на прибыль', 'tax'],
+            ['m', 'Чистая прибыль', 'profit'],
+            ['p', 'Наценка (валовая маржа)', 'gross', 'revenue'],
+            ['p', 'Рентабельность по чистой прибыли', 'profit', 'revenue'],
+            ['h', 'Баланс на конец года'],
+            ['m', 'Активы всего', 'assets'],
+            ['m', 'Запасы (склад)', 'stock'],
+            ['m', 'Дебиторская задолженность', 'receivable'],
+            ['m', 'Деньги на счетах', 'cash'],
+            ['m', 'Основные средства', 'fixed'],
+            ['m', 'Собственный капитал', 'equity'],
+            ['m', 'Обязательства всего', 'liab'],
+            ['m', 'в том числе кредиты и займы', 'loans'],
+            ['h', 'Движение денег'],
+            ['m', 'Платежи на оплату труда', 'payroll'],
+            ['m', 'Сальдо по текущим операциям', 'op_cash']
+        ];
+        const cell = (html, w, extra) => `<div style="flex:0 0 ${w}; text-align:right; white-space:nowrap; ${extra || ''}">${html}</div>`;
+        const nameW = mobile ? '40%' : '34%';
+        const colW = `calc((100% - ${nameW}) / ${years.length})`;
+        let body = `<div style="display:flex; padding:0 0 5px; font-size:11px; color:var(--text-sec); border-bottom:1px solid var(--border);">
+                <div style="flex:1 1 ${nameW}; min-width:0;"></div>
+                ${years.map(y => cell(esc(y), colW)).join('')}
+            </div>`;
+        LINES.forEach(def => {
+            if (def[0] === 'h') {
+                body += `<div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.3px;
+                        color:var(--text-sec); margin:10px 0 3px;">${def[1]}</div>`;
+                return;
+            }
+            const vals = years.map(y => def[0] === 'p'
+                ? ratio(val(y, def[2]), val(y, def[3]))
+                : val(y, def[2]));
+            if (vals.every(v => v === null)) return;   // строки нет в упрощённой форме
+            body += `<div style="display:flex; align-items:baseline; padding:3px 0; font-size:12px;">
+                <div style="flex:1 1 ${nameW}; min-width:0; color:var(--text-sec); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${def[1]}</div>
+                ${vals.map(v => cell(
+                    def[0] === 'p' ? pctStr(v) : mon(v), colW,
+                    `color:${v !== null && v < 0 ? '#EF4444' : 'var(--text-main)'};`
+                )).join('')}
+            </div>`;
+        });
+
+        // ── Налоги и работники ──────────────────────────────────────────────
+        // Другой источник и другой масштаб: это открытые данные ФНС, суммы там
+        // в рублях, а не в тысячах, как во всей отчётности выше. Держим их
+        // отдельным блоком, чтобы масштабы не смешивались в одной таблице.
+        const rub = (r) => mon(r === null || r === undefined ? null : r / 1000);
+        const taxes = co.taxes || {}, staff = co.staff || {};
+        const tY = Object.keys(taxes).sort().pop() || null;
+        const sY = Object.keys(staff).sort().pop() || null;
+        const tRec = tY ? taxes[tY] : null;
+        const sRec = sY ? staff[sY] : null;
+        const heads = sRec && sRec.count !== null && sRec.count !== undefined ? Number(sRec.count) : null;
+        let taxHtml = '';
+        if (tRec || sRec) {
+            const facts = [];
+            if (tRec) {
+                facts.push(['Уплачено налогов', rub(tRec.total) + ' ₽', 'за ' + tY + ' год']);
+                const rv = val(tY, 'revenue');
+                if (rv) facts.push(['Налоговая нагрузка', pctStr(tRec.total / (rv * 1000) * 100), 'от выручки ' + tY + ' года']);
+            }
+            if (heads !== null) {
+                facts.push(['Работников', heads.toLocaleString('ru-RU'), 'на 31.12.' + sY]);
+                const rv = val(sY, 'revenue'), pay = val(sY, 'payroll');
+                // На ноль не делим и подписи не сочиняем: у компании из одного
+                // директора среднесписочная численность бывает нулевой, и
+                // «выручка на работника» там не показатель, а деление на ноль.
+                if (heads > 0 && rv) facts.push(['Выручка на работника', rub(rv * 1000 / heads) + ' ₽', 'в год']);
+                if (heads > 0 && pay) facts.push(['Оплата труда', rub(pay * 1000 / heads / 12) + ' ₽', 'на человека в месяц']);
+            }
+            const items = (tRec && tRec.items) || {};
+            const list = Object.keys(items).sort((a, b) => items[b] - items[a]);
+            taxHtml = `<div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.3px;
+                        color:var(--text-sec); margin:14px 0 6px;">Налоги и работники</div>
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                    ${facts.map(f => `<div style="flex:1 1 150px; border:1px solid var(--border); border-radius:10px; padding:8px 10px; background:var(--surface-light);">
+                        <div style="font-size:11px; color:var(--text-sec);">${f[0]}</div>
+                        <div style="font-size:15px; font-weight:800; color:var(--text-main);">${f[1]}</div>
+                        <div style="font-size:10.5px; color:var(--text-sec);">${f[2]}</div>
+                    </div>`).join('')}
+                </div>
+                ${list.length ? `<div style="margin-top:8px;">${list.map(k => `
+                    <div style="display:flex; gap:10px; align-items:baseline; padding:2px 0; font-size:12px;">
+                        <div style="flex:1 1 auto; min-width:0; color:var(--text-sec); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(k)}">${esc(k)}</div>
+                        <b style="color:var(--text-main); white-space:nowrap;">${rub(items[k])} ₽</b>
+                    </div>`).join('')}</div>` : ''}`;
+        } else if (co.taxes_absent || co.staff_absent) {
+            taxHtml = `<div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.3px;
+                        color:var(--text-sec); margin:14px 0 4px;">Налоги и работники</div>
+                <div style="font-size:11.5px; color:var(--text-sec); line-height:1.6;">
+                    ФНС не публикует эти сведения по компании. В открытых данных нет крупнейших налогоплательщиков — проверено на Газпроме, Сбербанке и Лукойле: их ИНН не встречаются в наборах ни разу, при том что средние компании там есть.
+                </div>`;
+        }
+
+        // ── Разбор словами ──────────────────────────────────────────────────
+        // Цифры выше отвечают на вопрос «сколько», этот абзац — на вопрос «ну
+        // и что»: те же четыре-пять соотношений всё равно считаются в уме при
+        // каждом разговоре с дистрибьютором.
+        const notes = [];
+        const rev = val(last, 'revenue'), prof = val(last, 'profit');
+        const netPct = ratio(prof, rev);
+        if (netPct !== null) {
+            notes.push(prof < 0
+                ? `За ${last} год сработали в убыток: ${mon(prof)} ₽ при выручке ${mon(rev)} ₽.`
+                : `Из каждых 100 ₽ выручки ${last} года у компании осталось ${netPct.toFixed(1).replace('.', ',')} ₽ чистой прибыли.`);
+        }
+        const cost = val(last, 'cost'), stock = val(last, 'stock');
+        if (cost && stock) {
+            const turns = cost / stock;
+            notes.push(`Склад прокручивается ${turns.toFixed(1).replace('.', ',')} раза в год — это около ${Math.round(365 / turns)} дней запаса.`);
+        }
+        const liab = val(last, 'liab'), eq = val(last, 'equity');
+        if (liab !== null && eq) {
+            notes.push(eq > 0 && liab / eq > 1.5
+                ? `Заёмных денег в полтора с лишним раза больше собственных: обязательства ${mon(liab)} ₽ против капитала ${mon(eq)} ₽.`
+                : `Обязательства ${mon(liab)} ₽ при собственном капитале ${mon(eq)} ₽.`);
+        }
+        const interest = val(last, 'interest'), sp = val(last, 'sales_profit');
+        if (interest && sp && sp > 0) {
+            notes.push(`На проценты по кредитам уходит ${Math.round(interest / sp * 100)} % прибыли от продаж.`);
+        }
+        if (row.sum && rev) {
+            notes.push(`Через нас за последние 12 месяцев прошло смет на ${mon(row.sum / 1000)} ₽ — это ${(row.sum / (rev * 1000) * 100).toFixed(2).replace('.', ',')} % их годовой выручки.`);
+        }
+
+        return `<div style="border:1px solid var(--border); border-radius:12px; padding:12px 14px; background:var(--surface);">
+            <div style="font-size:12.5px; color:var(--text-main); margin-bottom:8px;">${esc(co.full_name || co.name || '')}</div>
+            <div style="font-size:11.5px; margin-bottom:12px;">${req}</div>
+            <div style="display:flex; flex-wrap:wrap; gap:18px; margin-bottom:14px;">${charts}</div>
+            ${body}
+            ${taxHtml}
+            ${notes.length ? `<div style="font-size:11.5px; color:var(--text-sec); margin-top:12px; line-height:1.6;">${notes.map(esc).join(' ')}</div>` : ''}
+            <div style="font-size:11px; color:var(--text-sec); margin-top:8px;">
+                Источники — ГИР БО, государственный ресурс бухгалтерской отчётности ФНС${tRec || sRec ? ', и открытые данные ФНС (налоги, численность)' : ''}. Годовая отчётность выходит до конца марта следующего года, поэтому свежий квартал по ней не увидеть.
+            </div>
+        </div>`;
+    },
+
+    /**
+     * Столбики по годам. Линиями годовую отчётность рисовать нельзя: точек
+     * всего пять, и линия между ними подсказывает промежуточные значения,
+     * которых не существует. Плюс убыток — это отрицательный столбик, а
+     * линейный график (buildAnalyticsLineChart) считает шкалу от нуля вверх и
+     * увёл бы такой год за нижний край.
+     *
+     * Подписи внутри картинки, а не разметкой рядом: пропорции здесь
+     * сохраняются (preserveAspectRatio по умолчанию), и текст не растягивается
+     * вместе с шириной — в отличие от линейного графика, который тянется.
+     */
+    buildCompanyBars: function (labels, series, fmt) {
+        const rows = (series || []).filter(s => s.values.some(v => v !== null && v !== undefined));
+        if (!labels || !labels.length || !rows.length) return '';
+        const W = 720, H = 200, PT = 10, PB = 26, PX = 6;
+        let hi = 0, lo = 0;
+        rows.forEach(s => s.values.forEach(v => {
+            if (v === null || v === undefined) return;
+            if (v > hi) hi = v;
+            if (v < lo) lo = v;
+        }));
+        if (hi === lo) hi = lo + 1;
+        const span = hi - lo;
+        const plot = H - PT - PB;
+        const yOf = v => PT + plot * ((hi - v) / span);
+        const zero = yOf(0);
+        const colW = (W - PX * 2) / labels.length;
+        const barW = Math.min(34, (colW - 14) / rows.length);
+
+        let bars = '', ticks = '';
+        labels.forEach((lb, i) => {
+            const mid = PX + colW * (i + 0.5);
+            const x0 = mid - barW * rows.length / 2;
+            rows.forEach((s, k) => {
+                const v = s.values[i];
+                if (v === null || v === undefined) return;
+                const y = yOf(v);
+                bars += `<rect x="${(x0 + barW * k).toFixed(1)}" y="${(v < 0 ? zero : y).toFixed(1)}"
+                        width="${Math.max(1, barW - 2).toFixed(1)}" height="${Math.max(1, Math.abs(y - zero)).toFixed(1)}"
+                        rx="2" fill="${s.color}"><title>${lb} · ${s.name}: ${fmt(v)}</title></rect>`;
+            });
+            ticks += `<text x="${mid.toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="12" fill="currentColor">${lb}</text>`;
+        });
+
+        // Последний год выносим в легенду числом: подсказка по столбику
+        // (<title>) на телефоне не всплывает, а сравнивать хочется именно
+        // свежий год.
+        const legend = rows.map(s => {
+            const v = s.values[s.values.length - 1];
+            return `<span style="display:inline-flex; align-items:center; gap:5px; margin:0 12px 3px 0;">
+                <i style="width:9px; height:9px; border-radius:2px; background:${s.color}; display:inline-block;"></i>
+                ${s.name} <b style="color:var(--text-main);">${v === null || v === undefined ? '—' : fmt(v)}</b></span>`;
+        }).join('');
+
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; display:block; color:var(--text-sec);">
+                <line x1="${PX}" y1="${zero.toFixed(1)}" x2="${W - PX}" y2="${zero.toFixed(1)}" stroke="currentColor" opacity="0.3"/>
+                ${bars}${ticks}
+            </svg>
+            <div style="font-size:11.5px; color:var(--text-sec); margin-top:4px;">${legend}</div>`;
+    },
+
+    /**
      * Решение по слову-кандидату из блока «Возможно, новые марки».
      *
      * decision = 'brand' — слово настоящая марка: AutoWordstat.py допишет его
@@ -13798,8 +14114,17 @@ const app = {
                     : (p < 0.01 ? '<0,01 %' : p.toFixed(p < 1 ? 2 : 1).replace('.', ',') + ' %');
                 const rows = distMoney.map(x => {
                     const dead = x.co.status && x.co.status !== 'ACTIVE';
-                    return `<tr>
-                        <td style="padding:7px 6px;"><b style="color:var(--text-main);">${esc(x.name)}</b>
+                    // Строка кликабельна целиком: раскрывается вся отчётность
+                    // компании по годам. В таблице держим только выручку —
+                    // остальные полтора десятка строк баланса нужны, когда с
+                    // этим дистрибьютором действительно разбираются, а не при
+                    // каждом взгляде на дашборд.
+                    const open = this._dashCompany === x.inn;
+                    return `<tr onclick="app.toggleDashCompany('${esc(x.inn)}')" title="${open ? 'свернуть' : 'открыть отчётность по годам'}"
+                                style="cursor:pointer; ${open ? 'background:var(--surface-light);' : ''}">
+                        <td style="padding:7px 6px;"><b style="color:var(--text-main);">
+                                <span style="display:inline-block; width:11px; color:var(--text-sec); transform:rotate(${open ? 90 : 0}deg);">›</span>
+                                ${esc(x.name)}</b>
                             <div style="font-size:11px; color:var(--text-sec);">ИНН ${esc(x.inn)}${x.co.region ? ' · ' + esc(x.co.region) : ''}${dead ? ' · <span style="color:#EF4444; font-weight:700;">не действует</span>' : ''}</div></td>
                         <td style="padding:7px 6px; text-align:right; white-space:nowrap;">
                             <b style="color:var(--text-main);">${money((x.revenue || 0) * 1000)}</b>
@@ -13809,10 +14134,11 @@ const app = {
                             <div style="font-size:11px; color:var(--text-sec);">${num(x.n)} смет · ${num(x.users)} монтажников</div></td>
                         <td style="padding:7px 6px; text-align:right; white-space:nowrap;">
                             <b style="color:var(--text-main);">${share(x.pct)}</b></td>
-                    </tr>`;
+                    </tr>`
+                    + (open ? `<tr><td colspan="4" style="padding:0 6px 12px;">${this.buildCompanyPanel(x, mobile)}</td></tr>` : '');
                 }).join('');
                 B.dist_money = card(head('Дистрибьюторы: выручка и наш канал',
-                        'выручка — из отчётности ФНС по ИНН, наши сметы — за 12 месяцев')
+                        'выручка — из отчётности ФНС по ИНН, наши сметы — за 12 месяцев · строка раскрывается')
                     + `<div style="overflow-x:auto; margin-top:10px;"><table style="width:100%; border-collapse:collapse; font-size:12.5px;">
                         <thead><tr style="font-size:11px; color:var(--text-sec); text-align:right;">
                             <th style="text-align:left; padding:0 6px 6px;">Компания</th>
