@@ -13413,6 +13413,15 @@ const app = {
             ((this._dashOwn && this._dashOwn.users) || (this.adminData && this.adminData.allUsersDropdown) || [])
                 .forEach(u => { if (u.region) ourRegions.add(normRegion(u.region)); });
             regionList.forEach(r => ourRegions.add(normRegion(r)));
+            // Плюс список присутствия из самой аналитики. Он важнее, чем
+            // кажется: regionList выше берётся из регионального среза марок, а
+            // тот собирается раз в квартал и обычным месячным прогоном
+            // затирается. Останься мы на нём одном — в тихий месяц список
+            // «наших» опустел бы, и Москва с Петербургом уехали бы в белые
+            // пятна как чужие рынки. wordstat.regions пишет каждый месячный
+            // прогон, поэтому пустым он не бывает.
+            Object.keys((wordstat && wordstat.regions) || {})
+                .forEach(r => ourRegions.add(normRegion(r)));
 
             // У Wordstat нет отдельных Москвы и Подмосковья: есть один узел
             // «Москва и область», и так же склеены Петербург с Ленинградской.
