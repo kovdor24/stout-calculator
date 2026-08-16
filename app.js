@@ -20125,7 +20125,7 @@ const app = {
     },
     // Вызывается из init() новой вкладки, открытой viewAdminEstimateInvoice/printAdminEstimateInvoice.
     // Подменяет состояние калькулятора на сохранённый расчёт монтажника (сохраняя его tgUser),
-    // пересчитывает смету через обычный render() и уводит на итоговую invoice.html#data= —
+    // пересчитывает смету через обычный render() и уводит на итоговую invoice.html —
     // тот же самый механизм, что и обычная "Ссылка для клиента" (generateLocalShareLink),
     // только с контактами исходного монтажника вместо текущего пользователя.
     loadAdminEstimatePreview: async function (estId, autoPrint) {
@@ -20203,8 +20203,40 @@ const app = {
                 grandTotal: (app.lastEqSum || 0) + (app.lastWorksSum || 0)
             };
 
+            // Сначала пробуем короткую ссылку ?id=, как у обычной "Ссылки для клиента":
+            // сохраняем показываемую смету в shared_invoices и уводим на неё. Идентификатором
+            // берём id самой сметы — тогда повторный просмотр перезаписывает ту же строку, а не
+            // плодит новые. Строку монтажника (state.shared_invoice_id) не трогаем намеренно:
+            // у неё свой статус согласования, а цены тут пересчитаны прайс-листом смотрящего.
+            // Флаг preview=1 прячет в invoice.html кнопки согласования — их тут нажимает
+            // сотрудник, а не клиент, и нажатие писало бы статус и событие канбана от его имени.
+            //
+            // Если сохранить не удалось (нет сети, Supabase заблокирован, RLS) — уходим на
+            // прежнюю длинную #data=-ссылку: она открывается вообще без облака.
+            const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.origin : 'https://heatcalc.ru';
+            let shortUrl = '';
+            if (this.isValidUUID(estId)) {
+                try {
+                    const isSaved = await withTimeout(
+                        this.saveSharedInvoiceJobToCloud({
+                            shareId: estId, object_info, manager_info, items, totals, tgUser
+                        }),
+                        10000
+                    );
+                    if (isSaved) shortUrl = `${baseOrigin}/invoice.html?id=${estId}&preview=1`;
+                } catch (saveErr) {
+                    console.warn('[loadAdminEstimatePreview] Короткая ссылка не получилась, уходим на длинную:', saveErr);
+                }
+            }
+
+            if (shortUrl) {
+                window.location.replace(autoPrint ? shortUrl + '&print=1' : shortUrl);
+                return;
+            }
+
             const url = await this.generateLocalShareLink(object_info, manager_info, items, totals);
-            window.location.replace(autoPrint ? url.replace('/invoice.html#', '/invoice.html?print=1#') : url);
+            const longUrl = url.replace('/invoice.html#', '/invoice.html?preview=1#');
+            window.location.replace(autoPrint ? longUrl.replace('?preview=1#', '?preview=1&print=1#') : longUrl);
         } catch (err) {
             console.error('[loadAdminEstimatePreview] Ошибка:', err);
             document.body.innerHTML = '<div style="text-align:center; padding:80px 20px; font-family:Arial, sans-serif; color:#374151;"><h2>⚠️ Не удалось загрузить смету</h2><p>' + (err.message || 'Неизвестная ошибка') + '</p></div>';
