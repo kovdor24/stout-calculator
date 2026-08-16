@@ -13946,23 +13946,32 @@ const app = {
                 }
                 if (!edit) return `<div style="grid-column:span ${span}; min-width:0;">${inner}</div>`;
 
+                // Кнопки блока держим ВНУТРИ его ячейки и одной группой справа.
+                //
+                // Раньше они висели снаружи (left:-9px, right:-9px): у крайнего
+                // левого блока «убрать» уезжала за край панели и обрезалась
+                // пополам, а в промежутке между соседями сходились стрелки
+                // одного блока и красная кнопка другого — куча иконок на границе,
+                // по которой не понять, чьи они. Одна группа в своём углу
+                // снимает обе беды разом. Правый верхний угол у карточек пуст:
+                // заголовки прижаты влево, а у плиток число стоит снизу.
                 return `<div data-dash-w="${w.id}"
                              onpointerdown="app.dashPointerDown(event, '${s.id}', '${w.id}')"
                              title="${esc(meta.t)} — тяните мышью"
                              style="grid-column:span ${span}; min-width:0; position:relative; cursor:grab;
-                                    outline:1px dashed var(--border); outline-offset:3px; border-radius:16px;">
+                                    outline:1px dashed var(--border); outline-offset:-1px; border-radius:16px;">
                         <div style="pointer-events:none;">${inner}</div>
-                        <button title="убрать блок" onclick="app.dashRemoveWidget('${s.id}', '${w.id}')"
-                                style="position:absolute; top:-9px; left:-9px; width:22px; height:22px; border-radius:50%;
-                                       border:none; background:#EF4444; color:#fff; font-size:15px; line-height:1;
-                                       cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.25);">−</button>
-                        <div style="position:absolute; top:-9px; right:-9px; display:flex; gap:4px;">
+                        <div style="position:absolute; top:7px; right:7px; display:flex; gap:4px; align-items:center;">
                             ${iconBtn('раньше', '←', `app.dashMoveWidget('${s.id}', '${w.id}', -1)`, 'background:var(--surface);')}
                             ${iconBtn('позже', '→', `app.dashMoveWidget('${s.id}', '${w.id}', 1)`, 'background:var(--surface);')}
+                            <button title="убрать блок" onclick="app.dashRemoveWidget('${s.id}', '${w.id}')"
+                                    style="width:24px; height:24px; padding:0; border-radius:8px; border:none;
+                                           background:#EF4444; color:#fff; font-size:15px; line-height:1;
+                                           cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.25);">−</button>
                         </div>
                         <div data-dash-resize onpointerdown="app.dashResizeStart(event, '${s.id}', '${w.id}')"
                              title="ширина: тянуть или щёлкнуть (${span} из ${cols})"
-                             style="position:absolute; right:-4px; bottom:-4px; width:22px; height:22px; border-radius:7px;
+                             style="position:absolute; right:3px; bottom:3px; width:22px; height:22px; border-radius:7px;
                                     background:var(--surface); border:1px solid var(--border); color:var(--text-sec);
                                     font-size:11px; line-height:20px; text-align:center; cursor:nwse-resize; touch-action:none;">⇲</div>
                     </div>`;
@@ -14331,7 +14340,7 @@ const app = {
                 (inv && !inv.error) ? moneyShort(inv.money.sum) : '—',
                 (inv && !inv.error) ? dPct(inv.money.sum, inv.moneyPrev.sum) : null,
                 inv ? (inv.error ? 'события смет не прочитались'
-                    : `${num(inv.money.n)} ${this.plural(inv.money.n, 'счёт', 'счёта', 'счетов')} за 30 дней · сумма по смете`)
+                    : `${num(inv.money.n)} ${this.plural(inv.money.n, 'счёт', 'счёта', 'счетов')} за 30 дней · по ручной отметке в канбане`)
                     : 'считаем события смет…');
             B.own_users = miniTile('own_users', 'Новых монтажников', num(m.users), dPct(m.users, m.usersPrev), `всего ${num(own.users)}${region ? ' в регионе' : ''}`);
             B.own_projects = miniTile('own_projects', 'Проектов выпущено', num(m.projects), dPct(m.projects, m.projectsPrev), 'комплекты листов за 30 дней');
@@ -14505,7 +14514,8 @@ const app = {
                     const drop = i && prevN ? prevN - f.n : 0;
                     return `<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;"
                                  ${drop ? `title="потеряно на этой ступени: ${drop}"` : ''}>
-                        <div style="flex:1 1 42%; min-width:0; font-size:12.5px; color:var(--text-main);">${f.label}</div>
+                        <div style="flex:1 1 42%; min-width:0; font-size:12.5px; color:var(--text-main);">${f.label}${f.manual
+                            ? `<br><small style="color:var(--text-sec);">ручная отметка в канбане</small>` : ''}</div>
                         ${ifNarrow ? '' : `<div style="flex:1 1 30%; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
                             <div style="width:${Math.max(2, Math.round(f.n / if0 * 100))}%; height:8px; border-radius:999px;
                                         background:${i === 0 ? 'var(--primary)' : (f.n ? '#10B981' : '#EF4444')};"></div>
@@ -14518,7 +14528,12 @@ const app = {
                     ? `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px;">Из них ${inv.lost.map(x => `${x.label} — <b style="color:var(--text-main);">${num(x.n)}</b>`).join(', ')}.</div>`
                     : '';
                 B.inv_funnel = card(head('Смета → счёт', `когорта за 90 дней: ${num(inv.cohortN)} ${this.plural(inv.cohortN, 'смета', 'сметы', 'смет')} · ступень засчитана, если было её событие или любое следующее`)
-                    + `<div style="margin-top:12px;">${invFunnelHtml}</div>${lostHtml}`);
+                    + `<div style="margin-top:12px;">${invFunnelHtml}</div>${lostHtml}`
+                    + (inv.funnel.some(f => f.manual)
+                        ? `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.55;">
+                            Последнюю ступень система сама не ставит: событие пишется, только когда на карточке канбана нажимают «✓ Счёт выставлен».
+                            Ноль здесь значит «кнопку не нажимали», а не «сделок нет» — за реальную конверсию считайте ступень выше.
+                           </div>` : ''));
 
                 const dayWord = (d) => {
                     if (d === null) return '—';
@@ -14537,7 +14552,8 @@ const app = {
                         Медиана, а не среднее: одна смета, которую согласовывали полгода, среднее ломает.
                         Сумма счёта — это сумма сметы${inv.money.n && inv.money.known < inv.money.n
                             ? `; известна у ${num(inv.money.known)} из ${num(inv.money.n)}, остальные сметы удалены` : ''}.
-                        Оплату система не знает: воронка кончается выставлением.
+                        Последний переход считается по ручной отметке «✓ Счёт выставлен», поэтому «нет пар» здесь — чаще про ненажатую кнопку, чем про сроки.
+                        Оплату система не знает вовсе: воронка кончается выставлением.
                        </div>`);
 
                 const waitHtml = inv.waiting.length ? inv.waiting.slice(0, rows('inv_waiting', 4, 8, 12)).map(x => `
@@ -15364,16 +15380,22 @@ const app = {
                     + (da.newlyQuiet ? `, затихли за месяц <b style="color:#EF4444;">${num(da.newlyQuiet)}</b>` : '') });
             if (own.demoSoon.length) digest.push({ tone: 'warn', html: `Демо кончается у <b>${own.demoSoon.length}</b> в ближайшие 14 дней — блок «Демо на исходе»` });
             if (inv && !inv.error) {
-                const f0 = inv.funnel[0].n, fLast = inv.funnel[inv.funnel.length - 1].n;
+                const f0 = inv.funnel[0].n;
+                const fAuto = inv.funnel[inv.autoLast || 0];
                 const mP = dPctD(inv.money.sum, inv.moneyPrev.sum);
-                if (f0) {
-                    const conv = Math.round(fLast / f0 * 100);
+                // Считаем до последней ступени, которую система отмечает сама.
+                // По «счёт выставлен» вышло бы 0 % при живых сделках — эту
+                // отметку ставят руками, и её ноль говорит о дисциплине
+                // нажатий, а не о продажах.
+                if (f0 && fAuto) {
+                    const conv = Math.round(fAuto.n / f0 * 100);
                     digest.push({ tone: conv >= 20 ? 'up' : (conv < 5 ? 'down' : 'flat'),
-                        html: `Смета доходит до счёта в <b>${conv}%</b> случаев`
-                            + ` <small style="color:var(--text-sec);">${num(fLast)} из ${num(f0)} за 90 дней</small>` });
+                        html: `До ступени «${esc(fAuto.label)}» доходит <b>${conv}%</b> смет`
+                            + ` <small style="color:var(--text-sec);">${num(fAuto.n)} из ${num(f0)} за 90 дней</small>` });
                 }
                 if (inv.money.n) digest.push({ tone: toneOf(mP),
-                    html: `Выставлено <b>${num(inv.money.n)}</b> ${this.plural(inv.money.n, 'счёт', 'счёта', 'счетов')} за 30 дней на <b>${moneyShort(inv.money.sum)}</b>${pctWord(mP)}` });
+                    html: `Выставлено <b>${num(inv.money.n)}</b> ${this.plural(inv.money.n, 'счёт', 'счёта', 'счетов')} за 30 дней на <b>${moneyShort(inv.money.sum)}</b>${pctWord(mP)}`
+                        + ` <small style="color:var(--text-sec);">по ручной отметке</small>` });
                 if (inv.waiting.length) digest.push({ tone: 'warn',
                     html: `Счёт запрошен и не выставлен: <b>${num(inv.waiting.length)}</b>`
                         + `, дольше всех ждёт <b>${inv.waiting[0].days} дн.</b> — блок «Ждут счёта»` });
@@ -15574,13 +15596,20 @@ const app = {
      *
      * Печать приравнена к отправке: смету распечатали — значит показали
      * заказчику, дальше разговор идёт так же, как после письма.
+     *
+     * manual — ступень, которую система сама не отмечает. Событие
+     * invoice_issued пишется ТОЛЬКО когда админ или менеджер нажмёт «✓ Счёт
+     * выставлен» на карточке канбана (см. setInvoiceStatus): при выставлении
+     * настоящего счёта ничего не срабатывает. Поэтому ноль на этой ступени
+     * значит «никто не нажал кнопку», а не «сделок нет», и читателю об этом
+     * надо сказать прямо — иначе воронка выглядит катастрофой на ровном месте.
      */
     INVOICE_FLOW: [
         { key: 'draft', label: 'расчёт сохранён', events: ['calculated', 'saved'] },
         { key: 'sent', label: 'отправлена клиенту', events: ['sent', 'printed'] },
         { key: 'confirmed', label: 'клиент одобрил', events: ['confirmed'] },
         { key: 'requested', label: 'запрошен счёт', events: ['invoice_requested'] },
-        { key: 'issued', label: 'счёт выставлен', events: ['invoice_issued'] }
+        { key: 'issued', label: 'счёт выставлен', events: ['invoice_issued'], manual: true }
     ],
 
     DASH_FUNNEL_COHORT_DAYS: 90,
@@ -15658,7 +15687,11 @@ const app = {
         };
 
         const cohort = list.filter(c => c.firstAt >= now - this.DASH_FUNNEL_COHORT_DAYS * DAY);
-        const funnel = FLOW.map((s, i) => ({ label: s.label, n: cohort.filter(c => reached(c, i)).length }));
+        const funnel = FLOW.map((s, i) => ({ label: s.label, manual: !!s.manual, n: cohort.filter(c => reached(c, i)).length }));
+        // Последняя ступень, которую система отмечает САМА. Конверсию считают
+        // по ней: ручная отметка меряет дисциплину нажатий, а не сделки.
+        let autoLast = 0;
+        FLOW.forEach((s, i) => { if (!s.manual) autoLast = i; });
         const lost = [
             { label: 'вернули на доработку', n: cohort.filter(c => c.first.needs_revision).length },
             { label: 'отклонили', n: cohort.filter(c => c.first.rejected).length },
@@ -15710,7 +15743,7 @@ const app = {
         const waitingOld = waitAll.length - waiting.length;
 
         const out = {
-            funnel, lost, speeds, money, moneyPrev, waiting, waitingOld,
+            funnel, lost, speeds, money, moneyPrev, waiting, waitingOld, autoLast,
             cohortN: cohort.length, totalN: list.length,
             capped: !!ev.capped, error: ev.error || null
         };
