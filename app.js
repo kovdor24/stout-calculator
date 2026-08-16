@@ -12764,6 +12764,30 @@ const app = {
         return this.isAdminMobile() ? 1 : (this.dashLayout().style.cols || 4);
     },
 
+    /**
+     * Ширина блока в колонках — по ней он и рисуется.
+     *
+     * Один и тот же список на четверти экрана и во всю ширину должен выглядеть
+     * по-разному: в узкой карточке десять строк с четырьмя числами в каждой
+     * превращаются в кашу из многоточий, а в широкой шесть строк оставляют
+     * половину карточки пустой. Поэтому блоки спрашивают свою ширину и сами
+     * решают, сколько строк показать, во сколько колонок разложить текст и
+     * какие столбцы вообще не рисовать.
+     *
+     * Блок из галереи в раскладке не стоит — ему отвечаем «средний»: там он
+     * показывается уменьшенным предпросмотром.
+     */
+    dashSpanOf: function (id) {
+        if (this.isAdminMobile()) return 1;
+        const l = this.dashLayout();
+        const cols = l.style.cols || 4;
+        for (let i = 0; i < l.sections.length; i++) {
+            const w = l.sections[i].items.filter(x => x.id === id)[0];
+            if (w) return Math.min(cols, w.span || 1);
+        }
+        return Math.min(cols, 2);
+    },
+
     toggleDashEdit: function (on) {
         this._dashEdit = (on === undefined) ? !this._dashEdit : !!on;
         this._dashGallery = null;
@@ -12904,15 +12928,190 @@ const app = {
         this.dashRerender();
     },
 
-    // ── Перетаскивание ──────────────────────────────────────────────────────
-    // Бросить блок можно на другой блок (встанет перед ним), на пустое место
-    // раздела (встанет в конец) и на заголовок раздела (уедет в другой раздел).
-    // Разделы перетаскиваются за «⠿» и бросаются на заголовок соседа.
-    dashDragWidget: function (ev, sid, wid) {
-        this._dashDrag = { type: 'widget', sec: sid, id: wid };
-        try { ev.dataTransfer.setData('text/plain', wid); ev.dataTransfer.effectAllowed = 'move'; } catch (e) { }
+    // ── Перетаскивание блоков ───────────────────────────────────────────────
+    //
+    // Своё, на pointer-событиях, вместо штатного HTML5 drag-and-drop. У
+    // штатного блок едет за курсором полупрозрачным снимком, который рисует
+    // браузер: ни поднять его, ни положить обратно с анимацией нельзя, а
+    // соседи молча перескакивают на новые места, и глаз не успевает понять,
+    // что куда встало.
+    //
+    // Здесь блок поднимается из сетки (копия карточки увеличивается и
+    // отбрасывает тень), едет за рукой, на его месте остаётся пустая рамка,
+    // соседи расступаются перед ней, а на отпускании карточка опускается ровно
+    // в эту рамку. Порядок после этого читается прямо из DOM — dashCommitOrder.
+    //
+    // Пальцем не тянем намеренно: чтобы отличить перетаскивание от прокрутки,
+    // пришлось бы держать блок нажатым, а на телефоне сетка всё равно в одну
+    // колонку — там порядок меняют стрелками.
+    DASH_EASE: 'cubic-bezier(.2,.8,.3,1)',
+
+    dashPointerDown: function (ev, sid, wid) {
+        if (!this._dashEdit) return;
+        if (ev.pointerType === 'touch') return;
+        if (ev.button) return;
+        // Кнопки и уголок ширины живут поверх карточки и тянуть её не должны.
+        if (ev.target.closest('button, [data-dash-resize]')) return;
+
+        const cell = ev.currentTarget;
+        const startX = ev.clientX, startY = ev.clientY;
+        let started = false;
+
+        const move = (e) => {
+            if (!started) {
+                if (Math.abs(e.clientX - startX) < 5 && Math.abs(e.clientY - startY) < 5) return;
+                started = true;
+                app.dashLift(cell, e);
+            }
+            app.dashDragMove(e);
+        };
+        const up = (e) => {
+            document.removeEventListener('pointermove', move);
+            document.removeEventListener('pointerup', up);
+            document.removeEventListener('pointercancel', up);
+            if (started) app.dashDrop(e);
+        };
+        document.addEventListener('pointermove', move);
+        document.addEventListener('pointerup', up);
+        document.addEventListener('pointercancel', up);
+        ev.preventDefault();               // иначе тянется выделение текста
     },
 
+    // Поднять карточку: копия уезжает в отдельный слой, оригинал остаётся
+    // пустой рамкой-местом.
+    dashLift: function (cell, ev) {
+        const r = cell.getBoundingClientRect();
+        const ghost = cell.cloneNode(true);
+        // В копии ручки не нужны: она под курсором и всё равно не нажимается.
+        ghost.querySelectorAll('button, [data-dash-resize]').forEach(n => n.remove());
+        ghost.removeAttribute('data-dash-w');
+        ghost.style.cssText = `position:fixed; left:0; top:0; width:${r.width}px; height:${r.height}px;
+            margin:0; z-index:100002; pointer-events:none; outline:none; border-radius:16px;
+            will-change:transform; transform:translate(${r.left}px, ${r.top}px);
+            transition:box-shadow .18s ease, opacity .18s ease; opacity:.96;`;
+        document.body.appendChild(ghost);
+        // Тень и увеличение включаем следующим кадром — иначе браузер применит
+        // их сразу вместе с постановкой, и подъёма видно не будет.
+        requestAnimationFrame(() => {
+            ghost.style.boxShadow = '0 18px 42px rgba(15,23,42,.30)';
+            ghost.style.transform = `translate(${r.left}px, ${r.top}px) scale(1.035) rotate(.5deg)`;
+        });
+
+        cell.setAttribute('data-dash-hole', '1');
+        cell.style.outline = '2px dashed var(--primary)';
+        cell.style.background = 'rgba(127,127,127,.07)';
+        const guts = cell.firstElementChild;
+        if (guts) guts.style.visibility = 'hidden';
+        document.body.style.cursor = 'grabbing';
+
+        this._dashDragState = {
+            cell, ghost,
+            dx: ev.clientX - r.left,
+            dy: ev.clientY - r.top
+        };
+    },
+
+    // Соседи расступаются: запоминаем, где лежали карточки, переставляем место
+    // в DOM и проигрываем разницу — обычный приём FLIP. Анимировать сам порядок
+    // в grid браузер не умеет, там всё меняется мгновенно.
+    dashFlip: function (mutate) {
+        const cells = [];
+        document.querySelectorAll('[data-dash-grid] > [data-dash-w], [data-dash-grid] > [data-dash-hole]')
+            .forEach(c => cells.push([c, c.getBoundingClientRect()]));
+        mutate();
+        cells.forEach(([c, was]) => {
+            const now = c.getBoundingClientRect();
+            const dx = was.left - now.left, dy = was.top - now.top;
+            if (!dx && !dy) return;
+            c.style.transition = 'none';
+            c.style.transform = `translate(${dx}px, ${dy}px)`;
+            requestAnimationFrame(() => {
+                c.style.transition = `transform .24s ${app.DASH_EASE}`;
+                c.style.transform = '';
+            });
+        });
+    },
+
+    dashDragMove: function (ev) {
+        const D = this._dashDragState;
+        if (!D) return;
+        D.ghost.style.transform =
+            `translate(${ev.clientX - D.dx}px, ${ev.clientY - D.dy}px) scale(1.035) rotate(.5deg)`;
+
+        // Дашборд длиннее экрана, и тащить блок из последнего раздела в первый
+        // без подкрутки у края было бы нечем. Прокручивается либо сама панель
+        // (в админке у неё своя полоса), либо страница целиком.
+        const sc = document.getElementById('admin_content');
+        const own = sc && sc.scrollHeight > sc.clientHeight + 4;
+        const box = own ? sc.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+        if (ev.clientY < box.top + 70) {
+            if (own) sc.scrollTop -= 14; else window.scrollBy(0, -14);
+        } else if (ev.clientY > box.bottom - 70) {
+            if (own) sc.scrollTop += 14; else window.scrollBy(0, 14);
+        }
+
+        const under = document.elementFromPoint(ev.clientX, ev.clientY);
+        if (!under) return;
+        const overCell = under.closest('[data-dash-w]');
+        const grid = under.closest('[data-dash-grid]');
+
+        if (overCell && overCell !== D.cell) {
+            const rr = overCell.getBoundingClientRect();
+            const before = ev.clientX < rr.left + rr.width / 2;
+            const ref = before ? overCell : overCell.nextElementSibling;
+            if (ref === D.cell) return;
+            if (D.cell.parentElement === overCell.parentElement && D.cell.nextElementSibling === ref) return;
+            this.dashFlip(() => overCell.parentElement.insertBefore(D.cell, ref));
+        } else if (grid && !overCell && D.cell.parentElement !== grid) {
+            // Пустой раздел или свободное место в конце ряда.
+            this.dashFlip(() => grid.appendChild(D.cell));
+        }
+    },
+
+    dashDrop: function () {
+        const D = this._dashDragState;
+        if (!D) return;
+        this._dashDragState = null;
+        document.body.style.cursor = '';
+
+        const r = D.cell.getBoundingClientRect();
+        D.ghost.style.transition = `transform .26s cubic-bezier(.2,.9,.3,1.06), box-shadow .26s ease`;
+        D.ghost.style.transform = `translate(${r.left}px, ${r.top}px) scale(1)`;
+        D.ghost.style.boxShadow = '0 1px 3px rgba(0,0,0,.05)';
+
+        // Перерисовываем не сразу, а когда карточка долетит: иначе она
+        // исчезнет на полпути и опускания видно не будет.
+        setTimeout(() => {
+            try { D.ghost.remove(); } catch (e) { }
+            app.dashCommitOrder();
+        }, 270);
+    },
+
+    // Порядок берём из DOM, а не из того, что мы думали при перетаскивании:
+    // карточка могла уехать в другой раздел, и DOM — единственное место, где
+    // это уже учтено.
+    dashCommitOrder: function () {
+        const l = this.dashLayout();
+        const spans = {};
+        l.sections.forEach(s => s.items.forEach(w => { spans[w.id] = w.span; }));
+        let touched = false;
+        document.querySelectorAll('[data-dash-grid]').forEach(g => {
+            const s = this.dashSection(g.getAttribute('data-dash-sec'));
+            if (!s) return;
+            const ids = Array.prototype.slice.call(g.children)
+                .filter(c => c.hasAttribute('data-dash-w') || c.hasAttribute('data-dash-hole'))
+                .map(c => c.getAttribute('data-dash-w') || c.getAttribute('data-dash-id'))
+                .filter(Boolean);
+            s.items = ids.map(id => ({ id, span: spans[id] || 1 }));
+            touched = true;
+        });
+        if (!touched) return;
+        this.saveDashLayout();
+        this.dashRerender();
+    },
+
+    // Разделы по-прежнему на штатном drag-and-drop: их переставляют редко, они
+    // цепляются за «⠿» и бросаются на заголовок соседа.
     dashDragSection: function (ev, sid) {
         this._dashDrag = { type: 'section', id: sid };
         try { ev.dataTransfer.setData('text/plain', sid); ev.dataTransfer.effectAllowed = 'move'; } catch (e) { }
@@ -12924,69 +13123,18 @@ const app = {
         try { ev.dataTransfer.dropEffect = 'move'; } catch (e) { }
     },
 
-    // Вынуть блок из его раздела. Возвращает саму запись — с шириной, которую
-    // ей уже задали: после переноса она не должна схлопываться в единицу.
-    dashTakeWidget: function (wid) {
-        let taken = null;
-        this.dashLayout().sections.forEach(s => {
-            s.items = s.items.filter(w => {
-                if (w.id !== wid) return true;
-                taken = w;
-                return false;
-            });
-        });
-        return taken;
-    },
-
-    dashDropWidget: function (ev, sid, wid) {
-        const d = this._dashDrag;
-        if (!d || d.type !== 'widget') return;
-        ev.preventDefault();
-        ev.stopPropagation();
-        this._dashDrag = null;
-        if (d.id === wid) return;
-        const s = this.dashSection(sid);
-        const moving = this.dashTakeWidget(d.id);
-        if (!s || !moving) return;
-        const at = s.items.findIndex(w => w.id === wid);
-        s.items.splice(at < 0 ? s.items.length : at, 0, moving);
-        this.saveDashLayout();
-        this.dashRerender();
-    },
-
-    dashDropInSection: function (ev, sid) {
-        const d = this._dashDrag;
-        if (!d || d.type !== 'widget') return;
-        ev.preventDefault();
-        this._dashDrag = null;
-        const s = this.dashSection(sid);
-        const moving = this.dashTakeWidget(d.id);
-        if (!s || !moving) return;
-        s.items.push(moving);
-        this.saveDashLayout();
-        this.dashRerender();
-    },
-
     dashDropOnHeader: function (ev, sid) {
         const d = this._dashDrag;
-        if (!d) return;
+        if (!d || d.type !== 'section' || d.id === sid) return;
         ev.preventDefault();
         ev.stopPropagation();
         this._dashDrag = null;
         const l = this.dashLayout();
-        if (d.type === 'widget') {
-            const s = this.dashSection(sid);
-            const moving = this.dashTakeWidget(d.id);
-            if (!s || !moving) return;
-            s.items.unshift(moving);
-        } else {
-            if (d.id === sid) return;
-            const from = l.sections.findIndex(s => s.id === d.id);
-            if (from < 0) return;
-            const moving = l.sections.splice(from, 1)[0];
-            const at = l.sections.findIndex(s => s.id === sid);
-            l.sections.splice(at < 0 ? l.sections.length : at, 0, moving);
-        }
+        const from = l.sections.findIndex(s => s.id === d.id);
+        if (from < 0) return;
+        const moving = l.sections.splice(from, 1)[0];
+        const at = l.sections.findIndex(s => s.id === sid);
+        l.sections.splice(at < 0 ? l.sections.length : at, 0, moving);
         this.saveDashLayout();
         this.dashRerender();
     },
@@ -13116,12 +13264,9 @@ const app = {
                 }
                 if (!edit) return `<div style="grid-column:span ${span}; min-width:0;">${inner}</div>`;
 
-                return `<div data-dash-w="${w.id}" draggable="true"
-                             ondragstart="app.dashDragWidget(event, '${s.id}', '${w.id}')"
-                             ondragend="app._dashDrag = null"
-                             ondragover="app.dashDragOver(event)"
-                             ondrop="app.dashDropWidget(event, '${s.id}', '${w.id}')"
-                             title="${esc(meta.t)}"
+                return `<div data-dash-w="${w.id}"
+                             onpointerdown="app.dashPointerDown(event, '${s.id}', '${w.id}')"
+                             title="${esc(meta.t)} — тяните мышью"
                              style="grid-column:span ${span}; min-width:0; position:relative; cursor:grab;
                                     outline:1px dashed var(--border); outline-offset:3px; border-radius:16px;">
                         <div style="pointer-events:none;">${inner}</div>
@@ -13133,7 +13278,7 @@ const app = {
                             ${iconBtn('раньше', '←', `app.dashMoveWidget('${s.id}', '${w.id}', -1)`, 'background:var(--surface);')}
                             ${iconBtn('позже', '→', `app.dashMoveWidget('${s.id}', '${w.id}', 1)`, 'background:var(--surface);')}
                         </div>
-                        <div onpointerdown="app.dashResizeStart(event, '${s.id}', '${w.id}')"
+                        <div data-dash-resize onpointerdown="app.dashResizeStart(event, '${s.id}', '${w.id}')"
                              title="ширина: тянуть или щёлкнуть (${span} из ${cols})"
                              style="position:absolute; right:-4px; bottom:-4px; width:22px; height:22px; border-radius:7px;
                                     background:var(--surface); border:1px solid var(--border); color:var(--text-sec);
@@ -13152,9 +13297,9 @@ const app = {
 
             return `<div style="margin-bottom:${edit ? 22 : 18}px;">
                     ${head}
-                    <div ${edit ? `ondragover="app.dashDragOver(event)" ondrop="app.dashDropInSection(event, '${s.id}')"` : ''}
+                    <div ${edit ? `data-dash-grid data-dash-sec="${s.id}"` : ''}
                          style="display:grid; grid-template-columns:repeat(${cols}, minmax(0,1fr)); gap:${gap}px;
-                                align-items:stretch; ${edit ? 'min-height:40px;' : ''}">
+                                align-items:stretch; ${edit ? 'min-height:56px;' : ''}">
                         ${cells}${empty}
                     </div>
                 </div>`;
@@ -13302,6 +13447,11 @@ const app = {
         const st = this.dashLayout().style;
         const pad = st.density === 'compact' ? '11px 13px' : '16px 18px';
         const shadow = st.card === 'flat' ? '' : 'box-shadow:0 1px 3px rgba(0,0,0,.05);';
+        // Ширина блока в колонках и три её ступени: узкий (одна колонка),
+        // обычный (две) и широкий (три и больше). По ним блоки решают, сколько
+        // строк и столбцов им рисовать.
+        const sp = (id) => this.dashSpanOf(id);
+        const rows = (id, narrow, normal, wide) => { const n = sp(id); return n <= 1 ? narrow : (n === 2 ? normal : wide); };
         const card = (inner, extra) => `<div style="background:var(--surface); border:1px solid var(--border); border-radius:16px;
                 padding:${pad}; ${shadow} height:100%; box-sizing:border-box; ${extra || ''}">${inner}</div>`;
         const head = (title, sub) => `<div style="font-size:14px; font-weight:800; color:var(--text-main);">${title}</div>`
@@ -13314,23 +13464,29 @@ const app = {
         const pill = (p) => p === null || p === undefined ? ''
             : `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(255,255,255,.6); color:#0F172A;
                      border-radius:999px; padding:2px 9px; font-size:12px; font-weight:800;">${p > 0 ? '↑ +' : (p < 0 ? '↓ ' : '→ ')}${p}%</span>`;
-        const tile = (grad, label, value, sub, p) => st.tiles === 'plain'
-            ? card(`<div style="font-size:13px; font-weight:800; color:var(--text-sec);">${label}</div>
-                    <div style="font-size:30px; font-weight:800; color:var(--text-main); line-height:1.05; margin-top:10px;">${value}</div>
+        // Плитка знает свою ширину: в одной колонке крупная цифра переносится
+        // и ломает карточку, поэтому там она мельче, а подпись короче.
+        const tile = (id, grad, label, value, sub, p) => {
+            const wide = sp(id) >= 2;
+            const big = wide ? 30 : 23;
+            return st.tiles === 'plain'
+                ? card(`<div style="font-size:13px; font-weight:800; color:var(--text-sec);">${label}</div>
+                    <div style="font-size:${big}px; font-weight:800; color:var(--text-main); line-height:1.05; margin-top:10px;">${value}</div>
                     <div style="display:flex; align-items:center; gap:8px; margin-top:6px; flex-wrap:wrap;">
                         <span style="font-size:12px;">${trend(p)}</span>
                         <span style="font-size:11.5px; color:var(--text-sec);">${sub}</span>
                     </div>`)
-            : `<div style="background:${grad}; border-radius:16px; padding:${pad}; color:#0F172A;
-                        min-height:126px; height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between;">
+                : `<div style="background:${grad}; border-radius:16px; padding:${pad}; color:#0F172A;
+                        min-height:${wide ? 126 : 112}px; height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between;">
                 <div style="font-size:13px; font-weight:800; opacity:.8;">${label}</div>
                 <div>
-                    <div style="font-size:30px; font-weight:800; line-height:1.05;">${value}</div>
+                    <div style="font-size:${big}px; font-weight:800; line-height:1.05;">${value}</div>
                     <div style="display:flex; align-items:center; gap:8px; margin-top:6px; flex-wrap:wrap;">
                         ${pill(p)}<span style="font-size:11.5px; opacity:.75;">${sub}</span>
                     </div>
                 </div>
             </div>`;
+        };
 
         // Внутренние двухколоночные разбивки самих блоков. Сетка дашборда живёт
         // снаружи и о них ничего не знает.
@@ -13372,20 +13528,25 @@ const app = {
         };
 
         const kDemand = kpi('demand'), kCalc = kpi('calc'), kEquip = kpi('equipment');
-        B.own_places = card(head('Наши места по группам', `${idsWithRank.length} групп прайса${region ? `, ${esc(region)}` : ', вся Россия'} · доля групп, где марка в тройке по спросу`)
-            + `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;">
+        // Два кольца рядом требуют места на подписи «в тройке 16 из 38». В одну
+        // колонку они не встают — там ставим их друг под другом.
+        B.own_places = card(head('Наши места по группам', sp('own_places') >= 2
+                ? `${idsWithRank.length} групп прайса${region ? `, ${esc(region)}` : ', вся Россия'} · доля групп, где марка в тройке по спросу`
+                : `${idsWithRank.length} групп · в тройке по спросу`)
+            + `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;
+                        ${sp('own_places') <= 1 ? 'flex-direction:column;' : ''}">
                     ${ring('stout', 'STOUT', '#2563EB')}
                     ${ring('rommer', 'ROMMER', '#EF4444')}
                </div>`);
-        if (kDemand) B.demand_works = tile('linear-gradient(135deg,#FBCFE8 0%,#FDBA74 55%,#FCA5A5 100%)',
+        if (kDemand) B.demand_works = tile('demand_works', 'linear-gradient(135deg,#FBCFE8 0%,#FDBA74 55%,#FCA5A5 100%)',
             'Спрос на монтаж и работы', num(kDemand.now),
-            `${esc(kDemand.month)} · ${kDemand.count} формулировок, ${backLabel}`, kDemand.pct);
-        if (kCalc) B.demand_calc = tile('linear-gradient(135deg,#A7F3D0 0%,#7DD3FC 55%,#BFDBFE 100%)',
+            sp('demand_works') >= 2 ? `${esc(kDemand.month)} · ${kDemand.count} формулировок, ${backLabel}` : `${esc(kDemand.month)}, ${backLabel}`, kDemand.pct);
+        if (kCalc) B.demand_calc = tile('demand_calc', 'linear-gradient(135deg,#A7F3D0 0%,#7DD3FC 55%,#BFDBFE 100%)',
             'Спрос на подбор и проект', num(kCalc.now),
-            `${esc(kCalc.month)} · то, что делает калькулятор, ${backLabel}`, kCalc.pct);
-        if (kEquip) B.demand_equip = tile('linear-gradient(135deg,#DDD6FE 0%,#C7D2FE 55%,#BAE6FD 100%)',
+            sp('demand_calc') >= 2 ? `${esc(kCalc.month)} · то, что делает калькулятор, ${backLabel}` : `${esc(kCalc.month)}, ${backLabel}`, kCalc.pct);
+        if (kEquip) B.demand_equip = tile('demand_equip', 'linear-gradient(135deg,#DDD6FE 0%,#C7D2FE 55%,#BAE6FD 100%)',
             'Спрос на оборудование', num(kEquip.now),
-            `${esc(kEquip.month)} · ${kEquip.count} формулировок, ${backLabel}`, kEquip.pct);
+            sp('demand_equip') >= 2 ? `${esc(kEquip.month)} · ${kEquip.count} формулировок, ${backLabel}` : `${esc(kEquip.month)}, ${backLabel}`, kEquip.pct);
 
         // ── Полоса источников ───────────────────────────────────────────────
         const src = (icon, name, date) => `<div style="display:flex; align-items:center; gap:8px; min-width:0;">
@@ -13393,9 +13554,13 @@ const app = {
                 <span style="min-width:0;"><b style="font-size:12.5px; color:var(--text-main);">${name}</b>
                 <br><small style="color:var(--text-sec);">${date ? 'обновлено ' + esc(date) : 'нет данных'}</small></span>
             </div>`;
-        B.sources = card(`<div style="display:flex; gap:18px; flex-wrap:wrap; align-items:center;">
+        // В одну колонку четыре источника в строку не помещаются — там заголовок
+        // встаёт сверху, а сами источники столбиком под ним.
+        const srcWide = sp('sources') >= 3;
+        B.sources = card(`<div style="display:flex; gap:${srcWide ? 18 : 10}px; flex-wrap:wrap; align-items:${srcWide ? 'center' : 'flex-start'};
+                    ${srcWide ? '' : 'flex-direction:column;'}">
                 <div style="min-width:0;">${head('Источники', 'собирает GitHub Actions, без Supabase')}</div>
-                <div style="display:flex; gap:18px; flex-wrap:wrap; margin-left:auto;">
+                <div style="display:flex; gap:${srcWide ? 18 : 12}px; flex-wrap:wrap; ${srcWide ? 'margin-left:auto;' : ''}">
                     ${src('🔎', 'Wordstat', wordstat && wordstat.updated)}
                     ${src('🏷️', 'Марки в запросах', brands && brands.updated)}
                     ${src('📅', 'Недельный пульс', pulse && pulse.updated)}
@@ -13422,18 +13587,20 @@ const app = {
         } else {
             const m = own.month;
             const dPct = (a, b) => b ? Math.round((a - b) / b * 100) : null;
-            const miniTile = (label, value, prevPct, sub) => card(
+            // Растянутый на две колонки счётчик выглядит потерянным: цифра та же,
+            // а места вдвое больше. Поэтому с шириной растёт и она.
+            const miniTile = (id, label, value, prevPct, sub) => card(
                 `<div style="font-size:12px; color:var(--text-sec); font-weight:700;">${label}</div>
                  <div style="display:flex; align-items:baseline; gap:8px; margin-top:6px; flex-wrap:wrap;">
-                    <span style="font-size:26px; font-weight:800; color:var(--text-main); line-height:1;">${value}</span>
+                    <span style="font-size:${sp(id) >= 2 ? 36 : 26}px; font-weight:800; color:var(--text-main); line-height:1;">${value}</span>
                     <span style="font-size:12px;">${trend(prevPct)}</span>
                  </div>
                  <div style="font-size:11px; color:var(--text-sec); margin-top:4px;">${sub}</div>`);
 
-            B.own_ests = miniTile('Смет за 30 дней', num(m.ests), dPct(m.ests, m.estsPrev), `всего ${num(own.totalEst)} · к предыдущим 30 дням`);
-            B.own_users = miniTile('Новых монтажников', num(m.users), dPct(m.users, m.usersPrev), `всего ${num(own.users)}${region ? ' в регионе' : ''}`);
-            B.own_projects = miniTile('Проектов выпущено', num(m.projects), dPct(m.projects, m.projectsPrev), 'комплекты листов за 30 дней');
-            B.own_rec = miniTile('Распознано смет', m.rec === null ? '—' : num(m.rec), m.rec === null ? null : dPct(m.rec, m.recPrev),
+            B.own_ests = miniTile('own_ests', 'Смет за 30 дней', num(m.ests), dPct(m.ests, m.estsPrev), `всего ${num(own.totalEst)} · к предыдущим 30 дням`);
+            B.own_users = miniTile('own_users', 'Новых монтажников', num(m.users), dPct(m.users, m.usersPrev), `всего ${num(own.users)}${region ? ' в регионе' : ''}`);
+            B.own_projects = miniTile('own_projects', 'Проектов выпущено', num(m.projects), dPct(m.projects, m.projectsPrev), 'комплекты листов за 30 дней');
+            B.own_rec = miniTile('own_rec', 'Распознано смет', m.rec === null ? '—' : num(m.rec), m.rec === null ? null : dPct(m.rec, m.recPrev),
                 m.rec === null ? 'архив на сервере не ответил' : 'накладные и сметы за 30 дней');
 
             // 1. Свои сметы против поискового спроса — форма кривой, не величина.
@@ -13490,18 +13657,21 @@ const app = {
 
             // 4 и 3: воронка когорты и демо, которые вот-вот кончатся
             const fMax = own.funnel[0].n || 1;
+            // В узкой карточке от полоски остаётся полтора сантиметра, а число и
+            // процент рядом дублируют друг друга — процент убираем, полоску тоже.
+            const fNarrow = sp('funnel') <= 1;
             const funnelHtml = own.funnel.map((f, i) => `
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                     <div style="flex:1 1 42%; min-width:0; font-size:12.5px; color:var(--text-main);">${f.label}</div>
-                    <div style="flex:1 1 38%; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
+                    ${fNarrow ? '' : `<div style="flex:1 1 38%; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
                         <div style="width:${Math.max(2, Math.round(f.n / fMax * 100))}%; height:8px; border-radius:999px; background:${i === 0 ? 'var(--primary)' : (f.n ? '#10B981' : '#EF4444')};"></div>
-                    </div>
+                    </div>`}
                     <div style="width:38px; text-align:right; font-size:12.5px; font-weight:700; color:var(--text-main);">${f.n}</div>
                     <div style="width:44px; text-align:right; font-size:11.5px; color:var(--text-sec);">${fMax ? Math.round(f.n / fMax * 100) : 0}%</div>
                 </div>`).join('');
 
             const demoHtml = own.demoSoon.length
-                ? own.demoSoon.slice(0, 8).map(x => `
+                ? own.demoSoon.slice(0, rows('demo_soon', 4, 8, 12)).map(x => `
                     <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
                         <div style="min-width:0; flex:1;">
                             <b style="font-size:12.5px; color:var(--text-main);">${esc(x.name)}</b>
@@ -13525,6 +13695,9 @@ const app = {
             // Свои сметы, в отличие от Wordstat, показываем и за текущий месяц:
             // это не оценка спроса, а факт. Но помечаем — иначе последняя
             // строка каждый раз читается как провал по числу смет.
+            // Узкая карточка держит только месяц, полоску и чек: площадь и число
+            // смет в ней вставали в две строки и рвали ряд.
+            const chekNarrow = sp('chek') <= 1;
             const chekHtml = own.monthRows.length ? own.monthRows.map(x => `
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;"
                      ${x.m === CUR_M ? 'title="месяц ещё не кончился"' : ''}>
@@ -13533,8 +13706,8 @@ const app = {
                         <div style="width:${Math.max(2, Math.round(x.avg / chekMax * 100))}%; height:8px; border-radius:999px; background:var(--primary);"></div>
                     </div>
                     <div style="width:78px; text-align:right; font-size:12.5px; font-weight:700; color:var(--text-main);">${num(x.avg)} ₽</div>
-                    <div style="width:62px; text-align:right; font-size:11.5px; color:var(--text-sec);">${x.area ? x.area + ' м²' : '—'}</div>
-                    <div style="width:34px; text-align:right; font-size:11.5px; color:var(--text-sec);">${x.n}</div>
+                    ${chekNarrow ? '' : `<div style="width:62px; text-align:right; font-size:11.5px; color:var(--text-sec);">${x.area ? x.area + ' м²' : '—'}</div>
+                    <div style="width:34px; text-align:right; font-size:11.5px; color:var(--text-sec);">${x.n}</div>`}
                 </div>`).join('') : `<div style="font-size:12.5px; color:var(--text-sec);">Смет за последние месяцы нет.</div>`;
 
             // Группы прайса в реальных счетах против поискового спроса на них.
@@ -13567,25 +13740,29 @@ const app = {
             } else if (!usage || !usage.rows.length) {
                 usageHtml = `<div style="font-size:12.5px; color:var(--text-sec); padding:10px 0;">За последние полгода счетов с позициями нет.</div>`;
             } else {
-                usageHtml = usage.rows.slice(0, 12).map(r => {
+                // Четыре числа в строке — это на две колонки и шире. В узкой
+                // карточке остаются доля и сдвиг, спрос уходит: он и так есть
+                // отдельным блоком.
+                const uNarrow = sp('group_usage') <= 1;
+                usageHtml = usage.rows.slice(0, rows('group_usage', 6, 12, 16)).map(r => {
                     const nameFull = (cats[r.id] && cats[r.id].price_group) || r.id;
                     const dp = demandPct(r.id);
                     return `<div style="display:flex; align-items:center; gap:9px; margin-bottom:8px;">
                         <div style="flex:1 1 40%; min-width:0; font-size:12.5px; color:var(--text-main);
                                     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(nameFull)}">${esc(nameFull)}</div>
-                        <div style="flex:1 1 22%; min-width:52px; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
+                        ${uNarrow ? '' : `<div style="flex:1 1 22%; min-width:52px; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
                             <div style="width:${Math.max(2, Math.round(r.share))}%; height:8px; border-radius:999px; background:var(--primary);"></div>
-                        </div>
+                        </div>`}
                         <div style="width:38px; text-align:right; font-size:12.5px; font-weight:700; color:var(--text-main);">${Math.round(r.share)}%</div>
                         <div style="width:62px; text-align:right; font-size:11.5px;">${pp(r.delta)}</div>
-                        <div style="width:56px; text-align:right; font-size:11.5px;" title="спрос по России, ${backLabel}">${trend(dp)}</div>
+                        ${uNarrow ? '' : `<div style="width:56px; text-align:right; font-size:11.5px;" title="спрос по России, ${backLabel}">${trend(dp)}</div>`}
                     </div>`;
                 }).join('')
-                + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.6;">
+                + (uNarrow ? '' : `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.6;">
                         ${num(usage.nRecent)} счетов за полгода, ${num(usage.nPrev)} за предыдущие${usage.capped ? ' (обрезано по потолку строк)' : ''}.
                         Столбцы: доля счетов с группой · сдвиг к прошлому полугодию · спрос ${esc(backLabel)}.
                         ${usage.unknownShare > 0 ? `Вне карты групп ${usage.unknownShare}% строк — своё и распознанное оборудование.` : ''}
-                   </div>`;
+                   </div>`);
             }
 
             // Про недогруз своих данных пишем внутри блока среднего чека: раньше
@@ -13684,7 +13861,7 @@ const app = {
             }
             B.prices = card(head(`Цены прайса: ${lastPrice.index > 0 ? '+' : ''}${Number(lastPrice.index).toFixed(1)}% за месяц`,
                     `${esc(priceKeys[priceKeys.length - 1])} к ${esc(lastPrice.base_month || 'прошлому снимку')} · по ${num(lastPrice.common)} одинаковым артикулам из ${num(lastPrice.positions)}`)
-                + `<div style="display:grid; ${gHalf} gap:18px; margin-top:12px;">
+                + `<div style="display:grid; ${sp('prices') >= 2 ? gHalf : 'grid-template-columns:1fr;'} gap:18px; margin-top:12px;">
                     <div><div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">Подорожало сильнее всего</div>${grTop.map(priceLine).join('') || '<small style="color:var(--text-sec);">нет</small>'}</div>
                     <div><div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">Подешевело</div>${grDown.map(priceLine).join('') || '<small style="color:var(--text-sec);">ничего не подешевело</small>'}</div>
                    </div>`
@@ -13768,6 +13945,9 @@ const app = {
         }).sort((a, b) => b.households - a.households);
         const gasTotal = gasRows.reduce((a, x) => a + x.households, 0);
 
+        // В узкой карточке график съедается подписями, а полоса периодов под ним
+        // становится нечитаемой: семь клеток по 88 пикселей туда не влезают.
+        const chNarrow = sp('demand_chart') <= 1;
         B.demand_chart = card(`<div style="display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
                         <div>${head('Спрос по месяцам', (region ? esc(region) : 'вся Россия') + (spanNote ? ' · ' + spanNote : ''))}</div>
                         <div style="margin-left:auto; display:flex; gap:5px; flex-wrap:wrap;">${GROUPS.map(([g, l]) => gBtn(g, l)).join('')}</div>
@@ -13783,7 +13963,7 @@ const app = {
                     ${chartSeries.length
                         ? this.buildAnalyticsLineChart(chartSeries, 'dash')
                         : `<div style="font-size:12.5px; color:var(--text-sec); padding:20px 0;">По этой группе${region ? ` в регионе «${esc(region)}»` : ''} истории пока нет.</div>`}
-                    ${demandStrip}`);
+                    ${chNarrow ? '' : demandStrip}`);
 
         B.gas = card(head('🔥 Догазификация', gasRows.length
                     ? `программа ${esc((gas && gas.program) || '')} · ${num(gasTotal)} домовладений`
@@ -13809,6 +13989,9 @@ const app = {
         // Считаем по той же группе фраз, что выбрана для графика выше, и по
         // тому же региону: иначе два блока рядом отвечали бы про разное.
         const qMode = this._dashQuarters === 'qoq' ? 'qoq' : 'yoy';
+        // Двенадцать столбиков подряд требуют всей ширины. Ужатый блок кладёт те
+        // же кварталы строками — так же, как это давно сделано для телефона.
+        const qNarrow = mobile || sp('quarters') <= 2;
         const qPoints = groupSeries(curGroup).points;
         if (qPoints.length > 3) {
             const mMap = {};
@@ -13918,7 +14101,7 @@ const app = {
                 // На телефоне сетка выпрямляется в одну колонку (общее правило
                 // админки), и четыре квартала встают друг под друга — тот же
                 // отступ работает уже как вертикальный, поэтому не ужимаем.
-                qBody = `<div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:18px; margin-top:12px;">${cols}</div>`;
+                qBody = `<div style="display:grid; grid-template-columns:repeat(${qNarrow ? 2 : 4}, minmax(0,1fr)); gap:18px; margin-top:12px;">${cols}</div>`;
                 qNote = `Столбцы внутри квартала — годы, выбранная пара выделена жирным. Процент под кварталом сравнивает ${esc(qNewY)} с ${esc(qOldY)} по одним и тем же месяцам, так что сезон из него уже вычтен.`;
             } else {
                 qLast.forEach(k => { qMax = Math.max(qMax, qSum(k.slice(0, 4), Number(k.slice(5)))); });
@@ -13933,11 +14116,11 @@ const app = {
                     const pct = prevV ? Math.round((val - prevV) / prevV * 100) : null;
                     const color = Y_COLORS[Math.max(0, yrs.indexOf(y) + Y_COLORS.length - yrs.length)] || Y_COLORS[2];
                     const hint = `${ROM[qn - 1]} квартал ${y}: ${num(val)}${part ? ' (неполный, ' + qMonths(y, qn).length + ' мес.)' : ''}`;
-                    // На телефоне двенадцать столбиков не помещаются: на колонку
-                    // остаётся 24 пикселя, а подпись под ней шире сорока — числа
-                    // налезали друг на друга. Кладём те же кварталы строками,
-                    // как соседний блок регионов.
-                    if (mobile) {
+                    // На телефоне (и в ужатом блоке) двенадцать столбиков не
+                    // помещаются: на колонку остаётся 24 пикселя, а подпись под
+                    // ней шире сорока — числа налезали друг на друга. Кладём те
+                    // же кварталы строками, как соседний блок регионов.
+                    if (qNarrow) {
                         return `<div style="display:flex; align-items:center; gap:8px; margin-bottom:7px;" title="${hint}">
                                 <div style="width:46px; flex:0 0 auto; font-size:11.5px; color:var(--text-sec);">${ROM[qn - 1]}·${y.slice(2)}</div>
                                 <div style="flex:1 1 auto; min-width:0; height:9px; background:rgba(127,127,127,.18); border-radius:999px;">
@@ -13958,7 +14141,7 @@ const app = {
                             <div style="font-size:10.5px; margin-top:1px; white-space:nowrap;">${trend(pct)}</div>
                         </div>`;
                 }).join('');
-                qBody = mobile
+                qBody = qNarrow
                     ? `<div style="margin-top:12px;">${bars}</div>`
                     : `<div style="display:flex; align-items:flex-end; gap:7px; height:${BAR_H + 60}px; margin-top:12px;">${bars}</div>`;
                 qNote = 'Кварталы подряд, процент — к предыдущему. Здесь виден сезон: у монтажа он всегда падает к первому кварталу, и это не спад спроса.';
@@ -14012,7 +14195,8 @@ const app = {
             // Группы, где у нас вообще нет позиций, из этого блока убираем:
             // нулевая полоска про сопутствующий спрос — не «наша доля», а шум,
             // и он вытеснял вниз группы, где действительно есть что смотреть.
-        }).filter(x => x.brandTotal > 0 && x.ourGroup).sort((a, b) => b.brandTotal - a.brandTotal).slice(0, 9);
+        }).filter(x => x.brandTotal > 0 && x.ourGroup).sort((a, b) => b.brandTotal - a.brandTotal)
+          .slice(0, rows('share_groups', 5, 9, 14));
 
         const demandId = phrases['montazh_otopleniya'] ? 'montazh_otopleniya'
             : Object.keys(phrases).filter(id => phrases[id].group === 'demand')[0];
@@ -14023,7 +14207,7 @@ const app = {
                 name: rg, val: (nowP && nowP[1]) || 0,
                 pct: (baseP && baseP[1] && nowP) ? Math.round((nowP[1] - baseP[1]) / baseP[1] * 100) : null
             };
-        }).filter(x => x.val > 0).sort((a, b) => b.val - a.val).slice(0, 10) : [];
+        }).filter(x => x.val > 0).sort((a, b) => b.val - a.val).slice(0, rows('regions', 5, 10, 16)) : [];
         const regMax = regRows.length ? regRows[0].val : 1;
 
         B.share_groups = card(head('Наша доля в спросе на группу', 'из тех запросов, где марку вообще называют · строка ведёт в «Аналитику»')
@@ -14096,7 +14280,7 @@ const app = {
             const white = Object.keys(allDemand[demandId])
                 .map(r => ({ name: r, val: Number(allDemand[demandId][r]) || 0 }))
                 .filter(x => x.val > 0 && !isOurs(x.name))
-                .sort((a, b) => b.val - a.val).slice(0, 10);
+                .sort((a, b) => b.val - a.val).slice(0, rows('white_spots', 5, 10, 16));
             const whiteMax = white.length ? white[0].val : 1;
 
             B.white_spots = card(head('Белые пятна: спрос есть, монтажников нет',
@@ -14143,11 +14327,14 @@ const app = {
                 topRows.push({ text: text, cnt: Number(pair[1]) || 0 });
             }));
             topRows.sort((a, b) => b.cnt - a.cnt);
-            topRows = topRows.slice(0, 12);
+            // Формулировки — единственный блок, который тем полезнее, чем шире:
+            // это просто текст, и в четыре колонки их читают столько же, сколько
+            // в одну, только видно втрое больше.
+            topRows = topRows.slice(0, rows('top_requests', 6, 12, 21));
         }
         if (topRows.length) {
             B.top_requests = card(head('Что именно спрашивают', `самые частые формулировки, ${esc(trM)} · по России`)
-                + `<div style="margin-top:10px; columns:${mobile ? 1 : 2}; column-gap:22px;">` + topRows.map(x => `
+                + `<div style="margin-top:10px; columns:${mobile ? 1 : rows('top_requests', 1, 2, 3)}; column-gap:22px;">` + topRows.map(x => `
                     <div style="display:flex; gap:10px; align-items:baseline; padding:5px 0; break-inside:avoid;">
                         <span style="flex:1; min-width:0; font-size:12.5px; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(x.text)}</span>
                         <b style="font-size:12px; color:var(--text-sec);">${num(x.cnt)}</b>
