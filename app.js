@@ -12608,13 +12608,639 @@ const app = {
 
         if (!this.ensureAnalyticsData(wrap)) return;
 
-        const { brands, wordstat, pulse, gas, prices } = this._analytics;
+        const { brands, wordstat, gas } = this._analytics;
         if (!brands && !wordstat && !gas) {
             wrap.innerHTML = `<div style="padding:30px 0; text-align:center; color:var(--text-sec);">
                 Данных пока нет. Их собирает GitHub Actions → Wordstat Analytics: сначала режим <b>brands</b>, затем <b>monthly</b>.
             </div>`;
             return;
         }
+
+        // Блоки считаются всегда все, а показываются только те, что стоят в
+        // раскладке. Считать по раскладке было бы экономнее, но данные всё
+        // равно загружены целиком, а галерея «+» должна показывать живые
+        // предпросмотры выключенных блоков — иначе выбирать пришлось бы
+        // вслепую, по одному названию.
+        const B = this.dashBuildBlocks();
+        wrap.innerHTML = this.dashHeaderHtml() + this.dashLayoutHtml(B) + this.dashGalleryHtml(B);
+    },
+
+    // ══ Раскладка дашборда ════════════════════════════════════════════════════
+    //
+    // Дашборд собирается не сплошным полотном, а из блоков: dashBuildBlocks()
+    // считает данные и отдаёт готовый HTML каждого блока по его идентификатору,
+    // а раскладка — какие блоки, в каком разделе, в каком порядке и какой
+    // ширины — лежит отдельно, в localStorage. Поэтому лишнее можно выбросить,
+    // нужное растянуть на всю ширину, а разделы переименовать, не трогая код.
+    //
+    // Хранятся только идентификаторы. Новый блок в коде на уже настроенной
+    // раскладке сам не всплывёт (иначе каждый выпуск ломал бы чужую настройку),
+    // но будет лежать в галерее под «+», а «Сбросить» вернёт раскладку по
+    // умолчанию — со всем новым сразу.
+
+    DASH_LAYOUT_KEY: 'heatcalc_dash_layout_v1',
+
+    // sec — вкладка галереи, в которой блок ищут глазами; к тому, в каком
+    // разделе он реально стоит, отношения не имеет.
+    DASH_WIDGETS: {
+        own_places:    { t: 'Наши места по группам',              icon: '🎯', sec: 'market' },
+        demand_works:  { t: 'Спрос на монтаж и работы',           icon: '🔧', sec: 'market' },
+        demand_calc:   { t: 'Спрос на подбор и проект',           icon: '📐', sec: 'market' },
+        demand_equip:  { t: 'Спрос на оборудование',              icon: '📦', sec: 'market' },
+        sources:       { t: 'Источники',                          icon: '🛰️', sec: 'market' },
+        own_ests:      { t: 'Смет за 30 дней',                    icon: '🧾', sec: 'us' },
+        own_users:     { t: 'Новых монтажников',                  icon: '👷', sec: 'us' },
+        own_projects:  { t: 'Проектов выпущено',                  icon: '📁', sec: 'us' },
+        own_rec:       { t: 'Распознано смет',                    icon: '🔍', sec: 'us' },
+        est_vs_demand: { t: 'Наши сметы против спроса',           icon: '📈', sec: 'us' },
+        funnel:        { t: 'Воронка новичков',                   icon: '🚀', sec: 'us' },
+        demo_soon:     { t: 'Демо на исходе',                     icon: '⏳', sec: 'us' },
+        chek:          { t: 'Средний чек и площадь',              icon: '💰', sec: 'us' },
+        group_usage:   { t: 'Группы прайса: счета против спроса', icon: '📊', sec: 'us' },
+        dist_money:    { t: 'Дистрибьюторы: выручка и наш канал', icon: '🏢', sec: 'us' },
+        prices:        { t: 'Цены прайса',                        icon: '🏷️', sec: 'prices' },
+        demand_chart:  { t: 'Спрос по месяцам',                   icon: '📉', sec: 'demand' },
+        quarters:      { t: 'Кварталы',                           icon: '🗓️', sec: 'demand' },
+        gas:           { t: 'Догазификация',                      icon: '🔥', sec: 'demand' },
+        share_groups:  { t: 'Наша доля в спросе на группу',       icon: '🥇', sec: 'demand' },
+        regions:       { t: 'Регионы: спрос на монтаж',           icon: '🗺️', sec: 'demand' },
+        white_spots:   { t: 'Белые пятна',                        icon: '⚪', sec: 'demand' },
+        pulse:         { t: 'Пульс по неделям',                   icon: '💓', sec: 'demand' },
+        top_requests:  { t: 'Что именно спрашивают',              icon: '💬', sec: 'demand' }
+    },
+
+    DASH_TABS: [
+        { id: 'market', t: 'Обзор рынка' },
+        { id: 'us', t: 'Мы' },
+        { id: 'demand', t: 'Спрос' },
+        { id: 'prices', t: 'Цены' }
+    ],
+
+    dashDefaultLayout: function () {
+        return {
+            style: { density: 'cozy', card: 'shadow', tiles: 'color', cols: 4 },
+            sections: [
+                { id: 'market', title: 'Обзор рынка', items: [
+                    { id: 'own_places', span: 2 }, { id: 'demand_works', span: 1 },
+                    { id: 'demand_calc', span: 1 }, { id: 'sources', span: 4 }
+                ] },
+                { id: 'us', title: 'Мы', items: [
+                    { id: 'own_ests', span: 1 }, { id: 'own_users', span: 1 },
+                    { id: 'own_projects', span: 1 }, { id: 'own_rec', span: 1 },
+                    { id: 'est_vs_demand', span: 4 },
+                    { id: 'funnel', span: 2 }, { id: 'demo_soon', span: 2 },
+                    { id: 'chek', span: 2 }, { id: 'group_usage', span: 2 },
+                    { id: 'dist_money', span: 4 }
+                ] },
+                { id: 'prices', title: 'Цены', items: [
+                    { id: 'prices', span: 4 }
+                ] },
+                { id: 'demand', title: 'Спрос', items: [
+                    { id: 'demand_chart', span: 3 }, { id: 'gas', span: 1 },
+                    { id: 'quarters', span: 4 },
+                    { id: 'share_groups', span: 2 }, { id: 'regions', span: 2 },
+                    { id: 'white_spots', span: 4 },
+                    { id: 'pulse', span: 2 }, { id: 'top_requests', span: 2 }
+                ] }
+            ]
+        };
+    },
+
+    /**
+     * Раскладка из localStorage, приведённая в порядок: незнакомые и повторные
+     * идентификаторы выброшены, ширины загнаны в 1…4. Мусор в localStorage не
+     * должен ронять весь дашборд — его правит и человек руками, и старая версия
+     * калькулятора.
+     */
+    dashLayout: function () {
+        if (this._dashLayout) return this._dashLayout;
+        const def = this.dashDefaultLayout();
+        let l = null;
+        try { l = JSON.parse(localStorage.getItem(this.DASH_LAYOUT_KEY) || 'null'); } catch (e) { l = null; }
+        if (!l || !Array.isArray(l.sections) || !l.sections.length) l = def;
+
+        const seen = {};
+        const clean = {
+            style: Object.assign({}, def.style, l.style || {}),
+            sections: (l.sections || []).filter(s => s && Array.isArray(s.items)).map((s, i) => ({
+                id: String(s.id || ('sec' + i)),
+                title: String(s.title == null ? '' : s.title),
+                items: s.items.filter(w => {
+                    if (!w || !this.DASH_WIDGETS[w.id] || seen[w.id]) return false;
+                    seen[w.id] = 1;
+                    return true;
+                }).map(w => ({ id: w.id, span: Math.min(4, Math.max(1, Number(w.span) || 1)) }))
+            }))
+        };
+        clean.style.cols = Math.min(4, Math.max(2, Number(clean.style.cols) || 4));
+        this._dashLayout = clean;
+        return clean;
+    },
+
+    saveDashLayout: function () {
+        try { localStorage.setItem(this.DASH_LAYOUT_KEY, JSON.stringify(this.dashLayout())); } catch (e) { }
+    },
+
+    resetDashLayout: function () {
+        this.confirm('Вернуть дашборд к раскладке по умолчанию? Ваши перестановки и скрытые блоки пропадут.').then(ok => {
+            if (!ok) return;
+            try { localStorage.removeItem(this.DASH_LAYOUT_KEY); } catch (e) { }
+            this._dashLayout = null;
+            this.dashRerender();
+        });
+    },
+
+    // Перерисовка админки со своей полосой прокрутки: перетащил блок вниз
+    // страницы — и без этого улетел бы в самое начало.
+    dashRerender: function () {
+        const el = document.getElementById('admin_content');
+        const top = el ? el.scrollTop : 0;
+        this.renderAdminMain();
+        const back = document.getElementById('admin_content');
+        if (back) back.scrollTop = top;
+    },
+
+    dashCols: function () {
+        return this.isAdminMobile() ? 1 : (this.dashLayout().style.cols || 4);
+    },
+
+    toggleDashEdit: function (on) {
+        this._dashEdit = (on === undefined) ? !this._dashEdit : !!on;
+        this._dashGallery = null;
+        this.dashRerender();
+    },
+
+    dashSetStyle: function (key, val) {
+        this.dashLayout().style[key] = (key === 'cols') ? Number(val) : val;
+        this.saveDashLayout();
+        this.dashRerender();
+    },
+
+    dashSection: function (sid) {
+        return this.dashLayout().sections.filter(s => s.id === sid)[0] || null;
+    },
+
+    dashRemoveWidget: function (sid, wid) {
+        const s = this.dashSection(sid);
+        if (!s) return;
+        s.items = s.items.filter(w => w.id !== wid);
+        this.saveDashLayout();
+        this.dashRerender();
+    },
+
+    dashAddWidget: function (sid, wid) {
+        const s = this.dashSection(sid);
+        if (!s || !this.DASH_WIDGETS[wid]) return;
+        // Раскладка держит блок в одном экземпляре: два одинаковых блока рядом
+        // ничего не добавляют, а вот перетащить и потерять один из них легко.
+        this.dashLayout().sections.forEach(x => { x.items = x.items.filter(w => w.id !== wid); });
+        s.items.push({ id: wid, span: Math.min(this.dashLayout().style.cols, 2) });
+        this._dashGallery = null;
+        this.saveDashLayout();
+        this.dashRerender();
+    },
+
+    // Стрелки рядом с блоком. Драг мышью на телефоне не работает вовсе, а
+    // владелец смотрит дашборд и с телефона — поэтому порядок меняется ещё и
+    // кнопками, и на любом экране.
+    dashMoveWidget: function (sid, wid, dir) {
+        const s = this.dashSection(sid);
+        if (!s) return;
+        const i = s.items.findIndex(w => w.id === wid);
+        const j = i + dir;
+        if (i < 0 || j < 0 || j >= s.items.length) return;
+        const tmp = s.items[i]; s.items[i] = s.items[j]; s.items[j] = tmp;
+        this.saveDashLayout();
+        this.dashRerender();
+    },
+
+    dashSetSpan: function (sid, wid, span) {
+        const s = this.dashSection(sid);
+        if (!s) return;
+        const w = s.items.filter(x => x.id === wid)[0];
+        if (!w) return;
+        w.span = Math.min(4, Math.max(1, span));
+        this.saveDashLayout();
+        this.dashRerender();
+    },
+
+    // Уголок карточки. Тянут мышью — ширина считается в колонках сетки прямо по
+    // ходу, чтобы было видно, что получится; отпустили — сохраняем. Просто
+    // кликнули, не сдвинув, — ширина идёт по кругу 1→2→3→4.
+    dashResizeStart: function (ev, sid, wid) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const box = ev.target.closest('[data-dash-w]');
+        const grid = box && box.parentElement;
+        if (!box || !grid) return;
+        const cols = this.dashCols();
+        const colW = Math.max(1, grid.getBoundingClientRect().width / cols);
+        const startX = ev.clientX;
+        const s = this.dashSection(sid);
+        const item = s && s.items.filter(x => x.id === wid)[0];
+        if (!item) return;
+        const startSpan = item.span || 1;
+        let span = startSpan, moved = false;
+
+        const move = (e) => {
+            const d = Math.round((e.clientX - startX) / colW);
+            if (Math.abs(e.clientX - startX) > 4) moved = true;
+            const next = Math.min(cols, Math.max(1, startSpan + d));
+            if (next !== span) {
+                span = next;
+                box.style.gridColumn = 'span ' + span;
+            }
+        };
+        const up = () => {
+            document.removeEventListener('pointermove', move);
+            document.removeEventListener('pointerup', up);
+            app.dashSetSpan(sid, wid, moved ? span : (startSpan % cols) + 1);
+        };
+        document.addEventListener('pointermove', move);
+        document.addEventListener('pointerup', up);
+    },
+
+    dashAddSection: function () {
+        this.prompt('Название нового раздела', 'Новый раздел', 'Раздел дашборда').then(name => {
+            if (name === null) return;
+            const l = this.dashLayout();
+            l.sections.push({ id: 'sec' + Date.now(), title: String(name || 'Новый раздел'), items: [] });
+            this.saveDashLayout();
+            this.dashRerender();
+        });
+    },
+
+    dashRenameSection: function (sid) {
+        const s = this.dashSection(sid);
+        if (!s) return;
+        this.prompt('Название раздела', s.title, 'Раздел дашборда').then(name => {
+            if (name === null) return;
+            s.title = String(name);
+            this.saveDashLayout();
+            this.dashRerender();
+        });
+    },
+
+    dashRemoveSection: function (sid) {
+        const s = this.dashSection(sid);
+        if (!s) return;
+        const go = () => {
+            const l = this.dashLayout();
+            l.sections = l.sections.filter(x => x.id !== sid);
+            this.saveDashLayout();
+            this.dashRerender();
+        };
+        if (!s.items.length) return go();
+        this.confirm(`Убрать раздел «${s.title}» вместе с ${s.items.length} блоками? Блоки останутся в галерее «+».`).then(ok => { if (ok) go(); });
+    },
+
+    dashMoveSection: function (sid, dir) {
+        const l = this.dashLayout();
+        const i = l.sections.findIndex(s => s.id === sid);
+        const j = i + dir;
+        if (i < 0 || j < 0 || j >= l.sections.length) return;
+        const tmp = l.sections[i]; l.sections[i] = l.sections[j]; l.sections[j] = tmp;
+        this.saveDashLayout();
+        this.dashRerender();
+    },
+
+    // ── Перетаскивание ──────────────────────────────────────────────────────
+    // Бросить блок можно на другой блок (встанет перед ним), на пустое место
+    // раздела (встанет в конец) и на заголовок раздела (уедет в другой раздел).
+    // Разделы перетаскиваются за «⠿» и бросаются на заголовок соседа.
+    dashDragWidget: function (ev, sid, wid) {
+        this._dashDrag = { type: 'widget', sec: sid, id: wid };
+        try { ev.dataTransfer.setData('text/plain', wid); ev.dataTransfer.effectAllowed = 'move'; } catch (e) { }
+    },
+
+    dashDragSection: function (ev, sid) {
+        this._dashDrag = { type: 'section', id: sid };
+        try { ev.dataTransfer.setData('text/plain', sid); ev.dataTransfer.effectAllowed = 'move'; } catch (e) { }
+    },
+
+    dashDragOver: function (ev) {
+        if (!this._dashDrag) return;
+        ev.preventDefault();
+        try { ev.dataTransfer.dropEffect = 'move'; } catch (e) { }
+    },
+
+    // Вынуть блок из его раздела. Возвращает саму запись — с шириной, которую
+    // ей уже задали: после переноса она не должна схлопываться в единицу.
+    dashTakeWidget: function (wid) {
+        let taken = null;
+        this.dashLayout().sections.forEach(s => {
+            s.items = s.items.filter(w => {
+                if (w.id !== wid) return true;
+                taken = w;
+                return false;
+            });
+        });
+        return taken;
+    },
+
+    dashDropWidget: function (ev, sid, wid) {
+        const d = this._dashDrag;
+        if (!d || d.type !== 'widget') return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        this._dashDrag = null;
+        if (d.id === wid) return;
+        const s = this.dashSection(sid);
+        const moving = this.dashTakeWidget(d.id);
+        if (!s || !moving) return;
+        const at = s.items.findIndex(w => w.id === wid);
+        s.items.splice(at < 0 ? s.items.length : at, 0, moving);
+        this.saveDashLayout();
+        this.dashRerender();
+    },
+
+    dashDropInSection: function (ev, sid) {
+        const d = this._dashDrag;
+        if (!d || d.type !== 'widget') return;
+        ev.preventDefault();
+        this._dashDrag = null;
+        const s = this.dashSection(sid);
+        const moving = this.dashTakeWidget(d.id);
+        if (!s || !moving) return;
+        s.items.push(moving);
+        this.saveDashLayout();
+        this.dashRerender();
+    },
+
+    dashDropOnHeader: function (ev, sid) {
+        const d = this._dashDrag;
+        if (!d) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        this._dashDrag = null;
+        const l = this.dashLayout();
+        if (d.type === 'widget') {
+            const s = this.dashSection(sid);
+            const moving = this.dashTakeWidget(d.id);
+            if (!s || !moving) return;
+            s.items.unshift(moving);
+        } else {
+            if (d.id === sid) return;
+            const from = l.sections.findIndex(s => s.id === d.id);
+            if (from < 0) return;
+            const moving = l.sections.splice(from, 1)[0];
+            const at = l.sections.findIndex(s => s.id === sid);
+            l.sections.splice(at < 0 ? l.sections.length : at, 0, moving);
+        }
+        this.saveDashLayout();
+        this.dashRerender();
+    },
+
+    dashOpenGallery: function (sid, tab) {
+        this._dashGallery = sid;
+        this._dashGalleryTab = tab || 'all';
+        this.dashRerender();
+    },
+
+    dashCloseGallery: function () {
+        this._dashGallery = null;
+        this.dashRerender();
+    },
+
+    // ── Шапка, раскладка, галерея ───────────────────────────────────────────
+    dashHeaderHtml: function () {
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const q = s => esc(s).replace(/'/g, "\\'");
+        const { brands, wordstat } = this._analytics;
+        const region = this._analyticsRegion || '';
+        const back = this._analyticsCompare || 12;
+        const updated = (brands && brands.updated) || (wordstat && wordstat.updated) || '—';
+        const edit = !!this._dashEdit;
+        const st = this.dashLayout().style;
+
+        const regionRank = (brands && brands.regions && brands.months)
+            ? (brands.regions[Object.keys(brands.months).sort().pop()] || {}) : {};
+        const regionNames = new Set();
+        Object.keys(regionRank).forEach(id => Object.keys(regionRank[id] || {}).forEach(r => regionNames.add(r)));
+        const regionList = Array.from(regionNames).sort();
+
+        let h = `<div style="margin-bottom:18px;">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:4px;">
+                <h3 style="margin:0; color:var(--text-main);">📊 Дашборд${region ? ` — ${esc(region)}` : ''}</h3>
+                <span style="font-size:12.5px; color:var(--text-sec);">данные на <b>${esc(updated)}</b>, последний закрытый месяц</span>
+                <div style="margin-left:auto; display:flex; gap:6px; flex-wrap:wrap;">
+                    ${edit
+                        ? `<button class="admin-btn" onclick="app.resetDashLayout()">Сбросить</button>
+                           <button class="admin-btn" style="background:var(--primary); color:#fff; border-color:var(--primary);" onclick="app.toggleDashEdit(false)">Готово</button>`
+                        : `<button class="admin-btn" title="переставить блоки и настроить вид" onclick="app.toggleDashEdit(true)">✏️ Настроить</button>
+                           <button class="admin-btn" onclick="app.switchAdminTab('analytics')">Подробно →</button>
+                           <button class="admin-btn" onclick="app._analytics = null; app.renderAdminMain()">Обновить</button>`}
+                </div>
+            </div>
+            <div style="font-size:12px; color:var(--text-sec); margin-bottom:12px;">
+                Спрос по Яндексу — это интерес, а не продажи: профессиональные позиции берут у дистрибьютора, не заходя в поиск.
+            </div>`;
+
+        if (regionList.length) {
+            h += `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+                <button class="admin-btn" style="${!region ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsRegion('')">Вся Россия</button>
+                ${regionList.map(r => `<button class="admin-btn" style="${region === r ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsRegion('${q(r)}')">${esc(r)}</button>`).join('')}
+            </div>`;
+        }
+        const cmpBtn = (m, label) => `<button class="admin-btn" style="${back === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsCompare(${m})">${label}</button>`;
+        h += `<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:${edit ? 10 : 16}px;">
+                <span style="font-size:12px; color:var(--text-sec);">сравнивать:</span>
+                ${cmpBtn(1, 'с прошлым месяцем')}${cmpBtn(3, 'с кварталом')}${cmpBtn(12, 'с годом назад')}
+              </div>`;
+
+        if (edit) {
+            const pick = (key, val, label, hint) => `<button class="admin-btn" title="${hint || ''}"
+                    style="height:26px; padding:0 9px; font-size:11.5px; ${st[key] == val ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}"
+                    onclick="app.dashSetStyle('${key}', '${val}')">${label}</button>`;
+            const group = (title, inner) => `<span style="display:inline-flex; align-items:center; gap:5px;">
+                    <span style="font-size:11.5px; color:var(--text-sec);">${title}</span>${inner}</span>`;
+            h += `<div style="display:flex; gap:14px; flex-wrap:wrap; align-items:center; padding:10px 12px; margin-bottom:14px;
+                        border:1px dashed var(--primary); border-radius:12px; background:var(--surface);">
+                    ${group('плотность:', pick('density', 'cozy', 'просторно') + pick('density', 'compact', 'компактно'))}
+                    ${group('карточки:', pick('card', 'shadow', 'с тенью') + pick('card', 'flat', 'плоские'))}
+                    ${group('плитки:', pick('tiles', 'color', 'цветные') + pick('tiles', 'plain', 'обычные'))}
+                    ${group('колонок:', pick('cols', 2, '2') + pick('cols', 3, '3') + pick('cols', 4, '4'))}
+                    <span style="font-size:11.5px; color:var(--text-sec); margin-left:auto;">
+                        Блоки тянутся за уголок, переставляются мышью или стрелками. Настройка своя у каждого компьютера.
+                    </span>
+                 </div>`;
+        }
+
+        return h + `</div>`;
+    },
+
+    dashLayoutHtml: function (B) {
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const l = this.dashLayout();
+        const edit = !!this._dashEdit;
+        const cols = this.dashCols();
+        const gap = l.style.density === 'compact' ? 10 : 14;
+
+        const iconBtn = (title, sym, on, extra) => `<button class="admin-btn" title="${title}"
+                style="width:24px; height:24px; padding:0; font-size:12px; line-height:1; border-radius:8px; ${extra || ''}"
+                onclick="${on}">${sym}</button>`;
+
+        const html = l.sections.map((s, si) => {
+            const head = edit
+                ? `<div ondragover="app.dashDragOver(event)" ondrop="app.dashDropOnHeader(event, '${s.id}')"
+                        style="display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin:0 0 10px;
+                               padding:5px 8px; border:1px dashed var(--border); border-radius:10px;">
+                        <span draggable="true" ondragstart="app.dashDragSection(event, '${s.id}')"
+                              ondragend="app._dashDrag = null"
+                              title="перетащить раздел" style="cursor:grab; color:var(--text-sec); font-size:14px;">⠿</span>
+                        <b style="font-size:15px; color:var(--text-main);">${esc(s.title) || '<span style="color:var(--text-sec);">без названия</span>'}</b>
+                        ${iconBtn('добавить блок', '+', `app.dashOpenGallery('${s.id}')`, 'font-size:15px; font-weight:700;')}
+                        ${iconBtn('переименовать', '✏️', `app.dashRenameSection('${s.id}')`)}
+                        ${iconBtn('выше', '▲', `app.dashMoveSection('${s.id}', -1)`)}
+                        ${iconBtn('ниже', '▼', `app.dashMoveSection('${s.id}', 1)`)}
+                        ${iconBtn('убрать раздел', '×', `app.dashRemoveSection('${s.id}')`, 'color:#EF4444; font-size:15px;')}
+                   </div>`
+                : (s.title && s.items.some(w => B[w.id])
+                    ? `<div style="font-size:15px; font-weight:800; color:var(--text-main); margin:0 0 10px;">${esc(s.title)}</div>`
+                    : '');
+
+            const cells = s.items.map(w => {
+                const meta = this.DASH_WIDGETS[w.id];
+                const span = Math.min(cols, w.span || 1);
+                let inner = B[w.id];
+                if (!inner) {
+                    // Блока может не быть: догазификации нет данных, свои сметы
+                    // ещё считаются. В обычном режиме такую дырку просто не
+                    // показываем, в режиме правки — показываем, иначе её нельзя
+                    // ни убрать, ни понять, куда она делась.
+                    if (!edit) return '';
+                    inner = `<div style="background:var(--surface); border:1px dashed var(--border); border-radius:16px;
+                                    padding:16px 18px; color:var(--text-sec); font-size:12.5px; height:100%; box-sizing:border-box;">
+                                <b style="color:var(--text-main);">${esc(meta.t)}</b><br>сейчас данных для этого блока нет
+                             </div>`;
+                }
+                if (!edit) return `<div style="grid-column:span ${span}; min-width:0;">${inner}</div>`;
+
+                return `<div data-dash-w="${w.id}" draggable="true"
+                             ondragstart="app.dashDragWidget(event, '${s.id}', '${w.id}')"
+                             ondragend="app._dashDrag = null"
+                             ondragover="app.dashDragOver(event)"
+                             ondrop="app.dashDropWidget(event, '${s.id}', '${w.id}')"
+                             title="${esc(meta.t)}"
+                             style="grid-column:span ${span}; min-width:0; position:relative; cursor:grab;
+                                    outline:1px dashed var(--border); outline-offset:3px; border-radius:16px;">
+                        <div style="pointer-events:none;">${inner}</div>
+                        <button title="убрать блок" onclick="app.dashRemoveWidget('${s.id}', '${w.id}')"
+                                style="position:absolute; top:-9px; left:-9px; width:22px; height:22px; border-radius:50%;
+                                       border:none; background:#EF4444; color:#fff; font-size:15px; line-height:1;
+                                       cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.25);">−</button>
+                        <div style="position:absolute; top:-9px; right:-9px; display:flex; gap:4px;">
+                            ${iconBtn('раньше', '←', `app.dashMoveWidget('${s.id}', '${w.id}', -1)`, 'background:var(--surface);')}
+                            ${iconBtn('позже', '→', `app.dashMoveWidget('${s.id}', '${w.id}', 1)`, 'background:var(--surface);')}
+                        </div>
+                        <div onpointerdown="app.dashResizeStart(event, '${s.id}', '${w.id}')"
+                             title="ширина: тянуть или щёлкнуть (${span} из ${cols})"
+                             style="position:absolute; right:-4px; bottom:-4px; width:22px; height:22px; border-radius:7px;
+                                    background:var(--surface); border:1px solid var(--border); color:var(--text-sec);
+                                    font-size:11px; line-height:20px; text-align:center; cursor:nwse-resize; touch-action:none;">⇲</div>
+                    </div>`;
+            }).join('');
+
+            const empty = edit && !s.items.length
+                ? `<div style="grid-column:1/-1; padding:18px; text-align:center; border:1px dashed var(--border);
+                            border-radius:14px; color:var(--text-sec); font-size:12.5px;">
+                        Пусто. Перетащите сюда блок или нажмите «+» в заголовке раздела.
+                   </div>`
+                : '';
+
+            if (!edit && !cells.replace(/\s/g, '')) return '';
+
+            return `<div style="margin-bottom:${edit ? 22 : 18}px;">
+                    ${head}
+                    <div ${edit ? `ondragover="app.dashDragOver(event)" ondrop="app.dashDropInSection(event, '${s.id}')"` : ''}
+                         style="display:grid; grid-template-columns:repeat(${cols}, minmax(0,1fr)); gap:${gap}px;
+                                align-items:stretch; ${edit ? 'min-height:40px;' : ''}">
+                        ${cells}${empty}
+                    </div>
+                </div>`;
+        }).join('');
+
+        return html + (edit
+            ? `<div style="margin:4px 0 24px;">
+                   <button class="admin-btn" onclick="app.dashAddSection()">+ Добавить раздел</button>
+               </div>`
+            : '');
+    },
+
+    /**
+     * Галерея блоков: всё, чего сейчас нет на дашборде, живыми предпросмотрами.
+     * Предпросмотр — настоящий блок, уменьшенный и с отключёнными нажатиями:
+     * по одному названию «Группы прайса: счета против спроса» не понять, что там
+     * внутри, а по картинке — сразу.
+     */
+    dashGalleryHtml: function (B) {
+        const sid = this._dashGallery;
+        if (!sid) return '';
+        const s = this.dashSection(sid);
+        if (!s) return '';
+        const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const placed = {};
+        this.dashLayout().sections.forEach(x => x.items.forEach(w => { placed[w.id] = 1; }));
+        const tab = this._dashGalleryTab || 'all';
+        const ids = Object.keys(this.DASH_WIDGETS)
+            .filter(id => !placed[id])
+            .filter(id => tab === 'all' || this.DASH_WIDGETS[id].sec === tab);
+
+        const chip = (id, label) => `<button class="admin-btn"
+                style="${tab === id ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}"
+                onclick="app.dashOpenGallery('${sid}', '${id}')">${label}</button>`;
+
+        const cards = ids.map(id => {
+            const meta = this.DASH_WIDGETS[id];
+            const prev = B[id]
+                ? `<div style="height:150px; overflow:hidden; pointer-events:none; border-radius:12px;">
+                       <div style="width:167%; transform:scale(.6); transform-origin:top left;">${B[id]}</div>
+                   </div>`
+                : `<div style="height:150px; display:flex; align-items:center; justify-content:center;
+                            color:var(--text-sec); font-size:12px; border:1px dashed var(--border); border-radius:12px;">
+                       данных сейчас нет
+                   </div>`;
+            return `<div onclick="app.dashAddWidget('${sid}', '${id}')" title="добавить в раздел «${esc(s.title)}»"
+                         style="cursor:pointer; border:1px solid var(--border); border-radius:14px; padding:10px;
+                                background:var(--surface);">
+                        ${prev}
+                        <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
+                            <span>${meta.icon}</span>
+                            <b style="font-size:12.5px; color:var(--text-main);">${esc(meta.t)}</b>
+                            <span style="margin-left:auto; color:var(--primary); font-size:18px; line-height:1;">+</span>
+                        </div>
+                    </div>`;
+        }).join('');
+
+        return `<div onclick="if (event.target === this) app.dashCloseGallery()"
+                     style="position:fixed; inset:0; z-index:100001; background:rgba(15,23,42,.45); backdrop-filter:blur(4px);
+                            display:flex; align-items:center; justify-content:center; padding:18px;">
+            <div style="background:var(--bg); border:1px solid var(--border); border-radius:18px;
+                        width:min(1000px, 100%); max-height:88vh; overflow:auto; padding:18px 20px;">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+                    <h3 style="margin:0; color:var(--text-main);">Добавить в раздел «${esc(s.title)}»</h3>
+                    <button class="admin-btn" style="margin-left:auto;" onclick="app.dashCloseGallery()">Закрыть</button>
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">
+                    ${chip('all', 'Все')}${this.DASH_TABS.map(t => chip(t.id, t.t)).join('')}
+                </div>
+                ${ids.length
+                    ? `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:14px;">${cards}</div>`
+                    : `<div style="padding:26px 0; text-align:center; color:var(--text-sec); font-size:13px;">
+                           Здесь пусто: все блоки этой вкладки уже стоят на дашборде.
+                       </div>`}
+            </div>
+        </div>`;
+    },
+
+    /**
+     * Считает все блоки дашборда и возвращает их HTML по идентификаторам.
+     * Раскладкой не занимается: где блок встанет и какой будет ширины, решает
+     * dashLayoutHtml по сохранённой настройке.
+     */
+    dashBuildBlocks: function () {
+        const B = {};
+        const { brands, wordstat, pulse, gas, prices } = this._analytics;
 
         const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const num = n => Number(n || 0).toLocaleString('ru-RU');
@@ -12669,8 +13295,15 @@ const app = {
         };
 
         // ── Кирпичики оформления ────────────────────────────────────────────
+        // Вид карточек владелец выбирает сам, поэтому отступ, тень и цветность
+        // плиток берутся из раскладки, а не зашиты в разметку. height:100% —
+        // чтобы соседи в ряду сетки были одной высоты, какой бы длины ни
+        // оказался их список внутри.
+        const st = this.dashLayout().style;
+        const pad = st.density === 'compact' ? '11px 13px' : '16px 18px';
+        const shadow = st.card === 'flat' ? '' : 'box-shadow:0 1px 3px rgba(0,0,0,.05);';
         const card = (inner, extra) => `<div style="background:var(--surface); border:1px solid var(--border); border-radius:16px;
-                padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,.05); ${extra || ''}">${inner}</div>`;
+                padding:${pad}; ${shadow} height:100%; box-sizing:border-box; ${extra || ''}">${inner}</div>`;
         const head = (title, sub) => `<div style="font-size:14px; font-weight:800; color:var(--text-main);">${title}</div>`
             + (sub ? `<div style="font-size:11.5px; color:var(--text-sec); margin-top:2px;">${sub}</div>` : '');
         const trend = (p) => p === null || p === undefined
@@ -12681,9 +13314,15 @@ const app = {
         const pill = (p) => p === null || p === undefined ? ''
             : `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(255,255,255,.6); color:#0F172A;
                      border-radius:999px; padding:2px 9px; font-size:12px; font-weight:800;">${p > 0 ? '↑ +' : (p < 0 ? '↓ ' : '→ ')}${p}%</span>`;
-        const tile = (grad, label, value, sub, p) => `
-            <div style="background:${grad}; border-radius:16px; padding:16px 18px; color:#0F172A;
-                        min-height:126px; display:flex; flex-direction:column; justify-content:space-between;">
+        const tile = (grad, label, value, sub, p) => st.tiles === 'plain'
+            ? card(`<div style="font-size:13px; font-weight:800; color:var(--text-sec);">${label}</div>
+                    <div style="font-size:30px; font-weight:800; color:var(--text-main); line-height:1.05; margin-top:10px;">${value}</div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:6px; flex-wrap:wrap;">
+                        <span style="font-size:12px;">${trend(p)}</span>
+                        <span style="font-size:11.5px; color:var(--text-sec);">${sub}</span>
+                    </div>`)
+            : `<div style="background:${grad}; border-radius:16px; padding:${pad}; color:#0F172A;
+                        min-height:126px; height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between;">
                 <div style="font-size:13px; font-weight:800; opacity:.8;">${label}</div>
                 <div>
                     <div style="font-size:30px; font-weight:800; line-height:1.05;">${value}</div>
@@ -12693,36 +13332,11 @@ const app = {
                 </div>
             </div>`;
 
-        const gHero = mobile ? 'grid-template-columns:1fr;' : 'grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,1fr);';
-        const gWide = mobile ? 'grid-template-columns:1fr;' : 'grid-template-columns:minmax(0,2fr) minmax(260px,1fr);';
+        // Внутренние двухколоночные разбивки самих блоков. Сетка дашборда живёт
+        // снаружи и о них ничего не знает.
         const gHalf = mobile ? 'grid-template-columns:1fr;' : 'grid-template-columns:repeat(2, minmax(0,1fr));';
 
-        // ── Шапка и фильтры ─────────────────────────────────────────────────
-        const updated = (brands && brands.updated) || (wordstat && wordstat.updated) || '—';
-        let h = `<div style="margin-bottom:18px;">
-            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:4px;">
-                <h3 style="margin:0; color:var(--text-main);">📊 Дашборд${region ? ` — ${esc(region)}` : ''}</h3>
-                <span style="font-size:12.5px; color:var(--text-sec);">данные на <b>${esc(updated)}</b>, последний закрытый месяц</span>
-                <button class="admin-btn" style="margin-left:auto;" onclick="app.switchAdminTab('analytics')">Подробно →</button>
-                <button class="admin-btn" onclick="app._analytics = null; app.renderAdminMain()">Обновить</button>
-            </div>
-            <div style="font-size:12px; color:var(--text-sec); margin-bottom:12px;">
-                Спрос по Яндексу — это интерес, а не продажи: профессиональные позиции берут у дистрибьютора, не заходя в поиск.
-            </div>`;
-
-        if (regionList.length) {
-            h += `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
-                <button class="admin-btn" style="${!region ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsRegion('')">Вся Россия</button>
-                ${regionList.map(r => `<button class="admin-btn" style="${region === r ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsRegion('${q(r)}')">${esc(r)}</button>`).join('')}
-            </div>`;
-        }
-        const cmpBtn = (m, label) => `<button class="admin-btn" style="${back === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsCompare(${m})">${label}</button>`;
-        h += `<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
-                <span style="font-size:12px; color:var(--text-sec);">сравнивать:</span>
-                ${cmpBtn(1, 'с прошлым месяцем')}${cmpBtn(3, 'с кварталом')}${cmpBtn(12, 'с годом назад')}
-              </div>`;
-
-        // ── Верхний ряд: наши места и два показателя спроса ──────────────────
+        // ── Наши места и показатели спроса ──────────────────────────────────
         const idsWithRank = Object.keys(cats).filter(id => rankOf(id));
         const ownPos = { stout: { present: 0, first: 0, top3: 0 }, rommer: { present: 0, first: 0, top3: 0 } };
         idsWithRank.forEach(id => {
@@ -12758,21 +13372,20 @@ const app = {
         };
 
         const kDemand = kpi('demand'), kCalc = kpi('calc'), kEquip = kpi('equipment');
-        h += `<div style="display:grid; ${gHero} gap:14px; margin-bottom:14px;">
-            ${card(head('Наши места по группам', `${idsWithRank.length} групп прайса${region ? `, ${esc(region)}` : ', вся Россия'} · доля групп, где марка в тройке по спросу`)
-                + `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;">
-                        ${ring('stout', 'STOUT', '#2563EB')}
-                        ${ring('rommer', 'ROMMER', '#EF4444')}
-                   </div>`)}
-            ${kDemand ? tile('linear-gradient(135deg,#FBCFE8 0%,#FDBA74 55%,#FCA5A5 100%)',
-                'Спрос на монтаж и работы', num(kDemand.now),
-                `${esc(kDemand.month)} · ${kDemand.count} формулировок, ${backLabel}`, kDemand.pct)
-                : card(head('Спрос на монтаж', 'истории пока нет'))}
-            ${kCalc ? tile('linear-gradient(135deg,#A7F3D0 0%,#7DD3FC 55%,#BFDBFE 100%)',
-                'Спрос на подбор и проект', num(kCalc.now),
-                `${esc(kCalc.month)} · то, что делает калькулятор, ${backLabel}`, kCalc.pct)
-                : card(head('Спрос на подбор и проект', 'истории пока нет'))}
-        </div>`;
+        B.own_places = card(head('Наши места по группам', `${idsWithRank.length} групп прайса${region ? `, ${esc(region)}` : ', вся Россия'} · доля групп, где марка в тройке по спросу`)
+            + `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;">
+                    ${ring('stout', 'STOUT', '#2563EB')}
+                    ${ring('rommer', 'ROMMER', '#EF4444')}
+               </div>`);
+        if (kDemand) B.demand_works = tile('linear-gradient(135deg,#FBCFE8 0%,#FDBA74 55%,#FCA5A5 100%)',
+            'Спрос на монтаж и работы', num(kDemand.now),
+            `${esc(kDemand.month)} · ${kDemand.count} формулировок, ${backLabel}`, kDemand.pct);
+        if (kCalc) B.demand_calc = tile('linear-gradient(135deg,#A7F3D0 0%,#7DD3FC 55%,#BFDBFE 100%)',
+            'Спрос на подбор и проект', num(kCalc.now),
+            `${esc(kCalc.month)} · то, что делает калькулятор, ${backLabel}`, kCalc.pct);
+        if (kEquip) B.demand_equip = tile('linear-gradient(135deg,#DDD6FE 0%,#C7D2FE 55%,#BAE6FD 100%)',
+            'Спрос на оборудование', num(kEquip.now),
+            `${esc(kEquip.month)} · ${kEquip.count} формулировок, ${backLabel}`, kEquip.pct);
 
         // ── Полоса источников ───────────────────────────────────────────────
         const src = (icon, name, date) => `<div style="display:flex; align-items:center; gap:8px; min-width:0;">
@@ -12780,7 +13393,7 @@ const app = {
                 <span style="min-width:0;"><b style="font-size:12.5px; color:var(--text-main);">${name}</b>
                 <br><small style="color:var(--text-sec);">${date ? 'обновлено ' + esc(date) : 'нет данных'}</small></span>
             </div>`;
-        h += card(`<div style="display:flex; gap:18px; flex-wrap:wrap; align-items:center;">
+        B.sources = card(`<div style="display:flex; gap:18px; flex-wrap:wrap; align-items:center;">
                 <div style="min-width:0;">${head('Источники', 'собирает GitHub Actions, без Supabase')}</div>
                 <div style="display:flex; gap:18px; flex-wrap:wrap; margin-left:auto;">
                     ${src('🔎', 'Wordstat', wordstat && wordstat.updated)}
@@ -12788,7 +13401,7 @@ const app = {
                     ${src('📅', 'Недельный пульс', pulse && pulse.updated)}
                     ${src('🔥', 'Догазификация', gas && gas.updated)}
                 </div>
-            </div>`, 'margin-bottom:14px;');
+            </div>`);
 
         // ── Свои показатели ─────────────────────────────────────────────────
         // Всё выше — чужой рынок. Дальше — мы сами: сметы, монтажники,
@@ -12798,9 +13411,14 @@ const app = {
         const own = ownReady ? this.dashboardOwnStats(region) : null;
 
         if (!own) {
-            h += card(head('Мы', 'сметы, монтажники, проекты')
-                + `<div style="padding:16px 0; color:var(--text-sec); font-size:12.5px;">Считаем свои сметы и монтажников…</div>`,
-                'margin-bottom:14px;');
+            // Свои данные грузятся отдельным запросом и приходят позже. Пока их
+            // нет, блоки не исчезают, а честно показывают, что идёт счёт: иначе
+            // полдашборда мигало бы пустотой при каждом открытии.
+            ['own_ests', 'own_users', 'own_projects', 'own_rec', 'est_vs_demand',
+             'funnel', 'demo_soon', 'chek', 'group_usage', 'dist_money'].forEach(id => {
+                B[id] = card(head(this.DASH_WIDGETS[id].t, 'сметы, монтажники, проекты')
+                    + `<div style="padding:16px 0; color:var(--text-sec); font-size:12.5px;">Считаем свои сметы и монтажников…</div>`);
+            });
         } else {
             const m = own.month;
             const dPct = (a, b) => b ? Math.round((a - b) / b * 100) : null;
@@ -12812,13 +13430,11 @@ const app = {
                  </div>
                  <div style="font-size:11px; color:var(--text-sec); margin-top:4px;">${sub}</div>`);
 
-            h += `<div style="display:grid; ${mobile ? 'grid-template-columns:1fr;' : 'grid-template-columns:repeat(auto-fit, minmax(190px,1fr));'} gap:14px; margin-bottom:14px;">
-                ${miniTile('Смет за 30 дней', num(m.ests), dPct(m.ests, m.estsPrev), `всего ${num(own.totalEst)} · к предыдущим 30 дням`)}
-                ${miniTile('Новых монтажников', num(m.users), dPct(m.users, m.usersPrev), `всего ${num(own.users)}${region ? ' в регионе' : ''}`)}
-                ${miniTile('Проектов выпущено', num(m.projects), dPct(m.projects, m.projectsPrev), 'комплекты листов за 30 дней')}
-                ${miniTile('Распознано смет', m.rec === null ? '—' : num(m.rec), m.rec === null ? null : dPct(m.rec, m.recPrev),
-                    m.rec === null ? 'архив на сервере не ответил' : 'накладные и сметы за 30 дней')}
-            </div>`;
+            B.own_ests = miniTile('Смет за 30 дней', num(m.ests), dPct(m.ests, m.estsPrev), `всего ${num(own.totalEst)} · к предыдущим 30 дням`);
+            B.own_users = miniTile('Новых монтажников', num(m.users), dPct(m.users, m.usersPrev), `всего ${num(own.users)}${region ? ' в регионе' : ''}`);
+            B.own_projects = miniTile('Проектов выпущено', num(m.projects), dPct(m.projects, m.projectsPrev), 'комплекты листов за 30 дней');
+            B.own_rec = miniTile('Распознано смет', m.rec === null ? '—' : num(m.rec), m.rec === null ? null : dPct(m.rec, m.recPrev),
+                m.rec === null ? 'архив на сервере не ответил' : 'накладные и сметы за 30 дней');
 
             // 1. Свои сметы против поискового спроса — форма кривой, не величина.
             // Ряды нормируем каждый по своему максимуму (ownScale): тысячи
@@ -12860,7 +13476,7 @@ const app = {
                 const first = pairs[0], last = pairs[pairs.length - 1];
                 const demGrow = grow(first[1], last[1]);
                 const estGrow = grow(first[2], last[2]);
-                h += card(head('Наши сметы против спроса', `${region ? esc(region) : 'вся Россия'} · ${pairs.length} общих месяцев · ${word}`)
+                B.est_vs_demand = card(head('Наши сметы против спроса', `${region ? esc(region) : 'вся Россия'} · ${pairs.length} общих месяцев · ${word}`)
                     + `<div style="margin-top:10px;">${this.buildAnalyticsLineChart(cmpSeries, 'dashvs', true)}</div>
                        <div style="font-size:12px; color:var(--text-sec); margin-top:8px; display:flex; gap:14px; flex-wrap:wrap;">
                           <span>С ${esc(first[0])} по ${esc(last[0])}:</span>
@@ -12869,7 +13485,7 @@ const app = {
                        </div>
                        <div style="font-size:11.5px; color:var(--text-sec); margin-top:4px;">
                           У каждой линии своя шкала — сравнивается форма, а не величина; точные числа показывает подсказка при наведении.
-                       </div>`, 'margin-bottom:14px;');
+                       </div>`);
             }
 
             // 4 и 3: воронка когорты и демо, которые вот-вот кончатся
@@ -12899,12 +13515,10 @@ const app = {
                     </div>`).join('')
                 : `<div style="font-size:12.5px; color:var(--text-sec); padding:8px 0;">В ближайшие две недели демо ни у кого не заканчивается.</div>`;
 
-            h += `<div style="display:grid; ${gHalf} gap:14px; margin-bottom:14px;">
-                ${card(head('Воронка новичков', 'кто зарегистрировался за 90 дней и докуда дошёл; месячная воронка всегда показывала бы ноль на проектах — до них доходят позже')
-                    + `<div style="margin-top:12px;">${funnelHtml}</div>`)}
-                ${card(head('Демо на исходе', 'заканчивается в ближайшие 14 дней')
-                    + `<div style="margin-top:8px;">${demoHtml}</div>`)}
-            </div>`;
+            B.funnel = card(head('Воронка новичков', 'кто зарегистрировался за 90 дней и докуда дошёл; месячная воронка всегда показывала бы ноль на проектах — до них доходят позже')
+                + `<div style="margin-top:12px;">${funnelHtml}</div>`);
+            B.demo_soon = card(head('Демо на исходе', 'заканчивается в ближайшие 14 дней')
+                + `<div style="margin-top:8px;">${demoHtml}</div>`);
 
             // 5 и 6: чек с площадью по месяцам и свои марки в сметах против поиска
             const chekMax = Math.max(1, ...own.monthRows.map(x => x.avg));
@@ -12974,16 +13588,17 @@ const app = {
                    </div>`;
             }
 
-            h += `<div style="display:grid; ${gHalf} gap:14px; margin-bottom:14px;">
-                ${card(head('Средний чек и площадь', 'по месяцам: чек, средняя площадь объекта, число смет; точкой помечен текущий, ещё не законченный месяц')
-                    + `<div style="margin-top:12px;">${chekHtml}</div>`)}
-                ${card(head('Группы прайса: счета против спроса', 'как часто группа попадает в счёт — и что в это время делает спрос на неё · по всем регионам, фильтр сверху сюда не бьёт')
-                    + `<div style="margin-top:12px;">${usageHtml}</div>`)}
-            </div>`;
+            // Про недогруз своих данных пишем внутри блока среднего чека: раньше
+            // это была отдельная строка между рядами, а в свободной раскладке
+            // такой строке не к чему прислониться.
+            const ownErr = (own.errors && own.errors.length)
+                ? `<div style="font-size:11.5px; color:#F97316; margin-top:10px;">Часть своих данных не загрузилась: ${esc(own.errors.join('; '))}</div>`
+                : '';
 
-            if (own.errors && own.errors.length) {
-                h += `<div style="font-size:11.5px; color:#F97316; margin:-4px 0 14px;">Часть своих данных не загрузилась: ${esc(own.errors.join('; '))}</div>`;
-            }
+            B.chek = card(head('Средний чек и площадь', 'по месяцам: чек, средняя площадь объекта, число смет; точкой помечен текущий, ещё не законченный месяц')
+                + `<div style="margin-top:12px;">${chekHtml}</div>` + ownErr);
+            B.group_usage = card(head('Группы прайса: счета против спроса', 'как часто группа попадает в счёт — и что в это время делает спрос на неё · по всем регионам, фильтр сверху сюда не бьёт')
+                + `<div style="margin-top:12px;">${usageHtml}</div>`);
 
             // ── Дистрибьюторы в деньгах ─────────────────────────────────────
             // Выручка компании из отчётности ФНС против того, что через неё
@@ -13019,7 +13634,7 @@ const app = {
                             <b style="color:var(--text-main);">${share(x.pct)}</b></td>
                     </tr>`;
                 }).join('');
-                h += card(head('Дистрибьюторы: выручка и наш канал',
+                B.dist_money = card(head('Дистрибьюторы: выручка и наш канал',
                         'выручка — из отчётности ФНС по ИНН, наши сметы — за 12 месяцев')
                     + `<div style="overflow-x:auto; margin-top:10px;"><table style="width:100%; border-collapse:collapse; font-size:12.5px;">
                         <thead><tr style="font-size:11px; color:var(--text-sec); text-align:right;">
@@ -13030,7 +13645,7 @@ const app = {
                         </tr></thead><tbody>${rows}</tbody></table></div>
                        <div style="font-size:11.5px; color:var(--text-sec); margin-top:8px;">
                             Смета — это предложение, а не отгрузка, и годы разные: отчётность за прошлый год, сметы за последние двенадцать месяцев. Доля показывает масштаб канала, а не выполнение плана.
-                       </div>`, 'margin-bottom:14px;');
+                       </div>`);
             }
         }
 
@@ -13067,19 +13682,18 @@ const app = {
                                 : 'Чек отстал от прайса: сметы стали мельче.'));
                 }
             }
-            h += card(head(`Цены прайса: ${lastPrice.index > 0 ? '+' : ''}${Number(lastPrice.index).toFixed(1)}% за месяц`,
+            B.prices = card(head(`Цены прайса: ${lastPrice.index > 0 ? '+' : ''}${Number(lastPrice.index).toFixed(1)}% за месяц`,
                     `${esc(priceKeys[priceKeys.length - 1])} к ${esc(lastPrice.base_month || 'прошлому снимку')} · по ${num(lastPrice.common)} одинаковым артикулам из ${num(lastPrice.positions)}`)
                 + `<div style="display:grid; ${gHalf} gap:18px; margin-top:12px;">
                     <div><div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">Подорожало сильнее всего</div>${grTop.map(priceLine).join('') || '<small style="color:var(--text-sec);">нет</small>'}</div>
                     <div><div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">Подешевело</div>${grDown.map(priceLine).join('') || '<small style="color:var(--text-sec);">ничего не подешевело</small>'}</div>
                    </div>`
-                + (verdict ? `<div style="font-size:12px; color:var(--text-sec); margin-top:10px;">${verdict}</div>` : ''),
-                'margin-bottom:14px;');
+                + (verdict ? `<div style="font-size:12px; color:var(--text-sec); margin-top:10px;">${verdict}</div>` : ''));
         } else if (prices) {
-            h += card(head('Цены прайса', 'история копится с первого прогона')
+            B.prices = card(head('Цены прайса', 'история копится с первого прогона')
                 + `<div style="font-size:12.5px; color:var(--text-sec); margin-top:8px;">
                     Первый снимок цен снят, сравнивать пока не с чем — индекс появится после следующего прогона Actions → Price Index History.
-                   </div>`, 'margin-bottom:14px;');
+                   </div>`);
         }
 
         // ── График спроса и догазификация ───────────────────────────────────
@@ -13154,8 +13768,7 @@ const app = {
         }).sort((a, b) => b.households - a.households);
         const gasTotal = gasRows.reduce((a, x) => a + x.households, 0);
 
-        h += `<div style="display:grid; ${gWide} gap:14px; margin-bottom:14px;">
-            ${card(`<div style="display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+        B.demand_chart = card(`<div style="display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
                         <div>${head('Спрос по месяцам', (region ? esc(region) : 'вся Россия') + (spanNote ? ' · ' + spanNote : ''))}</div>
                         <div style="margin-left:auto; display:flex; gap:5px; flex-wrap:wrap;">${GROUPS.map(([g, l]) => gBtn(g, l)).join('')}</div>
                     </div>
@@ -13170,8 +13783,9 @@ const app = {
                     ${chartSeries.length
                         ? this.buildAnalyticsLineChart(chartSeries, 'dash')
                         : `<div style="font-size:12.5px; color:var(--text-sec); padding:20px 0;">По этой группе${region ? ` в регионе «${esc(region)}»` : ''} истории пока нет.</div>`}
-                    ${demandStrip}`)}
-            ${card(head('🔥 Догазификация', gasRows.length
+                    ${demandStrip}`);
+
+        B.gas = card(head('🔥 Догазификация', gasRows.length
                     ? `программа ${esc((gas && gas.program) || '')} · ${num(gasTotal)} домовладений`
                     : 'данных пока нет')
                 + (gasRows.length ? `<div style="margin-top:10px;">` + gasRows.map(x => `
@@ -13185,8 +13799,7 @@ const app = {
                                 <br><small style="color:var(--text-sec);">домовладений</small>
                             </div>
                         </div>`).join('')
-                    + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:8px;">Пришёл газ в посёлок — в ближайший год-полтора там меняют электрические и твердотопливные котлы на газовые.</div></div>` : ''))}
-        </div>`;
+                    + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:8px;">Пришёл газ в посёлок — в ближайший год-полтора там меняют электрические и твердотопливные котлы на газовые.</div></div>` : ''));
 
         // ── Кварталы за три года ────────────────────────────────────────────
         // Месячный график показывает сезон, но не отвечает на вопрос «мы растём
@@ -13363,13 +13976,12 @@ const app = {
                        сравнить ${ySel('new', qNewY)} с ${ySel('old', qOldY)}</span>`
                 : '';
 
-            h += card(`<div style="display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+            B.quarters = card(`<div style="display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap;">
                         <div>${head(qMode === 'yoy' ? 'Кварталы по годам' : 'Кварталы за три года', `${esc(curGroupLabel)} · ${region ? esc(region) : 'вся Россия'}`)}</div>
                         <div style="margin-left:auto; display:flex; gap:5px; flex-wrap:wrap; align-items:center;">${yPick}${qBtn('yoy', 'год к году')}${qBtn('qoq', 'квартал к кварталу')}</div>
                     </div>
                     ${qBody}
-                    <div style="font-size:11.5px; color:var(--text-sec); margin-top:10px;">${qNote}${anyPartial ? ' Штриховкой отмечен квартал, у которого закрыты не все три месяца.' : ''}</div>`,
-                'margin-bottom:14px;');
+                    <div style="font-size:11.5px; color:var(--text-sec); margin-top:10px;">${qNote}${anyPartial ? ' Штриховкой отмечен квартал, у которого закрыты не все три месяца.' : ''}</div>`);
         }
 
         // ── Наша доля по группам и регионы ──────────────────────────────────
@@ -13414,8 +14026,7 @@ const app = {
         }).filter(x => x.val > 0).sort((a, b) => b.val - a.val).slice(0, 10) : [];
         const regMax = regRows.length ? regRows[0].val : 1;
 
-        h += `<div style="display:grid; ${gHalf} gap:14px; margin-bottom:14px;">
-            ${card(head('Наша доля в спросе на группу', 'из тех запросов, где марку вообще называют · строка ведёт в «Аналитику»')
+        B.share_groups = card(head('Наша доля в спросе на группу', 'из тех запросов, где марку вообще называют · строка ведёт в «Аналитику»')
                 + `<div style="margin-top:12px;">` + (shareRows.length ? shareRows.map(x => `
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:9px; cursor:pointer;"
                          title="лидер: ${esc(x.leader)}; запросов с маркой: ${num(x.brandTotal)}"
@@ -13427,8 +14038,9 @@ const app = {
                         <div style="width:44px; text-align:right; font-size:12px; font-weight:700; color:var(--text-main);">${x.share.toFixed(x.share < 10 ? 1 : 0)}%</div>
                         <div style="width:52px; text-align:right; font-size:11.5px;">${trend(x.demandPct)}</div>
                     </div>`).join('') : `<div style="font-size:12.5px; color:var(--text-sec);">Данных о марках в запросах пока нет.</div>`)
-                + `</div>`)}
-            ${card(head('Регионы: спрос на монтаж', demandId ? esc((phrases[demandId] && phrases[demandId].text) || demandId) : '')
+                + `</div>`);
+
+        B.regions = card(head('Регионы: спрос на монтаж', demandId ? esc((phrases[demandId] && phrases[demandId].text) || demandId) : '')
                 + `<div style="margin-top:12px;">` + (regRows.length ? regRows.map(x => `
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:9px; cursor:pointer;"
                          onclick="app.setAnalyticsRegion('${q(x.name)}')" title="показать дашборд по региону">
@@ -13440,8 +14052,7 @@ const app = {
                         <div style="width:52px; text-align:right; font-size:12px; font-weight:700; color:var(--text-main);">${num(x.val)}</div>
                         <div style="width:52px; text-align:right; font-size:11.5px;">${trend(x.pct)}</div>
                     </div>`).join('') : `<div style="font-size:12.5px; color:var(--text-sec);">Истории по регионам пока нет.</div>`)
-                + `</div>`)}
-        </div>`;
+                + `</div>`);
 
         // ── Белые пятна: спрос есть, монтажников нет ────────────────────────
         // Все блоки выше показывают только «живые» регионы — те, где мы уже
@@ -13488,7 +14099,7 @@ const app = {
                 .sort((a, b) => b.val - a.val).slice(0, 10);
             const whiteMax = white.length ? white[0].val : 1;
 
-            h += card(head('Белые пятна: спрос есть, монтажников нет',
+            B.white_spots = card(head('Белые пятна: спрос есть, монтажников нет',
                     `${esc((phrases[demandId] && phrases[demandId].text) || demandId)} · регионы, где нас нет ни одним человеком`)
                 + `<div style="margin-top:12px;">` + (white.length ? white.map(x => `
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:9px;">
@@ -13499,23 +14110,22 @@ const app = {
                         <div style="width:62px; text-align:right; font-size:12px; font-weight:700; color:var(--text-main);">${num(x.val)}</div>
                     </div>`).join('')
                     : `<div style="font-size:12.5px; color:var(--text-sec);">Регионов со спросом, где у нас никого нет, не нашлось.</div>`)
-                + `</div>`, 'margin-bottom:14px;');
+                + `</div>`);
         } else {
-            h += card(head('Белые пятна: спрос есть, монтажников нет', 'регионы, где нас нет ни одним человеком')
+            B.white_spots = card(head('Белые пятна: спрос есть, монтажников нет', 'регионы, где нас нет ни одним человеком')
                 + `<div style="font-size:12.5px; color:var(--text-sec); margin-top:8px;">
                     Появится после ближайшего прогона Actions → Wordstat Analytics в режиме <b>monthly</b>: до сих пор парсер выбрасывал всё, кроме наших регионов, а теперь сохраняет спрос по стране целиком.
-                   </div>`, 'margin-bottom:14px;');
+                   </div>`);
         }
 
         // ── Пульс и топ-запросы ─────────────────────────────────────────────
-        let pulseCard = '';
         if (pulse && pulse.ru && pulse.weeks && pulse.weeks.length > 1) {
             const ps = Object.keys(pulse.ru).slice(0, 4).map(id => ({
                 name: (phrases[id] && phrases[id].text) || id,
                 points: pulse.weeks.map((w, i) => [String(w).slice(5), pulse.ru[id][i] || 0])
             })).filter(s => s.points.length > 1);
             if (ps.length) {
-                pulseCard = card(head(`Пульс: ${pulse.weeks.length} недель по России`,
+                B.pulse = card(head(`Пульс: ${pulse.weeks.length} недель по России`,
                         'недельный шаг — чтобы увидеть начало сезона не с месячным опозданием; текущая неполная неделя не берётся')
                     + `<div style="margin-top:10px;">${this.buildAnalyticsLineChart(ps, 'dashpulse')}</div>`);
             }
@@ -13535,21 +14145,16 @@ const app = {
             topRows.sort((a, b) => b.cnt - a.cnt);
             topRows = topRows.slice(0, 12);
         }
-        const topCard = topRows.length ? card(head('Что именно спрашивают', `самые частые формулировки, ${esc(trM)} · по России`)
-            + `<div style="margin-top:10px; columns:${mobile ? 1 : 2}; column-gap:22px;">` + topRows.map(x => `
-                <div style="display:flex; gap:10px; align-items:baseline; padding:5px 0; break-inside:avoid;">
-                    <span style="flex:1; min-width:0; font-size:12.5px; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(x.text)}</span>
-                    <b style="font-size:12px; color:var(--text-sec);">${num(x.cnt)}</b>
-                </div>`).join('') + `</div>`) : '';
-
-        if (pulseCard || topCard) {
-            h += `<div style="display:grid; ${(pulseCard && topCard) ? gHalf : 'grid-template-columns:1fr;'} gap:14px;">
-                ${pulseCard}${topCard}
-            </div>`;
+        if (topRows.length) {
+            B.top_requests = card(head('Что именно спрашивают', `самые частые формулировки, ${esc(trM)} · по России`)
+                + `<div style="margin-top:10px; columns:${mobile ? 1 : 2}; column-gap:22px;">` + topRows.map(x => `
+                    <div style="display:flex; gap:10px; align-items:baseline; padding:5px 0; break-inside:avoid;">
+                        <span style="flex:1; min-width:0; font-size:12.5px; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(x.text)}</span>
+                        <b style="font-size:12px; color:var(--text-sec);">${num(x.cnt)}</b>
+                    </div>`).join('') + `</div>`);
         }
 
-        h += `</div>`;
-        wrap.innerHTML = h;
+        return B;
     },
 
     /**
