@@ -5549,7 +5549,130 @@ const app = {
                 `;
             });
         h += `</div><div id="manager_installer_chat_detail" style="margin-top:16px;"></div>`;
-        container.innerHTML = h;
+        // Сводка считается своим запросом и приезжает позже списка: список с
+        // перепиской нужен сразу, а числа могут и подождать секунду.
+        container.innerHTML = `<div id="manager_summary_host"></div>` + h;
+        this.renderManagerSummary(installers);
+    },
+
+    /**
+     * Сводка менеджера дистрибьютора над списком его монтажников.
+     *
+     * Отвечает на два вопроса, которых в переписке не видно: кто из моих
+     * перестал считать и где висят счета, которые ждут от меня. Второе —
+     * прямой упрёк самому менеджеру, поэтому и стоит первым.
+     *
+     * Считается по тем же событиям и тем же правилам, что дашборд владельца
+     * (buildInvoiceFunnel), но по своим монтажникам: список email берётся из
+     * resolveManagedInstallers, то есть из привязки к дистрибьютору, где этот
+     * человек указан менеджером. Чужих не видно.
+     */
+    MANAGER_SUMMARY_DAYS: 120,
+    MANAGER_QUIET_DAYS: 45,
+
+    renderManagerSummary: async function (installers) {
+        const host = document.getElementById('manager_summary_host');
+        if (!host || !installers || !installers.length) return;
+        const esc = (s) => String(s == null ? '' : s).replace(/</g, '&lt;');
+        const num = n => Number(n || 0).toLocaleString('ru-RU');
+        host.innerHTML = `<div class="lk-empty">⌛ Считаем сметы ваших монтажников…</div>`;
+
+        const emails = installers.map(i => (i.email || '').toLowerCase()).filter(Boolean);
+        if (!emails.length) { host.innerHTML = ''; return; }
+
+        let rows = null, failed = '';
+        try {
+            const since = new Date(Date.now() - this.MANAGER_SUMMARY_DAYS * 86400000).toISOString();
+            const res = await this.fetchAllRows('invoice_events',
+                'calc_id, event, created_at, user_email, user_name, project_name',
+                { order: 'created_at', cap: 20000, build: (qy) => qy.in('user_email', emails).gte('created_at', since) });
+            rows = res.rows;
+        } catch (e) {
+            failed = (e && e.message) || String(e);
+        }
+        if (!rows) {
+            host.innerHTML = `<p class="lk-hint">Сводка сейчас недоступна${failed ? ' (' + esc(failed) + ')' : ''}.</p>`;
+            return;
+        }
+
+        const inv = this.buildInvoiceFunnel(rows);
+        const DAY = 86400000, now = Date.now();
+
+        // Кто затих: считаем по последнему событию монтажника, а не по входу
+        // на сайт — зайти можно случайно, а смета это работа.
+        const lastByEmail = {};
+        rows.forEach(r => {
+            const e = String(r.user_email || '').toLowerCase();
+            const t = new Date(r.created_at).getTime();
+            if (!e || isNaN(t)) return;
+            if (t > (lastByEmail[e] || 0)) lastByEmail[e] = t;
+        });
+        let active = 0;
+        const quiet = [];
+        installers.forEach(i => {
+            const e = (i.email || '').toLowerCase();
+            const t = lastByEmail[e] || 0;
+            const days = t ? Math.floor((now - t) / DAY) : null;
+            if (days !== null && days <= 30) active++;
+            if (days === null || days >= this.MANAGER_QUIET_DAYS) {
+                quiet.push({ id: i.id, authId: i.auth_user_id, name: this.getAdminUserDisplayName(i), days: days });
+            }
+        });
+        // Сначала те, кто молчит дольше; кто не сделал ни одной сметы — в
+        // конце: это не отток, а несостоявшийся старт, и разговор другой.
+        const quietRank = (x) => x.days === null ? -1 : x.days;
+        quiet.sort((a, b) => quietRank(b) - quietRank(a));
+
+        const tile = (label, value, sub, accent) => `
+            <div style="flex:1 1 140px; min-width:0; background:var(--surface-light); border:1px solid var(--border);
+                        border-radius:12px; padding:12px 14px;">
+                <div style="font-size:11.5px; color:var(--text-sec); font-weight:700;">${label}</div>
+                <div style="font-size:24px; font-weight:800; line-height:1.1; margin-top:4px; color:${accent || 'var(--text-main)'};">${value}</div>
+                <div style="font-size:11px; color:var(--text-sec); margin-top:3px;">${sub}</div>
+            </div>`;
+
+        // Счета, которые ждут ИМЕННО ЕГО: запрос есть, выставления нет.
+        const waitHtml = inv.waiting.length
+            ? inv.waiting.slice(0, 6).map(x => `
+                <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+                    <div style="min-width:0; flex:1;">
+                        <b style="font-size:12.5px; color:var(--text-main);">${esc(x.name)}</b>
+                        <br><small style="color:var(--text-sec);">${esc(x.project || 'без названия')}</small>
+                    </div>
+                    <b style="flex:0 0 auto; font-size:12.5px; color:${x.days >= 7 ? '#EF4444' : '#F97316'};">${x.days} дн.</b>
+                </div>`).join('')
+                + (inv.waiting.length > 6 ? `<p class="lk-hint" style="margin-top:6px;">и ещё ${num(inv.waiting.length - 6)}</p>` : '')
+            : `<p class="lk-hint">Непоставленных счетов нет — всё, что запрашивали, выставлено.</p>`;
+
+        const quietHtml = quiet.length
+            ? quiet.slice(0, 6).map(x => `
+                <div class="lk-row" onclick="app.openManagerChatWithInstaller('${x.id}', '${x.authId}')" style="cursor:pointer; justify-content:space-between;">
+                    <div style="font-size:12.5px; color:var(--text-main);">${esc(x.name)}</div>
+                    <small style="color:var(--text-sec);">${x.days === null ? 'ни одной сметы' : 'молчит ' + x.days + ' дн.'}</small>
+                </div>`).join('')
+                + (quiet.length > 6 ? `<p class="lk-hint" style="margin-top:6px;">и ещё ${num(quiet.length - 6)}</p>` : '')
+            : `<p class="lk-hint">Все ваши монтажники считали сметы за последние ${this.MANAGER_QUIET_DAYS} дней.</p>`;
+
+        const f0 = inv.funnel[0].n || 1;
+        const fAuto = inv.funnel[inv.autoLast || 0];
+
+        host.innerHTML = `
+            <div class="lk-section-head"><h4>📊 Сводка по вашим монтажникам</h4></div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                ${tile('Монтажников', num(installers.length), num(active) + ' считали за 30 дней')}
+                ${tile('Ждут счёта', num(inv.waiting.length), 'запросили и ждут вас',
+                    inv.waiting.length ? '#F97316' : null)}
+                ${tile('Смет за ' + this.MANAGER_SUMMARY_DAYS + ' дней', num(inv.cohortN),
+                    'до запроса счёта дошло ' + (f0 ? Math.round((fAuto ? fAuto.n : 0) / f0 * 100) : 0) + '%')}
+            </div>
+            <div class="lk-section-head" style="margin-top:4px;"><h4>🔔 Ждут от вас счёта</h4></div>
+            ${waitHtml}
+            <div class="lk-section-head" style="margin-top:18px;"><h4>📞 Кто затих</h4></div>
+            ${quietHtml}
+            <p class="lk-hint" style="margin-top:10px;">
+                Считается по сметам ваших монтажников за ${this.MANAGER_SUMMARY_DAYS} дней. Отметку «счёт выставлен» ставите вы сами в админке — пока её нет, смета так и висит в ожидании.
+            </p>
+            <hr style="border:none; border-top:1px solid var(--border); margin:18px 0 4px;">`;
     },
 
     // Открывает чат с конкретным монтажником из списка «Мои монтажники»
