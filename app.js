@@ -932,7 +932,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', ufhDT: null, sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', radRegime: 'r8060', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', ufhDT: null, sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', radRegime: 'r8060', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
 
     lastSavedStateString: "",
 
@@ -1226,7 +1226,7 @@ const app = {
     },
 
     updateHeaderCompanyDetails: function () {
-        let cc = this.state.customCompany || null;
+        let cc = this.companyDetails();
 
         let defName = "Общество с ограниченной ответственностью «ТЕРЕМ»";
         let defWeb = "www.teremopt.ru";
@@ -1269,8 +1269,9 @@ const app = {
         const reader = new FileReader();
         reader.onload = (e) => {
             const dataUrl = e.target.result;
-            this.state.customCompany = this.state.customCompany || {};
-            this.state.customCompany.logo = dataUrl;
+            // Логотип сохраняется сразу, не дожидаясь кнопки «Сохранить»: раньше он жил
+            // только в памяти вкладки и пропадал, если анкету закрывали крестиком.
+            this.setCompanyDetails({ logo: dataUrl });
 
             const imgPreview = document.getElementById('profile_logo_preview');
             if (imgPreview) imgPreview.src = dataUrl;
@@ -1282,8 +1283,7 @@ const app = {
     },
 
     resetProfileLogo: function () {
-        this.state.customCompany = this.state.customCompany || {};
-        this.state.customCompany.logo = "";
+        this.setCompanyDetails({ logo: "" });
         const imgPreview = document.getElementById('profile_logo_preview');
         if (imgPreview) imgPreview.src = "img/logo.jpg";
         this.updateHeaderCompanyDetails();
@@ -1291,7 +1291,7 @@ const app = {
     },
 
     resetCompanyDetails: function () {
-        this.state.customCompany = { name: "", website: "", address: "", bank: "", logo: "" };
+        this.setCompanyDetails({ name: "", website: "", address: "", bank: "", logo: "" });
         if (document.getElementById('profile_company_name')) document.getElementById('profile_company_name').value = "";
         if (document.getElementById('profile_company_website')) document.getElementById('profile_company_website').value = "";
         if (document.getElementById('profile_company_address')) document.getElementById('profile_company_address').value = "";
@@ -1299,7 +1299,6 @@ const app = {
         const imgPreview = document.getElementById('profile_logo_preview');
         if (imgPreview) imgPreview.src = "img/logo.jpg";
         this.updateHeaderCompanyDetails();
-        this.saveState();
         app.alert("✅ Все реквизиты компании сброшены на стандартные!");
     },
 
@@ -4645,17 +4644,30 @@ const app = {
                     return false;
                 }
                 if (!isLocal) {
-                    console.warn("[saveToCloud] Профиль пользователя не найден в БД. Сохраняем расчет без привязки к user_id.");
+                    // Раньше смета в этом случае сохранялась без user_id: человек видел
+                    // «✅ Смета сохранена», а в «Моих объектах» она не появлялась никогда —
+                    // список отбирается как раз по user_id. Лучше честно отказать.
+                    console.warn("[saveToCloud] Профиль пользователя не найден в БД. Сохранение отменено.");
+                    app.alert("Не удалось определить ваш профиль — смета не сохранена.\n\nПроверьте связь и попробуйте ещё раз, а если не поможет — выйдите из аккаунта и зайдите заново. Расчёт при этом останется на экране.");
+                    return false;
                 }
             }
 
             const todayStr = new Date().toLocaleDateString('ru-RU');
             this.state.last_saved_date = todayStr;
 
+            // Номер расчёта присваиваем при первом же сохранении: он служит ключом записи
+            // в облаке, и без него каждое нажатие кнопки создавало новую строку — в списке
+            // объектов копились одинаковые «Мой проект», среди которых не найти нужный.
+            if (!this.state.calc_id) { this.ensureCalcId(true); this.saveState(); }
+
             const insertData = {
                 project_name: pName,
                 share_id: this.state.calc_id || null,
-                calc_data: this.state,
+                // Реквизиты компании добавляем снимком: сама смета их больше не хранит,
+                // но админский предпросмотр и печать сохранённого расчёта должны показывать
+                // шапку автора (см. stateForCloud).
+                calc_data: this.stateForCloud(),
                 total_sum: total,
                 eq_sum: eq,
                 works_sum: wk,
@@ -5815,6 +5827,40 @@ const app = {
         { key: 'payment', label: 'В оплату', color: '#F59E0B', events: ['invoice_requested', 'invoice_issued', 'rejected'] },
     ],
 
+    /**
+     * Постраничное чтение таблицы целиком.
+     *
+     * PostgREST отдаёт максимум тысячу строк за запрос и обрезает остальное
+     * МОЛЧА: ни ошибки, ни признака в ответе. Запрос без .range() выглядит как
+     * «взять всё», а на деле берёт тысячу — и чем дольше живёт проект, тем
+     * больше он недоговаривает.
+     *
+     * Возвращает { rows, capped }. capped — признак того, что упёрлись в
+     * потолок и данные заведомо неполные: по нему решается, можно ли на этих
+     * данных что-то удалять или списывать в «пропавшее».
+     *
+     * opts.build — доводка запроса (фильтры) до постраничного среза.
+     */
+    SUPA_PAGE: 1000,
+    SUPA_PAGE_CAP: 40000,
+
+    fetchAllRows: async function (table, columns, opts) {
+        opts = opts || {};
+        const page = opts.page || this.SUPA_PAGE;
+        const cap = opts.cap || this.SUPA_PAGE_CAP;
+        const out = [];
+        for (let from = 0; from < cap; from += page) {
+            let qy = supabaseClient.from(table).select(columns);
+            if (opts.build) qy = opts.build(qy);
+            if (opts.order) qy = qy.order(opts.order, { ascending: opts.ascending !== false });
+            const { data, error } = await qy.range(from, from + page - 1);
+            if (error) throw error;
+            out.push(...(data || []));
+            if (!data || data.length < page) return { rows: out, capped: false };
+        }
+        return { rows: out, capped: true };
+    },
+
     renderAdminKanban: async function (skipFetch) {
         const content = document.getElementById('admin_content');
         if (!content) return;
@@ -5825,13 +5871,11 @@ const app = {
             content.innerHTML += `<div id="kanban_root" style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка истории...</div>`;
             let events = null;
             let error = null;
+            let eventsCapped = false;
             try {
-                const res = await supabaseClient
-                    .from('invoice_events')
-                    .select('*')
-                    .order('created_at', { ascending: true });
-                events = res.data;
-                error = res.error;
+                const res = await this.fetchAllRows('invoice_events', '*', { order: 'created_at' });
+                events = res.rows;
+                eventsCapped = res.capped;
             } catch (ex) { error = ex; }
 
             if (error) {
@@ -5848,19 +5892,30 @@ const app = {
             let liveCalcIds = null;
             let liveCalcMap = {};
             let liveRecMap = {};
+            let estimatesCapped = false;
             try {
-                // Тянем calc_id и суммы из estimates для подсчета итогов по колонкам
-                const { data: liveEstimates, error: estErr } = await supabaseClient.from('estimates')
-                    .select('id, project_name, created_at, user_id, total_sum, eq_sum, works_sum, calc_id:calc_data->>calc_id, from_recognition:calc_data->>from_recognition, users(username, email)');
-                if (!estErr) {
+                // Тянем calc_id и суммы из estimates для подсчета итогов по колонкам.
+                // share_id — вторая копия того же идентификатора (saveToCloud
+                // пишет туда state.calc_id). Берём обе: смета, у которой в
+                // calc_data идентификатора не оказалось, считалась «несуществующей»,
+                // и её история шла в осиротевшие — то есть под удаление.
+                const estRes = await this.fetchAllRows('estimates',
+                    'id, project_name, created_at, user_id, share_id, total_sum, eq_sum, works_sum, calc_id:calc_data->>calc_id, from_recognition:calc_data->>from_recognition, users(username, email)',
+                    { order: 'created_at' });
+                const liveEstimates = estRes.rows;
+                estimatesCapped = estRes.capped;
+                {
                     liveCalcIds = new Set();
                     (liveEstimates || []).forEach(e => {
-                        if (e.calc_id) {
-                            liveCalcIds.add(String(e.calc_id));
+                        const ids = [e.calc_id, e.share_id].filter(Boolean).map(String);
+                        if (ids.length) {
                             const sum = parseFloat(e.total_sum) || ((parseFloat(e.eq_sum) || 0) + (parseFloat(e.works_sum) || 0)) || 0;
-                            liveCalcMap[String(e.calc_id)] = sum;
-                            // Смета собрана распознаванием — помечаем карточку в канбане
-                            if (e.from_recognition === 'true' || e.from_recognition === true) liveRecMap[String(e.calc_id)] = true;
+                            ids.forEach(cid => {
+                                liveCalcIds.add(cid);
+                                liveCalcMap[cid] = sum;
+                                // Смета собрана распознаванием — помечаем карточку в канбане
+                                if (e.from_recognition === 'true' || e.from_recognition === true) liveRecMap[cid] = true;
+                            });
                         }
                     });
 
@@ -5869,8 +5924,14 @@ const app = {
                     const eventCalcIds = new Set((events || []).map(ev => String(ev.calc_id)));
                     const missingEvents = [];
                     (liveEstimates || []).forEach(est => {
-                        const cId = est.calc_id ? String(est.calc_id) : null;
-                        if (cId && !eventCalcIds.has(cId)) {
+                        // Тот же порядок, что и выше: сначала calc_data, потом
+                        // share_id. Иначе смете со вторым идентификатором
+                        // дописывалось бы «saved» поверх уже имеющейся истории.
+                        const cId = est.calc_id ? String(est.calc_id) : (est.share_id ? String(est.share_id) : null);
+                        const known = cId && (eventCalcIds.has(cId)
+                            || (est.share_id && eventCalcIds.has(String(est.share_id)))
+                            || (est.calc_id && eventCalcIds.has(String(est.calc_id))));
+                        if (cId && !known) {
                             missingEvents.push({
                                 calc_id: cId,
                                 event: 'saved',
@@ -5883,17 +5944,16 @@ const app = {
                         }
                     });
 
-                    if (missingEvents.length > 0) {
+                    // Досочинять историю можно только по полному списку смет:
+                    // на обрезанном «нет события» означает всего лишь «эта
+                    // смета не попала в выборку».
+                    if (missingEvents.length > 0 && !estimatesCapped && !eventsCapped) {
                         try {
                             const { error: insErr } = await supabaseClient.from('invoice_events').insert(missingEvents);
                             if (!insErr) {
-                                const { data: reloadedEvents, error: reErr } = await supabaseClient
-                                    .from('invoice_events')
-                                    .select('*')
-                                    .order('created_at', { ascending: true });
-                                if (!reErr) {
-                                    events = reloadedEvents || [];
-                                }
+                                const reRes = await this.fetchAllRows('invoice_events', '*', { order: 'created_at' });
+                                events = reRes.rows;
+                                eventsCapped = reRes.capped;
                             }
                         } catch (insEx) {
                             console.warn('[renderAdminKanban] Ошибка авто-генерации событий для старых смет:', insEx);
@@ -5905,14 +5965,34 @@ const app = {
             }
 
             let cleanEvents = events || [];
-            if (liveCalcIds) {
+            // Удаление здесь необратимо, поэтому запускаем его только на
+            // ЗАВЕДОМО ПОЛНЫХ данных. На обрезанной выборке смет «сметы нет»
+            // означает не «смету удалили», а «до неё не дочитали» — и чистка
+            // сносила бы историю живых смет при каждом открытии вкладки.
+            if (liveCalcIds && !estimatesCapped && !eventsCapped) {
                 const byCalc = {};
-                cleanEvents.forEach(e => { (byCalc[e.calc_id] = byCalc[e.calc_id] || []).push(e); });
-                const orphanCalcIds = Object.keys(byCalc).filter(calcId => !liveCalcIds.has(calcId));
+                cleanEvents.forEach(e => { (byCalc[String(e.calc_id)] = byCalc[String(e.calc_id)] || []).push(e); });
+                // Черновик — это смета, которую посчитали и не сохранили: строки
+                // в estimates у неё не было никогда, а не «была и удалили».
+                // Такие карточки — штатное начало воронки, и удалять их нельзя
+                // (иначе первая ступень «расчёт сохранён» пустеет сама собой).
+                // Правило было описано в комментарии выше, но в коде его не
+                // было: под нож шло всё, чего нет в estimates.
+                const isDraftOnly = (list) => list.every(e =>
+                    e.event === 'calculated' || this.ADMIN_KANBAN_TECH_EVENTS.includes(e.event));
+                const orphanCalcIds = Object.keys(byCalc)
+                    .filter(calcId => !liveCalcIds.has(calcId) && !isDraftOnly(byCalc[calcId]));
                 if (orphanCalcIds.length) {
-                    supabaseClient.from('invoice_events').delete().in('calc_id', orphanCalcIds)
-                        .then(({ error: delErr }) => { if (delErr) console.warn('[renderAdminKanban] Ошибка очистки осиротевших событий:', delErr); });
-                    cleanEvents = cleanEvents.filter(e => !orphanCalcIds.includes(String(e.calc_id)));
+                    // Список идёт в строку запроса, а она ограничена по длине:
+                    // на нескольких тысячах calc_id запрос отвалился бы целиком,
+                    // и чистка молча переставала работать. Режем на пачки.
+                    const CHUNK = 100;
+                    for (let i = 0; i < orphanCalcIds.length; i += CHUNK) {
+                        supabaseClient.from('invoice_events').delete().in('calc_id', orphanCalcIds.slice(i, i + CHUNK))
+                            .then(({ error: delErr }) => { if (delErr) console.warn('[renderAdminKanban] Ошибка очистки осиротевших событий:', delErr); });
+                    }
+                    const orphanSet = new Set(orphanCalcIds);
+                    cleanEvents = cleanEvents.filter(e => !orphanSet.has(String(e.calc_id)));
                 }
             }
 
@@ -5922,13 +6002,16 @@ const app = {
             // даже по пользователям, которых нет на текущей странице вкладки "Монтажники"
             let userMeta = {};
             try {
-                const { data: allUsers, error: uErr } = await supabaseClient.from('users').select('email, region, distributor_id');
-                if (!uErr) {
+                const { rows: allUsers } = await this.fetchAllRows('users', 'email, region, distributor_id', { order: 'id' });
+                {
                     (allUsers || []).forEach(u => { if (u.email) userMeta[u.email.toLowerCase()] = { region: u.region || null, distributor_id: u.distributor_id || null }; });
                 }
             } catch (e) {
                 console.warn('[renderAdminKanban] Не удалось загрузить регионы/дистрибьюторов пользователей:', e);
             }
+            // Признак неполноты переживает skipFetch: подпись рисуется при
+            // каждой перерисовке, а данные читаются один раз.
+            this._kanbanCapped = { events: eventsCapped, estimates: estimatesCapped };
             this._kanbanUserMeta = userMeta;
             this._kanbanCalcSumMap = liveCalcMap;
             this._kanbanRecMap = liveRecMap;
@@ -6029,6 +6112,18 @@ const app = {
         // часть воронки, а состояние связи в целом, поэтому окно всегда одно — 30 дней.
         const offlineHtml = this.buildOfflineLinkSummaryHtml(this._kanbanEvents);
 
+        // Данные упёрлись в потолок строк — говорим об этом прямо. Молчаливая
+        // обрезка читается как «столько всего и есть», а это не так; заодно на
+        // таких данных отключена чистка осиротевших событий.
+        const capped = this._kanbanCapped || {};
+        const cappedHtml = (capped.events || capped.estimates)
+            ? `<div style="background:rgba(249,115,22,.12); border:1px solid #F97316; border-radius:10px;
+                          padding:9px 12px; margin-bottom:12px; font-size:12px; color:var(--text-main);">
+                    Показана не вся история: ${[capped.events ? 'событий' : '', capped.estimates ? 'смет' : ''].filter(Boolean).join(' и ')}
+                    больше, чем помещается в один заход (${this.SUPA_PAGE_CAP.toLocaleString('ru-RU')} строк). Автоочистка истории на таких данных не запускалась.
+               </div>`
+            : '';
+
         const columnsHtml = `
             <div class="admin-kanban-cols" style="display:flex; gap:14px; align-items:start; overflow-x:auto; padding-bottom:12px; width:100%;">
                 ${STAGES.map(s => {
@@ -6076,7 +6171,7 @@ const app = {
         `;
 
         const root = document.getElementById('kanban_root');
-        if (root) root.outerHTML = `<div id="kanban_root">${filterHtml}${offlineHtml}${columnsHtml}</div>`;
+        if (root) root.outerHTML = `<div id="kanban_root">${filterHtml}${cappedHtml}${offlineHtml}${columnsHtml}</div>`;
     },
 
     /**
@@ -6925,6 +7020,11 @@ const app = {
 
             let loadedState = data.calc_data;
             delete loadedState.tgUser; delete loadedState.accountType; delete loadedState.demoUsed; delete loadedState.darkMode; delete loadedState.themeMode;
+            // Реквизиты компании — настройка учётной записи, а не сметы: в сохранённом
+            // расчёте лежит лишь снимок на момент отправки. Без этой строки открытие
+            // старого объекта возвращало бы шапку к тому, что было тогда (а у смет,
+            // сохранённых до заполнения реквизитов, — к ТЕРЕМ).
+            delete loadedState.customCompany;
             this.state = { ...this.state, ...loadedState };
             this.migrateSnowPipeSwap();
             this.migrateBoilerSectionTitles();
@@ -7675,20 +7775,7 @@ const app = {
 
         // Реквизиты компании и логотип — доступны на любом тарифе (не только ПРО),
         // живут в отдельном разделе кабинета «Реквизиты компании»
-        let compSec = document.getElementById('profile_tab_company');
-        if (compSec) {
-            let cc = this.state.customCompany || {};
-            let defName = "Общество с ограниченной ответственностью «ТЕРЕМ»";
-            let defWeb = "www.teremopt.ru";
-            let defAddr = "Россия, 123100, г. Москва\nвн. тер.г. муниципального округа Пресненский, 2-я Звенигородская ул., д. 12, стр. 1, помещ. 16н\nтел.: +7 (495) 775-20-20, факс: +7 (495) 775-20-25";
-            let defBank = "ИНН 7729646148\nР/сч. 40702810638110013275\nМосковский банк Сбербанка России ОАО г. Москва\nК/сч. 30101810400000000225";
-
-            document.getElementById('profile_company_name').value = (cc.name !== undefined && cc.name !== null && cc.name !== '') ? cc.name : defName;
-            document.getElementById('profile_company_website').value = (cc.website !== undefined && cc.website !== null && cc.website !== '') ? cc.website : defWeb;
-            document.getElementById('profile_company_address').value = (cc.address !== undefined && cc.address !== null && cc.address !== '') ? cc.address : defAddr;
-            document.getElementById('profile_company_bank').value = (cc.bank !== undefined && cc.bank !== null && cc.bank !== '') ? cc.bank : defBank;
-            document.getElementById('profile_logo_preview').src = cc.logo || 'img/logo.jpg';
-        }
+        this.fillCompanyDetailsForm();
 
         document.getElementById('profile_modal_overlay').style.display = 'flex';
         // Модалка позиционируется фиксированно и может быть выше вьюпорта на низких экранах —
@@ -8179,14 +8266,82 @@ const app = {
     loadInstallerSettingsLocal: function () {
         let parsed = null;
         try { parsed = JSON.parse(localStorage.getItem('stout_installer_settings') || 'null'); } catch (e) { parsed = null; }
-        this.installerSettings = Object.assign({ workPrices: {}, equipmentLibrary: [], swapLog: [], deletionLog: [] }, parsed || {});
+        this.installerSettings = Object.assign({ workPrices: {}, equipmentLibrary: [], swapLog: [], deletionLog: [], company: null }, parsed || {});
         if (!this.installerSettings.workPrices || typeof this.installerSettings.workPrices !== 'object') this.installerSettings.workPrices = {};
         if (!Array.isArray(this.installerSettings.equipmentLibrary)) this.installerSettings.equipmentLibrary = [];
         if (!Array.isArray(this.installerSettings.swapLog)) this.installerSettings.swapLog = [];
         if (!Array.isArray(this.installerSettings.deletionLog)) this.installerSettings.deletionLog = [];
+        if (this.installerSettings.company && typeof this.installerSettings.company !== 'object') this.installerSettings.company = null;
     },
     saveInstallerSettingsLocal: function () {
-        localStorage.setItem('stout_installer_settings', JSON.stringify(this.installerSettings));
+        // Логотип лежит здесь целиком (base64, до 1 МБ), поэтому запись вполне может
+        // упереться в лимит localStorage. Ошибку гасим: настройки уедут в облако, а
+        // падение отсюда оборвало бы сохранение анкеты целиком.
+        try {
+            localStorage.setItem('stout_installer_settings', JSON.stringify(this.installerSettings));
+        } catch (e) {
+            console.error('[saveInstallerSettingsLocal] Не удалось записать настройки в localStorage:', e);
+        }
+    },
+
+    // ── Реквизиты компании ───────────────────────────────────────────────────
+    // Раньше лежали в app.state.customCompany, то есть внутри сметы. Из-за этого
+    // загрузка любого сохранённого расчёта (или КП по номеру) подставляла реквизиты
+    // того расчёта, а «Сбросить всё» и выход из аккаунта стирали их совсем: монтажник
+    // заполнял свои данные, открывал вчерашний объект — и в шапке снова стоял ТЕРЕМ.
+    // Теперь это настройка учётной записи и живёт вместе с прайс-листом монтажа.
+    // В смету реквизиты по-прежнему попадают, но только как снимок на момент отправки
+    // (см. stateForCloud) — чтобы админский предпросмотр и ссылка клиенту показывали
+    // шапку того, кто эту смету считал.
+    companyDetails: function () {
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        if (this.installerSettings.company) return this.installerSettings.company;
+        // Настройки ещё не переехали (migrateCompanyDetails не отработала) — читаем по-старому
+        return this.state.customCompany || null;
+    },
+    setCompanyDetails: function (patch) {
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        const current = this.installerSettings.company || {};
+        this.installerSettings.company = Object.assign({}, current, patch || {});
+        this.pushInstallerSettingsToCloud();
+    },
+    // Разовый перенос реквизитов из последней сметы в настройки аккаунта. Вызывается
+    // в init() сразу после загрузки state: там лежит то, что человек заполнял последним.
+    migrateCompanyDetails: function () {
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        const old = this.state.customCompany;
+        const hasOld = old && typeof old === 'object' &&
+            ['name', 'website', 'address', 'bank', 'logo'].some(k => old[k]);
+        if (hasOld && !this.installerSettings.company) {
+            this.installerSettings.company = Object.assign({}, old);
+            this.pushInstallerSettingsToCloud();
+        }
+        // Дальше state.customCompany не источник истины, а только снимок при отправке
+        // в облако. Держать копию логотипа (до 1 МБ в base64) ещё и здесь незачем —
+        // localStorage не резиновый.
+        delete this.state.customCompany;
+    },
+    // Состояние для отправки в облако: к обычному расчёту добавляем реквизиты автора,
+    // чтобы сохранённая смета несла свою шапку (админский предпросмотр, печать).
+    stateForCloud: function (base) {
+        return Object.assign({}, base || this.state, { customCompany: this.companyDetails() });
+    },
+    // Заполняет поля раздела «Реквизиты компании». Вызывается при открытии кабинета и
+    // ещё раз, когда настройки доехали из облака (вход с нового устройства).
+    fillCompanyDetailsForm: function () {
+        const compSec = document.getElementById('profile_tab_company');
+        if (!compSec) return;
+        const cc = this.companyDetails() || {};
+        const defName = "Общество с ограниченной ответственностью «ТЕРЕМ»";
+        const defWeb = "www.teremopt.ru";
+        const defAddr = "Россия, 123100, г. Москва\nвн. тер.г. муниципального округа Пресненский, 2-я Звенигородская ул., д. 12, стр. 1, помещ. 16н\nтел.: +7 (495) 775-20-20, факс: +7 (495) 775-20-25";
+        const defBank = "ИНН 7729646148\nР/сч. 40702810638110013275\nМосковский банк Сбербанка России ОАО г. Москва\nК/сч. 30101810400000000225";
+
+        document.getElementById('profile_company_name').value = cc.name ? cc.name : defName;
+        document.getElementById('profile_company_website').value = cc.website ? cc.website : defWeb;
+        document.getElementById('profile_company_address').value = cc.address ? cc.address : defAddr;
+        document.getElementById('profile_company_bank').value = cc.bank ? cc.bank : defBank;
+        document.getElementById('profile_logo_preview').src = cc.logo || 'img/logo.jpg';
     },
     _resolveInstallerCloudUserId: async function () {
         try {
@@ -8203,34 +8358,62 @@ const app = {
         } catch (e) { /* нет сети/сессии — работаем локально */ }
         return null;
     },
-    // Подтягивает облачную версию персональных настроек один раз за сессию (лениво, при первом
-    // обращении к вкладкам «Прайс-лист монтаж» / «Своё оборудование»)
+    // Подтягивает облачную версию персональных настроек один раз за сессию: при запуске
+    // и при открытии вкладок «Прайс-лист монтаж» / «Своё оборудование»
     pullInstallerSettingsFromCloud: async function () {
-        if (this._installerSettingsCloudSynced) return;
-        this._installerSettingsCloudSynced = true;
+        if (this._installerSettingsCloudSynced || this._installerSettingsCloudPulling) return;
+        // Флаг «уже забрали» ставим только после того, как пользователь опознан: при запуске
+        // страницы сессия может ещё не подняться, и пометка «синхронизировано» навсегда
+        // закрыла бы попытку после входа в аккаунт.
+        this._installerSettingsCloudPulling = true;
         try {
             const uid = await this._resolveInstallerCloudUserId();
             if (!uid) return;
+            this._installerSettingsCloudSynced = true;
             this._installerCloudUserId = uid;
             const { data, error } = await supabaseClient.from('users').select('installer_settings').eq('id', uid).maybeSingle();
             if (error) throw error;
             const cloud = data && data.installer_settings;
             if (cloud && typeof cloud === 'object') {
+                // Реквизиты компании: облачная версия главнее, но если в облаке их ещё нет
+                // (первый вход после переезда реквизитов из сметы в настройки аккаунта) —
+                // держим локальные и тут же отправляем их наверх, иначе они пропадут.
+                const localCompany = this.installerSettings ? this.installerSettings.company : null;
+                const cloudCompany = (cloud.company && typeof cloud.company === 'object') ? cloud.company : null;
                 this.installerSettings = {
                     workPrices: Object.assign({}, cloud.workPrices || {}),
                     equipmentLibrary: Array.isArray(cloud.equipmentLibrary) ? cloud.equipmentLibrary : [],
                     swapLog: Array.isArray(cloud.swapLog) ? cloud.swapLog : [],
                     deletionLog: Array.isArray(cloud.deletionLog) ? cloud.deletionLog : [],
+                    company: cloudCompany || localCompany || null,
                     workPricesUpdatedAt: cloud.workPricesUpdatedAt || undefined
                 };
                 this.saveInstallerSettingsLocal();
+                if (!cloudCompany && localCompany) this.pushInstallerSettingsToCloud();
                 if (this._activeProfileTab === 'workprices') this.renderWorkPricesTab();
                 if (this._activeProfileTab === 'equipment') this.renderEquipmentLibraryTab();
+                if (this._activeProfileTab === 'company') this.fillCompanyDetailsForm();
+                this.updateHeaderCompanyDetails();
                 this.render();
             }
         } catch (e) {
             console.warn('[pullInstallerSettingsFromCloud] Error:', e);
+        } finally {
+            this._installerSettingsCloudPulling = false;
         }
+    },
+    // Выход из аккаунта: персональные настройки (реквизиты компании, свои цены на работы,
+    // своё оборудование) принадлежат учётной записи, а не браузеру. За общим компьютером
+    // следующий вошедший не должен получить чужую шапку в КП — и тем более отправить её
+    // в облако под своим именем. Всё это вернётся из users.installer_settings при входе.
+    clearInstallerSettingsOnLogout: function () {
+        clearTimeout(this._installerSettingsPushTimer);
+        try { localStorage.removeItem('stout_installer_settings'); } catch (e) { }
+        this._installerSettingsCloudSynced = false;
+        this._installerSettingsCloudPulling = false;
+        this._installerCloudUserId = null;
+        this.loadInstallerSettingsLocal();
+        this.updateHeaderCompanyDetails();
     },
     // Сохраняет локально сразу и синхронизирует с облаком с задержкой (не блокирует UI)
     pushInstallerSettingsToCloud: function () {
@@ -20189,6 +20372,9 @@ const app = {
                 phone: tgUser.phone || '',
                 city: tgUser.city || '',
                 email: (tgUser.email || this.state.user?.email || ''),
+                // Здесь намеренно из state, а не через companyDetails(): state сейчас
+                // подменён чужим расчётом, и в предпросмотре должна стоять шапка того,
+                // кто эту смету считал, а не того, кто её смотрит из админки.
                 customCompany: this.state.customCompany || null
             };
 
@@ -20779,6 +20965,9 @@ const app = {
                 isGoogle: user.app_metadata && user.app_metadata.provider === 'google'
             };
             this.saveState();
+            // Только что вошли — забираем настройки аккаунта (реквизиты компании,
+            // прайс-лист монтажа). При запуске страницы сессии ещё могло не быть.
+            this.pullInstallerSettingsFromCloud();
 
             let updatePayload = {
                 last_visited: new Date().toISOString(),
@@ -21188,12 +21377,15 @@ const app = {
         this.state.tgUser.email = email;
         this.state.tgUser.activityTypes = activityTypes;
 
-        // Реквизиты компании и логотип — доступны на любом тарифе
-        this.state.customCompany = this.state.customCompany || {};
-        this.state.customCompany.name = document.getElementById('profile_company_name').value.trim();
-        this.state.customCompany.website = document.getElementById('profile_company_website').value.trim();
-        this.state.customCompany.address = document.getElementById('profile_company_address').value.trim();
-        this.state.customCompany.bank = document.getElementById('profile_company_bank').value.trim();
+        // Реквизиты компании и логотип — доступны на любом тарифе. Это настройка
+        // учётной записи, а не сметы: сохраняем в installerSettings, откуда их не
+        // сможет затереть ни загрузка чужого расчёта, ни «Сбросить всё».
+        this.setCompanyDetails({
+            name: document.getElementById('profile_company_name').value.trim(),
+            website: document.getElementById('profile_company_website').value.trim(),
+            address: document.getElementById('profile_company_address').value.trim(),
+            bank: document.getElementById('profile_company_bank').value.trim()
+        });
         this.updateHeaderCompanyDetails();
 
         // Город в анкете только что заполнили или сменили — подставляем его в расчёт
@@ -24246,7 +24438,7 @@ const app = {
         const region = this.formatProjectAddress(addr)
             || (this.state.selectedCity ? this.state.selectedCity.name : '');
         if (!this.state.calc_id) { this.ensureCalcId(true); this.saveState(); }
-        const cc = this.state.customCompany || null;
+        const cc = this.companyDetails();
         const payload = {
             title: 'Спецификация оборудования и материалов',
             // Шифр в штампы — как в проектах («2025 – 191 – О»). Марку раздела
@@ -24487,7 +24679,7 @@ const app = {
             phone: tgUser.phone || '',
             city: tgUser.city || '',
             email: (this.state.tgUser?.email || this.state.user?.email || localStorage.getItem('user_email') || ''),
-            customCompany: this.state.customCompany || null
+            customCompany: this.companyDetails()
         };
 
         // .alts (список товаров-аналогов для кнопки "Аналог" в смете) взаимно ссылается
@@ -24909,7 +25101,9 @@ const app = {
         this.queue.addJob({
             id: "savejob_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
             type: 'save_only',
-            stateData: stateData,
+            // Реквизиты в самом расчёте не хранятся — подмешиваем снимок здесь,
+            // чтобы у сохранённой сметы осталась шапка автора (см. stateForCloud)
+            stateData: this.stateForCloud(stateData),
             eqSum: eqSum || 0,
             worksSum: worksSum || 0,
             retries: 0,
@@ -25344,7 +25538,7 @@ const app = {
                     phone: tgUser.phone || '',
                     city: tgUser.city || '',
                     email: (this.state.tgUser?.email || this.state.user?.email || localStorage.getItem('user_email') || ''),
-                    customCompany: this.state.customCompany || null
+                    customCompany: this.companyDetails()
                 };
 
                 // .alts циклически ссылается на другие позиции каталога (см. комментарий в
@@ -25647,12 +25841,15 @@ const app = {
                 if (data.calc_data) {
                     let savedState = data.calc_data;
 
-                    // Удаляем чужие личные данные перед загрузкой
+                    // Удаляем чужие личные данные перед загрузкой. Реквизиты компании
+                    // тоже личные: в смете лежит снимок шапки автора, подставлять его
+                    // тому, кто грузит КП по номеру, нельзя (см. companyDetails).
                     delete savedState.tgUser;
                     delete savedState.accountType;
                     delete savedState.demoUsed;
                     delete savedState.darkMode;
                     delete savedState.themeMode;
+                    delete savedState.customCompany;
 
                     this.state = { ...this.state, ...savedState };
                     this.migrateSnowPipeSwap();
@@ -25687,6 +25884,7 @@ const app = {
                 delete savedState.demoUsed;
                 delete savedState.darkMode;
                 delete savedState.themeMode;
+                delete savedState.customCompany;
 
                 this.state = { ...this.state, ...savedState };
                 this.migrateSnowPipeSwap();
@@ -25725,7 +25923,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: currentShowScheme, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: currentShowScheme, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType,
@@ -25777,7 +25975,21 @@ const app = {
         // временно подменяется данными чужого расчёта — сохранять его в localStorage/облако
         // нельзя, иначе это затрёт реальный проект администратора.
         if (this._suppressSaveState) return;
-        localStorage.setItem('stout_save', JSON.stringify(this.state));
+        // Запись может не пройти: у localStorage свой лимит на сайт (обычно 5 МБ), а в
+        // расчёт попадают планы этажей и распознанное оборудование. Раньше исключение
+        // отсюда обрывало весь обработчик, который вызвал saveState, — со стороны это
+        // выглядело как «выставляешь параметры, а они слетают». Теперь ошибка ловится,
+        // а человек один раз получает внятное предупреждение.
+        try {
+            localStorage.setItem('stout_save', JSON.stringify(this.state));
+            this._storageFullWarned = false;
+        } catch (e) {
+            console.error('[saveState] Не удалось записать состояние в localStorage:', e);
+            if (!this._storageFullWarned) {
+                this._storageFullWarned = true;
+                app.alert("⚠️ В браузере кончилось место для сохранения расчёта.\n\nПоследние изменения не сохранятся при перезагрузке страницы. Сохраните смету в облако (кнопка 💾), а затем нажмите «Сбросить всё» — это освободит место.");
+            }
+        }
         app.triggerAutoSave();
     },
 
@@ -25871,7 +26083,7 @@ const app = {
             const autoData = {
                 project_name: autoName,
                 share_id: this._autoCalcId,
-                calc_data: { ...this.state, projectName: autoName, calc_id: this._autoCalcId },
+                calc_data: this.stateForCloud({ ...this.state, projectName: autoName, calc_id: this._autoCalcId }),
                 total_sum: total,
                 eq_sum: eq,
                 works_sum: wk,
@@ -26303,6 +26515,12 @@ const app = {
         this.migrateSnowPipeSwap();
         this.migrateBoilerSectionTitles();
         this.loadInstallerSettingsLocal();
+        // Реквизиты компании переехали из сметы в настройки аккаунта — забираем их
+        // из последнего расчёта, пока он ещё лежит в state (разовая операция)
+        this.migrateCompanyDetails();
+        // Настройки аккаунта с сервера: на новом устройстве реквизиты и прайс-лист
+        // монтажа должны появиться сами, без перезаполнения анкеты
+        this.pullInstallerSettingsFromCloud();
         // Списки доступа к инструментам: приходят с сервера, поэтому интерфейс
         // пересобираем ещё раз, когда они доедут (до этого проектирование
         // и распознавание закрыты — открывать «на всякий случай» нельзя).
@@ -26778,6 +26996,7 @@ const app = {
                 delete this.state.tgUser;
                 this.state.accountType = 'base';
                 this._authHandling = false;
+                this.clearInstallerSettingsOnLogout();
                 this.saveState();
                 this.syncUI();
                 this.render();
