@@ -5667,10 +5667,122 @@ const app = {
             ${waitHtml}
             <div class="lk-section-head" style="margin-top:18px;"><h4>📞 Кто затих</h4></div>
             ${quietHtml}
+            <div id="manager_price_gaps"></div>
             <p class="lk-hint" style="margin-top:10px;">
                 Считается по сметам ваших монтажников за ${this.MANAGER_SUMMARY_DAYS} дней. Отметку «счёт выставлен» ставите вы сами в админке — пока её нет, смета так и висит в ожидании.
             </p>
             <hr style="border:none; border-top:1px solid var(--border); margin:18px 0 4px;">`;
+
+        // Ассортимент считаем отдельно и после: это ещё два запроса, а числа
+        // выше должны появиться сразу.
+        this.renderManagerPriceGaps(installers, (inv.cards || []).map(c => c.id));
+    },
+
+    /**
+     * «Чего нет в вашем прайсе»: позиции, которые монтажники ставят в счета, а
+     * у дистрибьютора их в прайс-листе нет.
+     *
+     * Самый прямой ответ на вопрос «что закупить»: спрос тут не поисковый, а
+     * настоящий — это то, что уже выписали клиенту. Считается по составу
+     * счетов (shared_invoices.items) против прайса дистрибьютора
+     * (dist_prices.js), наложенного по ключу price_list_key.
+     *
+     * Идентификатор счёта совпадает с calc_id сметы — shared_invoices.id и есть
+     * тот самый идентификатор, по которому пишутся события.
+     */
+    MANAGER_GAPS_LIMIT: 10,
+
+    renderManagerPriceGaps: async function (installers, calcIds) {
+        const host = document.getElementById('manager_price_gaps');
+        if (!host || !calcIds || !calcIds.length) return;
+        const esc = (s) => String(s == null ? '' : s).replace(/</g, '&lt;');
+        const num = n => Number(n || 0).toLocaleString('ru-RU');
+
+        // Прайс берём у дистрибьютора этих монтажников
+        const distIds = [...new Set(installers.map(i => i.distributor_id).filter(Boolean))];
+        if (!distIds.length) return;
+        let dists = [];
+        try {
+            const { data } = await supabaseClient.from('distributors')
+                .select('id, company_name, use_own_prices, price_list_key').in('id', distIds);
+            dists = data || [];
+        } catch (e) { return; }
+
+        const withPrice = dists.find(d => d.price_list_key && typeof DIST_PRICES !== 'undefined' && DIST_PRICES[d.price_list_key]);
+        if (!withPrice) {
+            host.innerHTML = `<div class="lk-section-head" style="margin-top:18px;"><h4>📦 Чего нет в вашем прайсе</h4></div>
+                <p class="lk-hint">Ваш прайс-лист в системе не загружен, сравнить не с чем. Пришлите выгрузку — и здесь появится список позиций, которые ваши монтажники ставят в счета, а вы их не возите.</p>`;
+            return;
+        }
+        const priceItems = DIST_PRICES[withPrice.price_list_key].items || {};
+        // Та же подстановка, что при наложении цен: нержавейка лежит в каталоге
+        // под RSS-10…, а в прайсах поставщика под RSS-00… — это одна позиция.
+        const inPrice = (id) => {
+            if (priceItems[id] !== undefined) return true;
+            return id.indexOf('RSS-10') === 0 && priceItems['RSS-00' + id.slice(6)] !== undefined;
+        };
+
+        // Состав счетов: список идентификаторов уходит в строку запроса, режем.
+        let rows = [];
+        try {
+            const CHUNK = 80;
+            for (let i = 0; i < calcIds.length; i += CHUNK) {
+                const part = calcIds.slice(i, i + CHUNK);
+                const { data, error } = await supabaseClient.from('shared_invoices')
+                    .select('id, eq:items->equipment').in('id', part);
+                if (error) throw error;
+                rows.push(...(data || []));
+            }
+        } catch (e) {
+            host.innerHTML = `<div class="lk-section-head" style="margin-top:18px;"><h4>📦 Чего нет в вашем прайсе</h4></div>
+                <p class="lk-hint">Состав счетов не прочитался (${esc((e && e.message) || e)}).</p>`;
+            return;
+        }
+        if (!rows.length) return;
+
+        const gaps = {};
+        let seenItems = 0, seenInvoices = 0;
+        rows.forEach(r => {
+            const eq = Array.isArray(r.eq) ? r.eq : [];
+            if (!eq.length) return;
+            seenInvoices++;
+            const once = {};
+            eq.forEach(it => {
+                if (!it) return;
+                const art = String(it.originalId || it.id || '');
+                if (!art) return;
+                seenItems++;
+                if (inPrice(art)) return;
+                const g = gaps[art] || (gaps[art] = { art, name: it.name || art, invoices: 0, qty: 0 });
+                if (!once[art]) { g.invoices++; once[art] = 1; }
+                g.qty += Number(it.qty || it.count || 0) || 0;
+            });
+        });
+
+        const list = Object.values(gaps).sort((a, b) => (b.invoices - a.invoices) || (b.qty - a.qty));
+        if (!list.length) {
+            host.innerHTML = `<div class="lk-section-head" style="margin-top:18px;"><h4>📦 Чего нет в вашем прайсе</h4></div>
+                <p class="lk-hint">Всё, что монтажники ставят в счета, у вас есть — по ${num(seenInvoices)} ${this.plural(seenInvoices, 'счёту', 'счетам', 'счетам')} расхождений не нашлось.</p>`;
+            return;
+        }
+        const top = list.slice(0, this.MANAGER_GAPS_LIMIT);
+        host.innerHTML = `<div class="lk-section-head" style="margin-top:18px;"><h4>📦 Чего нет в вашем прайсе</h4></div>`
+            + top.map(g => `
+                <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+                    <div style="min-width:0; flex:1;">
+                        <b style="font-size:12.5px; color:var(--text-main);">${esc(g.name)}</b>
+                        <br><small style="color:var(--text-sec);">${esc(g.art)}</small>
+                    </div>
+                    <div style="flex:0 0 auto; text-align:right;">
+                        <b style="font-size:12.5px; color:var(--text-main);">${num(g.invoices)} ${this.plural(g.invoices, 'счёт', 'счёта', 'счетов')}</b>
+                        ${g.qty ? `<br><small style="color:var(--text-sec);">${num(Math.round(g.qty))} шт.</small>` : ''}
+                    </div>
+                </div>`).join('')
+            + (list.length > top.length ? `<p class="lk-hint" style="margin-top:6px;">и ещё ${num(list.length - top.length)} позиций</p>` : '')
+            + `<p class="lk-hint" style="margin-top:8px;">
+                Это не поисковый спрос, а выписанное клиентам: позиции стоят в счетах ваших монтажников, а в вашем прайсе (${esc(withPrice.company_name || 'ваша компания')}) их нет.
+                Разобрано ${num(seenInvoices)} ${this.plural(seenInvoices, 'счёт', 'счёта', 'счетов')}, ${num(seenItems)} строк.
+               </p>`;
     },
 
     // Открывает чат с конкретным монтажником из списка «Мои монтажники»
@@ -15723,11 +15835,11 @@ const app = {
                         ${wide ? `<div style="flex:1 1 20%; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
                             <div style="width:${Math.max(2, Math.round(x.val / regTableMax * 100))}%; height:8px; border-radius:999px; background:${white ? '#F97316' : 'var(--primary)'};"></div>
                         </div>` : ''}
-                        <div style="width:56px; text-align:right; font-size:12px; font-weight:700; color:var(--text-main);" title="запросов за месяц">${num(x.val)}</div>
-                        ${wide ? `<div style="width:44px; text-align:right; font-size:11.5px;" title="изменение спроса, ${esc(backLabel)}">${trend(x.pct)}</div>` : ''}
-                        <div style="width:34px; text-align:right; font-size:11.5px; color:${white ? '#F97316' : 'var(--text-sec)'};" title="монтажников">${num(x.users)}</div>
-                        ${wide ? `<div style="width:34px; text-align:right; font-size:11.5px; color:var(--text-sec);" title="смет за 90 дней">${num(x.ests)}</div>` : ''}
-                        <div style="width:44px; text-align:right; font-size:11.5px; font-weight:700; color:var(--text-main);" title="смет на 1000 запросов">${per1000(x.per1000)}</div>
+                        <div style="width:62px; text-align:right; font-size:12px; font-weight:700; white-space:nowrap; color:var(--text-main);" title="запросов за месяц">${num(x.val)}</div>
+                        ${wide ? `<div style="width:64px; text-align:right; font-size:11.5px; white-space:nowrap;" title="изменение спроса, ${esc(backLabel)}">${trend(x.pct)}</div>` : ''}
+                        <div style="width:40px; text-align:right; font-size:11.5px; white-space:nowrap; color:${white ? '#F97316' : 'var(--text-sec)'};" title="монтажников">${num(x.users)}</div>
+                        ${wide ? `<div style="width:42px; text-align:right; font-size:11.5px; white-space:nowrap; color:var(--text-sec);" title="смет за 90 дней">${num(x.ests)}</div>` : ''}
+                        <div style="width:48px; text-align:right; font-size:11.5px; font-weight:700; white-space:nowrap; color:var(--text-main);" title="смет на 1000 запросов">${per1000(x.per1000)}</div>
                     </div>`;
             }).join('');
 
@@ -15737,11 +15849,11 @@ const app = {
                         <span style="flex:0 0 7px;"></span>
                         <div style="flex:1 1 34%;">регион</div>
                         ${wide ? `<div style="flex:1 1 20%;"></div>` : ''}
-                        <div style="width:56px; text-align:right;">спрос</div>
-                        ${wide ? `<div style="width:44px; text-align:right;">Δ</div>` : ''}
-                        <div style="width:34px; text-align:right;">чел.</div>
-                        ${wide ? `<div style="width:34px; text-align:right;">смет</div>` : ''}
-                        <div style="width:44px; text-align:right;">/1000</div>
+                        <div style="width:62px; text-align:right;">спрос</div>
+                        ${wide ? `<div style="width:64px; text-align:right;">Δ</div>` : ''}
+                        <div style="width:40px; text-align:right;">чел.</div>
+                        ${wide ? `<div style="width:42px; text-align:right;">смет</div>` : ''}
+                        <div style="width:48px; text-align:right;">/1000</div>
                    </div>`
                 + regHtml
                 + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.55;">
@@ -16708,8 +16820,10 @@ const app = {
         this.renderAdminMain();
     },
 
+    // Повторное нажатие по той же строке — сворачивает её обратно: строка
+    // работает как выключатель, а не как «выбрать одну из».
     setAnalyticsCategory: function (id) {
-        this._analyticsCategory = id;
+        this._analyticsCategory = (this._analyticsCategory === id) ? null : id;
         this.renderAdminMain();
     },
 
