@@ -5815,6 +5815,40 @@ const app = {
         { key: 'payment', label: 'В оплату', color: '#F59E0B', events: ['invoice_requested', 'invoice_issued', 'rejected'] },
     ],
 
+    /**
+     * Постраничное чтение таблицы целиком.
+     *
+     * PostgREST отдаёт максимум тысячу строк за запрос и обрезает остальное
+     * МОЛЧА: ни ошибки, ни признака в ответе. Запрос без .range() выглядит как
+     * «взять всё», а на деле берёт тысячу — и чем дольше живёт проект, тем
+     * больше он недоговаривает.
+     *
+     * Возвращает { rows, capped }. capped — признак того, что упёрлись в
+     * потолок и данные заведомо неполные: по нему решается, можно ли на этих
+     * данных что-то удалять или списывать в «пропавшее».
+     *
+     * opts.build — доводка запроса (фильтры) до постраничного среза.
+     */
+    SUPA_PAGE: 1000,
+    SUPA_PAGE_CAP: 40000,
+
+    fetchAllRows: async function (table, columns, opts) {
+        opts = opts || {};
+        const page = opts.page || this.SUPA_PAGE;
+        const cap = opts.cap || this.SUPA_PAGE_CAP;
+        const out = [];
+        for (let from = 0; from < cap; from += page) {
+            let qy = supabaseClient.from(table).select(columns);
+            if (opts.build) qy = opts.build(qy);
+            if (opts.order) qy = qy.order(opts.order, { ascending: opts.ascending !== false });
+            const { data, error } = await qy.range(from, from + page - 1);
+            if (error) throw error;
+            out.push(...(data || []));
+            if (!data || data.length < page) return { rows: out, capped: false };
+        }
+        return { rows: out, capped: true };
+    },
+
     renderAdminKanban: async function (skipFetch) {
         const content = document.getElementById('admin_content');
         if (!content) return;
@@ -5825,13 +5859,11 @@ const app = {
             content.innerHTML += `<div id="kanban_root" style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка истории...</div>`;
             let events = null;
             let error = null;
+            let eventsCapped = false;
             try {
-                const res = await supabaseClient
-                    .from('invoice_events')
-                    .select('*')
-                    .order('created_at', { ascending: true });
-                events = res.data;
-                error = res.error;
+                const res = await this.fetchAllRows('invoice_events', '*', { order: 'created_at' });
+                events = res.rows;
+                eventsCapped = res.capped;
             } catch (ex) { error = ex; }
 
             if (error) {
@@ -5848,19 +5880,30 @@ const app = {
             let liveCalcIds = null;
             let liveCalcMap = {};
             let liveRecMap = {};
+            let estimatesCapped = false;
             try {
-                // Тянем calc_id и суммы из estimates для подсчета итогов по колонкам
-                const { data: liveEstimates, error: estErr } = await supabaseClient.from('estimates')
-                    .select('id, project_name, created_at, user_id, total_sum, eq_sum, works_sum, calc_id:calc_data->>calc_id, from_recognition:calc_data->>from_recognition, users(username, email)');
-                if (!estErr) {
+                // Тянем calc_id и суммы из estimates для подсчета итогов по колонкам.
+                // share_id — вторая копия того же идентификатора (saveToCloud
+                // пишет туда state.calc_id). Берём обе: смета, у которой в
+                // calc_data идентификатора не оказалось, считалась «несуществующей»,
+                // и её история шла в осиротевшие — то есть под удаление.
+                const estRes = await this.fetchAllRows('estimates',
+                    'id, project_name, created_at, user_id, share_id, total_sum, eq_sum, works_sum, calc_id:calc_data->>calc_id, from_recognition:calc_data->>from_recognition, users(username, email)',
+                    { order: 'created_at' });
+                const liveEstimates = estRes.rows;
+                estimatesCapped = estRes.capped;
+                {
                     liveCalcIds = new Set();
                     (liveEstimates || []).forEach(e => {
-                        if (e.calc_id) {
-                            liveCalcIds.add(String(e.calc_id));
+                        const ids = [e.calc_id, e.share_id].filter(Boolean).map(String);
+                        if (ids.length) {
                             const sum = parseFloat(e.total_sum) || ((parseFloat(e.eq_sum) || 0) + (parseFloat(e.works_sum) || 0)) || 0;
-                            liveCalcMap[String(e.calc_id)] = sum;
-                            // Смета собрана распознаванием — помечаем карточку в канбане
-                            if (e.from_recognition === 'true' || e.from_recognition === true) liveRecMap[String(e.calc_id)] = true;
+                            ids.forEach(cid => {
+                                liveCalcIds.add(cid);
+                                liveCalcMap[cid] = sum;
+                                // Смета собрана распознаванием — помечаем карточку в канбане
+                                if (e.from_recognition === 'true' || e.from_recognition === true) liveRecMap[cid] = true;
+                            });
                         }
                     });
 
@@ -5869,8 +5912,14 @@ const app = {
                     const eventCalcIds = new Set((events || []).map(ev => String(ev.calc_id)));
                     const missingEvents = [];
                     (liveEstimates || []).forEach(est => {
-                        const cId = est.calc_id ? String(est.calc_id) : null;
-                        if (cId && !eventCalcIds.has(cId)) {
+                        // Тот же порядок, что и выше: сначала calc_data, потом
+                        // share_id. Иначе смете со вторым идентификатором
+                        // дописывалось бы «saved» поверх уже имеющейся истории.
+                        const cId = est.calc_id ? String(est.calc_id) : (est.share_id ? String(est.share_id) : null);
+                        const known = cId && (eventCalcIds.has(cId)
+                            || (est.share_id && eventCalcIds.has(String(est.share_id)))
+                            || (est.calc_id && eventCalcIds.has(String(est.calc_id))));
+                        if (cId && !known) {
                             missingEvents.push({
                                 calc_id: cId,
                                 event: 'saved',
@@ -5883,17 +5932,16 @@ const app = {
                         }
                     });
 
-                    if (missingEvents.length > 0) {
+                    // Досочинять историю можно только по полному списку смет:
+                    // на обрезанном «нет события» означает всего лишь «эта
+                    // смета не попала в выборку».
+                    if (missingEvents.length > 0 && !estimatesCapped && !eventsCapped) {
                         try {
                             const { error: insErr } = await supabaseClient.from('invoice_events').insert(missingEvents);
                             if (!insErr) {
-                                const { data: reloadedEvents, error: reErr } = await supabaseClient
-                                    .from('invoice_events')
-                                    .select('*')
-                                    .order('created_at', { ascending: true });
-                                if (!reErr) {
-                                    events = reloadedEvents || [];
-                                }
+                                const reRes = await this.fetchAllRows('invoice_events', '*', { order: 'created_at' });
+                                events = reRes.rows;
+                                eventsCapped = reRes.capped;
                             }
                         } catch (insEx) {
                             console.warn('[renderAdminKanban] Ошибка авто-генерации событий для старых смет:', insEx);
@@ -5905,14 +5953,34 @@ const app = {
             }
 
             let cleanEvents = events || [];
-            if (liveCalcIds) {
+            // Удаление здесь необратимо, поэтому запускаем его только на
+            // ЗАВЕДОМО ПОЛНЫХ данных. На обрезанной выборке смет «сметы нет»
+            // означает не «смету удалили», а «до неё не дочитали» — и чистка
+            // сносила бы историю живых смет при каждом открытии вкладки.
+            if (liveCalcIds && !estimatesCapped && !eventsCapped) {
                 const byCalc = {};
-                cleanEvents.forEach(e => { (byCalc[e.calc_id] = byCalc[e.calc_id] || []).push(e); });
-                const orphanCalcIds = Object.keys(byCalc).filter(calcId => !liveCalcIds.has(calcId));
+                cleanEvents.forEach(e => { (byCalc[String(e.calc_id)] = byCalc[String(e.calc_id)] || []).push(e); });
+                // Черновик — это смета, которую посчитали и не сохранили: строки
+                // в estimates у неё не было никогда, а не «была и удалили».
+                // Такие карточки — штатное начало воронки, и удалять их нельзя
+                // (иначе первая ступень «расчёт сохранён» пустеет сама собой).
+                // Правило было описано в комментарии выше, но в коде его не
+                // было: под нож шло всё, чего нет в estimates.
+                const isDraftOnly = (list) => list.every(e =>
+                    e.event === 'calculated' || this.ADMIN_KANBAN_TECH_EVENTS.includes(e.event));
+                const orphanCalcIds = Object.keys(byCalc)
+                    .filter(calcId => !liveCalcIds.has(calcId) && !isDraftOnly(byCalc[calcId]));
                 if (orphanCalcIds.length) {
-                    supabaseClient.from('invoice_events').delete().in('calc_id', orphanCalcIds)
-                        .then(({ error: delErr }) => { if (delErr) console.warn('[renderAdminKanban] Ошибка очистки осиротевших событий:', delErr); });
-                    cleanEvents = cleanEvents.filter(e => !orphanCalcIds.includes(String(e.calc_id)));
+                    // Список идёт в строку запроса, а она ограничена по длине:
+                    // на нескольких тысячах calc_id запрос отвалился бы целиком,
+                    // и чистка молча переставала работать. Режем на пачки.
+                    const CHUNK = 100;
+                    for (let i = 0; i < orphanCalcIds.length; i += CHUNK) {
+                        supabaseClient.from('invoice_events').delete().in('calc_id', orphanCalcIds.slice(i, i + CHUNK))
+                            .then(({ error: delErr }) => { if (delErr) console.warn('[renderAdminKanban] Ошибка очистки осиротевших событий:', delErr); });
+                    }
+                    const orphanSet = new Set(orphanCalcIds);
+                    cleanEvents = cleanEvents.filter(e => !orphanSet.has(String(e.calc_id)));
                 }
             }
 
@@ -5922,13 +5990,16 @@ const app = {
             // даже по пользователям, которых нет на текущей странице вкладки "Монтажники"
             let userMeta = {};
             try {
-                const { data: allUsers, error: uErr } = await supabaseClient.from('users').select('email, region, distributor_id');
-                if (!uErr) {
+                const { rows: allUsers } = await this.fetchAllRows('users', 'email, region, distributor_id', { order: 'id' });
+                {
                     (allUsers || []).forEach(u => { if (u.email) userMeta[u.email.toLowerCase()] = { region: u.region || null, distributor_id: u.distributor_id || null }; });
                 }
             } catch (e) {
                 console.warn('[renderAdminKanban] Не удалось загрузить регионы/дистрибьюторов пользователей:', e);
             }
+            // Признак неполноты переживает skipFetch: подпись рисуется при
+            // каждой перерисовке, а данные читаются один раз.
+            this._kanbanCapped = { events: eventsCapped, estimates: estimatesCapped };
             this._kanbanUserMeta = userMeta;
             this._kanbanCalcSumMap = liveCalcMap;
             this._kanbanRecMap = liveRecMap;
@@ -6029,6 +6100,18 @@ const app = {
         // часть воронки, а состояние связи в целом, поэтому окно всегда одно — 30 дней.
         const offlineHtml = this.buildOfflineLinkSummaryHtml(this._kanbanEvents);
 
+        // Данные упёрлись в потолок строк — говорим об этом прямо. Молчаливая
+        // обрезка читается как «столько всего и есть», а это не так; заодно на
+        // таких данных отключена чистка осиротевших событий.
+        const capped = this._kanbanCapped || {};
+        const cappedHtml = (capped.events || capped.estimates)
+            ? `<div style="background:rgba(249,115,22,.12); border:1px solid #F97316; border-radius:10px;
+                          padding:9px 12px; margin-bottom:12px; font-size:12px; color:var(--text-main);">
+                    Показана не вся история: ${[capped.events ? 'событий' : '', capped.estimates ? 'смет' : ''].filter(Boolean).join(' и ')}
+                    больше, чем помещается в один заход (${this.SUPA_PAGE_CAP.toLocaleString('ru-RU')} строк). Автоочистка истории на таких данных не запускалась.
+               </div>`
+            : '';
+
         const columnsHtml = `
             <div class="admin-kanban-cols" style="display:flex; gap:14px; align-items:start; overflow-x:auto; padding-bottom:12px; width:100%;">
                 ${STAGES.map(s => {
@@ -6076,7 +6159,7 @@ const app = {
         `;
 
         const root = document.getElementById('kanban_root');
-        if (root) root.outerHTML = `<div id="kanban_root">${filterHtml}${offlineHtml}${columnsHtml}</div>`;
+        if (root) root.outerHTML = `<div id="kanban_root">${filterHtml}${cappedHtml}${offlineHtml}${columnsHtml}</div>`;
     },
 
     /**
