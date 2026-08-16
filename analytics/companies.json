@@ -1,5 +1,52 @@
 {
   "companies": {
+    "3917053753": {
+      "active": true,
+      "bo_id": 11376379,
+      "capital": 10000,
+      "full_name": "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ \"КИТ-СЕРВИС\"",
+      "inn": "3917053753",
+      "name": "ООО \"КИТ-СЕРВИС\"",
+      "ogrn": "1203900010050",
+      "okved": "46.74",
+      "okved_name": "Торговля оптовая скобяными изделиями, водопроводным и отопительным оборудованием и принадлежностями",
+      "region": "КАЛИНИНГРАДСКАЯ",
+      "registered": "2020-08-11",
+      "status": "ACTIVE",
+      "status_date": "2020-08-11",
+      "years": {
+        "2021": {
+          "assets": 1673,
+          "profit": -175,
+          "revenue": 1583,
+          "sales_profit": -157
+        },
+        "2022": {
+          "assets": 2343,
+          "profit": -217,
+          "revenue": 2161,
+          "sales_profit": -199
+        },
+        "2023": {
+          "assets": 2764,
+          "profit": 26,
+          "revenue": 753,
+          "sales_profit": null
+        },
+        "2024": {
+          "assets": 4519,
+          "profit": 5,
+          "revenue": 1652,
+          "sales_profit": null
+        },
+        "2025": {
+          "assets": 73345,
+          "profit": 3316,
+          "revenue": 151955,
+          "sales_profit": null
+        }
+      }
+    },
     "7729646148": {
       "active": true,
       "bo_id": 3174498,
