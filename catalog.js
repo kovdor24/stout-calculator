@@ -1499,7 +1499,13 @@ const catalog = {
     conv_valves: [
         { id: "SVT-0001-000015", name: "Клапан термостатический, прямой 1/2\"", price: 1180, brand: "STOUT", unit: "шт", rommer: { id: "RVT-0001-100015", name: "Клапан термостатический прямой 1/2\"", price: 862, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SVL-1176-000015", name: "Клапан запорно-балансировочный прямой 1/2\"", price: 656, brand: "STOUT", unit: "шт", rommer: { id: "RVL-0001-100015", name: "Клапан запорно-балансировочный прямой/угловой 1/2\"", price: 465, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
-        { id: "SVT-0005-000015", name: "Клапан термостатический угловой 1/2\"", price: 1614, brand: "STOUT", unit: "шт", rommer: { id: "RVT-0002-100015", name: "Клапан термостатический угловой 1/2\"", price: 855, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
+        // По прайсу и паспорту STOUT это ОСЕВОЙ клапан, а не угловой: угловой у
+        // STOUT идёт под артикулом SVT-0002-000015 (см. radValves ниже). Здесь
+        // раньше стояло «угловой» — название не совпадало с тем, что монтажник
+        // получал по артикулу. У ROMMER аналога осевого нет, поэтому в пару
+        // остаётся его угловой RVT-0002: это замена по назначению, не по типу
+        // присоединения, и о ней сказано в самом названии аналога.
+        { id: "SVT-0005-000015", name: "Клапан термостатический, осевой 1/2\"", price: 1614, brand: "STOUT", unit: "шт", rommer: { id: "RVT-0002-100015", name: "Клапан термостатический угловой 1/2\"", price: 855, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
         { id: "SVL-1156-000015", name: "Клапан запорно-балансировочный угловой 1/2\"", price: 597, brand: "STOUT", unit: "шт", rommer: { id: "RVL-0002-100015", name: "Клапан запорно-балансировочный прямой/угловой 1/2\"", price: 430, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" }
     ],
     conv_parts: [
@@ -5107,9 +5113,9 @@ const tubeRoundRads = [
 ];
 
 // Радиаторная арматура (термостатическая пара) для автообвязки радиаторов с БОКОВЫМ подключением.
-// Отдельный от conv_valves массив: в conv_valves у SVT-0005-000015 перепутано название
-// ("угловой" вместо факт. "осевой" по прайсу) и отсутствует настоящий угловой SVT-0002-000015 —
-// здесь корректные названия по прайс-листу, existing conv_valves не трогаем.
+// Отдельный от conv_valves массив: там своя пара под конвекторы, и настоящего углового
+// SVT-0002-000015 в ней нет — при угловом подключении конвектора подставляется осевой
+// SVT-0005-000015. Названия здесь и там теперь совпадают с прайс-листом.
 const radValves = [
     { id: "SVT-0001-000015", name: "Клапан термостатический, прямой 1/2\"", price: 1180, type: "straight", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
     { id: "SVT-0002-000015", name: "Клапан термостатический, угловой 1/2\"", price: 1101, type: "angled", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10" },
