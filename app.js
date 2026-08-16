@@ -8451,6 +8451,37 @@ const app = {
      */
     INSTALLER_SUMMARY_DAYS: 120,
     INSTALLER_STALE_DAYS: 5,
+    // Ниже этого движения не показываем: копеечные колебания прайса читаются
+    // как «подорожало», а пересчитывать смету из-за полупроцента незачем.
+    INSTALLER_REPRICE_MIN_PCT: 1,
+
+    /**
+     * Артикул → сегодняшняя цена. Строится один раз обходом каталога, включая
+     * вложенные .rommer/.comfort: findCatalogItemById перебирает каталог на
+     * каждый вызов, а здесь позиций сотни.
+     *
+     * Важно: цены дистрибьютора накладываются на те же объекты каталога прямо
+     * в браузере (applyDistributorPrices), поэтому здесь оказывается та цена,
+     * которая действует ДЛЯ ЭТОГО монтажника, а не общая розница.
+     */
+    catalogPriceIndex: function () {
+        if (this._catPriceIdx) return this._catPriceIdx;
+        const idx = {};
+        if (typeof catalog === 'undefined' || !catalog) return idx;
+        const seen = new Set();
+        const walk = (node) => {
+            if (!node || typeof node !== 'object' || seen.has(node)) return;
+            seen.add(node);
+            if (typeof node.id === 'string' && typeof node.price === 'number' && node.price > 0) {
+                if (idx[node.id] === undefined) idx[node.id] = node.price;
+                if (typeof node.article === 'string' && idx[node.article] === undefined) idx[node.article] = node.price;
+            }
+            for (const k in node) walk(node[k]);
+        };
+        (typeof CATALOG_PRICE_ROOTS !== 'undefined' ? CATALOG_PRICE_ROOTS : [catalog]).forEach(walk);
+        this._catPriceIdx = idx;
+        return idx;
+    },
 
     /**
      * Полная история смет по списку почт: сначала находим ЧЬИ это сметы, потом
@@ -8606,11 +8637,126 @@ const app = {
                </div>`
             + `<div class="lk-section-head" style="margin-top:4px;"><h4>⏳ Ждут вашего звонка</h4></div>`
             + staleHtml
+            + `<div id="installer_reprice"></div>`
             + `<div class="lk-section-head" style="margin-top:18px;"><h4>📈 Путь ваших смет</h4></div>`
             + funnelHtml
             + `<p class="lk-hint" style="margin-top:10px;">
                 Ступень засчитана, если было её событие или любое следующее.
                 «Клиент открыл» отмечается, когда заказчик открывает вашу ссылку, — по ней видно, дошла смета до него или нет.
+               </p>`;
+
+        // Подорожание считаем отдельно и после: это ещё запрос за составом
+        // счетов, а числа выше должны появиться сразу.
+        this.renderInstallerRepricing((inv.cards || []).map(c => c.id));
+    },
+
+    /**
+     * «Сколько стоит сегодня»: смета составлена по ценам своего дня, а
+     * оборудование с тех пор подорожало.
+     *
+     * Почему не берём индекс цен с дашборда: он считается по прайсу ТЕРЕМ и
+     * говорит про рынок вообще, а монтажнику важны ЕГО позиции и его цены.
+     * Здесь сравниваются цены, записанные в самом счёте, с сегодняшними
+     * ценами каталога — а у них поверх уже наложен прайс его дистрибьютора,
+     * если он есть. Получается ответ на его вопрос: «если клиент согласится
+     * сейчас, я уложусь в свою же смету?»
+     *
+     * Работы не трогаем: их расценки монтажник ставит сам, и рынок их не
+     * двигает.
+     */
+    renderInstallerRepricing: async function (calcIds) {
+        const host = document.getElementById('installer_reprice');
+        if (!host || !calcIds || !calcIds.length) return;
+        const esc = (s) => String(s == null ? '' : s).replace(/</g, '&lt;');
+        const num = n => Number(n || 0).toLocaleString('ru-RU');
+        // Знак ставим только при реальном движении: «+0 ₽» читается как ошибка.
+        const rub = (v) => {
+            const r = Math.round(v);
+            return (r === 0 ? '' : (r > 0 ? '+' : '−')) + num(Math.abs(r)) + ' ₽';
+        };
+        const pctStr = (p) => (Math.abs(p) < 0.05 ? '' : (p > 0 ? '+' : '−')) + Math.abs(p).toFixed(1).replace('.', ',') + '%';
+
+        let rows = [];
+        try {
+            const CHUNK = 80;
+            for (let i = 0; i < calcIds.length; i += CHUNK) {
+                const part = calcIds.slice(i, i + CHUNK);
+                const { data, error } = await supabaseClient.from('shared_invoices')
+                    .select('id, created_at, pn:object_info->>projectName, eq:items->equipment').in('id', part);
+                if (error) throw error;
+                rows.push(...(data || []));
+            }
+        } catch (e) {
+            return;   // молча: блок вспомогательный, ломать им вкладку незачем
+        }
+        if (!rows.length) return;
+
+        const price = this.catalogPriceIndex();
+        let oldAll = 0, newAll = 0, matched = 0, skipped = 0;
+        const perInvoice = [];
+        rows.forEach(r => {
+            const eq = Array.isArray(r.eq) ? r.eq : [];
+            let o = 0, n = 0, m = 0;
+            eq.forEach(it => {
+                if (!it) return;
+                const art = String(it.originalId || it.id || '');
+                // Свёрнутые комплекты — это подытог раздела, а не позиция:
+                // у них нет артикула и цена собрана из чужих строк.
+                if (!art || art.indexOf('custom_collapsed_') === 0) { skipped++; return; }
+                const was = Number(it.price) || 0;
+                const now = price[art];
+                if (!was || now === undefined) { skipped++; return; }
+                const q = Number(it.q) || Number(it.qty) || 1;
+                o += was * q; n += now * q; m++;
+            });
+            if (!m || !o) return;
+            matched += m;
+            oldAll += o; newAll += n;
+            perInvoice.push({
+                id: r.id, name: r.pn || 'Без названия',
+                old: o, diff: n - o, pct: (n - o) / o * 100,
+                when: r.created_at ? String(r.created_at).slice(0, 10) : ''
+            });
+        });
+
+        if (!perInvoice.length || !oldAll) return;
+        const pctAll = (newAll - oldAll) / oldAll * 100;
+        // Дорожает почти всегда, но бывает и наоборот — текст не должен
+        // предполагать только одну сторону.
+        const grew = perInvoice.filter(x => x.pct >= this.INSTALLER_REPRICE_MIN_PCT)
+            .sort((a, b) => b.diff - a.diff);
+
+        host.innerHTML = `<div class="lk-section-head" style="margin-top:18px;"><h4>💰 Сколько это стоит сегодня</h4></div>`
+            + `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                <div style="flex:1 1 150px; background:var(--surface-light); border:1px solid var(--border); border-radius:12px; padding:12px 14px;">
+                    <div style="font-size:11.5px; color:var(--text-sec); font-weight:700;">Ваши сметы сегодня</div>
+                    <div style="font-size:24px; font-weight:800; line-height:1.1; margin-top:4px;
+                                color:${pctAll > this.INSTALLER_REPRICE_MIN_PCT ? '#EF4444' : (pctAll < -this.INSTALLER_REPRICE_MIN_PCT ? '#10B981' : 'var(--text-main)')};">
+                        ${pctStr(pctAll)}
+                    </div>
+                    <div style="font-size:11px; color:var(--text-sec); margin-top:3px;">оборудование, ${num(rows.length)} ${this.plural(rows.length, 'смета', 'сметы', 'смет')}</div>
+                </div>
+                <div style="flex:1 1 150px; background:var(--surface-light); border:1px solid var(--border); border-radius:12px; padding:12px 14px;">
+                    <div style="font-size:11.5px; color:var(--text-sec); font-weight:700;">Разница в деньгах</div>
+                    <div style="font-size:24px; font-weight:800; line-height:1.1; margin-top:4px; color:var(--text-main);">${rub(newAll - oldAll)}</div>
+                    <div style="font-size:11px; color:var(--text-sec); margin-top:3px;">если пересчитать все разом</div>
+                </div>
+               </div>`
+            + (grew.length
+                ? `<p class="lk-hint" style="margin:0 0 4px;">Пересчитать в первую очередь:</p>`
+                    + grew.slice(0, 5).map(x => `
+                    <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+                        <div style="min-width:0; flex:1;">
+                            <b style="font-size:12.5px; color:var(--text-main);">${esc(x.name)}</b>
+                            <br><small style="color:var(--text-sec);">от ${esc(x.when)} · было ${num(Math.round(x.old))} ₽</small>
+                        </div>
+                        <b style="flex:0 0 auto; font-size:12.5px; color:#EF4444;">${rub(x.diff)}</b>
+                    </div>`).join('')
+                : `<p class="lk-hint">Заметно ничего не подорожало — можно отправлять как есть.</p>`)
+            + `<p class="lk-hint" style="margin-top:8px;">
+                Сравниваются цены, записанные в самой смете, с сегодняшними — теми, что действуют для вас${this.activeDistPriceKey() ? ' (прайс вашего дистрибьютора)' : ''}.
+                Считается только оборудование: расценки на работы вы ставите сами.
+                Учтено ${num(matched)} ${this.plural(matched, 'позиция', 'позиции', 'позиций')}${skipped ? `, ${num(skipped)} пропущено — их нет в каталоге (своё и распознанное оборудование)` : ''}.
                </p>`;
     },
 
@@ -17063,6 +17209,14 @@ const app = {
         this.renderAdminMain();
     },
 
+    // Глубина графика внутри раскрытой категории. Своя, а не общая с блоком
+    // «Спрос по месяцам»: кнопки стоят у разных графиков, и нажатие у одного
+    // не должно молча перестраивать другой, который в этот момент за экраном.
+    setAnalyticsCatMonths: function (m) {
+        this._analyticsCatMonths = m;
+        this.renderAdminMain();
+    },
+
     // Период графика на дашборде. 0 — вся история, иначе число месяцев.
     dashMonthsLabel: function (m) {
         const n = Number(m) || 0;
@@ -17169,7 +17323,7 @@ const app = {
         // собирается только по нашим брендам («дымоход коаксиальный stout»),
         // по конкурентам её нет и не будет — гасить у них нечего.
         const chartId = 'cat_' + r.id;
-        const monthsCd = this._analyticsMonths || 36;
+        const monthsCd = this._analyticsCatMonths || 36;
         const curves = {};
         Object.keys(brandMonthly || {}).forEach(b => {
             const bp = (brandMonthly[b] || []).slice(monthsCd > 0 ? -monthsCd : 0);
@@ -17238,10 +17392,20 @@ const app = {
             // общей кривой — сравнивается форма, а не абсолютные величины.
             const chartSeries = [{ name: r.phrase, points: pts }];
             Object.keys(curves).forEach(brand => chartSeries.push({ name: brand, points: curves[brand] }));
-            inner += `<div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">
-                    Спрос на «${esc(r.phrase)}» по месяцам, ${esc(first[0])} → ${esc(last[0])}
-                    ${growth === null ? '' : `<b style="color:${growth > 0 ? '#10B981' : '#EF4444'};">${growth > 0 ? '+' : ''}${growth}%</b> за период`}
-                    ${chartSeries.length > 1 ? '<span style="margin-left:6px;">— нажмите на марку в списке выше или на подпись под графиком, чтобы включить или выключить кривую. У каждой линии своя шкала: сравниваем форму сезона, а не величину</span>' : ''}
+            // Масштаб графика — своими кнопками прямо здесь. Кнопки «12 месяцев
+            // / 3 года / всё» есть и ниже, у блока «Спрос по месяцам», но до них
+            // от раскрытой категории надо доскроллить всю таблицу, и было
+            // непонятно, чем вообще менять глубину этой кривой.
+            const mBtn = (m, label) => `<button class="admin-btn"
+                    style="height:22px; padding:0 8px; font-size:11px; ${monthsCd === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}"
+                    onclick="event.stopPropagation(); app.setAnalyticsCatMonths(${m})">${label}</button>`;
+            inner += `<div style="display:flex; align-items:flex-start; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
+                    <div style="flex:1 1 320px; min-width:0; font-size:12px; color:var(--text-sec);">
+                        Спрос на «${esc(r.phrase)}» по месяцам, ${esc(first[0])} → ${esc(last[0])}
+                        ${growth === null ? '' : `<b style="color:${growth > 0 ? '#10B981' : '#EF4444'};">${growth > 0 ? '+' : ''}${growth}%</b> за период`}
+                        ${chartSeries.length > 1 ? '<span style="margin-left:6px;">— нажмите на марку в списке выше или на подпись под графиком, чтобы включить или выключить кривую. У каждой линии своя шкала: сравниваем форму сезона, а не величину</span>' : ''}
+                    </div>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap;">${mBtn(12, '12 месяцев')}${mBtn(36, '3 года')}${mBtn(0, 'всё')}</div>
                 </div>`
                 + this.buildAnalyticsLineChart(chartSeries, chartId, true);
         } else {
