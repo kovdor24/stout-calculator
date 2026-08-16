@@ -8201,6 +8201,155 @@ const app = {
         return head(requestedInvoices.length) + `<div style="display:flex; flex-direction:column;">${listHtml}</div>`;
     },
 
+    /**
+     * «Сводка» в личном кабинете монтажника: что стало с его сметами.
+     *
+     * Дашборд владельца отвечает на вопрос «как дела у проекта», а монтажнику
+     * нужен свой: где деньги застряли. Считается по тем же событиям
+     * invoice_events и по тем же правилам INVOICE_FLOW, что и у владельца, —
+     * общий расчёт лежит в buildInvoiceFunnel, чтобы правила не разъехались.
+     *
+     * Данные строго свои: фильтр по своему email, как во вкладке «Заказы и
+     * счета». Чужих смет монтажник тут не видит и видеть не должен.
+     *
+     * Суммы берём из локальной истории запросов счёта: она лежит на этом
+     * устройстве и есть у всех, включая Базовый тариф, — в отличие от облачных
+     * смет, которые копятся только у Профи.
+     */
+    INSTALLER_SUMMARY_DAYS: 120,
+    INSTALLER_STALE_DAYS: 5,
+
+    renderInstallerSummaryTab: async function () {
+        const container = document.getElementById('profile_tab_summary');
+        if (!container) return;
+        const esc = (s) => String(s == null ? '' : s).replace(/</g, '&lt;');
+        const head = `<div class="lk-section-head">
+                          <h4>📊 Сводка</h4>
+                          <button type="button" class="lk-btn-sm" onclick="app.renderInstallerSummaryTab()">↻ Обновить</button>
+                      </div>`;
+        container.innerHTML = head + `<div class="lk-empty">⌛ Считаем ваши сметы…</div>`;
+
+        let rows = null, failed = '';
+        try {
+            const me = await this.resolveCurrentUserForChat();
+            const email = (me && me.email) || (this.state.tgUser && this.state.tgUser.email) || null;
+            if (!email) {
+                container.innerHTML = head + `<p class="lk-hint">Войдите в аккаунт — сводка считается по вашим сметам.</p>`;
+                return;
+            }
+            // Здесь, в отличие от «Заказов», нужны и черновики: воронка
+            // начинается с сохранённого расчёта. Поэтому фильтруем не по видам
+            // событий, а по времени — у одного человека за четыре месяца строк
+            // немного.
+            const since = new Date(Date.now() - this.INSTALLER_SUMMARY_DAYS * 86400000).toISOString();
+            const res = await this.fetchAllRows('invoice_events',
+                'calc_id, event, created_at, user_email, user_name, project_name',
+                { order: 'created_at', cap: 4000, build: (qy) => qy.eq('user_email', email).gte('created_at', since) });
+            rows = res.rows;
+        } catch (e) {
+            failed = (e && e.message) || String(e);
+        }
+
+        if (!rows) {
+            container.innerHTML = head + `<p class="lk-hint">Сводка сейчас недоступна${failed ? ' (' + esc(failed) + ')' : ''}. Попробуйте обновить позже.</p>`;
+            return;
+        }
+
+        // Суммы по сметам — из локальной истории запросов счёта
+        let local = [];
+        try { local = JSON.parse(localStorage.getItem('requested_invoices')) || []; } catch (e) { }
+        const sumOfCalc = {};
+        local.forEach(inv => {
+            if (!inv || !inv.calc_id) return;
+            const s = Number(inv.total) || ((Number(inv.eqSum) || 0) + (Number(inv.worksSum) || 0)) || 0;
+            if (s) sumOfCalc[String(inv.calc_id)] = s;
+        });
+
+        const inv = this.buildInvoiceFunnel(rows, { sumOfCalc: sumOfCalc });
+        if (!inv.totalN) {
+            container.innerHTML = head + `<p class="lk-hint">За последние ${this.INSTALLER_SUMMARY_DAYS} дней смет не было. Посчитайте объект — и здесь появится, что с ним стало.</p>`;
+            return;
+        }
+
+        const num = n => Number(n || 0).toLocaleString('ru-RU');
+        const money = (rub) => !rub ? '—'
+            : (rub >= 1e6 ? (rub / 1e6).toFixed(1).replace('.', ',') + ' млн ₽'
+                : Math.round(rub / 1e3).toLocaleString('ru-RU') + ' тыс ₽');
+
+        // ── Что висит без ответа ────────────────────────────────────────────
+        // Главная строка этой вкладки: смета ушла клиенту, прошло время, и
+        // ничего не происходит. Открытие ссылки различает два разных случая —
+        // «не смотрел» и «посмотрел и молчит»; разговор с клиентом в них
+        // разный, поэтому и подпись разная.
+        const DAY = 86400000, now = Date.now();
+        const stale = [];
+        (inv.cards || []).forEach(c => {
+            const sent = c.first.sent || c.first.printed || null;
+            const opened = c.first.opened || null;
+            const moved = c.first.confirmed || c.first.invoice_requested || c.first.invoice_issued
+                || c.first.paid || c.first.needs_revision || c.first.rejected;
+            if (moved || (!sent && !opened)) return;
+            const last = Math.max(sent || 0, opened || 0);
+            const days = Math.floor((now - last) / DAY);
+            if (days < this.INSTALLER_STALE_DAYS) return;
+            stale.push({ id: c.id, name: c.project || 'Без названия', days, opened: !!opened, sum: sumOfCalc[c.id] || 0 });
+        });
+        stale.sort((a, b) => b.days - a.days);
+
+        const f0 = inv.funnel[0].n || 1;
+        const fAuto = inv.funnel[inv.autoLast || 0];
+        const tile = (label, value, sub) => `
+            <div style="flex:1 1 150px; min-width:0; background:var(--surface-light); border:1px solid var(--border);
+                        border-radius:12px; padding:12px 14px;">
+                <div style="font-size:11.5px; color:var(--text-sec); font-weight:700;">${label}</div>
+                <div style="font-size:24px; font-weight:800; color:var(--text-main); line-height:1.1; margin-top:4px;">${value}</div>
+                <div style="font-size:11px; color:var(--text-sec); margin-top:3px;">${sub}</div>
+            </div>`;
+
+        const funnelHtml = inv.funnel.map((f, i) => {
+            const prevN = i ? inv.funnel[i - 1].n : 0;
+            const step = !i ? '' : (prevN ? Math.round(f.n / prevN * 100) + '%' : '—');
+            return `<div style="display:flex; align-items:center; gap:10px; margin-bottom:7px;">
+                    <div style="flex:1 1 46%; min-width:0; font-size:12.5px; color:var(--text-main);">${f.label}${f.manual
+                        ? `<br><small style="color:var(--text-sec);">ставит менеджер вручную</small>` : ''}</div>
+                    <div style="flex:1 1 28%; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
+                        <div style="width:${Math.max(2, Math.round(f.n / f0 * 100))}%; height:8px; border-radius:999px;
+                                    background:${i === 0 ? 'var(--primary)' : (f.n ? '#10B981' : '#EF4444')};"></div>
+                    </div>
+                    <div style="width:34px; text-align:right; font-size:12.5px; font-weight:700; color:var(--text-main);">${num(f.n)}</div>
+                    <div style="width:42px; text-align:right; font-size:11.5px; color:var(--text-sec);">${step}</div>
+                </div>`;
+        }).join('');
+
+        const staleHtml = stale.length
+            ? stale.slice(0, 8).map(x => `
+                <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+                    <div style="min-width:0; flex:1;">
+                        <b style="font-size:12.5px; color:var(--text-main);">${esc(x.name)}</b>
+                        <br><small style="color:${x.opened ? '#F97316' : 'var(--text-sec)'};">${x.opened
+                            ? 'клиент открыл и молчит' : 'клиент так и не открыл'}${x.sum ? ' · ' + money(x.sum) : ''}</small>
+                    </div>
+                    <b style="flex:0 0 auto; font-size:12.5px; color:${x.days >= 14 ? '#EF4444' : '#F97316'};">${x.days} дн.</b>
+                </div>`).join('')
+                + (stale.length > 8 ? `<p class="lk-hint" style="margin-top:6px;">и ещё ${num(stale.length - 8)}</p>` : '')
+            : `<p class="lk-hint">Ничего не висит: по всем отправленным сметам есть движение.</p>`;
+
+        container.innerHTML = head
+            + `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                ${tile('Смет за ' + this.INSTALLER_SUMMARY_DAYS + ' дней', num(inv.cohortN), 'считаем от первого действия')}
+                ${tile('Дошло до счёта', num(fAuto ? fAuto.n : 0), f0 ? Math.round((fAuto ? fAuto.n : 0) / f0 * 100) + '% ваших смет' : '')}
+                ${tile('Ждут ответа', num(stale.length), 'отправлены и молчат ' + this.INSTALLER_STALE_DAYS + '+ дней')}
+               </div>`
+            + `<div class="lk-section-head" style="margin-top:4px;"><h4>⏳ Ждут вашего звонка</h4></div>`
+            + staleHtml
+            + `<div class="lk-section-head" style="margin-top:18px;"><h4>📈 Путь ваших смет</h4></div>`
+            + funnelHtml
+            + `<p class="lk-hint" style="margin-top:10px;">
+                Ступень засчитана, если было её событие или любое следующее.
+                «Клиент открыл» отмечается, когда заказчик открывает вашу ссылку, — по ней видно, дошла смета до него или нет.
+               </p>`;
+    },
+
     // Показывает вкладку «Мои монтажники» только тем, кто зарегистрировался под email,
     // совпадающим с manager_email хотя бы одного дистрибьютора — то есть реально является
     // чьим-то менеджером. Остальным вкладка вообще не показывается.
@@ -8224,7 +8373,7 @@ const app = {
     // Прайс монтажа / Своё оборудование. Содержимое всех разделов, кроме реквизитов,
     // строится лениво при первом открытии раздела.
     setProfileTab: function (tab) {
-        const tabs = ['requisites', 'company', 'subscription', 'objects', 'orders', 'manager', 'installers', 'workprices', 'equipment'];
+        const tabs = ['requisites', 'company', 'subscription', 'objects', 'summary', 'orders', 'manager', 'installers', 'workprices', 'equipment'];
         if (!tabs.includes(tab)) tab = 'requisites';
         // Уходим со вкладки с открытым чатом — отписываемся от реалтайма, чтобы не копить
         // висящие подписки и не обновлять невидимую панель
@@ -8264,6 +8413,8 @@ const app = {
             // контейнер-приёмник и переиспользуем загрузчик, не открывая вторую модалку
             this._cloudListHostId = 'profile_cloud_list_content';
             this.loadFromCloudList();
+        } else if (tab === 'summary') {
+            this.renderInstallerSummaryTab();
         } else if (tab === 'orders') {
             this.renderOrdersTab();
         } else if (tab === 'manager') {
@@ -15801,7 +15952,6 @@ const app = {
         this._dashFunnel = this._dashFunnel || {};
         if (this._dashFunnel[key]) return this._dashFunnel[key];
 
-        const DAY = 86400000, now = Date.now();
         // Регион у сметы авторский: у самой сметы региона нет, у события — тем
         // более. Связь одна — через почту монтажника.
         const regionOfEmail = {}, sumOfCalc = {};
@@ -15813,8 +15963,37 @@ const app = {
                 || ((Number(e.eq_sum) || 0) + (Number(e.works_sum) || 0)) || 0;
         });
 
+        const out = this.buildInvoiceFunnel(ev.rows, {
+            sumOfCalc: sumOfCalc,
+            // При выбранном регионе смету без известного автора не берём:
+            // сказать, чья она, нельзя, а показать в чужом регионе — соврать.
+            keep: region ? (c => c.email && regionOfEmail[c.email] === region) : null,
+            regionOfEmail: regionOfEmail
+        });
+        out.capped = !!ev.capped;
+        out.error = ev.error || null;
+        this._dashFunnel[key] = out;
+        return out;
+    },
+
+    /**
+     * Чистый расчёт воронки по списку событий. Отделён от дашборда владельца
+     * нарочно: та же воронка нужна монтажнику в личном кабинете (по своим
+     * сметам) и менеджеру (по сметам своих монтажников). Три копии одних и тех
+     * же правил разъехались бы на первой же правке.
+     *
+     * opts.sumOfCalc — суммы по идентификатору сметы, если они известны;
+     * opts.keep — фильтр карточек (регион и т. п.);
+     * opts.regionOfEmail — подписи регионов для списка ожидающих счёта.
+     */
+    buildInvoiceFunnel: function (rows, opts) {
+        opts = opts || {};
+        const sumOfCalc = opts.sumOfCalc || {};
+        const regionOfEmail = opts.regionOfEmail || {};
+        const DAY = 86400000, now = Date.now();
+
         const cards = {};
-        (ev.rows || []).forEach(r => {
+        (rows || []).forEach(r => {
             if (!r || !r.calc_id || !r.event) return;
             const t = new Date(r.created_at).getTime();
             if (isNaN(t)) return;
@@ -15831,9 +16010,7 @@ const app = {
         });
 
         let list = Object.keys(cards).map(id => Object.assign({ id: id }, cards[id]));
-        // При выбранном регионе смету без известного автора не берём: сказать,
-        // чья она, нельзя, а показать в чужом регионе — соврать.
-        if (region) list = list.filter(c => c.email && regionOfEmail[c.email] === region);
+        if (opts.keep) list = list.filter(opts.keep);
 
         const FLOW = this.INVOICE_FLOW;
         const minOf = (c, events) => {
@@ -15904,13 +16081,14 @@ const app = {
         const waiting = waitAll.filter(x => x.days <= this.DASH_INVOICE_WAIT_WINDOW).sort((a, b) => b.days - a.days);
         const waitingOld = waitAll.length - waiting.length;
 
-        const out = {
+        return {
             funnel, lost, speeds, money, moneyPrev, waiting, waitingOld, autoLast,
             cohortN: cohort.length, totalN: list.length,
-            capped: !!ev.capped, error: ev.error || null
+            // Сами карточки нужны тем, кто считает по ним своё: в кабинете
+            // монтажника из них собирается список «висит без ответа».
+            cards: list,
+            capped: false, error: null
         };
-        this._dashFunnel[key] = out;
-        return out;
     },
 
     /**
