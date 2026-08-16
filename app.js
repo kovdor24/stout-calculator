@@ -12326,9 +12326,14 @@ const app = {
             // не предмет разбирательств, поэтому без источника (промокод/оплата)
             let tariffLabelShort = 'Базовый';
             if (hasProTariff) {
+                // Оплата важнее промокода: pro_expires_at заполняется ТОЛЬКО
+                // при выборе «Оплата» в карточке, а distributor_id ставится
+                // независимо от тарифа — это адрес для копии запроса счёта.
+                // Обратный порядок показывал оплатившего монтажника с
+                // указанным поставщиком как промокодного.
                 let proType = 'пробный';
-                if (u.distributor_id) proType = 'промокод';
-                else if (u.pro_expires_at) proType = 'оплата';
+                if (u.pro_expires_at) proType = 'оплата';
+                else if (u.distributor_id) proType = 'промокод';
 
                 let dateStr = u.demo_ends_at ? new Date(u.demo_ends_at).toLocaleDateString('ru-RU') : 'навсегда';
                 if (u.demo_ends_at && new Date(u.demo_ends_at).getFullYear() === 2099) {
@@ -19707,9 +19712,14 @@ const app = {
         userEstimates.forEach(e => { ltv += (e.total_sum || 0); if (e.calc_data && e.calc_data.area) totalArea += parseFloat(e.calc_data.area); });
         let avgArea = userEstimates.length > 0 ? Math.round(totalArea / userEstimates.length) : 0;
 
+        // Тот же порядок, что в списке монтажников и в истории тарифа: оплата
+        // важнее промокода. Здесь это не только подпись, но и предвыбор в
+        // списке «Источник Профи» — при обратном порядке достаточно было
+        // открыть карточку оплатившего (у которого указан поставщик) и нажать
+        // «Сохранить», чтобы предвыбранный «Промокод» затёр pro_expires_at.
         let proSubtype = 'trial';
-        if (user.distributor_id) proSubtype = 'promo';
-        else if (user.pro_expires_at) proSubtype = 'paid';
+        if (user.pro_expires_at) proSubtype = 'paid';
+        else if (user.distributor_id) proSubtype = 'promo';
 
         let h = `
                     <button class="btn-header-blue" style="margin-bottom: 20px; width: fit-content;" onclick="app.renderAdminMain()">← Назад</button>
