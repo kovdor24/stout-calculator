@@ -1102,6 +1102,21 @@
                         <div class="tab" id="ufh_step1_200" onclick="app.setUfhStep(1, 200)">200 мм</div>
                     </div>
                 </div>
+                <!-- Перепад контура: расчёт выбирает его сам от дешёвого к дорогому
+                     (шире перепад дешевле, чем насос посильнее). Здесь его можно
+                     задать вручную, когда ровность пола важнее стоимости насоса. -->
+                <div class="control-item" id="blk_ufh_dt" style="display:none; margin-bottom: 12px; margin-top: 6px;">
+                    <span class="lbl-sub" style="margin-bottom: 6px;">Перепад контура тёплого пола</span>
+                    <div class="tabs" id="ufh_dt_tabs">
+                        <div class="tab active" id="ufh_dt_auto" onclick="app.setUfhDT(null)" title="Расчёт подбирает перепад сам: сначала штатный насос узла на 5 К, затем на 7 К, и только потом насос посильнее. Перепад обходится дешевле насоса.">авто</div>
+                        <div class="tab" id="ufh_dt_5" onclick="app.setUfhDT(5)" title="График 40/35. Самый ровный пол: разбег вдоль петли минимальный. Расход выше, и на крупном коллекторе может потребоваться насос 25/80.">5 K</div>
+                        <div class="tab" id="ufh_dt_7" onclick="app.setUfhDT(7)" title="График 41/34. Расход ниже, штатного насоса узла хватает чаще. Дальний конец петли холоднее ближнего.">7 K</div>
+                        <div class="tab" id="ufh_dt_10" onclick="app.setUfhDT(10)" title="График 42,5/32,5. Крайний режим: пол заметно неравномерный, зато требования к насосу самые скромные.">10 K</div>
+                    </div>
+                    <div class="info-card" style="margin-top: 6px; font-size: 11px; line-height: 1.4;">
+                        <span id="lbl_ufh_dt_note">Перепад подбирается расчётом.</span>
+                    </div>
+                </div>
                 <div id="div_tp2" class="control-item" style="display:none;">
                     <div class="label-row"><span class="lbl">Тёплый пол 2 этаж</span><span class="val"><span
                                 id="val_tp2" class="editable-val" contenteditable="true"

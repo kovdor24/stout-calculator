@@ -932,7 +932,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', radRegime: 'r8060', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
+    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, customCompany: null, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', ufhDT: null, sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', radRegime: 'r8060', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
 
     lastSavedStateString: "",
 
@@ -35947,6 +35947,35 @@ const app = {
         this.render();
         this.saveState();
     },
+    /**
+     * Перепад контура тёплого пола: null — подбирается расчётом, число —
+     * задан монтажником.
+     *
+     * Сам расчёт выбирает перепад от дешёвого к дорогому: сначала штатный насос
+     * узла на 5 К (самый ровный пол), потом он же на 7 К, и только потом насос
+     * посильнее. Поэтому на объекте, где 5 К проходит лишь с насосом 25/80,
+     * расчёт молча уходит на 7 К — перепад дешевле насоса. Но ровность пола
+     * бывает важнее: разбег вдоль петли на 7 К шире, и дальний её конец
+     * холоднее ближнего. Здесь монтажник может настоять на своём — тогда
+     * перебор идёт только по заданному перепаду, а насос подбирается под него.
+     */
+    setUfhDT: function (v) {
+        const n = parseInt(v, 10);
+        this.state.ufhDT = (this.UFH_DTS.indexOf(n) >= 0 || n === this.UFH_DT_LAST) ? n : null;
+        // Порядок обратный соседним переключателям: подпись под вкладками
+        // называет подобранный насос, а он известен только после пересчёта.
+        // При обычном syncUI → render она отставала бы на одно нажатие.
+        this.render();
+        this.syncUI();
+        this.saveState();
+    },
+    /** Ряд перепадов для подбора: заданный монтажником либо штатный перебор. */
+    ufhDtSets: function () {
+        const f = parseInt(this.state.ufhDT, 10);
+        if (f > 0) return [[f]];
+        return [this.UFH_DTS, this.UFH_DTS.concat(this.UFH_DT_LAST)];
+    },
+
     setRadRegime: function (key) {
         this.state.radRegime = (key === 'r7565') ? 'r7565' : 'r8060';
         this.syncUI();
@@ -36217,6 +36246,29 @@ const app = {
         const _rgNote = document.getElementById('lbl_rad_regime_note');
         if (_rgNote) _rgNote.textContent = this.RAD_REGIMES[_rg].note;
         if (hasTp) {
+            // Перепад контура — рядом с шагом укладки: обе настройки про то, как
+            // разложен и как работает сам пол.
+            const dtBlock = document.getElementById('blk_ufh_dt');
+            if (dtBlock) dtBlock.style.display = 'block';
+            const _fd = parseInt(this.state.ufhDT, 10) || null;
+            const _dtTab = (id, on) => { const e = document.getElementById(id); if (e) e.className = on ? 'tab active' : 'tab'; };
+            _dtTab('ufh_dt_auto', !_fd);
+            _dtTab('ufh_dt_5', _fd === 5);
+            _dtTab('ufh_dt_7', _fd === 7);
+            _dtTab('ufh_dt_10', _fd === 10);
+            const _dtNote = document.getElementById('lbl_ufh_dt_note');
+            if (_dtNote) {
+                const b = this._ufhBal;
+                if (!_fd) {
+                    _dtNote.textContent = b
+                        ? 'Подобран расчётом: ' + b.dT + ' K, график ' + this.ufhGraph(b.dT) +
+                          ' °C, насос ' + b.pump.label + '.'
+                        : 'Перепад подбирается расчётом.';
+                } else {
+                    _dtNote.textContent = 'Задан вручную: ' + _fd + ' K, график ' + this.ufhGraph(_fd) +
+                        ' °C' + (b ? ', насос ' + b.pump.label + (b.ok ? '' : ' — напора не хватает') : '') + '.';
+                }
+            }
             const step1Block = document.getElementById('blk_step_floor1');
             if (step1Block) {
                 step1Block.style.display = (this.state.detailedRooms && hasTp) ? 'block' : 'none';
@@ -42428,7 +42480,7 @@ const app = {
             // расчёт разменивал бы равномерность пола раньше, чем железо, хотя
             // неравномерный пол монтажник заметит, а лишний насос — нет.
             let _first = null, _ok = null;
-            const _dtSets = [this.UFH_DTS, this.UFH_DTS.concat(this.UFH_DT_LAST)];
+            const _dtSets = this.ufhDtSets();
             for (let d = 0; d < _dtSets.length && !_ok; d++) {
                 for (let i = 0; i < _cands.length; i++) {
                     const _b = this.ufhBalance(this._ufhCalc, _cands[i], _brand, _dtSets[d]);
