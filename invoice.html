@@ -3594,6 +3594,52 @@
             }
         }
 
+        // Сохраняет ответ клиента (статус и комментарий) в shared_invoices.
+        //
+        // Страницу открывают по ссылке, без входа в аккаунт — это роль anon, и права
+        // переписывать строку сметы у неё нет: прямой upsert по существующей записи
+        // отвечал «new row violates row-level security policy (USING expression)».
+        // Поэтому статус пишем через функцию set_shared_invoice_status: она меняет
+        // только status/client_comment/status_updated_at, остальное трогать не умеет
+        // (см. supabase/migrations/20260816_shared_invoice_status_rpc.sql).
+        //
+        // Если строки в базе ещё нет (монтажник не был онлайн и фоновая синхронизация
+        // не успела её создать), функция вернёт false — тогда создаём запись сами
+        // из данных, которые уже загружены в эту ссылку: вставка анониму разрешена.
+        async function saveInvoiceStatusToCloud(status, comment, updatedObjectInfo) {
+            const insertRow = async () => {
+                const { error } = await supabaseClient
+                    .from('shared_invoices')
+                    .upsert({
+                        id: invoiceId,
+                        object_info: updatedObjectInfo,
+                        manager_info: invoiceData.manager_info || {},
+                        items: invoiceData.items || {},
+                        totals: invoiceData.totals || {},
+                        user_id: invoiceData.user_id || null
+                    }, { onConflict: 'id' });
+                if (error) throw error;
+            };
+
+            const { data, error } = await supabaseClient.rpc('set_shared_invoice_status', {
+                p_id: invoiceId,
+                p_status: status,
+                p_comment: comment || null
+            });
+
+            if (error) {
+                // Функции в базе ещё нет (миграция не выполнена) — работаем по-старому.
+                if (error.code === 'PGRST202' || error.code === '42883') {
+                    console.warn('[saveInvoiceStatusToCloud] set_shared_invoice_status не найдена, пишем напрямую');
+                    await insertRow();
+                    return;
+                }
+                throw error;
+            }
+
+            if (data === false) await insertRow();
+        }
+
         async function updateInvoiceStatus(status, comment = null) {
             if (IS_PREVIEW) {
                 alert('Это предпросмотр сметы. Согласовать её может только клиент по своей ссылке.');
@@ -3622,21 +3668,7 @@
                     if (btn) btn.disabled = true;
                 }
 
-                // upsert, а не update: если монтажник ещё не был онлайн и запись в
-                // shared_invoices ещё не синхронизировалась в фоне, первый же клик клиента
-                // создаст её сам — со всеми данными, которые уже есть в этой ссылке.
-                const { error } = await supabaseClient
-                    .from('shared_invoices')
-                    .upsert({
-                        id: invoiceId,
-                        object_info: updatedObjectInfo,
-                        manager_info: invoiceData.manager_info || {},
-                        items: invoiceData.items || {},
-                        totals: invoiceData.totals || {},
-                        user_id: invoiceData.user_id || null
-                    }, { onConflict: 'id' });
-
-                if (error) throw error;
+                await saveInvoiceStatusToCloud(status, comment, updatedObjectInfo);
 
                 // Update local state
                 invoiceData.object_info = updatedObjectInfo;
@@ -3922,22 +3954,9 @@
                     const updatedObjectInfo = { ...(invoiceData.object_info || {}) };
                     updatedObjectInfo.status = 'invoice_requested';
                     updatedObjectInfo.status_updated_at = new Date().toISOString();
-                    const { error: statusErr } = await supabaseClient
-                        .from('shared_invoices')
-                        .upsert({
-                            id: invoiceId,
-                            object_info: updatedObjectInfo,
-                            manager_info: invoiceData.manager_info || {},
-                            items: invoiceData.items || {},
-                            totals: invoiceData.totals || {},
-                            user_id: invoiceData.user_id || null
-                        }, { onConflict: 'id' });
-                    if (statusErr) {
-                        console.error('[requestInvoice] Не удалось обновить статус сметы:', statusErr);
-                    } else {
-                        invoiceData.object_info = updatedObjectInfo;
-                        renderStatusBadge(updatedObjectInfo);
-                    }
+                    await saveInvoiceStatusToCloud('invoice_requested', null, updatedObjectInfo);
+                    invoiceData.object_info = updatedObjectInfo;
+                    renderStatusBadge(updatedObjectInfo);
                 } catch (statusEx) {
                     console.error('[requestInvoice] Исключение при обновлении статуса:', statusEx);
                 }
