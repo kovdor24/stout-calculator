@@ -16839,7 +16839,7 @@ const app = {
      */
     BRAND_CHART_COLORS: {
         light: { stout: '#1E3A63', rommer: '#B01E1E' },
-        dark: { stout: '#4E7FBF', rommer: '#E05252' }
+        dark: { stout: '#5A8ACB', rommer: '#E05252' }
     },
     brandChartColor: function (name) {
         const key = String(name == null ? '' : name).toLowerCase().trim();
@@ -17063,6 +17063,14 @@ const app = {
         this.renderAdminMain();
     },
 
+    // Глубина графика внутри раскрытой категории. Своя, а не общая с блоком
+    // «Спрос по месяцам»: кнопки стоят у разных графиков, и нажатие у одного
+    // не должно молча перестраивать другой, который в этот момент за экраном.
+    setAnalyticsCatMonths: function (m) {
+        this._analyticsCatMonths = m;
+        this.renderAdminMain();
+    },
+
     // Период графика на дашборде. 0 — вся история, иначе число месяцев.
     dashMonthsLabel: function (m) {
         const n = Number(m) || 0;
@@ -17169,7 +17177,7 @@ const app = {
         // собирается только по нашим брендам («дымоход коаксиальный stout»),
         // по конкурентам её нет и не будет — гасить у них нечего.
         const chartId = 'cat_' + r.id;
-        const monthsCd = this._analyticsMonths || 36;
+        const monthsCd = this._analyticsCatMonths || 36;
         const curves = {};
         Object.keys(brandMonthly || {}).forEach(b => {
             const bp = (brandMonthly[b] || []).slice(monthsCd > 0 ? -monthsCd : 0);
@@ -17238,10 +17246,20 @@ const app = {
             // общей кривой — сравнивается форма, а не абсолютные величины.
             const chartSeries = [{ name: r.phrase, points: pts }];
             Object.keys(curves).forEach(brand => chartSeries.push({ name: brand, points: curves[brand] }));
-            inner += `<div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">
-                    Спрос на «${esc(r.phrase)}» по месяцам, ${esc(first[0])} → ${esc(last[0])}
-                    ${growth === null ? '' : `<b style="color:${growth > 0 ? '#10B981' : '#EF4444'};">${growth > 0 ? '+' : ''}${growth}%</b> за период`}
-                    ${chartSeries.length > 1 ? '<span style="margin-left:6px;">— нажмите на марку в списке выше или на подпись под графиком, чтобы включить или выключить кривую. У каждой линии своя шкала: сравниваем форму сезона, а не величину</span>' : ''}
+            // Масштаб графика — своими кнопками прямо здесь. Кнопки «12 месяцев
+            // / 3 года / всё» есть и ниже, у блока «Спрос по месяцам», но до них
+            // от раскрытой категории надо доскроллить всю таблицу, и было
+            // непонятно, чем вообще менять глубину этой кривой.
+            const mBtn = (m, label) => `<button class="admin-btn"
+                    style="height:22px; padding:0 8px; font-size:11px; ${monthsCd === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}"
+                    onclick="event.stopPropagation(); app.setAnalyticsCatMonths(${m})">${label}</button>`;
+            inner += `<div style="display:flex; align-items:flex-start; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
+                    <div style="flex:1 1 320px; min-width:0; font-size:12px; color:var(--text-sec);">
+                        Спрос на «${esc(r.phrase)}» по месяцам, ${esc(first[0])} → ${esc(last[0])}
+                        ${growth === null ? '' : `<b style="color:${growth > 0 ? '#10B981' : '#EF4444'};">${growth > 0 ? '+' : ''}${growth}%</b> за период`}
+                        ${chartSeries.length > 1 ? '<span style="margin-left:6px;">— нажмите на марку в списке выше или на подпись под графиком, чтобы включить или выключить кривую. У каждой линии своя шкала: сравниваем форму сезона, а не величину</span>' : ''}
+                    </div>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap;">${mBtn(12, '12 месяцев')}${mBtn(36, '3 года')}${mBtn(0, 'всё')}</div>
                 </div>`
                 + this.buildAnalyticsLineChart(chartSeries, chartId, true);
         } else {
@@ -23221,7 +23239,7 @@ const app = {
     THEME_DARK_FROM: 20,   // часы, в которые считаем «темно», когда координат нет
     THEME_DARK_TO: 7,
     THEME_GEO_KEY: 'stout_geo',
-    THEME_GEO_DAYS: 30,
+    THEME_GEO_DAYS: 7,
 
     // Режим темы. Старое состояние знало только булев darkMode — переводим его в явный
     // режим, чтобы у тех, кто уже сидит на тёмной, ничего не поменялось само собой.
