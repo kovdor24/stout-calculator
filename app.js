@@ -13341,6 +13341,7 @@ const app = {
         own_projects:  { t: 'Проектов выпущено',                  icon: '📁', sec: 'us' },
         own_rec:       { t: 'Распознано смет',                    icon: '🔍', sec: 'us' },
         own_invoices:  { t: 'Счетов выставлено',                  icon: '💳', sec: 'us' },
+        pro_active:    { t: 'Профи',                              icon: '👑', sec: 'us' },
         est_vs_demand: { t: 'Наши сметы против спроса',           icon: '📈', sec: 'us' },
         activity:      { t: 'Активность монтажников',             icon: '🌡️', sec: 'us' },
         quiet_list:    { t: 'Кого пора вернуть',                  icon: '📞', sec: 'us' },
@@ -13350,7 +13351,11 @@ const app = {
         inv_speed:     { t: 'Сколько это занимает',               icon: '⏱️', sec: 'us' },
         inv_waiting:   { t: 'Ждут счёта',                         icon: '🔔', sec: 'us' },
         funnel:        { t: 'Воронка новичков',                   icon: '🚀', sec: 'us' },
-        demo_soon:     { t: 'Демо на исходе',                     icon: '⏳', sec: 'us' },
+        // Идентификатор оставлен прежним намеренно: блок вырос из «Демо на
+        // исходе» в полные сроки Профи, но у владельца он уже стоит в
+        // сохранённой раскладке, а переименование ключа выбросило бы его
+        // оттуда молча.
+        demo_soon:     { t: 'Профи: сроки и отток',               icon: '⏳', sec: 'us' },
         chek:          { t: 'Средний чек и площадь',              icon: '💰', sec: 'us' },
         group_usage:   { t: 'Группы прайса: счета против спроса', icon: '📊', sec: 'us' },
         dist_money:    { t: 'Дистрибьюторы: выручка и наш канал', icon: '🏢', sec: 'us' },
@@ -13393,11 +13398,11 @@ const app = {
                 { id: 'us', title: 'Мы', items: [
                     { id: 'own_ests', span: 1 }, { id: 'own_active', span: 1 },
                     { id: 'own_users', span: 1 }, { id: 'own_invoices', span: 1 },
+                    { id: 'pro_active', span: 2 }, { id: 'demo_soon', span: 2 },
                     { id: 'activity', span: 2 }, { id: 'quiet_list', span: 2 },
                     { id: 'inv_funnel', span: 2 }, { id: 'inv_speed', span: 2 },
                     { id: 'inv_waiting', span: 4 },
                     { id: 'own_projects', span: 1 }, { id: 'own_rec', span: 1 },
-                    { id: 'demo_soon', span: 2 },
                     { id: 'est_vs_demand', span: 4 },
                     { id: 'funnel', span: 2 }, { id: 'chek', span: 2 },
                     { id: 'group_usage', span: 2 }, { id: 'dist_money', span: 2 }
@@ -14343,7 +14348,7 @@ const app = {
             // полдашборда мигало бы пустотой при каждом открытии.
             ['own_ests', 'own_active', 'own_users', 'own_projects', 'own_rec', 'own_invoices',
              'est_vs_demand', 'activity', 'quiet_list', 'inv_funnel', 'inv_speed', 'inv_waiting',
-             'funnel', 'demo_soon', 'chek', 'group_usage', 'dist_money'].forEach(id => {
+             'funnel', 'demo_soon', 'pro_active', 'chek', 'group_usage', 'dist_money'].forEach(id => {
                 B[id] = card(head(this.DASH_WIDGETS[id].t, 'сметы, монтажники, проекты')
                     + `<div style="padding:16px 0; color:var(--text-sec); font-size:12.5px;">Считаем свои сметы и монтажников…</div>`);
             });
@@ -14441,25 +14446,62 @@ const app = {
                     <div style="width:44px; text-align:right; font-size:11.5px; color:var(--text-sec);">${fMax ? Math.round(f.n / fMax * 100) : 0}%</div>
                 </div>`).join('');
 
-            const demoHtml = own.demoSoon.length
-                ? own.demoSoon.slice(0, rows('demo_soon', 4, 8, 12)).map(x => `
-                    <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
-                        <div style="min-width:0; flex:1;">
-                            <b style="font-size:12.5px; color:var(--text-main);">${esc(x.name)}</b>
-                            <br><small style="color:var(--text-sec);">${x.ests} смет${x.region ? ' · ' + esc(x.region) : ''}</small>
-                        </div>
-                        <div style="flex:0 0 auto; text-align:right;">
-                            <b style="font-size:12.5px; color:${x.days <= 3 ? '#EF4444' : (x.days <= 7 ? '#F97316' : 'var(--text-main)')};">${x.days === 0 ? 'сегодня' : 'через ' + x.days + ' дн.'}</b>
-                            <br><button class="admin-btn" style="height:22px; padding:0 8px; font-size:11px; margin-top:3px;"
-                                        onclick="app.adminMessageUser('${esc(String(x.id))}', '${q(x.name)}')">написать</button>
-                        </div>
+            // ── Профи: состав и сроки ───────────────────────────────────────
+            const P = own.pro;
+            const proSegs = [
+                ['paid', 'оплата', '#10B981'],
+                ['promo', 'промокод', '#60A5FA'],
+                ['trial', 'пробный', '#F59E0B']
+            ];
+            const proTotal = proSegs.reduce((s, x) => s + P[x[0]], 0) || 1;
+            B.pro_active = card(head('Профи', `${num(P.active)} ${this.plural(P.active, 'активный', 'активных', 'активных')}${region ? ' в регионе' : ''} · из ${num(own.users)} монтажников`)
+                + `<div style="display:flex; height:14px; border-radius:999px; overflow:hidden; background:rgba(127,127,127,.18); margin-top:12px;">`
+                + proSegs.filter(x => P[x[0]] > 0).map(x =>
+                    `<div title="${x[1]}: ${num(P[x[0]])}" style="width:${(P[x[0]] / proTotal * 100).toFixed(2)}%; background:${x[2]};"></div>`).join('')
+                + `</div>`
+                + `<div style="display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:10px;">`
+                + proSegs.map(x => `<div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-main);">
+                        <span style="width:9px; height:9px; border-radius:50%; background:${x[2]}; flex:0 0 auto;"></span>
+                        <b>${num(P[x[0]])}</b> ${x[1]}
                     </div>`).join('')
-                : `<div style="font-size:12.5px; color:var(--text-sec); padding:8px 0;">В ближайшие две недели демо ни у кого не заканчивается.</div>`;
+                + `</div>`
+                + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.55;">
+                    ${P.forever ? `Из них ${num(P.forever)} бессрочных. ` : ''}Платит ${P.active ? Math.round(P.paid / P.active * 100) : 0}% тех, у кого Профи.
+                    Промокод даёт дистрибьютор, пробный кончается сам — деньги приносит только первая доля.
+                   </div>`);
+
+            const proRow = (x, lapsed) => `
+                <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+                    <div style="min-width:0; flex:1;">
+                        <b style="font-size:12.5px; color:var(--text-main);">${esc(x.name)}</b>
+                        <br><small style="color:var(--text-sec);">${esc(x.kind)} · ${num(x.ests)} ${this.plural(x.ests, 'смета', 'сметы', 'смет')}${x.region && !region ? ' · ' + esc(x.region) : ''}</small>
+                    </div>
+                    <div style="flex:0 0 auto; text-align:right;">
+                        <b style="font-size:12.5px; color:${lapsed ? '#EF4444' : (x.days <= 3 ? '#EF4444' : (x.days <= 7 ? '#F97316' : 'var(--text-main)'))};">${lapsed
+                            ? (x.days === 0 ? 'вчера' : Math.abs(x.days) + ' дн. назад')
+                            : (x.days <= 0 ? 'сегодня' : 'через ' + x.days + ' дн.')}</b>
+                        <br><button class="admin-btn" style="height:22px; padding:0 8px; font-size:11px; margin-top:3px;"
+                                    onclick="app.adminMessageUser('${esc(String(x.id))}', '${q(x.name)}')">написать</button>
+                    </div>
+                </div>`;
+            const proLimit = rows('demo_soon', 3, 6, 10);
+            const demoHtml = (P.expiring.length
+                    ? P.expiring.slice(0, proLimit).map(x => proRow(x, false)).join('')
+                        + (P.expiring.length > proLimit ? `<div style="font-size:11.5px; color:var(--text-sec); padding-top:6px;">и ещё ${num(P.expiring.length - proLimit)}</div>` : '')
+                    : `<div style="font-size:12.5px; color:var(--text-sec); padding:8px 0;">В ближайший месяц Профи ни у кого не заканчивается.</div>`)
+                + (P.lapsed.length
+                    ? `<div style="font-size:12px; font-weight:700; color:var(--text-main); margin:14px 0 2px;">Истёк и не вернулся — ${num(P.lapsed.length)}</div>`
+                        + P.lapsed.slice(0, proLimit).map(x => proRow(x, true)).join('')
+                        + (P.lapsed.length > proLimit ? `<div style="font-size:11.5px; color:var(--text-sec); padding-top:6px;">и ещё ${num(P.lapsed.length - proLimit)}</div>` : '')
+                    : '');
 
             B.funnel = card(head('Воронка новичков', 'кто зарегистрировался за 90 дней и докуда дошёл; месячная воронка всегда показывала бы ноль на проектах — до них доходят позже')
                 + `<div style="margin-top:12px;">${funnelHtml}</div>`);
-            B.demo_soon = card(head('Демо на исходе', 'заканчивается в ближайшие 14 дней')
-                + `<div style="margin-top:8px;">${demoHtml}</div>`);
+            B.demo_soon = card(head('Профи: сроки и отток', 'заканчивается в ближайшие 30 дней · ниже — у кого уже истёк и не вернулся')
+                + `<div style="margin-top:8px;">${demoHtml}</div>`
+                + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.55;">
+                    Числа продлений тут нет и не будет, пока не появится история тарифа: в базе лежит только текущая дата, и «продлил» от «купил впервые» не отличить. Отток честнее — он виден по факту.
+                   </div>`);
 
             // ── Активность монтажников ──────────────────────────────────────
             // Не «сколько нас», а «сколько из нас живы». Общее число только
@@ -15479,7 +15521,15 @@ const app = {
             digest.push({ tone: da.newlyQuiet > dm.users ? 'down' : toneOf(actP),
                 html: `Монтажники: активных <b>${num(dm.active)}</b>${pctWord(actP)}, новых <b>${num(dm.users)}</b>`
                     + (da.newlyQuiet ? `, затихли за месяц <b style="color:#EF4444;">${num(da.newlyQuiet)}</b>` : '') });
-            if (own.demoSoon.length) digest.push({ tone: 'warn', html: `Демо кончается у <b>${own.demoSoon.length}</b> в ближайшие 14 дней — блок «Демо на исходе»` });
+            // Профи — единственная строка про деньги самого проекта, поэтому
+            // стоит выше рыночных: истекающие важнее любого спроса.
+            if (own.pro.expiring.length || own.pro.lapsed.length) {
+                digest.push({ tone: 'warn',
+                    html: [
+                        own.pro.expiring.length ? `Профи кончается у <b>${own.pro.expiring.length}</b> за 30 дней` : '',
+                        own.pro.lapsed.length ? `истёк и не вернулся у <b style="color:#EF4444;">${own.pro.lapsed.length}</b>` : ''
+                    ].filter(Boolean).join(', ') + ` <small style="color:var(--text-sec);">блок «Профи: сроки и отток»</small>` });
+            }
             if (inv && !inv.error) {
                 const f0 = inv.funnel[0].n;
                 const fAuto = inv.funnel[inv.autoLast || 0];
@@ -15617,8 +15667,11 @@ const app = {
                     'created_at');
             } catch (e) { res.errors.push('сметы: ' + (e.message || e)); }
             try {
+                // pro_expires_at отличает оплаченный Профи от промокода и
+                // пробного: сама дата окончания у всех троих лежит в
+                // demo_ends_at, а это поле заполняется только при оплате.
                 res.users = await page('users',
-                    'id, email, username, created_at, last_visited, region, account_type, demo_ends_at, distributor_id',
+                    'id, email, username, created_at, last_visited, region, account_type, demo_ends_at, pro_expires_at, distributor_id',
                     'created_at');
             } catch (e) { res.errors.push('монтажники: ' + (e.message || e)); }
             try {
@@ -16153,16 +16206,57 @@ const app = {
         // Демо, которые вот-вот закончатся. Уже истёкшие не берём: писать
         // «продлить» человеку, у которого демо кончилось неделю назад, поздно —
         // это другой разговор и другой список.
-        const demoSoon = myUsers.filter(u => {
+        // ── Профи ───────────────────────────────────────────────────────────
+        //
+        // Единственная часть, которая про деньги самого проекта, и до сих пор
+        // её на дашборде не было вовсе — только «демо на исходе», где все три
+        // источника Профи свалены в кучу.
+        //
+        // Как устроены данные (не очевидно и легко прочесть неверно):
+        //  · дата окончания у ВСЕХ лежит в demo_ends_at, как бы Профи ни
+        //    достался — и оплатой, и промокодом, и пробным периодом;
+        //  · pro_expires_at заполняется ТОЛЬКО при оплате и дублирует ту же
+        //    дату, то есть служит признаком «платный», а не сроком;
+        //  · distributor_id у Профи означает промокод дистрибьютора;
+        //  · 2099 год — это «навсегда», а не срок;
+        //  · у админов и наблюдателей Профи тоже бывает, поэтому считаем не по
+        //    account_type === 'pro', а по наличию тарифа.
+        //
+        // Чего здесь принципиально нет: числа продлений. История тарифа нигде
+        // не хранится — в строке пользователя лежит только текущая дата, и
+        // «продлил» от «купил впервые» отличить нечем. Врать процентом
+        // продления не будем; вместо него честный отток — у кого срок вышел и
+        // Профи не вернулся.
+        const hasPro = (u) => u.account_type === 'pro'
+            || (['admin', 'viewer'].includes(u.account_type) && u.demo_ends_at);
+        const proKind = (u) => u.pro_expires_at ? 'оплата' : (u.distributor_id ? 'промокод' : 'пробный');
+        const FOREVER = new Date('2099-01-01T00:00:00.000Z').getTime();
+        const pro = { active: 0, paid: 0, promo: 0, trial: 0, forever: 0, expiring: [], lapsed: [] };
+        myUsers.forEach(u => {
+            if (!hasPro(u)) return;
             const t = u.demo_ends_at ? time(u.demo_ends_at) : 0;
-            return t && t >= now && t <= now + 14 * DAY;
-        }).sort((a, b) => time(a.demo_ends_at) - time(b.demo_ends_at))
-          .map(u => ({
-              id: u.id, name: u.username || u.email || 'без имени',
-              email: u.email || '', region: u.region || '',
-              days: Math.max(0, Math.round((time(u.demo_ends_at) - now) / DAY)),
-              ests: 0
-          }));
+            const endless = !t || t >= FOREVER;
+            const kind = proKind(u);
+            const row = () => ({
+                id: u.id, name: u.username || u.email || 'без имени',
+                email: u.email || '', region: u.region || '', kind: kind,
+                days: Math.round((t - now) / DAY), ests: 0
+            });
+            if (endless || t >= now) {
+                pro.active++;
+                if (endless) pro.forever++;
+                if (kind === 'оплата') pro.paid++;
+                else if (kind === 'промокод') pro.promo++;
+                else pro.trial++;
+                if (!endless && t <= now + 30 * DAY) pro.expiring.push(row());
+            } else if (t >= now - 30 * DAY) {
+                // Срок вышел за последний месяц и Профи не вернулся — это и
+                // есть отток, который иначе никак не увидеть.
+                pro.lapsed.push(row());
+            }
+        });
+        pro.expiring.sort((a, b) => a.days - b.days);
+        pro.lapsed.sort((a, b) => b.days - a.days);
         const perUser = {}, lastEst = {};
         ests.forEach(e => {
             const k = String(e.user_id);
@@ -16170,7 +16264,8 @@ const app = {
             const t = time(e.created_at);
             if (t > (lastEst[k] || 0)) lastEst[k] = t;
         });
-        demoSoon.forEach(x => { x.ests = perUser[String(x.id)] || 0; });
+        pro.expiring.forEach(x => { x.ests = perUser[String(x.id)] || 0; });
+        pro.lapsed.forEach(x => { x.ests = perUser[String(x.id)] || 0; });
 
         // Активность — по дате последней сметы, а не по last_visited: зайти
         // на сайт можно случайно, а смета — это работа. Границы: 30 дней —
@@ -16229,7 +16324,7 @@ const app = {
         ];
 
         const out = {
-            estSeries, monthRows, funnel, demoSoon,
+            estSeries, monthRows, funnel, pro,
             activity, quietList,
             users: myUsers.length,
             totalEst: ests.length,
