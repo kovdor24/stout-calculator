@@ -13,6 +13,11 @@ analytics_live_regions(). Список фраз и какие из них «ос
     python AutoWordstat.py --pulse     — недельный пульс по России (понедельник)
     python AutoWordstat.py --backfill  — разовый сбор истории 2018→сейчас
                                           по регионам (запускать руками)
+    python AutoWordstat.py --top-word СЛОВО
+                                       — диагностика: топ запросов со словом.
+                                          Один запрос, в файлы не пишет. Нужен,
+                                          когда непонятно, марка это или тёзка
+                                          («стаут» — ещё и сорт пива)
 
 Почему история по регионам не тянется каждый месяц напрямую: у метода
 распределения по регионам (GetRegionsDistribution) нет глубины в прошлое —
@@ -1528,6 +1533,49 @@ def run_backfill(client):
 
 
 # ──────────────────────────────────────────────────────────────────────────
+# Проверка слова: что за ним стоит на самом деле
+# ──────────────────────────────────────────────────────────────────────────
+
+def run_top_word(client, word):
+    """Показывает топ запросов со словом — и ничего не пишет в файлы.
+
+    Нужен для написаний-омонимов. Отношение «кириллица к латинице» ловит их
+    по числу (см. миграцию 20260816_disable_homonym_spellings.sql), но само
+    число не говорит, ЧТО именно намешано в слове: «стаут» может оказаться
+    пивом, «тим» — именем. Один запрос, несколько секунд, без записи в
+    репозиторий: это диагностика, а не сбор данных.
+
+    Заодно прикидываем инженерную долю: сколько из показанных запросов стоят
+    рядом со словом из отопления и водоснабжения. Это грубая оценка по топу,
+    а не измерение, — но чтобы отличить марку от тёзки, её хватает."""
+    word = (word or "").strip()
+    if not word:
+        log("Не задано слово для проверки")
+        return 1
+    resp = client.call("topRequests", {"phrase": word, "numPhrases": "50"})
+    if resp is None:
+        log("Wordstat не ответил по слову «%s»" % word)
+        return 1
+    rows = [(r.get("phrase", ""), to_int(r.get("count"))) for r in resp.get("results", [])]
+    if not rows:
+        log("По слову «%s» топ запросов пуст" % word)
+        return 0
+    ENG = ("труб", "котл", "котел", "радиатор", "коллектор", "фитинг", "кран",
+           "отоплен", "теплый пол", "теплого пола", "насос", "бойлер", "клапан",
+           "водоснабж", "канализац", "полипропилен", "монтаж", "гребенк",
+           "смесител", "термоголов", "шкаф", "сшитого полиэтилена", "гидрострелк")
+    total = sum(c for _, c in rows)
+    eng = sum(c for p, c in rows if any(k in p.lower() for k in ENG))
+    log("Топ запросов со словом «%s» (%d строк, всего %d показов):" % (word, len(rows), total))
+    for p, c in rows:
+        mark = " ← инженерия" if any(k in p.lower() for k in ENG) else ""
+        log("  %8d  %s%s" % (c, p, mark))
+    log("Инженерных запросов в топе: %d из %d (%.1f%%)"
+        % (eng, total, (eng * 100.0 / total) if total else 0))
+    return 0
+
+
+# ──────────────────────────────────────────────────────────────────────────
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
@@ -1542,6 +1590,8 @@ def main():
                    help="рейтинг марок по категориям из топа запросов (по России)")
     g.add_argument("--brands-regional", action="store_true",
                    help="то же с разбивкой по живым регионам (раз в квартал)")
+    g.add_argument("--top-word", metavar="СЛОВО",
+                   help="диагностика: топ запросов со словом, 1 запрос, ничего не пишет")
     args = ap.parse_args()
 
     api_key = os.environ.get("WORDSTAT_API_KEY")
@@ -1552,6 +1602,8 @@ def main():
 
     client = WordstatClient(api_key, folder_id, RateLimiter())
 
+    if args.top_word:
+        return run_top_word(client, args.top_word)
     if args.dump_regions:
         return run_dump_regions(client)
     if args.region_all:

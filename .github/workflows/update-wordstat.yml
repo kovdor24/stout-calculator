@@ -33,6 +33,12 @@ on:
           - brands-regional
           - region-all
           - dump-regions
+          - top-word
+      word:
+        description: 'Слово для режима top-word (топ запросов, ничего не пишет)'
+        type: string
+        required: false
+        default: ''
 
 jobs:
   scrape:
@@ -65,6 +71,9 @@ jobs:
         env:
           WORDSTAT_API_KEY: ${{ secrets.WORDSTAT_API_KEY }}
           WORDSTAT_FOLDER_ID: ${{ secrets.WORDSTAT_FOLDER_ID }}
+          # Через переменную, а не подстановкой в саму команду: слово вводят
+          # руками, и кавычка в нём иначе разорвала бы строку оболочки.
+          WORD: ${{ github.event.inputs.word }}
         run: |
           case "${{ steps.mode.outputs.mode }}" in
             pulse) python AutoWordstat.py --pulse ;;
@@ -73,6 +82,7 @@ jobs:
             brands-regional) python AutoWordstat.py --brands-regional ;;
             region-all) python AutoWordstat.py --region-all ;;
             dump-regions) python AutoWordstat.py --dump-regions ;;
+            top-word) python AutoWordstat.py --top-word "$WORD" ;;
             *) python AutoWordstat.py ;;
           esac
       # if: always() — если backfill прервётся по таймауту или его отменят
