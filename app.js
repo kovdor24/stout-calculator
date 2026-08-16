@@ -12923,41 +12923,62 @@ const app = {
                     <div style="width:34px; text-align:right; font-size:11.5px; color:var(--text-sec);">${x.n}</div>
                 </div>`).join('') : `<div style="font-size:12.5px; color:var(--text-sec);">Смет за последние месяцы нет.</div>`;
 
-            // Поисковая доля своих марок — сумма их запросов по всем группам
-            // против всех запросов с указанием марки. Считается по тем же
-            // данным, что и таблица «Наши места», просто одним числом.
-            let searchOwn = { stout: 0, rommer: 0, all: 0 };
-            idsWithRank.forEach(id => {
-                const rk = rankOf(id), o = (rk && rk.own) || {};
-                searchOwn.stout += (o.stout && o.stout.count) || 0;
-                searchOwn.rommer += (o.rommer && o.rommer.count) || 0;
-                searchOwn.all += (rk.ranking || []).reduce((a, x) => a + (x[1] || 0), 0);
-            });
-            const pairBar = (label, a, b, total, cA, cB) => {
-                const pa = total ? a / total * 100 : 0, pb = total ? b / total * 100 : 0;
-                return `<div style="margin-bottom:12px;">
-                    <div style="display:flex; font-size:12px; color:var(--text-sec); margin-bottom:4px;">
-                        <span>${label}</span>
-                        <span style="margin-left:auto; color:var(--text-main); font-weight:700;">STOUT ${pa.toFixed(pa < 10 ? 1 : 0)}% · ROMMER ${pb.toFixed(pb < 10 ? 1 : 0)}%</span>
-                    </div>
-                    <div style="display:flex; height:10px; border-radius:999px; overflow:hidden; background:rgba(127,127,127,.18);">
-                        <div style="width:${pa}%; background:${cA};"></div>
-                        <div style="width:${pb}%; background:${cB};"></div>
-                    </div>
-                </div>`;
+            // Группы прайса в реальных счетах против поискового спроса на них.
+            //
+            // Раньше здесь стояло сравнение долей STOUT и ROMMER, и оно ничего
+            // не измеряло: доля бралась из переключателя бренда, а он доступен
+            // только Профи — то есть показывал умолчание, а не выбор. Состав
+            // счёта от умолчания не зависит: труба, коллектор или бойлер туда
+            // попадают потому, что их выбрали под объект.
+            const posReady = this.ensureDashboardPositions();
+            const usage = posReady ? this.dashboardGroupUsage() : null;
+            // Спрос по группе — всегда по России: cat_monthly регионального
+            // разреза не имеет, а состав счетов мы и так считаем по всем
+            // регионам (у счёта регион свой, не авторский).
+            const catM = (brands && brands.cat_monthly) || {};
+            const demandPct = (id) => {
+                const s = full(catM[id] || []);
+                if (s.length <= back) return null;
+                const a = s[s.length - 1], b = s[s.length - 1 - back];
+                return (b && b[1]) ? Math.round((a[1] - b[1]) / b[1] * 100) : null;
             };
+            const pp = (v) => v === null ? `<span style="color:var(--text-sec);">—</span>`
+                : `<span style="color:${v > 1 ? '#10B981' : (v < -1 ? '#EF4444' : 'var(--text-sec)')}; font-weight:700;">${v > 0 ? '+' : ''}${v} п.п.</span>`;
+
+            let usageHtml;
+            if (!posReady) {
+                usageHtml = `<div style="font-size:12.5px; color:var(--text-sec); padding:10px 0;">Разбираем состав счетов…</div>`;
+            } else if (usage && usage.error) {
+                usageHtml = `<div style="font-size:12.5px; color:#EF4444; padding:10px 0;">Счета не прочитались: ${esc(usage.error)}</div>`;
+            } else if (!usage || !usage.rows.length) {
+                usageHtml = `<div style="font-size:12.5px; color:var(--text-sec); padding:10px 0;">За последние полгода счетов с позициями нет.</div>`;
+            } else {
+                usageHtml = usage.rows.slice(0, 12).map(r => {
+                    const nameFull = (cats[r.id] && cats[r.id].price_group) || r.id;
+                    const dp = demandPct(r.id);
+                    return `<div style="display:flex; align-items:center; gap:9px; margin-bottom:8px;">
+                        <div style="flex:1 1 40%; min-width:0; font-size:12.5px; color:var(--text-main);
+                                    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(nameFull)}">${esc(nameFull)}</div>
+                        <div style="flex:1 1 22%; min-width:52px; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
+                            <div style="width:${Math.max(2, Math.round(r.share))}%; height:8px; border-radius:999px; background:var(--primary);"></div>
+                        </div>
+                        <div style="width:38px; text-align:right; font-size:12.5px; font-weight:700; color:var(--text-main);">${Math.round(r.share)}%</div>
+                        <div style="width:62px; text-align:right; font-size:11.5px;">${pp(r.delta)}</div>
+                        <div style="width:56px; text-align:right; font-size:11.5px;" title="спрос по России, ${backLabel}">${trend(dp)}</div>
+                    </div>`;
+                }).join('')
+                + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.6;">
+                        ${num(usage.nRecent)} счетов за полгода, ${num(usage.nPrev)} за предыдущие${usage.capped ? ' (обрезано по потолку строк)' : ''}.
+                        Столбцы: доля счетов с группой · сдвиг к прошлому полугодию · спрос ${esc(backLabel)}.
+                        ${usage.unknownShare > 0 ? `Вне карты групп ${usage.unknownShare}% строк — своё и распознанное оборудование.` : ''}
+                   </div>`;
+            }
 
             h += `<div style="display:grid; ${gHalf} gap:14px; margin-bottom:14px;">
                 ${card(head('Средний чек и площадь', 'по месяцам: чек, средняя площадь объекта, число смет; точкой помечен текущий, ещё не законченный месяц')
                     + `<div style="margin-top:12px;">${chekHtml}</div>`)}
-                ${card(head('Наши марки: сметы против поиска', 'слева доля в наших сметах, ниже — доля в поисковых запросах с маркой')
-                    + `<div style="margin-top:12px;">
-                        ${pairBar('В наших сметах', own.brands.stout, own.brands.rommer, own.brands.total || 1, '#2563EB', '#EF4444')}
-                        ${pairBar('В поиске по стране', searchOwn.stout, searchOwn.rommer, searchOwn.all || 1, '#93C5FD', '#FCA5A5')}
-                        <div style="font-size:11.5px; color:var(--text-sec);">
-                            Смет всего ${num(own.brands.total)}. Расхождение долей — это и есть работа дистрибьютора: в поиске марку спрашивают одни, а в сметах выбирают другие.
-                        </div>
-                       </div>`)}
+                ${card(head('Группы прайса: счета против спроса', 'как часто группа попадает в счёт — и что в это время делает спрос на неё · по всем регионам, фильтр сверху сюда не бьёт')
+                    + `<div style="margin-top:12px;">${usageHtml}</div>`)}
             </div>`;
 
             if (own.errors && own.errors.length) {
@@ -13517,7 +13538,7 @@ const app = {
             const res = { estimates: [], users: [], projects: [], recognition: null, errors: [] };
             try {
                 res.estimates = await page('estimates',
-                    'id, user_id, created_at, total_sum, eq_sum, works_sum, area:calc_data->>area, brand:calc_data->>brandMode',
+                    'id, user_id, created_at, total_sum, eq_sum, works_sum, area:calc_data->>area',
                     'created_at');
             } catch (e) { res.errors.push('сметы: ' + (e.message || e)); }
             try {
@@ -13551,6 +13572,232 @@ const app = {
             if (this._adminTab === 'dashboard') this.renderAdminMain();
         })();
         return false;
+    },
+
+    /**
+     * Связь «массив каталога → группа прайса из wordstat_categories.json».
+     *
+     * Нужна, чтобы сопоставить состав реальных счетов с поисковым спросом:
+     * в счёте лежат артикулы, а спрос считается по группам прайса. Ключ здесь
+     * — имя массива в catalog.js, значение — id категории у парсера Wordstat.
+     *
+     * Чего тут намеренно нет: полипропилен (ppr_*) — по нему статистику не
+     * ведём, своих позиций в группе нет; мелкая обвязка вроде подпитки и
+     * компенсаторов гидроудара — в прайсе она размазана по разным группам, и
+     * приписать её одной значило бы соврать. Непокрытые артикулы не теряются:
+     * их доля показана в карточке отдельной строкой, и по ней видно, когда
+     * карту пора дополнять.
+     */
+    PRICE_GROUP_BY_CATALOG_KEY: {
+        // Котёл + водонагреватель
+        boilers_gas: 'kotly_gaz', boilers_baxi: 'kotly_gaz',
+        boilers_plus: 'kotly_el', boilers_status: 'kotly_el', boilers_polis: 'kotly_el',
+        tanks_optibase: 'boylery_kn', tanks_standard: 'boylery_kn', tanks_stainless: 'boylery_kn',
+        chimneys: 'dymohody',
+        // Радиаторное отопление
+        rads: 'radiatory',
+        convectors_scq: 'konvektory', convectors_scn: 'konvektory',
+        conv_valves: 'konvektory', conv_parts: 'konvektory',
+        heads: 'termogolovki',
+        h_valves: 'radiatornaya_armatura',
+        rad_kits: 'aksessuary_rad', rad_tube_set: 'aksessuary_rad', rad_shoe_set: 'aksessuary_rad',
+        protective_sleeves: 'aksessuary_rad', protective_sleeves_black: 'aksessuary_rad',
+        label_kits: 'aksessuary_rad',
+        // Водяной тёплый пол
+        manifolds: 'kollektor_tp', manifolds_full_kit: 'kollektor_tp',
+        manifolds_shutoff: 'kollektor_tp', manifolds_shutoff_auto: 'kollektor_tp',
+        manifolds_rad: 'kollektor_tp',
+        cabinets_shrn: 'shkaf_kollekt', cabinets_shrv: 'shkaf_kollekt',
+        cabinets_shrn180: 'shkaf_kollekt', cabinets_shrn_eco: 'shkaf_kollekt',
+        mixing_units: 'uzel_podmesa', ufh_node_parts: 'uzel_podmesa',
+        mats: 'maty_tp', ufh_mat: 'maty_tp',
+        xps_kit: 'komplekt_tp', damper_tape: 'komplekt_tp', parts: 'komplekt_tp',
+        thermostats_stout: 'termostaty_tp', ufh_mech: 'termostaty_tp', ufh_electro: 'termostaty_tp',
+        actuators_rommer: 'termostaty_tp', ufh_cables: 'termostaty_tp',
+        // Обвязка котельной
+        groups_dn20: 'nasosnye_gruppy', groups_dn25: 'nasosnye_gruppy',
+        groups_dn32: 'nasosnye_gruppy', heat_exchanger_groups: 'nasosnye_gruppy',
+        hydro_separators: 'gidrostrelki', hydro_dn20: 'gidrostrelki', hydro_dn25: 'gidrostrelki',
+        collectors_dn20: 'gidrostrelki', collectors_dn25: 'gidrostrelki',
+        collectors_dn32: 'gidrostrelki', hydro_modular_dn20: 'gidrostrelki',
+        pumps_dn20: 'nasosy_cirk', pumps_dn25: 'nasosy_cirk', pumps_dn25_80: 'nasosy_cirk',
+        rommer_pumps: 'nasosy_cirk', pumps_mix: 'nasosy_cirk', dhw_pump: 'nasosy_cirk',
+        exp_dhw: 'rasshir_baki', exp_dhw_alts: 'rasshir_baki',
+        exp_heating: 'rasshir_baki', exp_heating_alts: 'rasshir_baki',
+        filter_mag_alts: 'separatory', air_separators: 'separatory', air_vent_12_alts: 'separatory',
+        valves: 'klapany_3h',
+        hydro_thermometer_alts: 'kip',
+        stabs: 'stabilizatory',
+        // Горячее водоснабжение
+        dhw_mix_valves: 'smesit_klapany',
+        // Управление отоплением
+        boiler_automation: 'avtomatika', air_sensors: 'avtomatika', radio_modules: 'avtomatika',
+        auto_cables: 'avtomatika', leak_sensors: 'avtomatika', leak_valves: 'avtomatika',
+        leak_actuators: 'avtomatika',
+        // Водопровод и канализация
+        pipes: 'truba_pex', rad_pipes_grey: 'truba_pex', water_pipes: 'truba_pex',
+        insulated_pipes: 'truba_pex', snow_pipes_red: 'truba_pex',
+        metal_plastic_pipes: 'truba_mp', stable_pipes: 'truba_mp', water_pipes_mp: 'truba_mp',
+        insulated_pipes_mp_red: 'truba_mp', insulated_pipes_mp_blue: 'truba_mp',
+        axial_fittings_pex: 'fitingi_ax', snow_axial_20: 'fitingi_ax', water_fittings: 'fitingi_ax',
+        water_fittings_press_mp: 'fitingi_press',
+        water_manifolds_cold: 'kollektor_vodo', water_manifolds_hot: 'kollektor_vodo',
+        water_manifolds_recirc: 'kollektor_vodo', water_manifolds_stout: 'kollektor_vodo',
+        water_manifolds_rommer: 'kollektor_vodo', manifolds_chrome_blocks: 'kollektor_vodo',
+        outdoor_faucet: 'krany_nezamerz', outdoor_faucets: 'krany_nezamerz',
+        sewer_silent: 'kanalizaciya',
+        installations: 'installyacii', flush_panels: 'installyacii',
+        // Монтажные элементы
+        ball_valves: 'krany_sharovye',
+        mounting_system: 'homuty',
+        // Скважина / колодец
+        well_pumps: 'nasosy_skv', well_auto: 'nasosnaya_avtomatika', well_relays: 'nasosnaya_avtomatika',
+        well_parts: 'fitingi_pnd',
+        // Ввод ХВС и водоочистка
+        filter_big_blue: 'vodoochistka', water_input_node: 'vodoochistka',
+        // Дополнительные материалы
+        insulation: 'teploizolyaciya', insulation_pro: 'teploizolyaciya',
+        water_insulation: 'teploizolyaciya',
+        coolants: 'teplonositel'
+    },
+
+    // Нержавейка разложена в каталоге на 33 массива по типам фитингов
+    // (ss_tee, ss_elbow90, …), а в прайсе это одна группа. Перечислять их
+    // поимённо незачем — довольно префикса.
+    PRICE_GROUP_BY_CATALOG_PREFIX: [['ss_', 'nerzh_press']],
+
+    /**
+     * Артикул → группа прайса. Строится один раз из catalog.js, включая
+     * ROMMER-аналоги: в счёте лежит тот артикул, который выбрал монтажник,
+     * а группа у STOUT и ROMMER одна и та же.
+     */
+    priceGroupIndex: function () {
+        if (this._priceGroupIdx) return this._priceGroupIdx;
+        const idx = {};
+        if (typeof catalog === 'undefined' || !catalog) return idx;
+        const map = this.PRICE_GROUP_BY_CATALOG_KEY;
+        const pref = this.PRICE_GROUP_BY_CATALOG_PREFIX;
+        Object.keys(catalog).forEach(key => {
+            const arr = catalog[key];
+            if (!Array.isArray(arr)) return;
+            let cat = map[key];
+            if (!cat) {
+                const hit = pref.find(p => key.indexOf(p[0]) === 0);
+                cat = hit ? hit[1] : null;
+            }
+            if (!cat) return;
+            arr.forEach(it => {
+                if (!it) return;
+                if (it.id) idx[String(it.id)] = cat;
+                if (it.rommer && it.rommer.id) idx[String(it.rommer.id)] = cat;
+            });
+        });
+        this._priceGroupIdx = idx;
+        return idx;
+    },
+
+    /**
+     * Состав реальных счетов: сами позиции лежат в shared_invoices.items, а не
+     * в estimates — в смете сохранено только состояние калькулятора, список
+     * оборудования из него каждый раз пересчитывается render() и в базу не
+     * попадает.
+     *
+     * Тянем один раз за сеанс, только оборудование (works не нужны) и только
+     * за 400 дней — этого хватает на два полугодия сравнения. Каждая строка
+     * весит килобайты, поэтому здесь и потолок строк, и узкая выборка: egress
+     * Supabase уже был узким местом.
+     */
+    DASH_POS_PAGE: 300,
+    DASH_POS_CAP: 3000,
+    DASH_POS_DAYS: 400,
+
+    ensureDashboardPositions: function () {
+        if (this._dashPos) return true;
+        if (this._loadingDashPos) return false;
+        if (typeof supabaseClient === 'undefined' || !supabaseClient) return false;
+        this._loadingDashPos = true;
+        (async () => {
+            const out = { rows: [], error: null, capped: false };
+            try {
+                const since = new Date(Date.now() - this.DASH_POS_DAYS * 86400000).toISOString();
+                for (let from = 0; from < this.DASH_POS_CAP; from += this.DASH_POS_PAGE) {
+                    const { data, error } = await supabaseClient.from('shared_invoices')
+                        .select('created_at, eq:items->equipment')
+                        .gte('created_at', since)
+                        .order('created_at', { ascending: false })
+                        .range(from, from + this.DASH_POS_PAGE - 1);
+                    if (error) throw error;
+                    out.rows.push(...(data || []));
+                    if (!data || data.length < this.DASH_POS_PAGE) break;
+                    if (out.rows.length >= this.DASH_POS_CAP) { out.capped = true; break; }
+                }
+            } catch (e) {
+                out.error = (e && e.message) || String(e);
+            }
+            this._dashPos = out;
+            this._dashPosStats = null;
+            this._loadingDashPos = false;
+            if (this._adminTab === 'dashboard') this.renderAdminMain();
+        })();
+        return false;
+    },
+
+    /**
+     * Как часто группа прайса попадает в счёт — за последние полгода и за
+     * предыдущие. Считаем присутствие группы в счёте, а не число строк:
+     * трубу заказывают одной позицией, а фитинги к ней — двадцатью, и по
+     * числу строк фитинги всегда «важнее» трубы.
+     *
+     * Это единственная своя метрика, на которую не влияет умолчание бренда:
+     * переключатель STOUT/ROMMER доступен только Профи, поэтому доля марок в
+     * сметах показывала бы настройку по умолчанию, а не выбор монтажника.
+     */
+    dashboardGroupUsage: function () {
+        if (this._dashPosStats) return this._dashPosStats;
+        const d = this._dashPos;
+        if (!d) return null;
+        const idx = this.priceGroupIndex();
+        const now = Date.now(), DAY = 86400000, HALF = 182;
+        const acc = {};
+        let nRecent = 0, nPrev = 0, itemsAll = 0, itemsUnknown = 0;
+        (d.rows || []).forEach(r => {
+            const t = new Date(r.created_at).getTime();
+            if (isNaN(t)) return;
+            const age = (now - t) / DAY;
+            const win = age <= HALF ? 'recent' : (age <= HALF * 2 ? 'prev' : null);
+            if (!win) return;
+            if (win === 'recent') nRecent++; else nPrev++;
+            const eq = Array.isArray(r.eq) ? r.eq : [];
+            const seen = {};
+            eq.forEach(it => {
+                if (!it) return;
+                itemsAll++;
+                const cat = idx[String(it.originalId || it.id || '')];
+                if (!cat) { itemsUnknown++; return; }
+                seen[cat] = true;
+            });
+            Object.keys(seen).forEach(cat => {
+                acc[cat] = acc[cat] || { recent: 0, prev: 0 };
+                acc[cat][win]++;
+            });
+        });
+        const rows = Object.keys(acc).map(id => {
+            const a = acc[id];
+            const share = nRecent ? a.recent / nRecent * 100 : 0;
+            const prev = nPrev ? a.prev / nPrev * 100 : null;
+            return {
+                id, n: a.recent, share,
+                // Разница в процентных пунктах, а не в процентах от процента:
+                // «было в 80% счетов, стало в 70%» — это минус 10 пунктов, и
+                // читается это честнее, чем «минус 12%».
+                delta: (prev === null || nPrev < 10) ? null : Math.round((share - prev) * 10) / 10
+            };
+        }).sort((x, y) => y.share - x.share);
+        this._dashPosStats = {
+            rows, nRecent, nPrev, capped: !!d.capped, error: d.error,
+            unknownShare: itemsAll ? Math.round(itemsUnknown / itemsAll * 100) : 0
+        };
+        return this._dashPosStats;
     },
 
     /**
@@ -13604,12 +13851,6 @@ const app = {
             area: areaCnt[m] ? Math.round(areaSum[m] / areaCnt[m]) : null
         }));
 
-        // Бренд сметы: поля может не быть у старых записей — там всегда был STOUT
-        let bStout = 0, bRommer = 0;
-        ests.forEach(e => {
-            if (String(e.brand || '').toLowerCase() === 'rommer') bRommer++; else bStout++;
-        });
-
         const now = Date.now(), DAY = 86400000;
         const inWin = (arr, field, fromDays, toDays) => arr.filter(x => {
             const t = time(x[field]);
@@ -13657,7 +13898,6 @@ const app = {
 
         const out = {
             estSeries, monthRows, funnel, demoSoon,
-            brands: { stout: bStout, rommer: bRommer, total: bStout + bRommer },
             users: myUsers.length,
             totalEst: ests.length,
             month: {
