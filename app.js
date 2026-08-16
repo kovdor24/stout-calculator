@@ -20849,6 +20849,7 @@ const app = {
             installedW: Math.round(h.installedW || h.watt),// паспорт подобранных приборов
             flow: h.flow,
             branches: h.branches,
+            hasGroup: !!h.hasGroup,
             flowBranch: h.flowBranch,
             dp: h.dp,
             head: h.head,
@@ -31187,7 +31188,12 @@ const app = {
         const valve = this.radValveKv();
         const valveDp = Math.pow(flowWorst / valve.kv, 2) * 100;
         add('Клапан прибора (' + valve.label + ')', valveDp);
-        add('Насосная группа и обвязка', this.RAD_GROUP_DP);
+        // Насосную группу считаем, только если она в смете есть. На небольшом
+        // одноэтажном доме (до 150 м², до 20 кВт, без других групп на коллекторе)
+        // радиаторы идут от встроенного насоса котла, группы нет вовсе — а её
+        // 12 кПа всё равно прибавлялись к кольцу и завышали требуемый напор.
+        const hasGroup = (parseInt(this._radGroupsCount, 10) || 0) > 0;
+        if (hasGroup) add('Насосная группа и обвязка', this.RAD_GROUP_DP);
         add('Теплообменник котла', this.RAD_BOILER_DP);
 
         const vMax = parts.reduce((a, p) => Math.max(a, p.v || 0), 0);
@@ -31197,9 +31203,14 @@ const app = {
         // завышало требование к магистрали и занижало к подводке.
         const loudParts = parts.filter(p => (p.v || 0) > (p.vLim || this.RAD_V_MAX));
         const head = dp / 9.81;
-        // Какой из насосов тянет посчитанное кольцо на рабочем расходе.
-        const pump = this.RAD_PUMPS.map(pm => ({
-            label: pm.label,
+        // Какой из насосов тянет посчитанное кольцо на рабочем расходе. Без
+        // насосной группы качает встроенный насос котла: его паспортной кривой
+        // у нас нет, поэтому берём младшую из группы (25/60) — у настенных
+        // котлов там насос того же класса. Допущение помечено в подписи, чтобы
+        // на листе не выглядело паспортной величиной.
+        const pumps = hasGroup ? this.RAD_PUMPS : [this.RAD_PUMPS[0]];
+        const pump = pumps.map(pm => ({
+            label: hasGroup ? pm.label : 'встроенный насос котла (принят по кривой ' + pm.label + ')',
             avail: pm.hMax * (1 - Math.pow(flowBranch / pm.qMax, 2))
         }));
         const fit = pump.find(pm => pm.avail >= head) || null;
@@ -31219,6 +31230,7 @@ const app = {
             noisy: loudParts.length > 0,
             loudParts: loudParts,
             scheme: tee ? 'tee' : 'manifold',
+            hasGroup: hasGroup,     // есть ли в смете насосная группа радиаторов
             devices: devices.length,
             watt: totalW,           // расчётная нагрузка приборов, Вт — по ней расход
             installedW: installedW, // паспортная мощность подобранных приборов, Вт
