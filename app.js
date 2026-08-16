@@ -11945,7 +11945,12 @@ const app = {
             const title = active === 'leader' ? 'показаны группы, где марка первая — нажмите ещё раз'
                 : (active === 'weak' ? 'показаны группы, где продаём, но не первые — нажмите ещё раз, чтобы снять'
                     : 'нажмите: сначала где первые, потом где не первые');
-            return `<th style="text-align:center; width:70px; cursor:pointer; ${active ? 'color:var(--primary);' : ''}"
+            // Колонка марки подписана её же фирменным цветом — тем самым,
+            // которым марка идёт на графиках (brandChartColor). Раньше обе
+            // подсвечивались одним var(--primary), и только при включённом
+            // фильтре.
+            const color = this.brandChartColor(brand);
+            return `<th style="text-align:center; width:70px; cursor:pointer; color:${color}; ${active ? 'font-weight:800;' : ''}"
                         title="${title}" onclick="app.cycleAnalyticsOwnFilter('${brand}')">${label}${mark}</th>`;
         };
 
@@ -11957,7 +11962,7 @@ const app = {
                        ${cmpBtn(1, 'прошлому месяцу')}${cmpBtn(3, 'кварталу')}${cmpBtn(12, 'году назад')}`
                     : `<span style="font-size:12px; color:#F97316; margin-left:6px;">История по категориям ещё не собрана — запустите Actions → Wordstat Analytics → brands. Тогда появятся проценты изменения и графики по каждой группе.</span>`}
               </div>
-            ${ownFilter ? `<div style="font-size:12px; color:var(--primary); margin:0 0 6px;">
+            ${ownFilter ? `<div style="font-size:12px; color:${this.brandChartColor(ownFilter.brand)}; margin:0 0 6px;">
                     ${ownFilter.mode === 'leader'
                         ? `Показаны группы, где <b>${ownFilter.brand.toUpperCase()}</b> первый по спросу`
                         : `Показаны группы, где <b>${ownFilter.brand.toUpperCase()}</b> продаётся, но не первый — это и есть список, куда идти отвоёвывать`}
@@ -14011,8 +14016,9 @@ const app = {
                 if (place && place <= 3) ownPos[b].top3++;
             });
         });
-        const ring = (b, label, color) => {
+        const ring = (b, label) => {
             const s = ownPos[b];
+            const color = this.brandChartColor(b);
             const pct = s.present ? Math.round(s.top3 / s.present * 100) : 0;
             const C = 2 * Math.PI * 26;
             return `<div style="display:flex; align-items:center; gap:11px; flex:1 1 150px; min-width:0;">
@@ -14039,8 +14045,8 @@ const app = {
                 : `${idsWithRank.length} групп · в тройке по спросу`)
             + `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;
                         ${sp('own_places') <= 1 ? 'flex-direction:column;' : ''}">
-                    ${ring('stout', 'STOUT', '#2563EB')}
-                    ${ring('rommer', 'ROMMER', '#EF4444')}
+                    ${ring('stout', 'STOUT')}
+                    ${ring('rommer', 'ROMMER')}
                </div>`);
         if (kDemand) B.demand_works = tile('demand_works', 'linear-gradient(135deg,#FBCFE8 0%,#FDBA74 55%,#FCA5A5 100%)',
             'Спрос на монтаж и работы', num(kDemand.now),
@@ -15400,6 +15406,26 @@ const app = {
     },
 
     /**
+     * Цвет наших марок на любой картинке админки — синий STOUT и красный
+     * ROMMER с логотипов. Одно место на все графики: раньше каждый блок красил
+     * своё, и на одной странице STOUT шёл на ломаной фирменным тёмно-синим, а
+     * в кольце «наши места» — ярко-синим. Одна марка двух цветов, глаз их не
+     * связывает.
+     *
+     * На тёмной теме оттенок тот же, просто светлее: фирменный синий на тёмном
+     * фоне почти сливается с фоном.
+     */
+    BRAND_CHART_COLORS: {
+        light: { stout: '#1E3A63', rommer: '#B01E1E' },
+        dark: { stout: '#4E7FBF', rommer: '#E05252' }
+    },
+    brandChartColor: function (name) {
+        const key = String(name == null ? '' : name).toLowerCase().trim();
+        const set = this.BRAND_CHART_COLORS[this.isDarkBackground() ? 'dark' : 'light'];
+        return set[key] || null;
+    },
+
+    /**
      * Ломаная на несколько рядов в чистом SVG, с подсказкой при наведении.
      *
      * Ряды нормируем каждый по своему максимуму: у «газового котла» сотни тысяч
@@ -15430,19 +15456,11 @@ const app = {
         // линии все остальные перекрашивались бы — и глаз терял бы, где кто.
         this._chartHidden = this._chartHidden || {};
         const hidden = this._chartHidden[id] || {};
-        // Свои марки всегда своим цветом, в каком бы порядке ни шли: синий
-        // STOUT и красный ROMMER с логотипов. На тёмной теме фирменный синий
-        // почти сливается с фоном, поэтому там его подсвечиваем — оттенок тот
-        // же, просто светлее.
-        const dark = this.isDarkBackground();
-        const BRAND = {
-            stout: dark ? '#4E7FBF' : '#1E3A63',
-            rommer: dark ? '#E05252' : '#B01E1E'
-        };
+        // Свои марки всегда своим цветом, в каком бы порядке ни шли —
+        // см. brandChartColor.
         let palette = 0;
         const all = series.map((s) => {
-            const key = String(s.name).toLowerCase().trim();
-            const own = BRAND[key];
+            const own = this.brandChartColor(s.name);
             return Object.assign({}, s, {
                 color: own || COLORS[palette++ % COLORS.length],
                 own: !!own,
@@ -15755,7 +15773,11 @@ const app = {
                 </div>
                 <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:12px;">`;
             top.forEach(([brand, count]) => {
-                const mine = brand === 'stout' || brand === 'rommer';
+                // Своя марка — своим цветом, тем же, каким она идёт на графике
+                // ниже. Раньше обе наши шли одинаковым var(--primary), и в
+                // списке STOUT с ROMMER различались только подписью.
+                const own = this.brandChartColor(brand);
+                const mine = !!own;
                 const w = Math.max(2, Math.round(count / max * 100));
                 const share = (count / totalBrand * 100);
                 // Строка марки — выключатель её кривой на графике ниже, как и
@@ -15770,11 +15792,11 @@ const app = {
                     : `title="своя история по месяцам есть только у наших марок"
                        style="display:flex; align-items:center; gap:8px;"`;
                 inner += `<div ${sw}>
-                    <div style="width:140px; flex-shrink:0; font-size:12.5px; ${mine ? 'font-weight:800; color:var(--primary);' : 'color:var(--text-main);'}">${esc(brand)}</div>
+                    <div style="width:140px; flex-shrink:0; font-size:12.5px; ${mine ? `font-weight:800; color:${own};` : 'color:var(--text-main);'}">${esc(brand)}</div>
                     <div style="flex:1; background:rgba(127,127,127,.18); border-radius:4px; overflow:hidden;">
-                        <div style="width:${w}%; height:15px; background:${mine ? 'var(--primary)' : 'rgba(127,127,127,.75)'};"></div>
+                        <div style="width:${w}%; height:15px; background:${mine ? own : 'rgba(127,127,127,.75)'};"></div>
                     </div>
-                    <div style="width:52px; text-align:right; font-size:12.5px; font-weight:700; ${mine ? 'color:var(--primary);' : 'color:var(--text-main);'}">${share.toFixed(1)}%</div>
+                    <div style="width:52px; text-align:right; font-size:12.5px; font-weight:700; ${mine ? `color:${own};` : 'color:var(--text-main);'}">${share.toFixed(1)}%</div>
                     <div style="width:62px; text-align:right; font-size:11.5px; color:var(--text-sec);">${num(count)}</div>
                 </div>`;
             });
