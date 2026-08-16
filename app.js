@@ -13043,7 +13043,9 @@ const app = {
         const mns = (this._dashMonths === undefined || this._dashMonths === null) ? 12 : this._dashMonths;
         const chartSeries = Object.keys(phrases).filter(id => phrases[id].group === curGroup)
             .map(id => ({ name: phrases[id].text || id, points: seriesOf(id).slice(mns > 0 ? -mns : 0) }))
-            .filter(s => s.points.length > 1)
+            // Одну точку раньше отбрасывали — но ползунок теперь доходит до
+            // одного месяца, и на этом делении график оказывался пустым.
+            .filter(s => s.points.length > 0)
             .sort((a, b) => (b.points[b.points.length - 1][1] || 0) - (a.points[a.points.length - 1][1] || 0))
             .slice(0, 6);
         const gBtn = (g, label) => `<button class="admin-btn" style="height:26px; padding:0 9px; font-size:11.5px; ${curGroup === g ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsGroup('${g}')">${label}</button>`;
@@ -13702,6 +13704,15 @@ const app = {
                 `${i ? 'L' : 'M'}${x(i).toFixed(1)},${yOf(p[1], max).toFixed(1)}`
             ).join(' ');
             paths += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.own ? 3 : 2}" stroke-linejoin="round"/>`;
+            // Ряд из одной точки линией не нарисовать: без кружка на коротком
+            // периоде поле выглядело бы пустым, хотя данные есть.
+            if (s.points.length === 1) {
+                // Картинка растянута по ширине непропорционально, круг превратился
+                // бы в овал — поэтому точку рисуем короткой горизонтальной риской.
+                const py = yOf(s.points[0][1], max).toFixed(1), px = x(0);
+                paths += `<line x1="${(px - 14).toFixed(1)}" y1="${py}" x2="${(px + 14).toFixed(1)}" y2="${py}"
+                          stroke="${s.color}" stroke-width="${s.own ? 4 : 3}" stroke-linecap="round"/>`;
+            }
         });
 
         // Легенда — она же переключатели: показываем и выключенные ряды,
