@@ -62,6 +62,9 @@ RATE_PER_SECOND = 8            # запас от официальных 10/с
 RATE_PER_HOUR = 90              # запас от официальных 100/ч
 QUOTA_WAIT = 20 * 60            # сколько ждать, поймав отказ по часовой квоте
 MIN_SUCCESS_RATIO = 0.8         # ниже — файлы не переписываем, это сбой
+# Для каких групп фраз снимаем спрос по ВСЕЙ стране (region_all, «белые пятна»
+# на дашборде). Каждая добавленная группа — примерно по 85 чисел на фразу.
+REGION_ALL_GROUPS = ("demand",)
 SNAPSHOT_MONTHS_KEEP = 6        # region_snapshots — только последние месяцы,
                                  # полная история и так есть в region_monthly
 TOP_MONTHS_KEEP = 2             # «последний снимок и предыдущий», см. план
@@ -592,10 +595,15 @@ def build_subject_labels(client):
     out = {}
     for rid, label, path in flat:
         parts = [p.strip() for p in path.split(" / ") if p.strip()]
-        # Субъект — это узел, лежащий непосредственно в федеральном округе.
-        # Города и районы внутри субъектов лежат глубже и в снимок не идут:
-        # иначе «Сочи» встал бы в один список с «Краснодарским краем».
-        if parts and "федеральн" in parts[-1].lower():
+        # Субъект — узел ровно на втором уровне под «Россией»: Россия / округ /
+        # ЗДЕСЬ. Города и районы лежат глубже и в снимок не идут — иначе «Сочи»
+        # встал бы в один список с «Краснодарским краем».
+        #
+        # Округа у Яндекса названы коротко и без слова «федеральный» («Центр»,
+        # «Северо-Запад», «Урал»), поэтому опознавать их по имени нельзя:
+        # первая версия искала «федеральн» в названии и находила ноль
+        # субъектов — прогон прошёл успешно, а снимок молча остался пустым.
+        if len(parts) == 2 and parts[0] == "Россия":
             out[str(rid)] = label
     log("  субъектов РФ в дереве Wordstat: %d" % len(out))
     return out
@@ -1248,7 +1256,7 @@ def run_monthly(client):
         # значения и области здесь идут как отдельные узлы Wordstat, то есть
         # «Москва и область» лежит одной строкой. Для вопроса «куда расти» это
         # годится: точность до области там не нужна, нужен порядок величины.
-        if subject_labels and p.get("group") in region_all_groups:
+        if subject_labels and p.get("group") in REGION_ALL_GROUPS:
             by_name = {}
             for rid, val in raw.items():
                 name = subject_labels.get(str(rid))
@@ -1323,6 +1331,59 @@ def run_monthly(client):
 # ──────────────────────────────────────────────────────────────────────────
 # Недельный пульс — только по России, только core-фразы
 # ──────────────────────────────────────────────────────────────────────────
+
+def run_region_all(client):
+    """Только снимок спроса по всей стране (region_all), без остального.
+
+    Тот же расчёт делает и ежемесячный прогон, но он стоит 111 запросов и
+    больше часа из-за квоты. Когда нужен именно снимок по стране — например,
+    после правки в его разборе — гонять всё заново незачем: здесь ровно по
+    одному запросу на фразу группы demand.
+    """
+    phrases, _by_id, _core, _top = load_phrases()
+    targets = [p for p in phrases if p.get("group") in REGION_ALL_GROUPS]
+    if not targets:
+        log("В конфиге нет фраз групп %s — снимать нечего" % ", ".join(REGION_ALL_GROUPS))
+        return 1
+
+    subject_labels = build_subject_labels(client)
+    if not subject_labels:
+        log("Субъектов в дереве не нашлось — файл не трогаю")
+        return 1
+
+    region_all = {}
+    for p in targets:
+        resp = client.call("regions", {"phrase": p["text"], "region": "REGION_REGIONS"})
+        if resp is None:
+            continue
+        by_name = {}
+        for r in resp.get("results", []):
+            name = subject_labels.get(str(r.get("region")))
+            count = to_int(r.get("count"))
+            if name and count:
+                by_name[name] = count
+        if by_name:
+            region_all[p["id"]] = by_name
+            log("  %s: %d регионов" % (p["id"], len(by_name)))
+
+    ratio = client.success_ratio
+    log("Запросов: %d, успешно: %d (%.0f%%)" % (client.attempted, client.succeeded, ratio * 100))
+    if not region_all or ratio < MIN_SUCCESS_RATIO:
+        log("Снимок не собрался — файл не переписываю")
+        return 1
+
+    # Дописываем в существующий файл, остальные ключи не трогаем: это добавка
+    # к тому, что собрал ежемесячный прогон, а не его замена.
+    data = load_json_file(OUT_FILE, {})
+    if not data:
+        log("%s пуст — сначала нужен обычный ежемесячный прогон" % OUT_FILE)
+        return 1
+    data["region_all"] = region_all
+    data["region_all_month"] = month_key(datetime.date.today().isoformat())
+    save_json_file(OUT_FILE, data)
+    log("Готово: %s обновлён (снимок по стране)" % OUT_FILE)
+    return 0
+
 
 def run_pulse(client):
     phrases, phrases_by_id, core_ids, _top_ids = load_phrases()
@@ -1405,6 +1466,8 @@ def main():
     g.add_argument("--backfill", action="store_true", help="разовый сбор истории по регионам")
     g.add_argument("--dump-regions", action="store_true",
                    help="диагностика: показать дерево регионов Яндекса (бесплатно)")
+    g.add_argument("--region-all", action="store_true",
+                   help="только снимок спроса по всей стране (белые пятна), 5 запросов")
     g.add_argument("--brands", action="store_true",
                    help="рейтинг марок по категориям из топа запросов (по России)")
     g.add_argument("--brands-regional", action="store_true",
@@ -1421,6 +1484,8 @@ def main():
 
     if args.dump_regions:
         return run_dump_regions(client)
+    if args.region_all:
+        return run_region_all(client)
     if args.brands:
         return run_brands(client, regional=False)
     if args.brands_regional:
