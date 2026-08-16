@@ -11800,6 +11800,7 @@ const app = {
         const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const num = n => Number(n || 0).toLocaleString('ru-RU');
         const isViewer = this.getAdminRole() === 'viewer';
+        const { companies } = this._analytics;
 
         const months = (brands && brands.months) ? Object.keys(brands.months).sort() : [];
         const lastMonth = months[months.length - 1];
@@ -12222,7 +12223,12 @@ const app = {
                 // идентификаторы). Запасной вариант с id оставлен на случай
                 // записи без названия, но подписан понятнее.
                 const dName = d.company_name || d.promo_code || ('без названия, id ' + String(d.id).slice(0, 8));
-                return { id: d.id, name: dName, inn: d.inn || '', users: mine.length,
+                // Отчётность привязываем по ИНН, а не по названию: у крупного
+                // дистрибьютора несколько промокодов (по менеджеру на каждый),
+                // и по названию они бы то склеивались, то нет — из-за кавычек
+                // и «ООО» в одной строке и без них в другой.
+                const co = (d.inn && ((companies && companies.companies) || {})[d.inn]) || null;
+                return { id: d.id, name: dName, inn: d.inn || '', co: co, users: mine.length,
                           cur, base, total, demand,
                           regions: d.regions || [], known: known, picked: picked || null,
                           demandCur: dCur,
@@ -12235,9 +12241,13 @@ const app = {
                     <div style="font-size:12px; color:var(--text-sec); margin-bottom:8px;">
                         Слева — как менялся поисковый спрос в регионе дистрибьютора, справа — сколько смет за тот же период сделали привязанные к нему монтажники. Расхождение и есть ответ на вопрос, доходит ли рост рынка до него.
                     </div>
+                    <div style="font-size:12px; color:var(--text-sec); margin-bottom:8px;">
+                        Выручка — из бухгалтерской отчётности ФНС по ИНН${companies && companies.updated ? `, собрана ${esc(companies.updated)}` : ''}. Она выходит раз в год и с отставанием до полутора лет: масштаб компании показывает, сегодняшний день — нет, для него и есть колонки спроса и смет.
+                    </div>
                     <div style="overflow-x:auto;"><table class="inv-table"><thead><tr>
                         <th>Дистрибьютор</th>
                         <th style="text-align:center; width:120px;">ИНН</th>
+                        <th style="text-align:center; width:130px;">Выручка</th>
                         <th style="text-align:center; width:90px;">Монтажников</th>
                         <th style="text-align:center; width:110px;">Спрос в регионе</th>
                         <th style="text-align:center; width:110px;">Смет за месяц</th>
@@ -12272,6 +12282,7 @@ const app = {
                     h += `<tr>
                         <td><b>${esc(x.name)}</b>${chips}</td>
                         ${innTd}
+                        ${this.buildRevenueCell(x, esc)}
                         <td style="text-align:center;">${x.users}</td>
                         <td style="text-align:center;">${pctCell(x.demand, demandTitle)}</td>
                         <td style="text-align:center;">${x.cur} ${pctCell(x.estPct, `${curM}: ${x.cur} против ${baseM}: ${x.base}`)}</td>
@@ -12326,6 +12337,66 @@ const app = {
      * Возвращает false, если данных ещё нет: заглушку функция в этом случае
      * уже нарисовала сама, вызывающему остаётся только выйти.
      */
+    /**
+     * Ячейка «Выручка» в таблице дистрибьюторов: последний год из
+     * бухгалтерской отчётности ФНС, под ним — рост к предыдущему году.
+     *
+     * Суммы в отчётности идут в тысячах рублей (проверено по уставному
+     * капиталу: в ЕГРЮЛ 100 000 рублей, в форме — 100), поэтому здесь их
+     * домножаем на тысячу и показываем миллиардами и миллионами: у
+     * дистрибьютора выручка девятизначная, и читать её цифра в цифру
+     * невозможно.
+     *
+     * Год подписан всегда. Отчётность выходит с отставанием до полутора лет,
+     * и без года «выручка 26 млрд» читалась бы как сегодняшняя.
+     */
+    buildRevenueCell: function (row, esc) {
+        const co = row.co;
+        if (!co) {
+            const why = row.inn
+                ? 'Данных по этому ИНН нет: либо сборщик ещё не запускался, либо ФНС по компании отчётности не публикует (ИП её не сдаёт)'
+                : 'Сначала заполните ИНН в карточке дистрибьютора';
+            return `<td style="text-align:center; color:var(--text-sec);" title="${esc(why)}">—</td>`;
+        }
+        const money = (k) => {
+            const r = Number(k || 0) * 1000;
+            if (!r) return '—';
+            if (r >= 1e9) return (r / 1e9).toFixed(1).replace('.', ',') + ' млрд ₽';
+            if (r >= 1e6) return (r / 1e6).toFixed(1).replace('.', ',') + ' млн ₽';
+            return Math.round(r / 1e3).toLocaleString('ru-RU') + ' тыс ₽';
+        };
+        const years = Object.keys(co.years || {}).sort();
+        const last = years[years.length - 1];
+        const prev = years[years.length - 2];
+        if (!last) {
+            return `<td style="text-align:center; color:var(--text-sec);" title="${esc(co.note || 'отчётности в ГИР БО нет')}">—</td>`;
+        }
+        const cur = co.years[last] || {};
+        const before = prev ? (co.years[prev] || {}) : {};
+        const pct = (before.revenue && cur.revenue)
+            ? Math.round((cur.revenue - before.revenue) / before.revenue * 100) : null;
+        const pctHtml = pct === null ? ''
+            : `<br><span style="font-size:11px; color:${pct > 4 ? '#10B981' : (pct < -4 ? '#EF4444' : 'var(--text-sec)')};">${pct > 0 ? '+' : ''}${pct}% к ${esc(prev)}</span>`;
+        // Ликвидация или банкротство важнее любой выручки: с такой компанией
+        // условия не обсуждают, и увидеть это надо в той же строке, а не
+        // узнать потом от монтажников.
+        const dead = co.status && co.status !== 'ACTIVE';
+        const title = [
+            co.full_name || co.name || '',
+            cur.profit != null ? `чистая прибыль ${last}: ${money(cur.profit)}` : '',
+            cur.assets != null ? `активы: ${money(cur.assets)}` : '',
+            co.okved ? `ОКВЭД ${co.okved} — ${co.okved_name || ''}` : '',
+            co.registered ? `в реестре с ${String(co.registered).slice(0, 10)}` : '',
+            dead ? `статус: ${co.status}` : ''
+        ].filter(Boolean).join('; ');
+        return `<td style="text-align:center;" title="${esc(title)}">
+            <b style="color:var(--text-main);">${money(cur.revenue)}</b>
+            <span style="font-size:11px; color:var(--text-sec);"> за ${esc(last)}</span>
+            ${dead ? `<br><span style="font-size:11px; color:#EF4444; font-weight:700;">не действует</span>` : ''}
+            ${pctHtml}
+        </td>`;
+    },
+
     /**
      * Решение по слову-кандидату из блока «Возможно, новые марки».
      *
@@ -12412,11 +12483,11 @@ const app = {
                     return {};
                 }
             })();
-            const [brands, wordstat, pulse, gas] = await Promise.all([
-                get('wordstat_brands'), get('wordstat'), get('wordstat_pulse'), get('gas')
+            const [brands, wordstat, pulse, gas, companies] = await Promise.all([
+                get('wordstat_brands'), get('wordstat'), get('wordstat_pulse'), get('gas'), get('companies')
             ]);
             this._analyticsTerms = await terms;
-            this._analytics = { brands, wordstat, pulse, gas };
+            this._analytics = { brands, wordstat, pulse, gas, companies };
             this._loadingAnalytics = false;
             if (this.OWNER_ONLY_TABS.indexOf(this._adminTab) >= 0) this.renderAdminMain();
         })();
@@ -19213,13 +19284,18 @@ const app = {
         };
     },
 
-    // Иконка показывает текущий режим, подсказка — что будет по нажатию
+    // Иконка показывает текущий режим, подсказка — что будет по нажатию.
+    // Кнопок две: в шапке сайта и в шапке админки — панель открыта поверх всего
+    // экрана, и до шапки сайта из неё не дотянуться.
     updateThemeButton: function (mode) {
-        const btn = document.getElementById('btn_theme');
-        if (!btn) return;
         const info = this.themeModeInfo(mode);
-        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${info.svg}</svg>`;
-        btn.title = `Тема: ${info.label.toLowerCase()} — ${info.sub}. Нажмите, чтобы включить: ${info.next}`;
+        const title = `Тема: ${info.label.toLowerCase()} — ${info.sub}. Нажмите, чтобы включить: ${info.next}`;
+        ['btn_theme', 'btn_theme_admin'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${info.svg}</svg>`;
+            btn.title = title;
+        });
     },
 
     cycleThemeMode: function () {
@@ -20769,7 +20845,8 @@ const app = {
             dT: reg.dt,
             scheme: h.scheme === 'tee' ? 'тройниковая' : 'коллекторная (лучевая)',
             devices: h.devices,
-            watt: Math.round(h.watt),
+            watt: Math.round(h.watt),                     // расчётная нагрузка — по ней расход
+            installedW: Math.round(h.installedW || h.watt),// паспорт подобранных приборов
             flow: h.flow,
             branches: h.branches,
             flowBranch: h.flowBranch,
@@ -20783,15 +20860,19 @@ const app = {
             noisy: !!h.noisy,
             loud: (h.loudParts || []).map(x => x.name.replace(/,.*$/, '')),
             worst: h.worst
-                ? { room: h.worst.room || 'самый дальний', watt: Math.round(h.worst.watt || 0) }
+                ? { room: h.worst.room || 'самый дальний', watt: Math.round(h.worstW || 0) }
                 : null,
             flowWorst: h.flowWorst,
             // Запас — во сколько раз насос на рабочем расходе перекрывает
             // требуемый напор: по нему на листе видно, есть ли куда расти.
             pump: p ? { label: p.label, avail: p.avail,
                 reserve: h.head > 0 ? p.avail / h.head : 0 } : null,
+            // R — удельные потери на трение, Па/м: radPipeDrop складывает участок
+            // как R·L·K/1000, отсюда и обратный ход. У арматуры длины нет —
+            // там прочерк.
             parts: (h.parts || []).map(x => ({ name: x.name, dp: x.dp, v: x.v || 0,
-                vLim: x.vLim || null })),
+                vLim: x.vLim || null,
+                r: x.len > 0 ? x.dp * 1000 / (x.len * this.RAD_LOCAL_K) : null })),
             balance: bal ? bal.rows.map(r => ({
                 room: r.room, watt: r.watt, flow: r.flow, dp: r.dp,
                 kv: r.kv, turns: r.turns, full: !!r.full
@@ -30970,12 +31051,15 @@ const app = {
         const len = 2 * avgRun * 1.1;
 
         const kvValve = this.radValveKv().kv;
+        // Расход тот же, что в radHydraulics, — по расчётной нагрузке прибора:
+        // преднастройку выставляют на режим, в котором система работает.
+        const wOf = d => ((d.load != null ? d.load : d.watt) || 0);
         const rows = devices.map(d => {
-            const flow = this.radFlowOf(d.watt);
+            const flow = this.radFlowOf(wOf(d));
             // Кольцо прибора: луч в обе стороны и его клапан на расчётной настройке.
             const dp = this.radPipeDrop(flow, 16, len).dp
                 + Math.pow(flow / kvValve, 2) * 100;
-            return { room: d.room, watt: Math.round(d.watt), flow: flow, dp: dp };
+            return { room: d.room, watt: Math.round(wOf(d)), flow: flow, dp: dp };
         });
 
         const tbl = this.RAD_BAL_SVL[this.state.connectionType === 'angled' ? 'angled' : 'straight'];
@@ -31024,8 +31108,16 @@ const app = {
         const devices = this.radDevices || [];
         if (!devices.length) return null;
 
-        const totalW = devices.reduce((a, d) => a + (d.watt || 0), 0);
+        // Расход считается по РАСЧЁТНОЙ нагрузке прибора, а не по его паспортной
+        // мощности. Секции округляются вверх до типоразмера, и установленная
+        // мощность выходит на треть больше теплопотерь; но термоголовка держит
+        // комнату по теплопотерям и лишние ватты через прибор не гонит.
+        // Считать кольцо по установленной мощности значило бы закладывать
+        // диаметры и насос под режим, которого в доме не бывает.
+        const wOf = d => ((d.load != null ? d.load : d.watt) || 0);
+        const totalW = devices.reduce((a, d) => a + wOf(d), 0);
         if (!(totalW > 0)) return null;
+        const installedW = devices.reduce((a, d) => a + (d.watt || 0), 0);
 
         const flowTotal = this.radFlowOf(totalW);
         // Система поделена на ветки (по группе на каждую) — через подводку ветки
@@ -31037,8 +31129,8 @@ const app = {
 
         // Самый мощный прибор задаёт худший луч: у него наибольший расход, а
         // длина луча одна на всех — реальной трассировки у нас нет.
-        const worst = devices.reduce((a, d) => (d.watt > (a.watt || 0) ? d : a), devices[0]);
-        const flowWorst = this.radFlowOf(worst.watt);
+        const worst = devices.reduce((a, d) => (wOf(d) > wOf(a) ? d : a), devices[0]);
+        const flowWorst = this.radFlowOf(wOf(worst));
 
         const parts = [];
         let dp = 0;
@@ -31128,7 +31220,9 @@ const app = {
             loudParts: loudParts,
             scheme: tee ? 'tee' : 'manifold',
             devices: devices.length,
-            watt: totalW
+            watt: totalW,           // расчётная нагрузка приборов, Вт — по ней расход
+            installedW: installedW, // паспортная мощность подобранных приборов, Вт
+            worstW: wOf(worst)
         };
     },
 
@@ -31148,7 +31242,7 @@ const app = {
             (h.branches > 1 ? ` (по системе ${h.flow.toFixed(2)} м³/ч на ${h.branches} ветки)` : '') +
             `; самое тяжёлое кольцо теряет ${h.dp.toFixed(0)} кПа → требуемый напор ` +
             `<b>${h.head.toFixed(1)} м</b> при расчётном приборе «${h.worst.room || 'самый дальний'}» ` +
-            `(${Math.round(h.worst.watt)} Вт).`;
+            `(${Math.round(h.worstW)} Вт расчётной нагрузки).`;
         if (h.pump) {
             s += `<br>Насос ${h.pump.label} на этом расходе даёт ` +
                 `<b style="color:#10B981;">${h.pump.avail.toFixed(1)} м</b> — запас ` +
@@ -39799,6 +39893,7 @@ const app = {
         // Чистим здесь: без сброса гидравлика при смене этажности или схемы
         // считала бы кольцо по стояку из прошлого расчёта.
         this._radTrunk = null;
+        this._radTee = null;
         if (rQ > 0) {
             const _grpsForCap = dn25 ? catalog.groups_dn25 : catalog.groups_dn20;
             const _directGrp = _grpsForCap && _grpsForCap[0];
@@ -40899,7 +40994,11 @@ const app = {
                             totalConvCount++;
                             if (this.state.convectorType === 'scq') roomSCQCount++;
                             roomFactPowerSum += factPower; // учитываем мощность конвектора по помещению
-                            app.radDevices.push({ room: r.name, watt: factPower, kind: 'conv' });
+                            // load — расчётная нагрузка места, watt — что реально подобрано.
+                            // Гидравлика считает по нагрузке: приборы округляются вверх
+                            // до типоразмера, но термоголовка держит комнату по
+                            // теплопотерям, и лишние ватты в расход не идут.
+                            app.radDevices.push({ room: r.name, watt: factPower, load: wLoad, kind: 'conv' });
                         } else if (roomHasRad) {
                             let isRommer = (this.state.brandMode === 'rommer');
                             let reqPwr = Math.round(wLoad);
@@ -41184,7 +41283,8 @@ const app = {
                             addToBill(activeItem, 1, wDesc, "3. Приборы отопления");
                             totalRadCount++;
                             roomFactPowerSum += factPower; // учитываем мощность радиатора по помещению
-                            app.radDevices.push({ room: r.name, watt: factPower, kind: 'rad' });
+                            // load — потребность места, watt — подобранный прибор (см. конвектор выше)
+                            app.radDevices.push({ room: r.name, watt: factPower, load: reqPwr, kind: 'rad' });
                         }
                     });
                     // === Проверка покрытия теплопотерь помещения ===
@@ -41202,7 +41302,7 @@ const app = {
                 // Быстрый режим: помещений нет, приборы одинаковые — гидравлике
                 // хватает их числа и доли нагрузки на каждый.
                 for (let _i = 0; _i < win; _i++)
-                    app.radDevices.push({ room: 'Прибор ' + (_i + 1), watt: loadPerWindow, kind: 'rad' });
+                    app.radDevices.push({ room: 'Прибор ' + (_i + 1), watt: loadPerWindow, load: loadPerWindow, kind: 'rad' });
 
                 let totalSecSpace = Math.ceil(heatLoadTotal / p50_space);
                 let maxSecs = isRommer ? 12 : 14;
@@ -41498,6 +41598,33 @@ const app = {
                 let diamNear = pickDiam(heatLoadKw);      // ближний участок (у котла/стояка) — несёт всю мощность дома
                 let diamFar = pickDiam(heatLoadKw / 2);    // дальний участок — примерно половина мощности
                 let metersNear = Math.ceil(trunkMeters / 2);
+                // Второй критерий — запас насоса. По скорости магистраль может
+                // пройти и тонкой (см. RAD_PUMP_RESERVE), но тогда она съедает
+                // напор, и насосу на рабочей точке ничего не остаётся.
+                // Поднимаем ступенями оба участка, пока кольцо не даст запас;
+                // кольцо считает radHydraulics по this._radTee — тем же кодом,
+                // что печатает лист.
+                let teeByHead = false;
+                {
+                    const _order = [16, 20, 25, 32];
+                    const _fam = _isMpPipe ? 'mp' : (_isStablePipe ? 'stable' : null);
+                    const _put = () => {
+                        this._radTee = { near: diamNear, far: diamFar, fam: _fam,
+                            lenNear: Math.ceil(trunkMeters / 2),
+                            lenFar: trunkMeters - Math.ceil(trunkMeters / 2) };
+                    };
+                    _put();
+                    while (!this.radRingHasReserve()) {
+                        // Укрупняем тот участок, что теряет больше: обычно ближний,
+                        // через него идёт весь расход системы.
+                        const iN = _order.indexOf(diamNear), iF = _order.indexOf(diamFar);
+                        if (iN < _order.length - 1 && (iN <= iF || iF >= _order.length - 1)) diamNear = _order[iN + 1];
+                        else if (iF < _order.length - 1) diamFar = _order[iF + 1];
+                        else break;                       // Ø32 — крупнее в каталоге нет
+                        teeByHead = true;
+                        _put();
+                    }
+                }
                 let metersFar = trunkMeters - metersNear;
 
                 let isMp = _isMpPipe;
@@ -41736,12 +41863,12 @@ const app = {
                     // оставался на типоразмер тоньше, чем нужно.
                     //
                     // Второе слагаемое — тот самый расход, каким кольцо считает
-                    // гидравлика: по фактическим мощностям подобранных приборов.
-                    // Они округлены вверх до типоразмера секций и в сумме больше
-                    // расчётной нагрузки, поэтому смета выбирала трубу по одному
-                    // числу, а лист проекта мерил скорость по другому — и ругался
-                    // на трубу, которую сам же и положил. Берём худшее из двух.
-                    const _riserDevW = (this.radDevices || []).reduce((a, x) => a + (x.watt || 0), 0);
+                    // гидравлика: по расчётной нагрузке подобранных приборов.
+                    // Основание одно на смету и на лист, иначе смета выбирала бы
+                    // трубу по одному числу, а лист мерил скорость по другому и
+                    // ругался на трубу, которую сам же и положил.
+                    const _riserDevW = (this.radDevices || [])
+                        .reduce((a, x) => a + ((x.load != null ? x.load : x.watt) || 0), 0);
                     const _riserFlow = Math.max(_riserKw / (1.163 * this.radDT()),
                         this.radFlowOf(_riserDevW) * 0.5);
                     const _riserSpeed = (bore) => bore > 0
@@ -41849,7 +41976,8 @@ const app = {
                     };
                     // Перепад — выбранного режима, а не зашитые 20 K, и худшее из
                     // двух оснований расхода: см. стояк выше.
-                    const _trDevW = (this.radDevices || []).reduce((a, x) => a + (x.watt || 0), 0);
+                    const _trDevW = (this.radDevices || [])
+                        .reduce((a, x) => a + ((x.load != null ? x.load : x.watt) || 0), 0);
                     const _trFlow = Math.max(_trKw / (1.163 * this.radDT()),
                         this.radFlowOf(_trDevW));
                     const _trSpeed = (bore) => bore > 0

@@ -3332,12 +3332,42 @@ body.profile-incomplete-lock #page_scale_wrapper {
 
 #admin_modal_overlay .auth-modal-title {
     text-align: left !important;
-    padding-right: 40px;
+    padding-right: 80px;
 }
 
 #admin_modal_overlay .auth-modal-close {
     top: 20px !important;
     right: 24px !important;
+}
+
+/* Переключатель темы — слева от крестика: панель занимает весь экран, и раньше
+   ради смены темы приходилось её закрывать. */
+#admin_modal_overlay .admin-theme-btn {
+    position: absolute;
+    top: 18px;
+    right: 54px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-light);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-sec);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#admin_modal_overlay .admin-theme-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+#admin_modal_overlay .admin-theme-btn:hover {
+    color: var(--text-main);
+    border-color: var(--primary);
 }
 
 /* Админка на планшете/телефоне: панель фильтров (поиск/цена/регион/группировка/обновить)
@@ -3556,7 +3586,7 @@ body.modal-over-banner .hc-cookie-banner {
         font-size: 16px !important;
         line-height: 1.35;
         margin-bottom: 12px !important;
-        padding-right: 36px;
+        padding-right: 72px;
     }
     #admin_modal_overlay .auth-modal-title span {
         display: inline-block;
@@ -3566,6 +3596,12 @@ body.modal-over-banner .hc-cookie-banner {
     #admin_modal_overlay .auth-modal-close {
         top: 10px !important;
         right: 12px !important;
+    }
+    #admin_modal_overlay .admin-theme-btn {
+        top: 8px !important;
+        right: 38px !important;
+        width: 28px;
+        height: 28px;
     }
     #admin_content {
         padding-right: 0 !important;

@@ -149,7 +149,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.30">
+    <link rel="stylesheet" href="style.css?v=3.31">
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.78" defer></script>
@@ -172,7 +172,7 @@
          плагина Capacitor нет, все методы тихо выходят. Подключать до app.js —
          app.init() дёргает appPush.init(). -->
     <script src="push.js?v=1.0" defer></script>
-    <script src="app.js?v=5.90" defer></script>
+    <script src="app.js?v=5.91" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
          векторный композитор, что рисует лист схемы в проекте, поэтому нужен
          и движок листов (рамка/штамп из него не берутся, только текст). -->
@@ -2300,6 +2300,16 @@
     <div id="admin_modal_overlay" class="auth-modal-overlay" style="display: none; z-index: 100000;">
         <div class="auth-modal-content" style="display: flex; flex-direction: column;">
             <span class="auth-modal-close" onclick="app.closeAdminModal()">&times;</span>
+            <!-- Тот же переключатель темы, что и в шапке сайта: панель открыта поверх
+                 всего экрана, и до шапки из неё не дотянуться. Иконку и подсказку
+                 проставляет app.updateThemeButton обеим кнопкам сразу. -->
+            <button class="admin-theme-btn" id="btn_theme_admin" onclick="app.cycleThemeMode()"
+                title="Переключить тему">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
             <h3 class="auth-modal-title">Панель управления</h3>
             <div id="admin_content" style="overflow: auto; flex-grow: 1; padding-right: 10px; min-width: 0;">
                 <div style="text-align: center; color: var(--text-sec); padding: 50px;">Загрузка данных из базы...

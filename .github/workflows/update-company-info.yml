@@ -1,0 +1,56 @@
+name: Company Info (ГИР БО)
+
+# Официальные данные по ИНН дистрибьюторов: выручка, прибыль, активы, статус.
+# Источник — ГИР БО (bo.nalog.gov.ru), открытый ресурс ФНС, ключа не требует.
+# Список ИНН скрипт берёт из своей базы (RPC analytics_distributor_inns) —
+# заводит их владелец в карточке дистрибьютора.
+#
+# Раз в месяц, 9-го числа. Чаще бессмысленно: годовая отчётность обновляется
+# один раз, до конца марта следующего года. Ежемесячный прогон нужен не ради
+# выручки, а ради статуса компании и новых дистрибьюторов, которых завели
+# после прошлого запуска.
+on:
+  schedule:
+    - cron: '0 6 9 * *'
+  workflow_dispatch:
+    inputs:
+      inn:
+        description: 'Один ИНН (для проверки). Пусто — все дистрибьюторы из базы'
+        required: false
+        default: ''
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      # Зависимостей нет: скрипт ходит в ГИР БО и Supabase через urllib.
+      - name: Collect company info
+        run: |
+          if [ -n "${{ github.event.inputs.inn }}" ]; then
+            python AutoCompanyInfo.py --inn "${{ github.event.inputs.inn }}"
+          else
+            python AutoCompanyInfo.py
+          fi
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add analytics/companies.json
+          if git diff --staged --quiet; then
+            echo "Данные по компаниям не изменились."
+          else
+            git commit -m "Автообновление данных по ИНН дистрибьюторов (ГИР БО)"
+            for i in {1..5}; do
+              git pull --rebase origin main && git push origin main && exit 0
+              git rebase --abort || true
+              sleep 5
+            done
+            exit 1
+          fi
