@@ -13304,16 +13304,26 @@ const app = {
     // sec — вкладка галереи, в которой блок ищут глазами; к тому, в каком
     // разделе он реально стоит, отношения не имеет.
     DASH_WIDGETS: {
+        digest:        { t: 'Что изменилось',                     icon: '📰', sec: 'us' },
         own_places:    { t: 'Наши места по группам',              icon: '🎯', sec: 'market' },
         demand_works:  { t: 'Спрос на монтаж и работы',           icon: '🔧', sec: 'market' },
         demand_calc:   { t: 'Спрос на подбор и проект',           icon: '📐', sec: 'market' },
         demand_equip:  { t: 'Спрос на оборудование',              icon: '📦', sec: 'market' },
         sources:       { t: 'Источники',                          icon: '🛰️', sec: 'market' },
         own_ests:      { t: 'Смет за 30 дней',                    icon: '🧾', sec: 'us' },
+        own_active:    { t: 'Активных монтажников',               icon: '⚡', sec: 'us' },
         own_users:     { t: 'Новых монтажников',                  icon: '👷', sec: 'us' },
         own_projects:  { t: 'Проектов выпущено',                  icon: '📁', sec: 'us' },
         own_rec:       { t: 'Распознано смет',                    icon: '🔍', sec: 'us' },
+        own_invoices:  { t: 'Счетов выставлено',                  icon: '💳', sec: 'us' },
         est_vs_demand: { t: 'Наши сметы против спроса',           icon: '📈', sec: 'us' },
+        activity:      { t: 'Активность монтажников',             icon: '🌡️', sec: 'us' },
+        quiet_list:    { t: 'Кого пора вернуть',                  icon: '📞', sec: 'us' },
+        // Ключ funnel уже занят воронкой новичков, поэтому воронка счетов
+        // живёт под своим именем — иначе одна затирала бы другую.
+        inv_funnel:    { t: 'Смета → счёт',                       icon: '🧭', sec: 'us' },
+        inv_speed:     { t: 'Сколько это занимает',               icon: '⏱️', sec: 'us' },
+        inv_waiting:   { t: 'Ждут счёта',                         icon: '🔔', sec: 'us' },
         funnel:        { t: 'Воронка новичков',                   icon: '🚀', sec: 'us' },
         demo_soon:     { t: 'Демо на исходе',                     icon: '⏳', sec: 'us' },
         chek:          { t: 'Средний чек и площадь',              icon: '💰', sec: 'us' },
@@ -13341,17 +13351,28 @@ const app = {
         return {
             style: { density: 'cozy', card: 'shadow', tiles: 'color', cols: 4 },
             sections: [
+                // Сводка идёт первой и на всю ширину: дашборд открывают раз в
+                // неделю, и первый вопрос — «что нового», а не «покажи всё».
+                // Раздел отдельный, чтобы её можно было убрать целиком, не
+                // разбирая «Обзор рынка».
+                { id: 'digest', title: 'Коротко', items: [
+                    { id: 'digest', span: 4 }
+                ] },
                 { id: 'market', title: 'Обзор рынка', items: [
                     { id: 'own_places', span: 2 }, { id: 'demand_works', span: 1 },
                     { id: 'demand_calc', span: 1 }, { id: 'sources', span: 4 }
                 ] },
                 { id: 'us', title: 'Мы', items: [
-                    { id: 'own_ests', span: 1 }, { id: 'own_users', span: 1 },
+                    { id: 'own_ests', span: 1 }, { id: 'own_active', span: 1 },
+                    { id: 'own_users', span: 1 }, { id: 'own_invoices', span: 1 },
+                    { id: 'activity', span: 2 }, { id: 'quiet_list', span: 2 },
+                    { id: 'inv_funnel', span: 2 }, { id: 'inv_speed', span: 2 },
+                    { id: 'inv_waiting', span: 4 },
                     { id: 'own_projects', span: 1 }, { id: 'own_rec', span: 1 },
+                    { id: 'demo_soon', span: 2 },
                     { id: 'est_vs_demand', span: 4 },
-                    { id: 'funnel', span: 2 }, { id: 'demo_soon', span: 2 },
-                    { id: 'chek', span: 2 }, { id: 'group_usage', span: 2 },
-                    { id: 'dist_money', span: 4 }
+                    { id: 'funnel', span: 2 }, { id: 'chek', span: 2 },
+                    { id: 'group_usage', span: 2 }, { id: 'dist_money', span: 2 }
                 ] },
                 { id: 'prices', title: 'Цены', items: [
                     { id: 'prices', span: 4 }
@@ -14267,12 +14288,25 @@ const app = {
         // снаружи», а самый нужный вопрос — доходит ли это до нас.
         const ownReady = this.ensureDashboardOwn();
         const own = ownReady ? this.dashboardOwnStats(region) : null;
+        // Воронка счетов живёт на событиях смет плюс суммах и регионах из
+        // своих: без ownReady считать её не из чего.
+        const evReady = this.ensureDashboardEvents();
+        const inv = (evReady && ownReady) ? this.dashboardInvoiceFunnel(region) : null;
+        // Короткие рубли для своих сумм. У дистрибьюторов ниже свой формат:
+        // там миллиарды выручки из отчётности, здесь — сотни тысяч по счёту.
+        const moneyShort = (rub) => {
+            if (!rub) return '0 ₽';
+            if (rub >= 1e6) return (rub / 1e6).toFixed(1).replace('.', ',') + ' млн ₽';
+            if (rub >= 1e3) return Math.round(rub / 1e3).toLocaleString('ru-RU') + ' тыс ₽';
+            return Math.round(rub).toLocaleString('ru-RU') + ' ₽';
+        };
 
         if (!own) {
             // Свои данные грузятся отдельным запросом и приходят позже. Пока их
             // нет, блоки не исчезают, а честно показывают, что идёт счёт: иначе
             // полдашборда мигало бы пустотой при каждом открытии.
-            ['own_ests', 'own_users', 'own_projects', 'own_rec', 'est_vs_demand',
+            ['own_ests', 'own_active', 'own_users', 'own_projects', 'own_rec', 'own_invoices',
+             'est_vs_demand', 'activity', 'quiet_list', 'inv_funnel', 'inv_speed', 'inv_waiting',
              'funnel', 'demo_soon', 'chek', 'group_usage', 'dist_money'].forEach(id => {
                 B[id] = card(head(this.DASH_WIDGETS[id].t, 'сметы, монтажники, проекты')
                     + `<div style="padding:16px 0; color:var(--text-sec); font-size:12.5px;">Считаем свои сметы и монтажников…</div>`);
@@ -14291,6 +14325,14 @@ const app = {
                  <div style="font-size:11px; color:var(--text-sec); margin-top:4px;">${sub}</div>`);
 
             B.own_ests = miniTile('own_ests', 'Смет за 30 дней', num(m.ests), dPct(m.ests, m.estsPrev), `всего ${num(own.totalEst)} · к предыдущим 30 дням`);
+            B.own_active = miniTile('own_active', 'Активных монтажников', num(m.active), dPct(m.active, m.activePrev),
+                `сделали смету за 30 дней · из ${num(own.users)}${region ? ' в регионе' : ''}`);
+            B.own_invoices = miniTile('own_invoices', 'Счетов выставлено',
+                (inv && !inv.error) ? moneyShort(inv.money.sum) : '—',
+                (inv && !inv.error) ? dPct(inv.money.sum, inv.moneyPrev.sum) : null,
+                inv ? (inv.error ? 'события смет не прочитались'
+                    : `${num(inv.money.n)} ${this.plural(inv.money.n, 'счёт', 'счёта', 'счетов')} за 30 дней · сумма по смете`)
+                    : 'считаем события смет…');
             B.own_users = miniTile('own_users', 'Новых монтажников', num(m.users), dPct(m.users, m.usersPrev), `всего ${num(own.users)}${region ? ' в регионе' : ''}`);
             B.own_projects = miniTile('own_projects', 'Проектов выпущено', num(m.projects), dPct(m.projects, m.projectsPrev), 'комплекты листов за 30 дней');
             B.own_rec = miniTile('own_rec', 'Распознано смет', m.rec === null ? '—' : num(m.rec), m.rec === null ? null : dPct(m.rec, m.recPrev),
@@ -14382,6 +14424,145 @@ const app = {
                 + `<div style="margin-top:12px;">${funnelHtml}</div>`);
             B.demo_soon = card(head('Демо на исходе', 'заканчивается в ближайшие 14 дней')
                 + `<div style="margin-top:8px;">${demoHtml}</div>`);
+
+            // ── Активность монтажников ──────────────────────────────────────
+            // Не «сколько нас», а «сколько из нас живы». Общее число только
+            // растёт — из базы никто не удаляется, и по нему нельзя отличить
+            // рост от кладбища аккаунтов.
+            const act = own.activity;
+            const segs = [
+                ['active', 'активные', '#10B981', '≤ 30 дней'],
+                ['pause', 'пауза', '#60A5FA', '30–60'],
+                ['quiet', 'затихли', '#F97316', '60–180'],
+                ['gone', 'ушли', '#EF4444', '> 180'],
+                ['never', 'не начинали', 'rgba(127,127,127,.35)', 'ни одной сметы']
+            ];
+            const actTotal = segs.reduce((s, x) => s + act[x[0]], 0) || 1;
+            const actBar = `<div style="display:flex; height:14px; border-radius:999px; overflow:hidden; background:rgba(127,127,127,.18); margin-top:12px;">`
+                + segs.filter(x => act[x[0]] > 0).map(x =>
+                    `<div title="${x[1]}: ${num(act[x[0]])}" style="width:${(act[x[0]] / actTotal * 100).toFixed(2)}%; background:${x[2]};"></div>`).join('')
+                + `</div>`;
+            // На узком блоке подписи встают столбиком: в одну строку они там
+            // всё равно не помещаются и рвутся посреди слова.
+            const actNarrow = sp('activity') <= 1;
+            const actLegend = `<div style="display:flex; flex-wrap:wrap; gap:8px ${actNarrow ? 10 : 16}px; margin-top:10px;
+                        ${actNarrow ? 'flex-direction:column;' : ''}">`
+                + segs.map(x => `<div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-main);">
+                        <span style="width:9px; height:9px; border-radius:50%; background:${x[2]}; flex:0 0 auto;"></span>
+                        <b>${num(act[x[0]])}</b> ${x[1]} <small style="color:var(--text-sec);">${x[3]}</small>
+                    </div>`).join('')
+                + `</div>`;
+            B.activity = card(head('Активность монтажников', `${num(own.users)} человек${region ? ' в регионе' : ''} · по дате последней сметы`)
+                + actBar + actLegend
+                + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.55;">
+                    Затихли за последний месяц: <b style="color:var(--text-main);">${num(act.newlyQuiet)}</b>,
+                    новых за тот же месяц: <b style="color:var(--text-main);">${num(m.users)}</b>.
+                    Приток и отток читать парой: рост числа монтажников при пустеющей зелёной доле — это не рост.
+                   </div>`);
+
+            const quietHtml = own.quietList.length ? own.quietList.slice(0, rows('quiet_list', 4, 8, 12)).map(x => `
+                <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+                    <div style="min-width:0; flex:1;">
+                        <b style="font-size:12.5px; color:var(--text-main);">${esc(x.name)}</b>
+                        <br><small style="color:var(--text-sec);">${num(x.ests)} ${this.plural(x.ests, 'смета', 'сметы', 'смет')} · молчит ${x.days} дн.${x.region && !region ? ' · ' + esc(x.region) : ''}</small>
+                    </div>
+                    <button class="admin-btn" style="height:22px; padding:0 8px; font-size:11px; flex:0 0 auto;"
+                            onclick="app.adminMessageUser('${esc(String(x.id))}', '${q(x.name)}')">написать</button>
+                </div>`).join('')
+                + (own.quietList.length > rows('quiet_list', 4, 8, 12)
+                    ? `<div style="font-size:11.5px; color:var(--text-sec); padding-top:6px;">и ещё ${num(own.quietList.length - rows('quiet_list', 4, 8, 12))}</div>` : '')
+                : `<div style="font-size:12.5px; color:var(--text-sec); padding:8px 0;">Затихших за последние полгода нет.</div>`;
+            B.quiet_list = card(head('Кого пора вернуть', 'затихли 60–180 дней назад · сначала те, у кого смет больше')
+                + `<div style="margin-top:8px;">${quietHtml}</div>`);
+
+            // ── Воронка «смета → счёт» ──────────────────────────────────────
+            // Единственное место, где видно, чем кончаются сметы. Канбан
+            // показывает карточки по колонкам, но не отвечает на вопросы
+            // «сколько теряется на каждой ступени» и «сколько это ждёт».
+            const invStub = (id, text, color) => card(head(this.DASH_WIDGETS[id].t, 'конверсия, сроки, суммы')
+                + `<div style="padding:16px 0; color:${color || 'var(--text-sec)'}; font-size:12.5px;">${text}</div>`);
+            if (!inv) {
+                ['inv_funnel', 'inv_speed', 'inv_waiting'].forEach(id => { B[id] = invStub(id, 'Читаем события смет…'); });
+            } else if (inv.error) {
+                ['inv_funnel', 'inv_speed', 'inv_waiting'].forEach(id => {
+                    B[id] = invStub(id, 'События не прочитались: ' + esc(inv.error), '#EF4444');
+                });
+            } else if (!inv.totalN) {
+                // Пустая воронка из пяти нулей выглядит как поломка. Пишем
+                // словами, что событий просто нет.
+                ['inv_funnel', 'inv_speed', 'inv_waiting'].forEach(id => {
+                    B[id] = invStub(id, `Событий смет за последние ${this.DASH_EV_DAYS} дней нет${region ? ` — по крайней мере у монтажников региона «${esc(region)}»` : ''}.`);
+                });
+            } else {
+                const if0 = inv.funnel[0].n || 1;
+                const ifNarrow = sp('inv_funnel') <= 1;
+                const invFunnelHtml = inv.funnel.map((f, i) => {
+                    const prevN = i ? inv.funnel[i - 1].n : 0;
+                    // Первая ступень — «старт», у остальных доля от предыдущей;
+                    // когда считать не из чего — прочерк, иначе вся воронка
+                    // подписывалась бы словом «старт».
+                    const step = !i ? 'старт' : (prevN ? Math.round(f.n / prevN * 100) + '%' : '—');
+                    const drop = i && prevN ? prevN - f.n : 0;
+                    return `<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;"
+                                 ${drop ? `title="потеряно на этой ступени: ${drop}"` : ''}>
+                        <div style="flex:1 1 42%; min-width:0; font-size:12.5px; color:var(--text-main);">${f.label}</div>
+                        ${ifNarrow ? '' : `<div style="flex:1 1 30%; height:8px; background:rgba(127,127,127,.18); border-radius:999px; overflow:hidden;">
+                            <div style="width:${Math.max(2, Math.round(f.n / if0 * 100))}%; height:8px; border-radius:999px;
+                                        background:${i === 0 ? 'var(--primary)' : (f.n ? '#10B981' : '#EF4444')};"></div>
+                        </div>`}
+                        <div style="width:38px; text-align:right; font-size:12.5px; font-weight:700; color:var(--text-main);">${num(f.n)}</div>
+                        <div style="width:52px; text-align:right; font-size:11.5px; color:var(--text-sec);" title="доля от предыдущей ступени">${step}</div>
+                    </div>`;
+                }).join('');
+                const lostHtml = inv.lost.length
+                    ? `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px;">Из них ${inv.lost.map(x => `${x.label} — <b style="color:var(--text-main);">${num(x.n)}</b>`).join(', ')}.</div>`
+                    : '';
+                B.inv_funnel = card(head('Смета → счёт', `когорта за 90 дней: ${num(inv.cohortN)} ${this.plural(inv.cohortN, 'смета', 'сметы', 'смет')} · ступень засчитана, если было её событие или любое следующее`)
+                    + `<div style="margin-top:12px;">${invFunnelHtml}</div>${lostHtml}`);
+
+                const dayWord = (d) => {
+                    if (d === null) return '—';
+                    if (d < 1) return Math.max(1, Math.round(d * 24)) + ' ч';
+                    return d.toFixed(d < 10 ? 1 : 0).replace('.', ',') + ' дн.';
+                };
+                const speedHtml = inv.speeds.map(s => `
+                    <div style="display:flex; align-items:baseline; gap:10px; padding:6px 0; border-bottom:1px solid var(--border);">
+                        <div style="flex:1; min-width:0; font-size:12.5px; color:var(--text-main);">${s.label}</div>
+                        <b style="font-size:13px; color:var(--text-main); white-space:nowrap;">${dayWord(s.v.days)}</b>
+                        <small style="color:var(--text-sec); width:58px; text-align:right;">${s.v.n ? num(s.v.n) + ' шт.' : 'нет пар'}</small>
+                    </div>`).join('');
+                B.inv_speed = card(head('Сколько это занимает', `медиана по переходам за полгода · за 30 дней выставлено ${num(inv.money.n)} ${this.plural(inv.money.n, 'счёт', 'счёта', 'счетов')} на ${moneyShort(inv.money.sum)}`)
+                    + `<div style="margin-top:10px;">${speedHtml}</div>`
+                    + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.55;">
+                        Медиана, а не среднее: одна смета, которую согласовывали полгода, среднее ломает.
+                        Сумма счёта — это сумма сметы${inv.money.n && inv.money.known < inv.money.n
+                            ? `; известна у ${num(inv.money.known)} из ${num(inv.money.n)}, остальные сметы удалены` : ''}.
+                        Оплату система не знает: воронка кончается выставлением.
+                       </div>`);
+
+                const waitHtml = inv.waiting.length ? inv.waiting.slice(0, rows('inv_waiting', 4, 8, 12)).map(x => `
+                    <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+                        <div style="min-width:0; flex:1;">
+                            <b style="font-size:12.5px; color:var(--text-main);">${esc(x.name)}</b>
+                            <br><small style="color:var(--text-sec);">${esc(x.project || 'без названия')}${x.region && !region ? ' · ' + esc(x.region) : ''}</small>
+                        </div>
+                        <div style="flex:0 0 auto; text-align:right;">
+                            <b style="font-size:12.5px; color:${x.days >= 7 ? '#EF4444' : '#F97316'};">${x.days} дн.</b>
+                            <br><small style="color:var(--text-sec);">${x.sum ? moneyShort(x.sum) : '—'}</small>
+                        </div>
+                    </div>`).join('')
+                    + (inv.waiting.length > rows('inv_waiting', 4, 8, 12)
+                        ? `<div style="font-size:11.5px; color:var(--text-sec); padding-top:6px;">и ещё ${num(inv.waiting.length - rows('inv_waiting', 4, 8, 12))}</div>` : '')
+                    : `<div style="font-size:12.5px; color:var(--text-sec); padding:8px 0;">${inv.waitingOld
+                            ? 'За последний месяц счёт не ждёт никто.'
+                            : 'Непоставленных счетов нет — всё, что запрашивали, выставлено.'}</div>`;
+                B.inv_waiting = card(head('Ждут счёта', `запросили больше ${this.DASH_INVOICE_WAIT_DAYS} дней назад и не выставили · сначала те, кто ждёт дольше`)
+                    + `<div style="margin-top:8px;">${waitHtml}</div>`
+                    + (inv.waitingOld ? `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px;">
+                            Ещё ${num(inv.waitingOld)} — старше месяца; в список не берём: это уже не «дожать», а несостоявшаяся сделка.
+                       </div>` : '')
+                    + (inv.capped ? `<div style="font-size:11.5px; color:#F97316; margin-top:8px;">История событий обрезана по потолку строк — числа неполные.</div>` : ''));
+            }
 
             // 5 и 6: чек с площадью по месяцам и свои марки в сметах против поиска
             const chekMax = Math.max(1, ...own.monthRows.map(x => x.avg));
@@ -15148,6 +15329,116 @@ const app = {
                     </div>`).join('') + `</div>`);
         }
 
+        // ── Сводка «Что изменилось» ─────────────────────────────────────────
+        // Считается последней, потому что берёт готовые числа всех блоков выше:
+        // спрос, свои сметы, воронку счетов, индекс цен. Своих вычислений тут
+        // нет — только правила, что показывать и каким цветом.
+        //
+        // Порядок строк: сначала протухшие источники (если парсер упал, всё
+        // остальное устарело), потом свои числа, потом рынок.
+        const digest = [];   // { tone: 'up' | 'down' | 'warn' | 'flat', html }
+        // ±4 % — тот же порог «не изменилось», что у стрелок trend().
+        const toneOf = (p, goodUp) => (p === null || p === undefined || Math.abs(p) <= 4) ? 'flat'
+            : ((p > 0) === (goodUp !== false) ? 'up' : 'down');
+        const pctWord = (p) => (p === null || p === undefined) ? '' : ' ' + trend(p);
+        const ageDays = (iso) => { const t = new Date(iso).getTime(); return isNaN(t) ? null : Math.floor((Date.now() - t) / 86400000); };
+
+        // Пороги с запасом к расписанию: Wordstat и марки ходят раз в месяц,
+        // пульс — раз в неделю, догазификация — 15-го числа.
+        [['Wordstat', wordstat, 40], ['Марки в запросах', brands, 45], ['Недельный пульс', pulse, 14], ['Догазификация', gas, 45]]
+            .forEach(([name, srcData, limit]) => {
+                if (!srcData || !srcData.updated) return;
+                const a = ageDays(srcData.updated);
+                if (a !== null && a > limit) digest.push({ tone: 'warn', html: `${name} не обновлялся <b>${a} дн.</b> — проверить Actions` });
+            });
+
+        if (!own) {
+            digest.push({ tone: 'flat', html: 'Свои сметы и монтажники ещё считаются…' });
+        } else {
+            const dm = own.month, da = own.activity;
+            const dPctD = (a, b) => b ? Math.round((a - b) / b * 100) : null;
+            const estP = dPctD(dm.ests, dm.estsPrev), actP = dPctD(dm.active, dm.activePrev);
+            digest.push({ tone: toneOf(estP), html: `Смет за 30 дней: <b>${num(dm.ests)}</b>${pctWord(estP)} к предыдущим 30` });
+            digest.push({ tone: da.newlyQuiet > dm.users ? 'down' : toneOf(actP),
+                html: `Монтажники: активных <b>${num(dm.active)}</b>${pctWord(actP)}, новых <b>${num(dm.users)}</b>`
+                    + (da.newlyQuiet ? `, затихли за месяц <b style="color:#EF4444;">${num(da.newlyQuiet)}</b>` : '') });
+            if (own.demoSoon.length) digest.push({ tone: 'warn', html: `Демо кончается у <b>${own.demoSoon.length}</b> в ближайшие 14 дней — блок «Демо на исходе»` });
+            if (inv && !inv.error) {
+                const f0 = inv.funnel[0].n, fLast = inv.funnel[inv.funnel.length - 1].n;
+                const mP = dPctD(inv.money.sum, inv.moneyPrev.sum);
+                if (f0) {
+                    const conv = Math.round(fLast / f0 * 100);
+                    digest.push({ tone: conv >= 20 ? 'up' : (conv < 5 ? 'down' : 'flat'),
+                        html: `Смета доходит до счёта в <b>${conv}%</b> случаев`
+                            + ` <small style="color:var(--text-sec);">${num(fLast)} из ${num(f0)} за 90 дней</small>` });
+                }
+                if (inv.money.n) digest.push({ tone: toneOf(mP),
+                    html: `Выставлено <b>${num(inv.money.n)}</b> ${this.plural(inv.money.n, 'счёт', 'счёта', 'счетов')} за 30 дней на <b>${moneyShort(inv.money.sum)}</b>${pctWord(mP)}` });
+                if (inv.waiting.length) digest.push({ tone: 'warn',
+                    html: `Счёт запрошен и не выставлен: <b>${num(inv.waiting.length)}</b>`
+                        + `, дольше всех ждёт <b>${inv.waiting[0].days} дн.</b> — блок «Ждут счёта»` });
+            }
+            if (dm.projects || dm.projectsPrev) {
+                const pP = dPctD(dm.projects, dm.projectsPrev);
+                digest.push({ tone: toneOf(pP), html: `Проектов выпущено: <b>${num(dm.projects)}</b>${pctWord(pP)}` });
+            }
+        }
+
+        const kDem = kpi('demand');
+        if (kDem) digest.push({ tone: toneOf(kDem.pct), html: `Спрос на монтаж, ${esc(kDem.month)}: <b>${num(kDem.now)}</b>${pctWord(kDem.pct)} ${esc(backLabel)}` });
+
+        // Движение мест: вошли в тройку или выпали к прошлому месяцу. Кольца
+        // «Наши места» показывают только «сейчас», а решение принимают по
+        // сдвигу. Только по России: региональный срез марок собирается раз в
+        // квартал. Пока в истории один месяц — строки просто нет.
+        const prevM = bMonths[bMonths.length - 2];
+        const rankPrevAll = prevM ? (((brands && brands.months) || {})[prevM] || null) : null;
+        if (rankPrevAll) {
+            const few = (arr) => esc(arr.slice(0, 3).join(', ')) + (arr.length > 3 ? ` и ещё ${arr.length - 3}` : '');
+            ['stout', 'rommer'].forEach(b => {
+                const inT = [], outT = [];
+                Object.keys(cats).forEach(id => {
+                    const pNow = (((rankAll[id] || {}).own || {})[b] || {}).place;
+                    const pOld = (((rankPrevAll[id] || {}).own || {})[b] || {}).place;
+                    const nowTop = !!(pNow && pNow <= 3), oldTop = !!(pOld && pOld <= 3);
+                    if (nowTop && !oldTop) inT.push(cats[id].price_group || id);
+                    if (!nowTop && oldTop) outT.push(cats[id].price_group || id);
+                });
+                if (!inT.length && !outT.length) return;
+                digest.push({ tone: outT.length > inT.length ? 'down' : 'up',
+                    html: `${b === 'stout' ? 'STOUT' : 'ROMMER'}, к ${esc(prevM)}: `
+                        + [inT.length ? `в тройку вошли ${inT.length} — ${few(inT)}` : '',
+                           outT.length ? `выпали ${outT.length} — ${few(outT)}` : ''].filter(Boolean).join('; ')
+                        + ' <small style="color:var(--text-sec);">по России</small>' });
+            });
+        }
+
+        if (lastPrice && lastPrice.index !== null && lastPrice.index !== undefined && Math.abs(lastPrice.index) >= 0.5) {
+            const gr = Object.keys(lastPrice.groups || {})
+                .map(g => ({ name: g, pct: Number(lastPrice.groups[g].pct) || 0 }))
+                .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct));
+            const top = gr[0];
+            const fmt = (v) => (v > 0 ? '+' : '') + Number(v).toFixed(1) + '%';
+            // Рост цен красим красным, как в карточке цен: для сметы это
+            // подорожание, а не рост.
+            digest.push({ tone: lastPrice.index > 0 ? 'down' : 'up',
+                html: `Цены прайса: <b>${fmt(lastPrice.index)}</b> за месяц`
+                    + (top ? `, сильнее всего — ${esc(top.name)} (${fmt(top.pct)})` : '') });
+        }
+
+        const dot = { up: '#10B981', down: '#EF4444', warn: '#F97316', flat: 'var(--text-sec)' };
+        // На всю ширину строки идут в две колонки: их до десятка, и столбиком
+        // они занимают экран, ради которого сводку и делали.
+        const digCols = mobile ? 1 : rows('digest', 1, 1, 2);
+        B.digest = card(head('Что изменилось', `${region ? esc(region) : 'вся Россия'} · свои числа за 30 дней к предыдущим 30, спрос ${esc(backLabel)}`)
+            + `<div style="margin-top:10px; columns:${digCols}; column-gap:26px;">`
+            + digest.map(d => `<div style="display:flex; align-items:baseline; gap:9px; font-size:13px; color:var(--text-main);
+                        line-height:1.45; padding:3px 0; break-inside:avoid;">
+                    <span style="flex:0 0 8px; width:8px; height:8px; border-radius:50%; background:${dot[d.tone]}; position:relative; top:-1px;"></span>
+                    <span style="min-width:0;">${d.html}</span>
+                </div>`).join('')
+            + `</div>`);
+
         return B;
     },
 
@@ -15192,8 +15483,14 @@ const app = {
 
             const res = { estimates: [], users: [], projects: [], recognition: null, errors: [] };
             try {
+                // Идентификатор сметы нужен воронке счетов: события
+                // invoice_events связаны с ней по calc_id. Отдельной колонки
+                // calc_id у estimates НЕТ — он лежит внутри calc_data, а в
+                // колонке share_id хранится его копия (saveToCloud пишет туда
+                // state.calc_id). Берём оба: у старых записей заполнено не
+                // всегда одно и то же.
                 res.estimates = await page('estimates',
-                    'id, user_id, created_at, total_sum, eq_sum, works_sum, area:calc_data->>area',
+                    'id, user_id, share_id, calc_id:calc_data->>calc_id, created_at, total_sum, eq_sum, works_sum, area:calc_data->>area',
                     'created_at');
             } catch (e) { res.errors.push('сметы: ' + (e.message || e)); }
             try {
@@ -15227,6 +15524,198 @@ const app = {
             if (this._adminTab === 'dashboard') this.renderAdminMain();
         })();
         return false;
+    },
+
+    /**
+     * События жизненного цикла смет для воронки счетов.
+     *
+     * Узкими столбцами и страницами: meta не нужна, а весит она больше всей
+     * остальной строки. Читается один раз за сеанс и только на дашборде —
+     * egress Supabase уже был узким местом.
+     */
+    DASH_EV_PAGE: 1000,
+    DASH_EV_CAP: 20000,
+    DASH_EV_DAYS: 400,
+
+    ensureDashboardEvents: function () {
+        if (this._dashEv) return true;
+        if (this._loadingDashEv) return false;
+        if (typeof supabaseClient === 'undefined' || !supabaseClient) return false;
+        this._loadingDashEv = true;
+        (async () => {
+            const out = { rows: [], error: null, capped: false };
+            try {
+                const since = new Date(Date.now() - this.DASH_EV_DAYS * 86400000).toISOString();
+                const res = await this.fetchAllRows('invoice_events',
+                    'calc_id, event, created_at, user_email, user_name, project_name',
+                    {
+                        order: 'created_at', cap: this.DASH_EV_CAP, page: this.DASH_EV_PAGE,
+                        build: (qy) => qy.gte('created_at', since)
+                    });
+                out.rows = res.rows;
+                out.capped = res.capped;
+            } catch (e) {
+                out.error = (e && e.message) || String(e);
+            }
+            this._dashEv = out;
+            this._dashFunnel = null;
+            this._loadingDashEv = false;
+            if (this._adminTab === 'dashboard') this.renderAdminMain();
+        })();
+        return false;
+    },
+
+    /**
+     * Порядок стадий сметы — в том виде, в каком она живёт на самом деле, а не
+     * в каком нарисованы колонки канбана. Колонок там три (расчёты, на
+     * согласовании, в оплату), и внутри «на согласовании» лежат и отправка, и
+     * одобрение — для воронки это разные ступени, между ними теряется больше
+     * всего.
+     *
+     * Печать приравнена к отправке: смету распечатали — значит показали
+     * заказчику, дальше разговор идёт так же, как после письма.
+     */
+    INVOICE_FLOW: [
+        { key: 'draft', label: 'расчёт сохранён', events: ['calculated', 'saved'] },
+        { key: 'sent', label: 'отправлена клиенту', events: ['sent', 'printed'] },
+        { key: 'confirmed', label: 'клиент одобрил', events: ['confirmed'] },
+        { key: 'requested', label: 'запрошен счёт', events: ['invoice_requested'] },
+        { key: 'issued', label: 'счёт выставлен', events: ['invoice_issued'] }
+    ],
+
+    DASH_FUNNEL_COHORT_DAYS: 90,
+    DASH_FUNNEL_SPEED_DAYS: 180,
+    DASH_INVOICE_WAIT_DAYS: 2,
+    DASH_INVOICE_WAIT_WINDOW: 30,
+
+    /**
+     * Воронка «смета → счёт»: конверсия по ступеням, сроки между ними, сумма
+     * выставленных счетов и список тех, у кого счёт запросили и не выставили.
+     *
+     * Три решения, без которых числа врут:
+     *
+     * 1. Ступень считается достигнутой, если есть её событие ИЛИ любое более
+     *    позднее. События пишутся по факту нажатия, и стадии проскакивают:
+     *    счёт выставлен, а «одобрено» никто не нажимал. Без этого воронка
+     *    показывала бы на середине провал, которого нет.
+     * 2. Когорта — сметы, у которых ПЕРВОЕ событие за последние 90 дней. Смета
+     *    живёт неделями, и смешивать свежие с прошлогодними нельзя: у старых
+     *    все ступени уже пройдены, у новых ещё нет.
+     * 3. Сроки — медиана, а не среднее. Одна смета, которую согласовывали
+     *    полгода, сдвигает среднее так, что оно перестаёт описывать типичный
+     *    случай.
+     */
+    dashboardInvoiceFunnel: function (region) {
+        const ev = this._dashEv, own = this._dashOwn;
+        if (!ev || !own) return null;
+        const key = region || '*';
+        this._dashFunnel = this._dashFunnel || {};
+        if (this._dashFunnel[key]) return this._dashFunnel[key];
+
+        const DAY = 86400000, now = Date.now();
+        // Регион у сметы авторский: у самой сметы региона нет, у события — тем
+        // более. Связь одна — через почту монтажника.
+        const regionOfEmail = {}, sumOfCalc = {};
+        (own.users || []).forEach(u => { if (u.email) regionOfEmail[String(u.email).toLowerCase()] = u.region || ''; });
+        (own.estimates || []).forEach(e => {
+            const cid = e.calc_id || e.share_id;
+            if (!cid) return;
+            sumOfCalc[String(cid)] = Number(e.total_sum)
+                || ((Number(e.eq_sum) || 0) + (Number(e.works_sum) || 0)) || 0;
+        });
+
+        const cards = {};
+        (ev.rows || []).forEach(r => {
+            if (!r || !r.calc_id || !r.event) return;
+            const t = new Date(r.created_at).getTime();
+            if (isNaN(t)) return;
+            const id = String(r.calc_id);
+            const c = cards[id] || (cards[id] = { first: {}, email: '', name: '', project: '', firstAt: t });
+            // Берём ПЕРВОЕ событие каждого вида: «отправлено» могут нажать
+            // трижды, и по последнему разу срок согласования вышел бы
+            // отрицательным.
+            if (!c.first[r.event] || t < c.first[r.event]) c.first[r.event] = t;
+            if (t < c.firstAt) c.firstAt = t;
+            if (r.user_email) c.email = String(r.user_email).toLowerCase();
+            if (r.user_name) c.name = r.user_name;
+            if (r.project_name) c.project = r.project_name;
+        });
+
+        let list = Object.keys(cards).map(id => Object.assign({ id: id }, cards[id]));
+        // При выбранном регионе смету без известного автора не берём: сказать,
+        // чья она, нельзя, а показать в чужом регионе — соврать.
+        if (region) list = list.filter(c => c.email && regionOfEmail[c.email] === region);
+
+        const FLOW = this.INVOICE_FLOW;
+        const minOf = (c, events) => {
+            let best = null;
+            events.forEach(e => { const t = c.first[e]; if (t && (best === null || t < best)) best = t; });
+            return best;
+        };
+        const reached = (c, i) => {
+            for (let k = i; k < FLOW.length; k++) if (minOf(c, FLOW[k].events) !== null) return true;
+            return false;
+        };
+
+        const cohort = list.filter(c => c.firstAt >= now - this.DASH_FUNNEL_COHORT_DAYS * DAY);
+        const funnel = FLOW.map((s, i) => ({ label: s.label, n: cohort.filter(c => reached(c, i)).length }));
+        const lost = [
+            { label: 'вернули на доработку', n: cohort.filter(c => c.first.needs_revision).length },
+            { label: 'отклонили', n: cohort.filter(c => c.first.rejected).length },
+            { label: 'отказались от счёта', n: cohort.filter(c => c.first.invoice_reminder_declined).length }
+        ].filter(x => x.n > 0);
+
+        const median = (arr) => {
+            if (!arr.length) return null;
+            const a = arr.slice().sort((x, y) => x - y), m = Math.floor(a.length / 2);
+            return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+        };
+        // Пары считаем по дате ЗАВЕРШЕНИЯ перехода: смета, отправленная год
+        // назад и одобренная вчера, описывает сегодняшнюю скорость.
+        const span = (fromEv, toEv) => {
+            const vals = [];
+            list.forEach(c => {
+                const a = minOf(c, fromEv), b = minOf(c, toEv);
+                if (a && b && b >= a && b >= now - this.DASH_FUNNEL_SPEED_DAYS * DAY) vals.push((b - a) / DAY);
+            });
+            return { days: median(vals), n: vals.length };
+        };
+        const speeds = [
+            { label: 'отправлено → одобрено', v: span(['sent', 'printed'], ['confirmed']) },
+            { label: 'одобрено → запрошен счёт', v: span(['confirmed'], ['invoice_requested']) },
+            { label: 'запрошен счёт → выставлен', v: span(['invoice_requested'], ['invoice_issued']) }
+        ];
+
+        const issuedIn = (fromDays, toDays) => list.filter(c => {
+            const t = c.first.invoice_issued;
+            return t && t >= now - fromDays * DAY && t < now - toDays * DAY;
+        });
+        const moneyOf = (arr) => {
+            let sum = 0, known = 0;
+            arr.forEach(c => { const s = sumOfCalc[c.id]; if (s) { sum += s; known++; } });
+            return { sum: sum, known: known, n: arr.length };
+        };
+        const money = moneyOf(issuedIn(30, 0)), moneyPrev = moneyOf(issuedIn(60, 30));
+
+        // Ждут счёта. Запрос старше месяца — это уже не «дожать», а несбывшаяся
+        // сделка: показываем такие числом, а в список берём свежие.
+        const waitAll = list.filter(c => c.first.invoice_requested && !c.first.invoice_issued && !c.first.rejected
+                && (now - c.first.invoice_requested) > this.DASH_INVOICE_WAIT_DAYS * DAY)
+            .map(c => ({
+                id: c.id, name: c.name || c.email || 'без имени', project: c.project || '',
+                days: Math.floor((now - c.first.invoice_requested) / DAY),
+                sum: sumOfCalc[c.id] || 0, region: regionOfEmail[c.email] || ''
+            }));
+        const waiting = waitAll.filter(x => x.days <= this.DASH_INVOICE_WAIT_WINDOW).sort((a, b) => b.days - a.days);
+        const waitingOld = waitAll.length - waiting.length;
+
+        const out = {
+            funnel, lost, speeds, money, moneyPrev, waiting, waitingOld,
+            cohortN: cohort.length, totalN: list.length,
+            capped: !!ev.capped, error: ev.error || null
+        };
+        this._dashFunnel[key] = out;
+        return out;
     },
 
     /**
@@ -15532,9 +16021,55 @@ const app = {
               days: Math.max(0, Math.round((time(u.demo_ends_at) - now) / DAY)),
               ests: 0
           }));
-        const perUser = {};
-        ests.forEach(e => { perUser[String(e.user_id)] = (perUser[String(e.user_id)] || 0) + 1; });
+        const perUser = {}, lastEst = {};
+        ests.forEach(e => {
+            const k = String(e.user_id);
+            perUser[k] = (perUser[k] || 0) + 1;
+            const t = time(e.created_at);
+            if (t > (lastEst[k] || 0)) lastEst[k] = t;
+        });
         demoSoon.forEach(x => { x.ests = perUser[String(x.id)] || 0; });
+
+        // Активность — по дате последней сметы, а не по last_visited: зайти
+        // на сайт можно случайно, а смета — это работа. Границы: 30 дней —
+        // активен; 30–60 — обычная пауза между объектами; 60–180 — затих;
+        // больше полугода — ушёл. Кто не сделал ни одной сметы — отдельно,
+        // это не отток, а несостоявшийся старт (его считает воронка новичков).
+        const ACT = 30, PAUSE = 60, QUIET = 180;
+        const daysAgo = (t) => Math.floor((now - t) / DAY);
+        const activity = { active: 0, pause: 0, quiet: 0, gone: 0, never: 0 };
+        const quietList = [];
+        myUsers.forEach(u => {
+            const t = lastEst[String(u.id)];
+            if (!t) { activity.never++; return; }
+            const dd = daysAgo(t);
+            if (dd <= ACT) activity.active++;
+            else if (dd <= PAUSE) activity.pause++;
+            else if (dd <= QUIET) {
+                activity.quiet++;
+                quietList.push({
+                    id: u.id, name: u.username || u.email || 'без имени', email: u.email || '',
+                    region: u.region || '', ests: perUser[String(u.id)] || 0, days: dd
+                });
+            } else activity.gone++;
+        });
+        // В список звонков — сначала те, кого терять обиднее: у кого смет
+        // больше. При равенстве — кто затих недавно, его ещё можно вернуть.
+        quietList.sort((a, b) => (b.ests - a.ests) || (a.days - b.days));
+        // Затихли за последний месяц — пересекли границу 60 дней в эти 30 дней.
+        // Это и есть отток за месяц, парный к «новым монтажникам».
+        activity.newlyQuiet = quietList.filter(x => x.days <= PAUSE + 30).length;
+        // Активные в предыдущие 30 дней — для стрелки на плитке. Считаем по
+        // сметам в окне 30–60 дней, а не по «последней смете»: тот, кто считал
+        // и тогда, и сейчас, входит в оба числа, как и должно быть.
+        const myIds = {};
+        myUsers.forEach(u => { myIds[String(u.id)] = 1; });
+        const activePrevSet = {};
+        ests.forEach(e => {
+            const t = time(e.created_at);
+            if (t && t >= now - PAUSE * DAY && t < now - ACT * DAY && myIds[String(e.user_id)]) activePrevSet[String(e.user_id)] = 1;
+        });
+        activity.activePrev = Object.keys(activePrevSet).length;
 
         // Воронка по когорте: берём тех, кто зарегистрировался за последние
         // 90 дней, и смотрим, докуда они дошли. Считать «за месяц» нельзя —
@@ -15553,11 +16088,14 @@ const app = {
 
         const out = {
             estSeries, monthRows, funnel, demoSoon,
+            activity, quietList,
             users: myUsers.length,
             totalEst: ests.length,
             month: {
                 ests: inWin(ests, 'created_at', 30, 0),
                 estsPrev: inWin(ests, 'created_at', 60, 30),
+                active: activity.active,
+                activePrev: activity.activePrev,
                 users: inWin(myUsers, 'created_at', 30, 0),
                 usersPrev: inWin(myUsers, 'created_at', 60, 30),
                 projects: inWin(projRows, 'issued_at', 30, 0),
