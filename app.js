@@ -129,7 +129,7 @@ function compactDesc(desc) {
 }
 
 /**
- * Найдёт ли invoice.html позицию по этому артикулу в catalog.js?
+ * Что найдёт invoice.html по этому артикулу в catalog.js — или null.
  *
  * Повторяет findCatalogItem оттуда: только верхний уровень catalog[key]
  * (массив или одиночный объект) плюс вложенная ROMMER-версия. Всё, что лежит
@@ -140,20 +140,27 @@ function compactDesc(desc) {
  * цену страница берёт из каталога — для таких позиций она получала пусто и
  * показывала клиенту 0 ₽ при правильном итоге в шапке.
  */
-function shareLinkCatalogHas(sku) {
-    if (!sku || typeof catalog === 'undefined') return false;
+function shareLinkCatalogFind(sku) {
+    if (!sku || typeof catalog === 'undefined') return null;
     for (const key in catalog) {
         const list = catalog[key];
         if (!list) continue;
         const arr = Array.isArray(list) ? list : [list];
         for (const it of arr) {
             if (!it) continue;
-            if (it.id === sku || it.article === sku) return true;
+            if (it.id === sku || it.article === sku) return it;
             const r = it.rommer;
-            if (r && (Array.isArray(r) ? r.some(x => x && x.id === sku) : r.id === sku)) return true;
+            if (r) {
+                if (Array.isArray(r)) {
+                    const hit = r.find(x => x && x.id === sku);
+                    if (hit) return hit;
+                } else if (r.id === sku) {
+                    return r;
+                }
+            }
         }
     }
-    return false;
+    return null;
 }
 
 function compactPayload(data) {
@@ -200,12 +207,24 @@ function compactPayload(data) {
             e: (data.items.equipment || []).map(item => {
                 const sku = item.displaySku || item.sku || item.id || '';
                 const isCustom = item.id && String(item.id).startsWith('custom_');
-                // Позиция вне catalog.js (распознанная, радиатор отдельной линейки,
-                // аксессуар): страница по артикулу её не найдёт — везём название и
-                // цену с собой, как у своей позиции. Артикул едет отдельным полем,
-                // для колонки «Артикул» и картинки. Цена — уже со скидкой, как и у
-                // своих позиций; страница её не пересчитывает.
-                const isLoose = !isCustom && !shareLinkCatalogHas(sku);
+                // Цену обычной позиции страница считает сама: цена каталога минус
+                // скидка. Значит в ссылку можно не везти только те строки, где
+                // получится ровно то же число. Не получается в двух случаях:
+                //
+                // 1. Позиции нет в catalog.js — страница не найдёт ничего и покажет
+                //    0 ₽ (распознанное, радиаторы отдельных линеек, аксессуары).
+                // 2. Цена строки посчитана, а не взята из каталога. Труба в
+                //    теплоизоляции стоит в каталоге 220 ₽ за МЕТР, а в смету идёт
+                //    строкой за бухту 100 м — 22 000 ₽. Страница считала бухту по
+                //    цене метра, и клиент видел трубы в сто раз дешевле.
+                //
+                // В обоих случаях везём название и цену с собой, как у своей
+                // позиции (c: 1), плюс артикул полем s — для колонки «Артикул» и
+                // картинки. Цена уже со скидкой, страница её не пересчитывает.
+                const hit = isCustom ? null : shareLinkCatalogFind(sku);
+                const disc = data.object_info.eqDiscount || 0;
+                const pagePrice = hit ? Math.round((hit.price || 0) * (1 - disc / 100)) : null;
+                const isLoose = !isCustom && (!hit || pagePrice !== Math.round(item.price || 0));
                 if (isCustom || isLoose) {
                     const out = {
                         n: item.name || '',
@@ -220,6 +239,10 @@ function compactPayload(data) {
                         out.s = sku;
                         if (item.isOpt) out.o = 1;
                         out.d = compactDesc(item.desc);
+                        // Наличие у таких строк тоже неоткуда взять — в отличие от
+                        // обычных, где страница читает его из каталога. Правило
+                        // 31 дня к нему уже применено в render().
+                        if (item.availability) out.a = item.availability;
                     } else {
                         out.id = item.id;
                     }
