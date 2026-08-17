@@ -3729,6 +3729,7 @@ const RecognizeMatch = (function () {
     groups_dn20: '2. Обвязка котельной',
     groups_dn25: '2. Обвязка котельной',
     groups_dn32: '2. Обвязка котельной',
+    gbm_nodes: '2. Обвязка котельной',
     heat_exchanger_groups: '2. Обвязка котельной',
     hydro_separators: '2. Обвязка котельной',
     hydro_arrow: '2. Обвязка котельной',
