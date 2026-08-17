@@ -3590,19 +3590,45 @@
         // как это уже делает app.logInvoiceEvent() со стороны монтажника — синхронно и с
         // видимой ошибкой в консоли, вместо fire-and-forget записи внутри edge-функции mail-status,
         // которая молча теряла событие при сбое.
+        // Возвращает id записанной строки (или null): по нему потом просят
+        // разбудить телефон монтажника — send-push принимает только вид события
+        // и id, а текст и адресата берёт из базы сам.
         async function logInvoiceEventDirect(event, comment) {
             const calcId = invoiceData?.object_info?.sequence_id;
-            if (!calcId || !supabaseClient) return;
+            if (!calcId || !supabaseClient) return null;
             try {
-                const { error } = await supabaseClient.from('invoice_events').insert([{
+                const { data, error } = await supabaseClient.from('invoice_events').insert([{
                     calc_id: String(calcId),
                     event: event,
                     project_name: invoiceData?.object_info?.projectName || 'Без названия',
                     meta: { comment: comment || '' }
-                }]);
-                if (error) console.error('[logInvoiceEventDirect] Ошибка записи:', error);
+                }]).select('id');
+                if (error) {
+                    console.error('[logInvoiceEventDirect] Ошибка записи:', error);
+                    return null;
+                }
+                return (data && data[0] && data[0].id) ? String(data[0].id) : null;
             } catch (e) {
                 console.error('[logInvoiceEventDirect] Исключение:', e);
+                return null;
+            }
+        }
+
+        // Просьба разбудить телефон по конкретному событию сметы. Отдаём только вид
+        // и id строки — ни адресата, ни текста (см. ветку invoice_event в send-push).
+        async function notifyInvoiceEvent(rowId) {
+            if (!rowId) return;
+            try {
+                await supabaseProxyFetch('https://ahanbwugsmcyvrwbmtlx.supabase.co/functions/v1/send-push', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        apikey: 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p'
+                    },
+                    body: JSON.stringify({ reason: 'invoice_event', id: String(rowId) })
+                });
+            } catch (e) {
+                console.warn('[push] уведомление не отправлено:', e);
             }
         }
 
@@ -3625,7 +3651,7 @@
         // монтажник, проверяя ссылку. Разделить их нечем — страницу отдают без
         // входа в аккаунт. Поэтому в канбане это техническая отметка, а не
         // статус: карточку она не двигает.
-        function logInvoiceOpened() {
+        async function logInvoiceOpened() {
             try {
                 const params = new URLSearchParams(window.location.search);
                 if (params.get('print') === '1') return;
@@ -3635,11 +3661,65 @@
                 const key = 'invoice_opened_' + calcId;
                 if (localStorage.getItem(key)) return;
                 localStorage.setItem(key, String(Date.now()));
-                logInvoiceEventDirect('opened');
+
+                const rowId = await logInvoiceEventDirect('opened');
+                if (!rowId) return;
+
+                // Дальше — сообщить монтажнику. Ради этого отметка и вводилась: до
+                // сих пор он не знал, дошла смета до заказчика или нет, и не мог
+                // отличить «не смотрел» от «посмотрел и молчит».
+                //
+                // Первое ли это открытие, спрашиваем у базы, а не только у
+                // localStorage: он свой у каждого устройства, а звонить монтажнику
+                // на каждый повторный просмотр незачем. Пуш то же самое проверяет
+                // и на сервере, но письмо отправляется отсюда, и без этой проверки
+                // на второй телефон клиента ушло бы второе письмо.
+                let firstOpen = true;
+                try {
+                    const { data } = await supabaseClient.from('invoice_events')
+                        .select('id').eq('calc_id', String(calcId)).eq('event', 'opened')
+                        .order('created_at', { ascending: true }).limit(2);
+                    if (data && data.length && String(data[0].id) !== String(rowId)) firstOpen = false;
+                } catch (e) { /* не проверилось — считаем первым, лучше сообщить */ }
+
+                notifyInvoiceEvent(rowId);
+                if (firstOpen) notifyOpenedByEmail();
             } catch (e) {
                 // Приватный режим блокирует localStorage — отметка не критична,
                 // страница клиента из-за неё падать не должна.
                 console.warn('[logInvoiceOpened] пропущено:', e && e.message);
+            }
+        }
+
+        // Письмо монтажнику «клиент открыл смету».
+        //
+        // Пуши сегодня не доходят ни до кого: приложение ещё не опубликовано, и в
+        // push_tokens ноль устройств. Письмо — единственный канал, который работает
+        // прямо сейчас, поэтому событие дублируется на почту. Уйдёт через ту же
+        // Edge Function mail-status, что и ответ клиента по смете.
+        //
+        // Адрес берём из manager_info — это контакты САМОГО монтажника (имя, телефон,
+        // почта), как они уехали в ссылку; для клиента он и есть «менеджер объекта».
+        async function notifyOpenedByEmail() {
+            try {
+                const to = invoiceData?.manager_info?.email;
+                if (!to) return;
+                const projectName = invoiceData?.object_info?.projectName || 'Новый объект';
+                await fetch('https://ahanbwugsmcyvrwbmtlx.supabase.co/functions/v1/mail-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: to,
+                        projectName: projectName,
+                        statusText: 'Клиент открыл смету',
+                        comment: 'Заказчик открыл ссылку на смету. Хороший момент позвонить.',
+                        invoiceUrl: window.location.href,
+                        calcId: invoiceData?.object_info?.sequence_id || null,
+                        event: 'opened'
+                    })
+                });
+            } catch (e) {
+                console.warn('[mail] письмо об открытии не отправлено:', e);
             }
         }
 
@@ -4009,7 +4089,11 @@
                 } catch (statusEx) {
                     console.error('[requestInvoice] Исключение при обновлении статуса:', statusEx);
                 }
-                await logInvoiceEventDirect('invoice_requested', comment);
+                const reqEvId = await logInvoiceEventDirect('invoice_requested', comment);
+                // Разбудить телефон менеджера дистрибьютора: письмо ниже уходит
+                // монтажнику, а счёт выставляет менеджер — до сих пор он узнавал
+                // о запросе только из канбана, если туда заглядывал.
+                notifyInvoiceEvent(reqEvId);
 
                 const response = await fetch('https://ahanbwugsmcyvrwbmtlx.supabase.co/functions/v1/mail-status', {
                     method: 'POST',

@@ -6708,8 +6708,10 @@ const app = {
                 commentText = promptVal.trim();
             }
 
-            // Записываем событие в БД
-            const { error } = await supabaseClient.from('invoice_events').insert([{
+            // Записываем событие в БД. id забираем сразу: по нему просим разбудить
+            // телефон монтажника — до сих пор он узнавал о выставленном счёте,
+            // только заглянув в кабинет.
+            const { data: evRows, error } = await supabaseClient.from('invoice_events').insert([{
                 calc_id: String(calcId),
                 event: status,
                 user_id: myId ? String(myId) : null,
@@ -6717,9 +6719,16 @@ const app = {
                 user_email: myEmail,
                 project_name: last.project_name || null,
                 meta: commentText ? { comment: commentText } : null
-            }]);
+            }]).select('id');
 
             if (error) throw error;
+
+            const evId = (evRows && evRows[0] && evRows[0].id) ? String(evRows[0].id) : null;
+            if (evId && typeof appPush !== 'undefined') appPush.notify('invoice_event', evId);
+            // Письмом — потому что пуши доходят только до установленного
+            // приложения, а его пока нет ни у кого. Адрес монтажника берём из
+            // события сметы: там он записан автором расчёта.
+            this.mailInvoiceStatusToInstaller(status, last, commentText);
 
             app.alert(status === 'invoice_issued' ? "✅ Статус изменен: Счёт выставлен"
                 : (status === 'paid' ? "💰 Статус изменен: Оплачено" : "❌ Статус изменен: Отклонен"));
@@ -6732,6 +6741,59 @@ const app = {
         } catch (e) {
             console.error('[setInvoiceStatus] Ошибка:', e);
             app.alert("Ошибка при изменении статуса: " + e.message);
+        }
+    },
+
+    /**
+     * Письмо монтажнику о том, что менеджер сделал с его счётом.
+     *
+     * Зачем письмом, а не только пушем: пуш доходит только до установленного
+     * Android-приложения, а в push_tokens сейчас ноль устройств — приложение
+     * ещё не опубликовано. Пока так, письмо — единственный канал, который
+     * действительно доходит.
+     *
+     * Адресата берём из события сметы (user_email автора расчёта), а не из
+     * профиля: события пишет тот, кто действует, и у самой свежей строки это
+     * может быть менеджер — а нам нужен монтажник.
+     */
+    INVOICE_MAIL_TITLES: {
+        invoice_issued: 'Счёт выставлен',
+        paid: 'Оплата подтверждена',
+        rejected: 'Запрос счёта отклонён'
+    },
+
+    mailInvoiceStatusToInstaller: async function (status, lastEvent, commentText) {
+        try {
+            const title = this.INVOICE_MAIL_TITLES[status];
+            if (!title) return;
+            // Ищем среди событий сметы того, кто её считал: у выставления счёта в
+            // user_email стоит менеджер, и письмо ушло бы ему самому.
+            const events = (this._kanbanEvents || []).filter(e => String(e.calc_id) === String(lastEvent && lastEvent.calc_id));
+            const authorEv = events.find(e => (e.event === 'calculated' || e.event === 'saved') && e.user_email)
+                || events.find(e => e.user_email);
+            const to = (authorEv && authorEv.user_email) || (lastEvent && lastEvent.user_email) || '';
+            if (!to) return;
+
+            const projectName = (lastEvent && lastEvent.project_name) || 'Без названия';
+            const baseOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? window.location.origin : 'https://heatcalc.ru';
+            await supabaseProxyFetch(supabaseUrl + '/functions/v1/mail-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: to,
+                    projectName: projectName,
+                    statusText: title,
+                    comment: commentText || '',
+                    invoiceUrl: baseOrigin + '/invoice.html?id=' + encodeURIComponent(String(lastEvent && lastEvent.calc_id || '')),
+                    calcId: String((lastEvent && lastEvent.calc_id) || ''),
+                    event: status
+                })
+            });
+        } catch (e) {
+            // Уведомление — дополнение к статусу, а не его условие: статус уже
+            // записан, монтажник увидит его в кабинете.
+            console.warn('[mail] письмо монтажнику не отправлено:', e);
         }
     },
 
@@ -7252,7 +7314,15 @@ const app = {
                     user_name: tgUser.first_name || tgUser.username || null,
                     user_email: tgUser.email || null,
                     project_name: est.project_name || null
-                }]).then(({ error }) => { if (error) console.warn('[sendEstimateInvoiceToManager] Ошибка записи invoice_events:', error); });
+                }]).select('id').then(({ data, error }) => {
+                    if (error) { console.warn('[sendEstimateInvoiceToManager] Ошибка записи invoice_events:', error); return; }
+                    // Разбудить телефон МЕНЕДЖЕРА: письмо со счётом он получает и
+                    // так, но письмо теряется в потоке, а запрос счёта — это то,
+                    // чего монтажник ждёт от него в ответ. Кому именно слать,
+                    // решает send-push по привязке к дистрибьютору.
+                    const evId = (data && data[0] && data[0].id) ? String(data[0].id) : null;
+                    if (evId && typeof appPush !== 'undefined') appPush.notify('invoice_event', evId);
+                });
             }
 
             if (btnEl) {

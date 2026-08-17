@@ -33,14 +33,40 @@ const ADMIN_EMAILS = [
 ];
 
 // События по смете, ради которых стоит будить телефон. Черновики (calculated, saved)
-// и технические отметки сюда не входят — их у активного монтажника сотни в день.
+// и остальные технические отметки сюда не входят — их у активного монтажника сотни
+// в день.
 const INVOICE_EVENT_TITLES: Record<string, string> = {
+  opened: "Клиент открыл смету",
   confirmed: "Клиент согласовал смету",
   rejected: "Клиент отклонил смету",
   needs_revision: "Клиент просит доработать смету",
-  invoice_issued: "Счёт выставлен",
   invoice_requested: "Запрошен счёт",
+  invoice_issued: "Счёт выставлен",
+  paid: "Оплата подтверждена",
 };
+
+// Кому идёт уведомление. По умолчанию — хозяину сметы (монтажнику): почти все
+// события делает кто-то другой, а ждёт их он.
+//
+// Исключение одно: запрос счёта. Его нажимает сам монтажник, и уведомлять его же
+// бессмысленно — ждёт этого менеджер дистрибьютора, который счёт и выставляет.
+// Раньше событие числилось уведомляемым, но адресатом получался автор сметы,
+// то есть сам вызвавший, и уведомление отфильтровывалось как «себе не шлём»:
+// менеджер не узнавал о запросе никогда.
+const TO_MANAGER = new Set(["invoice_requested"]);
+
+// О чём сообщает страница сметы, открытая по ссылке БЕЗ входа в аккаунт: всё это
+// действия самого заказчика. Пропуском служит знание идентификатора события —
+// та же оговорка, что у shared_invoice ниже: кто его знает, тот и так видит смету.
+// Остальные события (счёт выставлен, оплачено, отклонено) ставит человек из
+// админки, и там сессия обязательна.
+const CLIENT_EVENTS = new Set(["opened", "confirmed", "needs_revision", "invoice_requested"]);
+
+// Насколько свежим должно быть событие, о котором сообщает анонимная страница.
+// Она зовёт функцию через секунды после записи; всё, что старше, — это повтор
+// чужого идентификатора, а не новость. Без этой проверки один и тот же id можно
+// было бы звать сколько угодно раз и слать людям уведомление за уведомлением.
+const EVENT_FRESH_MS = 10 * 60 * 1000;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -143,13 +169,22 @@ Deno.serve(async (req) => {
     if (!reason || !rowId) return json({ error: "Не указано событие" }, 400);
 
     // Ответ клиента приходит со страницы без входа — сессии там нет и быть не может.
-    // Остальные события отправляет авторизованный пользователь, и мы обязаны знать кто:
-    // иначе нельзя проверить, что он уведомляет по своему сообщению, а не по чужому.
-    const needsAuth = reason !== "shared_invoice";
+    // Сообщения и статусы отправляет авторизованный пользователь, и мы обязаны знать
+    // кто: иначе нельзя проверить, что он уведомляет по своему сообщению, а не по
+    // чужому.
+    //
+    // invoice_event — посередине: часть событий сметы делает менеджер из админки (там
+    // сессия есть и проверяется ниже, внутри ветки), а «клиент открыл смету» пишет та
+    // же анонимная страница по ссылке. Поэтому здесь токен не требуем, а требуем его
+    // внутри ветки — для всех событий, кроме открытия.
+    const needsAuth = reason !== "shared_invoice" && reason !== "invoice_event";
     let callerId = "";
     let isAdmin = false;
 
-    if (needsAuth) {
+    // Возвращает null, если сессия в порядке, иначе — готовый ответ с отказом.
+    // Вынесено в функцию, потому что invoice_event проверяет сессию не здесь, а
+    // внутри своей ветки: там решение зависит от вида события.
+    const verifyCaller = async () => {
       const userToken = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
       if (!userToken) return json({ error: "Нет токена" }, 401);
 
@@ -166,6 +201,12 @@ Deno.serve(async (req) => {
       const callerRow = Array.isArray(callerRows) && callerRows[0] ? callerRows[0] : null;
       if (!callerRow) return json({ error: "Профиль не найден" }, 403);
       callerId = String(callerRow.id);
+      return null;
+    };
+
+    if (needsAuth) {
+      const denied = await verifyCaller();
+      if (denied) return denied;
     }
 
     // --- Кому и что отправляем — решаем здесь, по строке из базы ------------
@@ -217,26 +258,87 @@ Deno.serve(async (req) => {
       payload.open = "messages";
     } else if (reason === "invoice_event") {
       const rows = await get(
-        `invoice_events?id=eq.${encodeURIComponent(rowId)}&select=calc_id,event,project_name&limit=1`,
+        `invoice_events?id=eq.${encodeURIComponent(rowId)}&select=calc_id,event,project_name,created_at&limit=1`,
       );
       const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
       if (!row) return json({ error: "Событие не найдено" }, 404);
 
-      const knownTitle = INVOICE_EVENT_TITLES[String(row.event)];
+      const event = String(row.event);
+      const knownTitle = INVOICE_EVENT_TITLES[event];
       if (!knownTitle) return json({ status: "skipped", reason: "event-not-notifiable" });
 
-      // Уведомляем хозяина сметы, а не того, кто нажал кнопку: клиент открывает
-      // ссылку без входа, и его действие должно разбудить телефон монтажника.
+      // Кто зовёт: человек из админки (есть токен) или страница клиента (токена
+      // нет и быть не может). Проверку сессии делаем здесь, а не наверху, потому
+      // что ответ зависит от вида события.
+      const hasToken = !!(req.headers.get("Authorization") || "").trim();
+      if (hasToken) {
+        const denied = await verifyCaller();
+        if (denied) return denied;
+      } else {
+        if (!CLIENT_EVENTS.has(event)) return json({ error: "Нет токена" }, 401);
+        const age = Date.now() - new Date(String(row.created_at || "")).getTime();
+        if (!isFinite(age) || age > EVENT_FRESH_MS) {
+          return json({ status: "skipped", reason: "event-not-fresh" });
+        }
+      }
+
+      // Об открытии сообщаем только ПЕРВОМ: клиент открывает смету с телефона,
+      // потом с компьютера, потом показывает жене — каждое устройство пишет свою
+      // отметку (в браузере её гасит localStorage, но он у каждого свой).
+      // Монтажнику важен факт «дошло», а не счётчик просмотров.
+      if (event === "opened") {
+        const firstRows = await get(
+          `invoice_events?calc_id=eq.${encodeURIComponent(String(row.calc_id))}` +
+          `&event=eq.opened&select=id&order=created_at.asc&limit=1`,
+        );
+        const first = Array.isArray(firstRows) && firstRows[0] ? String(firstRows[0].id) : "";
+        if (first && first !== rowId) {
+          return json({ status: "skipped", reason: "not-first-open" });
+        }
+      }
+
+      // Хозяин сметы — монтажник. Он адресат почти всех событий: их делает кто-то
+      // другой (клиент открыл, менеджер выставил), а ждёт их он.
       const est = await get(
         `estimates?calc_id=eq.${encodeURIComponent(String(row.calc_id))}&select=user_id&limit=1`,
       );
       const owner = Array.isArray(est) && est[0] ? est[0].user_id : null;
       if (!owner) return json({ status: "skipped", reason: "owner-unknown" });
 
-      recipientUserIds = [String(owner)];
+      if (TO_MANAGER.has(event)) {
+        // Ищем менеджера дистрибьютора, к которому привязан монтажник. Берём и
+        // менеджера, и директора: у части дистрибьюторов заполнен только второй,
+        // и тогда запрос счёта не увидел бы никто.
+        const ownerRows = await get(`users?id=eq.${encodeURIComponent(String(owner))}&select=distributor_id&limit=1`);
+        const distId = Array.isArray(ownerRows) && ownerRows[0] ? ownerRows[0].distributor_id : null;
+        if (!distId) return json({ status: "skipped", reason: "no-distributor" });
+
+        const distRows = await get(
+          `distributors?id=eq.${encodeURIComponent(String(distId))}&select=manager_email,director_email&limit=1`,
+        );
+        const dist = Array.isArray(distRows) && distRows[0] ? distRows[0] : null;
+        const emails = [dist?.manager_email, dist?.director_email]
+          .map((e) => String(e || "").trim().toLowerCase())
+          .filter(Boolean);
+        if (!emails.length) return json({ status: "skipped", reason: "no-manager-email" });
+
+        // Адрес в базе может быть записан с заглавными буквами, поэтому ищем
+        // регистронезависимо: in.() такого не умеет, а or=(...) умеет.
+        const orExpr = emails.map((e) => `email.ilike.${e}`).join(",");
+        const mgrRows = await get(`users?or=(${encodeURIComponent(orExpr)})&select=id`);
+        const mgrIds = Array.isArray(mgrRows) ? mgrRows.map((r) => String(r.id)) : [];
+        if (!mgrIds.length) return json({ status: "skipped", reason: "manager-not-registered" });
+
+        recipientUserIds = mgrIds;
+        text = row.project_name ? `Объект: ${row.project_name}` : "Монтажник запросил счёт";
+        payload.open = "kanban";
+      } else {
+        recipientUserIds = [String(owner)];
+        text = row.project_name ? `Объект: ${row.project_name}` : "Смета изменила статус";
+        payload.open = "orders";
+      }
+
       title = knownTitle;
-      text = row.project_name ? `Объект: ${row.project_name}` : "Смета изменила статус";
-      payload.open = "orders";
       payload.calcId = String(row.calc_id);
     } else if (reason === "shared_invoice") {
       // Клиент открыл ссылку и согласовал смету или отправил замечания.
