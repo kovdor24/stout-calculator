@@ -128,6 +128,34 @@ function compactDesc(desc) {
     return (title ? '§' + title + '\n' : '') + s;
 }
 
+/**
+ * Найдёт ли invoice.html позицию по этому артикулу в catalog.js?
+ *
+ * Повторяет findCatalogItem оттуда: только верхний уровень catalog[key]
+ * (массив или одиночный объект) плюс вложенная ROMMER-версия. Всё, что лежит
+ * вне объекта catalog, страница не видит: радиаторные линейки (titanRads,
+ * steelRads и остальные отдельные массивы), radAccessories, а главное —
+ * распознанные позиции: их артикул чаще всего из прайса, а не из каталога,
+ * либо артикула нет вовсе. У обычной строки в ссылку уходит один артикул, и
+ * цену страница берёт из каталога — для таких позиций она получала пусто и
+ * показывала клиенту 0 ₽ при правильном итоге в шапке.
+ */
+function shareLinkCatalogHas(sku) {
+    if (!sku || typeof catalog === 'undefined') return false;
+    for (const key in catalog) {
+        const list = catalog[key];
+        if (!list) continue;
+        const arr = Array.isArray(list) ? list : [list];
+        for (const it of arr) {
+            if (!it) continue;
+            if (it.id === sku || it.article === sku) return true;
+            const r = it.rommer;
+            if (r && (Array.isArray(r) ? r.some(x => x && x.id === sku) : r.id === sku)) return true;
+        }
+    }
+    return false;
+}
+
 function compactPayload(data) {
     const SECTION_MAP = {
         "1. Котёл + водонагреватель": 1,
@@ -170,10 +198,16 @@ function compactPayload(data) {
         },
         i: {
             e: (data.items.equipment || []).map(item => {
+                const sku = item.displaySku || item.sku || item.id || '';
                 const isCustom = item.id && String(item.id).startsWith('custom_');
-                if (isCustom) {
-                    return {
-                        id: item.id,
+                // Позиция вне catalog.js (распознанная, радиатор отдельной линейки,
+                // аксессуар): страница по артикулу её не найдёт — везём название и
+                // цену с собой, как у своей позиции. Артикул едет отдельным полем,
+                // для колонки «Артикул» и картинки. Цена — уже со скидкой, как и у
+                // своих позиций; страница её не пересчитывает.
+                const isLoose = !isCustom && !shareLinkCatalogHas(sku);
+                if (isCustom || isLoose) {
+                    const out = {
                         n: item.name || '',
                         b: item.brand || '',
                         u: item.unit || '',
@@ -182,9 +216,17 @@ function compactPayload(data) {
                         t: SECTION_MAP[item.sectionTitle] || item.sectionTitle || 9,
                         c: 1
                     };
+                    if (isLoose) {
+                        out.s = sku;
+                        if (item.isOpt) out.o = 1;
+                        out.d = compactDesc(item.desc);
+                    } else {
+                        out.id = item.id;
+                    }
+                    return out;
                 } else {
                     return {
-                        s: item.displaySku || item.sku || item.id || '',
+                        s: sku,
                         q: item.q || 0,
                         t: SECTION_MAP[item.sectionTitle] || item.sectionTitle || 9,
                         o: item.isOpt ? 1 : 0,

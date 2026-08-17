@@ -2829,24 +2829,29 @@
                     };
                 }
 
-                // If it's a custom manually-added item
+                // Позиция с ценой и названием в самой ссылке: своё оборудование
+                // (id вида custom_…) или позиция, которой нет в catalog.js —
+                // распознанная, радиатор отдельной линейки, аксессуар (у таких
+                // артикул приезжает в поле s, а исключённая из сметы — с o: 1).
+                // Цена уже со скидкой, повторно её не применяем.
                 if (item.c === 1) {
                     const price = Math.round(item.p || 0);
                     const q = item.q || 0;
+                    const sku = String(item.s || item.id || '');
                     let name = item.n || 'Свое оборудование';
-                    if (name && (name.includes('Бастион') || name.includes('бастион') || (item.id && item.id.startsWith('SST-')))) {
+                    if (name && (name.includes('Бастион') || name.includes('бастион') || sku.startsWith('SST-'))) {
                         name = name.replace(/бастион/gi, '').replace(/\s+/g, ' ').trim();
                     }
                     return {
                         name: name,
-                        displaySku: item.id || '',
+                        displaySku: sku,
                         brand: item.b || ' ',
                         unit: item.u || 'шт',
                         q: q,
                         price: price,
                         sum: Math.round(price * q),
                         sectionTitle: typeof item.t === 'number' ? (SECTION_MAP_REV[item.t] || '9. Дополнительные материалы') : (item.t || '9. Дополнительные материалы'),
-                        isOpt: false,
+                        isOpt: item.o === 1,
                         desc: expandDesc(item.d) || item.desc || '',
                         availability: ''
                     };
