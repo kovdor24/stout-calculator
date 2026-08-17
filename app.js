@@ -2,8 +2,14 @@
 // === ЗАЩИТА ДОМЕНА (DOMAIN LOCK) ===
 (function () {
     var currentHost = window.location.hostname;
-    // Разрешенные домены
-    var allowedHosts = ['heatcalc.ru', 'www.heatcalc.ru', 'terem24.github.io', 'localhost', '127.0.0.1'];
+    // Разрешенные домены.
+    //
+    // new.heatcalc.ru — копия сайта на хостинге Beget. Заведена не ради второго
+    // адреса, а на случай переезда: провайдеры начали резать шифрованное
+    // соединение к адресам GitHub Pages, с которых сайт раздаётся, и у части
+    // монтажников он просто перестаёт открываться. Копия позволяет проверить
+    // всё вживую до того, как домен переставят на новый сервер.
+    var allowedHosts = ['heatcalc.ru', 'www.heatcalc.ru', 'new.heatcalc.ru', 'terem24.github.io', 'localhost', '127.0.0.1'];
 
     // Если текущего домена нет в списке разрешенных (включая запуск из папки через file://)
     if (allowedHosts.indexOf(currentHost) === -1) {
@@ -24,7 +30,11 @@ const supabaseKey = 'sb_publishable_gcMJ-PvJmKavObbnePFGZQ_O-pu5O2p';
 // поддомен proxy.heatcalc.ru с настоящим PHP-хостингом (Beget), сам сайт остаётся на GitHub Pages.
 function supabaseProxyFetch(input, init) {
     const host = window.location.hostname;
-    const canProxy = (host === 'heatcalc.ru' || host === 'www.heatcalc.ru');
+    // new.heatcalc.ru — проверочная копия сайта на Beget (см. allowedHosts выше).
+    // Через прокси её пускаем по той же причине, что и основной адрес: иначе
+    // проверка шла бы в других условиях, чем работа, и «вход не работает» на
+    // копии значило бы не то же самое, что на сайте.
+    const canProxy = (host === 'heatcalc.ru' || host === 'www.heatcalc.ru' || host === 'new.heatcalc.ru');
     const url = typeof input === 'string' ? input : input.url;
     if (canProxy && url.startsWith(supabaseUrl)) {
         return fetch('https://proxy.heatcalc.ru/supabase_proxy.php?path=' + encodeURIComponent(url.slice(supabaseUrl.length)), init);

@@ -1,0 +1,117 @@
+# Выкладка сайта на хостинг Beget.
+#
+# Зачем. Сайт раздаётся с GitHub Pages, а часть провайдеров начала резать
+# шифрованное соединение к адресам, на которых Pages стоит (185.199.108–111.x).
+# У таких пользователей сайт просто не открывается, и узнать об этом нельзя:
+# человек, до которого сайт не доехал, в статистику не попадает.
+#
+# Пока это проверочная копия по адресу new.heatcalc.ru — основной сайт живёт
+# там же, где и жил, и ничего не меняется. Если решим переезжать совсем, менять
+# код не придётся: путь к папке сайта задан секретом BEGET_FTP_DIR, и переезд
+# сводится к правке одного секрета плюс смене адреса домена у регистратора.
+#
+# Что нужно один раз завести в настройках репозитория
+# (Settings → Secrets and variables → Actions → New repository secret):
+#   BEGET_FTP_HOST      — адрес FTP-сервера Beget
+#   BEGET_FTP_USER      — логин FTP
+#   BEGET_FTP_PASSWORD  — пароль FTP
+#   BEGET_FTP_DIR       — папка сайта, например /new.heatcalc.ru/public_html/
+# Пароль вводится в GitHub и виден только ему: в код он не попадает и в
+# журнале выполнения затирается звёздочками.
+#
+# Пока секреты не заданы, задача честно пропускается и не мигает красным.
+
+name: Выкладка на Beget
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Две выкладки разом по одному FTP — верный способ получить полусайт.
+# Ставим их в очередь, а не отменяем: отменённая на середине оставила бы
+# ровно то, чего мы избегаем.
+concurrency:
+  group: deploy-beget
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Проверить, заведён ли доступ к хостингу
+        id: check
+        env:
+          HOST: ${{ secrets.BEGET_FTP_HOST }}
+        run: |
+          if [ -z "$HOST" ]; then
+            echo "Секреты Beget не заданы — выкладка пропущена, это не ошибка."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Забрать файлы репозитория
+        if: steps.check.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+
+      - name: Залить изменившееся на хостинг
+        if: steps.check.outputs.enabled == 'true'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.BEGET_FTP_HOST }}
+          username: ${{ secrets.BEGET_FTP_USER }}
+          password: ${{ secrets.BEGET_FTP_PASSWORD }}
+          server-dir: ${{ secrets.BEGET_FTP_DIR }}
+          # ftps — тот же FTP, но с шифрованием: по обычному FTP пароль
+          # уходит открытым текстом. Если Beget откажется соединяться,
+          # заменить на ftp (тогда пароль лучше сменить после переезда).
+          protocol: ftps
+          # Картинок больше тринадцати тысяч, первая заливка долгая.
+          timeout: 600000
+          # Ничего лишнего на боевом сервере. Особенно php: на Beget он,
+          # в отличие от GitHub Pages, по-настоящему исполняется, и копии
+          # прокси на сайте создали бы вторую дверь к тем же данным.
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.claude/**
+            **/.agents/**
+            **/.github/**
+            **/mobile-android/**
+            **/supabase/**
+            **/bench/**
+            **/scratch/**
+            **/__pycache__/**
+            **/models/**
+            **/*.py
+            **/*.php
+            **/*.md
+            **/*.sql
+            **/*.ps1
+            **/CNAME
+            **/revit_catalog.json
+            **/price_index.new.json
+
+      - name: Проверить, что сайт отвечает
+        if: steps.check.outputs.enabled == 'true'
+        continue-on-error: true
+        run: |
+          URL="${{ vars.BEGET_CHECK_URL }}"
+          if [ -z "$URL" ]; then URL="https://new.heatcalc.ru/index.html"; fi
+          echo "Проверяю $URL"
+          CODE=$(curl -sS -o /tmp/page.html -w "%{http_code}" --max-time 60 "$URL" || echo 000)
+          echo "код ответа: $CODE"
+          if [ "$CODE" != "200" ]; then
+            echo "::warning::Сайт ответил $CODE — загляните на хостинг"
+            exit 0
+          fi
+          # Версии файлов в index.html должны совпасть с теми, что в репозитории:
+          # иначе заливка прошла наполовину и на сервере смесь двух выпусков.
+          WANT=$(grep -o 'app\.js?v=[0-9.]*' index.html | head -1)
+          GOT=$(grep -o 'app\.js?v=[0-9.]*' /tmp/page.html | head -1)
+          echo "в репозитории: $WANT"
+          echo "на сервере:    $GOT"
+          if [ "$WANT" != "$GOT" ]; then
+            echo "::warning::Версии не совпали — возможно, залилось не всё"
+          fi
