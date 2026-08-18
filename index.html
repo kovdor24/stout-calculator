@@ -173,6 +173,7 @@
          app.init() дёргает appPush.init(). -->
     <script src="push.js?v=1.1" defer></script>
     <script src="app.js?v=6.38" defer></script>
+    <script src="tour.js?v=1.0" defer></script>
     <!-- Выгрузка сметы в Excel: читает уже готовую печатную вёрстку (#print_bin) -->
     <script src="excel_export.js?v=1.0" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
@@ -384,6 +385,22 @@
     </header>
     <div class="container">
         <div class="panel input-panel">
+            <!-- Режим обучения: ведёт по всему пути от площади до ссылки клиенту.
+                 Логика и стили — в tour.js, здесь только переключатель. -->
+            <div class="control-item toggle-item" id="blk_tour_toggle"
+                style="margin-top: 0; padding-top: 0; border-top: none; margin-bottom: 14px; border-bottom: 1px dashed var(--border); padding-bottom: 10px;">
+                <div class="label-row" style="margin-bottom: 0;">
+                    <span class="lbl">🎓 Режим обучения</span>
+                    <label class="switch">
+                        <input type="checkbox" id="chk_tour" onchange="Tour.toggle(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div style="font-size: 11px; line-height: 1.4; color: var(--text-sec); margin-top: 4px;">
+                    Подсказки на каждом шаге — от площади до ссылки клиенту
+                </div>
+            </div>
+
             <h3 style="margin-top: 0; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal;">Режим расчёта</h3>
             <div class="control-item" style="margin-bottom: 15px;">
                 <div class="mode-selector-tabs">
