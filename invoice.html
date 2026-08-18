@@ -2353,19 +2353,42 @@
          позиций едет только артикул, а цену эта страница берёт из каталога сама. -->
     <script src="dist_prices.js"></script>
     <script>
+        /**
+         * Артикул позиции или пусто, если артикула у неё нет.
+         *
+         * У позиции каталога id и есть артикул, а распознанные ('rec_…') и
+         * добавленные монтажником ('custom_…', 'user_…') строки живут под
+         * служебным id. В счёте у клиента и в таблице для 1С он бесполезен:
+         * товара с таким артикулом не существует. Строкой 'нет' помечаем то же
+         * самое, что показывает смета в калькуляторе.
+         */
+        function realSku(id) {
+            const s = String(id || '');
+            if (!s || s === 'нет' || s === '-') return '';
+            return /^(rec|custom|user)_/.test(s) ? '' : s;
+        }
+
         function copySpecFor1C() {
             if (!invoiceData || !invoiceData.items || !invoiceData.items.equipment) {
                 alert("Данные сметы не найдены");
                 return;
             }
             let text = "";
+            let noSkuCount = 0;
             invoiceData.items.equipment.forEach(item => {
                 if (item.isOpt) return;
-                const sku = item.displaySku || item.id || "";
+                const sku = realSku(item.displaySku || item.id);
                 if (sku) {
                     text += `${sku}|${item.q}\n`;
+                } else {
+                    noSkuCount++;
                 }
             });
+            // Молча выкинутая позиция хуже строки без артикула: таблица
+            // выглядит полной, а часть оборудования в заказ не попадёт.
+            if (noSkuCount > 0) {
+                text += `\nПозиций без артикула: ${noSkuCount} — их надо подобрать по названию из счёта.\n`;
+            }
 
             const btn = document.querySelector('.btn-copy-spec');
             const oldText = btn ? btn.innerHTML : "📋 Копировать для 1С";
@@ -2816,7 +2839,10 @@
                     }
                     return {
                         name: name,
-                        displaySku: item.s,
+                        // Ссылки, отправленные до 18.08.2026, везут в поле s
+                        // служебный id распознанных и своих позиций — счёт по
+                        // такой ссылке показывал его как артикул.
+                        displaySku: realSku(item.s) || 'нет',
                         brand: item.b,
                         unit: item.u,
                         q: item.q,
@@ -2847,7 +2873,9 @@
                     }
                     return {
                         name: name,
-                        displaySku: sku,
+                        // Своё оборудование приезжает под служебным id ('custom_…'):
+                        // артикула у него нет, и показывать вместо него id нельзя.
+                        displaySku: realSku(sku) || 'нет',
                         brand: item.b || ' ',
                         unit: item.u || 'шт',
                         q: q,
@@ -2878,7 +2906,7 @@
                 }
                 return {
                     name: name,
-                    displaySku: item.s,
+                    displaySku: realSku(item.s) || 'нет',
                     brand: catalogItem.brand || 'STOUT',
                     unit: catalogItem.unit || 'шт',
                     q: q,
@@ -3279,9 +3307,11 @@
 
                         const tr = document.createElement('tr');
 
-                        // Image file mapping
-                        const cleanSku = i.displaySku || i.id;
-                        const imgPath = `img/${cleanSku}.jpg`;
+                        // Image file mapping. Фото лежат по артикулу, поэтому у
+                        // строки без него сразу берём заглушку, а не ходим за
+                        // заведомо несуществующим 'img/нет.jpg'.
+                        const cleanSku = realSku(i.displaySku || i.id);
+                        const imgPath = cleanSku ? `img/${cleanSku}.jpg` : 'img/favicon.png';
 
                         let availStyle = '';
                         let availText = '';
