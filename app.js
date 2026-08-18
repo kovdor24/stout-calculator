@@ -38920,8 +38920,9 @@ const app = {
         if (hasTp) {
             // Перепад контура — рядом с шагом укладки: обе настройки про то, как
             // разложен и как работает сам пол.
+            // Только в режиме "Подробный": в быстром расчёте перепад подбирается сам.
             const dtBlock = document.getElementById('blk_ufh_dt');
-            if (dtBlock) dtBlock.style.display = 'block';
+            if (dtBlock) dtBlock.style.display = this.state.detailedRooms ? 'block' : 'none';
             const _fd = parseInt(this.state.ufhDT, 10) || null;
             const _dtTab = (id, on) => { const e = document.getElementById(id); if (e) e.className = on ? 'tab active' : 'tab'; };
             _dtTab('ufh_dt_auto', !_fd);
