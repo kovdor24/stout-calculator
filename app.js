@@ -163,6 +163,20 @@ function shareLinkCatalogFind(sku) {
     return null;
 }
 
+/**
+ * Артикул позиции или пусто, если артикула у неё нет.
+ *
+ * У позиции каталога id и есть артикул, а вот распознанные ('rec_…') и
+ * добавленные монтажником ('custom_…', 'user_…') строки живут под служебным
+ * id. Он не значит ничего ни для клиента, ни для 1С, но раньше подставлялся
+ * в колонку «Артикул» запасным вариантом — и клиент получал счёт со строкой
+ * 'custom_1786965434808'.
+ */
+function realSku(id) {
+    const s = String(id || '');
+    return /^(rec|custom|user)_/.test(s) ? '' : s;
+}
+
 function compactPayload(data) {
     const SECTION_MAP = {
         "1. Котёл + водонагреватель": 1,
@@ -27567,8 +27581,7 @@ const app = {
             // артикулов и не мог ни найти товар, ни загрузить таблицу в 1С.
             const skuOf = (item) => {
                 if (item.article) return String(item.article);
-                const id = String(item.id || item.code || '');
-                return /^(rec|user)_/.test(id) ? '' : id;
+                return realSku(item.id || item.code);
             };
 
             let equipmentText = "Название - Артикул - Количество\n";
@@ -43270,7 +43283,7 @@ const app = {
                     // sortRank берём у ИСХОДНОЙ позиции, а не у finalItem: после ручной
                     // замены или подстановки ROMMER-аналога это уже другой объект, и
                     // дымоход после замены уехал бы из начала раздела вниз по цене.
-                    bill.push({ ...finalItem, sortRank: item.sortRank || 0, q: finalQty, sum: Math.round(finalItem.price * finalQty), basePrice: originalPrice, displaySku: finalItem.displaySku || finalItem.article || finalItem.id, qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
+                    bill.push({ ...finalItem, sortRank: item.sortRank || 0, q: finalQty, sum: Math.round(finalItem.price * finalQty), basePrice: originalPrice, displaySku: finalItem.displaySku || finalItem.article || realSku(finalItem.id) || 'нет', qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
                 }
             });
         };
@@ -43478,7 +43491,7 @@ const app = {
                 this.currentEquipmentList.push({
                     id: i.id,
                     name: i.name,
-                    displaySku: i.displaySku || i.article || i.id,
+                    displaySku: i.displaySku || i.article || realSku(i.id) || 'нет',
                     brand: i.brand || 'STOUT',
                     unit: i.unit || 'шт',
                     q: i.q,
