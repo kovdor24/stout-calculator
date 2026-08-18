@@ -256,6 +256,47 @@ Deno.serve(async (req) => {
       title = row.sender_name || "Сообщение от администратора";
       text = row.text || "";
       payload.open = "messages";
+    } else if (reason === "installer_reply") {
+      // Ответ монтажника администрации. Раньше о нём сообщали письмом на каждый из
+      // трёх админских адресов — это съедало месячный лимит почтовой службы. Теперь
+      // будим телефон, а письмо остаётся только напоминанием через двое суток
+      // (remindAdminAboutStaleReply в app.js).
+      const rows = await get(
+        `messages?id=eq.${encodeURIComponent(rowId)}&select=sender_id,type,text,sender_name&limit=1`,
+      );
+      const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
+      if (!row) return json({ error: "Сообщение не найдено" }, 404);
+      if (String(row.sender_id) !== callerId) {
+        return json({ error: "Чужое сообщение" }, 403);
+      }
+      // Только ответы: письма и объявления рассылает админ, у них своё событие
+      if (String(row.type) !== "reply") {
+        return json({ status: "skipped", reason: "not-a-reply" });
+      }
+
+      // Адресат — вся администрация: ответ уходит «администрации» (recipient_id пуст),
+      // а не конкретному человеку, и заранее неизвестно, кто из них сейчас за панелью.
+      const orExpr = ADMIN_EMAILS.map((e) => `email.ilike.${e}`).join(",");
+      const adminRows = await get(`users?or=(${encodeURIComponent(orExpr)})&select=id`);
+      recipientUserIds = Array.isArray(adminRows) ? adminRows.map((r) => String(r.id)) : [];
+      if (!recipientUserIds.length) return json({ status: "skipped", reason: "admins-not-registered" });
+
+      // Имя монтажника подписью в шторке уведомлений: sender_name заполнен только у
+      // сотрудников, поэтому обычному человеку берём имя из его профиля.
+      let who = String(row.sender_name || "").trim();
+      if (!who) {
+        const senderRows = await get(
+          `users?id=eq.${encodeURIComponent(String(row.sender_id))}&select=username,email,last_name,first_name&limit=1`,
+        );
+        const s = Array.isArray(senderRows) && senderRows[0] ? senderRows[0] : null;
+        who = s
+          ? ([s.last_name, s.first_name].filter(Boolean).join(" ") || s.username || s.email || "Монтажник")
+          : "Монтажник";
+      }
+
+      title = `Ответ: ${who}`;
+      text = row.text || "Новый ответ монтажника";
+      payload.open = "messages";
     } else if (reason === "invoice_event") {
       const rows = await get(
         `invoice_events?id=eq.${encodeURIComponent(rowId)}&select=calc_id,event,project_name,created_at&limit=1`,

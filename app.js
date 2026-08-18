@@ -10068,6 +10068,11 @@ const app = {
                                 }
                             }
                         }
+                    } else {
+                        // Вопрос администрации висит без ответа больше двух суток —
+                        // напоминаем о нём письмом. Данные уже здесь, лишних запросов нет.
+                        this.remindAdminAboutStaleReply(uRow, dbMessages,
+                            this.formatShortName(tgUser) || tgUser.first_name || tgUser.username || '');
                     }
                 }
             } catch (msgErr) {
@@ -19106,6 +19111,72 @@ const app = {
         }
     },
 
+    // Сколько ждём ответа администрации, прежде чем напомнить о вопросе письмом.
+    STALE_REPLY_DAYS: 2,
+    // Один адрес, а не все три: напоминание — страховка, а не рассылка, и почтовый
+    // лимит расходуется втрое медленнее.
+    STALE_REPLY_EMAIL: 'kovdor24@yandex.ru',
+
+    /**
+     * Напоминание администрации о вопросе, который висит без ответа больше двух суток.
+     *
+     * Зачем оно вообще: сам ответ монтажника на почту больше не уходит (см. комментарий
+     * в sendUserReply) — он приходит пушем и виден в панели управления. Но пуш доходит
+     * только до установленного приложения, а панель открывают не каждый день, поэтому
+     * забытый вопрос должен всё-таки догнать человека письмом.
+     *
+     * Почему проверяет приложение монтажника, а не сервер: своего сервера у калькулятора
+     * нет, а строки переписки и так уже лежат в памяти вкладки (_msgCache) — проверка не
+     * стоит ни одного лишнего запроса к базе. Считает тот, кто ждёт ответа.
+     *
+     * Письмо уходит ОДНО на вопрос: отметка о нём лежит в localStorage, и повторные
+     * заходы в калькулятор её не сбрасывают.
+     */
+    remindAdminAboutStaleReply: function (uRow, dbMessages, senderName) {
+        try {
+            if (!uRow || !Array.isArray(dbMessages) || !dbMessages.length) return;
+            const cutoff = Date.now() - this.STALE_REPLY_DAYS * 24 * 60 * 60 * 1000;
+            const at = (m) => new Date(m.created_at).getTime();
+
+            // Мои вопросы администрации, заданные больше двух суток назад
+            const mine = dbMessages.filter(m => m.type === 'reply' && m.sender_id === uRow.id
+                && isFinite(at(m)) && at(m) < cutoff);
+            if (!mine.length) return;
+
+            // Ответ администрации — это письмо лично мне. Объявление для всех
+            // (recipient_id = null) ответом на вопрос не считается: его получили все,
+            // и к моему вопросу оно отношения не имеет.
+            const lastAnswer = dbMessages
+                .filter(m => m.recipient_id === uRow.id && m.sender_id !== uRow.id && isFinite(at(m)))
+                .reduce((mx, m) => Math.max(mx, at(m)), 0);
+
+            // Самый старый вопрос, после которого ответа так и не было
+            const pending = mine.filter(m => at(m) > lastAnswer).sort((a, b) => at(a) - at(b))[0];
+            if (!pending) return;
+
+            // Напоминаем один раз на вопрос. Ключ хранит id последнего, о котором уже
+            // писали: если человек задал ещё пару вопросов, а ответа всё нет, самым
+            // старым останется тот же — и второго письма не будет.
+            const KEY = 'stout_stale_reply_mailed';
+            if (localStorage.getItem(KEY) === String(pending.id)) return;
+            // Отметку ставим ДО отправки: письмо уходит в фоне, и если ответа от почтовой
+            // службы не дождаться, повторный опрос успел бы отправить его второй раз.
+            localStorage.setItem(KEY, String(pending.id));
+
+            const days = Math.floor((Date.now() - at(pending)) / (24 * 60 * 60 * 1000));
+            const who = senderName || uRow.email || 'Монтажник';
+            this.sendNotificationEmail(
+                this.STALE_REPLY_EMAIL,
+                `Вопрос без ответа ${days} дн. — ${who}, HeatCalc.ru`,
+                `Монтажник ${who} (${uRow.email || 'Email не указан'}) ждёт ответа ${days} дн.:\n\n`
+                + `"${pending.text}"\n\n`
+                + `Ответить можно в панели администрирования на HeatCalc.ru, вкладка «Сообщения».`
+            );
+        } catch (e) {
+            console.warn('[переписка] не удалось проверить давность вопроса:', e);
+        }
+    },
+
     // silent = true — ответ отправлен из всплывающей карточки в углу: там своя индикация
     // («✓ Отправлено» прямо в карточке), поэтому ни alert'ов, ни открытия модалки не нужно
     // replyToId — id сообщения, на которое отвечают с цитатой (клик по пузырю в
@@ -19143,14 +19214,16 @@ const app = {
                 parent_id: parentId
             };
             if (replyToId) row.reply_to_id = replyToId;
-            let { error } = await supabaseClient.from('messages').insert(row);
+            // .select('id') — id нужен, чтобы попросить сервер разбудить телефон
+            // администратора по этой строке (см. appPush.notify ниже)
+            let { data: inserted, error } = await supabaseClient.from('messages').insert(row).select('id').maybeSingle();
 
             // Колонки reply_to_id может не быть — миграция 20260818_add_message_reply_to.sql
             // выполняется вручную. Тогда отправляем ответ без цитаты, а не теряем его.
             if (error && (error.code === '42703' || /reply_to_id/i.test(error.message || ''))) {
                 console.warn('[переписка] колонки reply_to_id нет — ответ уйдёт без цитаты');
                 delete row.reply_to_id;
-                ({ error } = await supabaseClient.from('messages').insert(row));
+                ({ data: inserted, error } = await supabaseClient.from('messages').insert(row).select('id').maybeSingle());
             }
 
             // Письмо, на которое отвечают, могло быть удалено админом («Удалить
@@ -19163,29 +19236,29 @@ const app = {
                 console.warn('[переписка] родительское письмо удалено — отправляем без привязки');
                 row.parent_id = null;
                 delete row.reply_to_id; // цитируемое письмо могли удалить тем же «Удалить переписку»
-                ({ error } = await supabaseClient.from('messages').insert(row));
+                ({ data: inserted, error } = await supabaseClient.from('messages').insert(row).select('id').maybeSingle());
             }
 
             if (error) throw error;
 
             if (!silent) app.alert("Ответ успешно отправлен администратору!");
 
-            // Email Дублирование администраторам в фоне
-            (async () => {
-                try {
-                    const adminEmails = ['kovdor24@yandex.ru', 'dima24ba@gmail.com', 'kovdorekb@gmail.com'];
-                    const installerName = uRow.username || uRow.email || 'Монтажник';
-                    for (const adminEmail of adminEmails) {
-                        await this.sendNotificationEmail(
-                            adminEmail,
-                            `Новый ответ от монтажника ${installerName} на HeatCalc.ru`,
-                            `Монтажник ${installerName} (${uRow.email || 'Email не указан'}) ответил на сообщение администратора:\n\n"${text.trim()}"\n\nПожалуйста, проверьте панель администрирования на HeatCalc.ru.`
-                        );
-                    }
-                } catch (emailErr) {
-                    console.error("Ошибка при дублировании ответа на почту админам:", emailErr);
-                }
-            })();
+            // Пуш администрации вместо письма.
+            //
+            // Раньше каждый ответ монтажника уходил ТРЕМЯ письмами — по одному на каждый
+            // адрес администрации. При месячном лимите почтовой службы в 200 писем это
+            // самый прожорливый расход во всём калькуляторе: десяток вопросов от
+            // монтажников за день съедал бы его целиком, и тогда до людей перестали бы
+            // доходить действительно важные письма (счета, статусы смет, тариф).
+            //
+            // Ответ при этом не теряется: у администрации он и так появляется в
+            // колокольчике — со звуком и всплывашкой (см. блок «Ответ монтажника уходит
+            // с recipient_id = null» в fetchNotifications) — и в переписке панели
+            // управления. Письмо остаётся страховкой на случай, когда ответа нет больше
+            // двух дней: его шлёт remindAdminAboutStaleReply, и уже одно, а не три.
+            if (inserted && inserted.id && typeof appPush !== 'undefined') {
+                appPush.notify('installer_reply', inserted.id);
+            }
 
             // Сбросываем инпут
             const inp = document.getElementById(`reply_input_${parentId}`);
