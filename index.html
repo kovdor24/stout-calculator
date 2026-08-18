@@ -383,24 +383,23 @@
             <div id="header_totals" class="header-totals-block no-print"></div>
         </div>
     </header>
+    <!-- Режим обучения: ведёт по всему пути от площади до ссылки клиенту.
+         Стоит над обеими колонками, а не внутри панели параметров: там его не
+         видел никто, кто не долистал панель до низа. Внутрь колонки со сметой
+         тоже нельзя — на телефоне она целиком скрыта, пока открыта вкладка
+         «Параметры». Логика и стили — в tour.js, здесь только переключатель. -->
+    <div id="blk_tour_toggle" class="no-print"
+        style="display: flex; flex-wrap: wrap; align-items: center;
+               justify-content: center; gap: 6px 10px; margin: 0 0 4px;">
+        <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">🎓 Режим обучения</span>
+        <label class="switch">
+            <input type="checkbox" id="chk_tour" onchange="Tour.toggle(this.checked)">
+            <span class="slider"></span>
+        </label>
+        <span style="font-size: 11px; color: var(--text-sec); text-align: center;">подсказки на каждом шаге — от площади до ссылки клиенту</span>
+    </div>
     <div class="container">
         <div class="panel input-panel">
-            <!-- Режим обучения: ведёт по всему пути от площади до ссылки клиенту.
-                 Логика и стили — в tour.js, здесь только переключатель. -->
-            <div class="control-item toggle-item" id="blk_tour_toggle"
-                style="margin-top: 0; padding-top: 0; border-top: none; margin-bottom: 14px; border-bottom: 1px dashed var(--border); padding-bottom: 10px;">
-                <div class="label-row" style="margin-bottom: 0;">
-                    <span class="lbl">🎓 Режим обучения</span>
-                    <label class="switch">
-                        <input type="checkbox" id="chk_tour" onchange="Tour.toggle(this.checked)">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div style="font-size: 11px; line-height: 1.4; color: var(--text-sec); margin-top: 4px;">
-                    Подсказки на каждом шаге — от площади до ссылки клиенту
-                </div>
-            </div>
-
             <h3 style="margin-top: 0; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal;">Режим расчёта</h3>
             <div class="control-item" style="margin-bottom: 15px;">
                 <div class="mode-selector-tabs">
