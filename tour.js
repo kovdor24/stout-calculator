@@ -1,8 +1,13 @@
 // ===================== Режим обучения =====================
 //
-// Ведёт человека по всему пути: площадь → регион → котёл → система отопления →
-// смета → работы → сохранение → ссылка клиенту или печать. Каждый шаг подсвечивает
-// свой элемент и объясняет словами, зачем он нужен.
+// Ведёт человека по всему пути: площадь → котёл → система отопления → смета →
+// работы → сохранение → ссылка клиенту или печать. Каждый шаг подсвечивает свой
+// элемент, объясняет словами, зачем он нужен, и показывает пальцем, что сделать.
+//
+// Регион, город и стены из обучения убраны намеренно: у них есть рабочие значения
+// по умолчанию, смета считается и без них, а лежат они под свёрнутым тумблером
+// «Параметры объекта» — обучение приходилось разворачивать его самому и тратить
+// два шага из двенадцати на то, без чего первый расчёт прекрасно получается.
 //
 // Зачем это вообще: по журналу видно, что из 42 заведённых аккаунтов 18 не сделали
 // ни одной сметы, и у 17 из них нет ни одного события — люди не «посчитали и не
@@ -25,12 +30,14 @@ const Tour = {
     // done — необязательное условие «человек это сделал»; если оно выполнилось, шаг
     // переключается сам, без нажатия «Дальше». Шаг, чей элемент не найден или скрыт,
     // пропускается: половина блоков появляется только при своих настройках.
+    // anim — ролик в карточке, показывает жест: потянуть, нажать, выбрать (см. reel).
     STEPS: [
         {
             key: 'quick', mob: 'output',
             sel: '#quick_start_row',
             title: 'Быстрый старт',
             text: 'Если хочется сразу увидеть готовую смету — возьмите типовой объект отсюда, а потом поправьте под свой. Или заполняйте параметры сами, шаг за шагом.',
+            anim: { type: 'press', label: '🏠 Типовой объект' },
             done: () => app.state.area > 0
         },
         {
@@ -38,57 +45,44 @@ const Tour = {
             sel: '#blk_main_area',
             title: 'Площадь дома',
             text: 'Главное число расчёта: от него зависят теплопотери, мощность котла, число радиаторов и длина трубы. Тяните ползунок или впишите площадь руками.',
+            anim: { type: 'drag' },
             done: () => app.state.area > 0
-        },
-        {
-            key: 'region', mob: 'inputs',
-            sel: '#reg_tabs',
-            // Регион и стены живут под тумблером «Параметры объекта» и по умолчанию
-            // закрыты. Раньше шаг молча пропускался — обучение проскакивало мимо двух
-            // настроек, которые сильнее всего двигают мощность котла. Открываем сами.
-            before: () => {
-                const box = document.getElementById('chk_fast_obj_params');
-                if (box && !box.checked && box.offsetParent) { box.checked = true; app.toggleFastObjectParams(true); }
-            },
-            title: 'Регион и город',
-            text: 'Задаёт расчётную зимнюю температуру. Сибирь и Юг при одной площади дают разную мощность котла. Ниже можно выбрать конкретный город — так точнее.'
-        },
-        {
-            key: 'mat', mob: 'inputs',
-            sel: '#mat_tabs',
-            title: 'Стены',
-            text: 'Насколько дом держит тепло. «Тёплый» — утеплённый каркас или газоблок с утеплителем, «Холодный» — старый дом без утепления. Если знаете состав стен, включите «Параметры объекта» и задайте слои.'
         },
         {
             key: 'fuel', mob: 'inputs',
             sel: () => document.getElementById('fuel_gas') && document.getElementById('fuel_gas').closest('.control-item'),
             title: 'Тип котла',
-            text: 'Газ или электричество. Для электрического ещё спросим про выделенную мощность и тариф — по ним считается стоимость отопления за сезон.'
+            text: 'Газ или электричество. Для электрического ещё спросим про выделенную мощность и тариф — по ним считается стоимость отопления за сезон.',
+            anim: { type: 'pick', a: 'Электро', b: 'Газ' }
         },
         {
             key: 'sys', mob: 'inputs',
             sel: () => document.getElementById('sys_rad') && document.getElementById('sys_rad').closest('.control-item'),
             title: 'Чем греем',
             text: 'Радиаторы, тёплый пол или и то и другое. Для пола дальше появятся поля площади по этажам и шаг укладки трубы.',
+            anim: { type: 'pick', a: 'Радиаторы', b: 'Тёплый пол' },
             done: () => (app.state.systems || []).length > 0
         },
         {
             key: 'hw', mob: 'inputs',
             sel: () => document.getElementById('chk_hw') && document.getElementById('chk_hw').closest('.control-item'),
             title: 'Горячая вода',
-            text: 'Включите, если нужен бойлер. Объём подберётся по числу проживающих, а в смету добавится обвязка бойлера и, если попросите, рециркуляция.'
+            text: 'Включите, если нужен бойлер. Объём подберётся по числу проживающих, а в смету добавится обвязка бойлера и, если попросите, рециркуляция.',
+            anim: { type: 'toggle', label: 'Горячая вода' }
         },
         {
             key: 'eq', mob: 'output',
             sel: '#tab_equipment',
             title: 'Смета готова',
-            text: 'Здесь подобранное оборудование: котёл, бойлер, радиаторы, трубы, автоматика. Любую позицию можно заменить, убрать или задать своё количество — расчёт пересоберётся.'
+            text: 'Здесь подобранное оборудование: котёл, бойлер, радиаторы, трубы, автоматика. Любую позицию можно заменить, убрать или задать своё количество — расчёт пересоберётся.',
+            anim: { type: 'rows' }
         },
         {
             key: 'works', mob: 'output',
             sel: '#tab_works',
             title: 'Монтажные работы',
             text: 'Вторая вкладка — работы с объёмами и расценками. Свои цены на монтаж задаются один раз в личном кабинете и подставляются во все сметы.',
+            anim: { type: 'pick', a: 'Оборудование', b: 'Работы' },
             done: () => app.state.viewMode === 'works'
         },
         {
@@ -103,13 +97,15 @@ const Tour = {
                 return t && t.parentElement;
             },
             title: 'Итог и ваша наценка',
-            text: 'Ползунок скидки и наценки меняет цену оборудования для клиента: рекомендованная цена остаётся у вас перед глазами, а в документ уходит ваша.'
+            text: 'Ползунок скидки и наценки меняет цену оборудования для клиента: рекомендованная цена остаётся у вас перед глазами, а в документ уходит ваша.',
+            anim: { type: 'drag' }
         },
         {
             key: 'save', mob: 'output',
             sel: '#btn_save_main',
             title: 'Сохранить',
-            text: 'Смета уйдёт в облако и откроется на любом устройстве под вашим аккаунтом. Без этого расчёт живёт только в этом браузере.'
+            text: 'Смета уйдёт в облако и откроется на любом устройстве под вашим аккаунтом. Без этого расчёт живёт только в этом браузере.',
+            anim: { type: 'press', label: 'Сохранить' }
         },
         {
             key: 'send', mob: 'output',
@@ -119,7 +115,8 @@ const Tour = {
                 return document.getElementById('btn_print_trigger');
             },
             title: 'Отдать клиенту',
-            text: 'Ссылка открывает смету у клиента в браузере — он посмотрит её с телефона, согласует или попросит правки, а вы увидите это у себя. «Печать» делает тот же документ на бумагу или в PDF.',
+            text: 'Ссылка открывает смету у клиента в браузере — он посмотрит её с телефона, согласует или попросит правки, а вы увидите это у себя. «Скачать» делает тот же документ в PDF или Excel.',
+            anim: { type: 'press', label: 'Ссылка для клиента' },
             last: true
         }
     ],
@@ -202,6 +199,43 @@ const Tour = {
         try { localStorage.setItem(this.LS_STEP, String(this._step)); } catch (e) { }
     },
 
+    // Ролик в карточке: показывает жест, который ждут от человека на этом шаге —
+    // потянуть ползунок, щёлкнуть тумблер, выбрать вкладку, нажать кнопку. Словами
+    // «тяните ползунок» объясняется хуже, чем одной картинкой, где палец тянет.
+    //
+    // Рисуется на CSS, а не гифками: гифку пришлось бы держать в двух темах (на
+    // тёмном фоне светлая подложка ролика режет глаз), она весит сотни килобайт на
+    // каждый шаг и мылится на телефоне. Здесь же вся анимация — три прямоугольника
+    // и курсор, который ходит по одним и тем же ключевым кадрам.
+    HAND: '<svg class="ta-hand-i" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' +
+        '<path d="M5 2.5l13.5 7.8-6 1.6-3 6.6z" fill="#fff" stroke="#111827" stroke-width="1.3" stroke-linejoin="round"/></svg>',
+
+    reel: function (a) {
+        if (!a || !a.type) return '';
+        const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const hand = c => '<span class="ta-hand ' + c + '">' + this.HAND + '</span>';
+        let inner = '';
+        if (a.type === 'drag') {
+            inner = '<div class="ta-track"><div class="ta-fill"></div><div class="ta-knob"></div>' +
+                hand('ta-hand-drag') + '</div>';
+        } else if (a.type === 'toggle') {
+            inner = '<span class="ta-cap">' + esc(a.label || '') + '</span>' +
+                '<span class="ta-switch"><i></i></span><span class="ta-ring ta-ring-sw"></span>' +
+                hand('ta-hand-sw');
+        } else if (a.type === 'pick') {
+            inner = '<div class="ta-tabs"><span class="ta-tab">' + esc(a.a || '') + '</span>' +
+                '<span class="ta-tab ta-tab-2">' + esc(a.b || '') + '</span></div>' + hand('ta-hand-pick');
+        } else if (a.type === 'press') {
+            inner = '<span class="ta-btn">' + esc(a.label || '') + '</span>' +
+                '<span class="ta-ring ta-ring-btn"></span>' + hand('ta-hand-press');
+        } else if (a.type === 'rows') {
+            inner = '<div class="ta-rows"><i></i><i></i><i></i><i></i></div>';
+        } else {
+            return '';
+        }
+        return '<div class="tour-anim tour-anim-' + a.type + '" aria-hidden="true">' + inner + '</div>';
+    },
+
     target: function (step) {
         const s = step || this.STEPS[this._step];
         if (!s) return null;
@@ -274,6 +308,7 @@ const Tour = {
             '</div>' +
             '<div class="tour-card-title">' + step.title + '</div>' +
             '<div class="tour-card-text">' + step.text + '</div>' +
+            this.reel(step.anim) +
             '<div class="tour-card-btns">' +
             (this._step > 0 ? '<button type="button" class="tour-btn tour-btn-ghost" onclick="Tour.prev()">Назад</button>' : '') +
             '<button type="button" class="tour-btn" onclick="Tour.next()">' + (step.last ? 'Готово' : 'Дальше') + '</button>' +
@@ -418,6 +453,117 @@ body.dark-mode .tour-card { background: #1E1E1E; border-color: #333333; }
     border: none; background: var(--primary); color: #fff; cursor: pointer;
 }
 .tour-btn-ghost { background: transparent; color: var(--text-sec); border: 1px solid var(--border); }
+
+/* ---------- Ролик с жестом ---------- */
+.tour-anim {
+    position: relative;
+    height: 62px;
+    margin: 12px 0 2px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-light);
+    overflow: hidden;
+}
+body.dark-mode .tour-anim { background: #171717; border-color: #333333; }
+.ta-hand { position: absolute; left: 0; top: 0; line-height: 0; pointer-events: none; z-index: 3; }
+.ta-hand-i { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35)); }
+.ta-ring {
+    position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px;
+    border: 2px solid var(--primary); border-radius: 50%; opacity: 0; z-index: 2;
+}
+
+/* Тянем ползунок */
+.ta-track { position: absolute; left: 16%; right: 16%; top: 50%; height: 6px; margin-top: -3px; border-radius: 3px; background: var(--border); }
+.ta-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--primary); animation: ta-fill 3.2s ease-in-out infinite; }
+.ta-knob {
+    position: absolute; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px;
+    border-radius: 50%; background: var(--primary); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    animation: ta-slide 3.2s ease-in-out infinite;
+}
+.ta-hand-drag { top: 4px; margin-left: -3px; animation: ta-slide 3.2s ease-in-out infinite; }
+@keyframes ta-fill { 0%, 8% { width: 10%; } 55%, 72% { width: 80%; } 100% { width: 10%; } }
+@keyframes ta-slide { 0%, 8% { left: 10%; } 55%, 72% { left: 80%; } 100% { left: 10%; } }
+
+/* Щёлкаем тумблером */
+.ta-cap { position: absolute; left: 16px; top: 50%; margin-top: -8px; font-size: 12px; font-weight: 600; color: var(--text-sec); }
+.ta-switch {
+    position: absolute; right: 18px; top: 50%; margin-top: -11px;
+    width: 42px; height: 22px; border-radius: 11px; background: var(--border);
+    animation: ta-sw 2.8s ease-in-out infinite;
+}
+.ta-switch i {
+    position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    animation: ta-sw-knob 2.8s ease-in-out infinite;
+}
+.ta-ring-sw { right: 24px; top: 50%; left: auto; animation: ta-ring 2.8s ease-in-out infinite; }
+.ta-hand-sw { right: 16px; left: auto; top: 50%; animation: ta-tap 2.8s ease-in-out infinite; }
+@keyframes ta-sw { 0%, 42% { background: var(--border); } 52%, 100% { background: var(--primary); } }
+@keyframes ta-sw-knob { 0%, 42% { left: 3px; } 52%, 100% { left: 23px; } }
+@keyframes ta-tap {
+    0% { transform: translate(16px, 16px); }
+    38% { transform: translate(2px, 3px); }
+    48%, 58% { transform: translate(0, 0); }
+    78%, 100% { transform: translate(16px, 16px); }
+}
+@keyframes ta-ring {
+    0%, 44% { opacity: 0; transform: scale(0.5); }
+    52% { opacity: 0.55; transform: scale(0.8); }
+    72%, 100% { opacity: 0; transform: scale(1.35); }
+}
+
+/* Выбираем из двух */
+.ta-tabs { position: absolute; left: 14px; right: 14px; top: 14px; bottom: 14px; display: flex; gap: 6px; }
+.ta-tab {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; text-align: center; padding: 0 4px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-sec);
+}
+body.dark-mode .ta-tab { background: #1E1E1E; border-color: #3A3A3A; }
+.ta-tab-2 { animation: ta-pick 3s ease-in-out infinite; }
+.ta-hand-pick { left: 50%; top: 50%; animation: ta-pick-hand 3s ease-in-out infinite; }
+@keyframes ta-pick {
+    0%, 46% { border-color: var(--border); box-shadow: none; }
+    56%, 100% { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+}
+@keyframes ta-pick-hand {
+    0% { transform: translate(-46px, 18px); }
+    44% { transform: translate(14px, 2px); }
+    54%, 66% { transform: translate(12px, 0); }
+    100% { transform: translate(-46px, 18px); }
+}
+
+/* Нажимаем кнопку */
+.ta-btn {
+    position: absolute; left: 16px; right: 16px; top: 50%; margin-top: -16px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; background: var(--primary); color: #fff;
+    font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden;
+    animation: ta-press 2.6s ease-in-out infinite;
+}
+.ta-ring-btn { left: 50%; top: 50%; animation: ta-ring 2.6s ease-in-out infinite; }
+.ta-hand-press { left: 50%; top: 50%; animation: ta-tap 2.6s ease-in-out infinite; }
+@keyframes ta-press { 0%, 42% { transform: scale(1); } 52% { transform: scale(0.965); } 64%, 100% { transform: scale(1); } }
+
+/* Смета собирается строками */
+.ta-rows { position: absolute; left: 16px; right: 16px; top: 12px; bottom: 12px; display: flex; flex-direction: column; justify-content: space-between; }
+.ta-rows i { display: block; height: 6px; border-radius: 3px; background: var(--border); opacity: 0; animation: ta-row 3s ease-in-out infinite; }
+.ta-rows i:nth-child(1) { width: 78%; animation-delay: 0s; }
+.ta-rows i:nth-child(2) { width: 62%; animation-delay: 0.22s; }
+.ta-rows i:nth-child(3) { width: 88%; animation-delay: 0.44s; }
+.ta-rows i:nth-child(4) { width: 46%; background: var(--primary); animation-delay: 0.66s; }
+@keyframes ta-row {
+    0% { opacity: 0; transform: translateX(-10px); }
+    18%, 76% { opacity: 1; transform: translateX(0); }
+    94%, 100% { opacity: 0; transform: translateX(-10px); }
+}
+
+/* Человек попросил систему не двигать картинки — показываем ролик статичным кадром */
+@media (prefers-reduced-motion: reduce) {
+    .tour-anim *, .tour-spot { animation: none !important; }
+    .ta-rows i { opacity: 1; }
+}
 @media print { .tour-card, .tour-spot { display: none !important; outline: none !important; } }
 `;
         document.head.appendChild(st);
