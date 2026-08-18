@@ -1023,6 +1023,193 @@ body.dark-mode .swap-alt-badge {
     transition: transform 160ms var(--ease-out);
 }
 
+/* ================== КНОПКИ ПОД СМЕТОЙ ==================
+   Правило одно: ряд одинаковых кнопок, из которых цветом выделена ровно одна —
+   главное действие. Раньше здесь стояли пять залитых кнопок трёх разных цветов
+   вперемешку, ряд читался как набор случайных плиток.
+
+   Селекторы намеренно начинаются с .footer-btns: правило .btn-base в этом файле
+   объявлено дважды, и одноклассовые правила проигрывали ему по порядку. */
+/* Ряд — грид, а не flex. На flex кнопки делят место по содержимому, и «Скачать»
+   (она в обёртке из-за меню) выходила на 15 % уже соседей — ряд выглядел кривым.
+   Колонки грида равны по определению, независимо от длины подписи и обёрток.
+   Селектор с .output-panel: правило .footer-btns ниже в файле объявлено второй раз. */
+.output-panel .footer-btns {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 12px;
+}
+
+.footer-btns .btn-base {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    border-radius: 10px;
+}
+
+/* Главное действие — ради него смета и считается */
+.footer-btns .btn-primary-action {
+    background-color: var(--primary);
+    color: #fff;
+    border: 1px solid var(--primary);
+}
+
+.footer-btns .btn-primary-action:hover {
+    filter: brightness(0.93);
+}
+
+/* Все остальные — одинаковые нейтральные */
+.footer-btns .btn-secondary-action {
+    background-color: var(--surface-light);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    box-shadow: none;
+}
+
+.footer-btns .btn-secondary-action:hover {
+    background-color: var(--surface);
+    border-color: var(--text-sec);
+}
+
+.footer-btns .btn-secondary-action svg {
+    stroke: var(--text-sec);
+}
+
+/* Обёртка «Скачать»: кнопка с меню занимает такую же долю ряда, как соседи */
+.btn-download-wrap {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.btn-download-wrap > .btn-base {
+    width: 100%;
+    min-width: 0;
+}
+
+.btn-caret {
+    opacity: 0.6;
+    margin-left: -2px;
+}
+
+/* Меню выбора формата. Открывается вверх: кнопки стоят внизу сметы, вниз
+   выпадать некуда. */
+.download-menu {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    min-width: 100%;
+    z-index: 60;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 12px 24px -8px rgba(15, 23, 42, 0.18);
+}
+
+.download-menu.open {
+    display: block;
+}
+
+.download-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-main);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.download-menu-item svg {
+    stroke: var(--text-sec);
+    flex-shrink: 0;
+}
+
+.download-menu-item:hover {
+    background: var(--surface-light);
+}
+
+.download-menu-hint {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-sec);
+}
+
+/* Подсказка при наведении. Тот же тёмный пузырь со стрелкой, что у значков «i»
+   в смете (.tooltip-content), но без своей разметки — текст берётся из data-tip.
+   Только для мыши: на телефоне наведения нет, а по нажатию подсказка мешала бы
+   самой кнопке. */
+@media (hover: hover) and (pointer: fine) {
+    .footer-btns [data-tip] {
+        position: relative;
+    }
+
+    .footer-btns [data-tip]::before,
+    .footer-btns [data-tip]::after {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.15s ease;
+        pointer-events: none;
+        z-index: 200;
+    }
+
+    .footer-btns [data-tip]::before {
+        content: attr(data-tip);
+        position: absolute;
+        bottom: calc(100% + 11px);
+        left: 50%;
+        transform: translateX(-50%);
+        width: max-content;
+        max-width: 240px;
+        padding: 8px 11px;
+        background: #1F2937;
+        color: #fff;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1.5;
+        text-align: center;
+        white-space: normal;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+    }
+
+    .footer-btns [data-tip]::after {
+        content: "";
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: #1F2937;
+    }
+
+    .footer-btns [data-tip]:hover::before,
+    .footer-btns [data-tip]:hover::after {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Открытое меню форматов занимает то же место над кнопкой — подсказка там лишняя */
+    .btn-download-wrap.has-open-menu [data-tip]::before,
+    .btn-download-wrap.has-open-menu [data-tip]::after {
+        display: none;
+    }
+}
+
+
 /* Р¦РІРµС‚Р° РєРЅРѕРїРѕРє РІ СЃРІРµС‚Р»РѕР№ С‚РµРјРµ */
 .btn-tg {
     background-color: #229ED9;
@@ -1074,6 +1261,28 @@ body.dark-mode .btn-share {
 
 body.dark-mode .btn-share:hover {
     background-color: #047857;
+}
+
+/* Главная кнопка берёт --primary и в тёмной теме меняется сама, нейтральным
+   нужен свой фон: --surface-light на тёмном почти сливается с полотном. */
+body.dark-mode .footer-btns .btn-secondary-action {
+    background-color: #374151;
+    color: #F3F4F6;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+body.dark-mode .footer-btns .btn-secondary-action:hover {
+    background-color: #4B5563;
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+body.dark-mode .footer-btns .btn-secondary-action svg {
+    stroke: #D1D5DB;
+}
+
+body.dark-mode .download-menu {
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.5);
 }
 
 .editable-val {
@@ -1764,6 +1973,26 @@ body.menu-open .mobile-menu-backdrop {
         margin-left: 0 !important;
         padding: 16px !important;
         font-size: 16px !important;
+    }
+
+    /* На узком экране тот же грид разворачивается в столбик */
+    .output-panel .footer-btns {
+        grid-auto-flow: row;
+    }
+
+    .btn-download-wrap {
+        width: 100%;
+    }
+
+    .download-menu {
+        left: 0;
+        right: 0;
+    }
+
+    /* Палец не мышь: пункты меню на телефоне выше и крупнее */
+    .download-menu-item {
+        padding: 13px 14px;
+        font-size: 15px;
     }
 }
 
@@ -5913,6 +6142,52 @@ body.menu-open .mobile-menu-backdrop {
         padding: 11px 8px !important;
         font-size: 12px !important;
         justify-content: center;
+    }
+
+    /* В меню кнопки стоят плиткой по две в ряд — обёртка «Скачать» занимает
+       такую же плитку, а её кнопка внутри растягивается на всю обёртку. */
+    .mobile-sidebar .btn-download-wrap {
+        flex: 1 1 calc(50% - 4px);
+        min-width: calc(50% - 4px);
+    }
+
+    .mobile-sidebar .btn-download-wrap > .btn-base {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    /* Одна высота у всех плиток: «Ссылка для клиента» переносится на две строки,
+       и без этого второй ряд выходил ниже первого. */
+    .mobile-sidebar .footer-btns .btn-base,
+    .mobile-sidebar .btn-download-wrap {
+        min-height: 54px;
+    }
+
+    /* Меню ровно по ширине своей плитки. Шире делать нельзя: плитка «Скачать» может
+       оказаться в правом столбце, и меню уезжало за край экрана. */
+    .mobile-sidebar .download-menu {
+        left: 0;
+        right: auto;
+        min-width: 100%;
+        width: 100%;
+    }
+
+    .mobile-sidebar .download-menu-item {
+        padding: 12px;
+        font-size: 13px;
+    }
+
+    /* Главная кнопка в меню остаётся цветной — иначе список плиток одинаково серый.
+       Селектор по id, а не по классу: общее правило .footer-btns .btn-base svg имеет
+       ту же вес, что и по классу, и перебивало белую обводку иконки порядком в файле. */
+    .mobile-sidebar #btn_share_trigger {
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: #fff !important;
+    }
+
+    .mobile-sidebar #btn_share_trigger svg {
+        stroke: #fff !important;
     }
     
     .mobile-sidebar .footer-btns .btn-base svg {

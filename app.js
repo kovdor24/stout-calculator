@@ -1137,6 +1137,9 @@ const app = {
             if (skuControl) sidebarContent.appendChild(skuControl);
             if (footerBtns) sidebarContent.appendChild(footerBtns);
         } else {
+            // Меню «Скачать» живёт внутри этих же кнопок — уезжает вместе с ними,
+            // и открытым его оставлять нельзя: на десктопе оно всплывёт само собой.
+            this.closeDownloadMenu();
             this.restoreDesktopLayout();
         }
     },
@@ -9703,6 +9706,8 @@ const app = {
             // Скрываем кнопку «Ссылка для клиента» без VPN
             if (btnShare) btnShare.style.display = 'none';
         }
+        // Кнопка появилась или пропала — пересобираем акцент в ряду под сметой
+        this.syncFooterAccent();
     },
 
     fetchNotifications: async function () {
@@ -27038,6 +27043,54 @@ const app = {
             }
         }
     },
+    // Меню «Скачать»: PDF и Excel вместо двух отдельных кнопок в ряду.
+    toggleDownloadMenu: function (event) {
+        if (event) event.stopPropagation();
+        const menu = document.getElementById('download_menu');
+        const btn = document.getElementById('btn_print_trigger');
+        if (!menu) return;
+        const open = !menu.classList.contains('open');
+        menu.classList.toggle('open', open);
+        if (btn) btn.setAttribute('aria-expanded', String(open));
+        // Подсказка кнопки всплывает там же, где открывается меню — гасим её на это время
+        const wrap = menu.closest('.btn-download-wrap');
+        if (wrap) wrap.classList.toggle('has-open-menu', open);
+        // Закрытие по клику мимо и по Esc вешаем только на время показа меню
+        if (open) {
+            this._closeDownloadMenuOutside = (e) => {
+                if (!e.target.closest('.btn-download-wrap')) this.closeDownloadMenu();
+            };
+            this._closeDownloadMenuEsc = (e) => {
+                if (e.key === 'Escape') this.closeDownloadMenu();
+            };
+            setTimeout(() => {
+                document.addEventListener('click', this._closeDownloadMenuOutside);
+                document.addEventListener('keydown', this._closeDownloadMenuEsc);
+            }, 0);
+        } else {
+            this.closeDownloadMenu();
+        }
+    },
+
+    closeDownloadMenu: function () {
+        const menu = document.getElementById('download_menu');
+        const btn = document.getElementById('btn_print_trigger');
+        if (menu) {
+            menu.classList.remove('open');
+            const wrap = menu.closest('.btn-download-wrap');
+            if (wrap) wrap.classList.remove('has-open-menu');
+        }
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+        if (this._closeDownloadMenuOutside) {
+            document.removeEventListener('click', this._closeDownloadMenuOutside);
+            this._closeDownloadMenuOutside = null;
+        }
+        if (this._closeDownloadMenuEsc) {
+            document.removeEventListener('keydown', this._closeDownloadMenuEsc);
+            this._closeDownloadMenuEsc = null;
+        }
+    },
+
     download: async function () {
         return this.requestExport('print');
     },
@@ -27709,9 +27762,11 @@ const app = {
             }
         }
 
-        const btn = document.querySelector('.btn-tg');
+        // Кнопка «Запросить счёт»: ищем по id, класс .btn-tg остался только у старой
+        // разметки (счёт/шаринг), после перекладки кнопок под сметой его на ней нет.
+        const btn = document.getElementById('btn_invoice_trigger') || document.querySelector('.btn-tg');
         if (!btn) {
-            console.error("[sendEmail] Кнопка .btn-tg не найдена!");
+            console.error("[sendEmail] Кнопка «Запросить счёт» не найдена!");
             return;
         }
         const originalHtml = btn.innerHTML;
@@ -39810,22 +39865,34 @@ const app = {
         this.renderZonesUI();
         this.updateInfo();
 
-        // Кнопка «Печать» на мобильных/планшетах скачивает PDF напрямую, минуя системный
-        // диалог печати (см. executeDownload/isMobileOrTablet) — на этих устройствах он
-        // выглядит как неудобный "виртуальный принтер". На десктопе — обычная печать браузера.
+        // «Скачать» — одна кнопка на оба формата (см. toggleDownloadMenu), поэтому
+        // подписи ей больше не переписываем. Меняется только подсказка у пункта PDF:
+        // на компьютере он открывает окно печати, на мобильном/планшете сразу качает
+        // файл, минуя неудобный «виртуальный принтер» (см. executeDownload).
+        // Видимость кнопки «Ссылка для клиента» управляется через checkConnectionStatus (VPN).
         const btnPrint = document.getElementById('btn_print_trigger');
         const btnShare = document.getElementById('btn_share_trigger');
+        const hintPdf = document.getElementById('download_hint_pdf');
         if (btnPrint) {
             const isMobile = this.isMobileOrTablet();
             btnPrint.style.display = '';
-            if (isMobile) {
-                btnPrint.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Скачать PDF`;
-                if (isGuest && btnShare) btnShare.style.display = 'none';
-            } else {
-                btnPrint.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>Печать`;
-                // Видимость кнопки «Ссылка для клиента» управляется через checkConnectionStatus (VPN)
-            }
+            if (hintPdf) hintPdf.innerText = isMobile ? 'файл' : 'печать';
+            if (isMobile && isGuest && btnShare) btnShare.style.display = 'none';
+            this.syncFooterAccent();
         }
+    },
+
+    // Цветная кнопка в ряду под сметой всегда ровно одна. «Ссылка для клиента»
+    // показывается не всегда — ей нужна связь с базой (см. checkConnectionStatus),
+    // и без неё ряд остался бы из одинаково серых кнопок. Тогда главной становится
+    // «Скачать»: следующее по важности, что вообще можно сделать со сметой.
+    syncFooterAccent: function () {
+        const btnPrint = document.getElementById('btn_print_trigger');
+        const btnShare = document.getElementById('btn_share_trigger');
+        if (!btnPrint) return;
+        const shareShown = !!btnShare && btnShare.style.display !== 'none';
+        btnPrint.classList.toggle('btn-primary-action', !shareShown);
+        btnPrint.classList.toggle('btn-secondary-action', shareShown);
     },
     setArea: function (v) {
         v = parseInt(v);
