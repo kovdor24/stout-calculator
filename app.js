@@ -49110,7 +49110,9 @@ const app = {
                 addToBill(bb[9], 2, "", grp63);
             }
 
-            let ballValve = { id: "SVB-1007-200020", name: "Кран шаровой ВН-НР 3/4\"", price: 1556, brand: "STOUT" };
+            // Кран с американкой, поэтому ROMMER-аналог тоже с американкой: без поля
+            // rommer позиция оставалась STOUT даже при переключении сметы на ROMMER.
+            let ballValve = { id: "SVB-1007-200020", name: "Кран шаровой ВН-НР 3/4\"", price: 1556, brand: "STOUT", rommer: { id: "RBV-0005-0510220", name: "Кран шаровой с американкой ВР/НР 3/4\"", price: 640.13, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } };
             let tee34 = { id: "SFT-0020-000034", name: "Тройник 3/4\" ВР", price: 504, brand: "STOUT" };
             let union34 = { id: "SFT-0045-000034", name: "Сгон прямой 3/4\" ВР-НР", price: 583, brand: "STOUT" };
             let nipple34 = { id: "SFT-0004-003434", name: "Ниппель 3/4\" НР", price: 207, brand: "STOUT" };
