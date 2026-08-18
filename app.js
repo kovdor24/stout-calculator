@@ -17269,7 +17269,7 @@ const app = {
      */
     PRICE_GROUP_BY_CATALOG_KEY: {
         // Котёл + водонагреватель
-        boilers_gas: 'kotly_gaz', boilers_baxi: 'kotly_gaz',
+        boilers_gas: 'kotly_gaz', boilers_baxi: 'kotly_gaz', boilers_vaillant: 'kotly_gaz',
         boilers_plus: 'kotly_el', boilers_status: 'kotly_el', boilers_polis: 'kotly_el',
         tanks_optibase: 'boylery_kn', tanks_standard: 'boylery_kn', tanks_stainless: 'boylery_kn',
         chimneys: 'dymohody',
@@ -26576,7 +26576,7 @@ const app = {
         // Поле type у стабилизаторов значит совсем другое, поэтому смотрим его
         // только у позиций, найденных в котловых массивах каталога.
         const _boilerById = {};
-        ['boilers_gas', 'boilers_baxi', 'boilers_plus', 'boilers_status', 'boilers_polis']
+        ['boilers_gas', 'boilers_baxi', 'boilers_vaillant', 'boilers_plus', 'boilers_status', 'boilers_polis']
             .forEach(k => (catalog[k] || []).forEach(x => { _boilerById[x.id] = x; }));
         const catB = i => (i && (_boilerById[i.id] || _boilerById[i.originalId])) || null;
         const isBoiler = i => !!catB(i) || /котел|котёл/i.test(nameOf(i));
@@ -30155,6 +30155,12 @@ const app = {
     polisAvailable: function () {
         return (this.state.fuels || []).includes('gas');
     },
+    // Все газовые котлы, из которых собирается таблица замены: Haier (автоподбор),
+    // BAXI и Vaillant. Одно место вместо пяти перечислений — новый бренд добавляется
+    // здесь и в _boilerById схемы (см. buildSchemeConfig).
+    gasBoilerPool: function () {
+        return [...catalog.boilers_gas, ...(catalog.boilers_baxi || []), ...(catalog.boilers_vaillant || [])];
+    },
     openSwapModal: function (lookupId) {
         // Полотенцесушители (SHQ-) заменяются собственным пикером с фильтрами по высоте/ширине/цвету (#5).
         if (lookupId && String(lookupId).startsWith('SHQ-')) { this.openTowelWarmerPicker(); return; }
@@ -30679,7 +30685,7 @@ const app = {
                 { id: 'angled', name: 'Угловое подключение конвектора', brand: isRommer ? 'ROMMER' : 'STOUT', price: angledPrice, imgId: angledImgId }
             ];
         }
-        else if (item.originalId && (item.originalId.startsWith('SCA-') || item.originalId.startsWith('RCA-'))) {
+        else if (item.originalId && (item.originalId.startsWith('SCA-') || item.originalId.startsWith('RCA-') || (catalog.chimneys || []).some(c => c.id === item.originalId))) {
             let p0 = isRommer ? (catalog.chimneys[0].rommer?.price || catalog.chimneys[0].price) : catalog.chimneys[0].price;
             let name0 = isRommer ? (catalog.chimneys[0].rommer?.name || catalog.chimneys[0].name) : catalog.chimneys[0].name;
             let imgId0 = isRommer ? (catalog.chimneys[0].rommer?.id || catalog.chimneys[0].id) : catalog.chimneys[0].id;
@@ -31047,7 +31053,7 @@ const app = {
                 </div>
             `;
         } else if (_origId0 === 'gas_boiler_auto') {
-            const _gbData = [...catalog.boilers_gas, ...(catalog.boilers_baxi || [])].find(p => p.id === item.id) || item;
+            const _gbData = this.gasBoilerPool().find(p => p.id === item.id) || item;
             const _gbDhwBadge = (_gbData.circuits === 2)
                 ? `<div style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid rgba(37,99,235,0.08);">ГВС: <span style="font-weight:800;">${_gbData.dhw != null ? _gbData.dhw + ' л/мин' : '—'}</span></div>`
                 : '';
@@ -31398,7 +31404,7 @@ const app = {
             if (_en !== 'all') customAlts = customAlts.filter(a => a.conn === _en);
         } else if (_origId0 === 'gas_boiler_auto') {
             if (isFirstOpen) {
-                const _gbCur = [...catalog.boilers_gas, ...(catalog.boilers_baxi || [])].find(b => b.id === item.id);
+                const _gbCur = this.gasBoilerPool().find(b => b.id === item.id);
                 if (_gbCur) {
                     this.state.gasBoilerCircuits = _gbCur.circuits ? String(_gbCur.circuits) : 'all';
                     this.state.gasBoilerPower = _gbCur.power || 'all';
@@ -31423,7 +31429,7 @@ const app = {
                 `</div>` +
                 `</div>`;
             const _gp = this.state.gasBoilerPower || 'all';
-            const _allGbPowers = [...new Set([...catalog.boilers_gas, ...(catalog.boilers_baxi || [])].map(b => b.power).filter(Boolean))].sort((a, b) => a - b);
+            const _allGbPowers = [...new Set(this.gasBoilerPool().map(b => b.power).filter(Boolean))].sort((a, b) => a - b);
             const _powerBtns = _allGbPowers.map(p => `<span onclick="app.setGasBoilerPower(${p})" ${_b(_gp===p)}>${p} кВт</span>`).join('');
             _tankFiltersHtml = _tankFiltersHtml.replace('</div>', '') +
                 `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
@@ -31432,7 +31438,9 @@ const app = {
                 `<span onclick="app.setGasBoilerPower('all')" ${_b(_gp==='all')}>Все</span>` +
                 `</div>` +
                 `</div>`;
-            const _isCond = (b) => b.brand === 'BAXI' && /Duo-tec|Platinum\+|LUNA AIR|LUNA IN PLUS/.test(b.name);
+            // Признак конденсационного — поле cond у позиции каталога (BAXI и Vaillant),
+            // а не разбор названия: по названию Vaillant ecoTEC не опознавался.
+            const _isCond = (b) => !!b.cond;
             if (_gc !== 'all') alts = alts.filter(b => String(b.circuits) === _gc);
             if (_gt === 'traditional') alts = alts.filter(b => !_isCond(b));
             else if (_gt === 'cond') alts = alts.filter(b => _isCond(b));
@@ -31476,7 +31484,8 @@ const app = {
             if (_al !== 'all') alts = alts.filter(x => x.link === _al);
             if (_at !== 'all') alts = alts.filter(x => !x.ctrlType || x.ctrlType === _at);
             if (_ac !== 'all') alts = alts.filter(x => !x.color || x.color === _ac);
-        } else if (item.originalId && (item.originalId.startsWith('SCA-') || item.originalId.startsWith('RCA-'))) {
+        // Дымоходы Vaillant (артикулы без префикса SCA-/RCA-) узнаём по самому каталогу.
+        } else if (item.originalId && (item.originalId.startsWith('SCA-') || item.originalId.startsWith('RCA-') || (catalog.chimneys || []).some(c => c.id === item.originalId))) {
             const _cht = this.state.chimneySwapType || 'all';
             const _b = (active) => `style="cursor:pointer;padding:3px 10px;border-radius:5px;font-size:12px;border:1px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:${active?700:400};margin:2px;"`;
             _tankFiltersHtml =
@@ -42739,19 +42748,34 @@ const app = {
                 let singlePower = val2 || 24;
                 let totalPwrLimit = qty * singlePower;
 
+                // val4 — позиция каталога, если котёл не Haier: бренд, модель и паспортная
+                // производительность ГВС берутся из неё, а не из зашитых под Haier цифр.
+                let gb = (val4 && typeof val4 === 'object') ? val4 : null;
+                let gbBrand = (gb && gb.brand) || 'Haier';
+                let gbModel = (gb && gb.brand && gb.brand !== 'Haier' && gb.name && !/^Котёл газовый/.test(gb.name)) ? ` ${gb.name}` : '';
+
                 let formulaStr = `Q_требуемая = Q_теплопотери (согласно расчёту теплопотерь здания по СП 60.13330.2020).`;
                 if (qty > 1) {
-                    formulaStr += ` При каскаде: N_котлов = ⌈Q_требуемая / 24 кВт⌉.`;
+                    formulaStr += ` При каскаде: N_котлов = ⌈Q_требуемая / ${singlePower} кВт⌉.`;
                 }
 
-                let flowRate = (singlePower <= 18) ? "10.5" : "13.7";
+                // У Haier расход ГВС в паспорте дан при Δt=25°C, у Vaillant в прайсе — при ΔT 30 °C.
+                let dhwOwn = gb && gb.dhw;
+                let flowRate = dhwOwn ? String(gb.dhw) : ((singlePower <= 18) ? "10.5" : "13.7");
+                let dtStr = dhwOwn ? 'ΔT=30°C' : 'Δt=25°C';
                 let gvsText = isBk
                     ? 'Работает в паре с бойлером косвенного нагрева для высокого комфорта ГВС.'
-                    : `Обеспечивает нагрев горячей воды во встроенном вторичном теплообменнике в проточном режиме с производительностью ГВС (Δt=25°C) — ${flowRate} л/мин.`;
+                    : `Обеспечивает нагрев горячей воды во встроенном вторичном теплообменнике в проточном режиме с производительностью ГВС (${dtStr}) — ${flowRate} л/мин.`;
 
                 let gvsValLine = isBk
                     ? ''
-                    : `• Производительность ГВС (Δt=25°C): ${flowRate} л/мин.<br>`;
+                    : `• Производительность ГВС (${dtStr}): ${flowRate} л/мин.<br>`;
+                // Одноконтурный со встроенным переключающим клапаном (Vaillant VU): комплект
+                // внешнего клапана в обвязке не нужен, о чём стоит сказать прямо здесь.
+                let builtInValveLine = (isBk && gb && gb.dhwValve)
+                    ? `• Приоритетный трёхходовой клапан для бойлера встроен в котёл — внешний комплект клапана не нужен, ставится только датчик бойлера.<br>`
+                    : '';
+                let condLine = (gb && gb.cond) ? `• Конденсационный: дымоход — пластиковый (PP) комплект для конденсационных котлов.<br>` : '';
 
                 let sumPwrLine = qty > 1
                     ? `• Суммарная мощность каскада: ${totalPwrLimit} кВт.<br>`
@@ -42773,7 +42797,7 @@ const app = {
                       `по числу насосных групп и один котловой ввод — под ${qty} котлов его надо пересмотреть.<br>`
                     : '';
 
-                return `<span style="${styles}"><span style="${head}">Газовый котёл Haier</span>` +
+                return `<span style="${styles}"><span style="${head}">Газовый котёл ${gbBrand}${gbModel}</span>` +
                     `<b>Зачем:</b> Основной энергоэффективный источник тепла для системы отопления и горячего водоснабжения. ${gvsText}<br><br>` +
                     `<b>Формула подбора:</b> ${formulaStr}<br><br>` +
                     `<b>Подставленные значения:</b><br>` +
@@ -42781,6 +42805,8 @@ const app = {
                     `• Количество котлов${qty > 1 ? ' в каскаде' : ''}: ${qty} шт.<br>` +
                     `• Мощность подобранного котла: ${singlePower} кВт (${bkText}).<br>` +
                     `${gvsValLine}` +
+                    builtInValveLine +
+                    condLine +
                     sumPwrLine +
                     cascadeWarn +
                     `</span>`;
@@ -43108,8 +43134,18 @@ const app = {
                     calcStr = `<b>Расчёт по жильцам:</b> Жильцы (${val1} чел) × 50 л = ${val1 * 50} л.`;
                 }
                 return `<span style="${styles}"><span style="${head}">Бойлер косвенного нагрева</span><b>Зачем:</b> Комфортное ГВС (запас воды).<br><b>Метод подбора:</b> ${calcStr}<br><b>Подобранный объем бойлера:</b> ${val2} л.<br><b>Норматив:</b> СП 30.13330.2020.</span>`;
-            case 'chimney':
+            case 'chimney': {
+                // val1 — позиция дымохода: у конденсационного свой текст (пластик,
+                // конденсат), у Vaillant — почему именно родной комплект.
+                const chm = (val1 && typeof val1 === 'object') ? val1 : null;
+                if (chm && chm.chimType === 'cond') {
+                    const own = chm.forBrand
+                        ? `<b>Почему родной ${chm.forBrand}:</b> производитель котла требует сертифицированную систему дымоудаления — на универсальном комплекте гарантия под вопросом. Универсальный ROMMER остаётся в списке замены.<br>`
+                        : '';
+                    return `<span style="${styles}"><span style="${head}">Дымоход коаксиальный для конденсационного котла</span><b>Зачем:</b> Безопасный выброс газов и забор воздуха с улицы.<br><b>Особенность:</b> у конденсационного котла дымовые газы холодные (40–60 °C) и с кислым конденсатом — нужен пластиковый (PP) комплект с уклоном к котлу для стока конденсата в сифон.<br><b>Стандарт:</b> 60/100 мм.<br>${own}<b>Норматив:</b> СП 402.1325800.2018.</span>`;
+                }
                 return `<span style="${styles}"><span style="${head}">Дымоход коаксиальный</span><b>Зачем:</b> Безопасный выброс газов и забор воздуха с улицы.<br><b>Стандарт:</b> 60/100 мм (для турбированных котлов).<br><b>Норматив:</b> СП 402.1325800.2018.</span>`;
+            }
             case 'stab': {
                 let boilerType = val1 || 'gas';
                 let capacity = val2 || 250;
@@ -43123,7 +43159,7 @@ const app = {
                         `<b>Зачем:</b> ${why}<br><br>` +
                         `<b>Формула подбора:</b> Мощность стабилизатора P_стаб ≥ P_потребляемая_электрическая × 1.5 (коэффициент запаса на пусковые токи насоса и горелки).<br><br>` +
                         `<b>Подставленные значения:</b><br>` +
-                        `• Тип котла: Газовый настенный Haier.<br>` +
+                        `• Тип котла: Газовый настенный ${val4 || 'Haier'}.<br>` +
                         `• Максимальное электропотребление: ~${powerVal} Вт.<br>` +
                         `• Требуемая мощность стабилизатора: ${powerVal} × 1.5 = ${(powerVal * 1.5).toFixed(0)} ВА.<br>` +
                         `• Подобран прибор: ST ${capacity} (номинал ${capacity} ВА).</span>`;
@@ -43160,6 +43196,21 @@ const app = {
                 return `<span style="${styles}"><span style="${head}">Расширительный бак (ГВС)</span><b>Зачем:</b> Компенсация давления при нагреве бойлера.<br><b>Формула:</b> 10% от объема бойлера (${val1} л).<br><b>Расчет:</b> ${val2} л.</span>`;
             case 'fugas':
                 return `<span style="${styles}"><span style="${head}">Комплект 3-х ходового клапана</span><b>Зачем:</b> Трехходовой клапан для подключения бойлера к одноконтурному котлу.<br><b>Функция:</b> Переключает поток на нагрев воды по датчику.<br><b>Состав:</b> Клапан, датчик NTC 2 м, датчик LM335 2 м.</span>`;
+            case 'vaillant_dhw_sensor': {
+                const bn = (val1 && val1.name) ? ` ${val1.name}` : '';
+                return `<span style="${styles}"><span style="${head}">Датчик температуры бойлера NTC</span><b>Зачем:</b> У одноконтурного котла Vaillant${bn} приоритетный трёхходовой клапан для бойлера уже встроен, поэтому внешний комплект клапана не нужен — котёл сам переключает поток на змеевик бойлера.<br><b>Функция:</b> Датчик ставится в гильзу бойлера и сообщает котлу температуру воды; по ней котёл включает нагрев ГВС и возвращается на отопление.<br><b>Артикул:</b> 306257 (turboTEC / atmoTEC / ecoTEC plus). В прайсе ТЕРЕМ нет — цена ориентировочная, сервисных центров.</span>`;
+            }
+            case 'vaillant_reg': {
+                // val1 — роль (room / weather / cascade), val2 — число котлов Vaillant.
+                const n = val2 || 1;
+                if (val1 === 'cascade') {
+                    return `<span style="${styles}"><span style="${head}">Модуль каскада VR 32</span><b>Зачем:</b> Связывает по eBUS второй и следующие котлы Vaillant с регулятором VRC 700/6 — без модуля регулятор видит только первый котёл, и каскад не работает.<br><b>Количество:</b> по одному на каждый котёл сверх первого: котлов ${n} → ${n - 1} шт.<br><b>Когда не нужен:</b> если включена автоматика STOUT (Thermatic) — она ведёт каскад сама по своим платам цифровой шины.</span>`;
+                }
+                if (val1 === 'weather') {
+                    return `<span style="${styles}"><span style="${head}">Погодозависимый регулятор Vaillant</span><b>Зачем:</b> Каскад из ${n} котлов Vaillant без автоматики STOUT: собственный контроллер котлов не умеет вести второй котёл, нужен системный регулятор — VRC 700/6 (multiMATIC) с уличным датчиком, он ставится в панель первого котла и распределяет нагрузку между котлами.<br><b>Управляет:</b> отоплением по погоде, приоритетом ГВС (бойлер), каскадом (через VR 32).<br><b>Замена:</b> VRC 720 sensoCOMFORT — тот же класс, новее.<br><b>Когда не нужен:</b> если включена автоматика STOUT (Thermatic) — она ведёт котлы по eBUS сама.</span>`;
+                }
+                return `<span style="${styles}"><span style="${head}">Комнатный регулятор Vaillant</span><b>Зачем:</b> Котёл Vaillant без автоматики STOUT: базовый комнатный регулятор VRT 50 по шине eBUS — модулирует горелку по температуре в помещении вместо тактования «вкл/выкл» по термостату.<br><b>Замена:</b> VRT 380 (недельная программа) или погодозависимые VRC 700/6 и VRC 720 с уличным датчиком.<br><b>Когда не нужен:</b> если включена автоматика STOUT (Thermatic) — она ведёт котёл по eBUS сама, и родной регулятор ей не нужен.</span>`;
+            }
             case 'fugas_pump':
                 return `<span style="${styles}"><span style="${head}">Насосная группа (загрузка бойлера)</span><b>Зачем:</b> Альтернатива трёхходовому клапану для подключения бойлера к одноконтурному котлу.<br><b>Функция:</b> Отдельный насос по сигналу термостата бойлера подкачивает контур загрузки, не отключая при этом отопление дома (в отличие от переключающего 3-х ходового клапана).</span>`;
             case 'pump_std':
@@ -44752,7 +44803,14 @@ const app = {
                     let _gasSwapId = this.state.swaps && this.state.swaps['gas_boiler_auto'];
                     let haierBoiler;
                     if (_gasSwapId) {
-                        haierBoiler = [...catalog.boilers_gas, ...(catalog.boilers_baxi || [])].find(x => x.id === _gasSwapId);
+                        haierBoiler = this.gasBoilerPool().find(x => x.id === _gasSwapId);
+                        // Выбранная руками модель задаёт и число котлов: каскад считаем
+                        // по её мощности, а не по 24 кВт Haier. Иначе дом на 30 кВт с
+                        // выбранным котлом на 32 кВт получал два котла по 32.
+                        if (haierBoiler && haierBoiler.power > 0) {
+                            qty = Math.max(1, Math.ceil(targetPower / haierBoiler.power));
+                            powerPerBoiler = targetPower / qty;
+                        }
                     }
                     if (!haierBoiler) {
                         if (!this.state.hotWater) {
@@ -44769,12 +44827,14 @@ const app = {
                     }
                     if (haierBoiler) {
                         const _gbCircStr = haierBoiler.circuits === 1 ? 'одноконтурный' : 'двухконтурный';
+                        // Исходная позиция каталога — подсказке нужны бренд и модель до переименования.
+                        const _gbSrc = haierBoiler;
                         // sortRank: -1 — газовый котёл открывает раздел независимо от суммы.
                         // Он основной источник тепла, электрический при нём стоит резервом,
                         // а по цене бывает и дороже (STATUS 27 кВт против Haier 24 кВт) —
                         // без ранга резервный котёл вставал в смете выше основного.
-                        haierBoiler = { ...haierBoiler, sortRank: -1, name: `Котёл газовый, ${_gbCircStr} (${haierBoiler.power} кВт)`, originalId: 'gas_boiler_auto', alts: [...catalog.boilers_gas, ...(catalog.boilers_baxi || [])] };
-                        addToBill(haierBoiler, qty, this.getDesc('boiler_gas', parseFloat(pwrBoiler), haierBoiler.power, qty));
+                        haierBoiler = { ...haierBoiler, sortRank: -1, name: `Котёл газовый, ${_gbCircStr} (${haierBoiler.power} кВт)`, originalId: 'gas_boiler_auto', alts: this.gasBoilerPool() };
+                        addToBill(haierBoiler, qty, this.getDesc('boiler_gas', parseFloat(pwrBoiler), haierBoiler.power, qty, _gbSrc));
                         markRigAnchor('gas', 'gas_boiler_auto');
                         for (let k = 0; k < qty; k++) selBoilers.push(haierBoiler);
                     }
@@ -44960,29 +45020,78 @@ const app = {
         // DN25). Сбрасываем на каждом рендере: без коллектора этот блок не выполняется,
         // и прошлое значение осталось бы висеть от другой конфигурации.
         this._tankLoadKitInfo = null;
-        const addTankLoadingKit = (grp) => {
+        // Котёл, у которого переключающий клапан бойлера встроен (dhwValve — Vaillant VU):
+        // внешний комплект ему не нужен, ставим только датчик бойлера, по которому
+        // котёл сам переключает поток на змеевик.
+        const addTankLoadingKit = (grp, boiler) => {
             if (!this.state.hotWater) return;
             // Узел загрузки переключает поток котла на змеевик бойлера — без бойлера
             // в смете он ни к чему не подключается.
             if (rigDropped('dhw')) return;
+            if (boiler && boiler.dhwValve) {
+                const _sens = (catalog.vaillant_acc || []).find(x => x.id === '306257');
+                if (_sens) addToBill(_sens, 1, this.getDesc('vaillant_dhw_sensor', boiler), grp);
+                return;
+            }
             addToBill({ ...catalog.valves[0], originalId: 'SFB-0001-000001_tankload', alts: _tankLoadAlts }, 1, this.getDesc('fugas'), grp);
             addToBill(catalog.nipple_34, 2, "Для фугаса.", grp);
+        };
+        // Дымоход под конкретный котёл. Конденсационному нужен свой комплект (сбор
+        // конденсата, пластик): у Vaillant — родной PP-комплект (гарантия требует
+        // сертифицированную систему), у остальных — универсальный ROMMER. Традиционные
+        // котлы любого бренда идут на STOUT/ROMMER 60/100, как и раньше.
+        const chimneyFor = (b) => {
+            const list = catalog.chimneys || [];
+            if (b && b.cond) {
+                const own = b.brand && list.find(c => c.chimType === 'cond' && c.forBrand === b.brand);
+                const uni = list.find(c => c.chimType === 'cond' && !c.forBrand);
+                if (own || uni) return own || uni;
+            }
+            return (this.state.chimneyType === 'basic') ? list[1] : list[0];
         };
         let _gasIdx = 0;
         selBoilers.forEach(b => {
             if (b.type === 'gas' && !rigDropped('gas')) {
                 let grp = gasBoilerGrp(_gasIdx++);
-                let ch = (this.state.chimneyType === 'basic') ? catalog.chimneys[1] : catalog.chimneys[0];
+                let ch = chimneyFor(b);
                 // Дымоход всегда открывает обвязку котла: по нему монтажник опознаёт,
                 // чья это обвязка, а по цене он не всегда оказывался наверху.
-                addToBill({ ...ch, sortRank: -1 }, 1, this.getDesc('chimney'), grp);
-                addToBill(catalog.stabs[0], 1, this.getDesc('stab', 'gas', 250, 150), grp);
+                // noCheapenAlts у конденсационного: в .alts лежат и обычные дымоходы, и
+                // режим «Аналог» иначе подставил бы конденсационному котлу дешёвый
+                // традиционный 60/100. Ручной замене список остаётся.
+                addToBill({ ...ch, sortRank: -1, ...(ch.chimType === 'cond' ? { noCheapenAlts: true } : {}) }, 1, this.getDesc('chimney', ch), grp);
+                addToBill(catalog.stabs[0], 1, this.getDesc('stab', 'gas', 250, 150, b.brand), grp);
                 addToBill(catalog.american_34, 2, "Разъемное соед.", grp);
                 addToBill(withRommerAlt(catalog.ball_valve_34), 2, "Запорная арматура.", grp);
                 addToBill(withRommerAlt(catalog.filter_mag), 1, this.getDesc('filter_mag'), grp);
                 if (selBoilers.length > 1) addToBill(withRommerAlt(catalog.check_valve_34), 1, "Обратный клапан.", grp);
             }
         });
+        // Регуляторы Vaillant — только когда автоматика STOUT (Thermatic) выключена:
+        // включённая ведёт котёл по eBUS сама, и родной регулятор ей не нужен.
+        // Один котёл — комнатный VRT 50 (в замене VRT 380 и погодозависимые VRC);
+        // каскад — VRC 700/6 плюс VR 32 на каждый котёл сверх первого: без модуля
+        // второй котёл в каскад не встаёт. Кладём в обвязку первого котла.
+        {
+            const _vGas = selBoilers.filter(b => b && b.type === 'gas' && b.brand === 'Vaillant');
+            const _acc = catalog.vaillant_acc || [];
+            if (_vGas.length && !this.state.boilerAuto && !rigDropped('gas') && _acc.length) {
+                const grp = gasBoilerGrp(0);
+                const room = _acc.filter(x => x.role === 'room');
+                const weather = _acc.filter(x => x.role === 'weather');
+                const vr32 = _acc.find(x => x.role === 'cascade');
+                // noCheapenAlts: в списке — разные приборы, а не тот же товар другого
+                // бренда; режим «Аналог» не вправе подменять их по цене.
+                if (_vGas.length === 1) {
+                    const base = room[0];
+                    if (base) addToBill({ ...base, alts: [...room.slice(1), ...weather], noCheapenAlts: true }, 1, this.getDesc('vaillant_reg', 'room', 1), grp);
+                } else {
+                    const base = weather[0];
+                    if (base) addToBill({ ...base, alts: weather.slice(1), noCheapenAlts: true }, 1, this.getDesc('vaillant_reg', 'weather', _vGas.length), grp);
+                    if (vr32) addToBill(vr32, _vGas.length - 1, this.getDesc('vaillant_reg', 'cascade', _vGas.length), grp);
+                }
+            }
+        }
         // Варианты обвязки POLIS для кнопки замены. Цены нулевые намеренно: реальные
         // подставляет модалка (customAlts), а getCheapestAlternative пропускает позиции
         // с price <= 0 — иначе в режиме «Аналог» он подменил бы узел этим списком.
@@ -45099,7 +45208,7 @@ const app = {
         let hasElSel = selBoilers.some(b => b.type !== 'gas' && !b.noPump) && !rigDropped('el');
         let tankNeedsPumpGroup = !!this.state.hotWater && !rigDropped('dhw') && (this.state.tankLoadScheme || 'valve') === 'pump';
         if (!tankNeedsPumpGroup) {
-            if (hasGasSel) addTankLoadingKit(gasBoilerGrp(0));
+            if (hasGasSel) addTankLoadingKit(gasBoilerGrp(0), selBoilers.find(b => b && b.type === 'gas'));
             if (hasElSel) addTankLoadingKit(elBoilerGrp(0));
         }
         if (this.state.hotWater && !rigDropped('dhw')) {
