@@ -49,15 +49,43 @@ jobs:
           npm ci
           npx cap sync android
 
+      # Ключ подписи в репозитории не лежит: он хранится секретом в настройках
+      # GitHub и здесь на минуту разворачивается обратно в файл.
+      - name: Достать ключ подписи
+        working-directory: mobile-android/android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "Нет секрета ANDROID_KEYSTORE_BASE64 — подписать сборку нечем."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | tr -d '\r\n' | base64 -d > release.keystore
+
+      # Магазины принимают только release: в отладочной сборке стоит флаг
+      # debuggable и подпись стандартным ключом отладки, RuStore такую заворачивает.
       - name: Собрать APK
         working-directory: mobile-android/android
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$PWD/release.keystore" \
+            -Pandroid.injected.signing.store.password="$STORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+
+      - name: Убрать ключ подписи
+        if: always()
+        working-directory: mobile-android/android
+        run: rm -f release.keystore
 
       - name: Выложить APK
         uses: actions/upload-artifact@v4
         with:
-          name: heatcalc-debug-apk
-          path: mobile-android/android/app/build/outputs/apk/debug/*.apk
+          name: heatcalc-release-apk
+          path: mobile-android/android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error

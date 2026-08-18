@@ -12,3 +12,5 @@ store-assets/googleplay-package/signing-key-info.txt
 # Собранные пакеты — по 2 МБ на каждую пересборку, в истории git не нужны
 store-assets/googleplay-package/*.aab
 store-assets/googleplay-package/*.apk
+# Ключ в виде текста для секрета GitHub — тоже секрет, в историю не кладём
+store-assets/googleplay-package/*.base64.txt
