@@ -392,6 +392,20 @@
                 </div>
             </div>
 
+            <!-- Быстрый старт: пока в расчёте ничего нет, предлагаем начать с типового
+                 объекта. Окно первого запуска показывается не больше двух раз и легко
+                 закрывается не глядя, а эта кнопка остаётся на месте, пока смета пустая
+                 (показ — app.syncQuickStartBtn). -->
+            <div id="quick_start_row" class="no-print" style="display: none; margin-bottom: 15px;">
+                <button type="button" onclick="app.showQuickStart()"
+                    style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+                           font: inherit; font-size: 13px; font-weight: 600; padding: 10px 12px;
+                           border-radius: 10px; border: 1px dashed var(--primary); background: transparent;
+                           color: var(--primary); cursor: pointer;">
+                    <span style="font-size: 15px;">🏠</span>Быстрый старт: типовой объект
+                </button>
+            </div>
+
             <div class="control-item" id="blk_main_area" style="margin-bottom: 15px;">
                 <div class="label-row"><span class="lbl">Основная площадь</span><span class="val"><span
                             id="val_area" class="editable-val" contenteditable="true"

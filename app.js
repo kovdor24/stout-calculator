@@ -28820,6 +28820,25 @@ const app = {
         }
     ],
 
+    // Пустой ли расчёт: ни площади, ни номера КП, ни своих или распознанных позиций,
+    // ни комнат подробного расчёта. От этого зависит и окно первого запуска, и кнопка
+    // «Быстрый старт» над площадью.
+    isCalcEmpty: function () {
+        if (this.state.area > 0 || this.state.calc_id) return false;
+        if ((this.state.userAddedEq || []).length || (this.state.userAddedWorks || []).length) return false;
+        if ((this.state.rooms || []).length) return false;
+        return true;
+    },
+
+    // Кнопка над площадью. Окно первого запуска показывается не больше двух раз и
+    // закрывается одним касанием — человек, закрывший его не глядя, иначе больше о
+    // быстром старте не узнал бы. Кнопка живёт ровно столько, сколько расчёт пуст.
+    syncQuickStartBtn: function () {
+        const row = document.getElementById('quick_start_row');
+        if (!row) return;
+        row.style.display = this.isCalcEmpty() ? 'block' : 'none';
+    },
+
     // Показывать ли окно. Условий много, но все об одном: человек пришёл на пустой
     // калькулятор своими ногами и ещё ничего в нём не сделал.
     maybeShowQuickStart: function () {
@@ -28831,9 +28850,7 @@ const app = {
             if ((window.location.hash || '').indexOf('data=') > -1) return;
             if (this._yandexExchanging) return;
             // В расчёте уже что-то есть — своё, распознанное или просто заданная площадь.
-            if (this.state.area > 0 || this.state.calc_id) return;
-            if ((this.state.userAddedEq || []).length || (this.state.userAddedWorks || []).length) return;
-            if ((this.state.rooms || []).length) return;
+            if (!this.isCalcEmpty()) return;
             // Дважды хватит: закрыл не глядя в первый раз — покажем ещё один, но не больше.
             const shown = parseInt(localStorage.getItem('quick_start_shown') || '0', 10) || 0;
             if (shown >= 2) return;
@@ -38721,6 +38738,9 @@ const app = {
         // Проектирование (листы проекта, редактор планов) — по такому же
         // доступу, как распознавание: по умолчанию закрыто всем, кроме админов.
         this.syncDesignUI();
+
+        // Кнопка быстрого старта над площадью — пока в расчёте ничего нет
+        this.syncQuickStartBtn();
 
         // Кубок рейтинга (шапка) — пилот доступен монтажникам Калининградской области;
         // админы и наблюдатели видят его вне зависимости от своего региона (для контроля/теста).
