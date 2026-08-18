@@ -1137,6 +1137,9 @@ const app = {
             if (skuControl) sidebarContent.appendChild(skuControl);
             if (footerBtns) sidebarContent.appendChild(footerBtns);
         } else {
+            // Меню «Скачать» живёт внутри этих же кнопок — уезжает вместе с ними,
+            // и открытым его оставлять нельзя: на десктопе оно всплывёт само собой.
+            this.closeDownloadMenu();
             this.restoreDesktopLayout();
         }
     },

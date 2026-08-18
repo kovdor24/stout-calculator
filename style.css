@@ -1931,6 +1931,12 @@ body.menu-open .mobile-menu-backdrop {
         right: 0;
         min-width: 0;
     }
+
+    /* Палец не мышь: пункты меню на телефоне выше и крупнее */
+    .download-menu-item {
+        padding: 13px 14px;
+        font-size: 15px;
+    }
 }
 
 .qty-wrap {
@@ -6097,18 +6103,32 @@ body.menu-open .mobile-menu-backdrop {
         display: none;
     }
 
+    /* Плитка «Скачать» занимает половину ряда, а меню под палец должно быть шире
+       и с пунктами повыше — 37 px в списке промахиваются. */
+    .mobile-sidebar .download-menu {
+        right: auto;
+        min-width: 200px;
+    }
+
+    .mobile-sidebar .download-menu-item {
+        padding: 12px 12px;
+        font-size: 13px;
+    }
+
     .mobile-sidebar .btn-compact {
         flex: 1 1 calc(50% - 4px);
     }
 
-    /* Главная кнопка в меню остаётся цветной — иначе список плиток одинаково серый */
-    .mobile-sidebar .footer-btns .btn-primary-action {
+    /* Главная кнопка в меню остаётся цветной — иначе список плиток одинаково серый.
+       Селектор по id, а не по классу: общее правило .footer-btns .btn-base svg имеет
+       ту же вес, что и по классу, и перебивало белую обводку иконки порядком в файле. */
+    .mobile-sidebar #btn_share_trigger {
         background: var(--primary) !important;
         border-color: var(--primary) !important;
         color: #fff !important;
     }
 
-    .mobile-sidebar .footer-btns .btn-primary-action svg {
+    .mobile-sidebar #btn_share_trigger svg {
         stroke: #fff !important;
     }
     
