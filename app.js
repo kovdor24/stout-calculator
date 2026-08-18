@@ -4472,7 +4472,7 @@ const app = {
      * из профиля открывается окно тарифов, и снимать класс при закрытии
      * верхнего из них нельзя, пока под ним осталось нижнее.
      */
-    MODAL_OVER_BANNER_IDS: ['profile_modal_overlay', 'custom_modal_overlay'],
+    MODAL_OVER_BANNER_IDS: ['profile_modal_overlay', 'custom_modal_overlay', 'quick_start_overlay'],
     syncModalOverlayClass: function () {
         const open = this.MODAL_OVER_BANNER_IDS.some(id => {
             const el = document.getElementById(id);
@@ -28846,6 +28846,7 @@ const app = {
         if (document.getElementById('quick_start_overlay')) return;
         const cards = this.QUICK_START_PRESETS.map(p => `
             <button type="button" class="quick-start-card" onclick="app.applyQuickStart('${p.key}')"
+                aria-label="${p.title}: ${p.note}"
                 style="display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer;
                        background:var(--bg); border:1px solid var(--border); border-radius:14px;
                        padding:14px 16px; margin-bottom:10px; transition:0.15s;">
@@ -28862,7 +28863,8 @@ const app = {
         wrap.onclick = (e) => { if (e.target === wrap) app.closeQuickStart(); };
         wrap.innerHTML = `
             <div class="custom-modal" style="max-width:520px; padding:32px 28px; text-align:left;">
-                <span class="auth-modal-close" onclick="app.closeQuickStart()">&times;</span>
+                <span class="auth-modal-close" onclick="app.closeQuickStart()"
+                    style="top:6px; right:8px; padding:10px 14px;">&times;</span>
                 <div class="custom-modal-title" style="font-size:20px; margin-bottom:6px;">Первая смета — за минуту</div>
                 <div class="custom-modal-text" style="margin-bottom:18px;">
                     Выберите объект, похожий на ваш. Калькулятор сразу подберёт котёл, радиаторы,
@@ -28877,14 +28879,14 @@ const app = {
         // а не requestAnimationFrame: в фоновой вкладке кадры не рисуются, кадровый
         // обработчик не вызывается вовсе — и окно так и осталось бы невидимым, при
         // том что счётчик показов уже увеличен.
-        setTimeout(() => wrap.classList.add('active'), 20);
+        setTimeout(() => { wrap.classList.add('active'); this.syncModalOverlayClass(); }, 20);
     },
 
     closeQuickStart: function (instant) {
         const wrap = document.getElementById('quick_start_overlay');
         if (!wrap) return;
         wrap.classList.remove('active');
-        setTimeout(() => wrap.remove(), instant ? 0 : 300);
+        setTimeout(() => { wrap.remove(); app.syncModalOverlayClass(); }, instant ? 0 : 300);
     },
 
     applyQuickStart: function (key) {
