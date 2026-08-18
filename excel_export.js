@@ -134,8 +134,8 @@
     // Номера стилей из cellXfs. Порядок менять только вместе с stylesXml.
     const S = {
         def: 0,
-        banner: 1,    // цветная полоса с названием компании
-        gray: 2,      // мелкий серый текст (адрес, параметры объекта, подписи)
+        plain: 1,     // обычный текст вне таблицы
+        gray: 2,      // мелкий текст (реквизиты, параметры объекта)
         title: 3,     // «Смета № … от …»
         th: 4,        // заголовок колонки
         thLeft: 5,
@@ -158,31 +158,28 @@
         wrap: 22      // многострочный текст (реквизиты поставщика)
     };
 
-    function stylesXml(primary, primaryLight) {
+    // Оформление намеренно чёрно-белое, как выгрузка счёта из 1С: цветных заливок
+    // и фирменных цветов на листе нет, единственная — светло-серая подложка строки
+    // раздела, чтобы структура сметы читалась.
+    function stylesXml() {
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
             + '<numFmts count="2">'
             + '<numFmt numFmtId="164" formatCode="#,##0.00"/>'
             + '<numFmt numFmtId="165" formatCode="#,##0.###"/>'
             + '</numFmts>'
-            + '<fonts count="9">'
+            + '<fonts count="6">'
             + '<font><sz val="10"/><name val="Arial"/></font>'
             + '<font><b/><sz val="10"/><name val="Arial"/></font>'
             + '<font><b/><sz val="14"/><name val="Arial"/></font>'
-            + '<font><sz val="9"/><color rgb="FF6B7280"/><name val="Arial"/></font>'
-            + '<font><b/><sz val="12"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>'
-            + '<font><b/><sz val="10"/><color rgb="FF1E3A8A"/><name val="Arial"/></font>'
+            + '<font><sz val="9"/><name val="Arial"/></font>'
             + '<font><b/><sz val="11"/><name val="Arial"/></font>'
-            + '<font><sz val="8"/><color rgb="FF9CA3AF"/><name val="Arial"/></font>'
-            + '<font><b/><sz val="10"/><color rgb="' + primary + '"/><name val="Arial"/></font>'
+            + '<font><sz val="8"/><color rgb="FF808080"/><name val="Arial"/></font>'
             + '</fonts>'
-            + '<fills count="6">'
+            + '<fills count="3">'
             + '<fill><patternFill patternType="none"/></fill>'
             + '<fill><patternFill patternType="gray125"/></fill>'
-            + '<fill><patternFill patternType="solid"><fgColor rgb="' + primary + '"/><bgColor indexed="64"/></patternFill></fill>'
-            + '<fill><patternFill patternType="solid"><fgColor rgb="FFF3F4F6"/><bgColor indexed="64"/></patternFill></fill>'
-            + '<fill><patternFill patternType="solid"><fgColor rgb="' + primaryLight + '"/><bgColor indexed="64"/></patternFill></fill>'
-            + '<fill><patternFill patternType="solid"><fgColor rgb="FFEFF6FF"/><bgColor indexed="64"/></patternFill></fill>'
+            + '<fill><patternFill patternType="solid"><fgColor rgb="FFF2F2F2"/><bgColor indexed="64"/></patternFill></fill>'
             + '</fills>'
             // Сетка у образца сплошная и тонкая, поэтому основная рамка — коробка со
             // всех четырёх сторон; отдельные линии нужны только для подписей.
@@ -195,24 +192,24 @@
             + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
             + '<cellXfs count="23">'
             /* 0  def       */ + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment vertical="center"/></xf>'
-            /* 1  banner    */ + '<xf xfId="0" numFmtId="0" fontId="4" fillId="2" borderId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            /* 1  plain     */ + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
             /* 2  gray      */ + '<xf xfId="0" numFmtId="0" fontId="3" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
             /* 3  title     */ + '<xf xfId="0" numFmtId="0" fontId="2" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
-            /* 4  th        */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="3" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
-            /* 5  thLeft    */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="3" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+            /* 4  th        */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+            /* 5  thLeft    */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
             /* 6  td        */ + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
             /* 7  tdC       */ + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
             /* 8  qty       */ + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
             /* 9  money     */ + '<xf xfId="0" numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
-            /* 10 sec       */ + '<xf xfId="0" numFmtId="0" fontId="8" fillId="4" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
-            /* 11 grp       */ + '<xf xfId="0" numFmtId="0" fontId="5" fillId="5" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
-            /* 12 grpMoney  */ + '<xf xfId="0" numFmtId="164" fontId="5" fillId="5" borderId="1" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+            /* 10 sec       */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            /* 11 grp       */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            /* 12 grpMoney  */ + '<xf xfId="0" numFmtId="164" fontId="1" fillId="0" borderId="1" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
             /* 13 sub       */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
             /* 14 subMoney  */ + '<xf xfId="0" numFmtId="164" fontId="1" fillId="0" borderId="1" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
-            /* 15 total     */ + '<xf xfId="0" numFmtId="0" fontId="6" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
-            /* 16 totalMoney*/ + '<xf xfId="0" numFmtId="164" fontId="6" fillId="0" borderId="0" applyNumberFormat="1" applyFont="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
+            /* 15 total     */ + '<xf xfId="0" numFmtId="0" fontId="4" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
+            /* 16 totalMoney*/ + '<xf xfId="0" numFmtId="164" fontId="4" fillId="0" borderId="0" applyNumberFormat="1" applyFont="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
             /* 17 idx       */ + '<xf xfId="0" numFmtId="1" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
-            /* 18 small     */ + '<xf xfId="0" numFmtId="0" fontId="7" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf>'
+            /* 18 small     */ + '<xf xfId="0" numFmtId="0" fontId="5" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf>'
             /* 19 underline */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="2" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
             /* 20 line      */ + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="2" applyBorder="1"/>'
             /* 21 bold      */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
@@ -306,7 +303,7 @@
             + '</worksheet>';
     }
 
-    function buildWorkbook(sheets, primary, primaryLight) {
+    function buildWorkbook(sheets) {
         const files = [];
 
         let types = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -347,7 +344,7 @@
                     + '<sheets>' + sheetsXml + '</sheets></workbook>'
             },
             { name: 'xl/_rels/workbook.xml.rels', data: rels },
-            { name: 'xl/styles.xml', data: stylesXml(primary, primaryLight) }
+            { name: 'xl/styles.xml', data: stylesXml() }
         );
 
         return zipStore(files);
@@ -407,10 +404,21 @@
 
         return out.replace(/[\u00A0\u202F]/g, ' ')
             .split('\u0001')
-            .map(function (s) { return s.replace(/\s+/g, ' ').trim(); })
+            .map(function (s) { return s.replace(EMOJI, '').replace(/\s+/g, ' ').trim(); })
             .filter(Boolean)
             .join(sep);
     }
+
+    /**
+     * Иконки интерфейса: эмодзи разделов и групп («🔥 Обвязка…»), значки строки
+     * параметров, стрелки сворачивания. В выгрузке из 1С картинок в тексте не
+     * бывает, да и шрифт под них Excel подставляет чужой. Диапазоны записаны
+     * через new RegExp, чтобы в исходнике не было самих символов.
+     */
+    const EMOJI = new RegExp(
+        '[\\u2190-\\u21FF\\u2300-\\u23FF\\u2460-\\u24FF\\u25A0-\\u27BF'
+        + '\\u2900-\\u297F\\u2B00-\\u2BFF\\uFE0F\\u200D]'
+        + '|[\\uD83C-\\uD83E][\\uDC00-\\uDFFF]', 'g');
 
     // «12 500 ₽» → 12500, «1,5» → 1.5, «1 шт» → null (останется текстом)
     function num(s) {
@@ -617,9 +625,8 @@
         const blank = function (h) { rows.push({ h: h, cells: [] }); };
 
         // --- шапка документа ---
-        // Вместо картинок-баннеров, как в бумажном счёте, — цветная полоса с
-        // названием компании и серая строка контактов под ней. Рисуется ячейками,
-        // поэтому в файле нет ни одной картинки и он остаётся лёгким.
+        // Ни логотипов, ни баннеров: сверху сразу реквизиты сторон, как в счёте,
+        // выгруженном из 1С.
         const hdr = node.querySelector('.print-header');
         if (hdr) {
             // «ЦЕНТРАЛЬНЫЙ ОФИС:» и «РЕКВИЗИТЫ БАНКА:» — подписи блоков печатного бланка,
@@ -630,19 +637,11 @@
             const compAddr = dropLabel(readText(hdr.querySelector('#hdr_comp_addr'), ', '));
             const compBank = dropLabel(readText(hdr.querySelector('#hdr_comp_bank'), ', '));
 
-            rows.push({
-                h: 30,
-                cells: [{ v: '  ' + (compName || 'Смета'), t: 's', s: S.banner, span: n }]
-            });
-            wide([compAddr, compWeb].filter(Boolean).join('   ·   '), S.gray, 16);
+            labelled('Поставщик:', [compName, compAddr, compWeb].filter(Boolean).join(', '), 15);
+            if (compBank) wide(compBank, S.plain, 15);
             blank(6);
-            labelled('Поставщик:', [compName, compBank].filter(Boolean).join(', '), 15);
-
-            const master = hdr.querySelector('#print_master_contacts');
-            if (master && master.style.display !== 'none') {
-                labelled('Расчёт произвёл:', readText(master).replace(/^Расчёт произвёл:\s*/i, ''), 15);
-            }
-            blank(6);
+            // Кто считал — внизу, у линии подписи: в счёте ответственный тоже стоит там,
+            // и в шапке эта строка была бы вторым таким же упоминанием.
         }
 
         // --- заголовок документа: «Смета № … от …», как «Счет на оплату № … от …» ---
@@ -688,7 +687,7 @@
                     const v = num(c.text);
                     const money = (c.cls === 'col-price' || c.cls === 'col-sum');
                     // Стрелка сворачивания группы — часть интерфейса, в файле она ни о чём
-                    const text = c.text.replace(/^[▶▼►⤴⤵↳↴\s]+/, '');
+                    const text = c.text;
                     cells[i] = (v !== null && money)
                         ? { v: v, t: 'n', s: S.grpMoney, span: c.span }
                         : { v: text, t: 's', s: S.grp, span: c.span };
@@ -780,15 +779,6 @@
         return sheets;
     }
 
-    function cssColor(name, fallback) {
-        let v = '';
-        try {
-            v = getComputedStyle(document.documentElement).getPropertyValue(name);
-        } catch (e) { /* нестандартное окружение — берём запасной цвет */ }
-        const m = String(v || '').trim().match(/^#?([0-9a-fA-F]{6})$/);
-        return 'FF' + (m ? m[1].toUpperCase() : fallback);
-    }
-
     function saveBlob(blob, fileName) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -808,12 +798,7 @@
         saveFromPrintBin: function (fileName) {
             const sheets = collectSheets();
             if (!sheets.length) throw new Error('в смете нет разделов для выгрузки');
-            const blob = buildWorkbook(
-                sheets,
-                cssColor('--primary', '2563EB'),
-                cssColor('--primary-light', 'EFF6FF')
-            );
-            saveBlob(blob, fileName);
+            saveBlob(buildWorkbook(sheets), fileName);
             return sheets.length;
         },
         // для отладки и тестов
