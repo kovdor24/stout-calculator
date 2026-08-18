@@ -20858,6 +20858,11 @@ const app = {
      * Обычная ссылка <a href> не может отправить заголовок Authorization —
      * браузер просто откроет URL без него, и сервер ответит 403. Поэтому
      * файл забирается через fetch с заголовком, а открывается уже как blob.
+     *
+     * Excel и Word вкладка показать не умеет: она молча роняет файл в
+     * «Загрузки», а имя ему достаётся от blob-адреса — UUID без расширения,
+     * который потом ничем не открывается. Поэтому всё, что вкладка показать
+     * не может, отдаём обычной ссылкой download с настоящим именем файла.
      */
     openRecognitionFile: async function (rel) {
         const headers = await this.recognitionAuthHeaders();
@@ -20867,7 +20872,19 @@ const app = {
             if (!r.ok) throw new Error(r.status === 403 ? 'доступ только для администраторов' : 'HTTP ' + r.status);
             const blob = await r.blob();
             const url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
+            const name = String(rel).split('/').pop() || 'file';
+            const ext = (name.indexOf('.') >= 0 ? name.split('.').pop() : '').toLowerCase();
+            const inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'txt', 'json', 'htm', 'html'];
+            if (inline.indexOf(ext) >= 0) {
+                window.open(url, '_blank');
+            } else {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = name;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            }
             // Не отзываем сразу: новой вкладке нужно время загрузить blob.
             setTimeout(() => URL.revokeObjectURL(url), 60000);
         } catch (e) {
