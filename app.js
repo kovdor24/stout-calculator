@@ -163,6 +163,20 @@ function shareLinkCatalogFind(sku) {
     return null;
 }
 
+/**
+ * Артикул позиции или пусто, если артикула у неё нет.
+ *
+ * У позиции каталога id и есть артикул, а вот распознанные ('rec_…') и
+ * добавленные монтажником ('custom_…', 'user_…') строки живут под служебным
+ * id. Он не значит ничего ни для клиента, ни для 1С, но раньше подставлялся
+ * в колонку «Артикул» запасным вариантом — и клиент получал счёт со строкой
+ * 'custom_1786965434808'.
+ */
+function realSku(id) {
+    const s = String(id || '');
+    return /^(rec|custom|user)_/.test(s) ? '' : s;
+}
+
 function compactPayload(data) {
     const SECTION_MAP = {
         "1. Котёл + водонагреватель": 1,
@@ -4389,7 +4403,13 @@ const app = {
         this.state.calc_id = String(Math.floor(100000 + Math.random() * 900000));
         const fromRecognition = this.isRecognizedEstimate();
         if (fromRecognition) this.state.from_recognition = true;
-        this.logInvoiceEvent('calculated', fromRecognition ? { source: 'recognition' } : null);
+        // Откуда взялся расчёт: распознанная накладная, шаблон быстрого старта или
+        // заполненная руками форма. Нужно, чтобы видеть, доводит ли окно первого
+        // запуска людей до первой сметы (см. QUICK_START_PRESETS).
+        let calcMeta = null;
+        if (fromRecognition) calcMeta = { source: 'recognition' };
+        else if (this._quickStartPreset) calcMeta = { source: 'quick_start', preset: this._quickStartPreset };
+        this.logInvoiceEvent('calculated', calcMeta);
     },
 
     getProUntilDate: function () {
@@ -27651,8 +27671,7 @@ const app = {
             // артикулов и не мог ни найти товар, ни загрузить таблицу в 1С.
             const skuOf = (item) => {
                 if (item.article) return String(item.article);
-                const id = String(item.id || item.code || '');
-                return /^(rec|user)_/.test(id) ? '' : id;
+                return realSku(item.id || item.code);
             };
 
             let equipmentText = "Название - Артикул - Количество\n";
@@ -28696,6 +28715,129 @@ const app = {
         }
     },
 
+    // ===================== Быстрый старт (окно первого запуска) =====================
+    //
+    // Первое, что видит новый человек — форма с полусотней переключателей и площадью 0.
+    // По журналу видно, чем это кончается: из 42 заведённых аккаунтов 18 не сделали ни
+    // одной сметы, и у 17 из них нет вообще ни одного события. То есть это не «посчитал
+    // и не сохранил», а «не посчитал ничего»: люди зашли, посмотрели на форму и ушли.
+    // У тех, кто всё-таки добрался до сметы, от регистрации до неё проходит медианно
+    // пять дней — то есть и они справляются не с первого захода.
+    //
+    // Окно предлагает три типовых объекта. Клик по любому — и через секунду перед
+    // человеком готовая смета с оборудованием, работами и суммой; дальше он правит
+    // площадь и регион под свой дом, уже видя, что получается.
+    QUICK_START_PRESETS: [
+        {
+            key: 'house120',
+            icon: '🏠',
+            title: 'Дом 120 м²',
+            note: 'один этаж, газовый котёл, радиаторы, горячая вода',
+            state: { area: 120, floors: 1, fuels: ['gas'], systems: ['rad'], tp1: 0, tp2: 0, hotWater: true, res: 3 }
+        },
+        {
+            key: 'house200tp',
+            icon: '🏡',
+            title: 'Дом 200 м², два этажа',
+            note: 'газовый котёл, радиаторы наверху и тёплый пол внизу',
+            state: { area: 200, floors: 2, fuels: ['gas'], systems: ['rad', 'tp'], tp1: 100, tp2: 0, hotWater: true, res: 4 }
+        },
+        {
+            key: 'house80el',
+            icon: '⚡',
+            title: 'Дом 80 м²',
+            note: 'газа нет, электрокотёл и радиаторы',
+            state: { area: 80, floors: 1, fuels: ['el'], systems: ['rad'], tp1: 0, tp2: 0, hotWater: true, res: 2 }
+        }
+    ],
+
+    // Показывать ли окно. Условий много, но все об одном: человек пришёл на пустой
+    // калькулятор своими ногами и ещё ничего в нём не сделал.
+    maybeShowQuickStart: function () {
+        try {
+            // Открыта чужая смета по ссылке, печать или просмотр менеджером — окно
+            // первого запуска здесь не к месту, человек пришёл читать документ.
+            const q = new URLSearchParams(window.location.search || '');
+            if (['id', 'print', 'view', 'manager', 'share', 'code'].some(k => q.has(k))) return;
+            if ((window.location.hash || '').indexOf('data=') > -1) return;
+            if (this._yandexExchanging) return;
+            // В расчёте уже что-то есть — своё, распознанное или просто заданная площадь.
+            if (this.state.area > 0 || this.state.calc_id) return;
+            if ((this.state.userAddedEq || []).length || (this.state.userAddedWorks || []).length) return;
+            if ((this.state.rooms || []).length) return;
+            // Дважды хватит: закрыл не глядя в первый раз — покажем ещё один, но не больше.
+            const shown = parseInt(localStorage.getItem('quick_start_shown') || '0', 10) || 0;
+            if (shown >= 2) return;
+            localStorage.setItem('quick_start_shown', String(shown + 1));
+            this.showQuickStart();
+        } catch (e) { console.warn('[quickStart] не показалось:', e); }
+    },
+
+    showQuickStart: function () {
+        if (document.getElementById('quick_start_overlay')) return;
+        const cards = this.QUICK_START_PRESETS.map(p => `
+            <button type="button" class="quick-start-card" onclick="app.applyQuickStart('${p.key}')"
+                style="display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer;
+                       background:var(--bg); border:1px solid var(--border); border-radius:14px;
+                       padding:14px 16px; margin-bottom:10px; transition:0.15s;">
+                <span style="font-size:30px; line-height:1; flex:0 0 auto;">${p.icon}</span>
+                <span style="flex:1 1 auto;">
+                    <span style="display:block; font-size:15px; font-weight:700; color:var(--text-main);">${p.title}</span>
+                    <span style="display:block; font-size:12.5px; color:var(--text-sec); margin-top:2px;">${p.note}</span>
+                </span>
+                <span style="font-size:18px; color:var(--primary); flex:0 0 auto;">›</span>
+            </button>`).join('');
+        const wrap = document.createElement('div');
+        wrap.id = 'quick_start_overlay';
+        wrap.className = 'custom-modal-overlay';
+        wrap.onclick = (e) => { if (e.target === wrap) app.closeQuickStart(); };
+        wrap.innerHTML = `
+            <div class="custom-modal" style="max-width:520px; padding:32px 28px; text-align:left;">
+                <span class="auth-modal-close" onclick="app.closeQuickStart()">&times;</span>
+                <div class="custom-modal-title" style="font-size:20px; margin-bottom:6px;">Первая смета — за минуту</div>
+                <div class="custom-modal-text" style="margin-bottom:18px;">
+                    Выберите объект, похожий на ваш. Калькулятор сразу подберёт котёл, радиаторы,
+                    трубы и работы — а площадь, регион и оборудование поправите уже по готовой смете.
+                </div>
+                ${cards}
+                <button type="button" class="custom-modal-btn custom-modal-close" style="margin-top:6px;"
+                    onclick="app.closeQuickStart()">Настрою сам</button>
+            </div>`;
+        document.body.appendChild(wrap);
+        // Класс active навешиваем не сразу, иначе не будет перехода. Через таймер,
+        // а не requestAnimationFrame: в фоновой вкладке кадры не рисуются, кадровый
+        // обработчик не вызывается вовсе — и окно так и осталось бы невидимым, при
+        // том что счётчик показов уже увеличен.
+        setTimeout(() => wrap.classList.add('active'), 20);
+    },
+
+    closeQuickStart: function (instant) {
+        const wrap = document.getElementById('quick_start_overlay');
+        if (!wrap) return;
+        wrap.classList.remove('active');
+        setTimeout(() => wrap.remove(), instant ? 0 : 300);
+    },
+
+    applyQuickStart: function (key) {
+        const preset = this.QUICK_START_PRESETS.find(p => p.key === key);
+        if (!preset) return;
+        this.closeQuickStart(true);
+        // Больше не показываем: человек стартом воспользовался.
+        try { localStorage.setItem('quick_start_shown', '2'); } catch (e) { }
+        Object.assign(this.state, JSON.parse(JSON.stringify(preset.state)));
+        // Метка для события 'calculated' (см. ensureCalcId): по ней видно, сколько
+        // смет начинается с шаблона, а сколько — с пустой формы.
+        this._quickStartPreset = preset.key;
+        this.autoCalcZones();
+        this.syncUI();
+        this.render();
+        this.saveState();
+        setTimeout(() => {
+            const anchor = document.getElementById('doc_summary') || document.getElementById('total_sum');
+            if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 120);
+    },
+
     init: function () {
         // Global premium modal overrides
         window.alert = (msg) => app.alert(msg);
@@ -29230,6 +29372,11 @@ const app = {
                 setTimeout(() => preloader.remove(), 500); // Удаляем из DOM после затухания
             }
         }, 300);
+
+        // Окно первого запуска — когда прелоадер уже ушёл и страница на месте
+        setTimeout(() => {
+            this.maybeShowQuickStart();
+        }, 900);
 
         // Проверяем обновления статусов смет через 3 секунды после загрузки
         setTimeout(() => {
@@ -43354,7 +43501,7 @@ const app = {
                     // sortRank берём у ИСХОДНОЙ позиции, а не у finalItem: после ручной
                     // замены или подстановки ROMMER-аналога это уже другой объект, и
                     // дымоход после замены уехал бы из начала раздела вниз по цене.
-                    bill.push({ ...finalItem, sortRank: item.sortRank || 0, q: finalQty, sum: Math.round(finalItem.price * finalQty), basePrice: originalPrice, displaySku: finalItem.displaySku || finalItem.article || finalItem.id, qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
+                    bill.push({ ...finalItem, sortRank: item.sortRank || 0, q: finalQty, sum: Math.round(finalItem.price * finalQty), basePrice: originalPrice, displaySku: finalItem.displaySku || finalItem.article || realSku(finalItem.id) || 'нет', qtyTip: finalTip || "", group: itemGroup, originalId: finalItem.originalId || item.id });
                 }
             });
         };
@@ -43562,7 +43709,7 @@ const app = {
                 this.currentEquipmentList.push({
                     id: i.id,
                     name: i.name,
-                    displaySku: i.displaySku || i.article || i.id,
+                    displaySku: i.displaySku || i.article || realSku(i.id) || 'нет',
                     brand: i.brand || 'STOUT',
                     unit: i.unit || 'шт',
                     q: i.q,
