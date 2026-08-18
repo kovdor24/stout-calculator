@@ -2507,6 +2507,9 @@
 
             <div id="notif_pane_chat" style="display: none; flex-direction: column; flex: 1; min-height: 0; margin: 0 -18px -18px; border-top: 1px solid var(--border); border-radius: 0 0 16px 16px; overflow: hidden;">
                 <div class="admin-chat-body" id="user_chat_body" style="min-height: 240px;"></div>
+                <!-- Полоска «отвечаем на это сообщение»: появляется по клику на пузыре,
+                     заполняется из renderUserReplyBar -->
+                <div id="user_chat_replybar"></div>
                 <div class="admin-chat-compose">
                     <textarea id="user_chat_input" rows="1" placeholder="Сообщение администратору…" onkeydown="app.userChatKey(event)"></textarea>
                     <button class="emoji-open-btn" type="button" title="Смайлики" onclick="app.toggleEmojiPicker('user_chat_input', this)">🙂</button>
