@@ -12979,10 +12979,9 @@ const app = {
         const cats = (brands && brands.categories) || {};
         const regionsData = (brands && brands.regions && brands.regions[lastMonth]) || {};
 
-        // Список регионов берём из самих данных: там ровно те, где мы есть
-        const regionNames = new Set();
-        Object.values(regionsData).forEach(byRegion => Object.keys(byRegion).forEach(r => regionNames.add(r)));
-        const regionList = Array.from(regionNames).sort();
+        // Список регионов берём из самих данных, но только те, где мы ещё
+        // есть: опустевший регион кнопкой не показываем (analyticsRegionList).
+        const regionList = this.analyticsRegionList(brands);
         const region = this._analyticsRegion || '';        // '' = вся Россия
 
         const rankOf = (catId) => region
@@ -13247,23 +13246,32 @@ const app = {
             ].filter(([g]) => Object.keys(phrases).some(id => phrases[id].group === g));
 
             const curGroup = (GROUPS.some(([g]) => g === this._analyticsGroup) ? this._analyticsGroup : (GROUPS[0] && GROUPS[0][0]));
-            const trendRegion = this._analyticsTrendRegion || '';
             const rmAll = (wordstat.region_monthly || {});
             const months = this._analyticsMonths || 36;
 
             const ids = Object.keys(phrases).filter(id => phrases[id].group === curGroup);
+
+            // Регионы предлагаем только те, по которым история действительно
+            // есть: у остальных график был бы пустым, и непонятно почему.
+            // И только те, где мы ещё есть: историю по опустевшему региону
+            // файл хранит и дальше, но смотреть в ней уже нечего.
+            const liveTrendKeys = this.analyticsLiveRegionKeys();
+            const trendRegions = Array.from(new Set(
+                ids.reduce((acc, id) => acc.concat(Object.keys(rmAll[id] || {})), [])
+            )).filter(rg => !liveTrendKeys.size || liveTrendKeys.has(this.analyticsRegionKey(rg))).sort();
+
+            // Выбранный регион мог опустеть — тогда возвращаемся ко всей России.
+            if (this._analyticsTrendRegion && trendRegions.indexOf(this._analyticsTrendRegion) < 0) {
+                this._analyticsTrendRegion = '';
+            }
+            const trendRegion = this._analyticsTrendRegion || '';
+
             const series = ids.map(id => {
                 const src = trendRegion ? ((rmAll[id] || {})[trendRegion] || []) : (wordstat.ru_monthly[id] || []);
                 return { name: phrases[id].text || id, points: src.slice(months > 0 ? -months : 0) };
             }).filter(s => s.points.length > 1)
               .sort((a, b) => (b.points[b.points.length - 1][1] || 0) - (a.points[a.points.length - 1][1] || 0))
               .slice(0, 8);
-
-            // Регионы предлагаем только те, по которым история действительно
-            // есть: у остальных график был бы пустым, и непонятно почему.
-            const trendRegions = Array.from(new Set(
-                ids.reduce((acc, id) => acc.concat(Object.keys(rmAll[id] || {})), [])
-            )).sort();
 
             const btn = (m, label) => `<button class="admin-btn" style="${months === m ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsMonths(${m})">${label}</button>`;
             const gBtn = (g, label) => `<button class="admin-btn" style="${curGroup === g ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}" onclick="app.setAnalyticsGroup('${g}')">${label}</button>`;
@@ -14217,6 +14225,64 @@ const app = {
     },
 
     /**
+     * Название региона → ключ для сравнения. Регистрация монтажника пишет
+     * длинную форму («Республика Карелия»), аналитика — короткую («Карелия»),
+     * поэтому в лоб строки не сходятся.
+     */
+    analyticsRegionKey: function (s) {
+        return String(s || '').toLowerCase().replace(/ё/g, 'е')
+            .replace(/республика|область|обл\.|край|автономный округ|автономная область|-кузбасс/g, '')
+            .replace(/[^a-zа-я0-9]/g, '').trim();
+    },
+
+    /**
+     * Регионы присутствия: те, где есть хоть один монтажник или зона
+     * дистрибьютора. Ровно те же источники, что у RPC
+     * analytics_live_regions() — по нему AutoWordstat.py решает, какие
+     * регионы вообще опрашивать.
+     */
+    analyticsLiveRegionKeys: function () {
+        const keys = new Set();
+        const add = (v) => { const k = this.analyticsRegionKey(v); if (k) keys.add(k); };
+        // Берём список админки: его перечитывает loadAdminData после каждого
+        // удаления. Дашбордный _dashOwn кэшируется на весь сеанс, и удалённый
+        // монтажник держал бы в нём свой регион живым до перезагрузки —
+        // поэтому он здесь только запасной, на случай пустого списка.
+        const fresh = (this.adminData && this.adminData.allUsersDropdown) || [];
+        const users = fresh.length ? fresh : ((this._dashOwn && this._dashOwn.users) || []);
+        users.forEach(u => add(u && u.region));
+        ((this.adminData && this.adminData.distributors) || [])
+            .forEach(d => ((d && d.regions) || []).forEach(add));
+        return keys;
+    },
+
+    /**
+     * Кнопки-регионы вкладок «Аналитика» и «Дашборд».
+     *
+     * Названия берём из квартального среза марок, а показываем только те
+     * регионы, где мы ещё есть. Удалили последнего монтажника в области —
+     * кнопка уходит сразу: файлы аналитики пересобираются раз в месяц (а
+     * региональный срез марок и вовсе раз в квартал), и до следующего прогона
+     * опустевший регион иначе висел бы в фильтре со старыми числами.
+     *
+     * Список пользователей ещё не загрузился — не прячем ничего: пустой
+     * фильтр читался бы как «регионов нет вовсе».
+     */
+    analyticsRegionList: function (brands) {
+        const months = (brands && brands.months) ? Object.keys(brands.months).sort() : [];
+        const byCat = (brands && brands.regions && brands.regions[months[months.length - 1]]) || {};
+        const names = new Set();
+        Object.keys(byCat).forEach(id => Object.keys(byCat[id] || {}).forEach(r => names.add(r)));
+        let list = Array.from(names).sort();
+        const live = this.analyticsLiveRegionKeys();
+        if (live.size) list = list.filter(r => live.has(this.analyticsRegionKey(r)));
+        // Регион мог опустеть, пока вкладка открыта: кнопки уже нет, а фильтр
+        // остался — дашборд считал бы по срезу, которого больше не существует.
+        if (this._analyticsRegion && list.indexOf(this._analyticsRegion) < 0) this._analyticsRegion = '';
+        return list;
+    },
+
+    /**
      * Вкладка «Дашборд»: те же данные, что во вкладке «Аналитика», но одним
      * экраном и без раскопок.
      *
@@ -14815,17 +14881,14 @@ const app = {
         const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const q = s => esc(s).replace(/'/g, "\\'");
         const { brands, wordstat } = this._analytics;
+        // Список считаем ДО чтения выбранного региона: он же сбрасывает фильтр,
+        // если выбранный регион опустел (analyticsRegionList).
+        const regionList = this.analyticsRegionList(brands);
         const region = this._analyticsRegion || '';
         const back = this._analyticsCompare || 12;
         const updated = (brands && brands.updated) || (wordstat && wordstat.updated) || '—';
         const edit = !!this._dashEdit;
         const st = this.dashLayout().style;
-
-        const regionRank = (brands && brands.regions && brands.months)
-            ? (brands.regions[Object.keys(brands.months).sort().pop()] || {}) : {};
-        const regionNames = new Set();
-        Object.keys(regionRank).forEach(id => Object.keys(regionRank[id] || {}).forEach(r => regionNames.add(r)));
-        const regionList = Array.from(regionNames).sort();
 
         let h = `<div style="margin-bottom:18px;">
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:4px;">
@@ -15074,11 +15137,10 @@ const app = {
         const lastM = bMonths[bMonths.length - 1];
         const rankAll = (brands && brands.months && brands.months[lastM]) || {};
         const regionRank = (brands && brands.regions && brands.regions[lastM]) || {};
+        // Тот же порядок, что в шапке: сначала список (он же чинит фильтр,
+        // если выбранный регион опустел), потом сам выбранный регион.
+        const regionList = this.analyticsRegionList(brands);
         const region = this._analyticsRegion || '';
-
-        const regionNames = new Set();
-        Object.keys(regionRank).forEach(id => Object.keys(regionRank[id] || {}).forEach(r => regionNames.add(r)));
-        const regionList = Array.from(regionNames).sort();
         const rankOf = id => region ? ((regionRank[id] || {})[region] || null) : (rankAll[id] || null);
 
         const phrases = (wordstat && wordstat.phrases) || {};
@@ -16277,7 +16339,15 @@ const app = {
 
         const demandId = phrases['montazh_otopleniya'] ? 'montazh_otopleniya'
             : Object.keys(phrases).filter(id => phrases[id].group === 'demand')[0];
-        const regRows = demandId ? Object.keys(regM[demandId] || {}).map(rg => {
+
+        // «Наш» регион — тот, где остался хоть один монтажник или зона
+        // дистрибьютора. В собранных файлах регион живёт ещё месяцами после
+        // того, как последнего человека удалили, поэтому сверяемся с базой.
+        const normRegion = (s) => this.analyticsRegionKey(s);
+        const liveKeys = this.analyticsLiveRegionKeys();
+        const isLive = (name) => !liveKeys.size || liveKeys.has(normRegion(name));
+
+        const regRows = demandId ? Object.keys(regM[demandId] || {}).filter(isLive).map(rg => {
             const s = full(regM[demandId][rg]);
             const nowP = s[s.length - 1], baseP = s[s.length - 1 - back];
             return {
@@ -16317,9 +16387,6 @@ const app = {
         // московским спросом и одним человеком в белые пятна не попадал
         // никогда, хотя это такая же точка роста.
         const allDemand = (wordstat && wordstat.region_all) || null;
-        const normRegion = (s) => String(s || '').toLowerCase().replace(/ё/g, 'е')
-            .replace(/республика|область|обл\.|край|автономный округ|автономная область|-кузбасс/g, '')
-            .replace(/[^a-zа-я0-9]/g, '').trim();
 
         if (allDemand && demandId && allDemand[demandId]) {
             const ownRows = (this._dashOwn && this._dashOwn.users) || (this.adminData && this.adminData.allUsersDropdown) || [];
@@ -16342,15 +16409,17 @@ const app = {
             // только из них считается изменение спроса. У остальных в снимке
             // одно число — честно показываем прочерк вместо стрелки.
             const seriesByNorm = {};
-            Object.keys((regM[demandId] || {})).forEach(rg => {
+            Object.keys((regM[demandId] || {})).filter(isLive).forEach(rg => {
                 seriesByNorm[normRegion(rg)] = { name: rg, pts: full(regM[demandId][rg]) };
             });
             // Плюс присутствие из самой аналитики: regionList берётся из
             // квартального среза марок и в тихий месяц пустеет, а
-            // wordstat.regions пишет каждый месячный прогон.
+            // wordstat.regions пишет каждый месячный прогон. Оба списка — из
+            // файлов, поэтому опустевшие регионы отсеиваем тем же isLive.
             const presence = new Set();
             regionList.forEach(r => presence.add(normRegion(r)));
-            Object.keys((wordstat && wordstat.regions) || {}).forEach(r => presence.add(normRegion(r)));
+            Object.keys((wordstat && wordstat.regions) || {}).filter(isLive)
+                .forEach(r => presence.add(normRegion(r)));
 
             // У Wordstat нет отдельных Москвы и Подмосковья: есть один узел
             // «Москва и область», так же склеены Петербург с Ленинградской.
