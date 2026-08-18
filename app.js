@@ -4403,7 +4403,13 @@ const app = {
         this.state.calc_id = String(Math.floor(100000 + Math.random() * 900000));
         const fromRecognition = this.isRecognizedEstimate();
         if (fromRecognition) this.state.from_recognition = true;
-        this.logInvoiceEvent('calculated', fromRecognition ? { source: 'recognition' } : null);
+        // Откуда взялся расчёт: распознанная накладная, шаблон быстрого старта или
+        // заполненная руками форма. Нужно, чтобы видеть, доводит ли окно первого
+        // запуска людей до первой сметы (см. QUICK_START_PRESETS).
+        let calcMeta = null;
+        if (fromRecognition) calcMeta = { source: 'recognition' };
+        else if (this._quickStartPreset) calcMeta = { source: 'quick_start', preset: this._quickStartPreset };
+        this.logInvoiceEvent('calculated', calcMeta);
     },
 
     getProUntilDate: function () {
@@ -25593,9 +25599,12 @@ const app = {
         // показ схемы в интерфейсе.
         const cardHeatLoss = document.getElementById('card_opt_heatloss');
         const cardScheme = document.getElementById('card_opt_scheme');
-        const isPrint = actionType === 'print';
+        // Excel собирается из той же печатной вёрстки, поэтому теплопотери
+        // предлагаем и ему. Схема — только в PDF: это векторная графика на весь
+        // лист, в таблице ей места нет.
+        const isPrint = actionType === 'print' || actionType === 'excel';
         const heatLossReady = isPrint && !!this.state.detailedRooms && !!this.state.showDetailedRoomsPanel;
-        const schemeReady = isPrint && this.schemeOn();
+        const schemeReady = actionType === 'print' && this.schemeOn();
         if (cardHeatLoss) cardHeatLoss.style.display = heatLossReady ? 'flex' : 'none';
         if (cardScheme) cardScheme.style.display = schemeReady ? 'flex' : 'none';
 
@@ -25610,6 +25619,18 @@ const app = {
                     <circle cx="18" cy="19" r="3"></circle>
                     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
                     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>`;
+            }
+        } else if (actionType === 'excel') {
+            if (titleEl) titleEl.innerText = "Смета в Excel";
+            if (descEl) descEl.innerText = "Выберите, какие разделы выгрузить в файл Excel. Каждый раздел ляжет на свой лист книги — в том же виде, что и на печати.";
+            if (btnTextEl) btnTextEl.innerText = "Скачать Excel";
+            if (iconEl) {
+                iconEl.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="3" y1="15" x2="21" y2="15"></line>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
                 </svg>`;
             }
         } else {
@@ -25710,6 +25731,8 @@ const app = {
 
         if (this.shareActionType === 'share') {
             this.executeShareInvoice(showEq, showWorks);
+        } else if (this.shareActionType === 'excel') {
+            this.executeExcelDownload(showEq, showWorks, showHeatLoss);
         } else {
             this.executeDownload(showEq, showWorks, showHeatLoss, showScheme);
         }
@@ -26941,12 +26964,25 @@ const app = {
         }
     },
     download: async function () {
+        return this.requestExport('print');
+    },
+    // Выгрузка той же сметы в Excel. Отдельной подготовки не требует: файл
+    // собирается из печатной вёрстки, поэтому проверки (тариф, название объекта,
+    // заполненный профиль) и окно выбора разделов у неё общие с печатью.
+    downloadExcel: async function () {
+        return this.requestExport('excel');
+    },
+    // Общая часть печати и выгрузки в Excel: проверить доступ, спросить название
+    // объекта и контакты монтажника, затем открыть окно выбора разделов.
+    requestExport: async function (actionType) {
         if (!this.checkAccess('base')) return;
+
+        const fileWord = actionType === 'excel' ? 'файла Excel' : 'PDF-файла';
 
         let pName = this.state.projectName;
         if (!pName || pName.trim() === "") {
             const enteredName = await this.prompt(
-                "Для формирования PDF-файла\nВведите название объекта",
+                "Для формирования " + fileWord + "\nВведите название объекта",
                 "",
                 "Ввод данных"
             );
@@ -26955,7 +26991,7 @@ const app = {
             }
             const cleanName = enteredName.trim();
             if (cleanName === "") {
-                app.alert("Название объекта не может быть пустым для формирования PDF.");
+                app.alert("Название объекта не может быть пустым для формирования " + fileWord + ".");
                 return;
             }
             this.setProjectName(cleanName);
@@ -26975,7 +27011,7 @@ const app = {
             return;
         }
 
-        this.openShareOptionsModal('print');
+        this.openShareOptionsModal(actionType);
     },
     // html2canvas (используется html2pdf на мобильных, см. executeDownload) рендерит DOM как
     // есть на экране — браузер применяет @media print только к настоящей печати, а не к canvas-
@@ -27121,6 +27157,60 @@ const app = {
 
         // Возвращаем тему обратно
         if (wasDark) document.body.classList.add('dark-mode');
+    },
+    // Выгрузка сметы в Excel (.xlsx). Готовим документ ровно так же, как для печати
+    // (prepareForPrint собирает #print_bin), а собирает книгу excel_export.js —
+    // он читает уже готовую печатную вёрстку. За счёт этого в файл попадает та же
+    // смета, что и в PDF: те же разделы, строки, скидки и группировки, без второй
+    // копии логики сметы. В Excel не переносятся только фотографии и схема.
+    executeExcelDownload: async function (showEq, showWorks, showHeatLoss) {
+        if (!window.ExcelExport) {
+            app.alert('Выгрузка в Excel сейчас недоступна. Обновите страницу и попробуйте снова.');
+            return;
+        }
+
+        this.printOptions = {
+            eq: showEq,
+            works: showWorks,
+            heatLoss: !!showHeatLoss,
+            scheme: false
+        };
+
+        // Как и при печати: смета должна попасть в базу, даже если сейчас нет связи.
+        this.ensureCalcId();
+        this.queueCloudSave(JSON.parse(JSON.stringify(this.state)), app.lastEqSum || 0, app.lastWorksSum || 0);
+
+        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (isLocal && (!tgUser || !tgUser.first_name || !this.isPhoneFilled(tgUser.phone))) {
+            tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99" };
+        }
+
+        const printBlock = document.getElementById('print_master_contacts');
+        if (tgUser && printBlock) {
+            document.getElementById('print_master_name').innerText = this.formatShortName(tgUser) || '';
+            document.getElementById('print_master_phone').innerText = tgUser.phone || '';
+            printBlock.style.display = 'block';
+        }
+
+        const wasDark = document.body.classList.contains('dark-mode');
+        if (wasDark) document.body.classList.remove('dark-mode');
+
+        this.updateDocumentTitle();
+        prepareForPrint();
+
+        try {
+            const safeName = (this.state.projectName || 'Смета').replace(/[\\\/:\*\?"<>\|]/g, '');
+            ExcelExport.saveFromPrintBin(`${safeName}.xlsx`);
+            this.logInvoiceEvent('printed');
+            GRM.trackAction('pdf', this.state.calc_id);  // геймификация: та же отметка, что и у PDF
+        } catch (err) {
+            console.error('[executeExcelDownload] Ошибка формирования Excel:', err);
+            app.alert('Не удалось сформировать файл Excel: ' + (err && err.message ? err.message : err));
+        } finally {
+            cleanupAfterPrint();
+            if (wasDark) document.body.classList.add('dark-mode');
+        }
     },
     saveJobToCloud: async function (stateData, eqSum = 0, worksSum = 0) {
         console.log("[saveJobToCloud] Запущен фоновый сейв для проекта:", stateData.projectName);
@@ -28625,6 +28715,129 @@ const app = {
         }
     },
 
+    // ===================== Быстрый старт (окно первого запуска) =====================
+    //
+    // Первое, что видит новый человек — форма с полусотней переключателей и площадью 0.
+    // По журналу видно, чем это кончается: из 42 заведённых аккаунтов 18 не сделали ни
+    // одной сметы, и у 17 из них нет вообще ни одного события. То есть это не «посчитал
+    // и не сохранил», а «не посчитал ничего»: люди зашли, посмотрели на форму и ушли.
+    // У тех, кто всё-таки добрался до сметы, от регистрации до неё проходит медианно
+    // пять дней — то есть и они справляются не с первого захода.
+    //
+    // Окно предлагает три типовых объекта. Клик по любому — и через секунду перед
+    // человеком готовая смета с оборудованием, работами и суммой; дальше он правит
+    // площадь и регион под свой дом, уже видя, что получается.
+    QUICK_START_PRESETS: [
+        {
+            key: 'house120',
+            icon: '🏠',
+            title: 'Дом 120 м²',
+            note: 'один этаж, газовый котёл, радиаторы, горячая вода',
+            state: { area: 120, floors: 1, fuels: ['gas'], systems: ['rad'], tp1: 0, tp2: 0, hotWater: true, res: 3 }
+        },
+        {
+            key: 'house200tp',
+            icon: '🏡',
+            title: 'Дом 200 м², два этажа',
+            note: 'газовый котёл, радиаторы наверху и тёплый пол внизу',
+            state: { area: 200, floors: 2, fuels: ['gas'], systems: ['rad', 'tp'], tp1: 100, tp2: 0, hotWater: true, res: 4 }
+        },
+        {
+            key: 'house80el',
+            icon: '⚡',
+            title: 'Дом 80 м²',
+            note: 'газа нет, электрокотёл и радиаторы',
+            state: { area: 80, floors: 1, fuels: ['el'], systems: ['rad'], tp1: 0, tp2: 0, hotWater: true, res: 2 }
+        }
+    ],
+
+    // Показывать ли окно. Условий много, но все об одном: человек пришёл на пустой
+    // калькулятор своими ногами и ещё ничего в нём не сделал.
+    maybeShowQuickStart: function () {
+        try {
+            // Открыта чужая смета по ссылке, печать или просмотр менеджером — окно
+            // первого запуска здесь не к месту, человек пришёл читать документ.
+            const q = new URLSearchParams(window.location.search || '');
+            if (['id', 'print', 'view', 'manager', 'share', 'code'].some(k => q.has(k))) return;
+            if ((window.location.hash || '').indexOf('data=') > -1) return;
+            if (this._yandexExchanging) return;
+            // В расчёте уже что-то есть — своё, распознанное или просто заданная площадь.
+            if (this.state.area > 0 || this.state.calc_id) return;
+            if ((this.state.userAddedEq || []).length || (this.state.userAddedWorks || []).length) return;
+            if ((this.state.rooms || []).length) return;
+            // Дважды хватит: закрыл не глядя в первый раз — покажем ещё один, но не больше.
+            const shown = parseInt(localStorage.getItem('quick_start_shown') || '0', 10) || 0;
+            if (shown >= 2) return;
+            localStorage.setItem('quick_start_shown', String(shown + 1));
+            this.showQuickStart();
+        } catch (e) { console.warn('[quickStart] не показалось:', e); }
+    },
+
+    showQuickStart: function () {
+        if (document.getElementById('quick_start_overlay')) return;
+        const cards = this.QUICK_START_PRESETS.map(p => `
+            <button type="button" class="quick-start-card" onclick="app.applyQuickStart('${p.key}')"
+                style="display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer;
+                       background:var(--bg); border:1px solid var(--border); border-radius:14px;
+                       padding:14px 16px; margin-bottom:10px; transition:0.15s;">
+                <span style="font-size:30px; line-height:1; flex:0 0 auto;">${p.icon}</span>
+                <span style="flex:1 1 auto;">
+                    <span style="display:block; font-size:15px; font-weight:700; color:var(--text-main);">${p.title}</span>
+                    <span style="display:block; font-size:12.5px; color:var(--text-sec); margin-top:2px;">${p.note}</span>
+                </span>
+                <span style="font-size:18px; color:var(--primary); flex:0 0 auto;">›</span>
+            </button>`).join('');
+        const wrap = document.createElement('div');
+        wrap.id = 'quick_start_overlay';
+        wrap.className = 'custom-modal-overlay';
+        wrap.onclick = (e) => { if (e.target === wrap) app.closeQuickStart(); };
+        wrap.innerHTML = `
+            <div class="custom-modal" style="max-width:520px; padding:32px 28px; text-align:left;">
+                <span class="auth-modal-close" onclick="app.closeQuickStart()">&times;</span>
+                <div class="custom-modal-title" style="font-size:20px; margin-bottom:6px;">Первая смета — за минуту</div>
+                <div class="custom-modal-text" style="margin-bottom:18px;">
+                    Выберите объект, похожий на ваш. Калькулятор сразу подберёт котёл, радиаторы,
+                    трубы и работы — а площадь, регион и оборудование поправите уже по готовой смете.
+                </div>
+                ${cards}
+                <button type="button" class="custom-modal-btn custom-modal-close" style="margin-top:6px;"
+                    onclick="app.closeQuickStart()">Настрою сам</button>
+            </div>`;
+        document.body.appendChild(wrap);
+        // Класс active навешиваем не сразу, иначе не будет перехода. Через таймер,
+        // а не requestAnimationFrame: в фоновой вкладке кадры не рисуются, кадровый
+        // обработчик не вызывается вовсе — и окно так и осталось бы невидимым, при
+        // том что счётчик показов уже увеличен.
+        setTimeout(() => wrap.classList.add('active'), 20);
+    },
+
+    closeQuickStart: function (instant) {
+        const wrap = document.getElementById('quick_start_overlay');
+        if (!wrap) return;
+        wrap.classList.remove('active');
+        setTimeout(() => wrap.remove(), instant ? 0 : 300);
+    },
+
+    applyQuickStart: function (key) {
+        const preset = this.QUICK_START_PRESETS.find(p => p.key === key);
+        if (!preset) return;
+        this.closeQuickStart(true);
+        // Больше не показываем: человек стартом воспользовался.
+        try { localStorage.setItem('quick_start_shown', '2'); } catch (e) { }
+        Object.assign(this.state, JSON.parse(JSON.stringify(preset.state)));
+        // Метка для события 'calculated' (см. ensureCalcId): по ней видно, сколько
+        // смет начинается с шаблона, а сколько — с пустой формы.
+        this._quickStartPreset = preset.key;
+        this.autoCalcZones();
+        this.syncUI();
+        this.render();
+        this.saveState();
+        setTimeout(() => {
+            const anchor = document.getElementById('doc_summary') || document.getElementById('total_sum');
+            if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 120);
+    },
+
     init: function () {
         // Global premium modal overrides
         window.alert = (msg) => app.alert(msg);
@@ -29159,6 +29372,11 @@ const app = {
                 setTimeout(() => preloader.remove(), 500); // Удаляем из DOM после затухания
             }
         }, 300);
+
+        // Окно первого запуска — когда прелоадер уже ушёл и страница на месте
+        setTimeout(() => {
+            this.maybeShowQuickStart();
+        }, 900);
 
         // Проверяем обновления статусов смет через 3 секунды после загрузки
         setTimeout(() => {
