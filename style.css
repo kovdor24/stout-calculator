@@ -1023,6 +1023,126 @@ body.dark-mode .swap-alt-badge {
     transition: transform 160ms var(--ease-out);
 }
 
+/* Кнопки под сметой: одна залитая главная, одна тёмная и контурные. Раньше все
+   пять были залиты (три из них одинаково чёрные) — глазу не за что было
+   зацепиться, и главное действие терялось среди второстепенных. */
+.btn-primary-action {
+    flex: 1.6;
+    background-color: var(--primary);
+}
+
+.btn-primary-action:hover {
+    filter: brightness(0.92);
+}
+
+.btn-dark {
+    background-color: #111827;
+}
+
+.btn-dark:hover {
+    background-color: #000000;
+}
+
+.btn-outline {
+    background-color: transparent;
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    box-shadow: none;
+}
+
+.btn-outline:hover {
+    background-color: var(--surface-light);
+    border-color: var(--text-sec);
+}
+
+.btn-outline svg {
+    stroke: var(--text-sec);
+}
+
+/* «Проект» — по ширине содержимого, а не на равную долю строки */
+.btn-compact {
+    flex: 0 0 auto;
+    padding-left: 18px;
+    padding-right: 18px;
+}
+
+/* Черта между выгрузкой сметы и проектом: это разные вещи, а не пятая кнопка в ряд */
+.footer-btns-sep {
+    width: 1px;
+    align-self: stretch;
+    margin: 6px 2px;
+    background: var(--border);
+    flex: 0 0 auto;
+}
+
+.btn-download-wrap {
+    position: relative;
+    display: flex;
+    flex: 1.1;
+}
+
+.btn-download-wrap > .btn-base {
+    width: 100%;
+}
+
+.btn-caret {
+    opacity: 0.7;
+    margin-left: -2px;
+}
+
+/* Меню выбора формата. Открывается вверх: кнопки стоят внизу сметы, вниз
+   выпадать некуда. */
+.download-menu {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    min-width: 215px;
+    z-index: 60;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 12px 24px -8px rgba(15, 23, 42, 0.18);
+}
+
+.download-menu.open {
+    display: block;
+}
+
+.download-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-main);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.download-menu-item svg {
+    stroke: var(--text-sec);
+    flex-shrink: 0;
+}
+
+.download-menu-item:hover {
+    background: var(--surface-light);
+}
+
+.download-menu-hint {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-sec);
+}
+
+
 /* Р¦РІРµС‚Р° РєРЅРѕРїРѕРє РІ СЃРІРµС‚Р»РѕР№ С‚РµРјРµ */
 .btn-tg {
     background-color: #229ED9;
@@ -1074,6 +1194,32 @@ body.dark-mode .btn-share {
 
 body.dark-mode .btn-share:hover {
     background-color: #047857;
+}
+
+/* Главная кнопка берёт --primary и в тёмной теме меняется сама, остальным нужны
+   свои цвета: чёрная заливка на тёмном фоне не читается. */
+body.dark-mode .btn-dark {
+    background-color: #374151;
+    color: #F3F4F6;
+}
+
+body.dark-mode .btn-dark:hover {
+    background-color: #4B5563;
+}
+
+body.dark-mode .btn-outline {
+    color: #F3F4F6;
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+body.dark-mode .btn-outline:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+body.dark-mode .download-menu {
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.5);
 }
 
 .editable-val {
@@ -1764,6 +1910,26 @@ body.menu-open .mobile-menu-backdrop {
         margin-left: 0 !important;
         padding: 16px !important;
         font-size: 16px !important;
+    }
+
+    /* На узком экране кнопки идут в столбик: обёртка «Скачать» растягивается
+       наравне с ними, черта-разделитель не нужна. */
+    .btn-download-wrap {
+        width: 100%;
+    }
+
+    .footer-btns-sep {
+        display: none;
+    }
+
+    .btn-compact {
+        flex: 1 1 auto;
+    }
+
+    .download-menu {
+        left: 0;
+        right: 0;
+        min-width: 0;
     }
 }
 
@@ -5913,6 +6079,37 @@ body.menu-open .mobile-menu-backdrop {
         padding: 11px 8px !important;
         font-size: 12px !important;
         justify-content: center;
+    }
+
+    /* В меню кнопки стоят плиткой по две в ряд — обёртка «Скачать» занимает
+       такую же плитку, а её кнопка внутри растягивается на всю обёртку. */
+    .mobile-sidebar .btn-download-wrap {
+        flex: 1 1 calc(50% - 4px);
+        min-width: calc(50% - 4px);
+    }
+
+    .mobile-sidebar .btn-download-wrap > .btn-base {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .mobile-sidebar .footer-btns-sep {
+        display: none;
+    }
+
+    .mobile-sidebar .btn-compact {
+        flex: 1 1 calc(50% - 4px);
+    }
+
+    /* Главная кнопка в меню остаётся цветной — иначе список плиток одинаково серый */
+    .mobile-sidebar .footer-btns .btn-primary-action {
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: #fff !important;
+    }
+
+    .mobile-sidebar .footer-btns .btn-primary-action svg {
+        stroke: #fff !important;
     }
     
     .mobile-sidebar .footer-btns .btn-base svg {
