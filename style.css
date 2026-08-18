@@ -1026,41 +1026,41 @@ body.dark-mode .swap-alt-badge {
 /* Кнопки под сметой: одна залитая главная, одна тёмная и контурные. Раньше все
    пять были залиты (три из них одинаково чёрные) — глазу не за что было
    зацепиться, и главное действие терялось среди второстепенных. */
-.btn-primary-action {
+.footer-btns .btn-primary-action {
     flex: 1.6;
     background-color: var(--primary);
 }
 
-.btn-primary-action:hover {
+.footer-btns .btn-primary-action:hover {
     filter: brightness(0.92);
 }
 
-.btn-dark {
+.footer-btns .btn-dark {
     background-color: #111827;
 }
 
-.btn-dark:hover {
+.footer-btns .btn-dark:hover {
     background-color: #000000;
 }
 
-.btn-outline {
+.footer-btns .btn-outline {
     background-color: transparent;
     color: var(--text-main);
     border: 1px solid var(--border);
     box-shadow: none;
 }
 
-.btn-outline:hover {
+.footer-btns .btn-outline:hover {
     background-color: var(--surface-light);
     border-color: var(--text-sec);
 }
 
-.btn-outline svg {
+.footer-btns .btn-outline svg {
     stroke: var(--text-sec);
 }
 
 /* «Проект» — по ширине содержимого, а не на равную долю строки */
-.btn-compact {
+.footer-btns .btn-compact {
     flex: 0 0 auto;
     padding-left: 18px;
     padding-right: 18px;
@@ -1083,6 +1083,14 @@ body.dark-mode .swap-alt-badge {
 
 .btn-download-wrap > .btn-base {
     width: 100%;
+    /* Без сброса flex-элемент не даёт себя сжать до ширины обёртки: min-width
+       у него по умолчанию auto, то есть «не уже содержимого». */
+    min-width: 0;
+}
+
+/* Палец на планшете: 39 px по инерции от прежних отступов маловато */
+.footer-btns .btn-base {
+    min-height: 44px;
 }
 
 .btn-caret {
@@ -1922,7 +1930,7 @@ body.menu-open .mobile-menu-backdrop {
         display: none;
     }
 
-    .btn-compact {
+    .footer-btns .btn-compact {
         flex: 1 1 auto;
     }
 
