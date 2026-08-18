@@ -172,8 +172,8 @@
          плагина Capacitor нет, все методы тихо выходят. Подключать до app.js —
          app.init() дёргает appPush.init(). -->
     <script src="push.js?v=1.1" defer></script>
-    <script src="app.js?v=6.41" defer></script>
-    <script src="tour.js?v=1.1" defer></script>
+    <script src="app.js?v=6.42" defer></script>
+    <script src="tour.js?v=1.2" defer></script>
     <!-- Выгрузка сметы в Excel: читает уже готовую печатную вёрстку (#print_bin) -->
     <script src="excel_export.js?v=1.0" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
@@ -396,7 +396,7 @@
             <input type="checkbox" id="chk_tour" onchange="Tour.toggle(this.checked)">
             <span class="slider"></span>
         </label>
-        <span style="font-size: 11px; color: var(--text-sec); text-align: center;">подсказки на каждом шаге — от площади до ссылки клиенту</span>
+        <span style="font-size: 11px; color: var(--text-sec); text-align: center;">подсказки на каждом шаге</span>
     </div>
     <div class="container">
         <div class="panel input-panel">
@@ -406,20 +406,6 @@
                     <div class="mode-tab active" id="mode_fast" onclick="app.toggleDetailedRooms(false, event)">Быстрый</div>
                     <div class="mode-tab" id="mode_pro" onclick="app.toggleDetailedRooms(true, event)">Подробный</div>
                 </div>
-            </div>
-
-            <!-- Быстрый старт: пока в расчёте ничего нет, предлагаем начать с типового
-                 объекта. Окно первого запуска показывается не больше двух раз и легко
-                 закрывается не глядя, а эта кнопка остаётся на месте, пока смета пустая
-                 (показ — app.syncQuickStartBtn). -->
-            <div id="quick_start_row" class="no-print" style="display: none; margin-bottom: 15px;">
-                <button type="button" onclick="app.showQuickStart()"
-                    style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
-                           font: inherit; font-size: 13px; font-weight: 600; padding: 10px 12px;
-                           border-radius: 10px; border: 1px dashed var(--primary); background: transparent;
-                           color: var(--primary); cursor: pointer;">
-                    <span style="font-size: 15px;">🏠</span>Быстрый старт: типовой объект
-                </button>
             </div>
 
             <div class="control-item" id="blk_main_area" style="margin-bottom: 15px;">

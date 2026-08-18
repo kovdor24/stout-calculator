@@ -28828,7 +28828,7 @@ const app = {
 
     // Пустой ли расчёт: ни площади, ни номера КП, ни своих или распознанных позиций,
     // ни комнат подробного расчёта. От этого зависит и окно первого запуска, и кнопка
-    // «Быстрый старт» над площадью.
+    // «Быстрый старт» в центре пустой сметы.
     isCalcEmpty: function () {
         if (this.state.area > 0 || this.state.calc_id) return false;
         if ((this.state.userAddedEq || []).length || (this.state.userAddedWorks || []).length) return false;
@@ -28836,13 +28836,15 @@ const app = {
         return true;
     },
 
-    // Кнопка над площадью. Окно первого запуска показывается не больше двух раз и
-    // закрывается одним касанием — человек, закрывший его не глядя, иначе больше о
-    // быстром старте не узнал бы. Кнопка живёт ровно столько, сколько расчёт пуст.
+    // Кнопка живёт в центре пустой сметы и рисуется вместе с подсказкой «Параметры
+    // объекта не заданы» (см. render). Окно первого запуска показывается не больше
+    // двух раз и закрывается одним касанием — человек, закрывший его не глядя, иначе
+    // больше о быстром старте не узнал бы. Здесь остаётся подстраховка на случай,
+    // когда расчёт перестал быть пустым без перерисовки таблицы.
     syncQuickStartBtn: function () {
         const row = document.getElementById('quick_start_row');
         if (!row) return;
-        row.style.display = this.isCalcEmpty() ? 'block' : 'none';
+        if (!this.isCalcEmpty()) row.style.display = 'none';
     },
 
     // Показывать ли окно. Условий много, но все об одном: человек пришёл на пустой
@@ -50051,11 +50053,23 @@ const app = {
         // «Создать новую смету» из распознавания — это как раз голая смета из
         // одних распознанных позиций.
         if (this.state.area <= 0 && !hasUserRows) {
+            // Кнопка быстрого старта стоит здесь же, в центре пустой сметы: место,
+            // куда человек смотрит первым делом. Показываем её ровно тогда, когда
+            // расчёт действительно пуст (открытая чужая смета с нулевой площадью —
+            // не тот случай). Идентификатор нужен режиму обучения (tour.js).
+            const qsBtn = this.isCalcEmpty() ? `
+                    <button type="button" id="quick_start_row" class="no-print" onclick="app.showQuickStart()"
+                        style="display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+                               margin-top: 12px; font: inherit; font-size: 13px; font-weight: 600;
+                               padding: 10px 18px; border-radius: 10px; border: 1px dashed var(--primary);
+                               background: transparent; color: var(--primary); cursor: pointer;">
+                        <span style="font-size: 15px;">🏠</span>Быстрый старт: типовой объект
+                    </button>` : '';
             h = `<tr class="empty-state-row"><td colspan="9">
                 <div class="empty-state-hint">
                     <span class="empty-state-icon">🏠</span>
                     <div class="empty-state-title">Параметры объекта не заданы</div>
-                    <div class="empty-state-text">Измените параметры объекта слева (площадь, отопление, материалы), чтобы начать подбор оборудования — либо нажмите «✨ ИИ-заполнение» и опишите объект словами.</div>
+                    <div class="empty-state-text">Измените параметры объекта слева (площадь, отопление, материалы), чтобы начать подбор оборудования — либо нажмите «✨ ИИ-заполнение» и опишите объект словами.</div>${qsBtn}
                 </div>
             </td></tr>`;
             sum = 0;
