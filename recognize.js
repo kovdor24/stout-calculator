@@ -136,9 +136,40 @@ const RecognizeUI = {
             this._onPaste = (e) => {
                 // Вставка работает, только пока вкладка открыта и мы на шаге загрузки.
                 if (app.state.viewMode !== 'recognize' || this._rows.length) return;
-                const it = [...(e.clipboardData || {}).items || []]
-                    .find(i => i.type.startsWith('image/'));
-                if (it) this.handleFile(it.getAsFile());
+
+                // Поле ввода важнее: если курсор в нём, человек вставляет текст
+                // туда, а не в распознавание.
+                const t = e.target;
+                if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+
+                const cd = e.clipboardData;
+                if (!cd) return;
+
+                const it = [...(cd.items || [])].find(i => i.type.startsWith('image/'));
+                if (it) { this.handleFile(it.getAsFile()); return; }
+
+                /**
+                 * Текст из письма или таблицы — такой же источник сметы, как файл.
+                 * Оборачиваем его в File и отдаём тому же разбору, что и загруженный
+                 * .html/.txt — отдельного пути для вставки не заводим.
+                 *
+                 * HTML берём в первую очередь: в нём сохранилась разбивка по колонкам,
+                 * а в text/plain колонки часто уже слиплись в одну строку.
+                 */
+                let html = '';
+                let plain = '';
+                try { html = cd.getData('text/html') || ''; } catch (_) {}
+                try { plain = cd.getData('text/plain') || ''; } catch (_) {}
+                const src = html.trim() ? html : plain;
+                if (!src || !src.trim()) return;
+
+                e.preventDefault();
+                const asHtml = !!html.trim();
+                this.handleFile(new File(
+                    [src],
+                    asHtml ? 'вставленный текст.html' : 'вставленный текст.txt',
+                    { type: asHtml ? 'text/html' : 'text/plain' }
+                ));
             };
             document.addEventListener('paste', this._onPaste);
 
@@ -216,7 +247,7 @@ const RecognizeUI = {
           <div class="rec-drop" id="rec_drop">
             <div class="rec-drop-ico">📄</div>
             <div class="rec-drop-t">Перетащите смету сюда</div>
-            <div class="rec-drop-s">фото, PDF, Excel, Word или HTML · или нажмите для выбора · или вставьте скриншот через Ctrl+V</div>
+            <div class="rec-drop-s">фото, PDF, Excel, Word или HTML · или нажмите для выбора · или вставьте скриншот или текст через Ctrl+V</div>
           </div>
           <div class="rec-prev-row" id="rec_prev_wrap">
             <div class="rec-prev-wrap">
