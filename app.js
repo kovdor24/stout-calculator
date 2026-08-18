@@ -25668,9 +25668,12 @@ const app = {
         // показ схемы в интерфейсе.
         const cardHeatLoss = document.getElementById('card_opt_heatloss');
         const cardScheme = document.getElementById('card_opt_scheme');
-        const isPrint = actionType === 'print';
+        // Excel собирается из той же печатной вёрстки, поэтому теплопотери
+        // предлагаем и ему. Схема — только в PDF: это векторная графика на весь
+        // лист, в таблице ей места нет.
+        const isPrint = actionType === 'print' || actionType === 'excel';
         const heatLossReady = isPrint && !!this.state.detailedRooms && !!this.state.showDetailedRoomsPanel;
-        const schemeReady = isPrint && this.schemeOn();
+        const schemeReady = actionType === 'print' && this.schemeOn();
         if (cardHeatLoss) cardHeatLoss.style.display = heatLossReady ? 'flex' : 'none';
         if (cardScheme) cardScheme.style.display = schemeReady ? 'flex' : 'none';
 
@@ -25685,6 +25688,18 @@ const app = {
                     <circle cx="18" cy="19" r="3"></circle>
                     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
                     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>`;
+            }
+        } else if (actionType === 'excel') {
+            if (titleEl) titleEl.innerText = "Смета в Excel";
+            if (descEl) descEl.innerText = "Выберите, какие разделы выгрузить в файл Excel. Каждый раздел ляжет на свой лист книги — в том же виде, что и на печати.";
+            if (btnTextEl) btnTextEl.innerText = "Скачать Excel";
+            if (iconEl) {
+                iconEl.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="3" y1="15" x2="21" y2="15"></line>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
                 </svg>`;
             }
         } else {
@@ -25785,6 +25800,8 @@ const app = {
 
         if (this.shareActionType === 'share') {
             this.executeShareInvoice(showEq, showWorks);
+        } else if (this.shareActionType === 'excel') {
+            this.executeExcelDownload(showEq, showWorks, showHeatLoss);
         } else {
             this.executeDownload(showEq, showWorks, showHeatLoss, showScheme);
         }
@@ -27016,12 +27033,25 @@ const app = {
         }
     },
     download: async function () {
+        return this.requestExport('print');
+    },
+    // Выгрузка той же сметы в Excel. Отдельной подготовки не требует: файл
+    // собирается из печатной вёрстки, поэтому проверки (тариф, название объекта,
+    // заполненный профиль) и окно выбора разделов у неё общие с печатью.
+    downloadExcel: async function () {
+        return this.requestExport('excel');
+    },
+    // Общая часть печати и выгрузки в Excel: проверить доступ, спросить название
+    // объекта и контакты монтажника, затем открыть окно выбора разделов.
+    requestExport: async function (actionType) {
         if (!this.checkAccess('base')) return;
+
+        const fileWord = actionType === 'excel' ? 'файла Excel' : 'PDF-файла';
 
         let pName = this.state.projectName;
         if (!pName || pName.trim() === "") {
             const enteredName = await this.prompt(
-                "Для формирования PDF-файла\nВведите название объекта",
+                "Для формирования " + fileWord + "\nВведите название объекта",
                 "",
                 "Ввод данных"
             );
@@ -27030,7 +27060,7 @@ const app = {
             }
             const cleanName = enteredName.trim();
             if (cleanName === "") {
-                app.alert("Название объекта не может быть пустым для формирования PDF.");
+                app.alert("Название объекта не может быть пустым для формирования " + fileWord + ".");
                 return;
             }
             this.setProjectName(cleanName);
@@ -27050,7 +27080,7 @@ const app = {
             return;
         }
 
-        this.openShareOptionsModal('print');
+        this.openShareOptionsModal(actionType);
     },
     // html2canvas (используется html2pdf на мобильных, см. executeDownload) рендерит DOM как
     // есть на экране — браузер применяет @media print только к настоящей печати, а не к canvas-
@@ -27196,6 +27226,60 @@ const app = {
 
         // Возвращаем тему обратно
         if (wasDark) document.body.classList.add('dark-mode');
+    },
+    // Выгрузка сметы в Excel (.xlsx). Готовим документ ровно так же, как для печати
+    // (prepareForPrint собирает #print_bin), а собирает книгу excel_export.js —
+    // он читает уже готовую печатную вёрстку. За счёт этого в файл попадает та же
+    // смета, что и в PDF: те же разделы, строки, скидки и группировки, без второй
+    // копии логики сметы. В Excel не переносятся только фотографии и схема.
+    executeExcelDownload: async function (showEq, showWorks, showHeatLoss) {
+        if (!window.ExcelExport) {
+            app.alert('Выгрузка в Excel сейчас недоступна. Обновите страницу и попробуйте снова.');
+            return;
+        }
+
+        this.printOptions = {
+            eq: showEq,
+            works: showWorks,
+            heatLoss: !!showHeatLoss,
+            scheme: false
+        };
+
+        // Как и при печати: смета должна попасть в базу, даже если сейчас нет связи.
+        this.ensureCalcId();
+        this.queueCloudSave(JSON.parse(JSON.stringify(this.state)), app.lastEqSum || 0, app.lastWorksSum || 0);
+
+        let tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (isLocal && (!tgUser || !tgUser.first_name || !this.isPhoneFilled(tgUser.phone))) {
+            tgUser = { first_name: "Тестовый Монтажник", phone: "+7 (999) 999-99-99" };
+        }
+
+        const printBlock = document.getElementById('print_master_contacts');
+        if (tgUser && printBlock) {
+            document.getElementById('print_master_name').innerText = this.formatShortName(tgUser) || '';
+            document.getElementById('print_master_phone').innerText = tgUser.phone || '';
+            printBlock.style.display = 'block';
+        }
+
+        const wasDark = document.body.classList.contains('dark-mode');
+        if (wasDark) document.body.classList.remove('dark-mode');
+
+        this.updateDocumentTitle();
+        prepareForPrint();
+
+        try {
+            const safeName = (this.state.projectName || 'Смета').replace(/[\\\/:\*\?"<>\|]/g, '');
+            ExcelExport.saveFromPrintBin(`${safeName}.xlsx`);
+            this.logInvoiceEvent('printed');
+            GRM.trackAction('pdf', this.state.calc_id);  // геймификация: та же отметка, что и у PDF
+        } catch (err) {
+            console.error('[executeExcelDownload] Ошибка формирования Excel:', err);
+            app.alert('Не удалось сформировать файл Excel: ' + (err && err.message ? err.message : err));
+        } finally {
+            cleanupAfterPrint();
+            if (wasDark) document.body.classList.add('dark-mode');
+        }
     },
     saveJobToCloud: async function (stateData, eqSum = 0, worksSum = 0) {
         console.log("[saveJobToCloud] Запущен фоновый сейв для проекта:", stateData.projectName);
