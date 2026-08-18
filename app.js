@@ -24668,7 +24668,11 @@ const app = {
         const cfg = this.thermaticConfig;
         const hasWarnings = !!(cfg && (cfg.warnings || []).length);
         const hasOpts = !!this.state.detailedRooms;
-        box.style.display = (this.state.boilerAuto && (hasWarnings || hasOpts)) ? 'flex' : 'none';
+        // Каскад открывает рамку сам, без подробного режима: котловых каналов у
+        // приборов разное число, и монтажник должен видеть, какой ему подобрали,
+        // не открывая смету. См. renderBoilerAutoInfo.
+        const hasCascade = !!(cfg && (cfg.boilerCount || 0) > 1);
+        box.style.display = (this.state.boilerAuto && (hasWarnings || hasOpts || hasCascade)) ? 'flex' : 'none';
     },
 
     /**
@@ -24703,6 +24707,16 @@ const app = {
         // под «i» у строки автоматики в смете, и два одинаковых текста рядом только
         // сбивают — состав смотрят там, где стоит сама позиция.
         let html = '';
+        // Каскад — единственный случай, когда состав всё-таки называем здесь.
+        // Приборы держат разное число котлов, и в быстром режиме рамка иначе не
+        // раскрывается вовсе: монтажник соберёт каскад и не узнает, какой
+        // контроллер ему подобрали, пока не дойдёт до строки в смете.
+        if ((cfg.boilerCount || 0) > 1) {
+            const _m = this.BOILER_AUTO_MODELS[cfg.model === 'basic' ? 'basic' : 'full'];
+            html += `<div style="margin-top:8px; padding-left:8px; border-left:3px solid var(--primary); color:var(--text-main);">` +
+                `Котлов в смете ${cfg.boilerCount} — подобран ${_m.short}. ` +
+                `Прибор меняется заменой позиции на строке контроллера в смете.</div>`;
+        }
         (cfg.warnings || []).forEach(w => {
             html += `<div style="margin-top:8px; padding-left:8px; border-left:3px solid #F59E0B; color:var(--text-main);">⚠️ ${w}</div>`;
         });
