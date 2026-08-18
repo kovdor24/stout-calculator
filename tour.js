@@ -27,21 +27,21 @@ const Tour = {
     // пропускается: половина блоков появляется только при своих настройках.
     STEPS: [
         {
-            key: 'quick',
+            key: 'quick', mob: 'inputs',
             sel: '#quick_start_row',
             title: 'Быстрый старт',
             text: 'Если хочется сразу увидеть готовую смету — возьмите типовой объект отсюда, а потом поправьте под свой. Или заполняйте параметры сами, шаг за шагом.',
             done: () => app.state.area > 0
         },
         {
-            key: 'area',
+            key: 'area', mob: 'inputs',
             sel: '#blk_main_area',
             title: 'Площадь дома',
             text: 'Главное число расчёта: от него зависят теплопотери, мощность котла, число радиаторов и длина трубы. Тяните ползунок или впишите площадь руками.',
             done: () => app.state.area > 0
         },
         {
-            key: 'region',
+            key: 'region', mob: 'inputs',
             sel: '#reg_tabs',
             // Регион и стены живут под тумблером «Параметры объекта» и по умолчанию
             // закрыты. Раньше шаг молча пропускался — обучение проскакивало мимо двух
@@ -54,45 +54,45 @@ const Tour = {
             text: 'Задаёт расчётную зимнюю температуру. Сибирь и Юг при одной площади дают разную мощность котла. Ниже можно выбрать конкретный город — так точнее.'
         },
         {
-            key: 'mat',
+            key: 'mat', mob: 'inputs',
             sel: '#mat_tabs',
             title: 'Стены',
             text: 'Насколько дом держит тепло. «Тёплый» — утеплённый каркас или газоблок с утеплителем, «Холодный» — старый дом без утепления. Если знаете состав стен, включите «Параметры объекта» и задайте слои.'
         },
         {
-            key: 'fuel',
+            key: 'fuel', mob: 'inputs',
             sel: () => document.getElementById('fuel_gas') && document.getElementById('fuel_gas').closest('.control-item'),
             title: 'Тип котла',
             text: 'Газ или электричество. Для электрического ещё спросим про выделенную мощность и тариф — по ним считается стоимость отопления за сезон.'
         },
         {
-            key: 'sys',
+            key: 'sys', mob: 'inputs',
             sel: () => document.getElementById('sys_rad') && document.getElementById('sys_rad').closest('.control-item'),
             title: 'Чем греем',
             text: 'Радиаторы, тёплый пол или и то и другое. Для пола дальше появятся поля площади по этажам и шаг укладки трубы.',
             done: () => (app.state.systems || []).length > 0
         },
         {
-            key: 'hw',
+            key: 'hw', mob: 'inputs',
             sel: () => document.getElementById('chk_hw') && document.getElementById('chk_hw').closest('.control-item'),
             title: 'Горячая вода',
             text: 'Включите, если нужен бойлер. Объём подберётся по числу проживающих, а в смету добавится обвязка бойлера и, если попросите, рециркуляция.'
         },
         {
-            key: 'eq',
+            key: 'eq', mob: 'output',
             sel: '#tab_equipment',
             title: 'Смета готова',
             text: 'Здесь подобранное оборудование: котёл, бойлер, радиаторы, трубы, автоматика. Любую позицию можно заменить, убрать или задать своё количество — расчёт пересоберётся.'
         },
         {
-            key: 'works',
+            key: 'works', mob: 'output',
             sel: '#tab_works',
             title: 'Монтажные работы',
             text: 'Вторая вкладка — работы с объёмами и расценками. Свои цены на монтаж задаются один раз в личном кабинете и подставляются во все сметы.',
             done: () => app.state.viewMode === 'works'
         },
         {
-            key: 'total',
+            key: 'total', mob: 'output',
             // Строка итога, а не панель вокруг: closest('.panel') брал всю смету
             // целиком — подсветка в пол-экрана, и карточка подсказки неминуемо на неё
             // наезжала. Со скидкой берём и блок скидки, он прямо над итогом.
@@ -106,13 +106,13 @@ const Tour = {
             text: 'Ползунок скидки и наценки меняет цену оборудования для клиента: рекомендованная цена остаётся у вас перед глазами, а в документ уходит ваша.'
         },
         {
-            key: 'save',
+            key: 'save', mob: 'output',
             sel: '#btn_save_main',
             title: 'Сохранить',
             text: 'Смета уйдёт в облако и откроется на любом устройстве под вашим аккаунтом. Без этого расчёт живёт только в этом браузере.'
         },
         {
-            key: 'send',
+            key: 'send', mob: 'output',
             sel: () => {
                 const share = document.getElementById('btn_share_trigger');
                 if (share && share.offsetParent) return share;
@@ -213,6 +213,16 @@ const Tour = {
         return el;
     },
 
+    // Вкладка телефона: 'inputs' — параметры, 'output' — смета. На широком экране
+    // обе колонки на месте и переключать нечего.
+    mobTab: function (which) {
+        try {
+            if (!app.isMobileLayout || !app.isMobileLayout()) return;
+            if ((app.state.mobTab || 'inputs') === which) return;
+            app.switchMobileTab(which);
+        } catch (e) { }
+    },
+
     clearSpot: function () {
         document.querySelectorAll('.tour-spot').forEach(e => e.classList.remove('tour-spot'));
     },
@@ -225,7 +235,13 @@ const Tour = {
             if (!s) { this.finish(); return; }
             // Шаг может сам открыть свёрнутый блок — иначе подсвечивать нечего
             if (s.before) { try { s.before(); } catch (e) { } }
-            const el = this.target(s);
+            let el = this.target(s);
+            // На телефоне параметры и смета живут на разных вкладках, и половина
+            // шагов оказывалась в скрытой: обучение обрывалось на «Горячей воде»,
+            // не показав ни сметы, ни работ, ни отправки клиенту. Переключаем
+            // вкладку только когда иначе шаг пришлось бы пропустить — чтобы не
+            // выдёргивать человека, если он сам ушёл посмотреть другое.
+            if (!el && s.mob) { this.mobTab(s.mob); el = this.target(s); }
             const alreadyDone = s.done && !s.last && (() => { try { return s.done(); } catch (e) { return false; } })();
             if (el && !alreadyDone) break;
             if (this._step >= this.STEPS.length - 1) { this.finish(); return; }
@@ -238,7 +254,11 @@ const Tour = {
 
         this.clearSpot();
         el.classList.add('tour-spot');
-        try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { }
+        // Прокрутка мгновенная, а не плавная: задача шага — показать элемент, и
+        // анимация тут не украшение, а лишний способ не доехать. Плавная прокрутка
+        // считается композитором и в части окружений (свёрнутая вкладка, часть
+        // встроенных браузеров) не двигается вовсе — подсветка оставалась за экраном.
+        try { el.scrollIntoView({ behavior: 'auto', block: 'center' }); } catch (e) { }
 
         let card = document.getElementById('tour_card');
         if (!card) {
@@ -259,6 +279,25 @@ const Tour = {
             '<button type="button" class="tour-btn" onclick="Tour.next()">' + (step.last ? 'Готово' : 'Дальше') + '</button>' +
             '</div>';
         this.place(card, el);
+        // На узком экране карточка — полоса снизу, и подсвеченный блок, выведенный
+        // ровно в центр, оказывался наполовину под ней. Досдвигаем страницу так,
+        // чтобы он остался над карточкой.
+        if (window.innerWidth < 760) this.keepClear(el, card);
+    },
+
+    keepClear: function (el, card) {
+        const a = card.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        let shift = 0;
+        if (card.classList.contains('tour-card-atop')) {
+            // Карточка сверху — элемент должен оказаться ниже неё
+            const floor = a.bottom + 12;
+            if (r.top < floor) shift = r.top - floor;
+        } else {
+            const room = a.top - 12;
+            if (r.bottom > room) shift = (r.height >= room - 60) ? (r.top - 70) : (r.bottom - room);
+        }
+        if (Math.abs(shift) > 2) window.scrollBy(0, Math.round(shift));
     },
 
     // Размещение карточки. На узком экране — полосой снизу: считать координаты
@@ -270,9 +309,14 @@ const Tour = {
         const busy = this.bottomBusy();
         const narrow = window.innerWidth < 760;
         if (narrow) {
-            card.className = 'tour-card tour-card-bottom';
+            // Элемент у самого низа страницы (кнопки печати, тумблеры в конце панели)
+            // прокруткой из-под нижней полосы не вытащить — там уже конец документа.
+            // В этом случае полосу поднимаем наверх экрана.
+            const r = el.getBoundingClientRect();
+            const low = r.top + r.height / 2 > window.innerHeight * 0.5;
+            card.className = 'tour-card tour-card-bottom' + (low ? ' tour-card-atop' : '');
             card.style.left = ''; card.style.top = '';
-            card.style.bottom = (busy + 10) + 'px';
+            card.style.bottom = low ? '' : (busy + 10) + 'px';
             return;
         }
         card.style.bottom = '';
@@ -357,6 +401,10 @@ body.dark-mode .tour-card { background: #1E1E1E; border-color: #333333; }
     width: auto;
     top: auto !important;
     bottom: 10px;
+}
+.tour-card-atop {
+    top: 10px !important;
+    bottom: auto !important;
 }
 .tour-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .tour-card-num { font-size: 11px; font-weight: 700; letter-spacing: 0.3px; color: var(--primary); text-transform: uppercase; }
