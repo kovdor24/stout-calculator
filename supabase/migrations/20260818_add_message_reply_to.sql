@@ -13,34 +13,30 @@
 -- «Удалить переписку», автоочистка через 90 дней) — ответ при этом остаётся,
 -- просто вместо цитаты в нём будет «Сообщение удалено».
 --
--- Тип колонки берём такой же, какой у messages.id, чтобы файл выполнился
--- независимо от того, uuid там или bigint.
---
 -- Пока миграция не выполнена, всё работает как раньше: приложение видит, что
 -- колонки нет (код 42703), и отправляет сообщение без цитаты.
 --
 -- Выполнить вручную в Supabase SQL Editor (весь файл целиком, за один раз).
 
-do $$
-declare
-    id_type text;
-begin
-    if exists (select 1 from information_schema.columns
-                where table_schema = 'public' and table_name = 'messages'
-                  and column_name = 'reply_to_id') then
-        raise notice 'reply_to_id уже есть — ничего не делаем';
-        return;
-    end if;
-
-    select data_type into id_type
-      from information_schema.columns
-     where table_schema = 'public' and table_name = 'messages' and column_name = 'id';
-
-    execute format(
-        'alter table public.messages add column reply_to_id %s references public.messages(id) on delete set null',
-        id_type);
-end $$;
+alter table public.messages
+    add column if not exists reply_to_id uuid references public.messages(id) on delete set null;
 
 -- Индекс нужен самой базе: без него on delete set null перебирает всю таблицу
 -- при каждом удалении сообщения.
 create index if not exists messages_reply_to_id_idx on public.messages (reply_to_id);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Если запрос выше ругается на тип («foreign key constraint ... cannot be
+-- implemented», «incompatible types»), значит messages.id не uuid. Тогда
+-- вместо него выполнить этот блок — он сам подставит нужный тип:
+--
+-- do $$
+-- declare id_type text;
+-- begin
+--     if exists (select 1 from information_schema.columns
+--                 where table_schema = 'public' and table_name = 'messages'
+--                   and column_name = 'reply_to_id') then return; end if;
+--     select data_type into id_type from information_schema.columns
+--      where table_schema = 'public' and table_name = 'messages' and column_name = 'id';
+--     execute format('alter table public.messages add column reply_to_id %s references public.messages(id) on delete set null', id_type);
+-- end $$;
