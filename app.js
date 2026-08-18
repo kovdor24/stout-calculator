@@ -2361,12 +2361,24 @@ const app = {
             if (isRoofWarm) {
                 const isXps = /пеноплэкс[а-я]*|эппс|пенопласт[а-я]*|экструз[а-я]*/i.test(t);
                 let thick = 0;
-                if (/двухсотк[а-я]*|200\s*мм|в\s*четыре\s*сло[а-я]*|4\s*сло[а-я]*/i.test(t)) thick = 200;
+                if (/400\s*мм/i.test(t)) thick = 400;
+                else if (/350\s*мм/i.test(t)) thick = 350;
+                else if (/300\s*мм|в\s*шесть\s*сло[а-я]*|6\s*сло[а-я]*/i.test(t)) thick = 300;
+                else if (/250\s*мм|в\s*пять\s*сло[а-я]*|5\s*сло[а-я]*/i.test(t)) thick = 250;
+                else if (/двухсотк[а-я]*|200\s*мм|в\s*четыре\s*сло[а-я]*|4\s*сло[а-я]*/i.test(t)) thick = 200;
                 else if (/сотк[а-я]*|100\s*мм/i.test(t)) thick = 100;
                 else if (/150\s*мм|в\s*три\s*сло[а-я]*|3\s*сло[а-я]*/i.test(t)) thick = 150;
+                // Толщина из фразы → ближайшая позиция справочника НЕ толще названной:
+                // 300 мм минваты не должны молча превратиться в 200 мм, как было раньше,
+                // когда справочник на 200 заканчивался.
+                const _roofPick = (prefix, list, dflt) => {
+                    if (!thick) return dflt;
+                    const fit = list.filter(x => x <= thick);
+                    return prefix + (fit.length ? fit[fit.length - 1] : list[0]);
+                };
                 let roofMatId;
-                if (isXps) roofMatId = thick >= 150 ? 'roof_xps150' : 'roof_xps100';
-                else roofMatId = thick >= 200 ? 'roof_mw200' : (thick === 100 ? 'roof_mw100' : 'roof_mw150');
+                if (isXps) roofMatId = _roofPick('roof_xps', [100, 150, 200, 250, 300], 'roof_xps100');
+                else roofMatId = _roofPick('roof_mw', [100, 150, 200, 250, 300, 350, 400], 'roof_mw150');
                 results.push({ field: 'roofMat', value: { enabled: true, matId: roofMatId }, label: 'Кровля', display: 'утеплённая' + (thick ? ` (${thick} мм)` : '') });
             } else if (isRoofCold) {
                 results.push({ field: 'roofMat', value: { enabled: false }, label: 'Кровля', display: 'холодная (без утепления)' });
@@ -23504,6 +23516,23 @@ const app = {
         this.render();
     },
 
+    /**
+     * Возврат работ, удалённых крестиком. Удаление копится в state.deletedWorks и
+     * живёт вместе с настройками, поэтому без этой кнопки один случайный крестик
+     * убирал расценку из всех последующих смет монтажника.
+     */
+    restoreDeletedWorks: async function () {
+        const list = (this.state.deletedWorks || []);
+        if (!list.length) return;
+        const sep = `
+`;
+        const msg = `Вернуть в смету удалённые работы (${list.length})?` + sep + sep + list.join(sep);
+        if (!await app.confirm(msg)) return;
+        this.state.deletedWorks = [];
+        this.saveState();
+        this.render();
+    },
+
     addCustomWork: async function () {
         if (!this.checkAccess('pro')) return;
         let name = await app.prompt("Введите название работы:", "Дополнительная работа");
@@ -37035,7 +37064,7 @@ const app = {
             let w = r.windows.find(x => x.id === winId);
             if (w) {
                 if (field === 'width') {
-                    w.width = parseFloat(val) || 1.0;
+                    w.width = Math.round((parseFloat(val) || 1.0) * 100) / 100;
                     w.isManualWidth = true;
                 } else {
                     w[field] = val;
@@ -37077,7 +37106,7 @@ const app = {
         if (r) {
             let w = r.windows.find(x => x.id === winId);
             if (w) {
-                w.width = parseFloat(val) || 1.2;
+                w.width = Math.round((parseFloat(val) || 1.2) * 100) / 100;
                 w.isManualWidth = true;
                 this.syncRoomsToState();
                 if (skipRender) {
@@ -37107,7 +37136,7 @@ const app = {
         if (!w) return;
         let h = parseFloat(val);
         if (!(h > 0)) h = this.winHeight(w);
-        w.height = Math.round(h * 10) / 10;
+        w.height = Math.round(h * 100) / 100;
         this.syncRoomsToState();
         if (skipRender) {
             this.render();
@@ -37701,10 +37730,10 @@ const app = {
             let winRows = (r.windows || []).map((w, i) => `
                         <div style="display:flex; align-items:center; gap:5px; padding:3px 0; border-bottom:1px dashed var(--border); font-size:11px;">
                             <span style="color:var(--text-sec); width:10px;">${i + 1}</span>
-                            <input type="number" class="room-num-input" style="${fInp} width:52px; height:24px;" step="0.1" min="0.3" max="6" value="${w.width}"
+                            <input type="number" class="room-num-input" style="${fInp} width:52px; height:24px;" step="0.01" min="0.3" max="6" value="${w.width}"
                                 onchange="app.updWindowWidthManual(${r.id}, ${w.id}, this.value, false)" title="Ширина окна, м">
                             <span style="color:var(--text-sec);">×</span>
-                            <input type="number" class="room-num-input" style="${fInp} width:52px; height:24px;" step="0.1" min="0.6" max="3" value="${this.winHeight(w)}"
+                            <input type="number" class="room-num-input" style="${fInp} width:52px; height:24px;" step="0.01" min="0.6" max="3" value="${this.winHeight(w)}"
                                 onchange="app.updWindowHeight(${r.id}, ${w.id}, this.value, false)" title="Высота окна, м">
                             <span style="color:var(--text-sec);">м</span>
                             <label style="display:flex; align-items:center; gap:3px; cursor:pointer; color:var(--text-sec); margin-left:auto; white-space:nowrap;">
@@ -43824,6 +43853,20 @@ const app = {
                         + Добавить свою работу
                     </div>
                   </td></tr>`;
+
+            // Удалённая работа исчезала из сметы навсегда: крестик пишет её имя в
+            // state.deletedWorks, и расчёт с тех пор молча её пропускает — в любой
+            // новой смете тоже, потому что state переезжает вместе с настройками.
+            // Со стороны это читается как «пропал раздел»: работа по котлу есть у
+            // всех, а у тебя её нет. Возврат — этой кнопкой.
+            const _delWorks = (this.state.deletedWorks || []);
+            if (_delWorks.length) {
+                h += `<tr class="hide-custom-work-btn no-print"><td colspan="100">
+                        <div class="btn-add-custom" onclick="app.restoreDeletedWorks()" title="${_delWorks.map(x => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))).join(', ')}">
+                            ↩ Вернуть удалённые работы (${_delWorks.length})
+                        </div>
+                      </td></tr>`;
+            }
         };
 
         // === 1. КОТЁЛ + ВОДОНАГРЕВАТЕЛЬ ===
@@ -46272,6 +46315,11 @@ const app = {
                             // Определяем сторону подключения ИМЕННО этого радиатора (а не общий
                             // state.radType) — для правильного разнесения обвязки ниже по коду,
                             // корректно даже при точечной замене на другую серию для одного окна.
+                            // Количество в строке этого радиатора монтажник мог поправить руками
+                            // (qtyOverrides по instanceKey). Считаем обвязку и работы по нему же,
+                            // иначе смета и монтажные работы расходятся (см. быстрый режим ниже).
+                            const _radQty = (this.state.qtyOverrides && this.state.qtyOverrides[instanceKey] !== undefined)
+                                ? this.state.qtyOverrides[instanceKey] : 1;
                             {
                                 const _finalSeries = this._getSecRadSeries().find(s => s.arr && s.arr.some(x => x.id === activeItem.id));
                                 // Панели (сталь): Compact — боковое подключение (нет поля bottom
@@ -46281,8 +46329,8 @@ const app = {
                                 // содержит вперемешку оба типа.
                                 const _isPanel = !!(_finalSeries && _finalSeries.isPanel);
                                 const _isBottom = _finalSeries ? (_isPanel ? !!activeItem.bottom : !!_finalSeries.bottom) : true;
-                                if (_isBottom) { totalRadCountBottom++; if (_isPanel) totalRadCountBottomSteel++; } else totalRadCountSide++;
-                                if (!_isPanel) { totalRadCountSectional++; if (!activeItem.kitIncluded && !_isBottom) radKitColorCounts[this._radKitColorFor(activeItem)]++; }
+                                if (_isBottom) { totalRadCountBottom += _radQty; if (_isPanel) totalRadCountBottomSteel += _radQty; } else totalRadCountSide += _radQty;
+                                if (!_isPanel) { totalRadCountSectional += _radQty; if (!activeItem.kitIncluded && !_isBottom) radKitColorCounts[this._radKitColorFor(activeItem)] += _radQty; }
                             }
 
                             // Каждый радиатор индивидуален: уникальный ключ + запрет слияния в счёте
@@ -46307,11 +46355,13 @@ const app = {
                             let locInfo = `<span style="font-size:11px; line-height:1.2;">• <b>${app.spotLabel(r, w, wIdx)}</b>: ${w.noWin ? r.area + " м²" : w.width + "м"} | Требуются: <b>${reqPwr} Вт</b>, подобран: <b>${factPower} Вт</b>, запас: <b style="color:${marginColor};">${margin}%</b></span>`;
 
                             let wDesc = locInfo + "|||" + devInfo;
-                            addToBill(activeItem, 1, wDesc, "3. Приборы отопления");
-                            totalRadCount++;
-                            roomFactPowerSum += factPower; // учитываем мощность радиатора по помещению
-                            // load — потребность места, watt — подобранный прибор (см. конвектор выше)
-                            app.radDevices.push({ room: r.name, watt: factPower, load: reqPwr, kind: 'rad' });
+                            addToBill(activeItem, _radQty, wDesc, "3. Приборы отопления");
+                            totalRadCount += _radQty;
+                            roomFactPowerSum += factPower * _radQty; // учитываем мощность радиатора по помещению
+                            // load — потребность места, watt — подобранный прибор (см. конвектор выше).
+                            // Приборов на месте может быть больше одного (правка количества руками) —
+                            // гидравлике нужен каждый: у каждого своё кольцо и свой расход.
+                            for (let _k = 0; _k < _radQty; _k++) app.radDevices.push({ room: r.name, watt: factPower, load: reqPwr, kind: 'rad' });
                         }
                     });
                     // === Проверка покрытия теплопотерь помещения ===
@@ -46397,6 +46447,22 @@ const app = {
                     }
                 } else {
                     activeItem = itemSpace; totalCount = countSpace; factPowerTotal = activeItem.sec * p50_space * totalCount;
+                }
+                // Количество радиаторов монтажник правит прямо в строке сметы (qtyOverrides),
+                // и правка обязана дойти до всего, что от неё зависит: обвязки, гидравлики и
+                // расценки «Монтаж радиатора отопления». Раньше override применялся только к
+                // самой строке в flushBill — в смете оставалось два прибора, а в работах
+                // по-прежнему четыре точки, и смета с работами не сходились.
+                // Ключ тот же, что берёт flushBill: originalId || id позиции, отданной в addToBill.
+                {
+                    const _radKey = activeItem.originalId || activeItem.id;
+                    const _radOv = this.state.qtyOverrides ? this.state.qtyOverrides[_radKey] : undefined;
+                    if (_radOv !== undefined && _radOv !== totalCount) {
+                        // Фактическая мощность — сумма по приборам, поэтому пересчитываем её
+                        // пропорционально: иначе подсказка обещала бы тепло от снятых радиаторов.
+                        factPowerTotal = totalCount > 0 ? Math.round(factPowerTotal * _radOv / totalCount) : 0;
+                        totalCount = _radOv;
+                    }
                 }
                 totalRadCount = totalCount;
 
@@ -49161,8 +49227,13 @@ const app = {
         let hvsGroup = "2.2 Монтаж узла ввода ХВС";
 
         // 1. Котлы и дымоудаление (Монтаж котла и бойлера)
-        let gasCount = this.state.fuels.includes('gas') ? 1 : 0;
-        let elCount = this.state.fuels.includes('el') ? 1 : 0;
+        // Считаем по КОТЛАМ, ПОПАВШИМ В СМЕТУ (selBoilers), а не по галочкам топлива.
+        // Галочка «Электро» и строка электрокотла в смете — не одно и то же: подбор мог
+        // не поставить котёл (например, объект без площади), а каскад из двух котлов
+        // галочка описывала одной работой. Теперь работа есть ровно там и ровно в том
+        // количестве, в каком в смете стоит сам котёл.
+        let gasCount = gasBoilerCnt;
+        let elCount = elBoilerCnt;
 
         if (elCount > 0) addToWorks("Mонтаж электрического котла", elCount, 18000, "шт", boilerGroup);
         if (gasCount > 0) {
