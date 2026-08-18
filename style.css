@@ -1023,78 +1023,75 @@ body.dark-mode .swap-alt-badge {
     transition: transform 160ms var(--ease-out);
 }
 
-/* Кнопки под сметой: одна залитая главная, одна тёмная и контурные. Раньше все
-   пять были залиты (три из них одинаково чёрные) — глазу не за что было
-   зацепиться, и главное действие терялось среди второстепенных. */
+/* ================== КНОПКИ ПОД СМЕТОЙ ==================
+   Правило одно: ряд одинаковых кнопок, из которых цветом выделена ровно одна —
+   главное действие. Раньше здесь стояли пять залитых кнопок трёх разных цветов
+   вперемешку, ряд читался как набор случайных плиток.
+
+   Селекторы намеренно начинаются с .footer-btns: правило .btn-base в этом файле
+   объявлено дважды, и одноклассовые правила проигрывали ему по порядку. */
+/* Ряд — грид, а не flex. На flex кнопки делят место по содержимому, и «Скачать»
+   (она в обёртке из-за меню) выходила на 15 % уже соседей — ряд выглядел кривым.
+   Колонки грида равны по определению, независимо от длины подписи и обёрток.
+   Селектор с .output-panel: правило .footer-btns ниже в файле объявлено второй раз. */
+.output-panel .footer-btns {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 12px;
+}
+
+.footer-btns .btn-base {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    border-radius: 10px;
+}
+
+/* Главное действие — ради него смета и считается */
 .footer-btns .btn-primary-action {
-    flex: 1.6;
     background-color: var(--primary);
+    color: #fff;
+    border: 1px solid var(--primary);
 }
 
 .footer-btns .btn-primary-action:hover {
-    filter: brightness(0.92);
+    filter: brightness(0.93);
 }
 
-.footer-btns .btn-dark {
-    background-color: #111827;
-}
-
-.footer-btns .btn-dark:hover {
-    background-color: #000000;
-}
-
-.footer-btns .btn-outline {
-    background-color: transparent;
+/* Все остальные — одинаковые нейтральные */
+.footer-btns .btn-secondary-action {
+    background-color: var(--surface-light);
     color: var(--text-main);
     border: 1px solid var(--border);
     box-shadow: none;
 }
 
-.footer-btns .btn-outline:hover {
-    background-color: var(--surface-light);
+.footer-btns .btn-secondary-action:hover {
+    background-color: var(--surface);
     border-color: var(--text-sec);
 }
 
-.footer-btns .btn-outline svg {
+.footer-btns .btn-secondary-action svg {
     stroke: var(--text-sec);
 }
 
-/* «Проект» — по ширине содержимого, а не на равную долю строки */
-.footer-btns .btn-compact {
-    flex: 0 0 auto;
-    padding-left: 18px;
-    padding-right: 18px;
-}
-
-/* Черта между выгрузкой сметы и проектом: это разные вещи, а не пятая кнопка в ряд */
-.footer-btns-sep {
-    width: 1px;
-    align-self: stretch;
-    margin: 6px 2px;
-    background: var(--border);
-    flex: 0 0 auto;
-}
-
+/* Обёртка «Скачать»: кнопка с меню занимает такую же долю ряда, как соседи */
 .btn-download-wrap {
     position: relative;
     display: flex;
-    flex: 1.1;
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 .btn-download-wrap > .btn-base {
     width: 100%;
-    /* Без сброса flex-элемент не даёт себя сжать до ширины обёртки: min-width
-       у него по умолчанию auto, то есть «не уже содержимого». */
     min-width: 0;
 }
 
-/* Палец на планшете: 39 px по инерции от прежних отступов маловато */
-.footer-btns .btn-base {
-    min-height: 44px;
-}
-
 .btn-caret {
-    opacity: 0.7;
+    opacity: 0.6;
     margin-left: -2px;
 }
 
@@ -1105,7 +1102,7 @@ body.dark-mode .swap-alt-badge {
     position: absolute;
     bottom: calc(100% + 8px);
     left: 0;
-    min-width: 215px;
+    min-width: 100%;
     z-index: 60;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -1123,6 +1120,7 @@ body.dark-mode .swap-alt-badge {
     align-items: center;
     gap: 10px;
     width: 100%;
+    min-height: 44px;
     padding: 10px 12px;
     border: none;
     border-radius: 8px;
@@ -1204,25 +1202,21 @@ body.dark-mode .btn-share:hover {
     background-color: #047857;
 }
 
-/* Главная кнопка берёт --primary и в тёмной теме меняется сама, остальным нужны
-   свои цвета: чёрная заливка на тёмном фоне не читается. */
-body.dark-mode .btn-dark {
+/* Главная кнопка берёт --primary и в тёмной теме меняется сама, нейтральным
+   нужен свой фон: --surface-light на тёмном почти сливается с полотном. */
+body.dark-mode .footer-btns .btn-secondary-action {
     background-color: #374151;
     color: #F3F4F6;
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
-body.dark-mode .btn-dark:hover {
+body.dark-mode .footer-btns .btn-secondary-action:hover {
     background-color: #4B5563;
+    border-color: rgba(255, 255, 255, 0.28);
 }
 
-body.dark-mode .btn-outline {
-    color: #F3F4F6;
-    border-color: rgba(255, 255, 255, 0.16);
-}
-
-body.dark-mode .btn-outline:hover {
-    background-color: rgba(255, 255, 255, 0.07);
-    border-color: rgba(255, 255, 255, 0.3);
+body.dark-mode .footer-btns .btn-secondary-action svg {
+    stroke: #D1D5DB;
 }
 
 body.dark-mode .download-menu {
@@ -1920,24 +1914,18 @@ body.menu-open .mobile-menu-backdrop {
         font-size: 16px !important;
     }
 
-    /* На узком экране кнопки идут в столбик: обёртка «Скачать» растягивается
-       наравне с ними, черта-разделитель не нужна. */
+    /* На узком экране тот же грид разворачивается в столбик */
+    .output-panel .footer-btns {
+        grid-auto-flow: row;
+    }
+
     .btn-download-wrap {
         width: 100%;
-    }
-
-    .footer-btns-sep {
-        display: none;
-    }
-
-    .footer-btns .btn-compact {
-        flex: 1 1 auto;
     }
 
     .download-menu {
         left: 0;
         right: 0;
-        min-width: 0;
     }
 
     /* Палец не мышь: пункты меню на телефоне выше и крупнее */
@@ -6107,24 +6095,25 @@ body.menu-open .mobile-menu-backdrop {
         flex: 1 1 auto;
     }
 
-    .mobile-sidebar .footer-btns-sep {
-        display: none;
+    /* Одна высота у всех плиток: «Ссылка для клиента» переносится на две строки,
+       и без этого второй ряд выходил ниже первого. */
+    .mobile-sidebar .footer-btns .btn-base,
+    .mobile-sidebar .btn-download-wrap {
+        min-height: 54px;
     }
 
-    /* Плитка «Скачать» занимает половину ряда, а меню под палец должно быть шире
-       и с пунктами повыше — 37 px в списке промахиваются. */
+    /* Меню ровно по ширине своей плитки. Шире делать нельзя: плитка «Скачать» может
+       оказаться в правом столбце, и меню уезжало за край экрана. */
     .mobile-sidebar .download-menu {
+        left: 0;
         right: auto;
-        min-width: 200px;
+        min-width: 100%;
+        width: 100%;
     }
 
     .mobile-sidebar .download-menu-item {
-        padding: 12px 12px;
+        padding: 12px;
         font-size: 13px;
-    }
-
-    .mobile-sidebar .btn-compact {
-        flex: 1 1 calc(50% - 4px);
     }
 
     /* Главная кнопка в меню остаётся цветной — иначе список плиток одинаково серый.

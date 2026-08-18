@@ -9704,6 +9704,8 @@ const app = {
             // Скрываем кнопку «Ссылка для клиента» без VPN
             if (btnShare) btnShare.style.display = 'none';
         }
+        // Кнопка появилась или пропала — пересобираем акцент в ряду под сметой
+        this.syncFooterAccent();
     },
 
     fetchNotifications: async function () {
@@ -39833,7 +39835,21 @@ const app = {
             btnPrint.style.display = '';
             if (hintPdf) hintPdf.innerText = isMobile ? 'файл' : 'печать';
             if (isMobile && isGuest && btnShare) btnShare.style.display = 'none';
+            this.syncFooterAccent();
         }
+    },
+
+    // Цветная кнопка в ряду под сметой всегда ровно одна. «Ссылка для клиента»
+    // показывается не всегда — ей нужна связь с базой (см. checkConnectionStatus),
+    // и без неё ряд остался бы из одинаково серых кнопок. Тогда главной становится
+    // «Скачать»: следующее по важности, что вообще можно сделать со сметой.
+    syncFooterAccent: function () {
+        const btnPrint = document.getElementById('btn_print_trigger');
+        const btnShare = document.getElementById('btn_share_trigger');
+        if (!btnPrint) return;
+        const shareShown = !!btnShare && btnShare.style.display !== 'none';
+        btnPrint.classList.toggle('btn-primary-action', !shareShown);
+        btnPrint.classList.toggle('btn-secondary-action', shareShown);
     },
     setArea: function (v) {
         v = parseInt(v);
