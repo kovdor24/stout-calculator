@@ -134,78 +134,89 @@
     // Номера стилей из cellXfs. Порядок менять только вместе с stylesXml.
     const S = {
         def: 0,
-        company: 1,   // название компании в шапке
-        gray: 2,      // мелкий серый текст шапки
-        title: 3,     // название объекта
+        banner: 1,    // цветная полоса с названием компании
+        gray: 2,      // мелкий серый текст (адрес, параметры объекта, подписи)
+        title: 3,     // «Смета № … от …»
         th: 4,        // заголовок колонки
-        thR: 5,
-        thC: 6,
-        td: 7,        // обычная ячейка
-        tdC: 8,
-        qty: 9,       // количество
-        money: 10,    // цена/сумма
-        sec: 11,      // строка раздела
-        grp: 12,      // строка группы
-        grpMoney: 13,
-        sub: 14,      // «Итого:» по разделу
-        subMoney: 15,
-        total: 16,    // итог документа
-        totalMoney: 17,
-        idx: 18       // номер позиции
+        thLeft: 5,
+        td: 6,        // ячейка позиции
+        tdC: 7,
+        qty: 8,
+        money: 9,
+        sec: 10,      // строка раздела
+        grp: 11,      // строка группы
+        grpMoney: 12,
+        sub: 13,      // «Итого» по разделу
+        subMoney: 14,
+        total: 15,    // итог документа
+        totalMoney: 16,
+        idx: 17,      // номер позиции
+        small: 18,    // подписи под линиями («подпись», «расшифровка»)
+        underline: 19,// сумма прописью — с чертой снизу
+        line: 20,     // пустая линия для подписи
+        bold: 21,     // жирный текст вне таблицы
+        wrap: 22      // многострочный текст (реквизиты поставщика)
     };
 
     function stylesXml(primary, primaryLight) {
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
             + '<numFmts count="2">'
-            + '<numFmt numFmtId="164" formatCode="#,##0&quot; ₽&quot;"/>'
+            + '<numFmt numFmtId="164" formatCode="#,##0.00"/>'
             + '<numFmt numFmtId="165" formatCode="#,##0.###"/>'
             + '</numFmts>'
             + '<fonts count="9">'
             + '<font><sz val="10"/><name val="Arial"/></font>'
-            + '<font><b/><sz val="11"/><name val="Arial"/></font>'
+            + '<font><b/><sz val="10"/><name val="Arial"/></font>'
             + '<font><b/><sz val="14"/><name val="Arial"/></font>'
             + '<font><sz val="9"/><color rgb="FF6B7280"/><name val="Arial"/></font>'
-            + '<font><b/><sz val="11"/><color rgb="' + primary + '"/><name val="Arial"/></font>'
+            + '<font><b/><sz val="12"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>'
             + '<font><b/><sz val="10"/><color rgb="FF1E3A8A"/><name val="Arial"/></font>'
-            + '<font><b/><sz val="12"/><name val="Arial"/></font>'
-            + '<font><i/><sz val="9"/><color rgb="FF6B7280"/><name val="Arial"/></font>'
-            + '<font><b/><sz val="9"/><color rgb="FF374151"/><name val="Arial"/></font>'
+            + '<font><b/><sz val="11"/><name val="Arial"/></font>'
+            + '<font><sz val="8"/><color rgb="FF9CA3AF"/><name val="Arial"/></font>'
+            + '<font><b/><sz val="10"/><color rgb="' + primary + '"/><name val="Arial"/></font>'
             + '</fonts>'
-            + '<fills count="5">'
+            + '<fills count="6">'
             + '<fill><patternFill patternType="none"/></fill>'
             + '<fill><patternFill patternType="gray125"/></fill>'
+            + '<fill><patternFill patternType="solid"><fgColor rgb="' + primary + '"/><bgColor indexed="64"/></patternFill></fill>'
+            + '<fill><patternFill patternType="solid"><fgColor rgb="FFF3F4F6"/><bgColor indexed="64"/></patternFill></fill>'
             + '<fill><patternFill patternType="solid"><fgColor rgb="' + primaryLight + '"/><bgColor indexed="64"/></patternFill></fill>'
             + '<fill><patternFill patternType="solid"><fgColor rgb="FFEFF6FF"/><bgColor indexed="64"/></patternFill></fill>'
-            + '<fill><patternFill patternType="solid"><fgColor rgb="FFF3F4F6"/><bgColor indexed="64"/></patternFill></fill>'
             + '</fills>'
+            // Сетка у образца сплошная и тонкая, поэтому основная рамка — коробка со
+            // всех четырёх сторон; отдельные линии нужны только для подписей.
             + '<borders count="4">'
             + '<border><left/><right/><top/><bottom/><diagonal/></border>'
-            + '<border><left/><right/><top/><bottom style="thin"><color rgb="FFE5E7EB"/></bottom><diagonal/></border>'
-            + '<border><left/><right/><top/><bottom style="medium"><color rgb="FF000000"/></bottom><diagonal/></border>'
+            + '<border><left style="thin"><color rgb="FF000000"/></left><right style="thin"><color rgb="FF000000"/></right><top style="thin"><color rgb="FF000000"/></top><bottom style="thin"><color rgb="FF000000"/></bottom><diagonal/></border>'
+            + '<border><left/><right/><top/><bottom style="thin"><color rgb="FF000000"/></bottom><diagonal/></border>'
             + '<border><left/><right/><top style="thin"><color rgb="FF000000"/></top><bottom/><diagonal/></border>'
             + '</borders>'
             + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-            + '<cellXfs count="19">'
-            + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>'
-            + '<xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="0" applyFont="1"/>'
-            + '<xf xfId="0" numFmtId="0" fontId="3" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>'
-            + '<xf xfId="0" numFmtId="0" fontId="2" fillId="0" borderId="0" applyFont="1"/>'
-            + '<xf xfId="0" numFmtId="0" fontId="8" fillId="4" borderId="2" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
-            + '<xf xfId="0" numFmtId="0" fontId="8" fillId="4" borderId="2" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center" wrapText="1"/></xf>'
-            + '<xf xfId="0" numFmtId="0" fontId="8" fillId="4" borderId="2" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
-            + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
-            + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
-            + '<xf xfId="0" numFmtId="165" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
-            + '<xf xfId="0" numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
-            + '<xf xfId="0" numFmtId="0" fontId="4" fillId="2" borderId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
-            + '<xf xfId="0" numFmtId="0" fontId="5" fillId="3" borderId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
-            + '<xf xfId="0" numFmtId="164" fontId="5" fillId="3" borderId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
-            + '<xf xfId="0" numFmtId="0" fontId="7" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
-            + '<xf xfId="0" numFmtId="164" fontId="7" fillId="0" borderId="0" applyNumberFormat="1" applyFont="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
-            + '<xf xfId="0" numFmtId="0" fontId="6" fillId="0" borderId="3" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
-            + '<xf xfId="0" numFmtId="164" fontId="6" fillId="0" borderId="3" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
-            + '<xf xfId="0" numFmtId="1" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+            + '<cellXfs count="23">'
+            /* 0  def       */ + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment vertical="center"/></xf>'
+            /* 1  banner    */ + '<xf xfId="0" numFmtId="0" fontId="4" fillId="2" borderId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            /* 2  gray      */ + '<xf xfId="0" numFmtId="0" fontId="3" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            /* 3  title     */ + '<xf xfId="0" numFmtId="0" fontId="2" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            /* 4  th        */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="3" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+            /* 5  thLeft    */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="3" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+            /* 6  td        */ + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
+            /* 7  tdC       */ + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+            /* 8  qty       */ + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+            /* 9  money     */ + '<xf xfId="0" numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+            /* 10 sec       */ + '<xf xfId="0" numFmtId="0" fontId="8" fillId="4" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            /* 11 grp       */ + '<xf xfId="0" numFmtId="0" fontId="5" fillId="5" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            /* 12 grpMoney  */ + '<xf xfId="0" numFmtId="164" fontId="5" fillId="5" borderId="1" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+            /* 13 sub       */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
+            /* 14 subMoney  */ + '<xf xfId="0" numFmtId="164" fontId="1" fillId="0" borderId="1" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+            /* 15 total     */ + '<xf xfId="0" numFmtId="0" fontId="6" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
+            /* 16 totalMoney*/ + '<xf xfId="0" numFmtId="164" fontId="6" fillId="0" borderId="0" applyNumberFormat="1" applyFont="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
+            /* 17 idx       */ + '<xf xfId="0" numFmtId="1" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+            /* 18 small     */ + '<xf xfId="0" numFmtId="0" fontId="7" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf>'
+            /* 19 underline */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="2" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            /* 20 line      */ + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="2" applyBorder="1"/>'
+            /* 21 bold      */ + '<xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            /* 22 wrap      */ + '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
             + '</cellXfs>'
             + '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
             + '</styleSheet>';
@@ -228,12 +239,34 @@
         sheet.rows.forEach(function (row, ri) {
             const r = ri + 1;
             let cellsXml = '';
-            (row.cells || []).forEach(function (cell, ci) {
-                if (!cell) return;
+            // Перебор именно по числу колонок, а не forEach по массиву: ниже мы
+            // дописываем в него пустые ячейки под объединение, а forEach уже
+            // добавленные за концом элементы не увидел бы.
+            row.cells = row.cells || [];
+            for (let ci = 0; ci < nCols; ci++) {
+                const cell = row.cells[ci];
+                if (!cell) continue;
                 const ref = colLetter(ci + 1) + r;
                 const span = Math.min(cell.span || 1, nCols - ci);
-                if (span > 1) merges.push(ref + ':' + colLetter(ci + span) + r);
-                if (cell.t === 'n') {
+                if (span > 1) {
+                    merges.push(ref + ':' + colLetter(ci + span) + r);
+                    // Рамку объединённой ячейки Excel рисует по каждой ячейке диапазона,
+                    // а не по всей области: без пустых ячеек с тем же стилем линия
+                    // обрывалась на первой колонке.
+                    for (let k = 1; k < span; k++) {
+                        row.cells[ci + k] = row.cells[ci + k] || { v: '', t: 's', s: cell.s || 0 };
+                    }
+                }
+                if (cell.runs) {
+                    // Строка с жирным началом («Поставщик: ООО …») — как в бумажном счёте
+                    const runs = cell.runs.map(function (run) {
+                        const pr = run.b
+                            ? '<rPr><b/><sz val="10"/><rFont val="Arial"/></rPr>'
+                            : '<rPr><sz val="10"/><rFont val="Arial"/></rPr>';
+                        return '<r>' + pr + '<t xml:space="preserve">' + esc(run.t) + '</t></r>';
+                    }).join('');
+                    cellsXml += '<c r="' + ref + '" s="' + (cell.s || 0) + '" t="inlineStr"><is>' + runs + '</is></c>';
+                } else if (cell.t === 'n') {
                     cellsXml += '<c r="' + ref + '" s="' + (cell.s || 0) + '"><v>' + cell.v + '</v></c>';
                 } else if (cell.v === '' || cell.v === null || cell.v === undefined) {
                     cellsXml += '<c r="' + ref + '" s="' + (cell.s || 0) + '"/>';
@@ -241,7 +274,7 @@
                     cellsXml += '<c r="' + ref + '" s="' + (cell.s || 0) + '" t="inlineStr"><is><t xml:space="preserve">'
                         + esc(cell.v) + '</t></is></c>';
                 }
-            });
+            }
             body += '<row r="' + r + '"' + (row.h ? ' ht="' + row.h + '" customHeight="1"' : '') + '>' + cellsXml + '</row>';
         });
 
@@ -461,9 +494,7 @@
     }
 
     function headStyle(cls) {
-        if (cls === 'col-price' || cls === 'col-sum') return S.thR;
-        if (cls === 'col-idx' || cls === 'col-qty' || cls === 'col-brand' || cls === 'col-unit' || cls === 'col-sku') return S.thC;
-        return S.th;
+        return cls === 'col-name' ? S.thLeft : S.th;
     }
 
     // Ширина колонки в Excel: под содержимое, но в разумных границах
@@ -474,8 +505,71 @@
         if (cls === 'col-qty' || cls === 'col-unit') return 8;
         if (cls === 'col-brand') return 11;
         if (cls === 'col-sku') return 18;
-        if (cls === 'col-price' || cls === 'col-sum') return 14;
-        return Math.max(24, Math.min(Math.round(max * 1.05), 60));
+        if (cls === 'col-price' || cls === 'col-sum') return 13;
+        return Math.max(30, Math.min(Math.round(max * 1.05), 60));
+    }
+
+    const UNITS = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+    const UNITS_F = ['', 'одна', 'две', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+    const TEENS = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать',
+        'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+    const TENS = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+    const HUNDREDS = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
+
+    function plural(n, one, two, five) {
+        const n10 = n % 10, n100 = n % 100;
+        if (n100 >= 11 && n100 <= 14) return five;
+        if (n10 === 1) return one;
+        if (n10 >= 2 && n10 <= 4) return two;
+        return five;
+    }
+
+    // Триада числа словами (до 999)
+    function triadWords(num3, female) {
+        const words = [];
+        const h = Math.floor(num3 / 100);
+        const t = Math.floor((num3 % 100) / 10);
+        const u = num3 % 10;
+        if (h) words.push(HUNDREDS[h]);
+        if (t === 1) {
+            words.push(TEENS[u]);
+        } else {
+            if (t) words.push(TENS[t]);
+            if (u) words.push((female ? UNITS_F : UNITS)[u]);
+        }
+        return words;
+    }
+
+    /**
+     * Сумма прописью — как в бумажном счёте: «Сто две тысячи рублей 00 копеек».
+     * Копейки цифрами, первая буква заглавная.
+     */
+    function rublesInWords(value) {
+        const total = Math.round(Math.abs(value || 0) * 100);
+        const rub = Math.floor(total / 100);
+        const kop = total % 100;
+
+        const groups = [
+            { div: 1e9, female: false, forms: ['миллиард', 'миллиарда', 'миллиардов'] },
+            { div: 1e6, female: false, forms: ['миллион', 'миллиона', 'миллионов'] },
+            { div: 1e3, female: true, forms: ['тысяча', 'тысячи', 'тысяч'] }
+        ];
+
+        let rest = rub;
+        let words = [];
+        groups.forEach(function (g) {
+            const cnt = Math.floor(rest / g.div);
+            rest = rest % g.div;
+            if (!cnt) return;
+            words = words.concat(triadWords(cnt, g.female));
+            words.push(plural(cnt, g.forms[0], g.forms[1], g.forms[2]));
+        });
+        if (rest || !words.length) words = words.concat(triadWords(rest, false));
+        words.push(plural(rub, 'рубль', 'рубля', 'рублей'));
+
+        let text = words.filter(Boolean).join(' ');
+        text = text.charAt(0).toUpperCase() + text.slice(1);
+        return text + ' ' + (kop < 10 ? '0' + kop : kop) + ' ' + plural(kop, 'копейка', 'копейки', 'копеек');
     }
 
     /** Строка «Итого: 123 456 ₽» → подпись слева, число в последней колонке */
@@ -498,29 +592,74 @@
         const cols = data.cols;
         const n = cols.length;
         const rows = [];
-        const wide = function (text, style) {
+        const wide = function (text, style, h) {
             if (!text) return;
-            rows.push({ cells: [{ v: text, t: 's', s: style, span: n }] });
+            rows.push({ h: h, cells: [{ v: text, t: 's', s: style, span: n }] });
         };
-        const blank = function () { rows.push({ cells: [] }); };
+        // Ширина листа в знаках — по ней прикидываем, во сколько строк ляжет
+        // длинный текст реквизитов (у объединённой ячейки высота сама не подбирается).
+        const sheetChars = cols.reduce(function (a, c) { return a + colWidth(c.cls, [c.title]); }, 0);
 
-        // --- шапка документа: та же, что на печати ---
+        // Строка вида «Поставщик: ООО …»: подпись жирная, значение обычное
+        const labelled = function (label, value, h) {
+            if (!value) return;
+            const text = label + ' ' + value;
+            const lines = Math.max(1, Math.ceil(text.length / Math.max(20, sheetChars - 4)));
+            rows.push({
+                h: lines > 1 ? lines * 12 + 3 : h,
+                cells: [{
+                    runs: [{ t: label + ' ', b: true }, { t: value }],
+                    s: lines > 1 ? S.wrap : S.def,
+                    span: n
+                }]
+            });
+        };
+        const blank = function (h) { rows.push({ h: h, cells: [] }); };
+
+        // --- шапка документа ---
+        // Вместо картинок-баннеров, как в бумажном счёте, — цветная полоса с
+        // названием компании и серая строка контактов под ней. Рисуется ячейками,
+        // поэтому в файле нет ни одной картинки и он остаётся лёгким.
         const hdr = node.querySelector('.print-header');
         if (hdr) {
-            wide(readText(hdr.querySelector('#hdr_comp_name')), S.company);
-            wide(readText(hdr.querySelector('#hdr_comp_web')), S.gray);
-            wide(readText(hdr.querySelector('#hdr_comp_addr'), ', '), S.gray);
-            wide(readText(hdr.querySelector('#hdr_comp_bank'), ', '), S.gray);
+            // «ЦЕНТРАЛЬНЫЙ ОФИС:» и «РЕКВИЗИТЫ БАНКА:» — подписи блоков печатного бланка,
+            // в строке реквизитов они лишние.
+            const dropLabel = function (s) { return String(s || '').replace(/^[^:]{3,30}:,?\s*/, ''); };
+            const compName = readText(hdr.querySelector('#hdr_comp_name'));
+            const compWeb = readText(hdr.querySelector('#hdr_comp_web'));
+            const compAddr = dropLabel(readText(hdr.querySelector('#hdr_comp_addr'), ', '));
+            const compBank = dropLabel(readText(hdr.querySelector('#hdr_comp_bank'), ', '));
+
+            rows.push({
+                h: 30,
+                cells: [{ v: '  ' + (compName || 'Смета'), t: 's', s: S.banner, span: n }]
+            });
+            wide([compAddr, compWeb].filter(Boolean).join('   ·   '), S.gray, 16);
+            blank(6);
+            labelled('Поставщик:', [compName, compBank].filter(Boolean).join(', '), 15);
+
             const master = hdr.querySelector('#print_master_contacts');
-            if (master && master.style.display !== 'none') wide(readText(master), S.gray);
-            blank();
+            if (master && master.style.display !== 'none') {
+                labelled('Расчёт произвёл:', readText(master).replace(/^Расчёт произвёл:\s*/i, ''), 15);
+            }
+            blank(6);
         }
 
+        // --- заголовок документа: «Смета № … от …», как «Счет на оплату № … от …» ---
         const titleEl = node.querySelector('#project_name_edit');
-        const title = readText(titleEl) || (window.app && app.state ? app.state.projectName : '') || 'Смета';
-        rows.push({ h: 22, cells: [{ v: title + (name ? '. ' + name : ''), t: 's', s: S.title, span: n }] });
-        wide(readText(node.querySelector('#doc_summary'), ' · '), S.gray);
-        blank();
+        const projectName = readText(titleEl) || (window.app && app.state ? app.state.projectName : '') || 'Смета';
+        const calcId = (window.app && app.state && app.state.calc_id) ? app.state.calc_id : '';
+        const today = new Date().toLocaleDateString('ru-RU');
+        rows.push({
+            h: 24,
+            cells: [{
+                v: 'Смета' + (calcId ? ' № ' + calcId : '') + ' от ' + today,
+                t: 's', s: S.title, span: n
+            }]
+        });
+        labelled('Объект:', projectName + (name ? '. ' + name : ''), 15);
+        wide(readText(node.querySelector('#doc_summary'), ' · '), S.gray, 15);
+        blank(6);
 
         // --- шапка таблицы ---
         rows.push({
@@ -533,7 +672,9 @@
 
         // --- строки сметы ---
         const samples = cols.map(function () { return []; });
+        let itemCount = 0;
         data.rows.forEach(function (r) {
+            if (r.kind === 'item') itemCount++;
             const cells = new Array(n).fill(null);
             r.cells.forEach(function (c, i) {
                 if (!c) return;
@@ -546,9 +687,11 @@
                 if (r.kind === 'group') {
                     const v = num(c.text);
                     const money = (c.cls === 'col-price' || c.cls === 'col-sum');
+                    // Стрелка сворачивания группы — часть интерфейса, в файле она ни о чём
+                    const text = c.text.replace(/^[▶▼►⤴⤵↳↴\s]+/, '');
                     cells[i] = (v !== null && money)
                         ? { v: v, t: 'n', s: S.grpMoney, span: c.span }
-                        : { v: c.text, t: 's', s: S.grp, span: c.span };
+                        : { v: text, t: 's', s: S.grp, span: c.span };
                     return;
                 }
                 if (r.kind === 'subtotal') {
@@ -570,21 +713,47 @@
             rows.push({ cells: cells });
         });
 
-        // --- итог документа ---
+        // --- подвал: итог, сумма прописью и место для подписи ---
         const footer = node.querySelector('.doc-footer');
-        if (footer && n > 1) {
-            const lbl = footer.querySelector('.total-lbl');
-            const val = footer.querySelector('.total-val');
-            if (lbl && val) {
-                const sum = num(readText(val));
-                blank();
-                const cells = new Array(n).fill(null);
-                cells[0] = { v: readText(lbl), t: 's', s: S.total, span: n - 1 };
-                cells[n - 1] = (sum !== null)
-                    ? { v: sum, t: 'n', s: S.totalMoney }
-                    : { v: readText(val), t: 's', s: S.total };
-                rows.push({ h: 20, cells: cells });
-            }
+        const lbl = footer ? footer.querySelector('.total-lbl') : null;
+        const val = footer ? footer.querySelector('.total-val') : null;
+        const sum = (lbl && val) ? num(readText(val)) : null;
+
+        if (lbl && val && n > 1) {
+            blank(6);
+            const cells = new Array(n).fill(null);
+            cells[0] = { v: readText(lbl), t: 's', s: S.total, span: n - 1 };
+            cells[n - 1] = (sum !== null)
+                ? { v: sum, t: 'n', s: S.totalMoney }
+                : { v: readText(val), t: 's', s: S.total };
+            rows.push({ h: 20, cells: cells });
+        }
+
+        if (sum !== null) {
+            blank(4);
+            wide('Всего наименований ' + itemCount + ', на сумму '
+                + sum.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' руб.',
+                S.def, 15);
+            // Сумма прописью с чертой — так подписывают бумажный счёт
+            rows.push({ h: 16, cells: [{ v: rublesInWords(sum), t: 's', s: S.underline, span: n }] });
+        }
+
+        // Место для подписи: линия во всю ширину и подпись мелким под ней
+        const masterName = readText(node.querySelector('#print_master_name'));
+        const masterPhone = readText(node.querySelector('#print_master_phone'));
+        if (n > 2) {
+            blank(14);
+            const sign = new Array(n).fill(null);
+            sign[0] = { v: 'Расчёт произвёл', t: 's', s: S.bold, span: 2 };
+            sign[2] = { v: '', t: 's', s: S.line, span: n - 2 };
+            rows.push({ h: 18, cells: sign });
+
+            const under = new Array(n).fill(null);
+            under[2] = {
+                v: [masterName, masterPhone].filter(Boolean).join(', тел. ') || 'подпись, расшифровка',
+                t: 's', s: S.small, span: n - 2
+            };
+            rows.push({ h: 12, cells: under });
         }
 
         return {
