@@ -8112,6 +8112,8 @@ const app = {
         // если пользователь вышел из него по ссылке "Выйти" в баннере, closeProfileModal()
         // не даст закрыть окно, пока formально не сохранена (уже удалённая) анкета.
         this._profileForceComplete = false;
+        // Следующий вошедший — другой человек: его анкету снова ждём из базы
+        this._profileDbLoaded = false;
         const profileOverlay = document.getElementById('profile_modal_overlay');
         if (profileOverlay) profileOverlay.style.display = 'none';
         // Адрес устройства снимаем ДО выхода: удалять свою строку в push_tokens
@@ -23252,6 +23254,10 @@ const app = {
                 if (uRow.birth_date) this.state.tgUser.birthDate = uRow.birth_date;
                 if (uRow.region) this.state.tgUser.region = uRow.region;
                 if (uRow.activity_types && uRow.activity_types.length) this.state.tgUser.activityTypes = uRow.activity_types;
+                // Анкета в state теперь та же, что в базе — с этого момента её незаполненность
+                // означает, что человек и правда её не заполнял, а не что ответ базы в пути
+                // (см. profileLocked в syncUI).
+                this._profileDbLoaded = true;
 
                 // Промокод, введённый при регистрации, применяем один раз — при первом
                 // входе, когда запись в users уже создана и ещё нет привязки к поставщику
@@ -23305,7 +23311,7 @@ const app = {
                 setTimeout(() => {
                     window.location.replace(window.location.pathname + window.location.search);
                 }, 6000);
-            } else if (this.isProfileIncomplete()) {
+            } else if (this._profileDbLoaded && this.isProfileIncomplete()) {
                 // Google/Telegram-вход или старый аккаунт без обязательной анкеты —
                 // не даём продолжить работу, пока профиль не будет дозаполнен целиком.
                 // На самом Google-редиректе (isGoogleCallback) не показываем: страница всё равно
@@ -29429,6 +29435,7 @@ const app = {
                 delete this.state.tgUser;
                 this.state.accountType = 'base';
                 this._authHandling = false;
+                this._profileDbLoaded = false;
                 this.clearInstallerSettingsOnLogout();
                 this.saveState();
                 this.syncUI();
@@ -39653,8 +39660,15 @@ const app = {
         // калькулятором, пока не дозаполнят и не сохранят анкету целиком (см. isProfileIncomplete).
         // Флаг _profileForceComplete не даём выставлять повторно на каждый render(), иначе форма
         // сбрасывалась бы прямо во время ввода.
+        //
+        // Требовать анкету можно только по данным из базы (_profileDbLoaded). При входе через
+        // Яндекс ID / Google профиль сначала собирается из того, что отдал провайдер, а
+        // отчества и сферы деятельности там нет вовсе — и пока строка users не доехала,
+        // заполненная анкета выглядела незаполненной. Человека раз за разом отправляли
+        // переписывать то, что уже лежит в базе. Не доехала (нет сети, база не ответила) —
+        // молчим и ждём следующей загрузки, а не мучаем формой.
         const lockTgUser = this.state.tgUser;
-        const profileLocked = !!(lockTgUser && this.isProfileIncomplete());
+        const profileLocked = !!(lockTgUser && this._profileDbLoaded && this.isProfileIncomplete());
         document.body.classList.toggle('profile-incomplete-lock', profileLocked);
         if (profileLocked && !this._profileForceComplete) {
             this.showProfileModal(true);
