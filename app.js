@@ -27046,6 +27046,9 @@ const app = {
         const open = !menu.classList.contains('open');
         menu.classList.toggle('open', open);
         if (btn) btn.setAttribute('aria-expanded', String(open));
+        // Подсказка кнопки всплывает там же, где открывается меню — гасим её на это время
+        const wrap = menu.closest('.btn-download-wrap');
+        if (wrap) wrap.classList.toggle('has-open-menu', open);
         // Закрытие по клику мимо и по Esc вешаем только на время показа меню
         if (open) {
             this._closeDownloadMenuOutside = (e) => {
@@ -27066,7 +27069,11 @@ const app = {
     closeDownloadMenu: function () {
         const menu = document.getElementById('download_menu');
         const btn = document.getElementById('btn_print_trigger');
-        if (menu) menu.classList.remove('open');
+        if (menu) {
+            menu.classList.remove('open');
+            const wrap = menu.closest('.btn-download-wrap');
+            if (wrap) wrap.classList.remove('has-open-menu');
+        }
         if (btn) btn.setAttribute('aria-expanded', 'false');
         if (this._closeDownloadMenuOutside) {
             document.removeEventListener('click', this._closeDownloadMenuOutside);

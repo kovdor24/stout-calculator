@@ -1148,6 +1148,67 @@ body.dark-mode .swap-alt-badge {
     color: var(--text-sec);
 }
 
+/* Подсказка при наведении. Тот же тёмный пузырь со стрелкой, что у значков «i»
+   в смете (.tooltip-content), но без своей разметки — текст берётся из data-tip.
+   Только для мыши: на телефоне наведения нет, а по нажатию подсказка мешала бы
+   самой кнопке. */
+@media (hover: hover) and (pointer: fine) {
+    .footer-btns [data-tip] {
+        position: relative;
+    }
+
+    .footer-btns [data-tip]::before,
+    .footer-btns [data-tip]::after {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.15s ease;
+        pointer-events: none;
+        z-index: 200;
+    }
+
+    .footer-btns [data-tip]::before {
+        content: attr(data-tip);
+        position: absolute;
+        bottom: calc(100% + 11px);
+        left: 50%;
+        transform: translateX(-50%);
+        width: max-content;
+        max-width: 240px;
+        padding: 8px 11px;
+        background: #1F2937;
+        color: #fff;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1.5;
+        text-align: center;
+        white-space: normal;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+    }
+
+    .footer-btns [data-tip]::after {
+        content: "";
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: #1F2937;
+    }
+
+    .footer-btns [data-tip]:hover::before,
+    .footer-btns [data-tip]:hover::after {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Открытое меню форматов занимает то же место над кнопкой — подсказка там лишняя */
+    .btn-download-wrap.has-open-menu [data-tip]::before,
+    .btn-download-wrap.has-open-menu [data-tip]::after {
+        display: none;
+    }
+}
+
 
 /* Р¦РІРµС‚Р° РєРЅРѕРїРѕРє РІ СЃРІРµС‚Р»РѕР№ С‚РµРјРµ */
 .btn-tg {
