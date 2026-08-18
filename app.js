@@ -10916,8 +10916,18 @@ const app = {
 
         if (!items.length) {
             body.innerHTML = '<div class="admin-chat-empty">Переписки пока нет. Напишите — администратор ответит, а ответ придёт сюда же.</div>';
+            this.renderUserReplyBar(null);
             return;
         }
+
+        // Ответ на конкретное сообщение: цитата в пузыре и полоска над полем ввода.
+        // Сообщение, на которое отвечали, могли удалить — тогда цитата остаётся, но
+        // без перехода («Сообщение удалено»).
+        const byId = {};
+        items.forEach(m => { byId[m.id] = m; });
+        if (this._userReplyTo && !byId[this._userReplyTo]) this._userReplyTo = null;
+        const nameOf = (m) => m.sender_id === meId ? 'Вы'
+            : (m.type === 'broadcast' ? 'Объявление для всех' : (m.sender_name || 'Администратор'));
 
         const SERIE_GAP_MS = 5 * 60 * 1000;
         let html = '', lastDay = '';
@@ -10938,17 +10948,27 @@ const app = {
             // Подпись входящего: имя автора, если оно есть в сообщении (так подписаны
             // ответы наблюдателей), иначе привычное «Администратор».
             const from = mine ? '' : (m.type === 'broadcast' ? '📢 Объявление для всех' : (m.sender_name || 'Администратор'));
+            const src = m.reply_to_id ? byId[m.reply_to_id] : null;
+            const quote = m.reply_to_id
+                ? this.chatQuoteHtml(src ? nameOf(src) : '', src ? src.text : '', src ? 'umsg_' + src.id : '')
+                : '';
             html += `
-                <div class="admin-chat-bubble ${mine ? 'from-admin' : 'from-user'}${serieCls}">
+                <div class="admin-chat-bubble ${mine ? 'from-admin' : 'from-user'}${serieCls}" id="umsg_${m.id}" onclick="app.userChatReplyTo('${m.id}')" title="Нажмите, чтобы ответить на это сообщение">
                     ${(!mine && !sameAsPrev) ? `<div class="user-chat-from">${from}</div>` : ''}
+                    ${quote}
                     <div class="admin-chat-text">${esc(m.text)}<span class="admin-chat-meta">
+                        <span onclick="event.stopPropagation(); app.userChatReplyTo('${m.id}')" title="Ответить на это сообщение" class="admin-chat-reply">↩</span>
                         <span class="admin-chat-metatime">${clockTime(m.created_at)}</span>
                     </span></div>
                 </div>
             `;
         });
+        // Ушли вверх по переписке (например, отвечают на старое сообщение) — не
+        // отбрасываем обратно в конец при перерисовке
+        const keepScroll = (body.scrollHeight - body.scrollTop - body.clientHeight) > 40 ? body.scrollTop : null;
         body.innerHTML = html;
-        body.scrollTop = body.scrollHeight;
+        body.scrollTop = keepScroll == null ? body.scrollHeight : keepScroll;
+        this.renderUserReplyBar(byId[this._userReplyTo] || null, nameOf);
 
         // Переписка открыта и текст виден целиком — значит письма прочитаны: ставим
         // галочку в админке и гасим по ним бейдж на конверте. Когда окно открыто на
@@ -10964,6 +10984,38 @@ const app = {
                 this.fetchNotifications();
             }
         }
+    },
+
+    // Полоска «отвечаем на это сообщение» над полем ввода переписки монтажника.
+    // Пустой msg — полоски нет.
+    renderUserReplyBar: function (msg, nameOf) {
+        const bar = document.getElementById('user_chat_replybar');
+        if (!bar) return;
+        if (!msg) { bar.innerHTML = ''; return; }
+        const name = nameOf ? nameOf(msg) : '';
+        bar.innerHTML = `
+            <div class="chat-replybar">
+                <span class="chat-replybar-icon">↩</span>
+                ${this.chatQuoteHtml(name, msg.text, 'umsg_' + msg.id)}
+                <button class="admin-chat-clear" title="Не отвечать на это сообщение" onclick="app.userChatReplyCancel()">✕</button>
+            </div>`;
+    },
+
+    userChatReplyTo: function (id) {
+        // Клик, которым выделяли текст, ответом не считаем — иначе кусок переписки
+        // нельзя было бы скопировать
+        try { if (String(window.getSelection() || '').trim()) return; } catch (e) { /* нет выделения */ }
+        this._userReplyTo = id;
+        this.renderUserChat();
+        const inp = document.getElementById('user_chat_input');
+        if (inp) inp.focus();
+    },
+
+    userChatReplyCancel: function () {
+        this._userReplyTo = null;
+        this.renderUserReplyBar(null);
+        const inp = document.getElementById('user_chat_input');
+        if (inp) inp.focus();
     },
 
     userChatKey: function (e) {
@@ -10992,14 +11044,22 @@ const app = {
             .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
         const parentId = incoming.length ? incoming[incoming.length - 1].id : null;
 
+        // На какое сообщение отвечаем (цитата). Своё, только что отправленное
+        // сообщение цитировать нечем — у него ещё нет id из базы, поэтому такие
+        // «local_…» ссылки в базу не отправляем.
+        const replyTo = this._userReplyTo && String(this._userReplyTo).indexOf('local_') !== 0
+            ? this._userReplyTo : null;
+
         if (btn) btn.disabled = true;
         try {
-            await this.sendUserReply(parentId, text, true);
+            await this.sendUserReply(parentId, text, true, replyTo);
             if (inp) inp.value = '';
+            this._userReplyTo = null;
             // Дорисовываем сразу, не дожидаясь следующего опроса базы
             (this._msgCache = this._msgCache || []).push({
                 id: 'local_' + Date.now(), sender_id: meId, recipient_id: null,
-                text: text, type: 'reply', parent_id: parentId, created_at: new Date().toISOString()
+                text: text, type: 'reply', parent_id: parentId, reply_to_id: replyTo,
+                created_at: new Date().toISOString()
             });
             this.renderUserChat();
         } catch (e) {
@@ -18170,6 +18230,13 @@ const app = {
         const searchBefore = document.getElementById('admin_chat_search')?.value || '';
         const sameChat = this._lastRenderedChatId === this._adminChatId;
         const draftBefore = sameChat ? (document.getElementById('admin_msg_text')?.value || '') : '';
+        // Где стояла прокрутка переписки. Обычно её сбрасывают вниз (пришло новое
+        // сообщение), но если человек ушёл вверх — например, чтобы ответить на
+        // старое сообщение, — оставляем его там же, а не отбрасываем в конец.
+        const bodyBefore = document.getElementById('admin_chat_body');
+        const scrollBefore = (sameChat && bodyBefore
+            && (bodyBefore.scrollHeight - bodyBefore.scrollTop - bodyBefore.clientHeight) > 40)
+            ? bodyBefore.scrollTop : null;
 
         // Квитанции по сообщению: message_id -> [{user_id, delivered_at, read_at}]
         const receiptsByMsg = {};
@@ -18481,6 +18548,17 @@ const app = {
         // сносит ровно открытый диалог (см. deleteUserMessages)
         this._adminChatIds = (isNotifChat || isForeignChat) ? [] : chatItems.map(m => m.id);
 
+        // Ответ с цитатой: id сообщения, на которое отвечают. Живёт только пока открыт
+        // тот же диалог — ушли в другую переписку, и цитата снимается сама.
+        const itemsById = {};
+        chatItems.forEach(m => { itemsById[m.id] = m; });
+        const canReply = !isNotifChat && !isForeignChat;
+        if (this._adminReplyTo && (!canReply || !itemsById[this._adminReplyTo])) this._adminReplyTo = null;
+        // Кто написал сообщение — этим именем подписывается цитата
+        const msgAuthor = (m) => m.__from === 'user'
+            ? (activeThread ? activeThread.instName : chatName)
+            : (m.sender_name || (isStaffChat && activeThread ? activeThread.mgrName : 'Администрация'));
+
         let bodyHtml = '';
         if (isNotifChat) {
             // Разметку карточек берём ту же, что и в окне уведомлений у монтажника
@@ -18537,10 +18615,17 @@ const app = {
                 // читается как своё сообщение.
                 const byName = !isUser && !sameAsPrev && (m.sender_name || isStaffChat)
                     ? `<div class="admin-chat-sender">${esc(m.sender_name || activeThread.mgrName)}</div>` : '';
+                // Цитата над текстом — если это ответ на конкретное сообщение
+                const src = m.reply_to_id ? itemsById[m.reply_to_id] : null;
+                const quote = m.reply_to_id
+                    ? this.chatQuoteHtml(src ? msgAuthor(src) : '', src ? src.text : '', src ? 'amsg_' + src.id : '')
+                    : '';
                 bodyHtml += `
-                    <div class="admin-chat-bubble ${isUser ? 'from-user' : 'from-admin'}${serieCls}">
+                    <div class="admin-chat-bubble ${isUser ? 'from-user' : 'from-admin'}${serieCls}" id="amsg_${m.id}"${canReply ? ` onclick="app.adminChatReplyTo('${m.id}')" title="Нажмите, чтобы ответить на это сообщение"` : ''}>
                         ${byName}
+                        ${quote}
                         <div class="admin-chat-text">${esc(m.text)}<span class="admin-chat-meta">
+                            ${canReply ? `<span onclick="event.stopPropagation(); app.adminChatReplyTo('${m.id}')" title="Ответить на это сообщение" class="admin-chat-reply">↩</span>` : ''}
                             <span class="admin-chat-metatime">${clockTime(m.created_at)}</span>
                             ${isUser ? '' : ticks(m, isBroadcastChat)}
                             ${isViewer || isStaffChat ? '' : `<span onclick="event.stopPropagation(); app.deleteAdminMessage('${m.id}')" title="Удалить сообщение" class="admin-chat-del">🗑</span>`}
@@ -18595,6 +18680,16 @@ const app = {
 
         const composePlaceholder = isBroadcastChat ? 'Объявление всем пользователям…' : `Сообщение для ${chatName}…`;
 
+        // Полоска над полем ввода: на что именно отвечаем. Клик по ней уводит к
+        // исходному сообщению, крестик — снимает цитату.
+        const replyToMsg = this._adminReplyTo ? itemsById[this._adminReplyTo] : null;
+        const replyBarHtml = replyToMsg ? `
+            <div class="chat-replybar">
+                <span class="chat-replybar-icon">↩</span>
+                ${this.chatQuoteHtml(msgAuthor(replyToMsg), replyToMsg.text, 'amsg_' + replyToMsg.id)}
+                <button class="admin-chat-clear" title="Не отвечать на это сообщение" onclick="app.adminChatReplyCancel()">✕</button>
+            </div>` : '';
+
         const innerHtml = `
             <div class="admin-chat-wrap fill-height ${this._adminChatOpen ? 'chat-open' : ''}">
                 <div class="admin-chat-side">
@@ -18647,6 +18742,7 @@ const app = {
                          панели: смотреть на вопрос монтажника и не иметь возможности
                          ответить — бессмысленно. Удаление сообщений и переписок ему
                          по-прежнему закрыто (см. кнопки с корзиной выше). -->
+                    ${replyBarHtml}
                     <div class="admin-chat-compose">
                         <textarea id="admin_msg_text" rows="1" placeholder="${esc(composePlaceholder)}" onkeydown="app.adminChatKeydown(event)"></textarea>
                         <button class="emoji-open-btn" type="button" title="Смайлики" onclick="app.toggleEmojiPicker('admin_msg_text', this)">🙂</button>
@@ -18681,7 +18777,7 @@ const app = {
         const ta = document.getElementById('admin_msg_text');
         if (ta && draftBefore) ta.value = draftBefore;
         const body = document.getElementById('admin_chat_body');
-        if (body) body.scrollTop = body.scrollHeight;
+        if (body) body.scrollTop = scrollBefore == null ? body.scrollHeight : scrollBefore;
 
         this.filterAdminChatList();
     },
@@ -18737,8 +18833,53 @@ const app = {
         try { return JSON.parse(localStorage.getItem('stout_admin_chat_seen') || '{}') || {}; } catch (e) { return {}; }
     },
 
+    // ── Ответ на конкретное сообщение (цитата) ──
+    // Одна разметка на оба мессенджера: панель управления и переписку монтажника.
+    // domId — id пузыря с исходным сообщением ('amsg_…' в админке, 'umsg_…' у
+    // монтажника); пустой означает, что сообщение уже удалено и переходить некуда.
+    chatQuoteHtml: function (name, text, domId) {
+        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        if (!domId) return `<div class="chat-quote chat-quote-lost"><div class="chat-quote-text">Сообщение удалено</div></div>`;
+        const snippet = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 140) || '(без текста)';
+        return `<div class="chat-quote" title="Перейти к этому сообщению" onclick="event.stopPropagation(); app.chatScrollToMsg('${esc(domId)}')">
+                    <div class="chat-quote-name">${esc(name || 'Сообщение')}</div>
+                    <div class="chat-quote-text">${esc(snippet)}</div>
+                </div>`;
+    },
+
+    // Клик по цитате — как ссылка на сообщение в мессенджере: прокручиваем переписку
+    // к оригиналу и коротко подсвечиваем его.
+    chatScrollToMsg: function (domId) {
+        const el = document.getElementById(domId);
+        if (!el) { app.alert('Это сообщение больше недоступно — его удалили.'); return; }
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        el.classList.remove('chat-hl');
+        void el.offsetWidth; // перезапуск анимации, если её уже включали
+        el.classList.add('chat-hl');
+        setTimeout(() => el.classList.remove('chat-hl'), 1800);
+    },
+
+    // Клик по чужому (или своему) пузырю — отвечаем на него. Если человек в этот
+    // момент выделял текст, клик пропускаем: иначе скопировать кусок переписки
+    // было бы нельзя.
+    adminChatReplyTo: function (id) {
+        try { if (String(window.getSelection() || '').trim()) return; } catch (e) { /* нет выделения — не беда */ }
+        this._adminReplyTo = id;
+        this.renderAdminMessages();
+        const ta = document.getElementById('admin_msg_text');
+        if (ta && !ta.disabled) ta.focus();
+    },
+
+    adminChatReplyCancel: function () {
+        this._adminReplyTo = null;
+        this.renderAdminMessages();
+        const ta = document.getElementById('admin_msg_text');
+        if (ta && !ta.disabled) ta.focus();
+    },
+
     openAdminChat: function (id) {
         this._adminChatId = id;
+        this._adminReplyTo = null; // цитата принадлежит своей переписке, в другую не переезжает
         this._adminChatOpen = true; // на узком экране показывает правую панель вместо списка
         this._broadcastRecipientsOpen = false; // ушли в переписку — список получателей больше не нужен
         this.renderAdminMessages();
@@ -18893,17 +19034,21 @@ const app = {
             if (this.getAdminRole() === 'viewer') {
                 row.sender_name = this.getAdminUserDisplayName(uRow);
             }
+            // Отвечаем на конкретное сообщение — привязываем к нему (цитата в пузыре)
+            if (this._adminReplyTo) row.reply_to_id = this._adminReplyTo;
 
             // .select('id') — id нужен, чтобы попросить сервер разослать пуш по этой
             // строке. Своё сообщение отправителю читать разрешено (та же политика, по
             // которой оно потом видно в переписке), так что вставку это не ломает.
             let { data: inserted, error } = await supabaseClient.from('messages').insert(row).select('id').maybeSingle();
-            // Колонки может не быть, если миграция 20260804_add_message_sender_name.sql
-            // ещё не выполнена — тогда отправляем как раньше, без подписи, лишь бы
-            // сообщение дошло (код 42703 — «нет такой колонки»).
-            if (error && (error.code === '42703' || /sender_name/i.test(error.message || ''))) {
-                console.warn('[сообщения] колонки sender_name нет — письмо уйдёт без подписи');
+            // Колонки может не быть, если миграции 20260804_add_message_sender_name.sql
+            // или 20260818_add_message_reply_to.sql ещё не выполнены — тогда отправляем
+            // как раньше, без подписи и без цитаты, лишь бы сообщение дошло
+            // (код 42703 — «нет такой колонки»).
+            if (error && (error.code === '42703' || /sender_name|reply_to_id/i.test(error.message || ''))) {
+                console.warn('[сообщения] нет колонки sender_name/reply_to_id — письмо уйдёт без подписи и цитаты');
                 delete row.sender_name;
+                delete row.reply_to_id;
                 ({ data: inserted, error } = await supabaseClient.from('messages').insert(row).select('id').maybeSingle());
             }
 
@@ -18911,6 +19056,7 @@ const app = {
 
             // Alert'а нет намеренно: отправленное сообщение само появляется в переписке
             if (textEl) textEl.value = '';
+            this._adminReplyTo = null; // цитата ушла вместе с сообщением
 
             // Пуш получателю (или всем, если объявление). На почту объявления
             // намеренно не уходят — см. комментарий ниже, — так что для закрытого
@@ -18962,7 +19108,10 @@ const app = {
 
     // silent = true — ответ отправлен из всплывающей карточки в углу: там своя индикация
     // («✓ Отправлено» прямо в карточке), поэтому ни alert'ов, ни открытия модалки не нужно
-    sendUserReply: async function (parentId, text, silent) {
+    // replyToId — id сообщения, на которое отвечают с цитатой (клик по пузырю в
+    // переписке). Это не то же самое, что parentId: тот определяет, в чью нить
+    // попадёт ответ, и ставится сам, без участия человека.
+    sendUserReply: async function (parentId, text, silent, replyToId) {
         if (!text || !text.trim()) {
             if (silent) throw new Error('Введите текст ответа');
             app.alert("Введите текст ответа!");
@@ -18993,7 +19142,16 @@ const app = {
                 type: 'reply',
                 parent_id: parentId
             };
+            if (replyToId) row.reply_to_id = replyToId;
             let { error } = await supabaseClient.from('messages').insert(row);
+
+            // Колонки reply_to_id может не быть — миграция 20260818_add_message_reply_to.sql
+            // выполняется вручную. Тогда отправляем ответ без цитаты, а не теряем его.
+            if (error && (error.code === '42703' || /reply_to_id/i.test(error.message || ''))) {
+                console.warn('[переписка] колонки reply_to_id нет — ответ уйдёт без цитаты');
+                delete row.reply_to_id;
+                ({ error } = await supabaseClient.from('messages').insert(row));
+            }
 
             // Письмо, на которое отвечают, могло быть удалено админом («Удалить
             // переписку») или подчищено автоочисткой через 90 дней, а карточка с ним
@@ -19001,9 +19159,10 @@ const app = {
             // ключу (код 23503), и человек упирался в «не могу ответить». Повторяем без
             // привязки: в панели управления диалоги группируются по автору, а не по
             // родителю, поэтому сообщение всё равно придёт в его переписку.
-            if (error && (error.code === '23503' || /foreign key|parent_id/i.test(error.message || ''))) {
+            if (error && (error.code === '23503' || /foreign key|parent_id|reply_to_id/i.test(error.message || ''))) {
                 console.warn('[переписка] родительское письмо удалено — отправляем без привязки');
                 row.parent_id = null;
+                delete row.reply_to_id; // цитируемое письмо могли удалить тем же «Удалить переписку»
                 ({ error } = await supabaseClient.from('messages').insert(row));
             }
 
