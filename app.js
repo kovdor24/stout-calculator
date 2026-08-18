@@ -27559,20 +27559,35 @@ const app = {
             // 1. Формируем простую и наглядную таблицу оборудования (Название - Артикул - Количество).
             // Название объекта выводится в шаблоне EmailJS отдельным полем {{project_name}}
             // в блоке "Параметры объекта и пользователя", номер КП — в статус-строке {{calc_id}}.
+            // У позиции каталога id и есть артикул, а у распознанных и
+            // добавленных руками строк он служебный ('rec_1786965434808_0',
+            // 'user_…'): настоящий артикул лежит в item.article и заполнен,
+            // только если позиция подобралась к каталогу или прайсу. Раньше в
+            // письмо уезжал именно id — менеджер получал набор 'rec_…' вместо
+            // артикулов и не мог ни найти товар, ни загрузить таблицу в 1С.
+            const skuOf = (item) => {
+                if (item.article) return String(item.article);
+                const id = String(item.id || item.code || '');
+                return /^(rec|user)_/.test(id) ? '' : id;
+            };
+
             let equipmentText = "Название - Артикул - Количество\n";
             equipmentText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
             (this.currentSpec || []).forEach((item, idx) => {
-                const sku = item.id || item.code || "—";
+                const sku = skuOf(item) || "нет";
                 equipmentText += `${idx + 1}. ${item.name} - ${sku} - ${item.q} шт.\n`;
             });
             equipmentText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
 
             // 2. Формируем таблицу для легкого импорта в 1С (Артикул|Количество)
             let copyTableText = "";
+            let noSkuCount = 0;
             (this.currentSpec || []).forEach(item => {
-                const sku = item.id || item.code || "";
+                const sku = skuOf(item);
                 if (sku) {
                     copyTableText += `${sku}|${item.q}\n`;
+                } else {
+                    noSkuCount++;
                 }
             });
 
@@ -27581,6 +27596,12 @@ const app = {
             equipmentText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
             equipmentText += copyTableText;
             equipmentText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+            // Молча выкинутая позиция хуже строки без артикула: по таблице
+            // импорта счёт выглядит полным, а часть оборудования в нём просто
+            // отсутствует. Поэтому пишем, сколько строк не попало.
+            if (noSkuCount > 0) {
+                equipmentText += `\nПозиций без артикула: ${noSkuCount} — в таблицу импорта они не вошли, их надо подобрать по названию из списка выше.`;
+            }
 
             let regionName = "";
             if (this.state.selectedCity) {
