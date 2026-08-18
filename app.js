@@ -7425,6 +7425,181 @@ const app = {
         }
     },
 
+    // ===================== Пересчёт по сегодняшним ценам =====================
+    //
+    // Сохранённая смета хранит только настройки объекта и итоговые суммы: список
+    // позиций собирается заново при каждой отрисовке, по текущему каталогу. То есть
+    // открытая через два месяца смета УЖЕ пересчитана по сегодняшним ценам — просто
+    // делает это молча. Монтажник видит другое число и не знает, он ли что-то задел
+    // или подорожало оборудование; а тот, кто не приглядывался, отправляет клиенту
+    // сумму, которой в его собственной отправленной смете не было.
+    //
+    // Плашка сравнивает сумму оборудования, записанную при сохранении, с той, что
+    // получилась сейчас, и называет разницу словами.
+    //
+    // Работы не трогаем: их расценки монтажник ставит сам, и каталог их не двигает.
+
+    // Порог, ниже которого молчим. Проценты — чтобы не дёргать из-за копеек на
+    // большой смете, рубли — чтобы не пугать «+3%» там, где это сто рублей.
+    REPRICE_MIN_PCT: 0.5,
+    REPRICE_MIN_RUB: 500,
+
+    /**
+     * Показать плашку о разнице цен. saved — то, что лежало в базе на момент
+     * сохранения: { eqSum, at }.
+     */
+    showRepriceNotice: function (saved) {
+        const host = document.getElementById('reprice_notice');
+        if (!host || !saved) return;
+        const was = Number(saved.eqSum) || 0;
+        const now = Number(this.lastEqSum) || 0;
+        if (!was || !now) return;
+        const diff = now - was;
+        const pct = diff / was * 100;
+        if (Math.abs(pct) < this.REPRICE_MIN_PCT || Math.abs(diff) < this.REPRICE_MIN_RUB) return;
+
+        const num = n => Math.round(Math.abs(n)).toLocaleString('ru-RU');
+        const up = diff > 0;
+        const when = saved.at ? new Date(saved.at).toLocaleDateString('ru-RU') : '';
+        // Снимок отправленной клиенту сметы есть не всегда — построчный разбор
+        // предлагаем только там, где его есть с чем сравнивать.
+        const canDetail = !!this.state.shared_invoice_id;
+
+        host.innerHTML = `
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px 14px;
+                        background:${up ? 'rgba(239,68,68,0.08)' : 'rgba(16,185,129,0.08)'};
+                        border:1px solid ${up ? 'rgba(239,68,68,0.35)' : 'rgba(16,185,129,0.35)'};
+                        border-radius:12px; padding:10px 14px; margin:0 20px 10px;">
+                <span style="font-size:18px; line-height:1;">${up ? '📈' : '📉'}</span>
+                <span style="font-size:13px; color:var(--text-main); text-align:center;">
+                    ${when ? `Смета сохранена ${when}. ` : ''}Оборудование сегодня
+                    <b>${up ? 'дороже' : 'дешевле'} на ${num(diff)} ₽</b>
+                    (${up ? '+' : '−'}${Math.abs(pct).toFixed(1).replace('.', ',')}%) — в таблице уже сегодняшние цены.
+                </span>
+                ${canDetail ? `<button type="button" onclick="app.showRepriceDetails()"
+                    style="font:inherit; font-size:12px; font-weight:700; padding:6px 12px; border-radius:8px;
+                           border:1px solid var(--border); background:var(--surface); color:var(--text-main); cursor:pointer;">
+                    Что изменилось</button>` : ''}
+                <button type="button" onclick="app.closeRepriceNotice()" title="Скрыть"
+                    style="font:inherit; font-size:18px; line-height:1; padding:4px 8px; border:none;
+                           background:transparent; color:var(--text-sec); cursor:pointer;">&times;</button>
+            </div>`;
+        host.style.display = 'block';
+    },
+
+    closeRepriceNotice: function () {
+        const host = document.getElementById('reprice_notice');
+        if (!host) return;
+        host.innerHTML = '';
+        host.style.display = 'none';
+    },
+
+    /**
+     * Построчно: что подорожало с момента, когда смету отправили клиенту.
+     *
+     * Сравнивать есть с чем только у отправленных смет: в shared_invoices лежит
+     * снимок позиций с ценами того дня. У просто сохранённой сметы таких цен нет
+     * нигде — в базе только итоговые суммы, поэтому для неё плашка остаётся без
+     * кнопки разбора.
+     */
+    showRepriceDetails: async function () {
+        const shareId = this.state.shared_invoice_id;
+        if (!shareId) return;
+        let snap = null;
+        try {
+            const { data, error } = await supabaseClient.from('shared_invoices')
+                .select('created_at, eq:items->equipment').eq('id', shareId).maybeSingle();
+            if (error) throw error;
+            snap = data;
+        } catch (e) {
+            this.alert('Не удалось получить отправленную клиенту смету. Попробуйте позже.', 'Что изменилось');
+            return;
+        }
+        if (!snap || !Array.isArray(snap.eq) || !snap.eq.length) {
+            this.alert('Отправленной клиенту сметы не нашлось — сравнивать не с чем.', 'Что изменилось');
+            return;
+        }
+
+        const price = this.catalogPriceIndex();
+        const rows = [];
+        let skipped = 0, oldAll = 0, newAll = 0;
+        snap.eq.forEach(it => {
+            if (!it) return;
+            const art = String(it.originalId || it.id || '');
+            // Свёрнутые комплекты — подытог раздела, а не позиция каталога
+            if (!art || art.indexOf('custom_collapsed_') === 0) { skipped++; return; }
+            const was = Number(it.price) || 0;
+            const now = price[art];
+            if (!was || now === undefined) { skipped++; return; }
+            const q = Number(it.q) || Number(it.qty) || 1;
+            oldAll += was * q; newAll += now * q;
+            if (Math.round(was) === Math.round(now)) return;
+            rows.push({ name: it.name || art, art, was, now, q, diff: (now - was) * q });
+        });
+
+        const num = n => Math.round(Math.abs(n)).toLocaleString('ru-RU');
+        const esc = s => String(s == null ? '' : s).replace(/</g, '&lt;');
+        const when = snap.created_at ? new Date(snap.created_at).toLocaleDateString('ru-RU') : '';
+        if (!rows.length) {
+            this.alert(`Цены позиций не изменились с ${when || 'момента отправки'}. Разница в сумме, если она есть, — от правок в самой смете.`, 'Что изменилось');
+            return;
+        }
+        rows.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+
+        const list = rows.map(r => `
+            <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+                <div style="min-width:0; flex:1;">
+                    <b style="font-size:12.5px; color:var(--text-main);">${esc(r.name)}</b>
+                    <br><small style="color:var(--text-sec);">${esc(r.art)} · ${num(r.was)} → ${num(r.now)} ₽${r.q > 1 ? ` × ${num(r.q)}` : ''}</small>
+                </div>
+                <b style="flex:0 0 auto; font-size:12.5px; color:${r.diff > 0 ? '#EF4444' : '#10B981'};">
+                    ${r.diff > 0 ? '+' : '−'}${num(r.diff)} ₽</b>
+            </div>`).join('');
+
+        const total = newAll - oldAll;
+        this.showPlainModal('Что изменилось с ' + (when || 'отправки клиенту'),
+            `<p style="font-size:12.5px; color:var(--text-sec); margin:0 0 10px;">
+                Сравниваются цены той сметы, что ушла клиенту, с сегодняшними.
+                Изменилось ${rows.length} ${this.plural(rows.length, 'позиция', 'позиции', 'позиций')}
+                из ${snap.eq.length - skipped}${skipped ? `, ещё ${skipped} не из каталога — их не сравнить` : ''}.
+             </p>`
+            + list
+            + `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0 0; font-size:13px;">
+                <b style="color:var(--text-main);">Итого по оборудованию</b>
+                <b style="color:${total > 0 ? '#EF4444' : '#10B981'};">${total > 0 ? '+' : '−'}${num(total)} ₽</b>
+               </div>`);
+    },
+
+    /**
+     * Простое окно с заголовком и произвольной разметкой. Своё, а не showModal:
+     * тот собран под фиксированные тексты тарифов и гостевого доступа.
+     */
+    showPlainModal: function (title, html) {
+        const old = document.getElementById('plain_modal_overlay');
+        if (old) old.remove();
+        const wrap = document.createElement('div');
+        wrap.id = 'plain_modal_overlay';
+        wrap.className = 'custom-modal-overlay';
+        wrap.onclick = (e) => { if (e.target === wrap) app.closePlainModal(); };
+        wrap.innerHTML = `
+            <div class="custom-modal" style="max-width:560px; padding:28px 24px; text-align:left;">
+                <span class="auth-modal-close" onclick="app.closePlainModal()" style="top:6px; right:8px; padding:10px 14px;">&times;</span>
+                <div class="custom-modal-title" style="font-size:17px; margin-bottom:10px;">${title}</div>
+                ${html}
+                <button type="button" class="custom-modal-btn custom-modal-close" style="margin-top:14px;"
+                    onclick="app.closePlainModal()">Закрыть</button>
+            </div>`;
+        document.body.appendChild(wrap);
+        setTimeout(() => { wrap.classList.add('active'); this.syncModalOverlayClass(); }, 20);
+    },
+
+    closePlainModal: function () {
+        const wrap = document.getElementById('plain_modal_overlay');
+        if (!wrap) return;
+        wrap.classList.remove('active');
+        setTimeout(() => { wrap.remove(); app.syncModalOverlayClass(); }, 300);
+    },
+
     loadSingleEstimate: async function (id) {
         this.closeCloudListModal();
         // Смету могли открыть из раздела «Мои объекты» кабинета — закрываем и его,
@@ -7436,7 +7611,11 @@ const app = {
             const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
             const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
 
-            let query = supabaseClient.from('estimates').select('calc_data, user_id').eq('id', id);
+            // eq_sum и created_at — для плашки «цены изменились» (см. showRepriceNotice):
+            // список позиций собирается заново по сегодняшнему каталогу, и сравнить
+            // «было / стало» можно только с суммой, записанной в момент сохранения.
+            let query = supabaseClient.from('estimates')
+                .select('calc_data, user_id, eq_sum, created_at').eq('id', id);
 
             // Если мы не в режиме разработки, добавляем фильтр по текущему пользователю
             // (даже если RLS настроен, лишняя проверка на фронте не помешает)
@@ -7472,6 +7651,9 @@ const app = {
             this.hasUnsavedChanges = false;
             this.updateSaveBtnUI();
             this.resetAutosaveBaseline();
+            // Цены каталога могли уехать с момента сохранения — расчёт уже пересобран
+            // по сегодняшним, осталось сказать об этом вслух
+            this.showRepriceNotice({ eqSum: data.eq_sum, at: data.created_at });
             app.alert("✅ Смета успешно загружена!");
         } catch (error) { app.alert("Ошибка загрузки сметы: " + error.message); }
     },
