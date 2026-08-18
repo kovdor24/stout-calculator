@@ -421,7 +421,7 @@ if (typeof emailjs !== 'undefined') {
 const ANALOG_MAP = {
     "SVC-0011-000020": "RVC-0001-000020",
     "RDG-0015-004002": "RDG-1015-004003",
-    "SVB-0006-000020": "RBV-0007-2410220",
+    "SVB-0006-200020": "RBV-0007-2410220",
     "RCP-0005-152080": "RCP-0005-150480",
     "SFA-0020-000016": "RFA-0020-000016",
     "SPC-0011-2560130": "RCP-0004-2560130",
@@ -30131,10 +30131,10 @@ const app = {
             // обвязка россыпью. Насос, переходные муфты и расширительный бак нужны
             // в обоих вариантах — переключается только «корпус» узла.
             const _gbmP = (catalog.groups_dn25[0] || {}).price || 0;
-            const _bvP = (catalog.ball_valves.find(x => x.id === 'SVB-0007-000025') || {}).price || 0;
+            const _bvP = (catalog.ball_valves.find(x => x.id === 'SVB-0007-200025') || {}).price || 0;
             customAlts = [
                 { id: 'gbm', name: 'Группа быстрого монтажа DN25 (прямая, в теплоизоляции)', brand: 'STOUT', price: _gbmP, imgId: 'SDG-0001-002501' },
-                { id: 'parts', name: 'Сборная обвязка: 2 крана шаровых с американкой 1"', brand: 'STOUT', price: _bvP * 2, imgId: 'SVB-0007-000025' }
+                { id: 'parts', name: 'Сборная обвязка: 2 крана шаровых с американкой 1"', brand: 'STOUT', price: _bvP * 2, imgId: 'SVB-0007-200025' }
             ];
         }
         else if (_origId0 === 'SFB-0001-000001_tankload' || _origId0.endsWith('_dhw')) {
@@ -44737,7 +44737,7 @@ const app = {
                     // всегда, и с любого варианта есть куда кликнуть, чтобы вернуться.
                     const _polisAnchorId = 'SDG-0001-002501_polis';
                     if ((this.state.polisKit || 'gbm') === 'parts') {
-                        let bv = catalog.ball_valves.find(x => x.id === 'SVB-0007-000025');
+                        let bv = catalog.ball_valves.find(x => x.id === 'SVB-0007-200025');
                         if (bv) {
                             addToBill({ ...bv, name: bv.name + ' — обвязка котла', originalId: _polisAnchorId, alts: _polisKitAlts },
                                 2, this.getDesc('polis_kit_parts', b.power), grp);
@@ -45531,11 +45531,11 @@ const app = {
             _hydroTieDn = dn25 ? 112 : 1;
             _hydroTieGrp = grpHydro;
 
-            const _hydroDrain = (catalog.ball_valves || []).find(v => v.id === 'SVB-0006-000015');
+            const _hydroDrain = (catalog.ball_valves || []).find(v => v.id === 'SVB-0006-200015');
             if (_hydroDrain) {
                 // Свой originalId — кран 1/2" НР/НР встречается в смете и в других узлах,
                 // а этот должен иметь отдельную строку и собственную ручную замену.
-                addToBill({ ...withRommerAlt(_hydroDrain), originalId: 'SVB-0006-000015_hydro_drain' },
+                addToBill({ ...withRommerAlt(_hydroDrain), originalId: 'SVB-0006-200015_hydro_drain' },
                     1, this.getDesc('hydro_drain'), grpHydro);
             }
 
@@ -47656,7 +47656,7 @@ const app = {
                     if (_conn && _threadOk) {
                         const _sz = _nodeThread === '1' ? '1"' : '3/4"';
                         const _fit = id => (catalog[_conn.pool] || []).find(x => x.id === id);
-                        const _valve = _np(_nodeThread === '1' ? 'SVB-0007-000025' : 'SVB-0007-000020');
+                        const _valve = _np(_nodeThread === '1' ? 'SVB-0007-200025' : 'SVB-0007-200020');
                         if (_valve) addToBill({ ..._valve, originalId: _valve.id + '_rad_node' }, manifoldsCount * 2, _nodeWhere +
                             `<b>Зачем:</b> Отсечь коллектор от подводки. По одному крану на подачу и обратку; американка нужна, чтобы снять коллектор целиком, не разрезая трубу.</span>`, pipeGrp);
                         // Переход нужен, только когда торец гребёнки и резьба узла разошлись.
@@ -48009,7 +48009,7 @@ const app = {
                     }
                 } else {
                     const _sz = conn.thread1 ? '1"' : '3/4"';
-                    const _valve = _part(conn.thread1 ? 'SVB-0007-000025' : 'SVB-0007-000020');
+                    const _valve = _part(conn.thread1 ? 'SVB-0007-200025' : 'SVB-0007-200020');
                     if (_valve) addToBill(_valve, 2, _where +
                         `<b>Зачем:</b> Отсечь коллектор от трассы: без кранов даже замена расходомера означает слив всего контура. По одному на подачу и обратку. У этой гребёнки кранов в комплекте нет — в отличие от «полностью укомплектован».</span>`, grpPipe);
                     // Присоединение гребёнки — 1". Кран на 3/4" садится на неё через переходной

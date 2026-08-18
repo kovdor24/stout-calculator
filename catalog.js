@@ -1165,13 +1165,13 @@ const catalog = {
     ],
     dhw_fittings: [
         { id: "SFT-0041-000001", name: "Американка 1\" ВР/НР (Змеевик бойлера)", price: 1016, availability: "in_stock", price_date: "2026-08-10" },
-        { id: "SVB-0002-000025", name: "Кран шаровой 1\" ВР/ВР (Змеевик бойлера)", price: 1548, rommer: { id: "RBV-0003-2110225", name: "Кран шаровой ВР/ВР бабочка 1\"", price: 905, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SVB-0002-200025", name: "Кран шаровой 1\" ВР/ВР (Змеевик бойлера)", price: 1657, rommer: { id: "RBV-0003-2110225", name: "Кран шаровой ВР/ВР бабочка 1\"", price: 905, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-08-10" },
         { id: "SFT-0041-000034", name: "Американка 3/4\" ВР/НР (ГВС/Рецирк)", price: 597, availability: "in_stock", price_date: "2026-08-10" },
-        { id: "SVB-0012-000020", name: "Кран шаровой 3/4\" ВР/ВР (Бабочка)", price: 865, rommer: { id: "RBV-0003-2110220", name: "Кран шаровой ВР/ВР бабочка 3/4\"", price: 464, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SVB-0002-200020", name: "Кран шаровой 3/4\" ВР/ВР (Бабочка)", price: 1052, rommer: { id: "RBV-0003-2110220", name: "Кран шаровой ВР/ВР бабочка 3/4\"", price: 464, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-08-10" },
         { id: "RVS-0003-006015", name: "Клапан предохранительный 6 бар", price: 471, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" },
         { id: "SFT-0031-000034", name: "Крестовина 3/4\" ВР", price: 1151, availability: "in_stock", price_date: "2026-08-10" },
         { id: "SVC-0012-000020", name: "Клапан обратный пружинный 3/4\"", price: 1128, availability: "in_stock", price_date: "2026-08-10" },
-        { id: "SVB-0006-000020", name: "Кран шаровой 3/4\" НР/НР (Вход ХВС)", price: 1175, rommer: { id: "RBV-0007-2410220", name: "Кран шаровой 3/4\" НР/НР", price: 523, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
+        { id: "SVB-0006-200020", name: "Кран шаровой 3/4\" НР/НР (Вход ХВС)", price: 1256, rommer: { id: "RBV-0007-2410220", name: "Кран шаровой 3/4\" НР/НР", price: 523, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-08-10" },
         { id: "RBV-0007-2410220", name: "Кран шаровой 3/4\" НР/НР", price: 549, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" },
         { id: "SVC-0012-000020", name: "Обратный клапан 3/4\" (Для рециркуляции)", price: 1128, availability: "in_stock", price_date: "2026-08-10" }
     ],
@@ -1181,29 +1181,35 @@ const catalog = {
     // все исполнения одного размера: по ним же собирается таблица замены.
     // 3/4" и 1" ВР/ВР (Бабочка) не дублируются — они есть в dhw_fittings.
     // Прайс 07.2026.
+    // Старая линейка «STOUT Шаровые краны» (SVB-XXXX-0000NN) снята с поставки
+    // счётом 166275 от 18.08.2026 — вся, целиком. Взамен стоит линейка
+    // «STOUT Шаровые краны ГОСТ» (SVB-XXXX-2000NN): то же соединение и та же
+    // ручка, дороже на ~7 %. Стандартнопроходные (SVB-0011…0014) преемника не
+    // получили — под них подставлены полнопроходные ГОСТ того же исполнения
+    // (0012→0002, 0014→0004). Старые артикулы в подбор не возвращать.
     ball_valves: [
         // ВР/ВР — «ВВ» в рукописной смете
-        { id: "SVB-0012-000015", name: "Кран шаровой 1/2\" ВР/ВР (Бабочка)", price: 588, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0003-0110215", name: "Кран шаровой ВР/ВР бабочка 1/2\"", price: 281.55, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
-        { id: "SVB-0001-000032", name: "Кран шаровой 1 1/4\" ВР/ВР (Рычаг)", price: 2499, brand: "STOUT", availability: "on_order", price_date: "2026-08-10", rommer: { id: "RBV-0003-0110232", name: "Кран шаровой ВР/ВР бабочка 1 1/4\"", price: 1362.31, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
-        { id: "SVB-0001-000040", name: "Кран шаровой 1 1/2\" ВР/ВР (Рычаг)", price: 3712, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
-        { id: "SVB-0001-000050", name: "Кран шаровой 2\" ВР/ВР (Рычаг)", price: 5855, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+        { id: "SVB-0002-200015", name: "Кран шаровой 1/2\" ВР/ВР (Бабочка)", price: 725, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0003-0110215", name: "Кран шаровой ВР/ВР бабочка 1/2\"", price: 281.55, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0001-200032", name: "Кран шаровой 1 1/4\" ВР/ВР (Рычаг)", price: 2673, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0003-0110232", name: "Кран шаровой ВР/ВР бабочка 1 1/4\"", price: 1362.31, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0001-200040", name: "Кран шаровой 1 1/2\" ВР/ВР (Рычаг)", price: 3972, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+        { id: "SVB-0001-200050", name: "Кран шаровой 2\" ВР/ВР (Рычаг)", price: 6264, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
 
         // ВР/НР — «ВН»
-        { id: "SVB-0014-000015", name: "Кран шаровой 1/2\" ВР/НР (Бабочка)", price: 644, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0004-0210215", name: "Кран шаровой ВР/НР бабочка 1/2\"", price: 295.53, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
-        { id: "SVB-0014-000020", name: "Кран шаровой 3/4\" ВР/НР (Бабочка)", price: 957, brand: "STOUT", availability: "on_order", price_date: "2026-08-10", rommer: { id: "RBV-0004-0210220", name: "Кран шаровой ВР/НР бабочка 3/4\"", price: 472.77, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
-        { id: "SVB-0014-000025", name: "Кран шаровой 1\" ВР/НР (Бабочка)", price: 1476, brand: "STOUT", availability: "on_order", price_date: "2026-08-10", rommer: { id: "RBV-0004-0210225", name: "Кран шаровой ВР/НР бабочка 1\"", price: 934.97, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0004-200015", name: "Кран шаровой 1/2\" ВР/НР (Бабочка)", price: 789, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0004-0210215", name: "Кран шаровой ВР/НР бабочка 1/2\"", price: 295.53, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0004-200020", name: "Кран шаровой 3/4\" ВР/НР (Бабочка)", price: 1167, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0004-0210220", name: "Кран шаровой ВР/НР бабочка 3/4\"", price: 472.77, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0004-200025", name: "Кран шаровой 1\" ВР/НР (Бабочка)", price: 1784, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0004-0210225", name: "Кран шаровой ВР/НР бабочка 1\"", price: 934.97, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
 
         // НР/НР
-        { id: "SVB-0006-000015", name: "Кран шаровой 1/2\" НР/НР (Бабочка)", price: 844, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0007-0410215", name: "Кран шаровой НР/НР бабочка 1/2\"", price: 311.51, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
-        { id: "SVB-0006-000025", name: "Кран шаровой 1\" НР/НР (Бабочка)", price: 1521, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0007-0410225", name: "Кран шаровой НР/НР бабочка 1\"", price: 984.12, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0006-200015", name: "Кран шаровой 1/2\" НР/НР (Бабочка)", price: 902, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0007-0410215", name: "Кран шаровой НР/НР бабочка 1/2\"", price: 311.51, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0006-200025", name: "Кран шаровой 1\" НР/НР (Бабочка)", price: 1628, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0007-0410225", name: "Кран шаровой НР/НР бабочка 1\"", price: 984.12, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
 
         // С американкой — прямой и угловой
-        { id: "SVB-0007-000015", name: "Кран шаровой с американкой 1/2\" ВР/НР (Бабочка)", price: 961, brand: "STOUT", availability: "on_order", price_date: "2026-08-10", rommer: { id: "RBV-0005-0510215", name: "Кран шаровой с американкой ВР/НР 1/2\"", price: 397.37, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
-        { id: "SVB-0007-000020", name: "Кран шаровой с американкой 3/4\" ВР/НР (Бабочка)", price: 1455, brand: "STOUT", availability: "on_order", price_date: "2026-08-10", rommer: { id: "RBV-0005-0510220", name: "Кран шаровой с американкой ВР/НР 3/4\"", price: 640.13, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
-        { id: "SVB-0007-000025", name: "Кран шаровой с американкой 1\" ВР/НР (Бабочка)", price: 2264, brand: "STOUT", availability: "on_order", price_date: "2026-08-10", rommer: { id: "RBV-0005-0510225", name: "Кран шаровой с американкой ВР/НР 1\"", price: 1371.43, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
-        { id: "SVB-0008-000015", name: "Кран шаровой с американкой угловой 1/2\" ВР/НР", price: 1230, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0006-0610215", name: "Кран шаровой угловой с американкой ВР/НР 1/2\"", price: 423.33, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
-        { id: "SVB-0008-000020", name: "Кран шаровой с американкой угловой 3/4\" ВР/НР", price: 1888, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0006-0610220", name: "Кран шаровой угловой с американкой ВР/НР 3/4\"", price: 709.16, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
-        { id: "SVB-0008-000025", name: "Кран шаровой с американкой угловой 1\" ВР/НР", price: 2952, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0006-0610225", name: "Кран шаровой угловой с американкой ВР/НР 1\"", price: 1611.32, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } }
+        { id: "SVB-0007-200015", name: "Кран шаровой с американкой 1/2\" ВР/НР (Бабочка)", price: 1028, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0005-0510215", name: "Кран шаровой с американкой ВР/НР 1/2\"", price: 397.37, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0007-200020", name: "Кран шаровой с американкой 3/4\" ВР/НР (Бабочка)", price: 1556, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0005-0510220", name: "Кран шаровой с американкой ВР/НР 3/4\"", price: 640.13, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0007-200025", name: "Кран шаровой с американкой 1\" ВР/НР (Бабочка)", price: 2423, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0005-0510225", name: "Кран шаровой с американкой ВР/НР 1\"", price: 1371.43, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0008-200015", name: "Кран шаровой с американкой угловой 1/2\" ВР/НР", price: 1316, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0006-0610215", name: "Кран шаровой угловой с американкой ВР/НР 1/2\"", price: 423.33, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0008-200020", name: "Кран шаровой с американкой угловой 3/4\" ВР/НР", price: 2021, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0006-0610220", name: "Кран шаровой угловой с американкой ВР/НР 3/4\"", price: 709.16, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0008-200025", name: "Кран шаровой с американкой угловой 1\" ВР/НР", price: 3159, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0006-0610225", name: "Кран шаровой угловой с американкой ВР/НР 1\"", price: 1611.32, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } }
     ],
     boilers_gas: [
         { id: "GE0Q6QE0CRU", name: "Котёл газовый, одноконтурный (18 кВт)", article: "GE0Q6QE0CRU", price: 62324, power: 18, circuits: 1, type: "gas", brand: "Haier", availability: "in_stock", price_date: "2026-06-06" },
@@ -1900,8 +1906,8 @@ const catalog = {
     // переходника на 3/4" в линейке нет, и узел там собирается целиком на 1".
     ufh_node_parts: [
         { id: "SFT-0004-000134", name: "Ниппель 1\" х 3/4\" НР", price: 350, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
-        { id: "SVB-0007-000020", name: "Кран шаровой с американкой 3/4\" ВР/НР (Бабочка)", price: 1455, brand: "STOUT", availability: "on_order", price_date: "2026-08-10", rommer: { id: "RBV-0005-0510220", name: "Кран шаровой с американкой ВР/НР 3/4\"", price: 640.13, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
-        { id: "SVB-0007-000025", name: "Кран шаровой с американкой 1\" ВР/НР (Бабочка)", price: 2264, brand: "STOUT", availability: "on_order", price_date: "2026-08-10", rommer: { id: "RBV-0005-0510225", name: "Кран шаровой с американкой ВР/НР 1\"", price: 1371.43, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0007-200020", name: "Кран шаровой с американкой 3/4\" ВР/НР (Бабочка)", price: 1556, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0005-0510220", name: "Кран шаровой с американкой ВР/НР 3/4\"", price: 640.13, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
+        { id: "SVB-0007-200025", name: "Кран шаровой с американкой 1\" ВР/НР (Бабочка)", price: 2423, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0005-0510225", name: "Кран шаровой с американкой ВР/НР 1\"", price: 1371.43, brand: "ROMMER", availability: "in_stock", price_date: "2026-07-19" } },
         { id: "SFT-0014-000034", name: "Угольник 90° 3/4\" ВР", price: 462, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
         { id: "SFT-0014-000001", name: "Угольник 90° 1\" ВР", price: 787, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" }
     ],
@@ -2173,7 +2179,7 @@ const catalog = {
         { id: "SMF-0002-100825", name: "Лента демпферная с фартуком 100х8 (25 м)", len: 25, unit: "рул.", price: 1331, brand: "STOUT", availability: "in_stock", price_date: "2026-08-15" }
     ],
     american_34: { id: "SFT-0041-000034", name: "Разъемное соед. американка ВН 3/4\"", price: 597, availability: "in_stock", price_date: "2026-08-10" },
-    ball_valve_34: { id: "SVB-0004-000020", name: "Кран шаровой ВР/НР, 3/4\"", price: 1090, rommer: { id: "RBV-0004-2210220", name: "Кран шаровой ВР/НР бабочка 3/4\"", price: 497, brand: "ROMMER", availability: "on_order", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-27" },
+    ball_valve_34: { id: "SVB-0004-200020", name: "Кран шаровой ВР/НР, 3/4\"", price: 1167, rommer: { id: "RBV-0004-2210220", name: "Кран шаровой ВР/НР бабочка 3/4\"", price: 497, brand: "ROMMER", availability: "on_order", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-08-10" },
     check_valve_34: { id: "SVC-0011-000020", name: "Клапан обратный пружинный 3/4\"", price: 1547, rommer: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 535, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" }, availability: "in_stock", price_date: "2026-06-06" },
     rommer_check_valve_34: { id: "RVC-0001-000020", name: "Клапан обратный 3/4\"", price: 530, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-10" },
     // STOUT SFW-0072-000020 снят с производства: из подбора и из списка замен убран,
