@@ -30202,6 +30202,7 @@ const app = {
                 this.state.gasBoilerCircuits = null;
                 this.state.gasBoilerCond = null;
                 this.state.gasBoilerPower = null;
+                this.state.gasBoilerBrand = null;
             }
             if (!_lkId.startsWith('tee_pipe_d')) {
                 this.state.teePipeSwapMaterial = null;
@@ -31431,11 +31432,21 @@ const app = {
             const _gp = this.state.gasBoilerPower || 'all';
             const _allGbPowers = [...new Set(this.gasBoilerPool().map(b => b.power).filter(Boolean))].sort((a, b) => a - b);
             const _powerBtns = _allGbPowers.map(p => `<span onclick="app.setGasBoilerPower(${p})" ${_b(_gp===p)}>${p} кВт</span>`).join('');
+            // Бренд — значения из самого пула котлов: добавили марку в каталог,
+            // кнопка появилась сама. По умолчанию «Все».
+            const _gbr = this.state.gasBoilerBrand || 'all';
+            const _allGbBrands = [...new Set(this.gasBoilerPool().map(b => b.brand).filter(Boolean))];
+            const _brandBtns = _allGbBrands.map(br => `<span onclick="app.setGasBoilerBrand('${br}')" ${_b(_gbr===br)}>${br}</span>`).join('');
             _tankFiltersHtml = _tankFiltersHtml.replace('</div>', '') +
                 `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
                 `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Мощность:</span>` +
                 _powerBtns +
                 `<span onclick="app.setGasBoilerPower('all')" ${_b(_gp==='all')}>Все</span>` +
+                `</div>` +
+                `<div style="display:flex;gap:2px;align-items:center;flex-wrap:wrap;">` +
+                `<span style="font-size:12px;font-weight:700;color:var(--text-sec);margin-right:8px;">Бренд:</span>` +
+                _brandBtns +
+                `<span onclick="app.setGasBoilerBrand('all')" ${_b(_gbr==='all')}>Все</span>` +
                 `</div>` +
                 `</div>`;
             // Признак конденсационного — поле cond у позиции каталога (BAXI и Vaillant),
@@ -31445,6 +31456,7 @@ const app = {
             if (_gt === 'traditional') alts = alts.filter(b => !_isCond(b));
             else if (_gt === 'cond') alts = alts.filter(b => _isCond(b));
             if (_gp !== 'all') alts = alts.filter(b => b.power === _gp);
+            if (_gbr !== 'all') alts = alts.filter(b => b.brand === _gbr);
         // Часть артикулов лежит и в air_sensors, и в термостатах тёплого пола
         // (это один и тот же прибор в разных ролях). Разбирать по одному id
         // нельзя: для позиции из раздела 4.3 включались фильтры «по воздуху»,
@@ -38647,6 +38659,10 @@ const app = {
     },
     setGasBoilerPower: function (val) {
         this.state.gasBoilerPower = val;
+        if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
+    },
+    setGasBoilerBrand: function (val) {
+        this.state.gasBoilerBrand = val;
         if (this._lastSwapLookupId) this.openSwapModal(this._lastSwapLookupId);
     },
     setAirSwapLink: function (val) {
