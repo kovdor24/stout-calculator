@@ -9437,6 +9437,285 @@ const app = {
         return !!(rail && getComputedStyle(rail).display !== 'none');
     },
 
+    // ── Куда прикреплена панель разделов: слева колонкой или сверху лентой ──────
+    // Панель таскают за хват (.lk-rail-grip), как палитры в фотошопе: потянул к
+    // верхнему краю — прилипла под шапку, потянул к левому — вернулась колонкой.
+    // Выбор запоминается, потому что это про привычку работать, а не про разовое
+    // действие.
+    RAIL_DOCK_KEY: 'lk_rail_dock',
+
+    railDock: function () {
+        try { return localStorage.getItem(this.RAIL_DOCK_KEY) === 'top' ? 'top' : 'left'; } catch (e) { return 'left'; }
+    },
+
+    setRailDock: function (where, remember) {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        const toTop = (where === 'top');
+        const container = document.querySelector('.container');
+        const header = document.querySelector('.site-header');
+        if (!container || !header) return;
+
+        // Сверху панель живёт сразу за шапкой (там же, внутри #page_scale_wrapper —
+        // иначе разъедется масштаб), слева — первым элементом колонок
+        if (toTop) {
+            if (rail.previousElementSibling !== header) header.parentNode.insertBefore(rail, header.nextSibling);
+        } else if (container.firstElementChild !== rail) {
+            container.insertBefore(rail, container.firstChild);
+        }
+
+        rail.classList.toggle('dock-top', toTop);
+        document.body.classList.toggle('lk-rail-top', toTop);
+        if (remember !== false) {
+            try { localStorage.setItem(this.RAIL_DOCK_KEY, toTop ? 'top' : 'left'); } catch (e) { }
+        }
+        // Пристыкованный кабинет считает свой прямоугольник по панели и колонкам —
+        // после переезда его надо пересчитать
+        this.updateCabinetDockGeometry();
+    },
+
+    initRailDrag: function () {
+        if (this._railDragBound) return;
+        const rail = document.getElementById('lk_rail');
+        const grip = document.getElementById('lk_rail_grip');
+        if (!rail || !grip) return;
+        this._railDragBound = true;
+
+        let startX = 0, startY = 0, dragging = false, target = null;
+
+        // Подсказка-прямоугольник на месте будущего положения панели. Лежит в body
+        // (вне масштабируемой обёртки), поэтому размеры берём из настоящих
+        // координат шапки и колонок, а не из чисел в CSS.
+        const showHint = (where) => {
+            let hint = document.getElementById('lk_rail_drop_hint');
+            if (!hint) {
+                hint = document.createElement('div');
+                hint.id = 'lk_rail_drop_hint';
+                hint.className = 'lk-rail-drop-hint no-print';
+                document.body.appendChild(hint);
+            }
+            const headerBox = document.querySelector('.site-header').getBoundingClientRect();
+            const railBox = rail.getBoundingClientRect();
+            if (where === 'top') {
+                hint.style.left = Math.round(headerBox.left + 12) + 'px';
+                hint.style.width = Math.round(headerBox.width - 24) + 'px';
+                hint.style.top = Math.round(headerBox.bottom + 6) + 'px';
+                hint.style.height = '54px';
+            } else {
+                hint.style.left = Math.round(headerBox.left + 12) + 'px';
+                hint.style.width = Math.round(railBox.width || 67) + 'px';
+                hint.style.top = Math.round(headerBox.bottom + 16) + 'px';
+                hint.style.height = Math.round(window.innerHeight - headerBox.bottom - 32) + 'px';
+            }
+            hint.style.display = 'block';
+        };
+
+        const hideHint = () => {
+            const hint = document.getElementById('lk_rail_drop_hint');
+            if (hint) hint.remove();
+        };
+
+        // Куда целится курсор: верхняя полоса экрана — «сверху», левый край — «слева».
+        // За пределами обеих зон оставляем панель там, где она была.
+        const zoneAt = (ev) => {
+            const headerBottom = document.querySelector('.site-header').getBoundingClientRect().bottom;
+            if (ev.clientY < headerBottom + 90) return 'top';
+            if (ev.clientX < 220) return 'left';
+            return null;
+        };
+
+        const onMove = (ev) => {
+            if (!dragging) {
+                // Порог, чтобы дрожание руки не считалось перетаскиванием
+                if (Math.abs(ev.clientX - startX) < 6 && Math.abs(ev.clientY - startY) < 6) return;
+                dragging = true;
+                rail.classList.add('is-dragging');
+                // Курсор-кулак на всё время перетаскивания и по всему экрану: рука
+                // уходит с самого хвата, а вид курсора должен остаться прежним
+                document.body.classList.add('lk-grabbing');
+            }
+            target = zoneAt(ev) || this.railDock();
+            showHint(target);
+            ev.preventDefault();
+        };
+
+        const onUp = () => {
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', onUp);
+            document.removeEventListener('pointercancel', onUp);
+            hideHint();
+            rail.classList.remove('is-dragging');
+            document.body.classList.remove('lk-grabbing');
+            if (dragging && target) this.setRailDock(target);
+            dragging = false;
+            target = null;
+        };
+
+        grip.addEventListener('pointerdown', (ev) => {
+            if (ev.button !== 0) return;
+            startX = ev.clientX;
+            startY = ev.clientY;
+            dragging = false;
+            target = null;
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp);
+            document.addEventListener('pointercancel', onUp);
+            ev.preventDefault();
+        });
+
+        // Двойной щелчок и клавиша — то же самое без перетаскивания: мышью с тачпада
+        // тянуть неудобно, а с клавиатуры перетащить нельзя вовсе
+        const flip = () => this.setRailDock(this.railDock() === 'top' ? 'left' : 'top');
+        grip.addEventListener('dblclick', flip);
+        grip.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); flip(); }
+        });
+    },
+
+    // ── Порядок блоков внутри панели ──────────────────────────────────────────
+    // Пункты собраны в блоки (data-group в разметке), блоки можно менять местами.
+    // Перетаскивание включается отдельно — правым щелчком по панели: иначе оно
+    // отбирало бы обычные нажатия на разделы, и человек двигал бы меню, просто
+    // промахнувшись мимо кнопки.
+    RAIL_GROUPS_KEY: 'lk_rail_groups',
+
+    applyRailGroupOrder: function () {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        let saved = [];
+        try { saved = JSON.parse(localStorage.getItem(this.RAIL_GROUPS_KEY) || '[]'); } catch (e) { saved = []; }
+        if (!Array.isArray(saved) || !saved.length) return;
+
+        const groups = Array.from(rail.querySelectorAll('.lk-rail-group'));
+        const keys = groups.map(g => g.dataset.group);
+        // Блок, которого в сохранённом порядке нет (появился в новой версии сайта),
+        // не теряем — дописываем в конец
+        const order = saved.filter(k => keys.includes(k)).concat(keys.filter(k => !saved.includes(k)));
+        order.forEach(k => {
+            const g = groups.find(x => x.dataset.group === k);
+            if (g) rail.appendChild(g);
+        });
+    },
+
+    saveRailGroupOrder: function () {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        const order = Array.from(rail.querySelectorAll('.lk-rail-group')).map(g => g.dataset.group);
+        try { localStorage.setItem(this.RAIL_GROUPS_KEY, JSON.stringify(order)); } catch (e) { }
+    },
+
+    setRailEditMode: function (on) {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        document.body.classList.toggle('lk-rail-edit', !!on);
+        let hint = document.getElementById('lk_rail_edit_hint');
+        if (on) {
+            if (!hint) {
+                hint = document.createElement('div');
+                hint.id = 'lk_rail_edit_hint';
+                hint.className = 'lk-rail-edit-hint no-print';
+                hint.innerHTML = 'Настройка меню: тяните блоки мышью.<br>Правый щелчок или Esc — выйти.';
+                document.body.appendChild(hint);
+            }
+            const box = rail.getBoundingClientRect();
+            hint.style.left = Math.round(box.right + 10) + 'px';
+            hint.style.top = Math.round(box.top) + 'px';
+        } else if (hint) {
+            hint.remove();
+        }
+    },
+
+    initRailGroupDrag: function () {
+        if (this._railGroupDragBound) return;
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        this._railGroupDragBound = true;
+
+        let group = null, startX = 0, startY = 0, moving = false;
+        const editing = () => document.body.classList.contains('lk-rail-edit');
+        const horizontal = () => rail.classList.contains('dock-top');
+
+        const onMove = (ev) => {
+            if (!moving) {
+                if (Math.abs(ev.clientX - startX) < 8 && Math.abs(ev.clientY - startY) < 8) return;
+                moving = true;
+                group.classList.add('is-moving');
+                document.body.classList.add('lk-grabbing');
+            }
+            // Блок сразу встаёт на новое место — так видно результат ещё до того,
+            // как отпустишь кнопку. Соседа выбираем по середине: курсор прошёл её —
+            // значит, встаём перед этим блоком.
+            const others = Array.from(rail.querySelectorAll('.lk-rail-group')).filter(g => g !== group);
+            const pos = horizontal() ? ev.clientX : ev.clientY;
+            let before = null;
+            for (const g of others) {
+                const b = g.getBoundingClientRect();
+                const mid = horizontal() ? (b.left + b.width / 2) : (b.top + b.height / 2);
+                if (pos < mid) { before = g; break; }
+            }
+            if (before) {
+                if (group.nextElementSibling !== before) rail.insertBefore(group, before);
+            } else if (rail.lastElementChild !== group) {
+                rail.appendChild(group);
+            }
+            ev.preventDefault();
+        };
+
+        const onUp = () => {
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', onUp);
+            document.removeEventListener('pointercancel', onUp);
+            document.body.classList.remove('lk-grabbing');
+            if (moving) {
+                group.classList.remove('is-moving');
+                this.saveRailGroupOrder();
+                this.updateCabinetDockGeometry();
+            }
+            group = null;
+            moving = false;
+        };
+
+        rail.addEventListener('pointerdown', (ev) => {
+            if (ev.button !== 0 || !editing()) return;
+            if (ev.target.closest('.lk-rail-grip')) return; // хват двигает панель целиком
+            const g = ev.target.closest('.lk-rail-group');
+            if (!g) return;
+            group = g;
+            startX = ev.clientX;
+            startY = ev.clientY;
+            moving = false;
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp);
+            document.addEventListener('pointercancel', onUp);
+            ev.preventDefault();
+        });
+
+        // Правый щелчок по панели включает и выключает настройку. Своё меню браузера
+        // при этом не показываем — иначе оно перекроет то, что человек двигает.
+        rail.addEventListener('contextmenu', (ev) => {
+            ev.preventDefault();
+            this.setRailEditMode(!editing());
+        });
+
+        // В режиме настройки нажатия на разделы не срабатывают: панель сейчас
+        // перестраивают, а не пользуются ей
+        rail.addEventListener('click', (ev) => {
+            if (!editing()) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+        }, true);
+
+        document.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Escape' && editing()) this.setRailEditMode(false);
+        });
+
+        // Щелчок мимо панели — тоже выход: режим не должен оставаться включённым
+        // незаметно для человека
+        document.addEventListener('pointerdown', (ev) => {
+            if (editing() && !ev.target.closest('#lk_rail')) this.setRailEditMode(false);
+        });
+    },
+
     // Единственная точка, решающая, пристыковано окно или раскрыто на весь экран.
     // Зовётся после каждого открытия и закрытия любого из окон списка.
     syncCabinetDock: function () {
@@ -9550,9 +9829,17 @@ const app = {
             ? Math.max(0, window.innerWidth - outputPanel.getBoundingClientRect().right)
             : 16;
 
+        // Верх — по колонкам, которые кабинет собой закрывает. Пока страница не
+        // прокручена, это их собственный край; когда прокручена, колонки уходят под
+        // шапку, и упираемся в неё — а если панель прикреплена сверху лентой, то в
+        // её нижний край, иначе карточка наехала бы на ленту.
+        const railTopStrip = document.body.classList.contains('lk-rail-top') && this.isRailVisible();
+        const floor = railTopStrip ? railBox.bottom + 8 : headerBottom + 8;
+        const inputTop = inputPanel ? inputPanel.getBoundingClientRect().top : floor;
+
         const style = document.documentElement.style;
         style.setProperty('--lk-dock-left', Math.round(left) + 'px');
-        style.setProperty('--lk-dock-top', Math.round(Math.max(railBox.top, headerBottom + 8)) + 'px');
+        style.setProperty('--lk-dock-top', Math.round(Math.max(inputTop, floor)) + 'px');
         style.setProperty('--lk-dock-right', Math.round(right) + 'px');
         style.setProperty('--lk-dock-bottom', Math.round(right) + 'px');
     },
@@ -9568,6 +9855,16 @@ const app = {
 
         const rail = document.getElementById('lk_rail');
         if (!rail) return;
+
+        // Место панели (слева колонкой или сверху лентой) восстанавливаем один раз
+        // при первой отрисовке и тогда же вешаем перетаскивание
+        if (!this._railDockInit) {
+            this._railDockInit = true;
+            this.applyRailGroupOrder();
+            this.setRailDock(this.railDock(), false);
+            this.initRailDrag();
+            this.initRailGroupDrag();
+        }
 
         const adminBtn = document.getElementById('lk_rail_admin');
         if (adminBtn) adminBtn.style.display = this.hasAdminAccess() ? 'flex' : 'none';

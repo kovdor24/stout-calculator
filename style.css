@@ -11957,6 +11957,157 @@ body.lk-docked #profile_nav {
     display: none;
 }
 
+/* ── Хват и переезд панели (как палитры в фотошопе) ────────────────────────────
+   За хват панель тянут к верхнему краю — тогда она прилипает лентой под шапку, —
+   или обратно к левому. Точки хвата рисуем градиентом, а не иконкой: так они
+   одинаково выглядят и в колонке, и в ленте, где хват лежит боком. */
+.lk-rail-grip {
+    flex-shrink: 0;
+    height: 12px;
+    margin: 0 4px 4px;
+    border-radius: 5px;
+    background-image: radial-gradient(currentColor 1px, transparent 1.2px);
+    background-size: 4px 4px;
+    background-position: center;
+    color: var(--text-sec);
+    opacity: 0.45;
+    cursor: grab;
+    transition: opacity var(--dur-fast) ease, background-color var(--dur-fast) ease;
+}
+
+.lk-rail-grip:hover {
+    opacity: 1;
+    background-color: var(--surface-light);
+}
+
+.lk-rail-grip:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    opacity: 1;
+}
+
+.lk-rail.is-dragging {
+    opacity: 0.55;
+}
+
+.lk-rail.is-dragging .lk-rail-grip {
+    cursor: grabbing;
+}
+
+/* Панель, прикреплённая сверху: те же плитки, только в ряд. Стоит сразу под
+   шапкой и липнет к ней при прокрутке — ради этого её и переносят наверх.
+   Не помещается в ширину (узкий ноутбук, много разделов) — прокручивается
+   внутри себя, а не разрывает страницу. */
+.lk-rail.dock-top {
+    flex: none;
+    width: auto;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 2px;
+    margin: 0 20px 10px;
+    padding: 5px 8px;
+    border-radius: 0 0 16px 16px;
+    border-top: none;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    top: var(--sticky-header-h, 70px);
+    z-index: 900;
+}
+
+.lk-rail.dock-top .lk-rail-item {
+    flex: 0 0 64px;
+    width: 64px;
+}
+
+.lk-rail.dock-top .lk-rail-sep {
+    flex: 0 0 1px;
+    width: 1px;
+    height: auto;
+    margin: 6px 7px;
+}
+
+.lk-rail.dock-top .lk-rail-grip {
+    width: 12px;
+    height: auto;
+    margin: 2px 6px 2px 0;
+}
+
+/* Блоки пунктов. Разделительные линии рисуем между блоками, а не отдельными
+   элементами: после перестановки блоков они остаются на местах сами. */
+.lk-rail-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.lk-rail-group + .lk-rail-group {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+}
+
+.lk-rail.dock-top .lk-rail-group {
+    flex-direction: row;
+}
+
+.lk-rail.dock-top .lk-rail-group + .lk-rail-group {
+    margin: 0 0 0 7px;
+    padding: 0 0 0 7px;
+    border-top: none;
+    border-left: 1px solid var(--border);
+}
+
+/* Режим настройки меню: включается правым щелчком по панели, чтобы блоки не
+   двигались от случайного промаха мимо кнопки. Пока он включён, разделы не
+   открываются, а панель видно, что она «в разборе». */
+body.lk-rail-edit .lk-rail {
+    outline: 2px dashed var(--primary);
+    outline-offset: 3px;
+}
+
+body.lk-rail-edit .lk-rail-item {
+    cursor: grab;
+}
+
+.lk-rail-group.is-moving {
+    opacity: 0.5;
+}
+
+/* Кулак на всё время перетаскивания и по всему экрану: рука уходит с хвата, а
+   курсор должен остаться прежним, пока кнопка не отпущена */
+body.lk-grabbing,
+body.lk-grabbing * {
+    cursor: grabbing !important;
+}
+
+.lk-rail-edit-hint {
+    position: fixed;
+    z-index: 1600;
+    max-width: 210px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--primary);
+    color: var(--text-main);
+    font-size: 12px;
+    line-height: 1.35;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    pointer-events: none;
+}
+
+/* Куда встанет панель, если отпустить сейчас */
+.lk-rail-drop-hint {
+    position: fixed;
+    z-index: 1500;
+    display: none;
+    box-sizing: border-box;
+    background: rgba(37, 99, 235, 0.12);
+    border: 2px dashed var(--primary);
+    border-radius: 14px;
+    pointer-events: none;
+}
+
 /* Включённый режим обучения виден по кнопке в шапке (класс ставит Tour.syncButton).
    Заливка, а не подсветка: подсветка совпадает с наведением, а курсор после нажатия
    остаётся на кнопке — состояние выглядело бы неизменным. Наведение на включённую
