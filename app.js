@@ -3161,12 +3161,39 @@ const app = {
         chatLog.className = 'ai-chat-log';
         card.appendChild(chatLog);
 
+        // Журнал сеанса — что человек сказал и что система ответила. Уходит в
+        // таблицу ai_fill_sessions при закрытии окна (см. logAiFillSession), оттуда
+        // его читает вкладка админки «✨ Умное заполнение». До этого журнала диалог
+        // исчезал вместе с окном, и по каким фразам правила спотыкаются — было не видно.
+        const journal = { startedAt: Date.now(), items: [], voiceDraft: null, lastUser: null, flushed: false };
+        const sinceStart = () => Math.round((Date.now() - journal.startedAt) / 1000);
+        // Реплика системы в журнал — текстом, как её прочитал бы человек: пузырёк
+        // собран из div/span, и голый textContent склеил бы «Площадь:150 м²✓Этажей:2»
+        const bubbleText = (html) => {
+            const t = document.createElement('textarea');
+            t.innerHTML = String(html)
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/div>/gi, '\n')
+                .replace(/<\/span>/gi, ' ')
+                .replace(/<[^>]+>/g, '');
+            return t.value.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+        };
+        // Что система сделала с последней репликой монтажника (см. kind в миграции
+        // 20260819_add_ai_fill_sessions.sql) и что из неё распознала
+        const note = (kind, found) => {
+            if (!journal.lastUser) return;
+            journal.lastUser.kind = kind;
+            if (found && found.length) journal.lastUser.found = found.map(r => ({ label: r.label, display: r.display }));
+        };
+        this.flushAiFillLogQueue();
+
         const addBubble = (role, html) => {
             const b = document.createElement('div');
             b.className = 'ai-chat-bubble ai-chat-' + role;
             b.innerHTML = html;
             chatLog.appendChild(b);
             chatLog.scrollTop = chatLog.scrollHeight;
+            if (role === 'assistant') journal.items.push({ t: sinceStart(), who: 'a', text: bubbleText(html) });
             return b;
         };
 
@@ -3183,6 +3210,7 @@ const app = {
 
         const voiceUI = this._createVoiceMicButton((transcript) => {
             textInput.value = transcript;
+            journal.voiceDraft = transcript;
             textInput.focus();
         });
         if (voiceUI) {
@@ -3229,7 +3257,32 @@ const app = {
             window.visualViewport.addEventListener('scroll', syncViewport);
         }
 
-        const close = () => {
+        // Журнал пишем один раз — при «Применить», закрытии окна или уходе со
+        // страницы с открытым окном. Сеанс без единой реплики монтажника не пишем:
+        // открыл и закрыл — анализировать там нечего.
+        const flushJournal = (outcome, appliedFields) => {
+            if (journal.flushed) return;
+            journal.flushed = true;
+            window.removeEventListener('pagehide', onPageHide);
+            const userItems = journal.items.filter(i => i.who === 'u');
+            if (!userItems.length) return;
+            this.logAiFillSession({
+                started_at: new Date(journal.startedAt).toISOString(),
+                ended_at: new Date().toISOString(),
+                duration_sec: sinceStart(),
+                messages_count: userItems.length,
+                voice_count: userItems.filter(i => i.src !== 'text').length,
+                outcome: outcome || 'closed',
+                applied_fields: (appliedFields || []).map(r => ({ label: r.label, display: r.display })),
+                unrecognized: userItems.filter(i => i.kind === 'none').length,
+                dialog: journal.items
+            });
+        };
+        const onPageHide = () => flushJournal('closed');
+        window.addEventListener('pagehide', onPageHide);
+
+        const close = (outcome, appliedFields) => {
+            flushJournal(outcome, appliedFields);
             overlay.classList.remove('active');
             if (window.visualViewport) {
                 window.visualViewport.removeEventListener('resize', syncViewport);
@@ -3333,9 +3386,15 @@ const app = {
             if (!text) { textInput.focus(); return; }
             addBubble('user', escapeHtml(text));
             textInput.value = '';
+            // Откуда реплика: надиктована, набрана, или надиктована и поправлена руками
+            const src = journal.voiceDraft == null ? 'text' : (journal.voiceDraft.trim() === text ? 'voice' : 'voice+edit');
+            journal.voiceDraft = null;
+            journal.lastUser = { t: sinceStart(), who: 'u', text, src, kind: 'none' };
+            journal.items.push(journal.lastUser);
 
             // Пользователь явно говорит, что вопросов больше не нужно
             if (isStopPhrase(text)) {
+                note('stop');
                 stopAsking = true;
                 pendingTopic = null;
                 addBubble('assistant', accumulated.size
@@ -3350,11 +3409,13 @@ const app = {
                 const topic = TOPICS.find(x => x.key === pendingTopic);
                 if (topic) {
                     if (topic.ambiguousYes && isBareYes(text)) {
+                        note('question');
                         addBubble('assistant', topic.question);
                         textInput.focus();
                         return;
                     }
                     if (isBareYes(text) && topic.yesField) {
+                        note('yes', [topic.yesField]);
                         accumulated.set(topic.yesField.field, topic.yesField);
                         pendingTopic = null;
                         applyBtn.style.display = '';
@@ -3364,6 +3425,7 @@ const app = {
                         return;
                     }
                     if (isBareNo(text)) {
+                        note('no');
                         declined.add(topic.key);
                         pendingTopic = null;
                         addBubble('assistant', 'Хорошо, пропускаю.');
@@ -3378,6 +3440,7 @@ const app = {
             // разбора, иначе, например, "убери бойлер" сам распознался бы как "нужна горячая вода".
             const deleteFields = this.detectDeleteIntent(text);
             if (deleteFields) {
+                note('delete');
                 let removedAny = false;
                 deleteFields.forEach(f => { if (accumulated.delete(f)) removedAny = true; });
                 applyBtn.style.display = accumulated.size ? '' : 'none';
@@ -3393,6 +3456,7 @@ const app = {
             // проверяем раньше обычного разбора параметров, чтобы не пытаться найти в этой
             // фразе площадь/этажность и т.п.
             if (this.detectProTariffIntent(text)) {
+                note('pro');
                 const month = this.proPaymentLinks.month;
                 const year = this.proPaymentLinks.year;
                 const link = (plan) => `<a href="${plan.url}" target="_blank" rel="noopener">${plan.tariffName} — ${this.formatCurrencyAmount(plan.rub)}</a>`;
@@ -3414,6 +3478,7 @@ const app = {
 
             const results = this.parseHouseQuery(parseText);
             if (results.length) {
+                note('parsed', results);
                 results.forEach(r => accumulated.set(r.field, r));
                 applyBtn.style.display = '';
                 pendingTopic = null;
@@ -3434,7 +3499,7 @@ const app = {
             if (!results.length) return;
             this.applyParsedResults(results);
             this.showAiParseToast(results.length);
-            close();
+            close('applied', results);
         };
 
         // Enter отправляет сообщение, Shift+Enter — обычный перенос строки
@@ -13087,12 +13152,14 @@ const app = {
         { id: 'plans', icon: '📐', label: 'Планы этажей', hint: 'Подложки планов на сервере' },
         { id: 'projects', icon: '📁', label: 'Проекты', hint: 'Выпущенные комплекты листов' },
         { id: 'dashboard', icon: '📊', label: 'Дашборд', hint: 'Вся аналитика одним экраном' },
-        { id: 'analytics', icon: '📈', label: 'Аналитика', hint: 'Спрос и конкуренты по регионам' }
+        { id: 'analytics', icon: '📈', label: 'Аналитика', hint: 'Спрос и конкуренты по регионам' },
+        { id: 'aifill', icon: '✨', label: 'Умное заполнение', hint: 'Что говорили и писали в окно ✨' }
     ],
 
     // Разделы владельца: «Дашборд» — сводка тех же данных, что и «Аналитика»,
     // поэтому и закрыт он тем же ключом. Список один, чтобы права не разъехались.
-    OWNER_ONLY_TABS: ['dashboard', 'analytics'],
+    // «Умное заполнение» — журнал диалогов монтажников с окном ✨, тоже только владельцу.
+    OWNER_ONLY_TABS: ['dashboard', 'analytics', 'aifill'],
 
     // Вкладка «Аналитика» — только для владельца: там конкурентная разведка,
     // которой незачем светиться даже перед наблюдателями с доступом в админку.
@@ -13367,6 +13434,12 @@ const app = {
         if (this._adminTab === 'estimates') {
             content.innerHTML = navHtml;
             this.renderAdminEstimates();
+            return;
+        }
+
+        if (this._adminTab === 'aifill') {
+            content.innerHTML = navHtml;
+            this.renderAdminAiFill();
             return;
         }
 
@@ -19034,6 +19107,409 @@ const app = {
         }
 
         return `<tr><td colspan="5" style="background:var(--surface-light); padding:12px 14px;">${inner}</td></tr>`;
+    },
+
+    /**
+     * Вкладка «✨ Умное заполнение» — журнал диалогов с окном умного заполнения
+     * (таблица ai_fill_sessions, пишет openAiParseModal → logAiFillSession).
+     *
+     * Для чего. Само заполнение — правила в parseHouseQuery, и умнее оно
+     * становится только по живым фразам: какие слова люди говорят, на чём
+     * правила спотыкаются. Поэтому главное здесь — диалог целиком, в том же
+     * виде, что видел монтажник (пузырьки), а не сводные числа. Сводка и
+     * фильтры — чтобы найти нужные сеансы: по дате, аккаунту, числу запусков
+     * и времени общения.
+     *
+     * Только для владельца (OWNER_ONLY_TABS): в диалогах личные фразы людей.
+     */
+    renderAdminAiFill: function () {
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+
+        const wrap = document.createElement('div');
+        wrap.id = 'admin_aifill_root';
+        content.appendChild(wrap);
+
+        if (this.adminData.aiFill == null) {
+            wrap.innerHTML = `<div style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка журнала…</div>`;
+            if (!this._loadingAiFill) {
+                this._loadingAiFill = true;
+                (async () => {
+                    try {
+                        const { data, error } = await supabaseClient.from('ai_fill_sessions')
+                            .select('id, auth_user_id, user_email, user_name, started_at, ended_at, duration_sec, messages_count, voice_count, outcome, applied_fields, unrecognized, dialog')
+                            .order('started_at', { ascending: false })
+                            .limit(2000);
+                        if (error) throw error;
+                        this.adminData.aiFill = data || [];
+                        this._aiFillError = null;
+                    } catch (e) {
+                        // Чаще всего таблицы просто нет: миграцию
+                        // 20260819_add_ai_fill_sessions.sql ещё не выполняли в Supabase
+                        console.warn('Could not load ai_fill_sessions:', e.message || e);
+                        this.adminData.aiFill = [];
+                        this._aiFillError = e.message || String(e);
+                    }
+                    this._loadingAiFill = false;
+                    if (this._adminTab === 'aifill') this.renderAdminMain();
+                })();
+            }
+            return;
+        }
+        this.renderAdminAiFillBody();
+    },
+
+    // Ключ аккаунта для группировки и фильтра: почта, если есть, иначе имя.
+    // auth_user_id не годится — у старых строк и входа через Telegram его может не быть.
+    _aiFillAccountKey: function (r) {
+        return (r.user_email || r.user_name || 'неизвестен').toLowerCase();
+    },
+    _aiFillAccountLabel: function (r) {
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        if (r.user_name && r.user_email) return `<b>${esc(r.user_name)}</b><br><span style="color:var(--text-sec); font-size:11px;">${esc(r.user_email)}</span>`;
+        return `<b>${esc(r.user_name || r.user_email || 'Неизвестен')}</b>`;
+    },
+
+    switchAdminAiFillGroup: function (mode) {
+        this._aiFillGroup = mode;
+        this.renderAdminAiFillBody();
+    },
+
+    // Развернуть/свернуть диалог под строкой сеанса
+    toggleAdminAiFillDialog: function (id) {
+        const row = document.getElementById('admin_aifill_dlg_' + id);
+        if (!row) return;
+        const open = row.style.display === 'none';
+        row.style.display = open ? '' : 'none';
+        const btn = document.getElementById('admin_aifill_btn_' + id);
+        if (btn) btn.textContent = open ? 'Свернуть ▴' : 'Диалог ▾';
+    },
+
+    // Диалог как текст — чтобы скопировать и разобрать (или прислать мне для доработки правил)
+    aiFillDialogText: function (r) {
+        const when = new Date(r.started_at).toLocaleString('ru-RU');
+        const head = `${when} · ${r.user_name || ''} ${r.user_email ? '<' + r.user_email + '>' : ''} · ${this._fmtAiFillDur(r.duration_sec)} · ${r.outcome === 'applied' ? 'применил' : 'закрыл без применения'}`;
+        const lines = (r.dialog || []).map(m => {
+            const who = m.who === 'u' ? (m.src === 'voice' ? '🎤 Монтажник' : m.src === 'voice+edit' ? '🎤✎ Монтажник' : '⌨ Монтажник') : '   Система';
+            const tail = (m.who === 'u' && m.kind === 'none') ? '   [НЕ РАСПОЗНАНО]' : '';
+            return `[${String(m.t || 0).padStart(4, ' ')}с] ${who}: ${m.text}${tail}`;
+        });
+        return head + '\n' + lines.join('\n');
+    },
+    copyAdminAiFillDialog: function (id, btn) {
+        const r = (this.adminData.aiFill || []).find(x => x.id === id);
+        if (!r) return;
+        this._copyAiFillText(this.aiFillDialogText(r), btn);
+    },
+    // Копирование в буфер с подтверждением прямо на кнопке; без буфера (старый
+    // браузер, http) — показываем текст окном, оттуда его можно выделить
+    _copyAiFillText: function (text, btn) {
+        const done = () => {
+            if (!btn) return;
+            const was = btn.textContent;
+            btn.textContent = '✓ Скопировано';
+            setTimeout(() => { btn.textContent = was; }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done, () => this.alert(text));
+        } else {
+            this.alert(text);
+        }
+    },
+
+    _fmtAiFillDur: function (sec) {
+        sec = Math.max(0, Math.round(Number(sec) || 0));
+        const m = Math.floor(sec / 60), s = sec % 60;
+        return m ? `${m} мин ${String(s).padStart(2, '0')} с` : `${s} с`;
+    },
+
+    renderAdminAiFillBody: function () {
+        const content = document.getElementById('admin_content');
+        let root = document.getElementById('admin_aifill_root');
+        if (!root) {
+            root = document.createElement('div');
+            root.id = 'admin_aifill_root';
+            content.appendChild(root);
+        }
+        root.style.textAlign = 'left';
+        root.style.padding = '';
+        const focusSnap = this._snapshotAdminFilterFocus(root);
+
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const all = this.adminData.aiFill || [];
+        const group = this._aiFillGroup || 'sessions';
+
+        // ── Фильтры (значения берём из полей до перерисовки) ──
+        const g = id => document.getElementById(id);
+        const dateFrom = g('admin_aif_from')?.value || '';
+        const dateTo = g('admin_aif_to')?.value || '';
+        const account = g('admin_aif_account')?.value || 'all';
+        const outcome = g('admin_aif_outcome')?.value || 'all';
+        const search = (g('admin_aif_search')?.value || '').trim().toLowerCase();
+        const runsMin = parseInt(g('admin_aif_runs_min')?.value) || 0;
+        const runsMax = parseInt(g('admin_aif_runs_max')?.value) || 0;
+        const durMin = parseInt(g('admin_aif_dur_min')?.value) || 0;
+        const durMax = parseInt(g('admin_aif_dur_max')?.value) || 0;
+
+        const fromTs = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : null;
+        const toTs = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : null;
+
+        // Сначала период и аккаунт — от них считается число запусков на аккаунт
+        let rows = all.filter(r => {
+            const ts = new Date(r.started_at).getTime();
+            if (fromTs && ts < fromTs) return false;
+            if (toTs && ts > toTs) return false;
+            if (account !== 'all' && this._aiFillAccountKey(r) !== account) return false;
+            return true;
+        });
+        const runsByAcc = {};
+        rows.forEach(r => { const k = this._aiFillAccountKey(r); runsByAcc[k] = (runsByAcc[k] || 0) + 1; });
+
+        rows = rows.filter(r => {
+            const runs = runsByAcc[this._aiFillAccountKey(r)] || 0;
+            if (runsMin && runs < runsMin) return false;
+            if (runsMax && runs > runsMax) return false;
+            const d = Number(r.duration_sec) || 0;
+            if (durMin && d < durMin) return false;
+            if (durMax && d > durMax) return false;
+            if (outcome !== 'all' && (r.outcome || 'closed') !== outcome) return false;
+            if (search) {
+                const hay = ((r.user_name || '') + ' ' + (r.user_email || '') + ' ' +
+                    (r.dialog || []).map(m => m.text || '').join(' ')).toLowerCase();
+                if (!hay.includes(search)) return false;
+            }
+            return true;
+        });
+
+        // ── Сводка ──
+        const accounts = new Set(rows.map(r => this._aiFillAccountKey(r)));
+        const totalSec = rows.reduce((s, r) => s + (Number(r.duration_sec) || 0), 0);
+        const applied = rows.filter(r => r.outcome === 'applied').length;
+        const msgs = rows.reduce((s, r) => s + (Number(r.messages_count) || 0), 0);
+        const voice = rows.reduce((s, r) => s + (Number(r.voice_count) || 0), 0);
+        const unrec = rows.reduce((s, r) => s + (Number(r.unrecognized) || 0), 0);
+        const pct = (a, b) => b ? Math.round(a * 100 / b) + '%' : '—';
+
+        // Список аккаунтов для фильтра — по всему журналу, не по отфильтрованному,
+        // иначе после выбора одного остальные пропадут из списка
+        const accOptions = {};
+        all.forEach(r => { const k = this._aiFillAccountKey(r); if (!accOptions[k]) accOptions[k] = r.user_name ? `${r.user_name}${r.user_email ? ' (' + r.user_email + ')' : ''}` : (r.user_email || 'Неизвестен'); });
+
+        const inputStyle = 'padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); font-size:12px; outline:none; height:34px; box-sizing:border-box;';
+        const lbl = (t) => `<span style="font-size:10.5px; color:var(--text-sec); white-space:nowrap;">${t}</span>`;
+        const tabBtn = (mode, text) => `<button class="auth-btn-base" style="margin:0; width:auto; height:34px; font-size:11px; white-space:nowrap; padding:0 12px; background:${group === mode ? 'var(--primary)' : 'var(--surface-light)'}; color:${group === mode ? 'white' : 'var(--text-sec)'}; border:1px solid ${group === mode ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminAiFillGroup('${mode}')">${text}</button>`;
+
+        let h = `
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+                <h3 style="margin:0; color:var(--text-main);">✨ Умное заполнение</h3>
+                <span style="font-size:12.5px; color:var(--text-sec);">
+                    запусков: <b style="color:var(--text-main);">${rows.length}</b> ·
+                    людей: <b style="color:var(--text-main);">${accounts.size}</b> ·
+                    общее время: <b style="color:var(--text-main);">${this._fmtAiFillDur(totalSec)}</b> ·
+                    среднее: <b style="color:var(--text-main);">${this._fmtAiFillDur(rows.length ? totalSec / rows.length : 0)}</b> ·
+                    применили: <b style="color:#10B981;">${applied}</b> (${pct(applied, rows.length)}) ·
+                    реплик: <b style="color:var(--text-main);">${msgs}</b>, голосом ${pct(voice, msgs)} ·
+                    не распознано: <b style="color:${unrec ? '#EF4444' : 'var(--text-main)'};">${unrec}</b>
+                </span>
+                <button class="admin-btn" style="margin-left:auto;" onclick="app.adminData.aiFill = null; app.renderAdminMain()">↻ Обновить</button>
+            </div>
+            <div class="admin-toolbar-row" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
+                ${lbl('Дата')}
+                <input type="date" id="admin_aif_from" value="${dateFrom}" style="${inputStyle}" onchange="app.renderAdminAiFillBody()">
+                <input type="date" id="admin_aif_to" value="${dateTo}" style="${inputStyle}" onchange="app.renderAdminAiFillBody()">
+                <select id="admin_aif_account" style="${inputStyle} max-width:220px; cursor:pointer;" onchange="app.renderAdminAiFillBody()">
+                    <option value="all">Все аккаунты</option>
+                    ${Object.keys(accOptions).sort().map(k => `<option value="${esc(k)}" ${account === k ? 'selected' : ''}>${esc(accOptions[k])}</option>`).join('')}
+                </select>
+                ${lbl('Запусков')}
+                <input type="number" id="admin_aif_runs_min" placeholder="от" min="0" value="${runsMin || ''}" style="${inputStyle} width:64px;" oninput="app.renderAdminAiFillBody()">
+                <input type="number" id="admin_aif_runs_max" placeholder="до" min="0" value="${runsMax || ''}" style="${inputStyle} width:64px;" oninput="app.renderAdminAiFillBody()">
+                ${lbl('Время, сек')}
+                <input type="number" id="admin_aif_dur_min" placeholder="от" min="0" value="${durMin || ''}" style="${inputStyle} width:70px;" oninput="app.renderAdminAiFillBody()">
+                <input type="number" id="admin_aif_dur_max" placeholder="до" min="0" value="${durMax || ''}" style="${inputStyle} width:70px;" oninput="app.renderAdminAiFillBody()">
+                <select id="admin_aif_outcome" style="${inputStyle} cursor:pointer;" onchange="app.renderAdminAiFillBody()">
+                    <option value="all" ${outcome === 'all' ? 'selected' : ''}>Любой итог</option>
+                    <option value="applied" ${outcome === 'applied' ? 'selected' : ''}>Применил</option>
+                    <option value="closed" ${outcome === 'closed' ? 'selected' : ''}>Закрыл без применения</option>
+                </select>
+                <input type="text" id="admin_aif_search" placeholder="🔍 Фраза в диалоге…" value="${esc(g('admin_aif_search')?.value || '')}" style="${inputStyle} width:180px;" oninput="app.renderAdminAiFillBody()">
+                <span style="flex:1;"></span>
+                ${tabBtn('sessions', 'Сеансы')}
+                ${tabBtn('accounts', 'По аккаунтам')}
+                ${tabBtn('unrecognized', 'Нераспознанное')}
+            </div>`;
+
+        if (!all.length) {
+            h += `<div style="text-align:center; color:var(--text-sec); padding:40px 0;">${this._aiFillError
+                ? 'Журнал недоступен. Похоже, миграция supabase/migrations/20260819_add_ai_fill_sessions.sql ещё не выполнена.'
+                : 'Журнал пока пуст. Сеанс попадает сюда, когда монтажник что-то написал или надиктовал в окне ✨ и закрыл его.'}</div>`;
+        } else if (!rows.length) {
+            h += `<div style="text-align:center; color:var(--text-sec); padding:40px 0;">Нет сеансов по заданным фильтрам.</div>`;
+        } else if (group === 'accounts') {
+            h += this._renderAdminAiFillAccounts(rows);
+        } else if (group === 'unrecognized') {
+            h += this._renderAdminAiFillUnrecognized(rows);
+        } else {
+            h += this._renderAdminAiFillSessions(rows);
+        }
+
+        root.innerHTML = h;
+        this._restoreAdminFilterFocus(focusSnap);
+    },
+
+    _renderAdminAiFillSessions: function (rows) {
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        let h = `
+            <table class="inv-table">
+                <thead><tr>
+                    <th style="width:30px;">#</th>
+                    <th style="white-space:nowrap;">Дата и время</th>
+                    <th>Аккаунт</th>
+                    <th style="white-space:nowrap;">Время общения</th>
+                    <th style="white-space:nowrap;">Реплик</th>
+                    <th>Итог</th>
+                    <th style="white-space:nowrap;">Не распознано</th>
+                    <th></th>
+                </tr></thead><tbody>`;
+        rows.forEach((r, i) => {
+            const dt = new Date(r.started_at);
+            const when = dt.toLocaleDateString('ru-RU') + ' ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            const voice = Number(r.voice_count) || 0;
+            const msgs = Number(r.messages_count) || 0;
+            const src = voice === 0 ? '⌨' : (voice === msgs ? '🎤' : '🎤⌨');
+            const fields = Array.isArray(r.applied_fields) ? r.applied_fields : [];
+            const result = r.outcome === 'applied'
+                ? `<span style="color:#10B981; font-weight:700;">✅ Применил ${fields.length}</span>` +
+                  (fields.length ? `<div style="font-size:11px; color:var(--text-sec); margin-top:2px;">${esc(fields.map(f => f.label + ': ' + f.display).join(' · '))}</div>` : '')
+                : `<span style="color:var(--text-sec);">Закрыл без применения</span>`;
+            const unrec = Number(r.unrecognized) || 0;
+            h += `<tr class="active-row" style="cursor:pointer;" onclick="app.toggleAdminAiFillDialog('${esc(r.id)}')">
+                    <td style="color:var(--text-sec);">${i + 1}</td>
+                    <td style="white-space:nowrap; font-size:12px;">${when}</td>
+                    <td>${this._aiFillAccountLabel(r)}</td>
+                    <td style="white-space:nowrap;">${this._fmtAiFillDur(r.duration_sec)}</td>
+                    <td style="white-space:nowrap;" title="Голосом: ${voice} из ${msgs}">${msgs} ${src}</td>
+                    <td>${result}</td>
+                    <td style="text-align:center; color:${unrec ? '#EF4444' : 'var(--text-sec)'}; font-weight:${unrec ? 700 : 400};">${unrec || '—'}</td>
+                    <td style="white-space:nowrap; text-align:right;"><button id="admin_aifill_btn_${esc(r.id)}" class="admin-btn" style="padding:4px 10px; font-size:11px;" onclick="event.stopPropagation(); app.toggleAdminAiFillDialog('${esc(r.id)}')">Диалог ▾</button></td>
+                  </tr>
+                  <tr id="admin_aifill_dlg_${esc(r.id)}" style="display:none;"><td colspan="8" style="padding:10px 14px 16px; background:var(--bg);">${this._renderAdminAiFillDialog(r)}</td></tr>`;
+        });
+        h += `</tbody></table>`;
+        return h;
+    },
+
+    // Диалог в том же виде, что видел монтажник: его реплики справа, система слева.
+    // У реплики монтажника — значок источника и то, что из неё распознано; фразы,
+    // на которые система ответила «не удалось распознать», подсвечены.
+    _renderAdminAiFillDialog: function (r) {
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const SRC = { voice: '🎤 голосом', 'voice+edit': '🎤✎ голосом, поправил руками', text: '⌨ текстом' };
+        const items = Array.isArray(r.dialog) ? r.dialog : [];
+        if (!items.length) return `<div style="color:var(--text-sec); font-size:12px;">Диалог не сохранился.</div>`;
+        const bubbles = items.map(m => {
+            const text = esc(m.text).replace(/\n/g, '<br>');
+            if (m.who !== 'u') {
+                return `<div class="ai-chat-bubble ai-chat-assistant" style="max-width:75%;"><span style="font-size:10px; color:var(--text-sec);">${m.t || 0} с · система</span><br>${text}</div>`;
+            }
+            const none = m.kind === 'none';
+            const found = Array.isArray(m.found) && m.found.length
+                ? `<div style="margin-top:4px; font-size:11px; opacity:0.9;">${m.found.map(f => '✓ ' + esc(f.label) + ': ' + esc(f.display)).join('<br>')}</div>` : '';
+            return `<div class="ai-chat-bubble ai-chat-user" style="max-width:75%; ${none ? 'background:linear-gradient(135deg,#DC2626,#EF4444);' : ''}">
+                        <span style="font-size:10px; opacity:0.85;">${m.t || 0} с · ${SRC[m.src] || '⌨ текстом'}${none ? ' · <b>НЕ РАСПОЗНАНО</b>' : ''}</span><br>${text}${found}
+                    </div>`;
+        }).join('');
+        return `
+            <div style="display:flex; justify-content:flex-end; margin-bottom:6px;">
+                <button class="admin-btn" style="padding:4px 10px; font-size:11px;" onclick="event.stopPropagation(); app.copyAdminAiFillDialog('${esc(r.id)}', this)">📋 Скопировать диалог</button>
+            </div>
+            <div class="ai-chat-log" style="max-height:420px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:4px 2px;">${bubbles}</div>`;
+    },
+
+    _renderAdminAiFillAccounts: function (rows) {
+        const by = {};
+        rows.forEach(r => {
+            const k = this._aiFillAccountKey(r);
+            const a = by[k] = by[k] || { row: r, runs: 0, sec: 0, applied: 0, msgs: 0, voice: 0, unrec: 0, last: 0 };
+            a.runs++;
+            a.sec += Number(r.duration_sec) || 0;
+            if (r.outcome === 'applied') a.applied++;
+            a.msgs += Number(r.messages_count) || 0;
+            a.voice += Number(r.voice_count) || 0;
+            a.unrec += Number(r.unrecognized) || 0;
+            a.last = Math.max(a.last, new Date(r.started_at).getTime());
+        });
+        const list = Object.values(by).sort((a, b) => b.runs - a.runs || b.sec - a.sec);
+        let h = `
+            <table class="inv-table">
+                <thead><tr>
+                    <th style="width:30px;">#</th>
+                    <th>Аккаунт</th>
+                    <th style="text-align:right;">Запусков</th>
+                    <th style="text-align:right; white-space:nowrap;">Общее время</th>
+                    <th style="text-align:right; white-space:nowrap;">Среднее</th>
+                    <th style="text-align:right;">Применил</th>
+                    <th style="text-align:right;">Реплик</th>
+                    <th style="text-align:right;">Голосом</th>
+                    <th style="text-align:right; white-space:nowrap;">Не распознано</th>
+                    <th style="text-align:right; white-space:nowrap;">Последний</th>
+                </tr></thead><tbody>`;
+        list.forEach((a, i) => {
+            const dt = new Date(a.last);
+            h += `<tr>
+                    <td style="color:var(--text-sec);">${i + 1}</td>
+                    <td>${this._aiFillAccountLabel(a.row)}</td>
+                    <td style="text-align:right; font-weight:700;">${a.runs}</td>
+                    <td style="text-align:right; white-space:nowrap;">${this._fmtAiFillDur(a.sec)}</td>
+                    <td style="text-align:right; white-space:nowrap;">${this._fmtAiFillDur(a.sec / a.runs)}</td>
+                    <td style="text-align:right; color:#10B981;">${a.applied} из ${a.runs}</td>
+                    <td style="text-align:right;">${a.msgs}</td>
+                    <td style="text-align:right;">${a.msgs ? Math.round(a.voice * 100 / a.msgs) + '%' : '—'}</td>
+                    <td style="text-align:right; color:${a.unrec ? '#EF4444' : 'var(--text-sec)'};">${a.unrec || '—'}</td>
+                    <td style="text-align:right; white-space:nowrap; color:var(--text-sec); font-size:12px;">${dt.toLocaleDateString('ru-RU')} ${dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</td>
+                  </tr>`;
+        });
+        h += `</tbody></table>`;
+        return h;
+    },
+
+    // Фразы, на которые система ответила «не удалось распознать», — сырьё для
+    // доработки правил parseHouseQuery. Одинаковые фразы схлопнуты, частые сверху.
+    _renderAdminAiFillUnrecognized: function (rows) {
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const by = {};
+        rows.forEach(r => (r.dialog || []).forEach(m => {
+            if (m.who !== 'u' || m.kind !== 'none') return;
+            const k = String(m.text || '').trim().toLowerCase();
+            if (!k) return;
+            const e = by[k] = by[k] || { text: m.text, count: 0, voice: 0, who: new Set(), last: 0 };
+            e.count++;
+            if (m.src && m.src !== 'text') e.voice++;
+            e.who.add(r.user_name || r.user_email || 'неизвестен');
+            e.last = Math.max(e.last, new Date(r.started_at).getTime());
+        }));
+        const list = Object.values(by).sort((a, b) => b.count - a.count || b.last - a.last);
+        if (!list.length) return `<div style="text-align:center; color:var(--text-sec); padding:40px 0;">Нераспознанных фраз в выбранных сеансах нет.</div>`;
+        this._aiFillUnrecognizedText = list.map(e => e.text).join('\n');
+        let h = `
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                <span style="font-size:12.5px; color:var(--text-sec);">Фраз: <b style="color:var(--text-main);">${list.length}</b> — то, на чём правила спотыкаются. Копируйте и присылайте на доработку.</span>
+                <button class="admin-btn" style="margin-left:auto; padding:4px 10px; font-size:11px;" onclick="app._copyAiFillText(app._aiFillUnrecognizedText || '', this)">📋 Скопировать все</button>
+            </div>
+            <table class="inv-table">
+                <thead><tr><th style="width:30px;">#</th><th>Фраза</th><th style="text-align:right;">Раз</th><th style="text-align:right;">Голосом</th><th>Кто</th><th style="text-align:right; white-space:nowrap;">Последний раз</th></tr></thead><tbody>`;
+        list.forEach((e, i) => {
+            h += `<tr>
+                    <td style="color:var(--text-sec);">${i + 1}</td>
+                    <td style="color:#EF4444;">«${esc(e.text)}»</td>
+                    <td style="text-align:right; font-weight:700;">${e.count}</td>
+                    <td style="text-align:right;">${e.voice}</td>
+                    <td style="font-size:12px; color:var(--text-sec);">${esc(Array.from(e.who).join(', '))}</td>
+                    <td style="text-align:right; white-space:nowrap; color:var(--text-sec); font-size:12px;">${new Date(e.last).toLocaleDateString('ru-RU')}</td>
+                  </tr>`;
+        });
+        h += `</tbody></table>`;
+        return h;
     },
 
     renderAdminProjects: function () {
@@ -27874,6 +28350,60 @@ const app = {
         } catch (e) {
             console.warn('[logProjectSheets] Исключение:', e);
         }
+    },
+
+    /**
+     * Сеанс «Умного заполнения» → таблица ai_fill_sessions (миграция
+     * 20260819_add_ai_fill_sessions.sql). Зовётся из openAiParseModal при
+     * закрытии окна, строка уже собрана там — здесь только кто и отправка.
+     *
+     * Пишем в фон и молча: монтажнику журнал ни к чему, а ошибка записи не
+     * должна мешать закрыть окно. Не дошло (нет сети, упал Supabase) —
+     * кладём в очередь в localStorage и дошлём при следующем открытии окна
+     * (flushAiFillLogQueue): сеансы редкие, терять их жалко.
+     */
+    AI_FILL_QUEUE_KEY: 'ai_fill_log_queue',
+    logAiFillSession: function (row) {
+        const u = this.state.tgUser || {};
+        row = Object.assign({
+            auth_user_id: u.authUserId || null,
+            user_email: u.email || null,
+            user_name: u.first_name || u.username || null
+        }, row);
+        const queue = () => {
+            try {
+                const q = JSON.parse(localStorage.getItem(this.AI_FILL_QUEUE_KEY) || '[]');
+                q.push(row);
+                // Очередь не резиновая: больше 20 сеансов без сети — это уже не очередь, а мусор
+                localStorage.setItem(this.AI_FILL_QUEUE_KEY, JSON.stringify(q.slice(-20)));
+            } catch (e) { }
+        };
+        try {
+            if (typeof supabaseClient === 'undefined') { queue(); return; }
+            supabaseClient.from('ai_fill_sessions').insert([row]).then(({ error }) => {
+                if (error) {
+                    console.warn('[logAiFillSession] Сеанс не записан:', error.message || error);
+                    queue();
+                }
+            }, () => queue());
+        } catch (e) {
+            queue();
+        }
+    },
+    flushAiFillLogQueue: function () {
+        let q = [];
+        try { q = JSON.parse(localStorage.getItem(this.AI_FILL_QUEUE_KEY) || '[]'); } catch (e) { }
+        if (!q.length || typeof supabaseClient === 'undefined') return;
+        try { localStorage.removeItem(this.AI_FILL_QUEUE_KEY); } catch (e) { }
+        supabaseClient.from('ai_fill_sessions').insert(q).then(({ error }) => {
+            if (!error) return;
+            console.warn('[flushAiFillLogQueue] Очередь не дослана:', error.message || error);
+            // Вернём в очередь, но не поверх того, что успело накопиться за это время
+            try {
+                const cur = JSON.parse(localStorage.getItem(this.AI_FILL_QUEUE_KEY) || '[]');
+                localStorage.setItem(this.AI_FILL_QUEUE_KEY, JSON.stringify(q.concat(cur).slice(-20)));
+            } catch (e) { }
+        }, () => { });
     },
 
     shareInvoice: async function () {
