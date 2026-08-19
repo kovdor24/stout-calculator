@@ -11810,8 +11810,15 @@ select.rec-btn-g { padding-right: 8px; }
    ширину или отступы — «Сообщения» и «Менеджер» порвутся посреди слова. */
 .lk-rail {
     display: none;
-    flex: 0 0 84px;
-    width: 84px;
+    /* Ширина — по самой длинной подписи, а не числом: у людей разные браузеры,
+       масштаб страницы и подставленный шрифт, и подобранные «на глаз» 84 px в
+       чужом окружении оказывались малы — подписи ломались пополам («Профил/ь»),
+       колонка вырастала вдвое по высоте и уезжала в прокрутку. Границы нужны,
+       чтобы колонка не выродилась в узкую полоску и не съела пол-экрана. */
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: 84px;
+    max-width: 150px;
     box-sizing: border-box;
     flex-direction: column;
     align-items: stretch;
@@ -11826,12 +11833,12 @@ select.rec-btn-g { padding-right: 8px; }
        (тот же приём, что у строки параметров .doc-summary). */
     position: sticky;
     top: calc(var(--sticky-header-h, 70px) + 10px);
-    /* Страховка на низкий экран: разделов больше десятка, и если они однажды
-       перестанут помещаться, колонка прокрутится внутри себя, а не уедет за
-       нижний край. 125vh, а не 100vh: единицы vh считаются от окна, а колонка
-       живёт внутри #page_scale_wrapper с zoom: 0.8 — 100vh дали бы только 80 %
-       высоты окна. */
-    max-height: calc(125vh - var(--sticky-header-h, 70px) - 30px);
+    /* Предел высоты ставит app.fitRailToViewport по живым размерам окна и шапки —
+       той же меркой, по которой решает, надо ли поджимать разделы. Пока скрипт не
+       отработал, действует запасная формула. 125vh, а не 100vh: единицы vh
+       считаются от окна, а колонка живёт внутри #page_scale_wrapper с zoom: 0.8,
+       и 100vh дали бы только 80 % высоты окна. */
+    max-height: var(--lk-rail-max-h, calc(125vh - var(--sticky-header-h, 70px) - 30px));
     overflow-y: auto;
     /* Гасим часть общего 20-пиксельного зазора .container: без этого панель
        отъедала бы у сметы сотню пикселей ширины вместо необходимых восьмидесяти */
@@ -11857,20 +11864,24 @@ body.guest-mode .lk-rail {
     display: none !important;
 }
 
+/* Размер разделов задан не числами, а долей от --lk-scale: её ставит
+   app.fitRailToViewport так, чтобы колонка занимала высоту первого экрана
+   целиком. На высоком мониторе разделы крупнее, на низком ноутбуке — мельче,
+   но помещаются все. Единица — обычный размер, границы — в скрипте. */
 .lk-rail-item {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    gap: 3px;
-    padding: 7px 2px 6px;
+    gap: calc(3px * var(--lk-scale, 1));
+    padding: calc(7px * var(--lk-scale, 1)) 2px calc(6px * var(--lk-scale, 1));
     border: 1px solid transparent;
     border-radius: 10px;
     background: transparent;
     color: var(--text-sec);
     font-family: inherit;
-    font-size: 11.5px;
+    font-size: calc(11.5px * var(--lk-scale, 1));
     font-weight: 600;
     line-height: 1.15;
     text-align: center;
@@ -11893,13 +11904,18 @@ body.guest-mode .lk-rail {
     color: var(--primary);
 }
 
-/* Длинные подписи («Оборудование») переносятся по мягкому переносу &shy; из
-   разметки. overflow-wrap — страховка на случай другого шрифта: лучше некрасивый
-   перенос, чем подпись, вылезшая за край панели. */
+/* Подписи не переносятся никогда: перенос посреди слова читается плохо, а по
+   высоте колонка тогда вырастает и уходит в прокрутку. Вместо переноса под
+   подпись подстраивается ширина всей колонки (width: max-content выше). */
 .lk-rail-label {
     display: block;
     width: 100%;
-    overflow-wrap: break-word;
+    white-space: nowrap;
+}
+
+.lk-rail-item svg {
+    width: calc(22px * var(--lk-scale, 1));
+    height: calc(22px * var(--lk-scale, 1));
 }
 
 .lk-rail-admin {
@@ -12024,6 +12040,29 @@ body.lk-docked #profile_nav {
     display: none;
 }
 
+/* Колонки под открытым разделом прячем. Карточка ложится ровно на их место, но у
+   самих колонок свои рамки, тени и скруглённые углы — они выглядывали из-под неё
+   тонким контуром по краям и снизу, и окно казалось сдвинутым и неаккуратным.
+   visibility, а не display: размеры колонок нужны, чтобы считать по ним место
+   карточки (см. app.updateCabinetDockGeometry). */
+body.lk-docked .container > .panel {
+    visibility: hidden;
+}
+
+/* Крестик закрытия отодвинут от края и от полосы прокрутки раздела: он вставал
+   поверх содержимого и попадал по нему вместо кнопки */
+body.lk-docked #profile_modal_overlay .auth-modal-close,
+body.lk-docked #lk_rating_overlay .auth-modal-close {
+    top: 8px !important;
+    right: 10px !important;
+    z-index: 3;
+}
+
+body.lk-docked #profile_modal_overlay .lk-pane {
+    padding-right: 30px;
+}
+
+
 /* ── Хват и переезд панели (как палитры в фотошопе) ────────────────────────────
    За хват панель тянут к верхнему краю — тогда она прилипает лентой под шапку, —
    или обратно к левому. Точки хвата рисуем градиентом, а не иконкой: так они
@@ -12067,7 +12106,11 @@ body.lk-docked #profile_nav {
    внутри себя, а не разрывает страницу. */
 .lk-rail.dock-top {
     flex: none;
+    /* Ограничения ширины из колонки тут не действуют: лента тянется во всю
+       страницу, а max-width от колонки сжимал её в узкий столбик посреди экрана */
     width: auto;
+    min-width: 0;
+    max-width: none;
     flex-direction: row;
     align-items: stretch;
     gap: 2px;
@@ -12099,7 +12142,8 @@ body.lk-docked #profile_nav {
 .lk-rail.dock-top .lk-rail-item {
     flex: 1 1 auto;
     width: auto;
-    min-width: 72px;
+    /* Не уже своей подписи — иначе она вылезет за плитку: переносов больше нет */
+    min-width: fit-content;
     max-width: 120px;
 }
 
@@ -12119,8 +12163,8 @@ body.lk-docked #profile_nav {
 }
 
 .lk-rail-group + .lk-rail-group {
-    margin-top: 6px;
-    padding-top: 6px;
+    margin-top: calc(6px * var(--lk-scale, 1));
+    padding-top: calc(6px * var(--lk-scale, 1));
     border-top: 1px solid var(--border);
 }
 

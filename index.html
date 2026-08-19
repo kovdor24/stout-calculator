@@ -149,7 +149,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.39">
+    <link rel="stylesheet" href="style.css?v=3.41">
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.84" defer></script>
@@ -172,8 +172,8 @@
          плагина Capacitor нет, все методы тихо выходят. Подключать до app.js —
          app.init() дёргает appPush.init(). -->
     <script src="push.js?v=1.1" defer></script>
-    <script src="app.js?v=6.48" defer></script>
-    <script src="tour.js?v=1.5" defer></script>
+    <script src="app.js?v=6.54" defer></script>
+    <script src="tour.js?v=1.6" defer></script>
     <!-- Выгрузка сметы в Excel: читает уже готовую печатную вёрстку (#print_bin) -->
     <script src="excel_export.js?v=1.0" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
@@ -460,7 +460,7 @@
                      app.syncRailUI по видимости такого же пункта в колонке кабинета -->
                 <button type="button" class="lk-rail-item" data-rail="installers" style="display: none;" onclick="app.railGo('installers')" title="Мои монтажники">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                    <span class="lk-rail-label">Монтаж&shy;ники</span>
+                    <span class="lk-rail-label">Монтажники</span>
                 </button>
                 <button type="button" class="lk-rail-item" data-rail="messages" onclick="app.railGo('messages')" title="Сообщения и уведомления">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
@@ -2469,11 +2469,11 @@
             <div id="profile_tab_equipment" style="display:none; text-align:left;"></div>
 
             <div id="profile_modal_footer_requisites" style="flex-shrink: 0; border-top: 1px solid var(--border); padding-top: 10px; display: flex; justify-content: center; gap: 10px; width: 100%;">
-                <button class="auth-btn-base btn-email-submit" style="margin: 0; max-width: 180px; height: 36px; font-size: 13px;" onclick="app.saveProfile()">Сохранить</button>
-                <button id="profile_cancel_btn" class="auth-btn-base" style="margin: 0; max-width: 110px; height: 36px; font-size: 13px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border);" onclick="app.closeProfileModal()">Отмена</button>
+                <button class="auth-btn-base btn-email-submit" style="margin: 0; max-width: 150px; height: 32px; font-size: 12.5px;" onclick="app.saveProfile()">Сохранить</button>
+                <button id="profile_cancel_btn" class="auth-btn-base" style="margin: 0; max-width: 110px; height: 32px; font-size: 12.5px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border);" onclick="app.closeProfileModal()">Отмена</button>
             </div>
             <div id="profile_modal_footer_other" style="display:none; flex-shrink: 0; border-top: 1px solid var(--border); padding-top: 10px; justify-content: center; gap: 10px; width: 100%;">
-                <button class="auth-btn-base" style="margin: 0; max-width: 140px; height: 36px; font-size: 13px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border);" onclick="app.closeProfileModal()">Закрыть</button>
+                <button class="auth-btn-base" style="margin: 0; max-width: 140px; height: 32px; font-size: 12.5px; background: var(--surface-light); color: var(--text-sec); border: 1px solid var(--border);" onclick="app.closeProfileModal()">Закрыть</button>
             </div>
 
             </div>
