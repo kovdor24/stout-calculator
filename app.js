@@ -9503,22 +9503,27 @@ const app = {
         this.fitRailToViewport();
     },
 
-    // Меню должно помещаться на экран целиком: колонка из полутора десятков
-    // разделов на ноутбуке с невысоким экраном не влезала и уходила в прокрутку,
-    // а прокручиваемое меню — это меню, половины которого не видно. Поджимаем в
-    // два приёма (значки и подписи меньше, отступы теснее) и только если и это не
-    // помогло, оставляем прокрутку как последнее средство.
+    // Меню занимает высоту первого экрана целиком: на высоком мониторе разделы
+    // крупнее, на невысоком ноутбуке мельче — но помещаются все и без прокрутки.
+    // Подбираем один множитель --lk-scale, от которого зависят значки, подписи и
+    // отступы (см. .lk-rail-item в style.css).
     //
     // Почему не числами в CSS: высота колонки зависит от шрифта, масштаба страницы
     // в браузере и от того, сколько разделов показано этому человеку (у менеджера
     // дистрибьютора на один больше, у не-админа на один меньше). Считать надо по
     // факту, а не по предположению.
+    // Нижняя граница — чтобы подписи оставались читаемыми на невысоком ноутбуке.
+    // Верхней почти нет: на большом мониторе меню должно занимать высоту первого
+    // экрана, а не жаться маленькой колонкой в углу с пустотой снизу.
+    RAIL_SCALE_MIN: 0.72,
+    RAIL_SCALE_MAX: 2,
+
     fitRailToViewport: function () {
         const rail = document.getElementById('lk_rail');
         if (!rail) return;
-        // Лента сверху по высоте ни во что не упирается — поджимать нечего
+        // Лента сверху по высоте ни во что не упирается — растягивать нечего
         if (rail.classList.contains('dock-top') || getComputedStyle(rail).display === 'none') {
-            rail.classList.remove('lk-rail-compact', 'lk-rail-compact2');
+            rail.style.removeProperty('--lk-scale');
             return;
         }
         const header = document.querySelector('.site-header');
@@ -9528,17 +9533,38 @@ const app = {
         const wrap = document.getElementById('page_scale_wrapper');
         const zoom = (wrap && parseFloat(getComputedStyle(wrap).zoom)) || 1;
         const available = window.innerHeight - headerBottom - 24;
-        // Тем же числом ограничиваем высоту колонки, иначе обрезка в CSS и мерка
-        // здесь расходятся, и появляется прокрутка на пару пикселей там, где всё
-        // помещается. В переменную кладём CSS-пиксели: внутри обёртки они свои.
-        document.documentElement.style.setProperty('--lk-rail-max-h', Math.floor(available / zoom) + 'px');
-        const fits = () => (rail.scrollHeight * zoom) <= available;
+        if (available <= 0) return;
 
-        rail.classList.remove('lk-rail-compact', 'lk-rail-compact2');
-        if (fits()) return;
-        rail.classList.add('lk-rail-compact');
-        if (fits()) return;
-        rail.classList.add('lk-rail-compact2');
+        // Дальше считаем в CSS-пикселях самой колонки — в них же заданы её размеры.
+        // Из предела вычитаем рамку (по пикселю сверху и снизу при box-sizing:
+        // border-box) и пару пикселей на округления: без этого колонка упиралась в
+        // собственный предел и показывала прокрутку на два пикселя.
+        const limit = Math.floor(available / zoom);
+        const room = limit - 4;
+        const setScale = (value) => rail.style.setProperty('--lk-scale', value.toFixed(3));
+        const fits = () => rail.scrollHeight <= room;
+
+        // Первое приближение — по высоте при обычном размере. Оно неточное: рамки,
+        // скругления и межстрочный интервал масштабу не подчиняются, поэтому дальше
+        // уточняем шагами. Шагов немного: каждый — пересчёт вёрстки, а точность до
+        // пикселя тут не нужна.
+        setScale(1);
+        const natural = rail.scrollHeight || 1;
+        let scale = Math.min(this.RAIL_SCALE_MAX, Math.max(this.RAIL_SCALE_MIN, room / natural));
+        setScale(scale);
+
+        for (let i = 0; i < 8 && !fits() && scale > this.RAIL_SCALE_MIN; i++) {
+            scale = Math.max(this.RAIL_SCALE_MIN, scale - 0.03);
+            setScale(scale);
+        }
+        for (let i = 0; i < 12 && scale < this.RAIL_SCALE_MAX; i++) {
+            const next = Math.min(this.RAIL_SCALE_MAX, scale + 0.03);
+            setScale(next);
+            if (!fits()) { setScale(scale); break; }
+            scale = next;
+        }
+
+        document.documentElement.style.setProperty('--lk-rail-max-h', limit + 'px');
     },
 
     railDock: function () {
@@ -9928,9 +9954,16 @@ const app = {
         // «на глаз» край оставлял бы сбоку торчать полоску колонки параметров.
         const inputPanel = document.querySelector('.container .input-panel');
         const outputPanel = document.querySelector('.container .output-panel');
+        // Ширину окна берём у документа, а не у window.innerWidth: последняя считает
+        // вместе с полосой прокрутки страницы. Пока раздел не открыт, полоса есть, а
+        // как только открыли — пропадает (body получает overflow: hidden), колонки
+        // становятся шире, и карточка, посчитанная по старым числам, не доходила до
+        // их края на ширину полосы. Именно это и выглядело «окно не совпадает».
+        const viewW = document.documentElement.clientWidth || window.innerWidth;
+        const viewH = document.documentElement.clientHeight || window.innerHeight;
         const left = inputPanel ? inputPanel.getBoundingClientRect().left : railBox.right + 12;
         const right = outputPanel
-            ? Math.max(0, window.innerWidth - outputPanel.getBoundingClientRect().right)
+            ? Math.max(0, viewW - outputPanel.getBoundingClientRect().right)
             : 16;
 
         // Верх — по колонкам, которые кабинет собой закрывает. Пока страница не
@@ -9946,6 +9979,20 @@ const app = {
         style.setProperty('--lk-dock-top', Math.round(Math.max(inputTop, floor)) + 'px');
         style.setProperty('--lk-dock-right', Math.round(right) + 'px');
         style.setProperty('--lk-dock-bottom', Math.round(right) + 'px');
+        // Дно карточки не должно оказаться выше нижнего края окна больше, чем на тот
+        // же отступ: иначе снизу остаётся полоска страницы
+        if (viewH <= 0) return;
+
+        // Пересчитываем ещё раз в следующем кадре: окно открывается, страница
+        // перестаёт прокручиваться, полоса прокрутки исчезает — и колонки, по
+        // которым мы считали, успевают стать шире уже после нашей мерки.
+        if (!this._dockGeometryRetry) {
+            this._dockGeometryRetry = true;
+            requestAnimationFrame(() => {
+                this._dockGeometryRetry = false;
+                if (document.body.classList.contains('lk-docked')) this.updateCabinetDockGeometry();
+            });
+        }
     },
 
     syncRailUI: function () {
