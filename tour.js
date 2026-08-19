@@ -24,6 +24,10 @@ const Tour = {
     // обязательно, человек будет пробовать кнопки.
     LS_ON: 'tour_on',
     LS_STEP: 'tour_step',
+    // Отметка «человек решил сам». Без неё нельзя отличить выключенное обучение от
+    // ещё не заданного: новичку мы включаем подсказки сами, и без этой отметки они
+    // возвращались бы после каждой перезагрузки тому, кто их выключил.
+    LS_CHOICE: 'tour_choice',
 
     // Шаги. sel — либо строка для querySelector, либо функция, возвращающая элемент
     // (нужна там, где подсветить надо не сам переключатель, а блок вокруг него).
@@ -128,7 +132,16 @@ const Tour = {
         try { return localStorage.getItem(this.LS_ON) === '1'; } catch (e) { return false; }
     },
 
-    // Галочка в панели параметров
+    // Человек сам решил, нужны ему подсказки или нет: нажал кнопку в шапке, закрыл
+    // карточку крестиком или дошёл до конца. С этого момента за него не решаем.
+    userChose: function () {
+        try { return localStorage.getItem(this.LS_CHOICE) === '1'; } catch (e) { return false; }
+    },
+
+    rememberChoice: function () {
+        try { localStorage.setItem(this.LS_CHOICE, '1'); } catch (e) { }
+    },
+
     toggle: function (on) {
         try { localStorage.setItem(this.LS_ON, on ? '1' : '0'); } catch (e) { }
         if (on) {
@@ -137,6 +150,38 @@ const Tour = {
         } else {
             this.stop();
         }
+        this.syncButton();
+    },
+
+    // Кнопка в шапке сайта (#btn_tour)
+    toggleFromButton: function () {
+        this.rememberChoice();
+        this.toggle(!this.active());
+    },
+
+    // Вид кнопки: включённый режим подсвечен, подсказка объясняет, что будет по нажатию
+    syncButton: function () {
+        const btn = document.getElementById('btn_tour');
+        if (!btn) return;
+        const on = this.active();
+        btn.classList.toggle('is-on', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        btn.title = on
+            ? 'Режим обучения включён: подсказки на каждом шаге. Нажмите, чтобы выключить'
+            : 'Режим обучения: подсказки на каждом шаге';
+    },
+
+    // Умолчание для тех, кто ещё не решал сам: новичку подсказки включаем, а тому,
+    // у кого сметы уже сохранены, — нет, он и так знает, куда нажимать. Есть ли
+    // сохранённые объекты, выясняет app.decideTourDefault (один запрос-счётчик и
+    // только пока выбор не сделан).
+    // Переключаем всегда, без проверки «а не в этом ли состоянии уже находимся»:
+    // проверка сверялась с записью в localStorage, а она может разойтись с тем, что
+    // на экране (запись потёрли, а карточка обучения осталась висеть) — и тогда
+    // выключение молча ничего не выключало.
+    applyDefault: function (hasObjects) {
+        if (this.userChose()) return;
+        this.toggle(!hasObjects);
     },
 
     _savedStep: function () {
@@ -148,11 +193,17 @@ const Tour = {
 
     // Восстановление после перезагрузки страницы
     init: function () {
-        const box = document.getElementById('chk_tour');
-        if (box) box.checked = this.active();
+        this.syncButton();
         if (this.active()) {
             this._step = this._savedStep();
             this.start();
+            return;
+        }
+        // Выбор ещё не сделан. Гостю сохранять объекты негде — он заведомо новичок,
+        // включаем подсказки сразу. У вошедшего сметы надо сначала посчитать, этим
+        // занимается app.decideTourDefault и позовёт applyDefault сам.
+        if (!this.userChose() && !(window.app && app.state && app.state.tgUser)) {
+            this.applyDefault(false);
         }
     },
 
@@ -171,13 +222,15 @@ const Tour = {
         this.clearSpot();
         const card = document.getElementById('tour_card');
         if (card) card.remove();
-        const box = document.getElementById('chk_tour');
-        if (box) box.checked = false;
+        this.syncButton();
     },
 
+    // Крестик на карточке и конец последнего шага. И то и другое — решение человека,
+    // поэтому сами подсказки ему больше не включаем.
     finish: function () {
         try { localStorage.setItem(this.LS_STEP, '0'); } catch (e) { }
         this._step = 0;
+        this.rememberChoice();
         this.toggle(false);
     },
 

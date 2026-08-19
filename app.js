@@ -8407,6 +8407,9 @@ const app = {
         this.fillCompanyDetailsForm();
 
         document.getElementById('profile_modal_overlay').style.display = 'flex';
+        // Кабинет встаёт справа от панели разделов, на место параметров и сметы, и
+        // прячет свою колонку разделов — меню на экране должно быть одно
+        this.syncCabinetDock();
         // Модалка позиционируется фиксированно и может быть выше вьюпорта на низких экранах —
         // без блокировки прокрутки body под ней появляется лишний внешний скролл всей страницы
         // поверх собственного overflow-y:auto модалки (два скролла одновременно)
@@ -8441,6 +8444,7 @@ const app = {
         }
         this._profileForceComplete = false;
         document.getElementById('profile_modal_overlay').style.display = 'none';
+        this.syncCabinetDock();
         document.body.style.overflow = '';
         this.unsubscribeChatThread();
         // Список смет снова рисуется в собственную модалку, пока кабинет не откроют заново
@@ -8448,6 +8452,8 @@ const app = {
 
         this.syncAiFabVisibility();
         this.syncModalOverlayClass();
+        // Подсветка в левой панели возвращается на «Расчёт»
+        this.syncRailUI();
     },
     // ── Город → регион в анкете ──
     // Регион подставляется по справочнику CITY_REGION_MAP (catalog.js). Как только
@@ -9288,6 +9294,8 @@ const app = {
         } catch (e) {
             console.warn('[refreshManagerTabVisibility] Ошибка проверки роли менеджера:', e);
         }
+        // Тот же пункт есть в левой панели — переносим на него результат проверки
+        this.syncRailUI();
     },
     // Переключение разделов личного кабинета (колонка слева, .lk-nav в index.html):
     // Профиль и компания / Мои объекты / Заказы и счета / Мой менеджер / Мои монтажники /
@@ -9347,6 +9355,618 @@ const app = {
         } else if (tab === 'equipment') {
             this.renderEquipmentLibraryTab();
         }
+
+        // Тот же раздел подсвечиваем в левой панели на экране
+        this.syncRailUI();
+    },
+
+    // ═══════════ Левая панель кабинета (.lk-rail, разметка в index.html) ═══════════
+    // Появилась потому, что в кабинет вёл единственный вход — клик по своему имени в
+    // шапке, и монтажники его не находили. Панель ничего не считает и не хранит: это
+    // просто вынесенные на экран кнопки к уже существующим разделам.
+    //
+    // У «Подписки» своего пункта в панели нет (раздел скрыт до конца обкатки тарифа),
+    // но подсветить логично соседний — иначе панель выглядит так, будто кабинет закрыт.
+    RAIL_TAB_ALIAS: {
+        subscription: 'requisites'
+    },
+
+    // Все разделы занимают одно и то же место на экране, поэтому при переходе то,
+    // что там лежало, надо закрыть, а не накрыть сверху. Раньше кабинет (у него
+    // z-index выше) оставался поверх панели управления, и «Сообщения» при открытом
+    // кабинете выглядели как не нажимающаяся кнопка.
+    closeOtherRailPlaces: function (keepId) {
+        this.DOCKABLE_OVERLAY_IDS.forEach(id => {
+            if (id === keepId || !this.isOverlayOpen(id)) return;
+            if (id === 'profile_modal_overlay') this.closeProfileModal();
+            else if (id === 'admin_modal_overlay') this.closeAdminModal();
+            else if (id === 'notifications_modal_overlay') this.closeNotificationsModal();
+            else if (id === 'lk_rating_overlay') this.closeRatingPanel();
+        });
+    },
+
+    railGo: function (section) {
+        if (section === 'logout') {
+            this.logout();
+            return;
+        }
+        // «Расчёт» — возврат к смете: закрываем всё, что открыто поверх колонок
+        if (section === 'calc') {
+            this.closeOtherRailPlaces(null);
+            this.syncRailUI();
+            return;
+        }
+        // Сообщения живут в отдельном окне, а не разделом кабинета: у админа это
+        // панель управления на вкладке сообщений, у монтажника — своё окно
+        if (section === 'messages') {
+            const target = this.hasAdminAccess() ? 'admin_modal_overlay' : 'notifications_modal_overlay';
+            this.closeOtherRailPlaces(target);
+            // По какому пункту пришли, тот и подсвечиваем: панель управления
+            // открывается и «Сообщениями», и «Админкой»
+            this._adminOpenedFrom = 'messages';
+            this.openMessagesCenter();
+            return;
+        }
+        if (section === 'rating') {
+            this.openRatingPanel();
+            return;
+        }
+        if (section === 'admin') {
+            this.closeOtherRailPlaces('admin_modal_overlay');
+            this._adminOpenedFrom = 'admin';
+            this.showAdminModal();
+            return;
+        }
+        // Панель показывается только авторизованным (body.guest-mode в CSS), но клик
+        // может прийти и от гостя — например, если он вышел из аккаунта, не перезагрузив
+        // страницу. Тогда предлагаем вход, а не молча ничего не делаем: сам
+        // showProfileModal в этом случае просто ничего не сделает. Пользователя ищем той
+        // же строкой, что и он, — иначе внутри Telegram WebApp вход предлагался бы тому,
+        // кто уже вошёл.
+        const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        if (!tgUser) {
+            this.showAuthModal();
+            return;
+        }
+        // Кабинет уже открыт — просто переключаем раздел. Полный showProfileModal
+        // заново заполнил бы поля анкеты из сохранённых данных и стёр незаписанную
+        // правку, которую человек как раз набирал.
+        if (this.isOverlayOpen('profile_modal_overlay')) {
+            this.setProfileTab(section);
+            return;
+        }
+        this.closeOtherRailPlaces('profile_modal_overlay');
+        this.showProfileModal(false, section);
+    },
+
+    // ── Окна кабинета справа от панели, а не поверх экрана ────────────────────
+    // Пристыкованный режим включается, только когда панель разделов на экране есть.
+    // На телефоне и планшете стоймя её нет, и окна остаются прежними шторками во
+    // весь экран со своей навигацией.
+    //
+    // Список окон, которые открываются из панели и потому обязаны вставать в то же
+    // место: кабинет, панель управления (у админа в неё ведут «Сообщения»), окно
+    // сообщений обычного монтажника и врезка рейтинга.
+    DOCKABLE_OVERLAY_IDS: ['profile_modal_overlay', 'admin_modal_overlay', 'notifications_modal_overlay', 'lk_rating_overlay'],
+
+    isOverlayOpen: function (id) {
+        const el = document.getElementById(id);
+        return !!(el && el.style.display && el.style.display !== 'none');
+    },
+
+    isRailVisible: function () {
+        const rail = document.getElementById('lk_rail');
+        return !!(rail && getComputedStyle(rail).display !== 'none');
+    },
+
+    // ── Куда прикреплена панель разделов: слева колонкой или сверху лентой ──────
+    // Панель таскают за хват (.lk-rail-grip), как палитры в фотошопе: потянул к
+    // верхнему краю — прилипла под шапку, потянул к левому — вернулась колонкой.
+    // Выбор запоминается, потому что это про привычку работать, а не про разовое
+    // действие.
+    // Раскладка меню (где панель и в каком порядке блоки) живёт в настройках
+    // аккаунта, а не в памяти браузера: это про привычку человека работать, и на
+    // другом компьютере она должна быть той же. Настройки уезжают в
+    // users.installer_settings тем же push/pull, что реквизиты компании и прайс
+    // монтажа; у гостя остаются только в localStorage — сохранять некуда.
+    // Старые ключи браузера читаем один раз как запасной вариант: у тех, кто уже
+    // настроил меню до переезда, порядок не должен пропасть.
+    RAIL_DOCK_KEY: 'lk_rail_dock',
+    RAIL_GROUPS_KEY: 'lk_rail_groups',
+
+    railLayout: function () {
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        const saved = this.installerSettings.railLayout;
+        if (saved && typeof saved === 'object') return saved;
+        let dock = null, groups = null;
+        try {
+            dock = localStorage.getItem(this.RAIL_DOCK_KEY);
+            groups = JSON.parse(localStorage.getItem(this.RAIL_GROUPS_KEY) || 'null');
+        } catch (e) { /* приватный режим — просто нечего восстанавливать */ }
+        return { dock: dock === 'top' ? 'top' : 'left', groups: Array.isArray(groups) ? groups : null };
+    },
+
+    saveRailLayout: function (patch) {
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        const now = this.railLayout();
+        this.installerSettings.railLayout = Object.assign({ dock: 'left', groups: null }, now, patch || {});
+        // Пишет и в localStorage, и (для вошедших) в облако
+        this.pushInstallerSettingsToCloud();
+    },
+
+    // Применить раскладку к разметке. Зовётся при первой отрисовке и ещё раз, когда
+    // настройки доедут из облака: на новом устройстве они приходят с задержкой.
+    applyRailLayout: function () {
+        if (!document.getElementById('lk_rail')) return;
+        this.applyRailGroupOrder();
+        this.setRailDock(this.railDock(), false);
+    },
+
+    railDock: function () {
+        return this.railLayout().dock === 'top' ? 'top' : 'left';
+    },
+
+    setRailDock: function (where, remember) {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        const toTop = (where === 'top');
+        const container = document.querySelector('.container');
+        const header = document.querySelector('.site-header');
+        if (!container || !header) return;
+
+        // Сверху панель живёт сразу за шапкой (там же, внутри #page_scale_wrapper —
+        // иначе разъедется масштаб), слева — первым элементом колонок
+        if (toTop) {
+            if (rail.previousElementSibling !== header) header.parentNode.insertBefore(rail, header.nextSibling);
+        } else if (container.firstElementChild !== rail) {
+            container.insertBefore(rail, container.firstChild);
+        }
+
+        rail.classList.toggle('dock-top', toTop);
+        document.body.classList.toggle('lk-rail-top', toTop);
+        if (remember !== false) this.saveRailLayout({ dock: toTop ? 'top' : 'left' });
+        // Пристыкованный кабинет считает свой прямоугольник по панели и колонкам —
+        // после переезда его надо пересчитать
+        this.updateCabinetDockGeometry();
+    },
+
+    initRailDrag: function () {
+        if (this._railDragBound) return;
+        const rail = document.getElementById('lk_rail');
+        const grip = document.getElementById('lk_rail_grip');
+        if (!rail || !grip) return;
+        this._railDragBound = true;
+
+        let startX = 0, startY = 0, dragging = false, target = null;
+
+        // Подсказка-прямоугольник на месте будущего положения панели. Лежит в body
+        // (вне масштабируемой обёртки), поэтому размеры берём из настоящих
+        // координат шапки и колонок, а не из чисел в CSS.
+        const showHint = (where) => {
+            let hint = document.getElementById('lk_rail_drop_hint');
+            if (!hint) {
+                hint = document.createElement('div');
+                hint.id = 'lk_rail_drop_hint';
+                hint.className = 'lk-rail-drop-hint no-print';
+                document.body.appendChild(hint);
+            }
+            const headerBox = document.querySelector('.site-header').getBoundingClientRect();
+            // Размер будущего места считаем по числам из CSS, а не по нынешнему
+            // размеру панели: она сейчас может быть лентой во всю ширину, и подсветка
+            // «слева» тогда растягивалась на весь экран. Обёртка страницы уменьшена
+            // zoom-ом, поэтому переводим в экранные пиксели тем же множителем.
+            const wrap = document.getElementById('page_scale_wrapper');
+            const zoom = (wrap && parseFloat(getComputedStyle(wrap).zoom)) || 1;
+            const columnW = Math.round(84 * zoom);   // ширина .lk-rail колонкой
+            const stripH = Math.round(66 * zoom);    // высота .lk-rail лентой
+            if (where === 'top') {
+                hint.style.left = Math.round(headerBox.left + 12) + 'px';
+                hint.style.width = Math.round(headerBox.width - 24) + 'px';
+                hint.style.top = Math.round(headerBox.bottom + 6) + 'px';
+                hint.style.height = stripH + 'px';
+            } else {
+                hint.style.left = Math.round(headerBox.left + 12) + 'px';
+                hint.style.width = columnW + 'px';
+                hint.style.top = Math.round(headerBox.bottom + 16) + 'px';
+                hint.style.height = Math.round(window.innerHeight - headerBox.bottom - 32) + 'px';
+            }
+            hint.style.display = 'block';
+        };
+
+        const hideHint = () => {
+            const hint = document.getElementById('lk_rail_drop_hint');
+            if (hint) hint.remove();
+        };
+
+        // Мест всего два, поэтому делим экран пополам по смыслу: подтянул к шапке —
+        // лента сверху, потянул ниже — колонка слева. Отдельной «мёртвой» зоны нет
+        // намеренно: раньше при перетаскивании вниз от ленты панель просто оставалась
+        // на месте, и это выглядело так, будто её не отпустили.
+        const zoneAt = (ev) => {
+            const headerBottom = document.querySelector('.site-header').getBoundingClientRect().bottom;
+            return (ev.clientY < headerBottom + 90) ? 'top' : 'left';
+        };
+
+        const onMove = (ev) => {
+            if (!dragging) {
+                // Порог, чтобы дрожание руки не считалось перетаскиванием
+                if (Math.abs(ev.clientX - startX) < 6 && Math.abs(ev.clientY - startY) < 6) return;
+                dragging = true;
+                rail.classList.add('is-dragging');
+                // Курсор-кулак на всё время перетаскивания и по всему экрану: рука
+                // уходит с самого хвата, а вид курсора должен остаться прежним
+                document.body.classList.add('lk-grabbing');
+            }
+            target = zoneAt(ev) || this.railDock();
+            showHint(target);
+            ev.preventDefault();
+        };
+
+        const onUp = () => {
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', onUp);
+            document.removeEventListener('pointercancel', onUp);
+            hideHint();
+            rail.classList.remove('is-dragging');
+            document.body.classList.remove('lk-grabbing');
+            if (dragging && target) this.setRailDock(target);
+            dragging = false;
+            target = null;
+        };
+
+        grip.addEventListener('pointerdown', (ev) => {
+            if (ev.button !== 0) return;
+            startX = ev.clientX;
+            startY = ev.clientY;
+            dragging = false;
+            target = null;
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp);
+            document.addEventListener('pointercancel', onUp);
+            ev.preventDefault();
+        });
+
+        // Двойной щелчок и клавиша — то же самое без перетаскивания: мышью с тачпада
+        // тянуть неудобно, а с клавиатуры перетащить нельзя вовсе
+        const flip = () => this.setRailDock(this.railDock() === 'top' ? 'left' : 'top');
+        grip.addEventListener('dblclick', flip);
+        grip.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); flip(); }
+        });
+    },
+
+    // ── Порядок блоков внутри панели ──────────────────────────────────────────
+    // Пункты собраны в блоки (data-group в разметке), блоки можно менять местами.
+    // Перетаскивание включается отдельно — правым щелчком по панели: иначе оно
+    // отбирало бы обычные нажатия на разделы, и человек двигал бы меню, просто
+    // промахнувшись мимо кнопки.
+    applyRailGroupOrder: function () {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        const groups = Array.from(rail.querySelectorAll('.lk-rail-group'));
+        const keys = groups.map(g => g.dataset.group);
+        // Порядок из разметки запоминаем при первом заходе: к нему надо вернуться,
+        // когда своей раскладки нет (вышли из аккаунта, зашли под другим)
+        if (!this._railDefaultGroupOrder) this._railDefaultGroupOrder = keys.slice();
+
+        const layout = this.railLayout().groups;
+        const saved = (Array.isArray(layout) && layout.length) ? layout : this._railDefaultGroupOrder;
+        // Блок, которого в сохранённом порядке нет (появился в новой версии сайта),
+        // не теряем — дописываем в конец
+        const order = saved.filter(k => keys.includes(k)).concat(keys.filter(k => !saved.includes(k)));
+        order.forEach(k => {
+            const g = groups.find(x => x.dataset.group === k);
+            if (g) rail.appendChild(g);
+        });
+    },
+
+    saveRailGroupOrder: function () {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        const order = Array.from(rail.querySelectorAll('.lk-rail-group')).map(g => g.dataset.group);
+        this.saveRailLayout({ groups: order });
+    },
+
+    setRailEditMode: function (on) {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        document.body.classList.toggle('lk-rail-edit', !!on);
+        let hint = document.getElementById('lk_rail_edit_hint');
+        if (on) {
+            if (!hint) {
+                hint = document.createElement('div');
+                hint.id = 'lk_rail_edit_hint';
+                hint.className = 'lk-rail-edit-hint no-print';
+                hint.innerHTML = 'Настройка меню: тяните блоки мышью.<br>Правый щелчок или Esc — выйти.';
+                document.body.appendChild(hint);
+            }
+            const box = rail.getBoundingClientRect();
+            hint.style.left = Math.round(box.right + 10) + 'px';
+            hint.style.top = Math.round(box.top) + 'px';
+        } else if (hint) {
+            hint.remove();
+        }
+    },
+
+    initRailGroupDrag: function () {
+        if (this._railGroupDragBound) return;
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        this._railGroupDragBound = true;
+
+        let group = null, startX = 0, startY = 0, moving = false;
+        const editing = () => document.body.classList.contains('lk-rail-edit');
+        const horizontal = () => rail.classList.contains('dock-top');
+
+        const onMove = (ev) => {
+            if (!moving) {
+                if (Math.abs(ev.clientX - startX) < 8 && Math.abs(ev.clientY - startY) < 8) return;
+                moving = true;
+                group.classList.add('is-moving');
+                document.body.classList.add('lk-grabbing');
+            }
+            // Блок сразу встаёт на новое место — так видно результат ещё до того,
+            // как отпустишь кнопку. Соседа выбираем по середине: курсор прошёл её —
+            // значит, встаём перед этим блоком.
+            const others = Array.from(rail.querySelectorAll('.lk-rail-group')).filter(g => g !== group);
+            const pos = horizontal() ? ev.clientX : ev.clientY;
+            let before = null;
+            for (const g of others) {
+                const b = g.getBoundingClientRect();
+                const mid = horizontal() ? (b.left + b.width / 2) : (b.top + b.height / 2);
+                if (pos < mid) { before = g; break; }
+            }
+            if (before) {
+                if (group.nextElementSibling !== before) rail.insertBefore(group, before);
+            } else if (rail.lastElementChild !== group) {
+                rail.appendChild(group);
+            }
+            ev.preventDefault();
+        };
+
+        const onUp = () => {
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', onUp);
+            document.removeEventListener('pointercancel', onUp);
+            document.body.classList.remove('lk-grabbing');
+            if (moving) {
+                group.classList.remove('is-moving');
+                this.saveRailGroupOrder();
+                this.updateCabinetDockGeometry();
+            }
+            group = null;
+            moving = false;
+        };
+
+        rail.addEventListener('pointerdown', (ev) => {
+            if (ev.button !== 0 || !editing()) return;
+            if (ev.target.closest('.lk-rail-grip')) return; // хват двигает панель целиком
+            const g = ev.target.closest('.lk-rail-group');
+            if (!g) return;
+            group = g;
+            startX = ev.clientX;
+            startY = ev.clientY;
+            moving = false;
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp);
+            document.addEventListener('pointercancel', onUp);
+            ev.preventDefault();
+        });
+
+        // Правый щелчок по панели включает и выключает настройку. Своё меню браузера
+        // при этом не показываем — иначе оно перекроет то, что человек двигает.
+        rail.addEventListener('contextmenu', (ev) => {
+            ev.preventDefault();
+            this.setRailEditMode(!editing());
+        });
+
+        // В режиме настройки нажатия на разделы не срабатывают: панель сейчас
+        // перестраивают, а не пользуются ей
+        rail.addEventListener('click', (ev) => {
+            if (!editing()) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+        }, true);
+
+        document.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Escape' && editing()) this.setRailEditMode(false);
+        });
+
+        // Щелчок мимо панели — тоже выход: режим не должен оставаться включённым
+        // незаметно для человека
+        document.addEventListener('pointerdown', (ev) => {
+            if (editing() && !ev.target.closest('#lk_rail')) this.setRailEditMode(false);
+        });
+    },
+
+    // Единственная точка, решающая, пристыковано окно или раскрыто на весь экран.
+    // Зовётся после каждого открытия и закрытия любого из окон списка.
+    syncCabinetDock: function () {
+        // Принудительное дозаполнение анкеты остаётся окном во весь экран: иначе от
+        // обязательной формы можно уйти щелчком по панели
+        const anyOpen = !this._profileForceComplete
+            && this.DOCKABLE_OVERLAY_IDS.some(id => this.isOverlayOpen(id));
+        this.setCabinetDocked(anyOpen && this.isRailVisible());
+    },
+
+    // Есть ли у человека сохранённые сметы — от этого зависит, включать ли ему
+    // режим обучения по умолчанию. Запрос делаем только пока выбор не сделан (после
+    // первого решения ответ уже записан и сюда мы не заходим) и берём один
+    // счётчик без тела ответа, чтобы не тратить трафик базы.
+    decideTourDefault: async function (userId) {
+        if (typeof Tour === 'undefined' || !userId) return;
+        if (Tour.userChose()) return;
+        try {
+            const { count, error } = await supabaseClient
+                .from('estimates')
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', userId);
+            // Не ответила база — ничего не решаем: включить обучение тому, у кого
+            // полсотни смет, неприятнее, чем не включить его новичку
+            if (error) return;
+            Tour.applyDefault((count || 0) > 0);
+        } catch (e) {
+            console.warn('[decideTourDefault] Не удалось проверить сохранённые сметы:', e);
+        }
+    },
+
+    // Клик по логотипу — возврат на главный экран, к расчёту. Закрываем всё, что
+    // открыто поверх сметы, а на телефоне ещё и переключаемся с вкладки профиля
+    // обратно на параметры: там «главная» — это она, а не колонка разделов.
+    goHome: function () {
+        if (document.body.classList.contains('menu-open')) this.toggleMenu();
+        this.railGo('calc');
+        if (this.isMobileLayout()) this.switchMobileTab('inputs');
+    },
+
+    // ── Врезка «Баллы и рейтинг» ──
+    // Рейтинг — отдельная страница, и ссылка на неё уводила из калькулятора вместе с
+    // меню. Показываем ту же страницу во фрейме на месте колонок; на узком экране,
+    // где панели нет, по-прежнему открываем её отдельной вкладкой.
+    openRatingPanel: function () {
+        if (!this.isRailVisible()) {
+            window.open('/rating/', '_blank', 'noopener');
+            return;
+        }
+        this.closeOtherRailPlaces('lk_rating_overlay');
+
+        const frame = document.getElementById('lk_rating_frame');
+        // Адрес подставляем при первом открытии: до него страницу грузить незачем.
+        // Путь относительный — сайт живёт и на своём домене, и в подпапке.
+        if (frame && !frame.getAttribute('src')) frame.setAttribute('src', 'rating/');
+        const overlay = document.getElementById('lk_rating_overlay');
+        if (overlay) overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        this.syncCabinetDock();
+        this.syncRailUI();
+    },
+
+    closeRatingPanel: function () {
+        const overlay = document.getElementById('lk_rating_overlay');
+        if (overlay) overlay.style.display = 'none';
+        document.body.style.overflow = '';
+        this.syncCabinetDock();
+        this.syncRailUI();
+    },
+
+    setCabinetDocked: function (on) {
+        document.body.classList.toggle('lk-docked', !!on);
+        if (!on) return;
+        this.updateCabinetDockGeometry();
+        // Пересчёт при смене размера окна вешаем один раз и лениво: до первого
+        // открытия кабинета он не нужен.
+        if (!this._dockResizeBound) {
+            this._dockResizeBound = true;
+            window.addEventListener('resize', () => {
+                if (!document.body.classList.contains('lk-docked')) return;
+                // Окно сузили до мобильной раскладки — панели больше нет,
+                // возвращаем кабинету полный экран
+                if (!this.isRailVisible()) {
+                    document.body.classList.remove('lk-docked');
+                    return;
+                }
+                this.updateCabinetDockGeometry();
+            });
+        }
+    },
+
+    // Считаем прямоугольник кабинета по живому положению панели и шапки: панель
+    // лежит внутри #page_scale_wrapper с zoom: 0.8, а шапка меняет высоту при
+    // прокрутке — фиксированными числами в CSS это не описать.
+    updateCabinetDockGeometry: function () {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        const railBox = rail.getBoundingClientRect();
+        const header = document.querySelector('.site-header');
+        const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+
+        // Левый и правый края берём у самих колонок, которые кабинет собой закрывает:
+        // отступ между панелью и параметрами задан гэпом .container, и посчитанный
+        // «на глаз» край оставлял бы сбоку торчать полоску колонки параметров.
+        const inputPanel = document.querySelector('.container .input-panel');
+        const outputPanel = document.querySelector('.container .output-panel');
+        const left = inputPanel ? inputPanel.getBoundingClientRect().left : railBox.right + 12;
+        const right = outputPanel
+            ? Math.max(0, window.innerWidth - outputPanel.getBoundingClientRect().right)
+            : 16;
+
+        // Верх — по колонкам, которые кабинет собой закрывает. Пока страница не
+        // прокручена, это их собственный край; когда прокручена, колонки уходят под
+        // шапку, и упираемся в неё — а если панель прикреплена сверху лентой, то в
+        // её нижний край, иначе карточка наехала бы на ленту.
+        const railTopStrip = document.body.classList.contains('lk-rail-top') && this.isRailVisible();
+        const floor = railTopStrip ? railBox.bottom + 8 : headerBottom + 8;
+        const inputTop = inputPanel ? inputPanel.getBoundingClientRect().top : floor;
+
+        const style = document.documentElement.style;
+        style.setProperty('--lk-dock-left', Math.round(left) + 'px');
+        style.setProperty('--lk-dock-top', Math.round(Math.max(inputTop, floor)) + 'px');
+        style.setProperty('--lk-dock-right', Math.round(right) + 'px');
+        style.setProperty('--lk-dock-bottom', Math.round(right) + 'px');
+    },
+
+    syncRailUI: function () {
+        // Подстраховка к обработчику resize: если панель почему-либо исчезла с экрана
+        // (сузили окно, повернули планшет), пристыкованный кабинет обязан вернуться в
+        // полноэкранный вид со своей колонкой разделов. Иначе человек останется вообще
+        // без меню: панели уже нет, а колонка кабинета ещё спрятана.
+        if (document.body.classList.contains('lk-docked') && !this.isRailVisible()) {
+            document.body.classList.remove('lk-docked');
+        }
+
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+
+        // Место панели (слева колонкой или сверху лентой) восстанавливаем один раз
+        // при первой отрисовке и тогда же вешаем перетаскивание
+        if (!this._railDockInit) {
+            this._railDockInit = true;
+            this.applyRailLayout();
+            this.initRailDrag();
+            this.initRailGroupDrag();
+        }
+
+        const adminBtn = document.getElementById('lk_rail_admin');
+        if (adminBtn) adminBtn.style.display = this.hasAdminAccess() ? 'flex' : 'none';
+
+        // «Мои монтажники» показываются только менеджерам дистрибьюторов. Проверку
+        // делает refreshManagerTabVisibility — повторять её незачем, берём результат
+        // с такого же пункта в колонке кабинета.
+        const navInstallers = document.querySelector('#profile_nav .lk-nav-item[data-tab="installers"]');
+        const railInstallers = rail.querySelector('.lk-rail-item[data-rail="installers"]');
+        if (railInstallers) {
+            railInstallers.style.display = (navInstallers && navInstallers.style.display !== 'none') ? 'flex' : 'none';
+        }
+
+        // Число непрочитанных берём готовым из бейджа конверта в шапке: считает его
+        // loadNotifications, второй раз считать незачем
+        const mainBadge = document.getElementById('notification_badge');
+        const railBadge = document.getElementById('lk_rail_msg_badge');
+        if (railBadge && mainBadge) {
+            railBadge.innerText = mainBadge.innerText;
+            railBadge.style.display = (mainBadge.style.display === 'none' || !mainBadge.style.display) ? 'none' : 'block';
+        }
+
+        // Подсветка показывает, где человек сейчас находится. Порядок проверок — по
+        // тому, какое окно лежит выше: кабинет перекрывает панель управления.
+        let current = 'calc';
+        if (this.isOverlayOpen('profile_modal_overlay')) {
+            const tab = this._activeProfileTab || 'requisites';
+            current = this.RAIL_TAB_ALIAS[tab] || tab;
+        } else if (this.isOverlayOpen('admin_modal_overlay')) {
+            // Панель управления открывают два пункта — «Сообщения» и «Админка».
+            // Подсвечиваем тот, по которому пришли, а не вкладку внутри панели:
+            // она могла остаться с прошлого раза.
+            current = (this._adminOpenedFrom === 'messages') ? 'messages' : 'admin';
+        } else if (this.isOverlayOpen('notifications_modal_overlay')) {
+            current = 'messages';
+        } else if (this.isOverlayOpen('lk_rating_overlay')) {
+            current = 'rating';
+        }
+        rail.querySelectorAll('.lk-rail-item').forEach(el => {
+            const key = el.dataset.rail;
+            el.classList.toggle('active', !!key && key === current);
+        });
     },
 
     // Геймификация (начисление XP / разблокировка значков за действия монтажника,
@@ -9363,7 +9983,8 @@ const app = {
     loadInstallerSettingsLocal: function () {
         let parsed = null;
         try { parsed = JSON.parse(localStorage.getItem('stout_installer_settings') || 'null'); } catch (e) { parsed = null; }
-        this.installerSettings = Object.assign({ workPrices: {}, equipmentLibrary: [], swapLog: [], deletionLog: [], company: null }, parsed || {});
+        this.installerSettings = Object.assign({ workPrices: {}, equipmentLibrary: [], swapLog: [], deletionLog: [], company: null, railLayout: null }, parsed || {});
+        if (this.installerSettings.railLayout && typeof this.installerSettings.railLayout !== 'object') this.installerSettings.railLayout = null;
         if (!this.installerSettings.workPrices || typeof this.installerSettings.workPrices !== 'object') this.installerSettings.workPrices = {};
         if (!Array.isArray(this.installerSettings.equipmentLibrary)) this.installerSettings.equipmentLibrary = [];
         if (!Array.isArray(this.installerSettings.swapLog)) this.installerSettings.swapLog = [];
@@ -9483,14 +10104,24 @@ const app = {
                     swapLog: Array.isArray(cloud.swapLog) ? cloud.swapLog : [],
                     deletionLog: Array.isArray(cloud.deletionLog) ? cloud.deletionLog : [],
                     company: cloudCompany || localCompany || null,
-                    workPricesUpdatedAt: cloud.workPricesUpdatedAt || undefined
+                    workPricesUpdatedAt: cloud.workPricesUpdatedAt || undefined,
+                    // Раскладку меню собираем тем же правилом, что и реквизиты:
+                    // облачная главнее, но пустое облако не должно стирать местную
+                    // (первый вход после переезда раскладки в настройки аккаунта)
+                    railLayout: (cloud.railLayout && typeof cloud.railLayout === 'object')
+                        ? cloud.railLayout
+                        : ((this.installerSettings && this.installerSettings.railLayout) || null)
                 };
                 this.saveInstallerSettingsLocal();
                 if (!cloudCompany && localCompany) this.pushInstallerSettingsToCloud();
+                if (!cloud.railLayout && this.installerSettings.railLayout) this.pushInstallerSettingsToCloud();
                 if (this._activeProfileTab === 'workprices') this.renderWorkPricesTab();
                 if (this._activeProfileTab === 'equipment') this.renderEquipmentLibraryTab();
                 if (this._activeProfileTab === 'company') this.fillCompanyDetailsForm();
                 this.updateHeaderCompanyDetails();
+                // Раскладка меню могла приехать с другого устройства — переставляем
+                // панель уже после того, как настройки заменены
+                this.applyRailLayout();
                 this.render();
             }
         } catch (e) {
@@ -9511,6 +10142,10 @@ const app = {
         this._installerCloudUserId = null;
         this.loadInstallerSettingsLocal();
         this.updateHeaderCompanyDetails();
+        // Раскладка меню тоже принадлежит аккаунту: за общим компьютером следующий
+        // вошедший начинает с обычного вида, а свою получит из облака при входе
+        try { localStorage.removeItem(this.RAIL_DOCK_KEY); localStorage.removeItem(this.RAIL_GROUPS_KEY); } catch (e) { }
+        this.applyRailLayout();
     },
     // Сохраняет локально сразу и синхронизирует с облаком с задержкой (не блокирует UI)
     pushInstallerSettingsToCloud: function () {
@@ -10423,6 +11058,8 @@ const app = {
                     badge.style.display = 'none';
                 }
             }
+            // Тот же счётчик на «Сообщениях» в левой панели — она берёт значение отсюда
+            this.syncRailUI();
 
             // Проигрываем звук, если количество непрочитанных увеличилось
             if (this._lastUnreadCount !== undefined && unreadCount > this._lastUnreadCount) {
@@ -10902,6 +11539,10 @@ const app = {
 
     openNotificationsModal: async function (tab) {
         document.getElementById('notifications_modal_overlay').style.display = 'flex';
+        // Окно сообщений открывается из панели разделов — значит, встаёт туда же,
+        // где остальные разделы, не закрывая меню
+        this.syncCabinetDock();
+        this.syncRailUI();
         // Вкладка задаётся только явно (кнопка-конверт, переключатель). Перерисовки
         // после отправки/прочтения вызывают эту функцию без аргумента и не должны
         // перекидывать человека с той вкладки, где он сейчас находится.
@@ -11661,6 +12302,8 @@ const app = {
 
     closeNotificationsModal: function () {
         document.getElementById('notifications_modal_overlay').style.display = 'none';
+        this.syncCabinetDock();
+        this.syncRailUI();
         // Панель смайликов живёт в body и сама об окне не знает — гасим вместе с ним
         this.closeEmojiPicker();
     },
@@ -11925,6 +12568,11 @@ const app = {
             }
         }
         document.getElementById('admin_modal_overlay').style.display = 'flex';
+        // На широком экране панель управления встаёт справа от меню, как и разделы
+        // кабинета: в неё ведут «Сообщения», и разворачиваться во весь экран, пряча
+        // меню, она не должна
+        this.syncCabinetDock();
+        this.syncRailUI();
         // Пока панель открыта, нижняя навигация и плавающие кнопки калькулятора
         // не нужны: они висят поверх (z-index выше модалок) и закрывают нижние
         // строки таблиц вместе с кнопками действий.
@@ -11935,6 +12583,8 @@ const app = {
     },
     closeAdminModal: function () {
         document.getElementById('admin_modal_overlay').style.display = 'none';
+        this.syncCabinetDock();
+        this.syncRailUI();
         document.body.classList.remove('admin-modal-open');
         this.stopAdminMobileLabels();
         // На телефоне следующий вход снова начинается с меню разделов
@@ -23609,6 +24259,11 @@ const app = {
                 // означает, что человек и правда её не заполнял, а не что ответ базы в пути
                 // (см. profileLocked в syncUI).
                 this._profileDbLoaded = true;
+
+                // Режим обучения новичку включается сам, а тому, у кого сметы уже
+                // сохранены, — нет. Считаем их только пока человек не решил сам:
+                // это один запрос на браузер, и только у тех, кто ещё не выбирал.
+                this.decideTourDefault(uRow.id);
 
                 // Промокод, введённый при регистрации, применяем один раз — при первом
                 // входе, когда запись в users уже создана и ещё нет привязки к поставщику
@@ -40077,12 +40732,10 @@ const app = {
                     </div>`;
                 }
 
-                // ПРОВЕРКА НА АДМИНА
-                let adminBtn = app.hasAdminAccess()
-                    ? `<div style="font-size: 12px; font-weight: 700; color: #10B981; cursor: pointer; border: 1px solid #10B981; padding: 4px 10px; border-radius: 8px; background: #ECFDF5; margin-right: 10px;" onclick="app.showAdminModal()" title="Панель администратора">Админка</div>`
-                    : ``;
-
-                authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);">${adminBtn}<div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;
+                // Кнопки «Админка» здесь больше нет: тот же вход есть в левой панели
+                // разделов (пункт «Админка», см. syncRailUI), а два одинаковых входа
+                // рядом только занимали место в шапке.
+                authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);"><div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;
             } else {
                 // Если пользователь не авторизован - показываем только одну аккуратную кнопку
                 authContainer.innerHTML = `
@@ -40092,6 +40745,10 @@ const app = {
                         `;
             }
         }
+
+        // Левая панель кабинета: доступ к админке, счётчик сообщений, подсветка раздела
+        this.syncRailUI();
+
         if (document.getElementById('chk_dark')) document.getElementById('chk_dark').checked = this.state.darkMode; document.body.classList.toggle('dark-mode', this.state.darkMode);
 
         // === БЛОКИРОВКИ ===
