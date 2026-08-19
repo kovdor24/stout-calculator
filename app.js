@@ -3103,6 +3103,115 @@ const app = {
         btn.style.display = hide ? 'none' : 'flex';
         if (!hide) this.applyAiFabCollapsedState();
     },
+    // Пустой экран в быстром режиме: колонка настроек тоже должна помещаться
+    // целиком. Лишние отступы уже сняты стилями (body.empty-fit), остаток добираем
+    // масштабом — ровно настолько, насколько не хватило. Ниже 0.8 не опускаемся:
+    // мельче текст уже не прочитать, там панели возвращается своя прокрутка.
+    _emptyFitPanelMinScale: 0.8,
+    // recalc = true — мерить заново, даже если масштаб уже зафиксирован: так зовут
+    // при смене размера окна, переносе меню и переключении режима расчёта.
+    syncEmptyFitPanelScale: function (recalc) {
+        const panel = document.querySelector('.input-panel');
+        if (!panel) return;
+        if (recalc) { this._emptyFitScale = null; this._emptyFitScaleLocked = false; }
+        // Мобильная раскладка (узкое окно, планшет стоймя, телефон набок) — колонки
+        // идут друг под другом, ужимать нечего. Границы те же, что в style.css.
+        const desktop = window.innerWidth >= 900 && window.innerHeight > 500 && !this.isMobileLayout();
+        // Лист сметы растягиваем только в быстром режиме, колонку параметров — в обоих.
+        const cardFit = document.body.classList.contains('empty-fit') && desktop;
+        const fit = document.body.classList.contains('empty-fit-panel') && desktop;
+        const outPanel = document.querySelector('.output-panel');
+        if (!cardFit && outPanel && outPanel.style.minHeight) outPanel.style.minHeight = '';
+        if (!fit) {
+            if (panel.style.zoom) { panel.style.zoom = ''; panel.style.maxHeight = ''; panel.style.flex = ''; }
+            this._emptyFitScale = null;
+            this._emptyFitScaleLocked = false;
+            return;
+        }
+        // Страница отрисовывается в zoom 0.8 (#page_scale_wrapper): scrollHeight
+        // отдаёт высоту в единицах вёрстки, getBoundingClientRect — в экранных.
+        // Коэффициент снимаем с самой обёртки, чтобы не зашивать 0.8 второй раз и
+        // не спутать его с масштабом, который вешаем на панель ниже.
+        const wrap = document.getElementById('page_scale_wrapper');
+        const k = (wrap && wrap.offsetWidth) ? (wrap.getBoundingClientRect().width / wrap.offsetWidth) : 1;
+        // Высоту листа сметы тоже считаем здесь, а не в CSS: над колонками может
+        // стоять лента кабинета (меню перенесено наверх), и вычесть в стилях
+        // «шапку с полями» больше недостаточно — верх колонки уезжает вниз.
+        if (cardFit && outPanel) {
+            const availOut = Math.floor((window.innerHeight - outPanel.getBoundingClientRect().top - 8) / k);
+            const wanted = availOut > 0 ? (availOut + 'px') : '';
+            if (outPanel.style.minHeight !== wanted) outPanel.style.minHeight = wanted;
+        }
+        // Натуральную ширину колонки (flex-basis из стилей) запоминаем один раз,
+        // до того как сами её тронем: ниже она понадобится, чтобы масштаб не увёл
+        // колонку по ширине.
+        if (!this._emptyFitPanelBaseWidth && !panel.style.flexBasis) this._emptyFitPanelBaseWidth = panel.offsetWidth;
+        // Свободная высота под колонкой нужна и при пересчёте масштаба, и при
+        // выставлении её потолка — считаем один раз здесь.
+        const avail = window.innerHeight - panel.getBoundingClientRect().top - 8;
+        if (avail <= 0) return;
+        let scale;
+        if (this._emptyFitScaleLocked && this._emptyFitScale) {
+            // Монтажник уже что-то трогает в колонке — масштаб больше не пересчитываем:
+            // включил параметр, появился новый блок, и колонка от этого не должна
+            // прыгать в размере. Новые блоки просто удлиняют её вниз, дальше своя
+            // прокрутка. Заново меряем только при смене окна, режима или места меню.
+            scale = this._emptyFitScale;
+        } else {
+            // scrollHeight у панели остаётся натуральным: собственный zoom элемента
+            // на его внутренние единицы не влияет. Поэтому мерить можно, ничего
+            // предварительно не сбрасывая.
+            const need = panel.scrollHeight * k;
+            if (need <= 0) return;
+            scale = need > avail ? Math.max(this._emptyFitPanelMinScale, avail / need) : 1;
+            scale = Math.min(1, Math.round(scale * 1000) / 1000);
+            this._emptyFitScale = scale;
+        }
+        const baseW = this._emptyFitPanelBaseWidth;
+        // zoom жмёт элемент по обеим осям, а по ширине колонке жаться незачем —
+        // соседний лист сметы от этого дёргался бы туда-сюда, и это выглядело бы
+        // поломкой. Ширину возвращаем обратно: заданная в единицах вёрстки
+        // basis/scale после масштабирования даёт на экране прежние 340 px.
+        // Потолок панели задан в стилях от 125vh и вместе с ней сожмётся —
+        // пересчитываем его под фактическую свободную высоту, иначе внутри панели
+        // появится прокрутка на ровном месте (или, наоборот, панель вылезет за экран).
+        const wantZoom = scale < 1 ? String(scale) : '';
+        const wantFlex = (baseW && scale < 1) ? ('0 0 ' + Math.round(baseW / scale) + 'px') : '';
+        const wantMaxH = scale < 1 ? (Math.floor(avail / (k * scale)) + 'px') : '';
+        // Пишем только то, что и правда изменилось: наблюдатель за содержимым панели
+        // будит этот метод, и лишняя правка стиля крутила бы его сама по кругу.
+        if (panel.style.zoom !== wantZoom) panel.style.zoom = wantZoom;
+        if (panel.style.flex !== wantFlex) panel.style.flex = wantFlex;
+        if (panel.style.maxHeight !== wantMaxH) panel.style.maxHeight = wantMaxH;
+    },
+    // Отложенный пересчёт: за одну отрисовку панель трогают десятки раз, а ответ
+    // у них один. Таймером, а не requestAnimationFrame: в фоновой вкладке кадры
+    // не рисуются, и подгон бы там просто не случился.
+    queueEmptyFitPanelScale: function () {
+        if (this._emptyFitScalePending) return;
+        this._emptyFitScalePending = true;
+        setTimeout(() => {
+            this._emptyFitScalePending = false;
+            this.syncEmptyFitPanelScale();
+        }, 0);
+    },
+    // Набор видимых настроек меняется не только из render()/syncUI(): блоки
+    // показываются и прячутся по ходу дела, а при первой отрисовке панель вообще
+    // может быть ещё пустой. Следить за размером самой панели бесполезно — он
+    // упёрт в потолок и не меняется, поэтому смотрим за содержимым.
+    initEmptyFitPanelObserver: function () {
+        if (this._emptyFitObserver || typeof MutationObserver === 'undefined') return;
+        const panel = document.querySelector('.input-panel');
+        if (!panel) return;
+        this._emptyFitObserver = new MutationObserver(() => this.queueEmptyFitPanelScale());
+        this._emptyFitObserver.observe(panel, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+        // Первое же касание колонки замораживает масштаб: пока страница загружается,
+        // содержимое ещё приезжает и мерить надо каждый раз, а вот в руках у
+        // монтажника колонка меняться в размере не должна — включил параметр,
+        // появился новый блок, и колонка просто стала длиннее.
+        ['pointerdown', 'input', 'change'].forEach(ev => panel.addEventListener(ev, () => { this._emptyFitScaleLocked = true; }, true));
+    },
+
     // Кружок — состояние по умолчанию: развёрнутая подпись стоит поверх сметы, а
     // нужна она один раз, в начале расчёта. Ключа в localStorage нет — значит
     // свёрнута; подпись видит только тот, кто сам её развернул.
@@ -8553,6 +8662,7 @@ const app = {
         this.renderProfilePromoField();
         this.renderProfileLoginMethod();
         this.renderProfileNavHeader(tgUser);
+        this.renderProfilePhotoField();
         this.setProfileTab(forced ? 'requisites' : (initialTab || 'requisites'));
         this.refreshManagerTabVisibility(tgUser.email);
 
@@ -9720,6 +9830,9 @@ const app = {
         // Пристыкованный кабинет считает свой прямоугольник по панели и колонкам —
         // после переезда его надо пересчитать
         this.updateCabinetDockGeometry();
+        // Лента наверху забирает высоту у обеих колонок — на пустом экране их
+        // подгонку надо пересчитать, сами они об этом переезде не узнают.
+        this.syncEmptyFitPanelScale(true);
     },
 
     initRailDrag: function () {
@@ -24852,6 +24965,25 @@ const app = {
             const existingCity = this.state.tgUser.city || regCity || localStorage.getItem('user_city') || '';
             const existingPhone = this.state.tgUser.phone || phone || '';
 
+            // Фото, загруженное в кабинете, лежит в том же avatar_url, но data:-строкой
+            // (см. setProfilePhoto). Этот обработчик срабатывает на каждой загрузке страницы
+            // с живой сессией, поэтому без проверки аватарка Яндекса или Google затирала бы
+            // своё фото — и в базе, и на экране. На чужом устройстве в state его ещё нет,
+            // тогда спрашиваем базу; ответ и так нужен, чтобы это фото показать.
+            let ownAvatar = (typeof this.state.tgUser.avatar_url === 'string' && this.state.tgUser.avatar_url.indexOf('data:') === 0)
+                ? this.state.tgUser.avatar_url : '';
+            if (!ownAvatar) {
+                try {
+                    const { data: avatarRows } = await supabaseClient
+                        .from('users').select('avatar_url').eq('auth_user_id', authUserId).limit(1);
+                    const storedAvatar = (avatarRows && avatarRows[0] && avatarRows[0].avatar_url) || '';
+                    if (storedAvatar.indexOf('data:') === 0) ownAvatar = storedAvatar;
+                } catch (avatarErr) {
+                    console.warn('[handleAuthSession] Не удалось прочитать фото профиля:', avatarErr);
+                }
+            }
+            if (ownAvatar) avatar = ownAvatar;
+
             this.state.tgUser = {
                 id: null,
                 authUserId: authUserId,
@@ -30334,8 +30466,10 @@ const app = {
         if (tgUser) {
             nameVal = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || "Монтажник";
             phoneVal = tgUser.phone || "";
-            if (tgUser.photo_url) {
-                avatarSrc = tgUser.photo_url;
+            // avatar_url — своё фото из кабинета или аватарка Яндекса/Google;
+            // photo_url приходит только из Telegram
+            if (tgUser.avatar_url || tgUser.photo_url) {
+                avatarSrc = tgUser.avatar_url || tgUser.photo_url;
             }
         } else {
             // 2. Иначе проверяем ручные настройки из формы профиля
@@ -30423,18 +30557,129 @@ const app = {
         }
     },
 
+    // Карточка пользователя в мобильной панели профиля — та же загрузка фото, что и в
+    // кабинете. Раньше клала снимок только в localStorage, поэтому на другом устройстве,
+    // в переписке и в админке его не было.
     handleCustomAvatarUpload: function (event) {
-        const file = event.target.files[0];
-        if (!file) return;
+        return this.handleProfilePhotoUpload(event);
+    },
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const base64Img = e.target.result;
-            localStorage.setItem('profile_custom_avatar', base64Img);
-            this.updateProfileTabDetails();
-            this.showInAppNotification("Успешно", "Ваша фотография профиля загружена!", "👤");
-        };
-        reader.readAsDataURL(file);
+    // ── Фото профиля ──
+    // Хранится в users.avatar_url — том же поле, откуда фото читают шапка сайта, чат,
+    // рейтинг и админка. Файлового хранилища у проекта нет, поэтому своё фото уменьшается
+    // до квадрата 160 px и лежит в базе data:-строкой (около 10 КБ). Аватарки провайдеров
+    // (Яндекс, Google, Telegram) — обычные https-ссылки; по префиксу «data:» мы и отличаем
+    // загруженное человеком фото от провайдерского (см. handleAuthSession).
+    PROFILE_PHOTO_SIZE: 160,
+
+    // Квадрат по центру исходника, уменьшенный до size×size. Возвращает data:image/jpeg.
+    shrinkImageToSquare: function (file, size) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error('Файл не читается'));
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onerror = () => reject(new Error('Это не изображение'));
+                img.onload = () => {
+                    const side = Math.min(img.width, img.height);
+                    if (!side) { reject(new Error('Пустое изображение')); return; }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    // JPEG не умеет прозрачность: без белой подложки прозрачный PNG
+                    // превратился бы в чёрный квадрат
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, size, size);
+                    ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    },
+
+    handleProfilePhotoUpload: async function (event) {
+        const file = event.target.files && event.target.files[0];
+        // Сбрасываем поле сразу: иначе повторный выбор того же файла не даёт события change
+        event.target.value = '';
+        if (!file) return;
+        if (file.type && file.type.indexOf('image/') !== 0) {
+            app.alert('Выберите файл с изображением.');
+            return;
+        }
+
+        let dataUrl;
+        try {
+            dataUrl = await this.shrinkImageToSquare(file, this.PROFILE_PHOTO_SIZE);
+        } catch (e) {
+            console.error('[profilePhoto] Не удалось обработать файл:', e);
+            app.alert('Не удалось прочитать это изображение. Попробуйте другой файл.');
+            return;
+        }
+        await this.setProfilePhoto(dataUrl);
+    },
+
+    removeProfilePhoto: async function () {
+        await this.setProfilePhoto('');
+    },
+
+    // Пустая строка = убрать фото. В базу пишем null, чтобы поле снова считалось пустым.
+    setProfilePhoto: async function (dataUrl) {
+        const tgUser = this.state.tgUser;
+        if (!tgUser) { app.alert('Войдите в аккаунт, чтобы загрузить фото.'); return; }
+
+        tgUser.avatar_url = dataUrl || '';
+        // Мобильная панель профиля читает снимок отсюда (updateProfileTabDetails)
+        if (dataUrl) localStorage.setItem('profile_custom_avatar', dataUrl);
+        else localStorage.removeItem('profile_custom_avatar');
+        this.saveState();
+
+        this.renderProfilePhotoField();
+        this.renderProfileNavHeader(tgUser);
+        this.updateProfileTabDetails();
+        this.syncUI(); // фото в шапке сайта (#tg-auth-container) перерисовывает syncUI, не render
+
+        try {
+            let query = supabaseClient.from('users').update({ avatar_url: dataUrl || null });
+            if (tgUser.authUserId) query = query.eq('auth_user_id', tgUser.authUserId);
+            else if (tgUser.email) query = query.eq('email', tgUser.email);
+            else return;
+            const { error } = await query;
+            if (error) throw error;
+        } catch (e) {
+            console.error('[profilePhoto] Не удалось сохранить фото в облако:', e);
+            app.alert('Фото сохранено на этом устройстве, но до облака не дошло. На других устройствах оно появится, когда связь восстановится.');
+        }
+    },
+
+    // Кружок с фото и кнопки в разделе «Профиль»
+    renderProfilePhotoField: function () {
+        const box = document.getElementById('profile_photo_box');
+        if (!box) return;
+        const imgEl = document.getElementById('profile_photo_img');
+        const initialEl = document.getElementById('profile_photo_initial');
+        const removeBtn = document.getElementById('profile_photo_remove_btn');
+
+        const tgUser = this.state.tgUser || {};
+        const src = tgUser.avatar_url || tgUser.photo_url || '';
+        const isOwnPhoto = String(tgUser.avatar_url || '').indexOf('data:') === 0;
+
+        if (src) {
+            if (imgEl) { imgEl.src = src; imgEl.style.display = 'block'; }
+            if (initialEl) initialEl.style.display = 'none';
+        } else {
+            if (imgEl) { imgEl.removeAttribute('src'); imgEl.style.display = 'none'; }
+            if (initialEl) {
+                initialEl.style.display = 'block';
+                const uName = this.formatShortName(tgUser) || 'Монтажник';
+                initialEl.innerText = uName.trim().charAt(0).toUpperCase() || '·';
+            }
+        }
+        // «Удалить фото» имеет смысл только для своего снимка: аватарку Яндекса или
+        // Google мы всё равно получим обратно при следующем входе
+        if (removeBtn) removeBtn.style.display = isOwnPhoto ? '' : 'none';
     },
 
     // Старый выпадающий блок истории под меню профиля. Сам пункт меню теперь открывает
@@ -31190,7 +31435,12 @@ const app = {
             console.warn('[DEV MODE] Localhost detected — установлена PRO сессия для тестирования.');
             this.state.accountType = 'pro';
             this.state.groupItems = true; // По умолчанию группировка включена для PRO
+            // Фото профиля переносим из сохранённого состояния: заглушка перезаписывает
+            // tgUser целиком, и без этого загруженный снимок пропадал бы на каждой
+            // перезагрузке — на localhost выглядело бы как поломка загрузки фото
+            const devAvatar = (this.state.tgUser && this.state.tgUser.avatar_url) || '';
             this.state.tgUser = {
+                avatar_url: devAvatar,
                 id: '0279a53c-452b-474f-8626-08be2c2b32da',
                 first_name: "Dima Ibatullin",
                 username: "dima_ibatullin",
@@ -31359,6 +31609,10 @@ const app = {
 
         this.initCityAutocomplete();
         this.initAiFabDrag();
+        this.initEmptyFitPanelObserver();
+        // Пустой экран подогнан под конкретную высоту окна — при её изменении
+        // (другой монитор, свёрнутое окно, повёрнутый планшет) считаем заново.
+        window.addEventListener('resize', () => this.syncEmptyFitPanelScale(true));
     },
     getPower: function () {
         let regVal = (this.state.region !== undefined) ? (this.state.region / 100) : 1.0;
@@ -35659,6 +35913,9 @@ const app = {
         this.autoCalcZones();
         this.syncUI();
         this.render();
+        // Набор настроек в режимах разный — подгон колонки меряем заново, а не
+        // тянем зафиксированный масштаб из прежнего режима.
+        this.syncEmptyFitPanelScale(true);
     },
     toggleVentilation: function (chk, event) {
         this.state.ventilationEnabled = chk;
@@ -41765,6 +42022,12 @@ const app = {
             if (isMobile && isGuest && btnShare) btnShare.style.display = 'none';
             this.syncFooterAccent();
         }
+
+        // Набор видимых настроек только что пересобран — самое время подогнать
+        // высоту колонки под экран (пустой расчёт, см. syncEmptyFitPanelScale).
+        // Из render() одного вызова мало: там панель меряется до того, как syncUI
+        // покажет или спрячет свои блоки.
+        this.queueEmptyFitPanelScale();
     },
 
     // Цветная кнопка в ряду под сметой всегда ровно одна. «Ссылка для клиента»
@@ -52113,7 +52376,16 @@ const app = {
         // что-то есть. Класс переводит вёрстку в компактный вид (см. body.empty-fit
         // в style.css) и снимается сразу, как задана площадь или включён подробный
         // режим: там прокрутка нужна по делу.
-        document.body.classList.toggle('empty-fit', this.isCalcEmpty() && !this.state.detailedRooms);
+        const _emptyCalc = this.isCalcEmpty();
+        document.body.classList.toggle('empty-fit', _emptyCalc && !this.state.detailedRooms);
+        // Колонка параметров подгоняется под экран в обоих режимах: в подробном
+        // настроек ещё больше, и переключение туда не должно возвращать прежний
+        // крупный шаг. Всё остальное (растянутый лист, спрятанный подвал) остаётся
+        // привилегией быстрого режима — там пустой экран и правда пустой.
+        document.body.classList.toggle('empty-fit-panel', _emptyCalc);
+        // Мерить панель настроек сразу нельзя: класс только что повешен, и браузер
+        // ещё не пересчитал с ним раскладку.
+        this.queueEmptyFitPanelScale();
 
         if (this.state.area <= 0 && !hasUserRows) {
             // Кнопка быстрого старта стоит здесь же, в центре пустой сметы: место,

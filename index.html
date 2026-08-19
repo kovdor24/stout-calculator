@@ -149,7 +149,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.44">
+    <link rel="stylesheet" href="style.css?v=3.46">
 
     <script src="supabase-js.js" defer></script>
     <script src="catalog.js?v=2.84" defer></script>
@@ -172,7 +172,7 @@
          плагина Capacitor нет, все методы тихо выходят. Подключать до app.js —
          app.init() дёргает appPush.init(). -->
     <script src="push.js?v=1.1" defer></script>
-    <script src="app.js?v=6.56" defer></script>
+    <script src="app.js?v=6.59" defer></script>
     <script src="tour.js?v=1.6" defer></script>
     <!-- Выгрузка сметы в Excel: читает уже готовую печатную вёрстку (#print_bin) -->
     <script src="excel_export.js?v=1.0" defer></script>
@@ -2339,6 +2339,22 @@
                     <!-- Left Column (General info) -->
                     <div class="lk-card" style="flex: 1 1 100%; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start;">
                         <div class="lk-card-label" style="margin-bottom: 10px;">Основные данные</div>
+
+                        <!-- Фото профиля. Видно в шапке сайта, в переписке с менеджером, в рейтинге
+                             и в админке — везде читается users.avatar_url. Своё фото уменьшается до
+                             160 px и хранится в том же поле data:-строкой (app.setProfilePhoto):
+                             отдельного файлового хранилища у проекта нет. -->
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <div id="profile_photo_box" onclick="document.getElementById('profile_photo_file').click()" title="Нажмите, чтобы выбрать фото" style="width: 56px; height: 56px; flex: 0 0 56px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; overflow: hidden; cursor: pointer; border: 1px solid var(--border);">
+                                <span id="profile_photo_initial">·</span>
+                                <img id="profile_photo_img" alt="" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <button type="button" class="btn-subscribe" onclick="document.getElementById('profile_photo_file').click()" style="padding: 4px 8px; font-size: 10px; margin: 0; width: fit-content; height: auto;">Загрузить фото</button>
+                                <input type="file" id="profile_photo_file" accept="image/*" style="display: none;" onchange="app.handleProfilePhotoUpload(event)">
+                                <button type="button" id="profile_photo_remove_btn" class="btn-subscribe" onclick="app.removeProfilePhoto()" style="padding: 4px 8px; font-size: 10px; margin: 0; width: fit-content; height: auto; background: var(--surface-light); color: var(--text-sec); border-color: var(--border);">Удалить фото</button>
+                            </div>
+                        </div>
 
                         <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 8px;">
                             <div>
