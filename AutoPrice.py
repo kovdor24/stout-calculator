@@ -107,11 +107,33 @@ def read_status(text):
         if word == found: return code
     return None
 
+def _own_text(obj_text):
+    """Текст объекта, в котором вложенные объекты ({...} внутри rommer/comfort)
+    заменены пробелами той же длины. Индексы не сдвигаются, а регулярки по
+    price_date / availability / id видят только собственные поля объекта."""
+    out = list(obj_text)
+    depth = 0
+    for i in range(1, len(obj_text) - 1):
+        ch = obj_text[i]
+        if ch == '{':
+            depth += 1
+        if depth > 0:
+            out[i] = ' '
+        if ch == '}' and depth > 0:
+            depth -= 1
+    return ''.join(out)
+
+
 def collect_catalog_items(content):
     """Позиции каталога с ценой: артикул, старая цена и границы объекта в тексте файла.
 
-    Вложенные объекты (.rommer, .comfort внутри родительской позиции) отбрасываем:
-    их цену обновляет собственная строка каталога, а тут они только сбили бы границы.
+    Вложенные объекты (.rommer, .comfort внутри родительской позиции) — тоже
+    позиции, со своим артикулом и своей ценой. Раньше они отбрасывались в
+    расчёте на то, что у каждого есть собственная строка каталога, — а у двухсот
+    с лишним артикулов ROMMER (бойлеры GT, коллекторы, фитинги) её нет, и их
+    цена не обновлялась никогда. Поля каждого объекта ищем только среди его
+    собственных (см. _own_text): иначе у родителя первым находился price_date
+    вложенного объекта, и дата с наличием писались не туда.
     """
     items = []
     processed_starts = set()
@@ -120,55 +142,58 @@ def collect_catalog_items(content):
         if start_idx == -1 or end_idx == -1 or start_idx in processed_starts: continue
         processed_starts.add(start_idx)
         obj_text = content[start_idx:end_idx]
+        own_text = _own_text(obj_text)
         sku = None
-        art_m = re.search(r'["\']?article["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
+        art_m = re.search(r'["\']?article["\']?\s*:\s*["\']([^"\']+)["\']', own_text, re.IGNORECASE)
         if art_m: sku = art_m.group(1)
         else:
-            id_m = re.search(r'["\']?id["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
+            id_m = re.search(r'["\']?id["\']?\s*:\s*["\']([^"\']+)["\']', own_text, re.IGNORECASE)
             if id_m: sku = id_m.group(1)
         if not sku: continue
         old_price_str = match.group(2)
         old_price = float(old_price_str) if '.' in old_price_str else int(old_price_str)
-        date_m = re.search(r'["\']?price_date["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
+        date_m = re.search(r'["\']?price_date["\']?\s*:\s*["\']([^"\']+)["\']', own_text, re.IGNORECASE)
         price_date = date_m.group(1) if date_m else None
         items.append({'sku': sku, 'old_price': old_price, 'match': match, 'start_idx': start_idx, 'end_idx': end_idx, 'obj_text': obj_text, 'price_date': price_date})
-
-    valid_items = []
-    for item in items:
-        is_nested = False
-        for other in items:
-            if item['start_idx'] > other['start_idx'] and item['end_idx'] < other['end_idx']:
-                is_nested = True
-                break
-        if not is_nested:
-            valid_items.append(item)
-    return valid_items
+    return items
 
 
 # Переписывает одну позицию каталога: цена, дата и наличие. Вынесено из основного
 # цикла, чтобы быстрый шаг по листингу (см. update_from_brand_listings) писал файл
 # ровно теми же правилами — иначе два пути обновления однажды разъедутся.
-def apply_price_status(obj_text, price_local_start, price_local_end, new_price, old_price, new_status, current_date_str):
+#
+# Возвращает не новый текст объекта, а список точечных правок
+# (abs_start, abs_end, text) в координатах исходного файла. Позиция и вложенный
+# в неё .rommer теперь обновляются оба, и замена «объект целиком» затирала бы
+# одну правку другой; точечные правки не пересекаются.
+def apply_price_status(obj_text, start_idx, price_local_start, price_local_end, new_price, old_price, new_status, current_date_str):
+    own_text = _own_text(obj_text)
+    edits = []
     if new_price != old_price:
-        obj_text = obj_text[:price_local_start] + str(new_price) + obj_text[price_local_end:]
+        edits.append((start_idx + price_local_start, start_idx + price_local_end, str(new_price)))
 
-    def _insert_before_brace(text, field, value):
-        m = re.search(r'(["\']?' + field + r'["\']?\s*:\s*["\'])([^"\']+)(["\'])', text, re.IGNORECASE)
+    def _set_field(field, value):
+        m = re.search(r'(["\']?' + field + r'["\']?\s*:\s*["\'])([^"\']+)(["\'])', own_text, re.IGNORECASE)
         if m:
-            return text[:m.start(2)] + value + text[m.end(2):]
-        last_brace = text.rfind('}')
+            if m.group(2) != value:
+                edits.append((start_idx + m.start(2), start_idx + m.end(2), value))
+            return
+        # Поля нет — дописываем перед закрывающей скобкой самого объекта. Точку
+        # вставки ищем по исходному тексту: если последним полем стоит вложенный
+        # объект, вставать надо после его «}», а не после «rommer:».
+        last_brace = obj_text.rfind('}')
         if last_brace == -1:
-            return text
+            return
         idx = last_brace - 1
-        while idx >= 0 and text[idx].isspace():
+        while idx >= 0 and obj_text[idx].isspace():
             idx -= 1
-        comma = ',' if text[idx] != ',' else ''
-        return text[:idx+1] + f"{comma}\n  {field}: '{value}'" + text[idx+1:]
+        comma = ',' if obj_text[idx] != ',' else ''
+        edits.append((start_idx + idx + 1, start_idx + idx + 1, f"{comma}\n  {field}: '{value}'"))
 
-    obj_text = _insert_before_brace(obj_text, 'price_date', current_date_str)
+    _set_field('price_date', current_date_str)
     if new_status:
-        obj_text = _insert_before_brace(obj_text, 'availability', new_status)
-    return obj_text
+        _set_field('availability', new_status)
+    return edits
 
 
 # Разделы, которые обновляются целиком по листингу, без поштучного поиска.
@@ -257,13 +282,13 @@ def update_from_brand_listings():
             skipped += 1
             continue
         new_status = data['status'] or 'on_order'
-        new_obj_text = apply_price_status(
-            item['obj_text'],
+        edits = apply_price_status(
+            item['obj_text'], item['start_idx'],
             item['match'].start(2) - item['start_idx'],
             item['match'].end(2) - item['start_idx'],
             new_price, old_price, new_status, current_date_str)
-        if new_obj_text != item['obj_text']:
-            replacements.append((item['start_idx'], item['end_idx'], new_obj_text))
+        if edits:
+            replacements.extend(edits)
             updated += 1
 
     if replacements:
@@ -628,7 +653,7 @@ def update_catalog_prices():
     # именно просроченные позиции, а не всегда одни и те же товары в начале catalog.js.
     items_to_process.sort(key=lambda x: x['price_date'] or '0000-00-00')
 
-    print(f"Найдено корневых товаров: {len(items_to_process)}\n")
+    print(f"Найдено товаров (с вложенными ROMMER): {len(items_to_process)}\n")
     replacements = []
     price_cache = {}
     updated_count = 0
@@ -685,14 +710,14 @@ def update_catalog_prices():
             
             import datetime
             current_date_str = datetime.datetime.now().strftime('%Y-%m-%d')
-            new_obj_text = apply_price_status(
-                obj_text,
+            edits = apply_price_status(
+                obj_text, start_idx,
                 match.start(2) - start_idx,
                 match.end(2) - start_idx,
                 new_price, old_price, new_status, current_date_str)
 
-            if new_obj_text != obj_text:
-                replacements.append((start_idx, end_idx, new_obj_text))
+            if edits:
+                replacements.extend(edits)
                 updated_count += 1
                 
         elif isinstance(res, str) and res.startswith("ERR_DIFF"): 
