@@ -9440,6 +9440,80 @@ body.dark-mode .cw-achieve.earned {
     line-height: 1.5;
 }
 
+/* Нетронутый расчёт в быстром режиме: пустой экран помещается целиком, без
+   прокрутки — листать всё равно нечего, а полоса внизу намекает на потерянное
+   содержимое. Ужимаем только воздух: размеры текста, кнопок и картинок те же,
+   поэтому мельче ничего не становится. Отступ заглушки задан от высоты экрана
+   (2vh): на большом мониторе остаётся прежний простор, на низком ноутбуке он
+   поджимается сам. Класс вешает render() в app.js — как только задана площадь
+   или включён подробный режим, обычные отступы возвращаются. Только десктоп:
+   на телефоне колонки идут друг под другом и в экран не влезут при любом
+   отступе. */
+@media screen and (min-width: 900px) {
+    body.empty-fit .container {
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+
+    body.empty-fit .output-panel {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    body.empty-fit .doc-header-rule {
+        margin-top: 8px;
+        margin-bottom: 8px;
+    }
+
+    body.empty-fit .empty-state-hint {
+        padding: clamp(8px, 2vh, 48px) 20px;
+    }
+
+    body.empty-fit .doc-footer {
+        padding-top: 12px;
+    }
+
+    body.empty-fit .footer-btns {
+        margin-top: 10px;
+        padding-top: 10px;
+    }
+
+    /* Левая панель настроек в экран не помещалась никогда — у неё своя прокрутка.
+       Но её потолок (125vh - 60px) не учитывал шапку сайта, и панель свисала ниже
+       экрана, сама вызывая прокрутку страницы. На пустом экране опускаем потолок
+       на высоту шапки с отступами. */
+    body.empty-fit .input-panel,
+    body.empty-fit .input-panel.fast-mode {
+        max-height: calc(125vh - 130px);
+    }
+
+    /* Подвал с копирайтом и ссылками на оферту занимает 143 px — ровно их и не
+       хватало, чтобы пустой экран обошёлся без прокрутки. На нетронутом расчёте
+       прячем: ссылки возвращаются при первом же заданном параметре, вместе с
+       самой сметой, и остаются доступны с любой другой страницы. */
+    body.empty-fit > footer {
+        display: none;
+    }
+
+    /* Две плавающие кнопки приколочены к низу окна (bottom: 102px и 58px). Пока
+       смета уезжала за край экрана, они висели над пустым местом; теперь всё
+       поднялось, и они сели ровно на «Итого» и на ряд кнопок. Считать отступ от
+       низа тут бесполезно — содержимое прижато к верху, и на высоком экране та же
+       кнопка окажется уже под сметой. Поэтому на пустом экране ИИ-кнопку держим
+       от верха: она попадает в пустую область таблицы, где ничего не закрывает
+       и остаётся на виду при любой высоте окна. */
+    body.empty-fit .ai-parse-fab {
+        top: 300px;
+        bottom: auto;
+    }
+
+    /* Кнопка «Наверх» на экране без прокрутки не нужна — листать некуда, а лежит
+       она поверх ряда кнопок под сметой. */
+    body.empty-fit .to-top-btn {
+        display: none;
+    }
+}
+
 /* Правила конкурса */
 .cw-rules-details {
     margin-top: 10px;
@@ -11734,4 +11808,498 @@ select.rec-btn-g { padding-right: 8px; }
     .admin-chat-wrap.chat-open .admin-chat-main { display: flex; }
     .admin-chat-back { display: block; }
     .admin-chat-bubble { max-width: 86%; }
+}
+
+
+/* ═══════════════ ЛЕВАЯ ПАНЕЛЬ ЛИЧНОГО КАБИНЕТА (.lk-rail) ═══════════════
+   Разметка — в index.html сразу после <div class="container">, там же написано,
+   зачем она появилась (кабинет никто не находил: единственным входом был клик по
+   собственному имени в шапке).
+
+   Показываем ровно там, где у сайта двухколоночный десктопный макет. Условие
+   повторяет медиазапрос мобильной вёрстки (см. «max-width: 768px, max-width:
+   1024px и портрет, альбомная с max-height: 500px» выше по файлу) и заодно
+   app.isMobileLayout(): где .container переворачивается в колонку, полоса иконок
+   легла бы поперёк экрана, и там за навигацию отвечает нижняя панель
+   .mobile-bottom-nav. Брать просто «от 1025 px» нельзя: ноутбук с окном ровно в
+   1024 px и планшет в альбомной ориентации считаются десктопом, нижней панели у
+   них нет — они остались бы вообще без входа в кабинет.
+
+   Про размеры: всё внутри #page_scale_wrapper уменьшено zoom: 0.8, поэтому
+   указанные тут 84 px на экране выглядят как 67, а 11.5 px шрифта — как 9. Числа
+   подобраны уже с учётом этого, уменьшать их «на глаз» не нужно.
+
+   Ширина и отступы подогнаны по самой длинной подписи, которая обязана уместиться
+   в строку, — «Сообщения» (66.6 px шрифтом Inter 600 11.5px). Под текст остаётся
+   70 px: 84 минус свои отступы 2×4, рамка 2×1 и отступы пункта 2×2. Уменьшишь
+   ширину или отступы — «Сообщения» и «Менеджер» порвутся посреди слова. */
+.lk-rail {
+    display: none;
+    /* Ширина — по самой длинной подписи, а не числом: у людей разные браузеры,
+       масштаб страницы и подставленный шрифт, и подобранные «на глаз» 84 px в
+       чужом окружении оказывались малы — подписи ломались пополам («Профил/ь»),
+       колонка вырастала вдвое по высоте и уезжала в прокрутку. Границы нужны,
+       чтобы колонка не выродилась в узкую полоску и не съела пол-экрана. */
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: 84px;
+    max-width: 150px;
+    box-sizing: border-box;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    padding: 7px 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    /* Липнет под шапкой: смета длинная, а разделы должны оставаться под рукой.
+       Высоту шапки в --sticky-header-h пишет handleScroll в index.html — шапка
+       при прокрутке сжимается, поэтому фиксированное число тут не годится
+       (тот же приём, что у строки параметров .doc-summary). */
+    position: sticky;
+    top: calc(var(--sticky-header-h, 70px) + 10px);
+    /* Предел высоты ставит app.fitRailToViewport по живым размерам окна и шапки —
+       той же меркой, по которой решает, надо ли поджимать разделы. Пока скрипт не
+       отработал, действует запасная формула. 125vh, а не 100vh: единицы vh
+       считаются от окна, а колонка живёт внутри #page_scale_wrapper с zoom: 0.8,
+       и 100vh дали бы только 80 % высоты окна. */
+    max-height: var(--lk-rail-max-h, calc(125vh - var(--sticky-header-h, 70px) - 30px));
+    overflow-y: auto;
+    /* Гасим часть общего 20-пиксельного зазора .container: без этого панель
+       отъедала бы у сметы сотню пикселей ширины вместо необходимых восьмидесяти */
+    margin-right: -8px;
+    z-index: 5;
+}
+
+@media screen and (min-width: 769px) {
+    .lk-rail {
+        display: flex;
+    }
+}
+
+@media screen and (max-width: 1024px) and (orientation: portrait),
+       screen and (orientation: landscape) and (max-height: 500px) {
+    .lk-rail {
+        display: none !important;
+    }
+}
+
+/* Гостю все разделы всё равно закрыты до входа — панель только мешала бы */
+body.guest-mode .lk-rail {
+    display: none !important;
+}
+
+/* Размер разделов задан не числами, а долей от --lk-scale: её ставит
+   app.fitRailToViewport так, чтобы колонка занимала высоту первого экрана
+   целиком. На высоком мониторе разделы крупнее, на низком ноутбуке — мельче,
+   но помещаются все. Единица — обычный размер, границы — в скрипте. */
+.lk-rail-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: calc(3px * var(--lk-scale, 1));
+    padding: calc(7px * var(--lk-scale, 1)) 2px calc(6px * var(--lk-scale, 1));
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-sec);
+    font-family: inherit;
+    font-size: calc(11.5px * var(--lk-scale, 1));
+    font-weight: 600;
+    line-height: 1.15;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.lk-rail-item svg {
+    flex-shrink: 0;
+}
+
+.lk-rail-item:hover {
+    background: var(--surface-light);
+    color: var(--text-main);
+}
+
+.lk-rail-item.active {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+/* Подписи не переносятся никогда: перенос посреди слова читается плохо, а по
+   высоте колонка тогда вырастает и уходит в прокрутку. Вместо переноса под
+   подпись подстраивается ширина всей колонки (width: max-content выше). */
+.lk-rail-label {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+}
+
+.lk-rail-item svg {
+    width: calc(22px * var(--lk-scale, 1));
+    height: calc(22px * var(--lk-scale, 1));
+}
+
+.lk-rail-admin {
+    color: #10B981;
+}
+
+.lk-rail-admin:hover {
+    color: #10B981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.lk-rail-logout {
+    color: #EF4444;
+}
+
+.lk-rail-logout:hover {
+    color: #EF4444;
+    background: rgba(239, 68, 68, 0.08);
+}
+
+/* Счётчик непрочитанных — зеркало бейджа конверта в шапке (#notification_badge),
+   значение переносит app.syncRailUI */
+.lk-rail-badge {
+    position: absolute;
+    top: 2px;
+    right: 8px;
+    box-sizing: border-box;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: #EF4444;
+    color: #FFFFFF;
+    border-radius: 999px;
+    font-size: 9.5px;
+    font-weight: 800;
+    line-height: 16px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+}
+
+@media print {
+    .lk-rail {
+        display: none !important;
+    }
+}
+
+
+/* ═══════ КАБИНЕТ, ПРИСТЫКОВАННЫЙ К ПАНЕЛИ (body.lk-docked) ═══════
+   На десктопе кабинет открывается не поверх всего экрана, а справа от панели
+   разделов — ровно на месте параметров объекта и сметы. Смысл: меню должно быть
+   одно и всегда на одном месте. Раньше при открытии кабинет разворачивался во
+   весь экран (правило «ЛИЧНЫЙ КАБИНЕТ НА ПК И ПЛАНШЕТАХ» выше по файлу) и
+   показывал вторую, свою колонку разделов — человека будто выбрасывало в другое
+   окно. Теперь эта колонка (#profile_nav) на десктопе скрыта, её работу делает
+   .lk-rail, а полноэкранный режим остаётся для телефона и планшета стоймя, где
+   панели нет.
+
+   Прямоугольник считает app.updateCabinetDockGeometry() и кладёт в переменные
+   ниже: положение панели зависит от zoom: 0.8 обёртки страницы, а верх — от
+   того, сжалась ли шапка при прокрутке. Числами в CSS это не задать. */
+/* !important здесь обязателен: у полноэкранных окон фон задан с ним же
+   (#admin_modal_overlay { background: var(--bg) !important } выше по файлу). Без
+   этого непрозрачная подложка оставалась поверх страницы и закрывала собой и
+   шапку, и панель разделов — на экране оставалась одна карточка на пустом фоне. */
+body.lk-docked #profile_modal_overlay,
+body.lk-docked #admin_modal_overlay,
+body.lk-docked #notifications_modal_overlay,
+body.lk-docked #lk_rating_overlay {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    /* Оверлей по-прежнему растянут на весь экран, но клики сквозь него проходят:
+       мимо карточки они должны доставать до панели разделов и до шапки */
+    pointer-events: none;
+}
+
+body.lk-docked #profile_modal_overlay .auth-modal-content,
+body.lk-docked #notifications_modal_overlay .auth-modal-content,
+body.lk-docked #lk_rating_overlay .auth-modal-content {
+    position: fixed !important;
+    top: var(--lk-dock-top, 80px) !important;
+    left: var(--lk-dock-left, 104px) !important;
+    right: var(--lk-dock-right, 16px) !important;
+    bottom: var(--lk-dock-bottom, 16px) !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    transform: none !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.10) !important;
+    padding: 18px 22px !important;
+    pointer-events: auto;
+}
+
+/* Панель управления масштабирует себя сама (см. «Масштаб админки под ширину
+   экрана» выше): её таблицы и девять вкладок иначе не помещаются. При zoom
+   координаты fixed-элемента считаются в его же масштабе, поэтому здесь их надо
+   поделить на тот же множитель — тем же приёмом, что и width: 100vw / 0.8 там.
+   Множитель задаём свой и постоянный: в пристыкованном виде ширина окна уже не
+   определяет размер панели. */
+body.lk-docked #admin_modal_overlay .auth-modal-content {
+    zoom: 0.8 !important;
+    position: fixed !important;
+    top: calc(var(--lk-dock-top, 80px) / 0.8) !important;
+    left: calc(var(--lk-dock-left, 104px) / 0.8) !important;
+    right: calc(var(--lk-dock-right, 16px) / 0.8) !important;
+    bottom: calc(var(--lk-dock-bottom, 16px) / 0.8) !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    transform: none !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.10) !important;
+    padding: 16px 20px !important;
+    pointer-events: auto;
+}
+
+body.lk-docked #profile_nav {
+    display: none;
+}
+
+/* Колонки под открытым разделом прячем. Карточка ложится ровно на их место, но у
+   самих колонок свои рамки, тени и скруглённые углы — они выглядывали из-под неё
+   тонким контуром по краям и снизу, и окно казалось сдвинутым и неаккуратным.
+   visibility, а не display: размеры колонок нужны, чтобы считать по ним место
+   карточки (см. app.updateCabinetDockGeometry). */
+body.lk-docked .container > .panel {
+    visibility: hidden;
+}
+
+/* Крестик закрытия отодвинут от края и от полосы прокрутки раздела: он вставал
+   поверх содержимого и попадал по нему вместо кнопки */
+body.lk-docked #profile_modal_overlay .auth-modal-close,
+body.lk-docked #lk_rating_overlay .auth-modal-close {
+    top: 8px !important;
+    right: 10px !important;
+    z-index: 3;
+}
+
+body.lk-docked #profile_modal_overlay .lk-pane {
+    padding-right: 30px;
+}
+
+
+/* ── Хват и переезд панели (как палитры в фотошопе) ────────────────────────────
+   За хват панель тянут к верхнему краю — тогда она прилипает лентой под шапку, —
+   или обратно к левому. Точки хвата рисуем градиентом, а не иконкой: так они
+   одинаково выглядят и в колонке, и в ленте, где хват лежит боком. */
+.lk-rail-grip {
+    flex-shrink: 0;
+    height: 12px;
+    margin: 0 4px 4px;
+    border-radius: 5px;
+    background-image: radial-gradient(currentColor 1px, transparent 1.2px);
+    background-size: 4px 4px;
+    background-position: center;
+    color: var(--text-sec);
+    opacity: 0.45;
+    cursor: grab;
+    transition: opacity var(--dur-fast) ease, background-color var(--dur-fast) ease;
+}
+
+.lk-rail-grip:hover {
+    opacity: 1;
+    background-color: var(--surface-light);
+}
+
+.lk-rail-grip:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    opacity: 1;
+}
+
+.lk-rail.is-dragging {
+    opacity: 0.55;
+}
+
+.lk-rail.is-dragging .lk-rail-grip {
+    cursor: grabbing;
+}
+
+/* Панель, прикреплённая сверху: те же плитки, только в ряд. Стоит сразу под
+   шапкой и липнет к ней при прокрутке — ради этого её и переносят наверх.
+   Не помещается в ширину (узкий ноутбук, много разделов) — прокручивается
+   внутри себя, а не разрывает страницу. */
+.lk-rail.dock-top {
+    flex: none;
+    /* Ограничения ширины из колонки тут не действуют: лента тянется во всю
+       страницу, а max-width от колонки сжимал её в узкий столбик посреди экрана */
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 2px;
+    margin: 0 20px 10px;
+    padding: 5px 8px;
+    border-radius: 0 0 16px 16px;
+    border-top: none;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    top: var(--sticky-header-h, 70px);
+    z-index: 900;
+}
+
+/* Наверху панель занимает всю ширину экрана, поэтому пункты не жмутся к левому
+   краю, а разбирают её между собой: блоки делят свободное место, внутри блока —
+   пункты. Нижняя граница 72 px не даёт подписям рваться посреди слова («Сообщения»
+   требует 67), верхняя 120 px — превратиться в широкие полосы с крошечным значком
+   посередине. */
+.lk-rail.dock-top {
+    justify-content: space-between;
+}
+
+.lk-rail.dock-top .lk-rail-group {
+    flex: 1 1 auto;
+    justify-content: space-evenly;
+}
+
+.lk-rail.dock-top .lk-rail-item {
+    flex: 1 1 auto;
+    width: auto;
+    /* Не уже своей подписи — иначе она вылезет за плитку: переносов больше нет */
+    min-width: fit-content;
+    max-width: 120px;
+}
+
+.lk-rail.dock-top .lk-rail-grip {
+    flex: 0 0 12px;
+    width: 12px;
+    height: auto;
+    margin: 2px 6px 2px 0;
+}
+
+/* Блоки пунктов. Разделительные линии рисуем между блоками, а не отдельными
+   элементами: после перестановки блоков они остаются на местах сами. */
+.lk-rail-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.lk-rail-group + .lk-rail-group {
+    margin-top: calc(6px * var(--lk-scale, 1));
+    padding-top: calc(6px * var(--lk-scale, 1));
+    border-top: 1px solid var(--border);
+}
+
+.lk-rail.dock-top .lk-rail-group {
+    flex-direction: row;
+}
+
+.lk-rail.dock-top .lk-rail-group + .lk-rail-group {
+    margin: 0 0 0 7px;
+    padding: 0 0 0 7px;
+    border-top: none;
+    border-left: 1px solid var(--border);
+}
+
+/* Режим настройки меню: включается правым щелчком по панели, чтобы блоки не
+   двигались от случайного промаха мимо кнопки. Пока он включён, разделы не
+   открываются, а панель видно, что она «в разборе». */
+body.lk-rail-edit .lk-rail {
+    outline: 2px dashed var(--primary);
+    outline-offset: 3px;
+}
+
+body.lk-rail-edit .lk-rail-item {
+    cursor: grab;
+}
+
+.lk-rail-group.is-moving {
+    opacity: 0.5;
+}
+
+/* Кулак на всё время перетаскивания и по всему экрану: рука уходит с хвата, а
+   курсор должен остаться прежним, пока кнопка не отпущена */
+body.lk-grabbing,
+body.lk-grabbing * {
+    cursor: grabbing !important;
+}
+
+.lk-rail-edit-hint {
+    position: fixed;
+    z-index: 1600;
+    max-width: 210px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--primary);
+    color: var(--text-main);
+    font-size: 12px;
+    line-height: 1.35;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    pointer-events: none;
+}
+
+/* Куда встанет панель, если отпустить сейчас */
+.lk-rail-drop-hint {
+    position: fixed;
+    z-index: 1500;
+    display: none;
+    box-sizing: border-box;
+    background: rgba(37, 99, 235, 0.12);
+    border: 2px dashed var(--primary);
+    border-radius: 14px;
+    pointer-events: none;
+}
+
+/* Включённый режим обучения виден по кнопке в шапке (класс ставит Tour.syncButton).
+   Заливка, а не подсветка: подсветка совпадает с наведением, а курсор после нажатия
+   остаётся на кнопке — состояние выглядело бы неизменным. Наведение на включённую
+   кнопку только притемняет заливку, чтобы «включено» и «наведено» не путались. */
+.btn-ctrl.is-on,
+.btn-ctrl.is-on:hover {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #FFFFFF;
+}
+
+.btn-ctrl.is-on:hover {
+    filter: brightness(0.92);
+}
+
+body.dark-mode .btn-ctrl.is-on,
+body.dark-mode .btn-ctrl.is-on:hover {
+    border-color: #6366F1;
+    background: #6366F1;
+    color: #FFFFFF;
+}
+
+/* Логотип — кнопка возврата к расчёту (app.goHome) */
+.stout-logo-img[role="button"] {
+    cursor: pointer;
+}
+
+.stout-logo-img[role="button"]:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+/* Врезка рейтинга: карточка — только рамка вокруг фрейма со страницей /rating/ */
+.lk-rating-card {
+    display: flex;
+    flex-direction: column;
+    padding: 10px !important;
+    overflow: hidden;
+}
+
+.lk-rating-frame {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    border-radius: 12px;
+    background: var(--bg);
 }

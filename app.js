@@ -3161,12 +3161,39 @@ const app = {
         chatLog.className = 'ai-chat-log';
         card.appendChild(chatLog);
 
+        // Журнал сеанса — что человек сказал и что система ответила. Уходит в
+        // таблицу ai_fill_sessions при закрытии окна (см. logAiFillSession), оттуда
+        // его читает вкладка админки «✨ Умное заполнение». До этого журнала диалог
+        // исчезал вместе с окном, и по каким фразам правила спотыкаются — было не видно.
+        const journal = { startedAt: Date.now(), items: [], voiceDraft: null, lastUser: null, flushed: false };
+        const sinceStart = () => Math.round((Date.now() - journal.startedAt) / 1000);
+        // Реплика системы в журнал — текстом, как её прочитал бы человек: пузырёк
+        // собран из div/span, и голый textContent склеил бы «Площадь:150 м²✓Этажей:2»
+        const bubbleText = (html) => {
+            const t = document.createElement('textarea');
+            t.innerHTML = String(html)
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/div>/gi, '\n')
+                .replace(/<\/span>/gi, ' ')
+                .replace(/<[^>]+>/g, '');
+            return t.value.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+        };
+        // Что система сделала с последней репликой монтажника (см. kind в миграции
+        // 20260819_add_ai_fill_sessions.sql) и что из неё распознала
+        const note = (kind, found) => {
+            if (!journal.lastUser) return;
+            journal.lastUser.kind = kind;
+            if (found && found.length) journal.lastUser.found = found.map(r => ({ label: r.label, display: r.display }));
+        };
+        this.flushAiFillLogQueue();
+
         const addBubble = (role, html) => {
             const b = document.createElement('div');
             b.className = 'ai-chat-bubble ai-chat-' + role;
             b.innerHTML = html;
             chatLog.appendChild(b);
             chatLog.scrollTop = chatLog.scrollHeight;
+            if (role === 'assistant') journal.items.push({ t: sinceStart(), who: 'a', text: bubbleText(html) });
             return b;
         };
 
@@ -3183,6 +3210,7 @@ const app = {
 
         const voiceUI = this._createVoiceMicButton((transcript) => {
             textInput.value = transcript;
+            journal.voiceDraft = transcript;
             textInput.focus();
         });
         if (voiceUI) {
@@ -3229,7 +3257,32 @@ const app = {
             window.visualViewport.addEventListener('scroll', syncViewport);
         }
 
-        const close = () => {
+        // Журнал пишем один раз — при «Применить», закрытии окна или уходе со
+        // страницы с открытым окном. Сеанс без единой реплики монтажника не пишем:
+        // открыл и закрыл — анализировать там нечего.
+        const flushJournal = (outcome, appliedFields) => {
+            if (journal.flushed) return;
+            journal.flushed = true;
+            window.removeEventListener('pagehide', onPageHide);
+            const userItems = journal.items.filter(i => i.who === 'u');
+            if (!userItems.length) return;
+            this.logAiFillSession({
+                started_at: new Date(journal.startedAt).toISOString(),
+                ended_at: new Date().toISOString(),
+                duration_sec: sinceStart(),
+                messages_count: userItems.length,
+                voice_count: userItems.filter(i => i.src !== 'text').length,
+                outcome: outcome || 'closed',
+                applied_fields: (appliedFields || []).map(r => ({ label: r.label, display: r.display })),
+                unrecognized: userItems.filter(i => i.kind === 'none').length,
+                dialog: journal.items
+            });
+        };
+        const onPageHide = () => flushJournal('closed');
+        window.addEventListener('pagehide', onPageHide);
+
+        const close = (outcome, appliedFields) => {
+            flushJournal(outcome, appliedFields);
             overlay.classList.remove('active');
             if (window.visualViewport) {
                 window.visualViewport.removeEventListener('resize', syncViewport);
@@ -3333,9 +3386,15 @@ const app = {
             if (!text) { textInput.focus(); return; }
             addBubble('user', escapeHtml(text));
             textInput.value = '';
+            // Откуда реплика: надиктована, набрана, или надиктована и поправлена руками
+            const src = journal.voiceDraft == null ? 'text' : (journal.voiceDraft.trim() === text ? 'voice' : 'voice+edit');
+            journal.voiceDraft = null;
+            journal.lastUser = { t: sinceStart(), who: 'u', text, src, kind: 'none' };
+            journal.items.push(journal.lastUser);
 
             // Пользователь явно говорит, что вопросов больше не нужно
             if (isStopPhrase(text)) {
+                note('stop');
                 stopAsking = true;
                 pendingTopic = null;
                 addBubble('assistant', accumulated.size
@@ -3350,11 +3409,13 @@ const app = {
                 const topic = TOPICS.find(x => x.key === pendingTopic);
                 if (topic) {
                     if (topic.ambiguousYes && isBareYes(text)) {
+                        note('question');
                         addBubble('assistant', topic.question);
                         textInput.focus();
                         return;
                     }
                     if (isBareYes(text) && topic.yesField) {
+                        note('yes', [topic.yesField]);
                         accumulated.set(topic.yesField.field, topic.yesField);
                         pendingTopic = null;
                         applyBtn.style.display = '';
@@ -3364,6 +3425,7 @@ const app = {
                         return;
                     }
                     if (isBareNo(text)) {
+                        note('no');
                         declined.add(topic.key);
                         pendingTopic = null;
                         addBubble('assistant', 'Хорошо, пропускаю.');
@@ -3378,6 +3440,7 @@ const app = {
             // разбора, иначе, например, "убери бойлер" сам распознался бы как "нужна горячая вода".
             const deleteFields = this.detectDeleteIntent(text);
             if (deleteFields) {
+                note('delete');
                 let removedAny = false;
                 deleteFields.forEach(f => { if (accumulated.delete(f)) removedAny = true; });
                 applyBtn.style.display = accumulated.size ? '' : 'none';
@@ -3393,6 +3456,7 @@ const app = {
             // проверяем раньше обычного разбора параметров, чтобы не пытаться найти в этой
             // фразе площадь/этажность и т.п.
             if (this.detectProTariffIntent(text)) {
+                note('pro');
                 const month = this.proPaymentLinks.month;
                 const year = this.proPaymentLinks.year;
                 const link = (plan) => `<a href="${plan.url}" target="_blank" rel="noopener">${plan.tariffName} — ${this.formatCurrencyAmount(plan.rub)}</a>`;
@@ -3414,6 +3478,7 @@ const app = {
 
             const results = this.parseHouseQuery(parseText);
             if (results.length) {
+                note('parsed', results);
                 results.forEach(r => accumulated.set(r.field, r));
                 applyBtn.style.display = '';
                 pendingTopic = null;
@@ -3434,7 +3499,7 @@ const app = {
             if (!results.length) return;
             this.applyParsedResults(results);
             this.showAiParseToast(results.length);
-            close();
+            close('applied', results);
         };
 
         // Enter отправляет сообщение, Shift+Enter — обычный перенос строки
@@ -4332,7 +4397,7 @@ const app = {
             }
             return true;
         }
-        if (['admin', 'viewer'].includes(accType)) {
+        if (['admin', 'viewer', 'manager'].includes(accType)) {
             if (demoEnds && new Date(demoEnds) >= new Date()) {
                 return true;
             }
@@ -5991,7 +6056,7 @@ const app = {
     },
 
     renderAdminDistributors: function () {
-        const isViewer = this.getAdminRole() === 'viewer';
+        const isViewer = this.isReadOnlyAdmin(); // наблюдатель или менеджер: панель только на просмотр
         const content = document.getElementById('admin_content');
         if (!content) return;
 
@@ -6402,7 +6467,12 @@ const app = {
             // 'calculated' (у смет, сохранённых до появления флага в calc_data)
             if (liveRecMap[String(e.calc_id)] || (e.meta && e.meta.source === 'recognition')) p.fromRecognition = true;
         });
-        const list = Object.values(projects);
+        // Менеджеру планировщик показывает только сметы его компании. Фильтруем
+        // здесь, а не в выборке событий: дистрибьютор у сметы известен лишь после
+        // сопоставления её автора со справочником пользователей (userMeta выше).
+        const scopeDists = this.isManagerRole() ? this.managerDistIds().map(String) : null;
+        const list = Object.values(projects)
+            .filter(p => !scopeDists || scopeDists.includes(String(p.distributor_id || '')));
 
         const installers = [...new Set(list.map(p => p.user_name).filter(Boolean))].sort();
         const regions = [...new Set(list.map(p => p.region).filter(Boolean))].sort();
@@ -6633,7 +6703,11 @@ const app = {
         const isSuperAdmin = ['super_admin', 'admin'].includes(role);
         const dist = meta && meta.distributor_id ? ((this.adminData && this.adminData.distributors) || []).find(d => String(d.id) === String(meta.distributor_id)) : null;
         const isAssignedManager = dist && (String(dist.manager_email).toLowerCase() === myEmail || String(dist.director_email).toLowerCase() === myEmail);
-        const canManage = isSuperAdmin || isAssignedManager;
+        // Менеджер с ролью привязан к компании полем «Дистрибьютор» в своей карточке,
+        // а не только почтой в карточке компании — эту привязку тоже засчитываем.
+        const isScopedManager = this.isManagerRole() && meta && meta.distributor_id
+            && this.managerDistIds().map(String).includes(String(meta.distributor_id));
+        const canManage = isSuperAdmin || isAssignedManager || isScopedManager;
 
         let actionsHtml = '';
         // Оплату система не видит: платёжной интеграции нет, и единственный, кто
@@ -6880,7 +6954,7 @@ const app = {
     },
 
     saveDistributor: async function () {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Добавление и изменение промокодов запрещено.');
             return;
         }
@@ -7005,7 +7079,7 @@ const app = {
     },
 
     deleteDistributor: async function (id) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Удаление промокодов запрещено.');
             return;
         }
@@ -7135,7 +7209,9 @@ const app = {
                         <th>Сумма</th>
                         <th>Статус</th>
                         <th>Дата</th>
-                        <th style="text-align:right;">Действия</th>
+                        <!-- Ширина задана явно: в колонке три кнопки действий, и без неё
+                             таблица отдавала ей меньше места, чем занимает содержимое -->
+                        <th style="text-align:right; width: 360px;">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -7172,9 +7248,12 @@ const app = {
                     <td style="color:var(--primary); font-weight:bold;">${sum}</td>
                     <td>${statusBadge}</td>
                     <td style="color:var(--text-sec); font-size:12px;">${date}</td>
-                    <td style="text-align:right;">
+                    <td style="text-align:right; white-space: nowrap;">
                         <div style="display:flex; justify-content:flex-end; gap:8px; align-items: center;">
                             ${getInvoiceBtn}
+                            <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'open')" title="Открыть расчёт в калькуляторе">Открыть</button>
+                            <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'share')" title="Короткая ссылка на смету для клиента">Ссылка клиенту</button>
+                            <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'download')" title="Скачать смету: PDF или Excel">Скачать</button>
                             ${canDelete ? `
                                 <button class="delete-icon-btn" onclick="event.stopPropagation(); app.deleteEstimate('${item.id}', event)" title="Удалить смету">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -7188,6 +7267,20 @@ const app = {
 
         h += `</tbody></table>`;
         content.innerHTML = h;
+    },
+
+    // Действия над сохранённой сметой прямо из списка «Мои объекты». И ссылка
+    // клиенту, и скачивание умеют работать только с открытым расчётом — иначе они
+    // молча сделали бы своё дело над той сметой, что была открыта до этого.
+    // Поэтому сначала загружаем выбранную, а потом запускаем действие.
+    cloudRowAction: async function (id, what) {
+        await this.loadSingleEstimate(id);
+        if (what === 'share') {
+            this.shareInvoice();
+        } else if (what === 'download') {
+            // Меню с выбором PDF или Excel — тот же, что под сметой
+            this.toggleDownloadMenu();
+        }
     },
 
     closeCloudListModal: function () {
@@ -8398,6 +8491,9 @@ const app = {
         this.fillCompanyDetailsForm();
 
         document.getElementById('profile_modal_overlay').style.display = 'flex';
+        // Кабинет встаёт справа от панели разделов, на место параметров и сметы, и
+        // прячет свою колонку разделов — меню на экране должно быть одно
+        this.syncCabinetDock();
         // Модалка позиционируется фиксированно и может быть выше вьюпорта на низких экранах —
         // без блокировки прокрутки body под ней появляется лишний внешний скролл всей страницы
         // поверх собственного overflow-y:auto модалки (два скролла одновременно)
@@ -8432,6 +8528,7 @@ const app = {
         }
         this._profileForceComplete = false;
         document.getElementById('profile_modal_overlay').style.display = 'none';
+        this.syncCabinetDock();
         document.body.style.overflow = '';
         this.unsubscribeChatThread();
         // Список смет снова рисуется в собственную модалку, пока кабинет не откроют заново
@@ -8439,6 +8536,8 @@ const app = {
 
         this.syncAiFabVisibility();
         this.syncModalOverlayClass();
+        // Подсветка в левой панели возвращается на «Расчёт»
+        this.syncRailUI();
     },
     // ── Город → регион в анкете ──
     // Регион подставляется по справочнику CITY_REGION_MAP (catalog.js). Как только
@@ -9279,6 +9378,8 @@ const app = {
         } catch (e) {
             console.warn('[refreshManagerTabVisibility] Ошибка проверки роли менеджера:', e);
         }
+        // Тот же пункт есть в левой панели — переносим на него результат проверки
+        this.syncRailUI();
     },
     // Переключение разделов личного кабинета (колонка слева, .lk-nav в index.html):
     // Профиль и компания / Мои объекты / Заказы и счета / Мой менеджер / Мои монтажники /
@@ -9338,6 +9439,719 @@ const app = {
         } else if (tab === 'equipment') {
             this.renderEquipmentLibraryTab();
         }
+
+        // Тот же раздел подсвечиваем в левой панели на экране
+        this.syncRailUI();
+    },
+
+    // ═══════════ Левая панель кабинета (.lk-rail, разметка в index.html) ═══════════
+    // Появилась потому, что в кабинет вёл единственный вход — клик по своему имени в
+    // шапке, и монтажники его не находили. Панель ничего не считает и не хранит: это
+    // просто вынесенные на экран кнопки к уже существующим разделам.
+    //
+    // У «Подписки» своего пункта в панели нет (раздел скрыт до конца обкатки тарифа),
+    // но подсветить логично соседний — иначе панель выглядит так, будто кабинет закрыт.
+    RAIL_TAB_ALIAS: {
+        subscription: 'requisites'
+    },
+
+    // Все разделы занимают одно и то же место на экране, поэтому при переходе то,
+    // что там лежало, надо закрыть, а не накрыть сверху. Раньше кабинет (у него
+    // z-index выше) оставался поверх панели управления, и «Сообщения» при открытом
+    // кабинете выглядели как не нажимающаяся кнопка.
+    closeOtherRailPlaces: function (keepId) {
+        this.DOCKABLE_OVERLAY_IDS.forEach(id => {
+            if (id === keepId || !this.isOverlayOpen(id)) return;
+            if (id === 'profile_modal_overlay') this.closeProfileModal();
+            else if (id === 'admin_modal_overlay') this.closeAdminModal();
+            else if (id === 'notifications_modal_overlay') this.closeNotificationsModal();
+            else if (id === 'lk_rating_overlay') this.closeRatingPanel();
+        });
+    },
+
+    railGo: function (section) {
+        if (section === 'logout') {
+            this.logout();
+            return;
+        }
+        // «Расчёт» — возврат к смете: закрываем всё, что открыто поверх колонок
+        if (section === 'calc') {
+            this.closeOtherRailPlaces(null);
+            this.syncRailUI();
+            return;
+        }
+        // Сообщения живут в отдельном окне, а не разделом кабинета: у админа это
+        // панель управления на вкладке сообщений, у монтажника — своё окно
+        if (section === 'messages') {
+            const target = this.hasAdminAccess() ? 'admin_modal_overlay' : 'notifications_modal_overlay';
+            this.closeOtherRailPlaces(target);
+            // По какому пункту пришли, тот и подсвечиваем: панель управления
+            // открывается и «Сообщениями», и «Админкой»
+            this._adminOpenedFrom = 'messages';
+            this.openMessagesCenter();
+            return;
+        }
+        if (section === 'rating') {
+            this.openRatingPanel();
+            return;
+        }
+        if (section === 'admin') {
+            this.closeOtherRailPlaces('admin_modal_overlay');
+            this._adminOpenedFrom = 'admin';
+            this.showAdminModal();
+            return;
+        }
+        // Панель показывается только авторизованным (body.guest-mode в CSS), но клик
+        // может прийти и от гостя — например, если он вышел из аккаунта, не перезагрузив
+        // страницу. Тогда предлагаем вход, а не молча ничего не делаем: сам
+        // showProfileModal в этом случае просто ничего не сделает. Пользователя ищем той
+        // же строкой, что и он, — иначе внутри Telegram WebApp вход предлагался бы тому,
+        // кто уже вошёл.
+        const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        if (!tgUser) {
+            this.showAuthModal();
+            return;
+        }
+        // Кабинет уже открыт — просто переключаем раздел. Полный showProfileModal
+        // заново заполнил бы поля анкеты из сохранённых данных и стёр незаписанную
+        // правку, которую человек как раз набирал.
+        if (this.isOverlayOpen('profile_modal_overlay')) {
+            this.setProfileTab(section);
+            return;
+        }
+        this.closeOtherRailPlaces('profile_modal_overlay');
+        this.showProfileModal(false, section);
+    },
+
+    // ── Окна кабинета справа от панели, а не поверх экрана ────────────────────
+    // Пристыкованный режим включается, только когда панель разделов на экране есть.
+    // На телефоне и планшете стоймя её нет, и окна остаются прежними шторками во
+    // весь экран со своей навигацией.
+    //
+    // Список окон, которые открываются из панели и потому обязаны вставать в то же
+    // место: кабинет, панель управления (у админа в неё ведут «Сообщения»), окно
+    // сообщений обычного монтажника и врезка рейтинга.
+    DOCKABLE_OVERLAY_IDS: ['profile_modal_overlay', 'admin_modal_overlay', 'notifications_modal_overlay', 'lk_rating_overlay'],
+
+    isOverlayOpen: function (id) {
+        const el = document.getElementById(id);
+        return !!(el && el.style.display && el.style.display !== 'none');
+    },
+
+    isRailVisible: function () {
+        const rail = document.getElementById('lk_rail');
+        return !!(rail && getComputedStyle(rail).display !== 'none');
+    },
+
+    // ── Куда прикреплена панель разделов: слева колонкой или сверху лентой ──────
+    // Панель таскают за хват (.lk-rail-grip), как палитры в фотошопе: потянул к
+    // верхнему краю — прилипла под шапку, потянул к левому — вернулась колонкой.
+    // Выбор запоминается, потому что это про привычку работать, а не про разовое
+    // действие.
+    // Раскладка меню (где панель и в каком порядке блоки) живёт в настройках
+    // аккаунта, а не в памяти браузера: это про привычку человека работать, и на
+    // другом компьютере она должна быть той же. Настройки уезжают в
+    // users.installer_settings тем же push/pull, что реквизиты компании и прайс
+    // монтажа; у гостя остаются только в localStorage — сохранять некуда.
+    // Старые ключи браузера читаем один раз как запасной вариант: у тех, кто уже
+    // настроил меню до переезда, порядок не должен пропасть.
+    RAIL_DOCK_KEY: 'lk_rail_dock',
+    RAIL_GROUPS_KEY: 'lk_rail_groups',
+
+    railLayout: function () {
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        const saved = this.installerSettings.railLayout;
+        if (saved && typeof saved === 'object') return saved;
+        let dock = null, groups = null;
+        try {
+            dock = localStorage.getItem(this.RAIL_DOCK_KEY);
+            groups = JSON.parse(localStorage.getItem(this.RAIL_GROUPS_KEY) || 'null');
+        } catch (e) { /* приватный режим — просто нечего восстанавливать */ }
+        return { dock: dock === 'top' ? 'top' : 'left', groups: Array.isArray(groups) ? groups : null };
+    },
+
+    saveRailLayout: function (patch) {
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        const now = this.railLayout();
+        this.installerSettings.railLayout = Object.assign({ dock: 'left', groups: null }, now, patch || {});
+        // Пишет и в localStorage, и (для вошедших) в облако
+        this.pushInstallerSettingsToCloud();
+    },
+
+    // Применить раскладку к разметке. Зовётся при первой отрисовке и ещё раз, когда
+    // настройки доедут из облака: на новом устройстве они приходят с задержкой.
+    applyRailLayout: function () {
+        if (!document.getElementById('lk_rail')) return;
+        this.applyRailGroupOrder();
+        this.setRailDock(this.railDock(), false);
+        this.fitRailToViewport();
+    },
+
+    // Меню занимает высоту первого экрана целиком: на высоком мониторе разделы
+    // крупнее, на невысоком ноутбуке мельче — но помещаются все и без прокрутки.
+    // Подбираем один множитель --lk-scale, от которого зависят значки, подписи и
+    // отступы (см. .lk-rail-item в style.css).
+    //
+    // Почему не числами в CSS: высота колонки зависит от шрифта, масштаба страницы
+    // в браузере и от того, сколько разделов показано этому человеку (у менеджера
+    // дистрибьютора на один больше, у не-админа на один меньше). Считать надо по
+    // факту, а не по предположению.
+    // Нижняя граница — чтобы подписи оставались читаемыми на невысоком ноутбуке.
+    // Верхней почти нет: на большом мониторе меню должно занимать высоту первого
+    // экрана, а не жаться маленькой колонкой в углу с пустотой снизу.
+    RAIL_SCALE_MIN: 0.72,
+    RAIL_SCALE_MAX: 2,
+
+    fitRailToViewport: function () {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        // Лента сверху по высоте ни во что не упирается — растягивать нечего
+        if (rail.classList.contains('dock-top') || getComputedStyle(rail).display === 'none') {
+            rail.style.removeProperty('--lk-scale');
+            return;
+        }
+        const header = document.querySelector('.site-header');
+        const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+        // Колонка внутри #page_scale_wrapper уменьшена zoom-ом: её собственная
+        // высота в CSS-пикселях, а окно — в экранных, поэтому приводим к одним
+        const wrap = document.getElementById('page_scale_wrapper');
+        const zoom = (wrap && parseFloat(getComputedStyle(wrap).zoom)) || 1;
+        const available = window.innerHeight - headerBottom - 24;
+        if (available <= 0) return;
+
+        // Дальше считаем в CSS-пикселях самой колонки — в них же заданы её размеры.
+        // Из предела вычитаем рамку (по пикселю сверху и снизу при box-sizing:
+        // border-box) и пару пикселей на округления: без этого колонка упиралась в
+        // собственный предел и показывала прокрутку на два пикселя.
+        const limit = Math.floor(available / zoom);
+        const room = limit - 4;
+        const setScale = (value) => rail.style.setProperty('--lk-scale', value.toFixed(3));
+        const fits = () => rail.scrollHeight <= room;
+
+        // Первое приближение — по высоте при обычном размере. Оно неточное: рамки,
+        // скругления и межстрочный интервал масштабу не подчиняются, поэтому дальше
+        // уточняем шагами. Шагов немного: каждый — пересчёт вёрстки, а точность до
+        // пикселя тут не нужна.
+        setScale(1);
+        const natural = rail.scrollHeight || 1;
+        let scale = Math.min(this.RAIL_SCALE_MAX, Math.max(this.RAIL_SCALE_MIN, room / natural));
+        setScale(scale);
+
+        for (let i = 0; i < 8 && !fits() && scale > this.RAIL_SCALE_MIN; i++) {
+            scale = Math.max(this.RAIL_SCALE_MIN, scale - 0.03);
+            setScale(scale);
+        }
+        for (let i = 0; i < 12 && scale < this.RAIL_SCALE_MAX; i++) {
+            const next = Math.min(this.RAIL_SCALE_MAX, scale + 0.03);
+            setScale(next);
+            if (!fits()) { setScale(scale); break; }
+            scale = next;
+        }
+
+        document.documentElement.style.setProperty('--lk-rail-max-h', limit + 'px');
+    },
+
+    railDock: function () {
+        return this.railLayout().dock === 'top' ? 'top' : 'left';
+    },
+
+    setRailDock: function (where, remember) {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        const toTop = (where === 'top');
+        const container = document.querySelector('.container');
+        const header = document.querySelector('.site-header');
+        if (!container || !header) return;
+
+        // Сверху панель живёт сразу за шапкой (там же, внутри #page_scale_wrapper —
+        // иначе разъедется масштаб), слева — первым элементом колонок
+        if (toTop) {
+            if (rail.previousElementSibling !== header) header.parentNode.insertBefore(rail, header.nextSibling);
+        } else if (container.firstElementChild !== rail) {
+            container.insertBefore(rail, container.firstChild);
+        }
+
+        rail.classList.toggle('dock-top', toTop);
+        document.body.classList.toggle('lk-rail-top', toTop);
+        if (remember !== false) this.saveRailLayout({ dock: toTop ? 'top' : 'left' });
+        // Пристыкованный кабинет считает свой прямоугольник по панели и колонкам —
+        // после переезда его надо пересчитать
+        this.updateCabinetDockGeometry();
+    },
+
+    initRailDrag: function () {
+        if (this._railDragBound) return;
+        const rail = document.getElementById('lk_rail');
+        const grip = document.getElementById('lk_rail_grip');
+        if (!rail || !grip) return;
+        this._railDragBound = true;
+
+        // Окно меняет размер — меню заново подгоняется по высоте. Вешаем здесь:
+        // initRailDrag вызывается один раз при первой отрисовке панели.
+        window.addEventListener('resize', () => this.fitRailToViewport());
+
+        let startX = 0, startY = 0, dragging = false, target = null;
+
+        // Подсказка-прямоугольник на месте будущего положения панели. Лежит в body
+        // (вне масштабируемой обёртки), поэтому размеры берём из настоящих
+        // координат шапки и колонок, а не из чисел в CSS.
+        const showHint = (where) => {
+            let hint = document.getElementById('lk_rail_drop_hint');
+            if (!hint) {
+                hint = document.createElement('div');
+                hint.id = 'lk_rail_drop_hint';
+                hint.className = 'lk-rail-drop-hint no-print';
+                document.body.appendChild(hint);
+            }
+            const headerBox = document.querySelector('.site-header').getBoundingClientRect();
+            // Размер будущего места считаем по числам из CSS, а не по нынешнему
+            // размеру панели: она сейчас может быть лентой во всю ширину, и подсветка
+            // «слева» тогда растягивалась на весь экран. Обёртка страницы уменьшена
+            // zoom-ом, поэтому переводим в экранные пиксели тем же множителем.
+            const wrap = document.getElementById('page_scale_wrapper');
+            const zoom = (wrap && parseFloat(getComputedStyle(wrap).zoom)) || 1;
+            const columnW = Math.round(84 * zoom);   // ширина .lk-rail колонкой
+            const stripH = Math.round(66 * zoom);    // высота .lk-rail лентой
+            if (where === 'top') {
+                hint.style.left = Math.round(headerBox.left + 12) + 'px';
+                hint.style.width = Math.round(headerBox.width - 24) + 'px';
+                hint.style.top = Math.round(headerBox.bottom + 6) + 'px';
+                hint.style.height = stripH + 'px';
+            } else {
+                hint.style.left = Math.round(headerBox.left + 12) + 'px';
+                hint.style.width = columnW + 'px';
+                hint.style.top = Math.round(headerBox.bottom + 16) + 'px';
+                hint.style.height = Math.round(window.innerHeight - headerBox.bottom - 32) + 'px';
+            }
+            hint.style.display = 'block';
+        };
+
+        const hideHint = () => {
+            const hint = document.getElementById('lk_rail_drop_hint');
+            if (hint) hint.remove();
+        };
+
+        // Мест всего два, поэтому делим экран пополам по смыслу: подтянул к шапке —
+        // лента сверху, потянул ниже — колонка слева. Отдельной «мёртвой» зоны нет
+        // намеренно: раньше при перетаскивании вниз от ленты панель просто оставалась
+        // на месте, и это выглядело так, будто её не отпустили.
+        const zoneAt = (ev) => {
+            const headerBottom = document.querySelector('.site-header').getBoundingClientRect().bottom;
+            return (ev.clientY < headerBottom + 90) ? 'top' : 'left';
+        };
+
+        const onMove = (ev) => {
+            if (!dragging) {
+                // Порог, чтобы дрожание руки не считалось перетаскиванием
+                if (Math.abs(ev.clientX - startX) < 6 && Math.abs(ev.clientY - startY) < 6) return;
+                dragging = true;
+                rail.classList.add('is-dragging');
+                // Курсор-кулак на всё время перетаскивания и по всему экрану: рука
+                // уходит с самого хвата, а вид курсора должен остаться прежним
+                document.body.classList.add('lk-grabbing');
+            }
+            target = zoneAt(ev) || this.railDock();
+            showHint(target);
+            ev.preventDefault();
+        };
+
+        const onUp = () => {
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', onUp);
+            document.removeEventListener('pointercancel', onUp);
+            hideHint();
+            rail.classList.remove('is-dragging');
+            document.body.classList.remove('lk-grabbing');
+            if (dragging && target) this.setRailDock(target);
+            dragging = false;
+            target = null;
+        };
+
+        grip.addEventListener('pointerdown', (ev) => {
+            if (ev.button !== 0) return;
+            startX = ev.clientX;
+            startY = ev.clientY;
+            dragging = false;
+            target = null;
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp);
+            document.addEventListener('pointercancel', onUp);
+            ev.preventDefault();
+        });
+
+        // Двойной щелчок и клавиша — то же самое без перетаскивания: мышью с тачпада
+        // тянуть неудобно, а с клавиатуры перетащить нельзя вовсе
+        const flip = () => this.setRailDock(this.railDock() === 'top' ? 'left' : 'top');
+        grip.addEventListener('dblclick', flip);
+        grip.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); flip(); }
+        });
+    },
+
+    // ── Порядок блоков внутри панели ──────────────────────────────────────────
+    // Пункты собраны в блоки (data-group в разметке), блоки можно менять местами.
+    // Перетаскивание включается отдельно — правым щелчком по панели: иначе оно
+    // отбирало бы обычные нажатия на разделы, и человек двигал бы меню, просто
+    // промахнувшись мимо кнопки.
+    applyRailGroupOrder: function () {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        const groups = Array.from(rail.querySelectorAll('.lk-rail-group'));
+        const keys = groups.map(g => g.dataset.group);
+        // Порядок из разметки запоминаем при первом заходе: к нему надо вернуться,
+        // когда своей раскладки нет (вышли из аккаунта, зашли под другим)
+        if (!this._railDefaultGroupOrder) this._railDefaultGroupOrder = keys.slice();
+
+        const layout = this.railLayout().groups;
+        const saved = (Array.isArray(layout) && layout.length) ? layout : this._railDefaultGroupOrder;
+        // Блок, которого в сохранённом порядке нет (появился в новой версии сайта),
+        // не теряем — дописываем в конец
+        const order = saved.filter(k => keys.includes(k)).concat(keys.filter(k => !saved.includes(k)));
+        order.forEach(k => {
+            const g = groups.find(x => x.dataset.group === k);
+            if (g) rail.appendChild(g);
+        });
+    },
+
+    saveRailGroupOrder: function () {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        const order = Array.from(rail.querySelectorAll('.lk-rail-group')).map(g => g.dataset.group);
+        this.saveRailLayout({ groups: order });
+    },
+
+    setRailEditMode: function (on) {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        document.body.classList.toggle('lk-rail-edit', !!on);
+        let hint = document.getElementById('lk_rail_edit_hint');
+        if (on) {
+            if (!hint) {
+                hint = document.createElement('div');
+                hint.id = 'lk_rail_edit_hint';
+                hint.className = 'lk-rail-edit-hint no-print';
+                hint.innerHTML = 'Настройка меню: тяните блоки мышью.<br>Правый щелчок или Esc — выйти.';
+                document.body.appendChild(hint);
+            }
+            const box = rail.getBoundingClientRect();
+            hint.style.left = Math.round(box.right + 10) + 'px';
+            hint.style.top = Math.round(box.top) + 'px';
+        } else if (hint) {
+            hint.remove();
+        }
+    },
+
+    initRailGroupDrag: function () {
+        if (this._railGroupDragBound) return;
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        this._railGroupDragBound = true;
+
+        let group = null, startX = 0, startY = 0, moving = false;
+        const editing = () => document.body.classList.contains('lk-rail-edit');
+        const horizontal = () => rail.classList.contains('dock-top');
+
+        const onMove = (ev) => {
+            if (!moving) {
+                if (Math.abs(ev.clientX - startX) < 8 && Math.abs(ev.clientY - startY) < 8) return;
+                moving = true;
+                group.classList.add('is-moving');
+                document.body.classList.add('lk-grabbing');
+            }
+            // Блок сразу встаёт на новое место — так видно результат ещё до того,
+            // как отпустишь кнопку. Соседа выбираем по середине: курсор прошёл её —
+            // значит, встаём перед этим блоком.
+            const others = Array.from(rail.querySelectorAll('.lk-rail-group')).filter(g => g !== group);
+            const pos = horizontal() ? ev.clientX : ev.clientY;
+            let before = null;
+            for (const g of others) {
+                const b = g.getBoundingClientRect();
+                const mid = horizontal() ? (b.left + b.width / 2) : (b.top + b.height / 2);
+                if (pos < mid) { before = g; break; }
+            }
+            if (before) {
+                if (group.nextElementSibling !== before) rail.insertBefore(group, before);
+            } else if (rail.lastElementChild !== group) {
+                rail.appendChild(group);
+            }
+            ev.preventDefault();
+        };
+
+        const onUp = () => {
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', onUp);
+            document.removeEventListener('pointercancel', onUp);
+            document.body.classList.remove('lk-grabbing');
+            if (moving) {
+                group.classList.remove('is-moving');
+                this.saveRailGroupOrder();
+                this.updateCabinetDockGeometry();
+            }
+            group = null;
+            moving = false;
+        };
+
+        rail.addEventListener('pointerdown', (ev) => {
+            if (ev.button !== 0 || !editing()) return;
+            if (ev.target.closest('.lk-rail-grip')) return; // хват двигает панель целиком
+            const g = ev.target.closest('.lk-rail-group');
+            if (!g) return;
+            group = g;
+            startX = ev.clientX;
+            startY = ev.clientY;
+            moving = false;
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp);
+            document.addEventListener('pointercancel', onUp);
+            ev.preventDefault();
+        });
+
+        // Правый щелчок по панели включает и выключает настройку. Своё меню браузера
+        // при этом не показываем — иначе оно перекроет то, что человек двигает.
+        rail.addEventListener('contextmenu', (ev) => {
+            ev.preventDefault();
+            this.setRailEditMode(!editing());
+        });
+
+        // В режиме настройки нажатия на разделы не срабатывают: панель сейчас
+        // перестраивают, а не пользуются ей
+        rail.addEventListener('click', (ev) => {
+            if (!editing()) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+        }, true);
+
+        document.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Escape' && editing()) this.setRailEditMode(false);
+        });
+
+        // Щелчок мимо панели — тоже выход: режим не должен оставаться включённым
+        // незаметно для человека
+        document.addEventListener('pointerdown', (ev) => {
+            if (editing() && !ev.target.closest('#lk_rail')) this.setRailEditMode(false);
+        });
+    },
+
+    // Единственная точка, решающая, пристыковано окно или раскрыто на весь экран.
+    // Зовётся после каждого открытия и закрытия любого из окон списка.
+    syncCabinetDock: function () {
+        // Принудительное дозаполнение анкеты остаётся окном во весь экран: иначе от
+        // обязательной формы можно уйти щелчком по панели
+        const anyOpen = !this._profileForceComplete
+            && this.DOCKABLE_OVERLAY_IDS.some(id => this.isOverlayOpen(id));
+        this.setCabinetDocked(anyOpen && this.isRailVisible());
+    },
+
+    // Есть ли у человека сохранённые сметы — от этого зависит, включать ли ему
+    // режим обучения по умолчанию. Запрос делаем только пока выбор не сделан (после
+    // первого решения ответ уже записан и сюда мы не заходим) и берём один
+    // счётчик без тела ответа, чтобы не тратить трафик базы.
+    decideTourDefault: async function (userId) {
+        if (typeof Tour === 'undefined' || !userId) return;
+        if (Tour.userChose()) return;
+        try {
+            const { count, error } = await supabaseClient
+                .from('estimates')
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', userId);
+            // Не ответила база — ничего не решаем: включить обучение тому, у кого
+            // полсотни смет, неприятнее, чем не включить его новичку
+            if (error) return;
+            Tour.applyDefault((count || 0) > 0);
+        } catch (e) {
+            console.warn('[decideTourDefault] Не удалось проверить сохранённые сметы:', e);
+        }
+    },
+
+    // Клик по логотипу — возврат на главный экран, к расчёту. Закрываем всё, что
+    // открыто поверх сметы, а на телефоне ещё и переключаемся с вкладки профиля
+    // обратно на параметры: там «главная» — это она, а не колонка разделов.
+    goHome: function () {
+        if (document.body.classList.contains('menu-open')) this.toggleMenu();
+        this.railGo('calc');
+        if (this.isMobileLayout()) this.switchMobileTab('inputs');
+    },
+
+    // ── Врезка «Баллы и рейтинг» ──
+    // Рейтинг — отдельная страница, и ссылка на неё уводила из калькулятора вместе с
+    // меню. Показываем ту же страницу во фрейме на месте колонок; на узком экране,
+    // где панели нет, по-прежнему открываем её отдельной вкладкой.
+    openRatingPanel: function () {
+        if (!this.isRailVisible()) {
+            window.open('/rating/', '_blank', 'noopener');
+            return;
+        }
+        this.closeOtherRailPlaces('lk_rating_overlay');
+
+        const frame = document.getElementById('lk_rating_frame');
+        // Адрес подставляем при первом открытии: до него страницу грузить незачем.
+        // Путь относительный — сайт живёт и на своём домене, и в подпапке.
+        if (frame && !frame.getAttribute('src')) frame.setAttribute('src', 'rating/');
+        const overlay = document.getElementById('lk_rating_overlay');
+        if (overlay) overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        this.syncCabinetDock();
+        this.syncRailUI();
+    },
+
+    closeRatingPanel: function () {
+        const overlay = document.getElementById('lk_rating_overlay');
+        if (overlay) overlay.style.display = 'none';
+        document.body.style.overflow = '';
+        this.syncCabinetDock();
+        this.syncRailUI();
+    },
+
+    setCabinetDocked: function (on) {
+        document.body.classList.toggle('lk-docked', !!on);
+        if (!on) return;
+        this.updateCabinetDockGeometry();
+        // Пересчёт при смене размера окна вешаем один раз и лениво: до первого
+        // открытия кабинета он не нужен.
+        if (!this._dockResizeBound) {
+            this._dockResizeBound = true;
+            window.addEventListener('resize', () => {
+                if (!document.body.classList.contains('lk-docked')) return;
+                // Окно сузили до мобильной раскладки — панели больше нет,
+                // возвращаем кабинету полный экран
+                if (!this.isRailVisible()) {
+                    document.body.classList.remove('lk-docked');
+                    return;
+                }
+                this.updateCabinetDockGeometry();
+            });
+        }
+    },
+
+    // Считаем прямоугольник кабинета по живому положению панели и шапки: панель
+    // лежит внутри #page_scale_wrapper с zoom: 0.8, а шапка меняет высоту при
+    // прокрутке — фиксированными числами в CSS это не описать.
+    updateCabinetDockGeometry: function () {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        const railBox = rail.getBoundingClientRect();
+        const header = document.querySelector('.site-header');
+        const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+
+        // Левый и правый края берём у самих колонок, которые кабинет собой закрывает:
+        // отступ между панелью и параметрами задан гэпом .container, и посчитанный
+        // «на глаз» край оставлял бы сбоку торчать полоску колонки параметров.
+        const inputPanel = document.querySelector('.container .input-panel');
+        const outputPanel = document.querySelector('.container .output-panel');
+        // Ширину окна берём у документа, а не у window.innerWidth: последняя считает
+        // вместе с полосой прокрутки страницы. Пока раздел не открыт, полоса есть, а
+        // как только открыли — пропадает (body получает overflow: hidden), колонки
+        // становятся шире, и карточка, посчитанная по старым числам, не доходила до
+        // их края на ширину полосы. Именно это и выглядело «окно не совпадает».
+        const viewW = document.documentElement.clientWidth || window.innerWidth;
+        const viewH = document.documentElement.clientHeight || window.innerHeight;
+        const left = inputPanel ? inputPanel.getBoundingClientRect().left : railBox.right + 12;
+        const right = outputPanel
+            ? Math.max(0, viewW - outputPanel.getBoundingClientRect().right)
+            : 16;
+
+        // Верх — по колонкам, которые кабинет собой закрывает. Пока страница не
+        // прокручена, это их собственный край; когда прокручена, колонки уходят под
+        // шапку, и упираемся в неё — а если панель прикреплена сверху лентой, то в
+        // её нижний край, иначе карточка наехала бы на ленту.
+        const railTopStrip = document.body.classList.contains('lk-rail-top') && this.isRailVisible();
+        const floor = railTopStrip ? railBox.bottom + 8 : headerBottom + 8;
+        const inputTop = inputPanel ? inputPanel.getBoundingClientRect().top : floor;
+
+        const style = document.documentElement.style;
+        style.setProperty('--lk-dock-left', Math.round(left) + 'px');
+        style.setProperty('--lk-dock-top', Math.round(Math.max(inputTop, floor)) + 'px');
+        style.setProperty('--lk-dock-right', Math.round(right) + 'px');
+        style.setProperty('--lk-dock-bottom', Math.round(right) + 'px');
+        // Дно карточки не должно оказаться выше нижнего края окна больше, чем на тот
+        // же отступ: иначе снизу остаётся полоска страницы
+        if (viewH <= 0) return;
+
+        // Пересчитываем ещё раз в следующем кадре: окно открывается, страница
+        // перестаёт прокручиваться, полоса прокрутки исчезает — и колонки, по
+        // которым мы считали, успевают стать шире уже после нашей мерки.
+        if (!this._dockGeometryRetry) {
+            this._dockGeometryRetry = true;
+            requestAnimationFrame(() => {
+                this._dockGeometryRetry = false;
+                if (document.body.classList.contains('lk-docked')) this.updateCabinetDockGeometry();
+            });
+        }
+    },
+
+    syncRailUI: function () {
+        // Подстраховка к обработчику resize: если панель почему-либо исчезла с экрана
+        // (сузили окно, повернули планшет), пристыкованный кабинет обязан вернуться в
+        // полноэкранный вид со своей колонкой разделов. Иначе человек останется вообще
+        // без меню: панели уже нет, а колонка кабинета ещё спрятана.
+        if (document.body.classList.contains('lk-docked') && !this.isRailVisible()) {
+            document.body.classList.remove('lk-docked');
+        }
+
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+
+        // Место панели (слева колонкой или сверху лентой) восстанавливаем один раз
+        // при первой отрисовке и тогда же вешаем перетаскивание
+        if (!this._railDockInit) {
+            this._railDockInit = true;
+            this.applyRailLayout();
+            this.initRailDrag();
+            this.initRailGroupDrag();
+        }
+
+        const adminBtn = document.getElementById('lk_rail_admin');
+        if (adminBtn) adminBtn.style.display = this.hasAdminAccess() ? 'flex' : 'none';
+
+        // «Мои монтажники» показываются только менеджерам дистрибьюторов. Проверку
+        // делает refreshManagerTabVisibility — повторять её незачем, берём результат
+        // с такого же пункта в колонке кабинета.
+        const navInstallers = document.querySelector('#profile_nav .lk-nav-item[data-tab="installers"]');
+        const railInstallers = rail.querySelector('.lk-rail-item[data-rail="installers"]');
+        if (railInstallers) {
+            railInstallers.style.display = (navInstallers && navInstallers.style.display !== 'none') ? 'flex' : 'none';
+        }
+
+        // Число непрочитанных берём готовым из бейджа конверта в шапке: считает его
+        // loadNotifications, второй раз считать незачем
+        const mainBadge = document.getElementById('notification_badge');
+        const railBadge = document.getElementById('lk_rail_msg_badge');
+        if (railBadge && mainBadge) {
+            railBadge.innerText = mainBadge.innerText;
+            railBadge.style.display = (mainBadge.style.display === 'none' || !mainBadge.style.display) ? 'none' : 'block';
+        }
+
+        // Подсветка показывает, где человек сейчас находится. Порядок проверок — по
+        // тому, какое окно лежит выше: кабинет перекрывает панель управления.
+        let current = 'calc';
+        if (this.isOverlayOpen('profile_modal_overlay')) {
+            const tab = this._activeProfileTab || 'requisites';
+            current = this.RAIL_TAB_ALIAS[tab] || tab;
+        } else if (this.isOverlayOpen('admin_modal_overlay')) {
+            // Панель управления открывают два пункта — «Сообщения» и «Админка».
+            // Подсвечиваем тот, по которому пришли, а не вкладку внутри панели:
+            // она могла остаться с прошлого раза.
+            current = (this._adminOpenedFrom === 'messages') ? 'messages' : 'admin';
+        } else if (this.isOverlayOpen('notifications_modal_overlay')) {
+            current = 'messages';
+        } else if (this.isOverlayOpen('lk_rating_overlay')) {
+            current = 'rating';
+        }
+        rail.querySelectorAll('.lk-rail-item').forEach(el => {
+            const key = el.dataset.rail;
+            el.classList.toggle('active', !!key && key === current);
+        });
+
+        // Пересчитываем посадку по высоте, только если изменилось то, от чего она
+        // зависит: число показанных разделов, место панели или размер окна.
+        // syncRailUI зовётся на каждой перерисовке сметы, и мерить каждый раз —
+        // лишняя работа для браузера.
+        const shown = rail.querySelectorAll('.lk-rail-item:not([style*="display: none"])').length;
+        const sign = shown + '|' + (rail.classList.contains('dock-top') ? 'top' : 'left') + '|' + window.innerHeight;
+        if (sign !== this._railFitSign) {
+            this._railFitSign = sign;
+            this.fitRailToViewport();
+        }
     },
 
     // Геймификация (начисление XP / разблокировка значков за действия монтажника,
@@ -9354,7 +10168,8 @@ const app = {
     loadInstallerSettingsLocal: function () {
         let parsed = null;
         try { parsed = JSON.parse(localStorage.getItem('stout_installer_settings') || 'null'); } catch (e) { parsed = null; }
-        this.installerSettings = Object.assign({ workPrices: {}, equipmentLibrary: [], swapLog: [], deletionLog: [], company: null }, parsed || {});
+        this.installerSettings = Object.assign({ workPrices: {}, equipmentLibrary: [], swapLog: [], deletionLog: [], company: null, railLayout: null }, parsed || {});
+        if (this.installerSettings.railLayout && typeof this.installerSettings.railLayout !== 'object') this.installerSettings.railLayout = null;
         if (!this.installerSettings.workPrices || typeof this.installerSettings.workPrices !== 'object') this.installerSettings.workPrices = {};
         if (!Array.isArray(this.installerSettings.equipmentLibrary)) this.installerSettings.equipmentLibrary = [];
         if (!Array.isArray(this.installerSettings.swapLog)) this.installerSettings.swapLog = [];
@@ -9474,14 +10289,24 @@ const app = {
                     swapLog: Array.isArray(cloud.swapLog) ? cloud.swapLog : [],
                     deletionLog: Array.isArray(cloud.deletionLog) ? cloud.deletionLog : [],
                     company: cloudCompany || localCompany || null,
-                    workPricesUpdatedAt: cloud.workPricesUpdatedAt || undefined
+                    workPricesUpdatedAt: cloud.workPricesUpdatedAt || undefined,
+                    // Раскладку меню собираем тем же правилом, что и реквизиты:
+                    // облачная главнее, но пустое облако не должно стирать местную
+                    // (первый вход после переезда раскладки в настройки аккаунта)
+                    railLayout: (cloud.railLayout && typeof cloud.railLayout === 'object')
+                        ? cloud.railLayout
+                        : ((this.installerSettings && this.installerSettings.railLayout) || null)
                 };
                 this.saveInstallerSettingsLocal();
                 if (!cloudCompany && localCompany) this.pushInstallerSettingsToCloud();
+                if (!cloud.railLayout && this.installerSettings.railLayout) this.pushInstallerSettingsToCloud();
                 if (this._activeProfileTab === 'workprices') this.renderWorkPricesTab();
                 if (this._activeProfileTab === 'equipment') this.renderEquipmentLibraryTab();
                 if (this._activeProfileTab === 'company') this.fillCompanyDetailsForm();
                 this.updateHeaderCompanyDetails();
+                // Раскладка меню могла приехать с другого устройства — переставляем
+                // панель уже после того, как настройки заменены
+                this.applyRailLayout();
                 this.render();
             }
         } catch (e) {
@@ -9502,6 +10327,10 @@ const app = {
         this._installerCloudUserId = null;
         this.loadInstallerSettingsLocal();
         this.updateHeaderCompanyDetails();
+        // Раскладка меню тоже принадлежит аккаунту: за общим компьютером следующий
+        // вошедший начинает с обычного вида, а свою получит из облака при входе
+        try { localStorage.removeItem(this.RAIL_DOCK_KEY); localStorage.removeItem(this.RAIL_GROUPS_KEY); } catch (e) { }
+        this.applyRailLayout();
     },
     // Сохраняет локально сразу и синхронизирует с облаком с задержкой (не блокирует UI)
     pushInstallerSettingsToCloud: function () {
@@ -10414,6 +11243,8 @@ const app = {
                     badge.style.display = 'none';
                 }
             }
+            // Тот же счётчик на «Сообщениях» в левой панели — она берёт значение отсюда
+            this.syncRailUI();
 
             // Проигрываем звук, если количество непрочитанных увеличилось
             if (this._lastUnreadCount !== undefined && unreadCount > this._lastUnreadCount) {
@@ -10636,7 +11467,7 @@ const app = {
     // смет лежат там же закреплённой нитью «Уведомления» (см. renderAdminMessages).
     // Прежний узкий список уведомлений админу больше не показывается.
     openMessagesCenter: function () {
-        if (this.hasAdminAccess()) {
+        if (this.usesAdminMessenger()) {
             this._adminTab = 'messages';
             // Пришли посмотреть, что нового: есть непрочитанные уведомления — открываем
             // сразу их ленту, нет — оставляем тот диалог, на котором остановились.
@@ -10697,7 +11528,7 @@ const app = {
 
         // Админу вкладка переписки не показывается — у него мессенджер в админке
         const tabs = document.getElementById('notif_tabs');
-        if (tabs) tabs.style.display = this.hasAdminAccess() ? 'none' : 'flex';
+        if (tabs) tabs.style.display = this.usesAdminMessenger() ? 'none' : 'flex';
 
         const badge = document.getElementById('notif_tab_badge');
         if (badge) {
@@ -10712,7 +11543,7 @@ const app = {
     // управления, а две копии такой разметки неизбежно разошлись бы.
     renderNotificationCards: function (notifications) {
         let h = '';
-        const isAdminView = this.hasAdminAccess();
+        const isAdminView = this.usesAdminMessenger();
         notifications.forEach(n => {
             // Письма администратора монтажник читает во вкладке «Переписка»
             if (n.type === 'admin_message' && !isAdminView) return;
@@ -10893,12 +11724,16 @@ const app = {
 
     openNotificationsModal: async function (tab) {
         document.getElementById('notifications_modal_overlay').style.display = 'flex';
+        // Окно сообщений открывается из панели разделов — значит, встаёт туда же,
+        // где остальные разделы, не закрывая меню
+        this.syncCabinetDock();
+        this.syncRailUI();
         // Вкладка задаётся только явно (кнопка-конверт, переключатель). Перерисовки
         // после отправки/прочтения вызывают эту функцию без аргумента и не должны
         // перекидывать человека с той вкладки, где он сейчас находится.
         if (tab) this._notifTab = tab;
         // У админа вкладки нет вообще — только список
-        if (this.hasAdminAccess() || !this._notifTab) this._notifTab = this.hasAdminAccess() ? 'list' : (this._notifTab || 'list');
+        if (this.usesAdminMessenger() || !this._notifTab) this._notifTab = this.usesAdminMessenger() ? 'list' : (this._notifTab || 'list');
         this.renderNotifTabs();
 
         // Синхронизируем значение селектора звука
@@ -11652,6 +12487,8 @@ const app = {
 
     closeNotificationsModal: function () {
         document.getElementById('notifications_modal_overlay').style.display = 'none';
+        this.syncCabinetDock();
+        this.syncRailUI();
         // Панель смайликов живёт в body и сама об окне не знает — гасим вместе с ним
         this.closeEmojiPicker();
     },
@@ -11667,12 +12504,91 @@ const app = {
         const accType = user.account_type || this.state.accountType || 'base';
         if (accType === 'admin') return 'admin';
         if (accType === 'viewer') return 'viewer';
+        if (accType === 'manager') return 'manager';
         return 'base';
     },
 
     hasAdminAccess: function () {
         const role = this.getAdminRole();
-        return ['super_admin', 'admin', 'viewer'].includes(role);
+        return ['super_admin', 'admin', 'viewer', 'manager'].includes(role);
+    },
+
+    // ═══ Менеджер дистрибьютора ══════════════════════════════════════════
+    // Четвёртая ступень доступа. Панель открыта, но только по своей компании:
+    // свои монтажники, их расчёты, переписка с ними и планировщик. Всё
+    // остальное — про платформу целиком или про чужие компании, туда ему не
+    // надо (MANAGER_TABS). Менять он может ровно две вещи: статусы счетов в
+    // планировщике и собственную переписку; в остальном панель ему такая же
+    // «только смотреть», как наблюдателю, — за это отвечает isReadOnlyAdmin.
+    //
+    // К компании менеджер привязан обычным полем «Дистрибьютор» в своей
+    // карточке (users.distributor_id): у монтажника оно значит «мой менеджер»,
+    // у менеджера — «моя компания». Отдельной таблицы ради этого не заводим.
+    // Вдобавок берём компании, где его почта стоит менеджером или директором:
+    // так же, как это давно работает в чате «Мои монтажники».
+    //
+    // ВАЖНО про безопасность: разделение здесь клиентское. Пока в Supabase не
+    // закрыто чтение (см. открытый доступ на select у users/estimates), это
+    // удобство интерфейса, а не защита данных — чужое всё ещё достаётся через
+    // API любому авторизованному. Настоящее ограничение делается политиками RLS.
+    isManagerRole: function () { return this.getAdminRole() === 'manager'; },
+
+    // Кому панель открыта только на просмотр
+    isReadOnlyAdmin: function () { return ['viewer', 'manager'].includes(this.getAdminRole()); },
+
+    // Мессенджер панели заменяет личную переписку с администрацией только тем, кто
+    // эту администрацию и представляет. У менеджера дистрибьютора наоборот: в панели
+    // он переписывается со своими монтажниками, а спросить что-то у самого сайта ему
+    // было бы негде — личную вкладку «Переписка с администратором» ему оставляем.
+    usesAdminMessenger: function () { return this.hasAdminAccess() && !this.isManagerRole(); },
+
+    managerDistIds: function () { return (this._managerScope && this._managerScope.distIds) || []; },
+    managerUserIds: function () { return (this._managerScope && this._managerScope.userIds) || []; },
+
+    /**
+     * Кто «свои» для менеджера: компании и их монтажники.
+     *
+     * Считается заново при каждой загрузке панели — состав компании меняется,
+     * держать его в кэше между сеансами нельзя. Пустой список компаний значит,
+     * что роль выдали, а компанию в карточке назначить забыли: тогда менеджер
+     * не увидит ничего, и это правильнее, чем показать ему всех подряд.
+     */
+    resolveManagerScope: async function () {
+        if (!this.isManagerRole()) { this._managerScope = null; return null; }
+        const row = this.accessUserRow();
+        const email = String(row.email || '').trim().toLowerCase();
+        const ids = new Set();
+        const own = row.distributor_id || this.state.distributorId;
+        if (own) ids.add(String(own));
+        if (email) {
+            try {
+                const { data } = await supabaseClient.from('distributors').select('id, manager_email, director_email');
+                (data || []).forEach(d => {
+                    const m = String(d.manager_email || '').trim().toLowerCase();
+                    const dir = String(d.director_email || '').trim().toLowerCase();
+                    if ((m && m === email) || (dir && dir === email)) ids.add(String(d.id));
+                });
+            } catch (e) { console.warn('[resolveManagerScope] Не удалось прочитать дистрибьюторов:', e); }
+        }
+        const distIds = [...ids];
+        let userIds = [];
+        if (distIds.length) {
+            try {
+                const { data } = await supabaseClient.from('users').select('id').in('distributor_id', distIds);
+                userIds = (data || []).map(u => String(u.id));
+            } catch (e) { console.warn('[resolveManagerScope] Не удалось прочитать монтажников компании:', e); }
+        }
+        this._managerScope = { distIds, userIds };
+        return this._managerScope;
+    },
+
+    // Отсечка выборки по монтажникам своей компании. Пустой список подменяем
+    // заведомо несуществующим id: запрос без условия отдал бы всю базу, а это
+    // ровно то, от чего роль и заводилась.
+    scopeQueryToManager: function (query, column) {
+        if (!this.isManagerRole()) return query;
+        const ids = this.managerUserIds();
+        return query.in(column, ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
     },
 
     // ═══ Доступ к инструментам: распознавание и проектирование ═══════════
@@ -11828,6 +12744,8 @@ const app = {
             const role = this.getAdminRole();
             if (role === 'viewer') {
                 titleEl.innerHTML = 'Панель управления <span style="font-size:12px; color:#EF4444; background:#FEE2E2; padding:3px 8px; border-radius:6px; margin-left:10px; font-weight:700; text-transform:none; letter-spacing:0; vertical-align:middle;">👁 Режим просмотра</span>';
+            } else if (role === 'manager') {
+                titleEl.innerHTML = 'Панель управления <span style="font-size:12px; color:#0F766E; background:#CCFBF1; padding:3px 8px; border-radius:6px; margin-left:10px; font-weight:700; text-transform:none; letter-spacing:0; vertical-align:middle;">🤝 Менеджер</span>';
             } else if (role === 'super_admin') {
                 titleEl.innerHTML = 'Панель управления <span style="font-size:12px; color:#10B981; background:#ECFDF5; padding:3px 8px; border-radius:6px; margin-left:10px; font-weight:700; text-transform:none; letter-spacing:0; vertical-align:middle;">👑 Владелец</span>';
             } else {
@@ -11835,6 +12753,11 @@ const app = {
             }
         }
         document.getElementById('admin_modal_overlay').style.display = 'flex';
+        // На широком экране панель управления встаёт справа от меню, как и разделы
+        // кабинета: в неё ведут «Сообщения», и разворачиваться во весь экран, пряча
+        // меню, она не должна
+        this.syncCabinetDock();
+        this.syncRailUI();
         // Пока панель открыта, нижняя навигация и плавающие кнопки калькулятора
         // не нужны: они висят поверх (z-index выше модалок) и закрывают нижние
         // строки таблиц вместе с кнопками действий.
@@ -11845,6 +12768,13 @@ const app = {
     },
     closeAdminModal: function () {
         document.getElementById('admin_modal_overlay').style.display = 'none';
+        // Данные разделов держим только пока панель открыта: следующее открытие
+        // должно показать свежие, а не то, что успело устареть за день. Обнуляем
+        // не в null, а в пустую заготовку: к adminData обращаются из десятков мест
+        // без проверок, и null уронил бы первое же из них.
+        this.adminData = { users: [], userEstimates: [], recentEstimates: [], totalUsers: 0, totalEstimates: 0, totalEq: 0, totalWorks: 0, messageReceipts: null };
+        this.syncCabinetDock();
+        this.syncRailUI();
         document.body.classList.remove('admin-modal-open');
         this.stopAdminMobileLabels();
         // На телефоне следующий вход снова начинается с меню разделов
@@ -11868,7 +12798,7 @@ const app = {
     // у админа и наблюдателя Профи определяется наличием demo_ends_at.
     adminTariffRank: function (u) {
         const isPro = (u.account_type === 'pro') ||
-            (['admin', 'viewer'].includes(u.account_type) && u.demo_ends_at);
+            (['admin', 'viewer', 'manager'].includes(u.account_type) && u.demo_ends_at);
         return isPro ? 1 : 0;
     },
 
@@ -11902,6 +12832,13 @@ const app = {
         // Убираем запятые/скобки — они ломают синтаксис .or(), это разделители условий
         const searchFilter = (filters.search || '').trim().replace(/[,()]/g, '');
 
+        // Менеджер видит только монтажников своей компании — это условие
+        // сильнее любых фильтров и снимается только сменой роли.
+        if (this.isManagerRole()) {
+            const mine = this.managerDistIds();
+            query = query.in('distributor_id', mine.length ? mine : ['00000000-0000-0000-0000-000000000000']);
+        }
+
         if (regionFilter) {
             if (regionFilter === 'Калининградская область') {
                 query = query.or('region.ilike.%Калининградская область%,region.eq.Калининград');
@@ -11929,6 +12866,8 @@ const app = {
             query = query.eq('account_type', 'pro').not('pro_expires_at', 'is', null);
         } else if (tariffFilter === 'viewer') {
             query = query.eq('account_type', 'viewer');
+        } else if (tariffFilter === 'manager') {
+            query = query.eq('account_type', 'manager');
         } else if (tariffFilter === 'admin') {
             query = query.eq('account_type', 'admin');
         }
@@ -11944,7 +12883,7 @@ const app = {
     // Массовое назначение дистрибьютора всем пользователям, попадающим под текущие фильтры
     // списка (например регион = "Калининградская область") — не меняет тариф, только контакт менеджера
     bulkAssignDistributor: async function () {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Массовое изменение дистрибьюторов запрещено.');
             return;
         }
@@ -11973,7 +12912,7 @@ const app = {
     setUserDistributorInline: async function (userId, distId, selectEl) {
         const u = (this.adminData.users || []).find(x => String(x.id) === String(userId));
         const prevValue = u ? (u.distributor_id || '') : '';
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Изменение дистрибьютора запрещено.');
             selectEl.value = prevValue;
             return;
@@ -11992,12 +12931,92 @@ const app = {
         }
     },
 
+    // Общий набор данных (страница монтажников, их сметы и обороты, счета, события
+    // смет, доступы к распознаванию) нужен только вкладке «Пользователи»: остальные
+    // разделы грузят своё сами, каждый в своём рендере. Раньше он тянулся при любом
+    // открытии панели, и «Сообщения» стоили двенадцати запросов вместо трёх —
+    // открывались заметно дольше прочих разделов.
+    adminTabNeedsHeavyData: function (tab) {
+        const t = (tab === undefined) ? this._adminTab : tab;
+        // Пустая вкладка — это либо десктоп до выбора (там дальше подставится
+        // «Пользователи»), либо меню разделов на телефоне: ему грузить нечего
+        if (!t) return !this.isAdminMobile();
+        return t === 'stats';
+    },
+
+    // Короткие списки, нужные почти каждому разделу для подписей: собеседники,
+    // переписка и компании-дистрибьюторы. Переписку тянем только для вкладки
+    // сообщений — таблица messages из трёх самая объёмная.
+    loadAdminLightData: async function () {
+        const withMessages = this._adminTab === 'messages';
+        const out = { allUsersDropdown: [], allMessages: [], distributors: [] };
+
+        try {
+            const { data } = await supabaseClient.from('users')
+                .select('id, username, email, phone, region, city, avatar_url, account_type')
+                .order('username', { ascending: true });
+            out.allUsersDropdown = data || [];
+            if (this.isManagerRole()) {
+                const mine = new Set(this.managerUserIds());
+                const meId = (this._meRow && this._meRow.id) || (this._currentUserRow && this._currentUserRow.id);
+                if (meId) mine.add(String(meId));
+                out.allUsersDropdown = out.allUsersDropdown.filter(u => mine.has(String(u.id)));
+            }
+        } catch (e) { console.warn('[loadAdminLightData] Список собеседников:', e); }
+
+        if (withMessages) {
+            try {
+                const { data } = await supabaseClient.from('messages')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                out.allMessages = data || [];
+                if (this.isManagerRole()) {
+                    const mine = new Set(this.managerUserIds());
+                    const meId = (this._meRow && this._meRow.id) || (this._currentUserRow && this._currentUserRow.id);
+                    if (meId) mine.add(String(meId));
+                    out.allMessages = out.allMessages.filter(m => mine.has(String(m.sender_id)) || mine.has(String(m.recipient_id)));
+                }
+            } catch (e) { console.warn('[loadAdminLightData] Переписка:', e); }
+        }
+
+        try {
+            const { data } = await supabaseClient.from('distributors')
+                .select('*')
+                .order('created_at', { ascending: false });
+            out.distributors = data || [];
+            if (this.isManagerRole()) {
+                const mine = this.managerDistIds().map(String);
+                out.distributors = out.distributors.filter(d => mine.includes(String(d.id)));
+            }
+        } catch (e) { console.warn('[loadAdminLightData] Дистрибьюторы:', e); }
+
+        return out;
+    },
+
     loadAdminData: async function (offset = 0) {
         if (!this.hasAdminAccess()) {
             const content = document.getElementById('admin_content');
             if (content) content.innerHTML = '<div style="padding:20px; color:#EF4444;">Доступ запрещен.</div>';
             return;
         }
+
+        if (!this.adminTabNeedsHeavyData()) {
+            if (this.isManagerRole()) await this.resolveManagerScope();
+            const lists = await this.loadAdminLightData();
+            // Пустая заготовка обязательна: renderAdminMain разбирает adminData сразу,
+            // ещё до ветвления по вкладкам. Ранее загруженное не теряем.
+            this.adminData = Object.assign(
+                { users: [], userEstimates: [], recentEstimates: [], totalUsers: 0, totalEstimates: 0, totalEq: 0, totalWorks: 0, messageReceipts: null },
+                this.adminData || {},
+                { allUsersDropdown: lists.allUsersDropdown, distributors: lists.distributors },
+                (this._adminTab === 'messages') ? { messages: lists.allMessages } : {}
+            );
+            this.renderAdminMain();
+            return;
+        }
+        // Менеджеру всё, что ниже, режется по его компании: состав компании
+        // выясняем до первого запроса, иначе фильтры уйдут пустыми.
+        if (this.isManagerRole()) await this.resolveManagerScope();
         this._adminOffset = offset;
         const content = document.getElementById('admin_content');
         // Запоминаем значение и фокус поля поиска — оно вот-вот исчезнет из DOM вместе
@@ -12127,15 +13146,19 @@ const app = {
 
             // 3. Fetch Recent Estimates (Fixed 50) — те же точечные JSON-поля, что и выше, вместо
             // полного calc_data (см. комментарий у запроса userEsts)
-            let { data: recentEsts, error: errRE } = await supabaseClient.from('estimates')
+            let recentQuery = supabaseClient.from('estimates')
                 .select('id, project_name, eq_sum, works_sum, total_sum, created_at, users(username, phone, email), calc_id:calc_data->>calc_id, shared_invoice_id:calc_data->>shared_invoice_id, area:calc_data->>area, from_recognition:calc_data->>from_recognition, addr:calc_data->projectAddress, share_id')
                 .order('created_at', { ascending: false })
                 .limit(50);
+            recentQuery = this.scopeQueryToManager(recentQuery, 'user_id');
+            let { data: recentEsts, error: errRE } = await recentQuery;
             recentEsts = (recentEsts || []).map(e => ({ ...e, calc_data: { calc_id: e.calc_id, shared_invoice_id: e.shared_invoice_id, area: e.area, projectAddress: e.addr || null } }));
 
             // 4. Fetch Global Totals (Only sums for dashboard cards)
-            let { data: sums, error: errS } = await supabaseClient.from('estimates')
-                .select('eq_sum, works_sum, total_sum');
+            // Цифры в шапке панели. Менеджеру они считаются по его компании:
+            // показатели всей платформы ему не принадлежат и только путают.
+            let { data: sums, error: errS } = await this.scopeQueryToManager(
+                supabaseClient.from('estimates').select('eq_sum, works_sum, total_sum'), 'user_id');
 
             if (errRE || errS) throw new Error("Ошибка загрузки связанных данных");
 
@@ -12189,6 +13212,14 @@ const app = {
                     .order('username', { ascending: true });
                 allUsersDropdown = data || [];
                 this.autoCleanupDatabaseUsers(allUsersDropdown);
+                // Менеджеру в списке собеседников — только его монтажники (и он сам:
+                // по своей строке мессенджер отличает свои сообщения от чужих)
+                if (this.isManagerRole()) {
+                    const mine = new Set(this.managerUserIds());
+                    const meId = (this._meRow && this._meRow.id) || (this._currentUserRow && this._currentUserRow.id);
+                    if (meId) mine.add(String(meId));
+                    allUsersDropdown = allUsersDropdown.filter(u => mine.has(String(u.id)));
+                }
             } catch (e) { console.warn("Could not load users for dropdown:", e); }
 
             // 7. Fetch all messages (broadcasts, private and replies) for history listing
@@ -12198,6 +13229,15 @@ const app = {
                     .select('*')
                     .order('created_at', { ascending: false });
                 allMessages = data || [];
+                // Переписка менеджера — только с его монтажниками. Объявления для
+                // всех (recipient_id = null) сюда не попадают: рассылка платформы
+                // к переписке компании отношения не имеет.
+                if (this.isManagerRole()) {
+                    const mine = new Set(this.managerUserIds());
+                    const meId = (this._meRow && this._meRow.id) || (this._currentUserRow && this._currentUserRow.id);
+                    if (meId) mine.add(String(meId));
+                    allMessages = allMessages.filter(m => mine.has(String(m.sender_id)) || mine.has(String(m.recipient_id)));
+                }
             } catch (e) { console.warn("Could not load messages history:", e); }
 
 
@@ -12208,6 +13248,12 @@ const app = {
                     .select('*')
                     .order('created_at', { ascending: false });
                 distributors = data || [];
+                // Менеджеру — только его компании: список идёт в подписи карточек
+                // планировщика и в выпадающие фильтры, чужие названия там лишние
+                if (this.isManagerRole()) {
+                    const mine = this.managerDistIds().map(String);
+                    distributors = distributors.filter(d => mine.includes(String(d.id)));
+                }
             } catch (e) { console.warn("Could not load distributors:", e); }
 
             this.adminData = {
@@ -12254,12 +13300,14 @@ const app = {
         { id: 'plans', icon: '📐', label: 'Планы этажей', hint: 'Подложки планов на сервере' },
         { id: 'projects', icon: '📁', label: 'Проекты', hint: 'Выпущенные комплекты листов' },
         { id: 'dashboard', icon: '📊', label: 'Дашборд', hint: 'Вся аналитика одним экраном' },
-        { id: 'analytics', icon: '📈', label: 'Аналитика', hint: 'Спрос и конкуренты по регионам' }
+        { id: 'analytics', icon: '📈', label: 'Аналитика', hint: 'Спрос и конкуренты по регионам' },
+        { id: 'aifill', icon: '✨', label: 'Умное заполнение', hint: 'Что говорили и писали в окно ✨' }
     ],
 
     // Разделы владельца: «Дашборд» — сводка тех же данных, что и «Аналитика»,
     // поэтому и закрыт он тем же ключом. Список один, чтобы права не разъехались.
-    OWNER_ONLY_TABS: ['dashboard', 'analytics'],
+    // «Умное заполнение» — журнал диалогов монтажников с окном ✨, тоже только владельцу.
+    OWNER_ONLY_TABS: ['dashboard', 'analytics', 'aifill'],
 
     // Вкладка «Аналитика» — только для владельца: там конкурентная разведка,
     // которой незачем светиться даже перед наблюдателями с доступом в админку.
@@ -12280,10 +13328,27 @@ const app = {
         return candidates.some(m => this.isAdminEmail(m));
     },
 
+    // Разделы менеджера дистрибьютора. Остальные вкладки — либо про платформу
+    // целиком (прайс-листы, распознавание, проекты, аналитика), либо про чужие
+    // компании (карточки дистрибьюторов), поэтому их он не видит вовсе.
+    MANAGER_TABS: ['stats', 'estimates', 'messages', 'kanban'],
+
+    // Подписи под названиями разделов в мобильном меню: у менеджера они честнее
+    // говорят «ваши», а не «все» — данные-то урезаны по его компании.
+    MANAGER_TAB_HINTS: {
+        stats: 'Монтажники вашей компании',
+        estimates: 'Сметы ваших монтажников',
+        messages: 'Переписка с вашими монтажниками',
+        kanban: 'Статусы смет вашей компании'
+    },
+
     // Вкладки, доступные текущему админу. Фильтр в одном месте: список строится
     // и в ряду вкладок на десктопе, и в меню разделов на телефоне.
     adminTabDefs: function () {
-        return this.ADMIN_TAB_DEFS.filter(t => this.OWNER_ONLY_TABS.indexOf(t.id) < 0 || this.isAnalyticsOwner());
+        const defs = this.ADMIN_TAB_DEFS.filter(t => this.OWNER_ONLY_TABS.indexOf(t.id) < 0 || this.isAnalyticsOwner());
+        if (!this.isManagerRole()) return defs;
+        return defs.filter(t => this.MANAGER_TABS.indexOf(t.id) >= 0)
+            .map(t => Object.assign({}, t, { hint: this.MANAGER_TAB_HINTS[t.id] || t.hint }));
     },
 
     // Ниже этой ширины админка живёт по-мобильному: вместо ряда вкладок — меню
@@ -12404,7 +13469,7 @@ const app = {
     },
 
     renderAdminMain: function () {
-        const isViewer = this.getAdminRole() === 'viewer';
+        const isViewer = this.isReadOnlyAdmin(); // наблюдатель или менеджер: панель только на просмотр
         const content = document.getElementById('admin_content');
         if (!content) return;
 
@@ -12520,6 +13585,12 @@ const app = {
             return;
         }
 
+        if (this._adminTab === 'aifill') {
+            content.innerHTML = navHtml;
+            this.renderAdminAiFill();
+            return;
+        }
+
         users.forEach(u => {
             const uEsts = userEstimates.filter(e => String(e.user_id) === String(u.id));
             u.projectsCount = uEsts.length;
@@ -12607,6 +13678,7 @@ const app = {
                                 <option value="pro_promo" ${tariffFilter === 'pro_promo' ? 'selected' : ''}>Профи: промокод</option>
                                 <option value="pro_paid" ${tariffFilter === 'pro_paid' ? 'selected' : ''}>Профи: оплата</option>
                                 <option value="viewer" ${tariffFilter === 'viewer' ? 'selected' : ''}>Наблюдатель</option>
+                                <option value="manager" ${tariffFilter === 'manager' ? 'selected' : ''}>Менеджер</option>
                                 <option value="admin" ${tariffFilter === 'admin' ? 'selected' : ''}>Администратор</option>
                             </select>
                             <select id="admin_filter_expiry" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer; height: 34px; box-sizing: border-box;">
@@ -12750,7 +13822,7 @@ const app = {
             let badge = '';
 
             let hasProTariff = (u.account_type === 'pro') || 
-                               (['admin', 'viewer'].includes(u.account_type) && u.demo_ends_at);
+                               (['admin', 'viewer', 'manager'].includes(u.account_type) && u.demo_ends_at);
 
             let tariffLabel = 'Базовый';
             // Отдельная короткая подпись для админов и наблюдателей: у них тариф —
@@ -12780,6 +13852,8 @@ const app = {
 
             if (u.account_type === 'viewer') {
                 badge = `<span style="color:#8B5CF6; font-weight:bold;">Наблюдатель 👁</span><br><span style="font-size:10px; color:var(--text-sec);">Тариф: ${tariffLabelShort}</span>`;
+            } else if (u.account_type === 'manager') {
+                badge = `<span style="color:#0F766E; font-weight:bold;">Менеджер 🤝</span><br><span style="font-size:10px; color:var(--text-sec);">Тариф: ${tariffLabelShort}</span>`;
             } else if (u.account_type === 'admin') {
                 badge = `<span style="color:#10B981; font-weight:bold;">Администратор ⚙️</span><br><span style="font-size:10px; color:var(--text-sec);">Тариф: ${tariffLabelShort}</span>`;
             } else if (u.account_type === 'pro') {
@@ -13085,8 +14159,19 @@ const app = {
         // Кнопок «Дашборд» и «Аналитика» у остальных админов нет, но вызов из
         // консоли или старой ссылки обязан упереться в ту же проверку, что и вёрстка.
         if (this.OWNER_ONLY_TABS.indexOf(tab) >= 0 && !this.isAnalyticsOwner()) return;
+        if (this.isManagerRole() && this.MANAGER_TABS.indexOf(tab) < 0) return;
         this._adminTab = tab;
-        this.renderAdminMain();
+        // Данные раздела грузим при переходе в него, а не все сразу при открытии
+        // панели. Что уже загружено — не перезапрашиваем: «Пользователей» отмечает
+        // сам набор users, переписку — массив messages.
+        const needHeavy = this.adminTabNeedsHeavyData(tab) && !(this.adminData && Array.isArray(this.adminData.users) && this.adminData.users.length);
+        const needMessages = (tab === 'messages') && !(this.adminData && Array.isArray(this.adminData.messages));
+        const needLists = !(this.adminData && Array.isArray(this.adminData.distributors));
+        if (needHeavy || needMessages || needLists) {
+            this.loadAdminData(0);
+        } else {
+            this.renderAdminMain();
+        }
         // Переход из меню разделов — всегда к началу раздела, а не туда, где
         // осталась прокрутка предыдущего
         const c = document.getElementById('admin_content');
@@ -13160,7 +14245,7 @@ const app = {
 
         const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const num = n => Number(n || 0).toLocaleString('ru-RU');
-        const isViewer = this.getAdminRole() === 'viewer';
+        const isViewer = this.isReadOnlyAdmin(); // наблюдатель или менеджер: панель только на просмотр
         const { companies } = this._analytics;
 
         const months = (brands && brands.months) ? Object.keys(brands.months).sort() : [];
@@ -14173,7 +15258,7 @@ const app = {
      * уже перепишется следующим прогоном.
      */
     setBrandTerm: async function (word, decision) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Менять словарь марок запрещено.');
             return;
         }
@@ -14196,7 +15281,7 @@ const app = {
     },
 
     clearBrandTerm: async function (word) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Менять словарь марок запрещено.');
             return;
         }
@@ -14258,7 +15343,7 @@ const app = {
      * историей, а не с месяца включения.
      */
     toggleChartBrand: async function (word) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Менять список марок запрещено.');
             return;
         }
@@ -14290,7 +15375,7 @@ const app = {
      * значат операторы и молча испортят запрос.
      */
     addChartBrand: async function () {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Менять список марок запрещено.');
             return;
         }
@@ -14336,7 +15421,7 @@ const app = {
      * Wordstat, их сотня в час на весь прогон.
      */
     removeChartBrand: async function (word) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Менять список марок запрещено.');
             return;
         }
@@ -16194,7 +17279,7 @@ const app = {
         // Новая марка появляется линией не сразу: историю по слову спрашивает
         // у Wordstat ежемесячный прогон, из браузера этого не сделать. Пишем
         // это прямо в подсказке, иначе выглядит как поломка.
-        const brandsViewer = this.getAdminRole() === 'viewer';
+        const brandsViewer = this.isReadOnlyAdmin();
         const brandEditor = () => {
             if (!isBrands || !this._brandEditorOpen) return '';
             const shown = chartSeries.length;
@@ -17568,7 +18653,7 @@ const app = {
         // продления не будем; вместо него честный отток — у кого срок вышел и
         // Профи не вернулся.
         const hasPro = (u) => u.account_type === 'pro'
-            || (['admin', 'viewer'].includes(u.account_type) && u.demo_ends_at);
+            || (['admin', 'viewer', 'manager'].includes(u.account_type) && u.demo_ends_at);
         const proKind = (u) => u.pro_expires_at ? 'оплата' : (u.distributor_id ? 'промокод' : 'пробный');
         const FOREVER = new Date('2099-01-01T00:00:00.000Z').getTime();
         const pro = { active: 0, paid: 0, promo: 0, trial: 0, forever: 0, expiring: [], lapsed: [] };
@@ -18182,6 +19267,409 @@ const app = {
         return `<tr><td colspan="5" style="background:var(--surface-light); padding:12px 14px;">${inner}</td></tr>`;
     },
 
+    /**
+     * Вкладка «✨ Умное заполнение» — журнал диалогов с окном умного заполнения
+     * (таблица ai_fill_sessions, пишет openAiParseModal → logAiFillSession).
+     *
+     * Для чего. Само заполнение — правила в parseHouseQuery, и умнее оно
+     * становится только по живым фразам: какие слова люди говорят, на чём
+     * правила спотыкаются. Поэтому главное здесь — диалог целиком, в том же
+     * виде, что видел монтажник (пузырьки), а не сводные числа. Сводка и
+     * фильтры — чтобы найти нужные сеансы: по дате, аккаунту, числу запусков
+     * и времени общения.
+     *
+     * Только для владельца (OWNER_ONLY_TABS): в диалогах личные фразы людей.
+     */
+    renderAdminAiFill: function () {
+        const content = document.getElementById('admin_content');
+        if (!content) return;
+
+        const wrap = document.createElement('div');
+        wrap.id = 'admin_aifill_root';
+        content.appendChild(wrap);
+
+        if (this.adminData.aiFill == null) {
+            wrap.innerHTML = `<div style="padding:30px 0; text-align:center; color:var(--text-sec);">Загрузка журнала…</div>`;
+            if (!this._loadingAiFill) {
+                this._loadingAiFill = true;
+                (async () => {
+                    try {
+                        const { data, error } = await supabaseClient.from('ai_fill_sessions')
+                            .select('id, auth_user_id, user_email, user_name, started_at, ended_at, duration_sec, messages_count, voice_count, outcome, applied_fields, unrecognized, dialog')
+                            .order('started_at', { ascending: false })
+                            .limit(2000);
+                        if (error) throw error;
+                        this.adminData.aiFill = data || [];
+                        this._aiFillError = null;
+                    } catch (e) {
+                        // Чаще всего таблицы просто нет: миграцию
+                        // 20260819_add_ai_fill_sessions.sql ещё не выполняли в Supabase
+                        console.warn('Could not load ai_fill_sessions:', e.message || e);
+                        this.adminData.aiFill = [];
+                        this._aiFillError = e.message || String(e);
+                    }
+                    this._loadingAiFill = false;
+                    if (this._adminTab === 'aifill') this.renderAdminMain();
+                })();
+            }
+            return;
+        }
+        this.renderAdminAiFillBody();
+    },
+
+    // Ключ аккаунта для группировки и фильтра: почта, если есть, иначе имя.
+    // auth_user_id не годится — у старых строк и входа через Telegram его может не быть.
+    _aiFillAccountKey: function (r) {
+        return (r.user_email || r.user_name || 'неизвестен').toLowerCase();
+    },
+    _aiFillAccountLabel: function (r) {
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        if (r.user_name && r.user_email) return `<b>${esc(r.user_name)}</b><br><span style="color:var(--text-sec); font-size:11px;">${esc(r.user_email)}</span>`;
+        return `<b>${esc(r.user_name || r.user_email || 'Неизвестен')}</b>`;
+    },
+
+    switchAdminAiFillGroup: function (mode) {
+        this._aiFillGroup = mode;
+        this.renderAdminAiFillBody();
+    },
+
+    // Развернуть/свернуть диалог под строкой сеанса
+    toggleAdminAiFillDialog: function (id) {
+        const row = document.getElementById('admin_aifill_dlg_' + id);
+        if (!row) return;
+        const open = row.style.display === 'none';
+        row.style.display = open ? '' : 'none';
+        const btn = document.getElementById('admin_aifill_btn_' + id);
+        if (btn) btn.textContent = open ? 'Свернуть ▴' : 'Диалог ▾';
+    },
+
+    // Диалог как текст — чтобы скопировать и разобрать (или прислать мне для доработки правил)
+    aiFillDialogText: function (r) {
+        const when = new Date(r.started_at).toLocaleString('ru-RU');
+        const head = `${when} · ${r.user_name || ''} ${r.user_email ? '<' + r.user_email + '>' : ''} · ${this._fmtAiFillDur(r.duration_sec)} · ${r.outcome === 'applied' ? 'применил' : 'закрыл без применения'}`;
+        const lines = (r.dialog || []).map(m => {
+            const who = m.who === 'u' ? (m.src === 'voice' ? '🎤 Монтажник' : m.src === 'voice+edit' ? '🎤✎ Монтажник' : '⌨ Монтажник') : '   Система';
+            const tail = (m.who === 'u' && m.kind === 'none') ? '   [НЕ РАСПОЗНАНО]' : '';
+            return `[${String(m.t || 0).padStart(4, ' ')}с] ${who}: ${m.text}${tail}`;
+        });
+        return head + '\n' + lines.join('\n');
+    },
+    copyAdminAiFillDialog: function (id, btn) {
+        const r = (this.adminData.aiFill || []).find(x => x.id === id);
+        if (!r) return;
+        this._copyAiFillText(this.aiFillDialogText(r), btn);
+    },
+    // Копирование в буфер с подтверждением прямо на кнопке; без буфера (старый
+    // браузер, http) — показываем текст окном, оттуда его можно выделить
+    _copyAiFillText: function (text, btn) {
+        const done = () => {
+            if (!btn) return;
+            const was = btn.textContent;
+            btn.textContent = '✓ Скопировано';
+            setTimeout(() => { btn.textContent = was; }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done, () => this.alert(text));
+        } else {
+            this.alert(text);
+        }
+    },
+
+    _fmtAiFillDur: function (sec) {
+        sec = Math.max(0, Math.round(Number(sec) || 0));
+        const m = Math.floor(sec / 60), s = sec % 60;
+        return m ? `${m} мин ${String(s).padStart(2, '0')} с` : `${s} с`;
+    },
+
+    renderAdminAiFillBody: function () {
+        const content = document.getElementById('admin_content');
+        let root = document.getElementById('admin_aifill_root');
+        if (!root) {
+            root = document.createElement('div');
+            root.id = 'admin_aifill_root';
+            content.appendChild(root);
+        }
+        root.style.textAlign = 'left';
+        root.style.padding = '';
+        const focusSnap = this._snapshotAdminFilterFocus(root);
+
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const all = this.adminData.aiFill || [];
+        const group = this._aiFillGroup || 'sessions';
+
+        // ── Фильтры (значения берём из полей до перерисовки) ──
+        const g = id => document.getElementById(id);
+        const dateFrom = g('admin_aif_from')?.value || '';
+        const dateTo = g('admin_aif_to')?.value || '';
+        const account = g('admin_aif_account')?.value || 'all';
+        const outcome = g('admin_aif_outcome')?.value || 'all';
+        const search = (g('admin_aif_search')?.value || '').trim().toLowerCase();
+        const runsMin = parseInt(g('admin_aif_runs_min')?.value) || 0;
+        const runsMax = parseInt(g('admin_aif_runs_max')?.value) || 0;
+        const durMin = parseInt(g('admin_aif_dur_min')?.value) || 0;
+        const durMax = parseInt(g('admin_aif_dur_max')?.value) || 0;
+
+        const fromTs = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : null;
+        const toTs = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : null;
+
+        // Сначала период и аккаунт — от них считается число запусков на аккаунт
+        let rows = all.filter(r => {
+            const ts = new Date(r.started_at).getTime();
+            if (fromTs && ts < fromTs) return false;
+            if (toTs && ts > toTs) return false;
+            if (account !== 'all' && this._aiFillAccountKey(r) !== account) return false;
+            return true;
+        });
+        const runsByAcc = {};
+        rows.forEach(r => { const k = this._aiFillAccountKey(r); runsByAcc[k] = (runsByAcc[k] || 0) + 1; });
+
+        rows = rows.filter(r => {
+            const runs = runsByAcc[this._aiFillAccountKey(r)] || 0;
+            if (runsMin && runs < runsMin) return false;
+            if (runsMax && runs > runsMax) return false;
+            const d = Number(r.duration_sec) || 0;
+            if (durMin && d < durMin) return false;
+            if (durMax && d > durMax) return false;
+            if (outcome !== 'all' && (r.outcome || 'closed') !== outcome) return false;
+            if (search) {
+                const hay = ((r.user_name || '') + ' ' + (r.user_email || '') + ' ' +
+                    (r.dialog || []).map(m => m.text || '').join(' ')).toLowerCase();
+                if (!hay.includes(search)) return false;
+            }
+            return true;
+        });
+
+        // ── Сводка ──
+        const accounts = new Set(rows.map(r => this._aiFillAccountKey(r)));
+        const totalSec = rows.reduce((s, r) => s + (Number(r.duration_sec) || 0), 0);
+        const applied = rows.filter(r => r.outcome === 'applied').length;
+        const msgs = rows.reduce((s, r) => s + (Number(r.messages_count) || 0), 0);
+        const voice = rows.reduce((s, r) => s + (Number(r.voice_count) || 0), 0);
+        const unrec = rows.reduce((s, r) => s + (Number(r.unrecognized) || 0), 0);
+        const pct = (a, b) => b ? Math.round(a * 100 / b) + '%' : '—';
+
+        // Список аккаунтов для фильтра — по всему журналу, не по отфильтрованному,
+        // иначе после выбора одного остальные пропадут из списка
+        const accOptions = {};
+        all.forEach(r => { const k = this._aiFillAccountKey(r); if (!accOptions[k]) accOptions[k] = r.user_name ? `${r.user_name}${r.user_email ? ' (' + r.user_email + ')' : ''}` : (r.user_email || 'Неизвестен'); });
+
+        const inputStyle = 'padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); font-size:12px; outline:none; height:34px; box-sizing:border-box;';
+        const lbl = (t) => `<span style="font-size:10.5px; color:var(--text-sec); white-space:nowrap;">${t}</span>`;
+        const tabBtn = (mode, text) => `<button class="auth-btn-base" style="margin:0; width:auto; height:34px; font-size:11px; white-space:nowrap; padding:0 12px; background:${group === mode ? 'var(--primary)' : 'var(--surface-light)'}; color:${group === mode ? 'white' : 'var(--text-sec)'}; border:1px solid ${group === mode ? 'var(--primary)' : 'var(--border)'};" onclick="app.switchAdminAiFillGroup('${mode}')">${text}</button>`;
+
+        let h = `
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+                <h3 style="margin:0; color:var(--text-main);">✨ Умное заполнение</h3>
+                <span style="font-size:12.5px; color:var(--text-sec);">
+                    запусков: <b style="color:var(--text-main);">${rows.length}</b> ·
+                    людей: <b style="color:var(--text-main);">${accounts.size}</b> ·
+                    общее время: <b style="color:var(--text-main);">${this._fmtAiFillDur(totalSec)}</b> ·
+                    среднее: <b style="color:var(--text-main);">${this._fmtAiFillDur(rows.length ? totalSec / rows.length : 0)}</b> ·
+                    применили: <b style="color:#10B981;">${applied}</b> (${pct(applied, rows.length)}) ·
+                    реплик: <b style="color:var(--text-main);">${msgs}</b>, голосом ${pct(voice, msgs)} ·
+                    не распознано: <b style="color:${unrec ? '#EF4444' : 'var(--text-main)'};">${unrec}</b>
+                </span>
+                <button class="admin-btn" style="margin-left:auto;" onclick="app.adminData.aiFill = null; app.renderAdminMain()">↻ Обновить</button>
+            </div>
+            <div class="admin-toolbar-row" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
+                ${lbl('Дата')}
+                <input type="date" id="admin_aif_from" value="${dateFrom}" style="${inputStyle}" onchange="app.renderAdminAiFillBody()">
+                <input type="date" id="admin_aif_to" value="${dateTo}" style="${inputStyle}" onchange="app.renderAdminAiFillBody()">
+                <select id="admin_aif_account" style="${inputStyle} max-width:220px; cursor:pointer;" onchange="app.renderAdminAiFillBody()">
+                    <option value="all">Все аккаунты</option>
+                    ${Object.keys(accOptions).sort().map(k => `<option value="${esc(k)}" ${account === k ? 'selected' : ''}>${esc(accOptions[k])}</option>`).join('')}
+                </select>
+                ${lbl('Запусков')}
+                <input type="number" id="admin_aif_runs_min" placeholder="от" min="0" value="${runsMin || ''}" style="${inputStyle} width:64px;" oninput="app.renderAdminAiFillBody()">
+                <input type="number" id="admin_aif_runs_max" placeholder="до" min="0" value="${runsMax || ''}" style="${inputStyle} width:64px;" oninput="app.renderAdminAiFillBody()">
+                ${lbl('Время, сек')}
+                <input type="number" id="admin_aif_dur_min" placeholder="от" min="0" value="${durMin || ''}" style="${inputStyle} width:70px;" oninput="app.renderAdminAiFillBody()">
+                <input type="number" id="admin_aif_dur_max" placeholder="до" min="0" value="${durMax || ''}" style="${inputStyle} width:70px;" oninput="app.renderAdminAiFillBody()">
+                <select id="admin_aif_outcome" style="${inputStyle} cursor:pointer;" onchange="app.renderAdminAiFillBody()">
+                    <option value="all" ${outcome === 'all' ? 'selected' : ''}>Любой итог</option>
+                    <option value="applied" ${outcome === 'applied' ? 'selected' : ''}>Применил</option>
+                    <option value="closed" ${outcome === 'closed' ? 'selected' : ''}>Закрыл без применения</option>
+                </select>
+                <input type="text" id="admin_aif_search" placeholder="🔍 Фраза в диалоге…" value="${esc(g('admin_aif_search')?.value || '')}" style="${inputStyle} width:180px;" oninput="app.renderAdminAiFillBody()">
+                <span style="flex:1;"></span>
+                ${tabBtn('sessions', 'Сеансы')}
+                ${tabBtn('accounts', 'По аккаунтам')}
+                ${tabBtn('unrecognized', 'Нераспознанное')}
+            </div>`;
+
+        if (!all.length) {
+            h += `<div style="text-align:center; color:var(--text-sec); padding:40px 0;">${this._aiFillError
+                ? 'Журнал недоступен. Похоже, миграция supabase/migrations/20260819_add_ai_fill_sessions.sql ещё не выполнена.'
+                : 'Журнал пока пуст. Сеанс попадает сюда, когда монтажник что-то написал или надиктовал в окне ✨ и закрыл его.'}</div>`;
+        } else if (!rows.length) {
+            h += `<div style="text-align:center; color:var(--text-sec); padding:40px 0;">Нет сеансов по заданным фильтрам.</div>`;
+        } else if (group === 'accounts') {
+            h += this._renderAdminAiFillAccounts(rows);
+        } else if (group === 'unrecognized') {
+            h += this._renderAdminAiFillUnrecognized(rows);
+        } else {
+            h += this._renderAdminAiFillSessions(rows);
+        }
+
+        root.innerHTML = h;
+        this._restoreAdminFilterFocus(focusSnap);
+    },
+
+    _renderAdminAiFillSessions: function (rows) {
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        let h = `
+            <table class="inv-table">
+                <thead><tr>
+                    <th style="width:30px;">#</th>
+                    <th style="white-space:nowrap;">Дата и время</th>
+                    <th>Аккаунт</th>
+                    <th style="white-space:nowrap;">Время общения</th>
+                    <th style="white-space:nowrap;">Реплик</th>
+                    <th>Итог</th>
+                    <th style="white-space:nowrap;">Не распознано</th>
+                    <th></th>
+                </tr></thead><tbody>`;
+        rows.forEach((r, i) => {
+            const dt = new Date(r.started_at);
+            const when = dt.toLocaleDateString('ru-RU') + ' ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            const voice = Number(r.voice_count) || 0;
+            const msgs = Number(r.messages_count) || 0;
+            const src = voice === 0 ? '⌨' : (voice === msgs ? '🎤' : '🎤⌨');
+            const fields = Array.isArray(r.applied_fields) ? r.applied_fields : [];
+            const result = r.outcome === 'applied'
+                ? `<span style="color:#10B981; font-weight:700;">✅ Применил ${fields.length}</span>` +
+                  (fields.length ? `<div style="font-size:11px; color:var(--text-sec); margin-top:2px;">${esc(fields.map(f => f.label + ': ' + f.display).join(' · '))}</div>` : '')
+                : `<span style="color:var(--text-sec);">Закрыл без применения</span>`;
+            const unrec = Number(r.unrecognized) || 0;
+            h += `<tr class="active-row" style="cursor:pointer;" onclick="app.toggleAdminAiFillDialog('${esc(r.id)}')">
+                    <td style="color:var(--text-sec);">${i + 1}</td>
+                    <td style="white-space:nowrap; font-size:12px;">${when}</td>
+                    <td>${this._aiFillAccountLabel(r)}</td>
+                    <td style="white-space:nowrap;">${this._fmtAiFillDur(r.duration_sec)}</td>
+                    <td style="white-space:nowrap;" title="Голосом: ${voice} из ${msgs}">${msgs} ${src}</td>
+                    <td>${result}</td>
+                    <td style="text-align:center; color:${unrec ? '#EF4444' : 'var(--text-sec)'}; font-weight:${unrec ? 700 : 400};">${unrec || '—'}</td>
+                    <td style="white-space:nowrap; text-align:right;"><button id="admin_aifill_btn_${esc(r.id)}" class="admin-btn" style="padding:4px 10px; font-size:11px;" onclick="event.stopPropagation(); app.toggleAdminAiFillDialog('${esc(r.id)}')">Диалог ▾</button></td>
+                  </tr>
+                  <tr id="admin_aifill_dlg_${esc(r.id)}" style="display:none;"><td colspan="8" style="padding:10px 14px 16px; background:var(--bg);">${this._renderAdminAiFillDialog(r)}</td></tr>`;
+        });
+        h += `</tbody></table>`;
+        return h;
+    },
+
+    // Диалог в том же виде, что видел монтажник: его реплики справа, система слева.
+    // У реплики монтажника — значок источника и то, что из неё распознано; фразы,
+    // на которые система ответила «не удалось распознать», подсвечены.
+    _renderAdminAiFillDialog: function (r) {
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const SRC = { voice: '🎤 голосом', 'voice+edit': '🎤✎ голосом, поправил руками', text: '⌨ текстом' };
+        const items = Array.isArray(r.dialog) ? r.dialog : [];
+        if (!items.length) return `<div style="color:var(--text-sec); font-size:12px;">Диалог не сохранился.</div>`;
+        const bubbles = items.map(m => {
+            const text = esc(m.text).replace(/\n/g, '<br>');
+            if (m.who !== 'u') {
+                return `<div class="ai-chat-bubble ai-chat-assistant" style="max-width:75%;"><span style="font-size:10px; color:var(--text-sec);">${m.t || 0} с · система</span><br>${text}</div>`;
+            }
+            const none = m.kind === 'none';
+            const found = Array.isArray(m.found) && m.found.length
+                ? `<div style="margin-top:4px; font-size:11px; opacity:0.9;">${m.found.map(f => '✓ ' + esc(f.label) + ': ' + esc(f.display)).join('<br>')}</div>` : '';
+            return `<div class="ai-chat-bubble ai-chat-user" style="max-width:75%; ${none ? 'background:linear-gradient(135deg,#DC2626,#EF4444);' : ''}">
+                        <span style="font-size:10px; opacity:0.85;">${m.t || 0} с · ${SRC[m.src] || '⌨ текстом'}${none ? ' · <b>НЕ РАСПОЗНАНО</b>' : ''}</span><br>${text}${found}
+                    </div>`;
+        }).join('');
+        return `
+            <div style="display:flex; justify-content:flex-end; margin-bottom:6px;">
+                <button class="admin-btn" style="padding:4px 10px; font-size:11px;" onclick="event.stopPropagation(); app.copyAdminAiFillDialog('${esc(r.id)}', this)">📋 Скопировать диалог</button>
+            </div>
+            <div class="ai-chat-log" style="max-height:420px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:4px 2px;">${bubbles}</div>`;
+    },
+
+    _renderAdminAiFillAccounts: function (rows) {
+        const by = {};
+        rows.forEach(r => {
+            const k = this._aiFillAccountKey(r);
+            const a = by[k] = by[k] || { row: r, runs: 0, sec: 0, applied: 0, msgs: 0, voice: 0, unrec: 0, last: 0 };
+            a.runs++;
+            a.sec += Number(r.duration_sec) || 0;
+            if (r.outcome === 'applied') a.applied++;
+            a.msgs += Number(r.messages_count) || 0;
+            a.voice += Number(r.voice_count) || 0;
+            a.unrec += Number(r.unrecognized) || 0;
+            a.last = Math.max(a.last, new Date(r.started_at).getTime());
+        });
+        const list = Object.values(by).sort((a, b) => b.runs - a.runs || b.sec - a.sec);
+        let h = `
+            <table class="inv-table">
+                <thead><tr>
+                    <th style="width:30px;">#</th>
+                    <th>Аккаунт</th>
+                    <th style="text-align:right;">Запусков</th>
+                    <th style="text-align:right; white-space:nowrap;">Общее время</th>
+                    <th style="text-align:right; white-space:nowrap;">Среднее</th>
+                    <th style="text-align:right;">Применил</th>
+                    <th style="text-align:right;">Реплик</th>
+                    <th style="text-align:right;">Голосом</th>
+                    <th style="text-align:right; white-space:nowrap;">Не распознано</th>
+                    <th style="text-align:right; white-space:nowrap;">Последний</th>
+                </tr></thead><tbody>`;
+        list.forEach((a, i) => {
+            const dt = new Date(a.last);
+            h += `<tr>
+                    <td style="color:var(--text-sec);">${i + 1}</td>
+                    <td>${this._aiFillAccountLabel(a.row)}</td>
+                    <td style="text-align:right; font-weight:700;">${a.runs}</td>
+                    <td style="text-align:right; white-space:nowrap;">${this._fmtAiFillDur(a.sec)}</td>
+                    <td style="text-align:right; white-space:nowrap;">${this._fmtAiFillDur(a.sec / a.runs)}</td>
+                    <td style="text-align:right; color:#10B981;">${a.applied} из ${a.runs}</td>
+                    <td style="text-align:right;">${a.msgs}</td>
+                    <td style="text-align:right;">${a.msgs ? Math.round(a.voice * 100 / a.msgs) + '%' : '—'}</td>
+                    <td style="text-align:right; color:${a.unrec ? '#EF4444' : 'var(--text-sec)'};">${a.unrec || '—'}</td>
+                    <td style="text-align:right; white-space:nowrap; color:var(--text-sec); font-size:12px;">${dt.toLocaleDateString('ru-RU')} ${dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</td>
+                  </tr>`;
+        });
+        h += `</tbody></table>`;
+        return h;
+    },
+
+    // Фразы, на которые система ответила «не удалось распознать», — сырьё для
+    // доработки правил parseHouseQuery. Одинаковые фразы схлопнуты, частые сверху.
+    _renderAdminAiFillUnrecognized: function (rows) {
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const by = {};
+        rows.forEach(r => (r.dialog || []).forEach(m => {
+            if (m.who !== 'u' || m.kind !== 'none') return;
+            const k = String(m.text || '').trim().toLowerCase();
+            if (!k) return;
+            const e = by[k] = by[k] || { text: m.text, count: 0, voice: 0, who: new Set(), last: 0 };
+            e.count++;
+            if (m.src && m.src !== 'text') e.voice++;
+            e.who.add(r.user_name || r.user_email || 'неизвестен');
+            e.last = Math.max(e.last, new Date(r.started_at).getTime());
+        }));
+        const list = Object.values(by).sort((a, b) => b.count - a.count || b.last - a.last);
+        if (!list.length) return `<div style="text-align:center; color:var(--text-sec); padding:40px 0;">Нераспознанных фраз в выбранных сеансах нет.</div>`;
+        this._aiFillUnrecognizedText = list.map(e => e.text).join('\n');
+        let h = `
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                <span style="font-size:12.5px; color:var(--text-sec);">Фраз: <b style="color:var(--text-main);">${list.length}</b> — то, на чём правила спотыкаются. Копируйте и присылайте на доработку.</span>
+                <button class="admin-btn" style="margin-left:auto; padding:4px 10px; font-size:11px;" onclick="app._copyAiFillText(app._aiFillUnrecognizedText || '', this)">📋 Скопировать все</button>
+            </div>
+            <table class="inv-table">
+                <thead><tr><th style="width:30px;">#</th><th>Фраза</th><th style="text-align:right;">Раз</th><th style="text-align:right;">Голосом</th><th>Кто</th><th style="text-align:right; white-space:nowrap;">Последний раз</th></tr></thead><tbody>`;
+        list.forEach((e, i) => {
+            h += `<tr>
+                    <td style="color:var(--text-sec);">${i + 1}</td>
+                    <td style="color:#EF4444;">«${esc(e.text)}»</td>
+                    <td style="text-align:right; font-weight:700;">${e.count}</td>
+                    <td style="text-align:right;">${e.voice}</td>
+                    <td style="font-size:12px; color:var(--text-sec);">${esc(Array.from(e.who).join(', '))}</td>
+                    <td style="text-align:right; white-space:nowrap; color:var(--text-sec); font-size:12px;">${new Date(e.last).toLocaleDateString('ru-RU')}</td>
+                  </tr>`;
+        });
+        h += `</tbody></table>`;
+        return h;
+    },
+
     renderAdminProjects: function () {
         const content = document.getElementById('admin_content');
         if (!content) return;
@@ -18468,7 +19956,11 @@ const app = {
     // this._adminChatId ('broadcast' | id пользователя). На узких экранах панели
     // показываются по очереди (класс chat-open, см. .admin-chat-* в style.css).
     renderAdminMessages: function () {
-        const isViewer = this.getAdminRole() === 'viewer';
+        const isViewer = this.isReadOnlyAdmin(); // наблюдатель или менеджер: панель только на просмотр
+        // Рассылка «всем пользователям» — инструмент платформы, а не компании:
+        // менеджеру дистрибьютора её не показываем и отправить не даём, иначе
+        // объявление одной компании уедет монтажникам всех остальных.
+        const canBroadcast = !this.isManagerRole();
         // Свой id в таблице пользователей: по нему отделяем свои переписки от чужих.
         // Обычно его уже заполнил опрос уведомлений, но если нет — спрашиваем базу
         // и рисуем вкладку заново (один раз, иначе при неудаче получился бы цикл).
@@ -18601,9 +20093,9 @@ const app = {
             const u = findUser(senderId);
             const email = ((u && u.email) || '').toLowerCase();
             if (email && this.SUPER_ADMIN_EMAILS.includes(email)) return 'adm';
-            if (u && u.account_type) return u.account_type === 'viewer' ? 'v:' + senderId : 'adm';
+            if (u && u.account_type) return ['viewer', 'manager'].includes(u.account_type) ? 'v:' + senderId : 'adm';
             // Строки пользователя нет (например, аккаунт удалён) — судим по подписи:
-            // её проставляют только письмам наблюдателя (см. sendAdminMessage)
+            // её проставляют письмам наблюдателя и менеджера (см. sendAdminMessage)
             return senderName ? 'v:' + senderId : 'adm';
         };
         const mySide = isViewer && meId ? 'v:' + meId : 'adm';
@@ -18727,9 +20219,10 @@ const app = {
             this._adminChatFindMsg = null;
         }
 
-        const allIds = ['broadcast', 'notifications'].concat(threads.map(t => t.id)).concat(dropdownUsers.map(u => u.id));
+        const allIds = (canBroadcast ? ['broadcast'] : []).concat(['notifications'])
+            .concat(threads.map(t => t.id)).concat(dropdownUsers.map(u => u.id));
         if (!this._adminChatId || allIds.indexOf(this._adminChatId) === -1) {
-            this._adminChatId = threads.length ? threads[0].id : 'broadcast';
+            this._adminChatId = threads.length ? threads[0].id : (canBroadcast ? 'broadcast' : 'notifications');
         }
         const activeId = this._adminChatId;
         this._lastRenderedChatId = activeId;
@@ -18765,13 +20258,14 @@ const app = {
                     <div class="admin-chat-item-row"><span class="admin-chat-prev">${esc(notifPrev)}</span>${notifUnread ? `<span class="admin-chat-badge" title="Непрочитанных уведомлений: ${notifUnread}">${notifUnread}</span>` : ''}</div>
                 </div>
             </div>
+            ${canBroadcast ? `
             <div class="admin-chat-item ${activeId === 'broadcast' ? 'active' : ''}" data-search="объявление рассылка всем broadcast ${esc(broadcastItems.map(m => m.text || '').join(' ').toLowerCase())}" onclick="app.openAdminChat('broadcast')">
                 <div class="admin-chat-ava" style="background:#D97706;">📢</div>
                 <div class="admin-chat-item-body">
                     <div class="admin-chat-item-row"><span class="admin-chat-name">Объявления для всех</span><span class="admin-chat-time">${lastBroadcast ? listTime(lastBroadcast.created_at) : ''}</span></div>
                     <div class="admin-chat-item-row"><span class="admin-chat-prev">${lastBroadcast ? 'Вы: ' + esc((lastBroadcast.text || '').replace(/\s+/g, ' ')) : 'Рассылка всем авторизованным'}</span></div>
                 </div>
-            </div>
+            </div>` : ''}
         `;
         threads.forEach(t => {
             // Чужая переписка — и с менеджером дистрибьютора, и наблюдателя с монтажником:
@@ -19033,10 +20527,10 @@ const app = {
                         <button class="admin-btn" style="height:26px; font-size:11px; margin-left:8px;" onclick="app.openAdminChat('${activeThread.installerId}')">✉️ Написать монтажнику от себя</button>
                     </div>
                     ` : `
-                    <!-- Наблюдателю переписка открыта на запись, в отличие от остальной
-                         панели: смотреть на вопрос монтажника и не иметь возможности
-                         ответить — бессмысленно. Удаление сообщений и переписок ему
-                         по-прежнему закрыто (см. кнопки с корзиной выше). -->
+                    <!-- Наблюдателю и менеджеру переписка открыта на запись, в отличие
+                         от остальной панели: смотреть на вопрос монтажника и не иметь
+                         возможности ответить — бессмысленно. Удаление сообщений и
+                         переписок им по-прежнему закрыто (см. кнопки с корзиной выше). -->
                     ${replyBarHtml}
                     <div class="admin-chat-compose">
                         <textarea id="admin_msg_text" rows="1" placeholder="${esc(composePlaceholder)}" onkeydown="app.adminChatKeydown(event)"></textarea>
@@ -19209,7 +20703,7 @@ const app = {
 
     // Удаление одного сообщения (объявления, личного письма или ответа)
     deleteAdminMessage: async function (id) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Удаление сообщений запрещено.');
             return;
         }
@@ -19227,7 +20721,7 @@ const app = {
     // Удаляет всю переписку с конкретным пользователем (личные сообщения ему + все его ответы).
     // Объявления для всех не трогает — они не принадлежат конкретному человеку.
     deleteUserMessages: async function (userId) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Удаление сообщений запрещено.');
             return;
         }
@@ -19250,7 +20744,7 @@ const app = {
 
     // Полная очистка истории сообщений (объявления, личные, ответы)
     deleteAllMessages: async function () {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Удаление сообщений запрещено.');
             return;
         }
@@ -19273,9 +20767,10 @@ const app = {
     },
 
     sendAdminMessage: async function () {
-        // Наблюдателю отправка разрешена намеренно: он ведёт переписку с монтажниками,
-        // хотя всё остальное в панели ему только на просмотр. Запрет стоял здесь и на
-        // поле ввода — из-за него ответить на вопрос монтажника было нечем.
+        // Наблюдателю и менеджеру дистрибьютора отправка разрешена намеренно: они
+        // ведут переписку с монтажниками, хотя всё остальное в панели им только на
+        // просмотр. Запрет стоял здесь и на поле ввода — из-за него ответить на
+        // вопрос монтажника было нечем.
         const textEl = document.getElementById('admin_msg_text');
         const text = textEl ? textEl.value : '';
         // Получатель — это открытый диалог: отдельного выпадающего списка больше нет
@@ -19286,6 +20781,10 @@ const app = {
         }
         if (!recipientVal) {
             app.alert('Выберите диалог слева или найдите человека через поиск.');
+            return;
+        }
+        if (recipientVal === 'all' && this.isManagerRole()) {
+            app.alert('Объявления для всех отправляет администрация сайта. Вам доступна переписка с монтажниками вашей компании.');
             return;
         }
         if (String(recipientVal).indexOf('mgr:') === 0) {
@@ -19323,10 +20822,11 @@ const app = {
                 text: text.trim(),
                 type: type
             };
-            // Имя подставляем только наблюдателю: монтажник не может узнать его по
-            // sender_id (чужие строки таблицы пользователей ему не отдаются), а
-            // письма владельца и администраторов остаются подписаны «Администратор».
-            if (this.getAdminRole() === 'viewer') {
+            // Имя подставляем наблюдателю и менеджеру дистрибьютора: монтажник не
+            // может узнать его по sender_id (чужие строки таблицы пользователей ему
+            // не отдаются), а письма владельца и администраторов остаются
+            // подписаны «Администратор».
+            if (this.isReadOnlyAdmin()) {
                 row.sender_name = this.getAdminUserDisplayName(uRow);
             }
             // Отвечаем на конкретное сообщение — привязываем к нему (цитата в пузыре)
@@ -20336,8 +21836,9 @@ const app = {
             let tariff = 'Базовый';
             if (u.account_type === 'pro') {
                 tariff = 'Профи';
-            } else if (['admin', 'viewer'].includes(u.account_type)) {
-                let roleName = u.account_type === 'admin' ? 'Администратор' : 'Наблюдатель';
+            } else if (['admin', 'viewer', 'manager'].includes(u.account_type)) {
+                let roleName = u.account_type === 'admin' ? 'Администратор'
+                    : (u.account_type === 'manager' ? 'Менеджер' : 'Наблюдатель');
                 let tariffName = (u.demo_ends_at && new Date(u.demo_ends_at) > new Date()) ? 'Профи' : 'Базовый';
                 tariff = `${roleName} (${tariffName})`;
             }
@@ -20356,7 +21857,7 @@ const app = {
         document.body.removeChild(link);
     },
     viewAdminUser: async function (userId) {
-        const isViewer = this.getAdminRole() === 'viewer';
+        const isViewer = this.isReadOnlyAdmin(); // наблюдатель или менеджер: панель только на просмотр
         let user = this.adminData.users.find(u => String(u.id) === String(userId));
         let userEstimates = (this.adminData.userEstimates || []).filter(e => String(e.user_id) === String(userId));
 
@@ -20451,20 +21952,21 @@ const app = {
                                             <option value="pro" ${user.account_type === 'pro' ? 'selected' : ''}>Профи ⭐️</option>
                                             ${this.getAdminRole() === 'super_admin' || user.account_type === 'admin' ? `<option value="admin" ${user.account_type === 'admin' ? 'selected' : ''}>Администратор ⚙️</option>` : ''}
                                             ${this.getAdminRole() === 'super_admin' || user.account_type === 'viewer' ? `<option value="viewer" ${user.account_type === 'viewer' ? 'selected' : ''}>Наблюдатель 👁</option>` : ''}
+                                            ${this.getAdminRole() === 'super_admin' || user.account_type === 'manager' ? `<option value="manager" ${user.account_type === 'manager' ? 'selected' : ''}>Менеджер 🤝</option>` : ''}
                                         </select>
                                     </div>
-                                    <div id="admin_edit_role_tariff_wrapper" style="display: ${['admin', 'viewer'].includes(user.account_type) ? 'block' : 'none'};">
+                                    <div id="admin_edit_role_tariff_wrapper" style="display: ${['admin', 'viewer', 'manager'].includes(user.account_type) ? 'block' : 'none'};">
                                         <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Тариф для роли</label>
                                         <select id="admin_edit_role_tariff" onchange="app.onAdminEditTariffChange()" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                             <option value="base" ${!(user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'selected' : ''}>Базовый</option>
                                             <option value="pro" ${(user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'selected' : ''}>Профи ⭐️</option>
                                         </select>
                                     </div>
-                                    <div id="admin_edit_date_wrapper" style="display: ${user.account_type === 'pro' || (['admin', 'viewer'].includes(user.account_type) && user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'block' : 'none'};">
+                                    <div id="admin_edit_date_wrapper" style="display: ${user.account_type === 'pro' || (['admin', 'viewer', 'manager'].includes(user.account_type) && user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'block' : 'none'};">
                                         <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Истекает (для Профи)</label>
                                         <input type="date" id="admin_edit_date" value="${proDateInput}" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                     </div>
-                                    <div id="admin_edit_subtype_wrapper" style="display: ${user.account_type === 'pro' || (['admin', 'viewer'].includes(user.account_type) && user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'block' : 'none'};">
+                                    <div id="admin_edit_subtype_wrapper" style="display: ${user.account_type === 'pro' || (['admin', 'viewer', 'manager'].includes(user.account_type) && user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'block' : 'none'};">
                                         <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Источник Профи</label>
                                         <select id="admin_edit_subtype" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                             <option value="trial" ${proSubtype === 'trial' ? 'selected' : ''}>Пробный</option>
@@ -21042,7 +22544,7 @@ const app = {
         if (!root) return;
         const data = this._adminPlansData || { projects: [], totalBytes: 0, retentionDays: 90 };
         const projects = data.projects || [];
-        const isViewer = this.getAdminRole() === 'viewer';
+        const isViewer = this.isReadOnlyAdmin(); // наблюдатель или менеджер: панель только на просмотр
         const esc = s => String(s ?? '').replace(/[&<>"]/g,
             c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const mb = b => (b / 1048576).toFixed(1) + ' МБ';
@@ -23446,6 +24948,11 @@ const app = {
                 // (см. profileLocked в syncUI).
                 this._profileDbLoaded = true;
 
+                // Режим обучения новичку включается сам, а тому, у кого сметы уже
+                // сохранены, — нет. Считаем их только пока человек не решил сам:
+                // это один запрос на браузер, и только у тех, кто ещё не выбирал.
+                this.decideTourDefault(uRow.id);
+
                 // Промокод, введённый при регистрации, применяем один раз — при первом
                 // входе, когда запись в users уже создана и ещё нет привязки к поставщику
                 const regPromo = (user.user_metadata && user.user_metadata.promo_code) || '';
@@ -23516,14 +25023,14 @@ const app = {
         }
     },
     updateAdminUserTariff: async function (userId) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Изменение тарифов запрещено.');
             return;
         }
         const currentRole = this.getAdminRole();
         const targetUser = (this.adminData.users || []).find(u => String(u.id) === String(userId));
         const targetType = targetUser ? targetUser.account_type : 'base';
-        if (['admin', 'viewer'].includes(targetType) && currentRole !== 'super_admin') {
+        if (['admin', 'viewer', 'manager'].includes(targetType) && currentRole !== 'super_admin') {
             app.alert('Изменение тарифа/роли этого пользователя разрешено только Владельцу.');
             return;
         }
@@ -23535,7 +25042,7 @@ const app = {
 
         let updateData = { account_type: type };
 
-        let isProTariff = (type === 'pro') || (['admin', 'viewer'].includes(type) && roleTariffVal === 'pro');
+        let isProTariff = (type === 'pro') || (['admin', 'viewer', 'manager'].includes(type) && roleTariffVal === 'pro');
 
         if (isProTariff) {
             if (dateVal) {
@@ -23592,7 +25099,7 @@ const app = {
             if (roleTariffWrapper) roleTariffWrapper.style.display = 'none';
             if (dateWrapper) dateWrapper.style.display = 'none';
             if (subtypeWrapper) subtypeWrapper.style.display = 'none';
-        } else if (['admin', 'viewer'].includes(val)) {
+        } else if (['admin', 'viewer', 'manager'].includes(val)) {
             if (roleTariffWrapper) roleTariffWrapper.style.display = 'block';
             const roleTariffVal = roleTariffSelect ? roleTariffSelect.value : 'base';
             if (roleTariffVal === 'pro') {
@@ -23608,14 +25115,14 @@ const app = {
     // is_blocked в handleAuthSession, которая принудительно выходит из сессии). Снимается тем
     // же переключателем в любой момент.
     toggleUserBlocked: async function (userId, block) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Изменение статуса блокировки запрещено.');
             return;
         }
         const currentRole = this.getAdminRole();
         const targetUser = (this.adminData.users || []).find(u => String(u.id) === String(userId));
         const targetType = targetUser ? targetUser.account_type : 'base';
-        if (['admin', 'viewer'].includes(targetType) && currentRole !== 'super_admin') {
+        if (['admin', 'viewer', 'manager'].includes(targetType) && currentRole !== 'super_admin') {
             app.alert('Блокировка администраторов/наблюдателей разрешена только Владельцу.');
             return;
         }
@@ -23645,14 +25152,14 @@ const app = {
     // соображений безопасности) — при необходимости полностью закрыть возможность входа
     // его нужно вручную удалить в Supabase Dashboard → Authentication → Users.
     deleteUserCompletely: async function (userId) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Удаление учетных записей запрещено.');
             return;
         }
         const currentRole = this.getAdminRole();
         const targetUser = (this.adminData.users || []).find(u => String(u.id) === String(userId));
         const targetType = targetUser ? targetUser.account_type : 'base';
-        if (['admin', 'viewer'].includes(targetType) && currentRole !== 'super_admin') {
+        if (['admin', 'viewer', 'manager'].includes(targetType) && currentRole !== 'super_admin') {
             app.alert('Удаление администраторов/наблюдателей разрешено только Владельцу.');
             return;
         }
@@ -27001,6 +28508,60 @@ const app = {
         } catch (e) {
             console.warn('[logProjectSheets] Исключение:', e);
         }
+    },
+
+    /**
+     * Сеанс «Умного заполнения» → таблица ai_fill_sessions (миграция
+     * 20260819_add_ai_fill_sessions.sql). Зовётся из openAiParseModal при
+     * закрытии окна, строка уже собрана там — здесь только кто и отправка.
+     *
+     * Пишем в фон и молча: монтажнику журнал ни к чему, а ошибка записи не
+     * должна мешать закрыть окно. Не дошло (нет сети, упал Supabase) —
+     * кладём в очередь в localStorage и дошлём при следующем открытии окна
+     * (flushAiFillLogQueue): сеансы редкие, терять их жалко.
+     */
+    AI_FILL_QUEUE_KEY: 'ai_fill_log_queue',
+    logAiFillSession: function (row) {
+        const u = this.state.tgUser || {};
+        row = Object.assign({
+            auth_user_id: u.authUserId || null,
+            user_email: u.email || null,
+            user_name: u.first_name || u.username || null
+        }, row);
+        const queue = () => {
+            try {
+                const q = JSON.parse(localStorage.getItem(this.AI_FILL_QUEUE_KEY) || '[]');
+                q.push(row);
+                // Очередь не резиновая: больше 20 сеансов без сети — это уже не очередь, а мусор
+                localStorage.setItem(this.AI_FILL_QUEUE_KEY, JSON.stringify(q.slice(-20)));
+            } catch (e) { }
+        };
+        try {
+            if (typeof supabaseClient === 'undefined') { queue(); return; }
+            supabaseClient.from('ai_fill_sessions').insert([row]).then(({ error }) => {
+                if (error) {
+                    console.warn('[logAiFillSession] Сеанс не записан:', error.message || error);
+                    queue();
+                }
+            }, () => queue());
+        } catch (e) {
+            queue();
+        }
+    },
+    flushAiFillLogQueue: function () {
+        let q = [];
+        try { q = JSON.parse(localStorage.getItem(this.AI_FILL_QUEUE_KEY) || '[]'); } catch (e) { }
+        if (!q.length || typeof supabaseClient === 'undefined') return;
+        try { localStorage.removeItem(this.AI_FILL_QUEUE_KEY); } catch (e) { }
+        supabaseClient.from('ai_fill_sessions').insert(q).then(({ error }) => {
+            if (!error) return;
+            console.warn('[flushAiFillLogQueue] Очередь не дослана:', error.message || error);
+            // Вернём в очередь, но не поверх того, что успело накопиться за это время
+            try {
+                const cur = JSON.parse(localStorage.getItem(this.AI_FILL_QUEUE_KEY) || '[]');
+                localStorage.setItem(this.AI_FILL_QUEUE_KEY, JSON.stringify(q.concat(cur).slice(-20)));
+            } catch (e) { }
+        }, () => { });
     },
 
     shareInvoice: async function () {
@@ -39913,12 +41474,10 @@ const app = {
                     </div>`;
                 }
 
-                // ПРОВЕРКА НА АДМИНА
-                let adminBtn = app.hasAdminAccess()
-                    ? `<div style="font-size: 12px; font-weight: 700; color: #10B981; cursor: pointer; border: 1px solid #10B981; padding: 4px 10px; border-radius: 8px; background: #ECFDF5; margin-right: 10px;" onclick="app.showAdminModal()" title="Панель администратора">Админка</div>`
-                    : ``;
-
-                authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);">${adminBtn}<div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;
+                // Кнопки «Админка» здесь больше нет: тот же вход есть в левой панели
+                // разделов (пункт «Админка», см. syncRailUI), а два одинаковых входа
+                // рядом только занимали место в шапке.
+                authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);"><div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;
             } else {
                 // Если пользователь не авторизован - показываем только одну аккуратную кнопку
                 authContainer.innerHTML = `
@@ -39928,6 +41487,10 @@ const app = {
                         `;
             }
         }
+
+        // Левая панель кабинета: доступ к админке, счётчик сообщений, подсветка раздела
+        this.syncRailUI();
+
         if (document.getElementById('chk_dark')) document.getElementById('chk_dark').checked = this.state.darkMode; document.body.classList.toggle('dark-mode', this.state.darkMode);
 
         // === БЛОКИРОВКИ ===
@@ -50444,6 +52007,13 @@ const app = {
         // распознанные позиции, их нужно показать даже без параметров объекта:
         // «Создать новую смету» из распознавания — это как раз голая смета из
         // одних распознанных позиций.
+        // Нетронутый расчёт в быстром режиме — единственный случай, когда листать
+        // нечего: полоса прокрутки на пустом экране выглядит так, будто внизу
+        // что-то есть. Класс переводит вёрстку в компактный вид (см. body.empty-fit
+        // в style.css) и снимается сразу, как задана площадь или включён подробный
+        // режим: там прокрутка нужна по делу.
+        document.body.classList.toggle('empty-fit', this.isCalcEmpty() && !this.state.detailedRooms);
+
         if (this.state.area <= 0 && !hasUserRows) {
             // Кнопка быстрого старта стоит здесь же, в центре пустой сметы: место,
             // куда человек смотрит первым делом. Показываем её ровно тогда, когда
@@ -50491,7 +52061,14 @@ const app = {
             // Тот же блок работает на вкладке «Монтажные работы» — со своим
             // процентом и своей суммой до скидки (см. discountFields).
             const _onWorks = this.state.viewMode === 'works';
-            if (this.state.tgUser && (this.state.viewMode === 'equipment' || _onWorks)) {
+            // Пока в смете пусто, блоку нечего показывать: «Рекомендованная цена: 0 ₽»
+            // и ползунок скидки от нуля — это шум на экране, где написано «Параметры
+            // объекта не заданы». Смотрим на список текущей вкладки, а не на сумму:
+            // позиция с нулевой ценой в смете всё равно есть.
+            const _hasRows = _onWorks
+                ? ((this.currentWorksList || []).length > 0)
+                : ((this.currentEquipmentList || []).length > 0);
+            if (this.state.tgUser && _hasRows && (this.state.viewMode === 'equipment' || _onWorks)) {
                 discountBlock.style.display = 'flex';
                 document.getElementById('rec_price_val').innerHTML = app.formatPriceHtml((_onWorks ? app.originalWorksSum : app.originalEqSum) || 0, true);
                 let curDiscount = (_onWorks ? this.state.worksDiscount : this.state.eqDiscount) || 0;

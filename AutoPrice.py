@@ -21,6 +21,26 @@ SEARCH_URL = 'https://www.teremonline.ru'
 USE_DIRECT_SEARCH = True
 BLOCK_HITS = 0
 
+# Два прогона по одному коду.
+#
+#   python AutoPrice.py           — свои артикулы STOUT/ROMMER вида SVB-0012-000015
+#                                   (workflow update-prices.yml, 10-е число);
+#   python AutoPrice.py --others  — всё остальное, что лежит в каталоге с ценой:
+#                                   Vaillant, Navien, BAXI, ProAqua, Wavin, Sinikon,
+#                                   ZONT, Haier…, плюс STOUT/ROMMER с нестандартным
+#                                   кодом (радиаторы QV40-…, RMB-0007CF-…, RVFF-…);
+#                                   без РЕХАУ (его берёт листинг) и без позиций с
+#                                   brand "—" — это служебные строки, на сайте их нет
+#                                   (workflow update-prices-other.yml, 20-е число).
+#
+# Чужие бренды живут в таблице замены и кнопке «Аналог», и до 19.08.2026 их цены не
+# обновлялись никогда: первый прогон отсекает их фильтром по виду артикула ради
+# времени (свой каталог и так идёт ~5 часов при лимите джобы в 6). Второй прогон
+# берёт ~630 позиций за ~1,5 часа. Делить на два дня, а не склеивать в один
+# запуск — именно из-за лимита.
+OTHERS_MODE = '--others' in sys.argv[1:]
+RUN_LABEL = 'другие бренды' if OTHERS_MODE else 'STOUT/ROMMER'
+
 # stdout не в терминал (как в GitHub Actions) по умолчанию блочно буферизуется — строки
 # print() могут не появляться в логе, пока буфер не наполнится или процесс не завершится.
 # Из-за этого зависание и "просто медленно" в логах выглядят одинаково — пусто. Форсируем
@@ -107,11 +127,33 @@ def read_status(text):
         if word == found: return code
     return None
 
+def _own_text(obj_text):
+    """Текст объекта, в котором вложенные объекты ({...} внутри rommer/comfort)
+    заменены пробелами той же длины. Индексы не сдвигаются, а регулярки по
+    price_date / availability / id видят только собственные поля объекта."""
+    out = list(obj_text)
+    depth = 0
+    for i in range(1, len(obj_text) - 1):
+        ch = obj_text[i]
+        if ch == '{':
+            depth += 1
+        if depth > 0:
+            out[i] = ' '
+        if ch == '}' and depth > 0:
+            depth -= 1
+    return ''.join(out)
+
+
 def collect_catalog_items(content):
     """Позиции каталога с ценой: артикул, старая цена и границы объекта в тексте файла.
 
-    Вложенные объекты (.rommer, .comfort внутри родительской позиции) отбрасываем:
-    их цену обновляет собственная строка каталога, а тут они только сбили бы границы.
+    Вложенные объекты (.rommer, .comfort внутри родительской позиции) — тоже
+    позиции, со своим артикулом и своей ценой. Раньше они отбрасывались в
+    расчёте на то, что у каждого есть собственная строка каталога, — а у двухсот
+    с лишним артикулов ROMMER (бойлеры GT, коллекторы, фитинги) её нет, и их
+    цена не обновлялась никогда. Поля каждого объекта ищем только среди его
+    собственных (см. _own_text): иначе у родителя первым находился price_date
+    вложенного объекта, и дата с наличием писались не туда.
     """
     items = []
     processed_starts = set()
@@ -120,55 +162,78 @@ def collect_catalog_items(content):
         if start_idx == -1 or end_idx == -1 or start_idx in processed_starts: continue
         processed_starts.add(start_idx)
         obj_text = content[start_idx:end_idx]
+        own_text = _own_text(obj_text)
         sku = None
-        art_m = re.search(r'["\']?article["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
+        art_m = re.search(r'["\']?article["\']?\s*:\s*["\']([^"\']+)["\']', own_text, re.IGNORECASE)
         if art_m: sku = art_m.group(1)
         else:
-            id_m = re.search(r'["\']?id["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
+            id_m = re.search(r'["\']?id["\']?\s*:\s*["\']([^"\']+)["\']', own_text, re.IGNORECASE)
             if id_m: sku = id_m.group(1)
         if not sku: continue
         old_price_str = match.group(2)
         old_price = float(old_price_str) if '.' in old_price_str else int(old_price_str)
-        date_m = re.search(r'["\']?price_date["\']?\s*:\s*["\']([^"\']+)["\']', obj_text, re.IGNORECASE)
+        date_m = re.search(r'["\']?price_date["\']?\s*:\s*["\']([^"\']+)["\']', own_text, re.IGNORECASE)
         price_date = date_m.group(1) if date_m else None
-        items.append({'sku': sku, 'old_price': old_price, 'match': match, 'start_idx': start_idx, 'end_idx': end_idx, 'obj_text': obj_text, 'price_date': price_date})
+        brand_m = re.search(r'["\']?brand["\']?\s*:\s*["\']([^"\']*)["\']', own_text, re.IGNORECASE)
+        brand = brand_m.group(1) if brand_m else None
+        unit_m = re.search(r'["\']?unit["\']?\s*:\s*["\']([^"\']*)["\']', own_text, re.IGNORECASE)
+        unit = unit_m.group(1) if unit_m else None
+        has_len = bool(re.search(r'\blen\s*:\s*\d', own_text))
+        items.append({'sku': sku, 'old_price': old_price, 'match': match, 'start_idx': start_idx, 'end_idx': end_idx, 'obj_text': obj_text, 'price_date': price_date, 'brand': brand, 'unit': unit, 'coil_family': has_len})
 
-    valid_items = []
-    for item in items:
-        is_nested = False
-        for other in items:
-            if item['start_idx'] > other['start_idx'] and item['end_idx'] < other['end_idx']:
-                is_nested = True
-                break
-        if not is_nested:
-            valid_items.append(item)
-    return valid_items
+    # «Бухтовое» семейство: у позиции или у объекта, в который она вложена, есть
+    # поле len — длина бухты. Калькулятор (asCoilPrice в app.js) умножает на неё
+    # цену и самой позиции, и её вложенных замен: значит, все цены там за метр,
+    # даже если unit не проставлен (теплоизоляция Energoflex внутри труб SPI).
+    # Признак наследуется от родителя: проход по объектам в порядке текста со
+    # стеком открытых родителей.
+    items.sort(key=lambda x: x['start_idx'])
+    parents = []
+    for it in items:
+        while parents and parents[-1]['end_idx'] <= it['start_idx']:
+            parents.pop()
+        if parents and parents[-1]['coil_family']:
+            it['coil_family'] = True
+        parents.append(it)
+    return items
 
 
 # Переписывает одну позицию каталога: цена, дата и наличие. Вынесено из основного
 # цикла, чтобы быстрый шаг по листингу (см. update_from_brand_listings) писал файл
 # ровно теми же правилами — иначе два пути обновления однажды разъедутся.
-def apply_price_status(obj_text, price_local_start, price_local_end, new_price, old_price, new_status, current_date_str):
+#
+# Возвращает не новый текст объекта, а список точечных правок
+# (abs_start, abs_end, text) в координатах исходного файла. Позиция и вложенный
+# в неё .rommer теперь обновляются оба, и замена «объект целиком» затирала бы
+# одну правку другой; точечные правки не пересекаются.
+def apply_price_status(obj_text, start_idx, price_local_start, price_local_end, new_price, old_price, new_status, current_date_str):
+    own_text = _own_text(obj_text)
+    edits = []
     if new_price != old_price:
-        obj_text = obj_text[:price_local_start] + str(new_price) + obj_text[price_local_end:]
+        edits.append((start_idx + price_local_start, start_idx + price_local_end, str(new_price)))
 
-    def _insert_before_brace(text, field, value):
-        m = re.search(r'(["\']?' + field + r'["\']?\s*:\s*["\'])([^"\']+)(["\'])', text, re.IGNORECASE)
+    def _set_field(field, value):
+        m = re.search(r'(["\']?' + field + r'["\']?\s*:\s*["\'])([^"\']+)(["\'])', own_text, re.IGNORECASE)
         if m:
-            return text[:m.start(2)] + value + text[m.end(2):]
-        last_brace = text.rfind('}')
+            if m.group(2) != value:
+                edits.append((start_idx + m.start(2), start_idx + m.end(2), value))
+            return
+        # Поля нет — дописываем перед закрывающей скобкой самого объекта. Точку
+        # вставки ищем по исходному тексту: если последним полем стоит вложенный
+        # объект, вставать надо после его «}», а не после «rommer:».
+        last_brace = obj_text.rfind('}')
         if last_brace == -1:
-            return text
+            return
         idx = last_brace - 1
-        while idx >= 0 and text[idx].isspace():
+        while idx >= 0 and obj_text[idx].isspace():
             idx -= 1
-        comma = ',' if text[idx] != ',' else ''
-        return text[:idx+1] + f"{comma}\n  {field}: '{value}'" + text[idx+1:]
+        comma = ',' if obj_text[idx] != ',' else ''
+        edits.append((start_idx + idx + 1, start_idx + idx + 1, f"{comma}\n  {field}: '{value}'"))
 
-    obj_text = _insert_before_brace(obj_text, 'price_date', current_date_str)
+    _set_field('price_date', current_date_str)
     if new_status:
-        obj_text = _insert_before_brace(obj_text, 'availability', new_status)
-    return obj_text
+        _set_field('availability', new_status)
+    return edits
 
 
 # Разделы, которые обновляются целиком по листингу, без поштучного поиска.
@@ -224,7 +289,11 @@ def fetch_brand_listing(url):
 
 
 def update_from_brand_listings():
-    """Быстрое обновление цен и наличия по листингам разделов. Selenium не нужен."""
+    """Быстрое обновление цен и наличия по листингам разделов. Selenium не нужен.
+
+    Возвращает множество артикулов, которые были на листингах: поштучный поиск
+    (в режиме --others) их пропускает — они уже обновлены, а каждый поиск стоит
+    ~15 секунд."""
     import datetime
     current_date_str = datetime.datetime.now().strftime('%Y-%m-%d')
 
@@ -241,7 +310,7 @@ def update_from_brand_listings():
             print(f"  {title}: листинг не прочитан ({e}) — раздел пропущен, цены остаются прежними")
 
     if not site:
-        return
+        return set()
 
     replacements = []
     updated = skipped = 0
@@ -257,13 +326,13 @@ def update_from_brand_listings():
             skipped += 1
             continue
         new_status = data['status'] or 'on_order'
-        new_obj_text = apply_price_status(
-            item['obj_text'],
+        edits = apply_price_status(
+            item['obj_text'], item['start_idx'],
             item['match'].start(2) - item['start_idx'],
             item['match'].end(2) - item['start_idx'],
             new_price, old_price, new_status, current_date_str)
-        if new_obj_text != item['obj_text']:
-            replacements.append((item['start_idx'], item['end_idx'], new_obj_text))
+        if edits:
+            replacements.extend(edits)
             updated += 1
 
     if replacements:
@@ -273,6 +342,7 @@ def update_from_brand_listings():
         with open(FULL_PATH, 'w', encoding='utf-8') as f:
             f.write(content)
     print(f"  Обновлено по листингам: {updated}, пропущено: {skipped}\n")
+    return set(site)
 
 
 def get_price_card_isolation(driver, sku, old_price):
@@ -318,7 +388,7 @@ def get_price_card_isolation(driver, sku, old_price):
     # ними пробел, дефис или подчёркивание.
     groups = re.findall(r'[0-9A-Za-z]+', sku)
     if not groups: return "NOT_FOUND"
-    sku_re = re.compile(r'[\s\-–—_]*'.join(map(re.escape, groups)), re.IGNORECASE)
+    sku_re = re.compile(r'[\s\-–—_.]*'.join(map(re.escape, groups)), re.IGNORECASE)
 
     # Артикул в карточке стоит отдельной короткой строкой («Код: SAC-0020-000012»).
     # Всё длинное, со слешами или фигурными скобками — это остатки разметки и
@@ -327,7 +397,22 @@ def get_price_card_isolation(driver, sku, old_price):
         t = str(node).strip()
         return len(t) <= 60 and '/' not in t and '{' not in t
 
-    candidates = [t for t in soup.find_all(string=sku_re) if _looks_like_code(t)]
+    # И строка должна быть именно этим кодом, а не содержать его. У STOUT код
+    # длинный и уникальный, а у чужих брендов бывает «6103», «545» или числовой
+    # «100021538»: как подстрока такой код найдётся в цене, в телефоне, в чужом
+    # артикуле — и парсер записал бы постороннюю цену. Сравниваем без
+    # разделителей и регистра; допускается короткая подпись слева («Код: …»).
+    def _norm_code(s):
+        return re.sub(r'[\s\-–—_.:*]+', '', str(s)).upper()
+    sku_norm = _norm_code(sku)
+    def _is_exact_code(node):
+        t = _norm_code(node)
+        if t == sku_norm: return True
+        if not t.endswith(sku_norm): return False
+        label = t[:-len(sku_norm)]
+        return len(label) <= 12 and not re.search(r'\d', label)
+
+    candidates = [t for t in soup.find_all(string=sku_re) if _looks_like_code(t) and _is_exact_code(t)]
     found_items = []
     
     fallback_status = None
@@ -345,7 +430,10 @@ def get_price_card_isolation(driver, sku, old_price):
                 status_in_card = read_status(card.get_text(" ", strip=True))
             
             if not price_in_card:
-                price_el = card.find(class_=re.compile(r'price__value|product-price|club-price|catalog-item__price', re.I))
+                # price-value — так цена лежит в исходном HTML страницы поиска (его же
+                # читает листинг, см. fetch_brand_listing); остальные классы — варианты
+                # вёрстки после отработки скриптов сайта в браузере.
+                price_el = card.find(class_=re.compile(r'price__value|price-value|product-price|club-price|catalog-item__price', re.I))
                 if price_el and 'old' not in str(price_el.get('class', [])) and 'old' not in str(price_el.parent.get('class', [])):
                     p = clean_price(price_el.get_text())
                     if p and p >= price_floor:
@@ -545,9 +633,9 @@ def process_sku_v42(driver, sku, old_price):
 
 
 def update_catalog_prices():
-    print(f"--- ЗАПУСК ПАРСЕРА (ЖЕСТКИЙ ПУТЬ + ЛИМИТ 200%) ---")
+    print(f"--- ЗАПУСК ПАРСЕРА (ЖЕСТКИЙ ПУТЬ + ЛИМИТ 200%), режим: {RUN_LABEL} ---")
     print(f"Путь: {FULL_PATH}\n")
-    
+
     print("Шаг 1: Проверка файла БД...")
     if not os.path.exists(FULL_PATH):
         print(f"ОШИБКА: Файл catalog.js не найден!")
@@ -556,9 +644,11 @@ def update_catalog_prices():
     print("Шаг 2: Очистка старых процессов...")
     kill_zombies()
 
+    # Листинги идут в обоих режимах: это секунды, а данные одни и те же.
+    listed_skus = set()
     print("Шаг 2а: Обновление по листингам разделов (без браузера)...")
     try:
-        update_from_brand_listings()
+        listed_skus = update_from_brand_listings() or set()
     except Exception as e:
         print(f"  Шаг пропущен: {e}\n")
 
@@ -606,21 +696,51 @@ def update_catalog_prices():
     with open(FULL_PATH, 'r', encoding='utf-8') as f: content = f.read()
     items_to_process = collect_catalog_items(content)
 
-    # Ищем только СВОИ артикулы — STOUT и ROMMER, вида SVB-0012-000015.
+    # Основной прогон ищет только СВОИ артикулы — STOUT и ROMMER вида SVB-0012-000015.
     #
-    # В каталоге лежат ещё ProAqua (STRS020RCT), Energoflex (EFXT018092SUPRK),
-    # Джилекс, Walraven, Tech-Krep и числовые коды прайса. На teremonline их под
-    # этими кодами нет, и поиск по ним всегда возвращает NOT_FOUND — но тратит
-    # те же ~15 секунд. Хуже того, у чужих позиций обычно нет price_date, а
-    # сортировка ниже ставит бездатные в начало очереди: прогон 29.07 за три
-    # часа перебрал 318 позиций, из них 278 чужих, и до просроченных товаров
-    # STOUT так и не дошёл.
+    # В каталоге лежат ещё Vaillant, Navien, BAXI, ProAqua, Wavin, Sinikon, ZONT и
+    # прочие — около 630 позиций. Часть из них сайт по коду знает, часть нет, но
+    # каждая стоит те же ~15 секунд поиска, и вместе со своими 2500 позициями они
+    # не укладываются в шестичасовой лимит джобы. Хуже того, у чужих позиций
+    # часто нет price_date, а сортировка ниже ставит бездатные в начало очереди:
+    # прогон 29.07 за три часа перебрал 318 позиций, из них 278 чужих, и до
+    # просроченных товаров STOUT так и не дошёл. Поэтому чужие бренды идут
+    # отдельным прогоном --others (20-е число), а здесь отсекаются.
     OWN_SKU_RE = re.compile(r'^[A-Z]{3}-\d{4}-')
-    skipped_foreign = len(items_to_process)
-    items_to_process = [i for i in items_to_process if OWN_SKU_RE.match(i['sku'])]
-    skipped_foreign -= len(items_to_process)
-    if skipped_foreign:
-        print(f"Пропущено чужих артикулов (не STOUT/ROMMER): {skipped_foreign}")
+    total_items = len(items_to_process)
+    if OTHERS_MODE:
+        # Второй прогон: всё, что не берёт первый. Минус то, что уже обновили
+        # листинги (РЕХАУ), и минус позиции без бренда («—») — это служебные
+        # строки каталога вроде кабеля для схем автоматики (CBL-…), на сайте их
+        # нет, а каждая проверка стоит те же 15 секунд.
+        items_to_process = [i for i in items_to_process
+                            if not OWN_SKU_RE.match(i['sku'])
+                            and i['sku'] not in listed_skus
+                            and i.get('brand') != '—']
+        print(f"Отобрано чужих позиций: {len(items_to_process)} из {total_items} "
+              f"(свои STOUT/ROMMER, листинги и позиции без бренда пропущены)")
+    else:
+        items_to_process = [i for i in items_to_process if OWN_SKU_RE.match(i['sku'])]
+        skipped_foreign = total_items - len(items_to_process)
+        if skipped_foreign:
+            print(f"Пропущено чужих артикулов (не STOUT/ROMMER): {skipped_foreign} — их обновляет прогон --others")
+
+    # Цена за метр — трубки изоляции, трубы в бухтах, трос. Сайт продаёт их штукой
+    # или бухтой (трубка 2 м, бухта 100 м), а длину штуки карточка поиска не отдаёт:
+    # пересчитать в метры нечем, и парсер записал бы цену трубки в поле «за метр» —
+    # RIC-0001-220602 стоит 29 ₽/м в каталоге и 58 ₽ за трубку 2 м на сайте,
+    # коридор ±200% такое пропускает. Признак «за метр»: unit "м", либо unit не
+    # проставлен, а позиция из бухтового семейства (см. coil_family в
+    # collect_catalog_items). Позиции с unit "шт" и len (трубка K-FLEX 2 м) — за
+    # штуку, как и на сайте, их обновляем. Пропущенные ведутся руками.
+    def _per_meter(i):
+        unit = (i.get('unit') or '').strip().lower()
+        if unit in ('м', 'м.', 'метр', 'п.м', 'п.м.'): return True
+        return not unit and i.get('coil_family', False)
+    per_meter_ids = {id(i) for i in items_to_process if _per_meter(i)}
+    if per_meter_ids:
+        items_to_process = [i for i in items_to_process if id(i) not in per_meter_ids]
+        print(f"Пропущено позиций с ценой за метр: {len(per_meter_ids)} — сайт продаёт их штукой или бухтой")
 
     # Сортируем от самых старых price_date к самым свежим (без даты — считаем самыми
     # старыми, в начало очереди). Прогон часто не успевает пройти весь каталог за один раз
@@ -628,7 +748,7 @@ def update_catalog_prices():
     # именно просроченные позиции, а не всегда одни и те же товары в начале catalog.js.
     items_to_process.sort(key=lambda x: x['price_date'] or '0000-00-00')
 
-    print(f"Найдено корневых товаров: {len(items_to_process)}\n")
+    print(f"Найдено товаров (с вложенными ROMMER): {len(items_to_process)}\n")
     replacements = []
     price_cache = {}
     updated_count = 0
@@ -685,14 +805,14 @@ def update_catalog_prices():
             
             import datetime
             current_date_str = datetime.datetime.now().strftime('%Y-%m-%d')
-            new_obj_text = apply_price_status(
-                obj_text,
+            edits = apply_price_status(
+                obj_text, start_idx,
                 match.start(2) - start_idx,
                 match.end(2) - start_idx,
                 new_price, old_price, new_status, current_date_str)
 
-            if new_obj_text != obj_text:
-                replacements.append((start_idx, end_idx, new_obj_text))
+            if edits:
+                replacements.extend(edits)
                 updated_count += 1
                 
         elif isinstance(res, str) and res.startswith("ERR_DIFF"): 
@@ -702,7 +822,7 @@ def update_catalog_prices():
         if time.time() - last_checkpoint_ts >= CHECKPOINT_INTERVAL_SEC:
             print(f"\n[Чекпоинт] Промежуточное сохранение: обработано {i+1}/{len(items_to_process)}, обновлено цен: {updated_count}...")
             if write_snapshot(content, replacements):
-                git_checkpoint(f"Автообновление цен (промежуточно, {i+1}/{len(items_to_process)} обработано)")
+                git_checkpoint(f"Автообновление цен ({RUN_LABEL}, промежуточно, {i+1}/{len(items_to_process)} обработано)")
             last_checkpoint_ts = time.time()
     driver.quit()
     if replacements:
