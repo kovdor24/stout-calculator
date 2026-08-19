@@ -454,6 +454,8 @@ const RecognizePlan = {
         if (!r.heated) notes.push('неотапливаемое');
         if (r.doubleHeight) notes.push('второй свет');
         if (r.ownFloor) notes.push(`на плане это ${r.floorRaw}-й уровень`);
+        if (r.warmBelow) notes.push('под полом тёплый уровень — грунт не считается');
+        if (r.warmAbove) notes.push('над потолком тёплый уровень — кровля не считается');
         if (r.windows === null) notes.push('окна не разобраны — поставлено 1');
         if (r.confidence < 0.5 && r.area > 0 && r.areaSrc !== 'estimate') notes.push('прочитано неуверенно');
         if (r.note) notes.push(r.note);
@@ -484,6 +486,38 @@ const RecognizePlan = {
             this.setSheetFloor(s.i, free, true);
             taken.add(free);
         });
+        this.markStacked();
+    },
+
+    /**
+     * Соседи снизу и сверху у помещений сложенных листов.
+     *
+     * Этажей в расчёте два, а уровней в доме бывает три: цоколь, первый,
+     * второй. Тогда два листа ложатся на «первый этаж», и расчёт посчитал бы
+     * пол по грунту обоим — хотя первый этаж стоит на тёплом цоколе. Отмечаем:
+     * у всех, кроме самого нижнего листа этажа, под полом тёплое; у всех, кроме
+     * самого верхнего, над потолком тёплое. Один лист на этаж — признаков нет,
+     * всё считается как раньше.
+     *
+     * Считается заново при каждой перестановке этажей: монтажник мог развести
+     * листы по разным этажам, и тогда снимать уже нечего.
+     */
+    markStacked() {
+        const byFloor = {};
+        this._sheets.forEach(s => { (byFloor[s.floor] = byFloor[s.floor] || []).push(s); });
+        this._rows.forEach(r => { delete r.warmBelow; delete r.warmAbove; });
+
+        Object.keys(byFloor).forEach(f => {
+            const stack = byFloor[f].slice().sort((a, b) => a.floorRaw - b.floorRaw);
+            if (stack.length < 2) return;
+            stack.forEach((s, k) => {
+                this._rows.forEach(r => {
+                    if (r._sheet !== s.i || r.floor !== s.floor) return;
+                    if (k > 0) r.warmBelow = true;                  // под ним лист ниже
+                    if (k < stack.length - 1) r.warmAbove = true;   // над ним лист выше
+                });
+            });
+        });
     },
 
     /** Поменять этажи местами: листы загрузили в обратном порядке. */
@@ -498,6 +532,7 @@ const RecognizePlan = {
             r.floor = r.floor === 2 ? 1 : 2;
             r.floorRaw = r.floor;
         });
+        this.markStacked();
         this.renderReview();
     },
 
@@ -544,9 +579,13 @@ const RecognizePlan = {
         const stacked = Object.keys(perFloor).filter(f => perFloor[f].length > 1)
             .map(f => `${f}-й этаж: ${perFloor[f].map(s => this.floorTitle(s)).join(' + ')}`);
         if (stacked.length && chosen.length) {
-            if (sumCls === 'ok') { sumCls = 'warn'; sumIco = '!'; }
-            sumSub += ` Несколько листов встали на один этаж (${stacked.join('; ')}) — ` +
-                'поправьте «Этаж в расчёте» в шапке листа.';
+            // Это не обязательно ошибка: этажей в расчёте два, а уровней в доме
+            // бывает три, и цоколю с первым этажом деваться некуда. Поэтому
+            // говорим не «поправьте», а что из этого следует.
+            sumSub += ` Несколько листов легли на один этаж расчёта (${stacked.join('; ')}) — ` +
+                'так и задумано, этажей в расчёте два. Площади сложатся, а у верхнего уровня ' +
+                'пол уже не по грунту — это учтено. Если листы перепутаны, поправьте ' +
+                '«Этаж в расчёте» в шапке листа.';
         }
 
         const floorOpt = (v, cur) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${v}-й</option>`;
@@ -716,6 +755,7 @@ const RecognizePlan = {
             r.floor = this.calcFloor(val);
             r.floorRaw = r.floor;
             r.ownFloor = false;
+            this.markStacked();
         }
         this.renderReview();
     },
@@ -740,7 +780,7 @@ const RecognizePlan = {
             r.floor = s.floor;
             r.floorRaw = s.floor;
         });
-        if (!quiet) this.renderReview();
+        if (!quiet) { this.markStacked(); this.renderReview(); }
     },
 
     setSheetH(si, val) {
@@ -779,6 +819,10 @@ const RecognizePlan = {
         if (r.outerWalls) room.outerWalls = r.outerWalls;
         if (r.orient) room.orient = r.orient;
         if (r.doubleHeight) room.doubleHeight = true;
+        // Три уровня в двух этажах расчёта: у помещения над цоколем пол не по
+        // грунту, а по тёплому — иначе оно получит лишние потери (см. markStacked).
+        if (r.warmBelow) room.warmBelow = true;
+        if (r.warmAbove) room.warmAbove = true;
         return room;
     },
 

@@ -9440,6 +9440,48 @@ body.dark-mode .cw-achieve.earned {
     line-height: 1.5;
 }
 
+/* Пустое место спецификации — не «страница не догрузилась», а лист, на котором
+   ещё ничего не начерчено: даём ту же сетку, что на подложке редактора планов
+   (см. gridPattern в plan_editor.html — точки через 12 px, узел покрупнее через
+   каждые пять). Прозрачность низкая, а под самой подсказкой сетка гасится
+   заливкой цветом панели — текст читается по чистому фону. */
+.empty-state-row td {
+    background-image:
+        radial-gradient(circle, rgba(17, 24, 39, 0.16) 1px, transparent 1.6px),
+        radial-gradient(circle, rgba(17, 24, 39, 0.09) 1px, transparent 1.4px);
+    background-size: 60px 60px, 12px 12px;
+    background-position: 30px 30px, 0 0;
+}
+
+body.dark-mode .empty-state-row td {
+    background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.20) 1px, transparent 1.6px),
+        radial-gradient(circle, rgba(255, 255, 255, 0.10) 1px, transparent 1.4px);
+}
+
+.empty-state-hint {
+    background: radial-gradient(ellipse 62% 58% at 50% 50%,
+        var(--surface) 0%, var(--surface) 52%, transparent 100%);
+}
+
+/* Конвертик «Сообщения» в шапке — тот же вход, что пункт «Сообщения» в меню
+   кабинета, два одинаковых рядом только занимали место. Прячем стилями, а не
+   удаляем разметку: на этой же кнопке висят счётчик непрочитанных (его значение
+   отсюда переносится на значок в меню, см. syncRailUI) и точка состояния связи,
+   которую обновляет checkConnectionStatus — она же и показывает кнопку обратно
+   при появлении сети, поэтому !important. */
+#btn_notifications {
+    display: none !important;
+}
+
+/* На печати сетка — только лишний тонер */
+@media print {
+    .empty-state-row td,
+    .empty-state-hint {
+        background: none;
+    }
+}
+
 /* Нетронутый расчёт в быстром режиме: пустой экран помещается целиком, без
    прокрутки — листать всё равно нечего, а полоса внизу намекает на потерянное
    содержимое. Ужимаем только воздух: размеры текста, кнопок и картинок те же,
@@ -12034,6 +12076,24 @@ body.guest-mode .lk-rail {
     line-height: 16px;
     text-align: center;
     box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+}
+
+/* Точка состояния связи — переехала с конвертика в шапке (его убрали как дубль
+   этого же пункта). Цвет ставит app.checkConnectionStatus: зелёная — связь есть,
+   красная — сервер не отвечает. Стоит в противоположном значку углу, чтобы
+   непрочитанные и связь не наезжали друг на друга. */
+.lk-rail-dot {
+    position: absolute;
+    bottom: 4px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #9CA3AF;
+    border: 1.5px solid var(--surface);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease;
+    pointer-events: none;
 }
 
 @media print {

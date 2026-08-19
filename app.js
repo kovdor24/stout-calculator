@@ -10850,6 +10850,11 @@ const app = {
         const dot = document.getElementById('vpn_status_dot');
         const btn = document.getElementById('btn_notifications');
         const btnShare = document.getElementById('btn_share_trigger');
+        // Конвертик в шапке убран как дубль пункта «Сообщения» в меню кабинета, и
+        // точка состояния связи переехала на этот пункт. Красим обе: скрытая в шапке
+        // остаётся источником счётчика непрочитанных (см. syncRailUI).
+        const railDot = document.getElementById('lk_rail_status_dot');
+        const railBtn = document.querySelector('[data-rail="messages"]');
         if (!dot) return;
 
         try {
@@ -10863,13 +10868,18 @@ const app = {
 
             // Если все успешно — зеленая точка (соединение работает)
             dot.style.backgroundColor = '#10B981';
+            if (railDot) { railDot.style.backgroundColor = '#10B981'; railDot.setAttribute('title', 'Связь с сервером есть'); }
+            if (railBtn) railBtn.setAttribute('title', 'Сообщения и уведомления');
             if (btn) { btn.setAttribute('title', 'Онлайн'); btn.style.display = ''; }
             // Показываем кнопку «Ссылка для клиента» только при активном VPN
             if (btnShare) btnShare.style.display = '';
         } catch (e) {
-            // Без связи с сервером иконка сообщений всё равно бесполезна (сообщения не
-            // загрузятся) — вместо красной точки просто скрываем саму кнопку
+            // В шапке кнопку скрывали: без связи сообщения всё равно не загрузятся.
+            // Пункт меню прятать нельзя — из него открывается не только переписка, да и
+            // меню бы прыгало. Поэтому там красная точка и прямая подпись.
             if (btn) btn.style.display = 'none';
+            if (railDot) { railDot.style.backgroundColor = '#EF4444'; railDot.setAttribute('title', 'Нет связи с сервером — сообщения не загрузятся'); }
+            if (railBtn) railBtn.setAttribute('title', 'Сообщения и уведомления — нет связи с сервером');
             // Скрываем кнопку «Ссылка для клиента» без VPN
             if (btnShare) btnShare.style.display = 'none';
         }
@@ -36348,8 +36358,25 @@ const app = {
         var totalFloors = parseInt(s.floors || 1);
         var isTopFloor = (rFloorNum === totalFloors) || (isDoubleHeight && rFloorNum === 1);
         var isBottomFloor = (rFloorNum === 1);
-        var Q_roof = (isTopFloor && R_roof > 0) ? area * dT / R_roof * n_roof : 0;
-        var Q_floor = (isBottomFloor && R_floor > 0) ? area * dT / R_floor * n_floor : 0;
+
+        /**
+         * Соседи снизу и сверху.
+         *
+         * Пол нижнего этажа отдаёт тепло грунту, потолок верхнего — кровле. Но
+         * этажей в расчёте два, а уровней в доме бывает три: цоколь, первый,
+         * второй. Тогда цоколь и первый лежат на «первом этаже» вместе, и оба
+         * получают пол по грунту — хотя первый стоит на тёплом цоколе и в
+         * землю ничего не отдаёт. На доме 100 м² это лишний киловатт.
+         *
+         * Признаки помещения снимают ровно эту составляющую: под полом тёплое —
+         * пола по грунту нет, над потолком тёплое — кровли нет. Ставятся руками
+         * в карточке и сами при переносе плана, когда несколько листов легли на
+         * один этаж расчёта. Не заданы — всё считается как раньше.
+         */
+        var warmBelow = !!r.warmBelow;
+        var warmAbove = !!r.warmAbove;
+        var Q_roof = (isTopFloor && !warmAbove && R_roof > 0) ? area * dT / R_roof * n_roof : 0;
+        var Q_floor = (isBottomFloor && !warmBelow && R_floor > 0) ? area * dT / R_floor * n_floor : 0;
 
         // Нагрев приточного воздуха. Раньше эта составляющая считалась разом на
         // весь дом в getHouseHeatLoss и добавлялась только к мощности котла, а в
@@ -36381,6 +36408,13 @@ const app = {
             vol: vol, n_vent: n_eff, kOrient: kOrient, orient: orient,
             tKind: tInfo.kind, tManual: tInfo.manual,
             orientAuto: !r.orient && !!(pgRoom && pgRoom.orient),
+            // Снятые составляющие показываем в подсказке карточки: «пола нет»
+            // без объяснения выглядит ошибкой расчёта. isTop/isBottom говорят
+            // карточке, есть ли смысл показывать галочку: у помещения посреди
+            // дома ни пола по грунту, ни кровли и так нет.
+            isTop: isTopFloor, isBottom: isBottomFloor,
+            warmBelow: warmBelow && isBottomFloor,
+            warmAbove: warmAbove && isTopFloor,
             perim: perim, outerPerim: outerPerim, geoSrc: geoSrc,
             Tv: Tv, Tn: Tn, dT: dT,
             n_wall: n_wall, n_glz: n_glz, n_roof: n_roof, n_floor: n_floor
@@ -37824,6 +37858,14 @@ const app = {
     updRoomEnv: function (id, field, val) {
         const r = this.state.rooms.find(x => x.id === id);
         if (!r) return;
+        // Соседи снизу и сверху — галочки, а не списки: false здесь значит
+        // «как обычно», и хранить его в смете незачем.
+        if (field === 'warmBelow' || field === 'warmAbove') {
+            if (val) r[field] = true; else delete r[field];
+            this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
+            this.saveState();
+            return;
+        }
         if (val === '' || val === null || val === undefined) delete r[field];
         else if (field === 'outerWalls') r[field] = parseInt(val, 10);
         else if (field === 'roomKind') {
@@ -40232,6 +40274,7 @@ const app = {
             if (r.roomKind || r.tempC) envSet.push('режим');
             if (r.outerWalls) envSet.push('стены');
             if (r.orient) envSet.push('сторона');
+            if (r.warmBelow || r.warmAbove) envSet.push('соседи');
             const envOpen = !!(this._roomDetails && this._roomDetails[r.id]);
             const envBtn = `<button id="room_det_btn_${r.id}" onclick="app.toggleRoomDetails(${r.id})" title="Тип помещения, число наружных стен и сторона света" style="background:${envSet.length ? 'var(--primary-light)' : 'transparent'}; border:1px dashed ${envSet.length ? 'var(--primary)' : '#9CA3AF'}; color:${envSet.length ? 'var(--primary)' : '#6B7280'}; padding:2px 6px; height:24px; border-radius:4px; font-size:10px; font-weight:600; cursor:pointer; white-space:nowrap;">⚙ ${envSet.length ? 'уточнено: ' + envSet.join(', ') : 'уточнить'}</button>`;
 
@@ -40241,6 +40284,28 @@ const app = {
             let envOrientSel = `<select style="${selCss}" title="Куда выходят окна и наружные стены. На север и восток по СНиП 41-01-2003 добавляется 10 %, на юго-восток и запад — 5 %." onchange="app.updRoomEnv(${r.id}, 'orient', this.value)">
                             ${orientOpt('', autoOrient)}${orientOpt('N', 'Север +10 %')}${orientOpt('NE', 'Северо-восток +10 %')}${orientOpt('E', 'Восток +10 %')}${orientOpt('SE', 'Юго-восток +5 %')}${orientOpt('S', 'Юг')}${orientOpt('SW', 'Юго-запад')}${orientOpt('W', 'Запад +5 %')}${orientOpt('NW', 'Северо-запад +10 %')}
                         </select>`;
+
+            /**
+             * Что под полом и над потолком. Показываем только там, где это
+             * что-то меняет: пол по грунту считается нижнему этажу, кровля —
+             * верхнему. У помещения посреди дома снимать нечего.
+             *
+             * Нужны трёхуровневым домам: этажей в расчёте два, а уровней бывает
+             * три (цоколь, первый, второй), и тогда два уровня делят «первый
+             * этаж». Без этих галочек пол по грунту считался бы обоим.
+             */
+            const chkCss = "display:flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--text-sec); cursor:pointer;";
+            const envNeighbors = [];
+            if (roomLossCard.isBottom) {
+                envNeighbors.push(`<label style="${chkCss}" title="Под этим помещением тёплый цоколь или подвал, а не грунт. Тепло через пол не уходит — потери пола не считаются.">
+                    <input type="checkbox" ${r.warmBelow ? 'checked' : ''} onchange="app.updRoomEnv(${r.id}, 'warmBelow', this.checked)">
+                    Под полом тёплое помещение</label>`);
+            }
+            if (roomLossCard.isTop) {
+                envNeighbors.push(`<label style="${chkCss}" title="Над этим помещением тёплый этаж, а не кровля или холодный чердак. Потери через потолок не считаются.">
+                    <input type="checkbox" ${r.warmAbove ? 'checked' : ''} onchange="app.updRoomEnv(${r.id}, 'warmAbove', this.checked)">
+                    Над потолком тёплое помещение</label>`);
+            }
 
             let floorSel = this.state.floors === 2 ? `<select style="font-size:10px; padding:0 2px 0 0; border:none; border-right:1px solid #D1D5DB; background:transparent; color:var(--text-sec); font-weight:600; margin-right:2px; outline:none; cursor:pointer;" onchange="app.updRoom(${r.id}, 'floor', parseInt(this.value))"><option value="1" ${r.floor === 1 ? 'selected' : ''}>1 Эт</option><option value="2" ${r.floor === 2 ? 'selected' : ''}>2 Эт</option></select>` : '';
             let accentColor = r.floor === 2 ? '#10B981' : 'var(--primary)';
@@ -40262,7 +40327,9 @@ const app = {
                 + (roomLossCard.tManual ? ' (задано вручную)' : (roomLossCard.tKind ? ` (${roomLossCard.tKind.norm})` : ''))
                 + `. Теплопотери: ограждения ${Math.round(roomLossCard.Q_total)} Вт + нагрев приточного воздуха ${Math.round(roomLossCard.Q_vent)} Вт.`
                 + ` Наружные стены — ${roomLossCard.outerPerim.toFixed(1)} м из ${roomLossCard.perim.toFixed(1)} м периметра (${roomLossCard.geoSrc}).`
-                + (roomLossCard.kOrient > 1 ? ` Надбавка на ориентацию +${Math.round((roomLossCard.kOrient - 1) * 100)} %.` : '');
+                + (roomLossCard.kOrient > 1 ? ` Надбавка на ориентацию +${Math.round((roomLossCard.kOrient - 1) * 100)} %.` : '')
+                + (roomLossCard.warmBelow ? ' Пол по грунту не считается: под помещением тёплое.' : '')
+                + (roomLossCard.warmAbove ? ' Кровля не считается: над помещением тёплое.' : '');
 
             // Комнат бывает под полтора десятка, и раскрытые карточки дают
             // простыню на три экрана. Открыта всегда одна — та, которую правят;
@@ -40382,6 +40449,7 @@ const app = {
                                     ${envOrientSel}
                                 </label>
                             </div>
+                            ${envNeighbors.length ? `<div style="display:flex; flex-direction:column; gap:5px;">${envNeighbors.join('')}</div>` : ''}
                         </div>
                     </div>`;
 
@@ -40912,16 +40980,22 @@ const app = {
         // Кнопка быстрого старта над площадью — пока в расчёте ничего нет
         this.syncQuickStartBtn();
 
-        // Кубок рейтинга (шапка) — пилот доступен монтажникам Калининградской области;
-        // админы и наблюдатели видят его вне зависимости от своего региона (для контроля/теста).
+        // Рейтинг и значки свёрнуты — общим выключателем в gamification.js (GRM.isEnabled).
+        // Пока он выключен, прячем оба входа: кубок в шапке и пункт «Рейтинг» в меню
+        // кабинета. Внутри — прежнее правило пилота: Калининградская область плюс
+        // админы и наблюдатели для контроля.
+        const ratingOn = (typeof GRM !== 'undefined' && GRM.isEnabled) ? GRM.isEnabled() : false;
         const trophyBtn = document.querySelector('.btn-trophy');
         if (trophyBtn) {
             const region = this.state.tgUser && this.state.tgUser.region;
-            const eligible = !isGuest && (
-                (typeof GRM !== 'undefined' && GRM.isEligibleRegion(region)) || this.hasAdminAccess()
+            const eligible = ratingOn && !isGuest && (
+                GRM.isEligibleRegion(region) || this.hasAdminAccess()
             );
             trophyBtn.style.display = eligible ? 'flex' : 'none';
         }
+        document.querySelectorAll('[data-rail="rating"], .lk-nav-rating').forEach(el => {
+            el.style.display = ratingOn ? '' : 'none';
+        });
 
         if (isGuest) {
             this.state.detailedRooms = false;
@@ -40943,7 +41017,11 @@ const app = {
         if (document.getElementById('val_h1')) document.getElementById('val_h1').innerText = parseFloat(this.state.h1 || 2.7).toFixed(1);
         if (document.getElementById('inp_h2')) document.getElementById('inp_h2').value = this.state.h2 || 2.7;
         if (document.getElementById('val_h2')) document.getElementById('val_h2').innerText = parseFloat(this.state.h2 || 2.7).toFixed(1);
-        document.getElementById('val_win').innerText = this.state.win; document.getElementById('chk_floors').checked = (this.state.floors === 2); document.getElementById('div_tp2').style.display = (this.state.floors === 2) ? 'block' : 'none';
+        // Площадь не задана — в окнах тоже ноль: «10 окон» у объекта на 0 м²
+        // выглядит так, будто расчёт уже начат. Само значение в state не трогаем:
+        // как только появится площадь, вернётся прежнее число. Свой ввод (winManual)
+        // показываем сразу — раз человек вписал окна, значит они ему уже нужны.
+        document.getElementById('val_win').innerText = (this.state.area > 0 || this.state.winManual) ? this.state.win : 0; document.getElementById('chk_floors').checked = (this.state.floors === 2); document.getElementById('div_tp2').style.display = (this.state.floors === 2) ? 'block' : 'none';
         document.getElementById('fuel_el').className = this.state.fuels.includes('el') ? 'tab multi-active' : 'tab'; document.getElementById('fuel_gas').className = this.state.fuels.includes('gas') ? 'tab multi-active' : 'tab';
         // Ограничение по выделенной на участок мощности: только подробный режим и
         // только при включённом электрокотле. В быстром режиме поля нет, и подбор
@@ -41801,7 +41879,7 @@ const app = {
                 // Кнопки «Админка» здесь больше нет: тот же вход есть в левой панели
                 // разделов (пункт «Админка», см. syncRailUI), а два одинаковых входа
                 // рядом только занимали место в шапке.
-                authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);"><div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;
+                authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);"><div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div>${this.isRailVisible() ? '' : '<div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div>'}</div>`;
             } else {
                 // Если пользователь не авторизован - показываем только одну аккуратную кнопку
                 authContainer.innerHTML = `
@@ -42026,7 +42104,10 @@ const app = {
     },
     updWin: function (d) {
         if (this.state.detailedRooms) { this.syncUI(); return; } // Блокировка кнопок окон
-        let n = this.state.win + d; if (n < 1) n = 1; this.state.win = n;
+        // На пустом объекте в поле показан ноль (см. syncUI) — от него и считаем,
+        // иначе первое нажатие «+» прыгнуло бы с нуля сразу на одиннадцать.
+        const base = (this.state.area > 0 || this.state.winManual) ? this.state.win : 0;
+        let n = base + d; if (n < 1) n = 1; this.state.win = n;
         this.state.winManual = true;
         this.state.winManualArea = this.state.area;
         this.state.winManualFloors = this.state.floors;
@@ -52714,6 +52795,10 @@ const app = {
     renderContestWidget() {
         const el = document.getElementById('contest_widget');
         if (!el) return;
+
+        // Пилот рейтинга свёрнут — виджет баллов и значков не показываем никому
+        // (общий выключатель GRM.isEnabled в gamification.js).
+        if (typeof GRM === 'undefined' || !GRM.isEnabled || !GRM.isEnabled()) { el.innerHTML = ''; return; }
 
         // Виджет считает баллы по оборудованию и уместен только на его вкладке.
         // На монтажных работах, распознавании и 3D он не к месту — заодно
