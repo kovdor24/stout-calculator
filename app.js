@@ -7144,7 +7144,9 @@ const app = {
                         <th>Сумма</th>
                         <th>Статус</th>
                         <th>Дата</th>
-                        <th style="text-align:right;">Действия</th>
+                        <!-- Ширина задана явно: в колонке три кнопки действий, и без неё
+                             таблица отдавала ей меньше места, чем занимает содержимое -->
+                        <th style="text-align:right; width: 360px;">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -7181,9 +7183,12 @@ const app = {
                     <td style="color:var(--primary); font-weight:bold;">${sum}</td>
                     <td>${statusBadge}</td>
                     <td style="color:var(--text-sec); font-size:12px;">${date}</td>
-                    <td style="text-align:right;">
+                    <td style="text-align:right; white-space: nowrap;">
                         <div style="display:flex; justify-content:flex-end; gap:8px; align-items: center;">
                             ${getInvoiceBtn}
+                            <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'open')" title="Открыть расчёт в калькуляторе">Открыть</button>
+                            <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'share')" title="Короткая ссылка на смету для клиента">Ссылка клиенту</button>
+                            <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'download')" title="Скачать смету: PDF или Excel">Скачать</button>
                             ${canDelete ? `
                                 <button class="delete-icon-btn" onclick="event.stopPropagation(); app.deleteEstimate('${item.id}', event)" title="Удалить смету">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -7197,6 +7202,20 @@ const app = {
 
         h += `</tbody></table>`;
         content.innerHTML = h;
+    },
+
+    // Действия над сохранённой сметой прямо из списка «Мои объекты». И ссылка
+    // клиенту, и скачивание умеют работать только с открытым расчётом — иначе они
+    // молча сделали бы своё дело над той сметой, что была открыта до этого.
+    // Поэтому сначала загружаем выбранную, а потом запускаем действие.
+    cloudRowAction: async function (id, what) {
+        await this.loadSingleEstimate(id);
+        if (what === 'share') {
+            this.shareInvoice();
+        } else if (what === 'download') {
+            // Меню с выбором PDF или Excel — тот же, что под сметой
+            this.toggleDownloadMenu();
+        }
     },
 
     closeCloudListModal: function () {
