@@ -9500,6 +9500,45 @@ const app = {
         if (!document.getElementById('lk_rail')) return;
         this.applyRailGroupOrder();
         this.setRailDock(this.railDock(), false);
+        this.fitRailToViewport();
+    },
+
+    // Меню должно помещаться на экран целиком: колонка из полутора десятков
+    // разделов на ноутбуке с невысоким экраном не влезала и уходила в прокрутку,
+    // а прокручиваемое меню — это меню, половины которого не видно. Поджимаем в
+    // два приёма (значки и подписи меньше, отступы теснее) и только если и это не
+    // помогло, оставляем прокрутку как последнее средство.
+    //
+    // Почему не числами в CSS: высота колонки зависит от шрифта, масштаба страницы
+    // в браузере и от того, сколько разделов показано этому человеку (у менеджера
+    // дистрибьютора на один больше, у не-админа на один меньше). Считать надо по
+    // факту, а не по предположению.
+    fitRailToViewport: function () {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        // Лента сверху по высоте ни во что не упирается — поджимать нечего
+        if (rail.classList.contains('dock-top') || getComputedStyle(rail).display === 'none') {
+            rail.classList.remove('lk-rail-compact', 'lk-rail-compact2');
+            return;
+        }
+        const header = document.querySelector('.site-header');
+        const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+        // Колонка внутри #page_scale_wrapper уменьшена zoom-ом: её собственная
+        // высота в CSS-пикселях, а окно — в экранных, поэтому приводим к одним
+        const wrap = document.getElementById('page_scale_wrapper');
+        const zoom = (wrap && parseFloat(getComputedStyle(wrap).zoom)) || 1;
+        const available = window.innerHeight - headerBottom - 24;
+        // Тем же числом ограничиваем высоту колонки, иначе обрезка в CSS и мерка
+        // здесь расходятся, и появляется прокрутка на пару пикселей там, где всё
+        // помещается. В переменную кладём CSS-пиксели: внутри обёртки они свои.
+        document.documentElement.style.setProperty('--lk-rail-max-h', Math.floor(available / zoom) + 'px');
+        const fits = () => (rail.scrollHeight * zoom) <= available;
+
+        rail.classList.remove('lk-rail-compact', 'lk-rail-compact2');
+        if (fits()) return;
+        rail.classList.add('lk-rail-compact');
+        if (fits()) return;
+        rail.classList.add('lk-rail-compact2');
     },
 
     railDock: function () {
@@ -9536,6 +9575,10 @@ const app = {
         const grip = document.getElementById('lk_rail_grip');
         if (!rail || !grip) return;
         this._railDragBound = true;
+
+        // Окно меняет размер — меню заново подгоняется по высоте. Вешаем здесь:
+        // initRailDrag вызывается один раз при первой отрисовке панели.
+        window.addEventListener('resize', () => this.fitRailToViewport());
 
         let startX = 0, startY = 0, dragging = false, target = null;
 
@@ -9967,6 +10010,17 @@ const app = {
             const key = el.dataset.rail;
             el.classList.toggle('active', !!key && key === current);
         });
+
+        // Пересчитываем посадку по высоте, только если изменилось то, от чего она
+        // зависит: число показанных разделов, место панели или размер окна.
+        // syncRailUI зовётся на каждой перерисовке сметы, и мерить каждый раз —
+        // лишняя работа для браузера.
+        const shown = rail.querySelectorAll('.lk-rail-item:not([style*="display: none"])').length;
+        const sign = shown + '|' + (rail.classList.contains('dock-top') ? 'top' : 'left') + '|' + window.innerHeight;
+        if (sign !== this._railFitSign) {
+            this._railFitSign = sign;
+            this.fitRailToViewport();
+        }
     },
 
     // Геймификация (начисление XP / разблокировка значков за действия монтажника,
