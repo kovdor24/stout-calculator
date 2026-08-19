@@ -40750,16 +40750,22 @@ const app = {
         // Кнопка быстрого старта над площадью — пока в расчёте ничего нет
         this.syncQuickStartBtn();
 
-        // Кубок рейтинга (шапка) — пилот доступен монтажникам Калининградской области;
-        // админы и наблюдатели видят его вне зависимости от своего региона (для контроля/теста).
+        // Рейтинг и значки свёрнуты — общим выключателем в gamification.js (GRM.isEnabled).
+        // Пока он выключен, прячем оба входа: кубок в шапке и пункт «Рейтинг» в меню
+        // кабинета. Внутри — прежнее правило пилота: Калининградская область плюс
+        // админы и наблюдатели для контроля.
+        const ratingOn = (typeof GRM !== 'undefined' && GRM.isEnabled) ? GRM.isEnabled() : false;
         const trophyBtn = document.querySelector('.btn-trophy');
         if (trophyBtn) {
             const region = this.state.tgUser && this.state.tgUser.region;
-            const eligible = !isGuest && (
-                (typeof GRM !== 'undefined' && GRM.isEligibleRegion(region)) || this.hasAdminAccess()
+            const eligible = ratingOn && !isGuest && (
+                GRM.isEligibleRegion(region) || this.hasAdminAccess()
             );
             trophyBtn.style.display = eligible ? 'flex' : 'none';
         }
+        document.querySelectorAll('[data-rail="rating"], .lk-nav-rating').forEach(el => {
+            el.style.display = ratingOn ? '' : 'none';
+        });
 
         if (isGuest) {
             this.state.detailedRooms = false;
@@ -40781,7 +40787,11 @@ const app = {
         if (document.getElementById('val_h1')) document.getElementById('val_h1').innerText = parseFloat(this.state.h1 || 2.7).toFixed(1);
         if (document.getElementById('inp_h2')) document.getElementById('inp_h2').value = this.state.h2 || 2.7;
         if (document.getElementById('val_h2')) document.getElementById('val_h2').innerText = parseFloat(this.state.h2 || 2.7).toFixed(1);
-        document.getElementById('val_win').innerText = this.state.win; document.getElementById('chk_floors').checked = (this.state.floors === 2); document.getElementById('div_tp2').style.display = (this.state.floors === 2) ? 'block' : 'none';
+        // Площадь не задана — в окнах тоже ноль: «10 окон» у объекта на 0 м²
+        // выглядит так, будто расчёт уже начат. Само значение в state не трогаем:
+        // как только появится площадь, вернётся прежнее число. Свой ввод (winManual)
+        // показываем сразу — раз человек вписал окна, значит они ему уже нужны.
+        document.getElementById('val_win').innerText = (this.state.area > 0 || this.state.winManual) ? this.state.win : 0; document.getElementById('chk_floors').checked = (this.state.floors === 2); document.getElementById('div_tp2').style.display = (this.state.floors === 2) ? 'block' : 'none';
         document.getElementById('fuel_el').className = this.state.fuels.includes('el') ? 'tab multi-active' : 'tab'; document.getElementById('fuel_gas').className = this.state.fuels.includes('gas') ? 'tab multi-active' : 'tab';
         // Ограничение по выделенной на участок мощности: только подробный режим и
         // только при включённом электрокотле. В быстром режиме поля нет, и подбор
@@ -41639,7 +41649,7 @@ const app = {
                 // Кнопки «Админка» здесь больше нет: тот же вход есть в левой панели
                 // разделов (пункт «Админка», см. syncRailUI), а два одинаковых входа
                 // рядом только занимали место в шапке.
-                authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);"><div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;
+                authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);"><div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div>${this.isRailVisible() ? '' : '<div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div>'}</div>`;
             } else {
                 // Если пользователь не авторизован - показываем только одну аккуратную кнопку
                 authContainer.innerHTML = `
@@ -41864,7 +41874,10 @@ const app = {
     },
     updWin: function (d) {
         if (this.state.detailedRooms) { this.syncUI(); return; } // Блокировка кнопок окон
-        let n = this.state.win + d; if (n < 1) n = 1; this.state.win = n;
+        // На пустом объекте в поле показан ноль (см. syncUI) — от него и считаем,
+        // иначе первое нажатие «+» прыгнуло бы с нуля сразу на одиннадцать.
+        const base = (this.state.area > 0 || this.state.winManual) ? this.state.win : 0;
+        let n = base + d; if (n < 1) n = 1; this.state.win = n;
         this.state.winManual = true;
         this.state.winManualArea = this.state.area;
         this.state.winManualFloors = this.state.floors;
@@ -52552,6 +52565,10 @@ const app = {
     renderContestWidget() {
         const el = document.getElementById('contest_widget');
         if (!el) return;
+
+        // Пилот рейтинга свёрнут — виджет баллов и значков не показываем никому
+        // (общий выключатель GRM.isEnabled в gamification.js).
+        if (typeof GRM === 'undefined' || !GRM.isEnabled || !GRM.isEnabled()) { el.innerHTML = ''; return; }
 
         // Виджет считает баллы по оборудованию и уместен только на его вкладке.
         // На монтажных работах, распознавании и 3D он не к месту — заодно

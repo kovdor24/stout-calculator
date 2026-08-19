@@ -24,7 +24,17 @@ const GRM = (function () {
     // в шапке, ни страницу /rating/. Сервер дублирует эту же проверку (см. миграцию
     // 20260718_restrict_gamification_to_kaliningrad.sql) — здесь только UI-гейт.
     const ELIGIBLE_REGION = 'Калининградская область';
+
+    // Общий выключатель: пилот свёрнут, рейтинг и значки скрыты от всех — включая
+    // админов и наблюдателей. Гасит и кубок в шапке, и пункт меню, и виджет баллов
+    // под сметой, и саму страницу /rating/ (её гейт спрашивает те же две функции
+    // ниже и без доступа уводит на калькулятор). Вернуть всё как было — поставить
+    // RATING_ENABLED = true, региональная логика пилота под ним сохранена.
+    const RATING_ENABLED = false;
+    function isEnabled() { return RATING_ENABLED; }
+
     function isEligibleRegion(region) {
+        if (!RATING_ENABLED) return false;
         return String(region || '').trim().toLowerCase() === ELIGIBLE_REGION.toLowerCase();
     }
 
@@ -32,6 +42,9 @@ const GRM = (function () {
     // пилота) — тот же список супер-админов и те же роли, что и в app.js (getAdminRole).
     const SUPER_ADMIN_EMAILS = ['kovdorekb@gmail.com', 'kovdor24@yandex.ru', 'dima24ba@gmail.com'];
     function isPrivilegedUser(user) {
+        // Выключатель выше сильнее любых ролей: пока пилот свёрнут, страницы нет и
+        // у админа — иначе «скрыто от всех» держалось бы только на честном слове.
+        if (!RATING_ENABLED) return false;
         if (!user) return false;
         const email = String(user.email || '').toLowerCase();
         if (email && SUPER_ADMIN_EMAILS.includes(email)) return true;
@@ -668,6 +681,7 @@ const GRM = (function () {
         renderFullInto,
         onUnlock,
         onNeedAuth,
+        isEnabled,
         isEligibleRegion,
         isPrivilegedUser,
         switchLbMode
