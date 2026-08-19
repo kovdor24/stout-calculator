@@ -10849,6 +10849,11 @@ const app = {
         const dot = document.getElementById('vpn_status_dot');
         const btn = document.getElementById('btn_notifications');
         const btnShare = document.getElementById('btn_share_trigger');
+        // Конвертик в шапке убран как дубль пункта «Сообщения» в меню кабинета, и
+        // точка состояния связи переехала на этот пункт. Красим обе: скрытая в шапке
+        // остаётся источником счётчика непрочитанных (см. syncRailUI).
+        const railDot = document.getElementById('lk_rail_status_dot');
+        const railBtn = document.querySelector('[data-rail="messages"]');
         if (!dot) return;
 
         try {
@@ -10862,13 +10867,18 @@ const app = {
 
             // Если все успешно — зеленая точка (соединение работает)
             dot.style.backgroundColor = '#10B981';
+            if (railDot) { railDot.style.backgroundColor = '#10B981'; railDot.setAttribute('title', 'Связь с сервером есть'); }
+            if (railBtn) railBtn.setAttribute('title', 'Сообщения и уведомления');
             if (btn) { btn.setAttribute('title', 'Онлайн'); btn.style.display = ''; }
             // Показываем кнопку «Ссылка для клиента» только при активном VPN
             if (btnShare) btnShare.style.display = '';
         } catch (e) {
-            // Без связи с сервером иконка сообщений всё равно бесполезна (сообщения не
-            // загрузятся) — вместо красной точки просто скрываем саму кнопку
+            // В шапке кнопку скрывали: без связи сообщения всё равно не загрузятся.
+            // Пункт меню прятать нельзя — из него открывается не только переписка, да и
+            // меню бы прыгало. Поэтому там красная точка и прямая подпись.
             if (btn) btn.style.display = 'none';
+            if (railDot) { railDot.style.backgroundColor = '#EF4444'; railDot.setAttribute('title', 'Нет связи с сервером — сообщения не загрузятся'); }
+            if (railBtn) railBtn.setAttribute('title', 'Сообщения и уведомления — нет связи с сервером');
             // Скрываем кнопку «Ссылка для клиента» без VPN
             if (btnShare) btnShare.style.display = 'none';
         }

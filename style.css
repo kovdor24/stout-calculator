@@ -12078,6 +12078,24 @@ body.guest-mode .lk-rail {
     box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
 }
 
+/* Точка состояния связи — переехала с конвертика в шапке (его убрали как дубль
+   этого же пункта). Цвет ставит app.checkConnectionStatus: зелёная — связь есть,
+   красная — сервер не отвечает. Стоит в противоположном значку углу, чтобы
+   непрочитанные и связь не наезжали друг на друга. */
+.lk-rail-dot {
+    position: absolute;
+    bottom: 4px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #9CA3AF;
+    border: 1.5px solid var(--surface);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease;
+    pointer-events: none;
+}
+
 @media print {
     .lk-rail {
         display: none !important;
