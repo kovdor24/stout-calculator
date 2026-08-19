@@ -8399,10 +8399,8 @@ const app = {
 
         document.getElementById('profile_modal_overlay').style.display = 'flex';
         // Кабинет встаёт справа от панели разделов, на место параметров и сметы, и
-        // прячет свою колонку разделов — меню на экране должно быть одно. Исключение:
-        // принудительное дозаполнение анкеты (forced) остаётся окном во весь экран,
-        // иначе от обязательной формы можно уйти щелчком по панели.
-        this.setCabinetDocked(!forced && this.isRailVisible());
+        // прячет свою колонку разделов — меню на экране должно быть одно
+        this.syncCabinetDock();
         // Модалка позиционируется фиксированно и может быть выше вьюпорта на низких экранах —
         // без блокировки прокрутки body под ней появляется лишний внешний скролл всей страницы
         // поверх собственного overflow-y:auto модалки (два скролла одновременно)
@@ -8437,7 +8435,7 @@ const app = {
         }
         this._profileForceComplete = false;
         document.getElementById('profile_modal_overlay').style.display = 'none';
-        this.setCabinetDocked(false);
+        this.syncCabinetDock();
         document.body.style.overflow = '';
         this.unsubscribeChatThread();
         // Список смет снова рисуется в собственную модалку, пока кабинет не откроют заново
@@ -9365,16 +9363,29 @@ const app = {
     },
 
     railGo: function (section) {
-        // «Расчёт» — это возврат к смете: закрываем кабинет, если он открыт
+        // Уходя с «Рейтинга», гасим его врезку: она занимает то же место экрана,
+        // что и остальные разделы, и осталась бы под ними
+        if (section !== 'rating' && this.isOverlayOpen('lk_rating_overlay')) this.closeRatingPanel();
+
+        // «Расчёт» — возврат к смете: закрываем всё, что открыто поверх колонок
         if (section === 'calc') {
-            const overlay = document.getElementById('profile_modal_overlay');
-            if (overlay && overlay.style.display === 'flex') this.closeProfileModal();
-            else this.syncRailUI();
+            if (this.isOverlayOpen('profile_modal_overlay')) this.closeProfileModal();
+            if (this.isOverlayOpen('admin_modal_overlay')) this.closeAdminModal();
+            if (this.isOverlayOpen('notifications_modal_overlay')) this.closeNotificationsModal();
+            this.syncRailUI();
             return;
         }
-        // Сообщения живут в отдельной модалке, а не разделом кабинета
+        // Сообщения живут в отдельном окне, а не разделом кабинета
         if (section === 'messages') {
             this.openMessagesCenter();
+            return;
+        }
+        if (section === 'rating') {
+            this.openRatingPanel();
+            return;
+        }
+        if (section === 'admin') {
+            this.showAdminModal();
             return;
         }
         if (section === 'logout') {
@@ -9395,21 +9406,86 @@ const app = {
         // Кабинет уже открыт — просто переключаем раздел. Полный showProfileModal
         // заново заполнил бы поля анкеты из сохранённых данных и стёр незаписанную
         // правку, которую человек как раз набирал.
-        const overlay = document.getElementById('profile_modal_overlay');
-        if (overlay && overlay.style.display === 'flex') {
+        if (this.isOverlayOpen('profile_modal_overlay')) {
             this.setProfileTab(section);
             return;
         }
+        // Все разделы занимают одно и то же место, поэтому то, что там лежало,
+        // закрываем, а не накрываем сверху
+        if (this.isOverlayOpen('admin_modal_overlay')) this.closeAdminModal();
+        if (this.isOverlayOpen('notifications_modal_overlay')) this.closeNotificationsModal();
         this.showProfileModal(false, section);
     },
 
-    // ── Кабинет справа от панели, а не поверх экрана ──────────────────────────
+    // ── Окна кабинета справа от панели, а не поверх экрана ────────────────────
     // Пристыкованный режим включается, только когда панель разделов на экране есть.
-    // На телефоне и планшете стоймя её нет, и кабинет остаётся прежней шторкой во
-    // весь экран со своей колонкой разделов.
+    // На телефоне и планшете стоймя её нет, и окна остаются прежними шторками во
+    // весь экран со своей навигацией.
+    //
+    // Список окон, которые открываются из панели и потому обязаны вставать в то же
+    // место: кабинет, панель управления (у админа в неё ведут «Сообщения»), окно
+    // сообщений обычного монтажника и врезка рейтинга.
+    DOCKABLE_OVERLAY_IDS: ['profile_modal_overlay', 'admin_modal_overlay', 'notifications_modal_overlay', 'lk_rating_overlay'],
+
+    isOverlayOpen: function (id) {
+        const el = document.getElementById(id);
+        return !!(el && el.style.display && el.style.display !== 'none');
+    },
+
     isRailVisible: function () {
         const rail = document.getElementById('lk_rail');
         return !!(rail && getComputedStyle(rail).display !== 'none');
+    },
+
+    // Единственная точка, решающая, пристыковано окно или раскрыто на весь экран.
+    // Зовётся после каждого открытия и закрытия любого из окон списка.
+    syncCabinetDock: function () {
+        // Принудительное дозаполнение анкеты остаётся окном во весь экран: иначе от
+        // обязательной формы можно уйти щелчком по панели
+        const anyOpen = !this._profileForceComplete
+            && this.DOCKABLE_OVERLAY_IDS.some(id => this.isOverlayOpen(id));
+        this.setCabinetDocked(anyOpen && this.isRailVisible());
+    },
+
+    // Клик по логотипу — возврат на главный экран, к расчёту. Закрываем всё, что
+    // открыто поверх сметы, а на телефоне ещё и переключаемся с вкладки профиля
+    // обратно на параметры: там «главная» — это она, а не колонка разделов.
+    goHome: function () {
+        if (document.body.classList.contains('menu-open')) this.toggleMenu();
+        this.railGo('calc');
+        if (this.isMobileLayout()) this.switchMobileTab('inputs');
+    },
+
+    // ── Врезка «Баллы и рейтинг» ──
+    // Рейтинг — отдельная страница, и ссылка на неё уводила из калькулятора вместе с
+    // меню. Показываем ту же страницу во фрейме на месте колонок; на узком экране,
+    // где панели нет, по-прежнему открываем её отдельной вкладкой.
+    openRatingPanel: function () {
+        if (!this.isRailVisible()) {
+            window.open('/rating/', '_blank', 'noopener');
+            return;
+        }
+        if (this.isOverlayOpen('profile_modal_overlay')) this.closeProfileModal();
+        if (this.isOverlayOpen('admin_modal_overlay')) this.closeAdminModal();
+        if (this.isOverlayOpen('notifications_modal_overlay')) this.closeNotificationsModal();
+
+        const frame = document.getElementById('lk_rating_frame');
+        // Адрес подставляем при первом открытии: до него страницу грузить незачем.
+        // Путь относительный — сайт живёт и на своём домене, и в подпапке.
+        if (frame && !frame.getAttribute('src')) frame.setAttribute('src', 'rating/');
+        const overlay = document.getElementById('lk_rating_overlay');
+        if (overlay) overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        this.syncCabinetDock();
+        this.syncRailUI();
+    },
+
+    closeRatingPanel: function () {
+        const overlay = document.getElementById('lk_rating_overlay');
+        if (overlay) overlay.style.display = 'none';
+        document.body.style.overflow = '';
+        this.syncCabinetDock();
+        this.syncRailUI();
     },
 
     setCabinetDocked: function (on) {
@@ -9493,12 +9569,20 @@ const app = {
             railBadge.style.display = (mainBadge.style.display === 'none' || !mainBadge.style.display) ? 'none' : 'block';
         }
 
-        const overlay = document.getElementById('profile_modal_overlay');
-        const lkOpen = !!(overlay && overlay.style.display === 'flex');
+        // Подсветка показывает, где человек сейчас находится. Порядок проверок — по
+        // тому, какое окно лежит выше: кабинет перекрывает панель управления.
         let current = 'calc';
-        if (lkOpen) {
+        if (this.isOverlayOpen('profile_modal_overlay')) {
             const tab = this._activeProfileTab || 'requisites';
             current = this.RAIL_TAB_ALIAS[tab] || tab;
+        } else if (this.isOverlayOpen('admin_modal_overlay')) {
+            // У админа «Сообщения» открывают панель управления на вкладке сообщений —
+            // подсвечивать надо тот пункт, по которому пришли
+            current = (this._adminTab === 'messages') ? 'messages' : 'admin';
+        } else if (this.isOverlayOpen('notifications_modal_overlay')) {
+            current = 'messages';
+        } else if (this.isOverlayOpen('lk_rating_overlay')) {
+            current = 'rating';
         }
         rail.querySelectorAll('.lk-rail-item').forEach(el => {
             const key = el.dataset.rail;
@@ -11061,6 +11145,10 @@ const app = {
 
     openNotificationsModal: async function (tab) {
         document.getElementById('notifications_modal_overlay').style.display = 'flex';
+        // Окно сообщений открывается из панели разделов — значит, встаёт туда же,
+        // где остальные разделы, не закрывая меню
+        this.syncCabinetDock();
+        this.syncRailUI();
         // Вкладка задаётся только явно (кнопка-конверт, переключатель). Перерисовки
         // после отправки/прочтения вызывают эту функцию без аргумента и не должны
         // перекидывать человека с той вкладки, где он сейчас находится.
@@ -11820,6 +11908,8 @@ const app = {
 
     closeNotificationsModal: function () {
         document.getElementById('notifications_modal_overlay').style.display = 'none';
+        this.syncCabinetDock();
+        this.syncRailUI();
         // Панель смайликов живёт в body и сама об окне не знает — гасим вместе с ним
         this.closeEmojiPicker();
     },
@@ -12003,6 +12093,11 @@ const app = {
             }
         }
         document.getElementById('admin_modal_overlay').style.display = 'flex';
+        // На широком экране панель управления встаёт справа от меню, как и разделы
+        // кабинета: в неё ведут «Сообщения», и разворачиваться во весь экран, пряча
+        // меню, она не должна
+        this.syncCabinetDock();
+        this.syncRailUI();
         // Пока панель открыта, нижняя навигация и плавающие кнопки калькулятора
         // не нужны: они висят поверх (z-index выше модалок) и закрывают нижние
         // строки таблиц вместе с кнопками действий.
@@ -12013,6 +12108,8 @@ const app = {
     },
     closeAdminModal: function () {
         document.getElementById('admin_modal_overlay').style.display = 'none';
+        this.syncCabinetDock();
+        this.syncRailUI();
         document.body.classList.remove('admin-modal-open');
         this.stopAdminMobileLabels();
         // На телефоне следующий вход снова начинается с меню разделов

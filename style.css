@@ -11893,7 +11893,10 @@ body.guest-mode .lk-rail {
    Прямоугольник считает app.updateCabinetDockGeometry() и кладёт в переменные
    ниже: положение панели зависит от zoom: 0.8 обёртки страницы, а верх — от
    того, сжалась ли шапка при прокрутке. Числами в CSS это не задать. */
-body.lk-docked #profile_modal_overlay {
+body.lk-docked #profile_modal_overlay,
+body.lk-docked #admin_modal_overlay,
+body.lk-docked #notifications_modal_overlay,
+body.lk-docked #lk_rating_overlay {
     background: transparent;
     backdrop-filter: none;
     /* Оверлей по-прежнему растянут на весь экран, но клики сквозь него проходят:
@@ -11901,7 +11904,9 @@ body.lk-docked #profile_modal_overlay {
     pointer-events: none;
 }
 
-body.lk-docked #profile_modal_overlay .auth-modal-content {
+body.lk-docked #profile_modal_overlay .auth-modal-content,
+body.lk-docked #notifications_modal_overlay .auth-modal-content,
+body.lk-docked #lk_rating_overlay .auth-modal-content {
     position: fixed !important;
     top: var(--lk-dock-top, 80px) !important;
     left: var(--lk-dock-left, 104px) !important;
@@ -11919,6 +11924,59 @@ body.lk-docked #profile_modal_overlay .auth-modal-content {
     pointer-events: auto;
 }
 
+/* Панель управления масштабирует себя сама (см. «Масштаб админки под ширину
+   экрана» выше): её таблицы и девять вкладок иначе не помещаются. При zoom
+   координаты fixed-элемента считаются в его же масштабе, поэтому здесь их надо
+   поделить на тот же множитель — тем же приёмом, что и width: 100vw / 0.8 там.
+   Множитель задаём свой и постоянный: в пристыкованном виде ширина окна уже не
+   определяет размер панели. */
+body.lk-docked #admin_modal_overlay .auth-modal-content {
+    zoom: 0.8 !important;
+    position: fixed !important;
+    top: calc(var(--lk-dock-top, 80px) / 0.8) !important;
+    left: calc(var(--lk-dock-left, 104px) / 0.8) !important;
+    right: calc(var(--lk-dock-right, 16px) / 0.8) !important;
+    bottom: calc(var(--lk-dock-bottom, 16px) / 0.8) !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    transform: none !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.10) !important;
+    padding: 16px 20px !important;
+    pointer-events: auto;
+}
+
 body.lk-docked #profile_nav {
     display: none;
+}
+
+/* Логотип — кнопка возврата к расчёту (app.goHome) */
+.stout-logo-img[role="button"] {
+    cursor: pointer;
+}
+
+.stout-logo-img[role="button"]:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+/* Врезка рейтинга: карточка — только рамка вокруг фрейма со страницей /rating/ */
+.lk-rating-card {
+    display: flex;
+    flex-direction: column;
+    padding: 10px !important;
+    overflow: hidden;
+}
+
+.lk-rating-frame {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    border-radius: 12px;
+    background: var(--bg);
 }
