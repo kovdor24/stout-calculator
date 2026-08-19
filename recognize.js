@@ -641,7 +641,11 @@ const RecognizeUI = {
         const rest = files.slice(1);
         if (!rest.length) return;
         if (this._docs && this._docs.length) return this.addDocs(rest);
-        if (this._img) return this.addSheets(rest);
+        // Первый файл мог лечь и одним снимком (_img), и пачкой страниц
+        // (_imgs — многостраничный PDF). Раньше проверялся только первый
+        // случай, и второй файл при многостраничном первом молча терялся:
+        // два плана этажей, а разобран один.
+        if (this._img || (this._imgs && this._imgs.length)) return this.addSheets(rest);
     },
 
     // ------------------------------------------------------------------
@@ -797,6 +801,44 @@ const RecognizeUI = {
             return hints;
         }
         return hints;
+    },
+
+    /**
+     * Выбранные файлы -> готовые снимки в base64, без единого касания экрана
+     * загрузки. Картинка ужимается, PDF рисуется страницами (для плана —
+     * всегда, даже если внутри есть текст).
+     *
+     * Нужна дочитыванию этажа: там листы докладывают уже на экране проверки,
+     * где ни зоны загрузки, ни миниатюр, ни кнопки «Распознать» нет.
+     */
+    async prepareImages(files, onStatus) {
+        const imgs = [];
+        let skipped = 0;
+        for (const f of files) {
+            const kind = (typeof RecognizeFiles !== 'undefined') ? RecognizeFiles.kindOf(f) : 'image';
+            if (onStatus) onStatus(`Готовлю ${f.name}…`);
+
+            if (kind === 'image') {
+                const b = await this.prepareToBase64(f);   // имя файла запоминает он сам
+                if (b) imgs.push(b); else skipped++;
+                continue;
+            }
+            if (!kind) { skipped++; continue; }
+
+            try {
+                const r = await RecognizeFiles.extract(f, (m) => { if (onStatus) onStatus(m); },
+                    { forceImages: true });
+                if (r.images && r.images.length) {
+                    r.images.forEach((b, k) => this.noteImgName(b,
+                        r.images.length > 1 ? `${f.name} — стр. ${k + 1}` : f.name));
+                    imgs.push(...r.images);
+                } else skipped++;
+            } catch (e) {
+                console.warn('Файл не прочитан:', f.name, e.message);
+                skipped++;
+            }
+        }
+        return { imgs, skipped };
     },
 
     /** Ужать картинку до base64 без показа — для пакетной загрузки. */

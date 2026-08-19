@@ -37,6 +37,9 @@ const RecognizePlan = {
     _undo: null,     // снимок комнат расчёта до применения — для отката
     _calls: 0,       // сколько запросов стоило это распознавание
     _fromCache: 0,
+    _busy: false,    // идёт дочитывание листа
+    _busyText: '',
+    _addNote: '',    // чем кончилось последнее дочитывание
 
     reset() {
         this._rows = [];
@@ -44,6 +47,9 @@ const RecognizePlan = {
         this._warning = '';
         this._calls = 0;
         this._fromCache = 0;
+        this._busy = false;
+        this._busyText = '';
+        this._addNote = '';
     },
 
     /** Ответ модели — про план, а не про смету. */
@@ -153,15 +159,25 @@ const RecognizePlan = {
         return n.charAt(0).toUpperCase() + n.slice(1);
     },
 
-    /** Один разобранный лист -> сведения о листе и строки помещений. */
-    normalizeSheet(parsed, i, fileName, sheetsTotal) {
+    /**
+     * Один разобранный лист -> сведения о листе и строки помещений.
+     *
+     * fallback — какой этаж считать, если он не подписан ни на листе, ни в
+     * имени файла. Задаётся при дочитывании: лист, добавленный к уже
+     * прочитанному первому этажу, это скорее второй, а не ещё один первый.
+     */
+    normalizeSheet(parsed, i, fileName, sheetsTotal, fallback) {
         const hint = this.floorHint(fileName);
         let raw = this.num(parsed.floor);
         if (raw === null) raw = hint;
         // Этаж не подписан нигде: у одного листа это первый этаж, у пачки —
         // порядок листов. Монтажник поправит в шапке листа.
         let floorGuessed = false;
-        if (raw === null) { raw = sheetsTotal > 1 ? i + 1 : 1; floorGuessed = true; }
+        if (raw === null) {
+            raw = (fallback !== null && fallback !== undefined)
+                ? fallback : (sheetsTotal > 1 ? i + 1 : 1);
+            floorGuessed = true;
+        }
         raw = Math.round(raw);
 
         const ceilingH = this.num(parsed.ceilingH);
@@ -241,33 +257,39 @@ const RecognizePlan = {
      * Полистный разбор планов. Каждый лист — свой запрос, как у сметы;
      * упавший лист не отменяет остальные.
      *
+     * opts.offset — номер первого листа в общем наборе снимков: при
+     * дочитывании этажа новые листы идут следом за уже прочитанными, и
+     * `_sheet` у строк должен указывать на тот же снимок, что и раньше.
+     * opts.fallbackFloor — этаж для листа без подписи (см. normalizeSheet).
+     *
      * Возвращает { sheets, rows, warnings, failed, quotaHit }.
      */
-    async run(imgs, names) {
+    async run(imgs, names, opts) {
         const ui = RecognizeUI;
+        const off = (opts && opts.offset) || 0;
+        const fallback = opts ? opts.fallbackFloor : null;
         const sheets = [], rows = [], warnings = [], failed = [];
         let quotaHit = false;
-        this._calls = 0;
-        this._fromCache = 0;
-        ui._sheetsTotal = imgs.length;
-        ui._sheetsDone = 0;
+        ui._sheetsTotal = off + imgs.length;
+        ui._sheetsDone = off;
         ui._itemsSoFar = 0;
 
         for (let i = 0; i < imgs.length; i++) {
             const name = names && names[i] ? names[i] : '';
+            const at = off + i;    // место листа в общем наборе снимков
             try {
                 let parsed = this.cached(imgs[i]);
                 if (parsed) {
                     this._fromCache++;
-                    ui.setStatus(`Лист ${i + 1} из ${imgs.length} — из памяти`);
+                    this.status(`Лист ${at + 1} — из памяти`);
                 } else {
-                    ui.setStatus(imgs.length > 1
-                        ? `Читаю план, лист ${i + 1} из ${imgs.length}…`
+                    this.status(ui._sheetsTotal > 1
+                        ? `Читаю план, лист ${at + 1} из ${ui._sheetsTotal}…`
                         : 'Читаю план этажа…');
                     const before = ui._apiCalls || 0;
                     const data = await ui.askModel([
                         { text: 'Разбери этот план этажа по правилам. ' +
-                                (imgs.length > 1 ? `Это лист ${i + 1} из ${imgs.length}. ` : '') +
+                                (ui._sheetsTotal > 1 ? `Это лист ${at + 1} из ${ui._sheetsTotal}. ` : '') +
                                 (name ? `Имя файла: «${name.replace(/[«»"]/g, '')}» — оно может подсказывать номер этажа. ` : '') +
                                 'Верни только JSON.' },
                         { inline_data: { mime_type: 'image/jpeg', data: imgs[i] } },
@@ -277,37 +299,38 @@ const RecognizePlan = {
                     const text = cand?.content?.parts?.[0]?.text;
                     if (!text) throw new Error('пустой ответ');
                     parsed = ui.parseModelJson(text, cand.finishReason);
-                    if (ui._parseWarning) warnings.push(`лист ${i + 1}: ${ui._parseWarning}`);
+                    if (ui._parseWarning) warnings.push(`лист ${at + 1}: ${ui._parseWarning}`);
                     if (!ui._parseWarning && this.isPlanResult(parsed)) this.remember(imgs[i], parsed);
                 }
 
                 if (!this.isPlanResult(parsed)) {
                     // Лист не план: счёт, фасад, фото. Отдельная ошибка на весь
                     // разбор, только если планов не нашлось вовсе.
-                    failed.push(i + 1);
-                    ui.markSheet(i, 'fail');
-                    warnings.push(`лист ${i + 1}: это не план этажа — помещений на нём не нашлось`);
+                    failed.push(at + 1);
+                    ui.markSheet(at, 'fail');
+                    warnings.push(`лист ${at + 1}: это не план этажа — помещений на нём не нашлось`);
                     continue;
                 }
 
-                const n = this.normalizeSheet(parsed, i, name, imgs.length);
+                const n = this.normalizeSheet(parsed, at, name, ui._sheetsTotal,
+                    fallback === null || fallback === undefined ? null : fallback + sheets.length);
                 sheets.push(n.sheet);
                 rows.push(...n.rows);
-                if (!n.rows.length) warnings.push(`лист ${i + 1}: помещений не прочитано`);
+                if (!n.rows.length) warnings.push(`лист ${at + 1}: помещений не прочитано`);
 
                 ui._sheetsDone++;
                 ui._itemsSoFar = rows.length;
-                ui.markSheet(i, 'done');
+                ui.markSheet(at, 'done');
             } catch (e) {
-                failed.push(i + 1);
-                ui.markSheet(i, 'fail');
+                failed.push(at + 1);
+                ui.markSheet(at, 'fail');
                 if (e.quota) {
                     quotaHit = true;
-                    for (let k = i + 1; k < imgs.length; k++) ui.markSheet(k, 'fail');
+                    for (let k = i + 1; k < imgs.length; k++) ui.markSheet(off + k, 'fail');
                     warnings.push(e.message);
                     break;
                 }
-                warnings.push(`лист ${i + 1} не прочитан: ${ui.cleanError(e.message).split('\n')[0]}`);
+                warnings.push(`лист ${at + 1} не прочитан: ${ui.cleanError(e.message).split('\n')[0]}`);
             }
         }
 
@@ -318,8 +341,87 @@ const RecognizePlan = {
                     ? 'На листе не нашлось ни сметы, ни плана этажа. Нужен план: чертёж, скан или эскиз с помещениями.'
                     : 'Не удалось прочитать план.\n' + warnings.join('\n')));
         }
-        ui.setStatus('');
+        this.status('');
         return { sheets, rows, warnings, failed, quotaHit };
+    },
+
+    /**
+     * Ход работы. На экране загрузки это обычная строка состояния, на экране
+     * проверки — подпись в плашке «Читаю ещё один этаж»: там строки состояния
+     * нет, а дочитывание идёт те же полминуты.
+     */
+    status(text) {
+        this._busyText = text || '';
+        RecognizeUI.setStatus(text || '');
+        const el = document.getElementById('rec_plan_busy');
+        if (el) el.textContent = this._busyText;
+    },
+
+    // ------------------------------------------------------------------
+    // Дочитывание этажа
+    //
+    // Планы этажей лежат по файлу на этаж, и монтажник почти никогда не
+    // грузит их все разом: сначала первый, посмотрел — потом второй. Раньше
+    // для второго надо было начинать заново («Другой файл» стирает разбор), а
+    // это и потерянная правка помещений, и лишние запросы к распознаванию за
+    // уже прочитанный лист.
+    // ------------------------------------------------------------------
+
+    addFloor() {
+        if (this._busy) return;
+        RecognizeUI.pickFiles(files => this.addFiles(files));
+    },
+
+    async addFiles(files) {
+        if (this._busy || !files || !files.length) return;
+        this._busy = true;
+        this._addNote = '';
+        this.renderReview();          // плашка «читаю» появляется сразу
+        this.status('Готовлю лист…');
+
+        const ui = RecognizeUI;
+        const before = this._rows.length;
+        try {
+            const prep = await ui.prepareImages(files, (t) => this.status(t));
+            if (!prep.imgs.length) {
+                throw new Error('План не прочитался. Нужен чертёж, скан, фото или PDF — ' +
+                    'Excel, Word и HTML для плана не подходят.');
+            }
+
+            // Снимки складываем в общий набор: по нему работают архив и
+            // память листов, и новый лист должен лежать там же, где первый.
+            const had = (ui._imgs && ui._imgs.length) ? ui._imgs.slice()
+                : (ui._img ? [ui._img] : []);
+            const offset = had.length;
+            ui._imgs = had.concat(prep.imgs);
+            ui._img = null;
+            ui._fileKind = 'image';
+            ui._fileName = `${ui._imgs.length} листов`;
+
+            // Этаж по умолчанию — следующий за самым верхним из прочитанных:
+            // к первому этажу докладывают второй, а не ещё один первый.
+            const top = this._sheets.reduce((m, s) => Math.max(m, s.floorRaw), 0);
+            const res = await this.run(prep.imgs, prep.imgs.map(b => ui.imgNameOf(b)),
+                { offset, fallbackFloor: top + 1 });
+
+            this._sheets = this._sheets.concat(res.sheets);
+            this._rows = this._rows.concat(res.rows);
+            this.arrangeFloors();
+            if (res.warnings.length) {
+                this._warning = [this._warning, ...res.warnings].filter(Boolean).join(' · ');
+            }
+            const added = this._rows.length - before;
+            this._addNote = `Лист добавлен: помещений ${added}` +
+                (prep.skipped ? ` · не удалось прочитать файлов: ${prep.skipped}` : '');
+        } catch (e) {
+            // Разобранное не теряем: дочитывание не удалось — на экране всё,
+            // что было до него, плюс объяснение.
+            this._addNote = 'Лист не добавлен. ' + ui.cleanError(e.message).split('\n')[0];
+        }
+        this._busy = false;
+        this._busyText = '';
+        ui.setStatus('');
+        this.renderReview();
     },
 
     // ------------------------------------------------------------------
@@ -330,6 +432,7 @@ const RecognizePlan = {
         this._sheets = res.sheets || [];
         this._rows = res.rows || [];
         this._warning = (res.warnings || []).join(' · ');
+        this.arrangeFloors();
         RecognizeUI.progressStop();
         RecognizeUI.step(2);
         RecognizeUI.setHead('plan');
@@ -363,6 +466,41 @@ const RecognizePlan = {
         return `${s.floorRaw}-й этаж${s.floorGuessed ? ' (этаж не подписан)' : ''}`;
     },
 
+    /**
+     * Развести листы по этажам расчёта.
+     *
+     * Планы грузят как придётся — бывает, что вторым файлом идёт первый этаж, а
+     * подписи этажа нет ни на листе, ни в имени файла. Тогда лист, чей этаж мы
+     * только угадали, уступает место листу с подписанным этажом и встаёт на
+     * свободный. Подписанные листы не трогаем никогда: там сказано прямо.
+     */
+    arrangeFloors() {
+        if (this._sheets.length < 2) return;
+        const taken = new Set(this._sheets.filter(s => !s.floorGuessed).map(s => s.floor));
+        this._sheets.forEach(s => {
+            if (!s.floorGuessed || !taken.has(s.floor)) { taken.add(s.floor); return; }
+            const free = [1, 2].find(f => !taken.has(f));
+            if (!free) return;   // оба этажа заняты — решать монтажнику
+            this.setSheetFloor(s.i, free, true);
+            taken.add(free);
+        });
+    },
+
+    /** Поменять этажи местами: листы загрузили в обратном порядке. */
+    swapFloors() {
+        if (this._busy) return;
+        this._sheets.forEach(s => {
+            s.floor = s.floor === 2 ? 1 : 2;
+            s.floorRaw = s.floor;
+            s.floorGuessed = false;
+        });
+        this._rows.forEach(r => {
+            r.floor = r.floor === 2 ? 1 : 2;
+            r.floorRaw = r.floor;
+        });
+        this.renderReview();
+    },
+
     renderReview() {
         const esc = this.esc;
         const fmt = (n) => this.fmt(n);
@@ -390,6 +528,25 @@ const RecognizePlan = {
                 (noArea ? `У ${noArea} ${RecognizeUI.plural(noArea, 'помещения', 'помещений', 'помещений')} нет площади — впишите её или снимите отметку. `
                     : 'Проверьте названия, площади и окна — по ним считаются теплопотери и подбираются приборы.');
             if (noArea) sumCls = 'warn', sumIco = '!';
+            // Второго этажа в разборе нет — напоминаем, что его можно дочитать
+            // сюда же: догадаться, что «Другой файл» не единственный путь, не
+            // по чему, а планы почти всегда лежат по файлу на этаж.
+            if (!f2 && !this._busy) {
+                sumSub += ' Второй этаж — кнопкой «➕ Добавить этаж», разобранное не потеряется.';
+            }
+        }
+
+        // Два листа на одном этаже расчёта. Бывает честно (подвал и первый:
+        // калькулятор считает два этажа, третьему деваться некуда), а бывает
+        // и ошибкой чтения — сказать надо в обоих случаях.
+        const perFloor = {};
+        this._sheets.forEach(s => { (perFloor[s.floor] = perFloor[s.floor] || []).push(s); });
+        const stacked = Object.keys(perFloor).filter(f => perFloor[f].length > 1)
+            .map(f => `${f}-й этаж: ${perFloor[f].map(s => this.floorTitle(s)).join(' + ')}`);
+        if (stacked.length && chosen.length) {
+            if (sumCls === 'ok') { sumCls = 'warn'; sumIco = '!'; }
+            sumSub += ` Несколько листов встали на один этаж (${stacked.join('; ')}) — ` +
+                'поправьте «Этаж в расчёте» в шапке листа.';
         }
 
         const floorOpt = (v, cur) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${v}-й</option>`;
@@ -460,20 +617,39 @@ const RecognizePlan = {
 
         const st = (typeof app !== 'undefined' && app.state) || {};
         const hasRooms = !!(st.detailedRooms && Array.isArray(st.rooms) && st.rooms.length);
-        const disabled = (!chosen.length || noArea || chosenArea > maxA) ? 'disabled' : '';
+        // Пока дочитывается лист, менять нечего: строки вот-вот прибавятся, а
+        // перенос в расчёт на середине разбора отдал бы половину дома.
+        const busy = this._busy ? 'disabled' : '';
+        const disabled = (this._busy || !chosen.length || noArea || chosenArea > maxA) ? 'disabled' : '';
 
         document.getElementById('rec_body').innerHTML = `
           ${this._warning ? `<div class="rec-err">${esc(this._warning)}</div>` : ''}
+          ${this._busy ? `
+            <div class="rec-tcheck warn">
+              <div class="rec-tcheck-ico">⏳</div>
+              <div><div>Читаю ещё один этаж</div>
+                   <div class="rec-tcheck-sub" id="rec_plan_busy">${esc(this._busyText)}</div>
+                   <div class="rec-tcheck-sub">Уже прочитанное останется на месте.</div></div>
+            </div>` : ''}
+          ${this._addNote ? `<div class="rec-tcheck ${/не добавлен/.test(this._addNote) ? 'bad' : 'ok'}">
+              <div class="rec-tcheck-ico">${/не добавлен/.test(this._addNote) ? '!' : '✓'}</div>
+              <div><div>${esc(this._addNote)}</div></div>
+            </div>` : ''}
           <div class="rec-tcheck ${sumCls}">
             <div class="rec-tcheck-ico">${sumIco}</div>
             <div><div>${sumText}</div><div class="rec-tcheck-sub">${sumSub}</div></div>
           </div>
           <div class="rec-toolbar">
-            <button class="rec-btn-g" onclick="RecognizePlan.selAll(true)">Отметить все</button>
-            <button class="rec-btn-g" onclick="RecognizePlan.selAll(false)">Снять все</button>
-            <button class="rec-btn-g" onclick="RecognizePlan.selHeated()">Только отапливаемые</button>
+            <button class="rec-btn-g" ${busy} onclick="RecognizePlan.selAll(true)">Отметить все</button>
+            <button class="rec-btn-g" ${busy} onclick="RecognizePlan.selAll(false)">Снять все</button>
+            <button class="rec-btn-g" ${busy} onclick="RecognizePlan.selHeated()">Только отапливаемые</button>
+            ${this._sheets.length > 1 || this._rows.some(r => r.floor === 2)
+                ? `<button class="rec-btn-g" ${busy} onclick="RecognizePlan.swapFloors()"
+                           title="Листы загрузили в обратном порядке: первый этаж станет вторым и наоборот">⇅ Поменять этажи местами</button>` : ''}
             <div class="rec-tb-right">
-              <button class="rec-btn-g" onclick="RecognizeUI.resetAll()">↩ Другой файл</button>
+              <button class="rec-btn-g rec-btn-accent" ${busy} onclick="RecognizePlan.addFloor()"
+                      title="Дочитать план другого этажа к уже разобранному">➕ Добавить этаж</button>
+              <button class="rec-btn-g" ${busy} onclick="RecognizeUI.resetAll()">↩ Другой файл</button>
             </div>
           </div>
           <div class="rec-tablewrap">
@@ -500,6 +676,10 @@ const RecognizePlan = {
                    <button class="calc-dialog-btn calc-dialog-btn-confirm" ${disabled} onclick="RecognizePlan.apply('add')">Добавить к комнатам</button>`
                 : `<button class="calc-dialog-btn calc-dialog-btn-confirm" ${disabled} onclick="RecognizePlan.apply('new')">В расчёт по комнатам</button>`}
           </div>`;
+
+        // Итог дочитывания показывается один раз: он про только что сделанное
+        // действие, и висеть над таблицей до конца проверки ему незачем.
+        this._addNote = '';
     },
 
     // ------------------------------------------------------------------
@@ -545,8 +725,11 @@ const RecognizePlan = {
     selHeated() { this._rows.forEach(r => r._sel = r.heated && r.area > 0); this.renderReview(); },
     del(i) { this._rows.splice(i, 1); this.renderReview(); },
 
-    /** Этаж всем помещениям листа разом: один лист — один этаж. */
-    setSheetFloor(si, val) {
+    /**
+     * Этаж всем помещениям листа разом: один лист — один этаж.
+     * quiet — правка идёт из разведения листов, перерисовка будет потом.
+     */
+    setSheetFloor(si, val, quiet) {
         const s = this._sheets.find(x => x.i === si);
         if (!s) return;
         s.floor = this.calcFloor(val);
@@ -557,7 +740,7 @@ const RecognizePlan = {
             r.floor = s.floor;
             r.floorRaw = s.floor;
         });
-        this.renderReview();
+        if (!quiet) this.renderReview();
     },
 
     setSheetH(si, val) {
@@ -600,7 +783,7 @@ const RecognizePlan = {
     },
 
     async apply(mode) {
-        if (typeof app === 'undefined') return;
+        if (typeof app === 'undefined' || this._busy) return;
         const st = app.state;
         const chosen = this._rows.filter(r => r._sel);
         if (!chosen.length) { app.alert('Отметьте хотя бы одно помещение.'); return; }
