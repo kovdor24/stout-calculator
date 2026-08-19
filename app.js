@@ -51524,7 +51524,14 @@ const app = {
             // Тот же блок работает на вкладке «Монтажные работы» — со своим
             // процентом и своей суммой до скидки (см. discountFields).
             const _onWorks = this.state.viewMode === 'works';
-            if (this.state.tgUser && (this.state.viewMode === 'equipment' || _onWorks)) {
+            // Пока в смете пусто, блоку нечего показывать: «Рекомендованная цена: 0 ₽»
+            // и ползунок скидки от нуля — это шум на экране, где написано «Параметры
+            // объекта не заданы». Смотрим на список текущей вкладки, а не на сумму:
+            // позиция с нулевой ценой в смете всё равно есть.
+            const _hasRows = _onWorks
+                ? ((this.currentWorksList || []).length > 0)
+                : ((this.currentEquipmentList || []).length > 0);
+            if (this.state.tgUser && _hasRows && (this.state.viewMode === 'equipment' || _onWorks)) {
                 discountBlock.style.display = 'flex';
                 document.getElementById('rec_price_val').innerHTML = app.formatPriceHtml((_onWorks ? app.originalWorksSum : app.originalEqSum) || 0, true);
                 let curDiscount = (_onWorks ? this.state.worksDiscount : this.state.eqDiscount) || 0;
