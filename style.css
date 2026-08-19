@@ -9508,31 +9508,34 @@ body.dark-mode .cw-achieve.earned {
        Но её потолок (125vh - 60px) не учитывал шапку сайта, и панель свисала ниже
        экрана, сама вызывая прокрутку страницы. На пустом экране опускаем потолок
        на высоту шапки с отступами. */
-    body.empty-fit .input-panel,
-    body.empty-fit .input-panel.fast-mode {
+    body.empty-fit-panel .input-panel,
+    body.empty-fit-panel .input-panel.fast-mode {
         max-height: calc(125vh - 130px);
         padding: 12px 14px;
     }
 
-    /* Почти 40 % высоты колонки настроек — это отступы между блоками. На пустом
+    /* Правила колонки настроек висят на своём классе empty-fit-panel: она ужимается
+       и в подробном режиме, где настроек ещё больше, а empty-fit (растянутый лист,
+       спрятанный подвал) остаётся только у быстрого.
+       Почти 40 % высоты колонки настроек — это отступы между блоками. На пустом
        экране снимаем их до минимума, чтобы список настроек помещался целиком без
        уменьшения текста. Что не поместилось после этого, доберёт масштабом
        syncEmptyFitPanelScale() в app.js. */
-    body.empty-fit .input-panel > h3,
-    body.empty-fit .input-panel > h4 {
+    body.empty-fit-panel .input-panel > h3,
+    body.empty-fit-panel .input-panel > h4 {
         margin-top: 8px;
         margin-bottom: 4px;
     }
 
-    body.empty-fit .input-panel > h3:first-child {
+    body.empty-fit-panel .input-panel > h3:first-child {
         margin-top: 0;
     }
 
-    body.empty-fit .input-panel > .control-item {
+    body.empty-fit-panel .input-panel > .control-item {
         margin-bottom: 8px;
     }
 
-    body.empty-fit .input-panel > .toggle-item {
+    body.empty-fit-panel .input-panel > .toggle-item {
         margin-top: 8px;
         margin-bottom: 8px;
         padding-top: 8px;
