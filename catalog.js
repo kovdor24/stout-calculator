@@ -1294,6 +1294,56 @@ const catalog = {
         { id: "A7810405", name: "LUNA AIR 28", price: 194655, power: 28, circuits: 2, type: "gas", cond: true, brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" },
         { id: "A7810446", name: "LUNA IN PLUS 1.24", price: 202920, power: 24, circuits: 1, type: "gas", cond: true, brand: "BAXI", availability: "in_stock", price_date: "2026-06-30" }
     ],
+    // Vaillant — как BAXI, только в таблице замены газового котла (автоподбор остаётся
+    // на Haier). Отобраны из прайса ТЕРЕМ 08.2026 только котлы с закрытой камерой и
+    // коаксиалом 60/100 — атмосферные atmoTEC и VU 35CS (80/125) в подбор не берём:
+    // обвязка калькулятора (дымоход, стабилизатор) под них неверна.
+    //
+    // Цена = прайс ТЕРЕМ × 0,8 — ровно так сайт teremonline отдаёт Vaillant, и AutoPrice
+    // приведёт к тем же цифрам. ecoTEC plus CS/1-5 на сайте нет вовсе (ни фото, ни
+    // автообновления) — они «под заказ» и правятся руками по месячному прайсу.
+    //
+    // dhwValve — приоритетный переключающий (трёхходовой) клапан для бойлера ВСТРОЕН
+    // в котёл: у всех одноконтурных VU этой линейки. Внешний комплект 3-х ходового
+    // клапана им не нужен, только датчик бойлера (см. vaillant_acc, 306257) — render()
+    // ставит датчик вместо комплекта. У двухконтурных VUW клапан тоже есть, но он
+    // работает на пластинчатый теплообменник (проточное ГВС), к бойлеру не подключается.
+    // dhw — производительность ГВС, л/мин при ΔT 30 °C (из прайса).
+    boilers_vaillant: [
+        // Традиционные (закрытая камера), двухконтурные
+        { id: "0010020901", name: "turboFIT VUW 242/5-2", price: 94549, power: 24, circuits: 2, dhw: 11, type: "gas", brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0010015249", name: "turboTEC pro VUW 242/5-3", price: 136828, power: 24, circuits: 2, dhw: 11.5, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "0010015263", name: "turboTEC plus VUW 242/5-5", price: 170531, power: 24, circuits: 2, dhw: 11.5, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "0010015264", name: "turboTEC plus VUW 282/5-5", price: 187858, power: 28, circuits: 2, dhw: 13.4, type: "gas", brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        // Традиционные, одноконтурные VU — клапан бойлера встроен
+        { id: "0010015254", name: "turboTEC plus VU 202/5-5", price: 139659, power: 20, circuits: 1, dhwValve: true, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "0010015255", name: "turboTEC plus VU 242/5-5", price: 153341, power: 24, circuits: 1, dhwValve: true, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "0010015256", name: "turboTEC plus VU 282/5-5", price: 168317, power: 28, circuits: 1, dhwValve: true, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "0010020413", name: "turboTEC plus VU 322/5-5", price: 177045, power: 32, circuits: 1, dhwValve: true, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
+        // Конденсационные, двухконтурные (60/100 PP)
+        { id: "0010026102", name: "ecoTEC intro VUW 18/24 AS/1-1 (H-RU)", price: 151188, power: 18, circuits: 2, dhw: 11.5, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0010026103", name: "ecoTEC intro VUW 24/28 AS/1-1 (H-RU)", price: 158654, power: 24, circuits: 2, dhw: 13.4, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        // Конденсационные, одноконтурные VU (60/100 PP) — клапан бойлера встроен
+        { id: "0010043977", name: "ecoTEC plus VU 20CS/1-5 (N-INT4)", price: 206801, power: 20, circuits: 1, dhwValve: true, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0010043979", name: "ecoTEC plus VU 25CS/1-5 (N-INT4)", price: 218102, power: 25, circuits: 1, dhwValve: true, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0010043980", name: "ecoTEC plus VU 30CS/1-5 (N-INT4)", price: 238607, power: 30, circuits: 1, dhwValve: true, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" }
+    ],
+    // Аксессуары Vaillant, которые ставит подбор (см. render(), раздел 2.1):
+    //   306257 — датчик бойлера NTC: одноконтурному VU вместо комплекта 3-х ходового
+    //     клапана. В прайсе ТЕРЕМ его нет, цена розничная сервисных центров, поэтому
+    //     без price_date — иначе правило 31 дня увело бы его в «под заказ» навсегда.
+    //   Регуляторы — только когда автоматика STOUT (Thermatic) выключена: включённая
+    //     ведёт Vaillant по eBUS сама. Один котёл → VRT 50 (замена: VRT 380, VRC 700/6,
+    //     VRC 720); каскад → VRC 700/6 + VR 32 на каждый котёл сверх первого. На сайте
+    //     ТЕРЕМ регуляторов нет — цены из прайса × 0,8, «под заказ».
+    vaillant_acc: [
+        { id: "306257", name: "Датчик температуры бойлера NTC (для одноконтурных VU)", price: 3000, brand: "Vaillant", availability: "in_stock" },
+        { id: "0020018266", name: "Комнатный регулятор температуры VRT 50 (eBUS)", price: 14466, brand: "Vaillant", role: "room", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0020260945", name: "Комнатный регулятор VRT 380 (eBUS, модулирующий)", price: 27906, brand: "Vaillant", role: "room", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0020171319", name: "Погодозависимый регулятор multiMATIC VRC 700/6", price: 47925, brand: "Vaillant", role: "weather", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0020260915", name: "Погодозависимый регулятор sensoCOMFORT VRC 720", price: 57650, brand: "Vaillant", role: "weather", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0020139895", name: "Коммутационный модуль VR 32 (каскад, на каждый котёл сверх первого)", price: 12182, brand: "Vaillant", role: "cascade", availability: "on_order", price_date: "2026-08-18" }
+    ],
     // PLUS СНЯТ С ПРОИЗВОДСТВА. Из подбора и из таблицы замен убран — см. app.init()
     // (alts гасятся) и render() (серия читается как STATUS). Массив оставлен НАМЕРЕННО:
     // распознавание перебирает весь каталог, и по нему разбираются старые сметы и
@@ -1344,7 +1394,12 @@ const catalog = {
         { id: "RCA-6010-750900", name: "Дымоход коаксиальный 60/100, СТАНДАРТ УНИВЕРСАЛЬНЫЙ, L900мм, однонаправл.", price: 2779, brand: "ROMMER", chimType: "trad", availability: "in_stock", price_date: "2026-08-10" },
         { id: "RCA-6010-751000", name: "Дымоход коаксиальный 60/100, АНТИЛЕД УНИВЕРСАЛЬНЫЙ, L1000мм, однонаправл.", price: 2771, brand: "ROMMER", chimType: "trad", availability: "in_stock", price_date: "2026-08-10" },
         { id: "RCA-6010-751220", name: "Дымоход коаксиальный 60/100, АНТИЛЕД УНИВЕРСАЛЬНЫЙ, L1220мм, однонаправл.", price: 3261, brand: "ROMMER", chimType: "trad", availability: "in_stock", price_date: "2026-08-10" },
-        { id: "RCA-8610-210090", name: "Дымоход коаксиальный 60/100, Комплект универсальный для конденсационных котлов Viessmann, Vaillant, Wolf, Ariston, Baxi, Fondital, Ferroli, Navien", price: 4533, brand: "ROMMER", chimType: "cond", availability: "in_stock", price_date: "2026-08-10" }
+        { id: "RCA-8610-210090", name: "Дымоход коаксиальный 60/100, Комплект универсальный для конденсационных котлов Viessmann, Vaillant, Wolf, Ariston, Baxi, Fondital, Ferroli, Navien", price: 4533, brand: "ROMMER", chimType: "cond", availability: "in_stock", price_date: "2026-08-10" },
+        // Родные дымоходы Vaillant PP — только для конденсационных Vaillant (forBrand):
+        // их render() ставит по умолчанию вместо универсального ROMMER, традиционные
+        // turboTEC остаются на STOUT/ROMMER. Цена = прайс ТЕРЕМ × 0,8, как на сайте.
+        { id: "0020219516", name: "Дымоход коаксиальный 60/100 PP, горизонтальный проход через стену (для конденсационных Vaillant)", price: 12030, brand: "Vaillant", chimType: "cond", forBrand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0020220656", name: "Дымоход коаксиальный 60/100 PP, вертикальный проход через крышу, чёрный (для конденсационных Vaillant)", price: 12334, brand: "Vaillant", chimType: "cond", forBrand: "Vaillant", availability: "on_order", price_date: "2026-08-18" }
     ],
     stabs: [
         { id: "SST-0001-000250", name: "Стабилизатор ST 250", price: 4972, type: "gas", availability: "in_stock", price_date: "2026-08-10" },
