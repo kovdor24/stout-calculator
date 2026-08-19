@@ -9362,21 +9362,39 @@ const app = {
         subscription: 'requisites'
     },
 
-    railGo: function (section) {
-        // Уходя с «Рейтинга», гасим его врезку: она занимает то же место экрана,
-        // что и остальные разделы, и осталась бы под ними
-        if (section !== 'rating' && this.isOverlayOpen('lk_rating_overlay')) this.closeRatingPanel();
+    // Все разделы занимают одно и то же место на экране, поэтому при переходе то,
+    // что там лежало, надо закрыть, а не накрыть сверху. Раньше кабинет (у него
+    // z-index выше) оставался поверх панели управления, и «Сообщения» при открытом
+    // кабинете выглядели как не нажимающаяся кнопка.
+    closeOtherRailPlaces: function (keepId) {
+        this.DOCKABLE_OVERLAY_IDS.forEach(id => {
+            if (id === keepId || !this.isOverlayOpen(id)) return;
+            if (id === 'profile_modal_overlay') this.closeProfileModal();
+            else if (id === 'admin_modal_overlay') this.closeAdminModal();
+            else if (id === 'notifications_modal_overlay') this.closeNotificationsModal();
+            else if (id === 'lk_rating_overlay') this.closeRatingPanel();
+        });
+    },
 
+    railGo: function (section) {
+        if (section === 'logout') {
+            this.logout();
+            return;
+        }
         // «Расчёт» — возврат к смете: закрываем всё, что открыто поверх колонок
         if (section === 'calc') {
-            if (this.isOverlayOpen('profile_modal_overlay')) this.closeProfileModal();
-            if (this.isOverlayOpen('admin_modal_overlay')) this.closeAdminModal();
-            if (this.isOverlayOpen('notifications_modal_overlay')) this.closeNotificationsModal();
+            this.closeOtherRailPlaces(null);
             this.syncRailUI();
             return;
         }
-        // Сообщения живут в отдельном окне, а не разделом кабинета
+        // Сообщения живут в отдельном окне, а не разделом кабинета: у админа это
+        // панель управления на вкладке сообщений, у монтажника — своё окно
         if (section === 'messages') {
+            const target = this.hasAdminAccess() ? 'admin_modal_overlay' : 'notifications_modal_overlay';
+            this.closeOtherRailPlaces(target);
+            // По какому пункту пришли, тот и подсвечиваем: панель управления
+            // открывается и «Сообщениями», и «Админкой»
+            this._adminOpenedFrom = 'messages';
             this.openMessagesCenter();
             return;
         }
@@ -9385,11 +9403,9 @@ const app = {
             return;
         }
         if (section === 'admin') {
+            this.closeOtherRailPlaces('admin_modal_overlay');
+            this._adminOpenedFrom = 'admin';
             this.showAdminModal();
-            return;
-        }
-        if (section === 'logout') {
-            this.logout();
             return;
         }
         // Панель показывается только авторизованным (body.guest-mode в CSS), но клик
@@ -9410,10 +9426,7 @@ const app = {
             this.setProfileTab(section);
             return;
         }
-        // Все разделы занимают одно и то же место, поэтому то, что там лежало,
-        // закрываем, а не накрываем сверху
-        if (this.isOverlayOpen('admin_modal_overlay')) this.closeAdminModal();
-        if (this.isOverlayOpen('notifications_modal_overlay')) this.closeNotificationsModal();
+        this.closeOtherRailPlaces('profile_modal_overlay');
         this.showProfileModal(false, section);
     },
 
@@ -9765,9 +9778,7 @@ const app = {
             window.open('/rating/', '_blank', 'noopener');
             return;
         }
-        if (this.isOverlayOpen('profile_modal_overlay')) this.closeProfileModal();
-        if (this.isOverlayOpen('admin_modal_overlay')) this.closeAdminModal();
-        if (this.isOverlayOpen('notifications_modal_overlay')) this.closeNotificationsModal();
+        this.closeOtherRailPlaces('lk_rating_overlay');
 
         const frame = document.getElementById('lk_rating_frame');
         // Адрес подставляем при первом открытии: до него страницу грузить незачем.
@@ -9894,9 +9905,10 @@ const app = {
             const tab = this._activeProfileTab || 'requisites';
             current = this.RAIL_TAB_ALIAS[tab] || tab;
         } else if (this.isOverlayOpen('admin_modal_overlay')) {
-            // У админа «Сообщения» открывают панель управления на вкладке сообщений —
-            // подсвечивать надо тот пункт, по которому пришли
-            current = (this._adminTab === 'messages') ? 'messages' : 'admin';
+            // Панель управления открывают два пункта — «Сообщения» и «Админка».
+            // Подсвечиваем тот, по которому пришли, а не вкладку внутри панели:
+            // она могла остаться с прошлого раза.
+            current = (this._adminOpenedFrom === 'messages') ? 'messages' : 'admin';
         } else if (this.isOverlayOpen('notifications_modal_overlay')) {
             current = 'messages';
         } else if (this.isOverlayOpen('lk_rating_overlay')) {

@@ -175,15 +175,13 @@ const Tour = {
     // у кого сметы уже сохранены, — нет, он и так знает, куда нажимать. Есть ли
     // сохранённые объекты, выясняет app.decideTourDefault (один запрос-счётчик и
     // только пока выбор не сделан).
+    // Переключаем всегда, без проверки «а не в этом ли состоянии уже находимся»:
+    // проверка сверялась с записью в localStorage, а она может разойтись с тем, что
+    // на экране (запись потёрли, а карточка обучения осталась висеть) — и тогда
+    // выключение молча ничего не выключало.
     applyDefault: function (hasObjects) {
         if (this.userChose()) return;
-        const want = !hasObjects;
-        if (want === this.active()) {
-            try { localStorage.setItem(this.LS_ON, want ? '1' : '0'); } catch (e) { }
-            this.syncButton();
-            return;
-        }
-        this.toggle(want);
+        this.toggle(!hasObjects);
     },
 
     _savedStep: function () {
