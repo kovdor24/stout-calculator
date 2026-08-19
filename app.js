@@ -8662,6 +8662,7 @@ const app = {
         this.renderProfilePromoField();
         this.renderProfileLoginMethod();
         this.renderProfileNavHeader(tgUser);
+        this.renderProfilePhotoField();
         this.setProfileTab(forced ? 'requisites' : (initialTab || 'requisites'));
         this.refreshManagerTabVisibility(tgUser.email);
 
@@ -24974,6 +24975,25 @@ const app = {
             const existingCity = this.state.tgUser.city || regCity || localStorage.getItem('user_city') || '';
             const existingPhone = this.state.tgUser.phone || phone || '';
 
+            // Фото, загруженное в кабинете, лежит в том же avatar_url, но data:-строкой
+            // (см. setProfilePhoto). Этот обработчик срабатывает на каждой загрузке страницы
+            // с живой сессией, поэтому без проверки аватарка Яндекса или Google затирала бы
+            // своё фото — и в базе, и на экране. На чужом устройстве в state его ещё нет,
+            // тогда спрашиваем базу; ответ и так нужен, чтобы это фото показать.
+            let ownAvatar = (typeof this.state.tgUser.avatar_url === 'string' && this.state.tgUser.avatar_url.indexOf('data:') === 0)
+                ? this.state.tgUser.avatar_url : '';
+            if (!ownAvatar) {
+                try {
+                    const { data: avatarRows } = await supabaseClient
+                        .from('users').select('avatar_url').eq('auth_user_id', authUserId).limit(1);
+                    const storedAvatar = (avatarRows && avatarRows[0] && avatarRows[0].avatar_url) || '';
+                    if (storedAvatar.indexOf('data:') === 0) ownAvatar = storedAvatar;
+                } catch (avatarErr) {
+                    console.warn('[handleAuthSession] Не удалось прочитать фото профиля:', avatarErr);
+                }
+            }
+            if (ownAvatar) avatar = ownAvatar;
+
             this.state.tgUser = {
                 id: null,
                 authUserId: authUserId,
@@ -30456,8 +30476,10 @@ const app = {
         if (tgUser) {
             nameVal = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || "Монтажник";
             phoneVal = tgUser.phone || "";
-            if (tgUser.photo_url) {
-                avatarSrc = tgUser.photo_url;
+            // avatar_url — своё фото из кабинета или аватарка Яндекса/Google;
+            // photo_url приходит только из Telegram
+            if (tgUser.avatar_url || tgUser.photo_url) {
+                avatarSrc = tgUser.avatar_url || tgUser.photo_url;
             }
         } else {
             // 2. Иначе проверяем ручные настройки из формы профиля
@@ -30545,18 +30567,129 @@ const app = {
         }
     },
 
+    // Карточка пользователя в мобильной панели профиля — та же загрузка фото, что и в
+    // кабинете. Раньше клала снимок только в localStorage, поэтому на другом устройстве,
+    // в переписке и в админке его не было.
     handleCustomAvatarUpload: function (event) {
-        const file = event.target.files[0];
-        if (!file) return;
+        return this.handleProfilePhotoUpload(event);
+    },
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const base64Img = e.target.result;
-            localStorage.setItem('profile_custom_avatar', base64Img);
-            this.updateProfileTabDetails();
-            this.showInAppNotification("Успешно", "Ваша фотография профиля загружена!", "👤");
-        };
-        reader.readAsDataURL(file);
+    // ── Фото профиля ──
+    // Хранится в users.avatar_url — том же поле, откуда фото читают шапка сайта, чат,
+    // рейтинг и админка. Файлового хранилища у проекта нет, поэтому своё фото уменьшается
+    // до квадрата 160 px и лежит в базе data:-строкой (около 10 КБ). Аватарки провайдеров
+    // (Яндекс, Google, Telegram) — обычные https-ссылки; по префиксу «data:» мы и отличаем
+    // загруженное человеком фото от провайдерского (см. handleAuthSession).
+    PROFILE_PHOTO_SIZE: 160,
+
+    // Квадрат по центру исходника, уменьшенный до size×size. Возвращает data:image/jpeg.
+    shrinkImageToSquare: function (file, size) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error('Файл не читается'));
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onerror = () => reject(new Error('Это не изображение'));
+                img.onload = () => {
+                    const side = Math.min(img.width, img.height);
+                    if (!side) { reject(new Error('Пустое изображение')); return; }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    // JPEG не умеет прозрачность: без белой подложки прозрачный PNG
+                    // превратился бы в чёрный квадрат
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, size, size);
+                    ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    },
+
+    handleProfilePhotoUpload: async function (event) {
+        const file = event.target.files && event.target.files[0];
+        // Сбрасываем поле сразу: иначе повторный выбор того же файла не даёт события change
+        event.target.value = '';
+        if (!file) return;
+        if (file.type && file.type.indexOf('image/') !== 0) {
+            app.alert('Выберите файл с изображением.');
+            return;
+        }
+
+        let dataUrl;
+        try {
+            dataUrl = await this.shrinkImageToSquare(file, this.PROFILE_PHOTO_SIZE);
+        } catch (e) {
+            console.error('[profilePhoto] Не удалось обработать файл:', e);
+            app.alert('Не удалось прочитать это изображение. Попробуйте другой файл.');
+            return;
+        }
+        await this.setProfilePhoto(dataUrl);
+    },
+
+    removeProfilePhoto: async function () {
+        await this.setProfilePhoto('');
+    },
+
+    // Пустая строка = убрать фото. В базу пишем null, чтобы поле снова считалось пустым.
+    setProfilePhoto: async function (dataUrl) {
+        const tgUser = this.state.tgUser;
+        if (!tgUser) { app.alert('Войдите в аккаунт, чтобы загрузить фото.'); return; }
+
+        tgUser.avatar_url = dataUrl || '';
+        // Мобильная панель профиля читает снимок отсюда (updateProfileTabDetails)
+        if (dataUrl) localStorage.setItem('profile_custom_avatar', dataUrl);
+        else localStorage.removeItem('profile_custom_avatar');
+        this.saveState();
+
+        this.renderProfilePhotoField();
+        this.renderProfileNavHeader(tgUser);
+        this.updateProfileTabDetails();
+        this.syncUI(); // фото в шапке сайта (#tg-auth-container) перерисовывает syncUI, не render
+
+        try {
+            let query = supabaseClient.from('users').update({ avatar_url: dataUrl || null });
+            if (tgUser.authUserId) query = query.eq('auth_user_id', tgUser.authUserId);
+            else if (tgUser.email) query = query.eq('email', tgUser.email);
+            else return;
+            const { error } = await query;
+            if (error) throw error;
+        } catch (e) {
+            console.error('[profilePhoto] Не удалось сохранить фото в облако:', e);
+            app.alert('Фото сохранено на этом устройстве, но до облака не дошло. На других устройствах оно появится, когда связь восстановится.');
+        }
+    },
+
+    // Кружок с фото и кнопки в разделе «Профиль»
+    renderProfilePhotoField: function () {
+        const box = document.getElementById('profile_photo_box');
+        if (!box) return;
+        const imgEl = document.getElementById('profile_photo_img');
+        const initialEl = document.getElementById('profile_photo_initial');
+        const removeBtn = document.getElementById('profile_photo_remove_btn');
+
+        const tgUser = this.state.tgUser || {};
+        const src = tgUser.avatar_url || tgUser.photo_url || '';
+        const isOwnPhoto = String(tgUser.avatar_url || '').indexOf('data:') === 0;
+
+        if (src) {
+            if (imgEl) { imgEl.src = src; imgEl.style.display = 'block'; }
+            if (initialEl) initialEl.style.display = 'none';
+        } else {
+            if (imgEl) { imgEl.removeAttribute('src'); imgEl.style.display = 'none'; }
+            if (initialEl) {
+                initialEl.style.display = 'block';
+                const uName = this.formatShortName(tgUser) || 'Монтажник';
+                initialEl.innerText = uName.trim().charAt(0).toUpperCase() || '·';
+            }
+        }
+        // «Удалить фото» имеет смысл только для своего снимка: аватарку Яндекса или
+        // Google мы всё равно получим обратно при следующем входе
+        if (removeBtn) removeBtn.style.display = isOwnPhoto ? '' : 'none';
     },
 
     // Старый выпадающий блок истории под меню профиля. Сам пункт меню теперь открывает
@@ -31312,7 +31445,12 @@ const app = {
             console.warn('[DEV MODE] Localhost detected — установлена PRO сессия для тестирования.');
             this.state.accountType = 'pro';
             this.state.groupItems = true; // По умолчанию группировка включена для PRO
+            // Фото профиля переносим из сохранённого состояния: заглушка перезаписывает
+            // tgUser целиком, и без этого загруженный снимок пропадал бы на каждой
+            // перезагрузке — на localhost выглядело бы как поломка загрузки фото
+            const devAvatar = (this.state.tgUser && this.state.tgUser.avatar_url) || '';
             this.state.tgUser = {
+                avatar_url: devAvatar,
                 id: '0279a53c-452b-474f-8626-08be2c2b32da',
                 first_name: "Dima Ibatullin",
                 username: "dima_ibatullin",
@@ -36196,8 +36334,25 @@ const app = {
         var totalFloors = parseInt(s.floors || 1);
         var isTopFloor = (rFloorNum === totalFloors) || (isDoubleHeight && rFloorNum === 1);
         var isBottomFloor = (rFloorNum === 1);
-        var Q_roof = (isTopFloor && R_roof > 0) ? area * dT / R_roof * n_roof : 0;
-        var Q_floor = (isBottomFloor && R_floor > 0) ? area * dT / R_floor * n_floor : 0;
+
+        /**
+         * Соседи снизу и сверху.
+         *
+         * Пол нижнего этажа отдаёт тепло грунту, потолок верхнего — кровле. Но
+         * этажей в расчёте два, а уровней в доме бывает три: цоколь, первый,
+         * второй. Тогда цоколь и первый лежат на «первом этаже» вместе, и оба
+         * получают пол по грунту — хотя первый стоит на тёплом цоколе и в
+         * землю ничего не отдаёт. На доме 100 м² это лишний киловатт.
+         *
+         * Признаки помещения снимают ровно эту составляющую: под полом тёплое —
+         * пола по грунту нет, над потолком тёплое — кровли нет. Ставятся руками
+         * в карточке и сами при переносе плана, когда несколько листов легли на
+         * один этаж расчёта. Не заданы — всё считается как раньше.
+         */
+        var warmBelow = !!r.warmBelow;
+        var warmAbove = !!r.warmAbove;
+        var Q_roof = (isTopFloor && !warmAbove && R_roof > 0) ? area * dT / R_roof * n_roof : 0;
+        var Q_floor = (isBottomFloor && !warmBelow && R_floor > 0) ? area * dT / R_floor * n_floor : 0;
 
         // Нагрев приточного воздуха. Раньше эта составляющая считалась разом на
         // весь дом в getHouseHeatLoss и добавлялась только к мощности котла, а в
@@ -36229,6 +36384,13 @@ const app = {
             vol: vol, n_vent: n_eff, kOrient: kOrient, orient: orient,
             tKind: tInfo.kind, tManual: tInfo.manual,
             orientAuto: !r.orient && !!(pgRoom && pgRoom.orient),
+            // Снятые составляющие показываем в подсказке карточки: «пола нет»
+            // без объяснения выглядит ошибкой расчёта. isTop/isBottom говорят
+            // карточке, есть ли смысл показывать галочку: у помещения посреди
+            // дома ни пола по грунту, ни кровли и так нет.
+            isTop: isTopFloor, isBottom: isBottomFloor,
+            warmBelow: warmBelow && isBottomFloor,
+            warmAbove: warmAbove && isTopFloor,
             perim: perim, outerPerim: outerPerim, geoSrc: geoSrc,
             Tv: Tv, Tn: Tn, dT: dT,
             n_wall: n_wall, n_glz: n_glz, n_roof: n_roof, n_floor: n_floor
@@ -37672,6 +37834,14 @@ const app = {
     updRoomEnv: function (id, field, val) {
         const r = this.state.rooms.find(x => x.id === id);
         if (!r) return;
+        // Соседи снизу и сверху — галочки, а не списки: false здесь значит
+        // «как обычно», и хранить его в смете незачем.
+        if (field === 'warmBelow' || field === 'warmAbove') {
+            if (val) r[field] = true; else delete r[field];
+            this.syncRoomsToState(); this.renderRoomsUI(); this.syncUI(); this.render();
+            this.saveState();
+            return;
+        }
         if (val === '' || val === null || val === undefined) delete r[field];
         else if (field === 'outerWalls') r[field] = parseInt(val, 10);
         else if (field === 'roomKind') {
@@ -40080,6 +40250,7 @@ const app = {
             if (r.roomKind || r.tempC) envSet.push('режим');
             if (r.outerWalls) envSet.push('стены');
             if (r.orient) envSet.push('сторона');
+            if (r.warmBelow || r.warmAbove) envSet.push('соседи');
             const envOpen = !!(this._roomDetails && this._roomDetails[r.id]);
             const envBtn = `<button id="room_det_btn_${r.id}" onclick="app.toggleRoomDetails(${r.id})" title="Тип помещения, число наружных стен и сторона света" style="background:${envSet.length ? 'var(--primary-light)' : 'transparent'}; border:1px dashed ${envSet.length ? 'var(--primary)' : '#9CA3AF'}; color:${envSet.length ? 'var(--primary)' : '#6B7280'}; padding:2px 6px; height:24px; border-radius:4px; font-size:10px; font-weight:600; cursor:pointer; white-space:nowrap;">⚙ ${envSet.length ? 'уточнено: ' + envSet.join(', ') : 'уточнить'}</button>`;
 
@@ -40089,6 +40260,28 @@ const app = {
             let envOrientSel = `<select style="${selCss}" title="Куда выходят окна и наружные стены. На север и восток по СНиП 41-01-2003 добавляется 10 %, на юго-восток и запад — 5 %." onchange="app.updRoomEnv(${r.id}, 'orient', this.value)">
                             ${orientOpt('', autoOrient)}${orientOpt('N', 'Север +10 %')}${orientOpt('NE', 'Северо-восток +10 %')}${orientOpt('E', 'Восток +10 %')}${orientOpt('SE', 'Юго-восток +5 %')}${orientOpt('S', 'Юг')}${orientOpt('SW', 'Юго-запад')}${orientOpt('W', 'Запад +5 %')}${orientOpt('NW', 'Северо-запад +10 %')}
                         </select>`;
+
+            /**
+             * Что под полом и над потолком. Показываем только там, где это
+             * что-то меняет: пол по грунту считается нижнему этажу, кровля —
+             * верхнему. У помещения посреди дома снимать нечего.
+             *
+             * Нужны трёхуровневым домам: этажей в расчёте два, а уровней бывает
+             * три (цоколь, первый, второй), и тогда два уровня делят «первый
+             * этаж». Без этих галочек пол по грунту считался бы обоим.
+             */
+            const chkCss = "display:flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--text-sec); cursor:pointer;";
+            const envNeighbors = [];
+            if (roomLossCard.isBottom) {
+                envNeighbors.push(`<label style="${chkCss}" title="Под этим помещением тёплый цоколь или подвал, а не грунт. Тепло через пол не уходит — потери пола не считаются.">
+                    <input type="checkbox" ${r.warmBelow ? 'checked' : ''} onchange="app.updRoomEnv(${r.id}, 'warmBelow', this.checked)">
+                    Под полом тёплое помещение</label>`);
+            }
+            if (roomLossCard.isTop) {
+                envNeighbors.push(`<label style="${chkCss}" title="Над этим помещением тёплый этаж, а не кровля или холодный чердак. Потери через потолок не считаются.">
+                    <input type="checkbox" ${r.warmAbove ? 'checked' : ''} onchange="app.updRoomEnv(${r.id}, 'warmAbove', this.checked)">
+                    Над потолком тёплое помещение</label>`);
+            }
 
             let floorSel = this.state.floors === 2 ? `<select style="font-size:10px; padding:0 2px 0 0; border:none; border-right:1px solid #D1D5DB; background:transparent; color:var(--text-sec); font-weight:600; margin-right:2px; outline:none; cursor:pointer;" onchange="app.updRoom(${r.id}, 'floor', parseInt(this.value))"><option value="1" ${r.floor === 1 ? 'selected' : ''}>1 Эт</option><option value="2" ${r.floor === 2 ? 'selected' : ''}>2 Эт</option></select>` : '';
             let accentColor = r.floor === 2 ? '#10B981' : 'var(--primary)';
@@ -40110,7 +40303,9 @@ const app = {
                 + (roomLossCard.tManual ? ' (задано вручную)' : (roomLossCard.tKind ? ` (${roomLossCard.tKind.norm})` : ''))
                 + `. Теплопотери: ограждения ${Math.round(roomLossCard.Q_total)} Вт + нагрев приточного воздуха ${Math.round(roomLossCard.Q_vent)} Вт.`
                 + ` Наружные стены — ${roomLossCard.outerPerim.toFixed(1)} м из ${roomLossCard.perim.toFixed(1)} м периметра (${roomLossCard.geoSrc}).`
-                + (roomLossCard.kOrient > 1 ? ` Надбавка на ориентацию +${Math.round((roomLossCard.kOrient - 1) * 100)} %.` : '');
+                + (roomLossCard.kOrient > 1 ? ` Надбавка на ориентацию +${Math.round((roomLossCard.kOrient - 1) * 100)} %.` : '')
+                + (roomLossCard.warmBelow ? ' Пол по грунту не считается: под помещением тёплое.' : '')
+                + (roomLossCard.warmAbove ? ' Кровля не считается: над помещением тёплое.' : '');
 
             // Комнат бывает под полтора десятка, и раскрытые карточки дают
             // простыню на три экрана. Открыта всегда одна — та, которую правят;
@@ -40230,6 +40425,7 @@ const app = {
                                     ${envOrientSel}
                                 </label>
                             </div>
+                            ${envNeighbors.length ? `<div style="display:flex; flex-direction:column; gap:5px;">${envNeighbors.join('')}</div>` : ''}
                         </div>
                     </div>`;
 
