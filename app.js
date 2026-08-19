@@ -9447,6 +9447,27 @@ const app = {
         this.setCabinetDocked(anyOpen && this.isRailVisible());
     },
 
+    // Есть ли у человека сохранённые сметы — от этого зависит, включать ли ему
+    // режим обучения по умолчанию. Запрос делаем только пока выбор не сделан (после
+    // первого решения ответ уже записан и сюда мы не заходим) и берём один
+    // счётчик без тела ответа, чтобы не тратить трафик базы.
+    decideTourDefault: async function (userId) {
+        if (typeof Tour === 'undefined' || !userId) return;
+        if (Tour.userChose()) return;
+        try {
+            const { count, error } = await supabaseClient
+                .from('estimates')
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', userId);
+            // Не ответила база — ничего не решаем: включить обучение тому, у кого
+            // полсотни смет, неприятнее, чем не включить его новичку
+            if (error) return;
+            Tour.applyDefault((count || 0) > 0);
+        } catch (e) {
+            console.warn('[decideTourDefault] Не удалось проверить сохранённые сметы:', e);
+        }
+    },
+
     // Клик по логотипу — возврат на главный экран, к расчёту. Закрываем всё, что
     // открыто поверх сметы, а на телефоне ещё и переключаемся с вкладки профиля
     // обратно на параметры: там «главная» — это она, а не колонка разделов.
@@ -23710,6 +23731,11 @@ const app = {
                 // означает, что человек и правда её не заполнял, а не что ответ базы в пути
                 // (см. profileLocked в syncUI).
                 this._profileDbLoaded = true;
+
+                // Режим обучения новичку включается сам, а тому, у кого сметы уже
+                // сохранены, — нет. Считаем их только пока человек не решил сам:
+                // это один запрос на браузер, и только у тех, кто ещё не выбирал.
+                this.decideTourDefault(uRow.id);
 
                 // Промокод, введённый при регистрации, применяем один раз — при первом
                 // входе, когда запись в users уже создана и ещё нет привязки к поставщику
@@ -40178,12 +40204,10 @@ const app = {
                     </div>`;
                 }
 
-                // ПРОВЕРКА НА АДМИНА
-                let adminBtn = app.hasAdminAccess()
-                    ? `<div style="font-size: 12px; font-weight: 700; color: #10B981; cursor: pointer; border: 1px solid #10B981; padding: 4px 10px; border-radius: 8px; background: #ECFDF5; margin-right: 10px;" onclick="app.showAdminModal()" title="Панель администратора">Админка</div>`
-                    : ``;
-
-                authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);">${adminBtn}<div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;
+                // Кнопки «Админка» здесь больше нет: тот же вход есть в левой панели
+                // разделов (пункт «Админка», см. syncRailUI), а два одинаковых входа
+                // рядом только занимали место в шапке.
+                authContainer.innerHTML = `<div style="display: flex; align-items: center; gap: 15px; padding-right: 15px; border-right: 1px solid var(--border);"><div style="font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 6px;" onclick="app.showProfileModal()" title="Настроить профиль" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'">${icon} ${infoHtml}</div><div style="font-size: 12px; color: #EF4444; cursor:pointer; font-weight: 500; padding: 4px;" onclick="app.logout()">Выйти</div></div>`;
             } else {
                 // Если пользователь не авторизован - показываем только одну аккуратную кнопку
                 authContainer.innerHTML = `

@@ -173,7 +173,7 @@
          app.init() дёргает appPush.init(). -->
     <script src="push.js?v=1.1" defer></script>
     <script src="app.js?v=6.46" defer></script>
-    <script src="tour.js?v=1.3" defer></script>
+    <script src="tour.js?v=1.4" defer></script>
     <!-- Выгрузка сметы в Excel: читает уже готовую печатную вёрстку (#print_bin) -->
     <script src="excel_export.js?v=1.0" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
@@ -361,6 +361,17 @@
                         <path d="M3 3v5h5"></path>
                     </svg>
                 </button>
+                <!-- Режим обучения. Раньше это была галочка отдельной строкой над колонками:
+                     её не замечали, а на телефоне она занимала место в самом верху экрана.
+                     Состояние кнопки и подсказку ставит Tour.syncButton (tour.js). -->
+                <button class="btn-ctrl" id="btn_tour" onclick="Tour.toggleFromButton()"
+                    title="Режим обучения: подсказки на каждом шаге" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 10 12 5 2 10l10 5 10-5z"></path>
+                        <path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"></path>
+                    </svg>
+                </button>
                 <!-- Иконку и подсказку проставляет app.updateThemeButton по текущему режиму
                      (светлая / тёмная / авто по закату); здесь — только вид до загрузки. -->
                 <button class="btn-ctrl" id="btn_theme" onclick="app.cycleThemeMode()"
@@ -373,7 +384,11 @@
 
                 <div class="header-divider"></div>
 
-                <a class="btn-ctrl btn-trophy" href="/rating/" title="Рейтинг и достижения">
+                <!-- Открывает ту же врезку рейтинга, что и пункт меню: обычный переход по
+                     ссылке уводил со страницы вместе с меню. href оставлен для средней
+                     кнопки мыши и «открыть в новой вкладке». -->
+                <a class="btn-ctrl btn-trophy" href="/rating/" title="Рейтинг и достижения"
+                    onclick="event.preventDefault(); app.railGo('rating');">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <path d="M7 4h10v4a5 5 0 0 1-10 0V4z"></path>
@@ -388,21 +403,8 @@
             <div id="header_totals" class="header-totals-block no-print"></div>
         </div>
     </header>
-    <!-- Режим обучения: ведёт по всему пути от площади до ссылки клиенту.
-         Стоит над обеими колонками, а не внутри панели параметров: там его не
-         видел никто, кто не долистал панель до низа. Внутрь колонки со сметой
-         тоже нельзя — на телефоне она целиком скрыта, пока открыта вкладка
-         «Параметры». Логика и стили — в tour.js, здесь только переключатель. -->
-    <div id="blk_tour_toggle" class="no-print"
-        style="display: flex; flex-wrap: wrap; align-items: center;
-               justify-content: center; gap: 6px 10px; margin: 0 0 4px;">
-        <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">🎓 Режим обучения</span>
-        <label class="switch">
-            <input type="checkbox" id="chk_tour" onchange="Tour.toggle(this.checked)">
-            <span class="slider"></span>
-        </label>
-        <span style="font-size: 11px; color: var(--text-sec); text-align: center;">подсказки на каждом шаге</span>
-    </div>
+    <!-- Переключатель режима обучения переехал в шапку (кнопка #btn_tour): отдельной
+         строкой над колонками его не замечали, а на телефоне он занимал верх экрана. -->
     <!-- Плашка «цены изменились с момента сохранения» — наполняет app.showRepriceNotice -->
     <div id="reprice_notice" class="no-print" style="display: none;"></div>
     <div class="container">
@@ -430,43 +432,51 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
                 <span class="lk-rail-label">Объекты</span>
             </button>
-            <button type="button" class="lk-rail-item" data-rail="summary" onclick="app.railGo('summary')" title="Сводка по своим сметам">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-                <span class="lk-rail-label">Сводка</span>
-            </button>
             <button type="button" class="lk-rail-item" data-rail="orders" onclick="app.railGo('orders')" title="Заказы и счета">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
                 <span class="lk-rail-label">Заказы</span>
             </button>
-            <button type="button" class="lk-rail-item" data-rail="messages" onclick="app.railGo('messages')" title="Сообщения и уведомления">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                <span class="lk-rail-label">Сообщения</span>
-                <span class="lk-rail-badge" id="lk_rail_msg_badge" style="display: none;">0</span>
+            <button type="button" class="lk-rail-item" data-rail="summary" onclick="app.railGo('summary')" title="Сводка по своим сметам">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                <span class="lk-rail-label">Сводка</span>
+            </button>
+
+            <div class="lk-rail-sep"></div>
+
+            <button type="button" class="lk-rail-item" data-rail="workprices" onclick="app.railGo('workprices')" title="Мои цены на монтаж">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                <span class="lk-rail-label">Прайс</span>
+            </button>
+            <button type="button" class="lk-rail-item" data-rail="equipment" onclick="app.railGo('equipment')" title="Своё оборудование и замены">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                <span class="lk-rail-label">Замены</span>
+            </button>
+
+            <div class="lk-rail-sep"></div>
+
+            <button type="button" class="lk-rail-item" data-rail="requisites" onclick="app.railGo('requisites')" title="Мои данные">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span class="lk-rail-label">Профиль</span>
+            </button>
+            <button type="button" class="lk-rail-item" data-rail="company" onclick="app.railGo('company')" title="Реквизиты компании и логотип">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M3 21h18"></path><path d="M5 21V7l7-4 7 4v14"></path><path d="M10 21v-5h4v5"></path><path d="M9 10h.01"></path><path d="M15 10h.01"></path></svg>
+                <span class="lk-rail-label">Реквизиты</span>
             </button>
             <button type="button" class="lk-rail-item" data-rail="manager" onclick="app.railGo('manager')" title="Мой менеджер, условия доставки и оплаты">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>
                 <span class="lk-rail-label">Менеджер</span>
             </button>
             <!-- Только зарегистрированным менеджерам дистрибьюторов: показ включает
-                 app.syncRailUI по видимости такого же пункта в колонке кабинета -->
+                 app.syncRailUI по видимости такого же пункта в колонке кабинета.
+                 Стоит рядом с «Менеджером» — оба про работу с поставщиком. -->
             <button type="button" class="lk-rail-item" data-rail="installers" style="display: none;" onclick="app.railGo('installers')" title="Мои монтажники">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 <span class="lk-rail-label">Монтаж&shy;ники</span>
             </button>
-            <button type="button" class="lk-rail-item" data-rail="workprices" onclick="app.railGo('workprices')" title="Мои цены на монтаж">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-                <span class="lk-rail-label">Прайс</span>
-            </button>
-            <button type="button" class="lk-rail-item" data-rail="equipment" onclick="app.railGo('equipment')" title="Своё оборудование">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-                <span class="lk-rail-label">Оборудо&shy;вание</span>
-            </button>
-            <!-- Рейтинг живёт отдельной страницей (/rating/), но открываем его тут же
-                 во врезке: уход на другую вкладку уносил человека от меню совсем.
-                 Адрес относительный — сайт лежит и на heatcalc.ru, и в подпапке. -->
-            <button type="button" class="lk-rail-item" data-rail="rating" onclick="app.railGo('rating')" title="Баллы, значки и рейтинг">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"></path><path d="M7 5H4.5A1.5 1.5 0 0 0 3 6.5v1A3.5 3.5 0 0 0 6.5 11H7"></path><path d="M17 5h2.5A1.5 1.5 0 0 1 21 6.5v1A3.5 3.5 0 0 1 17.5 11H17"></path><path d="M12 13v4"></path><path d="M9 21h6"></path><path d="M10 17h4"></path></svg>
-                <span class="lk-rail-label">Рейтинг</span>
+            <button type="button" class="lk-rail-item" data-rail="messages" onclick="app.railGo('messages')" title="Сообщения и уведомления">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                <span class="lk-rail-label">Сообщения</span>
+                <span class="lk-rail-badge" id="lk_rail_msg_badge" style="display: none;">0</span>
             </button>
 
             <div class="lk-rail-sep"></div>
@@ -476,13 +486,12 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="9" y1="9" x2="21" y2="9"></line><line x1="9" y1="15" x2="21" y2="15"></line></svg>
                 <span class="lk-rail-label">Админка</span>
             </button>
-            <button type="button" class="lk-rail-item" data-rail="requisites" onclick="app.railGo('requisites')" title="Мои данные">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                <span class="lk-rail-label">Профиль</span>
-            </button>
-            <button type="button" class="lk-rail-item" data-rail="company" onclick="app.railGo('company')" title="Реквизиты компании и логотип">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M3 21h18"></path><path d="M5 21V7l7-4 7 4v14"></path><path d="M10 21v-5h4v5"></path><path d="M9 10h.01"></path><path d="M15 10h.01"></path></svg>
-                <span class="lk-rail-label">Реквизиты</span>
+            <!-- Рейтинг живёт отдельной страницей (/rating/), но открываем его тут же
+                 во врезке: уход на другую вкладку уносил человека от меню совсем.
+                 Адрес относительный — сайт лежит и на heatcalc.ru, и в подпапке. -->
+            <button type="button" class="lk-rail-item" data-rail="rating" onclick="app.railGo('rating')" title="Баллы, значки и рейтинг">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"></path><path d="M7 5H4.5A1.5 1.5 0 0 0 3 6.5v1A3.5 3.5 0 0 0 6.5 11H7"></path><path d="M17 5h2.5A1.5 1.5 0 0 1 21 6.5v1A3.5 3.5 0 0 1 17.5 11H17"></path><path d="M12 13v4"></path><path d="M9 21h6"></path><path d="M10 17h4"></path></svg>
+                <span class="lk-rail-label">Рейтинг</span>
             </button>
             <button type="button" class="lk-rail-item lk-rail-logout" onclick="app.railGo('logout')" title="Выйти из аккаунта">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>

@@ -11893,12 +11893,16 @@ body.guest-mode .lk-rail {
    Прямоугольник считает app.updateCabinetDockGeometry() и кладёт в переменные
    ниже: положение панели зависит от zoom: 0.8 обёртки страницы, а верх — от
    того, сжалась ли шапка при прокрутке. Числами в CSS это не задать. */
+/* !important здесь обязателен: у полноэкранных окон фон задан с ним же
+   (#admin_modal_overlay { background: var(--bg) !important } выше по файлу). Без
+   этого непрозрачная подложка оставалась поверх страницы и закрывала собой и
+   шапку, и панель разделов — на экране оставалась одна карточка на пустом фоне. */
 body.lk-docked #profile_modal_overlay,
 body.lk-docked #admin_modal_overlay,
 body.lk-docked #notifications_modal_overlay,
 body.lk-docked #lk_rating_overlay {
-    background: transparent;
-    backdrop-filter: none;
+    background: transparent !important;
+    backdrop-filter: none !important;
     /* Оверлей по-прежнему растянут на весь экран, но клики сквозь него проходят:
        мимо карточки они должны доставать до панели разделов и до шапки */
     pointer-events: none;
@@ -11951,6 +11955,19 @@ body.lk-docked #admin_modal_overlay .auth-modal-content {
 
 body.lk-docked #profile_nav {
     display: none;
+}
+
+/* Включённый режим обучения виден по кнопке в шапке (Tour.syncButton) */
+.btn-ctrl.is-on {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-light);
+}
+
+body.dark-mode .btn-ctrl.is-on {
+    border-color: #6366F1;
+    color: #818CF8;
+    background: rgba(99, 102, 241, 0.15);
 }
 
 /* Логотип — кнопка возврата к расчёту (app.goHome) */
