@@ -3108,17 +3108,24 @@ const app = {
     // масштабом — ровно настолько, насколько не хватило. Ниже 0.8 не опускаемся:
     // мельче текст уже не прочитать, там панели возвращается своя прокрутка.
     _emptyFitPanelMinScale: 0.8,
-    syncEmptyFitPanelScale: function () {
+    // recalc = true — мерить заново, даже если масштаб уже зафиксирован: так зовут
+    // при смене размера окна, переносе меню и переключении режима расчёта.
+    syncEmptyFitPanelScale: function (recalc) {
         const panel = document.querySelector('.input-panel');
         if (!panel) return;
+        if (recalc) { this._emptyFitScale = null; this._emptyFitScaleLocked = false; }
         // Мобильная раскладка (узкое окно, планшет стоймя, телефон набок) — колонки
         // идут друг под другом, ужимать нечего. Границы те же, что в style.css.
         const desktop = window.innerWidth >= 900 && window.innerHeight > 500 && !this.isMobileLayout();
-        const fit = document.body.classList.contains('empty-fit') && desktop;
+        // Лист сметы растягиваем только в быстром режиме, колонку параметров — в обоих.
+        const cardFit = document.body.classList.contains('empty-fit') && desktop;
+        const fit = document.body.classList.contains('empty-fit-panel') && desktop;
+        const outPanel = document.querySelector('.output-panel');
+        if (!cardFit && outPanel && outPanel.style.minHeight) outPanel.style.minHeight = '';
         if (!fit) {
-            if (panel.style.zoom) { panel.style.zoom = ''; panel.style.maxHeight = ''; }
-            const outPanel = document.querySelector('.output-panel');
-            if (outPanel && outPanel.style.minHeight) outPanel.style.minHeight = '';
+            if (panel.style.zoom) { panel.style.zoom = ''; panel.style.maxHeight = ''; panel.style.flex = ''; }
+            this._emptyFitScale = null;
+            this._emptyFitScaleLocked = false;
             return;
         }
         // Страница отрисовывается в zoom 0.8 (#page_scale_wrapper): scrollHeight
@@ -3130,30 +3137,52 @@ const app = {
         // Высоту листа сметы тоже считаем здесь, а не в CSS: над колонками может
         // стоять лента кабинета (меню перенесено наверх), и вычесть в стилях
         // «шапку с полями» больше недостаточно — верх колонки уезжает вниз.
-        const out = document.querySelector('.output-panel');
-        if (out) {
-            const availOut = Math.floor((window.innerHeight - out.getBoundingClientRect().top - 8) / k);
+        if (cardFit && outPanel) {
+            const availOut = Math.floor((window.innerHeight - outPanel.getBoundingClientRect().top - 8) / k);
             const wanted = availOut > 0 ? (availOut + 'px') : '';
-            if (out.style.minHeight !== wanted) out.style.minHeight = wanted;
+            if (outPanel.style.minHeight !== wanted) outPanel.style.minHeight = wanted;
         }
+        // Натуральную ширину колонки (flex-basis из стилей) запоминаем один раз,
+        // до того как сами её тронем: ниже она понадобится, чтобы масштаб не увёл
+        // колонку по ширине.
+        if (!this._emptyFitPanelBaseWidth && !panel.style.flexBasis) this._emptyFitPanelBaseWidth = panel.offsetWidth;
+        // Свободная высота под колонкой нужна и при пересчёте масштаба, и при
+        // выставлении её потолка — считаем один раз здесь.
         const avail = window.innerHeight - panel.getBoundingClientRect().top - 8;
-        // scrollHeight у панели остаётся натуральным: собственный zoom элемента
-        // на его внутренние единицы не влияет. Поэтому мерить можно, ничего
-        // предварительно не сбрасывая.
-        const need = panel.scrollHeight * k;
-        if (avail <= 0 || need <= 0) return;
-        let scale = need > avail ? Math.max(this._emptyFitPanelMinScale, avail / need) : 1;
-        scale = Math.min(1, Math.round(scale * 1000) / 1000);
-        const current = parseFloat(panel.style.zoom) || 1;
-        // Считаем то же самое — молча уходим. Без этой проверки наблюдатель за
-        // размером панели крутил бы себя сам: правка стиля меняет размер, размер
-        // будит наблюдателя, наблюдатель правит стиль.
-        if (Math.abs(scale - current) < 0.002) return;
-        panel.style.zoom = scale < 1 ? String(scale) : '';
+        if (avail <= 0) return;
+        let scale;
+        if (this._emptyFitScaleLocked && this._emptyFitScale) {
+            // Монтажник уже что-то трогает в колонке — масштаб больше не пересчитываем:
+            // включил параметр, появился новый блок, и колонка от этого не должна
+            // прыгать в размере. Новые блоки просто удлиняют её вниз, дальше своя
+            // прокрутка. Заново меряем только при смене окна, режима или места меню.
+            scale = this._emptyFitScale;
+        } else {
+            // scrollHeight у панели остаётся натуральным: собственный zoom элемента
+            // на его внутренние единицы не влияет. Поэтому мерить можно, ничего
+            // предварительно не сбрасывая.
+            const need = panel.scrollHeight * k;
+            if (need <= 0) return;
+            scale = need > avail ? Math.max(this._emptyFitPanelMinScale, avail / need) : 1;
+            scale = Math.min(1, Math.round(scale * 1000) / 1000);
+            this._emptyFitScale = scale;
+        }
+        const baseW = this._emptyFitPanelBaseWidth;
+        // zoom жмёт элемент по обеим осям, а по ширине колонке жаться незачем —
+        // соседний лист сметы от этого дёргался бы туда-сюда, и это выглядело бы
+        // поломкой. Ширину возвращаем обратно: заданная в единицах вёрстки
+        // basis/scale после масштабирования даёт на экране прежние 340 px.
         // Потолок панели задан в стилях от 125vh и вместе с ней сожмётся —
-        // пересчитываем его в единицах вёрстки под фактический экран, иначе внутри
-        // панели появится прокрутка на ровном месте.
-        panel.style.maxHeight = scale < 1 ? (Math.floor(avail / (k * scale)) + 'px') : '';
+        // пересчитываем его под фактическую свободную высоту, иначе внутри панели
+        // появится прокрутка на ровном месте (или, наоборот, панель вылезет за экран).
+        const wantZoom = scale < 1 ? String(scale) : '';
+        const wantFlex = (baseW && scale < 1) ? ('0 0 ' + Math.round(baseW / scale) + 'px') : '';
+        const wantMaxH = scale < 1 ? (Math.floor(avail / (k * scale)) + 'px') : '';
+        // Пишем только то, что и правда изменилось: наблюдатель за содержимым панели
+        // будит этот метод, и лишняя правка стиля крутила бы его сама по кругу.
+        if (panel.style.zoom !== wantZoom) panel.style.zoom = wantZoom;
+        if (panel.style.flex !== wantFlex) panel.style.flex = wantFlex;
+        if (panel.style.maxHeight !== wantMaxH) panel.style.maxHeight = wantMaxH;
     },
     // Отложенный пересчёт: за одну отрисовку панель трогают десятки раз, а ответ
     // у них один. Таймером, а не requestAnimationFrame: в фоновой вкладке кадры
@@ -3176,6 +3205,11 @@ const app = {
         if (!panel) return;
         this._emptyFitObserver = new MutationObserver(() => this.queueEmptyFitPanelScale());
         this._emptyFitObserver.observe(panel, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+        // Первое же касание колонки замораживает масштаб: пока страница загружается,
+        // содержимое ещё приезжает и мерить надо каждый раз, а вот в руках у
+        // монтажника колонка меняться в размере не должна — включил параметр,
+        // появился новый блок, и колонка просто стала длиннее.
+        ['pointerdown', 'input', 'change'].forEach(ev => panel.addEventListener(ev, () => { this._emptyFitScaleLocked = true; }, true));
     },
 
     // Кружок — состояние по умолчанию: развёрнутая подпись стоит поверх сметы, а
@@ -9797,7 +9831,7 @@ const app = {
         this.updateCabinetDockGeometry();
         // Лента наверху забирает высоту у обеих колонок — на пустом экране их
         // подгонку надо пересчитать, сами они об этом переезде не узнают.
-        this.queueEmptyFitPanelScale();
+        this.syncEmptyFitPanelScale(true);
     },
 
     initRailDrag: function () {
@@ -31440,7 +31474,7 @@ const app = {
         this.initEmptyFitPanelObserver();
         // Пустой экран подогнан под конкретную высоту окна — при её изменении
         // (другой монитор, свёрнутое окно, повёрнутый планшет) считаем заново.
-        window.addEventListener('resize', () => this.syncEmptyFitPanelScale());
+        window.addEventListener('resize', () => this.syncEmptyFitPanelScale(true));
     },
     getPower: function () {
         let regVal = (this.state.region !== undefined) ? (this.state.region / 100) : 1.0;
@@ -35741,6 +35775,9 @@ const app = {
         this.autoCalcZones();
         this.syncUI();
         this.render();
+        // Набор настроек в режимах разный — подгон колонки меряем заново, а не
+        // тянем зафиксированный масштаб из прежнего режима.
+        this.syncEmptyFitPanelScale(true);
     },
     toggleVentilation: function (chk, event) {
         this.state.ventilationEnabled = chk;
@@ -52143,7 +52180,13 @@ const app = {
         // что-то есть. Класс переводит вёрстку в компактный вид (см. body.empty-fit
         // в style.css) и снимается сразу, как задана площадь или включён подробный
         // режим: там прокрутка нужна по делу.
-        document.body.classList.toggle('empty-fit', this.isCalcEmpty() && !this.state.detailedRooms);
+        const _emptyCalc = this.isCalcEmpty();
+        document.body.classList.toggle('empty-fit', _emptyCalc && !this.state.detailedRooms);
+        // Колонка параметров подгоняется под экран в обоих режимах: в подробном
+        // настроек ещё больше, и переключение туда не должно возвращать прежний
+        // крупный шаг. Всё остальное (растянутый лист, спрятанный подвал) остаётся
+        // привилегией быстрого режима — там пустой экран и правда пустой.
+        document.body.classList.toggle('empty-fit-panel', _emptyCalc);
         // Мерить панель настроек сразу нельзя: класс только что повешен, и браузер
         // ещё не пересчитал с ним раскладку.
         this.queueEmptyFitPanelScale();
