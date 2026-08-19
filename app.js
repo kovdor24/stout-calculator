@@ -8398,6 +8398,11 @@ const app = {
         this.fillCompanyDetailsForm();
 
         document.getElementById('profile_modal_overlay').style.display = 'flex';
+        // Кабинет встаёт справа от панели разделов, на место параметров и сметы, и
+        // прячет свою колонку разделов — меню на экране должно быть одно. Исключение:
+        // принудительное дозаполнение анкеты (forced) остаётся окном во весь экран,
+        // иначе от обязательной формы можно уйти щелчком по панели.
+        this.setCabinetDocked(!forced && this.isRailVisible());
         // Модалка позиционируется фиксированно и может быть выше вьюпорта на низких экранах —
         // без блокировки прокрутки body под ней появляется лишний внешний скролл всей страницы
         // поверх собственного overflow-y:auto модалки (два скролла одновременно)
@@ -8432,6 +8437,7 @@ const app = {
         }
         this._profileForceComplete = false;
         document.getElementById('profile_modal_overlay').style.display = 'none';
+        this.setCabinetDocked(false);
         document.body.style.overflow = '';
         this.unsubscribeChatThread();
         // Список смет снова рисуется в собственную модалку, пока кабинет не откроют заново
@@ -9281,6 +9287,8 @@ const app = {
         } catch (e) {
             console.warn('[refreshManagerTabVisibility] Ошибка проверки роли менеджера:', e);
         }
+        // Тот же пункт есть в левой панели — переносим на него результат проверки
+        this.syncRailUI();
     },
     // Переключение разделов личного кабинета (колонка слева, .lk-nav в index.html):
     // Профиль и компания / Мои объекты / Заказы и счета / Мой менеджер / Мои монтажники /
@@ -9350,14 +9358,10 @@ const app = {
     // шапке, и монтажники его не находили. Панель ничего не считает и не хранит: это
     // просто вынесенные на экран кнопки к уже существующим разделам.
     //
-    // Соответствие разделов кабинета пунктам панели: у части разделов своего пункта
-    // нет, но подсветить логично соседний — иначе при открытых «Реквизитах компании»
-    // панель выглядит так, будто кабинет закрыт.
+    // У «Подписки» своего пункта в панели нет (раздел скрыт до конца обкатки тарифа),
+    // но подсветить логично соседний — иначе панель выглядит так, будто кабинет закрыт.
     RAIL_TAB_ALIAS: {
-        company: 'requisites',
-        subscription: 'requisites',
-        summary: 'objects',
-        installers: 'manager'
+        subscription: 'requisites'
     },
 
     railGo: function (section) {
@@ -9373,6 +9377,10 @@ const app = {
             this.openMessagesCenter();
             return;
         }
+        if (section === 'logout') {
+            this.logout();
+            return;
+        }
         // Панель показывается только авторизованным (body.guest-mode в CSS), но клик
         // может прийти и от гостя — например, если он вышел из аккаунта, не перезагрузив
         // страницу. Тогда предлагаем вход, а не молча ничего не делаем: сам
@@ -9384,15 +9392,97 @@ const app = {
             this.showAuthModal();
             return;
         }
+        // Кабинет уже открыт — просто переключаем раздел. Полный showProfileModal
+        // заново заполнил бы поля анкеты из сохранённых данных и стёр незаписанную
+        // правку, которую человек как раз набирал.
+        const overlay = document.getElementById('profile_modal_overlay');
+        if (overlay && overlay.style.display === 'flex') {
+            this.setProfileTab(section);
+            return;
+        }
         this.showProfileModal(false, section);
     },
 
+    // ── Кабинет справа от панели, а не поверх экрана ──────────────────────────
+    // Пристыкованный режим включается, только когда панель разделов на экране есть.
+    // На телефоне и планшете стоймя её нет, и кабинет остаётся прежней шторкой во
+    // весь экран со своей колонкой разделов.
+    isRailVisible: function () {
+        const rail = document.getElementById('lk_rail');
+        return !!(rail && getComputedStyle(rail).display !== 'none');
+    },
+
+    setCabinetDocked: function (on) {
+        document.body.classList.toggle('lk-docked', !!on);
+        if (!on) return;
+        this.updateCabinetDockGeometry();
+        // Пересчёт при смене размера окна вешаем один раз и лениво: до первого
+        // открытия кабинета он не нужен.
+        if (!this._dockResizeBound) {
+            this._dockResizeBound = true;
+            window.addEventListener('resize', () => {
+                if (!document.body.classList.contains('lk-docked')) return;
+                // Окно сузили до мобильной раскладки — панели больше нет,
+                // возвращаем кабинету полный экран
+                if (!this.isRailVisible()) {
+                    document.body.classList.remove('lk-docked');
+                    return;
+                }
+                this.updateCabinetDockGeometry();
+            });
+        }
+    },
+
+    // Считаем прямоугольник кабинета по живому положению панели и шапки: панель
+    // лежит внутри #page_scale_wrapper с zoom: 0.8, а шапка меняет высоту при
+    // прокрутке — фиксированными числами в CSS это не описать.
+    updateCabinetDockGeometry: function () {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        const railBox = rail.getBoundingClientRect();
+        const header = document.querySelector('.site-header');
+        const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+
+        // Левый и правый края берём у самих колонок, которые кабинет собой закрывает:
+        // отступ между панелью и параметрами задан гэпом .container, и посчитанный
+        // «на глаз» край оставлял бы сбоку торчать полоску колонки параметров.
+        const inputPanel = document.querySelector('.container .input-panel');
+        const outputPanel = document.querySelector('.container .output-panel');
+        const left = inputPanel ? inputPanel.getBoundingClientRect().left : railBox.right + 12;
+        const right = outputPanel
+            ? Math.max(0, window.innerWidth - outputPanel.getBoundingClientRect().right)
+            : 16;
+
+        const style = document.documentElement.style;
+        style.setProperty('--lk-dock-left', Math.round(left) + 'px');
+        style.setProperty('--lk-dock-top', Math.round(Math.max(railBox.top, headerBottom + 8)) + 'px');
+        style.setProperty('--lk-dock-right', Math.round(right) + 'px');
+        style.setProperty('--lk-dock-bottom', Math.round(right) + 'px');
+    },
+
     syncRailUI: function () {
+        // Подстраховка к обработчику resize: если панель почему-либо исчезла с экрана
+        // (сузили окно, повернули планшет), пристыкованный кабинет обязан вернуться в
+        // полноэкранный вид со своей колонкой разделов. Иначе человек останется вообще
+        // без меню: панели уже нет, а колонка кабинета ещё спрятана.
+        if (document.body.classList.contains('lk-docked') && !this.isRailVisible()) {
+            document.body.classList.remove('lk-docked');
+        }
+
         const rail = document.getElementById('lk_rail');
         if (!rail) return;
 
         const adminBtn = document.getElementById('lk_rail_admin');
         if (adminBtn) adminBtn.style.display = this.hasAdminAccess() ? 'flex' : 'none';
+
+        // «Мои монтажники» показываются только менеджерам дистрибьюторов. Проверку
+        // делает refreshManagerTabVisibility — повторять её незачем, берём результат
+        // с такого же пункта в колонке кабинета.
+        const navInstallers = document.querySelector('#profile_nav .lk-nav-item[data-tab="installers"]');
+        const railInstallers = rail.querySelector('.lk-rail-item[data-rail="installers"]');
+        if (railInstallers) {
+            railInstallers.style.display = (navInstallers && navInstallers.style.display !== 'none') ? 'flex' : 'none';
+        }
 
         // Число непрочитанных берём готовым из бейджа конверта в шапке: считает его
         // loadNotifications, второй раз считать незачем

@@ -11752,6 +11752,13 @@ select.rec-btn-g { padding-right: 8px; }
        (тот же приём, что у строки параметров .doc-summary). */
     position: sticky;
     top: calc(var(--sticky-header-h, 70px) + 10px);
+    /* Страховка на низкий экран: разделов больше десятка, и если они однажды
+       перестанут помещаться, колонка прокрутится внутри себя, а не уедет за
+       нижний край. 125vh, а не 100vh: единицы vh считаются от окна, а колонка
+       живёт внутри #page_scale_wrapper с zoom: 0.8 — 100vh дали бы только 80 %
+       высоты окна. */
+    max-height: calc(125vh - var(--sticky-header-h, 70px) - 30px);
+    overflow-y: auto;
     /* Гасим часть общего 20-пиксельного зазора .container: без этого панель
        отъедала бы у сметы сотню пикселей ширины вместо необходимых восьмидесяти */
     margin-right: -8px;
@@ -11837,6 +11844,15 @@ body.guest-mode .lk-rail {
     background: rgba(16, 185, 129, 0.1);
 }
 
+.lk-rail-logout {
+    color: #EF4444;
+}
+
+.lk-rail-logout:hover {
+    color: #EF4444;
+    background: rgba(239, 68, 68, 0.08);
+}
+
 /* Счётчик непрочитанных — зеркало бейджа конверта в шапке (#notification_badge),
    значение переносит app.syncRailUI */
 .lk-rail-badge {
@@ -11861,4 +11877,48 @@ body.guest-mode .lk-rail {
     .lk-rail {
         display: none !important;
     }
+}
+
+
+/* ═══════ КАБИНЕТ, ПРИСТЫКОВАННЫЙ К ПАНЕЛИ (body.lk-docked) ═══════
+   На десктопе кабинет открывается не поверх всего экрана, а справа от панели
+   разделов — ровно на месте параметров объекта и сметы. Смысл: меню должно быть
+   одно и всегда на одном месте. Раньше при открытии кабинет разворачивался во
+   весь экран (правило «ЛИЧНЫЙ КАБИНЕТ НА ПК И ПЛАНШЕТАХ» выше по файлу) и
+   показывал вторую, свою колонку разделов — человека будто выбрасывало в другое
+   окно. Теперь эта колонка (#profile_nav) на десктопе скрыта, её работу делает
+   .lk-rail, а полноэкранный режим остаётся для телефона и планшета стоймя, где
+   панели нет.
+
+   Прямоугольник считает app.updateCabinetDockGeometry() и кладёт в переменные
+   ниже: положение панели зависит от zoom: 0.8 обёртки страницы, а верх — от
+   того, сжалась ли шапка при прокрутке. Числами в CSS это не задать. */
+body.lk-docked #profile_modal_overlay {
+    background: transparent;
+    backdrop-filter: none;
+    /* Оверлей по-прежнему растянут на весь экран, но клики сквозь него проходят:
+       мимо карточки они должны доставать до панели разделов и до шапки */
+    pointer-events: none;
+}
+
+body.lk-docked #profile_modal_overlay .auth-modal-content {
+    position: fixed !important;
+    top: var(--lk-dock-top, 80px) !important;
+    left: var(--lk-dock-left, 104px) !important;
+    right: var(--lk-dock-right, 16px) !important;
+    bottom: var(--lk-dock-bottom, 16px) !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    transform: none !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.10) !important;
+    padding: 18px 22px !important;
+    pointer-events: auto;
+}
+
+body.lk-docked #profile_nav {
+    display: none;
 }
