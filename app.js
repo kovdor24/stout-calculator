@@ -30621,18 +30621,42 @@ const app = {
         await this.setProfilePhoto(dataUrl);
     },
 
+    // Убираем своё фото. Если вход был через Яндекс, Google или Telegram, на его место
+    // сразу встаёт аватарка провайдера: она всё равно вернётся при следующей загрузке
+    // страницы (см. handleAuthSession), и без этого в кружке до перезагрузки висела бы
+    // буква — как будто фото пропало совсем.
     removeProfilePhoto: async function () {
-        await this.setProfilePhoto('');
+        await this.setProfilePhoto(await this.providerAvatarUrl());
     },
 
-    // Пустая строка = убрать фото. В базу пишем null, чтобы поле снова считалось пустым.
-    setProfilePhoto: async function (dataUrl) {
+    // Аватарка провайдера из данных уже открытой сессии — сети это не стоит: getSession
+    // читает сохранённую сессию, а Telegram отдаёт photo_url прямо в state.
+    providerAvatarUrl: async function () {
+        const tgUser = this.state.tgUser || {};
+        if (tgUser.photo_url) return tgUser.photo_url;
+        try {
+            const { data } = await supabaseClient.auth.getSession();
+            const meta = (data && data.session && data.session.user && data.session.user.user_metadata) || {};
+            const url = meta.avatar_url || meta.picture || '';
+            // Своё фото в метаданных аккаунта не держим — если там всё же оказалась
+            // data:-строка, возвращать её как «аватарку провайдера» нельзя
+            return url.indexOf('data:') === 0 ? '' : url;
+        } catch (e) {
+            console.warn('[profilePhoto] Не удалось прочитать аватарку провайдера:', e);
+            return '';
+        }
+    },
+
+    // Принимает свой снимок (data:-строка), ссылку на аватарку провайдера или пустую
+    // строку. В базу пустое пишем как null, чтобы поле снова считалось незаполненным.
+    setProfilePhoto: async function (photoUrl) {
         const tgUser = this.state.tgUser;
         if (!tgUser) { app.alert('Войдите в аккаунт, чтобы загрузить фото.'); return; }
 
-        tgUser.avatar_url = dataUrl || '';
-        // Мобильная панель профиля читает снимок отсюда (updateProfileTabDetails)
-        if (dataUrl) localStorage.setItem('profile_custom_avatar', dataUrl);
+        tgUser.avatar_url = photoUrl || '';
+        // Мобильная панель профиля читает снимок отсюда (updateProfileTabDetails).
+        // Ключ хранит только своё фото: ссылку провайдера подставит вход в аккаунт.
+        if (photoUrl && photoUrl.indexOf('data:') === 0) localStorage.setItem('profile_custom_avatar', photoUrl);
         else localStorage.removeItem('profile_custom_avatar');
         this.saveState();
 
@@ -30642,7 +30666,7 @@ const app = {
         this.syncUI(); // фото в шапке сайта (#tg-auth-container) перерисовывает syncUI, не render
 
         try {
-            let query = supabaseClient.from('users').update({ avatar_url: dataUrl || null });
+            let query = supabaseClient.from('users').update({ avatar_url: photoUrl || null });
             if (tgUser.authUserId) query = query.eq('auth_user_id', tgUser.authUserId);
             else if (tgUser.email) query = query.eq('email', tgUser.email);
             else return;
