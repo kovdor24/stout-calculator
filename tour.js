@@ -37,6 +37,24 @@ const Tour = {
     // anim — ролик в карточке, показывает жест: потянуть, нажать, выбрать (см. reel).
     STEPS: [
         {
+            // Первым шагом рассказываем про сам режим: до этого человек видел
+            // карточку с подсказкой, но не понимал, откуда она взялась и как её
+            // убрать — крестик выключает обучение молча, а найти кнопку в шапке
+            // потом уже никто не догадывался.
+            key: 'tour',
+            // На телефоне кнопка обучения лежит в свёрнутом меню шапки (её блок
+            // .header-main-controls там скрыт целиком), подсветить её нечем —
+            // показываем на самой кнопке меню, а текст говорит про оба случая.
+            sel: () => {
+                const b = document.getElementById('btn_tour');
+                if (b && b.offsetParent) return b;
+                return document.querySelector('.menu-toggle-btn');
+            },
+            title: 'Это режим обучения',
+            text: 'Калькулятор подсветит нужный элемент и объяснит, зачем он, — так по всему пути до готовой сметы. Включает и выключает подсказки кнопка со шапочкой выпускника в шапке сайта (на телефоне — внутри меню ☰). Крестик на карточке тоже выключает обучение; передумаете — нажмите кнопку ещё раз, и оно продолжится с того же места.',
+            anim: { type: 'press', label: '🎓 Обучение' }
+        },
+        {
             key: 'quick', mob: 'output',
             sel: '#quick_start_row',
             title: 'Быстрый старт',
@@ -110,6 +128,15 @@ const Tour = {
             title: 'Сохранить',
             text: 'Смета уйдёт в облако и откроется на любом устройстве под вашим аккаунтом. Без этого расчёт живёт только в этом браузере.',
             anim: { type: 'press', label: 'Сохранить' }
+        },
+        {
+            // Панели нет у гостя и на телефоне (см. .lk-rail в style.css) — шаг там
+            // пропустится сам, как и любой другой со скрытым элементом.
+            key: 'rail',
+            sel: '#lk_rail',
+            title: 'Меню разделов слева',
+            text: 'Отсюда открывается всё ваше: «Объекты» — сохранённые сметы, «Заказы» — выставленные счета, «Прайс» — свои цены на монтаж, «Замены» — своё оборудование. «Реквизиты» и «Менеджер» заполняются один раз и сами подставляются в документы. Любой раздел открывается рядом со сметой, расчёт при этом никуда не денется. А саму панель можно перетащить за верхний хват наверх — разделы лягут лентой под шапкой; блоки внутри тоже переставляются.',
+            anim: { type: 'press', label: 'Объекты' }
         },
         {
             key: 'send', mob: 'output',
@@ -314,7 +341,22 @@ const Tour = {
         document.querySelectorAll('.tour-spot').forEach(e => e.classList.remove('tour-spot'));
     },
 
+    // Пока на экране окно быстрого старта, подсказки прячем. Оба окна лежат поверх
+    // сметы, перекрывают друг друга и вместе читаются как одна каша — а выбрать
+    // типовой объект человек в этот момент всё равно не может, карточка обучения
+    // закрывает половину списка. Окно закроют — tick вернёт карточку сам.
+    blocked: function () {
+        return !!document.getElementById('quick_start_overlay');
+    },
+
+    hideCard: function () {
+        this.clearSpot();
+        const card = document.getElementById('tour_card');
+        if (card) card.style.display = 'none';
+    },
+
     show: function () {
+        if (this.blocked()) { this.hideCard(); return; }
         // Пропускаем шаги, которым нечего подсветить, и те, что уже выполнены
         let guard = 0;
         while (guard++ < this.STEPS.length) {
@@ -353,6 +395,8 @@ const Tour = {
             card.id = 'tour_card';
             document.body.appendChild(card);
         }
+        // Карточку могли спрятать на время окна быстрого старта — возвращаем
+        card.style.display = '';
         const n = this._step + 1, total = this.STEPS.length;
         card.innerHTML =
             '<div class="tour-card-head">' +
@@ -439,6 +483,7 @@ const Tour = {
 
     tick: function () {
         if (!this.active()) { this.stop(); return; }
+        if (this.blocked()) { this.hideCard(); return; }
         const step = this.STEPS[this._step];
         if (!step) { this.finish(); return; }
         // Человек сделал то, о чём шаг — двигаемся дальше сами
@@ -447,6 +492,10 @@ const Tour = {
             try { done = !!step.done(); } catch (e) { done = false; }
             if (done) { this.next(); return; }
         }
+        // Карточки ещё нет или её спрятало окно быстрого старта, а его уже закрыли —
+        // собираем шаг заново, иначе подсказка не вернётся до следующего действия
+        const shown = document.getElementById('tour_card');
+        if (!shown || shown.style.display === 'none') { this.show(); return; }
         // Смета перерисовалась, элемент уехал или исчез — поправляем подсветку
         const el = this.target(step);
         if (!el) { this.show(); return; }
