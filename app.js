@@ -12703,6 +12703,11 @@ const app = {
     },
     closeAdminModal: function () {
         document.getElementById('admin_modal_overlay').style.display = 'none';
+        // Данные разделов держим только пока панель открыта: следующее открытие
+        // должно показать свежие, а не то, что успело устареть за день. Обнуляем
+        // не в null, а в пустую заготовку: к adminData обращаются из десятков мест
+        // без проверок, и null уронил бы первое же из них.
+        this.adminData = { users: [], userEstimates: [], recentEstimates: [], totalUsers: 0, totalEstimates: 0, totalEq: 0, totalWorks: 0, messageReceipts: null };
         this.syncCabinetDock();
         this.syncRailUI();
         document.body.classList.remove('admin-modal-open');
@@ -12861,10 +12866,87 @@ const app = {
         }
     },
 
+    // Общий набор данных (страница монтажников, их сметы и обороты, счета, события
+    // смет, доступы к распознаванию) нужен только вкладке «Пользователи»: остальные
+    // разделы грузят своё сами, каждый в своём рендере. Раньше он тянулся при любом
+    // открытии панели, и «Сообщения» стоили двенадцати запросов вместо трёх —
+    // открывались заметно дольше прочих разделов.
+    adminTabNeedsHeavyData: function (tab) {
+        const t = (tab === undefined) ? this._adminTab : tab;
+        // Пустая вкладка — это либо десктоп до выбора (там дальше подставится
+        // «Пользователи»), либо меню разделов на телефоне: ему грузить нечего
+        if (!t) return !this.isAdminMobile();
+        return t === 'stats';
+    },
+
+    // Короткие списки, нужные почти каждому разделу для подписей: собеседники,
+    // переписка и компании-дистрибьюторы. Переписку тянем только для вкладки
+    // сообщений — таблица messages из трёх самая объёмная.
+    loadAdminLightData: async function () {
+        const withMessages = this._adminTab === 'messages';
+        const out = { allUsersDropdown: [], allMessages: [], distributors: [] };
+
+        try {
+            const { data } = await supabaseClient.from('users')
+                .select('id, username, email, phone, region, city, avatar_url, account_type')
+                .order('username', { ascending: true });
+            out.allUsersDropdown = data || [];
+            if (this.isManagerRole()) {
+                const mine = new Set(this.managerUserIds());
+                const meId = (this._meRow && this._meRow.id) || (this._currentUserRow && this._currentUserRow.id);
+                if (meId) mine.add(String(meId));
+                out.allUsersDropdown = out.allUsersDropdown.filter(u => mine.has(String(u.id)));
+            }
+        } catch (e) { console.warn('[loadAdminLightData] Список собеседников:', e); }
+
+        if (withMessages) {
+            try {
+                const { data } = await supabaseClient.from('messages')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                out.allMessages = data || [];
+                if (this.isManagerRole()) {
+                    const mine = new Set(this.managerUserIds());
+                    const meId = (this._meRow && this._meRow.id) || (this._currentUserRow && this._currentUserRow.id);
+                    if (meId) mine.add(String(meId));
+                    out.allMessages = out.allMessages.filter(m => mine.has(String(m.sender_id)) || mine.has(String(m.recipient_id)));
+                }
+            } catch (e) { console.warn('[loadAdminLightData] Переписка:', e); }
+        }
+
+        try {
+            const { data } = await supabaseClient.from('distributors')
+                .select('*')
+                .order('created_at', { ascending: false });
+            out.distributors = data || [];
+            if (this.isManagerRole()) {
+                const mine = this.managerDistIds().map(String);
+                out.distributors = out.distributors.filter(d => mine.includes(String(d.id)));
+            }
+        } catch (e) { console.warn('[loadAdminLightData] Дистрибьюторы:', e); }
+
+        return out;
+    },
+
     loadAdminData: async function (offset = 0) {
         if (!this.hasAdminAccess()) {
             const content = document.getElementById('admin_content');
             if (content) content.innerHTML = '<div style="padding:20px; color:#EF4444;">Доступ запрещен.</div>';
+            return;
+        }
+
+        if (!this.adminTabNeedsHeavyData()) {
+            if (this.isManagerRole()) await this.resolveManagerScope();
+            const lists = await this.loadAdminLightData();
+            // Пустая заготовка обязательна: renderAdminMain разбирает adminData сразу,
+            // ещё до ветвления по вкладкам. Ранее загруженное не теряем.
+            this.adminData = Object.assign(
+                { users: [], userEstimates: [], recentEstimates: [], totalUsers: 0, totalEstimates: 0, totalEq: 0, totalWorks: 0, messageReceipts: null },
+                this.adminData || {},
+                { allUsersDropdown: lists.allUsersDropdown, distributors: lists.distributors },
+                (this._adminTab === 'messages') ? { messages: lists.allMessages } : {}
+            );
+            this.renderAdminMain();
             return;
         }
         // Менеджеру всё, что ниже, режется по его компании: состав компании
@@ -14006,7 +14088,17 @@ const app = {
         if (this.OWNER_ONLY_TABS.indexOf(tab) >= 0 && !this.isAnalyticsOwner()) return;
         if (this.isManagerRole() && this.MANAGER_TABS.indexOf(tab) < 0) return;
         this._adminTab = tab;
-        this.renderAdminMain();
+        // Данные раздела грузим при переходе в него, а не все сразу при открытии
+        // панели. Что уже загружено — не перезапрашиваем: «Пользователей» отмечает
+        // сам набор users, переписку — массив messages.
+        const needHeavy = this.adminTabNeedsHeavyData(tab) && !(this.adminData && Array.isArray(this.adminData.users) && this.adminData.users.length);
+        const needMessages = (tab === 'messages') && !(this.adminData && Array.isArray(this.adminData.messages));
+        const needLists = !(this.adminData && Array.isArray(this.adminData.distributors));
+        if (needHeavy || needMessages || needLists) {
+            this.loadAdminData(0);
+        } else {
+            this.renderAdminMain();
+        }
         // Переход из меню разделов — всегда к началу раздела, а не туда, где
         // осталась прокрутка предыдущего
         const c = document.getElementById('admin_content');
