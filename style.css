@@ -9458,6 +9458,13 @@ body.dark-mode .cw-achieve.earned {
     body.empty-fit .output-panel {
         padding-top: 10px;
         padding-bottom: 10px;
+        /* Лист сметы тянем на всю оставшуюся высоту экрана: он и так flex-колонка,
+           а у .doc-footer стоит margin-top: auto — значит «Итого» и ряд кнопок сами
+           уезжают к нижнему краю, вместо того чтобы висеть под заглушкой посреди
+           пустого места. 125vh — это 100 % экрана: страница идёт в масштабе 0.8
+           (#page_scale_wrapper), и vh надо делить на него же. Вычитаем шапку сайта
+           с полями страницы. */
+        min-height: calc(125vh - 95px);
     }
 
     body.empty-fit .doc-header-rule {
@@ -9467,6 +9474,25 @@ body.dark-mode .cw-achieve.earned {
 
     body.empty-fit .empty-state-hint {
         padding: clamp(8px, 2vh, 48px) 20px;
+    }
+
+    /* Лист растянут на весь экран, и заглушка иначе висела бы вверху над пустотой:
+       отдаём таблице всю свободную высоту и ставим подсказку в её середину. */
+    body.empty-fit .table-responsive {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Таблица здесь ровно из одной строки-заглушки, поэтому растянуть её флексом
+       безопасно: горизонтальной прокрутке нечего ломать. Строка тянется во всю
+       высоту, а vertical-align ставит подсказку в середину. */
+    body.empty-fit .table-responsive .inv-table {
+        flex: 1 1 auto;
+    }
+
+    body.empty-fit .empty-state-row td {
+        vertical-align: middle;
     }
 
     body.empty-fit .doc-footer {
