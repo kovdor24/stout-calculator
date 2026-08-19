@@ -4332,7 +4332,7 @@ const app = {
             }
             return true;
         }
-        if (['admin', 'viewer'].includes(accType)) {
+        if (['admin', 'viewer', 'manager'].includes(accType)) {
             if (demoEnds && new Date(demoEnds) >= new Date()) {
                 return true;
             }
@@ -5991,7 +5991,7 @@ const app = {
     },
 
     renderAdminDistributors: function () {
-        const isViewer = this.getAdminRole() === 'viewer';
+        const isViewer = this.isReadOnlyAdmin(); // наблюдатель или менеджер: панель только на просмотр
         const content = document.getElementById('admin_content');
         if (!content) return;
 
@@ -6402,7 +6402,12 @@ const app = {
             // 'calculated' (у смет, сохранённых до появления флага в calc_data)
             if (liveRecMap[String(e.calc_id)] || (e.meta && e.meta.source === 'recognition')) p.fromRecognition = true;
         });
-        const list = Object.values(projects);
+        // Менеджеру планировщик показывает только сметы его компании. Фильтруем
+        // здесь, а не в выборке событий: дистрибьютор у сметы известен лишь после
+        // сопоставления её автора со справочником пользователей (userMeta выше).
+        const scopeDists = this.isManagerRole() ? this.managerDistIds().map(String) : null;
+        const list = Object.values(projects)
+            .filter(p => !scopeDists || scopeDists.includes(String(p.distributor_id || '')));
 
         const installers = [...new Set(list.map(p => p.user_name).filter(Boolean))].sort();
         const regions = [...new Set(list.map(p => p.region).filter(Boolean))].sort();
@@ -6633,7 +6638,11 @@ const app = {
         const isSuperAdmin = ['super_admin', 'admin'].includes(role);
         const dist = meta && meta.distributor_id ? ((this.adminData && this.adminData.distributors) || []).find(d => String(d.id) === String(meta.distributor_id)) : null;
         const isAssignedManager = dist && (String(dist.manager_email).toLowerCase() === myEmail || String(dist.director_email).toLowerCase() === myEmail);
-        const canManage = isSuperAdmin || isAssignedManager;
+        // Менеджер с ролью привязан к компании полем «Дистрибьютор» в своей карточке,
+        // а не только почтой в карточке компании — эту привязку тоже засчитываем.
+        const isScopedManager = this.isManagerRole() && meta && meta.distributor_id
+            && this.managerDistIds().map(String).includes(String(meta.distributor_id));
+        const canManage = isSuperAdmin || isAssignedManager || isScopedManager;
 
         let actionsHtml = '';
         // Оплату система не видит: платёжной интеграции нет, и единственный, кто
@@ -6880,7 +6889,7 @@ const app = {
     },
 
     saveDistributor: async function () {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Добавление и изменение промокодов запрещено.');
             return;
         }
@@ -7005,7 +7014,7 @@ const app = {
     },
 
     deleteDistributor: async function (id) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Удаление промокодов запрещено.');
             return;
         }
@@ -10636,7 +10645,7 @@ const app = {
     // смет лежат там же закреплённой нитью «Уведомления» (см. renderAdminMessages).
     // Прежний узкий список уведомлений админу больше не показывается.
     openMessagesCenter: function () {
-        if (this.hasAdminAccess()) {
+        if (this.usesAdminMessenger()) {
             this._adminTab = 'messages';
             // Пришли посмотреть, что нового: есть непрочитанные уведомления — открываем
             // сразу их ленту, нет — оставляем тот диалог, на котором остановились.
@@ -10697,7 +10706,7 @@ const app = {
 
         // Админу вкладка переписки не показывается — у него мессенджер в админке
         const tabs = document.getElementById('notif_tabs');
-        if (tabs) tabs.style.display = this.hasAdminAccess() ? 'none' : 'flex';
+        if (tabs) tabs.style.display = this.usesAdminMessenger() ? 'none' : 'flex';
 
         const badge = document.getElementById('notif_tab_badge');
         if (badge) {
@@ -10712,7 +10721,7 @@ const app = {
     // управления, а две копии такой разметки неизбежно разошлись бы.
     renderNotificationCards: function (notifications) {
         let h = '';
-        const isAdminView = this.hasAdminAccess();
+        const isAdminView = this.usesAdminMessenger();
         notifications.forEach(n => {
             // Письма администратора монтажник читает во вкладке «Переписка»
             if (n.type === 'admin_message' && !isAdminView) return;
@@ -10898,7 +10907,7 @@ const app = {
         // перекидывать человека с той вкладки, где он сейчас находится.
         if (tab) this._notifTab = tab;
         // У админа вкладки нет вообще — только список
-        if (this.hasAdminAccess() || !this._notifTab) this._notifTab = this.hasAdminAccess() ? 'list' : (this._notifTab || 'list');
+        if (this.usesAdminMessenger() || !this._notifTab) this._notifTab = this.usesAdminMessenger() ? 'list' : (this._notifTab || 'list');
         this.renderNotifTabs();
 
         // Синхронизируем значение селектора звука
@@ -11667,12 +11676,91 @@ const app = {
         const accType = user.account_type || this.state.accountType || 'base';
         if (accType === 'admin') return 'admin';
         if (accType === 'viewer') return 'viewer';
+        if (accType === 'manager') return 'manager';
         return 'base';
     },
 
     hasAdminAccess: function () {
         const role = this.getAdminRole();
-        return ['super_admin', 'admin', 'viewer'].includes(role);
+        return ['super_admin', 'admin', 'viewer', 'manager'].includes(role);
+    },
+
+    // ═══ Менеджер дистрибьютора ══════════════════════════════════════════
+    // Четвёртая ступень доступа. Панель открыта, но только по своей компании:
+    // свои монтажники, их расчёты, переписка с ними и планировщик. Всё
+    // остальное — про платформу целиком или про чужие компании, туда ему не
+    // надо (MANAGER_TABS). Менять он может ровно две вещи: статусы счетов в
+    // планировщике и собственную переписку; в остальном панель ему такая же
+    // «только смотреть», как наблюдателю, — за это отвечает isReadOnlyAdmin.
+    //
+    // К компании менеджер привязан обычным полем «Дистрибьютор» в своей
+    // карточке (users.distributor_id): у монтажника оно значит «мой менеджер»,
+    // у менеджера — «моя компания». Отдельной таблицы ради этого не заводим.
+    // Вдобавок берём компании, где его почта стоит менеджером или директором:
+    // так же, как это давно работает в чате «Мои монтажники».
+    //
+    // ВАЖНО про безопасность: разделение здесь клиентское. Пока в Supabase не
+    // закрыто чтение (см. открытый доступ на select у users/estimates), это
+    // удобство интерфейса, а не защита данных — чужое всё ещё достаётся через
+    // API любому авторизованному. Настоящее ограничение делается политиками RLS.
+    isManagerRole: function () { return this.getAdminRole() === 'manager'; },
+
+    // Кому панель открыта только на просмотр
+    isReadOnlyAdmin: function () { return ['viewer', 'manager'].includes(this.getAdminRole()); },
+
+    // Мессенджер панели заменяет личную переписку с администрацией только тем, кто
+    // эту администрацию и представляет. У менеджера дистрибьютора наоборот: в панели
+    // он переписывается со своими монтажниками, а спросить что-то у самого сайта ему
+    // было бы негде — личную вкладку «Переписка с администратором» ему оставляем.
+    usesAdminMessenger: function () { return this.hasAdminAccess() && !this.isManagerRole(); },
+
+    managerDistIds: function () { return (this._managerScope && this._managerScope.distIds) || []; },
+    managerUserIds: function () { return (this._managerScope && this._managerScope.userIds) || []; },
+
+    /**
+     * Кто «свои» для менеджера: компании и их монтажники.
+     *
+     * Считается заново при каждой загрузке панели — состав компании меняется,
+     * держать его в кэше между сеансами нельзя. Пустой список компаний значит,
+     * что роль выдали, а компанию в карточке назначить забыли: тогда менеджер
+     * не увидит ничего, и это правильнее, чем показать ему всех подряд.
+     */
+    resolveManagerScope: async function () {
+        if (!this.isManagerRole()) { this._managerScope = null; return null; }
+        const row = this.accessUserRow();
+        const email = String(row.email || '').trim().toLowerCase();
+        const ids = new Set();
+        const own = row.distributor_id || this.state.distributorId;
+        if (own) ids.add(String(own));
+        if (email) {
+            try {
+                const { data } = await supabaseClient.from('distributors').select('id, manager_email, director_email');
+                (data || []).forEach(d => {
+                    const m = String(d.manager_email || '').trim().toLowerCase();
+                    const dir = String(d.director_email || '').trim().toLowerCase();
+                    if ((m && m === email) || (dir && dir === email)) ids.add(String(d.id));
+                });
+            } catch (e) { console.warn('[resolveManagerScope] Не удалось прочитать дистрибьюторов:', e); }
+        }
+        const distIds = [...ids];
+        let userIds = [];
+        if (distIds.length) {
+            try {
+                const { data } = await supabaseClient.from('users').select('id').in('distributor_id', distIds);
+                userIds = (data || []).map(u => String(u.id));
+            } catch (e) { console.warn('[resolveManagerScope] Не удалось прочитать монтажников компании:', e); }
+        }
+        this._managerScope = { distIds, userIds };
+        return this._managerScope;
+    },
+
+    // Отсечка выборки по монтажникам своей компании. Пустой список подменяем
+    // заведомо несуществующим id: запрос без условия отдал бы всю базу, а это
+    // ровно то, от чего роль и заводилась.
+    scopeQueryToManager: function (query, column) {
+        if (!this.isManagerRole()) return query;
+        const ids = this.managerUserIds();
+        return query.in(column, ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
     },
 
     // ═══ Доступ к инструментам: распознавание и проектирование ═══════════
@@ -11828,6 +11916,8 @@ const app = {
             const role = this.getAdminRole();
             if (role === 'viewer') {
                 titleEl.innerHTML = 'Панель управления <span style="font-size:12px; color:#EF4444; background:#FEE2E2; padding:3px 8px; border-radius:6px; margin-left:10px; font-weight:700; text-transform:none; letter-spacing:0; vertical-align:middle;">👁 Режим просмотра</span>';
+            } else if (role === 'manager') {
+                titleEl.innerHTML = 'Панель управления <span style="font-size:12px; color:#0F766E; background:#CCFBF1; padding:3px 8px; border-radius:6px; margin-left:10px; font-weight:700; text-transform:none; letter-spacing:0; vertical-align:middle;">🤝 Менеджер</span>';
             } else if (role === 'super_admin') {
                 titleEl.innerHTML = 'Панель управления <span style="font-size:12px; color:#10B981; background:#ECFDF5; padding:3px 8px; border-radius:6px; margin-left:10px; font-weight:700; text-transform:none; letter-spacing:0; vertical-align:middle;">👑 Владелец</span>';
             } else {
@@ -11868,7 +11958,7 @@ const app = {
     // у админа и наблюдателя Профи определяется наличием demo_ends_at.
     adminTariffRank: function (u) {
         const isPro = (u.account_type === 'pro') ||
-            (['admin', 'viewer'].includes(u.account_type) && u.demo_ends_at);
+            (['admin', 'viewer', 'manager'].includes(u.account_type) && u.demo_ends_at);
         return isPro ? 1 : 0;
     },
 
@@ -11902,6 +11992,13 @@ const app = {
         // Убираем запятые/скобки — они ломают синтаксис .or(), это разделители условий
         const searchFilter = (filters.search || '').trim().replace(/[,()]/g, '');
 
+        // Менеджер видит только монтажников своей компании — это условие
+        // сильнее любых фильтров и снимается только сменой роли.
+        if (this.isManagerRole()) {
+            const mine = this.managerDistIds();
+            query = query.in('distributor_id', mine.length ? mine : ['00000000-0000-0000-0000-000000000000']);
+        }
+
         if (regionFilter) {
             if (regionFilter === 'Калининградская область') {
                 query = query.or('region.ilike.%Калининградская область%,region.eq.Калининград');
@@ -11929,6 +12026,8 @@ const app = {
             query = query.eq('account_type', 'pro').not('pro_expires_at', 'is', null);
         } else if (tariffFilter === 'viewer') {
             query = query.eq('account_type', 'viewer');
+        } else if (tariffFilter === 'manager') {
+            query = query.eq('account_type', 'manager');
         } else if (tariffFilter === 'admin') {
             query = query.eq('account_type', 'admin');
         }
@@ -11944,7 +12043,7 @@ const app = {
     // Массовое назначение дистрибьютора всем пользователям, попадающим под текущие фильтры
     // списка (например регион = "Калининградская область") — не меняет тариф, только контакт менеджера
     bulkAssignDistributor: async function () {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Массовое изменение дистрибьюторов запрещено.');
             return;
         }
@@ -11973,7 +12072,7 @@ const app = {
     setUserDistributorInline: async function (userId, distId, selectEl) {
         const u = (this.adminData.users || []).find(x => String(x.id) === String(userId));
         const prevValue = u ? (u.distributor_id || '') : '';
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Изменение дистрибьютора запрещено.');
             selectEl.value = prevValue;
             return;
@@ -11998,6 +12097,9 @@ const app = {
             if (content) content.innerHTML = '<div style="padding:20px; color:#EF4444;">Доступ запрещен.</div>';
             return;
         }
+        // Менеджеру всё, что ниже, режется по его компании: состав компании
+        // выясняем до первого запроса, иначе фильтры уйдут пустыми.
+        if (this.isManagerRole()) await this.resolveManagerScope();
         this._adminOffset = offset;
         const content = document.getElementById('admin_content');
         // Запоминаем значение и фокус поля поиска — оно вот-вот исчезнет из DOM вместе
@@ -12127,15 +12229,19 @@ const app = {
 
             // 3. Fetch Recent Estimates (Fixed 50) — те же точечные JSON-поля, что и выше, вместо
             // полного calc_data (см. комментарий у запроса userEsts)
-            let { data: recentEsts, error: errRE } = await supabaseClient.from('estimates')
+            let recentQuery = supabaseClient.from('estimates')
                 .select('id, project_name, eq_sum, works_sum, total_sum, created_at, users(username, phone, email), calc_id:calc_data->>calc_id, shared_invoice_id:calc_data->>shared_invoice_id, area:calc_data->>area, from_recognition:calc_data->>from_recognition, addr:calc_data->projectAddress, share_id')
                 .order('created_at', { ascending: false })
                 .limit(50);
+            recentQuery = this.scopeQueryToManager(recentQuery, 'user_id');
+            let { data: recentEsts, error: errRE } = await recentQuery;
             recentEsts = (recentEsts || []).map(e => ({ ...e, calc_data: { calc_id: e.calc_id, shared_invoice_id: e.shared_invoice_id, area: e.area, projectAddress: e.addr || null } }));
 
             // 4. Fetch Global Totals (Only sums for dashboard cards)
-            let { data: sums, error: errS } = await supabaseClient.from('estimates')
-                .select('eq_sum, works_sum, total_sum');
+            // Цифры в шапке панели. Менеджеру они считаются по его компании:
+            // показатели всей платформы ему не принадлежат и только путают.
+            let { data: sums, error: errS } = await this.scopeQueryToManager(
+                supabaseClient.from('estimates').select('eq_sum, works_sum, total_sum'), 'user_id');
 
             if (errRE || errS) throw new Error("Ошибка загрузки связанных данных");
 
@@ -12189,6 +12295,14 @@ const app = {
                     .order('username', { ascending: true });
                 allUsersDropdown = data || [];
                 this.autoCleanupDatabaseUsers(allUsersDropdown);
+                // Менеджеру в списке собеседников — только его монтажники (и он сам:
+                // по своей строке мессенджер отличает свои сообщения от чужих)
+                if (this.isManagerRole()) {
+                    const mine = new Set(this.managerUserIds());
+                    const meId = (this._meRow && this._meRow.id) || (this._currentUserRow && this._currentUserRow.id);
+                    if (meId) mine.add(String(meId));
+                    allUsersDropdown = allUsersDropdown.filter(u => mine.has(String(u.id)));
+                }
             } catch (e) { console.warn("Could not load users for dropdown:", e); }
 
             // 7. Fetch all messages (broadcasts, private and replies) for history listing
@@ -12198,6 +12312,15 @@ const app = {
                     .select('*')
                     .order('created_at', { ascending: false });
                 allMessages = data || [];
+                // Переписка менеджера — только с его монтажниками. Объявления для
+                // всех (recipient_id = null) сюда не попадают: рассылка платформы
+                // к переписке компании отношения не имеет.
+                if (this.isManagerRole()) {
+                    const mine = new Set(this.managerUserIds());
+                    const meId = (this._meRow && this._meRow.id) || (this._currentUserRow && this._currentUserRow.id);
+                    if (meId) mine.add(String(meId));
+                    allMessages = allMessages.filter(m => mine.has(String(m.sender_id)) || mine.has(String(m.recipient_id)));
+                }
             } catch (e) { console.warn("Could not load messages history:", e); }
 
 
@@ -12208,6 +12331,12 @@ const app = {
                     .select('*')
                     .order('created_at', { ascending: false });
                 distributors = data || [];
+                // Менеджеру — только его компании: список идёт в подписи карточек
+                // планировщика и в выпадающие фильтры, чужие названия там лишние
+                if (this.isManagerRole()) {
+                    const mine = this.managerDistIds().map(String);
+                    distributors = distributors.filter(d => mine.includes(String(d.id)));
+                }
             } catch (e) { console.warn("Could not load distributors:", e); }
 
             this.adminData = {
@@ -12280,10 +12409,27 @@ const app = {
         return candidates.some(m => this.isAdminEmail(m));
     },
 
+    // Разделы менеджера дистрибьютора. Остальные вкладки — либо про платформу
+    // целиком (прайс-листы, распознавание, проекты, аналитика), либо про чужие
+    // компании (карточки дистрибьюторов), поэтому их он не видит вовсе.
+    MANAGER_TABS: ['stats', 'estimates', 'messages', 'kanban'],
+
+    // Подписи под названиями разделов в мобильном меню: у менеджера они честнее
+    // говорят «ваши», а не «все» — данные-то урезаны по его компании.
+    MANAGER_TAB_HINTS: {
+        stats: 'Монтажники вашей компании',
+        estimates: 'Сметы ваших монтажников',
+        messages: 'Переписка с вашими монтажниками',
+        kanban: 'Статусы смет вашей компании'
+    },
+
     // Вкладки, доступные текущему админу. Фильтр в одном месте: список строится
     // и в ряду вкладок на десктопе, и в меню разделов на телефоне.
     adminTabDefs: function () {
-        return this.ADMIN_TAB_DEFS.filter(t => this.OWNER_ONLY_TABS.indexOf(t.id) < 0 || this.isAnalyticsOwner());
+        const defs = this.ADMIN_TAB_DEFS.filter(t => this.OWNER_ONLY_TABS.indexOf(t.id) < 0 || this.isAnalyticsOwner());
+        if (!this.isManagerRole()) return defs;
+        return defs.filter(t => this.MANAGER_TABS.indexOf(t.id) >= 0)
+            .map(t => Object.assign({}, t, { hint: this.MANAGER_TAB_HINTS[t.id] || t.hint }));
     },
 
     // Ниже этой ширины админка живёт по-мобильному: вместо ряда вкладок — меню
@@ -12404,7 +12550,7 @@ const app = {
     },
 
     renderAdminMain: function () {
-        const isViewer = this.getAdminRole() === 'viewer';
+        const isViewer = this.isReadOnlyAdmin(); // наблюдатель или менеджер: панель только на просмотр
         const content = document.getElementById('admin_content');
         if (!content) return;
 
@@ -12607,6 +12753,7 @@ const app = {
                                 <option value="pro_promo" ${tariffFilter === 'pro_promo' ? 'selected' : ''}>Профи: промокод</option>
                                 <option value="pro_paid" ${tariffFilter === 'pro_paid' ? 'selected' : ''}>Профи: оплата</option>
                                 <option value="viewer" ${tariffFilter === 'viewer' ? 'selected' : ''}>Наблюдатель</option>
+                                <option value="manager" ${tariffFilter === 'manager' ? 'selected' : ''}>Менеджер</option>
                                 <option value="admin" ${tariffFilter === 'admin' ? 'selected' : ''}>Администратор</option>
                             </select>
                             <select id="admin_filter_expiry" onchange="app.loadAdminData(0)" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; font-size: 12px; outline: none; cursor: pointer; height: 34px; box-sizing: border-box;">
@@ -12750,7 +12897,7 @@ const app = {
             let badge = '';
 
             let hasProTariff = (u.account_type === 'pro') || 
-                               (['admin', 'viewer'].includes(u.account_type) && u.demo_ends_at);
+                               (['admin', 'viewer', 'manager'].includes(u.account_type) && u.demo_ends_at);
 
             let tariffLabel = 'Базовый';
             // Отдельная короткая подпись для админов и наблюдателей: у них тариф —
@@ -12780,6 +12927,8 @@ const app = {
 
             if (u.account_type === 'viewer') {
                 badge = `<span style="color:#8B5CF6; font-weight:bold;">Наблюдатель 👁</span><br><span style="font-size:10px; color:var(--text-sec);">Тариф: ${tariffLabelShort}</span>`;
+            } else if (u.account_type === 'manager') {
+                badge = `<span style="color:#0F766E; font-weight:bold;">Менеджер 🤝</span><br><span style="font-size:10px; color:var(--text-sec);">Тариф: ${tariffLabelShort}</span>`;
             } else if (u.account_type === 'admin') {
                 badge = `<span style="color:#10B981; font-weight:bold;">Администратор ⚙️</span><br><span style="font-size:10px; color:var(--text-sec);">Тариф: ${tariffLabelShort}</span>`;
             } else if (u.account_type === 'pro') {
@@ -13085,6 +13234,7 @@ const app = {
         // Кнопок «Дашборд» и «Аналитика» у остальных админов нет, но вызов из
         // консоли или старой ссылки обязан упереться в ту же проверку, что и вёрстка.
         if (this.OWNER_ONLY_TABS.indexOf(tab) >= 0 && !this.isAnalyticsOwner()) return;
+        if (this.isManagerRole() && this.MANAGER_TABS.indexOf(tab) < 0) return;
         this._adminTab = tab;
         this.renderAdminMain();
         // Переход из меню разделов — всегда к началу раздела, а не туда, где
@@ -13160,7 +13310,7 @@ const app = {
 
         const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const num = n => Number(n || 0).toLocaleString('ru-RU');
-        const isViewer = this.getAdminRole() === 'viewer';
+        const isViewer = this.isReadOnlyAdmin(); // наблюдатель или менеджер: панель только на просмотр
         const { companies } = this._analytics;
 
         const months = (brands && brands.months) ? Object.keys(brands.months).sort() : [];
@@ -14173,7 +14323,7 @@ const app = {
      * уже перепишется следующим прогоном.
      */
     setBrandTerm: async function (word, decision) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Менять словарь марок запрещено.');
             return;
         }
@@ -14196,7 +14346,7 @@ const app = {
     },
 
     clearBrandTerm: async function (word) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Менять словарь марок запрещено.');
             return;
         }
@@ -14258,7 +14408,7 @@ const app = {
      * историей, а не с месяца включения.
      */
     toggleChartBrand: async function (word) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Менять список марок запрещено.');
             return;
         }
@@ -14290,7 +14440,7 @@ const app = {
      * значат операторы и молча испортят запрос.
      */
     addChartBrand: async function () {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Менять список марок запрещено.');
             return;
         }
@@ -14336,7 +14486,7 @@ const app = {
      * Wordstat, их сотня в час на весь прогон.
      */
     removeChartBrand: async function (word) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Менять список марок запрещено.');
             return;
         }
@@ -16194,7 +16344,7 @@ const app = {
         // Новая марка появляется линией не сразу: историю по слову спрашивает
         // у Wordstat ежемесячный прогон, из браузера этого не сделать. Пишем
         // это прямо в подсказке, иначе выглядит как поломка.
-        const brandsViewer = this.getAdminRole() === 'viewer';
+        const brandsViewer = this.isReadOnlyAdmin();
         const brandEditor = () => {
             if (!isBrands || !this._brandEditorOpen) return '';
             const shown = chartSeries.length;
@@ -17568,7 +17718,7 @@ const app = {
         // продления не будем; вместо него честный отток — у кого срок вышел и
         // Профи не вернулся.
         const hasPro = (u) => u.account_type === 'pro'
-            || (['admin', 'viewer'].includes(u.account_type) && u.demo_ends_at);
+            || (['admin', 'viewer', 'manager'].includes(u.account_type) && u.demo_ends_at);
         const proKind = (u) => u.pro_expires_at ? 'оплата' : (u.distributor_id ? 'промокод' : 'пробный');
         const FOREVER = new Date('2099-01-01T00:00:00.000Z').getTime();
         const pro = { active: 0, paid: 0, promo: 0, trial: 0, forever: 0, expiring: [], lapsed: [] };
@@ -18468,7 +18618,11 @@ const app = {
     // this._adminChatId ('broadcast' | id пользователя). На узких экранах панели
     // показываются по очереди (класс chat-open, см. .admin-chat-* в style.css).
     renderAdminMessages: function () {
-        const isViewer = this.getAdminRole() === 'viewer';
+        const isViewer = this.isReadOnlyAdmin(); // наблюдатель или менеджер: панель только на просмотр
+        // Рассылка «всем пользователям» — инструмент платформы, а не компании:
+        // менеджеру дистрибьютора её не показываем и отправить не даём, иначе
+        // объявление одной компании уедет монтажникам всех остальных.
+        const canBroadcast = !this.isManagerRole();
         // Свой id в таблице пользователей: по нему отделяем свои переписки от чужих.
         // Обычно его уже заполнил опрос уведомлений, но если нет — спрашиваем базу
         // и рисуем вкладку заново (один раз, иначе при неудаче получился бы цикл).
@@ -18601,9 +18755,9 @@ const app = {
             const u = findUser(senderId);
             const email = ((u && u.email) || '').toLowerCase();
             if (email && this.SUPER_ADMIN_EMAILS.includes(email)) return 'adm';
-            if (u && u.account_type) return u.account_type === 'viewer' ? 'v:' + senderId : 'adm';
+            if (u && u.account_type) return ['viewer', 'manager'].includes(u.account_type) ? 'v:' + senderId : 'adm';
             // Строки пользователя нет (например, аккаунт удалён) — судим по подписи:
-            // её проставляют только письмам наблюдателя (см. sendAdminMessage)
+            // её проставляют письмам наблюдателя и менеджера (см. sendAdminMessage)
             return senderName ? 'v:' + senderId : 'adm';
         };
         const mySide = isViewer && meId ? 'v:' + meId : 'adm';
@@ -18727,9 +18881,10 @@ const app = {
             this._adminChatFindMsg = null;
         }
 
-        const allIds = ['broadcast', 'notifications'].concat(threads.map(t => t.id)).concat(dropdownUsers.map(u => u.id));
+        const allIds = (canBroadcast ? ['broadcast'] : []).concat(['notifications'])
+            .concat(threads.map(t => t.id)).concat(dropdownUsers.map(u => u.id));
         if (!this._adminChatId || allIds.indexOf(this._adminChatId) === -1) {
-            this._adminChatId = threads.length ? threads[0].id : 'broadcast';
+            this._adminChatId = threads.length ? threads[0].id : (canBroadcast ? 'broadcast' : 'notifications');
         }
         const activeId = this._adminChatId;
         this._lastRenderedChatId = activeId;
@@ -18765,13 +18920,14 @@ const app = {
                     <div class="admin-chat-item-row"><span class="admin-chat-prev">${esc(notifPrev)}</span>${notifUnread ? `<span class="admin-chat-badge" title="Непрочитанных уведомлений: ${notifUnread}">${notifUnread}</span>` : ''}</div>
                 </div>
             </div>
+            ${canBroadcast ? `
             <div class="admin-chat-item ${activeId === 'broadcast' ? 'active' : ''}" data-search="объявление рассылка всем broadcast ${esc(broadcastItems.map(m => m.text || '').join(' ').toLowerCase())}" onclick="app.openAdminChat('broadcast')">
                 <div class="admin-chat-ava" style="background:#D97706;">📢</div>
                 <div class="admin-chat-item-body">
                     <div class="admin-chat-item-row"><span class="admin-chat-name">Объявления для всех</span><span class="admin-chat-time">${lastBroadcast ? listTime(lastBroadcast.created_at) : ''}</span></div>
                     <div class="admin-chat-item-row"><span class="admin-chat-prev">${lastBroadcast ? 'Вы: ' + esc((lastBroadcast.text || '').replace(/\s+/g, ' ')) : 'Рассылка всем авторизованным'}</span></div>
                 </div>
-            </div>
+            </div>` : ''}
         `;
         threads.forEach(t => {
             // Чужая переписка — и с менеджером дистрибьютора, и наблюдателя с монтажником:
@@ -19033,10 +19189,10 @@ const app = {
                         <button class="admin-btn" style="height:26px; font-size:11px; margin-left:8px;" onclick="app.openAdminChat('${activeThread.installerId}')">✉️ Написать монтажнику от себя</button>
                     </div>
                     ` : `
-                    <!-- Наблюдателю переписка открыта на запись, в отличие от остальной
-                         панели: смотреть на вопрос монтажника и не иметь возможности
-                         ответить — бессмысленно. Удаление сообщений и переписок ему
-                         по-прежнему закрыто (см. кнопки с корзиной выше). -->
+                    <!-- Наблюдателю и менеджеру переписка открыта на запись, в отличие
+                         от остальной панели: смотреть на вопрос монтажника и не иметь
+                         возможности ответить — бессмысленно. Удаление сообщений и
+                         переписок им по-прежнему закрыто (см. кнопки с корзиной выше). -->
                     ${replyBarHtml}
                     <div class="admin-chat-compose">
                         <textarea id="admin_msg_text" rows="1" placeholder="${esc(composePlaceholder)}" onkeydown="app.adminChatKeydown(event)"></textarea>
@@ -19209,7 +19365,7 @@ const app = {
 
     // Удаление одного сообщения (объявления, личного письма или ответа)
     deleteAdminMessage: async function (id) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Удаление сообщений запрещено.');
             return;
         }
@@ -19227,7 +19383,7 @@ const app = {
     // Удаляет всю переписку с конкретным пользователем (личные сообщения ему + все его ответы).
     // Объявления для всех не трогает — они не принадлежат конкретному человеку.
     deleteUserMessages: async function (userId) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Удаление сообщений запрещено.');
             return;
         }
@@ -19250,7 +19406,7 @@ const app = {
 
     // Полная очистка истории сообщений (объявления, личные, ответы)
     deleteAllMessages: async function () {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Удаление сообщений запрещено.');
             return;
         }
@@ -19273,9 +19429,10 @@ const app = {
     },
 
     sendAdminMessage: async function () {
-        // Наблюдателю отправка разрешена намеренно: он ведёт переписку с монтажниками,
-        // хотя всё остальное в панели ему только на просмотр. Запрет стоял здесь и на
-        // поле ввода — из-за него ответить на вопрос монтажника было нечем.
+        // Наблюдателю и менеджеру дистрибьютора отправка разрешена намеренно: они
+        // ведут переписку с монтажниками, хотя всё остальное в панели им только на
+        // просмотр. Запрет стоял здесь и на поле ввода — из-за него ответить на
+        // вопрос монтажника было нечем.
         const textEl = document.getElementById('admin_msg_text');
         const text = textEl ? textEl.value : '';
         // Получатель — это открытый диалог: отдельного выпадающего списка больше нет
@@ -19286,6 +19443,10 @@ const app = {
         }
         if (!recipientVal) {
             app.alert('Выберите диалог слева или найдите человека через поиск.');
+            return;
+        }
+        if (recipientVal === 'all' && this.isManagerRole()) {
+            app.alert('Объявления для всех отправляет администрация сайта. Вам доступна переписка с монтажниками вашей компании.');
             return;
         }
         if (String(recipientVal).indexOf('mgr:') === 0) {
@@ -19323,10 +19484,11 @@ const app = {
                 text: text.trim(),
                 type: type
             };
-            // Имя подставляем только наблюдателю: монтажник не может узнать его по
-            // sender_id (чужие строки таблицы пользователей ему не отдаются), а
-            // письма владельца и администраторов остаются подписаны «Администратор».
-            if (this.getAdminRole() === 'viewer') {
+            // Имя подставляем наблюдателю и менеджеру дистрибьютора: монтажник не
+            // может узнать его по sender_id (чужие строки таблицы пользователей ему
+            // не отдаются), а письма владельца и администраторов остаются
+            // подписаны «Администратор».
+            if (this.isReadOnlyAdmin()) {
                 row.sender_name = this.getAdminUserDisplayName(uRow);
             }
             // Отвечаем на конкретное сообщение — привязываем к нему (цитата в пузыре)
@@ -20336,8 +20498,9 @@ const app = {
             let tariff = 'Базовый';
             if (u.account_type === 'pro') {
                 tariff = 'Профи';
-            } else if (['admin', 'viewer'].includes(u.account_type)) {
-                let roleName = u.account_type === 'admin' ? 'Администратор' : 'Наблюдатель';
+            } else if (['admin', 'viewer', 'manager'].includes(u.account_type)) {
+                let roleName = u.account_type === 'admin' ? 'Администратор'
+                    : (u.account_type === 'manager' ? 'Менеджер' : 'Наблюдатель');
                 let tariffName = (u.demo_ends_at && new Date(u.demo_ends_at) > new Date()) ? 'Профи' : 'Базовый';
                 tariff = `${roleName} (${tariffName})`;
             }
@@ -20356,7 +20519,7 @@ const app = {
         document.body.removeChild(link);
     },
     viewAdminUser: async function (userId) {
-        const isViewer = this.getAdminRole() === 'viewer';
+        const isViewer = this.isReadOnlyAdmin(); // наблюдатель или менеджер: панель только на просмотр
         let user = this.adminData.users.find(u => String(u.id) === String(userId));
         let userEstimates = (this.adminData.userEstimates || []).filter(e => String(e.user_id) === String(userId));
 
@@ -20451,20 +20614,21 @@ const app = {
                                             <option value="pro" ${user.account_type === 'pro' ? 'selected' : ''}>Профи ⭐️</option>
                                             ${this.getAdminRole() === 'super_admin' || user.account_type === 'admin' ? `<option value="admin" ${user.account_type === 'admin' ? 'selected' : ''}>Администратор ⚙️</option>` : ''}
                                             ${this.getAdminRole() === 'super_admin' || user.account_type === 'viewer' ? `<option value="viewer" ${user.account_type === 'viewer' ? 'selected' : ''}>Наблюдатель 👁</option>` : ''}
+                                            ${this.getAdminRole() === 'super_admin' || user.account_type === 'manager' ? `<option value="manager" ${user.account_type === 'manager' ? 'selected' : ''}>Менеджер 🤝</option>` : ''}
                                         </select>
                                     </div>
-                                    <div id="admin_edit_role_tariff_wrapper" style="display: ${['admin', 'viewer'].includes(user.account_type) ? 'block' : 'none'};">
+                                    <div id="admin_edit_role_tariff_wrapper" style="display: ${['admin', 'viewer', 'manager'].includes(user.account_type) ? 'block' : 'none'};">
                                         <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Тариф для роли</label>
                                         <select id="admin_edit_role_tariff" onchange="app.onAdminEditTariffChange()" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                             <option value="base" ${!(user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'selected' : ''}>Базовый</option>
                                             <option value="pro" ${(user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'selected' : ''}>Профи ⭐️</option>
                                         </select>
                                     </div>
-                                    <div id="admin_edit_date_wrapper" style="display: ${user.account_type === 'pro' || (['admin', 'viewer'].includes(user.account_type) && user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'block' : 'none'};">
+                                    <div id="admin_edit_date_wrapper" style="display: ${user.account_type === 'pro' || (['admin', 'viewer', 'manager'].includes(user.account_type) && user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'block' : 'none'};">
                                         <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Истекает (для Профи)</label>
                                         <input type="date" id="admin_edit_date" value="${proDateInput}" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                     </div>
-                                    <div id="admin_edit_subtype_wrapper" style="display: ${user.account_type === 'pro' || (['admin', 'viewer'].includes(user.account_type) && user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'block' : 'none'};">
+                                    <div id="admin_edit_subtype_wrapper" style="display: ${user.account_type === 'pro' || (['admin', 'viewer', 'manager'].includes(user.account_type) && user.demo_ends_at && new Date(user.demo_ends_at) > new Date()) ? 'block' : 'none'};">
                                         <label style="display:block; font-size:11px; color:var(--text-sec); margin-bottom:4px;">Источник Профи</label>
                                         <select id="admin_edit_subtype" style="width:100%; padding:6px; border-radius:6px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); font-size:12px;">
                                             <option value="trial" ${proSubtype === 'trial' ? 'selected' : ''}>Пробный</option>
@@ -21042,7 +21206,7 @@ const app = {
         if (!root) return;
         const data = this._adminPlansData || { projects: [], totalBytes: 0, retentionDays: 90 };
         const projects = data.projects || [];
-        const isViewer = this.getAdminRole() === 'viewer';
+        const isViewer = this.isReadOnlyAdmin(); // наблюдатель или менеджер: панель только на просмотр
         const esc = s => String(s ?? '').replace(/[&<>"]/g,
             c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const mb = b => (b / 1048576).toFixed(1) + ' МБ';
@@ -23516,14 +23680,14 @@ const app = {
         }
     },
     updateAdminUserTariff: async function (userId) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Изменение тарифов запрещено.');
             return;
         }
         const currentRole = this.getAdminRole();
         const targetUser = (this.adminData.users || []).find(u => String(u.id) === String(userId));
         const targetType = targetUser ? targetUser.account_type : 'base';
-        if (['admin', 'viewer'].includes(targetType) && currentRole !== 'super_admin') {
+        if (['admin', 'viewer', 'manager'].includes(targetType) && currentRole !== 'super_admin') {
             app.alert('Изменение тарифа/роли этого пользователя разрешено только Владельцу.');
             return;
         }
@@ -23535,7 +23699,7 @@ const app = {
 
         let updateData = { account_type: type };
 
-        let isProTariff = (type === 'pro') || (['admin', 'viewer'].includes(type) && roleTariffVal === 'pro');
+        let isProTariff = (type === 'pro') || (['admin', 'viewer', 'manager'].includes(type) && roleTariffVal === 'pro');
 
         if (isProTariff) {
             if (dateVal) {
@@ -23592,7 +23756,7 @@ const app = {
             if (roleTariffWrapper) roleTariffWrapper.style.display = 'none';
             if (dateWrapper) dateWrapper.style.display = 'none';
             if (subtypeWrapper) subtypeWrapper.style.display = 'none';
-        } else if (['admin', 'viewer'].includes(val)) {
+        } else if (['admin', 'viewer', 'manager'].includes(val)) {
             if (roleTariffWrapper) roleTariffWrapper.style.display = 'block';
             const roleTariffVal = roleTariffSelect ? roleTariffSelect.value : 'base';
             if (roleTariffVal === 'pro') {
@@ -23608,14 +23772,14 @@ const app = {
     // is_blocked в handleAuthSession, которая принудительно выходит из сессии). Снимается тем
     // же переключателем в любой момент.
     toggleUserBlocked: async function (userId, block) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Изменение статуса блокировки запрещено.');
             return;
         }
         const currentRole = this.getAdminRole();
         const targetUser = (this.adminData.users || []).find(u => String(u.id) === String(userId));
         const targetType = targetUser ? targetUser.account_type : 'base';
-        if (['admin', 'viewer'].includes(targetType) && currentRole !== 'super_admin') {
+        if (['admin', 'viewer', 'manager'].includes(targetType) && currentRole !== 'super_admin') {
             app.alert('Блокировка администраторов/наблюдателей разрешена только Владельцу.');
             return;
         }
@@ -23645,14 +23809,14 @@ const app = {
     // соображений безопасности) — при необходимости полностью закрыть возможность входа
     // его нужно вручную удалить в Supabase Dashboard → Authentication → Users.
     deleteUserCompletely: async function (userId) {
-        if (this.getAdminRole() === 'viewer') {
+        if (this.isReadOnlyAdmin()) {
             app.alert('Режим просмотра. Удаление учетных записей запрещено.');
             return;
         }
         const currentRole = this.getAdminRole();
         const targetUser = (this.adminData.users || []).find(u => String(u.id) === String(userId));
         const targetType = targetUser ? targetUser.account_type : 'base';
-        if (['admin', 'viewer'].includes(targetType) && currentRole !== 'super_admin') {
+        if (['admin', 'viewer', 'manager'].includes(targetType) && currentRole !== 'super_admin') {
             app.alert('Удаление администраторов/наблюдателей разрешено только Владельцу.');
             return;
         }
