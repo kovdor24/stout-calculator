@@ -11828,13 +11828,6 @@ body.guest-mode .lk-rail {
     overflow-wrap: break-word;
 }
 
-.lk-rail-sep {
-    flex-shrink: 0;
-    height: 1px;
-    margin: 5px 6px;
-    background: var(--border);
-}
-
 .lk-rail-admin {
     color: #10B981;
 }
@@ -12034,13 +12027,6 @@ body.lk-docked #profile_nav {
     width: auto;
     min-width: 72px;
     max-width: 120px;
-}
-
-.lk-rail.dock-top .lk-rail-sep {
-    flex: 0 0 1px;
-    width: 1px;
-    height: auto;
-    margin: 6px 7px;
 }
 
 .lk-rail.dock-top .lk-rail-grip {
