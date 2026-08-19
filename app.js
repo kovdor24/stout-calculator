@@ -9455,10 +9455,46 @@ const app = {
     // верхнему краю — прилипла под шапку, потянул к левому — вернулась колонкой.
     // Выбор запоминается, потому что это про привычку работать, а не про разовое
     // действие.
+    // Раскладка меню (где панель и в каком порядке блоки) живёт в настройках
+    // аккаунта, а не в памяти браузера: это про привычку человека работать, и на
+    // другом компьютере она должна быть той же. Настройки уезжают в
+    // users.installer_settings тем же push/pull, что реквизиты компании и прайс
+    // монтажа; у гостя остаются только в localStorage — сохранять некуда.
+    // Старые ключи браузера читаем один раз как запасной вариант: у тех, кто уже
+    // настроил меню до переезда, порядок не должен пропасть.
     RAIL_DOCK_KEY: 'lk_rail_dock',
+    RAIL_GROUPS_KEY: 'lk_rail_groups',
+
+    railLayout: function () {
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        const saved = this.installerSettings.railLayout;
+        if (saved && typeof saved === 'object') return saved;
+        let dock = null, groups = null;
+        try {
+            dock = localStorage.getItem(this.RAIL_DOCK_KEY);
+            groups = JSON.parse(localStorage.getItem(this.RAIL_GROUPS_KEY) || 'null');
+        } catch (e) { /* приватный режим — просто нечего восстанавливать */ }
+        return { dock: dock === 'top' ? 'top' : 'left', groups: Array.isArray(groups) ? groups : null };
+    },
+
+    saveRailLayout: function (patch) {
+        if (!this.installerSettings) this.loadInstallerSettingsLocal();
+        const now = this.railLayout();
+        this.installerSettings.railLayout = Object.assign({ dock: 'left', groups: null }, now, patch || {});
+        // Пишет и в localStorage, и (для вошедших) в облако
+        this.pushInstallerSettingsToCloud();
+    },
+
+    // Применить раскладку к разметке. Зовётся при первой отрисовке и ещё раз, когда
+    // настройки доедут из облака: на новом устройстве они приходят с задержкой.
+    applyRailLayout: function () {
+        if (!document.getElementById('lk_rail')) return;
+        this.applyRailGroupOrder();
+        this.setRailDock(this.railDock(), false);
+    },
 
     railDock: function () {
-        try { return localStorage.getItem(this.RAIL_DOCK_KEY) === 'top' ? 'top' : 'left'; } catch (e) { return 'left'; }
+        return this.railLayout().dock === 'top' ? 'top' : 'left';
     },
 
     setRailDock: function (where, remember) {
@@ -9479,9 +9515,7 @@ const app = {
 
         rail.classList.toggle('dock-top', toTop);
         document.body.classList.toggle('lk-rail-top', toTop);
-        if (remember !== false) {
-            try { localStorage.setItem(this.RAIL_DOCK_KEY, toTop ? 'top' : 'left'); } catch (e) { }
-        }
+        if (remember !== false) this.saveRailLayout({ dock: toTop ? 'top' : 'left' });
         // Пристыкованный кабинет считает свой прямоугольник по панели и колонкам —
         // после переезда его надо пересчитать
         this.updateCabinetDockGeometry();
@@ -9597,17 +9631,17 @@ const app = {
     // Перетаскивание включается отдельно — правым щелчком по панели: иначе оно
     // отбирало бы обычные нажатия на разделы, и человек двигал бы меню, просто
     // промахнувшись мимо кнопки.
-    RAIL_GROUPS_KEY: 'lk_rail_groups',
-
     applyRailGroupOrder: function () {
         const rail = document.getElementById('lk_rail');
         if (!rail) return;
-        let saved = [];
-        try { saved = JSON.parse(localStorage.getItem(this.RAIL_GROUPS_KEY) || '[]'); } catch (e) { saved = []; }
-        if (!Array.isArray(saved) || !saved.length) return;
-
         const groups = Array.from(rail.querySelectorAll('.lk-rail-group'));
         const keys = groups.map(g => g.dataset.group);
+        // Порядок из разметки запоминаем при первом заходе: к нему надо вернуться,
+        // когда своей раскладки нет (вышли из аккаунта, зашли под другим)
+        if (!this._railDefaultGroupOrder) this._railDefaultGroupOrder = keys.slice();
+
+        const layout = this.railLayout().groups;
+        const saved = (Array.isArray(layout) && layout.length) ? layout : this._railDefaultGroupOrder;
         // Блок, которого в сохранённом порядке нет (появился в новой версии сайта),
         // не теряем — дописываем в конец
         const order = saved.filter(k => keys.includes(k)).concat(keys.filter(k => !saved.includes(k)));
@@ -9621,7 +9655,7 @@ const app = {
         const rail = document.getElementById('lk_rail');
         if (!rail) return;
         const order = Array.from(rail.querySelectorAll('.lk-rail-group')).map(g => g.dataset.group);
-        try { localStorage.setItem(this.RAIL_GROUPS_KEY, JSON.stringify(order)); } catch (e) { }
+        this.saveRailLayout({ groups: order });
     },
 
     setRailEditMode: function (on) {
@@ -9878,8 +9912,7 @@ const app = {
         // при первой отрисовке и тогда же вешаем перетаскивание
         if (!this._railDockInit) {
             this._railDockInit = true;
-            this.applyRailGroupOrder();
-            this.setRailDock(this.railDock(), false);
+            this.applyRailLayout();
             this.initRailDrag();
             this.initRailGroupDrag();
         }
@@ -9941,7 +9974,8 @@ const app = {
     loadInstallerSettingsLocal: function () {
         let parsed = null;
         try { parsed = JSON.parse(localStorage.getItem('stout_installer_settings') || 'null'); } catch (e) { parsed = null; }
-        this.installerSettings = Object.assign({ workPrices: {}, equipmentLibrary: [], swapLog: [], deletionLog: [], company: null }, parsed || {});
+        this.installerSettings = Object.assign({ workPrices: {}, equipmentLibrary: [], swapLog: [], deletionLog: [], company: null, railLayout: null }, parsed || {});
+        if (this.installerSettings.railLayout && typeof this.installerSettings.railLayout !== 'object') this.installerSettings.railLayout = null;
         if (!this.installerSettings.workPrices || typeof this.installerSettings.workPrices !== 'object') this.installerSettings.workPrices = {};
         if (!Array.isArray(this.installerSettings.equipmentLibrary)) this.installerSettings.equipmentLibrary = [];
         if (!Array.isArray(this.installerSettings.swapLog)) this.installerSettings.swapLog = [];
@@ -10061,14 +10095,24 @@ const app = {
                     swapLog: Array.isArray(cloud.swapLog) ? cloud.swapLog : [],
                     deletionLog: Array.isArray(cloud.deletionLog) ? cloud.deletionLog : [],
                     company: cloudCompany || localCompany || null,
-                    workPricesUpdatedAt: cloud.workPricesUpdatedAt || undefined
+                    workPricesUpdatedAt: cloud.workPricesUpdatedAt || undefined,
+                    // Раскладку меню собираем тем же правилом, что и реквизиты:
+                    // облачная главнее, но пустое облако не должно стирать местную
+                    // (первый вход после переезда раскладки в настройки аккаунта)
+                    railLayout: (cloud.railLayout && typeof cloud.railLayout === 'object')
+                        ? cloud.railLayout
+                        : ((this.installerSettings && this.installerSettings.railLayout) || null)
                 };
                 this.saveInstallerSettingsLocal();
                 if (!cloudCompany && localCompany) this.pushInstallerSettingsToCloud();
+                if (!cloud.railLayout && this.installerSettings.railLayout) this.pushInstallerSettingsToCloud();
                 if (this._activeProfileTab === 'workprices') this.renderWorkPricesTab();
                 if (this._activeProfileTab === 'equipment') this.renderEquipmentLibraryTab();
                 if (this._activeProfileTab === 'company') this.fillCompanyDetailsForm();
                 this.updateHeaderCompanyDetails();
+                // Раскладка меню могла приехать с другого устройства — переставляем
+                // панель уже после того, как настройки заменены
+                this.applyRailLayout();
                 this.render();
             }
         } catch (e) {
@@ -10089,6 +10133,10 @@ const app = {
         this._installerCloudUserId = null;
         this.loadInstallerSettingsLocal();
         this.updateHeaderCompanyDetails();
+        // Раскладка меню тоже принадлежит аккаунту: за общим компьютером следующий
+        // вошедший начинает с обычного вида, а свою получит из облака при входе
+        try { localStorage.removeItem(this.RAIL_DOCK_KEY); localStorage.removeItem(this.RAIL_GROUPS_KEY); } catch (e) { }
+        this.applyRailLayout();
     },
     // Сохраняет локально сразу и синхронизирует с облаком с задержкой (не блокирует UI)
     pushInstallerSettingsToCloud: function () {
