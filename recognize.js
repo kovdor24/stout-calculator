@@ -118,17 +118,22 @@ const RecognizeUI = {
               <div class="rec-panel">
                 <div class="rec-head">
                   <div>
-                    <div class="rec-title">Распознавание рукописной сметы
+                    <div class="rec-title"><span id="rec_title_text">Распознавание рукописной сметы</span>
                       <span class="rec-beta">бета</span></div>
                     <div class="rec-steps">
                       <span class="rec-step on" data-s="1">1. Загрузка</span>
                       <span class="rec-step" data-s="2">2. Проверка</span>
-                      <span class="rec-step" data-s="3">3. В смету</span>
+                      <span class="rec-step" data-s="3" id="rec_step3">3. В смету</span>
                     </div>
                   </div>
-                  <button class="rec-btn-g" id="rec_undo_apply"
-                          style="display:none" onclick="RecognizeUI.undoApply()">
-                    ↶ Отменить прошлое распознавание</button>
+                  <div class="rec-head-btns">
+                    <button class="rec-btn-g" id="rec_undo_apply"
+                            style="display:none" onclick="RecognizeUI.undoApply()">
+                      ↶ Отменить прошлое распознавание</button>
+                    <button class="rec-btn-g" id="rec_undo_plan"
+                            style="display:none" onclick="RecognizePlan.undoApply()">
+                      ↶ Вернуть комнаты</button>
+                  </div>
                 </div>
                 <div class="rec-body" id="rec_body"></div>
               </div>`;
@@ -136,6 +141,7 @@ const RecognizeUI = {
             this._onPaste = (e) => {
                 // Вставка работает, только пока вкладка открыта и мы на шаге загрузки.
                 if (app.state.viewMode !== 'recognize' || this._rows.length) return;
+                if (typeof RecognizePlan !== 'undefined' && RecognizePlan._rows.length) return;
 
                 // Поле ввода важнее: если курсор в нём, человек вставляет текст
                 // туда, а не в распознавание.
@@ -179,11 +185,61 @@ const RecognizeUI = {
 
         const u = document.getElementById('rec_undo_apply');
         if (u) u.style.display = app._recognizeUndo ? '' : 'none';
+        const up = document.getElementById('rec_undo_plan');
+        if (up) up.style.display = (typeof RecognizePlan !== 'undefined' && RecognizePlan._undo) ? '' : 'none';
     },
 
     /** Возврат к смете после применения. */
     close() {
         app.setViewMode('equipment');
+    },
+
+    // ------------------------------------------------------------------
+    // Что на файле: смета или план этажа
+    //
+    // Один и тот же экран загрузки принимает и то и другое, но разбираются
+    // они разными правилами и уходят в разные места: смета — в позиции,
+    // план — в комнаты подробного расчёта (RecognizePlan). Переключатель
+    // на экране загрузки говорит, что грузят; в положении «Смета» лист всё
+    // равно опознаётся автоматически — модель, увидев план вместо сметы,
+    // отвечает docKind=floor_plan, и разбор сам уходит в план.
+    // ------------------------------------------------------------------
+
+    _docKind: 'auto',   // 'auto' — смета с автоопознанием плана, 'plan' — план этажа
+
+    setDocKind(kind) {
+        this._docKind = kind === 'plan' ? 'plan' : 'auto';
+        this.syncDocKind();
+    },
+
+    /** Переключатель, подписи зоны загрузки и шапки — по выбранному виду. */
+    syncDocKind() {
+        const plan = this._docKind === 'plan';
+        document.querySelectorAll('#rec_kind .rec-tab').forEach(b => {
+            b.classList.toggle('on', (b.dataset.k === 'plan') === plan);
+        });
+        const t = document.querySelector('#rec_drop .rec-drop-t');
+        const s = document.querySelector('#rec_drop .rec-drop-s');
+        const ico = document.querySelector('#rec_drop .rec-drop-ico');
+        if (t) t.textContent = plan ? 'Перетащите план этажа сюда' : 'Перетащите смету сюда';
+        if (s) s.textContent = plan
+            ? 'чертёж, скан, фото или эскиз от руки · PDF или картинка · один лист — один этаж, несколько этажей грузите несколькими файлами · или нажмите для выбора · или вставьте снимок через Ctrl+V'
+            : 'фото, PDF, Excel, Word или HTML · или нажмите для выбора · или вставьте скриншот или текст через Ctrl+V';
+        if (ico) ico.textContent = plan ? '📐' : '📄';
+        const st = document.getElementById('rec_status');
+        if (st && !this._img && !(this._imgs && this._imgs.length) && !this._text && !(this._docs && this._docs.length)) {
+            st.textContent = plan ? 'Планы этажей: PDF, фото, сканы, эскизы' : 'Фото и сканы, а также PDF, Excel, Word, HTML';
+        }
+        this.setHead(plan ? 'plan' : 'estimate');
+    },
+
+    /** Заголовок мастера и подпись третьего шага — по тому, что разбираем. */
+    setHead(kind) {
+        const plan = kind === 'plan';
+        const t = document.getElementById('rec_title_text');
+        if (t) t.textContent = plan ? 'Распознавание плана этажа' : 'Распознавание рукописной сметы';
+        const s3 = document.getElementById('rec_step3');
+        if (s3) s3.textContent = plan ? '3. В расчёт' : '3. В смету';
     },
 
     /**
@@ -244,6 +300,13 @@ const RecognizeUI = {
         this.step(1);
         document.getElementById('rec_body').innerHTML = `
           ${this.draftBanner()}
+          <div class="rec-kind" id="rec_kind">
+            <span class="rec-kind-l">Что загружаете:</span>
+            <button class="rec-tab on" data-k="auto" onclick="RecognizeUI.setDocKind('auto')"
+                    title="Список материалов и работ: рукописный, счёт поставщика, КП">📋 Смету</button>
+            <button class="rec-tab" data-k="plan" onclick="RecognizeUI.setDocKind('plan')"
+                    title="План этажа: помещения с плана уйдут в расчёт по комнатам">📐 План этажа</button>
+          </div>
           <div class="rec-drop" id="rec_drop">
             <div class="rec-drop-ico">📄</div>
             <div class="rec-drop-t">Перетащите смету сюда</div>
@@ -270,6 +333,7 @@ const RecognizeUI = {
         // Остаток на месяц подтягиваем сразу: лучше увидеть его до того,
         // как монтажник сфотографировал и загрузил смету.
         this.showQuota();
+        this.syncDocKind();
 
         const drop = document.getElementById('rec_drop');
         drop.onclick = () => this.pickFiles(files => this.handleFiles(files));
@@ -333,8 +397,13 @@ const RecognizeUI = {
             // Документ дослать листом можно только картинками: текст и фото
             // в одном запросе не соединить, а сканы страниц — те же листы.
             try {
-                const r = await RecognizeFiles.extract(f, (m) => this.setStatus(m));
-                if (r.images && r.images.length) added.push(...r.images);
+                const r = await RecognizeFiles.extract(f, (m) => this.setStatus(m),
+                    { forceImages: this._docKind === 'plan' });
+                if (r.images && r.images.length) {
+                    r.images.forEach((b, k) => this.noteImgName(b,
+                        r.images.length > 1 ? `${f.name} — стр. ${k + 1}` : f.name));
+                    added.push(...r.images);
+                }
                 else skipped++;
             } catch (e) {
                 skipped++;
@@ -431,8 +500,9 @@ const RecognizeUI = {
         // На середине разбора сбрасывать нечего и опасно: ответ модели придёт
         // в уже очищенное состояние.
         if (this._busy) return;
+        const planRows = (typeof RecognizePlan !== 'undefined') ? RecognizePlan._rows.length : 0;
         const hasWork = !!(this._rows && this._rows.length) || !!this._img ||
-            !!(this._imgs && this._imgs.length) || !!this._text;
+            !!(this._imgs && this._imgs.length) || !!this._text || !!planRows;
         // Состояние уже пустое, а таблица на экране осталась — так бывает
         // после сброса объекта из шапки. Спрашивать не о чем, очищать нечего:
         // просто возвращаем экран загрузки.
@@ -464,6 +534,7 @@ const RecognizeUI = {
         this._fromCache = 0;
         this._cmpDiscount = null;
         this._cmpApplyDiscount = false;
+        if (typeof RecognizePlan !== 'undefined') RecognizePlan.reset();
 
         this.resetScreen();
     },
@@ -602,6 +673,22 @@ const RecognizeUI = {
     },
 
     /**
+     * Имя файла у снимка. Нужно плану этажа: «1 этаж.pdf» подсказывает номер
+     * этажа, а на самом листе подпись бывает мелкой или её нет. Ключ — от
+     * содержимого, как у заметок о кадре: снимки удаляют, переставляют и
+     * поворачивают, и параллельный массив имён разъехался бы.
+     */
+    noteImgName(b, name) {
+        if (!b || !name) return;
+        if (!this._imgNames) this._imgNames = new Map();
+        this._imgNames.set(this.imgKey(b), String(name));
+    },
+
+    imgNameOf(b) {
+        return (this._imgNames && this._imgNames.get(this.imgKey(b))) || '';
+    },
+
+    /**
      * Раскодировать файл с учётом метки поворота.
      *
      * createImageBitmap с imageOrientation разворачивает снимок ещё до
@@ -722,6 +809,7 @@ const RecognizeUI = {
             const hints = this.frameHints(c);
             if (!this._imgWarn) this._imgWarn = new Map();
             this._imgWarn.set(this.imgKey(b), hints);
+            this.noteImgName(b, file.name);
             if (src.close) src.close();
             return b;
         } catch (e) {
@@ -767,6 +855,7 @@ const RecognizeUI = {
                 // ориентацию, но не резкость и не свет.
                 if (!this._imgWarn) this._imgWarn = new Map();
                 this._imgWarn.set(this.imgKey(out), this._imgWarn.get(this.imgKey(b)) || []);
+                this.noteImgName(out, this.imgNameOf(b));
                 resolve(out);
             };
             img.onerror = () => resolve(null);
@@ -939,13 +1028,21 @@ const RecognizeUI = {
         this.setGoReady(false);
 
         try {
-            const r = await RecognizeFiles.extract(file, (m) => this.setStatus(m));
+            // План этажа читается только как картинка: текстовый слой чертежа
+            // — это размерные цепочки и подписи, а не помещения.
+            const r = await RecognizeFiles.extract(file, (m) => this.setStatus(m),
+                { forceImages: this._docKind === 'plan' });
 
             // Читатель файла мог взять не всё — например, у PDF есть потолок
             // страниц. Молчать об этом нельзя: неполная смета выглядит ровно
             // как полная, и заметить пропажу монтажнику не по чему.
             this._fileNote = r.note || '';
             if (this._fileNote) this.showFileNote();
+
+            if (r.images && r.images.length) {
+                r.images.forEach((b, k) => this.noteImgName(b,
+                    r.images.length > 1 ? `${file.name} — стр. ${k + 1}` : file.name));
+            }
 
             if (r.images && r.images.length > 1) {
                 /**
@@ -1181,6 +1278,7 @@ const RecognizeUI = {
 
         if (!this._imgWarn) this._imgWarn = new Map();
         this._imgWarn.set(this.imgKey(this._img), this.frameHints(c));
+        this.noteImgName(this._img, file.name);
         if (src.close) src.close();
 
         const prev = document.getElementById('rec_prev');
@@ -1223,9 +1321,18 @@ const RecognizeUI = {
         'Ищем в каталоге',
         'Проставляем цены и разделы',
     ],
+    // План этажа: ни каталога, ни цен — помещения, площади, окна.
+    STAGES_PLAN: [
+        'Готовим изображение',
+        'Читаем план: помещения и площади',
+        'Считаем окна и наружные стены',
+        'Собираем комнаты для расчёта',
+    ],
 
-    progressStart(fromText) {
-        this.STAGES = fromText ? this.STAGES_TEXT : this.STAGES_IMG;
+    /** kind: true — текст, 'plan' — план этажа, иначе снимок сметы. */
+    progressStart(kind) {
+        this.STAGES = kind === 'plan' ? this.STAGES_PLAN : (kind ? this.STAGES_TEXT : this.STAGES_IMG);
+        this._tips = kind === 'plan' ? this.TIPS_PLAN : this.TIPS;
         const host = document.getElementById('rec_body');
         if (!host) return;
         const box = document.createElement('div');
@@ -1289,6 +1396,24 @@ const RecognizeUI = {
         () => 'Проставляю цены из свежего прайса',
     ],
 
+    // Подсказки для плана — о том, что действительно делается с планом.
+    TIPS_PLAN: [
+        () => 'Читаю план: стены, помещения, подписи площадей',
+        function () {
+            return this._sheetsDone
+                ? `Прочитано листов: ${this._sheetsDone} из ${this._sheetsTotal}`
+                : 'Ищу экспликацию помещений — таблица точнее подписей на чертеже';
+        },
+        () => 'Считаю окна в наружных стенах — под них встанут приборы',
+        function () {
+            const n = this._itemsSoFar || 0;
+            return n ? `Уже прочитано помещений: ${n}` : 'Определяю, сколько стен помещения выходят на улицу';
+        },
+        () => 'Различаю террасы и крыльца — их греть не надо',
+        () => 'Смотрю подпись высоты потолка и номер этажа',
+        () => 'Собираю помещения для расчёта по комнатам',
+    ],
+
     tickProgress() {
         const el = document.getElementById('rec_elapsed');
         if (!el) return;
@@ -1296,12 +1421,13 @@ const RecognizeUI = {
 
         // Подсказку меняем раз в пять секунд: чаще — мельтешит, реже — успевает
         // надоесть.
-        const idx = Math.floor(sec / 5) % this.TIPS.length;
+        const tips = this._tips || this.TIPS;
+        const idx = Math.floor(sec / 5) % tips.length;
         if (idx !== this._tipAt || !el.dataset.ready) {
             this._tipAt = idx;
             el.dataset.ready = '1';
             let tip;
-            try { tip = this.TIPS[idx].call(this); } catch (e) { tip = ''; }
+            try { tip = tips[idx].call(this); } catch (e) { tip = ''; }
             const done = this._itemsSoFar || 0;
             // Ручной ввод строки в смету — поиск в прайсе, артикул, цена,
             // количество. Сорок секунд на позицию: оценка по нижней границе.
@@ -1414,10 +1540,19 @@ const RecognizeUI = {
         this._mergeInfo = '';
         this._apiCalls = 0;
         this._fromCache = 0;
-        this.progressStart(!!this._text);
+        this.progressStart(this._docKind === 'plan' ? 'plan' : !!this._text);
 
         try {
             this.progressTo(1);
+
+            // План этажа выбран руками — сразу по правилам плана, без
+            // попытки прочитать лист как смету.
+            if (this._docKind === 'plan') {
+                await this.runPlan();
+                this._busy = false;
+                if (go) go.disabled = false;
+                return;
+            }
 
             /**
              * Несколько листов разбираются ПО ОДНОМУ, отдельными запросами.
@@ -1434,6 +1569,14 @@ const RecognizeUI = {
              */
             if (!this._text && this._imgs && this._imgs.length > 1) {
                 const res = await this.runBySheets();
+                // Первый же лист оказался планом этажа — всю пачку читаем
+                // как планы, по своим правилам.
+                if (res.floorPlan) {
+                    await this.runPlan(true);
+                    this._busy = false;
+                    if (go) go.disabled = false;
+                    return;
+                }
                 this.progressTo(2);
                 this.startReview(res);
                 this._busy = false;
@@ -1479,6 +1622,15 @@ const RecognizeUI = {
 
             const parsed = this.parseModelJson(text, cand.finishReason);
 
+            // На снимке не смета, а план этажа: модель сказала об этом сама.
+            // Читаем его как план — по своим правилам и в свой экран проверки.
+            if (!this._text && typeof RecognizePlan !== 'undefined' && RecognizePlan.isPlanResult(parsed)) {
+                await this.runPlan(true);
+                this._busy = false;
+                if (go) go.disabled = false;
+                return;
+            }
+
             this.progressTo(2);
             this.startReview(parsed);
         } catch (e) {
@@ -1494,6 +1646,38 @@ const RecognizeUI = {
         }
         this._busy = false;
         if (go) go.disabled = false;
+    },
+
+    /**
+     * План этажа: те же снимки — по правилам плана.
+     *
+     * auto — сюда пришли не по переключателю, а потому что модель опознала
+     * план в том, что грузили как смету. Тогда индикатор хода уже идёт со
+     * ступенями сметы («ищем в каталоге»), и его надо перезапустить со
+     * ступенями плана — иначе он врёт о том, что происходит.
+     */
+    async runPlan(auto) {
+        if (typeof RecognizePlan === 'undefined') {
+            throw new Error('Разбор планов этажей не загрузился. Обновите страницу.');
+        }
+        if (this._text || (this._docs && this._docs.length)) {
+            throw new Error('План этажа читается с фото, скана или PDF-чертежа, а из этого файла ' +
+                'взят текст, а не изображение. Excel, Word и HTML для плана не подходят; ' +
+                'если это PDF — уберите файл крестиком, выберите «План этажа» и загрузите его снова.');
+        }
+        const imgs = (this._imgs && this._imgs.length) ? this._imgs : (this._img ? [this._img] : []);
+        if (!imgs.length) throw new Error('Нет снимка для распознавания.');
+
+        if (auto) {
+            this.progressStop();
+            this.progressStart('plan');
+            this.setStatus('Похоже, это план этажа — читаю его как план');
+        }
+        this.progressTo(1);
+        RecognizePlan.reset();
+        const res = await RecognizePlan.run(imgs, imgs.map(b => this.imgNameOf(b)));
+        this.progressTo(2);
+        RecognizePlan.startReview(res);
     },
 
     /**
@@ -1825,6 +2009,25 @@ const RecognizeUI = {
 
                     parsed = this.parseModelJson(text, cand.finishReason);
                     if (this._parseWarning) warnings.push(`лист ${i + 1}: ${this._parseWarning}`);
+
+                    /**
+                     * На листе план этажа, а не смета. Пока ни одной позиции не
+                     * прочитано — это пачка планов: отдаём её целиком разбору
+                     * планов (он прочитает листы своими правилами). Если
+                     * позиции уже есть, план затесался среди листов сметы —
+                     * пропускаем его с пометкой, смету он не ломает.
+                     * В память листов такой ответ не кладём: из неё
+                     * возвращаются только items, и лист выглядел бы пустой
+                     * сметой, а не планом.
+                     */
+                    if (typeof RecognizePlan !== 'undefined' && RecognizePlan.isPlanResult(parsed)) {
+                        if (!items.length) return { floorPlan: true };
+                        failed.push(i + 1);
+                        this._failedSheets.push(i);
+                        this.markSheet(i, 'fail');
+                        warnings.push(`лист ${i + 1} — план этажа, а не смета: пропущен, распознайте его отдельно`);
+                        continue;
+                    }
                     // Запоминаем только чистый разбор: спасённый из битого
                     // ответа неполон, и подсовывать его потом молча нельзя.
                     if (!this._parseWarning) this.rememberSheet(imgs[i], parsed);
@@ -6008,6 +6211,12 @@ const RECOGNIZE_PROMPT = `Ты разбираешь рукописные сме�
 На изображении — список материалов, написанный от руки, с сокращениями и жаргоном.
 
 Верни СТРОГО JSON по схеме. Никакого текста вне JSON.
+
+ЕСЛИ ЭТО НЕ СМЕТА, А ПЛАН ЭТАЖА — чертёж или эскиз здания сверху: стены,
+помещения, окна и двери, размерные цепочки, экспликация помещений, площади
+в м², — верни ровно {"docKind":"floor_plan","items":[],"skipped":[]} и
+больше ничего: такой лист разбирается другими правилами. Список материалов,
+пусть и с планом на полях, — это смета.
 
 ДЮЙМЫ ПИШИ БЕЗ СИМВОЛА КАВЫЧКИ: 3/4, 1/2, 1, 1 1/4 — никогда 3/4" и не 3/4».
 Кавычка внутри строки JSON рвёт весь ответ, и смета не разбирается целиком.
