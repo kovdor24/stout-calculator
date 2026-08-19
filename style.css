@@ -11736,8 +11736,15 @@ select.rec-btn-g { padding-right: 8px; }
    ширину или отступы — «Сообщения» и «Менеджер» порвутся посреди слова. */
 .lk-rail {
     display: none;
-    flex: 0 0 84px;
-    width: 84px;
+    /* Ширина — по самой длинной подписи, а не числом: у людей разные браузеры,
+       масштаб страницы и подставленный шрифт, и подобранные «на глаз» 84 px в
+       чужом окружении оказывались малы — подписи ломались пополам («Профил/ь»),
+       колонка вырастала вдвое по высоте и уезжала в прокрутку. Границы нужны,
+       чтобы колонка не выродилась в узкую полоску и не съела пол-экрана. */
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: 84px;
+    max-width: 150px;
     box-sizing: border-box;
     flex-direction: column;
     align-items: stretch;
@@ -11752,12 +11759,12 @@ select.rec-btn-g { padding-right: 8px; }
        (тот же приём, что у строки параметров .doc-summary). */
     position: sticky;
     top: calc(var(--sticky-header-h, 70px) + 10px);
-    /* Страховка на низкий экран: разделов больше десятка, и если они однажды
-       перестанут помещаться, колонка прокрутится внутри себя, а не уедет за
-       нижний край. 125vh, а не 100vh: единицы vh считаются от окна, а колонка
-       живёт внутри #page_scale_wrapper с zoom: 0.8 — 100vh дали бы только 80 %
-       высоты окна. */
-    max-height: calc(125vh - var(--sticky-header-h, 70px) - 30px);
+    /* Предел высоты ставит app.fitRailToViewport по живым размерам окна и шапки —
+       той же меркой, по которой решает, надо ли поджимать разделы. Пока скрипт не
+       отработал, действует запасная формула. 125vh, а не 100vh: единицы vh
+       считаются от окна, а колонка живёт внутри #page_scale_wrapper с zoom: 0.8,
+       и 100vh дали бы только 80 % высоты окна. */
+    max-height: var(--lk-rail-max-h, calc(125vh - var(--sticky-header-h, 70px) - 30px));
     overflow-y: auto;
     /* Гасим часть общего 20-пиксельного зазора .container: без этого панель
        отъедала бы у сметы сотню пикселей ширины вместо необходимых восьмидесяти */
@@ -11819,13 +11826,64 @@ body.guest-mode .lk-rail {
     color: var(--primary);
 }
 
-/* Длинные подписи («Оборудование») переносятся по мягкому переносу &shy; из
-   разметки. overflow-wrap — страховка на случай другого шрифта: лучше некрасивый
-   перенос, чем подпись, вылезшая за край панели. */
+/* Подписи не переносятся никогда: перенос посреди слова читается плохо, а по
+   высоте колонка тогда вырастает и уходит в прокрутку. Вместо переноса под
+   подпись подстраивается ширина всей колонки (width: max-content выше). */
 .lk-rail-label {
     display: block;
     width: 100%;
-    overflow-wrap: break-word;
+    white-space: nowrap;
+}
+
+.lk-rail-item svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* Подгонка под высоту экрана: если разделы не помещаются, app.fitRailToViewport
+   поджимает их в один-два приёма, и только если и это не спасло — остаётся
+   прокрутка внутри колонки. Так меню помещается целиком на любом ноутбуке. */
+.lk-rail.lk-rail-compact {
+    gap: 1px;
+    padding: 5px 4px;
+}
+
+.lk-rail.lk-rail-compact .lk-rail-item {
+    gap: 2px;
+    padding: 5px 2px 4px;
+    font-size: 10.5px;
+}
+
+.lk-rail.lk-rail-compact .lk-rail-item svg {
+    width: 19px;
+    height: 19px;
+}
+
+.lk-rail.lk-rail-compact .lk-rail-group + .lk-rail-group {
+    margin-top: 4px;
+    padding-top: 4px;
+}
+
+.lk-rail.lk-rail-compact2 {
+    gap: 0;
+    padding: 4px 3px;
+}
+
+.lk-rail.lk-rail-compact2 .lk-rail-item {
+    gap: 1px;
+    padding: 2px;
+    font-size: 10px;
+    line-height: 1.1;
+}
+
+.lk-rail.lk-rail-compact2 .lk-rail-item svg {
+    width: 17px;
+    height: 17px;
+}
+
+.lk-rail.lk-rail-compact2 .lk-rail-group + .lk-rail-group {
+    margin-top: 2px;
+    padding-top: 2px;
 }
 
 .lk-rail-admin {
@@ -11993,7 +12051,11 @@ body.lk-docked #profile_nav {
    внутри себя, а не разрывает страницу. */
 .lk-rail.dock-top {
     flex: none;
+    /* Ограничения ширины из колонки тут не действуют: лента тянется во всю
+       страницу, а max-width от колонки сжимал её в узкий столбик посреди экрана */
     width: auto;
+    min-width: 0;
+    max-width: none;
     flex-direction: row;
     align-items: stretch;
     gap: 2px;
@@ -12025,7 +12087,8 @@ body.lk-docked #profile_nav {
 .lk-rail.dock-top .lk-rail-item {
     flex: 1 1 auto;
     width: auto;
-    min-width: 72px;
+    /* Не уже своей подписи — иначе она вылезет за плитку: переносов больше нет */
+    min-width: fit-content;
     max-width: 120px;
 }
 
