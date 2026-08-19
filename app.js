@@ -7209,7 +7209,9 @@ const app = {
                         <th>Сумма</th>
                         <th>Статус</th>
                         <th>Дата</th>
-                        <th style="text-align:right;">Действия</th>
+                        <!-- Ширина задана явно: в колонке три кнопки действий, и без неё
+                             таблица отдавала ей меньше места, чем занимает содержимое -->
+                        <th style="text-align:right; width: 360px;">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -7246,9 +7248,12 @@ const app = {
                     <td style="color:var(--primary); font-weight:bold;">${sum}</td>
                     <td>${statusBadge}</td>
                     <td style="color:var(--text-sec); font-size:12px;">${date}</td>
-                    <td style="text-align:right;">
+                    <td style="text-align:right; white-space: nowrap;">
                         <div style="display:flex; justify-content:flex-end; gap:8px; align-items: center;">
                             ${getInvoiceBtn}
+                            <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'open')" title="Открыть расчёт в калькуляторе">Открыть</button>
+                            <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'share')" title="Короткая ссылка на смету для клиента">Ссылка клиенту</button>
+                            <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'download')" title="Скачать смету: PDF или Excel">Скачать</button>
                             ${canDelete ? `
                                 <button class="delete-icon-btn" onclick="event.stopPropagation(); app.deleteEstimate('${item.id}', event)" title="Удалить смету">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -7262,6 +7267,20 @@ const app = {
 
         h += `</tbody></table>`;
         content.innerHTML = h;
+    },
+
+    // Действия над сохранённой сметой прямо из списка «Мои объекты». И ссылка
+    // клиенту, и скачивание умеют работать только с открытым расчётом — иначе они
+    // молча сделали бы своё дело над той сметой, что была открыта до этого.
+    // Поэтому сначала загружаем выбранную, а потом запускаем действие.
+    cloudRowAction: async function (id, what) {
+        await this.loadSingleEstimate(id);
+        if (what === 'share') {
+            this.shareInvoice();
+        } else if (what === 'download') {
+            // Меню с выбором PDF или Excel — тот же, что под сметой
+            this.toggleDownloadMenu();
+        }
     },
 
     closeCloudListModal: function () {
@@ -9568,22 +9587,27 @@ const app = {
         this.fitRailToViewport();
     },
 
-    // Меню должно помещаться на экран целиком: колонка из полутора десятков
-    // разделов на ноутбуке с невысоким экраном не влезала и уходила в прокрутку,
-    // а прокручиваемое меню — это меню, половины которого не видно. Поджимаем в
-    // два приёма (значки и подписи меньше, отступы теснее) и только если и это не
-    // помогло, оставляем прокрутку как последнее средство.
+    // Меню занимает высоту первого экрана целиком: на высоком мониторе разделы
+    // крупнее, на невысоком ноутбуке мельче — но помещаются все и без прокрутки.
+    // Подбираем один множитель --lk-scale, от которого зависят значки, подписи и
+    // отступы (см. .lk-rail-item в style.css).
     //
     // Почему не числами в CSS: высота колонки зависит от шрифта, масштаба страницы
     // в браузере и от того, сколько разделов показано этому человеку (у менеджера
     // дистрибьютора на один больше, у не-админа на один меньше). Считать надо по
     // факту, а не по предположению.
+    // Нижняя граница — чтобы подписи оставались читаемыми на невысоком ноутбуке.
+    // Верхней почти нет: на большом мониторе меню должно занимать высоту первого
+    // экрана, а не жаться маленькой колонкой в углу с пустотой снизу.
+    RAIL_SCALE_MIN: 0.72,
+    RAIL_SCALE_MAX: 2,
+
     fitRailToViewport: function () {
         const rail = document.getElementById('lk_rail');
         if (!rail) return;
-        // Лента сверху по высоте ни во что не упирается — поджимать нечего
+        // Лента сверху по высоте ни во что не упирается — растягивать нечего
         if (rail.classList.contains('dock-top') || getComputedStyle(rail).display === 'none') {
-            rail.classList.remove('lk-rail-compact', 'lk-rail-compact2');
+            rail.style.removeProperty('--lk-scale');
             return;
         }
         const header = document.querySelector('.site-header');
@@ -9593,17 +9617,38 @@ const app = {
         const wrap = document.getElementById('page_scale_wrapper');
         const zoom = (wrap && parseFloat(getComputedStyle(wrap).zoom)) || 1;
         const available = window.innerHeight - headerBottom - 24;
-        // Тем же числом ограничиваем высоту колонки, иначе обрезка в CSS и мерка
-        // здесь расходятся, и появляется прокрутка на пару пикселей там, где всё
-        // помещается. В переменную кладём CSS-пиксели: внутри обёртки они свои.
-        document.documentElement.style.setProperty('--lk-rail-max-h', Math.floor(available / zoom) + 'px');
-        const fits = () => (rail.scrollHeight * zoom) <= available;
+        if (available <= 0) return;
 
-        rail.classList.remove('lk-rail-compact', 'lk-rail-compact2');
-        if (fits()) return;
-        rail.classList.add('lk-rail-compact');
-        if (fits()) return;
-        rail.classList.add('lk-rail-compact2');
+        // Дальше считаем в CSS-пикселях самой колонки — в них же заданы её размеры.
+        // Из предела вычитаем рамку (по пикселю сверху и снизу при box-sizing:
+        // border-box) и пару пикселей на округления: без этого колонка упиралась в
+        // собственный предел и показывала прокрутку на два пикселя.
+        const limit = Math.floor(available / zoom);
+        const room = limit - 4;
+        const setScale = (value) => rail.style.setProperty('--lk-scale', value.toFixed(3));
+        const fits = () => rail.scrollHeight <= room;
+
+        // Первое приближение — по высоте при обычном размере. Оно неточное: рамки,
+        // скругления и межстрочный интервал масштабу не подчиняются, поэтому дальше
+        // уточняем шагами. Шагов немного: каждый — пересчёт вёрстки, а точность до
+        // пикселя тут не нужна.
+        setScale(1);
+        const natural = rail.scrollHeight || 1;
+        let scale = Math.min(this.RAIL_SCALE_MAX, Math.max(this.RAIL_SCALE_MIN, room / natural));
+        setScale(scale);
+
+        for (let i = 0; i < 8 && !fits() && scale > this.RAIL_SCALE_MIN; i++) {
+            scale = Math.max(this.RAIL_SCALE_MIN, scale - 0.03);
+            setScale(scale);
+        }
+        for (let i = 0; i < 12 && scale < this.RAIL_SCALE_MAX; i++) {
+            const next = Math.min(this.RAIL_SCALE_MAX, scale + 0.03);
+            setScale(next);
+            if (!fits()) { setScale(scale); break; }
+            scale = next;
+        }
+
+        document.documentElement.style.setProperty('--lk-rail-max-h', limit + 'px');
     },
 
     railDock: function () {
@@ -9993,9 +10038,16 @@ const app = {
         // «на глаз» край оставлял бы сбоку торчать полоску колонки параметров.
         const inputPanel = document.querySelector('.container .input-panel');
         const outputPanel = document.querySelector('.container .output-panel');
+        // Ширину окна берём у документа, а не у window.innerWidth: последняя считает
+        // вместе с полосой прокрутки страницы. Пока раздел не открыт, полоса есть, а
+        // как только открыли — пропадает (body получает overflow: hidden), колонки
+        // становятся шире, и карточка, посчитанная по старым числам, не доходила до
+        // их края на ширину полосы. Именно это и выглядело «окно не совпадает».
+        const viewW = document.documentElement.clientWidth || window.innerWidth;
+        const viewH = document.documentElement.clientHeight || window.innerHeight;
         const left = inputPanel ? inputPanel.getBoundingClientRect().left : railBox.right + 12;
         const right = outputPanel
-            ? Math.max(0, window.innerWidth - outputPanel.getBoundingClientRect().right)
+            ? Math.max(0, viewW - outputPanel.getBoundingClientRect().right)
             : 16;
 
         // Верх — по колонкам, которые кабинет собой закрывает. Пока страница не
@@ -10011,6 +10063,20 @@ const app = {
         style.setProperty('--lk-dock-top', Math.round(Math.max(inputTop, floor)) + 'px');
         style.setProperty('--lk-dock-right', Math.round(right) + 'px');
         style.setProperty('--lk-dock-bottom', Math.round(right) + 'px');
+        // Дно карточки не должно оказаться выше нижнего края окна больше, чем на тот
+        // же отступ: иначе снизу остаётся полоска страницы
+        if (viewH <= 0) return;
+
+        // Пересчитываем ещё раз в следующем кадре: окно открывается, страница
+        // перестаёт прокручиваться, полоса прокрутки исчезает — и колонки, по
+        // которым мы считали, успевают стать шире уже после нашей мерки.
+        if (!this._dockGeometryRetry) {
+            this._dockGeometryRetry = true;
+            requestAnimationFrame(() => {
+                this._dockGeometryRetry = false;
+                if (document.body.classList.contains('lk-docked')) this.updateCabinetDockGeometry();
+            });
+        }
     },
 
     syncRailUI: function () {
@@ -12702,6 +12768,11 @@ const app = {
     },
     closeAdminModal: function () {
         document.getElementById('admin_modal_overlay').style.display = 'none';
+        // Данные разделов держим только пока панель открыта: следующее открытие
+        // должно показать свежие, а не то, что успело устареть за день. Обнуляем
+        // не в null, а в пустую заготовку: к adminData обращаются из десятков мест
+        // без проверок, и null уронил бы первое же из них.
+        this.adminData = { users: [], userEstimates: [], recentEstimates: [], totalUsers: 0, totalEstimates: 0, totalEq: 0, totalWorks: 0, messageReceipts: null };
         this.syncCabinetDock();
         this.syncRailUI();
         document.body.classList.remove('admin-modal-open');
@@ -12860,10 +12931,87 @@ const app = {
         }
     },
 
+    // Общий набор данных (страница монтажников, их сметы и обороты, счета, события
+    // смет, доступы к распознаванию) нужен только вкладке «Пользователи»: остальные
+    // разделы грузят своё сами, каждый в своём рендере. Раньше он тянулся при любом
+    // открытии панели, и «Сообщения» стоили двенадцати запросов вместо трёх —
+    // открывались заметно дольше прочих разделов.
+    adminTabNeedsHeavyData: function (tab) {
+        const t = (tab === undefined) ? this._adminTab : tab;
+        // Пустая вкладка — это либо десктоп до выбора (там дальше подставится
+        // «Пользователи»), либо меню разделов на телефоне: ему грузить нечего
+        if (!t) return !this.isAdminMobile();
+        return t === 'stats';
+    },
+
+    // Короткие списки, нужные почти каждому разделу для подписей: собеседники,
+    // переписка и компании-дистрибьюторы. Переписку тянем только для вкладки
+    // сообщений — таблица messages из трёх самая объёмная.
+    loadAdminLightData: async function () {
+        const withMessages = this._adminTab === 'messages';
+        const out = { allUsersDropdown: [], allMessages: [], distributors: [] };
+
+        try {
+            const { data } = await supabaseClient.from('users')
+                .select('id, username, email, phone, region, city, avatar_url, account_type')
+                .order('username', { ascending: true });
+            out.allUsersDropdown = data || [];
+            if (this.isManagerRole()) {
+                const mine = new Set(this.managerUserIds());
+                const meId = (this._meRow && this._meRow.id) || (this._currentUserRow && this._currentUserRow.id);
+                if (meId) mine.add(String(meId));
+                out.allUsersDropdown = out.allUsersDropdown.filter(u => mine.has(String(u.id)));
+            }
+        } catch (e) { console.warn('[loadAdminLightData] Список собеседников:', e); }
+
+        if (withMessages) {
+            try {
+                const { data } = await supabaseClient.from('messages')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                out.allMessages = data || [];
+                if (this.isManagerRole()) {
+                    const mine = new Set(this.managerUserIds());
+                    const meId = (this._meRow && this._meRow.id) || (this._currentUserRow && this._currentUserRow.id);
+                    if (meId) mine.add(String(meId));
+                    out.allMessages = out.allMessages.filter(m => mine.has(String(m.sender_id)) || mine.has(String(m.recipient_id)));
+                }
+            } catch (e) { console.warn('[loadAdminLightData] Переписка:', e); }
+        }
+
+        try {
+            const { data } = await supabaseClient.from('distributors')
+                .select('*')
+                .order('created_at', { ascending: false });
+            out.distributors = data || [];
+            if (this.isManagerRole()) {
+                const mine = this.managerDistIds().map(String);
+                out.distributors = out.distributors.filter(d => mine.includes(String(d.id)));
+            }
+        } catch (e) { console.warn('[loadAdminLightData] Дистрибьюторы:', e); }
+
+        return out;
+    },
+
     loadAdminData: async function (offset = 0) {
         if (!this.hasAdminAccess()) {
             const content = document.getElementById('admin_content');
             if (content) content.innerHTML = '<div style="padding:20px; color:#EF4444;">Доступ запрещен.</div>';
+            return;
+        }
+
+        if (!this.adminTabNeedsHeavyData()) {
+            if (this.isManagerRole()) await this.resolveManagerScope();
+            const lists = await this.loadAdminLightData();
+            // Пустая заготовка обязательна: renderAdminMain разбирает adminData сразу,
+            // ещё до ветвления по вкладкам. Ранее загруженное не теряем.
+            this.adminData = Object.assign(
+                { users: [], userEstimates: [], recentEstimates: [], totalUsers: 0, totalEstimates: 0, totalEq: 0, totalWorks: 0, messageReceipts: null },
+                this.adminData || {},
+                { allUsersDropdown: lists.allUsersDropdown, distributors: lists.distributors },
+                (this._adminTab === 'messages') ? { messages: lists.allMessages } : {}
+            );
+            this.renderAdminMain();
             return;
         }
         // Менеджеру всё, что ниже, режется по его компании: состав компании
@@ -14013,7 +14161,17 @@ const app = {
         if (this.OWNER_ONLY_TABS.indexOf(tab) >= 0 && !this.isAnalyticsOwner()) return;
         if (this.isManagerRole() && this.MANAGER_TABS.indexOf(tab) < 0) return;
         this._adminTab = tab;
-        this.renderAdminMain();
+        // Данные раздела грузим при переходе в него, а не все сразу при открытии
+        // панели. Что уже загружено — не перезапрашиваем: «Пользователей» отмечает
+        // сам набор users, переписку — массив messages.
+        const needHeavy = this.adminTabNeedsHeavyData(tab) && !(this.adminData && Array.isArray(this.adminData.users) && this.adminData.users.length);
+        const needMessages = (tab === 'messages') && !(this.adminData && Array.isArray(this.adminData.messages));
+        const needLists = !(this.adminData && Array.isArray(this.adminData.distributors));
+        if (needHeavy || needMessages || needLists) {
+            this.loadAdminData(0);
+        } else {
+            this.renderAdminMain();
+        }
         // Переход из меню разделов — всегда к началу раздела, а не туда, где
         // осталась прокрутка предыдущего
         const c = document.getElementById('admin_content');
@@ -51896,7 +52054,14 @@ const app = {
             // Тот же блок работает на вкладке «Монтажные работы» — со своим
             // процентом и своей суммой до скидки (см. discountFields).
             const _onWorks = this.state.viewMode === 'works';
-            if (this.state.tgUser && (this.state.viewMode === 'equipment' || _onWorks)) {
+            // Пока в смете пусто, блоку нечего показывать: «Рекомендованная цена: 0 ₽»
+            // и ползунок скидки от нуля — это шум на экране, где написано «Параметры
+            // объекта не заданы». Смотрим на список текущей вкладки, а не на сумму:
+            // позиция с нулевой ценой в смете всё равно есть.
+            const _hasRows = _onWorks
+                ? ((this.currentWorksList || []).length > 0)
+                : ((this.currentEquipmentList || []).length > 0);
+            if (this.state.tgUser && _hasRows && (this.state.viewMode === 'equipment' || _onWorks)) {
                 discountBlock.style.display = 'flex';
                 document.getElementById('rec_price_val').innerHTML = app.formatPriceHtml((_onWorks ? app.originalWorksSum : app.originalEqSum) || 0, true);
                 let curDiscount = (_onWorks ? this.state.worksDiscount : this.state.eqDiscount) || 0;
