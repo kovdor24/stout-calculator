@@ -354,6 +354,64 @@ def is_markdown_card(el):
 def norm_article(s):
     return re.sub(r'[^A-Z0-9]', '', (s or '').upper())
 
+# --- Артикул карточки / страницы товара на teremonline.ru ---
+# В выдаче поиска (/search/?q=…) каждая карточка несёт свой артикул в блоке
+# свойств: <dl class="product-item-property ARTICLE"><dt>Код:</dt><dd>SVB-0003-000015</dd></dl>.
+# На странице самого товара артикул стоит в <button class="js-copyArticleButton"
+# data-article="…"> и в конце <h1>.
+#
+# Зачем это нужно. Когда точного артикула на сайте нет, поиск Терема не отвечает
+# «ничего не найдено», а показывает что-то своё — первые попавшиеся позиции
+# каталога (для BAXI A7810404/A7810405/A7810446 это были дренажные насосы Vandjord и
+# водонагреватель). Проверка «искомый артикул есть где-то в тексте страницы» от
+# этого не спасает: страница выдачи сама повторяет запрос десятки раз (поле поиска,
+# ссылки фильтров, скрипты подсказок). Поэтому сверяем именно артикул карточки,
+# и только точное совпадение (после нормализации: регистр и разделители не в счёт).
+
+ARTICLE_LABEL_RE = re.compile(r'(?:Код|Артикул)\s*:?\s*([A-Za-z0-9][A-Za-z0-9.\-_/ ]{1,40}?)(?=\s{2,}|\s+[А-Яа-я]|$)')
+
+def card_article(el):
+    """Артикул карточки выдачи (нормализованный) или ''. Сначала разметка, потом текст."""
+    if el is None:
+        return ''
+    dd = el.select_one('.product-item-property.ARTICLE dd, dl.ARTICLE dd')
+    if dd:
+        val = norm_article(dd.get_text(' ', strip=True))
+        if val:
+            return val
+    btn = el.select_one('[data-article]')
+    if btn and btn.get('data-article'):
+        return norm_article(btn.get('data-article'))
+    m = ARTICLE_LABEL_RE.search(el.get_text(' ', strip=True))
+    return norm_article(m.group(1)) if m else ''
+
+def page_article(soup):
+    """Артикул на странице товара (нормализованный) или '', если это не страница товара."""
+    btn = soup.select_one('button.js-copyArticleButton[data-article], .js-copyArticleButton[data-article]')
+    if btn and btn.get('data-article'):
+        return norm_article(btn.get('data-article'))
+    # Запасной путь — подпись «Артикул: …» в шапке карточки товара
+    for span in soup.find_all('span'):
+        if span.get_text(strip=True).rstrip(':') == 'Артикул':
+            nxt = span.find_next_sibling('span')
+            if nxt and nxt.get_text(strip=True):
+                return norm_article(nxt.get_text(strip=True))
+    return ''
+
+def pick_card_image(item_el):
+    img_els = item_el.select('.product-item-image-original, .product-item-image-alternative, img')
+    for el in img_els:
+        src = el.get('src') or el.get('data-src') or el.get('style') or ''
+        if 'background-image' in src:
+            bg_match = re.search(r"url\(['\"]?([^'\"]+)['\"]?\)", src)
+            if bg_match:
+                src = bg_match.group(1)
+        if src and ('/upload/' in src):
+            src_lower = src.lower()
+            if 'logo' not in src_lower and 'banner' not in src_lower and 'icon' not in src_lower and 'arrow' not in src_lower and 'brand' not in src_lower:
+                return src
+    return None
+
 def extract_image_url(driver, sku, article=None):
     soup = BeautifulSoup(driver.page_source, 'html.parser')
 
@@ -364,15 +422,43 @@ def extract_image_url(driver, sku, article=None):
     if any(m in page_url for m in MARKDOWN_URL_MARKERS):
         return None
 
-    # Артикула нет НИГДЕ на странице — значит поиск его не знает и показал что-то
-    # своё (соседний товар той же группы, а то и просто первую позицию каталога).
-    # Раньше картинка с этой чужой карточки молча уезжала в img/<наш_id>.jpg: так
-    # у серии коллекторов ROMMER RMB-* оказались фото шаровых кранов, а у
-    # несуществующего артикула — бухта трубы. Лучше NOT_FOUND и строка в отчёте.
-    if article:
-        want = norm_article(article)
-        if want and want not in norm_article(soup.get_text(' ', strip=True)):
+    want = norm_article(article) if article else ''
+    pa = page_article(soup)
+
+    if not pa:
+        # --- Выдача поиска: карточки товаров. Берём ТОЛЬКО карточку с нашим артикулом. ---
+        # Раньше при отсутствии точного совпадения брались все карточки подряд, и в
+        # img/<наш_id>.jpg уезжало фото первого результата (чужой товар). Теперь без
+        # совпадения — NOT_FOUND и строка в articles_not_found.txt.
+        cards = list(soup.select('.product-item, .product-item-container, .product-card'))
+        if not cards:
+            # Ни карточек выдачи, ни артикула товара: страница «ничего не найдено»,
+            # капча или каталог целиком. Фото с такой страницы брать нельзя.
             return None
+        seen = []
+        exact = []
+        for c in cards:
+            if is_markdown_card(c):
+                continue
+            ca = card_article(c)
+            if ca and ca not in seen:
+                seen.append(ca)
+            if want and ca == want:
+                exact.append(c)
+        if not exact:
+            print(f"-> в выдаче нет карточки с артикулом {article}; найдено: {', '.join(seen[:5]) or '—'}", end=" ")
+            return None
+        for item_el in exact:
+            src = pick_card_image(item_el)
+            if src:
+                return src
+        return None
+
+    # --- Страница товара (поиск перебросил сразу на карточку). ---
+    # Артикул страницы обязан совпасть с искомым — иначе это чужой товар.
+    if want and pa != want:
+        print(f"-> открыт товар с артикулом {pa}, а искали {article}", end=" ")
+        return None
 
     # Try 1: Look at og:image metadata (usually high-res main product image)
     og_img = soup.find('meta', property='og:image')
@@ -388,39 +474,14 @@ def extract_image_url(driver, sku, article=None):
         if 'logo' not in url.lower() and 'brand' not in url.lower():
             return url
         
-    # Try 3: Search for common product detail page gallery structures
-    gallery_img = soup.select('.product-gallery img, .js-product-gallery img, .product-image img, .detail-gallery img, .product-card__gallery img')
+    # Try 3: Search for common product detail page gallery structures (в т.ч. слайдер splide)
+    gallery_img = soup.select('.product-gallery img, .js-product-gallery img, .product-image img, .detail-gallery img, .product-card__gallery img, .splide__slide img')
     for img in gallery_img:
         src = img.get('src') or img.get('data-src')
         if src and ('/upload/' in src):
             src_lower = src.lower()
             if 'logo' not in src_lower and 'banner' not in src_lower and 'icon' not in src_lower and 'arrow' not in src_lower and 'brand' not in src_lower:
                 return src
-                
-    # Try 4: карточка в выдаче, НЕ являющаяся уценкой. Раньше бралась просто первая —
-    # а уценённые позиции у Терема часто стоят выше обычных. Плюс: если в выдаче
-    # несколько товаров, берём именно ту карточку, где стоит наш артикул, а не
-    # верхнюю (проверка выше гарантирует лишь то, что артикул есть где-то на странице).
-    cards = list(soup.select('.product-item, .product-item-container, .product-card'))
-    if article:
-        want = norm_article(article)
-        exact = [c for c in cards if want and want in norm_article(c.get_text(' ', strip=True))]
-        if exact:
-            cards = exact
-    for item_el in cards:
-        if is_markdown_card(item_el):
-            continue
-        img_els = item_el.select('.product-item-image-original, .product-item-image-alternative, img')
-        for el in img_els:
-            src = el.get('src') or el.get('data-src') or el.get('style') or ''
-            if 'background-image' in src:
-                bg_match = re.search(r"url\(['\"]?([^'\"]+)['\"]?\)", src)
-                if bg_match:
-                    src = bg_match.group(1)
-            if src and ('/upload/' in src):
-                src_lower = src.lower()
-                if 'logo' not in src_lower and 'banner' not in src_lower and 'icon' not in src_lower and 'arrow' not in src_lower and 'brand' not in src_lower:
-                    return src
 
     return None
 
