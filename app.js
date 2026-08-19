@@ -3066,6 +3066,10 @@ const app = {
             document.addEventListener('pointerup', endDrag);
         });
 
+        // Навёл курсор или нажал — отсчёт до сворачивания начинается заново.
+        btn.addEventListener('pointerenter', () => this.scheduleAiFabAutoCollapse());
+        btn.addEventListener('pointerdown', () => this.scheduleAiFabAutoCollapse());
+
         btn.addEventListener('click', (e) => {
             if (moved) {
                 e.preventDefault();
@@ -3099,23 +3103,62 @@ const app = {
         btn.style.display = hide ? 'none' : 'flex';
         if (!hide) this.applyAiFabCollapsedState();
     },
+    // Кружок — состояние по умолчанию: развёрнутая подпись стоит поверх сметы, а
+    // нужна она один раз, в начале расчёта. Ключа в localStorage нет — значит
+    // свёрнута; подпись видит только тот, кто сам её развернул.
     applyAiFabCollapsedState: function () {
         const btn = document.getElementById('ai_parse_fab_btn');
         const toggleBtn = document.getElementById('ai_parse_fab_collapse_btn');
         if (!btn) return;
-        let collapsed = false;
-        try { collapsed = localStorage.getItem(this._aiFabCollapsedKey()) === '1'; } catch (e) { }
+        let collapsed = true;
+        try { collapsed = localStorage.getItem(this._aiFabCollapsedKey()) !== '0'; } catch (e) { }
         btn.classList.toggle('collapsed', collapsed);
         if (toggleBtn) toggleBtn.title = collapsed ? 'Развернуть' : 'Свернуть';
+        // Отсчёт заводим только если его ещё нет: этот метод зовётся из каждого
+        // render(), и перезапуск на каждую правку сметы означал бы, что кнопка не
+        // свернётся, пока монтажник работает — хотя саму кнопку он не трогал.
+        if (!collapsed && !this._aiFabCollapseTimer) this.scheduleAiFabAutoCollapse();
     },
-    toggleAiFabCollapsed: function () {
+    // Развёрнутая кнопка живёт 15 секунд без внимания и снова становится кружком.
+    _aiFabAutoCollapseMs: 15000,
+    scheduleAiFabAutoCollapse: function () {
+        clearTimeout(this._aiFabCollapseTimer);
+        this._aiFabCollapseTimer = null;
+        const btn = document.getElementById('ai_parse_fab_btn');
+        if (!btn || btn.classList.contains('collapsed')) return;
+        this._aiFabCollapseTimer = setTimeout(() => {
+            this._aiFabCollapseTimer = null;
+            const b = document.getElementById('ai_parse_fab_btn');
+            if (!b || b.classList.contains('collapsed')) return;
+            // Курсор на кнопке или её тащат — это и есть «пользуются»: ждём дальше,
+            // иначе подпись схлопнется прямо под рукой.
+            if (b.classList.contains('dragging') || (b.matches && b.matches(':hover'))) {
+                this.scheduleAiFabAutoCollapse();
+                return;
+            }
+            this.setAiFabCollapsed(true);
+        }, this._aiFabAutoCollapseMs);
+    },
+    setAiFabCollapsed: function (collapsed) {
         const btn = document.getElementById('ai_parse_fab_btn');
         const toggleBtn = document.getElementById('ai_parse_fab_collapse_btn');
         if (!btn) return;
-        const collapsed = !btn.classList.contains('collapsed');
         btn.classList.toggle('collapsed', collapsed);
         if (toggleBtn) toggleBtn.title = collapsed ? 'Развернуть' : 'Свернуть';
+        // Автосворачивание запоминаем наравне с ручным: иначе следующий же render()
+        // прочитает из localStorage прежнее «развёрнуто» и вернёт подпись обратно.
         try { localStorage.setItem(this._aiFabCollapsedKey(), collapsed ? '1' : '0'); } catch (e) { }
+        if (collapsed) {
+            clearTimeout(this._aiFabCollapseTimer);
+            this._aiFabCollapseTimer = null;
+        } else {
+            this.scheduleAiFabAutoCollapse();
+        }
+    },
+    toggleAiFabCollapsed: function () {
+        const btn = document.getElementById('ai_parse_fab_btn');
+        if (!btn) return;
+        this.setAiFabCollapsed(!btn.classList.contains('collapsed'));
     },
 
     showAiParseToast: function (count) {
