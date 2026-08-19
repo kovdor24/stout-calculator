@@ -30605,7 +30605,7 @@ const app = {
         this.renderProfilePhotoField();
         this.renderProfileNavHeader(tgUser);
         this.updateProfileTabDetails();
-        this.render(); // фото в шапке сайта рисуется вместе со сметой
+        this.syncUI(); // фото в шапке сайта (#tg-auth-container) перерисовывает syncUI, не render
 
         try {
             let query = supabaseClient.from('users').update({ avatar_url: dataUrl || null });
@@ -31401,7 +31401,12 @@ const app = {
             console.warn('[DEV MODE] Localhost detected — установлена PRO сессия для тестирования.');
             this.state.accountType = 'pro';
             this.state.groupItems = true; // По умолчанию группировка включена для PRO
+            // Фото профиля переносим из сохранённого состояния: заглушка перезаписывает
+            // tgUser целиком, и без этого загруженный снимок пропадал бы на каждой
+            // перезагрузке — на localhost выглядело бы как поломка загрузки фото
+            const devAvatar = (this.state.tgUser && this.state.tgUser.avatar_url) || '';
             this.state.tgUser = {
+                avatar_url: devAvatar,
                 id: '0279a53c-452b-474f-8626-08be2c2b32da',
                 first_name: "Dima Ibatullin",
                 username: "dima_ibatullin",
