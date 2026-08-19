@@ -8439,6 +8439,8 @@ const app = {
 
         this.syncAiFabVisibility();
         this.syncModalOverlayClass();
+        // Подсветка в левой панели возвращается на «Расчёт»
+        this.syncRailUI();
     },
     // ── Город → регион в анкете ──
     // Регион подставляется по справочнику CITY_REGION_MAP (catalog.js). Как только
@@ -9338,6 +9340,80 @@ const app = {
         } else if (tab === 'equipment') {
             this.renderEquipmentLibraryTab();
         }
+
+        // Тот же раздел подсвечиваем в левой панели на экране
+        this.syncRailUI();
+    },
+
+    // ═══════════ Левая панель кабинета (.lk-rail, разметка в index.html) ═══════════
+    // Появилась потому, что в кабинет вёл единственный вход — клик по своему имени в
+    // шапке, и монтажники его не находили. Панель ничего не считает и не хранит: это
+    // просто вынесенные на экран кнопки к уже существующим разделам.
+    //
+    // Соответствие разделов кабинета пунктам панели: у части разделов своего пункта
+    // нет, но подсветить логично соседний — иначе при открытых «Реквизитах компании»
+    // панель выглядит так, будто кабинет закрыт.
+    RAIL_TAB_ALIAS: {
+        company: 'requisites',
+        subscription: 'requisites',
+        summary: 'objects',
+        installers: 'manager'
+    },
+
+    railGo: function (section) {
+        // «Расчёт» — это возврат к смете: закрываем кабинет, если он открыт
+        if (section === 'calc') {
+            const overlay = document.getElementById('profile_modal_overlay');
+            if (overlay && overlay.style.display === 'flex') this.closeProfileModal();
+            else this.syncRailUI();
+            return;
+        }
+        // Сообщения живут в отдельной модалке, а не разделом кабинета
+        if (section === 'messages') {
+            this.openMessagesCenter();
+            return;
+        }
+        // Панель показывается только авторизованным (body.guest-mode в CSS), но клик
+        // может прийти и от гостя — например, если он вышел из аккаунта, не перезагрузив
+        // страницу. Тогда предлагаем вход, а не молча ничего не делаем: сам
+        // showProfileModal в этом случае просто ничего не сделает. Пользователя ищем той
+        // же строкой, что и он, — иначе внутри Telegram WebApp вход предлагался бы тому,
+        // кто уже вошёл.
+        const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user : this.state.tgUser;
+        if (!tgUser) {
+            this.showAuthModal();
+            return;
+        }
+        this.showProfileModal(false, section);
+    },
+
+    syncRailUI: function () {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+
+        const adminBtn = document.getElementById('lk_rail_admin');
+        if (adminBtn) adminBtn.style.display = this.hasAdminAccess() ? 'flex' : 'none';
+
+        // Число непрочитанных берём готовым из бейджа конверта в шапке: считает его
+        // loadNotifications, второй раз считать незачем
+        const mainBadge = document.getElementById('notification_badge');
+        const railBadge = document.getElementById('lk_rail_msg_badge');
+        if (railBadge && mainBadge) {
+            railBadge.innerText = mainBadge.innerText;
+            railBadge.style.display = (mainBadge.style.display === 'none' || !mainBadge.style.display) ? 'none' : 'block';
+        }
+
+        const overlay = document.getElementById('profile_modal_overlay');
+        const lkOpen = !!(overlay && overlay.style.display === 'flex');
+        let current = 'calc';
+        if (lkOpen) {
+            const tab = this._activeProfileTab || 'requisites';
+            current = this.RAIL_TAB_ALIAS[tab] || tab;
+        }
+        rail.querySelectorAll('.lk-rail-item').forEach(el => {
+            const key = el.dataset.rail;
+            el.classList.toggle('active', !!key && key === current);
+        });
     },
 
     // Геймификация (начисление XP / разблокировка значков за действия монтажника,
@@ -10414,6 +10490,8 @@ const app = {
                     badge.style.display = 'none';
                 }
             }
+            // Тот же счётчик на «Сообщениях» в левой панели — она берёт значение отсюда
+            this.syncRailUI();
 
             // Проигрываем звук, если количество непрочитанных увеличилось
             if (this._lastUnreadCount !== undefined && unreadCount > this._lastUnreadCount) {
@@ -39928,6 +40006,10 @@ const app = {
                         `;
             }
         }
+
+        // Левая панель кабинета: доступ к админке, счётчик сообщений, подсветка раздела
+        this.syncRailUI();
+
         if (document.getElementById('chk_dark')) document.getElementById('chk_dark').checked = this.state.darkMode; document.body.classList.toggle('dark-mode', this.state.darkMode);
 
         // === БЛОКИРОВКИ ===

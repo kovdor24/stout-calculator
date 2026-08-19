@@ -11710,3 +11710,139 @@ select.rec-btn-g { padding-right: 8px; }
     .admin-chat-back { display: block; }
     .admin-chat-bubble { max-width: 86%; }
 }
+
+
+/* ═══════════════ ЛЕВАЯ ПАНЕЛЬ ЛИЧНОГО КАБИНЕТА (.lk-rail) ═══════════════
+   Разметка — в index.html сразу после <div class="container">, там же написано,
+   зачем она появилась (кабинет никто не находил: единственным входом был клик по
+   собственному имени в шапке).
+
+   Показываем только от 1025 px. Ниже этой ширины .container переворачивается в
+   колонку (медиазапросы выше по файлу), и вертикальная полоса иконок растянулась
+   бы на всю ширину поперёк экрана; на телефоне и планшете в портрете за навигацию
+   отвечает нижняя панель .mobile-bottom-nav.
+
+   Про размеры: всё внутри #page_scale_wrapper уменьшено zoom: 0.8, поэтому
+   указанные тут 80 px на экране выглядят как 64, а 11.5 px шрифта — как 9. Числа
+   подобраны уже с учётом этого, уменьшать их «на глаз» не нужно. */
+.lk-rail {
+    display: none;
+    flex: 0 0 80px;
+    width: 80px;
+    box-sizing: border-box;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    padding: 7px 5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    /* Липнет под шапкой: смета длинная, а разделы должны оставаться под рукой.
+       Высоту шапки в --sticky-header-h пишет handleScroll в index.html — шапка
+       при прокрутке сжимается, поэтому фиксированное число тут не годится
+       (тот же приём, что у строки параметров .doc-summary). */
+    position: sticky;
+    top: calc(var(--sticky-header-h, 70px) + 10px);
+    /* Гасим часть общего 20-пиксельного зазора .container: без этого панель
+       отъедала бы у сметы сотню пикселей ширины вместо необходимых восьмидесяти */
+    margin-right: -8px;
+    z-index: 5;
+}
+
+@media screen and (min-width: 1025px) {
+    .lk-rail {
+        display: flex;
+    }
+}
+
+/* Гостю все разделы всё равно закрыты до входа — панель только мешала бы */
+body.guest-mode .lk-rail {
+    display: none !important;
+}
+
+.lk-rail-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 3px;
+    padding: 7px 3px 6px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-sec);
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.15;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.lk-rail-item svg {
+    flex-shrink: 0;
+}
+
+.lk-rail-item:hover {
+    background: var(--surface-light);
+    color: var(--text-main);
+}
+
+.lk-rail-item.active {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+/* Длинные подписи («Оборудование») переносятся по мягкому переносу &shy; из
+   разметки. overflow-wrap — страховка на случай другого шрифта: лучше некрасивый
+   перенос, чем подпись, вылезшая за край панели. */
+.lk-rail-label {
+    display: block;
+    width: 100%;
+    overflow-wrap: break-word;
+}
+
+.lk-rail-sep {
+    flex-shrink: 0;
+    height: 1px;
+    margin: 5px 6px;
+    background: var(--border);
+}
+
+.lk-rail-admin {
+    color: #10B981;
+}
+
+.lk-rail-admin:hover {
+    color: #10B981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+/* Счётчик непрочитанных — зеркало бейджа конверта в шапке (#notification_badge),
+   значение переносит app.syncRailUI */
+.lk-rail-badge {
+    position: absolute;
+    top: 2px;
+    right: 8px;
+    box-sizing: border-box;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: #EF4444;
+    color: #FFFFFF;
+    border-radius: 999px;
+    font-size: 9.5px;
+    font-weight: 800;
+    line-height: 16px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+}
+
+@media print {
+    .lk-rail {
+        display: none !important;
+    }
+}
