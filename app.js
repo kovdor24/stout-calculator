@@ -17269,7 +17269,7 @@ const app = {
      */
     PRICE_GROUP_BY_CATALOG_KEY: {
         // Котёл + водонагреватель
-        boilers_gas: 'kotly_gaz', boilers_baxi: 'kotly_gaz', boilers_vaillant: 'kotly_gaz',
+        boilers_gas: 'kotly_gaz', boilers_baxi: 'kotly_gaz', boilers_vaillant: 'kotly_gaz', boilers_navien: 'kotly_gaz',
         boilers_plus: 'kotly_el', boilers_status: 'kotly_el', boilers_polis: 'kotly_el',
         tanks_optibase: 'boylery_kn', tanks_standard: 'boylery_kn', tanks_stainless: 'boylery_kn',
         chimneys: 'dymohody',
@@ -26576,7 +26576,7 @@ const app = {
         // Поле type у стабилизаторов значит совсем другое, поэтому смотрим его
         // только у позиций, найденных в котловых массивах каталога.
         const _boilerById = {};
-        ['boilers_gas', 'boilers_baxi', 'boilers_vaillant', 'boilers_plus', 'boilers_status', 'boilers_polis']
+        ['boilers_gas', 'boilers_baxi', 'boilers_vaillant', 'boilers_navien', 'boilers_plus', 'boilers_status', 'boilers_polis']
             .forEach(k => (catalog[k] || []).forEach(x => { _boilerById[x.id] = x; }));
         const catB = i => (i && (_boilerById[i.id] || _boilerById[i.originalId])) || null;
         const isBoiler = i => !!catB(i) || /котел|котёл/i.test(nameOf(i));
@@ -30159,7 +30159,7 @@ const app = {
     // BAXI и Vaillant. Одно место вместо пяти перечислений — новый бренд добавляется
     // здесь и в _boilerById схемы (см. buildSchemeConfig).
     gasBoilerPool: function () {
-        return [...catalog.boilers_gas, ...(catalog.boilers_baxi || []), ...(catalog.boilers_vaillant || [])];
+        return [...catalog.boilers_gas, ...(catalog.boilers_baxi || []), ...(catalog.boilers_vaillant || []), ...(catalog.boilers_navien || [])];
     },
     openSwapModal: function (lookupId) {
         // Полотенцесушители (SHQ-) заменяются собственным пикером с фильтрами по высоте/ширине/цвету (#5).
@@ -42775,10 +42775,11 @@ const app = {
                     formulaStr += ` При каскаде: N_котлов = ⌈Q_требуемая / ${singlePower} кВт⌉.`;
                 }
 
-                // У Haier расход ГВС в паспорте дан при Δt=25°C, у Vaillant в прайсе — при ΔT 30 °C.
+                // Расход ГВС и ΔT, при котором он дан, — из позиции (dhw, dhwDt; без поля — 25 °C).
+                // У Haier цифры зашиты: 10,5 / 13,7 л/мин при Δt=25°C.
                 let dhwOwn = gb && gb.dhw;
                 let flowRate = dhwOwn ? String(gb.dhw) : ((singlePower <= 18) ? "10.5" : "13.7");
-                let dtStr = dhwOwn ? 'ΔT=30°C' : 'Δt=25°C';
+                let dtStr = dhwOwn ? `ΔT=${gb.dhwDt || 25}°C` : 'Δt=25°C';
                 let gvsText = isBk
                     ? 'Работает в паре с бойлером косвенного нагрева для высокого комфорта ГВС.'
                     : `Обеспечивает нагрев горячей воды во встроенном вторичном теплообменнике в проточном режиме с производительностью ГВС (${dtStr}) — ${flowRate} л/мин.`;
@@ -42789,7 +42790,7 @@ const app = {
                 // Одноконтурный со встроенным переключающим клапаном (Vaillant VU): комплект
                 // внешнего клапана в обвязке не нужен, о чём стоит сказать прямо здесь.
                 let builtInValveLine = (isBk && gb && gb.dhwValve)
-                    ? `• Приоритетный трёхходовой клапан для бойлера встроен в котёл — внешний комплект клапана не нужен, ставится только датчик бойлера.<br>`
+                    ? `• Приоритетный трёхходовой клапан для бойлера встроен в котёл — внешний комплект клапана не нужен${gb.dhwSensor ? ', ставится только датчик бойлера' : ', датчик бойлера в комплекте котла'}.<br>`
                     : '';
                 let condLine = (gb && gb.cond) ? `• Конденсационный: дымоход — пластиковый (PP) комплект для конденсационных котлов.<br>` : '';
 
@@ -45036,16 +45037,17 @@ const app = {
         // DN25). Сбрасываем на каждом рендере: без коллектора этот блок не выполняется,
         // и прошлое значение осталось бы висеть от другой конфигурации.
         this._tankLoadKitInfo = null;
-        // Котёл, у которого переключающий клапан бойлера встроен (dhwValve — Vaillant VU):
-        // внешний комплект ему не нужен, ставим только датчик бойлера, по которому
-        // котёл сам переключает поток на змеевик.
+        // Котёл, у которого переключающий клапан бойлера встроен (dhwValve — Vaillant VU,
+        // Navien Deluxe One / NGB210 SYS): внешний комплект ему не нужен. Датчик бойлера
+        // ставим только если он не в коробке (dhwSensor — артикул докупаемого датчика,
+        // у Vaillant 306257; у Navien датчик в комплекте, и dhwSensor нет).
         const addTankLoadingKit = (grp, boiler) => {
             if (!this.state.hotWater) return;
             // Узел загрузки переключает поток котла на змеевик бойлера — без бойлера
             // в смете он ни к чему не подключается.
             if (rigDropped('dhw')) return;
             if (boiler && boiler.dhwValve) {
-                const _sens = (catalog.vaillant_acc || []).find(x => x.id === '306257');
+                const _sens = boiler.dhwSensor && (catalog.vaillant_acc || []).find(x => x.id === boiler.dhwSensor);
                 if (_sens) addToBill(_sens, 1, this.getDesc('vaillant_dhw_sensor', boiler), grp);
                 return;
             }

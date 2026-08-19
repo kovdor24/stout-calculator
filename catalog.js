@@ -1305,28 +1305,29 @@ const catalog = {
     //
     // dhwValve — приоритетный переключающий (трёхходовой) клапан для бойлера ВСТРОЕН
     // в котёл: у всех одноконтурных VU этой линейки. Внешний комплект 3-х ходового
-    // клапана им не нужен, только датчик бойлера (см. vaillant_acc, 306257) — render()
-    // ставит датчик вместо комплекта. У двухконтурных VUW клапан тоже есть, но он
+    // клапана им не нужен; dhwSensor — артикул датчика бойлера, который надо докупить
+    // (у Vaillant 306257, см. vaillant_acc) — render() ставит его вместо комплекта.
+    // У Navien (см. boilers_navien) датчик лежит в коробке, поэтому dhwSensor нет. У двухконтурных VUW клапан тоже есть, но он
     // работает на пластинчатый теплообменник (проточное ГВС), к бойлеру не подключается.
-    // dhw — производительность ГВС, л/мин при ΔT 30 °C (из прайса).
+    // dhw — производительность ГВС, л/мин; dhwDt — при каком ΔT (у Vaillant 30 °C, без поля — 25 °C).
     boilers_vaillant: [
         // Традиционные (закрытая камера), двухконтурные
-        { id: "0010020901", name: "turboFIT VUW 242/5-2", price: 94549, power: 24, circuits: 2, dhw: 11, type: "gas", brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
-        { id: "0010015249", name: "turboTEC pro VUW 242/5-3", price: 136828, power: 24, circuits: 2, dhw: 11.5, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
-        { id: "0010015263", name: "turboTEC plus VUW 242/5-5", price: 170531, power: 24, circuits: 2, dhw: 11.5, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
-        { id: "0010015264", name: "turboTEC plus VUW 282/5-5", price: 187858, power: 28, circuits: 2, dhw: 13.4, type: "gas", brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0010020901", name: "turboFIT VUW 242/5-2", price: 94549, power: 24, circuits: 2, dhw: 11, dhwDt: 30, type: "gas", brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0010015249", name: "turboTEC pro VUW 242/5-3", price: 136828, power: 24, circuits: 2, dhw: 11.5, dhwDt: 30, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "0010015263", name: "turboTEC plus VUW 242/5-5", price: 170531, power: 24, circuits: 2, dhw: 11.5, dhwDt: 30, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "0010015264", name: "turboTEC plus VUW 282/5-5", price: 187858, power: 28, circuits: 2, dhw: 13.4, dhwDt: 30, type: "gas", brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
         // Традиционные, одноконтурные VU — клапан бойлера встроен
-        { id: "0010015254", name: "turboTEC plus VU 202/5-5", price: 139659, power: 20, circuits: 1, dhwValve: true, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
-        { id: "0010015255", name: "turboTEC plus VU 242/5-5", price: 153341, power: 24, circuits: 1, dhwValve: true, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
-        { id: "0010015256", name: "turboTEC plus VU 282/5-5", price: 168317, power: 28, circuits: 1, dhwValve: true, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
-        { id: "0010020413", name: "turboTEC plus VU 322/5-5", price: 177045, power: 32, circuits: 1, dhwValve: true, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "0010015254", name: "turboTEC plus VU 202/5-5", price: 139659, power: 20, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "0010015255", name: "turboTEC plus VU 242/5-5", price: 153341, power: 24, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "0010015256", name: "turboTEC plus VU 282/5-5", price: 168317, power: 28, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "0010020413", name: "turboTEC plus VU 322/5-5", price: 177045, power: 32, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
         // Конденсационные, двухконтурные (60/100 PP)
-        { id: "0010026102", name: "ecoTEC intro VUW 18/24 AS/1-1 (H-RU)", price: 151188, power: 18, circuits: 2, dhw: 11.5, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
-        { id: "0010026103", name: "ecoTEC intro VUW 24/28 AS/1-1 (H-RU)", price: 158654, power: 24, circuits: 2, dhw: 13.4, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0010026102", name: "ecoTEC intro VUW 18/24 AS/1-1 (H-RU)", price: 151188, power: 18, circuits: 2, dhw: 11.5, dhwDt: 30, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0010026103", name: "ecoTEC intro VUW 24/28 AS/1-1 (H-RU)", price: 158654, power: 24, circuits: 2, dhw: 13.4, dhwDt: 30, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
         // Конденсационные, одноконтурные VU (60/100 PP) — клапан бойлера встроен
-        { id: "0010043977", name: "ecoTEC plus VU 20CS/1-5 (N-INT4)", price: 206801, power: 20, circuits: 1, dhwValve: true, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
-        { id: "0010043979", name: "ecoTEC plus VU 25CS/1-5 (N-INT4)", price: 218102, power: 25, circuits: 1, dhwValve: true, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
-        { id: "0010043980", name: "ecoTEC plus VU 30CS/1-5 (N-INT4)", price: 238607, power: 30, circuits: 1, dhwValve: true, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" }
+        { id: "0010043977", name: "ecoTEC plus VU 20CS/1-5 (N-INT4)", price: 206801, power: 20, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0010043979", name: "ecoTEC plus VU 25CS/1-5 (N-INT4)", price: 218102, power: 25, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0010043980", name: "ecoTEC plus VU 30CS/1-5 (N-INT4)", price: 238607, power: 30, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" }
     ],
     // Аксессуары Vaillant, которые ставит подбор (см. render(), раздел 2.1):
     //   306257 — датчик бойлера NTC: одноконтурному VU вместо комплекта 3-х ходового
@@ -1343,6 +1344,41 @@ const catalog = {
         { id: "0020171319", name: "Погодозависимый регулятор multiMATIC VRC 700/6", price: 47925, brand: "Vaillant", role: "weather", availability: "on_order", price_date: "2026-08-18" },
         { id: "0020260915", name: "Погодозависимый регулятор sensoCOMFORT VRC 720", price: 57650, brand: "Vaillant", role: "weather", availability: "on_order", price_date: "2026-08-18" },
         { id: "0020139895", name: "Коммутационный модуль VR 32 (каскад, на каждый котёл сверх первого)", price: 12182, brand: "Vaillant", role: "cascade", availability: "on_order", price_date: "2026-08-18" }
+    ],
+    // Navien — тоже только таблица замены. Из прайса ТЕРЕМ 08.2026 взяты линейки без
+    // дублей: Deluxe C Plus 2026 (двухконтурный, OpenTherm), Deluxe One 2026
+    // (одноконтурный, OpenTherm), NGB210 / NGB210 SYS (бюджет), NCB700 (конденсационный).
+    // Не берём: Deluxe S/C/PRO/Plus без «2026» (те же котлы за те же деньги, но без
+    // OpenTherm), атмосферный NGB150 (обвязка калькулятора под открытую камеру не
+    // подходит), электрические EQB (не газовые).
+    // Цены и наличие — с сайта teremonline на 18.08.2026 (у Navien единого
+    // коэффициента к прайсу нет: от 0,9 до 1,05), дальше ведёт AutoPrice.
+    // Одноконтурные Deluxe One и NGB210 SYS: трёхходовой клапан встроен и датчик
+    // бойлера в комплекте — ни комплекта клапана, ни датчика в смету не идёт (dhwValve
+    // без dhwSensor). dhw — л/мин при ΔT 25 °C (из прайса).
+    boilers_navien: [
+        // Deluxe C Plus 2026 — двухконтурные, панель на корпусе, OpenTherm, режим ТП
+        { id: "PNGB3520016L002", name: "Deluxe C Plus 2026 -16k", price: 52940, power: 16, circuits: 2, dhw: 13.8, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
+        { id: "PNGB3520020L002", name: "Deluxe C Plus 2026 -20k", price: 53777, power: 20, circuits: 2, dhw: 13.8, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
+        { id: "PNGB3520024L002", name: "Deluxe C Plus 2026 -24k", price: 54091, power: 24, circuits: 2, dhw: 13.8, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
+        { id: "PNGB3520030L002", name: "Deluxe C Plus 2026 -30k", price: 62775, power: 30, circuits: 2, dhw: 17.2, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
+        // Deluxe One 2026 — одноконтурные, клапан встроен, датчик бойлера в комплекте
+        { id: "PNGB3500024L006", name: "Deluxe One 2026 -24k", price: 54614, power: 24, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
+        { id: "PNGB3500030L010", name: "Deluxe One 2026 -30k", price: 63089, power: 30, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
+        { id: "PNGB3500035L010", name: "Deluxe One 2026 -35k", price: 64868, power: 35, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
+        { id: "PNGB3500040L006", name: "Deluxe One 2026 -40k", price: 68006, power: 40, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-18" },
+        // NGB210 — бюджетные двухконтурные
+        { id: "PNGB2100013L001", name: "NGB210-13K", price: 37383, power: 13, circuits: 2, dhw: 13.7, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "PNGB2100016L001", name: "NGB210-16K", price: 37853, power: 16, circuits: 2, dhw: 13.7, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
+        { id: "PNGB2100024L001", name: "NGB210-24K", price: 38324, power: 24, circuits: 2, dhw: 13.7, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
+        { id: "PNGB2100032L002", name: "NGB210-32K", price: 45010, power: 32, circuits: 2, dhw: 18, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-18" },
+        // NGB210 SYS — бюджетные одноконтурные, клапан встроен, датчик в комплекте
+        { id: "PNGB2100020L002", name: "NGB210 SYS-20H", price: 40772, power: 20, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
+        { id: "PNGB2100024L002", name: "NGB210 SYS-24H", price: 42655, power: 24, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "PNGB2100032L001", name: "NGB210 SYS-32H", price: 48400, power: 32, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-18" },
+        // NCB700 — конденсационные двухконтурные (дымоход — универсальный ROMMER для конденсационных)
+        { id: "PNCB7000028L001", name: "NCB700-24K", price: 84513, power: 24, circuits: 2, dhw: 16.1, type: "gas", cond: true, brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
+        { id: "PNCB7000041L001", name: "NCB700-35K", price: 95580, power: 35, circuits: 2, dhw: 22.9, type: "gas", cond: true, brand: "Navien", availability: "on_order", price_date: "2026-08-18" }
     ],
     // PLUS СНЯТ С ПРОИЗВОДСТВА. Из подбора и из таблицы замен убран — см. app.init()
     // (alts гасятся) и render() (серия читается как STATUS). Массив оставлен НАМЕРЕННО:
