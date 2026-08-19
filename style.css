@@ -12015,9 +12015,25 @@ body.lk-docked #profile_nav {
     z-index: 900;
 }
 
+/* Наверху панель занимает всю ширину экрана, поэтому пункты не жмутся к левому
+   краю, а разбирают её между собой: блоки делят свободное место, внутри блока —
+   пункты. Нижняя граница 72 px не даёт подписям рваться посреди слова («Сообщения»
+   требует 67), верхняя 120 px — превратиться в широкие полосы с крошечным значком
+   посередине. */
+.lk-rail.dock-top {
+    justify-content: space-between;
+}
+
+.lk-rail.dock-top .lk-rail-group {
+    flex: 1 1 auto;
+    justify-content: space-evenly;
+}
+
 .lk-rail.dock-top .lk-rail-item {
-    flex: 0 0 64px;
-    width: 64px;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 72px;
+    max-width: 120px;
 }
 
 .lk-rail.dock-top .lk-rail-sep {
@@ -12028,6 +12044,7 @@ body.lk-docked #profile_nav {
 }
 
 .lk-rail.dock-top .lk-rail-grip {
+    flex: 0 0 12px;
     width: 12px;
     height: auto;
     margin: 2px 6px 2px 0;

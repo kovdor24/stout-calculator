@@ -9508,15 +9508,22 @@ const app = {
                 document.body.appendChild(hint);
             }
             const headerBox = document.querySelector('.site-header').getBoundingClientRect();
-            const railBox = rail.getBoundingClientRect();
+            // Размер будущего места считаем по числам из CSS, а не по нынешнему
+            // размеру панели: она сейчас может быть лентой во всю ширину, и подсветка
+            // «слева» тогда растягивалась на весь экран. Обёртка страницы уменьшена
+            // zoom-ом, поэтому переводим в экранные пиксели тем же множителем.
+            const wrap = document.getElementById('page_scale_wrapper');
+            const zoom = (wrap && parseFloat(getComputedStyle(wrap).zoom)) || 1;
+            const columnW = Math.round(84 * zoom);   // ширина .lk-rail колонкой
+            const stripH = Math.round(66 * zoom);    // высота .lk-rail лентой
             if (where === 'top') {
                 hint.style.left = Math.round(headerBox.left + 12) + 'px';
                 hint.style.width = Math.round(headerBox.width - 24) + 'px';
                 hint.style.top = Math.round(headerBox.bottom + 6) + 'px';
-                hint.style.height = '54px';
+                hint.style.height = stripH + 'px';
             } else {
                 hint.style.left = Math.round(headerBox.left + 12) + 'px';
-                hint.style.width = Math.round(railBox.width || 67) + 'px';
+                hint.style.width = columnW + 'px';
                 hint.style.top = Math.round(headerBox.bottom + 16) + 'px';
                 hint.style.height = Math.round(window.innerHeight - headerBox.bottom - 32) + 'px';
             }
@@ -9528,13 +9535,13 @@ const app = {
             if (hint) hint.remove();
         };
 
-        // Куда целится курсор: верхняя полоса экрана — «сверху», левый край — «слева».
-        // За пределами обеих зон оставляем панель там, где она была.
+        // Мест всего два, поэтому делим экран пополам по смыслу: подтянул к шапке —
+        // лента сверху, потянул ниже — колонка слева. Отдельной «мёртвой» зоны нет
+        // намеренно: раньше при перетаскивании вниз от ленты панель просто оставалась
+        // на месте, и это выглядело так, будто её не отпустили.
         const zoneAt = (ev) => {
             const headerBottom = document.querySelector('.site-header').getBoundingClientRect().bottom;
-            if (ev.clientY < headerBottom + 90) return 'top';
-            if (ev.clientX < 220) return 'left';
-            return null;
+            return (ev.clientY < headerBottom + 90) ? 'top' : 'left';
         };
 
         const onMove = (ev) => {
