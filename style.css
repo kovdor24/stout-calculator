@@ -11355,6 +11355,31 @@ select.rec-btn-g { padding-right: 8px; }
 }
 .rec-dupnote span { flex: 1; min-width: 200px; }
 
+/* ── Планы этажей ──
+   Переключатель «Смету / План этажа» над зоной загрузки — те же вкладки, что
+   разделяют оборудование и работы на проверке: один язык на весь мастер. */
+.rec-head-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.rec-kind { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.rec-kind-l { font-size: 12.5px; color: var(--text-sec, #94a3b8); margin-right: 6px; }
+
+/* Строка листа в таблице помещений: этаж и потолок правятся на весь лист
+   разом — один лист плана это один этаж. */
+.rec-table tr.rec-plan-group td {
+    background: var(--surface-light, #f1f5f9);
+    border-top: 2px solid var(--border, #cbd5e1);
+}
+.rec-plan-group-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 12.5px; }
+.rec-plan-group-row label { display: inline-flex; gap: 6px; align-items: center; font-weight: 500; }
+.rec-plan-sel { width: auto; padding-right: 6px; }
+.rec-plan-h { width: 64px; }
+.rec-plan-ok { color: #16a34a; font-weight: 600; }
+.rec-plan-warn { color: #d97706; font-weight: 600; }
+/* Площадь не прочитана — жёлтым, как неподобранная позиция сметы; оценена
+   по пропорциям — бледнее: цифра есть, но ей нельзя верить без проверки. */
+.rec-table tr.rec-plan-est td { background: rgba(245, 158, 11, .09); }
+.rec-plan-notes { font-size: 11.5px; color: var(--text-sec, #94a3b8); }
+.rec-plan-notes div + div { margin-top: 2px; }
+
 
 /* ═══════════ АДМИНКА · ВКЛАДКА «СООБЩЕНИЯ» ═══════════ */
 /* Раскладка и оформление сняты с Telegram Desktop: слева список чатов, справа

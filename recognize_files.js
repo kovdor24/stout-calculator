@@ -537,11 +537,16 @@ const RecognizeFiles = {
         return many;
     },
 
-    async fromPdf(buf, onProgress) {
+    /**
+     * forceImages — страницы нужны картинками независимо от текстового слоя.
+     * Так читается план этажа: текстом в чертеже лежат размерные цепочки и
+     * подписи, а помещения — это стены, которые нарисованы.
+     */
+    async fromPdf(buf, onProgress, forceImages) {
         const pdfjs = await this.loadPdfJs();
         const pdf = await pdfjs.getDocument({ data: buf }).promise;
 
-        const maxPages = Math.min(pdf.numPages, this.PDF_MAX_PAGES);
+        const maxPages = forceImages ? 0 : Math.min(pdf.numPages, this.PDF_MAX_PAGES);
         let text = '';
         let probeChars = 0, probeOps = 0, probed = 0;
         for (let i = 1; i <= maxPages; i++) {
@@ -635,8 +640,10 @@ const RecognizeFiles = {
     /**
      * Возвращает { kind, text, images }.
      * text — если удалось достать текст, images — если пришлось рисовать.
+     * opts.forceImages — PDF отдать страницами-картинками, даже если в нём
+     * есть текст (план этажа).
      */
-    async extract(file, onProgress) {
+    async extract(file, onProgress, opts) {
         const kind = this.kindOf(file);
         if (!kind) throw new Error('Формат не поддерживается: ' + (file.name || ''));
 
@@ -656,8 +663,8 @@ const RecognizeFiles = {
         if (kind === 'xls') return { kind, text: (await this.fromXls(buf)).trim(), images: [] };
         if (kind === 'docx') return { kind, text: (await this.fromDocx(buf)).trim(), images: [] };
         if (kind === 'pdf') {
-            const r = await this.fromPdf(buf, onProgress);
-            return { kind, text: r.text, images: r.images };
+            const r = await this.fromPdf(buf, onProgress, !!(opts && opts.forceImages));
+            return { kind, text: r.text, images: r.images, note: r.note };
         }
         throw new Error('Формат не поддерживается');
     },
