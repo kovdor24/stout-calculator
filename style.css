@@ -11717,23 +11717,32 @@ select.rec-btn-g { padding-right: 8px; }
    зачем она появилась (кабинет никто не находил: единственным входом был клик по
    собственному имени в шапке).
 
-   Показываем только от 1025 px. Ниже этой ширины .container переворачивается в
-   колонку (медиазапросы выше по файлу), и вертикальная полоса иконок растянулась
-   бы на всю ширину поперёк экрана; на телефоне и планшете в портрете за навигацию
-   отвечает нижняя панель .mobile-bottom-nav.
+   Показываем ровно там, где у сайта двухколоночный десктопный макет. Условие
+   повторяет медиазапрос мобильной вёрстки (см. «max-width: 768px, max-width:
+   1024px и портрет, альбомная с max-height: 500px» выше по файлу) и заодно
+   app.isMobileLayout(): где .container переворачивается в колонку, полоса иконок
+   легла бы поперёк экрана, и там за навигацию отвечает нижняя панель
+   .mobile-bottom-nav. Брать просто «от 1025 px» нельзя: ноутбук с окном ровно в
+   1024 px и планшет в альбомной ориентации считаются десктопом, нижней панели у
+   них нет — они остались бы вообще без входа в кабинет.
 
    Про размеры: всё внутри #page_scale_wrapper уменьшено zoom: 0.8, поэтому
-   указанные тут 80 px на экране выглядят как 64, а 11.5 px шрифта — как 9. Числа
-   подобраны уже с учётом этого, уменьшать их «на глаз» не нужно. */
+   указанные тут 84 px на экране выглядят как 67, а 11.5 px шрифта — как 9. Числа
+   подобраны уже с учётом этого, уменьшать их «на глаз» не нужно.
+
+   Ширина и отступы подогнаны по самой длинной подписи, которая обязана уместиться
+   в строку, — «Сообщения» (66.6 px шрифтом Inter 600 11.5px). Под текст остаётся
+   70 px: 84 минус свои отступы 2×4, рамка 2×1 и отступы пункта 2×2. Уменьшишь
+   ширину или отступы — «Сообщения» и «Менеджер» порвутся посреди слова. */
 .lk-rail {
     display: none;
-    flex: 0 0 80px;
-    width: 80px;
+    flex: 0 0 84px;
+    width: 84px;
     box-sizing: border-box;
     flex-direction: column;
     align-items: stretch;
     gap: 2px;
-    padding: 7px 5px;
+    padding: 7px 4px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
@@ -11749,9 +11758,16 @@ select.rec-btn-g { padding-right: 8px; }
     z-index: 5;
 }
 
-@media screen and (min-width: 1025px) {
+@media screen and (min-width: 769px) {
     .lk-rail {
         display: flex;
+    }
+}
+
+@media screen and (max-width: 1024px) and (orientation: portrait),
+       screen and (orientation: landscape) and (max-height: 500px) {
+    .lk-rail {
+        display: none !important;
     }
 }
 
@@ -11767,7 +11783,7 @@ body.guest-mode .lk-rail {
     align-items: center;
     justify-content: flex-start;
     gap: 3px;
-    padding: 7px 3px 6px;
+    padding: 7px 2px 6px;
     border: 1px solid transparent;
     border-radius: 10px;
     background: transparent;
