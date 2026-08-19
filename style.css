@@ -11957,17 +11957,26 @@ body.lk-docked #profile_nav {
     display: none;
 }
 
-/* Включённый режим обучения виден по кнопке в шапке (Tour.syncButton) */
-.btn-ctrl.is-on {
+/* Включённый режим обучения виден по кнопке в шапке (класс ставит Tour.syncButton).
+   Заливка, а не подсветка: подсветка совпадает с наведением, а курсор после нажатия
+   остаётся на кнопке — состояние выглядело бы неизменным. Наведение на включённую
+   кнопку только притемняет заливку, чтобы «включено» и «наведено» не путались. */
+.btn-ctrl.is-on,
+.btn-ctrl.is-on:hover {
     border-color: var(--primary);
-    color: var(--primary);
-    background: var(--primary-light);
+    background: var(--primary);
+    color: #FFFFFF;
 }
 
-body.dark-mode .btn-ctrl.is-on {
+.btn-ctrl.is-on:hover {
+    filter: brightness(0.92);
+}
+
+body.dark-mode .btn-ctrl.is-on,
+body.dark-mode .btn-ctrl.is-on:hover {
     border-color: #6366F1;
-    color: #818CF8;
-    background: rgba(99, 102, 241, 0.15);
+    background: #6366F1;
+    color: #FFFFFF;
 }
 
 /* Логотип — кнопка возврата к расчёту (app.goHome) */

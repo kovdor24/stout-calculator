@@ -361,17 +361,6 @@
                         <path d="M3 3v5h5"></path>
                     </svg>
                 </button>
-                <!-- Режим обучения. Раньше это была галочка отдельной строкой над колонками:
-                     её не замечали, а на телефоне она занимала место в самом верху экрана.
-                     Состояние кнопки и подсказку ставит Tour.syncButton (tour.js). -->
-                <button class="btn-ctrl" id="btn_tour" onclick="Tour.toggleFromButton()"
-                    title="Режим обучения: подсказки на каждом шаге" aria-pressed="false">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 10 12 5 2 10l10 5 10-5z"></path>
-                        <path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"></path>
-                    </svg>
-                </button>
                 <!-- Иконку и подсказку проставляет app.updateThemeButton по текущему режиму
                      (светлая / тёмная / авто по закату); здесь — только вид до загрузки. -->
                 <button class="btn-ctrl" id="btn_theme" onclick="app.cycleThemeMode()"
@@ -399,6 +388,21 @@
                         <path d="M10 17h4"></path>
                     </svg>
                 </a>
+
+                <!-- Режим обучения. Раньше это была галочка отдельной строкой над колонками:
+                     её не замечали, а на телефоне она занимала место в самом верху экрана.
+                     Включённый режим показывает заливкой (класс is-on): подсветки, как при
+                     наведении, здесь мало — палец или курсор остаётся на кнопке после нажатия
+                     и состояние выглядело бы неизменным. Класс и подсказку ставит
+                     Tour.syncButton (tour.js). -->
+                <button class="btn-ctrl" id="btn_tour" onclick="Tour.toggleFromButton()"
+                    title="Режим обучения: подсказки на каждом шаге" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 10 12 5 2 10l10 5 10-5z"></path>
+                        <path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"></path>
+                    </svg>
+                </button>
             </div>
             <div id="header_totals" class="header-totals-block no-print"></div>
         </div>
