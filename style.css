@@ -9449,7 +9449,7 @@ body.dark-mode .cw-achieve.earned {
    или включён подробный режим, обычные отступы возвращаются. Только десктоп:
    на телефоне колонки идут друг под другом и в экран не влезут при любом
    отступе. */
-@media screen and (min-width: 900px) {
+@media screen and (min-width: 900px) and (min-height: 501px) {
     body.empty-fit .container {
         padding-top: 6px;
         padding-bottom: 6px;
@@ -9511,6 +9511,32 @@ body.dark-mode .cw-achieve.earned {
     body.empty-fit .input-panel,
     body.empty-fit .input-panel.fast-mode {
         max-height: calc(125vh - 130px);
+        padding: 12px 14px;
+    }
+
+    /* Почти 40 % высоты колонки настроек — это отступы между блоками. На пустом
+       экране снимаем их до минимума, чтобы список настроек помещался целиком без
+       уменьшения текста. Что не поместилось после этого, доберёт масштабом
+       syncEmptyFitPanelScale() в app.js. */
+    body.empty-fit .input-panel > h3,
+    body.empty-fit .input-panel > h4 {
+        margin-top: 8px;
+        margin-bottom: 4px;
+    }
+
+    body.empty-fit .input-panel > h3:first-child {
+        margin-top: 0;
+    }
+
+    body.empty-fit .input-panel > .control-item {
+        margin-bottom: 8px;
+    }
+
+    body.empty-fit .input-panel > .toggle-item {
+        margin-top: 8px;
+        margin-bottom: 8px;
+        padding-top: 8px;
+        padding-bottom: 8px;
     }
 
     /* Подвал с копирайтом и ссылками на оферту занимает 143 px — ровно их и не

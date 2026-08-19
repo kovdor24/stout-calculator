@@ -3103,6 +3103,81 @@ const app = {
         btn.style.display = hide ? 'none' : 'flex';
         if (!hide) this.applyAiFabCollapsedState();
     },
+    // Пустой экран в быстром режиме: колонка настроек тоже должна помещаться
+    // целиком. Лишние отступы уже сняты стилями (body.empty-fit), остаток добираем
+    // масштабом — ровно настолько, насколько не хватило. Ниже 0.8 не опускаемся:
+    // мельче текст уже не прочитать, там панели возвращается своя прокрутка.
+    _emptyFitPanelMinScale: 0.8,
+    syncEmptyFitPanelScale: function () {
+        const panel = document.querySelector('.input-panel');
+        if (!panel) return;
+        // Мобильная раскладка (узкое окно, планшет стоймя, телефон набок) — колонки
+        // идут друг под другом, ужимать нечего. Границы те же, что в style.css.
+        const desktop = window.innerWidth >= 900 && window.innerHeight > 500 && !this.isMobileLayout();
+        const fit = document.body.classList.contains('empty-fit') && desktop;
+        if (!fit) {
+            if (panel.style.zoom) { panel.style.zoom = ''; panel.style.maxHeight = ''; }
+            const outPanel = document.querySelector('.output-panel');
+            if (outPanel && outPanel.style.minHeight) outPanel.style.minHeight = '';
+            return;
+        }
+        // Страница отрисовывается в zoom 0.8 (#page_scale_wrapper): scrollHeight
+        // отдаёт высоту в единицах вёрстки, getBoundingClientRect — в экранных.
+        // Коэффициент снимаем с самой обёртки, чтобы не зашивать 0.8 второй раз и
+        // не спутать его с масштабом, который вешаем на панель ниже.
+        const wrap = document.getElementById('page_scale_wrapper');
+        const k = (wrap && wrap.offsetWidth) ? (wrap.getBoundingClientRect().width / wrap.offsetWidth) : 1;
+        // Высоту листа сметы тоже считаем здесь, а не в CSS: над колонками может
+        // стоять лента кабинета (меню перенесено наверх), и вычесть в стилях
+        // «шапку с полями» больше недостаточно — верх колонки уезжает вниз.
+        const out = document.querySelector('.output-panel');
+        if (out) {
+            const availOut = Math.floor((window.innerHeight - out.getBoundingClientRect().top - 8) / k);
+            const wanted = availOut > 0 ? (availOut + 'px') : '';
+            if (out.style.minHeight !== wanted) out.style.minHeight = wanted;
+        }
+        const avail = window.innerHeight - panel.getBoundingClientRect().top - 8;
+        // scrollHeight у панели остаётся натуральным: собственный zoom элемента
+        // на его внутренние единицы не влияет. Поэтому мерить можно, ничего
+        // предварительно не сбрасывая.
+        const need = panel.scrollHeight * k;
+        if (avail <= 0 || need <= 0) return;
+        let scale = need > avail ? Math.max(this._emptyFitPanelMinScale, avail / need) : 1;
+        scale = Math.min(1, Math.round(scale * 1000) / 1000);
+        const current = parseFloat(panel.style.zoom) || 1;
+        // Считаем то же самое — молча уходим. Без этой проверки наблюдатель за
+        // размером панели крутил бы себя сам: правка стиля меняет размер, размер
+        // будит наблюдателя, наблюдатель правит стиль.
+        if (Math.abs(scale - current) < 0.002) return;
+        panel.style.zoom = scale < 1 ? String(scale) : '';
+        // Потолок панели задан в стилях от 125vh и вместе с ней сожмётся —
+        // пересчитываем его в единицах вёрстки под фактический экран, иначе внутри
+        // панели появится прокрутка на ровном месте.
+        panel.style.maxHeight = scale < 1 ? (Math.floor(avail / (k * scale)) + 'px') : '';
+    },
+    // Отложенный пересчёт: за одну отрисовку панель трогают десятки раз, а ответ
+    // у них один. Таймером, а не requestAnimationFrame: в фоновой вкладке кадры
+    // не рисуются, и подгон бы там просто не случился.
+    queueEmptyFitPanelScale: function () {
+        if (this._emptyFitScalePending) return;
+        this._emptyFitScalePending = true;
+        setTimeout(() => {
+            this._emptyFitScalePending = false;
+            this.syncEmptyFitPanelScale();
+        }, 0);
+    },
+    // Набор видимых настроек меняется не только из render()/syncUI(): блоки
+    // показываются и прячутся по ходу дела, а при первой отрисовке панель вообще
+    // может быть ещё пустой. Следить за размером самой панели бесполезно — он
+    // упёрт в потолок и не меняется, поэтому смотрим за содержимым.
+    initEmptyFitPanelObserver: function () {
+        if (this._emptyFitObserver || typeof MutationObserver === 'undefined') return;
+        const panel = document.querySelector('.input-panel');
+        if (!panel) return;
+        this._emptyFitObserver = new MutationObserver(() => this.queueEmptyFitPanelScale());
+        this._emptyFitObserver.observe(panel, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+    },
+
     // Кружок — состояние по умолчанию: развёрнутая подпись стоит поверх сметы, а
     // нужна она один раз, в начале расчёта. Ключа в localStorage нет — значит
     // свёрнута; подпись видит только тот, кто сам её развернул.
@@ -9720,6 +9795,9 @@ const app = {
         // Пристыкованный кабинет считает свой прямоугольник по панели и колонкам —
         // после переезда его надо пересчитать
         this.updateCabinetDockGeometry();
+        // Лента наверху забирает высоту у обеих колонок — на пустом экране их
+        // подгонку надо пересчитать, сами они об этом переезде не узнают.
+        this.queueEmptyFitPanelScale();
     },
 
     initRailDrag: function () {
@@ -31359,6 +31437,10 @@ const app = {
 
         this.initCityAutocomplete();
         this.initAiFabDrag();
+        this.initEmptyFitPanelObserver();
+        // Пустой экран подогнан под конкретную высоту окна — при её изменении
+        // (другой монитор, свёрнутое окно, повёрнутый планшет) считаем заново.
+        window.addEventListener('resize', () => this.syncEmptyFitPanelScale());
     },
     getPower: function () {
         let regVal = (this.state.region !== undefined) ? (this.state.region / 100) : 1.0;
@@ -41707,6 +41789,12 @@ const app = {
             if (isMobile && isGuest && btnShare) btnShare.style.display = 'none';
             this.syncFooterAccent();
         }
+
+        // Набор видимых настроек только что пересобран — самое время подогнать
+        // высоту колонки под экран (пустой расчёт, см. syncEmptyFitPanelScale).
+        // Из render() одного вызова мало: там панель меряется до того, как syncUI
+        // покажет или спрячет свои блоки.
+        this.queueEmptyFitPanelScale();
     },
 
     // Цветная кнопка в ряду под сметой всегда ровно одна. «Ссылка для клиента»
@@ -52056,6 +52144,9 @@ const app = {
         // в style.css) и снимается сразу, как задана площадь или включён подробный
         // режим: там прокрутка нужна по делу.
         document.body.classList.toggle('empty-fit', this.isCalcEmpty() && !this.state.detailedRooms);
+        // Мерить панель настроек сразу нельзя: класс только что повешен, и браузер
+        // ещё не пересчитал с ним раскладку.
+        this.queueEmptyFitPanelScale();
 
         if (this.state.area <= 0 && !hasUserRows) {
             // Кнопка быстрого старта стоит здесь же, в центре пустой сметы: место,
