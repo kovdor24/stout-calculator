@@ -1312,18 +1312,18 @@ const catalog = {
     // dhw — производительность ГВС, л/мин; dhwDt — при каком ΔT (у Vaillant 30 °C, без поля — 25 °C).
     boilers_vaillant: [
         // Традиционные (закрытая камера), двухконтурные
-        { id: "0010020901", name: "turboFIT VUW 242/5-2", price: 94549, power: 24, circuits: 2, dhw: 11, dhwDt: 30, type: "gas", brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
-        { id: "0010015249", name: "turboTEC pro VUW 242/5-3", price: 136828, power: 24, circuits: 2, dhw: 11.5, dhwDt: 30, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
-        { id: "0010015263", name: "turboTEC plus VUW 242/5-5", price: 170531, power: 24, circuits: 2, dhw: 11.5, dhwDt: 30, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
-        { id: "0010015264", name: "turboTEC plus VUW 282/5-5", price: 187858, power: 28, circuits: 2, dhw: 13.4, dhwDt: 30, type: "gas", brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0010020901", name: "turboFIT VUW 242/5-2", price: 94548, power: 24, circuits: 2, dhw: 11, dhwDt: 30, type: "gas", brand: "Vaillant", availability: "on_order", price_date: "2026-08-20" },
+        { id: "0010015249", name: "turboTEC pro VUW 242/5-3", price: 136827, power: 24, circuits: 2, dhw: 11.5, dhwDt: 30, type: "gas", brand: "Vaillant", availability: "on_order", price_date: "2026-08-20" },
+        { id: "0010015263", name: "turboTEC plus VUW 242/5-5", price: 170531, power: 24, circuits: 2, dhw: 11.5, dhwDt: 30, type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "0010015264", name: "turboTEC plus VUW 282/5-5", price: 187858, power: 28, circuits: 2, dhw: 13.4, dhwDt: 30, type: "gas", brand: "Vaillant", availability: "on_order", price_date: "2026-08-20" },
         // Традиционные, одноконтурные VU — клапан бойлера встроен
-        { id: "0010015254", name: "turboTEC plus VU 202/5-5", price: 139659, power: 20, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
-        { id: "0010015255", name: "turboTEC plus VU 242/5-5", price: 153341, power: 24, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
-        { id: "0010015256", name: "turboTEC plus VU 282/5-5", price: 168317, power: 28, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
-        { id: "0010020413", name: "turboTEC plus VU 322/5-5", price: 177045, power: 32, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "0010015254", name: "turboTEC plus VU 202/5-5", price: 139659, power: 20, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "0010015255", name: "turboTEC plus VU 242/5-5", price: 153341, power: 24, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "0010015256", name: "turboTEC plus VU 282/5-5", price: 168317, power: 28, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "0010020413", name: "turboTEC plus VU 322/5-5", price: 177044, power: 32, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", brand: "Vaillant", availability: "in_stock", price_date: "2026-08-20" },
         // Конденсационные, двухконтурные (60/100 PP)
-        { id: "0010026102", name: "ecoTEC intro VUW 18/24 AS/1-1 (H-RU)", price: 151188, power: 18, circuits: 2, dhw: 11.5, dhwDt: 30, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
-        { id: "0010026103", name: "ecoTEC intro VUW 24/28 AS/1-1 (H-RU)", price: 158654, power: 24, circuits: 2, dhw: 13.4, dhwDt: 30, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
+        { id: "0010026102", name: "ecoTEC intro VUW 18/24 AS/1-1 (H-RU)", price: 151188, power: 18, circuits: 2, dhw: 11.5, dhwDt: 30, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-20" },
+        { id: "0010026103", name: "ecoTEC intro VUW 24/28 AS/1-1 (H-RU)", price: 158654, power: 24, circuits: 2, dhw: 13.4, dhwDt: 30, type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-20" },
         // Конденсационные, одноконтурные VU (60/100 PP) — клапан бойлера встроен
         { id: "0010043977", name: "ecoTEC plus VU 20CS/1-5 (N-INT4)", price: 206801, power: 20, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
         { id: "0010043979", name: "ecoTEC plus VU 25CS/1-5 (N-INT4)", price: 218102, power: 25, circuits: 1, dhwValve: true, dhwSensor: "306257", type: "gas", cond: true, brand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
@@ -1343,7 +1343,7 @@ const catalog = {
         { id: "0020260945", name: "Комнатный регулятор VRT 380 (eBUS, модулирующий)", price: 27906, brand: "Vaillant", role: "room", availability: "on_order", price_date: "2026-08-18" },
         { id: "0020171319", name: "Погодозависимый регулятор multiMATIC VRC 700/6", price: 47925, brand: "Vaillant", role: "weather", availability: "on_order", price_date: "2026-08-18" },
         { id: "0020260915", name: "Погодозависимый регулятор sensoCOMFORT VRC 720", price: 57650, brand: "Vaillant", role: "weather", availability: "on_order", price_date: "2026-08-18" },
-        { id: "0020139895", name: "Коммутационный модуль VR 32 (каскад, на каждый котёл сверх первого)", price: 12182, brand: "Vaillant", role: "cascade", availability: "on_order", price_date: "2026-08-18" }
+        { id: "0020139895", name: "Коммутационный модуль VR 32 (каскад, на каждый котёл сверх первого)", price: 12182, brand: "Vaillant", role: "cascade", availability: "on_order", price_date: "2026-08-20" }
     ],
     // Navien — тоже только таблица замены. Из прайса ТЕРЕМ 08.2026 взяты линейки без
     // дублей: Deluxe C Plus 2026 (двухконтурный, OpenTherm), Deluxe One 2026
@@ -1358,27 +1358,27 @@ const catalog = {
     // без dhwSensor). dhw — л/мин при ΔT 25 °C (из прайса).
     boilers_navien: [
         // Deluxe C Plus 2026 — двухконтурные, панель на корпусе, OpenTherm, режим ТП
-        { id: "PNGB3520016L002", name: "Deluxe C Plus 2026 -16k", price: 52940, power: 16, circuits: 2, dhw: 13.8, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
-        { id: "PNGB3520020L002", name: "Deluxe C Plus 2026 -20k", price: 53777, power: 20, circuits: 2, dhw: 13.8, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
-        { id: "PNGB3520024L002", name: "Deluxe C Plus 2026 -24k", price: 54091, power: 24, circuits: 2, dhw: 13.8, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
-        { id: "PNGB3520030L002", name: "Deluxe C Plus 2026 -30k", price: 62775, power: 30, circuits: 2, dhw: 17.2, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
+        { id: "PNGB3520016L002", name: "Deluxe C Plus 2026 -16k", price: 52940, power: 16, circuits: 2, dhw: 13.8, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-20" },
+        { id: "PNGB3520020L002", name: "Deluxe C Plus 2026 -20k", price: 53777, power: 20, circuits: 2, dhw: 13.8, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-20" },
+        { id: "PNGB3520024L002", name: "Deluxe C Plus 2026 -24k", price: 54091, power: 24, circuits: 2, dhw: 13.8, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-20" },
+        { id: "PNGB3520030L002", name: "Deluxe C Plus 2026 -30k", price: 62775, power: 30, circuits: 2, dhw: 17.2, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-20" },
         // Deluxe One 2026 — одноконтурные, клапан встроен, датчик бойлера в комплекте
-        { id: "PNGB3500024L006", name: "Deluxe One 2026 -24k", price: 54614, power: 24, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
-        { id: "PNGB3500030L010", name: "Deluxe One 2026 -30k", price: 63089, power: 30, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
-        { id: "PNGB3500035L010", name: "Deluxe One 2026 -35k", price: 64868, power: 35, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
-        { id: "PNGB3500040L006", name: "Deluxe One 2026 -40k", price: 68006, power: 40, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "PNGB3500024L006", name: "Deluxe One 2026 -24k", price: 54614, power: 24, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-20" },
+        { id: "PNGB3500030L010", name: "Deluxe One 2026 -30k", price: 63088, power: 30, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-20" },
+        { id: "PNGB3500035L010", name: "Deluxe One 2026 -35k", price: 64867, power: 35, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-20" },
+        { id: "PNGB3500040L006", name: "Deluxe One 2026 -40k", price: 68006, power: 40, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-20" },
         // NGB210 — бюджетные двухконтурные
-        { id: "PNGB2100013L001", name: "NGB210-13K", price: 37383, power: 13, circuits: 2, dhw: 13.7, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-18" },
-        { id: "PNGB2100016L001", name: "NGB210-16K", price: 37853, power: 16, circuits: 2, dhw: 13.7, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
-        { id: "PNGB2100024L001", name: "NGB210-24K", price: 38324, power: 24, circuits: 2, dhw: 13.7, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
-        { id: "PNGB2100032L002", name: "NGB210-32K", price: 45010, power: 32, circuits: 2, dhw: 18, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "PNGB2100013L001", name: "NGB210-13K", price: 37382, power: 13, circuits: 2, dhw: 13.7, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "PNGB2100016L001", name: "NGB210-16K", price: 37853, power: 16, circuits: 2, dhw: 13.7, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-20" },
+        { id: "PNGB2100024L001", name: "NGB210-24K", price: 38324, power: 24, circuits: 2, dhw: 13.7, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-20" },
+        { id: "PNGB2100032L002", name: "NGB210-32K", price: 45009, power: 32, circuits: 2, dhw: 18, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-20" },
         // NGB210 SYS — бюджетные одноконтурные, клапан встроен, датчик в комплекте
-        { id: "PNGB2100020L002", name: "NGB210 SYS-20H", price: 40772, power: 20, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
-        { id: "PNGB2100024L002", name: "NGB210 SYS-24H", price: 42655, power: 24, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-18" },
-        { id: "PNGB2100032L001", name: "NGB210 SYS-32H", price: 48400, power: 32, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-18" },
+        { id: "PNGB2100020L002", name: "NGB210 SYS-20H", price: 40772, power: 20, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "on_order", price_date: "2026-08-20" },
+        { id: "PNGB2100024L002", name: "NGB210 SYS-24H", price: 42655, power: 24, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "PNGB2100032L001", name: "NGB210 SYS-32H", price: 48399, power: 32, circuits: 1, dhwValve: true, type: "gas", brand: "Navien", availability: "in_stock", price_date: "2026-08-20" },
         // NCB700 — конденсационные двухконтурные (дымоход — универсальный ROMMER для конденсационных)
-        { id: "PNCB7000028L001", name: "NCB700-24K", price: 84513, power: 24, circuits: 2, dhw: 16.1, type: "gas", cond: true, brand: "Navien", availability: "on_order", price_date: "2026-08-18" },
-        { id: "PNCB7000041L001", name: "NCB700-35K", price: 95580, power: 35, circuits: 2, dhw: 22.9, type: "gas", cond: true, brand: "Navien", availability: "on_order", price_date: "2026-08-18" }
+        { id: "PNCB7000028L001", name: "NCB700-24K", price: 84512, power: 24, circuits: 2, dhw: 16.1, type: "gas", cond: true, brand: "Navien", availability: "on_order", price_date: "2026-08-20" },
+        { id: "PNCB7000041L001", name: "NCB700-35K", price: 95579, power: 35, circuits: 2, dhw: 22.9, type: "gas", cond: true, brand: "Navien", availability: "on_order", price_date: "2026-08-20" }
     ],
     // PLUS СНЯТ С ПРОИЗВОДСТВА. Из подбора и из таблицы замен убран — см. app.init()
     // (alts гасятся) и render() (серия читается как STATUS). Массив оставлен НАМЕРЕННО:
@@ -1436,8 +1436,8 @@ const catalog = {
         // Родные дымоходы Vaillant PP — только для конденсационных Vaillant (forBrand):
         // их render() ставит по умолчанию вместо универсального ROMMER, традиционные
         // turboTEC остаются на STOUT/ROMMER. Цена = прайс ТЕРЕМ × 0,8, как на сайте.
-        { id: "0020219516", name: "Дымоход коаксиальный 60/100 PP, горизонтальный проход через стену (для конденсационных Vaillant)", price: 12030, brand: "Vaillant", chimType: "cond", forBrand: "Vaillant", availability: "on_order", price_date: "2026-08-18" },
-        { id: "0020220656", name: "Дымоход коаксиальный 60/100 PP, вертикальный проход через крышу, чёрный (для конденсационных Vaillant)", price: 12334, brand: "Vaillant", chimType: "cond", forBrand: "Vaillant", availability: "on_order", price_date: "2026-08-18" }
+        { id: "0020219516", name: "Дымоход коаксиальный 60/100 PP, горизонтальный проход через стену (для конденсационных Vaillant)", price: 12030, brand: "Vaillant", chimType: "cond", forBrand: "Vaillant", availability: "on_order", price_date: "2026-08-20" },
+        { id: "0020220656", name: "Дымоход коаксиальный 60/100 PP, вертикальный проход через крышу, чёрный (для конденсационных Vaillant)", price: 12333, brand: "Vaillant", chimType: "cond", forBrand: "Vaillant", availability: "on_order", price_date: "2026-08-20" }
     ],
     stabs: [
         { id: "SST-0001-000250", name: "Стабилизатор ST 250", price: 4972, type: "gas", availability: "in_stock", price_date: "2026-08-10" },
@@ -1446,7 +1446,7 @@ const catalog = {
     ],
     valves: [
         // STOUT SFB-0001-000001 (комплект Fugas) снят с производства — заменён на комплект BAXI.
-        { id: "BX4991100069", name: "Комплект 3-х ход. клапана", price: 7630, brand: "BAXI", availability: "in_stock", price_date: "2026-08-13" }
+        { id: "BX4991100069", name: "Комплект 3-х ход. клапана", price: 7630, brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" }
     ],
     tanks_optibase: [
         { id: "SWH-3110-000100", name: "Бойлер напольный 100л", ports: { cold: '3/4"', dhw: '3/4"', coil: '1"', recirc: '3/4"' }, vol: 100, price: 57183, rommer: { id: "RWH-2110-000150", name: "Бойлер напольный GT 150 л", ports: { cold: '3/4"', dhw: '3/4"', coil: '3/4"', recirc: '3/4"', safety: '1/2"' }, price: 45265, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-19" }, availability: "in_stock", price_date: "2026-06-27" },
@@ -2113,7 +2113,7 @@ const catalog = {
     // Цена розничная, с карточки ТЕРЕМ: в прайсе (price_index.json) этого артикула нет,
     // так что AutoPrice её не пересчитывает — обновлять руками.
     gbm_nodes: [
-        { id: "ASKON-MU-25M", article: "МУ-25М", name: "Многофункциональный узел для быстрого монтажа", price: 4294, unit: "шт", brand: "Askon", availability: "in_stock", price_date: "2026-08-17" }
+        { id: "ASKON-MU-25M", article: "МУ-25М", name: "Многофункциональный узел для быстрого монтажа", price: 8588, unit: "шт", brand: "Askon", availability: "in_stock", price_date: "2026-08-20" }
     ],
     // Насосные группы с пластинчатым теплообменником: разделяют первичный контур
     // (вода котельной) и вторичный, залитый другой средой. Отсюда и применение в
@@ -2454,8 +2454,8 @@ const catalog = {
              blue: { id: "RIC-0002-280602", name: "Трубка ПРОТЕКТ ПРО 28/6, 2м (синяя)",   dn: 28, thick: 6, len: 2, price: 36, unit: "м", brand: "ROMMER", availability: "in_stock", price_date: "2026-08-14" } },
         // K-FLEX цветовой разбивки не имеет — одна позиция на подачу и обратку.
         // Цена за трубку 2 м, поэтому unit «шт», а не «м», как у ПРОТЕКТ ПРО.
-        35: { red: { id: "R09035215508", name: "Трубка K-FLEX ST 35/9, 2м", dn: 35, thick: 9, len: 2, price: 112, unit: "шт", brand: "K-FLEX", availability: "in_stock", price_date: "2026-08-14" } },
-        42: { red: { id: "R09042215508", name: "Трубка K-FLEX ST 42/9, 2м", dn: 42, thick: 9, len: 2, price: 127, unit: "шт", brand: "K-FLEX", availability: "in_stock", price_date: "2026-08-14" } }
+        35: { red: { id: "R09035215508", name: "Трубка K-FLEX ST 35/9, 2м", dn: 35, thick: 9, len: 2, price: 223, unit: "шт", brand: "K-FLEX", availability: "in_stock", price_date: "2026-08-20" } },
+        42: { red: { id: "R09042215508", name: "Трубка K-FLEX ST 42/9, 2м", dn: 42, thick: 9, len: 2, price: 254, unit: "шт", brand: "K-FLEX", availability: "in_stock", price_date: "2026-08-20" } }
     },
     nipple_34: { id: "SFT-0003-003434", name: "Ниппель НН 3/4\"", price: 200, availability: "in_stock", price_date: "2026-08-10" },
     // Переходные муфты (проставки) между патрубками котла 1" и группой быстрого монтажа —
@@ -3937,22 +3937,22 @@ const catalog = {
         // Блоки расширения контуров по шине RS-485. EX-108 даёт +3 контура и
         // питается от контроллера, EX-77 даёт +2, но требует отдельный БП 12 В.
         { id: "ML00007406", name: "Блок расширения EX-108 (+3 контура отопления)", price: 27900, brand: "ZONT", unit: "шт", circuits: 3, availability: "in_stock", price_date: "2026-07-29" },
-        { id: "ML00004766", name: "Блок расширения EX-77 (+2 контура отопления)", price: 16100, brand: "ZONT", unit: "шт", circuits: 2, availability: "in_stock", price_date: "2026-07-29" },
-        { id: "ML13968", name: "Блок питания 12 Вт / 12–24 В на DIN-рейку", price: 2700, brand: "ZONT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "ML00004766", name: "Блок расширения EX-77 (+2 контура отопления)", price: 16100, brand: "ZONT", unit: "шт", circuits: 2, availability: "in_stock", price_date: "2026-08-20" },
+        { id: "ML13968", name: "Блок питания 12 Вт / 12–24 В на DIN-рейку", price: 2700, brand: "ZONT", unit: "шт", availability: "in_stock", price_date: "2026-08-20" },
         // Датчик давления на аналоговый вход. Автоподпиткой контроллер не
         // управляет (такой функции у него нет), но по порогам этого датчика
         // шлёт оповещение — только так и вскрывается утечка, которую
         // автоподпиточный клапан иначе доливает молча.
-        { id: "ML00005517", name: "Датчик давления MLD-10.01, нерж. сталь, 0–10 бар", price: 6360, brand: "ZONT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "ML00005517", name: "Датчик давления MLD-10.01, нерж. сталь, 0–10 бар", price: 6360, brand: "ZONT", unit: "шт", availability: "in_stock", price_date: "2026-08-20" },
         // Плата цифровой шины: одна на котёл, максимум две. Разъёмы ЦШ1 и ЦШ2
         // на плате контроллера из коробки пустые. В прайсе позиция названа
         // «для ZONT CLIMATIC» — это тот же прибор, Thermatic 3001 = Climatic.V2.
         // Поддерживаемые протоколы (OpenTherm, E-Bus, BridgeNet, Navien, BSB,
         // WOLF, Kiturami) плата определяет сама — в названии их не перечисляем,
         // они есть в подсказке к позиции.
-        { id: "ML00005842", name: "Плата цифровых шин универсальная", price: 4500, brand: "ZONT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "ML00005842", name: "Плата цифровых шин универсальная", price: 4500, brand: "ZONT", unit: "шт", availability: "in_stock", price_date: "2026-08-20" },
         // Выносная панель ручного управления, до 3 шт на контроллер.
-        { id: "ML00004742", name: "Панель ручного управления МЛ-753 (RS-485)", price: 8990, brand: "ZONT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "ML00004742", name: "Панель ручного управления МЛ-753 (RS-485)", price: 8990, brand: "ZONT", unit: "шт", availability: "in_stock", price_date: "2026-08-20" },
 
         // --- Базовый уровень: STOUT Thermatic 1002 (sys: 'basic') ---
         //
@@ -4015,10 +4015,10 @@ const catalog = {
     // kind: 'sensor' — только датчик; 'thermostat' — датчик со своей уставкой
     //                  и экраном в помещении.
     air_sensors: [
-        { id: "ML00005143", name: "Датчик температуры комнатный МЛ-778 (RS-485)", price: 3100, brand: "ZONT", unit: "шт", kind: "sensor", link: "wired", availability: "in_stock", price_date: "2026-07-29" },
-        { id: "ML00004436", name: "Радиодатчик температуры комнатный МЛ-740 (868 МГц)", price: 3450, brand: "ZONT", unit: "шт", kind: "sensor", link: "radio", availability: "in_stock", price_date: "2026-07-29" },
-        { id: "ML00006088", name: "Комнатный термостат МЛ-232 (RS-485)", price: 6100, brand: "ZONT", unit: "шт", kind: "thermostat", link: "wired", availability: "in_stock", price_date: "2026-07-29" },
-        { id: "ML00006557", name: "Комнатный термостат МЛ-332 (868 МГц)", price: 6900, brand: "ZONT", unit: "шт", kind: "thermostat", link: "radio", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "ML00005143", name: "Датчик температуры комнатный МЛ-778 (RS-485)", price: 3100, brand: "ZONT", unit: "шт", kind: "sensor", link: "wired", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "ML00004436", name: "Радиодатчик температуры комнатный МЛ-740 (868 МГц)", price: 3450, brand: "ZONT", unit: "шт", kind: "sensor", link: "radio", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "ML00006088", name: "Комнатный термостат МЛ-232 (RS-485)", price: 6100, brand: "ZONT", unit: "шт", kind: "thermostat", link: "wired", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "ML00006557", name: "Комнатный термостат МЛ-332 (868 МГц)", price: 6900, brand: "ZONT", unit: "шт", kind: "thermostat", link: "radio", availability: "in_stock", price_date: "2026-08-20" },
         // Двухпозиционные термостаты STOUT (3 А, ON/OFF). Подключаются иначе —
         // не по шине, а сухим контактом на клеммы «Входы термостатов», которых
         // у контроллера ровно 3. Меняется и способ регулирования: контур
@@ -4058,7 +4058,7 @@ const catalog = {
         { id: "SMH-0002-010800", name: "Термостат комнатный беспроводной, LoRa", price: 6990, brand: "STOUT", unit: "шт", kind: "thermostat", link: "radio", sys: "basic", availability: "in_stock", price_date: "2026-08-13" }
     ],
     radio_modules: [
-        { id: "ML00004741", name: "Радиомодуль МЛ-590 (868 МГц)", price: 3720, brand: "ZONT", unit: "шт", capacity: 40, availability: "in_stock", price_date: "2026-07-29" }
+        { id: "ML00004741", name: "Радиомодуль МЛ-590 (868 МГц)", price: 3720, brand: "ZONT", unit: "шт", capacity: 40, availability: "in_stock", price_date: "2026-08-20" }
     ],
 
     // Защита от протечки. Работает только в связке с контроллером: он
@@ -4066,7 +4066,7 @@ const catalog = {
     // релейный выход 1. Обратно кран открывается только вручную из
     // приложения, автоматически — никогда.
     leak_sensors: [
-        { id: "ML11025", name: "Датчик протечки воды АСТРА-361, проводной", price: 920, brand: "ZONT", unit: "шт", availability: "in_stock", price_date: "2026-07-29" },
+        { id: "ML11025", name: "Датчик протечки воды АСТРА-361, проводной", price: 1140, brand: "ZONT", unit: "шт", availability: "in_stock", price_date: "2026-08-20" },
         // Для Thermatic 1002 берём извещатель из его же линейки: шлейф у него
         // свой (вход Д1), и разветвители к нему идут из того же комплекта.
         { id: "SMH-0002-010060", name: "Датчик протечки воды проводной", price: 1490, brand: "STOUT", unit: "шт", sys: "basic", availability: "in_stock", price_date: "2026-08-13" }
@@ -4110,7 +4110,7 @@ const catalog = {
     extra_items: [
         // Артикул у Джилекса тот же, что у коллектора MEIBES в прайсе, поэтому
         // в каталоге он с приставкой — иначе поиск по id даст чужой товар.
-        { id: "JLX-9059", article: "9059", name: "Корпус для картриджного фильтра Джилекс 1 М 20\"", price: 5550, brand: "Джилекс", unit: "шт", availability: "in_stock", price_date: "2026-07-28" },
+        { id: "JLX-9059", article: "9059", name: "Корпус для картриджного фильтра Джилекс 1 М 20\"", price: 5550, brand: "Джилекс", unit: "шт", availability: "on_order", price_date: "2026-08-20" },
 
         // Энергофлекс 18/4: в прайсе эти позиции лежат без названия — в поле
         // наименования стоит сам артикул, поэтому по названию их не найти.
@@ -4134,7 +4134,7 @@ const catalog = {
 
         // Лента армированная: в прайсе лежит на листе «Энергофлекс», но строка
         // собирается без слова «лента», поэтому по названию не находится.
-        { id: "EPRL04825ARSKRDC", name: "Лента армированная самоклеящаяся Энергофлекс ENERGOPRO 48 мм х 25 м, красная", price: 545.88, unit: "шт", brand: "Energoflex", availability: "in_stock", price_date: "2026-07-28" },
+        { id: "EPRL04825ARSKRDC", name: "Лента армированная самоклеящаяся Энергофлекс ENERGOPRO 48 мм х 25 м, красная", price: 545, unit: "шт", brand: "Energoflex", availability: "in_stock", price_date: "2026-08-20" },
         // Гель уплотнительный: в прайс-листе его нет, цена с сайта ТЕРЕМ.
         { id: "6103", article: "6103", name: "Гель уплотнительный СантехМастерГель Синий, тюбик 60 г, блистер", price: 717, unit: "шт", brand: "СантехМастер", availability: "in_stock", price_date: "2026-07-28" }
     ]
@@ -5605,9 +5605,9 @@ const towelWarmersElectric = [
     { id: "SHQ-N2QQ-007050", name: "Полотенцесушитель эл. NEOSOUL quadro 70×50, Чёрный матовый", price: 16422, series: "NEOSOUL", shape: "quadro", size: "70×50", color: "black", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-20" },
     { id: "SHQ-N2QQ-010050", name: "Полотенцесушитель эл. NEOSOUL quadro 100×50, Чёрный матовый", price: 20400, series: "NEOSOUL", shape: "quadro", size: "100×50", color: "black", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-20" },
     { id: "SHQ-N4QQ-010050", name: "Полотенцесушитель эл. NEOSOUL quadro 100×50, Графит", price: 21420, series: "NEOSOUL", shape: "quadro", size: "100×50", color: "graphite", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-20" },
-    { id: "SHQ-J8RR-008050", name: "Полотенцесушитель эл. JAZZ round 80×50, Золотой хром", price: 21481, series: "JAZZ", shape: "round", size: "80×50", color: "gold", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
-    { id: "SHQ-J8RR-F08050", name: "Полотенцесушитель эл. JAZZ round 80×50, Золотой хром (с полкой)", price: 24939, series: "JAZZ", shape: "round", size: "80×50", color: "gold", shelf: true, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" },
-    { id: "SHQ-R8R0-012008", name: "Полотенцесушитель эл. ROCK round 120×08, Золотой хром (2 опоры)", price: 19416, series: "ROCK", shape: "round", size: "120×08", color: "gold", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-07-24" }
+    { id: "SHQ-J8RR-008050", name: "Полотенцесушитель эл. JAZZ round 80×50, Золотой хром", price: 18360, series: "JAZZ", shape: "round", size: "80×50", color: "gold", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-20" },
+    { id: "SHQ-J8RR-F08050", name: "Полотенцесушитель эл. JAZZ round 80×50, Золотой хром (с полкой)", price: 21420, series: "JAZZ", shape: "round", size: "80×50", color: "gold", shelf: true, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-20" },
+    { id: "SHQ-R8R0-012008", name: "Полотенцесушитель эл. ROCK round 120×08, Золотой хром (2 опоры)", price: 17340, series: "ROCK", shape: "round", size: "120×08", color: "gold", brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-20" }
 ];
 
 // Город → регион для автоподстановки в анкете (app.autofillRegionByCity).
