@@ -3469,6 +3469,13 @@ body.profile-incomplete-lock #page_scale_wrapper {
     letter-spacing: 0.4px;
     white-space: nowrap;
 }
+/* Подсказка про целую компанию — единственная длинная надпись в этой строке.
+   С общим для подписей nowrap она вылезала за правый край панели и тянула
+   горизонтальную прокрутку на всю админку: переносим её по словам. */
+.admin-bulk-hint .admin-bulk-label {
+    white-space: normal;
+    line-height: 1.25;
+}
 .admin-bulk-sep {
     width: 1px;
     align-self: stretch;

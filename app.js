@@ -14262,8 +14262,18 @@ const app = {
             let locHTML = `<div style="font-size:10px;color:var(--text-sec); margin-top:2px;">📍 ${cityText}${u.region ? ', ' + u.region : ''} <span class="admin-ip-location" style="color: #888; font-size: 0.85em; margin-left:5px;">(IP: ${ipLoc})</span></div>`;
 
             let birthStr = u.birth_date ? new Date(u.birth_date).toLocaleDateString('ru-RU') : '';
+            // Возраст: год минус год, и ещё минус один, если день рождения
+            // в этом году ещё не наступил.
+            let ageStr = '';
+            if (u.birth_date) {
+                const bd = new Date(u.birth_date), nowD = new Date();
+                let years = nowD.getFullYear() - bd.getFullYear();
+                const mDiff = nowD.getMonth() - bd.getMonth();
+                if (mDiff < 0 || (mDiff === 0 && nowD.getDate() < bd.getDate())) years--;
+                if (years > 0 && years < 120) ageStr = years + ' ' + this.plural(years, 'год', 'года', 'лет');
+            }
             let activityBadges = (u.activity_types || []).map(a => `<span style="background:var(--primary-light); color:var(--primary); font-size:9px; font-weight:700; padding:1px 6px; border-radius:8px; margin-right:3px;">${a}</span>`).join('');
-            let extraHTML = (birthStr || activityBadges) ? `<div style="font-size:10px; color:var(--text-sec); margin-top:2px;">${birthStr ? '🎂 ' + birthStr + ' ' : ''}${activityBadges}</div>` : '';
+            let extraHTML = (birthStr || activityBadges) ? `<div style="font-size:10px; color:var(--text-sec); margin-top:2px;">${birthStr ? '🎂 ' + birthStr + (ageStr ? ' · ' + ageStr : '') + ' ' : ''}${activityBadges}</div>` : '';
 
             let searchStr = `${name} ${phone} ${u.email || ''} ${cityText} ${ipLoc} ${u.region || ''} ${(u.activity_types || []).join(' ')}`.toLowerCase();
 
