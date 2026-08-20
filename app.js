@@ -30976,8 +30976,8 @@ const app = {
     },
 
     // Кнопка живёт в центре пустой сметы и рисуется вместе с подсказкой «Параметры
-    // объекта не заданы» (см. render). Она никакими сроками не ограничена: пока
-    // расчёт пуст, предложить готовый объект уместно всегда. Сроки — только у
+    // объекта не заданы» (см. render). Числом показов она не ограничена: пока
+    // расчёт пуст, предложить готовый объект уместно всегда. Счётчик — только у
     // всплывающего окна, см. quickStartWindowOpen. Здесь остаётся подстраховка на
     // случай, когда расчёт перестал быть пустым без перерисовки таблицы.
     syncQuickStartBtn: function () {
@@ -30986,38 +30986,22 @@ const app = {
         if (!this.isCalcEmpty()) row.style.display = 'none';
     },
 
-    // Срок, пока окно быстрого старта считается уместным. Раньше стоял жёсткий
-    // счётчик «не больше двух показов за всё время», и человек, закрывший окно не
-    // глядя два раза подряд, больше о быстром старте не узнавал никогда. Теперь
-    // граница по-другому: окно живёт, пока человек действительно новичок — у него
-    // нет ни одной сохранённой сметы и он на сайте первые дни. Ограничителя два,
-    // срабатывает любой: три захода или трое суток с первого.
-    QUICK_START_MAX_VISITS: 3,
-    QUICK_START_MAX_DAYS: 3,
+    // Сколько раз за всю жизнь браузера показываем окно быстрого старта.
+    //
+    // Считаем именно показы, а не дни и не заходы: человек может зарегистрироваться
+    // и сесть за первую смету через месяц — любой срок к тому времени вышел бы, а
+    // окно ему всё так же нужно. Три раза, а не два, как было изначально: закрыл не
+    // глядя — покажем ещё, но навязываться бесконечно не станем.
+    QUICK_START_MAX_SHOWS: 3,
 
-    // Заход считаем один раз за загрузку страницы (зовётся из init). Первую метку
-    // времени ставим тогда же — по ней отмеряются трое суток.
-    countQuickStartVisit: function () {
-        try {
-            const n = (parseInt(localStorage.getItem('quick_start_visits') || '0', 10) || 0) + 1;
-            localStorage.setItem('quick_start_visits', String(n));
-            if (!localStorage.getItem('quick_start_first_ts')) {
-                localStorage.setItem('quick_start_first_ts', String(Date.now()));
-            }
-        } catch (e) { }
-    },
-
-    // Не вышел ли срок окна. Отдельной функцией: по ней же decideNewcomerDefaults
-    // решает, нужен ли вообще запрос в базу за числом смет.
+    // Осталось ли право на показ. Отдельной функцией: по ней же
+    // decideNewcomerDefaults решает, нужен ли вообще запрос в базу за числом смет.
     quickStartWindowOpen: function () {
         try {
             // Человек уже брал типовой объект — предлагать снова незачем
             if (localStorage.getItem('quick_start_used') === '1') return false;
-            const visits = parseInt(localStorage.getItem('quick_start_visits') || '1', 10) || 1;
-            if (visits > this.QUICK_START_MAX_VISITS) return false;
-            const first = parseInt(localStorage.getItem('quick_start_first_ts') || '0', 10) || 0;
-            if (first && (Date.now() - first) > this.QUICK_START_MAX_DAYS * 86400000) return false;
-            return true;
+            const shown = parseInt(localStorage.getItem('quick_start_shown') || '0', 10) || 0;
+            return shown < this.QUICK_START_MAX_SHOWS;
         } catch (e) { return false; }
     },
 
@@ -31047,6 +31031,8 @@ const app = {
             if (this._savedEstimatesCount === undefined) return;
             if (this._savedEstimatesCount > 0) return;
             this._quickStartSeenThisLoad = true;
+            const shown = parseInt(localStorage.getItem('quick_start_shown') || '0', 10) || 0;
+            try { localStorage.setItem('quick_start_shown', String(shown + 1)); } catch (e) { }
             this.showQuickStart();
         } catch (e) { console.warn('[quickStart] не показалось:', e); }
     },
@@ -31129,10 +31115,6 @@ const app = {
         this.handleYandexCallback();
 
         this.captureUTM();
-        // Заход считаем здесь, до всего остального: по числу заходов и дате первого
-        // отмеряется срок окна быстрого старта, а спросить об этом могут уже из
-        // ответа базы о числе смет, то есть заметно раньше конца init.
-        this.countQuickStartVisit();
         this.applyPricingCurrencyDisplay();
         if (localStorage.getItem('stout_save')) {
             try {
