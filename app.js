@@ -3165,6 +3165,14 @@ const app = {
             if (need <= 0) return;
             scale = need > avail ? Math.max(this._emptyFitPanelMinScale, avail / need) : 1;
             scale = Math.min(1, Math.round(scale * 1000) / 1000);
+            // Мелкая разница масштаба — это не новая раскладка, а дрожание замера:
+            // считаем от высоты колонки, а она сама зависит от уже поставленного
+            // масштаба, и наблюдатель за содержимым будит пересчёт на каждую правку
+            // стиля. У колонки, стоящей ровно на границе, этого хватало, чтобы она
+            // бесконечно перещёлкивалась между двумя близкими значениями и дёргалась
+            // по ширине. Порог заметно больше самого дрожания и заметно меньше
+            // разницы, которую человек вообще увидит.
+            if (this._emptyFitScale && Math.abs(scale - this._emptyFitScale) < 0.03) scale = this._emptyFitScale;
             this._emptyFitScale = scale;
         }
         const baseW = this._emptyFitPanelBaseWidth;
@@ -9782,13 +9790,16 @@ const app = {
         // сдвигается никуда.
         const container = rail.parentElement;
         const padTop = container ? (parseFloat(getComputedStyle(container).paddingTop) || 0) : 0;
-        rail.style.setProperty('--lk-rail-sticky-top', Math.round(headerBottom / zoom + padTop) + 'px');
+        const top = headerBottom + padTop * zoom;   // верх колонки в экранных пикселях
+        rail.style.setProperty('--lk-rail-sticky-top', Math.round(top / zoom) + 'px');
 
-        // Свободное место — от настоящего верха колонки до низа окна. По низу
-        // шапки его считать нельзя: между ними ещё поле страницы, а при липком
-        // сдвиге колонка и вовсе начинается заметно ниже — на эту разницу меню
-        // и не помещалось, отращивая себе прокрутку.
-        const available = window.innerHeight - rail.getBoundingClientRect().top - 24;
+        // Свободное место — от верха колонки до низа окна. По низу шапки его
+        // считать нельзя: между ними ещё поле страницы, и на эту разницу меню не
+        // помещалось, отращивая себе прокрутку. Но и мерить сам верх колонки
+        // нельзя: у липкого элемента он зависит от собственной высоты, а её мы
+        // здесь и задаём — замер начал бы гоняться за собственным результатом.
+        // Поэтому берём то же число, что и для липкого отступа выше.
+        const available = window.innerHeight - top - 24;
         if (available <= 0) return;
 
         // Дальше считаем в CSS-пикселях самой колонки — в них же заданы её размеры.
