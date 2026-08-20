@@ -10098,13 +10098,16 @@ const app = {
         this.setCabinetDocked(anyOpen && this.isRailVisible());
     },
 
-    // Есть ли у человека сохранённые сметы — от этого зависит, включать ли ему
-    // режим обучения по умолчанию. Запрос делаем только пока выбор не сделан (после
-    // первого решения ответ уже записан и сюда мы не заходим) и берём один
-    // счётчик без тела ответа, чтобы не тратить трафик базы.
-    decideTourDefault: async function (userId) {
-        if (typeof Tour === 'undefined' || !userId) return;
-        if (Tour.userChose()) return;
+    // Есть ли у человека сохранённые сметы. От этого зависят две вещи: включать ли
+    // ему режим обучения по умолчанию и показывать ли окно быстрого старта. Берём
+    // один счётчик без тела ответа, чтобы не тратить трафик базы, и только пока
+    // хоть один из двух вопросов открыт: у того, кто выбрал обучение сам и вышел из
+    // срока быстрого старта, спрашивать нечего.
+    decideNewcomerDefaults: async function (userId) {
+        if (!userId) return;
+        const tourDecided = (typeof Tour === 'undefined') || Tour.userChose();
+        const quickOpen = this.quickStartWindowOpen();
+        if (tourDecided && !quickOpen) return;
         try {
             const { count, error } = await supabaseClient
                 .from('estimates')
@@ -10113,9 +10116,11 @@ const app = {
             // Не ответила база — ничего не решаем: включить обучение тому, у кого
             // полсотни смет, неприятнее, чем не включить его новичку
             if (error) return;
-            Tour.applyDefault((count || 0) > 0);
+            this._savedEstimatesCount = count || 0;
+            if (!tourDecided) Tour.applyDefault(this._savedEstimatesCount > 0);
+            if (quickOpen) this.maybeShowQuickStart();
         } catch (e) {
-            console.warn('[decideTourDefault] Не удалось проверить сохранённые сметы:', e);
+            console.warn('[decideNewcomerDefaults] Не удалось проверить сохранённые сметы:', e);
         }
     },
 
@@ -25136,7 +25141,7 @@ const app = {
                 // Режим обучения новичку включается сам, а тому, у кого сметы уже
                 // сохранены, — нет. Считаем их только пока человек не решил сам:
                 // это один запрос на браузер, и только у тех, кто ещё не выбирал.
-                this.decideTourDefault(uRow.id);
+                this.decideNewcomerDefaults(uRow.id);
 
                 // Промокод, введённый при регистрации, применяем один раз — при первом
                 // входе, когда запись в users уже создана и ещё нет привязки к поставщику
@@ -30971,18 +30976,54 @@ const app = {
     },
 
     // Кнопка живёт в центре пустой сметы и рисуется вместе с подсказкой «Параметры
-    // объекта не заданы» (см. render). Окно первого запуска показывается не больше
-    // двух раз и закрывается одним касанием — человек, закрывший его не глядя, иначе
-    // больше о быстром старте не узнал бы. Здесь остаётся подстраховка на случай,
-    // когда расчёт перестал быть пустым без перерисовки таблицы.
+    // объекта не заданы» (см. render). Она никакими сроками не ограничена: пока
+    // расчёт пуст, предложить готовый объект уместно всегда. Сроки — только у
+    // всплывающего окна, см. quickStartWindowOpen. Здесь остаётся подстраховка на
+    // случай, когда расчёт перестал быть пустым без перерисовки таблицы.
     syncQuickStartBtn: function () {
         const row = document.getElementById('quick_start_row');
         if (!row) return;
         if (!this.isCalcEmpty()) row.style.display = 'none';
     },
 
+    // Срок, пока окно быстрого старта считается уместным. Раньше стоял жёсткий
+    // счётчик «не больше двух показов за всё время», и человек, закрывший окно не
+    // глядя два раза подряд, больше о быстром старте не узнавал никогда. Теперь
+    // граница по-другому: окно живёт, пока человек действительно новичок — у него
+    // нет ни одной сохранённой сметы и он на сайте первые дни. Ограничителя два,
+    // срабатывает любой: три захода или трое суток с первого.
+    QUICK_START_MAX_VISITS: 3,
+    QUICK_START_MAX_DAYS: 3,
+
+    // Заход считаем один раз за загрузку страницы (зовётся из init). Первую метку
+    // времени ставим тогда же — по ней отмеряются трое суток.
+    countQuickStartVisit: function () {
+        try {
+            const n = (parseInt(localStorage.getItem('quick_start_visits') || '0', 10) || 0) + 1;
+            localStorage.setItem('quick_start_visits', String(n));
+            if (!localStorage.getItem('quick_start_first_ts')) {
+                localStorage.setItem('quick_start_first_ts', String(Date.now()));
+            }
+        } catch (e) { }
+    },
+
+    // Не вышел ли срок окна. Отдельной функцией: по ней же decideNewcomerDefaults
+    // решает, нужен ли вообще запрос в базу за числом смет.
+    quickStartWindowOpen: function () {
+        try {
+            // Человек уже брал типовой объект — предлагать снова незачем
+            if (localStorage.getItem('quick_start_used') === '1') return false;
+            const visits = parseInt(localStorage.getItem('quick_start_visits') || '1', 10) || 1;
+            if (visits > this.QUICK_START_MAX_VISITS) return false;
+            const first = parseInt(localStorage.getItem('quick_start_first_ts') || '0', 10) || 0;
+            if (first && (Date.now() - first) > this.QUICK_START_MAX_DAYS * 86400000) return false;
+            return true;
+        } catch (e) { return false; }
+    },
+
     // Показывать ли окно. Условий много, но все об одном: человек пришёл на пустой
-    // калькулятор своими ногами и ещё ничего в нём не сделал.
+    // калькулятор своими ногами, ещё ничего в нём не сделал и ни одной сметы у него
+    // не сохранено.
     maybeShowQuickStart: function () {
         try {
             // Открыта чужая смета по ссылке, печать или просмотр менеджером — окно
@@ -30993,10 +31034,19 @@ const app = {
             if (this._yandexExchanging) return;
             // В расчёте уже что-то есть — своё, распознанное или просто заданная площадь.
             if (!this.isCalcEmpty()) return;
-            // Дважды хватит: закрыл не глядя в первый раз — покажем ещё один, но не больше.
-            const shown = parseInt(localStorage.getItem('quick_start_shown') || '0', 10) || 0;
-            if (shown >= 2) return;
-            localStorage.setItem('quick_start_shown', String(shown + 1));
+            // За одну загрузку страницы — один раз. Зовут нас из двух мест (таймер
+            // после прелоадера и ответ базы о числе смет), и без этой отметки окно,
+            // закрытое человеком, всплыло бы второй раз само.
+            if (this._quickStartSeenThisLoad) return;
+            if (!this.quickStartWindowOpen()) return;
+            // Сколько у человека сохранённых смет, знаем не сразу: сессия поднимается
+            // асинхронно, а число приезжает отдельным запросом. Пока не знаем —
+            // молчим; позовут снова (гостя — из getSession, вошедшего — из
+            // decideNewcomerDefaults). Показать окно тому, у кого полсотни смет,
+            // неприятнее, чем показать его на полсекунды позже.
+            if (this._savedEstimatesCount === undefined) return;
+            if (this._savedEstimatesCount > 0) return;
+            this._quickStartSeenThisLoad = true;
             this.showQuickStart();
         } catch (e) { console.warn('[quickStart] не показалось:', e); }
     },
@@ -31053,7 +31103,7 @@ const app = {
         if (!preset) return;
         this.closeQuickStart(true);
         // Больше не показываем: человек стартом воспользовался.
-        try { localStorage.setItem('quick_start_shown', '2'); } catch (e) { }
+        try { localStorage.setItem('quick_start_used', '1'); } catch (e) { }
         Object.assign(this.state, JSON.parse(JSON.stringify(preset.state)));
         // Метка для события 'calculated' (см. ensureCalcId): по ней видно, сколько
         // смет начинается с шаблона, а сколько — с пустой формы.
@@ -31079,6 +31129,10 @@ const app = {
         this.handleYandexCallback();
 
         this.captureUTM();
+        // Заход считаем здесь, до всего остального: по числу заходов и дате первого
+        // отмеряется срок окна быстрого старта, а спросить об этом могут уже из
+        // ответа базы о числе смет, то есть заметно раньше конца init.
+        this.countQuickStartVisit();
         this.applyPricingCurrencyDisplay();
         if (localStorage.getItem('stout_save')) {
             try {
@@ -31590,6 +31644,12 @@ const app = {
         supabaseClient.auth.getSession().then(({ data: { session } }) => {
             if (session) {
                 this.handleAuthSession(session);
+            } else {
+                // Гостю сметы сохранять негде — он заведомо с нуля. Отвечаем на
+                // вопрос сами и зовём окно быстрого старта: таймер после прелоадера
+                // мог отработать раньше, когда ответа ещё не было.
+                this._savedEstimatesCount = 0;
+                this.maybeShowQuickStart();
             }
             // Убрана логика Telegram (tgUser && !tgUser.isGoogle), так как
             // авторизация через Telegram Bot удалена из проекта.
