@@ -12370,6 +12370,51 @@ body.lk-grabbing * {
     pointer-events: none;
 }
 
+/* ── Хват колонки параметров (тот же приём, что у панели разделов выше) ────────
+   За него колонку тянут к правому краю — параметры встают справа от сметы, —
+   или обратно к левому. Меню кабинета при этом остаётся левее всех: колонка
+   ездит только вокруг сметы. Логика — app.initParamsDrag, подсказка места
+   переиспользует .lk-rail-drop-hint. */
+.input-panel-grip {
+    height: 12px;
+    margin: -10px -10px 8px;
+    border-radius: 5px;
+    background-image: radial-gradient(currentColor 1px, transparent 1.2px);
+    background-size: 4px 4px;
+    background-position: center;
+    color: var(--text-sec);
+    opacity: 0.45;
+    cursor: grab;
+    transition: opacity var(--dur-fast) ease, background-color var(--dur-fast) ease;
+}
+
+.input-panel-grip:hover {
+    opacity: 1;
+    background-color: var(--surface-light);
+}
+
+.input-panel-grip:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    opacity: 1;
+}
+
+.input-panel.is-dragging {
+    opacity: 0.55;
+}
+
+.input-panel.is-dragging .input-panel-grip {
+    cursor: grabbing;
+}
+
+/* На телефоне и планшете стоймя колонки идут друг под другом, и вкладки внизу
+   показывают их по одной — переносить нечего, хват только занимал бы строку */
+@media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait), screen and (orientation: landscape) and (max-height: 500px) {
+    .input-panel-grip {
+        display: none;
+    }
+}
+
 /* Включённый режим обучения виден по кнопке в шапке (класс ставит Tour.syncButton).
    Заливка, а не подсветка: подсветка совпадает с наведением, а курсор после нажатия
    остаётся на кнопке — состояние выглядело бы неизменным. Наведение на включённую

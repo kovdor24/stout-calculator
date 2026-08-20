@@ -521,6 +521,13 @@
             </div>
         </nav>
         <div class="panel input-panel">
+            <!-- Хват: за него колонку параметров перетаскивают к правому краю сметы
+                 или обратно влево (двойной щелчок — переключить). Меню кабинета при
+                 этом остаётся левее всех. Логика — app.initParamsDrag, выбранное
+                 место запоминается так же, как место панели разделов. -->
+            <div class="input-panel-grip no-print" id="input_panel_grip" role="button" tabindex="0"
+                title="Перетащите, чтобы перенести колонку параметров вправо или влево (двойной щелчок — переключить)"
+                aria-label="Переместить колонку параметров"></div>
             <h3 style="margin-top: 0; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal;">Режим расчёта</h3>
             <div class="control-item" style="margin-bottom: 15px;">
                 <div class="mode-selector-tabs">

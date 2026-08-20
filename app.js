@@ -9726,7 +9726,7 @@ const app = {
     saveRailLayout: function (patch) {
         if (!this.installerSettings) this.loadInstallerSettingsLocal();
         const now = this.railLayout();
-        this.installerSettings.railLayout = Object.assign({ dock: 'left', groups: null }, now, patch || {});
+        this.installerSettings.railLayout = Object.assign({ dock: 'left', groups: null, params: 'left' }, now, patch || {});
         // Пишет и в localStorage, и (для вошедших) в облако
         this.pushInstallerSettingsToCloud();
     },
@@ -9737,6 +9737,7 @@ const app = {
         if (!document.getElementById('lk_rail')) return;
         this.applyRailGroupOrder();
         this.setRailDock(this.railDock(), false);
+        this.setParamsDock(this.paramsDock(), false);
         this.fitRailToViewport();
     },
 
@@ -9938,6 +9939,134 @@ const app = {
         // Двойной щелчок и клавиша — то же самое без перетаскивания: мышью с тачпада
         // тянуть неудобно, а с клавиатуры перетащить нельзя вовсе
         const flip = () => this.setRailDock(this.railDock() === 'top' ? 'left' : 'top');
+        grip.addEventListener('dblclick', flip);
+        grip.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); flip(); }
+        });
+    },
+
+    // ── Куда прикреплена колонка параметров: слева от сметы (обычно) или справа ──
+    // Тот же приём, что у панели разделов выше: колонку тянут за хват
+    // (.input-panel-grip) к правому краю — параметры встают справа от сметы, —
+    // или обратно к левому. Меню кабинета при этом всегда остаётся левее всех:
+    // колонка ездит только вокруг сметы и панель разделов не трогает.
+    // Выбор хранится в той же раскладке installerSettings.railLayout (поле
+    // params) и уезжает в облако тем же push/pull, что и место меню.
+    paramsDock: function () {
+        return this.railLayout().params === 'right' ? 'right' : 'left';
+    },
+
+    setParamsDock: function (where, remember) {
+        const panel = document.querySelector('.container > .input-panel');
+        const out = document.querySelector('.container > .output-panel');
+        if (!panel || !out) return;
+        const toRight = (where === 'right');
+        // Слева колонка стоит сразу перед сметой (меню, если оно колонкой, держит
+        // первым элементом setRailDock), справа — сразу после неё
+        if (toRight) {
+            if (out.nextElementSibling !== panel) out.parentNode.insertBefore(panel, out.nextSibling);
+        } else if (out.previousElementSibling !== panel) {
+            out.parentNode.insertBefore(panel, out);
+        }
+        if (remember !== false) this.saveRailLayout({ params: toRight ? 'right' : 'left' });
+    },
+
+    initParamsDrag: function () {
+        if (this._paramsDragBound) return;
+        const panel = document.querySelector('.container > .input-panel');
+        const grip = document.getElementById('input_panel_grip');
+        if (!panel || !grip) return;
+        this._paramsDragBound = true;
+
+        let startX = 0, startY = 0, dragging = false, target = null;
+
+        // Подсказка-прямоугольник на месте будущего положения колонки: та же
+        // ширина и высота, что у колонки сейчас, меняется только край. Лежит в
+        // body (вне масштабируемой обёртки), поэтому размеры берём из настоящих
+        // экранных координат, а отступы контейнера переводим множителем zoom.
+        const showHint = (where) => {
+            let hint = document.getElementById('params_drop_hint');
+            if (!hint) {
+                hint = document.createElement('div');
+                hint.id = 'params_drop_hint';
+                hint.className = 'lk-rail-drop-hint no-print';
+                document.body.appendChild(hint);
+            }
+            const panelBox = panel.getBoundingClientRect();
+            const containerBox = panel.parentElement.getBoundingClientRect();
+            const wrap = document.getElementById('page_scale_wrapper');
+            const zoom = (wrap && parseFloat(getComputedStyle(wrap).zoom)) || 1;
+            const pad = Math.round(20 * zoom);  // padding и gap .container
+            let left;
+            if (where === 'right') {
+                left = Math.round(containerBox.right - pad - panelBox.width);
+            } else {
+                // Слева колонка встаёт после меню, если оно сейчас стоит колонкой
+                const rail = document.getElementById('lk_rail');
+                const railHere = rail && rail.parentElement === panel.parentElement
+                    && getComputedStyle(rail).display !== 'none';
+                left = Math.round(containerBox.left + pad
+                    + (railHere ? rail.getBoundingClientRect().width + pad : 0));
+            }
+            hint.style.left = left + 'px';
+            hint.style.width = Math.round(panelBox.width) + 'px';
+            hint.style.top = Math.round(panelBox.top) + 'px';
+            hint.style.height = Math.round(panelBox.height) + 'px';
+            hint.style.display = 'block';
+        };
+
+        const hideHint = () => {
+            const hint = document.getElementById('params_drop_hint');
+            if (hint) hint.remove();
+        };
+
+        // Мест два — экран делим пополам: отпустил в правой половине — колонка
+        // справа от сметы, в левой — слева. Без «мёртвой» зоны, по той же
+        // причине, что у панели разделов.
+        const zoneAt = (ev) => {
+            const box = panel.parentElement.getBoundingClientRect();
+            return (ev.clientX > box.left + box.width / 2) ? 'right' : 'left';
+        };
+
+        const onMove = (ev) => {
+            if (!dragging) {
+                // Порог, чтобы дрожание руки не считалось перетаскиванием
+                if (Math.abs(ev.clientX - startX) < 6 && Math.abs(ev.clientY - startY) < 6) return;
+                dragging = true;
+                panel.classList.add('is-dragging');
+                document.body.classList.add('lk-grabbing');
+            }
+            target = zoneAt(ev) || this.paramsDock();
+            showHint(target);
+            ev.preventDefault();
+        };
+
+        const onUp = () => {
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', onUp);
+            document.removeEventListener('pointercancel', onUp);
+            hideHint();
+            panel.classList.remove('is-dragging');
+            document.body.classList.remove('lk-grabbing');
+            if (dragging && target) this.setParamsDock(target);
+            dragging = false;
+            target = null;
+        };
+
+        grip.addEventListener('pointerdown', (ev) => {
+            if (ev.button !== 0) return;
+            startX = ev.clientX;
+            startY = ev.clientY;
+            dragging = false;
+            target = null;
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp);
+            document.addEventListener('pointercancel', onUp);
+            ev.preventDefault();
+        });
+
+        // Двойной щелчок и клавиша — то же самое без перетаскивания
+        const flip = () => this.setParamsDock(this.paramsDock() === 'right' ? 'left' : 'right');
         grip.addEventListener('dblclick', flip);
         grip.addEventListener('keydown', (ev) => {
             if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); flip(); }
@@ -31132,6 +31261,11 @@ const app = {
         // Настройки аккаунта с сервера: на новом устройстве реквизиты и прайс-лист
         // монтажа должны появиться сами, без перезаполнения анкеты
         this.pullInstallerSettingsFromCloud();
+        // Колонка параметров могла быть перенесена вправо от сметы — возвращаем её
+        // на сохранённое место и вешаем перетаскивание. Именно здесь, а не в
+        // syncRailUI: колонка, в отличие от меню кабинета, видна и без входа.
+        this.setParamsDock(this.paramsDock(), false);
+        this.initParamsDrag();
         // Списки доступа к инструментам: приходят с сервера, поэтому интерфейс
         // пересобираем ещё раз, когда они доедут (до этого проектирование
         // и распознавание закрыты — открывать «на всякий случай» нельзя).
