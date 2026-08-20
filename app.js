@@ -10117,8 +10117,12 @@ const app = {
             // полсотни смет, неприятнее, чем не включить его новичку
             if (error) return;
             this._savedEstimatesCount = count || 0;
-            if (!tourDecided) Tour.applyDefault(this._savedEstimatesCount > 0);
+            // Порядок важен: сначала окно быстрого старта, потом обучение.
+            // Tour.blocked() смотрит, висит ли окно на экране, и при обратном
+            // порядке карточка успевала мелькнуть — от запуска обучения до
+            // ближайшего такта таймера, который её прячет, проходит полсекунды.
             if (quickOpen) this.maybeShowQuickStart();
+            if (!tourDecided) Tour.applyDefault(this._savedEstimatesCount > 0);
         } catch (e) {
             console.warn('[decideNewcomerDefaults] Не удалось проверить сохранённые сметы:', e);
         }
