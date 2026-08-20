@@ -12211,7 +12211,14 @@ body.lk-docked #profile_modal_overlay .lk-pane {
 /* ── Хват и переезд панели (как палитры в фотошопе) ────────────────────────────
    За хват панель тянут к верхнему краю — тогда она прилипает лентой под шапку, —
    или обратно к левому. Точки хвата рисуем градиентом, а не иконкой: так они
-   одинаково выглядят и в колонке, и в ленте, где хват лежит боком. */
+   одинаково выглядят и в колонке, и в ленте, где хват лежит боком.
+
+   Постоянно на виду хват не висит: переносят панель раз в жизни, а полоска из
+   точек мозолит глаза каждый день. Своё место он занимает всегда (иначе панель
+   дёргалась бы при его появлении), но виден только когда человек ведёт мышью по
+   верху панели — там, где хват и лежит, — либо щёлкнул по свободному месту
+   внутри неё. Второе нужно для тачпада и сенсорного экрана, где наведения нет
+   вовсе: класс grip-shown вешает app.revealGrip. */
 .lk-rail-grip {
     flex-shrink: 0;
     height: 12px;
@@ -12221,12 +12228,13 @@ body.lk-docked #profile_modal_overlay .lk-pane {
     background-size: 4px 4px;
     background-position: center;
     color: var(--text-sec);
-    opacity: 0.45;
+    opacity: 0;
     cursor: grab;
     transition: opacity var(--dur-fast) ease, background-color var(--dur-fast) ease;
 }
 
-.lk-rail-grip:hover {
+.lk-rail-grip:hover,
+.lk-rail.grip-shown .lk-rail-grip {
     opacity: 1;
     background-color: var(--surface-light);
 }
@@ -12397,12 +12405,23 @@ body.lk-grabbing * {
     background-size: 4px 4px;
     background-position: center;
     color: var(--text-sec);
-    opacity: 0.45;
+    /* Не на виду постоянно — появляется при наведении на верх колонки или по
+       щелчку в свободное место внутри неё (см. хват меню разделов выше) */
+    opacity: 0;
     cursor: grab;
     transition: opacity var(--dur-fast) ease, background-color var(--dur-fast) ease;
 }
 
-.input-panel-grip:hover {
+/* Полоска тонкая, а попадать по ней мышью должно быть легко: зону наведения
+   расширяем прозрачным довеском, сам хват от этого не толстеет */
+.input-panel-grip::before {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+}
+
+.input-panel-grip:hover,
+.input-panel.grip-shown .input-panel-grip {
     opacity: 1;
     background-color: var(--surface-light);
 }
