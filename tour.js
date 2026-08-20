@@ -283,6 +283,7 @@ const Tour = {
 
     start: function () {
         this.injectStyles();
+        document.body.classList.add('tour-running');
         this.show();
         if (this._timer) clearInterval(this._timer);
         // Полсекунды — компромисс: реакция на действие человека ощущается сразу,
@@ -293,6 +294,7 @@ const Tour = {
 
     stop: function () {
         if (this._timer) { clearInterval(this._timer); this._timer = null; }
+        document.body.classList.remove('tour-running');
         this.clearSpot();
         const card = document.getElementById('tour_card');
         if (card) card.remove();
@@ -372,6 +374,17 @@ const Tour = {
         // шаг показывать нечестно: подсветка легла бы в пустоту.
         if (!el || (!el.offsetParent && getComputedStyle(el).position !== 'fixed')) return null;
         return el;
+    },
+
+    // Низкий экран — телефон лёжа: 812×375. Высоты не хватает ни карточке, ни
+    // подсвеченному элементу, и в этом режиме включаются три послабления сразу:
+    // карточка жмётся до 45 % экрана (см. медиазапрос в стилях), баннер cookie
+    // прячется на время обучения, а элемент уводится из-под карточки прокруткой.
+    // Порог 520 выбран так, чтобы не задеть рабочий экран владельца — 592 px.
+    LOW_SCREEN: 520,
+
+    isLowScreen: function () {
+        return window.innerHeight < this.LOW_SCREEN;
     },
 
     // Вкладка телефона: 'inputs' — параметры, 'output' — смета. На широком экране
@@ -462,6 +475,21 @@ const Tour = {
         // ровно в центр, оказывался наполовину под ней. Досдвигаем страницу так,
         // чтобы он остался над карточкой.
         if (window.innerWidth < 760) this.keepClear(el, card);
+        else if (this.isLowScreen()) this.liftAboveCard(el, card);
+    },
+
+    // Телефон лёжа. Карточка даже ужатая занимает почти половину высоты, а
+    // scrollIntoView выводит элемент в середину экрана — ровно туда, где карточка
+    // и оказывается. Уводим элемент под шапку, наверх: place() на следующем такте
+    // увидит, что под ним освободилось место, и переставит карточку вниз — дальше
+    // пересечения нет и прокрутка останавливается.
+    liftAboveCard: function (el, card) {
+        const a = card.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        const мимо = r.bottom <= a.top || r.top >= a.bottom || r.right <= a.left || r.left >= a.right;
+        if (мимо) return;
+        const shift = r.top - 60;
+        if (Math.abs(shift) > 2) window.scrollBy(0, Math.round(shift));
     },
 
     keepClear: function (el, card) {
@@ -635,6 +663,50 @@ body.dark-mode .tour-card { background: #1E1E1E; border-color: #333333; }
     border: none; background: var(--primary); color: #fff; cursor: pointer;
 }
 .tour-btn-ghost { background: transparent; color: var(--text-sec); border: 1px solid var(--border); }
+
+/* Телефон лёжа: 375 px высоты на всё про всё. Карточка в 280–360 px не оставляет
+   места подсвеченному элементу ни под собой, ни над собой, и расчёт из place()
+   упирается в запасной вариант — прижать к низу поверх элемента.
+
+   Лечится не расстановкой, а размером: жмём карточку до 45 % экрана (≈168 px),
+   и тогда обычная логика «под элементом, иначе над ним» снова находит место.
+   Ролик с жестом убираем — он съедает 62 px из тех самых, которых не хватает.
+   Кнопки держим прилипшими к низу карточки, чтобы до «Дальше» не приходилось
+   прокручивать текст.
+
+   Баннер cookie на таком экране занимает 159 px из 375 — 42 % высоты. Пока идёт
+   обучение, прячем его: с ним свободными остаются 216 px, и карточке с элементом
+   там не разойтись никак. Появится снова, как только обучение выключат. На
+   экранах повыше баннер не трогаем — там его обходит Tour.bottomBusy().
+
+   Порог 520 px выбран так, чтобы не задеть рабочий экран владельца (592 px по
+   высоте) — там карточка помещается целиком и жать её незачем. */
+@media screen and (max-height: 520px) {
+    .tour-card { max-height: 45vh; }
+    .tour-card .tour-anim { display: none; }
+    .tour-card-btns {
+        position: sticky;
+        bottom: -12px;
+        margin-bottom: -12px;
+        padding: 8px 0 12px;
+        background: var(--surface);
+    }
+    body.dark-mode .tour-card-btns { background: #1E1E1E; }
+}
+
+/* Баннер cookie прячем на время обучения там, где иначе оно не работает: телефон
+   лёжа (159 px из 375) и телефон стоймя (181 px из 812). На узком экране карточка
+   и так полоса снизу, баннер поднимает её ещё выше, а увести подсвеченный элемент
+   прокруткой не выходит — страница короткая, крутить нечего. Замер: с баннером
+   карточка закрывала кнопку «Типовой объект» на 97 %, тумблер параметров на 18 %;
+   без него оба шага чистые.
+
+   На экранах пошире баннер не трогаем: там места хватает, и его обходит расчётом
+   Tour.bottomBusy(). Возвращается сразу, как обучение выключат, — метку
+   tour-running снимает Tour.stop(). */
+@media screen and (max-height: 520px), screen and (max-width: 760px) {
+    body.tour-running .hc-cookie-banner { display: none !important; }
+}
 
 /* ---------- Ролик с жестом ---------- */
 .tour-anim {
