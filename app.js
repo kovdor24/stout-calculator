@@ -9869,12 +9869,46 @@ const app = {
         this.syncEmptyFitPanelScale(true);
     },
 
+    // ── Показать хват ─────────────────────────────────────────────────────────
+    // Хваты обеих панелей не висят на виду: переносят панель раз в жизни, а
+    // полоска из точек попадается на глаза каждый день. Обычный способ их найти —
+    // подвести мышь к верху панели, это делает CSS. Здесь второй способ, для
+    // тачпада и сенсорного экрана, где наведения нет вовсе: щелчок по свободному
+    // месту внутри панели (не по настройке и не по разделу) показывает хват на
+    // несколько секунд. Свободное место выбрано потому, что других значений у
+    // такого щелчка нет — ничего не ломаем и ни у чего не отнимаем нажатие.
+    GRIP_CONTROLS: 'input, select, textarea, button, a, label, .switch, .slider, .mode-tab, .lk-rail-item, [onclick], [role="button"]',
+
+    revealGrip: function (host) {
+        if (!host) return;
+        host.classList.add('grip-shown');
+        clearTimeout(host._gripHintTimer);
+        host._gripHintTimer = setTimeout(() => host.classList.remove('grip-shown'), 3500);
+    },
+
+    bindGripReveal: function (host) {
+        if (!host || host._gripRevealBound) return;
+        host._gripRevealBound = true;
+        host.addEventListener('click', (ev) => {
+            // Ищем настройку только внутри самой панели: у body висит свой
+            // onclick, и без этой проверки «занятым» оказывался любой щелчок
+            const hit = ev.target.closest(this.GRIP_CONTROLS);
+            if (hit && hit !== host && host.contains(hit)) return;
+            // Панель прокручена — хват остался наверху, вне видимой части, и
+            // показывать его молча бессмысленно. Возвращаем к началу: у щелчка
+            // по пустому месту всё равно нет другого смысла.
+            if (host.scrollTop > 4) host.scrollTo({ top: 0, behavior: 'smooth' });
+            this.revealGrip(host);
+        });
+    },
+
     initRailDrag: function () {
         if (this._railDragBound) return;
         const rail = document.getElementById('lk_rail');
         const grip = document.getElementById('lk_rail_grip');
         if (!rail || !grip) return;
         this._railDragBound = true;
+        this.bindGripReveal(rail);
 
         // Окно меняет размер — меню заново подгоняется по высоте. Вешаем здесь:
         // initRailDrag вызывается один раз при первой отрисовке панели.
@@ -10010,6 +10044,7 @@ const app = {
         const grip = document.getElementById('input_panel_grip');
         if (!panel || !grip) return;
         this._paramsDragBound = true;
+        this.bindGripReveal(panel);
 
         let startX = 0, startY = 0, dragging = false, target = null;
 
