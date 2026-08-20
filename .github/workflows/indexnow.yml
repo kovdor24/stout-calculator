@@ -1,0 +1,86 @@
+# IndexNow — мгновенное уведомление поисковиков о новых и изменившихся
+# страницах.
+#
+# Зачем. Сайт статический (GitHub Pages), робот сам заходит на heatcalc.ru
+# по расписанию — от публикации страницы до первого обхода может пройти
+# от нескольких дней до пары недель. IndexNow — протокол, по которому сайт
+# сам сообщает поисковику «вот эти страницы обновились», и это ускоряет
+# первый обход до часов. Яндекс и Bing участвуют в протоколе напрямую;
+# запрос на api.indexnow.org разносится сразу обоим (и ещё паре движков
+# помельче), поэтому Google Search Console это не заменяет — туда
+# по-прежнему нужно отправлять адреса руками через «Проверку URL».
+#
+# Ключ. Файл 5f64b2dd826d818c4abc8d23c45b924c.txt в корне сайта содержит
+# сам ключ (это не секрет: по протоколу IndexNow ключ обязан быть публично
+# читаемым файлом — так поисковик убеждается, что запрос пришёл от
+# владельца домена, а не от кого-то постороннего). Не удалять и не
+# переименовывать — сменить ключ означает завести новый файл и поменять
+# имя здесь.
+#
+# Список страниц берётся из sitemap.xml — что в карте сайта, то и уходит
+# в IndexNow. Добавили страницу в sitemap — она подхватится тем же
+# запуском, что и её собственная публикация.
+#
+# Проверить результат: Яндекс.Вебмастер → Индексирование → там же, где
+# «Переобход страниц», видно и обращения по IndexNow.
+
+name: IndexNow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sitemap.xml'
+      - '**/index.html'
+  workflow_dispatch:
+
+concurrency:
+  group: indexnow
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Забрать файлы репозитория
+        uses: actions/checkout@v4
+
+      - name: Подождать публикацию на GitHub Pages
+        # CDN отдаёт свежую версию не мгновенно после пуша. Ключевой файл
+        # должен быть уже доступен по HTTP к моменту, когда IndexNow его
+        # проверит, иначе запрос отклонят.
+        run: sleep 40
+
+      - name: Отправить список страниц в IndexNow
+        run: |
+          KEY="5f64b2dd826d818c4abc8d23c45b924c"
+          KEY_LOCATION="https://heatcalc.ru/${KEY}.txt"
+
+          URLS_JSON=$(grep -oP '(?<=<loc>)[^<]+' sitemap.xml | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          COUNT=$(echo "$URLS_JSON" | jq 'length')
+          echo "Страниц в sitemap.xml: $COUNT"
+
+          jq -n \
+            --arg host "heatcalc.ru" \
+            --arg key "$KEY" \
+            --arg keyLocation "$KEY_LOCATION" \
+            --argjson urlList "$URLS_JSON" \
+            '{host: $host, key: $key, keyLocation: $keyLocation, urlList: $urlList}' > payload.json
+
+          for i in 1 2 3; do
+            CODE=$(curl -sS -o response.txt -w "%{http_code}" \
+              -X POST "https://api.indexnow.org/indexnow" \
+              -H "Content-Type: application/json; charset=utf-8" \
+              --data @payload.json)
+            echo "Попытка $i: код ответа $CODE"
+            cat response.txt
+            echo
+            # 200 — принято и обработано, 202 — принято в очередь.
+            if [ "$CODE" = "200" ] || [ "$CODE" = "202" ]; then
+              exit 0
+            fi
+            sleep 20
+          done
+
+          echo "::warning::IndexNow не подтвердил приём после трёх попыток — не критично, обычная переиндексация всё равно сработает"
+          exit 0
