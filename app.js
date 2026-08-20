@@ -9770,7 +9770,25 @@ const app = {
         // высота в CSS-пикселях, а окно — в экранных, поэтому приводим к одним
         const wrap = document.getElementById('page_scale_wrapper');
         const zoom = (wrap && parseFloat(getComputedStyle(wrap).zoom)) || 1;
-        const available = window.innerHeight - headerBottom - 24;
+
+        // Липкий отступ считаем сами, по живой высоте шапки. Раньше он брался из
+        // --sticky-header-h, а её пишет обработчик прокрутки — на нетронутом
+        // расчёте страница не прокручивается вовсе, и там оставалось значение с
+        // прошлой отрисовки. Стоило ему оказаться больше собственного места
+        // колонки, и браузер опускал липкое меню ниже: верхний край переставал
+        // совпадать с колонкой параметров и листом сметы. Ставим ровно ту высоту,
+        // на которой меню и так стоит (шапка + верхнее поле страницы): при
+        // прокрутке оно по-прежнему останавливается под шапкой, а на месте — не
+        // сдвигается никуда.
+        const container = rail.parentElement;
+        const padTop = container ? (parseFloat(getComputedStyle(container).paddingTop) || 0) : 0;
+        rail.style.setProperty('--lk-rail-sticky-top', Math.round(headerBottom / zoom + padTop) + 'px');
+
+        // Свободное место — от настоящего верха колонки до низа окна. По низу
+        // шапки его считать нельзя: между ними ещё поле страницы, а при липком
+        // сдвиге колонка и вовсе начинается заметно ниже — на эту разницу меню
+        // и не помещалось, отращивая себе прокрутку.
+        const available = window.innerHeight - rail.getBoundingClientRect().top - 24;
         if (available <= 0) return;
 
         // Дальше считаем в CSS-пикселях самой колонки — в них же заданы её размеры.
@@ -9791,7 +9809,11 @@ const app = {
         let scale = Math.min(this.RAIL_SCALE_MAX, Math.max(this.RAIL_SCALE_MIN, room / natural));
         setScale(scale);
 
-        for (let i = 0; i < 8 && !fits() && scale > this.RAIL_SCALE_MIN; i++) {
+        // Ужимаем до тех пор, пока не поместится, а не фиксированное число раз:
+        // восьми шагов по 0.03 хватало не всегда, и остаток колонка добирала
+        // прокруткой — то есть последние разделы («Админка», «Выйти») просто
+        // уезжали за нижний край.
+        for (let i = 0; i < 48 && !fits() && scale > this.RAIL_SCALE_MIN; i++) {
             scale = Math.max(this.RAIL_SCALE_MIN, scale - 0.03);
             setScale(scale);
         }
